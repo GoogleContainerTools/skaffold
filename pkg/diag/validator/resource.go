@@ -18,7 +18,6 @@ package validator
 
 import (
 	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -32,6 +31,7 @@ type Resource struct {
 	status     Status
 	err        error
 	StatusCode proto.StatusCode
+	logs       []byte
 }
 
 func (r Resource) Kind() string      { return r.kind }
@@ -45,10 +45,14 @@ func (r Resource) String() string {
 	}
 	return fmt.Sprintf("%s:%s/%s", r.namespace, r.kind, r.name)
 }
+func (r Resource) Logs() string {
+	// TODO: Maybe filter meaningful log lines in future.
+	return string(r.logs)
+}
 
 // NewResource creates new Resource of kind
-func NewResource(namespace, kind, name string, status Status, err error, statusCode proto.StatusCode) Resource {
-	return Resource{namespace: namespace, kind: kind, name: name, status: status, err: err, StatusCode: statusCode}
+func NewResource(namespace, kind, name string, status Status, err error, statusCode proto.StatusCode, logs []byte) Resource {
+	return Resource{namespace: namespace, kind: kind, name: name, status: status, err: err, StatusCode: statusCode, logs: logs}
 }
 
 // objectWithMetadata is any k8s object that has kind and object metadata.
@@ -58,6 +62,6 @@ type objectWithMetadata interface {
 }
 
 // NewResourceFromObject creates new Resource with fields populated from object metadata.
-func NewResourceFromObject(object objectWithMetadata, status Status, err error, statusCode proto.StatusCode) Resource {
-	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, err, statusCode)
+func NewResourceFromObject(object objectWithMetadata, status Status, err error, statusCode proto.StatusCode, logs []byte) Resource {
+	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, err, statusCode, logs)
 }

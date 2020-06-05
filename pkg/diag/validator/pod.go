@@ -86,17 +86,17 @@ func (p *PodValidator) getPodStatus(pod *v1.Pod) *podStatus {
 	case v1.PodSucceeded:
 		return ps
 	default:
-		return ps.withErr(getContainerStatus(pod))
+		return getContainerStatus(pod)
 	}
 }
 
-func getContainerStatus(pod *v1.Pod) (proto.StatusCode, error) {
+func getContainerStatus(pod *v1.Pod, ps *podStatus) *podStatus {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
 	for _, c := range pod.Status.Conditions {
 		if c.Type == v1.PodScheduled {
 			switch c.Status {
 			case v1.ConditionFalse:
-				return getUntoleratedTaints(c.Reason, c.Message)
+				return ps.withErr(getUntoleratedTaints(c.Reason, c.Message))
 			case v1.ConditionTrue:
 				// TODO(dgageot): Add EphemeralContainerStatuses
 				cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
@@ -179,6 +179,7 @@ type podStatus struct {
 	phase      string
 	err        error
 	statusCode proto.StatusCode
+	logs       []byte
 }
 
 func (p *podStatus) isStable() bool {
@@ -190,6 +191,12 @@ func (p *podStatus) withErr(errCode proto.StatusCode, err error) *podStatus {
 	p.statusCode = errCode
 	return p
 }
+
+func (p *podStatus) withLogs(logs []byte) *podStatus {
+	p.logs = logs
+	return p
+}
+
 
 func (p *podStatus) String() string {
 	switch {
