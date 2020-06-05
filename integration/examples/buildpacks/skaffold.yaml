@@ -3,7 +3,7 @@ kind: Config
 build:
   artifacts:
   - image: skaffold-buildpacks
-    buildpack:
+    buildpacks:
       builder: "gcr.io/buildpacks/builder"
       env:
       - GOPROXY={{.GOPROXY}}
