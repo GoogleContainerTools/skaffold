@@ -69,7 +69,7 @@ var testDeployNamespacedConfig = latest.HelmDeploy{
 		SetValues: map[string]string{
 			"some.key": "somevalue",
 		},
-		Namespace: "testNamespace",
+		Namespace: "testReleaseNamespace",
 	}},
 }
 
@@ -415,10 +415,10 @@ func TestHelmDeploy(t *testing.T) {
 			description: "helm3.0 namespaced deploy success",
 			commands: testutil.
 				CmdRunWithOutput("helm version", version30).
-				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testReleaseNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeployNamespacedConfig, false),
 			builds:     testBuilds,
 		},
@@ -431,6 +431,17 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig"),
 			runContext: makeNamespacedRunContext(testDeployConfig),
+			builds:     testBuilds,
+		},
+		{
+			description: "helm3.0 namespaced context deploy success overrides release namespaces",
+			commands: testutil.
+				CmdRunWithOutput("helm version", version30).
+				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig"),
+			runContext: makeNamespacedRunContext(testDeployNamespacedConfig),
 			builds:     testBuilds,
 		},
 		{
@@ -448,10 +459,10 @@ func TestHelmDeploy(t *testing.T) {
 			description: "helm3.1 namespaced deploy success",
 			commands: testutil.
 				CmdRunWithOutput("helm version", version31).
-				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testReleaseNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeployNamespacedConfig, false),
 			builds:     testBuilds,
 		},
@@ -464,6 +475,17 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig"),
 			runContext: makeNamespacedRunContext(testDeployConfig),
+			builds:     testBuilds,
+		},
+		{
+			description: "helm3.1 namespaced context deploy success overrides release namespaces",
+			commands: testutil.
+				CmdRunWithOutput("helm version", version31).
+				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig"),
+			runContext: makeNamespacedRunContext(testDeployNamespacedConfig),
 			builds:     testBuilds,
 		},
 		{
@@ -786,7 +808,7 @@ func TestHelmCleanup(t *testing.T) {
 			description: "helm3 namespace cleanup success",
 			commands: testutil.
 				CmdRunWithOutput("helm version", version31).
-				AndRun("helm --kube-context kubecontext delete skaffold-helm --namespace testNamespace --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext delete skaffold-helm --namespace testReleaseNamespace --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeployNamespacedConfig, false),
 			builds:     testBuilds,
 		},
@@ -796,6 +818,14 @@ func TestHelmCleanup(t *testing.T) {
 				CmdRunWithOutput("helm version", version31).
 				AndRun("helm --kube-context kubecontext delete skaffold-helm --namespace testNamespace --kubeconfig kubeconfig"),
 			runContext: makeNamespacedRunContext(testDeployConfig),
+			builds:     testBuilds,
+		},
+		{
+			description: "helm3 namespaced context cleanup success overriding release namespace",
+			commands: testutil.
+				CmdRunWithOutput("helm version", version31).
+				AndRun("helm --kube-context kubecontext delete skaffold-helm --namespace testNamespace --kubeconfig kubeconfig"),
+			runContext: makeNamespacedRunContext(testDeployNamespacedConfig),
 			builds:     testBuilds,
 		},
 	}
@@ -1074,7 +1104,7 @@ func TestHelmRender(t *testing.T) {
 			description: "render with namespace",
 			shouldErr:   false,
 			commands: testutil.CmdRunWithOutput("helm version", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --namespace testNamespace --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --namespace testReleaseNamespace --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeployNamespacedConfig, false),
 			builds: []build.Artifact{
 				{
