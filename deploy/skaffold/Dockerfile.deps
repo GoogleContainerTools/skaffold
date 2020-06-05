@@ -63,7 +63,7 @@ RUN tar -zxf gcloud.tar.gz
 
 # Download bazel
 FROM alpine:3.10 as download-bazel
-ENV BAZEL_VERSION 2.0.0
+ENV BAZEL_VERSION 3.2.0
 ENV BAZEL_URL https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-x86_64
 RUN wget -O bazel "${BAZEL_URL}"
 RUN chmod +x bazel
