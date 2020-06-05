@@ -224,7 +224,7 @@
         },
         {
           "properties": {
-            "buildpack": {
+            "buildpacks": {
               "$ref": "#/definitions/BuildpackArtifact",
               "description": "builds images using [Cloud Native Buildpacks](https://buildpacks.io/).",
               "x-intellij-html-description": "builds images using <a href=\"https://buildpacks.io/\">Cloud Native Buildpacks</a>."
@@ -254,7 +254,7 @@
             "image",
             "context",
             "sync",
-            "buildpack"
+            "buildpacks"
           ],
           "additionalProperties": false
         },
@@ -581,8 +581,8 @@
         "ignore"
       ],
       "additionalProperties": false,
-      "description": "*alpha* used to specify dependencies for an artifact built by a buildpack.",
-      "x-intellij-html-description": "<em>alpha</em> used to specify dependencies for an artifact built by a buildpack."
+      "description": "*alpha* used to specify dependencies for an artifact built by buildpacks.",
+      "x-intellij-html-description": "<em>alpha</em> used to specify dependencies for an artifact built by buildpacks."
     },
     "ClusterDetails": {
       "properties": {

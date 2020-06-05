@@ -3,7 +3,7 @@ kind: Config
 build:
   artifacts:
   - image: skaffold-buildpacks-node
-    buildpack:
+    buildpacks:
       builder: "gcr.io/buildpacks/builder"
     sync:
       auto: {}
