@@ -27,6 +27,21 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func TestNewCmdDebug(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.NewTempDir().Chdir()
+		t.Override(&opts, config.SkaffoldOptions{})
+
+		cmd := NewCmdDebug()
+		cmd.SilenceUsage = true
+		cmd.Execute()
+
+		t.CheckDeepEqual(true, opts.Tail)
+		t.CheckDeepEqual(false, opts.Force)
+		t.CheckDeepEqual(false, opts.EnableRPC)
+	})
+}
+
 // Verify workaround so that Dev and Debug can have separate defaults for Auto{Build,Deploy,Sync}
 // https://github.com/GoogleContainerTools/skaffold/issues/4129
 // https://github.com/spf13/pflag/issues/257
@@ -71,17 +86,3 @@ func TestDebugIndependentFromDev(t *testing.T) {
 	})
 }
 
-func TestNewCmdDebug(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		t.NewTempDir().Chdir()
-		t.Override(&opts, config.SkaffoldOptions{})
-
-		cmd := NewCmdDebug()
-		cmd.SilenceUsage = true
-		cmd.Execute()
-
-		t.CheckDeepEqual(true, opts.Tail)
-		t.CheckDeepEqual(false, opts.Force)
-		t.CheckDeepEqual(false, opts.EnableRPC)
-	})
-}
