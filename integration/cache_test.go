@@ -27,9 +27,7 @@ import (
 )
 
 func TestCacheAPITriggers(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("examples/getting-started").RunOrFail(t)

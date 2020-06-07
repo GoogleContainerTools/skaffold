@@ -23,15 +23,24 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/diag"
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 const (
-	deploymentType   = "deployment"
-	rollOutSuccess   = "successfully rolled out"
-	connectionErrMsg = "Unable to connect to the server"
-	killedErrMsg     = "signal: killed"
+	deploymentType          = "deployment"
+	rollOutSuccess          = "successfully rolled out"
+	connectionErrMsg        = "Unable to connect to the server"
+	killedErrMsg            = "signal: killed"
+	defaultPodCheckDeadline = 30 * time.Second
+	tabHeader               = " -"
+	tab                     = "  "
 )
 
 var (
@@ -40,12 +49,14 @@ var (
 )
 
 type Deployment struct {
-	name      string
-	namespace string
-	rType     string
-	status    Status
-	done      bool
-	deadline  time.Duration
+	name         string
+	namespace    string
+	rType        string
+	status       Status
+	done         bool
+	deadline     time.Duration
+	pods         map[string]validator.Resource
+	podValidator diag.Diagnose
 }
 
 func (d *Deployment) Deadline() time.Duration {
@@ -53,23 +64,36 @@ func (d *Deployment) Deadline() time.Duration {
 }
 
 func (d *Deployment) UpdateStatus(details string, err error) {
-	updated := newStatus(details, err)
-	if !d.status.Equal(updated) {
-		d.status = updated
-		if strings.Contains(details, rollOutSuccess) || isErrAndNotRetryAble(err) {
-			d.done = true
-		}
+	errCode := proto.StatusCode_STATUSCHECK_SUCCESS
+	if err != nil {
+		errCode = proto.StatusCode_STATUSCHECK_UNKNOWN
+	}
+	updated := newStatus(details, errCode, err)
+	if d.status.Equal(updated) {
+		d.status.changed = false
+		return
+	}
+	d.status = updated
+	d.status.changed = true
+	if strings.Contains(details, rollOutSuccess) || isErrAndNotRetryAble(err) {
+		d.done = true
 	}
 }
 
 func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 	return &Deployment{
-		name:      name,
-		namespace: ns,
-		rType:     deploymentType,
-		status:    newStatus("", nil),
-		deadline:  deadline,
+		name:         name,
+		namespace:    ns,
+		rType:        deploymentType,
+		status:       newStatus("", proto.StatusCode_STATUSCHECK_UNKNOWN, nil),
+		deadline:     deadline,
+		podValidator: diag.New(nil),
 	}
+}
+
+func (d *Deployment) WithValidator(pd diag.Diagnose) *Deployment {
+	d.podValidator = pd
+	return d
 }
 
 func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunContext) {
@@ -88,6 +112,9 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 	}
 
 	d.UpdateStatus(details, err)
+	if err := d.fetchPods(ctx); err != nil {
+		logrus.Debugf("pod statuses could be fetched this time due to %s", err)
+	}
 }
 
 func (d *Deployment) String() string {
@@ -110,12 +137,26 @@ func (d *Deployment) IsStatusCheckComplete() bool {
 	return d.done
 }
 
+// This returns a string representing deployment status along with tab header
+// e.g.
+//  - testNs:deployment/leeroy-app: waiting for rollout to complete. (1/2) pending
+//      - testNs:pod/leeroy-app-xvbg : error pulling container image
 func (d *Deployment) ReportSinceLastUpdated() string {
-	if d.status.reported {
+	if d.status.reported && !d.status.changed {
 		return ""
 	}
 	d.status.reported = true
-	return fmt.Sprintf("%s: %s", d, d.status)
+	if d.status.String() == "" {
+		return ""
+	}
+	var result strings.Builder
+	result.WriteString(fmt.Sprintf("%s %s: %s", tabHeader, d, d.status))
+	for _, p := range d.pods {
+		if p.Error() != nil {
+			result.WriteString(fmt.Sprintf("%s %s %s: %s\n", tab, tabHeader, p, p.Error()))
+		}
+	}
+	return result.String()
 }
 
 func (d *Deployment) cleanupStatus(msg string) string {
@@ -144,4 +185,29 @@ func isErrAndNotRetryAble(err error) bool {
 		return false
 	}
 	return err != ErrKubectlConnection
+}
+
+func (d *Deployment) fetchPods(ctx context.Context) error {
+	timeoutContext, cancel := context.WithTimeout(ctx, defaultPodCheckDeadline)
+	defer cancel()
+	pods, err := d.podValidator.Run(timeoutContext)
+	if err != nil {
+		return err
+	}
+
+	newPods := map[string]validator.Resource{}
+	d.status.changed = false
+	for _, p := range pods {
+		originalPod, ok := d.pods[p.String()]
+		if !ok {
+			d.status.changed = true
+			event.ResourceStatusCheckEventCompleted(p.String(), p.Error())
+		} else if originalPod.StatusCode != p.StatusCode {
+			d.status.changed = true
+			event.ResourceStatusCheckEventCompleted(p.String(), p.Error())
+		}
+		newPods[p.String()] = p
+	}
+	d.pods = newPods
+	return nil
 }

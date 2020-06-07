@@ -30,6 +30,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/diag"
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -59,12 +61,9 @@ type counter struct {
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	event.StatusCheckEventStarted()
-	if err := statusCheck(ctx, defaultLabeller, runCtx, out); err != nil {
-		event.StatusCheckEventFailed(err)
-		return err
-	}
-	event.StatusCheckEventSucceeded()
-	return nil
+	err := statusCheck(ctx, defaultLabeller, runCtx, out)
+	event.StatusCheckEventEnded(err)
+	return err
 }
 
 func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
@@ -88,18 +87,19 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		wg.Add(1)
 		go func(r *resource.Deployment) {
 			defer wg.Done()
+			// keep updating the resource status until it fails/succeeds/times out
 			pollDeploymentStatus(ctx, runCtx, r)
 			rcCopy := c.markProcessed(r.Status().Error())
 			printStatusCheckSummary(out, r, rcCopy)
 		}(d)
 	}
 
-	// Retrieve pending resource states
+	// Retrieve pending deployments statuses
 	go func() {
 		printDeploymentStatus(ctx, out, deployments, deadline)
 	}()
 
-	// Wait for all deployment status to be fetched
+	// Wait for all deployment statuses to be fetched
 	wg.Wait()
 	return getSkaffoldDeployStatus(c)
 }
@@ -112,15 +112,23 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 		return nil, fmt.Errorf("could not fetch deployments: %w", err)
 	}
 
-	deployments := make([]*resource.Deployment, 0, len(deps.Items))
-	for _, d := range deps.Items {
+	deployments := make([]*resource.Deployment, len(deps.Items))
+	for i, d := range deps.Items {
 		var deadline time.Duration
 		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds == kubernetesMaxDeadline {
 			deadline = deadlineDuration
 		} else {
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
 		}
-		deployments = append(deployments, resource.NewDeployment(d.Name, d.Namespace, deadline))
+		pd := diag.New([]string{d.Namespace}).
+			WithLabel(RunIDLabel, l.Labels()[RunIDLabel]).
+			WithValidators([]validator.Validator{validator.NewPodValidator(client)})
+
+		for k, v := range d.Spec.Template.Labels {
+			pd = pd.WithLabel(k, v)
+		}
+
+		deployments[i] = resource.NewDeployment(d.Name, d.Namespace, deadline).WithValidator(pd)
 	}
 
 	return deployments, nil
@@ -166,20 +174,18 @@ func getDeadline(d int) time.Duration {
 func printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 	err := r.Status().Error()
 	if errors.Is(err, context.Canceled) {
-		// Don't print the status summary if the user ctrl-Cd
+		// Don't print the status summary if the user ctrl-C
 		return
 	}
-
+	event.ResourceStatusCheckEventCompleted(r.String(), err)
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if err != nil {
-		event.ResourceStatusCheckEventFailed(r.String(), err)
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
 			trimNewLine(getPendingMessage(c.pending, c.total)),
 			trimNewLine(err.Error()),
 		)
 	} else {
-		event.ResourceStatusCheckEventSucceeded(r.String())
 		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(c.pending, c.total))
 	}
 
@@ -213,7 +219,7 @@ func printStatus(deployments []*resource.Deployment, out io.Writer) bool {
 		allDone = false
 		if str := r.ReportSinceLastUpdated(); str != "" {
 			event.ResourceStatusCheckEventUpdated(r.String(), str)
-			fmt.Fprintln(out, tabHeader, trimNewLine(str))
+			fmt.Fprintln(out, trimNewLine(str))
 		}
 	}
 	return allDone

@@ -66,11 +66,22 @@ func TestDebugIndependentFromDev(t *testing.T) {
 		dev := NewCmdDev()
 		debug := NewCmdDebug()
 
-		t.Log("Round 1")
 		dev.Execute()
 		debug.Execute()
-		t.Log("Round 2")
-		dev.Execute()
-		debug.Execute()
+	})
+}
+
+func TestNewCmdDebug(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.NewTempDir().Chdir()
+		t.Override(&opts, config.SkaffoldOptions{})
+
+		cmd := NewCmdDebug()
+		cmd.SilenceUsage = true
+		cmd.Execute()
+
+		t.CheckDeepEqual(true, opts.Tail)
+		t.CheckDeepEqual(false, opts.Force)
+		t.CheckDeepEqual(false, opts.EnableRPC)
 	})
 }

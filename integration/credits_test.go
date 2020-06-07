@@ -25,9 +25,7 @@ import (
 )
 
 func TestCredits(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	testutil.Run(t, "credits", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Chdir()

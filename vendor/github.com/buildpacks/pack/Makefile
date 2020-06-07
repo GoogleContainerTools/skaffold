@@ -2,6 +2,7 @@ ACCEPTANCE_TIMEOUT?=$(TEST_TIMEOUT)
 ARCHIVE_NAME=pack-$(PACK_VERSION)
 GOCMD?=go
 GOFLAGS?=-mod=vendor
+GOTESTFLAGS?=-v -count=1 -parallel=1
 PACKAGE_BASE=github.com/buildpacks/pack
 PACK_BIN?=pack
 PACK_GITSHA1=$(shell git rev-parse --short=7 HEAD)
@@ -39,7 +40,7 @@ tidy: mod-tidy mod-vendor format
 
 build: out
 	@echo "> Building..."
-	$(GOCMD) build -ldflags "-s -w -X 'github.com/buildpacks/pack/cmd.Version=${PACK_VERSION}'" -o ./out/$(PACK_BIN) -a ./cmd/pack
+	$(GOCMD) build -ldflags "-s -w -X 'github.com/buildpacks/pack/cmd.Version=${PACK_VERSION}' -extldflags ${LDFLAGS}" -trimpath -o ./out/$(PACK_BIN) -a ./cmd/pack
 
 package: out
 	tar czf ./out/$(ARCHIVE_NAME).tgz -C out/ pack
@@ -66,17 +67,22 @@ lint: install-golangci-lint
 
 test: unit acceptance
 
-unit:
+# append coverage arguments
+ifeq ($(TEST_COVERAGE), 1)
+unit: GOTESTFLAGS:=$(GOTESTFLAGS) -coverprofile=./out/tests/coverage-unit.txt -covermode=atomic
+endif
+unit: out
 	@echo "> Running unit/integration tests..."
-	$(GOCMD) test -v -count=1 -parallel=1 -timeout=$(UNIT_TIMEOUT) ./...
+	$(GOCMD) test $(GOTESTFLAGS) -timeout=$(UNIT_TIMEOUT) ./...
 
-acceptance:
+acceptance: out
 	@echo "> Running acceptance tests..."
-	$(GOCMD) test -v -count=1 -parallel=1 -timeout=$(ACCEPTANCE_TIMEOUT) -tags=acceptance ./acceptance
+	$(GOCMD) test $(GOTESTFLAGS) -timeout=$(ACCEPTANCE_TIMEOUT) -tags=acceptance ./acceptance
 
+acceptance-all: export ACCEPTANCE_SUITE_CONFIG:=$(shell cat ./acceptance/testconfig/all.json)
 acceptance-all:
 	@echo "> Running acceptance tests..."
-	ACCEPTANCE_SUITE_CONFIG=$$(cat ./acceptance/testconfig/all.json) $(GOCMD) test -v -count=1 -parallel=1 -timeout=$(ACCEPTANCE_TIMEOUT) -tags=acceptance ./acceptance
+	$(GOCMD) test $(GOTESTFLAGS) -timeout=$(ACCEPTANCE_TIMEOUT) -tags=acceptance ./acceptance
 
 clean:
 	@echo "> Cleaning workspace..."
@@ -110,6 +116,8 @@ prepare-for-pr: tidy verify test
 	exit 0;
 
 out:
+	# NOTE: Windows doesn't support `-p`
 	mkdir out
+	mkdir out/tests
 
 .PHONY: clean build format imports lint test unit acceptance verify verify-format

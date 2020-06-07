@@ -25,9 +25,7 @@ import (
 )
 
 func TestDebug(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		description string
@@ -73,12 +71,7 @@ func TestDebug(t *testing.T) {
 }
 
 func TestDebugEventsRPC_StatusCheck(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if RunOnGCP() {
-		t.Skip("skipping test that is not gcp only")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/jib").RunOrFail(t)
@@ -92,12 +85,7 @@ func TestDebugEventsRPC_StatusCheck(t *testing.T) {
 }
 
 func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if RunOnGCP() {
-		t.Skip("skipping test that is not gcp only")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/jib").RunOrFail(t)

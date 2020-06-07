@@ -50,7 +50,7 @@ type dlvSpec struct {
 }
 
 func newDlvSpec(port uint16) dlvSpec {
-	return dlvSpec{mode: "exec", host: "localhost", port: port, apiVersion: defaultAPIVersion, headless: true}
+	return dlvSpec{mode: "exec", port: port, apiVersion: defaultAPIVersion, headless: true}
 }
 
 // isLaunchingDlv determines if the arguments seems to be invoking Delve
@@ -135,6 +135,7 @@ func extractDlvSpec(args []string) *dlvSpec {
 	if !isLaunchingDlv(args) {
 		return nil
 	}
+	// delve's defaults
 	spec := dlvSpec{apiVersion: 2, log: false, headless: false}
 arguments:
 	for _, arg := range args {
@@ -151,8 +152,8 @@ arguments:
 			address := strings.SplitN(arg, "=", 2)[1]
 			split := strings.SplitN(address, ":", 2)
 			switch len(split) {
-			// port only
 			case 1:
+				// this is actually an error: delve insists on a :port
 				p, _ := strconv.ParseUint(split[0], 10, 16)
 				spec.port = uint16(p)
 
@@ -188,15 +189,10 @@ func (spec dlvSpec) asArguments() []string {
 		args = append(args, "--headless")
 	}
 	args = append(args, "--continue", "--accept-multiclient")
-	host := "localhost"
-	if spec.host != "" {
-		host = spec.host
-	}
 	if spec.port > 0 {
-		args = append(args, fmt.Sprintf("--listen=%s:%d", host, spec.port))
-		//args = append(args, ":", strconv.FormatInt(int64(spec.port), 10))
+		args = append(args, fmt.Sprintf("--listen=%s:%d", spec.host, spec.port))
 	} else {
-		args = append(args, fmt.Sprintf("--listen=%s", host))
+		args = append(args, fmt.Sprintf("--listen=%s", spec.host))
 	}
 	if spec.apiVersion > 0 {
 		args = append(args, fmt.Sprintf("--api-version=%d", spec.apiVersion))

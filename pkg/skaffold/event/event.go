@@ -128,35 +128,38 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(p latest.Pipeline, kubeContext string) proto.State {
+func emptyState(p latest.Pipeline, kubeContext string, autoBuild, autoDeploy, autoSync bool) proto.State {
 	builds := map[string]string{}
 	for _, a := range p.Build.Artifacts {
 		builds[a.ImageName] = NotStarted
 	}
 	metadata := initializeMetadata(p, kubeContext)
-	return emptyStateWithArtifacts(builds, metadata)
+	return emptyStateWithArtifacts(builds, metadata, autoBuild, autoDeploy, autoSync)
 }
 
-func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata) proto.State {
+func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata, autoBuild, autoDeploy, autoSync bool) proto.State {
 	return proto.State{
 		BuildState: &proto.BuildState{
-			Artifacts: builds,
+			Artifacts:   builds,
+			AutoTrigger: autoBuild,
 		},
 		DeployState: &proto.DeployState{
-			Status: NotStarted,
+			Status:      NotStarted,
+			AutoTrigger: autoDeploy,
 		},
 		StatusCheckState: emptyStatusCheckState(),
 		ForwardedPorts:   make(map[int32]*proto.PortEvent),
 		FileSyncState: &proto.FileSyncState{
-			Status: NotStarted,
+			Status:      NotStarted,
+			AutoTrigger: autoSync,
 		},
 		Metadata: metadata,
 	}
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-func InitializeState(c latest.Pipeline, kc string) {
-	handler.setState(emptyState(c, kc))
+func InitializeState(c latest.Pipeline, kc string, autoBuild, autoDeploy, autoSync bool) {
+	handler.setState(emptyState(c, kc, autoBuild, autoDeploy, autoSync))
 }
 
 // DeployInProgress notifies that a deployment has been started.
@@ -175,13 +178,21 @@ func DeployInfoEvent(err error) {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Info, Err: err.Error()})
 }
 
-func StatusCheckEventSucceeded() {
+func StatusCheckEventEnded(err error) {
+	if err != nil {
+		statusCheckEventFailed(err)
+		return
+	}
+	statusCheckEventSucceeded()
+}
+
+func statusCheckEventSucceeded() {
 	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
 		Status: Succeeded,
 	})
 }
 
-func StatusCheckEventFailed(err error) {
+func statusCheckEventFailed(err error) {
 	statusCode := sErrors.ErrorCodeFromError(sErrors.StatusCheck, err)
 	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
 		Status:  Failed,
@@ -203,7 +214,15 @@ func StatusCheckEventInProgress(s string) {
 	})
 }
 
-func ResourceStatusCheckEventSucceeded(r string) {
+func ResourceStatusCheckEventCompleted(r string, err error) {
+	if err != nil {
+		resourceStatusCheckEventFailed(r, err)
+		return
+	}
+	resourceStatusCheckEventSucceeded(r)
+}
+
+func resourceStatusCheckEventSucceeded(r string) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource: r,
 		Status:   Succeeded,
@@ -211,7 +230,7 @@ func ResourceStatusCheckEventSucceeded(r string) {
 	})
 }
 
-func ResourceStatusCheckEventFailed(r string, err error) {
+func resourceStatusCheckEventFailed(r string, err error) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource: r,
 		Status:   Failed,
@@ -551,7 +570,8 @@ func ResetStateOnBuild() {
 	for k := range handler.getState().BuildState.Artifacts {
 		builds[k] = NotStarted
 	}
-	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata)
+	autoBuild, autoDeploy, autoSync := handler.getState().BuildState.AutoTrigger, handler.getState().DeployState.AutoTrigger, handler.getState().FileSyncState.AutoTrigger
+	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata, autoBuild, autoDeploy, autoSync)
 	handler.setState(newState)
 }
 
@@ -565,9 +585,40 @@ func ResetStateOnDeploy() {
 	handler.setState(newState)
 }
 
+func UpdateStateAutoBuildTrigger(t bool) {
+	newState := handler.getState()
+	newState.BuildState.AutoTrigger = t
+	handler.setState(newState)
+}
+
+func UpdateStateAutoDeployTrigger(t bool) {
+	newState := handler.getState()
+	newState.DeployState.AutoTrigger = t
+	handler.setState(newState)
+}
+
+func UpdateStateAutoSyncTrigger(t bool) {
+	newState := handler.getState()
+	newState.FileSyncState.AutoTrigger = t
+	handler.setState(newState)
+}
+
 func emptyStatusCheckState() *proto.StatusCheckState {
 	return &proto.StatusCheckState{
 		Status:    NotStarted,
 		Resources: map[string]string{},
+	}
+}
+
+func AutoTriggerDiff(name string, val bool) (bool, error) {
+	switch name {
+	case "build":
+		return val != handler.getState().BuildState.AutoTrigger, nil
+	case "sync":
+		return val != handler.getState().FileSyncState.AutoTrigger, nil
+	case "deploy":
+		return val != handler.getState().DeployState.AutoTrigger, nil
+	default:
+		return false, fmt.Errorf("unknown phase %v not found in handler state", name)
 	}
 }
