@@ -1,0 +1,96 @@
+name: Nightly Darwin integration tests
+
+on:
+  schedule:
+  - cron: "0 10 * * *"
+
+jobs:
+
+  build:
+    name: Release binary integration tests
+    runs-on: macos-latest
+    steps:
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.14
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Install Kustomize
+      run: |
+        wget -O kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v3.5.4/kustomize_v3.5.4_darwin_amd64.tar.gz
+        sudo tar -xvf kustomize.tar.gz -C /usr/local/bin/
+
+    - name: Install Ko
+      run: |
+        wget -O ko.tar.gz https://github.com/google/ko/releases/download/v0.4.0/ko_0.4.0_Darwin_x86_64.tar.gz
+        sudo tar -xvf ko.tar.gz -C /usr/local/bin/
+
+    - name: Install Kompose
+      run: |
+        wget -O kompose https://github.com/kubernetes/kompose/releases/download/v1.21.0/kompose-darwin-amd64 && chmod +x kompose
+        sudo mv kompose /usr/local/bin/
+
+    - name: Install Docker
+      run: |
+        brew install docker docker-machine
+        mkdir -p ${HOME}/.docker/machine/cache
+        curl -Lo ${HOME}/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v18.09.1-rc1/boot2docker.iso
+        docker-machine create --driver virtualbox --virtualbox-boot2docker-url ${HOME}/.docker/machine/cache/boot2docker.iso default
+        docker-machine env default
+        eval $(docker-machine env default)
+        echo ::set-env name=DOCKER_TLS_VERIFY::${DOCKER_TLS_VERIFY}
+        echo ::set-env name=DOCKER_HOST::${DOCKER_HOST}
+        echo ::set-env name=DOCKER_CERT_PATH::${DOCKER_CERT_PATH}
+        echo ::set-env name=DOCKER_MACHINE_NAME::${DOCKER_MACHINE_NAME}
+
+    - name: Wait Docker Daemon startup
+      run: |
+        counter=0
+        until docker version --format {{.Server.Version}} && echo "Docker daemon running"
+        do
+        echo "Retry docker daemon status check..."
+        sleep 20
+        [[ counter -eq 30 ]] && echo "Docker daemon start failed" && exit 1
+        ((counter++))
+        done
+        docker run hello-world
+
+    - name: Install GCloud and configure
+      run: |
+        wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-276.0.0-darwin-x86_64.tar.gz
+        tar -xvf gcloud.tar.gz -C ${HOME}
+        CLOUDSDK_PYTHON="python2.7" ${HOME}/google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
+        echo ::add-path::${HOME}/google-cloud-sdk/bin
+
+    - name: Install kubectl
+      run: |
+        gcloud components install kubectl
+
+    - name: Install Container Structure Test
+      run: |
+        wget -O container-structure-test https://storage.googleapis.com/container-structure-test/v1.8.0/container-structure-test-darwin-amd64 && chmod +x container-structure-test
+        sudo mv container-structure-test /usr/local/bin/
+
+    - name: Setup other files and permissions
+      run: mkdir -p ${HOME}/.m2/ && cp ./hack/maven/settings.xml ${HOME}/.m2/settings.xml
+
+    - name: Install Minikube and start cluster
+      run: |
+        curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64
+        sudo install minikube /usr/local/bin/minikube
+        minikube start --profile=minikube --driver=virtualbox
+
+    - name: Install Skaffold release binary
+      run: |
+        curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64
+        sudo install skaffold /usr/local/bin/skaffold
+
+    - name: Run integration tests
+      env:
+        TOKEN: ${{ secrets.TOKEN }}
+      run: make integration-tests
