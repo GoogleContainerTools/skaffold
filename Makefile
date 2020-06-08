@@ -123,8 +123,8 @@ linters: $(BUILD_DIR)
 quicktest:
 	@ ./hack/gotest.sh -short -timeout=60s $(SKAFFOLD_TEST_PACKAGES)
 
-.PHONY: integration
-integration: install
+.PHONY: integration-tests
+integration-tests:
 ifeq ($(GCP_ONLY),true)
 	gcloud container clusters get-credentials \
 		$(GKE_CLUSTER_NAME) \
@@ -132,6 +132,9 @@ ifeq ($(GCP_ONLY),true)
 		--project $(GCP_PROJECT)
 endif
 	@ GCP_ONLY=$(GCP_ONLY) ./hack/gotest.sh -v $(REPOPATH)/integration/binpack $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
+
+.PHONY: integration
+integration: install integration-tests
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
