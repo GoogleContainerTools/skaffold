@@ -1,22 +1,4 @@
-/*
-Copyright 2019 The Skaffold Authors
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-// This whole file is copy/pasted from
-// https://github.com/buildpacks/pack/blob/master/internal/project/project.go
-package buildpacks
+package project
 
 import (
 	"io/ioutil"
@@ -43,8 +25,20 @@ type Build struct {
 	Env        []EnvVar    `toml:"env"`
 }
 
+type License struct {
+	Type string `toml:"type"`
+	URI  string `toml:"uri"`
+}
+
+type Project struct {
+	Name     string    `toml:"name"`
+	Licenses []License `toml:"licenses"`
+}
+
 type Descriptor struct {
-	Build Build `toml:"build"`
+	Project  Project                `toml:"project"`
+	Build    Build                  `toml:"build"`
+	Metadata map[string]interface{} `toml:"metadata"`
 }
 
 func ReadProjectDescriptor(pathToFile string) (Descriptor, error) {
@@ -65,6 +59,13 @@ func ReadProjectDescriptor(pathToFile string) (Descriptor, error) {
 func (p Descriptor) validate() error {
 	if p.Build.Exclude != nil && p.Build.Include != nil {
 		return errors.New("project.toml: cannot have both include and exclude defined")
+	}
+	if len(p.Project.Licenses) > 0 {
+		for _, license := range p.Project.Licenses {
+			if license.Type == "" && license.URI == "" {
+				return errors.New("project.toml: must have a type or uri defined for each license")
+			}
+		}
 	}
 
 	for _, bp := range p.Build.Buildpacks {

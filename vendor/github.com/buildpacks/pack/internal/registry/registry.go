@@ -11,14 +11,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/buildpacks/pack/logging"
-
 	ggcrname "github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
 	"gopkg.in/src-d/go-git.v4"
 
 	"github.com/buildpacks/pack/internal/buildpack"
+	"github.com/buildpacks/pack/logging"
 )
 
 const defaultRegistryURL = "https://github.com/buildpacks/registry-index"
