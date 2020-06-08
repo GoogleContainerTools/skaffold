@@ -324,6 +324,9 @@ type ClusterDetails struct {
 	// Tolerations describes the Kubernetes tolerations for the pod.
 	Tolerations []v1.Toleration `yaml:"tolerations,omitempty"`
 
+	// Annotations describes the Kubernetes annotations for the pod.
+	Annotations map[string]string `yaml:"annotations,omitempty"`
+
 	// RunAsUser defines the UID to request for running the container.
 	// If omitted, no SeurityContext will be specified for the pod and will therefore be inherited
 	// from the service account.

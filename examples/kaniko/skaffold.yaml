@@ -8,12 +8,15 @@ build:
   cluster:
     pullSecretName: e2esecret
     namespace: default
+#   annotations:
+#     test: test
+
 # If kaniko pod should be run on a tainted node, you can setup tolerations here.
-#    tolerations:
-#      - key: app
-#        operator: "Equal"
-#        value: skaffold
-#        effect: "NoSchedule"
+#   tolerations:
+#     - key: app
+#       operator: "Equal"
+#       value: skaffold
+#       effect: "NoSchedule"
 deploy:
   kubectl:
     manifests:

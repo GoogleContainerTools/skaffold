@@ -596,6 +596,15 @@
           "description": "for kaniko pod.",
           "x-intellij-html-description": "for kaniko pod."
         },
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "describes the Kubernetes annotations for the pod.",
+          "x-intellij-html-description": "describes the Kubernetes annotations for the pod.",
+          "default": "{}"
+        },
         "concurrency": {
           "type": "integer",
           "description": "how many artifacts can be built concurrently. 0 means \"no-limit\".",
@@ -686,6 +695,7 @@
         "dockerConfig",
         "serviceAccount",
         "tolerations",
+        "annotations",
         "runAsUser",
         "resources",
         "concurrency",
