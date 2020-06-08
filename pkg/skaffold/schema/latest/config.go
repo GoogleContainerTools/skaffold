@@ -324,6 +324,9 @@ type ClusterDetails struct {
 	// Tolerations describes the Kubernetes tolerations for the pod.
 	Tolerations []v1.Toleration `yaml:"tolerations,omitempty"`
 
+	// Annotations describes the Kubernetes annotations for the pod.
+	Annotations map[string]string `yaml:"annotations,omitempty"`
+
 	// RunAsUser defines the UID to request for running the container.
 	// If omitted, no SeurityContext will be specified for the pod and will therefore be inherited
 	// from the service account.
@@ -344,9 +347,6 @@ type ClusterDetails struct {
 
 	// RandomDockerConfigSecret adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds, e.g. docker-cfgfd154022-c761-416f-8eb3-cf8258450b85.
 	RandomDockerConfigSecret bool `yaml:"randomDockerConfigSecret,omitempty"`
-
-	// Annotations defines arbitrary non-identifying metadata to a kaniko pod.
-	Annotations map[string]string `yaml:"annotations,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.

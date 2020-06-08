@@ -601,8 +601,8 @@
             "type": "string"
           },
           "type": "object",
-          "description": "defines arbitrary non-identifying metadata to a kaniko pod.",
-          "x-intellij-html-description": "defines arbitrary non-identifying metadata to a kaniko pod.",
+          "description": "describes the Kubernetes annotations for the pod.",
+          "x-intellij-html-description": "describes the Kubernetes annotations for the pod.",
           "default": "{}"
         },
         "concurrency": {
@@ -695,13 +695,13 @@
         "dockerConfig",
         "serviceAccount",
         "tolerations",
+        "annotations",
         "runAsUser",
         "resources",
         "concurrency",
         "volumes",
         "randomPullSecret",
-        "randomDockerConfigSecret",
-        "annotations"
+        "randomDockerConfigSecret"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build.",
