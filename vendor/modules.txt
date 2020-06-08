@@ -70,7 +70,7 @@ github.com/buildpacks/lifecycle/archive
 github.com/buildpacks/lifecycle/auth
 github.com/buildpacks/lifecycle/cmd
 github.com/buildpacks/lifecycle/launch
-# github.com/buildpacks/pack v0.11.0
+# github.com/buildpacks/pack v0.11.1-0.20200602171405-91a81f8bf020
 ## explicit
 github.com/buildpacks/pack
 github.com/buildpacks/pack/builder
@@ -95,6 +95,7 @@ github.com/buildpacks/pack/internal/stack
 github.com/buildpacks/pack/internal/stringset
 github.com/buildpacks/pack/internal/style
 github.com/buildpacks/pack/logging
+github.com/buildpacks/pack/project
 # github.com/cenkalti/backoff/v4 v4.0.2
 ## explicit
 github.com/cenkalti/backoff/v4

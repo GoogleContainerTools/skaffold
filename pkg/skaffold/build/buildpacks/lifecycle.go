@@ -28,6 +28,7 @@ import (
 
 	lifecycle "github.com/buildpacks/lifecycle/cmd"
 	"github.com/buildpacks/pack"
+	"github.com/buildpacks/pack/project"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -50,7 +51,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 
 	// Read `project.toml` if it exists.
 	path := filepath.Join(workspace, artifact.ProjectDescriptor)
-	projectDescriptor, err := ReadProjectDescriptor(path)
+	projectDescriptor, err := project.ReadProjectDescriptor(path)
 	if err != nil && !os.IsNotExist(err) {
 		return "", fmt.Errorf("failed to read project descriptor %q: %w", path, err)
 	}
