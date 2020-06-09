@@ -48,7 +48,7 @@ const (
 var (
 	runContainerRe = regexp.MustCompile(errorPrefix)
 	taintsRe       = regexp.MustCompile(taintsExp)
-	noLogs         = ""
+	noLogs         = []string{}
 	// for testing
 	logFn = getPodLogs
 )
@@ -94,7 +94,7 @@ func (p *PodValidator) getPodStatus(pod *v1.Pod) *podStatus {
 	}
 }
 
-func getContainerStatus(pod *v1.Pod) (proto.StatusCode, string, error) {
+func getContainerStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
 	for _, c := range pod.Status.Conditions {
 		if c.Type == v1.PodScheduled {
@@ -115,7 +115,7 @@ func getContainerStatus(pod *v1.Pod) (proto.StatusCode, string, error) {
 	return proto.StatusCode_STATUSCHECK_SUCCESS, noLogs, nil
 }
 
-func getWaitingContainerStatus(po *v1.Pod, cs []v1.ContainerStatus) (proto.StatusCode, string, error) {
+func getWaitingContainerStatus(po *v1.Pod, cs []v1.ContainerStatus) (proto.StatusCode, []string, error) {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
 	for _, c := range cs {
 		switch {
@@ -182,7 +182,7 @@ type podStatus struct {
 	name       string
 	namespace  string
 	phase      string
-	logs       string
+	logs       []string
 	err        error
 	statusCode proto.StatusCode
 }
@@ -191,7 +191,7 @@ func (p *podStatus) isStable() bool {
 	return p.phase == success || (p.phase == running && p.err == nil)
 }
 
-func (p *podStatus) withErrAndLogs(errCode proto.StatusCode, l string, err error) *podStatus {
+func (p *podStatus) withErrAndLogs(errCode proto.StatusCode, l []string, err error) *podStatus {
 	p.err = err
 	p.statusCode = errCode
 	p.logs = l
@@ -210,7 +210,7 @@ func (p *podStatus) String() string {
 	return fmt.Sprintf(actionableMessage, p.namespace, p.name)
 }
 
-func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerStatus) (proto.StatusCode, string, error) {
+func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerStatus) (proto.StatusCode, []string, error) {
 	switch c.State.Waiting.Reason {
 	// Extract meaning full error out of container statuses.
 	case containerCreating:
@@ -243,12 +243,16 @@ func trimSpace(msg string) string {
 	return strings.Trim(msg, " ")
 }
 
-func getPodLogs(po *v1.Pod, c string) string {
-	logCommand := []string{"kubectl", "logFn", po.Name, "-n", po.Namespace, "-c", c}
+func getPodLogs(po *v1.Pod, c string) []string {
+	logCommand := []string{"kubectl", "logs", po.Name, "-n", po.Namespace, "-c", c}
 	cmd := exec.Command(logCommand[0], logCommand[1:]...)
 	logs, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Sprintf("Error retrieving logFn for pod %s. Try %s", po.Name, strings.Join(logCommand, " "))
+		return []string{fmt.Sprintf("Error retrieving logFn for pod %s. Try %s", po.Name, strings.Join(logCommand, " "))}
 	}
-	return string(logs)
+	lines := strings.Split(string(logs), "\n")
+	for i, s := range lines {
+		lines[i] = fmt.Sprintf("[%s %s]%s", po.Name, c, s)
+	}
+	return lines
 }
