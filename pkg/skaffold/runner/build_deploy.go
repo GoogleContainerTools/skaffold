@@ -34,7 +34,6 @@ import (
 
 // BuildAndTest builds and tests a list of artifacts.
 func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-
 	// Use tags directly from the Kubernetes manifests.
 	if r.runCtx.Opts.DigestSource == noneDigestSource {
 		return []build.Artifact{}, nil

@@ -696,12 +696,12 @@ The following options can be passed to any command:
 
 
 Examples:
-  # Hydrate Kubernetes manifests without building the images 
+  # Hydrate Kubernetes manifests without building the images, using digest resolved from tag in remote registry 
   skaffold render --digest-source=remote
 
 Options:
   -d, --default-repo='': Default repository value (overrides global config)
-      --digest-source='local': Set to 'local' to build and tag images, and output templated Kubernetes manifests; Set to 'remote' to resolve the digest of the image by tag from the container registry and output templated Kubernetes manifests; Set to 'none' to output templated Kubernetes manifests with images listed in skaffold.yaml
+      --digest-source='local': Set to 'local' to build images locally and use digests from built images; Set to 'remote' to resolve the digest of images by tag from the remote registry; Set to 'none' to use tags directly from the Kubernetes manifests
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
       --loud=false: Show the build logs and output
