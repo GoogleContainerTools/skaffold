@@ -48,7 +48,6 @@ const (
 var (
 	runContainerRe = regexp.MustCompile(errorPrefix)
 	taintsRe       = regexp.MustCompile(taintsExp)
-	noLogs         = []string{}
 	// for testing
 	logFn = getPodLogs
 )
@@ -101,18 +100,18 @@ func getContainerStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 			switch c.Status {
 			case v1.ConditionFalse:
 				sc, err := getUntoleratedTaints(c.Reason, c.Message)
-				return sc, noLogs, err
+				return sc, nil, err
 			case v1.ConditionTrue:
 				// TODO(dgageot): Add EphemeralContainerStatuses
 				cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
 				// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
 				return getWaitingContainerStatus(pod, cs)
 			case v1.ConditionUnknown:
-				return proto.StatusCode_STATUSCHECK_UNKNOWN, noLogs, fmt.Errorf(c.Message)
+				return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf(c.Message)
 			}
 		}
 	}
-	return proto.StatusCode_STATUSCHECK_SUCCESS, noLogs, nil
+	return proto.StatusCode_STATUSCHECK_SUCCESS, nil, nil
 }
 
 func getWaitingContainerStatus(po *v1.Pod, cs []v1.ContainerStatus) (proto.StatusCode, []string, error) {
@@ -127,7 +126,7 @@ func getWaitingContainerStatus(po *v1.Pod, cs []v1.ContainerStatus) (proto.Statu
 		}
 	}
 	// No waiting or terminated containers, pod should be in good health.
-	return proto.StatusCode_STATUSCHECK_SUCCESS, noLogs, nil
+	return proto.StatusCode_STATUSCHECK_SUCCESS, nil, nil
 }
 
 func getUntoleratedTaints(reason string, message string) (proto.StatusCode, error) {
@@ -214,20 +213,20 @@ func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerSta
 	switch c.State.Waiting.Reason {
 	// Extract meaning full error out of container statuses.
 	case containerCreating:
-		return proto.StatusCode_STATUSCHECK_CONTAINER_CREATING, noLogs, fmt.Errorf("creating container %s", c.Name)
+		return proto.StatusCode_STATUSCHECK_CONTAINER_CREATING, nil, fmt.Errorf("creating container %s", c.Name)
 	case crashLoopBackOff:
 		// TODO, in case of container restarting, return the original failure reason due to which container failed.
 		l := logFn(po, c.Name)
 		return proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING, l, fmt.Errorf("container %s is backing off waiting to restart", c.Name)
 	case imagePullErr, imagePullBackOff, errImagePullBackOff:
-		return proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, noLogs, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
+		return proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
 	case runContainerError:
 		match := runContainerRe.FindStringSubmatch(c.State.Waiting.Message)
 		if len(match) != 0 {
-			return proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR, noLogs, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(match[3]))
+			return proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR, nil, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(match[3]))
 		}
 	}
-	return proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN, noLogs, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(c.State.Waiting.Message))
+	return proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN, nil, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(c.State.Waiting.Message))
 }
 
 func newPodStatus(n string, ns string, p string) *podStatus {

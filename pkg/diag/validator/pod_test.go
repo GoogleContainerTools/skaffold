@@ -73,7 +73,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, noLogs)},
+				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil)},
 		},
 		{
 			description: "pod is Waiting condition due to ErrImageBackOffPullErr",
@@ -101,7 +101,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, noLogs)},
+				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil)},
 		},
 		{
 			description: "pod is Waiting due to Image Backoff Pull error",
@@ -129,7 +129,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, noLogs)},
+				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil)},
 		},
 		{
 			description: "pod is in Terminated State",
@@ -144,7 +144,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Succeeded", nil,
-				proto.StatusCode_STATUSCHECK_SUCCESS, noLogs)},
+				proto.StatusCode_STATUSCHECK_SUCCESS, nil)},
 		},
 		{
 			description: "pod is in Stable State",
@@ -165,7 +165,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Running", nil,
-				proto.StatusCode_STATUSCHECK_SUCCESS, noLogs)},
+				proto.StatusCode_STATUSCHECK_SUCCESS, nil)},
 		},
 		{
 			description: "pod condition unknown",
@@ -184,7 +184,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
-				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN, noLogs)},
+				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN, nil)},
 		},
 		{
 			description: "pod could not be scheduled",
@@ -205,7 +205,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
 				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"),
-				proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE, noLogs)},
+				proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE, nil)},
 		},
 		{
 			description: "pod is running but container terminated",
@@ -227,15 +227,15 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Running",
 				fmt.Errorf("container foo-container terminated with exit code 1"),
-				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, noLogs)},
+				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, nil)},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			rs := make([]runtime.Object, len(test.pods))
-			mLog := func(_ *v1.Pod, _ string) string {
-				return noLogs
+			mLog := func(_ *v1.Pod, _ string) []string {
+				return nil
 			}
 			t.Override(&logFn, mLog)
 			for i, p := range test.pods {
