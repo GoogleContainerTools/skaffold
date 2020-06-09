@@ -23,7 +23,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -37,17 +36,6 @@ func NewCmdDev() *cobra.Command {
 	return NewCmd("dev").
 		WithDescription("Run a pipeline in development mode").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.StringVar(&opts.Trigger, "trigger", "notify", "How is change detection triggered? (polling, notify, or manual)")
-			f.BoolVar(&opts.AutoBuild, "auto-build", true, "When set to false, builds wait for API request instead of running automatically (default true)")
-			f.MarkHidden("auto-build")
-			f.BoolVar(&opts.AutoSync, "auto-sync", true, "When set to false, syncs wait for API request instead of running automatically (default true)")
-			f.MarkHidden("auto-sync")
-			f.BoolVar(&opts.AutoDeploy, "auto-deploy", true, "When set to false, deploys wait for API request instead of running automatically (default true)")
-			f.MarkHidden("auto-deploy")
-			f.StringSliceVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
-			f.IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
-		}).
 		NoArgs(doDev)
 }
 

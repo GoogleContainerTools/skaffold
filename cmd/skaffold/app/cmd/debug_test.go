@@ -52,7 +52,7 @@ func TestDebugIndependentFromDev(t *testing.T) {
 			return mockRunner, &latest.SkaffoldConfig{}, nil
 		})
 		t.Override(&opts, config.SkaffoldOptions{})
-		t.Override(&doDev, func(_ context.Context, _ io.Writer) error {
+		t.Override(&doDev, func(context.Context, io.Writer) error {
 			if !opts.AutoBuild {
 				t.Error("opts.AutoBuild should be true for dev")
 			}
@@ -64,7 +64,7 @@ func TestDebugIndependentFromDev(t *testing.T) {
 			}
 			return nil
 		})
-		t.Override(&doDebug, func(_ context.Context, _ io.Writer) error {
+		t.Override(&doDebug, func(context.Context, io.Writer) error {
 			if opts.AutoBuild {
 				t.Error("opts.AutoBuild should be false for `debug`")
 			}
@@ -77,10 +77,12 @@ func TestDebugIndependentFromDev(t *testing.T) {
 			return nil
 		})
 
-		// debug should be independent of dev
+		// dev and debug should be independent of each other
 		dev := NewCmdDev()
 		debug := NewCmdDebug()
 
+		dev.Execute()
+		debug.Execute()
 		dev.Execute()
 		debug.Execute()
 	})
