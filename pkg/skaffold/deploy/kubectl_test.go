@@ -579,6 +579,34 @@ spec:
     name: image2
 `,
 		},
+		{
+			description: "no artifacts",
+			builds:      nil,
+			input: `apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1:tag1
+    name: image1
+  - image: gcr.io/project/image2:tag2
+    name: image2
+`,
+			expected: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1:tag1
+    name: image1
+  - image: gcr.io/project/image2:tag2
+    name: image2
+`,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

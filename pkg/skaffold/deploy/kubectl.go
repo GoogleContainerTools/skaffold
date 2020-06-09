@@ -210,9 +210,11 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 		return nil, nil
 	}
 
-	manifests, err = manifests.ReplaceImages(builds)
-	if err != nil {
-		return nil, fmt.Errorf("replacing images in manifests: %w", err)
+	if len(builds) != 0 {
+		manifests, err = manifests.ReplaceImages(builds)
+		if err != nil {
+			return nil, fmt.Errorf("replacing images in manifests: %w", err)
+		}
 	}
 
 	for _, transform := range manifestTransforms {

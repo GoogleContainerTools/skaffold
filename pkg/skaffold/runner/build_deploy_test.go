@@ -123,9 +123,7 @@ func TestBuildAndTestSkipBuild(t *testing.T) {
 		})
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual([]build.Artifact{
-			{ImageName: "img1", Tag: "img1:latest"},
-			{ImageName: "img2", Tag: "img2:latest"}}, bRes)
+		t.CheckDeepEqual([]build.Artifact{}, bRes)
 		// Nothing was built, tested or deployed
 		t.CheckDeepEqual([]Actions{{}}, testBench.Actions())
 	})

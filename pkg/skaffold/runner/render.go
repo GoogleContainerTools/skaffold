@@ -38,7 +38,7 @@ func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []bui
 		}
 	}
 	if r.runCtx.Opts.DigestSource == noneDigestSource {
-		color.Default.Fprintln(out, "--digest-source set to 'none', tags listed in skaffold.yaml will be used for render")
+		color.Default.Fprintln(out, "--digest-source set to 'none', tags listed in Kubernetes manifests will be used for render")
 	}
 	return r.deployer.Render(ctx, out, builds, r.labellers, filepath)
 }

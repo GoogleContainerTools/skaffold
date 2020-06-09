@@ -34,13 +34,19 @@ import (
 
 // BuildAndTest builds and tests a list of artifacts.
 func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+
+	// Use tags directly from the Kubernetes manifests.
+	if r.runCtx.Opts.DigestSource == noneDigestSource {
+		return []build.Artifact{}, nil
+	}
+
 	tags, err := r.imageTags(ctx, out, artifacts)
 	if err != nil {
 		return nil, err
 	}
 
-	// In dry-run mode or --digest-source  set to 'remote' or 'none', we don't build anything, just return the tag for each artifact.
-	if r.runCtx.Opts.DryRun || (r.runCtx.Opts.DigestSource == remoteDigestSource || r.runCtx.Opts.DigestSource == noneDigestSource) {
+	// In dry-run mode or with --digest-source  set to 'remote', we don't build anything, just return the tag for each artifact.
+	if r.runCtx.Opts.DryRun || (r.runCtx.Opts.DigestSource == remoteDigestSource) {
 		var bRes []build.Artifact
 
 		for _, artifact := range artifacts {
