@@ -40,7 +40,7 @@ func (r Resource) Name() string      { return r.name }
 func (r Resource) Namespace() string { return r.namespace }
 func (r Resource) Status() Status    { return r.status }
 func (r Resource) Error() error      { return r.err }
-func (r Resource) Logs() []string      { return r.logs }
+func (r Resource) Logs() []string    { return r.logs }
 func (r Resource) String() string {
 	if r.namespace == "default" {
 		return fmt.Sprintf("%s/%s", r.kind, r.name)
