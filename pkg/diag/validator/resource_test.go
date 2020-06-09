@@ -42,7 +42,7 @@ func TestNewResource(t *testing.T) {
 					Name:      "foo",
 				},
 			},
-			expected:     Resource{"default", "pod", "foo", Status(""), nil, 0},
+			expected:     Resource{"default", "pod", "foo", noLogs, Status(""), nil, 0},
 			expectedName: "pod/foo",
 		},
 		{
@@ -54,13 +54,13 @@ func TestNewResource(t *testing.T) {
 					Name:      "bar",
 				},
 			},
-			expected:     Resource{"test", "pod", "bar", Status(""), nil, 0},
+			expected:     Resource{"test", "pod", "bar", noLogs, Status(""), nil, 0},
 			expectedName: "test:pod/bar",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := NewResourceFromObject(test.resource, Status(""), nil, 0)
+			actual := NewResourceFromObject(test.resource, Status(""), nil, 0, noLogs)
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}))
 			t.CheckDeepEqual(test.expectedName, actual.String(), cmp.AllowUnexported(Resource{}))
 		})

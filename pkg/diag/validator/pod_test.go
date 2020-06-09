@@ -73,7 +73,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
+				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, noLogs)},
 		},
 		{
 			description: "pod is Waiting condition due to ErrImageBackOffPullErr",
@@ -101,7 +101,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
+				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, noLogs)},
 		},
 		{
 			description: "pod is Waiting due to Image Backoff Pull error",
@@ -129,7 +129,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
+				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, noLogs)},
 		},
 		{
 			description: "pod is in Terminated State",
@@ -144,7 +144,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Succeeded", nil,
-				proto.StatusCode_STATUSCHECK_SUCCESS)},
+				proto.StatusCode_STATUSCHECK_SUCCESS, noLogs)},
 		},
 		{
 			description: "pod is in Stable State",
@@ -165,7 +165,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Running", nil,
-				proto.StatusCode_STATUSCHECK_SUCCESS)},
+				proto.StatusCode_STATUSCHECK_SUCCESS, noLogs)},
 		},
 		{
 			description: "pod condition unknown",
@@ -184,7 +184,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
-				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN)},
+				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN, noLogs)},
 		},
 		{
 			description: "pod could not be scheduled",
@@ -205,7 +205,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
 				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"),
-				proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE)},
+				proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE, noLogs)},
 		},
 		{
 			description: "pod is running but container terminated",
@@ -227,19 +227,26 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "pod", "foo", "Running",
 				fmt.Errorf("container foo-container terminated with exit code 1"),
-				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED)},
+				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, noLogs)},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			rs := make([]runtime.Object, len(test.pods))
+			mLog := func(_ *v1.Pod, _ string) string {
+				return noLogs
+			}
+			t.Override(&logFn, mLog)
 			for i, p := range test.pods {
 				rs[i] = p
 			}
 			f := fakekubeclientset.NewSimpleClientset(rs...)
 			actual, err := NewPodValidator(f).Validate(context.Background(), "test", metav1.ListOptions{})
 			t.CheckNoError(err)
+			if len(actual) >= 1 {
+				fmt.Println(actual[0], "\n", test.expected[0])
+			}
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
 				if x == nil && y == nil {
 					return true
