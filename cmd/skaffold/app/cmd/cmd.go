@@ -86,9 +86,9 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 			switch {
 			case quietFlag:
-				logrus.Debugf("Update check and survey prompt is disabled because of quiet mode")
+				logrus.Debugf("Update check and survey prompt disabled in quiet mode")
 			case analyze:
-				logrus.Debugf("Update check and survey prompt is disabled because of init --analyze")
+				logrus.Debugf("Update check and survey prompt when running `init --analyze`")
 			default:
 				go func() {
 					if err := updateCheck(updateMsg, opts.GlobalConfig); err != nil {
@@ -107,8 +107,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			}
 			// check if survey prompt needs to be displayed
 			select {
-			case shdDisplay := <-surveyPrompt:
-				if shdDisplay {
+			case shouldDisplay := <-surveyPrompt:
+				if shouldDisplay {
 					if err := survey.New(opts.GlobalConfig).DisplaySurveyPrompt(cmd.OutOrStdout()); err != nil {
 						fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 					}
