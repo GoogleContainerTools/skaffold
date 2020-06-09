@@ -57,10 +57,11 @@ func New(configFile string) *Runner {
 	}
 }
 
-func DisplaySurveyPrompt(out io.Writer) {
+func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {
 	if isStdOut(out) {
 		fmt.Fprintln(out, Prompt)
 	}
+	return config.UpdateGlobalSurveyPrompted(s.configFile)
 }
 
 func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer) error {

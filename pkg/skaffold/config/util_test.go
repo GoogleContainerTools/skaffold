@@ -413,6 +413,10 @@ func TestIsSurveyPromptDisabled(t *testing.T) {
 			cfg:         &ContextConfig{Survey: &SurveyConfig{DisablePrompt: util.BoolPtr(false)}},
 		},
 		{
+			description: "disable prompt is nil",
+			cfg:         &ContextConfig{Survey: &SurveyConfig{}},
+		},
+		{
 			description: "config is nil",
 			cfg:         nil,
 		},
