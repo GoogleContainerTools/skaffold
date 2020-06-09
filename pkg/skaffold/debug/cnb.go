@@ -71,6 +71,16 @@ func updateForCNBImage(container *v1.Container, ic imageConfiguration, transform
 
 	// The buildpacks launcher is retained as the entrypoint
 	ic, rewriter := adjustCommandLine(m, ic)
+	
+	// 
+	if container.WorkingDir == "" {
+		if appDir := ic.env["CNB_APP_DIR"]; appDir != "" {
+			container.WorkingDir = appDir
+		} else {
+			container.WorkingDir = "/workspace"
+		}
+	}
+
 	c, img, err := transformer(container, ic)
 
 	// Only rewrite the container.Args if set: some transforms only alter env vars,
