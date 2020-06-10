@@ -78,7 +78,7 @@ func traverseManifestFields(manifest map[string]interface{}, visitor FieldVisito
 	visitFields(manifest, visitor)
 }
 
-func shouldTransformManifest(manifest map[interface{}]interface{}) bool {
+func shouldTransformManifest(manifest map[string]interface{}) bool {
 	var apiVersion string
 	switch value := manifest["apiVersion"].(type) {
 	case string:
