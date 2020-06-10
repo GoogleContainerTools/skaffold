@@ -19,6 +19,7 @@ package validator
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -32,9 +33,14 @@ import (
 )
 
 func TestRun(t *testing.T) {
+	type mockLogOutput struct {
+		output []byte
+		err    error
+	}
 	tests := []struct {
 		description string
 		pods        []*v1.Pod
+		logOutput   mockLogOutput
 		expected    []Resource
 	}{
 		{
@@ -225,28 +231,62 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
+			logOutput: mockLogOutput{
+				output: []byte("main.go:57 \ngo panic"),
+			},
 			expected: []Resource{NewResource("test", "pod", "foo", "Running",
 				fmt.Errorf("container foo-container terminated with exit code 1"),
-				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, nil)},
+				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, []string{
+					"[foo foo-container]main.go:57 ",
+					"[foo foo-container]go panic"},
+			)},
+		},
+		{
+			description: "pod is running but container terminated but could not retrieve logs",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				Status: v1.PodStatus{
+					Phase:      v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							State: v1.ContainerState{Terminated: &v1.ContainerStateTerminated{ExitCode: 1}},
+						},
+					},
+				},
+			}},
+			logOutput: mockLogOutput{
+				err: fmt.Errorf("error"),
+			},
+			expected: []Resource{NewResource("test", "pod", "foo", "Running",
+				fmt.Errorf("container foo-container terminated with exit code 1"),
+				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, []string{
+					"Error retrieving logs for pod foo. Try `kubectl logs foo -n test -c foo-container`"},
+			)},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			rs := make([]runtime.Object, len(test.pods))
-			mLog := func(_ *v1.Pod, _ string) []string {
-				return nil
+			mRun := func(n string, args []string) ([]byte, error) {
+				actualCommand := strings.Join(append([]string{n}, args...), " ")
+				if expected := "kubectl logs1 foo -n test -c foo-container"; actualCommand != expected {
+					t.Errorf("got %s, expected %s", actualCommand, expected)
+				}
+				return test.logOutput.output, test.logOutput.err
 			}
-			t.Override(&logFn, mLog)
+			t.Override(&runCli, mRun)
 			for i, p := range test.pods {
 				rs[i] = p
 			}
 			f := fakekubeclientset.NewSimpleClientset(rs...)
 			actual, err := NewPodValidator(f).Validate(context.Background(), "test", metav1.ListOptions{})
 			t.CheckNoError(err)
-			if len(actual) >= 1 {
-				fmt.Println(actual[0], "\n", test.expected[0])
-			}
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
 				if x == nil && y == nil {
 					return true

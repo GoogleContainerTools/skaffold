@@ -49,7 +49,7 @@ var (
 	runContainerRe = regexp.MustCompile(errorPrefix)
 	taintsRe       = regexp.MustCompile(taintsExp)
 	// for testing
-	logFn = getPodLogs
+	runCli = executeCLI
 )
 
 // PodValidator implements the Validator interface for Pods
@@ -121,7 +121,7 @@ func getWaitingContainerStatus(po *v1.Pod, cs []v1.ContainerStatus) (proto.Statu
 		case c.State.Waiting != nil:
 			return extractErrorMessageFromWaitingContainerStatus(po, c)
 		case c.State.Terminated != nil:
-			l := logFn(po, c.Name)
+			l := getPodLogs(po, c.Name)
 			return proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, l, fmt.Errorf("container %s terminated with exit code %d", c.Name, c.State.Terminated.ExitCode)
 		}
 	}
@@ -216,7 +216,7 @@ func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerSta
 		return proto.StatusCode_STATUSCHECK_CONTAINER_CREATING, nil, fmt.Errorf("creating container %s", c.Name)
 	case crashLoopBackOff:
 		// TODO, in case of container restarting, return the original failure reason due to which container failed.
-		l := logFn(po, c.Name)
+		l := getPodLogs(po, c.Name)
 		return proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING, l, fmt.Errorf("container %s is backing off waiting to restart", c.Name)
 	case imagePullErr, imagePullBackOff, errImagePullBackOff:
 		return proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
@@ -244,14 +244,18 @@ func trimSpace(msg string) string {
 
 func getPodLogs(po *v1.Pod, c string) []string {
 	logCommand := []string{"kubectl", "logs", po.Name, "-n", po.Namespace, "-c", c}
-	cmd := exec.Command(logCommand[0], logCommand[1:]...)
-	logs, err := cmd.CombinedOutput()
+	logs, err := runCli(logCommand[0], logCommand[1:])
 	if err != nil {
-		return []string{fmt.Sprintf("Error retrieving logFn for pod %s. Try %s", po.Name, strings.Join(logCommand, " "))}
+		return []string{fmt.Sprintf("Error retrieving logs for pod %s. Try `%s`", po.Name, strings.Join(logCommand, " "))}
 	}
 	lines := strings.Split(string(logs), "\n")
 	for i, s := range lines {
 		lines[i] = fmt.Sprintf("[%s %s]%s", po.Name, c, s)
 	}
 	return lines
+}
+
+func executeCLI(cmdName string, args []string) ([]byte, error) {
+	cmd := exec.Command(cmdName, args...)
+	return cmd.CombinedOutput()
 }
