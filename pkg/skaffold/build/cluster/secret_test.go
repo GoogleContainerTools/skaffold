@@ -46,7 +46,7 @@ func TestCreateSecret(t *testing.T) {
 						Cluster: &latest.ClusterDetails{
 							Timeout:        "20m",
 							PullSecretName: "kaniko-secret",
-							PullSecret:     tmpDir.Path("secret.json"),
+							PullSecretPath: tmpDir.Path("secret.json"),
 							Namespace:      "ns",
 						},
 					},
@@ -95,7 +95,7 @@ func TestExistingSecretNotFound(t *testing.T) {
 		// should fail to retrieve an existing secret
 		_, err = builder.setupPullSecret(ioutil.Discard)
 
-		t.CheckErrorContains("checking for existing kaniko secret", err)
+		t.CheckErrorContains("secret kaniko-secret does not exist. No path specified to create it", err)
 	})
 }
 
