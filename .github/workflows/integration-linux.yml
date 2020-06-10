@@ -1,4 +1,4 @@
-name: Nightly Linux integration tests
+name: release (linux)
 
 on:
   schedule:

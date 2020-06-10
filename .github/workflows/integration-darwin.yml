@@ -1,4 +1,4 @@
-name: Nightly Darwin integration tests
+name: release (darwin)
 
 on:
   schedule:
