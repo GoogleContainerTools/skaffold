@@ -58,6 +58,8 @@ var (
 
 	// update global config with the time the survey was last taken
 	updateLastTaken = "skaffold config set --survey --global last-taken %s"
+	// update global config with the time the survey was last prompted
+	updateLastPrompted = "skaffold config set --survey --global last-prompted %s"
 )
 
 // readConfigFileCached reads the specified file and returns the contents
@@ -281,7 +283,7 @@ func isSurveyPromptDisabled(configfile string) (*ContextConfig, bool) {
 	if err != nil {
 		return nil, false
 	}
-	return cfg, cfg != nil && cfg.Survey != nil && *cfg.Survey.DisablePrompt
+	return cfg, cfg != nil && cfg.Survey != nil && cfg.Survey.DisablePrompt != nil && *cfg.Survey.DisablePrompt
 }
 
 func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
@@ -321,6 +323,34 @@ func UpdateGlobalSurveyTaken(configFile string) error {
 		fullConfig.Global.Survey = &SurveyConfig{}
 	}
 	fullConfig.Global.Survey.LastTaken = today
+	err = WriteFullConfig(configFile, fullConfig)
+	if err != nil {
+		return aiErr
+	}
+	return err
+}
+
+func UpdateGlobalSurveyPrompted(configFile string) error {
+	// Today's date
+	today := current().Format(time.RFC3339)
+	ai := fmt.Sprintf(updateLastPrompted, today)
+	aiErr := fmt.Errorf("could not automatically update the survey prompted timestamp - please run `%s`", ai)
+
+	configFile, err := ResolveConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	fullConfig, err := ReadConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	if fullConfig.Global == nil {
+		fullConfig.Global = &ContextConfig{}
+	}
+	if fullConfig.Global.Survey == nil {
+		fullConfig.Global.Survey = &SurveyConfig{}
+	}
+	fullConfig.Global.Survey.LastPrompted = today
 	err = WriteFullConfig(configFile, fullConfig)
 	if err != nil {
 		return aiErr

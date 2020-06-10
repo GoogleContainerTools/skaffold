@@ -412,6 +412,10 @@ func TestIsSurveyPromptDisabled(t *testing.T) {
 			cfg:         &ContextConfig{Survey: &SurveyConfig{DisablePrompt: util.BoolPtr(false)}},
 		},
 		{
+			description: "disable prompt is nil",
+			cfg:         &ContextConfig{Survey: &SurveyConfig{}},
+		},
+		{
 			description: "config is nil",
 			cfg:         nil,
 		},
@@ -636,6 +640,66 @@ kubeContexts: []`,
 			t.CheckNoError(cfgErr)
 			// update time in expected cfg.
 			test.expectedCfg.Global.Survey.LastTaken = testTime.Format(time.RFC3339)
+			t.CheckDeepEqual(test.expectedCfg, actualConfig)
+		})
+	}
+}
+
+func TestUpdateGlobalSurveyPrompted(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         string
+		expectedCfg *GlobalConfig
+	}{
+		{
+			description: "update global context when context is empty",
+			expectedCfg: &GlobalConfig{
+				Global:         &ContextConfig{Survey: &SurveyConfig{}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "update global context when survey config is not nil",
+			cfg: `
+global:
+  survey:
+    last-taken: "some date"
+kubeContexts: []`,
+			expectedCfg: &GlobalConfig{
+				Global:         &ContextConfig{Survey: &SurveyConfig{LastTaken: "some date"}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "update global context when survey config last prompted is in past",
+			cfg: `
+global:
+  survey:
+    last-prompted: "some date in past"
+kubeContexts: []`,
+			expectedCfg: &GlobalConfig{
+				Global:         &ContextConfig{Survey: &SurveyConfig{}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfg := t.TempFile("config", []byte(test.cfg))
+			testTime := time.Now()
+			t.Override(&ReadConfigFile, ReadConfigFileNoCache)
+			t.Override(&current, func() time.Time {
+				return testTime
+			})
+
+			// update the time
+			err := UpdateGlobalSurveyPrompted(cfg)
+			t.CheckNoError(err)
+
+			actualConfig, cfgErr := ReadConfigFile(cfg)
+			t.CheckNoError(cfgErr)
+			// update time in expected cfg.
+			test.expectedCfg.Global.Survey.LastPrompted = testTime.Format(time.RFC3339)
 			t.CheckDeepEqual(test.expectedCfg, actualConfig)
 		})
 	}
