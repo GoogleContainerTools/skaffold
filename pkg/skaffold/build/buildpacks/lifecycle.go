@@ -28,13 +28,12 @@ import (
 
 	lifecycle "github.com/buildpacks/lifecycle/cmd"
 	"github.com/buildpacks/pack"
+	"github.com/buildpacks/pack/project"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
-
-const projectTOML = "project.toml"
 
 // For testing
 var (
@@ -51,8 +50,8 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	workspace := a.Workspace
 
 	// Read `project.toml` if it exists.
-	path := filepath.Join(a.Workspace, projectTOML)
-	projectDescriptor, err := ReadProjectDescriptor(path)
+	path := filepath.Join(workspace, artifact.ProjectDescriptor)
+	projectDescriptor, err := project.ReadProjectDescriptor(path)
 	if err != nil && !os.IsNotExist(err) {
 		return "", fmt.Errorf("failed to read project descriptor %q: %w", path, err)
 	}
@@ -85,9 +84,16 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	// Those specified in the skaffold.yaml replace those in the project.toml.
 	buildpacks := artifact.Buildpacks
 	if len(buildpacks) == 0 {
-		for _, buildpack := range projectDescriptor.Build.Buildpacks {
-			// TODO(dgageot): Support version and URI.
-			buildpacks = append(buildpacks, buildpack.ID)
+		for _, bp := range projectDescriptor.Build.Buildpacks {
+			if bp.ID != "" {
+				if bp.Version == "" {
+					buildpacks = append(buildpacks, bp.ID)
+				} else {
+					buildpacks = append(buildpacks, fmt.Sprintf("%s@%s", bp.ID, bp.Version))
+				}
+				// } else {
+				// TODO(dgageot): Support URI.
+			}
 		}
 	}
 
@@ -95,13 +101,14 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	alreadyPulled := images.AreAlreadyPulled(artifact.Builder, artifact.RunImage)
 
 	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
-		AppPath:    workspace,
-		Builder:    artifact.Builder,
-		RunImage:   artifact.RunImage,
-		Buildpacks: buildpacks,
-		Env:        env,
-		Image:      latest,
-		NoPull:     alreadyPulled,
+		AppPath:      workspace,
+		Builder:      artifact.Builder,
+		RunImage:     artifact.RunImage,
+		Buildpacks:   buildpacks,
+		Env:          env,
+		Image:        latest,
+		NoPull:       alreadyPulled,
+		TrustBuilder: artifact.TrustBuilder,
 		// TODO(dgageot): Support project.toml include/exclude.
 		// FileFilter: func(string) bool { return true },
 	}); err != nil {

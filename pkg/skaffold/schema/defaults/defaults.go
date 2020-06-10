@@ -200,6 +200,9 @@ func setCustomArtifactDefaults(a *latest.CustomArtifact) {
 }
 
 func setBuildpackArtifactDefaults(a *latest.BuildpackArtifact) {
+	if a.ProjectDescriptor == "" {
+		a.ProjectDescriptor = constants.DefaultProjectDescriptor
+	}
 	if a.Dependencies == nil {
 		a.Dependencies = &latest.BuildpackDependencies{
 			Paths: []string{"."},

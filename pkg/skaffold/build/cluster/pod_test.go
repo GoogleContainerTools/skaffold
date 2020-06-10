@@ -219,12 +219,22 @@ func TestKanikoPodSpec(t *testing.T) {
 					},
 				},
 			},
+			Tolerations: []v1.Toleration{
+				{
+					Key:               "app",
+					Operator:          "Equal",
+					Value:             "skaffold",
+					Effect:            "NoSchedule",
+					TolerationSeconds: nil,
+				},
+			},
 		},
 	}
 	pod, _ := builder.kanikoPodSpec(artifact, "tag")
 
 	expectedPod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
+			Annotations:  map[string]string{"test": "test"},
 			GenerateName: "kaniko-",
 			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 			Namespace:    "ns",
@@ -346,6 +356,15 @@ func TestKanikoPodSpec(t *testing.T) {
 							SecretName: "secret-1",
 						},
 					},
+				},
+			},
+			Tolerations: []v1.Toleration{
+				{
+					Key:               "app",
+					Operator:          "Equal",
+					Value:             "skaffold",
+					Effect:            "NoSchedule",
+					TolerationSeconds: nil,
 				},
 			},
 		},

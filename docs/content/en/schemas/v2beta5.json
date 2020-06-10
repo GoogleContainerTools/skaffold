@@ -224,7 +224,7 @@
         },
         {
           "properties": {
-            "buildpack": {
+            "buildpacks": {
               "$ref": "#/definitions/BuildpackArtifact",
               "description": "builds images using [Cloud Native Buildpacks](https://buildpacks.io/).",
               "x-intellij-html-description": "builds images using <a href=\"https://buildpacks.io/\">Cloud Native Buildpacks</a>."
@@ -254,7 +254,7 @@
             "image",
             "context",
             "sync",
-            "buildpack"
+            "buildpacks"
           ],
           "additionalProperties": false
         },
@@ -524,10 +524,22 @@
             "[\"key1=value1\", \"key2=value2\", \"key3={{.ENV_VARIABLE}}\"]"
           ]
         },
+        "projectDescriptor": {
+          "type": "string",
+          "description": "path to the project descriptor file.",
+          "x-intellij-html-description": "path to the project descriptor file.",
+          "default": "project.toml"
+        },
         "runImage": {
           "type": "string",
           "description": "overrides the stack's default run image.",
           "x-intellij-html-description": "overrides the stack's default run image."
+        },
+        "trustBuilder": {
+          "type": "boolean",
+          "description": "indicates that the builder should be trusted.",
+          "x-intellij-html-description": "indicates that the builder should be trusted.",
+          "default": "false"
         }
       },
       "preferredOrder": [
@@ -535,6 +547,8 @@
         "runImage",
         "env",
         "buildpacks",
+        "trustBuilder",
+        "projectDescriptor",
         "dependencies"
       ],
       "additionalProperties": false,
@@ -567,8 +581,8 @@
         "ignore"
       ],
       "additionalProperties": false,
-      "description": "*alpha* used to specify dependencies for an artifact built by a buildpack.",
-      "x-intellij-html-description": "<em>alpha</em> used to specify dependencies for an artifact built by a buildpack."
+      "description": "*alpha* used to specify dependencies for an artifact built by buildpacks.",
+      "x-intellij-html-description": "<em>alpha</em> used to specify dependencies for an artifact built by buildpacks."
     },
     "ClusterDetails": {
       "properties": {
@@ -581,6 +595,15 @@
           "type": "string",
           "description": "for kaniko pod.",
           "x-intellij-html-description": "for kaniko pod."
+        },
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "describes the Kubernetes annotations for the pod.",
+          "x-intellij-html-description": "describes the Kubernetes annotations for the pod.",
+          "default": "{}"
         },
         "concurrency": {
           "type": "integer",
@@ -646,6 +669,13 @@
           "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
           "x-intellij-html-description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>)."
         },
+        "tolerations": {
+          "items": {},
+          "type": "array",
+          "description": "describes the Kubernetes tolerations for the pod.",
+          "x-intellij-html-description": "describes the Kubernetes tolerations for the pod.",
+          "default": "[]"
+        },
         "volumes": {
           "items": {},
           "type": "array",
@@ -664,6 +694,8 @@
         "timeout",
         "dockerConfig",
         "serviceAccount",
+        "tolerations",
+        "annotations",
         "runAsUser",
         "resources",
         "concurrency",
@@ -1250,8 +1282,8 @@
         },
         "remote": {
           "type": "boolean",
-          "description": "specifies whether the chart path is remote, or exists on the host filesystem. `remote: true` implies `skipBuildDependencies: true`.",
-          "x-intellij-html-description": "specifies whether the chart path is remote, or exists on the host filesystem. <code>remote: true</code> implies <code>skipBuildDependencies: true</code>.",
+          "description": "specifies whether the chart path is remote, or exists on the host filesystem.",
+          "x-intellij-html-description": "specifies whether the chart path is remote, or exists on the host filesystem.",
           "default": "false"
         },
         "setFiles": {
@@ -1283,9 +1315,14 @@
         },
         "skipBuildDependencies": {
           "type": "boolean",
-          "description": "should build dependencies be skipped.",
-          "x-intellij-html-description": "should build dependencies be skipped.",
+          "description": "should build dependencies be skipped. Ignored when `remote: true`.",
+          "x-intellij-html-description": "should build dependencies be skipped. Ignored when <code>remote: true</code>.",
           "default": "false"
+        },
+        "upgradeOnChange": {
+          "type": "boolean",
+          "description": "specifies whether to upgrade helm chart on code changes. Default is `true` when helm chart is local (`remote: false`). Default is `false` if `remote: true`.",
+          "x-intellij-html-description": "specifies whether to upgrade helm chart on code changes. Default is <code>true</code> when helm chart is local (<code>remote: false</code>). Default is <code>false</code> if <code>remote: true</code>."
         },
         "useHelmSecrets": {
           "type": "boolean",
@@ -1329,6 +1366,7 @@
         "skipBuildDependencies",
         "useHelmSecrets",
         "remote",
+        "upgradeOnChange",
         "overrides",
         "packaged",
         "imageStrategy"

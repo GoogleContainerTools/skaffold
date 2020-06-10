@@ -65,16 +65,17 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			description: "success with buildpacks",
-			artifact:    withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun")),
+			artifact:    withTrustedBuilder(withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun"))),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
 			expectedOptions: &pack.BuildOptions{
-				AppPath:    ".",
-				Builder:    "my/otherBuilder",
-				RunImage:   "my/otherRun",
-				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
-				Env:        map[string]string{},
-				Image:      "img:latest",
+				AppPath:      ".",
+				Builder:      "my/otherBuilder",
+				RunImage:     "my/otherRun",
+				Buildpacks:   []string{"my/buildpack", "my/otherBuildpack"},
+				TrustBuilder: true,
+				Env:          map[string]string{},
+				Image:        "img:latest",
 			},
 		},
 		{
@@ -90,13 +91,14 @@ value = "14.3.0"
 id = "my/buildpack"
 [[build.buildpacks]]
 id = "my/otherBuildpack"
+version = "1.0"
 `,
 			},
 			expectedOptions: &pack.BuildOptions{
 				AppPath:    ".",
 				Builder:    "my/builder2",
 				RunImage:   "my/run2",
-				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
+				Buildpacks: []string{"my/buildpack", "my/otherBuildpack@1.0"},
 				Env: map[string]string{
 					"GOOGLE_RUNTIME_VERSION": "14.3.0",
 				},
@@ -237,8 +239,9 @@ func buildpacksArtifact(builder, runImage string) *latest.Artifact {
 		Workspace: ".",
 		ArtifactType: latest.ArtifactType{
 			BuildpackArtifact: &latest.BuildpackArtifact{
-				Builder:  builder,
-				RunImage: runImage,
+				Builder:           builder,
+				RunImage:          runImage,
+				ProjectDescriptor: "project.toml",
 				Dependencies: &latest.BuildpackDependencies{
 					Paths: []string{"."},
 				},
@@ -257,6 +260,10 @@ func withSync(sync *latest.Sync, artifact *latest.Artifact) *latest.Artifact {
 	return artifact
 }
 
+func withTrustedBuilder(artifact *latest.Artifact) *latest.Artifact {
+	artifact.BuildpackArtifact.TrustBuilder = true
+	return artifact
+}
 func withBuildpacks(buildpacks []string, artifact *latest.Artifact) *latest.Artifact {
 	artifact.BuildpackArtifact.Buildpacks = buildpacks
 	return artifact

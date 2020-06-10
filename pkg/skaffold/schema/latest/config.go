@@ -321,6 +321,12 @@ type ClusterDetails struct {
 	// Defaults to 'default'.
 	ServiceAccountName string `yaml:"serviceAccount,omitempty"`
 
+	// Tolerations describes the Kubernetes tolerations for the pod.
+	Tolerations []v1.Toleration `yaml:"tolerations,omitempty"`
+
+	// Annotations describes the Kubernetes annotations for the pod.
+	Annotations map[string]string `yaml:"annotations,omitempty"`
+
 	// RunAsUser defines the UID to request for running the container.
 	// If omitted, no SeurityContext will be specified for the pod and will therefore be inherited
 	// from the service account.
@@ -534,14 +540,19 @@ type HelmRelease struct {
 	RecreatePods bool `yaml:"recreatePods,omitempty"`
 
 	// SkipBuildDependencies should build dependencies be skipped.
+	// Ignored when `remote: true`.
 	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
 
 	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
 
 	// Remote specifies whether the chart path is remote, or exists on the host filesystem.
-	// `remote: true` implies `skipBuildDependencies: true`.
 	Remote bool `yaml:"remote,omitempty"`
+
+	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
+	// Default is `true` when helm chart is local (`remote: false`).
+	// Default is `false` if `remote: true`.
+	UpgradeOnChange *bool `yaml:"upgradeOnChange,omitempty"`
 
 	// Overrides are key-value pairs.
 	// If present, Skaffold will build a Helm `values` file that overrides
@@ -725,7 +736,7 @@ type ArtifactType struct {
 	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty" yamltags:"oneOf=artifact"`
 
 	// BuildpackArtifact builds images using [Cloud Native Buildpacks](https://buildpacks.io/).
-	BuildpackArtifact *BuildpackArtifact `yaml:"buildpack,omitempty" yamltags:"oneOf=artifact"`
+	BuildpackArtifact *BuildpackArtifact `yaml:"buildpacks,omitempty" yamltags:"oneOf=artifact"`
 
 	// CustomArtifact *beta* builds images using a custom build script written by the user.
 	CustomArtifact *CustomArtifact `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
@@ -750,11 +761,18 @@ type BuildpackArtifact struct {
 	// Order matters.
 	Buildpacks []string `yaml:"buildpacks,omitempty"`
 
+	// TrustBuilder indicates that the builder should be trusted.
+	TrustBuilder bool `yaml:"trustBuilder,omitempty"`
+
+	// ProjectDescriptor is the path to the project descriptor file.
+	// Defaults to `project.toml` if it exists.
+	ProjectDescriptor string `yaml:"projectDescriptor,omitempty"`
+
 	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`
 }
 
-// BuildpackDependencies *alpha* is used to specify dependencies for an artifact built by a buildpack.
+// BuildpackDependencies *alpha* is used to specify dependencies for an artifact built by buildpacks.
 type BuildpackDependencies struct {
 	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`

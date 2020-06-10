@@ -43,6 +43,9 @@ build:
   - image: gcr.io/k8s-skaffold/jib-gradle
     jib:
       args: ['-v']
+  - image: gcr.io/k8s-skaffold/buildpacks
+    buildpack:
+      builder: gcr.io/buildpacks/builder
   googleCloudBuild:
     projectId: test-project
 test:
@@ -109,6 +112,9 @@ build:
   - image: gcr.io/k8s-skaffold/jib-gradle
     jib:
       args: ['-v']
+  - image: gcr.io/k8s-skaffold/buildpacks
+    buildpacks:
+      builder: gcr.io/buildpacks/builder
   googleCloudBuild:
     projectId: test-project
 test:

@@ -162,7 +162,9 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 	// Enable auto build
 	rpcClient.AutoBuild(context.Background(), &proto.TriggerRequest{
 		State: &proto.TriggerState{
-			Enabled: true,
+			Val: &proto.TriggerState_Enabled{
+				Enabled: true,
+			},
 		},
 	})
 	// Ensure we see a build triggered in the event log
@@ -174,7 +176,9 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 
 	rpcClient.AutoDeploy(context.Background(), &proto.TriggerRequest{
 		State: &proto.TriggerState{
-			Enabled: true,
+			Val: &proto.TriggerState_Enabled{
+				Enabled: true,
+			},
 		},
 	})
 	verifyDeployment(t, entries, client, dep)

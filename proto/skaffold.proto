@@ -222,7 +222,9 @@ message TriggerRequest {
 
 // TriggerState represents trigger state for a given phase.
 message TriggerState {
-  bool enabled = 1; // enable or disable a trigger state
+  oneof val {
+    bool enabled = 1; // enable or disable a trigger state
+  }
 }
 
 // Intent represents user intents for a given phase.

@@ -23,12 +23,14 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	utilpointer "k8s.io/utils/pointer"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/diag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -214,7 +216,8 @@ func TestGetDeployments(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(objs...)
 			actual, err := getDeployments(client, "test", labeller, 200*time.Second)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
-				cmp.AllowUnexported(resource.Deployment{}, resource.Status{}))
+				cmp.AllowUnexported(resource.Deployment{}, resource.Status{}),
+				cmpopts.IgnoreInterfaces(struct{ diag.Diagnose }{}))
 		})
 	}
 }

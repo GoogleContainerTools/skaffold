@@ -18,6 +18,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -26,6 +27,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -159,7 +161,7 @@ func newGRPCServer(port int) (func() error, error) {
 }
 
 func newHTTPServer(port, proxyPort int) (func() error, error) {
-	mux := runtime.NewServeMux()
+	mux := runtime.NewServeMux(runtime.WithProtoErrorHandler(errorHandler))
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 	err := proto.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
 	if err != nil {
@@ -175,4 +177,19 @@ func newHTTPServer(port, proxyPort int) (func() error, error) {
 	go http.Serve(l, mux)
 
 	return l.Close, nil
+}
+
+type errResponse struct {
+	Err string `json:"error,omitempty"`
+}
+
+func errorHandler(ctx context.Context, _ *runtime.ServeMux, marshaler runtime.Marshaler, writer http.ResponseWriter, _ *http.Request, err error) {
+	writer.Header().Set("Content-type", marshaler.ContentType())
+	s, _ := status.FromError(err)
+	writer.WriteHeader(runtime.HTTPStatusFromCode(s.Code()))
+	if err := json.NewEncoder(writer).Encode(errResponse{
+		Err: s.Message(),
+	}); err != nil {
+		writer.Write([]byte(`{"error": "failed to marshal error message"}`))
+	}
 }
