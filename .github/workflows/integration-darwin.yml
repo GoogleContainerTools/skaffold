@@ -37,28 +37,7 @@ jobs:
 
     - name: Install Docker
       run: |
-        brew install docker docker-machine
-        mkdir -p ${HOME}/.docker/machine/cache
-        curl -Lo ${HOME}/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v18.09.1-rc1/boot2docker.iso
-        docker-machine create --driver virtualbox --virtualbox-boot2docker-url ${HOME}/.docker/machine/cache/boot2docker.iso default
-        docker-machine env default
-        eval $(docker-machine env default)
-        echo ::set-env name=DOCKER_TLS_VERIFY::${DOCKER_TLS_VERIFY}
-        echo ::set-env name=DOCKER_HOST::${DOCKER_HOST}
-        echo ::set-env name=DOCKER_CERT_PATH::${DOCKER_CERT_PATH}
-        echo ::set-env name=DOCKER_MACHINE_NAME::${DOCKER_MACHINE_NAME}
-
-    - name: Wait Docker Daemon startup
-      run: |
-        counter=0
-        until docker version --format {{.Server.Version}} && echo "Docker daemon running"
-        do
-        echo "Retry docker daemon status check..."
-        sleep 20
-        [[ counter -eq 30 ]] && echo "Docker daemon start failed" && exit 1
-        ((counter++))
-        done
-        docker run hello-world
+        brew install docker
 
     - name: Install GCloud and configure
       run: |
@@ -67,9 +46,10 @@ jobs:
         CLOUDSDK_PYTHON="python2.7" ${HOME}/google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
         echo ::add-path::${HOME}/google-cloud-sdk/bin
 
-    - name: Install kubectl
+    - name: Install Kubectl
       run: |
-        gcloud components install kubectl
+        curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl && chmod +x ./kubectl
+        sudo mv ./kubectl /usr/local/bin/kubectl
 
     - name: Install Container Structure Test
       run: |
@@ -77,13 +57,21 @@ jobs:
         sudo mv container-structure-test /usr/local/bin/
 
     - name: Setup other files and permissions
-      run: mkdir -p ${HOME}/.m2/ && cp ./hack/maven/settings.xml ${HOME}/.m2/settings.xml
+      run: |
+        mkdir -p ${HOME}/.m2/ && cp ./hack/maven/settings.xml ${HOME}/.m2/settings.xml
+        gcloud auth configure-docker
+        echo '{}' > ${HOME}/.docker/config.json
 
     - name: Install Minikube and start cluster
       run: |
         curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=virtualbox
+        eval $(minikube docker-env --profile=minikube)
+        echo ::set-env name=DOCKER_TLS_VERIFY::${DOCKER_TLS_VERIFY}
+        echo ::set-env name=DOCKER_HOST::${DOCKER_HOST}
+        echo ::set-env name=DOCKER_CERT_PATH::${DOCKER_CERT_PATH}
+        echo ::set-env name=MINIKUBE_ACTIVE_DOCKERD::${MINIKUBE_ACTIVE_DOCKERD}
 
     - name: Install Skaffold release binary
       run: |
