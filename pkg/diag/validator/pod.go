@@ -19,7 +19,6 @@ package validator
 import (
 	"context"
 	"fmt"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"regexp"
 	"strings"
 
@@ -28,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
@@ -56,9 +56,6 @@ var (
 		proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE:     {},
 		proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN: {},
 	}
-
-	// for testing
-	podEvents = processPodEvents
 )
 
 // PodValidator implements the Validator interface for Pods
@@ -86,7 +83,7 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
 		// Update Pod status from Pod events if required
-		podEvents(eventsClient, &po, ps)
+		processPodEvents(eventsClient, &po, ps)
 		// The GVK group is not populated for List Objects. Hence set `kind` to `pod`
 		// See https://github.com/kubernetes-sigs/controller-runtime/pull/389
 		if po.Kind == "" {

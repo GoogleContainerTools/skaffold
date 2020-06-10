@@ -19,14 +19,16 @@ package validator
 import (
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/proto"
+	"testing"
+
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
-	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 func TestRun(t *testing.T) {
