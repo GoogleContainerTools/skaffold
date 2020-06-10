@@ -320,11 +320,11 @@ func TestRun(t *testing.T) {
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "test"}, Reason: "FailedScheduling", Type: "Warning",
-					Message: "0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate.",
+					Message: "0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate",
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate."), proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING)},
+				fmt.Errorf("0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate"), proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING)},
 		},
 	}
 
