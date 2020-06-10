@@ -275,7 +275,7 @@ func TestRun(t *testing.T) {
 			rs := make([]runtime.Object, len(test.pods))
 			mRun := func(n string, args []string) ([]byte, error) {
 				actualCommand := strings.Join(append([]string{n}, args...), " ")
-				if expected := "kubectl logs1 foo -n test -c foo-container"; actualCommand != expected {
+				if expected := "kubectl logs foo -n test -c foo-container"; actualCommand != expected {
 					t.Errorf("got %s, expected %s", actualCommand, expected)
 				}
 				return test.logOutput.output, test.logOutput.err
