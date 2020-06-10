@@ -18,7 +18,6 @@ package yaml
 
 import (
 	"bytes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"io"
 
 	yaml "gopkg.in/yaml.v3"
@@ -59,7 +58,7 @@ func Marshal(in interface{}) (out []byte, err error) {
 
 // MarshalPreservingComments attempts to copy comments from original config into upgraded config.
 // Returns error if an occur happens.
-func MarshalPreservingComments(original []byte, upCfg util.VersionedConfig) ([]byte, error) {
+func MarshalPreservingComments(original []byte, upCfg interface{}) ([]byte, error) {
 	prev := yaml.Node{}
 	// unmarshal original config into prevNode
 	if err := yaml.Unmarshal(original, &prev); err != nil {

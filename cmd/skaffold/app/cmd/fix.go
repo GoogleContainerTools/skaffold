@@ -19,8 +19,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"io"
 	"io/ioutil"
 
@@ -30,7 +28,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
+	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -72,7 +72,11 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 	if err := validation.Process(cfg.(*latest.SkaffoldConfig)); err != nil {
 		return fmt.Errorf("validating upgraded config: %w", err)
 	}
+
 	newCfg, err := tryPreservingComments(configFile, cfg)
+	if err != nil {
+		return fmt.Errorf("marshaling new config: %w", err)
+	}
 
 	if overwrite {
 		if err := ioutil.WriteFile(configFile, newCfg, 0644); err != nil {
@@ -91,11 +95,13 @@ func tryPreservingComments(configFile string, cfg util.VersionedConfig) (out []b
 	if err != nil {
 		return nil, fmt.Errorf("marshaling new config: %w", err)
 	}
-	originalConfigBytes, err := misc.ReadConfiguration(configFile)
+	var originalConfigBytes []byte
+	originalConfigBytes, err = misc.ReadConfiguration(configFile)
 	if err != nil {
 		return fallBack, nil
 	}
-	newCfg, err := yaml.MarshalPreservingComments(originalConfigBytes, cfg)
+	var newCfg []byte
+	newCfg, err = yaml.MarshalPreservingComments(originalConfigBytes, cfg)
 	if err != nil {
 		return fallBack, nil
 	}
