@@ -24,7 +24,7 @@ import (
 )
 
 // UnmarshalStrict is like Unmarshal except that any fields that are found
-// in the data that do not have corresponding stru	ct members, or mapping
+// in the data that do not have corresponding struct members, or mapping
 // keys that are duplicates, will result in an error.
 // This is ensured by setting `KnownFields` true on `yaml.Decoder`.
 func UnmarshalStrict(in []byte, out interface{}) error {
@@ -39,7 +39,7 @@ func UnmarshalStrict(in []byte, out interface{}) error {
 	return nil
 }
 
-// Unmarshal is wrapper around yaml.Unmarshall
+// Unmarshal is wrapper around yaml.Unmarshal
 func Unmarshal(in []byte, out interface{}) error {
 	return yaml.Unmarshal(in, out)
 }
