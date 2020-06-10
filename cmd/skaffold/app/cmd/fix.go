@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 var toVersion string
@@ -71,7 +71,7 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		return fmt.Errorf("validating upgraded config: %w", err)
 	}
 
-	newCfg, err := yamlutil.Marshal(cfg)
+	newCfg, err := yaml.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("marshaling new config: %w", err)
 	}

@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 const (
@@ -95,7 +95,7 @@ func ReadConfigFileNoCache(configFile string) (*GlobalConfig, error) {
 		return nil, fmt.Errorf("reading global config: %w", err)
 	}
 	config := GlobalConfig{}
-	if err := yamlutil.Unmarshal(contents, &config); err != nil {
+	if err := yaml.Unmarshal(contents, &config); err != nil {
 		return nil, fmt.Errorf("unmarshalling global skaffold config: %w", err)
 	}
 	return &config, nil
@@ -329,7 +329,7 @@ func UpdateGlobalSurveyTaken(configFile string) error {
 }
 
 func WriteFullConfig(configFile string, cfg *GlobalConfig) error {
-	contents, err := yamlutil.Marshal(cfg)
+	contents, err := yaml.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("marshaling config: %w", err)
 	}

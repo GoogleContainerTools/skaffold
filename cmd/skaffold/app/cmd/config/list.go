@@ -22,7 +22,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 func List(ctx context.Context, out io.Writer) error {
@@ -35,7 +35,7 @@ func List(ctx context.Context, out io.Writer) error {
 		if cfg == nil || (cfg.Global == nil && len(cfg.ContextConfigs) == 0) { // empty config
 			return nil
 		}
-		configYaml, err = yamlutil.Marshal(&cfg)
+		configYaml, err = yaml.Marshal(&cfg)
 		if err != nil {
 			return fmt.Errorf("marshaling config: %w", err)
 		}
@@ -47,7 +47,7 @@ func List(ctx context.Context, out io.Writer) error {
 		if contextConfig == nil { // empty config
 			return nil
 		}
-		configYaml, err = yamlutil.Marshal(&contextConfig)
+		configYaml, err = yaml.Marshal(&contextConfig)
 		if err != nil {
 			return fmt.Errorf("marshaling config: %w", err)
 		}

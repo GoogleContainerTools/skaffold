@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package yamlutil
+package yaml
 
 import (
 	"bytes"
@@ -23,14 +23,29 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
+// UnmarshalStrict is like Unmarshal except that any fields that are found
+// in the data that do not have corresponding stru	ct members, or mapping
+// keys that are duplicates, will result in an error.
+// This is ensured by setting `KnownFields` true on `yaml.Decoder`.
 func UnmarshalStrict(in []byte, out interface{}) error {
-	return unmarshall(in, out, true)
+	b := bytes.NewReader(in)
+	decoder := yaml.NewDecoder(b)
+	decoder.KnownFields(true)
+	// Ignore io.EOF which signals expected end of input.
+	// This happens when input stream is empty or nil.
+	if err := decoder.Decode(out); err != io.EOF {
+		return err
+	}
+	return nil
 }
 
+// Unmarshal is wrapper around yaml.Unmarshall
 func Unmarshal(in []byte, out interface{}) error {
-	return unmarshall(in, out, false)
+	return yaml.Unmarshal(in, out)
 }
 
+// Marshal is same as yaml.Marshal except it creates a `yaml.Encoder` with
+// indent space 2 for encoding.
 func Marshal(in interface{}) (out []byte, err error) {
 	var b bytes.Buffer
 	encoder := yaml.NewEncoder(&b)
@@ -39,17 +54,4 @@ func Marshal(in interface{}) (out []byte, err error) {
 		return nil, err
 	}
 	return b.Bytes(), nil
-}
-
-func unmarshall(in []byte, out interface{}, strict bool) error {
-	b := bytes.NewReader(in)
-	decoder := yaml.NewDecoder(b)
-	decoder.KnownFields(strict)
-	if err := decoder.Decode(out); err != nil {
-		// yamlv3.Unmarshal swallows EOF to return empty object for empty string.
-		if err != io.EOF {
-			return err
-		}
-	}
-	return nil
 }

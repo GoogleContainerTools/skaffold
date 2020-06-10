@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 // DoInit executes the `skaffold init` flow.
@@ -73,7 +73,7 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 		return err
 	}
 
-	pipeline, err := yamlutil.Marshal(generateSkaffoldConfig(buildInitializer, deployInitializer))
+	pipeline, err := yaml.Marshal(generateSkaffoldConfig(buildInitializer, deployInitializer))
 	if err != nil {
 		return err
 	}

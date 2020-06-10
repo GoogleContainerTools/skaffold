@@ -27,7 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 type yamlObject map[string]interface{}
@@ -101,7 +101,7 @@ func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
 		}
 
 		obj := make(yamlObject)
-		if err := yamlutil.Unmarshal(doc, &obj); err != nil {
+		if err := yaml.Unmarshal(doc, &obj); err != nil {
 			return nil, fmt.Errorf("reading Kubernetes YAML: %w", err)
 		}
 

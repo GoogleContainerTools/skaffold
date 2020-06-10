@@ -60,7 +60,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta4"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 type APIVersion struct {
@@ -146,7 +146,7 @@ func ParseConfig(filename string) (util.VersionedConfig, error) {
 	}
 
 	apiVersion := &APIVersion{}
-	if err := yamlutil.Unmarshal(buf, apiVersion); err != nil {
+	if err := yaml.Unmarshal(buf, apiVersion); err != nil {
 		return nil, fmt.Errorf("parsing api version: %w", err)
 	}
 
@@ -157,7 +157,7 @@ func ParseConfig(filename string) (util.VersionedConfig, error) {
 
 	// Remove all top-level keys starting with `.` so they can be used as YAML anchors
 	parsed := make(map[string]interface{})
-	if err := yamlutil.UnmarshalStrict(buf, parsed); err != nil {
+	if err := yaml.UnmarshalStrict(buf, parsed); err != nil {
 		return nil, fmt.Errorf("unable to parse YAML: %w", err)
 	}
 	for field := range parsed {
@@ -165,13 +165,13 @@ func ParseConfig(filename string) (util.VersionedConfig, error) {
 			delete(parsed, field)
 		}
 	}
-	buf, err = yamlutil.Marshal(parsed)
+	buf, err = yaml.Marshal(parsed)
 	if err != nil {
 		return nil, fmt.Errorf("unable to re-marshal YAML without dotted keys: %w", err)
 	}
 
 	cfg := factory()
-	if err := yamlutil.UnmarshalStrict(buf, cfg); err != nil {
+	if err := yaml.UnmarshalStrict(buf, cfg); err != nil {
 		return nil, fmt.Errorf("unable to parse config: %w", err)
 	}
 

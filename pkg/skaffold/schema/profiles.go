@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	skutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 // ApplyProfiles returns configuration modified by the application
@@ -206,7 +206,7 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 	}
 
 	// Apply profile patches
-	buf, err := yamlutil.Marshal(*config)
+	buf, err := yaml.Marshal(*config)
 	if err != nil {
 		return err
 	}
@@ -244,7 +244,7 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 	}
 
 	*config = latest.SkaffoldConfig{}
-	return yamlutil.Unmarshal(buf, config)
+	return yaml.Unmarshal(buf, config)
 }
 
 // tryPatch is here to verify patches one by one before we

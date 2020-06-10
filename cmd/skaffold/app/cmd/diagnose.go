@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 var (
@@ -62,7 +62,7 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 			color.Blue.Fprintln(out, "\nConfiguration")
 		}
 
-		buf, err := yamlutil.Marshal(config)
+		buf, err := yaml.Marshal(config)
 		if err != nil {
 			return fmt.Errorf("marshalling configuration: %w", err)
 		}

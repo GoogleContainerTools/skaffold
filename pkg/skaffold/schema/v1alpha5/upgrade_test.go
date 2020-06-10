@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -117,7 +117,7 @@ profiles:
 
 func upgradeShouldFail(t *testing.T, input string) {
 	config := NewSkaffoldConfig()
-	err := yamlutil.UnmarshalStrict([]byte(input), config)
+	err := yaml.UnmarshalStrict([]byte(input), config)
 	testutil.CheckErrorAndDeepEqual(t, false, err, Version, config.GetVersion())
 
 	_, err = config.Upgrade()
@@ -126,14 +126,14 @@ func upgradeShouldFail(t *testing.T, input string) {
 
 func verifyUpgrade(t *testing.T, input, output string) {
 	config := NewSkaffoldConfig()
-	err := yamlutil.UnmarshalStrict([]byte(input), config)
+	err := yaml.UnmarshalStrict([]byte(input), config)
 	testutil.CheckErrorAndDeepEqual(t, false, err, Version, config.GetVersion())
 
 	upgraded, err := config.Upgrade()
 	testutil.CheckError(t, false, err)
 
 	expected := v1beta1.NewSkaffoldConfig()
-	err = yamlutil.UnmarshalStrict([]byte(output), expected)
+	err = yaml.UnmarshalStrict([]byte(output), expected)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
 }

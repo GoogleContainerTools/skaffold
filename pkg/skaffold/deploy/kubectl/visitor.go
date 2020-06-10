@@ -21,7 +21,7 @@ import (
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 // transformableWhitelist is the set of kinds that can be transformed by Skaffold.
@@ -49,7 +49,7 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 
 	for _, manifest := range *l {
 		m := make(map[string]interface{})
-		if err := yamlutil.Unmarshal(manifest, &m); err != nil {
+		if err := yaml.Unmarshal(manifest, &m); err != nil {
 			return nil, fmt.Errorf("reading Kubernetes YAML: %w", err)
 		}
 
@@ -59,7 +59,7 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 
 		traverseManifestFields(m, visitor)
 
-		updatedManifest, err := yamlutil.Marshal(m)
+		updatedManifest, err := yaml.Marshal(m)
 		if err != nil {
 			return nil, fmt.Errorf("marshalling yaml: %w", err)
 		}

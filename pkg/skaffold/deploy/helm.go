@@ -47,7 +47,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 var (
@@ -374,7 +374,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 
 	// Dump overrides to a YAML file to pass into helm
 	if len(r.Overrides.Values) != 0 {
-		overrides, err := yamlutil.Marshal(r.Overrides)
+		overrides, err := yaml.Marshal(r.Overrides)
 		if err != nil {
 			return nil, fmt.Errorf("cannot marshal overrides to create overrides values.yaml: %w", err)
 		}
