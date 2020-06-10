@@ -38,8 +38,10 @@ const (
 	crashLoopBackOff    = "CrashLoopBackOff"
 	runContainerError   = "RunContainerError"
 	imagePullErr        = "ErrImagePull"
+	imagePullBackOff    = "ImagePullBackOff"
 	errImagePullBackOff = "ErrImagePullBackOff"
 	containerCreating   = "ContainerCreating"
+	podKind             = "pod"
 )
 
 var (
@@ -67,6 +69,11 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	var rs []Resource
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
+		// The GVK group is not populated for List Objects. Hence set `kind` to `pod`
+		// See https://github.com/kubernetes-sigs/controller-runtime/pull/389
+		if po.Kind == "" {
+			po.Kind = podKind
+		}
 		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.statusCode))
 	}
 
@@ -89,7 +96,7 @@ func getContainerStatus(pod *v1.Pod) (proto.StatusCode, error) {
 		if c.Type == v1.PodScheduled {
 			switch c.Status {
 			case v1.ConditionFalse:
-				return getTolerationsDetails(c.Reason, c.Message)
+				return getUntoleratedTaints(c.Reason, c.Message)
 			case v1.ConditionTrue:
 				// TODO(dgageot): Add EphemeralContainerStatuses
 				cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
@@ -110,6 +117,7 @@ func getWaitingContainerStatus(cs []v1.ContainerStatus) (proto.StatusCode, error
 		case c.State.Waiting != nil:
 			return extractErrorMessageFromWaitingContainerStatus(c)
 		case c.State.Terminated != nil:
+			// TODO Add pod logs
 			return proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, fmt.Errorf("container %s terminated with exit code %d", c.Name, c.State.Terminated.ExitCode)
 		}
 	}
@@ -117,7 +125,7 @@ func getWaitingContainerStatus(cs []v1.ContainerStatus) (proto.StatusCode, error
 	return proto.StatusCode_STATUSCHECK_SUCCESS, nil
 }
 
-func getTolerationsDetails(reason string, message string) (proto.StatusCode, error) {
+func getUntoleratedTaints(reason string, message string) (proto.StatusCode, error) {
 	matches := taintsRe.FindAllStringSubmatch(message, -1)
 	errCode := proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE
 	if len(matches) == 0 {
@@ -196,14 +204,15 @@ func (p *podStatus) String() string {
 }
 
 func extractErrorMessageFromWaitingContainerStatus(c v1.ContainerStatus) (proto.StatusCode, error) {
-	// Extract meaning full error out of container statuses.
 	switch c.State.Waiting.Reason {
+	// Extract meaning full error out of container statuses.
 	case containerCreating:
 		return proto.StatusCode_STATUSCHECK_CONTAINER_CREATING, fmt.Errorf("creating container %s", c.Name)
 	case crashLoopBackOff:
 		// TODO, in case of container restarting, return the original failure reason due to which container failed.
-		return proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING, fmt.Errorf("restarting failed container %s", c.Name)
-	case imagePullErr, errImagePullBackOff:
+		// TODO Add pod logs
+		return proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING, fmt.Errorf("container %s is backing off waiting to restart", c.Name)
+	case imagePullErr, imagePullBackOff, errImagePullBackOff:
 		return proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
 	case runContainerError:
 		match := runContainerRe.FindStringSubmatch(c.State.Waiting.Message)

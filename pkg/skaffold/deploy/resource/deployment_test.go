@@ -192,12 +192,12 @@ func TestReportSinceLastUpdated(t *testing.T) {
 			description: "updating an error status",
 			message:     "cannot pull image",
 			err:         errors.New("cannot pull image"),
-			expected:    "test-ns:deployment/test: cannot pull image",
+			expected:    " - test-ns:deployment/test: cannot pull image",
 		},
 		{
 			description: "updating a non error status",
 			message:     "waiting for container",
-			expected:    "test-ns:deployment/test: waiting for container",
+			expected:    " - test-ns:deployment/test: waiting for container",
 		},
 	}
 	for _, test := range tests {
@@ -206,35 +206,47 @@ func TestReportSinceLastUpdated(t *testing.T) {
 			dep.UpdateStatus(test.message, test.err)
 
 			t.CheckDeepEqual(test.expected, dep.ReportSinceLastUpdated())
-			t.CheckTrue(dep.status.reported)
+			t.CheckTrue(dep.status.changed)
 		})
 	}
 }
 
 func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 	var tests = []struct {
-		description string
-		times       int
-		expected    string
+		description     string
+		statuses        []string
+		reportStatusSeq []bool
+		expected        string
 	}{
 		{
-			description: "report first time should return status",
-			times:       1,
-			expected:    "test-ns:deployment/test: cannot pull image",
+			description:     "report first time should return status",
+			statuses:        []string{"cannot pull image"},
+			reportStatusSeq: []bool{true},
+			expected:        " - test-ns:deployment/test: cannot pull image",
 		},
 		{
-			description: "report 2nd time should not return",
-			times:       2,
-			expected:    "",
+			description:     "report 2nd time should not return when same status",
+			statuses:        []string{"cannot pull image", "cannot pull image"},
+			reportStatusSeq: []bool{true, true},
+			expected:        "",
+		},
+		{
+			description:     "report called after multiple changes but last status was not changed.",
+			statuses:        []string{"cannot pull image", "changed but not reported", "changed but not reported", "changed but not reported"},
+			reportStatusSeq: []bool{true, false, false, true},
+			expected:        " - test-ns:deployment/test: changed but not reported",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			dep := NewDeployment("test", "test-ns", 1)
-			dep.UpdateStatus("cannot pull image", nil)
 			var actual string
-			for i := 0; i < test.times; i++ {
-				actual = dep.ReportSinceLastUpdated()
+			for i, status := range test.statuses {
+				// update to same status
+				dep.UpdateStatus(status, nil)
+				if test.reportStatusSeq[i] {
+					actual = dep.ReportSinceLastUpdated()
+				}
 			}
 			t.CheckDeepEqual(test.expected, actual)
 		})

@@ -64,6 +64,8 @@ const (
 	DefaultPortForwardNamespace = "default"
 	DefaultPortForwardAddress   = "127.0.0.1"
 
+	DefaultProjectDescriptor = "project.toml"
+
 	LeeroyAppResponse = "leeroooooy app!!\n"
 )
 
@@ -103,6 +105,15 @@ var (
 	Timeout = "TIMEOUT"
 )
 
+var ImageRef = struct {
+	Repo   string
+	Tag    string
+	Digest string
+}{
+	Repo:   "IMAGE_REPO",
+	Tag:    "IMAGE_TAG",
+	Digest: "IMAGE_DIGEST",
+}
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
 
 var Labels = struct {

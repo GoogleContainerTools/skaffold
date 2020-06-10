@@ -19,31 +19,28 @@ package v2beta3
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	yaml "gopkg.in/yaml.v2"
+
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta4"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v2beta3
+	tests := []struct {
+		description string
+		yaml        string
+		expected    string
+	}{
+		{
+			description: "no helm deploy",
+			yaml: `apiVersion: skaffold/v2beta3
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
     docker:
       dockerfile: path/to/Dockerfile
-  - image: gcr.io/k8s-skaffold/bazel
-    bazel:
-      target: //mytarget
-  - image: gcr.io/k8s-skaffold/jib-maven
-    jib:
-      args: ['-v', '--activate-profiles', 'prof']
-      project: dir
-  - image: gcr.io/k8s-skaffold/jib-gradle
-    jib:
-      args: ['-v']
-  googleCloudBuild:
-    projectId: test-project
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
@@ -54,61 +51,14 @@ deploy:
     - k8s-*
   kustomize:
     paths:
-    - kustomization-main
-profiles:
-  - name: test profile
-    build:
-      artifacts:
-      - image: gcr.io/k8s-skaffold/skaffold-example
-        kaniko:
-          cache: {}
-      cluster:
-        pullSecretName: e2esecret
-        namespace: default
-    test:
-     - image: gcr.io/k8s-skaffold/skaffold-example
-       structureTests:
-         - ./test/*
-    deploy:
-      kubectl:
-        manifests:
-        - k8s-*
-      kustomize:
-        paths:
-        - kustomization-test
-  - name: test local
-    build:
-      artifacts:
-      - image: gcr.io/k8s-skaffold/skaffold-example
-        docker:
-          dockerfile: path/to/Dockerfile
-      local:
-        push: false
-    deploy:
-      kubectl:
-        manifests:
-        - k8s-*
-      kustomize: {}
-`
-	expected := `apiVersion: skaffold/v2beta4
+    - kustomization-main`,
+			expected: `apiVersion: skaffold/v2beta4
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
     docker:
       dockerfile: path/to/Dockerfile
-  - image: gcr.io/k8s-skaffold/bazel
-    bazel:
-      target: //mytarget
-  - image: gcr.io/k8s-skaffold/jib-maven
-    jib:
-      args: ['-v', '--activate-profiles', 'prof']
-      project: dir
-  - image: gcr.io/k8s-skaffold/jib-gradle
-    jib:
-      args: ['-v']
-  googleCloudBuild:
-    projectId: test-project
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
@@ -119,55 +69,90 @@ deploy:
     - k8s-*
   kustomize:
     paths:
-    - kustomization-main
-profiles:
-  - name: test profile
-    build:
-      artifacts:
-      - image: gcr.io/k8s-skaffold/skaffold-example
-        kaniko:
-          cache: {}
-      cluster:
-        pullSecretName: e2esecret
-        namespace: default
-    test:
-     - image: gcr.io/k8s-skaffold/skaffold-example
-       structureTests:
-         - ./test/*
-    deploy:
-      kubectl:
-        manifests:
-        - k8s-*
-      kustomize:
-        paths:
-        - kustomization-test
-  - name: test local
-    build:
-      artifacts:
-      - image: gcr.io/k8s-skaffold/skaffold-example
-        docker:
-          dockerfile: path/to/Dockerfile
-      local:
-        push: false
-    deploy:
-      kubectl:
-        manifests:
-        - k8s-*
-      kustomize: {}
-`
-	verifyUpgrade(t, yaml, expected)
+    - kustomization-main`,
+		},
+		{
+			description: "helm deploy with releases but no values set",
+			yaml: `apiVersion: skaffold/v2beta3
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    docker:
+      dockerfile: path/to/Dockerfile
+deploy:
+  helm:
+    releases:
+    - name: skaffold
+      chartPath: dummy`,
+			expected: `apiVersion: skaffold/v2beta4
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    docker:
+      dockerfile: path/to/Dockerfile
+deploy:
+  helm:
+    releases:
+    - name: skaffold
+      chartPath: dummy`,
+		},
+		{
+			description: "helm deploy with multiple releases values set",
+			yaml: `apiVersion: skaffold/v2beta3
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    docker:
+      dockerfile: path/to/Dockerfile
+deploy:
+  helm:
+    releases:
+    - name: foo
+      values:
+        image1: foo
+        image2: bar
+    - name: bat
+      values:
+        image1: bat`,
+			expected: `apiVersion: skaffold/v2beta4
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+    docker:
+      dockerfile: path/to/Dockerfile
+deploy:
+  helm:
+    releases:
+    - name: foo
+      artifactOverrides:
+        image1: foo
+        image2: bar
+    - name: bat
+      artifactOverrides:
+        image1: bat`,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			verifyUpgrade(t, test.yaml, test.expected)
+		})
+	}
 }
 
-func verifyUpgrade(t *testing.T, input, output string) {
+func verifyUpgrade(t *testutil.T, input, output string) {
 	config := NewSkaffoldConfig()
 	err := yamlutil.UnmarshalStrict([]byte(input), config)
-	testutil.CheckErrorAndDeepEqual(t, false, err, Version, config.GetVersion())
+	t.CheckErrorAndDeepEqual(false, err, Version, config.GetVersion())
 
 	upgraded, err := config.Upgrade()
-	testutil.CheckError(t, false, err)
+	t.CheckError(false, err)
 
 	expected := next.NewSkaffoldConfig()
 	err = yamlutil.UnmarshalStrict([]byte(output), expected)
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
+	t.CheckErrorAndDeepEqual(false, err, expected, upgraded)
 }

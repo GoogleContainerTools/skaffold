@@ -71,16 +71,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				return err
 			}
 
-			// In dev mode, the default is to enable the rpc server
-			if cmd.Use == "dev" && !cmd.Flag("enable-rpc").Changed {
-				opts.EnableRPC = true
-			}
-
-			// In dev mode, the default is to force deployments
-			if cmd.Use == "dev" && !cmd.Flag("force").Changed {
-				opts.Force = true
-			}
-
 			// Start API Server
 			shutdown, err := server.Initialize(opts)
 			if err != nil {

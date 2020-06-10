@@ -38,8 +38,8 @@ type EntryForwarder interface {
 }
 
 type KubectlForwarder struct {
-	kubectl *kubectl.CLI
 	out     io.Writer
+	kubectl *kubectl.CLI
 }
 
 // NewKubectlForwarder returns a new KubectlForwarder

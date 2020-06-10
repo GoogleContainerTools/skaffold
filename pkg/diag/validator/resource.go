@@ -40,7 +40,10 @@ func (r Resource) Namespace() string { return r.namespace }
 func (r Resource) Status() Status    { return r.status }
 func (r Resource) Error() error      { return r.err }
 func (r Resource) String() string {
-	return fmt.Sprintf("{%s:%s/%s}", r.kind, r.namespace, r.name)
+	if r.namespace == "default" {
+		return fmt.Sprintf("%s/%s", r.kind, r.name)
+	}
+	return fmt.Sprintf("%s:%s/%s", r.namespace, r.kind, r.name)
 }
 
 // NewResource creates new Resource of kind

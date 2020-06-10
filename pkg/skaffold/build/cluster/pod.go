@@ -45,6 +45,7 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
+			Annotations:  b.ClusterDetails.Annotations,
 			GenerateName: "kaniko-",
 			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 			Namespace:    b.ClusterDetails.Namespace,
@@ -103,6 +104,11 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 			pod.Spec.SecurityContext = &v1.PodSecurityContext{}
 		}
 		pod.Spec.SecurityContext.RunAsUser = b.ClusterDetails.RunAsUser
+	}
+
+	// Add Tolerations for kaniko pod setup
+	if len(b.ClusterDetails.Tolerations) > 0 {
+		pod.Spec.Tolerations = b.ClusterDetails.Tolerations
 	}
 
 	// Add used-defines Volumes

@@ -27,9 +27,7 @@ import (
 )
 
 func TestInitCompose(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		name string
@@ -58,9 +56,7 @@ func TestInitCompose(t *testing.T) {
 }
 
 func TestInitManifestGeneration(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		name                  string
@@ -99,9 +95,7 @@ func TestInitManifestGeneration(t *testing.T) {
 }
 
 func TestInitKustomize(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	testutil.Run(t, "kustomize init", func(t *testutil.T) {
 		dir := "examples/getting-started-kustomize"

@@ -30,6 +30,8 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/proto"
@@ -45,7 +47,7 @@ var (
 	fileSyncSucceeded  = event.FileSyncSucceeded
 )
 
-func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
+func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kubernetes.LogAggregator, forwarderManager portforward.Forwarder) error {
 	if r.changeSet.needsReload {
 		return ErrorConfigurationChanged
 	}
@@ -58,7 +60,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		return nil
 	}
 
-	r.logger.Mute()
+	logger.Mute()
 	// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
 	defer r.monitor.Reset()
 	defer r.listener.LogWatchToUser(out)
@@ -107,18 +109,18 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			r.intents.resetDeploy()
 		}()
 
-		r.forwarderManager.Stop()
+		forwarderManager.Stop()
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
 			return nil
 		}
-		if err := r.forwarderManager.Start(ctx); err != nil {
+		if err := forwarderManager.Start(ctx); err != nil {
 			logrus.Warnln("Port forwarding failed:", err)
 		}
 	}
 	event.DevLoopComplete(r.devIteration)
-	r.logger.Unmute()
+	logger.Unmute()
 	return nil
 }
 
@@ -126,15 +128,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 // config until interrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	event.DevLoopInProgress(r.devIteration)
-	r.createLogger(out, artifacts)
-	defer r.logger.Stop()
 	defer func() { r.devIteration++ }()
-
-	r.createForwarder(out)
-	defer r.forwarderManager.Stop()
-
-	r.createContainerManager(out)
-	defer r.debugContainerManager.Stop()
 
 	// Watch artifacts
 	start := time.Now()
@@ -210,13 +204,23 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// First build
-	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {
+	bRes, err := r.BuildAndTest(ctx, out, artifacts)
+	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
 	}
 
+	logger := r.createLogger(out, bRes)
+	defer logger.Stop()
+
+	forwarderManager := r.createForwarder(out)
+	defer forwarderManager.Stop()
+
+	debugContainerManager := r.createContainerManager()
+	defer debugContainerManager.Stop()
+
 	// Logs should be retrieved up to just before the deploy
-	r.logger.SetSince(time.Now())
+	logger.SetSince(time.Now())
 
 	// First deploy
 	if err := r.Deploy(ctx, out, r.builds); err != nil {
@@ -224,19 +228,21 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
 
-	if err := r.forwarderManager.Start(ctx); err != nil {
+	if err := forwarderManager.Start(ctx); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
 	}
-	if err := r.debugContainerManager.Start(ctx); err != nil {
+	if err := debugContainerManager.Start(ctx); err != nil {
 		logrus.Warnln("Error starting debug container notification:", err)
 	}
-
 	// Start printing the logs after deploy is finished
-	if r.runCtx.Opts.TailDev {
-		if err := r.logger.Start(ctx); err != nil {
-			return fmt.Errorf("starting logger: %w", err)
-		}
+	if err := logger.Start(ctx); err != nil {
+		return fmt.Errorf("starting logger: %w", err)
 	}
+
+	color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
+
 	event.DevLoopComplete(0)
-	return r.listener.WatchForChanges(ctx, out, r.doDev)
+	return r.listener.WatchForChanges(ctx, out, func() error {
+		return r.doDev(ctx, out, logger, forwarderManager)
+	})
 }

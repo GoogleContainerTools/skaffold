@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -53,7 +52,7 @@ type TestBench struct {
 	deployErrors []error
 	namespaces   []string
 
-	devLoop        func(context.Context, io.Writer) error
+	devLoop        func(context.Context, io.Writer, func() error) error
 	firstMonitor   func(bool) error
 	cycles         int
 	currentCycle   int
@@ -164,7 +163,7 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Art
 	return deploy.NewDeploySuccessResult(t.namespaces)
 }
 
-func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ []deploy.Labeller, _ string) error {
+func (t *TestBench) Render(context.Context, io.Writer, []build.Artifact, []deploy.Labeller, string) error {
 	return nil
 }
 
@@ -172,7 +171,7 @@ func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
 
-func (t *TestBench) WatchForChanges(context.Context, io.Writer, func(context.Context, io.Writer) error) error {
+func (t *TestBench) WatchForChanges(ctx context.Context, out io.Writer, doDev func() error) error {
 	// don't actually call the monitor here, because extra actions would be added
 	if err := t.firstMonitor(true); err != nil {
 		return err
@@ -180,7 +179,7 @@ func (t *TestBench) WatchForChanges(context.Context, io.Writer, func(context.Con
 	for i := 0; i < t.cycles; i++ {
 		t.enterNewCycle()
 		t.currentCycle = i
-		if err := t.devLoop(context.Background(), ioutil.Discard); err != nil {
+		if err := t.devLoop(ctx, out, doDev); err != nil {
 			return err
 		}
 	}
@@ -236,11 +235,11 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 	runner.listener = testBench
 	runner.monitor = monitor
 
-	testBench.devLoop = func(context.Context, io.Writer) error {
+	testBench.devLoop = func(ctx context.Context, out io.Writer, doDev func() error) error {
 		if err := monitor.Run(true); err != nil {
 			return err
 		}
-		return runner.doDev(context.Background(), ioutil.Discard)
+		return doDev()
 	}
 
 	testBench.firstMonitor = func(bool) error {
@@ -304,19 +303,6 @@ func TestNewForConfig(t *testing.T) {
 			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
 			expectedDeployer: &deploy.KubectlDeployer{},
-		},
-		{
-			description: "unknown deployer",
-			pipeline: latest.Pipeline{
-				Build: latest.BuildConfig{
-					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
-					BuildType: latest.BuildType{
-						LocalBuild: &latest.LocalBuild{},
-					},
-				},
-				Deploy: latest.DeployConfig{},
-			},
-			shouldErr: true,
 		},
 		{
 			description: "no artifacts, cache",
