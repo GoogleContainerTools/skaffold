@@ -19,22 +19,21 @@ package validator
 import (
 	"context"
 	"fmt"
-	"testing"
-
+	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
-
-	"github.com/GoogleContainerTools/skaffold/proto"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"testing"
 )
 
 func TestRun(t *testing.T) {
 	tests := []struct {
 		description string
 		pods        []*v1.Pod
+		events      []v1.Event
 		expected    []Resource
 	}{
 		{
@@ -43,7 +42,8 @@ func TestRun(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "foo-ns",
-				}},
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"}},
 			},
 			expected: nil,
 		},
@@ -54,6 +54,7 @@ func TestRun(t *testing.T) {
 					Name:      "foo",
 					Namespace: "test",
 				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 				Status: v1.PodStatus{
 					Phase:      v1.PodPending,
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
@@ -71,7 +72,7 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
+			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
 				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
 		},
@@ -82,6 +83,7 @@ func TestRun(t *testing.T) {
 					Name:      "foo",
 					Namespace: "test",
 				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 				Status: v1.PodStatus{
 					Phase:      v1.PodPending,
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
@@ -99,7 +101,7 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
+			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
 				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
 		},
@@ -110,6 +112,7 @@ func TestRun(t *testing.T) {
 					Name:      "foo",
 					Namespace: "test",
 				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 				Status: v1.PodStatus{
 					Phase:      v1.PodPending,
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
@@ -127,7 +130,7 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
+			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
 				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
 		},
@@ -138,12 +141,13 @@ func TestRun(t *testing.T) {
 					Name:      "foo",
 					Namespace: "test",
 				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 				Status: v1.PodStatus{
 					Phase:      v1.PodSucceeded,
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
 				},
 			}},
-			expected: []Resource{NewResource("test", "pod", "foo", "Succeeded", nil,
+			expected: []Resource{NewResource("test", "Pod", "foo", "Succeeded", nil,
 				proto.StatusCode_STATUSCHECK_SUCCESS)},
 		},
 		{
@@ -153,6 +157,7 @@ func TestRun(t *testing.T) {
 					Name:      "foo",
 					Namespace: "test",
 				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 				Status: v1.PodStatus{
 					Phase:      v1.PodRunning,
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
@@ -164,7 +169,7 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "pod", "foo", "Running", nil,
+			expected: []Resource{NewResource("test", "Pod", "foo", "Running", nil,
 				proto.StatusCode_STATUSCHECK_SUCCESS)},
 		},
 		{
@@ -174,6 +179,7 @@ func TestRun(t *testing.T) {
 					Name:      "foo",
 					Namespace: "test",
 				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 					Conditions: []v1.PodCondition{{
@@ -183,7 +189,7 @@ func TestRun(t *testing.T) {
 					}},
 				},
 			}},
-			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
+			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN)},
 		},
 		{
@@ -193,6 +199,7 @@ func TestRun(t *testing.T) {
 					Name:      "foo",
 					Namespace: "test",
 				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 					Conditions: []v1.PodCondition{{
@@ -203,7 +210,7 @@ func TestRun(t *testing.T) {
 					}},
 				},
 			}},
-			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
+			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"),
 				proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE)},
 		},
@@ -214,6 +221,7 @@ func TestRun(t *testing.T) {
 					Name:      "foo",
 					Namespace: "test",
 				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
 				Status: v1.PodStatus{
 					Phase:      v1.PodRunning,
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
@@ -225,9 +233,96 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "pod", "foo", "Running",
+			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
 				fmt.Errorf("container foo-container terminated with exit code 1"),
 				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED)},
+		},
+		// Events Test cases
+		{
+			description: "pod condition with events",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					Conditions: []v1.PodCondition{{
+						Type:    v1.PodScheduled,
+						Status:  v1.ConditionUnknown,
+						Message: "could not determine",
+					}},
+				},
+			}},
+			events: []v1.Event{
+				{
+					ObjectMeta: metav1.ObjectMeta{Namespace: "test"},
+					Reason:     "eventCode", Type: "Warning", Message: "dummy event",
+				},
+			},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
+				fmt.Errorf("eventCode: dummy event"), proto.StatusCode_STATUSCHECK_UNKNOWN)},
+		},
+		{
+			description: "pod condition a warning event followed up normal",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					Conditions: []v1.PodCondition{{
+						Type:    v1.PodScheduled,
+						Status:  v1.ConditionUnknown,
+						Message: "could not determine",
+					}},
+				},
+			}},
+			events: []v1.Event{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "test"},
+					Reason:     "eventCode", Type: "Warning", Message: "dummy event",
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "test"},
+					Reason:     "eventCode", Type: "Normal", Message: "success",
+				},
+			},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
+				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN)},
+		},
+		{
+			description: "pod condition a warning event followed up normal adds last warning seen",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					Conditions: []v1.PodCondition{{
+						Type:    v1.PodScheduled,
+						Status:  v1.ConditionUnknown,
+						Message: "could not determine",
+					}},
+				},
+			}},
+			events: []v1.Event{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "test"},
+					Reason:     "eventCode", Type: "Warning", Message: "dummy event",
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "test"}, Reason: "FailedScheduling", Type: "Warning",
+					Message: "0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate.",
+				},
+			},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
+				fmt.Errorf("0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate."), proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING)},
 		},
 	}
 
@@ -237,7 +332,9 @@ func TestRun(t *testing.T) {
 			for i, p := range test.pods {
 				rs[i] = p
 			}
+			rs = append(rs, &v1.EventList{Items: test.events})
 			f := fakekubeclientset.NewSimpleClientset(rs...)
+
 			actual, err := NewPodValidator(f).Validate(context.Background(), "test", metav1.ListOptions{})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
