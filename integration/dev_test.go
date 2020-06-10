@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -34,6 +33,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -358,7 +358,7 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 	}
 
 	if kubeConfig.CurrentContext == constants.DefaultMinikubeContext {
-		contextName = "minikube"
+		contextName = constants.DefaultMinikubeContext // skip, since integration test with minikube runs on single cluster
 	}
 
 	activeContext := kubeConfig.Contexts[kubeConfig.CurrentContext]
