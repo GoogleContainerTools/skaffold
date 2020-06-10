@@ -119,9 +119,6 @@ func (e *encoder) marshal(tag string, in reflect.Value) {
 	case *Node:
 		e.nodev(in)
 		return
-	case Node:
-		e.nodev(in.Addr())
-		return
 	case time.Time:
 		e.timev(tag, in)
 		return

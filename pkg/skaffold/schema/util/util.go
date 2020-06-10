@@ -22,7 +22,8 @@ import (
 	"strings"
 
 	yamlpatch "github.com/krishicks/yaml-patch"
-	yaml "gopkg.in/yaml.v2"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 type VersionedConfig interface {

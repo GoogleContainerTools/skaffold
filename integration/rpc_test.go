@@ -45,9 +45,7 @@ var (
 )
 
 func TestEventsRPC(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	rpcAddr := randomPort()
 	setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr, "--status-check=false")
@@ -138,9 +136,7 @@ func TestEventsRPC(t *testing.T) {
 }
 
 func TestEventLogHTTP(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		description string
@@ -230,9 +226,7 @@ func TestEventLogHTTP(t *testing.T) {
 }
 
 func TestGetStateRPC(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	rpcAddr := randomPort()
 	// start a skaffold dev loop on an example
@@ -282,9 +276,7 @@ func TestGetStateRPC(t *testing.T) {
 }
 
 func TestGetStateHTTP(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	httpAddr := randomPort()
 	setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)

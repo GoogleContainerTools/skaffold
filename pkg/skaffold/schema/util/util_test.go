@@ -20,8 +20,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	yaml "gopkg.in/yaml.v2"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 

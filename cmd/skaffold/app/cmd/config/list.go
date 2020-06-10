@@ -21,9 +21,8 @@ import (
 	"fmt"
 	"io"
 
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 func List(ctx context.Context, out io.Writer) error {

@@ -35,6 +35,7 @@ github.com/Azure/go-autorest/logger
 # github.com/Azure/go-autorest/tracing v0.5.0
 github.com/Azure/go-autorest/tracing
 # github.com/BurntSushi/toml v0.3.1
+## explicit
 github.com/BurntSushi/toml
 # github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd
 github.com/MakeNowJust/heredoc
@@ -43,6 +44,8 @@ github.com/Masterminds/semver
 # github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
+# github.com/Microsoft/hcsshim v0.8.7
+github.com/Microsoft/hcsshim/osversion
 # github.com/apex/log v1.1.2
 github.com/apex/log
 # github.com/beorn7/perks v1.0.0
@@ -53,11 +56,13 @@ github.com/blang/semver
 # github.com/bmatcuk/doublestar v1.2.4
 ## explicit
 github.com/bmatcuk/doublestar
-# github.com/buildpacks/imgutil v0.0.0-20200313170640-a02052f47d62
+# github.com/buildpacks/imgutil v0.0.0-20200520132953-ba4f77a60397
+## explicit
 github.com/buildpacks/imgutil
+github.com/buildpacks/imgutil/layer
 github.com/buildpacks/imgutil/local
 github.com/buildpacks/imgutil/remote
-# github.com/buildpacks/lifecycle v0.7.1
+# github.com/buildpacks/lifecycle v0.7.2
 ## explicit
 github.com/buildpacks/lifecycle
 github.com/buildpacks/lifecycle/api
@@ -65,7 +70,7 @@ github.com/buildpacks/lifecycle/archive
 github.com/buildpacks/lifecycle/auth
 github.com/buildpacks/lifecycle/cmd
 github.com/buildpacks/lifecycle/launch
-# github.com/buildpacks/pack v0.10.0
+# github.com/buildpacks/pack v0.11.1-0.20200602171405-91a81f8bf020
 ## explicit
 github.com/buildpacks/pack
 github.com/buildpacks/pack/builder
@@ -83,13 +88,19 @@ github.com/buildpacks/pack/internal/config
 github.com/buildpacks/pack/internal/container
 github.com/buildpacks/pack/internal/dist
 github.com/buildpacks/pack/internal/image
+github.com/buildpacks/pack/internal/layer
 github.com/buildpacks/pack/internal/paths
+github.com/buildpacks/pack/internal/registry
 github.com/buildpacks/pack/internal/stack
 github.com/buildpacks/pack/internal/stringset
 github.com/buildpacks/pack/internal/style
 github.com/buildpacks/pack/logging
-# github.com/containerd/continuity v0.0.0-20200107194136-26c1120b8d41
-github.com/containerd/continuity/pathdriver
+github.com/buildpacks/pack/project
+# github.com/cenkalti/backoff/v4 v4.0.2
+## explicit
+github.com/cenkalti/backoff/v4
+# github.com/containerd/containerd v1.4.0-0 => github.com/containerd/containerd v1.3.4
+github.com/containerd/containerd/errdefs
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -114,7 +125,7 @@ github.com/docker/distribution/registry/client/auth/challenge
 github.com/docker/distribution/registry/client/transport
 github.com/docker/distribution/registry/storage/cache
 github.com/docker/distribution/registry/storage/cache/memory
-# github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c => github.com/docker/docker v1.4.2-0.20190319215453-e7b5f7dbe98c
+# github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c => github.com/docker/docker v1.4.2-0.20200221181110-62bd5a33f707
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
@@ -152,6 +163,7 @@ github.com/docker/docker/pkg/term
 github.com/docker/docker/pkg/term/windows
 github.com/docker/docker/registry
 github.com/docker/docker/registry/resumable
+github.com/docker/docker/rootless
 github.com/docker/docker/volume
 github.com/docker/docker/volume/mounts
 # github.com/docker/docker-credential-helpers v0.6.3
@@ -438,6 +450,11 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit
 github.com/spf13/pflag
+# github.com/src-d/gcfg v1.4.0
+github.com/src-d/gcfg
+github.com/src-d/gcfg/scanner
+github.com/src-d/gcfg/token
+github.com/src-d/gcfg/types
 # github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8 => github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
 ## explicit
 github.com/tektoncd/pipeline/pkg/apis/config
@@ -528,7 +545,7 @@ golang.org/x/oauth2/jwt
 # golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 ## explicit
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 => golang.org/x/sys v0.0.0-20190507160741-ecd444e8653b
+# golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
 golang.org/x/sys/windows
@@ -599,7 +616,7 @@ google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/status
 google.golang.org/genproto/googleapis/type/expr
 google.golang.org/genproto/protobuf/field_mask
-# google.golang.org/grpc v1.28.1
+# google.golang.org/grpc v1.29.1
 ## explicit
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -628,6 +645,7 @@ google.golang.org/grpc/internal/grpcsync
 google.golang.org/grpc/internal/grpcutil
 google.golang.org/grpc/internal/resolver/dns
 google.golang.org/grpc/internal/resolver/passthrough
+google.golang.org/grpc/internal/status
 google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/internal/transport
 google.golang.org/grpc/keepalive
@@ -687,12 +705,60 @@ gopkg.in/AlecAivazis/survey.v1/core
 gopkg.in/AlecAivazis/survey.v1/terminal
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
+# gopkg.in/src-d/go-billy.v4 v4.3.2
+gopkg.in/src-d/go-billy.v4
+gopkg.in/src-d/go-billy.v4/helper/chroot
+gopkg.in/src-d/go-billy.v4/helper/polyfill
+gopkg.in/src-d/go-billy.v4/osfs
+gopkg.in/src-d/go-billy.v4/util
+# gopkg.in/src-d/go-git.v4 v4.13.1
+gopkg.in/src-d/go-git.v4
+gopkg.in/src-d/go-git.v4/config
+gopkg.in/src-d/go-git.v4/internal/revision
+gopkg.in/src-d/go-git.v4/internal/url
+gopkg.in/src-d/go-git.v4/plumbing
+gopkg.in/src-d/go-git.v4/plumbing/cache
+gopkg.in/src-d/go-git.v4/plumbing/filemode
+gopkg.in/src-d/go-git.v4/plumbing/format/config
+gopkg.in/src-d/go-git.v4/plumbing/format/diff
+gopkg.in/src-d/go-git.v4/plumbing/format/gitignore
+gopkg.in/src-d/go-git.v4/plumbing/format/idxfile
+gopkg.in/src-d/go-git.v4/plumbing/format/index
+gopkg.in/src-d/go-git.v4/plumbing/format/objfile
+gopkg.in/src-d/go-git.v4/plumbing/format/packfile
+gopkg.in/src-d/go-git.v4/plumbing/format/pktline
+gopkg.in/src-d/go-git.v4/plumbing/object
+gopkg.in/src-d/go-git.v4/plumbing/protocol/packp
+gopkg.in/src-d/go-git.v4/plumbing/protocol/packp/capability
+gopkg.in/src-d/go-git.v4/plumbing/protocol/packp/sideband
+gopkg.in/src-d/go-git.v4/plumbing/revlist
+gopkg.in/src-d/go-git.v4/plumbing/storer
+gopkg.in/src-d/go-git.v4/plumbing/transport
+gopkg.in/src-d/go-git.v4/plumbing/transport/client
+gopkg.in/src-d/go-git.v4/plumbing/transport/file
+gopkg.in/src-d/go-git.v4/plumbing/transport/git
+gopkg.in/src-d/go-git.v4/plumbing/transport/http
+gopkg.in/src-d/go-git.v4/plumbing/transport/internal/common
+gopkg.in/src-d/go-git.v4/plumbing/transport/server
+gopkg.in/src-d/go-git.v4/plumbing/transport/ssh
+gopkg.in/src-d/go-git.v4/storage
+gopkg.in/src-d/go-git.v4/storage/filesystem
+gopkg.in/src-d/go-git.v4/storage/filesystem/dotgit
+gopkg.in/src-d/go-git.v4/storage/memory
+gopkg.in/src-d/go-git.v4/utils/binary
+gopkg.in/src-d/go-git.v4/utils/diff
+gopkg.in/src-d/go-git.v4/utils/ioutil
+gopkg.in/src-d/go-git.v4/utils/merkletrie
+gopkg.in/src-d/go-git.v4/utils/merkletrie/filesystem
+gopkg.in/src-d/go-git.v4/utils/merkletrie/index
+gopkg.in/src-d/go-git.v4/utils/merkletrie/internal/frame
+gopkg.in/src-d/go-git.v4/utils/merkletrie/noder
 # gopkg.in/warnings.v0 v0.1.2
 gopkg.in/warnings.v0
 # gopkg.in/yaml.v2 v2.2.8
 ## explicit
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20200506231410-2ff61e1afc86
+# gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c => gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 ## explicit
 gopkg.in/yaml.v3
 # honnef.co/go/tools v0.0.1-2020.1.3
@@ -1066,9 +1132,9 @@ knative.dev/pkg/tracker
 sigs.k8s.io/yaml
 # github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.1+incompatible
 # github.com/containerd/containerd => github.com/containerd/containerd v1.3.4
-# github.com/docker/docker => github.com/docker/docker v1.4.2-0.20190319215453-e7b5f7dbe98c
+# github.com/docker/docker => github.com/docker/docker v1.4.2-0.20200221181110-62bd5a33f707
 # github.com/tektoncd/pipeline => github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
-# golang.org/x/sys => golang.org/x/sys v0.0.0-20190507160741-ecd444e8653b
+# gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 # k8s.io/api => k8s.io/api v0.17.4
 # k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
 # k8s.io/client-go => k8s.io/client-go v0.17.4
