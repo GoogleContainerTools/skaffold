@@ -30,9 +30,9 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 const (

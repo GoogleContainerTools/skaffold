@@ -23,9 +23,8 @@ import (
 	"testing"
 	"time"
 
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
