@@ -19,8 +19,18 @@ package misc
 import (
 	"fmt"
 	"strings"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+)
+
+const (
+	Docker    = "docker"
+	Kaniko    = "kaniko"
+	Bazel     = "bazel"
+	Jib       = "jib"
+	Custom    = "custom"
+	Buildpack = "buildpack"
 )
 
 // ArtifactType returns a string representing the type found in an artifact. Used for error messages.
@@ -28,22 +38,21 @@ import (
 func ArtifactType(a *latest.Artifact) string {
 	switch {
 	case a.DockerArtifact != nil:
-		return "docker"
+		return Docker
 	case a.KanikoArtifact != nil:
-		return "kaniko"
+		return Kaniko
 	case a.BazelArtifact != nil:
-		return "bazel"
+		return Bazel
 	case a.JibArtifact != nil:
-		return "jib"
+		return Jib
 	case a.CustomArtifact != nil:
-		return "custom"
+		return Custom
 	case a.BuildpackArtifact != nil:
-		return "buildpack"
+		return Buildpack
 	default:
 		return ""
 	}
 }
-
 
 // FormatArtifact returns a string representation of an artifact for usage in error messages
 func FormatArtifact(a *latest.Artifact) string {

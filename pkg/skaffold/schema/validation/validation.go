@@ -211,21 +211,21 @@ func validateArtifactTypes(bc latest.BuildConfig) (errs []error) {
 	switch {
 	case bc.LocalBuild != nil:
 		for _, a := range bc.Artifacts {
-			if misc.ArtifactType(a) == "kaniko" {
-				errs = append(errs, fmt.Errorf("Found a '%s' artifact, which is incompatible with the 'local' builder:\n\n%s\n\nTo use the '%s' builder, add the 'cluster' stanza to the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)))
+			if misc.ArtifactType(a) == misc.Kaniko {
+				errs = append(errs, fmt.Errorf("found a '%s' artifact, which is incompatible with the 'local' builder:\n\n%s\n\nTo use the '%s' builder, add the 'cluster' stanza to the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)))
 			}
 		}
 	case bc.GoogleCloudBuild != nil:
 		for _, a := range bc.Artifacts {
 			at := misc.ArtifactType(a)
-			if at != "kaniko" && at != "docker" && at != "jib" && at != "buildpack" {
-				errs = append(errs, fmt.Errorf("Found a '%s' artifact, which is incompatible with the 'gcb' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'googleCloudBuild' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)))
+			if at != misc.Kaniko && at != misc.Docker && at != misc.Jib && at != misc.Buildpack {
+				errs = append(errs, fmt.Errorf("found a '%s' artifact, which is incompatible with the 'gcb' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'googleCloudBuild' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)))
 			}
 		}
 	case bc.Cluster != nil:
 		for _, a := range bc.Artifacts {
-			if misc.ArtifactType(a) != "kaniko" && misc.ArtifactType(a) != "custom" {
-				errs = append(errs, fmt.Errorf("Found a '%s' artifact, which is incompatible with the 'cluster' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'cluster' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)))
+			if misc.ArtifactType(a) != misc.Kaniko && misc.ArtifactType(a) != misc.Custom {
+				errs = append(errs, fmt.Errorf("found a '%s' artifact, which is incompatible with the 'cluster' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'cluster' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)))
 			}
 		}
 	}
