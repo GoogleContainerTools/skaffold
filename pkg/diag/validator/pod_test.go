@@ -19,6 +19,7 @@ package validator
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -32,9 +33,14 @@ import (
 )
 
 func TestRun(t *testing.T) {
+	type mockLogOutput struct {
+		output []byte
+		err    error
+	}
 	tests := []struct {
 		description string
 		pods        []*v1.Pod
+		logOutput   mockLogOutput
 		events      []v1.Event
 		expected    []Resource
 	}{
@@ -76,7 +82,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
+				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil)},
 		},
 		{
 			description: "pod is Waiting condition due to ErrImageBackOffPullErr",
@@ -105,7 +111,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
+				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil)},
 		},
 		{
 			description: "pod is Waiting due to Image Backoff Pull error",
@@ -134,7 +140,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
+				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil)},
 		},
 		{
 			description: "pod is in Terminated State",
@@ -150,7 +156,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Succeeded", nil,
-				proto.StatusCode_STATUSCHECK_SUCCESS)},
+				proto.StatusCode_STATUSCHECK_SUCCESS, nil)},
 		},
 		{
 			description: "pod is in Stable State",
@@ -172,7 +178,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Running", nil,
-				proto.StatusCode_STATUSCHECK_SUCCESS)},
+				proto.StatusCode_STATUSCHECK_SUCCESS, nil)},
 		},
 		{
 			description: "pod condition unknown",
@@ -192,7 +198,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN)},
+				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN, nil)},
 		},
 		{
 			description: "pod could not be scheduled",
@@ -214,7 +220,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"),
-				proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE)},
+				proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE, nil)},
 		},
 		{
 			description: "pod is running but container terminated",
@@ -235,9 +241,42 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
+			logOutput: mockLogOutput{
+				output: []byte("main.go:57 \ngo panic"),
+			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
 				fmt.Errorf("container foo-container terminated with exit code 1"),
-				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED)},
+				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, []string{
+					"[foo foo-container] main.go:57 ",
+					"[foo foo-container] go panic"},
+			)},
+		},
+		{
+			description: "pod is running but container terminated but could not retrieve logs",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				Status: v1.PodStatus{
+					Phase:      v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							State: v1.ContainerState{Terminated: &v1.ContainerStateTerminated{ExitCode: 1}},
+						},
+					},
+				},
+			}},
+			logOutput: mockLogOutput{
+				err: fmt.Errorf("error"),
+			},
+			expected: []Resource{NewResource("test", "pod", "foo", "Running",
+				fmt.Errorf("container foo-container terminated with exit code 1"),
+				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, []string{
+					"Error retrieving logs for pod foo. Try `kubectl logs foo -n test -c foo-container`"},
+			)},
 		},
 		// Events Test cases
 		{
@@ -264,7 +303,7 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("eventCode: dummy event"), proto.StatusCode_STATUSCHECK_UNKNOWN)},
+				fmt.Errorf("eventCode: dummy event"), proto.StatusCode_STATUSCHECK_UNKNOWN, nil)},
 		},
 		{
 			description: "pod condition a warning event followed up normal",
@@ -294,7 +333,7 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN)},
+				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN, nil)},
 		},
 		{
 			description: "pod condition a warning event followed up normal adds last warning seen",
@@ -324,13 +363,21 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate"), proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING)},
+				fmt.Errorf("0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate"), proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING, nil)},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			rs := make([]runtime.Object, len(test.pods))
+			mRun := func(n string, args []string) ([]byte, error) {
+				actualCommand := strings.Join(append([]string{n}, args...), " ")
+				if expected := "kubectl logs foo -n test -c foo-container"; actualCommand != expected {
+					t.Errorf("got %s, expected %s", actualCommand, expected)
+				}
+				return test.logOutput.output, test.logOutput.err
+			}
+			t.Override(&runCli, mRun)
 			for i, p := range test.pods {
 				rs[i] = p
 			}
