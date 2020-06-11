@@ -237,8 +237,8 @@ func TestRun(t *testing.T) {
 			expected: []Resource{NewResource("test", "pod", "foo", "Running",
 				fmt.Errorf("container foo-container terminated with exit code 1"),
 				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, []string{
-					"[foo foo-container]main.go:57 ",
-					"[foo foo-container]go panic"},
+					"[foo foo-container] main.go:57 ",
+					"[foo foo-container] go panic"},
 			)},
 		},
 		{

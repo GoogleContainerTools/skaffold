@@ -250,7 +250,7 @@ func getPodLogs(po *v1.Pod, c string) []string {
 	}
 	lines := strings.Split(string(logs), "\n")
 	for i, s := range lines {
-		lines[i] = fmt.Sprintf("[%s %s]%s", po.Name, c, s)
+		lines[i] = fmt.Sprintf("[%s %s] %s", po.Name, c, s)
 	}
 	return lines
 }
