@@ -22,9 +22,12 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
@@ -47,6 +50,12 @@ const (
 var (
 	runContainerRe = regexp.MustCompile(errorPrefix)
 	taintsRe       = regexp.MustCompile(taintsExp)
+
+	unknownFailures = map[proto.StatusCode]struct{}{
+		proto.StatusCode_STATUSCHECK_UNKNOWN:                   {},
+		proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE:     {},
+		proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN: {},
+	}
 )
 
 // PodValidator implements the Validator interface for Pods
@@ -65,10 +74,12 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	if err != nil {
 		return nil, err
 	}
-
+	eventsClient := p.k.CoreV1().Events(ns)
 	var rs []Resource
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
+		// Update Pod status from Pod events if required
+		processPodEvents(eventsClient, po, ps)
 		// The GVK group is not populated for List Objects. Hence set `kind` to `pod`
 		// See https://github.com/kubernetes-sigs/controller-runtime/pull/389
 		if po.Kind == "" {
@@ -76,7 +87,6 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 		}
 		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.statusCode))
 	}
-
 	return rs, nil
 }
 
@@ -171,6 +181,37 @@ func getUntoleratedTaints(reason string, message string) (proto.StatusCode, erro
 		}
 	}
 	return errCode, fmt.Errorf("%s: 0/%d nodes available: %s", reason, len(messages), strings.Join(messages, ", "))
+}
+
+func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
+	// if failures are known, return
+	if _, ok := unknownFailures[ps.statusCode]; !ok {
+		return
+	}
+
+	// Get pod events.
+	events, err := e.Search(runtime.NewScheme(), &pod)
+	if err != nil {
+		logrus.Debugf("could not fetch events for resource %s due to %v", pod.Name, err)
+		return
+	}
+	// find the latest failed event.
+	var recentEvent *v1.Event
+	for _, event := range events.Items {
+		if recentEvent == nil || recentEvent.EventTime.Before(&event.EventTime) {
+			recentEvent = &event
+		}
+	}
+	if recentEvent == nil || recentEvent.Type == v1.EventTypeNormal {
+		return
+	}
+	if recentEvent.Reason == "FailedScheduling" {
+		ps.statusCode = proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING
+		ps.err = fmt.Errorf(recentEvent.Message)
+		return
+	}
+	// TODO: Add unique error codes for reasons
+	ps.err = fmt.Errorf("%s: %s", recentEvent.Reason, recentEvent.Message)
 }
 
 type podStatus struct {
