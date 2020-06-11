@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -56,7 +57,7 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, insecureRe
 		paths, err = buildpacks.GetDependencies(ctx, a.Workspace, a.BuildpackArtifact)
 
 	default:
-		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
+		return nil, fmt.Errorf("undefined type %q for artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
 	}
 
 	if err != nil {

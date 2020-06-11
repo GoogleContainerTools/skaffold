@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -44,8 +45,8 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifact, *b.cfg.Concurrency)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	digestOrImageID, err := b.runBuildForArtifact(ctx, out, artifact, tag)
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+	digestOrImageID, err := b.runBuildForArtifact(ctx, out, a, tag)
 	if err != nil {
 		return "", err
 	}
@@ -53,7 +54,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	if b.pushImages {
 		// only track images for pruning when building with docker
 		// if we're pushing a bazel image, it was built directly to the registry
-		if artifact.DockerArtifact != nil {
+		if a.DockerArtifact != nil {
 			imageID, err := b.getImageIDForTag(ctx, tag)
 			if err != nil {
 				logrus.Warnf("unable to inspect image: built images may not be cleaned up correctly by skaffold")
@@ -72,7 +73,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
 }
 
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
 	if !b.pushImages {
 		// All of the builders will rely on a local Docker:
 		// + Either to build the image,
@@ -84,23 +85,26 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 	}
 
 	switch {
-	case artifact.DockerArtifact != nil:
-		return b.buildDocker(ctx, out, artifact, tag)
+	case a.DockerArtifact != nil:
+		return b.buildDocker(ctx, out, a, tag)
 
-	case artifact.BazelArtifact != nil:
-		return bazel.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages).Build(ctx, out, artifact, tag)
+	case a.BazelArtifact != nil:
+		return bazel.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages).Build(ctx, out, a, tag)
 
-	case artifact.JibArtifact != nil:
-		return jib.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.skipTests).Build(ctx, out, artifact, tag)
+	case a.JibArtifact != nil:
+		return jib.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.skipTests).Build(ctx, out, a, tag)
 
-	case artifact.CustomArtifact != nil:
-		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
+	case a.CustomArtifact != nil:
+		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
 
-	case artifact.BuildpackArtifact != nil:
-		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.devMode).Build(ctx, out, artifact, tag)
+	case a.BuildpackArtifact != nil:
+		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.devMode).Build(ctx, out, a, tag)
+
+	case a.KanikoArtifact != nil:
+		return "", fmt.Errorf("Found a '%s' artifact, which is incompatible with the 'local' builder:\n\n%s\n\nTo use the '%s' builder, add the 'cluster' stanza to the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a))
 
 	default:
-		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
+		return "", fmt.Errorf("undefined type %q for artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
 	}
 }
 
