@@ -115,3 +115,61 @@ func TestLabelDeployResults(t *testing.T) {
 		})
 	}
 }
+
+func TestLabelFiltering(t *testing.T) {
+	tests := []struct {
+		description    string
+		filter         string
+		actualLabels   map[string]string
+		expectedLabels map[string]string
+	}{
+		{
+			description: "filter name-only label",
+			filter:      "key1",
+			actualLabels: map[string]string{
+				"key0": "value0",
+				"key1": "filtered",
+			},
+			expectedLabels: map[string]string{
+				"key0": "value0",
+			},
+		},
+		{
+			description: "filter matching word",
+			filter:      "foobar",
+			actualLabels: map[string]string{
+				"key0":                  "value0",
+				"expected/key1":         "value0",
+				"foobar/key2":           "filtered",
+				"foobar/key3":           "filtered",
+				"domain.com/foobar-key": "filtered",
+			},
+			expectedLabels: map[string]string{
+				"key0":          "value0",
+				"expected/key1": "value0",
+			},
+		},
+		{
+			description: "filter by label prefix",
+			filter:      "^domain.com/",
+			actualLabels: map[string]string{
+				"key0":            "value0",
+				"expected/key1":   "value0",
+				"domain.com/key2": "filtered",
+				"domain.org/key3": "value0",
+			},
+			expectedLabels: map[string]string{
+				"key0":            "value0",
+				"expected/key1":   "value0",
+				"domain.org/key3": "value0",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			filteredLabels := filter(test.actualLabels, test.filter)
+			t.CheckDeepEqual(test.expectedLabels, filteredLabels)
+		})
+	}
+}

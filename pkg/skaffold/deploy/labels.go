@@ -58,6 +58,7 @@ func merge(deployer Labeller, sources ...Labeller) map[string]string {
 	return merged
 }
 
+// filter labels from the filter map according to the supplied filter string
 func filter(labels map[string]string, filter string) map[string]string {
 	// Remove labels that match the filter
 	r := regexp.MustCompile(filter)
