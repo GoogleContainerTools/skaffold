@@ -38,10 +38,12 @@ var (
 func NewCmdRender() *cobra.Command {
 	return NewCmd("render").
 		WithDescription("[alpha] Perform all image builds, and output rendered Kubernetes manifests").
+		WithExample("Hydrate Kubernetes manifests without building the images, using digest resolved from tag in remote registry ", "render --digest-source=remote").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.BoolVar(&showBuild, "loud", false, "Show the build logs and output")
 			f.StringVar(&renderOutputPath, "output", "", "file to write rendered manifests to")
+			f.StringVar(&opts.DigestSource, "digest-source", "local", "Set to 'local' to build images locally and use digests from built images; Set to 'remote' to resolve the digest of images by tag from the remote registry; Set to 'none' to use tags directly from the Kubernetes manifests")
 		}).
 		NoArgs(doRender)
 }
@@ -54,11 +56,9 @@ func doRender(ctx context.Context, out io.Writer) error {
 
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
 		bRes, err := r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
-
 		if err != nil {
 			return fmt.Errorf("executing build: %w", err)
 		}
-
 		if err := r.Render(ctx, out, bRes, renderOutputPath); err != nil {
 			return fmt.Errorf("rendering manifests: %w", err)
 		}

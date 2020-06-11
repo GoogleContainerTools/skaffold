@@ -33,6 +33,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
+const (
+	remoteDigestSource = "remote"
+	noneDigestSource   = "none"
+)
+
 // Runner is responsible for running the skaffold build, test and deploy config.
 type Runner interface {
 	DiagnoseArtifacts(context.Context, io.Writer) error
