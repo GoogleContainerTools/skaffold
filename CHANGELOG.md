@@ -1,3 +1,89 @@
+# v1.11.0 Release - 06/11/2020
+
+Note: This release comes with a new config version `v2beta5`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.11.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.11.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.11.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.11.0`
+
+
+Highlights:
+- `skaffold render` now supports hydrating manifests from pre-existing images without building locally using the `--digest-source` flag
+- Users can now provide custom annotations for Kaniko pods
+- `IMAGE_REPO` and `IMAGE_TAG` runtimes values now exposed through environment variables in custom builds and helm deploys
+- `skaffold render` now supports Helm projects
+
+
+New Features:
+* Skaffold render solely perform the manifests hydration [#4193](https://github.com/GoogleContainerTools/skaffold/pull/4193)
+* Setup Github Actions for testing release binary against linux and darwin [#4300](https://github.com/GoogleContainerTools/skaffold/pull/4300)
+* hook up showing survey prompt if not taken or recently prompted [#4306](https://github.com/GoogleContainerTools/skaffold/pull/4306)
+* add annotations feature to kaniko pod [#4280](https://github.com/GoogleContainerTools/skaffold/pull/4280)
+* Initial prototype for pod health check hook up [#4223](https://github.com/GoogleContainerTools/skaffold/pull/4223)
+* Make IMAGE_REPO and IMAGE_TAG templated values in custom build and helm deploy [#4278](https://github.com/GoogleContainerTools/skaffold/pull/4278)
+* add tolerations option for building image with kaniko [#4256](https://github.com/GoogleContainerTools/skaffold/pull/4256)
+* [buildpacks] Custom project toml [#4265](https://github.com/GoogleContainerTools/skaffold/pull/4265)
+* [buildpacks] Support trusted builders [#4273](https://github.com/GoogleContainerTools/skaffold/pull/4273)
+* [buildpacks] Support buildpack version from project.toml [#4266](https://github.com/GoogleContainerTools/skaffold/pull/4266)
+* [buildpacks] Initial support for project.toml [#4258](https://github.com/GoogleContainerTools/skaffold/pull/4258)
+* Initial implementation of Helm Renderer [#3929](https://github.com/GoogleContainerTools/skaffold/pull/3929)
+* Add user-friendly validation of builder/artifact compatibility [#4312](https://github.com/GoogleContainerTools/skaffold/pull/4312)
+
+
+Fixes:
+* Use `pullSecretPath` to set GOOGLE_APPLICATION_CREDENTIALS [#4147](https://github.com/GoogleContainerTools/skaffold/pull/4147)
+* Use "helm version --client" to avoid connecting to cluster [#4294](https://github.com/GoogleContainerTools/skaffold/pull/4294)
+* apply namespace from command first when cleaning up helm release [#4281](https://github.com/GoogleContainerTools/skaffold/pull/4281)
+* move field reported to changed [#4222](https://github.com/GoogleContainerTools/skaffold/pull/4222)
+* Fix support for Knative services [#4249](https://github.com/GoogleContainerTools/skaffold/pull/4249)
+* Remote helm charts should not be upgraded by default [#3274](https://github.com/GoogleContainerTools/skaffold/pull/3274)
+* Fix dockerfile resolution [#4260](https://github.com/GoogleContainerTools/skaffold/pull/4260)
+* Add control API to pause and resume autoBuild, autoDeploy and autoSync [#4145](https://github.com/GoogleContainerTools/skaffold/pull/4145)
+
+
+Updates & Refactors:
+* Update GCP Buildpacks builder image references to :v1 [#4313](https://github.com/GoogleContainerTools/skaffold/pull/4313)
+* upgrade to yaml.v3 [#4201](https://github.com/GoogleContainerTools/skaffold/pull/4201)
+* Update jib to 2.4.0 [#4308](https://github.com/GoogleContainerTools/skaffold/pull/4308)
+* Use pack’s code for reading project descriptors [#4298](https://github.com/GoogleContainerTools/skaffold/pull/4298)
+* Rename `buildpack` config to `buildpacks` [#4290](https://github.com/GoogleContainerTools/skaffold/pull/4290)
+* Update Bazel configuration [#4291](https://github.com/GoogleContainerTools/skaffold/pull/4291)
+* Add validations to Control API for Auto Triggers [#4242](https://github.com/GoogleContainerTools/skaffold/pull/4242)
+* Minor renames and change in the container status message. [#4284](https://github.com/GoogleContainerTools/skaffold/pull/4284)
+* Collapse ImagePullBackOff and ErrImagePullBackOff together [#4269](https://github.com/GoogleContainerTools/skaffold/pull/4269)
+* [buildpacks] Update to pack v0.11.0 [#4272](https://github.com/GoogleContainerTools/skaffold/pull/4272)
+* Remove default from resource name [#4270](https://github.com/GoogleContainerTools/skaffold/pull/4270)
+
+
+Docs updates:
+* Render and Buildpacks support are Beta [#4275](https://github.com/GoogleContainerTools/skaffold/pull/4275)
+
+
+Huge thanks goes out to all of our contributors for this release:
+- Appu Goundan
+- Balint Pato
+- Brian de Alwis
+- Chanseok Oh
+- Chris Ge
+- David Gageot
+- David Hovey
+- Gaurav
+- Gwonsoo-Lee
+- Hasso Mehide
+- Mark Burnett
+- Nick Kubala
+- Tejal Desai
+- Thomas Strömberg
+- tete17
+
 # v1.10.1 Hotfix Release - 05/20/2020
 
 This is a hotfix release to address an issue with newer versions of Kustomize being broken, and to address an issue in our release process with malformed binaries.
