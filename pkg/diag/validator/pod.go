@@ -75,15 +75,11 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 		return nil, err
 	}
 	eventsClient := p.k.CoreV1().Events(ns)
-	if err != nil {
-		logrus.Debugf("could not fetch events due to %v", err)
-	}
-
 	var rs []Resource
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
 		// Update Pod status from Pod events if required
-		processPodEvents(eventsClient, &po, ps)
+		processPodEvents(eventsClient, po, ps)
 		// The GVK group is not populated for List Objects. Hence set `kind` to `pod`
 		// See https://github.com/kubernetes-sigs/controller-runtime/pull/389
 		if po.Kind == "" {
@@ -187,14 +183,14 @@ func getUntoleratedTaints(reason string, message string) (proto.StatusCode, erro
 	return errCode, fmt.Errorf("%s: 0/%d nodes available: %s", reason, len(messages), strings.Join(messages, ", "))
 }
 
-func processPodEvents(e corev1.EventInterface, pod *v1.Pod, ps *podStatus) {
+func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
 	// if failures are known, return
 	if _, ok := unknownFailures[ps.statusCode]; !ok {
 		return
 	}
 
 	// Get pod events.
-	events, err := e.Search(runtime.NewScheme(), pod)
+	events, err := e.Search(runtime.NewScheme(), &pod)
 	if err != nil {
 		logrus.Debugf("could not fetch events for resource %s due to %v", pod.Name, err)
 		return
@@ -214,6 +210,7 @@ func processPodEvents(e corev1.EventInterface, pod *v1.Pod, ps *podStatus) {
 		ps.err = fmt.Errorf(recentEvent.Message)
 		return
 	}
+	// TODO: Add unique error codes for reasons
 	ps.err = fmt.Errorf("%s: %s", recentEvent.Reason, recentEvent.Message)
 }
 
