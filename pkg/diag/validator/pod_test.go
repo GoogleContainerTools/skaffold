@@ -155,7 +155,7 @@ func TestRun(t *testing.T) {
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
 				},
 			}},
-			expected: []Resource{NewResource("test", "pod", "foo", "Succeeded", nil,
+			expected: []Resource{NewResource("test", "Pod", "foo", "Succeeded", nil,
 				proto.StatusCode_STATUSCHECK_SUCCESS, nil)},
 		},
 		{
@@ -177,7 +177,7 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "pod", "foo", "Running", nil,
+			expected: []Resource{NewResource("test", "Pod", "foo", "Running", nil,
 				proto.StatusCode_STATUSCHECK_SUCCESS, nil)},
 		},
 		{
@@ -197,7 +197,7 @@ func TestRun(t *testing.T) {
 					}},
 				},
 			}},
-			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
+			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN, nil)},
 		},
 		{
@@ -244,7 +244,7 @@ func TestRun(t *testing.T) {
 			logOutput: mockLogOutput{
 				output: []byte("main.go:57 \ngo panic"),
 			},
-			expected: []Resource{NewResource("test", "pod", "foo", "Running",
+			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
 				fmt.Errorf("container foo-container terminated with exit code 1"),
 				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, []string{
 					"[foo foo-container] main.go:57 ",
@@ -303,7 +303,7 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("eventCode: dummy event"), proto.StatusCode_STATUSCHECK_UNKNOWN)},
+				fmt.Errorf("eventCode: dummy event"), proto.StatusCode_STATUSCHECK_UNKNOWN, nil)},
 		},
 		{
 			description: "pod condition a warning event followed up normal",
@@ -333,7 +333,7 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN)},
+				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN, nil)},
 		},
 		{
 			description: "pod condition a warning event followed up normal adds last warning seen",
@@ -363,7 +363,7 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate"), proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING)},
+				fmt.Errorf("0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate"), proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING, nil)},
 		},
 	}
 
