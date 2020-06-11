@@ -4,7 +4,7 @@ build:
   artifacts:
   - image: skaffold-buildpacks
     buildpack:
-      builder: "gcr.io/buildpacks/builder"
+      builder: "gcr.io/buildpacks/builder:v1"
       env:
       - GOPROXY={{.GOPROXY}}
     sync:
