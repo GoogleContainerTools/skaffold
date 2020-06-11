@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +28,7 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestRun(t *testing.T) {
