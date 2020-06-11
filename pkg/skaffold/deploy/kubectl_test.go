@@ -642,7 +642,6 @@ spec:
 }
 
 func TestGCSManifests(t *testing.T) {
-
 	tests := []struct {
 		description string
 		cfg         *latest.KubectlDeploy
@@ -662,10 +661,8 @@ func TestGCSManifests(t *testing.T) {
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 			skipRender: true,
 		}}
-
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-
 			t.Override(&util.DefaultExecCommand, test.commands)
 			if err := os.MkdirAll(manifestTmpDir, os.ModePerm); err != nil {
 				t.Fatal(err)

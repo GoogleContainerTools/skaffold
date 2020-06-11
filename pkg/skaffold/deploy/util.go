@@ -151,7 +151,6 @@ func downloadManifestsFromGCS(manifests []string) (string, error) {
 		}
 	}
 	return manifestTmpDir, nil
-
 }
 
 // ApplyDefaultRepo applies the default repo to a given image tag.

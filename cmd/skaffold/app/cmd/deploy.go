@@ -43,7 +43,7 @@ func NewCmdDeploy() *cobra.Command {
 		WithExample("Build the artifacts and collect the tags into a file", "build --file-output=tags.json").
 		WithExample("Deploy those tags", "deploy --build-artifacts=tags.json").
 		WithExample("Build the artifacts and then deploy them", "build -q | skaffold deploy --build-artifacts -").
-		WithExample("Deploy without rendering the manifests", "skaffold deploy --skip-render").
+		WithExample("Deploy without first rendering the manifests", "skaffold deploy --skip-render").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")

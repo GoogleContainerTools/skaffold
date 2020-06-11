@@ -169,7 +169,6 @@ func (k *KubectlDeployer) readManifests(ctx context.Context) (deploy.ManifestLis
 
 	// Append URL manifests
 	for _, manifest := range k.KubectlDeploy.Manifests {
-
 		if util.IsURL(manifest) {
 			manifests = append(manifests, manifest)
 		}
