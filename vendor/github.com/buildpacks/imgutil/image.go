@@ -51,6 +51,9 @@ type Image interface {
 	Delete() error
 	CreatedAt() (time.Time, error)
 	Identifier() (Identifier, error)
+	OS() (string, error)
+	OSVersion() (string, error)
+	Architecture() (string, error)
 }
 
 type Identifier fmt.Stringer

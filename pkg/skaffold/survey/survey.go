@@ -43,8 +43,9 @@ To permanently disable the survey prompt, run:
    skaffold config set --survey --global disable-prompt true`, URL)
 
 	// for testing
-	isStdOut = stdOut
-	open     = browser.OpenURL
+	isStdOut     = stdOut
+	open         = browser.OpenURL
+	updateConfig = config.UpdateGlobalSurveyPrompted
 )
 
 type Runner struct {
@@ -57,10 +58,11 @@ func New(configFile string) *Runner {
 	}
 }
 
-func DisplaySurveyPrompt(out io.Writer) {
+func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {
 	if isStdOut(out) {
 		fmt.Fprintln(out, Prompt)
 	}
+	return updateConfig(s.configFile)
 }
 
 func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer) error {

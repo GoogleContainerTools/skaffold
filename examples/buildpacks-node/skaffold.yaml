@@ -1,9 +1,9 @@
-apiVersion: skaffold/v2beta3
+apiVersion: skaffold/v2beta4
 kind: Config
 build:
   artifacts:
   - image: skaffold-buildpacks-node
     buildpack:
-      builder: "gcr.io/buildpacks/builder"
+      builder: "gcr.io/buildpacks/builder:v1"
     sync:
       auto: {}

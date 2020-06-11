@@ -19,40 +19,35 @@ package debugging
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
 
 var (
 	// For testing
-	aggregatePodWatcher = kubernetes.AggregatePodWatcher
-
 	notifyDebuggingContainerStarted    = event.DebuggingContainerStarted
 	notifyDebuggingContainerTerminated = event.DebuggingContainerTerminated
 )
 
 type ContainerManager struct {
-	output      io.Writer
-	cli         *kubectl.CLI
-	podSelector kubernetes.PodSelector
-	namespaces  []string
-	active      map[string]string // set of containers that have been notified
-	aggregate   chan watch.Event
+	podWatcher kubernetes.PodWatcher
+	active     map[string]string // set of containers that have been notified
+	events     chan kubernetes.PodEvent
 }
 
-func NewContainerManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string) *ContainerManager {
+func NewContainerManager(podSelector kubernetes.PodSelector, namespaces []string) *ContainerManager {
 	// Create the channel here as Stop() may be called before Start() when a build fails, thus
 	// avoiding the possibility of closing a nil channel. Channels are cheap.
-	return &ContainerManager{output: out, cli: cli, podSelector: podSelector, namespaces: namespaces, active: map[string]string{}, aggregate: make(chan watch.Event)}
+	return &ContainerManager{
+		podWatcher: kubernetes.NewPodWatcher(podSelector, namespaces),
+		active:     map[string]string{},
+		events:     make(chan kubernetes.PodEvent),
+	}
 }
 
 func (d *ContainerManager) Start(ctx context.Context) error {
@@ -60,51 +55,41 @@ func (d *ContainerManager) Start(ctx context.Context) error {
 		// debug mode probably not enabled
 		return nil
 	}
-	stopWatchers, err := aggregatePodWatcher(d.namespaces, d.aggregate)
+
+	d.podWatcher.Register(d.events)
+	stopWatcher, err := d.podWatcher.Start()
 	if err != nil {
-		stopWatchers()
-		return fmt.Errorf("initializing debugging container watcher: %w", err)
+		return err
 	}
 
 	go func() {
-		defer stopWatchers()
+		defer stopWatcher()
 
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case evt, ok := <-d.aggregate:
+			case evt, ok := <-d.events:
 				if !ok {
 					return
 				}
-				// If the event's type is "ERROR", warn and continue.
-				if evt.Type == watch.Error {
-					logrus.Warnf("got unexpected event of type %s", evt.Type)
-					continue
-				}
-				// Grab the pod from the event.
-				pod, ok := evt.Object.(*v1.Pod)
-				if !ok {
-					continue
-				}
-				// Unlike other event watchers, we ignore event types as checkPod() uses only container status
-				if d.podSelector.Select(pod) {
-					d.checkPod(ctx, pod)
-				}
+
+				d.checkPod(evt.Pod)
 			}
 		}
 	}()
+
 	return nil
 }
 
 func (d *ContainerManager) Stop() {
 	// if nil then debug mode probably not enabled
 	if d != nil {
-		close(d.aggregate)
+		close(d.events)
 	}
 }
 
-func (d *ContainerManager) checkPod(_ context.Context, pod *v1.Pod) {
+func (d *ContainerManager) checkPod(pod *v1.Pod) {
 	debugConfigString, found := pod.Annotations[debug.DebugConfigAnnotation]
 	if !found {
 		return

@@ -38,12 +38,12 @@ var (
 func NewCmdRender() *cobra.Command {
 	return NewCmd("render").
 		WithDescription("[alpha] Perform all image builds, and output rendered Kubernetes manifests").
-		WithExample("Hydrate Kubernetes manifests without building the images ", "render --skip-build").
+		WithExample("Hydrate Kubernetes manifests without building the images, using digest resolved from tag in remote registry ", "render --digest-source=remote").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.BoolVar(&showBuild, "loud", false, "Show the build logs and output")
 			f.StringVar(&renderOutputPath, "output", "", "file to write rendered manifests to")
-			f.BoolVar(&opts.SkipBuild, "skip-build", false, "Don't build images, just hydrate Kubernetes manifests.")
+			f.StringVar(&opts.DigestSource, "digest-source", "local", "Set to 'local' to build images locally and use digests from built images; Set to 'remote' to resolve the digest of images by tag from the remote registry; Set to 'none' to use tags directly from the Kubernetes manifests")
 		}).
 		NoArgs(doRender)
 }

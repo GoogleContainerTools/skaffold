@@ -48,12 +48,12 @@ func newNamespaceCollector() *namespaceCollector {
 	}
 }
 
-func (r *namespaceCollector) Visit(o map[interface{}]interface{}, k interface{}, v interface{}) bool {
+func (r *namespaceCollector) Visit(o map[string]interface{}, k string, v interface{}) bool {
 	if k != "metadata" {
 		return true
 	}
 
-	metadata, ok := v.(map[interface{}]interface{})
+	metadata, ok := v.(map[string]interface{})
 	if !ok {
 		return true
 	}

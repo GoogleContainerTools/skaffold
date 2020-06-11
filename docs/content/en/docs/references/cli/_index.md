@@ -355,7 +355,7 @@ Options:
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=true: Stream logs from deployed objects
+      --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
 
 Usage:
@@ -464,7 +464,7 @@ E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --status-check=true: Wait for deployed resources to stabilize
-      --tail=false: Stream logs from deployed objects (default false)
+      --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
 
 Usage:
@@ -528,7 +528,7 @@ Options:
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=true: Stream logs from deployed objects
+      --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
   -w, --watch-image=[]: Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
@@ -626,7 +626,7 @@ Examples:
 Options:
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --overwrite=false: Overwrite original config with fixed config
-      --version='skaffold/v2beta4': Target schema version to upgrade to
+      --version='skaffold/v2beta5': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -696,11 +696,12 @@ The following options can be passed to any command:
 
 
 Examples:
-  # Hydrate Kubernetes manifests without building the images 
-  skaffold render --skip-build
+  # Hydrate Kubernetes manifests without building the images, using digest resolved from tag in remote registry 
+  skaffold render --digest-source=remote
 
 Options:
   -d, --default-repo='': Default repository value (overrides global config)
+      --digest-source='local': Set to 'local' to build images locally and use digests from built images; Set to 'remote' to resolve the digest of images by tag from the remote registry; Set to 'none' to use tags directly from the Kubernetes manifests
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
       --loud=false: Show the build logs and output
@@ -708,7 +709,6 @@ Options:
       --output='': file to write rendered manifests to
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
-      --skip-build=false: Don't build images, just hydrate Kubernetes manifests.
 
 Usage:
   skaffold render [options]
@@ -720,6 +720,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_LOUD` (same as `--loud`)
@@ -727,7 +728,6 @@ Env vars:
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
-* `SKAFFOLD_SKIP_BUILD` (same as `--skip-build`)
 
 ### skaffold run
 
@@ -768,7 +768,7 @@ Options:
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=false: Stream logs from deployed objects (default false)
+      --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
 
 Usage:

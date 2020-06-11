@@ -37,7 +37,6 @@ type SkaffoldOptions struct {
 	Cleanup               bool
 	Notification          bool
 	Tail                  bool
-	TailDev               bool
 	SkipTests             bool
 	CacheArtifacts        bool
 	EnableRPC             bool
@@ -60,6 +59,7 @@ type SkaffoldOptions struct {
 	Trigger               string
 	KubeContext           string
 	KubeConfig            string
+	DigestSource          string
 	WatchPollInterval     int
 	DefaultRepo           StringOrUndefined
 	CustomLabels          []string

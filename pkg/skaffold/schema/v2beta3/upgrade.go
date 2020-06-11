@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ limitations under the License.
 package v2beta3
 
 import (
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta4"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -27,6 +27,7 @@ import (
 // 1. Additions:
 // 2. Removals:
 // 3. Updates:
+//    - Rename `values` in `helm.Releases` to `artifactOverrides`
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
@@ -36,6 +37,15 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	return &newConfig, err
 }
 
-func upgradeOnePipeline(_, _ interface{}) error {
+func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldDeploy := &oldPipeline.(*Pipeline).Deploy
+	if oldDeploy.HelmDeploy == nil {
+		return nil
+	}
+	newDeploy := &newPipeline.(*next.Pipeline).Deploy
+
+	for i, r := range oldDeploy.HelmDeploy.Releases {
+		newDeploy.HelmDeploy.Releases[i].ArtifactOverrides = r.Values
+	}
 	return nil
 }

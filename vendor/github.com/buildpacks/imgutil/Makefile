@@ -1,23 +1,24 @@
 # Go parameters
 GOCMD?=go
-GOTEST=$(GOCMD) test -mod=vendor
 PACKAGE_BASE=github.com/buildpacks/imgutil
-PACKAGES:=$(shell $(GOCMD) list -mod=vendor ./... | grep -v /testdata/)
-SRC:=$(shell find . -type f -name '*.go' -not -path "*/vendor/*")
 
 all: test
 
 install-goimports:
 	@echo "> Installing goimports..."
-	cd tools; $(GOCMD) install -mod=vendor golang.org/x/tools/cmd/goimports
+	cd tools && $(GOCMD) install golang.org/x/tools/cmd/goimports
 
 format: install-goimports
 	@echo "> Formating code..."
-	@goimports -l -w -local ${PACKAGE_BASE} ${SRC}
+	@goimports -l -w -local ${PACKAGE_BASE} .
 
-vet:
-	@echo "> Vetting code..."
-	@$(GOCMD) vet -mod=vendor ${PACKAGES}
+install-golangci-lint:
+	@echo "> Installing golangci-lint..."
+	cd tools && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
 
-test: format vet
-	$(GOTEST) -parallel=1 -count=1 -v ./...
+lint: install-golangci-lint
+	@echo "> Linting code..."
+	@golangci-lint run -c golangci.yaml
+
+test: format lint
+	$(GOCMD) test -parallel=1 -count=1 -v ./...

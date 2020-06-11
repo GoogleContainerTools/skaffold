@@ -17,10 +17,9 @@ limitations under the License.
 package docker
 
 import (
+	"errors"
 	"fmt"
 	"testing"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
