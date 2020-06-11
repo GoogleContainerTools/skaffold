@@ -78,7 +78,7 @@ File deletion will always cause a complete rebuild.
 ### Auto sync mode (Buildpacks)
 
 Skaffold requires special collaboration from the Buildpacks for the `auto` sync to work.
-The [gcr.io/buildpacks/builder](https://github.com/GoogleCloudPlatform/buildpacks) supports Skaffold
+The [gcr.io/buildpacks/builder:v1](https://github.com/GoogleCloudPlatform/buildpacks) supports Skaffold
 out of the box, currently for Go and NodeJS.
 
 Cloud Native Buildpacks set a `io.buildpacks.build.metadata` label on the images they create.

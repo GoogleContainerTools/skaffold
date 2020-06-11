@@ -25,11 +25,12 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
-type yamlObject map[interface{}]interface{}
+type yamlObject map[string]interface{}
 
 // These are the required fields for a yaml document to be a valid Kubernetes yaml
 var requiredFields = []string{"apiVersion", "kind", "metadata"}
@@ -116,7 +117,7 @@ func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
 	return k8sObjects, nil
 }
 
-func hasRequiredK8sManifestFields(doc map[interface{}]interface{}) bool {
+func hasRequiredK8sManifestFields(doc map[string]interface{}) bool {
 	for _, field := range requiredFields {
 		if _, ok := doc[field]; !ok {
 			logrus.Debugf("%s not present in yaml, continuing", field)
@@ -137,12 +138,7 @@ func parseImagesFromYaml(obj interface{}) []string {
 		}
 	case yamlObject:
 		for k, v := range t {
-			key, ok := k.(string)
-			if !ok {
-				continue
-			}
-
-			if key != "image" {
+			if k != "image" {
 				images = append(images, parseImagesFromYaml(v)...)
 				continue
 			}

@@ -46,8 +46,9 @@ func TestDisplaySurveyForm(t *testing.T) {
 			t.Override(&isStdOut, mock)
 			mockOpen := func(string) error { return nil }
 			t.Override(&open, mockOpen)
+			t.Override(&updateConfig, func(_ string) error { return nil })
 			var buf bytes.Buffer
-			DisplaySurveyPrompt(&buf)
+			New("test").DisplaySurveyPrompt(&buf)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})
 	}

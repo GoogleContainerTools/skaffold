@@ -89,7 +89,7 @@ build:
     context: ./examples/app1
     kaniko: {}
   cluster:
-    pullSecret: /secret.json
+    pullSecretPath: /secret.json
     pullSecretName: secret-name
     namespace: nskaniko
     timeout: 120m
@@ -326,7 +326,7 @@ func withClusterBuild(secretName, mountPath, namespace, secret string, timeout s
 		b := latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{
 			PullSecretName:      secretName,
 			Namespace:           namespace,
-			PullSecret:          secret,
+			PullSecretPath:      secret,
 			PullSecretMountPath: mountPath,
 			Timeout:             timeout,
 		}}}

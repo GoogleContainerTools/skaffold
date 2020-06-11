@@ -579,6 +579,34 @@ spec:
     name: image2
 `,
 		},
+		{
+			description: "no artifacts",
+			builds:      nil,
+			input: `apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: image1:tag1
+    name: image1
+  - image: image2:tag2
+    name: image2
+`,
+			expected: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1:tag1
+    name: image1
+  - image: gcr.io/project/image2:tag2
+    name: image2
+`,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -588,7 +616,8 @@ spec:
 			t.Override(&util.DefaultExecCommand, testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), test.input))
-
+			defaultRepo := config.StringOrUndefined{}
+			defaultRepo.Set("gcr.io/project")
 			deployer := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
 				Cfg: latest.Pipeline{
@@ -601,6 +630,7 @@ spec:
 					},
 				},
 				KubeContext: testKubeContext,
+				Opts:        config.SkaffoldOptions{DefaultRepo: defaultRepo},
 			})
 			var b bytes.Buffer
 			err := deployer.Render(context.Background(), &b, test.builds, test.labels, "")

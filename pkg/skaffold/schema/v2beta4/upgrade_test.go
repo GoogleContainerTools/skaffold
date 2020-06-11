@@ -45,7 +45,7 @@ build:
       args: ['-v']
   - image: gcr.io/k8s-skaffold/buildpacks
     buildpack:
-      builder: gcr.io/buildpacks/builder
+      builder: gcr.io/buildpacks/builder:v1
   googleCloudBuild:
     projectId: test-project
 test:
@@ -68,6 +68,7 @@ profiles:
           cache: {}
       cluster:
         pullSecretName: e2esecret
+        pullSecret: secret.json
         namespace: default
     test:
      - image: gcr.io/k8s-skaffold/skaffold-example
@@ -113,7 +114,7 @@ build:
       args: ['-v']
   - image: gcr.io/k8s-skaffold/buildpacks
     buildpacks:
-      builder: gcr.io/buildpacks/builder
+      builder: gcr.io/buildpacks/builder:v1
   googleCloudBuild:
     projectId: test-project
 test:
@@ -136,6 +137,7 @@ profiles:
           cache: {}
       cluster:
         pullSecretName: e2esecret
+        pullSecretPath: secret.json
         namespace: default
     test:
      - image: gcr.io/k8s-skaffold/skaffold-example
