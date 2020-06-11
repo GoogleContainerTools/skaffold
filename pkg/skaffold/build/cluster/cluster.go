@@ -66,7 +66,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 		return custom.NewArtifactBuilder(nil, b.insecureRegistries, true, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
 
 	default:
-		return "", fmt.Errorf("unexpected type %q for artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
+		return "", fmt.Errorf("unexpected type %q for in-cluster artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
 	}
 }
 

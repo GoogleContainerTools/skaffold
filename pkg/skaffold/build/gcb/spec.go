@@ -67,6 +67,6 @@ func (b *Builder) buildSpecForArtifact(a *latest.Artifact, tag string) (cloudbui
 		return b.buildpackBuildSpec(a.BuildpackArtifact, tag)
 
 	default:
-		return cloudbuild.Build{}, fmt.Errorf("unexpected type %q for artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
+		return cloudbuild.Build{}, fmt.Errorf("unexpected type %q for gcb artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
 	}
 }
