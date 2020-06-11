@@ -100,11 +100,8 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 	case a.BuildpackArtifact != nil:
 		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.devMode).Build(ctx, out, a, tag)
 
-	case a.KanikoArtifact != nil:
-		return "", fmt.Errorf("Found a '%s' artifact, which is incompatible with the 'local' builder:\n\n%s\n\nTo use the '%s' builder, add the 'cluster' stanza to the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a))
-
 	default:
-		return "", fmt.Errorf("undefined type %q for artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
+		return "", fmt.Errorf("unexpected artifact type %q:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
 	}
 }
 

@@ -63,13 +63,10 @@ func (b *Builder) buildSpecForArtifact(a *latest.Artifact, tag string) (cloudbui
 	case a.JibArtifact != nil:
 		return b.jibBuildSpec(a, tag)
 
-	case a.BazelArtifact != nil, a.CustomArtifact != nil:
-		return cloudbuild.Build{}, fmt.Errorf("Found a '%s' artifact, which is incompatible with the 'gcb' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'googleCloudBuild' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a))
-
 	case a.BuildpackArtifact != nil:
 		return b.buildpackBuildSpec(a.BuildpackArtifact, tag)
 
 	default:
-		return cloudbuild.Build{}, fmt.Errorf("undefined type %q for artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
+		return cloudbuild.Build{}, fmt.Errorf("unexpected type %q for artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
 	}
 }
