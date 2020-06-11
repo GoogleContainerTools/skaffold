@@ -50,7 +50,6 @@ type SkaffoldOptions struct {
 	RenderOnly            bool
 	ProfileAutoActivation bool
 	DryRun                bool
-	SkipBuild             bool
 	SkipRender            bool
 	PortForward           PortForwardOptions
 	CustomTag             string
