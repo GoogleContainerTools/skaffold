@@ -28,6 +28,7 @@ func TestValidate(t *testing.T) {
 	var tests = []struct {
 		description   string
 		path          string
+		otherFiles    []string
 		expectedValid bool
 	}{
 		{
@@ -37,7 +38,7 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			description:   "NodeJS (root)",
-			path:          filepath.Join("package.json"),
+			path:          "package.json",
 			expectedValid: true,
 		},
 		{
@@ -47,12 +48,33 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			description:   "Go (root)",
-			path:          filepath.Join("go.mod"),
+			path:          "go.mod",
+			expectedValid: true,
+		},
+		{
+			description: "Python",
+			path:        filepath.Join("path", "to", "requirements.txt"),
+			otherFiles: []string{
+				filepath.Join("path", "to", "Procfile"),
+			},
+			expectedValid: true,
+		},
+		{
+			description:   "Python missing Procfile",
+			path:          filepath.Join("path", "to", "requirements.txt"),
+			expectedValid: false,
+		},
+		{
+			description: "Python (root)",
+			path:        "requirements.txt",
+			otherFiles: []string{
+				filepath.Join("Procfile"),
+			},
 			expectedValid: true,
 		},
 		{
 			description:   "Buildpacks",
-			path:          filepath.Join("project.toml"),
+			path:          "project.toml",
 			expectedValid: true,
 		},
 		{
@@ -63,7 +85,7 @@ func TestValidate(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().Touch(test.path)
+			tmpDir := t.NewTempDir().Touch(test.path).Touch(test.otherFiles...)
 
 			isValid := Validate(tmpDir.Path(test.path))
 
@@ -79,6 +101,7 @@ func TestValidateIgnored(t *testing.T) {
 		filepath.Join("vendor", "go.mod"),
 		filepath.Join("parent", "vendor", "go.mod"),
 		filepath.Join("parent", "vendor", "project.toml"),
+		filepath.Join("parent", "vendor", "requirements.txt"),
 		filepath.Join("node_modules", "project.toml"),
 	}
 

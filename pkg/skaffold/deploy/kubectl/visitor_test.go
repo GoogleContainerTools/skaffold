@@ -29,7 +29,7 @@ type mockVisitor struct {
 	replaceWith interface{}
 }
 
-func (m *mockVisitor) Visit(o map[interface{}]interface{}, k interface{}, v interface{}) bool {
+func (m *mockVisitor) Visit(o map[string]interface{}, k string, v interface{}) bool {
 	s := fmt.Sprintf("%+v", v)
 	if len(s) > 4 {
 		s = s[:4] + "..."
@@ -173,6 +173,20 @@ spec:
   names:
     kind: MyKind`)},
 			expected: []string{"apiVersion=apie...", "kind=Cust...", "metadata=map[...", "spec=map[..."},
+		},
+		{
+			description: "a manifest with non string key",
+			manifests: ManifestList{[]byte(`apiVersion: v1
+data:
+  1973: \"test/myservice:1973\"
+kind: ConfigMap
+metadata:
+  labels:
+    app: myapp
+    chart: myapp-0.1.0
+    release: myapp
+  name: rel-nginx-ingress-tcp`)},
+			expected: []string{"apiVersion=v1", "kind=Conf...", "metadata=map[...", "data=map[..."},
 		},
 		{
 			description: "replace knative serving image",

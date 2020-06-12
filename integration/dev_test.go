@@ -33,6 +33,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -354,6 +355,10 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 	contextName := "modified-context"
 	if config.IsKindCluster(kubeConfig.CurrentContext) {
 		contextName = "kind-" + contextName
+	}
+
+	if kubeConfig.CurrentContext == constants.DefaultMinikubeContext {
+		contextName = constants.DefaultMinikubeContext // skip, since integration test with minikube runs on single cluster
 	}
 
 	activeContext := kubeConfig.Contexts[kubeConfig.CurrentContext]

@@ -159,7 +159,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 				Build: latest.BuildConfig{
 					BuildType: latest.BuildType{
 						Cluster: &latest.ClusterDetails{
-							PullSecret: "path/to/pull/secret",
+							PullSecretPath: "path/to/pull/secret",
 						},
 					},
 				},
@@ -178,7 +178,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 				Build: latest.BuildConfig{
 					BuildType: latest.BuildType{
 						Cluster: &latest.ClusterDetails{
-							PullSecret:          "path/to/pull/secret",
+							PullSecretPath:      "path/to/pull/secret",
 							PullSecretMountPath: path,
 						},
 					},

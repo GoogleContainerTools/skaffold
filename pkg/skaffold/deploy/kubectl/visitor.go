@@ -19,8 +19,9 @@ package kubectl
 import (
 	"fmt"
 
-	yaml "gopkg.in/yaml.v2"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 // transformableWhitelist is the set of kinds that can be transformed by Skaffold.
@@ -39,7 +40,7 @@ var transformableWhitelist = map[apimachinery.GroupKind]bool{
 type FieldVisitor interface {
 	// Visit is called for each transformable key contained in the object and may apply transformations/aggregations on it.
 	// It should return true to allow recursive traversal or false when the entry was transformed.
-	Visit(object map[interface{}]interface{}, key, value interface{}) bool
+	Visit(object map[string]interface{}, key string, value interface{}) bool
 }
 
 // Visit recursively visits all transformable object fields within the manifests and lets the visitor apply transformations/aggregations on them.
@@ -47,7 +48,7 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 	var updated ManifestList
 
 	for _, manifest := range *l {
-		m := make(map[interface{}]interface{})
+		m := make(map[string]interface{})
 		if err := yaml.Unmarshal(manifest, &m); err != nil {
 			return nil, fmt.Errorf("reading Kubernetes YAML: %w", err)
 		}
@@ -70,14 +71,14 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 }
 
 // traverseManifest traverses all transformable fields contained within the manifest.
-func traverseManifestFields(manifest map[interface{}]interface{}, visitor FieldVisitor) {
+func traverseManifestFields(manifest map[string]interface{}, visitor FieldVisitor) {
 	if shouldTransformManifest(manifest) {
 		visitor = &recursiveVisitorDecorator{visitor}
 	}
 	visitFields(manifest, visitor)
 }
 
-func shouldTransformManifest(manifest map[interface{}]interface{}) bool {
+func shouldTransformManifest(manifest map[string]interface{}) bool {
 	var apiVersion string
 	switch value := manifest["apiVersion"].(type) {
 	case string:
@@ -108,7 +109,7 @@ type recursiveVisitorDecorator struct {
 	delegate FieldVisitor
 }
 
-func (d *recursiveVisitorDecorator) Visit(o map[interface{}]interface{}, k, v interface{}) bool {
+func (d *recursiveVisitorDecorator) Visit(o map[string]interface{}, k string, v interface{}) bool {
 	if d.delegate.Visit(o, k, v) {
 		visitFields(v, d)
 	}
@@ -122,7 +123,7 @@ func visitFields(o interface{}, visitor FieldVisitor) {
 		for _, v := range entries {
 			visitFields(v, visitor)
 		}
-	case map[interface{}]interface{}:
+	case map[string]interface{}:
 		for k, v := range entries {
 			visitor.Visit(entries, k, v)
 		}

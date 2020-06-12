@@ -185,6 +185,7 @@ func TestKanikoPodSpec(t *testing.T) {
 		ClusterDetails: &latest.ClusterDetails{
 			Namespace:           "ns",
 			PullSecretName:      "secret",
+			PullSecretPath:      "kaniko-secret.json",
 			PullSecretMountPath: "/secret",
 			HTTPProxy:           "http://proxy",
 			HTTPSProxy:          "https://proxy",
@@ -273,7 +274,7 @@ func TestKanikoPodSpec(t *testing.T) {
 				ImagePullPolicy: v1.PullIfNotPresent,
 				Env: []v1.EnvVar{{
 					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-					Value: "/secret/kaniko-secret",
+					Value: "/secret/kaniko-secret.json",
 				}, {
 					Name:  "UPSTREAM_CLIENT_TYPE",
 					Value: "UpstreamClient(skaffold-)",

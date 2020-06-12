@@ -62,7 +62,7 @@ Any paths in `Ignore` will be ignored by the skaffold file watcher, even if they
 
 ```yaml
 buildpacks:
-  builder: "gcr.io/buildpacks/builder"
+  builder: "gcr.io/buildpacks/builder:v1"
   dependencies:
     paths:
     - pkg/**
