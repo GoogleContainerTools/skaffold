@@ -32,7 +32,6 @@ var doDebug = runDebug
 // NewCmdDebug describes the CLI command to run a pipeline in debug mode.
 // Unlike `dev`, `debug` defaults `auto-build` and `auto-deploy` to `false`.
 func NewCmdDebug() *cobra.Command {
-
 	return NewCmd("debug").
 		WithDescription("[beta] Run a pipeline in debug mode").
 		WithLongDescription("Similar to `dev`, but configures the pipeline for debugging.").
