@@ -135,12 +135,12 @@ func TestDlvTransformerApply(t *testing.T) {
 		{
 			description:   "basic",
 			containerSpec: v1.Container{},
-			configuration: imageConfiguration{entrypoint: []string{"app", "arg"}, workingDir: "/root"},
+			configuration: imageConfiguration{entrypoint: []string{"app", "arg"}},
 			result: v1.Container{
 				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--continue", "--accept-multiclient", "--listen=:56268", "--api-version=2", "app", "--", "arg"},
 				Ports:   []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
-			debugConfig: ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}, WorkingDir: "/root"},
+			debugConfig: ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
 			image:       "go",
 		},
 		{
