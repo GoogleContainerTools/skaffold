@@ -85,8 +85,9 @@ func (t jdwpTransformer) Apply(container *v1.Container, config imageConfiguratio
 	container.Ports = exposePort(container.Ports, "jdwp", port)
 
 	return ContainerDebugConfiguration{
-		Runtime: "jvm",
-		Ports:   map[string]uint32{"jdwp": uint32(port)},
+		Runtime:    "jvm",
+		Ports:      map[string]uint32{"jdwp": uint32(port)},
+		WorkingDir: config.workingDir,
 	}, "", nil
 }
 

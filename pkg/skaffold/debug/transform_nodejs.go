@@ -126,8 +126,9 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 	})
 
 	return ContainerDebugConfiguration{
-		Runtime: "nodejs",
-		Ports:   map[string]uint32{"devtools": uint32(spec.port)},
+		Runtime:    "nodejs",
+		Ports:      map[string]uint32{"devtools": uint32(spec.port)},
+		WorkingDir: config.workingDir,
 	}, "nodejs", nil
 }
 

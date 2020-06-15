@@ -116,8 +116,9 @@ func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration
 	container.Ports = exposePort(container.Ports, "dlv", int32(spec.port))
 
 	return ContainerDebugConfiguration{
-		Runtime: "go",
-		Ports:   map[string]uint32{"dlv": uint32(spec.port)},
+		Runtime:    "go",
+		Ports:      map[string]uint32{"dlv": uint32(spec.port)},
+		WorkingDir: config.workingDir,
 	}, "go", nil
 }
 

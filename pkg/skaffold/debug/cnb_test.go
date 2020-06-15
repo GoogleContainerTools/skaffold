@@ -49,6 +49,7 @@ func TestUpdateForCNBImage(t *testing.T) {
 		input       imageConfiguration
 		shouldErr   bool
 		expected    v1.Container
+		config      ContainerDebugConfiguration
 	}{
 		{
 			description: "error when missing build.metadata",
@@ -64,61 +65,71 @@ func TestUpdateForCNBImage(t *testing.T) {
 			description: "direct command-lines are rewritten as direct command-lines",
 			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, arguments: []string{"--", "web", "arg1", "arg2"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
-			expected:    v1.Container{Args: []string{"--", "web", "arg1", "arg2"}, WorkingDir: "/workspace"},
+			expected:    v1.Container{Args: []string{"--", "web", "arg1", "arg2"}},
+			config:      ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "defaults to web process when no process type",
 			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
-			expected:    v1.Container{Args: []string{"webProcess", "webArg1", "webArg2"}, WorkingDir: "/workspace"},
+			expected:    v1.Container{Args: []string{"webProcess", "webArg1", "webArg2"}},
+			config:      ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "resolves to default 'web' process",
 			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
-			expected:    v1.Container{Args: []string{"webProcess", "webArg1", "webArg2"}, WorkingDir: "/workspace"},
+			expected:    v1.Container{Args: []string{"webProcess", "webArg1", "webArg2"}},
+			config:      ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "CNB_PROCESS_TYPE=web",
 			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, env: map[string]string{"CNB_PROCESS_TYPE": "web"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
-			expected:    v1.Container{Args: []string{"webProcess", "webArg1", "webArg2"}, WorkingDir: "/workspace"},
+			expected:    v1.Container{Args: []string{"webProcess", "webArg1", "webArg2"}},
+			config:      ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "CNB_PROCESS_TYPE=diag",
 			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, env: map[string]string{"CNB_PROCESS_TYPE": "diag"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
-			expected:    v1.Container{Args: []string{"diagProcess"}, WorkingDir: "/workspace"},
+			expected:    v1.Container{Args: []string{"diagProcess"}},
+			config:      ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "CNB_PROCESS_TYPE=direct",
 			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, env: map[string]string{"CNB_PROCESS_TYPE": "direct"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
-			expected:    v1.Container{Args: []string{"--", "command", "cmdArg1"}, WorkingDir: "/workspace"},
+			expected:    v1.Container{Args: []string{"--", "command", "cmdArg1"}},
+			config:      ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "script command-line",
 			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, arguments: []string{"python main.py"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
-			expected:    v1.Container{Args: []string{"python main.py"}, WorkingDir: "/workspace"},
+			expected:    v1.Container{Args: []string{"python main.py"}},
+			config:      ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "no process and no args",
 			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": mdndJSON}},
 			shouldErr:   false,
-			expected:    v1.Container{WorkingDir: "/workspace"},
+			expected:    v1.Container{},
+			config:      ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "launcher ignores image's working dir",
 			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": mdndJSON}, workingDir: "/workdir"},
 			shouldErr:   false,
-			expected:    v1.Container{WorkingDir: "/workspace"},
+			expected:    v1.Container{},
+			config:      ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 		{
 			description: "CNB_APP_DIR used if set",
-			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": mdndJSON}, env: map[string]string{"CNB_APP_DIR":"/appDir"}, workingDir: "/workdir"},
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": mdndJSON}, env: map[string]string{"CNB_APP_DIR": "/appDir"}, workingDir: "/workdir"},
 			shouldErr:   false,
-			expected:    v1.Container{WorkingDir: "/appDir"},
+			expected:    v1.Container{},
+			config:      ContainerDebugConfiguration{WorkingDir: "/appDir"},
 		},
 	}
 	for _, test := range tests {
@@ -127,17 +138,18 @@ func TestUpdateForCNBImage(t *testing.T) {
 		testutil.Run(t, test.description+" (args changed)", func(t *testutil.T) {
 			argsChangedTransform := func(c *v1.Container, ic imageConfiguration) (ContainerDebugConfiguration, string, error) {
 				c.Args = ic.arguments
-				return ContainerDebugConfiguration{}, "", nil
+				return ContainerDebugConfiguration{WorkingDir: ic.workingDir}, "", nil
 			}
 			copy := v1.Container{}
-			_, _, err := updateForCNBImage(&copy, test.input, argsChangedTransform)
+			c, _, err := updateForCNBImage(&copy, test.input, argsChangedTransform)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, copy)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.config, c)
 		})
 
 		// Test that when the arguments are left unchanged, that the container is unchanged
 		testutil.Run(t, test.description+" (args unchanged)", func(t *testutil.T) {
 			argsUnchangedTransform := func(c *v1.Container, ic imageConfiguration) (ContainerDebugConfiguration, string, error) {
-				return ContainerDebugConfiguration{}, "", nil
+				return ContainerDebugConfiguration{WorkingDir: ic.workingDir}, "", nil
 			}
 
 			copy := v1.Container{}

@@ -93,8 +93,9 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 	container.Ports = exposePort(container.Ports, "dap", spec.port)
 
 	return ContainerDebugConfiguration{
-		Runtime: "python",
-		Ports:   map[string]uint32{"dap": uint32(spec.port)},
+		Runtime:    "python",
+		Ports:      map[string]uint32{"dap": uint32(spec.port)},
+		WorkingDir: config.workingDir,
 	}, "python", nil
 }
 
