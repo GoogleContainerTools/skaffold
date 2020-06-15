@@ -69,10 +69,10 @@ func updateForCNBImage(container *v1.Container, ic imageConfiguration, transform
 		return ContainerDebugConfiguration{}, "", fmt.Errorf("buildpacks metadata has no processes")
 	}
 
-	// The buildpacks launcher is retained as the entrypoint
+	// The CNB launcher is retained as the entrypoint.
 	ic, rewriter := adjustCommandLine(m, ic)
 	
-	// CNB launcher uses /workspace and ignores the image's working directory 
+	// The CNB launcher uses CNB_APP_DIR (defaults to /workspace) and ignores the image's working directory.
 	if appDir := ic.env["CNB_APP_DIR"]; appDir != "" {
 		ic.workingDir = appDir
 	} else {
