@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta4
+apiVersion: skaffold/v2beta5
 kind: Config
 build:
   artifacts:
@@ -6,14 +6,9 @@ build:
       kaniko:
         cache: {}
   cluster:
-    pullSecretName: e2esecret
+    pullSecretName: e2esecret-with-path
+    pullSecretPath:     kaniko-secret.json
     namespace: default
-# If kaniko pod should be run on a tainted node, you can setup tolerations here.
-#    tolerations:
-#      - key: app
-#        operator: "Equal"
-#        value: skaffold
-#        effect: "NoSchedule"
 deploy:
   kubectl:
     manifests:

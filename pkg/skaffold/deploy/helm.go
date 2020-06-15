@@ -36,7 +36,6 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -48,6 +47,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 var (
@@ -443,8 +443,8 @@ func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
 	}
 
 	var b bytes.Buffer
-	// Omits --client & --short, as some versions do not support it (v3.0.0-beta, for instance)
-	if err := h.exec(ctx, &b, false, "version"); err != nil {
+	// Only 3.0.0-beta doesn't support --client
+	if err := h.exec(ctx, &b, false, "version", "--client"); err != nil {
 		return semver.Version{}, fmt.Errorf("helm version command failed %q: %w", b.String(), err)
 	}
 	raw := b.String()

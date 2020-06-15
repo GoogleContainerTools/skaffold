@@ -46,7 +46,7 @@ func newLabelsSetter(labels map[string]string) *labelsSetter {
 	}
 }
 
-func (r *labelsSetter) Visit(o map[interface{}]interface{}, k interface{}, v interface{}) bool {
+func (r *labelsSetter) Visit(o map[string]interface{}, k string, v interface{}) bool {
 	if k != "metadata" {
 		return true
 	}
@@ -55,7 +55,7 @@ func (r *labelsSetter) Visit(o map[interface{}]interface{}, k interface{}, v int
 		return false
 	}
 
-	metadata, ok := v.(map[interface{}]interface{})
+	metadata, ok := v.(map[string]interface{})
 	if !ok {
 		return true
 	}
@@ -66,7 +66,7 @@ func (r *labelsSetter) Visit(o map[interface{}]interface{}, k interface{}, v int
 		return false
 	}
 
-	labels, ok := l.(map[interface{}]interface{})
+	labels, ok := l.(map[string]interface{})
 	if !ok {
 		return true
 	}

@@ -70,7 +70,7 @@ github.com/buildpacks/lifecycle/archive
 github.com/buildpacks/lifecycle/auth
 github.com/buildpacks/lifecycle/cmd
 github.com/buildpacks/lifecycle/launch
-# github.com/buildpacks/pack v0.11.0
+# github.com/buildpacks/pack v0.11.1-0.20200602171405-91a81f8bf020
 ## explicit
 github.com/buildpacks/pack
 github.com/buildpacks/pack/builder
@@ -95,6 +95,7 @@ github.com/buildpacks/pack/internal/stack
 github.com/buildpacks/pack/internal/stringset
 github.com/buildpacks/pack/internal/style
 github.com/buildpacks/pack/logging
+github.com/buildpacks/pack/project
 # github.com/cenkalti/backoff/v4 v4.0.2
 ## explicit
 github.com/cenkalti/backoff/v4
@@ -757,6 +758,9 @@ gopkg.in/warnings.v0
 # gopkg.in/yaml.v2 v2.2.8
 ## explicit
 gopkg.in/yaml.v2
+# gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c => gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+## explicit
+gopkg.in/yaml.v3
 # honnef.co/go/tools v0.0.1-2020.1.3
 honnef.co/go/tools/arg
 honnef.co/go/tools/cmd/staticcheck
@@ -1130,6 +1134,7 @@ sigs.k8s.io/yaml
 # github.com/containerd/containerd => github.com/containerd/containerd v1.3.4
 # github.com/docker/docker => github.com/docker/docker v1.4.2-0.20200221181110-62bd5a33f707
 # github.com/tektoncd/pipeline => github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
+# gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 # k8s.io/api => k8s.io/api v0.17.4
 # k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
 # k8s.io/client-go => k8s.io/client-go v0.17.4

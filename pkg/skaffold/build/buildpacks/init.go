@@ -71,12 +71,32 @@ func (c ArtifactConfig) Path() string {
 
 // validate checks if a file is a valid Buildpack configuration.
 func validate(path string) bool {
+	valid := false
+
 	file := filepath.Base(path)
-	if file == "package.json" || file == "go.mod" || file == "project.toml" {
-		return !hasParent(path, "node_modules") && !hasParent(path, "vendor")
+	switch {
+	// Buildpacks project descriptor.
+	case file == "project.toml":
+		valid = true
+
+	// NodeJS.
+	case file == "package.json":
+		valid = true
+
+	// Go.
+	case file == "go.mod":
+		valid = true
+
+	// Python.
+	// TODO(dgageot): When the Procfile is missing, we might want to inform the user
+	// that this still might be a valid python project.
+	case file == "requirements.txt":
+		if _, err := os.Stat(filepath.Join(filepath.Dir(path), "Procfile")); err == nil {
+			valid = true
+		}
 	}
 
-	return false
+	return valid && !hasParent(path, "node_modules") && !hasParent(path, "vendor")
 }
 
 func hasParent(path, parent string) bool {

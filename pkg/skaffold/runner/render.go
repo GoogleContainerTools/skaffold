@@ -18,11 +18,27 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
 func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []build.Artifact, filepath string) error {
+	//Fetch the digest and append it to the tag with the format of "tag@digest"
+	if r.runCtx.Opts.DigestSource == remoteDigestSource {
+		for i, a := range builds {
+			digest, err := docker.RemoteDigest(a.Tag, r.runCtx.InsecureRegistries)
+			if err != nil {
+				return fmt.Errorf("failed to resolve the digest of %s, render aborted", a.Tag)
+			}
+			builds[i].Tag = build.TagWithDigest(a.Tag, digest)
+		}
+	}
+	if r.runCtx.Opts.DigestSource == noneDigestSource {
+		color.Default.Fprintln(out, "--digest-source set to 'none', tags listed in Kubernetes manifests will be used for render")
+	}
 	return r.deployer.Render(ctx, out, builds, r.labellers, filepath)
 }

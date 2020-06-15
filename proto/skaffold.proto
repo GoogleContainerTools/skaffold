@@ -405,6 +405,8 @@ enum StatusCode {
     STATUSCHECK_NODE_UNREACHABLE = 405;
     // Node not ready error
     STATUSCHECK_NODE_NOT_READY= 406;
+    // Scheduler failure error
+    STATUSCHECK_FAILED_SCHEDULING = 407;
 
     // Unknown Error Codes
 
