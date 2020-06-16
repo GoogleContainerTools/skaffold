@@ -71,7 +71,7 @@ func updateForCNBImage(container *v1.Container, ic imageConfiguration, transform
 
 	// The CNB launcher is retained as the entrypoint.
 	ic, rewriter := adjustCommandLine(m, ic)
-	
+
 	// The CNB launcher uses CNB_APP_DIR (defaults to /workspace) and ignores the image's working directory.
 	if appDir := ic.env["CNB_APP_DIR"]; appDir != "" {
 		ic.workingDir = appDir
