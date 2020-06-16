@@ -303,7 +303,7 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("eventCode: dummy event"), proto.StatusCode_STATUSCHECK_UNKNOWN, nil)},
+				fmt.Errorf("eventCode: dummy event"), proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT, nil)},
 		},
 		{
 			description: "pod condition a warning event followed up normal",
