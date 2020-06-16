@@ -170,7 +170,13 @@ func DeployInProgress() {
 // DeployFailed notifies that non-fatal errors were encountered during a deployment.
 func DeployFailed(err error) {
 	statusCode := sErrors.ErrorCodeFromError(sErrors.Deploy, err)
-	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error(), ErrCode: statusCode})
+	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed,
+		Err:     err.Error(),
+		ErrCode: statusCode,
+		ActionableErr: &proto.ErrDef{
+			ErrCode: statusCode,
+			Message: err.Error(),
+		}})
 }
 
 // DeployEvent notifies that a deployment of non fatal interesting errors during deploy.
@@ -198,6 +204,10 @@ func statusCheckEventFailed(err error) {
 		Status:  Failed,
 		Err:     err.Error(),
 		ErrCode: statusCode,
+		ActionableErr: &proto.ErrDef{
+			ErrCode: statusCode,
+			Message: err.Error(),
+		},
 	})
 }
 
@@ -214,9 +224,9 @@ func StatusCheckEventInProgress(s string) {
 	})
 }
 
-func ResourceStatusCheckEventCompleted(r string, err error) {
+func ResourceStatusCheckEventCompleted(r string, statusCode proto.StatusCode, err error) {
 	if err != nil {
-		resourceStatusCheckEventFailed(r, err)
+		resourceStatusCheckEventFailed(r, statusCode, err)
 		return
 	}
 	resourceStatusCheckEventSucceeded(r)
@@ -230,12 +240,15 @@ func resourceStatusCheckEventSucceeded(r string) {
 	})
 }
 
-func resourceStatusCheckEventFailed(r string, err error) {
+func resourceStatusCheckEventFailed(r string, statusCode proto.StatusCode, err error) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource: r,
 		Status:   Failed,
 		Err:      err.Error(),
-	})
+		ActionableErr: &proto.ErrDef{
+			ErrCode: statusCode,
+			Message: err.Error(),
+		}})
 }
 
 func ResourceStatusCheckEventUpdated(r string, status string) {
@@ -259,7 +272,15 @@ func BuildInProgress(imageName string) {
 // BuildFailed notifies that a build has failed.
 func BuildFailed(imageName string, err error) {
 	statusCode := sErrors.ErrorCodeFromError(sErrors.Build, err)
-	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Failed, Err: err.Error(), ErrCode: statusCode})
+	handler.handleBuildEvent(&proto.BuildEvent{
+		Artifact: imageName,
+		Status:   Failed,
+		Err:      err.Error(),
+		ErrCode:  statusCode,
+		ActionableErr: &proto.ErrDef{
+			ErrCode: statusCode,
+			Message: err.Error(),
+		}})
 }
 
 // BuildComplete notifies that a build has completed.
@@ -302,7 +323,12 @@ func FileSyncInProgress(fileCount int, image string) {
 // FileSyncFailed notifies that a file sync has failed.
 func FileSyncFailed(fileCount int, image string, err error) {
 	statusCode := sErrors.ErrorCodeFromError(sErrors.FileSync, err)
-	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed, Err: err.Error(), ErrCode: statusCode})
+	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed,
+		Err: err.Error(), ErrCode: statusCode,
+	ActionableErr: &proto.ErrDef{
+		ErrCode: statusCode,
+		Message: err.Error(),
+	}})
 }
 
 // FileSyncSucceeded notifies that a file sync has succeeded.

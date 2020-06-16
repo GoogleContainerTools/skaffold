@@ -177,7 +177,7 @@ func printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 		// Don't print the status summary if the user ctrl-C
 		return
 	}
-	event.ResourceStatusCheckEventCompleted(r.String(), err)
+	event.ResourceStatusCheckEventCompleted(r.String(), r.StatusCode, err)
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if err != nil {
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
