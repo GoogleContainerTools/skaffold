@@ -408,6 +408,8 @@ enum StatusCode {
     STATUSCHECK_NODE_NOT_READY= 406;
     // Scheduler failure error
     STATUSCHECK_FAILED_SCHEDULING = 407;
+    // Readiness probe failed
+    STATUSCHECK_UNHEALTHY = 408;
 
     // Unknown Error Codes
 
@@ -419,6 +421,9 @@ enum StatusCode {
     STATUSCHECK_UNKNOWN_UNSCHEDULABLE = 502;
     // Container is waiting due to unknown reason
     STATUSCHECK_CONTAINER_WAITING_UNKNOWN = 503;
+    // Container event reason unknown
+    STATUSCHECK_UNKNOWN_EVENT = 509;
+
     // Deploy failed due to unknown reason
     DEPLOY_UNKNOWN = 504;
     // SYNC failed due to known reason
