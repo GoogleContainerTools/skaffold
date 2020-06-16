@@ -723,7 +723,7 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| NO_ERROR | 0 | Default StatusCode |
+| OK | 0 | A default status code for events that do not have an associated phase. Typically seen with the DevEndEvent event on success. |
 | STATUSCHECK_SUCCESS | 200 | Status Check Success |
 | BUILD_SUCCESS | 201 | Build Success |
 | BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |

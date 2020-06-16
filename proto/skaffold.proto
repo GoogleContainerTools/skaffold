@@ -359,8 +359,9 @@ enum ClusterType {
 // These error codes are prepended by Phase Name e.g.
 // BUILD, DEPLOY, STATUSCHECK, DEVINIT
 enum StatusCode {
-    // Default StatusCode
-    NO_ERROR = 0;
+    // A default status code for events that do not have an associated phase.
+    // Typically seen with the DevEndEvent event on success.
+    OK = 0;
 
     // No Error codes
 
