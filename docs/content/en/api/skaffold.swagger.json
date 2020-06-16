@@ -151,12 +151,12 @@
           },
           {
             "name": "event.buildEvent.errCode",
-            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - NO_ERROR: Default StatusCode\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "UNKNOWN_ERROR",
+              "NO_ERROR",
               "STATUSCHECK_SUCCESS",
               "BUILD_SUCCESS",
               "BUILD_PUSH_ACCESS_DENIED",
@@ -174,6 +174,7 @@
               "STATUSCHECK_NODE_UNREACHABLE",
               "STATUSCHECK_NODE_NOT_READY",
               "STATUSCHECK_FAILED_SCHEDULING",
+              "UNKNOWN_ERROR",
               "STATUSCHECK_UNKNOWN",
               "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
@@ -188,7 +189,7 @@
               "DEVINIT_REGISTER_DEPLOY_DEPS",
               "DEVINIT_REGISTER_CONFIG_DEP"
             ],
-            "default": "UNKNOWN_ERROR"
+            "default": "NO_ERROR"
           },
           {
             "name": "event.deployEvent.status",
@@ -204,12 +205,12 @@
           },
           {
             "name": "event.deployEvent.errCode",
-            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - NO_ERROR: Default StatusCode\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "UNKNOWN_ERROR",
+              "NO_ERROR",
               "STATUSCHECK_SUCCESS",
               "BUILD_SUCCESS",
               "BUILD_PUSH_ACCESS_DENIED",
@@ -227,6 +228,7 @@
               "STATUSCHECK_NODE_UNREACHABLE",
               "STATUSCHECK_NODE_NOT_READY",
               "STATUSCHECK_FAILED_SCHEDULING",
+              "UNKNOWN_ERROR",
               "STATUSCHECK_UNKNOWN",
               "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
@@ -241,7 +243,7 @@
               "DEVINIT_REGISTER_DEPLOY_DEPS",
               "DEVINIT_REGISTER_CONFIG_DEP"
             ],
-            "default": "UNKNOWN_ERROR"
+            "default": "NO_ERROR"
           },
           {
             "name": "event.portEvent.localPort",
@@ -319,12 +321,12 @@
           },
           {
             "name": "event.statusCheckEvent.errCode",
-            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - NO_ERROR: Default StatusCode\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "UNKNOWN_ERROR",
+              "NO_ERROR",
               "STATUSCHECK_SUCCESS",
               "BUILD_SUCCESS",
               "BUILD_PUSH_ACCESS_DENIED",
@@ -342,6 +344,7 @@
               "STATUSCHECK_NODE_UNREACHABLE",
               "STATUSCHECK_NODE_NOT_READY",
               "STATUSCHECK_FAILED_SCHEDULING",
+              "UNKNOWN_ERROR",
               "STATUSCHECK_UNKNOWN",
               "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
@@ -356,7 +359,7 @@
               "DEVINIT_REGISTER_DEPLOY_DEPS",
               "DEVINIT_REGISTER_CONFIG_DEP"
             ],
-            "default": "UNKNOWN_ERROR"
+            "default": "NO_ERROR"
           },
           {
             "name": "event.resourceStatusCheckEvent.resource",
@@ -409,12 +412,12 @@
           },
           {
             "name": "event.fileSyncEvent.errCode",
-            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - NO_ERROR: Default StatusCode\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "UNKNOWN_ERROR",
+              "NO_ERROR",
               "STATUSCHECK_SUCCESS",
               "BUILD_SUCCESS",
               "BUILD_PUSH_ACCESS_DENIED",
@@ -432,6 +435,7 @@
               "STATUSCHECK_NODE_UNREACHABLE",
               "STATUSCHECK_NODE_NOT_READY",
               "STATUSCHECK_FAILED_SCHEDULING",
+              "UNKNOWN_ERROR",
               "STATUSCHECK_UNKNOWN",
               "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
@@ -446,7 +450,7 @@
               "DEVINIT_REGISTER_DEPLOY_DEPS",
               "DEVINIT_REGISTER_CONFIG_DEP"
             ],
-            "default": "UNKNOWN_ERROR"
+            "default": "NO_ERROR"
           },
           {
             "name": "event.debuggingContainerEvent.status",
@@ -505,12 +509,12 @@
           },
           {
             "name": "event.devLoopEvent.err.errCode",
-            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - NO_ERROR: Default StatusCode\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "UNKNOWN_ERROR",
+              "NO_ERROR",
               "STATUSCHECK_SUCCESS",
               "BUILD_SUCCESS",
               "BUILD_PUSH_ACCESS_DENIED",
@@ -528,6 +532,7 @@
               "STATUSCHECK_NODE_UNREACHABLE",
               "STATUSCHECK_NODE_NOT_READY",
               "STATUSCHECK_FAILED_SCHEDULING",
+              "UNKNOWN_ERROR",
               "STATUSCHECK_UNKNOWN",
               "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
@@ -542,7 +547,7 @@
               "DEVINIT_REGISTER_DEPLOY_DEPS",
               "DEVINIT_REGISTER_CONFIG_DEP"
             ],
-            "default": "UNKNOWN_ERROR"
+            "default": "NO_ERROR"
           },
           {
             "name": "event.devLoopEvent.err.message",
@@ -1171,7 +1176,7 @@
     "protoStatusCode": {
       "type": "string",
       "enum": [
-        "UNKNOWN_ERROR",
+        "NO_ERROR",
         "STATUSCHECK_SUCCESS",
         "BUILD_SUCCESS",
         "BUILD_PUSH_ACCESS_DENIED",
@@ -1189,6 +1194,7 @@
         "STATUSCHECK_NODE_UNREACHABLE",
         "STATUSCHECK_NODE_NOT_READY",
         "STATUSCHECK_FAILED_SCHEDULING",
+        "UNKNOWN_ERROR",
         "STATUSCHECK_UNKNOWN",
         "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
         "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
@@ -1203,8 +1209,8 @@
         "DEVINIT_REGISTER_DEPLOY_DEPS",
         "DEVINIT_REGISTER_CONFIG_DEP"
       ],
-      "default": "UNKNOWN_ERROR",
-      "description": "Enum for Status codes\nThese error codes are prepended by Phase Name e.g.\nBUILD, DEPLOY, STATUSCHECK, DEVINIT\n- UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file."
+      "default": "NO_ERROR",
+      "description": "Enum for Status codes\nThese error codes are prepended by Phase Name e.g.\nBUILD, DEPLOY, STATUSCHECK, DEVINIT\n- NO_ERROR: Default StatusCode\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file."
     },
     "protoTriggerState": {
       "type": "object",
