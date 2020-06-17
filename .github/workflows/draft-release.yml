@@ -24,6 +24,13 @@ jobs:
         echo ::set-env name=TAG_NAME::"v${t}"
         echo ::set-env name=RELEASE_NAME::"v${t} Release"
 
+    - name: Create and push Tag
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git tag -a ${{ env.TAG_NAME }} -m "${{ env.RELEASE_NAME }}"
+        git push origin ${{ env.TAG_NAME }}
+
     - name: Install gsutil
       run: |
         curl -Lo $HOME/gsutil.tar.gz https://storage.googleapis.com/pub/gsutil.tar.gz
