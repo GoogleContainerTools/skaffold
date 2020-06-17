@@ -45,6 +45,7 @@ import (
 var (
 	DefaultKustomizePath = "."
 	kustomizeFilePaths   = []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
+	basePath             = "base"
 )
 
 type patchPath struct {
@@ -261,7 +262,7 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 	candidates := append(content.Bases, content.Resources...)
 
 	for _, candidate := range candidates {
-		// If the file  doesn't exist locally, we can assume it's a remote file and
+		// If the file doesn't exist locally, we can assume it's a remote file and
 		// skip it, since we can't monitor remote files. Kustomize itself will
 		// handle invalid/missing files.
 		local, mode := pathExistsLocally(candidate, dir)
@@ -313,8 +314,7 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 // A Kustomization config must be at the root of the directory. Kustomize will
 // error if more than one of these files exists so order doesn't matter.
 func findKustomizationConfig(dir string) (string, error) {
-	candidates := []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
-	for _, candidate := range candidates {
+	for _, candidate := range kustomizeFilePaths {
 		if local, _ := pathExistsLocally(candidate, dir); local {
 			return filepath.Join(dir, candidate), nil
 		}
@@ -366,6 +366,10 @@ func buildCommandArgs(buildArgs []string, kustomizePath string) []string {
 	}
 
 	return args
+}
+
+func IsKustomizationBase(path string) bool {
+	return filepath.Dir(path) == basePath
 }
 
 func IsKustomizationPath(path string) bool {

@@ -116,7 +116,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "kustomize",
 			dir:         "examples/getting-started-kustomize",
-			deployments: []string{"skaffold-kustomize"},
+			deployments: []string{"skaffold-kustomize-dev"},
 		},
 	}
 	for _, test := range tests {

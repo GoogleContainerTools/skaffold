@@ -13,4 +13,3 @@ spec:
     metadata:
       labels:
         app: skaffold-kustomize
-
