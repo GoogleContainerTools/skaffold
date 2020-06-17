@@ -54,7 +54,7 @@ deploy:
   helm:
     releases:
     - name: my-release
-      setValues:
+      artifactOverrides:
         image: gcr.io/my-project/my-image # no tag present!
         # Skaffold continuously tags your image, so no need to put one here.
 ```
