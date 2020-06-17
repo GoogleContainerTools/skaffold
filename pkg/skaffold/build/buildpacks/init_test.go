@@ -73,6 +73,21 @@ func TestValidate(t *testing.T) {
 			expectedValid: true,
 		},
 		{
+			description:   "Java Maven",
+			path:          filepath.Join("path", "to", "pom.xml"),
+			expectedValid: true,
+		},
+		{
+			description:   "Java Gradle",
+			path:          filepath.Join("path", "to", "build.gradle"),
+			expectedValid: true,
+		},
+		{
+			description:   "Java Gradle Kotlin",
+			path:          filepath.Join("path", "to", "build.gradle.kts"),
+			expectedValid: true,
+		},
+		{
 			description:   "Buildpacks",
 			path:          "project.toml",
 			expectedValid: true,

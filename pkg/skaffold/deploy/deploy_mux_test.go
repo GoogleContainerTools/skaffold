@@ -86,7 +86,7 @@ func (m *MockDeployer) Deploy(context.Context, io.Writer, []build.Artifact, []La
 	}
 }
 
-func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []build.Artifact, _ []Labeller, _ string) error {
+func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []build.Artifact, _ []Labeller, _ bool, _ string) error {
 	w.Write([]byte(m.renderResult))
 	return m.renderErr
 }
@@ -284,7 +284,7 @@ func TestDeployerMux_Render(t *testing.T) {
 			})
 
 			buf := &bytes.Buffer{}
-			err := deployerMux.Render(context.Background(), buf, nil, nil, "")
+			err := deployerMux.Render(context.Background(), buf, nil, nil, true, "")
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedRender, buf.String())
 		})
 	}
@@ -300,7 +300,7 @@ func TestDeployerMux_Render(t *testing.T) {
 			NewMockDeployer().WithRenderResult(test.render2).WithRenderErr(test.err2),
 		})
 
-		err := deployerMux.Render(context.Background(), nil, nil, nil, tmpDir.Path("render"))
+		err := deployerMux.Render(context.Background(), nil, nil, nil, true, tmpDir.Path("render"))
 		testutil.CheckError(t, false, err)
 
 		file, _ := os.Open(tmpDir.Path("render"))

@@ -94,8 +94,23 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started"},
 		},
 		{
-			description: "buildpacks",
+			description: "buildpacks Go",
 			dir:         "examples/buildpacks",
+			deployments: []string{"web"},
+		},
+		{
+			description: "buildpacks NodeJS",
+			dir:         "examples/buildpacks-node",
+			deployments: []string{"web"},
+		},
+		{
+			description: "buildpacks Python",
+			dir:         "examples/buildpacks-python",
+			deployments: []string{"web"},
+		},
+		{
+			description: "buildpacks Java",
+			dir:         "examples/buildpacks-java",
 			deployments: []string{"web"},
 		},
 		{

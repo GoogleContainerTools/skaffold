@@ -452,8 +452,7 @@ Examples:
   skaffold build -q | skaffold deploy --build-artifacts -
 
 Options:
-  -a, --build-artifacts=: Filepath containing build output.
-E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build.out
+  -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
@@ -706,12 +705,15 @@ Examples:
   skaffold render --digest-source=remote
 
 Options:
+      --add-skaffold-labels=true: Add Skaffold-specific labels to rendered manifest. If false, custom labels are still applied. Helpful for GitOps model where Skaffold is not the deployer.
+  -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
   -d, --default-repo='': Default repository value (overrides global config)
       --digest-source='local': Set to 'local' to build images locally and use digests from built images; Set to 'remote' to resolve the digest of images by tag from the remote registry; Set to 'none' to use tags directly from the Kubernetes manifests
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
       --loud=false: Show the build logs and output
   -n, --namespace='': Run deployments in the specified namespace
+      --offline=false: Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.
       --output='': file to write rendered manifests to
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
@@ -725,12 +727,15 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ADD_SKAFFOLD_LABELS` (same as `--add-skaffold-labels`)
+* `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_LOUD` (same as `--loud`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_OFFLINE` (same as `--offline`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
