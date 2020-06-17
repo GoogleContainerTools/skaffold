@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
@@ -37,6 +38,8 @@ func TestRun(t *testing.T) {
 		output []byte
 		err    error
 	}
+	before := time.Now()
+	after := before.Add(3 * time.Second)
 	tests := []struct {
 		description string
 		pods        []*v1.Pod
@@ -306,7 +309,7 @@ func TestRun(t *testing.T) {
 				fmt.Errorf("eventCode: dummy event"), proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT, nil)},
 		},
 		{
-			description: "pod condition a warning event followed up normal",
+			description: "pod condition a warning event followed up normal event",
 			pods: []*v1.Pod{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
@@ -326,17 +329,19 @@ func TestRun(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "test"},
 					Reason:     "eventCode", Type: "Warning", Message: "dummy event",
+					EventTime: metav1.MicroTime{Time: before},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "test"},
-					Reason:     "eventCode", Type: "Normal", Message: "success",
+					Reason:     "Created", Type: "Normal", Message: "Container Created",
+					EventTime: metav1.MicroTime{Time: after},
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN, nil)},
+				fmt.Errorf("eventCode: dummy event"), proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT, nil)},
 		},
 		{
-			description: "pod condition a warning event followed up normal adds last warning seen",
+			description: "pod condition a normal event followed by a warning event",
 			pods: []*v1.Pod{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
@@ -354,12 +359,46 @@ func TestRun(t *testing.T) {
 			}},
 			events: []v1.Event{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "test"},
-					Reason:     "eventCode", Type: "Warning", Message: "dummy event",
+					ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "test"},
+					Reason:     "Created", Type: "Normal", Message: "Container Created",
+					EventTime: metav1.MicroTime{Time: before},
 				},
 				{
+					ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "test"},
+					Reason:     "eventCode", Type: "Warning", Message: "dummy event",
+					EventTime: metav1.MicroTime{Time: after},
+				},
+			},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
+				fmt.Errorf("eventCode: dummy event"), proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT, nil)},
+		},
+		{
+			description: "pod condition a warning event followed up by warning adds last warning seen",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					Conditions: []v1.PodCondition{{
+						Type:    v1.PodScheduled,
+						Status:  v1.ConditionUnknown,
+						Message: "could not determine",
+					}},
+				},
+			}},
+			events: []v1.Event{
+				{
 					ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "test"}, Reason: "FailedScheduling", Type: "Warning",
-					Message: "0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate",
+					Message:   "0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate",
+					EventTime: metav1.MicroTime{Time: after},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "test"},
+					Reason:     "eventCode", Type: "Warning", Message: "dummy event",
+					EventTime: metav1.MicroTime{Time: before},
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",

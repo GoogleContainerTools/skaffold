@@ -49,6 +49,7 @@ const (
 
 	failedScheduling = "FailedScheduling"
 	unhealthy        = "Unhealthy"
+	scheduled        = "Scheduled"
 )
 
 var (
@@ -195,12 +196,16 @@ func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
 	}
 	// find the latest failed event.
 	var recentEvent *v1.Event
-	for _, event := range events.Items {
+	for _, e := range events.Items {
+		if e.Type == v1.EventTypeNormal {
+			continue
+		}
+		event := e.DeepCopy()
 		if recentEvent == nil || recentEvent.EventTime.Before(&event.EventTime) {
-			recentEvent = &event
+			recentEvent = event
 		}
 	}
-	if recentEvent == nil || recentEvent.Type == v1.EventTypeNormal {
+	if recentEvent == nil {
 		return
 	}
 	switch recentEvent.Reason {
