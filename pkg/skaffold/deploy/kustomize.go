@@ -210,19 +210,7 @@ func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []
 		return err
 	}
 
-	manifestOut := out
-	if filepath != "" {
-		f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
-		if err != nil {
-			return fmt.Errorf("opening file for writing manifests: %w", err)
-		}
-		defer f.Close()
-		f.WriteString(manifests.String() + "\n")
-		return nil
-	}
-
-	fmt.Fprintln(manifestOut, manifests.String())
-	return nil
+	return outputRenderedManifests(manifests.String(), filepath, out)
 }
 
 // UnmarshalYAML implements JSON unmarshalling by reading an inline yaml fragment.
