@@ -203,11 +203,11 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 	d.status.changed = false
 	for _, p := range pods {
 		originalPod, ok := d.pods[p.String()]
-		if !ok  || originalPod.StatusCode != p.StatusCode {
+		if !ok || originalPod.StatusCode != p.StatusCode {
 			d.status.changed = true
 			switch p.StatusCode {
 			case proto.StatusCode_STATUSCHECK_CONTAINER_CREATING:
-				event.ResourceStatusCheckEventUpdated(p.String(), p.Error().Error())
+				event.ResourceStatusCheckEventUpdated(p.String(), p.StatusCode, p.Error().Error())
 			default:
 				event.ResourceStatusCheckEventCompleted(p.String(), p.StatusCode, p.Error())
 			}

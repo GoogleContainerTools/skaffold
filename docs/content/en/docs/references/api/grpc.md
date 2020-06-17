@@ -485,6 +485,7 @@ will be sent with the new status.
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 | err | [string](#string) |  |  |
+| statusCode | [StatusCode](#proto.StatusCode) |  |  |
 
 
 
@@ -741,6 +742,9 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_NODE_UNREACHABLE | 405 | Node unreachable error |
 | STATUSCHECK_NODE_NOT_READY | 406 | Node not ready error |
 | STATUSCHECK_FAILED_SCHEDULING | 407 | Scheduler failure error |
+| STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING | 408 | Deployment waiting for rollout |
+| STATUSCHECK_KUBECTL_CONNECTION_ERR | 409 | Kubectl connection error |
+| STATUSCHECK_KUBECTL_PID_KILLED | 410 | Kubectl process Killed error |
 | UNKNOWN_ERROR | 500 | Could not determine error and phase |
 | STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
 | STATUSCHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |

@@ -19,6 +19,7 @@ package resource
 import (
 	"context"
 	"errors"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -104,34 +105,40 @@ func TestParseKubectlError(t *testing.T) {
 		description string
 		err         error
 		expected    string
+		expectedSc  proto.StatusCode
 		shouldErr   bool
 	}{
 		{
 			description: "rollout status connection error",
 			err:         errors.New("Unable to connect to the server"),
 			expected:    ErrKubectlConnection.Error(),
+			expectedSc:  proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
 			shouldErr:   true,
 		},
 		{
 			description: "rollout status kubectl command killed",
 			err:         errors.New("signal: killed"),
 			expected:    errKubectlKilled.Error(),
+			expectedSc:  proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED,
 			shouldErr:   true,
 		},
 		{
 			description: "rollout status random error",
 			err:         errors.New("deployment test not found"),
 			expected:    "deployment test not found",
+			expectedSc:  proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 			shouldErr:   true,
 		},
 		{
 			description: "rollout status nil error",
+			expectedSc:  proto.StatusCode_STATUSCHECK_SUCCESS,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := parseKubectlRolloutError(test.err)
+			sc, actual := parseKubectlRolloutError(test.err)
 			t.CheckError(test.shouldErr, actual)
+			t.CheckDeepEqual(test.expectedSc, sc)
 			if test.shouldErr {
 				t.CheckErrorContains(test.expected, actual)
 			}

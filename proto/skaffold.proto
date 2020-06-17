@@ -168,6 +168,7 @@ message ResourceStatusCheckEvent {
     string status = 2;
     string message = 3;
     string err = 4;
+    StatusCode statusCode = 5;
 }
 
 // PortEvent Event describes each port forwarding event.
@@ -408,6 +409,12 @@ enum StatusCode {
     STATUSCHECK_NODE_NOT_READY= 406;
     // Scheduler failure error
     STATUSCHECK_FAILED_SCHEDULING = 407;
+    // Deployment waiting for rollout
+    STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING = 408;
+    // Kubectl connection error
+    STATUSCHECK_KUBECTL_CONNECTION_ERR = 409;
+    // Kubectl process Killed error
+    STATUSCHECK_KUBECTL_PID_KILLED = 410;
 
     // Unknown Error Codes
 
