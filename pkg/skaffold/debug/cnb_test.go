@@ -138,7 +138,7 @@ func TestUpdateForCNBImage(t *testing.T) {
 		testutil.Run(t, test.description+" (args changed)", func(t *testutil.T) {
 			argsChangedTransform := func(c *v1.Container, ic imageConfiguration) (ContainerDebugConfiguration, string, error) {
 				c.Args = ic.arguments
-				return ContainerDebugConfiguration{WorkingDir: ic.workingDir}, "", nil
+				return ContainerDebugConfiguration{}, "", nil
 			}
 			copy := v1.Container{}
 			c, _, err := updateForCNBImage(&copy, test.input, argsChangedTransform)
