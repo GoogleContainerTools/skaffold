@@ -124,7 +124,7 @@ func outputRenderedManifests(renderedManifests string, output string, manifestOu
 }
 
 func dumpToFile(renderedManifests string, filepath string) error {
-	f, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	f, err := os.Create(filepath)
 	if err != nil {
 		return fmt.Errorf("opening file for writing manifests: %w", err)
 	}
