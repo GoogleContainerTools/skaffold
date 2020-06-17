@@ -49,7 +49,6 @@ const (
 
 	failedScheduling = "FailedScheduling"
 	unhealthy        = "Unhealthy"
-	scheduled        = "Scheduled"
 )
 
 var (
