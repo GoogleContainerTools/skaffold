@@ -50,13 +50,13 @@ type inspectSpec struct {
 
 // isLaunchingNode determines if the arguments seems to be invoking node
 func isLaunchingNode(args []string) bool {
-	return args[0] == "node" || strings.HasSuffix(args[0], "/node") ||
-		args[0] == "nodemon" || strings.HasSuffix(args[0], "/nodemon")
+	return len(args) > 0 && (args[0] == "node" || strings.HasSuffix(args[0], "/node") ||
+		args[0] == "nodemon" || strings.HasSuffix(args[0], "/nodemon"))
 }
 
 // isLaunchingNpm determines if the arguments seems to be invoking npm
 func isLaunchingNpm(args []string) bool {
-	return args[0] == "npm" || strings.HasSuffix(args[0], "/npm")
+	return len(args) > 0 && (args[0] == "npm" || strings.HasSuffix(args[0], "/npm"))
 }
 
 func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
@@ -70,10 +70,8 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 	}
 	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return isLaunchingNode(config.entrypoint) || isLaunchingNpm(config.entrypoint)
-	} else if len(config.arguments) > 0 {
-		return isLaunchingNode(config.arguments) || isLaunchingNpm(config.arguments)
 	}
-	return false
+	return isLaunchingNode(config.arguments) || isLaunchingNpm(config.arguments)
 }
 
 // Apply configures a container definition for NodeJS Chrome V8 Inspector.
@@ -96,16 +94,16 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 	if spec == nil {
 		spec = &inspectSpec{host: "0.0.0.0", port: portAlloc(defaultDevtoolsPort)}
 		switch {
-		case len(config.entrypoint) > 0 && isLaunchingNode(config.entrypoint):
+		case isLaunchingNode(config.entrypoint):
 			container.Command = rewriteNodeCommandLine(config.entrypoint, *spec)
 
-		case len(config.entrypoint) > 0 && isLaunchingNpm(config.entrypoint):
+		case isLaunchingNpm(config.entrypoint):
 			container.Command = rewriteNpmCommandLine(config.entrypoint, *spec)
 
-		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && len(config.arguments) > 0 && isLaunchingNode(config.arguments):
+		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingNode(config.arguments):
 			container.Args = rewriteNodeCommandLine(config.arguments, *spec)
 
-		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && len(config.arguments) > 0 && isLaunchingNpm(config.arguments):
+		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingNpm(config.arguments):
 			container.Args = rewriteNpmCommandLine(config.arguments, *spec)
 
 		default:

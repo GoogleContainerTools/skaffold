@@ -64,6 +64,7 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string
 		source      imageConfiguration
+		launcher    string
 		result      bool
 	}{
 		{
@@ -152,8 +153,9 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 			result:      false,
 		},
 		{
-			description: "`node` docker-entrypoint.sh",
+			description: "entrypoint launcher", // `node` image docker-entrypoint.sh"
 			source:      imageConfiguration{entrypoint: []string{"docker-entrypoint.sh"}, arguments: []string{"npm", "run", "dev"}},
+			launcher:    "docker-entrypoint.sh",
 			result:      true,
 		},
 		{
@@ -164,6 +166,7 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&entrypointLaunchers, []string{test.launcher})
 			result := nodeTransformer{}.IsApplicable(test.source)
 
 			t.CheckDeepEqual(test.result, result)
