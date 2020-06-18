@@ -19,11 +19,11 @@ package resource
 import (
 	"context"
 	"errors"
-	"github.com/GoogleContainerTools/skaffold/proto"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
