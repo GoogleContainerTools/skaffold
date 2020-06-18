@@ -171,6 +171,14 @@ func (d *Deployment) cleanupStatus(msg string) string {
 	return clean
 }
 
+// parses out connection error
+// $kubectl logs somePod -f
+// Unable to connect to the server: dial tcp x.x.x.x:443: connect: network is unreachable
+
+// Parses out errors when kubectl was killed on client side
+// $kubectl logs testPod  -f
+// 2020/06/18 17:28:31 service is running
+// Killed: 9
 func parseKubectlRolloutError(err error) (proto.StatusCode, error) {
 	if err == nil {
 		return proto.StatusCode_STATUSCHECK_SUCCESS, err
@@ -202,8 +210,8 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 	newPods := map[string]validator.Resource{}
 	d.status.changed = false
 	for _, p := range pods {
-		originalPod, ok := d.pods[p.String()]
-		if !ok || originalPod.StatusCode != p.StatusCode {
+		originalPod, found := d.pods[p.String()]
+		if !found || originalPod.StatusCode != p.StatusCode {
 			d.status.changed = true
 			switch p.StatusCode {
 			case proto.StatusCode_STATUSCHECK_CONTAINER_CREATING:
