@@ -37,7 +37,7 @@ type imageSaver struct {
 	Images []build.Artifact
 }
 
-func (is *imageSaver) Visit(o map[interface{}]interface{}, k interface{}, v interface{}) bool {
+func (is *imageSaver) Visit(o map[string]interface{}, k string, v interface{}) bool {
 	if k != "image" {
 		return true
 	}
@@ -91,7 +91,7 @@ func newImageReplacer(builds []build.Artifact) *imageReplacer {
 	}
 }
 
-func (r *imageReplacer) Visit(o map[interface{}]interface{}, k interface{}, v interface{}) bool {
+func (r *imageReplacer) Visit(o map[string]interface{}, k string, v interface{}) bool {
 	if k != "image" {
 		return true
 	}

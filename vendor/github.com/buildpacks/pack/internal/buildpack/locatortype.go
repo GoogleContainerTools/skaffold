@@ -20,9 +20,11 @@ const (
 	URILocator
 	IDLocator
 	PackageLocator
+	RegistryLocator
 )
 
 const fromBuilderPrefix = "from=builder"
+const fromRegistryPrefix = "urn:cnb:registry"
 
 func (l LocatorType) String() string {
 	return []string{
@@ -47,6 +49,10 @@ func GetLocatorType(locator string, buildpacksFromBuilder []dist.BuildpackInfo) 
 			return InvalidLocator, fmt.Errorf("%s is not a valid identifier", style.Symbol(locator))
 		}
 		return IDLocator, nil
+	}
+
+	if strings.HasPrefix(locator, fromRegistryPrefix+":") {
+		return RegistryLocator, nil
 	}
 
 	if paths.IsURI(locator) {

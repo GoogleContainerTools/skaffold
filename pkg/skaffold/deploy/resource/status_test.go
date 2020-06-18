@@ -53,7 +53,7 @@ func TestString(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			status := newStatus(test.details, test.err)
+			status := newStatus(test.details, 0, test.err)
 			t.CheckDeepEqual(test.expected, status.String())
 		})
 	}

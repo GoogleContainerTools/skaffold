@@ -67,11 +67,13 @@ message BuildState {
     // - `"Complete"`: build succeeded <br>
     // - `"Failed"`: build failed
     map<string, string> artifacts = 1;
+    bool autoTrigger = 2;
 }
 
 // `DeployState` describes the status of the current deploy
 message DeployState {
     string status = 1;
+    bool autoTrigger = 2;
 }
 
 // `StatusCheckState` describes the state of status check of current deployed resources.
@@ -90,6 +92,7 @@ message StatusCheckState {
 // `FileSyncState` contains the status of the current file sync
 message FileSyncState {
     string status = 1;
+    bool autoTrigger = 2;
 }
 
 // `Event` describes an event in the Skaffold process.
@@ -213,7 +216,18 @@ message UserIntentRequest {
     Intent intent = 1;
 }
 
-// Intent represents user intents for a given phase to be unblocked, once.
+message TriggerRequest {
+  TriggerState state = 1;
+}
+
+// TriggerState represents trigger state for a given phase.
+message TriggerState {
+  oneof val {
+    bool enabled = 1; // enable or disable a trigger state
+  }
+}
+
+// Intent represents user intents for a given phase.
 message Intent {
     bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once
     bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once
@@ -251,6 +265,30 @@ service SkaffoldService {
             post: "/v1/execute"
             body: "intent"
     };
+    }
+
+    // Allows for enabling or disabling automatic build trigger
+    rpc AutoBuild (TriggerRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            put: "/v1/build/auto_execute"
+            body: "state"
+        };
+    }
+
+    // Allows for enabling or disabling automatic sync trigger
+    rpc AutoSync (TriggerRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            put: "/v1/sync/auto_execute"
+            body: "state"
+        };
+    }
+
+    // Allows for enabling or disabling automatic deploy trigger
+    rpc AutoDeploy (TriggerRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            put: "/v1/deploy/auto_execute"
+            body: "state"
+        };
     }
 
     // EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.
@@ -321,8 +359,9 @@ enum ClusterType {
 // These error codes are prepended by Phase Name e.g.
 // BUILD, DEPLOY, STATUSCHECK, DEVINIT
 enum StatusCode {
-    // Could not determine error and phase
-    UNKNOWN_ERROR = 0;
+    // A default status code for events that do not have an associated phase.
+    // Typically seen with the DevEndEvent event on success.
+    OK = 0;
 
     // No Error codes
 
@@ -367,15 +406,24 @@ enum StatusCode {
     STATUSCHECK_NODE_UNREACHABLE = 405;
     // Node not ready error
     STATUSCHECK_NODE_NOT_READY= 406;
+    // Scheduler failure error
+    STATUSCHECK_FAILED_SCHEDULING = 407;
+    // Readiness probe failed
+    STATUSCHECK_UNHEALTHY = 408;
 
     // Unknown Error Codes
 
+    // Could not determine error and phase
+    UNKNOWN_ERROR = 500;
     // Status Check error unknown
     STATUSCHECK_UNKNOWN = 501;
     // Container is unschedulable due to unknown reasons
     STATUSCHECK_UNKNOWN_UNSCHEDULABLE = 502;
     // Container is waiting due to unknown reason
     STATUSCHECK_CONTAINER_WAITING_UNKNOWN = 503;
+    // Container event reason unknown
+    STATUSCHECK_UNKNOWN_EVENT = 509;
+
     // Deploy failed due to unknown reason
     DEPLOY_UNKNOWN = 504;
     // SYNC failed due to known reason

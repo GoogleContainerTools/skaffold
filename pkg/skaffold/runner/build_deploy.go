@@ -27,22 +27,25 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // BuildAndTest builds and tests a list of artifacts.
 func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	// Use tags directly from the Kubernetes manifests.
+	if r.runCtx.Opts.DigestSource == noneDigestSource {
+		return []build.Artifact{}, nil
+	}
+
 	tags, err := r.imageTags(ctx, out, artifacts)
 	if err != nil {
 		return nil, err
 	}
 
-	// In dry-run mode, we don't build anything, just return the tag for each artifact.
-	if r.runCtx.Opts.DryRun {
+	// In dry-run mode or with --digest-source  set to 'remote', we don't build anything, just return the tag for each artifact.
+	if r.runCtx.Opts.DryRun || (r.runCtx.Opts.DigestSource == remoteDigestSource) {
 		var bRes []build.Artifact
-
 		for _, artifact := range artifacts {
 			bRes = append(bRes, build.Artifact{
 				ImageName: artifact.ImageName,
@@ -105,12 +108,8 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		return err
 	}
 
-	if r.runCtx.Opts.PortForward.Enabled {
-		if err := forwarderManager.Start(ctx); err != nil {
-			logrus.Warnln("Error starting port forwarding:", err)
-		} else {
-			color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
-		}
+	if err := forwarderManager.Start(ctx); err != nil {
+		logrus.Warnln("Error starting port forwarding:", err)
 	}
 
 	// Start printing the logs after deploy is finished
@@ -119,6 +118,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	}
 
 	if r.runCtx.Opts.Tail || r.runCtx.Opts.PortForward.Enabled {
+		color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
 		<-ctx.Done()
 	}
 
@@ -137,19 +137,9 @@ type tagErr struct {
 	err error
 }
 
-// ApplyDefaultRepo spplies the default repo to a given image tag.
+// ApplyDefaultRepo applies the default repo to a given image tag.
 func (r *SkaffoldRunner) ApplyDefaultRepo(tag string) (string, error) {
-	defaultRepo, err := config.GetDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo.Value())
-	if err != nil {
-		return "", fmt.Errorf("getting default repo: %w", err)
-	}
-
-	newTag, err := docker.SubstituteDefaultRepoIntoImage(defaultRepo, tag)
-	if err != nil {
-		return "", fmt.Errorf("applying default repo to %q: %w", tag, err)
-	}
-
-	return newTag, nil
+	return deploy.ApplyDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo.Value(), tag)
 }
 
 // imageTags generates tags for a list of artifacts

@@ -66,6 +66,7 @@ import (
 )
 
 // ContainerDebugConfiguration captures debugging information for a specific container.
+// This structure is serialized out and included in the pod metadata.
 type ContainerDebugConfiguration struct {
 	// Artifact is the corresponding artifact's image name used in the skaffold.yaml
 	Artifact string `json:"artifact,omitempty"`
@@ -222,7 +223,9 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		// `err != nil` means that the container did not or could not be transformed
 		if configuration, requiredImage, err := transformContainer(container, imageConfig, portAlloc); err == nil {
 			configuration.Artifact = imageConfig.artifact
-			configuration.WorkingDir = imageConfig.workingDir
+			if configuration.WorkingDir == "" {
+				configuration.WorkingDir = imageConfig.workingDir
+			}
 			configurations[container.Name] = configuration
 			if len(requiredImage) > 0 {
 				logrus.Infof("%q requires debugging support image %q", container.Name, requiredImage)

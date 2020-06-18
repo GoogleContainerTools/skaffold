@@ -238,6 +238,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err := logger.Start(ctx); err != nil {
 		return fmt.Errorf("starting logger: %w", err)
 	}
+
+	color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
+
 	event.DevLoopComplete(0)
 	return r.listener.WatchForChanges(ctx, out, func() error {
 		return r.doDev(ctx, out, logger, forwarderManager)

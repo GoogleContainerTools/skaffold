@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -56,16 +57,16 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	return build.TagWithDigest(tag, digest), nil
 }
 
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
 	switch {
-	case artifact.KanikoArtifact != nil:
-		return b.buildWithKaniko(ctx, out, artifact.Workspace, artifact.KanikoArtifact, tag)
+	case a.KanikoArtifact != nil:
+		return b.buildWithKaniko(ctx, out, a.Workspace, a.KanikoArtifact, tag)
 
-	case artifact.CustomArtifact != nil:
-		return custom.NewArtifactBuilder(nil, b.insecureRegistries, true, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
+	case a.CustomArtifact != nil:
+		return custom.NewArtifactBuilder(nil, b.insecureRegistries, true, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
 
 	default:
-		return "", fmt.Errorf("unsupported artifact type: %+v", artifact.ArtifactType)
+		return "", fmt.Errorf("unexpected type %q for in-cluster artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
 	}
 }
 

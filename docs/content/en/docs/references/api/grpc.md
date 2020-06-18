@@ -40,6 +40,9 @@ Describes all the methods for the Skaffold API
 | EventLog | [LogEntry](#proto.LogEntry) stream | [LogEntry](#proto.LogEntry) stream | DEPRECATED. Events should be used instead. TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168) |
 | Events | [.google.protobuf.Empty](#google.protobuf.Empty) | [LogEntry](#proto.LogEntry) stream | Returns all the events of the current Skaffold execution from the start |
 | Execute | [UserIntentRequest](#proto.UserIntentRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled. |
+| AutoBuild | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic build trigger |
+| AutoSync | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic sync trigger |
+| AutoDeploy | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic deploy trigger |
 | Handle | [Event](#proto.Event) | [.google.protobuf.Empty](#google.protobuf.Empty) | EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example. |
 
  <!-- end services -->
@@ -126,6 +129,7 @@ If the build fails, an error will be attached to the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | artifacts | [BuildState.ArtifactsEntry](#proto.BuildState.ArtifactsEntry) | repeated | A map of `artifact name -> build-state`. Artifact name is defined in the `skaffold.yaml`. The `build-state` can be: <br> - `"Not started"`: not yet started <br> - `"In progress"`: build started <br> - `"Complete"`: build succeeded <br> - `"Failed"`: build failed |
+| autoTrigger | [bool](#bool) |  |  |
 
 
 
@@ -245,6 +249,7 @@ anytime a deployment starts or completes, successfully or not.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
+| autoTrigger | [bool](#bool) |  |  |
 
 
 
@@ -336,6 +341,7 @@ FileSyncEvent describes the sync status.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
+| autoTrigger | [bool](#bool) |  |  |
 
 
 
@@ -345,7 +351,7 @@ FileSyncEvent describes the sync status.
 
 <a name="proto.Intent"></a>
 #### Intent
-Intent represents user intents for a given phase to be unblocked, once.
+Intent represents user intents for a given phase.
 
 
 | Field | Type | Label | Description |
@@ -603,6 +609,36 @@ will be sent with the new status.
 
 
 
+<a name="proto.TriggerRequest"></a>
+#### TriggerRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| state | [TriggerState](#proto.TriggerState) |  |  |
+
+
+
+
+
+
+
+<a name="proto.TriggerState"></a>
+#### TriggerState
+TriggerState represents trigger state for a given phase.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  | enable or disable a trigger state |
+
+
+
+
+
+
+
 <a name="proto.UserIntentRequest"></a>
 #### UserIntentRequest
 
@@ -687,7 +723,7 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| UNKNOWN_ERROR | 0 | Could not determine error and phase |
+| OK | 0 | A default status code for events that do not have an associated phase. Typically seen with the DevEndEvent event on success. |
 | STATUSCHECK_SUCCESS | 200 | Status Check Success |
 | BUILD_SUCCESS | 201 | Build Success |
 | BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
@@ -704,9 +740,13 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_NODE_UNSCHEDULABLE | 404 | Node unschedulable error |
 | STATUSCHECK_NODE_UNREACHABLE | 405 | Node unreachable error |
 | STATUSCHECK_NODE_NOT_READY | 406 | Node not ready error |
+| STATUSCHECK_FAILED_SCHEDULING | 407 | Scheduler failure error |
+| STATUSCHECK_UNHEALTHY | 408 | Readiness probe failed |
+| UNKNOWN_ERROR | 500 | Could not determine error and phase |
 | STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
 | STATUSCHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |
 | STATUSCHECK_CONTAINER_WAITING_UNKNOWN | 503 | Container is waiting due to unknown reason |
+| STATUSCHECK_UNKNOWN_EVENT | 509 | Container event reason unknown |
 | DEPLOY_UNKNOWN | 504 | Deploy failed due to unknown reason |
 | SYNC_UNKNOWN | 505 | SYNC failed due to known reason |
 | BUILD_UNKNOWN | 506 | Build failed due to unknown reason |

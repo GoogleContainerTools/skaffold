@@ -33,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/survey"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
@@ -47,6 +48,7 @@ var (
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	updateMsg := make(chan string)
+	surveyPrompt := make(chan bool)
 	var shutdownAPIServer func() error
 
 	rootCmd := &cobra.Command{
@@ -84,14 +86,15 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 			switch {
 			case quietFlag:
-				logrus.Debugf("Update check is disabled because of quiet mode")
+				logrus.Debugf("Update check and survey prompt disabled in quiet mode")
 			case analyze:
-				logrus.Debugf("Update check is disabled because of init --analyze")
+				logrus.Debugf("Update check and survey prompt when running `init --analyze`")
 			default:
 				go func() {
 					if err := updateCheck(updateMsg, opts.GlobalConfig); err != nil {
 						logrus.Infof("update check failed: %s", err)
 					}
+					surveyPrompt <- config.ShouldDisplayPrompt(opts.GlobalConfig)
 				}()
 			}
 			return nil
@@ -100,6 +103,16 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			select {
 			case msg := <-updateMsg:
 				fmt.Fprintf(cmd.OutOrStdout(), "%s\n", msg)
+			default:
+			}
+			// check if survey prompt needs to be displayed
+			select {
+			case shouldDisplay := <-surveyPrompt:
+				if shouldDisplay {
+					if err := survey.New(opts.GlobalConfig).DisplaySurveyPrompt(cmd.OutOrStdout()); err != nil {
+						fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
+					}
+				}
 			default:
 			}
 

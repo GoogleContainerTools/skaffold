@@ -27,8 +27,6 @@ import (
 	"strings"
 
 	"github.com/segmentio/textio"
-	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -41,6 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 var (
@@ -90,36 +89,24 @@ type KustomizeDeployer struct {
 	*latest.KustomizeDeploy
 
 	kubectl            deploy.CLI
-	useKubectl         bool
 	insecureRegistries map[string]bool
 	BuildArgs          []string
 	globalConfig       string
+	addSkaffoldLabels  bool
 }
 
 func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
-	kubectl := deploy.CLI{
-		CLI:         kubectl.NewFromRunContext(runCtx),
-		Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
-		ForceDeploy: runCtx.Opts.Force,
-	}
-
-	// if user's kubectl version is >1.14, we can use the built-in kustomize command
-	var useKubectl bool
-	gt, err := kubectl.CompareVersionTo(context.Background(), 1, 14)
-	if err != nil {
-		logrus.Warnf("could not retrieve kubectl version: relying on standalone kustomize binary")
-	}
-	if gt == 1 {
-		useKubectl = true
-	}
-
 	return &KustomizeDeployer{
-		KustomizeDeploy:    runCtx.Cfg.Deploy.KustomizeDeploy,
-		kubectl:            kubectl,
-		useKubectl:         useKubectl,
+		KustomizeDeploy: runCtx.Cfg.Deploy.KustomizeDeploy,
+		kubectl: deploy.CLI{
+			CLI:         kubectl.NewFromRunContext(runCtx),
+			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
+			ForceDeploy: runCtx.Opts.Force,
+		},
 		insecureRegistries: runCtx.InsecureRegistries,
 		BuildArgs:          runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
 		globalConfig:       runCtx.Opts.GlobalConfig,
+		addSkaffoldLabels:  runCtx.Opts.AddSkaffoldLabels,
 	}
 }
 
@@ -192,7 +179,7 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 		}
 	}
 
-	manifests, err = manifests.SetLabels(merge(k, labellers...))
+	manifests, err = manifests.SetLabels(merge(k.addSkaffoldLabels, k, labellers...))
 	if err != nil {
 		return nil, fmt.Errorf("setting labels in manifests: %w", err)
 	}
@@ -227,25 +214,12 @@ func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 	return deps.toList(), nil
 }
 
-func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, filepath string) error {
+func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, offline bool, filepath string) error {
 	manifests, err := k.renderManifests(ctx, out, builds, labellers)
 	if err != nil {
 		return err
 	}
-
-	manifestOut := out
-	if filepath != "" {
-		f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
-		if err != nil {
-			return fmt.Errorf("opening file for writing manifests: %w", err)
-		}
-		defer f.Close()
-		f.WriteString(manifests.String() + "\n")
-		return nil
-	}
-
-	fmt.Fprintln(manifestOut, manifests.String())
-	return nil
+	return outputRenderedManifests(manifests.String(), filepath, out)
 }
 
 // UnmarshalYAML implements JSON unmarshalling by reading an inline yaml fragment.
@@ -362,15 +336,8 @@ func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {
 func (k *KustomizeDeployer) readManifests(ctx context.Context) (deploy.ManifestList, error) {
 	var manifests deploy.ManifestList
 	for _, kustomizePath := range k.KustomizePaths {
-		var out []byte
-		var err error
-		if k.useKubectl {
-			out, err = k.kubectl.Kustomize(ctx, buildCommandArgs(k.BuildArgs, kustomizePath))
-		} else {
-			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, buildCommandArgs(k.BuildArgs, kustomizePath)...)...)
-			out, err = util.RunCmdOut(cmd)
-		}
-
+		cmd := exec.CommandContext(ctx, "kustomize", buildCommandArgs(k.BuildArgs, kustomizePath)...)
+		out, err := util.RunCmdOut(cmd)
 		if err != nil {
 			return nil, fmt.Errorf("kustomize build: %w", err)
 		}
@@ -385,6 +352,7 @@ func (k *KustomizeDeployer) readManifests(ctx context.Context) (deploy.ManifestL
 
 func buildCommandArgs(buildArgs []string, kustomizePath string) []string {
 	var args []string
+	args = append(args, "build")
 
 	if len(buildArgs) > 0 {
 		for _, v := range buildArgs {

@@ -19,6 +19,7 @@ package cluster
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/sirupsen/logrus"
@@ -45,6 +46,7 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
+			Annotations:  b.ClusterDetails.Annotations,
 			GenerateName: "kaniko-",
 			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 			Namespace:    b.ClusterDetails.Namespace,
@@ -63,7 +65,7 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 				Image:           artifact.Image,
 				ImagePullPolicy: v1.PullIfNotPresent,
 				Args:            args,
-				Env:             env(artifact, b.ClusterDetails.HTTPProxy, b.ClusterDetails.HTTPSProxy),
+				Env:             b.env(artifact, b.ClusterDetails.HTTPProxy, b.ClusterDetails.HTTPSProxy),
 				VolumeMounts:    []v1.VolumeMount{vm},
 				Resources:       resourceRequirements(b.ClusterDetails.Resources),
 			}},
@@ -105,6 +107,11 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 		pod.Spec.SecurityContext.RunAsUser = b.ClusterDetails.RunAsUser
 	}
 
+	// Add Tolerations for kaniko pod setup
+	if len(b.ClusterDetails.Tolerations) > 0 {
+		pod.Spec.Tolerations = b.ClusterDetails.Tolerations
+	}
+
 	// Add used-defines Volumes
 	pod.Spec.Volumes = append(pod.Spec.Volumes, b.Volumes...)
 
@@ -117,10 +124,14 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 	return pod, nil
 }
 
-func env(artifact *latest.KanikoArtifact, httpProxy, httpsProxy string) []v1.EnvVar {
+func (b *Builder) env(artifact *latest.KanikoArtifact, httpProxy, httpsProxy string) []v1.EnvVar {
+	pullSecretPath := strings.Join(
+		[]string{b.ClusterDetails.PullSecretMountPath, b.ClusterDetails.PullSecretPath},
+		"/", // linux filepath separator.
+	)
 	env := []v1.EnvVar{{
 		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-		Value: "/secret/kaniko-secret",
+		Value: pullSecretPath,
 	}, {
 		// This should be same https://github.com/GoogleContainerTools/kaniko/blob/77cfb912f3483c204bfd09e1ada44fd200b15a78/pkg/executor/push.go#L49
 		Name:  "UPSTREAM_CLIENT_TYPE",

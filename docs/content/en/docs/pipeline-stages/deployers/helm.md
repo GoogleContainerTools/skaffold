@@ -54,7 +54,7 @@ deploy:
   helm:
     releases:
     - name: my-release
-      values:
+      artifactOverrides:
         image: gcr.io/my-project/my-image # no tag present!
         # Skaffold continuously tags your image, so no need to put one here.
 ```
@@ -100,5 +100,3 @@ The `helm` type offers the following options:
 Each `release` includes the following fields:
 
 {{< schema root="HelmRelease" >}}
-
-

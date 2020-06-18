@@ -31,7 +31,9 @@ import (
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -122,11 +124,26 @@ func outputRenderedManifests(renderedManifests string, output string, manifestOu
 }
 
 func dumpToFile(renderedManifests string, filepath string) error {
-	f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
+	f, err := os.Create(filepath)
 	if err != nil {
 		return fmt.Errorf("opening file for writing manifests: %w", err)
 	}
 	defer f.Close()
 	_, err = f.WriteString(renderedManifests + "\n")
 	return err
+}
+
+// ApplyDefaultRepo applies the default repo to a given image tag.
+func ApplyDefaultRepo(globalConfig string, defaultRepo *string, tag string) (string, error) {
+	repo, err := config.GetDefaultRepo(globalConfig, defaultRepo)
+	if err != nil {
+		return "", fmt.Errorf("getting default repo: %w", err)
+	}
+
+	newTag, err := docker.SubstituteDefaultRepoIntoImage(repo, tag)
+	if err != nil {
+		return "", fmt.Errorf("applying default repo to %q: %w", tag, err)
+	}
+
+	return newTag, nil
 }

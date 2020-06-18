@@ -55,9 +55,9 @@ func TestContainerManager(t *testing.T) {
 		state := &pod.Status.ContainerStatuses[0].State
 
 		// should never be active until running
-		m.checkPod(context.Background(), &pod)
+		m.checkPod(&pod)
 		t.CheckDeepEqual(0, len(m.active))
-		m.checkPod(context.Background(), &pod)
+		m.checkPod(&pod)
 		t.CheckDeepEqual(0, len(m.active))
 		t.CheckDeepEqual(0, startCount)
 		t.CheckDeepEqual(0, terminatedCount)
@@ -66,7 +66,7 @@ func TestContainerManager(t *testing.T) {
 		state.Waiting = nil
 		state.Running = &v1.ContainerStateRunning{}
 
-		m.checkPod(context.Background(), &pod)
+		m.checkPod(&pod)
 		t.CheckDeepEqual(1, len(m.active))
 		_, found := m.active["ns/pod/test"]
 		t.CheckDeepEqual(true, found)
@@ -77,7 +77,7 @@ func TestContainerManager(t *testing.T) {
 		state.Running = nil
 		state.Terminated = &v1.ContainerStateTerminated{}
 
-		m.checkPod(context.Background(), &pod)
+		m.checkPod(&pod)
 		t.CheckDeepEqual(0, len(m.active))
 		t.CheckDeepEqual(1, startCount)
 		t.CheckDeepEqual(1, terminatedCount)
