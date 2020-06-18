@@ -46,6 +46,9 @@ const (
 	errImagePullBackOff = "ErrImagePullBackOff"
 	containerCreating   = "ContainerCreating"
 	podKind             = "pod"
+
+	failedScheduling = "FailedScheduling"
+	unhealthy        = "Unhealthy"
 )
 
 var (
@@ -53,12 +56,6 @@ var (
 	taintsRe       = regexp.MustCompile(taintsExp)
 	// for testing
 	runCli = executeCLI
-
-	unknownFailures = map[proto.StatusCode]struct{}{
-		proto.StatusCode_STATUSCHECK_UNKNOWN:                   {},
-		proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE:     {},
-		proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN: {},
-	}
 )
 
 // PodValidator implements the Validator interface for Pods
@@ -188,34 +185,40 @@ func getUntoleratedTaints(reason string, message string) (proto.StatusCode, erro
 }
 
 func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
-	// if failures are known, return
-	if _, ok := unknownFailures[ps.statusCode]; !ok {
-		return
-	}
-
 	// Get pod events.
-	events, err := e.Search(runtime.NewScheme(), &pod)
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypes(v1.SchemeGroupVersion, &pod)
+	events, err := e.Search(scheme, &pod)
 	if err != nil {
 		logrus.Debugf("could not fetch events for resource %s due to %v", pod.Name, err)
 		return
 	}
 	// find the latest failed event.
 	var recentEvent *v1.Event
-	for _, event := range events.Items {
+	for _, e := range events.Items {
+		if e.Type == v1.EventTypeNormal {
+			continue
+		}
+		event := e.DeepCopy()
 		if recentEvent == nil || recentEvent.EventTime.Before(&event.EventTime) {
-			recentEvent = &event
+			recentEvent = event
 		}
 	}
-	if recentEvent == nil || recentEvent.Type == v1.EventTypeNormal {
+	if recentEvent == nil {
 		return
 	}
-	if recentEvent.Reason == "FailedScheduling" {
+	switch recentEvent.Reason {
+	case failedScheduling:
 		ps.statusCode = proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING
 		ps.err = fmt.Errorf(recentEvent.Message)
-		return
+	case unhealthy:
+		ps.statusCode = proto.StatusCode_STATUSCHECK_UNHEALTHY
+		ps.err = fmt.Errorf(recentEvent.Message)
+	default:
+		// TODO: Add unique error codes for reasons
+		ps.statusCode = proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT
+		ps.err = fmt.Errorf("%s: %s", recentEvent.Reason, recentEvent.Message)
 	}
-	// TODO: Add unique error codes for reasons
-	ps.err = fmt.Errorf("%s: %s", recentEvent.Reason, recentEvent.Message)
 }
 
 type podStatus struct {

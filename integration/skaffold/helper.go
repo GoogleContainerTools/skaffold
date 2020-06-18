@@ -107,6 +107,11 @@ func Credits(args ...string) *RunBuilder {
 	return &RunBuilder{command: "credits", args: args}
 }
 
+// Render runs `skaffold render` with the given arguments.
+func Render(args ...string) *RunBuilder {
+	return withDefaults("render", args)
+}
+
 func GeneratePipeline(args ...string) *RunBuilder {
 	return withDefaults("generate-pipeline", args)
 }

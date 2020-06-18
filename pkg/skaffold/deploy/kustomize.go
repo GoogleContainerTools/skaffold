@@ -90,6 +90,7 @@ type KustomizeDeployer struct {
 	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
 	BuildArgs          []string
+	addSkaffoldLabels  bool
 }
 
 func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
@@ -102,6 +103,7 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 		},
 		insecureRegistries: runCtx.InsecureRegistries,
 		BuildArgs:          runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
+		addSkaffoldLabels:  runCtx.Opts.AddSkaffoldLabels,
 	}
 }
 
@@ -169,7 +171,7 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 		}
 	}
 
-	manifests, err = manifests.SetLabels(merge(k, labellers...))
+	manifests, err = manifests.SetLabels(merge(k.addSkaffoldLabels, k, labellers...))
 	if err != nil {
 		return nil, fmt.Errorf("setting labels in manifests: %w", err)
 	}
@@ -204,12 +206,11 @@ func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 	return deps.toList(), nil
 }
 
-func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, filepath string) error {
+func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, offline bool, filepath string) error {
 	manifests, err := k.renderManifests(ctx, out, builds, labellers)
 	if err != nil {
 		return err
 	}
-
 	return outputRenderedManifests(manifests.String(), filepath, out)
 }
 

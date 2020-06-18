@@ -80,6 +80,10 @@ func updateForCNBImage(container *v1.Container, ic imageConfiguration, transform
 	}
 
 	c, img, err := transformer(container, ic)
+	// must explicitly modify the working dir as the imageConfig is lost after we return
+	if c.WorkingDir == "" {
+		c.WorkingDir = ic.workingDir
+	}
 
 	// Only rewrite the container.Args if set: some transforms only alter env vars,
 	// and the image's arguments are not changed.

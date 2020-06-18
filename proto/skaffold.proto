@@ -388,6 +388,8 @@ enum StatusCode {
     STATUSCHECK_RUN_CONTAINER_ERR = 302;
     // Container is already terminated
     STATUSCHECK_CONTAINER_TERMINATED = 303;
+    // Deployment waiting for rollout
+    STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING = 304;
     // Container restarting error
     STATUSCHECK_CONTAINER_RESTARTING = 356;
 
@@ -409,12 +411,13 @@ enum StatusCode {
     STATUSCHECK_NODE_NOT_READY= 406;
     // Scheduler failure error
     STATUSCHECK_FAILED_SCHEDULING = 407;
-    // Deployment waiting for rollout
-    STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING = 408;
+    // Readiness probe failed
+    STATUSCHECK_UNHEALTHY = 408;
     // Kubectl connection error
     STATUSCHECK_KUBECTL_CONNECTION_ERR = 409;
-    // Kubectl process Killed error
+    // Kubectl process killed error
     STATUSCHECK_KUBECTL_PID_KILLED = 410;
+
 
     // Unknown Error Codes
 
@@ -426,6 +429,9 @@ enum StatusCode {
     STATUSCHECK_UNKNOWN_UNSCHEDULABLE = 502;
     // Container is waiting due to unknown reason
     STATUSCHECK_CONTAINER_WAITING_UNKNOWN = 503;
+    // Container event reason unknown
+    STATUSCHECK_UNKNOWN_EVENT = 509;
+
     // Deploy failed due to unknown reason
     DEPLOY_UNKNOWN = 504;
     // SYNC failed due to known reason

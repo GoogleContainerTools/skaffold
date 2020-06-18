@@ -34,7 +34,7 @@ import (
 
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
 	if r.runCtx.Opts.RenderOnly {
-		return r.Render(ctx, out, artifacts, "")
+		return r.Render(ctx, out, artifacts, false, "")
 	}
 
 	color.Default.Fprintln(out, "Tags used in deployment:")
