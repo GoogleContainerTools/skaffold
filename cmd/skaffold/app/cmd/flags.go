@@ -287,6 +287,14 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose"},
 	},
+	{
+		Name:          "add-skaffold-labels",
+		Usage:         "Add Skaffold-specific labels to rendered manifest. If false, custom labels are still applied. Helpful for GitOps model where Skaffold is not the deployer.",
+		Value:         &opts.AddSkaffoldLabels,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"render"},
+	},
 }
 
 func (fl *Flag) flag() *pflag.Flag {

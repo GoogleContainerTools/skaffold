@@ -73,24 +73,27 @@ func (c ArtifactConfig) Path() string {
 func validate(path string) bool {
 	valid := false
 
-	file := filepath.Base(path)
-	switch {
+	switch filepath.Base(path) {
 	// Buildpacks project descriptor.
-	case file == "project.toml":
+	case "project.toml":
 		valid = true
 
 	// NodeJS.
-	case file == "package.json":
+	case "package.json":
 		valid = true
 
 	// Go.
-	case file == "go.mod":
+	case "go.mod":
+		valid = true
+
+	// Java.
+	case "pom.xml", "build.gradle", "build.gradle.kts":
 		valid = true
 
 	// Python.
 	// TODO(dgageot): When the Procfile is missing, we might want to inform the user
 	// that this still might be a valid python project.
-	case file == "requirements.txt":
+	case "requirements.txt":
 		if _, err := os.Stat(filepath.Join(filepath.Dir(path), "Procfile")); err == nil {
 			valid = true
 		}

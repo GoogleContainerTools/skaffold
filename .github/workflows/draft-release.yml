@@ -1,0 +1,64 @@
+name: create draft release
+
+on:
+  pull_request:
+    types: [closed]
+jobs:
+  build:
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'draft-release')
+    name: Create Tag and Draft Release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Calculate Tag and release names
+      run: |
+        t=$(echo ${{ github.event.pull_request.title }} | sed -ne 's/.*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')
+        if [ -z "$t" ]; then
+        echo Malformed title for PR; failed to extract semVer tag
+        return 1
+        fi
+        echo ::set-env name=TAG_NAME::"v${t}"
+        echo ::set-env name=RELEASE_NAME::"v${t} Release"
+
+    - name: Create and push Tag
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git tag -a ${{ env.TAG_NAME }} -m "${{ env.RELEASE_NAME }}"
+        git push origin ${{ env.TAG_NAME }}
+
+    - name: Install gsutil
+      run: |
+        curl -Lo $HOME/gsutil.tar.gz https://storage.googleapis.com/pub/gsutil.tar.gz
+        tar xfz $HOME/gsutil.tar.gz -C $HOME
+        echo ::add-path::$HOME/gsutil
+
+    - name: Download release artifacts
+      run: |
+        #Wait 60m for all artifacts to be available
+        retries=20
+        found=0
+        while [ $found -lt 10 -a $retries -gt 0 ]
+        do
+        sleep 3m
+        found=$(gsutil du  gs://skaffold/releases/${{ env.TAG_NAME }}/ | wc -l)
+        retries=$((retries-1))
+        done
+        gsutil -m cp -r gs://skaffold/releases/${{ env.TAG_NAME }}/ $HOME
+
+    - name: Create Release
+      shell: bash
+      run: |
+        curl -fsSL https://github.com/github/hub/raw/master/script/get | bash -s 2.14.1
+        body=$(git log -p --follow -1 CHANGELOG.md | grep '^\+' | cut -c 2- | tail -n +2)
+        assets=()
+        for asset in $HOME/${{ env.TAG_NAME }}/*; do
+        assets+=("-a" "$asset")
+        done
+        bin/hub release create "${assets[@]}" -m "${{ env.RELEASE_NAME }}" -m "$body" --draft ${{ env.TAG_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
