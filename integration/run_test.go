@@ -108,11 +108,12 @@ func TestRun(t *testing.T) {
 			dir:         "examples/buildpacks-python",
 			deployments: []string{"web"},
 		},
-		{
-			description: "buildpacks Java",
-			dir:         "examples/buildpacks-java",
-			deployments: []string{"web"},
-		},
+		// TODO(dgageot): Java buildpacks are broken on Java8. See https://github.com/GoogleCloudPlatform/buildpacks/issues/54.
+		// {
+		// 	description: "buildpacks Java",
+		// 	dir:         "examples/buildpacks-java",
+		// 	deployments: []string{"web"},
+		// },
 		{
 			description: "kustomize",
 			dir:         "examples/getting-started-kustomize",
