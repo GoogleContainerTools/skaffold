@@ -221,7 +221,7 @@ func TestResourceStatusCheckEventUpdated(t *testing.T) {
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	ResourceStatusCheckEventUpdated("ns:pod/foo", "img pull error")
+	ResourceStatusCheckEventUpdated("ns:pod/foo", 509, "img pull error")
 	wait(t, func() bool { return handler.getState().StatusCheckState.Resources["ns:pod/foo"] == InProgress })
 }
 
@@ -245,7 +245,7 @@ func TestResourceStatusCheckEventFailed(t *testing.T) {
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	resourceStatusCheckEventFailed("ns:pod/foo", errors.New("one or more deployments failed"))
+	resourceStatusCheckEventFailed("ns:pod/foo", 309, errors.New("one or more deployments failed"))
 	wait(t, func() bool { return handler.getState().StatusCheckState.Resources["ns:pod/foo"] == Failed })
 }
 

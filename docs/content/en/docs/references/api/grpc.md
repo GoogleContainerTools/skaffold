@@ -485,6 +485,7 @@ will be sent with the new status.
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 | err | [string](#string) |  |  |
+| statusCode | [StatusCode](#proto.StatusCode) |  |  |
 
 
 
@@ -732,6 +733,7 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
 | STATUSCHECK_CONTAINER_TERMINATED | 303 | Container is already terminated |
+| STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING | 304 | Deployment waiting for rollout |
 | STATUSCHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
 | STATUSCHECK_NODE_MEMORY_PRESSURE | 400 | Node memory pressure error |
 | STATUSCHECK_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
@@ -742,6 +744,8 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_NODE_NOT_READY | 406 | Node not ready error |
 | STATUSCHECK_FAILED_SCHEDULING | 407 | Scheduler failure error |
 | STATUSCHECK_UNHEALTHY | 408 | Readiness probe failed |
+| STATUSCHECK_KUBECTL_CONNECTION_ERR | 409 | Kubectl connection error |
+| STATUSCHECK_KUBECTL_PID_KILLED | 410 | Kubectl process killed error |
 | UNKNOWN_ERROR | 500 | Could not determine error and phase |
 | STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
 | STATUSCHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |

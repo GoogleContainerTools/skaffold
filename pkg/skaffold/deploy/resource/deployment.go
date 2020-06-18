@@ -53,6 +53,7 @@ type Deployment struct {
 	namespace    string
 	rType        string
 	status       Status
+	StatusCode   proto.StatusCode
 	done         bool
 	deadline     time.Duration
 	pods         map[string]validator.Resource
@@ -106,7 +107,7 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 
 	details := d.cleanupStatus(string(b))
 
-	err = parseKubectlRolloutError(err)
+	d.StatusCode, err = parseKubectlRolloutError(err)
 	if err == errKubectlKilled {
 		err = fmt.Errorf("received Ctrl-C or deployments could not stabilize within %v: %w", d.deadline, err)
 	}
@@ -170,17 +171,25 @@ func (d *Deployment) cleanupStatus(msg string) string {
 	return clean
 }
 
-func parseKubectlRolloutError(err error) error {
+// parses out connection error
+// $kubectl logs somePod -f
+// Unable to connect to the server: dial tcp x.x.x.x:443: connect: network is unreachable
+
+// Parses out errors when kubectl was killed on client side
+// $kubectl logs testPod  -f
+// 2020/06/18 17:28:31 service is running
+// Killed: 9
+func parseKubectlRolloutError(err error) (proto.StatusCode, error) {
 	if err == nil {
-		return err
+		return proto.StatusCode_STATUSCHECK_SUCCESS, err
 	}
 	if strings.Contains(err.Error(), connectionErrMsg) {
-		return ErrKubectlConnection
+		return proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR, ErrKubectlConnection
 	}
 	if strings.Contains(err.Error(), killedErrMsg) {
-		return errKubectlKilled
+		return proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED, errKubectlKilled
 	}
-	return err
+	return proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING, err
 }
 
 func isErrAndNotRetryAble(err error) bool {
@@ -201,13 +210,15 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 	newPods := map[string]validator.Resource{}
 	d.status.changed = false
 	for _, p := range pods {
-		originalPod, ok := d.pods[p.String()]
-		if !ok {
+		originalPod, found := d.pods[p.String()]
+		if !found || originalPod.StatusCode != p.StatusCode {
 			d.status.changed = true
-			event.ResourceStatusCheckEventCompleted(p.String(), p.Error())
-		} else if originalPod.StatusCode != p.StatusCode {
-			d.status.changed = true
-			event.ResourceStatusCheckEventCompleted(p.String(), p.Error())
+			switch p.StatusCode {
+			case proto.StatusCode_STATUSCHECK_CONTAINER_CREATING:
+				event.ResourceStatusCheckEventUpdated(p.String(), p.StatusCode, p.Error().Error())
+			default:
+				event.ResourceStatusCheckEventCompleted(p.String(), p.StatusCode, p.Error())
+			}
 		}
 		newPods[p.String()] = p
 	}

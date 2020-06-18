@@ -214,9 +214,9 @@ func StatusCheckEventInProgress(s string) {
 	})
 }
 
-func ResourceStatusCheckEventCompleted(r string, err error) {
+func ResourceStatusCheckEventCompleted(r string, statusCode proto.StatusCode, err error) {
 	if err != nil {
-		resourceStatusCheckEventFailed(r, err)
+		resourceStatusCheckEventFailed(r, statusCode, err)
 		return
 	}
 	resourceStatusCheckEventSucceeded(r)
@@ -224,25 +224,28 @@ func ResourceStatusCheckEventCompleted(r string, err error) {
 
 func resourceStatusCheckEventSucceeded(r string) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
-		Resource: r,
-		Status:   Succeeded,
-		Message:  Succeeded,
+		Resource:   r,
+		Status:     Succeeded,
+		Message:    Succeeded,
+		StatusCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 	})
 }
 
-func resourceStatusCheckEventFailed(r string, err error) {
+func resourceStatusCheckEventFailed(r string, statusCode proto.StatusCode, err error) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
-		Resource: r,
-		Status:   Failed,
-		Err:      err.Error(),
+		Resource:   r,
+		Status:     Failed,
+		Err:        err.Error(),
+		StatusCode: statusCode,
 	})
 }
 
-func ResourceStatusCheckEventUpdated(r string, status string) {
+func ResourceStatusCheckEventUpdated(r string, statusCode proto.StatusCode, status string) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
-		Resource: r,
-		Status:   InProgress,
-		Message:  status,
+		Resource:   r,
+		Status:     InProgress,
+		Message:    status,
+		StatusCode: statusCode,
 	})
 }
 

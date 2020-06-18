@@ -168,6 +168,7 @@ message ResourceStatusCheckEvent {
     string status = 2;
     string message = 3;
     string err = 4;
+    StatusCode statusCode = 5;
 }
 
 // PortEvent Event describes each port forwarding event.
@@ -387,6 +388,8 @@ enum StatusCode {
     STATUSCHECK_RUN_CONTAINER_ERR = 302;
     // Container is already terminated
     STATUSCHECK_CONTAINER_TERMINATED = 303;
+    // Deployment waiting for rollout
+    STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING = 304;
     // Container restarting error
     STATUSCHECK_CONTAINER_RESTARTING = 356;
 
@@ -410,6 +413,11 @@ enum StatusCode {
     STATUSCHECK_FAILED_SCHEDULING = 407;
     // Readiness probe failed
     STATUSCHECK_UNHEALTHY = 408;
+    // Kubectl connection error
+    STATUSCHECK_KUBECTL_CONNECTION_ERR = 409;
+    // Kubectl process killed error
+    STATUSCHECK_KUBECTL_PID_KILLED = 410;
+
 
     // Unknown Error Codes
 
