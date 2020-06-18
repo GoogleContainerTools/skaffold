@@ -154,6 +154,9 @@ func (d *Deployment) ReportSinceLastUpdated() string {
 	for _, p := range d.pods {
 		if p.Error() != nil {
 			result.WriteString(fmt.Sprintf("%s %s %s: %s\n", tab, tabHeader, p, p.Error()))
+			for _, l := range p.Logs() {
+				result.WriteString(fmt.Sprintf("%s\n", l))
+			}
 		}
 	}
 	return result.String()

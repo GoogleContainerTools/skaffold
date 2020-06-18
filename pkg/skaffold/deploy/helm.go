@@ -65,10 +65,11 @@ var (
 type HelmDeployer struct {
 	*latest.HelmDeploy
 
-	kubeContext string
-	kubeConfig  string
-	namespace   string
-	forceDeploy bool
+	kubeContext       string
+	kubeConfig        string
+	namespace         string
+	forceDeploy       bool
+	addSkaffoldLabels bool
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
@@ -80,11 +81,12 @@ type HelmDeployer struct {
 // NewHelmDeployer returns a configured HelmDeployer
 func NewHelmDeployer(runCtx *runcontext.RunContext) *HelmDeployer {
 	return &HelmDeployer{
-		HelmDeploy:  runCtx.Cfg.Deploy.HelmDeploy,
-		kubeContext: runCtx.KubeContext,
-		kubeConfig:  runCtx.Opts.KubeConfig,
-		namespace:   runCtx.Opts.Namespace,
-		forceDeploy: runCtx.Opts.Force,
+		HelmDeploy:        runCtx.Cfg.Deploy.HelmDeploy,
+		kubeContext:       runCtx.KubeContext,
+		kubeConfig:        runCtx.Opts.KubeConfig,
+		namespace:         runCtx.Opts.Namespace,
+		forceDeploy:       runCtx.Opts.Force,
+		addSkaffoldLabels: runCtx.Opts.AddSkaffoldLabels,
 	}
 }
 
@@ -141,7 +143,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 
 	event.DeployComplete()
 
-	labels := merge(h, labellers...)
+	labels := merge(h.addSkaffoldLabels, h, labellers...)
 	labelDeployResults(labels, dRes)
 
 	// Collect namespaces in a string
@@ -247,7 +249,7 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 // Render generates the Kubernetes manifests and writes them out
-func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, filepath string) error {
+func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, offline bool, filepath string) error {
 	hv, err := h.binVer(ctx)
 	if err != nil {
 		return fmt.Errorf(versionErrorString, err)

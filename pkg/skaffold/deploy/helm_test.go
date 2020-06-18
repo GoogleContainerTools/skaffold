@@ -1123,7 +1123,7 @@ func TestHelmRender(t *testing.T) {
 			deployer := NewHelmDeployer(test.runContext)
 
 			t.Override(&util.DefaultExecCommand, test.commands)
-			err := deployer.Render(context.Background(), ioutil.Discard, test.builds, nil, file)
+			err := deployer.Render(context.Background(), ioutil.Discard, test.builds, nil, true, file)
 			t.CheckError(test.shouldErr, err)
 
 			if file != "" {

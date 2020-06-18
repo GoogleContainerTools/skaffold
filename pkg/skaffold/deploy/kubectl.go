@@ -19,8 +19,10 @@ package deploy
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -49,6 +51,7 @@ type KubectlDeployer struct {
 	defaultRepo        *string
 	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
+	addSkaffoldLabels  bool
 	skipRender         bool
 }
 
@@ -66,6 +69,7 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 			ForceDeploy: runCtx.Opts.Force,
 		},
 		insecureRegistries: runCtx.InsecureRegistries,
+		addSkaffoldLabels:  runCtx.Opts.AddSkaffoldLabels,
 		skipRender:         runCtx.Opts.SkipRender,
 	}
 }
@@ -80,12 +84,13 @@ func (k *KubectlDeployer) Labels() map[string]string {
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
 	event.DeployInProgress()
+
 	var manifests deploy.ManifestList
 	var err error
 	if k.skipRender {
 		manifests, err = k.readManifests(ctx)
 	} else {
-		manifests, err = k.renderManifests(ctx, out, builds, labellers)
+		manifests, err := k.renderManifests(ctx, out, builds, labellers, false)
 	}
 	if err != nil {
 		event.DeployFailed(err)
@@ -158,7 +163,7 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 }
 
 // readManifests reads the manifests to deploy/delete.
-func (k *KubectlDeployer) readManifests(ctx context.Context) (deploy.ManifestList, error) {
+func (k *KubectlDeployer) readManifests(ctx context.Context, offline bool) (deploy.ManifestList, error) {
 	// Get file manifests
 	manifests, err := k.Dependencies()
 	if err != nil {
@@ -168,15 +173,37 @@ func (k *KubectlDeployer) readManifests(ctx context.Context) (deploy.ManifestLis
 	defer os.RemoveAll(manifestTmpDir)
 
 	// Append URL manifests
+	hasURLManifest := false
 	for _, manifest := range k.KubectlDeploy.Manifests {
 		if util.IsURL(manifest) {
 			manifests = append(manifests, manifest)
+			hasURLManifest = true
 		}
 	}
+
 	if len(manifests) == 0 {
 		return deploy.ManifestList{}, nil
 	}
-	return k.kubectl.ReadManifests(ctx, manifests)
+
+	if !offline {
+		return k.kubectl.ReadManifests(ctx, manifests)
+	}
+
+	// In case no URLs are provided, we can stay offline - no need to run "kubectl create" which
+	// would try to connect to a cluster (https://github.com/kubernetes/kubernetes/issues/51475)
+	if hasURLManifest {
+		return nil, errors.New("cannot use offline mode if URL manifests are configured")
+	}
+
+	var manifestList deploy.ManifestList
+	for _, manifestFilePath := range manifests {
+		manifestFileContent, err := ioutil.ReadFile(manifestFilePath)
+		if err != nil {
+			return nil, fmt.Errorf("reading manifest file %v: %w", manifestFilePath, err)
+		}
+		manifestList.Append(manifestFileContent)
+	}
+	return manifestList, nil
 }
 
 // readRemoteManifests will try to read manifests from the given kubernetes
@@ -199,8 +226,8 @@ func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) (
 	return manifest.Bytes(), nil
 }
 
-func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, filepath string) error {
-	manifests, err := k.renderManifests(ctx, out, builds, labellers)
+func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, offline bool, filepath string) error {
+	manifests, err := k.renderManifests(ctx, out, builds, labellers, offline)
 	if err != nil {
 		return err
 	}
@@ -208,13 +235,13 @@ func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []bu
 	return outputRenderedManifests(manifests.String(), filepath, out)
 }
 
-func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) (deploy.ManifestList, error) {
+func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, offline bool) (deploy.ManifestList, error) {
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
 		color.Default.Fprintln(out, err)
 	}
 
-	manifests, err := k.readManifests(ctx)
+	manifests, err := k.readManifests(ctx, offline)
 	if err != nil {
 		return nil, fmt.Errorf("reading manifests: %w", err)
 	}
@@ -264,7 +291,7 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 		}
 	}
 
-	manifests, err = manifests.SetLabels(merge(k, labellers...))
+	manifests, err = manifests.SetLabels(merge(k.addSkaffoldLabels, k, labellers...))
 	if err != nil {
 		return nil, fmt.Errorf("setting labels in manifests: %w", err)
 	}
@@ -274,7 +301,7 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 
 // Cleanup deletes what was deployed by calling Deploy.
 func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	manifests, err := k.readManifests(ctx)
+	manifests, err := k.readManifests(ctx, false)
 	if err != nil {
 		return fmt.Errorf("reading manifests: %w", err)
 	}

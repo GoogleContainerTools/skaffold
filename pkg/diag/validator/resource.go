@@ -29,6 +29,7 @@ type Resource struct {
 	namespace  string
 	kind       string
 	name       string
+	logs       []string
 	status     Status
 	err        error
 	StatusCode proto.StatusCode
@@ -39,6 +40,7 @@ func (r Resource) Name() string      { return r.name }
 func (r Resource) Namespace() string { return r.namespace }
 func (r Resource) Status() Status    { return r.status }
 func (r Resource) Error() error      { return r.err }
+func (r Resource) Logs() []string    { return r.logs }
 func (r Resource) String() string {
 	if r.namespace == "default" {
 		return fmt.Sprintf("%s/%s", r.kind, r.name)
@@ -47,8 +49,8 @@ func (r Resource) String() string {
 }
 
 // NewResource creates new Resource of kind
-func NewResource(namespace, kind, name string, status Status, err error, statusCode proto.StatusCode) Resource {
-	return Resource{namespace: namespace, kind: kind, name: name, status: status, err: err, StatusCode: statusCode}
+func NewResource(namespace, kind, name string, status Status, err error, statusCode proto.StatusCode, logs []string) Resource {
+	return Resource{namespace: namespace, kind: kind, name: name, status: status, err: err, StatusCode: statusCode, logs: logs}
 }
 
 // objectWithMetadata is any k8s object that has kind and object metadata.
@@ -58,6 +60,6 @@ type objectWithMetadata interface {
 }
 
 // NewResourceFromObject creates new Resource with fields populated from object metadata.
-func NewResourceFromObject(object objectWithMetadata, status Status, err error, statusCode proto.StatusCode) Resource {
-	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, err, statusCode)
+func NewResourceFromObject(object objectWithMetadata, status Status, err error, statusCode proto.StatusCode, logs []string) Resource {
+	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, err, statusCode, logs)
 }

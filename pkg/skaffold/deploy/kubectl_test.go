@@ -409,7 +409,8 @@ spec:
 			},
 			KubeContext: testKubeContext,
 			Opts: config.SkaffoldOptions{
-				Namespace: testNamespace,
+				Namespace:         testNamespace,
+				AddSkaffoldLabels: true,
 			},
 		})
 
@@ -631,10 +632,13 @@ spec:
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts:        config.SkaffoldOptions{DefaultRepo: defaultRepo},
+				Opts: config.SkaffoldOptions{
+					AddSkaffoldLabels: true,
+					DefaultRepo:       defaultRepo,
+				},
 			})
 			var b bytes.Buffer
-			err := deployer.Render(context.Background(), &b, test.builds, test.labels, "")
+			err := deployer.Render(context.Background(), &b, test.builds, test.labels, true, "")
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})

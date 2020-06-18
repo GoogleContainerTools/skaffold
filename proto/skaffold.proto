@@ -359,8 +359,9 @@ enum ClusterType {
 // These error codes are prepended by Phase Name e.g.
 // BUILD, DEPLOY, STATUSCHECK, DEVINIT
 enum StatusCode {
-    // Could not determine error and phase
-    UNKNOWN_ERROR = 0;
+    // A default status code for events that do not have an associated phase.
+    // Typically seen with the DevEndEvent event on success.
+    OK = 0;
 
     // No Error codes
 
@@ -405,9 +406,13 @@ enum StatusCode {
     STATUSCHECK_NODE_UNREACHABLE = 405;
     // Node not ready error
     STATUSCHECK_NODE_NOT_READY= 406;
+    // Scheduler failure error
+    STATUSCHECK_FAILED_SCHEDULING = 407;
 
     // Unknown Error Codes
 
+    // Could not determine error and phase
+    UNKNOWN_ERROR = 500;
     // Status Check error unknown
     STATUSCHECK_UNKNOWN = 501;
     // Container is unschedulable due to unknown reasons

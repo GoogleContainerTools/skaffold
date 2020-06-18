@@ -32,8 +32,8 @@ import (
 )
 
 var (
-	buildOutputFile flags.BuildOutputFileFlag
-	preBuiltImages  flags.Images
+	deployFromBuildOutputFile flags.BuildOutputFileFlag
+	preBuiltImages            flags.Images
 )
 
 // NewCmdDeploy describes the CLI command to deploy artifacts.
@@ -47,8 +47,7 @@ func NewCmdDeploy() *cobra.Command {
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
-			f.VarP(&buildOutputFile, "build-artifacts", "a", `Filepath containing build output.
-E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build.out`)
+			f.VarP(&deployFromBuildOutputFile, "build-artifacts", "a", "File containing build result from a previous 'skaffold build --file-output'")
 			f.BoolVar(&opts.SkipRender, "skip-render", false, "Don't render the manifests, just deploy them")
 		}).
 		NoArgs(doDeploy)
@@ -56,9 +55,10 @@ E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build
 
 func doDeploy(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
+
 		var deployed []build.Artifact
 		if !opts.SkipRender {
-			deployed, err := getArtifactsToDeploy(out, buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
+			deployed, err := getArtifactsToDeploy(out, deployFromBuildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
 			if err != nil {
 				return err
 			}
@@ -68,7 +68,6 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 				if err != nil {
 					return err
 				}
-
 				deployed[i].Tag = tag
 			}
 		}

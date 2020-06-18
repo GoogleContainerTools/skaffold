@@ -17,11 +17,11 @@ limitations under the License.
 package gcb
 
 import (
-	"errors"
 	"fmt"
 
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -52,27 +52,21 @@ func (b *Builder) buildSpec(artifact *latest.Artifact, tag, bucket, object strin
 	return buildSpec, nil
 }
 
-func (b *Builder) buildSpecForArtifact(artifact *latest.Artifact, tag string) (cloudbuild.Build, error) {
+func (b *Builder) buildSpecForArtifact(a *latest.Artifact, tag string) (cloudbuild.Build, error) {
 	switch {
-	case artifact.KanikoArtifact != nil:
-		return b.kanikoBuildSpec(artifact.KanikoArtifact, tag)
+	case a.KanikoArtifact != nil:
+		return b.kanikoBuildSpec(a.KanikoArtifact, tag)
 
-	case artifact.DockerArtifact != nil:
-		return b.dockerBuildSpec(artifact.DockerArtifact, tag)
+	case a.DockerArtifact != nil:
+		return b.dockerBuildSpec(a.DockerArtifact, tag)
 
-	case artifact.JibArtifact != nil:
-		return b.jibBuildSpec(artifact, tag)
+	case a.JibArtifact != nil:
+		return b.jibBuildSpec(a, tag)
 
-	case artifact.BazelArtifact != nil:
-		return cloudbuild.Build{}, errors.New("skaffold can't build a bazel artifact with Google Cloud Build")
-
-	case artifact.CustomArtifact != nil:
-		return cloudbuild.Build{}, errors.New("skaffold can't build a custom artifact with Google Cloud Build")
-
-	case artifact.BuildpackArtifact != nil:
-		return b.buildpackBuildSpec(artifact.BuildpackArtifact, tag)
+	case a.BuildpackArtifact != nil:
+		return b.buildpackBuildSpec(a.BuildpackArtifact, tag)
 
 	default:
-		return cloudbuild.Build{}, fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
+		return cloudbuild.Build{}, fmt.Errorf("unexpected type %q for gcb artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
 	}
 }

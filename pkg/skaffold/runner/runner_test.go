@@ -163,7 +163,7 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Art
 	return deploy.NewDeploySuccessResult(t.namespaces)
 }
 
-func (t *TestBench) Render(context.Context, io.Writer, []build.Artifact, []deploy.Labeller, string) error {
+func (t *TestBench) Render(context.Context, io.Writer, []build.Artifact, []deploy.Labeller, bool, string) error {
 	return nil
 }
 
