@@ -28,11 +28,14 @@ import (
 )
 
 func TestUpdateForCNBImage(t *testing.T) {
-	// metadata with default process type
+	// metadata with default process type `web`
 	md := cnb.BuildMetadata{Processes: []launch.Process{
 		{Type: "web", Command: "webProcess", Args: []string{"webArg1", "webArg2"}},
 		{Type: "diag", Command: "diagProcess"},
 		{Type: "direct", Command: "command", Args: []string{"cmdArg1"}, Direct: true},
+		// Google Buildpacks turns Procfiles into `/bin/bash -c cmdline`
+		{Type: "sh-c", Command: "/bin/sh", Args: []string{"-c", "command arg1 arg2"}, Direct: true},
+		{Type: "bash-c", Command: "/bin/bash", Args: []string{"-c", "command arg1 arg2"}, Direct: true},
 	}}
 	mdMarshalled, _ := json.Marshal(&md)
 	mdJSON := string(mdMarshalled)
@@ -130,6 +133,20 @@ func TestUpdateForCNBImage(t *testing.T) {
 			shouldErr:   false,
 			expected:    v1.Container{},
 			config:      ContainerDebugConfiguration{WorkingDir: "/appDir"},
+		},
+		{
+			description: "CNB_PROCESS_TYPE=sh-c ()Procfile-style)",
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, env: map[string]string{"CNB_PROCESS_TYPE": "sh-c"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
+			shouldErr:   false,
+			expected:    v1.Container{Args: []string{"command arg1 arg2"}},
+			config:      ContainerDebugConfiguration{WorkingDir: "/workspace"},
+		},
+		{
+			description: "CNB_PROCESS_TYPE=bash-c ()Procfile-style)",
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, env: map[string]string{"CNB_PROCESS_TYPE": "sh-c"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
+			shouldErr:   false,
+			expected:    v1.Container{Args: []string{"command arg1 arg2"}},
+			config:      ContainerDebugConfiguration{WorkingDir: "/workspace"},
 		},
 	}
 	for _, test := range tests {
