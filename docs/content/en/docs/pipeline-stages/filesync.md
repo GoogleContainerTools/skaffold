@@ -75,7 +75,9 @@ And a `skaffold.yaml` with the following sync configuration:
 Inferred sync mode only applies to modified and added files.
 File deletion will always cause a complete rebuild.
 
-### Auto sync mode (Buildpacks)
+### Auto sync mode
+
+#### Buildpacks
 
 Skaffold requires special collaboration from the Buildpacks for the `auto` sync to work.
 The [gcr.io/buildpacks/builder:v1](https://github.com/GoogleCloudPlatform/buildpacks) supports Skaffold
@@ -91,6 +93,12 @@ Another thing the Buildpacks have to do is support the `GOOGLE_DEVMODE` environm
 set it to `1` when running `skaffold dev` with sync configured to `auto: {}`. The Buildpacks can then use that
 signal to change the way the application is built so that it reloads the changes or rebuilds the app on each change.
 
+#### Jib
+
+Jib integration with skaffold allows for zero config `auto` sync. In this mode, Jib will sync your `classes`, `resources` and `extraDirectories` to a remote container as changes are made. It can only be used with Jib in default build mode (exploded) for jar style applications. It was primarily designed around [Spring Boot Developer Tools](https://docs.spring.io/spring-boot/docs/current/reference/html/using-spring-boot.html#using-boot-devtools), but can work with any embedded server that can reload/restart.
+
+Check out the [Jib Sync example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/jib-sync) for more details.
+
 ## Limitations
 
 File sync has some limitations:
@@ -98,5 +106,5 @@ File sync has some limitations:
   - File sync can only update files that can be modified by the container's configured User ID.
   - File sync requires the `tar` command to be available in the container.
   - Only local source files can be synchronized: files created by the builder will not be copied.
-  - It is currently not allowed to mix `manual` and `infer` sync modes.
+  - It is currently not allowed to mix `manual`, `infer` and `auto` sync modes.
     If you have a use-case for this, please let us know!
