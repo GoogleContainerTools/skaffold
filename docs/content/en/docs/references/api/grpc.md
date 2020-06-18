@@ -488,6 +488,7 @@ will be sent with the new status.
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. |
+| statusCode | [StatusCode](#proto.StatusCode) |  |  |
 | actionableErr | [ErrDef](#proto.ErrDef) |  | actionable error message |
 
 
@@ -753,8 +754,8 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
 | STATUSCHECK_CONTAINER_TERMINATED | 303 | Container is already terminated |
+| STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING | 304 | Deployment waiting for rollout |
 | STATUSCHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
-| STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING | 308 | Deployment waiting for rollout |
 | STATUSCHECK_NODE_MEMORY_PRESSURE | 400 | Node memory pressure error |
 | STATUSCHECK_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
 | STATUSCHECK_NODE_NETWORK_UNAVAILABLE | 402 | Node network unavailable error |

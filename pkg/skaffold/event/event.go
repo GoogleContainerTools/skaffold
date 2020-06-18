@@ -234,28 +234,31 @@ func ResourceStatusCheckEventCompleted(r string, statusCode proto.StatusCode, er
 
 func resourceStatusCheckEventSucceeded(r string) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
-		Resource: r,
-		Status:   Succeeded,
-		Message:  Succeeded,
+		Resource:   r,
+		Status:     Succeeded,
+		Message:    Succeeded,
+		StatusCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 	})
 }
 
 func resourceStatusCheckEventFailed(r string, statusCode proto.StatusCode, err error) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
-		Resource: r,
-		Status:   Failed,
-		Err:      err.Error(),
+		Resource:   r,
+		Status:     Failed,
+		Err:        err.Error(),
+		StatusCode: statusCode,
 		ActionableErr: &proto.ErrDef{
 			ErrCode: statusCode,
 			Message: err.Error(),
 		}})
 }
 
-func ResourceStatusCheckEventUpdated(r string, status string) {
+func ResourceStatusCheckEventUpdated(r string, statusCode proto.StatusCode, status string) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
-		Resource: r,
-		Status:   InProgress,
-		Message:  status,
+		Resource:   r,
+		Status:     InProgress,
+		Message:    status,
+		StatusCode: statusCode,
 	})
 }
 

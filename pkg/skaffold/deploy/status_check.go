@@ -218,7 +218,7 @@ func printStatus(deployments []*resource.Deployment, out io.Writer) bool {
 		}
 		allDone = false
 		if str := r.ReportSinceLastUpdated(); str != "" {
-			event.ResourceStatusCheckEventUpdated(r.String(), str)
+			event.ResourceStatusCheckEventUpdated(r.String(), r.StatusCode, str)
 			fmt.Fprintln(out, trimNewLine(str))
 		}
 	}
