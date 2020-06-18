@@ -657,7 +657,7 @@ func TestGCSManifests(t *testing.T) {
 			commands: testutil.
 				CmdRunOut(fmt.Sprintf("gsutil cp -r %s %s", "gs://dev/deployment.yaml", manifestTmpDir), "log").
 				AndRunOut("kubectl version --client -ojson", kubectlVersion112).
-				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+manifestTmpDir+"/deployment.yaml", deploymentWebYAML).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+filepath.Join(manifestTmpDir, "deployment.yaml"), deploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 			skipRender: true,
 		}}
