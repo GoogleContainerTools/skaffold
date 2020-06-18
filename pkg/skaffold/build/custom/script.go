@@ -24,6 +24,8 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -42,6 +44,7 @@ func (b *Builder) runBuildScript(ctx context.Context, out io.Writer, a *latest.A
 		return fmt.Errorf("retrieving cmd: %w", err)
 	}
 
+	logrus.Debugf("Running command: %s", cmd.Args)
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("starting cmd: %w", err)
 	}
