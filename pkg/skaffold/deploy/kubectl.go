@@ -88,9 +88,9 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	var manifests deploy.ManifestList
 	var err error
 	if k.skipRender {
-		manifests, err = k.readManifests(ctx)
+		manifests, err = k.readManifests(ctx, false)
 	} else {
-		manifests, err := k.renderManifests(ctx, out, builds, labellers, false)
+		manifests, err = k.renderManifests(ctx, out, builds, labellers, false)
 	}
 	if err != nil {
 		event.DeployFailed(err)

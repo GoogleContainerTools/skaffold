@@ -55,7 +55,6 @@ func NewCmdDeploy() *cobra.Command {
 
 func doDeploy(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-
 		var deployed []build.Artifact
 		if !opts.SkipRender {
 			deployed, err := getArtifactsToDeploy(out, deployFromBuildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
