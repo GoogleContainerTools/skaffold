@@ -446,7 +446,7 @@ Examples:
   skaffold build -q | skaffold deploy --build-artifacts -
 
   # Deploy without first rendering the manifests
-  skaffold skaffold deploy --skip-render
+  skaffold deploy --skip-render
 
 Options:
   -a, --build-artifacts=: Filepath containing build output.
