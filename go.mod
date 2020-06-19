@@ -25,12 +25,11 @@ require (
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.1 // indirect
-	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.4
 	github.com/buildpacks/imgutil v0.0.0-20200520132953-ba4f77a60397 // indirect
 	github.com/buildpacks/lifecycle v0.7.2
-	github.com/buildpacks/pack v0.11.1-0.20200602171405-91a81f8bf020
+	github.com/buildpacks/pack v0.11.3-0.20200618145402-bbe5aca0a58a
 	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/docker/cli v0.0.0-20200312141509-ef2f64abbd37
 	github.com/docker/distribution v2.7.1+incompatible
@@ -57,7 +56,6 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/openzipkin/zipkin-go v0.2.2 // indirect
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rakyll/statik v0.1.7
 	github.com/rjeczalik/notify v0.9.2
 	github.com/russross/blackfriday/v2 v2.0.1

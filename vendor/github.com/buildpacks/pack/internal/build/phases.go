@@ -36,7 +36,12 @@ type PhaseFactory interface {
 	New(provider *PhaseConfigProvider) RunnerCleaner
 }
 
-func (l *Lifecycle) Create(ctx context.Context, publish, clearCache bool, runImage, launchCacheName, cacheName, repoName, networkMode string, phaseFactory PhaseFactory) error {
+func (l *Lifecycle) Create(
+	ctx context.Context,
+	publish, clearCache bool,
+	runImage, launchCacheName, cacheName, repoName, networkMode string,
+	volumes []string,
+	phaseFactory PhaseFactory) error {
 	var configProvider *PhaseConfigProvider
 
 	args := []string{
@@ -44,7 +49,7 @@ func (l *Lifecycle) Create(ctx context.Context, publish, clearCache bool, runIma
 		repoName,
 	}
 
-	binds := []string{fmt.Sprintf("%s:%s", cacheName, cacheDir)}
+	binds := append(volumes, fmt.Sprintf("%s:%s", cacheName, cacheDir))
 
 	if clearCache {
 		args = append([]string{"-skip-restore"}, args...)
@@ -194,6 +199,8 @@ func (l *Lifecycle) newAnalyze(repoName, cacheName, networkMode string, publish,
 		"analyzer",
 		l,
 		WithLogPrefix("analyzer"),
+		WithImage(l.lifecycleImage),
+		WithEnv(fmt.Sprintf("%s=%d", builder.EnvUID, l.builder.UID()), fmt.Sprintf("%s=%d", builder.EnvGID, l.builder.GID())),
 		WithDaemonAccess(),
 		WithArgs(
 			l.withLogLevel(
@@ -242,15 +249,13 @@ func (l *Lifecycle) Build(ctx context.Context, networkMode string, volumes []str
 
 func (l *Lifecycle) Export(ctx context.Context, repoName string, runImage string, publish bool, launchCacheName, cacheName, networkMode string, phaseFactory PhaseFactory) error {
 	var stackMount mount.Mount
-	if publish {
-		stackPath, err := l.writeStackToml()
-		if err != nil {
-			return errors.Wrap(err, "writing stack toml")
-		}
-		defer os.Remove(stackPath)
-
-		stackMount = mount.Mount{Type: "bind", Source: stackPath, Target: builder.StackPath, ReadOnly: true}
+	stackPath, err := l.writeStackToml()
+	if err != nil {
+		return errors.Wrap(err, "writing stack toml")
 	}
+	defer os.Remove(stackPath)
+
+	stackMount = mount.Mount{Type: "bind", Source: stackPath, Target: builder.StackPath, ReadOnly: true}
 
 	export, err := l.newExport(repoName, runImage, publish, launchCacheName, cacheName, networkMode, []mount.Mount{stackMount}, phaseFactory)
 	if err != nil {
@@ -312,12 +317,15 @@ func (l *Lifecycle) newExport(repoName, runImage string, publish bool, launchCac
 		"exporter",
 		l,
 		WithLogPrefix("exporter"),
+		WithImage(l.lifecycleImage),
+		WithEnv(fmt.Sprintf("%s=%d", builder.EnvUID, l.builder.UID()), fmt.Sprintf("%s=%d", builder.EnvGID, l.builder.GID())),
 		WithDaemonAccess(),
 		WithArgs(
 			l.withLogLevel(args...)...,
 		),
 		WithNetwork(networkMode),
 		WithBinds(binds...),
+		WithMounts(mounts...),
 	)
 
 	return phaseFactory.New(configProvider), nil

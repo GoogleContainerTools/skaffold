@@ -35,7 +35,6 @@ github.com/Azure/go-autorest/logger
 # github.com/Azure/go-autorest/tracing v0.5.0
 github.com/Azure/go-autorest/tracing
 # github.com/BurntSushi/toml v0.3.1
-## explicit
 github.com/BurntSushi/toml
 # github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd
 github.com/MakeNowJust/heredoc
@@ -70,12 +69,11 @@ github.com/buildpacks/lifecycle/archive
 github.com/buildpacks/lifecycle/auth
 github.com/buildpacks/lifecycle/cmd
 github.com/buildpacks/lifecycle/launch
-# github.com/buildpacks/pack v0.11.1-0.20200602171405-91a81f8bf020
+# github.com/buildpacks/pack v0.11.3-0.20200618145402-bbe5aca0a58a
 ## explicit
 github.com/buildpacks/pack
 github.com/buildpacks/pack/builder
 github.com/buildpacks/pack/buildpackage
-github.com/buildpacks/pack/cmd
 github.com/buildpacks/pack/internal/api
 github.com/buildpacks/pack/internal/archive
 github.com/buildpacks/pack/internal/blob
@@ -406,7 +404,6 @@ github.com/opencontainers/selinux/pkg/pwalk
 ## explicit
 github.com/pkg/browser
 # github.com/pkg/errors v0.9.1
-## explicit
 github.com/pkg/errors
 # github.com/prometheus/client_golang v1.0.0
 github.com/prometheus/client_golang/prometheus

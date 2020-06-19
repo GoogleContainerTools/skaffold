@@ -18,7 +18,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/buildpacks/pack/builder"
-	"github.com/buildpacks/pack/cmd"
 	"github.com/buildpacks/pack/internal/api"
 	"github.com/buildpacks/pack/internal/archive"
 	"github.com/buildpacks/pack/internal/dist"
@@ -259,7 +258,7 @@ func (b *Builder) SetStack(stackConfig builder.StackConfig) {
 }
 
 // Save saves the builder
-func (b *Builder) Save(logger logging.Logger) error {
+func (b *Builder) Save(logger logging.Logger, creatorMetadata CreatorMetadata) error {
 	logger.Debugf("Creating builder with the following buildpacks:")
 	for _, bpInfo := range b.metadata.Buildpacks {
 		logger.Debugf("-> %s", style.Symbol(bpInfo.FullName()))
@@ -371,10 +370,11 @@ func (b *Builder) Save(logger logging.Logger) error {
 		return errors.Wrap(err, "adding env layer")
 	}
 
-	b.metadata.CreatedBy = CreatorMetadata{
-		Name:    packName,
-		Version: cmd.Version,
+	if creatorMetadata.Name == "" {
+		creatorMetadata.Name = packName
 	}
+
+	b.metadata.CreatedBy = creatorMetadata
 
 	if err := dist.SetLabel(b.image, metadataLabel, b.metadata); err != nil {
 		return err

@@ -40,7 +40,7 @@ tidy: mod-tidy mod-vendor format
 
 build: out
 	@echo "> Building..."
-	$(GOCMD) build -ldflags "-s -w -X 'github.com/buildpacks/pack/cmd.Version=${PACK_VERSION}' -extldflags ${LDFLAGS}" -trimpath -o ./out/$(PACK_BIN) -a ./cmd/pack
+	$(GOCMD) build -ldflags "-s -w -X 'github.com/buildpacks/pack.Version=${PACK_VERSION}' -extldflags ${LDFLAGS}" -trimpath -o ./out/$(PACK_BIN) -a ./cmd/pack
 
 package: out
 	tar czf ./out/$(ARCHIVE_NAME).tgz -C out/ pack
@@ -56,6 +56,7 @@ install-goimports:
 format: install-goimports
 	@echo "> Formating code..."
 	@goimports -l -w -local ${PACKAGE_BASE} ${SRC}
+	@go run tools/pedantic_imports/main.go ${PACKAGE_BASE} ${SRC}
 
 install-golangci-lint:
 	@echo "> Installing golangci-lint..."
