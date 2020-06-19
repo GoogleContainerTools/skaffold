@@ -4,20 +4,26 @@ build:
   artifacts:
   - image: skaffold-debug-java
     context: java
-    jib:
-      args:
-      - --no-transfer-progress
+    buildpacks:
+      builder: "gcr.io/buildpacks/builder:v1"
   - image: skaffold-debug-npm
     context: npm
+    buildpacks:
+      builder: "gcr.io/buildpacks/builder:v1"
   - image: skaffold-debug-nodejs
     context: nodejs
+    buildpacks:
+      builder: "gcr.io/buildpacks/builder:v1"
   - image: skaffold-debug-python3
     context: python3
+    buildpacks:
+      builder: "gcr.io/buildpacks/builder:v1"
   - image: skaffold-debug-go
     context: go
-    docker:
-      buildArgs:
-        GOGCFLAGS: "-gcflags='all=-N -l'"
+    buildpacks:
+      builder: "gcr.io/buildpacks/builder:v1"
+      #env:
+      #- GOOGLE_GCFLAGS: "-gcflags='all=-N -l'"
 
 deploy:
   kubectl:
