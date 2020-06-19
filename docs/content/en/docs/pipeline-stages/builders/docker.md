@@ -67,15 +67,37 @@ These credentials are configured in the `cluster` section with the following opt
 
 {{< schema root="ClusterDetails" >}}
 
-To set up the credentials for Kaniko refer to the [kaniko docs](https://github.com/GoogleContainerTools/kaniko#kubernetes-secret) (**Note**: Rename the downloaded JSON key to *kaniko-secret* without appending *.json*).
-Alternatively, the path to a credentials file can be set with the `pullSecret` option:
+### Configure Kaniko Credentials 
+
+To set up the credentials for Kaniko refer to the [kaniko docs](https://github.com/GoogleContainerTools/kaniko#kubernetes-secret)
+
+(**Note**: Rename the downloaded JSON key to *kaniko-secret* without appending *.json*).
+
+Alternatively, the path to credentials file can be set with the `pullSecretPath` option:
 ```yaml
 build:
   cluster:
     pullSecretName: pull-secret-in-kubernetes
-    # OR
-    pullSecret: path-to-service-account-key-file
+    pullSecretPath: path-to-service-account-key-file-within-secret
+  
 ```
+
+Skaffold can also set up credentials if a secret does not exist in your cluster. This is usually the case when you are performing a 
+build in your personal cluster. 
+
+First, [create a service account](https://cloud.google.com/iam/docs/creating-managing-service-accounts#creating) 
+in the Google Cloud Console project you want to push the final image to with Storage Admin permissions. 
+Download a JSON key for this service account at a convenient location.
+```yaml
+build:
+  cluster:
+    pullSecretPath: path-to-local-service-account-key-file
+```
+Skaffold will create a secret from the service account key file. Skaffold will delete the secret from your cluster at the end of the build.
+
+(**Note**: Please do not check this service account key file in your git repository)
+
+
 Similarly, when pushing to a docker registry:
 ```yaml
 build:
@@ -93,6 +115,34 @@ The following `build` section, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Kaniko:
 
 {{% readfile file="samples/builders/kaniko.yaml" %}}
+
+### Configure Kaniko Volume Mounts
+
+You might need to configure volume mounts for a Kaniko pod either to 
+1. Mount a secret or
+2. Set up a [persistent cache](https://github.com/GoogleContainerTools/kaniko/blob/master/examples/kaniko-test.yaml#L27).
+
+To set up volume mounts, configure the `volumeMount` key in `cluster` section like this
+```yaml
+build:
+  artifacts:
+  - image: getting-started
+    kaniko:
+      cache:
+        repo: getting-started
+      volumeMounts:
+      - name: kaniko-cache
+        mountpath: /cache
+        readonly: true
+cluster:
+  volumes:
+  - name: kaniko-cache
+    persistentvolumevlaim:
+    claimname: kaniko-cache-claim
+```
+
+**Note:** Due to [go-yaml/yaml#564](https://github.com/go-yaml/yaml/pull/564), all keys under `kaniko.VolumeMounts` and
+`cluster.Volumes` section should be in lower case. 
 
 ## Dockerfile remotely with Google Cloud Build
 
