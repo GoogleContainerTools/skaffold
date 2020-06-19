@@ -35,7 +35,6 @@ func TestDebug(t *testing.T) {
 		args        []string
 		deployments []string
 		pods        []string
-		
 	}{
 		{
 			description: "kubectl",
