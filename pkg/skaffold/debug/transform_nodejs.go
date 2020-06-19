@@ -17,7 +17,6 @@ limitations under the License.
 package debug
 
 import (
-	"sort"
 	"strconv"
 	"strings"
 
@@ -79,16 +78,6 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for node.js debugging", container.Name)
 
-	if config.env == nil {
-		config.env = make(map[string]string)
-	}
-	// Add our debug-helper path to resolve to our node wrapper
-	if v, found := config.env["PATH"]; found {
-		config.env["PATH"] = "/dbg/nodejs/bin:" + v
-	} else {
-		config.env["PATH"] = "/dbg/nodejs/bin"
-	}
-
 	// try to find existing `--inspect` command
 	spec := retrieveNodeInspectSpec(config)
 	if spec == nil {
@@ -108,20 +97,21 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 
 		default:
 			if v, found := config.env["NODE_OPTIONS"]; found {
-				config.env["NODE_OPTIONS"] = v + " " + spec.String()
+				container.Env = setEnvVar(container.Env, "NODE_OPTIONS", v+" "+spec.String())
 			} else {
-				config.env["NODE_OPTIONS"] = spec.String()
+				container.Env = setEnvVar(container.Env, "NODE_OPTIONS", spec.String())
 			}
 		}
 	}
 
-	container.Ports = exposePort(container.Ports, "devtools", spec.port)
-	for k, v := range config.env {
-		container.Env = append(container.Env, v1.EnvVar{Name: k, Value: v})
+	// Add our debug-helper path to resolve to our node wrapper
+	if v, found := config.env["PATH"]; found {
+		container.Env = setEnvVar(container.Env, "PATH", "/dbg/nodejs/bin:"+v)
+	} else {
+		container.Env = setEnvVar(container.Env, "PATH", "/dbg/nodejs/bin")
 	}
-	sort.Slice(container.Env, func(i, j int) bool {
-		return container.Env[i].Name < container.Env[j].Name
-	})
+
+	container.Ports = exposePort(container.Ports, "devtools", spec.port)
 
 	return ContainerDebugConfiguration{
 		Runtime: "nodejs",
