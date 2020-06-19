@@ -351,8 +351,8 @@ var FlagRegistry = []Flag{
 		DefValue:      1000,
 		FlagAddMethod: "IntVar",
 		DefinedOn:     []string{"dev", "debug"},
-  },
-  {
+	},
+	{
 		Name:          "add-skaffold-labels",
 		Usage:         "Add Skaffold-specific labels to rendered manifest. If false, custom labels are still applied. Helpful for GitOps model where Skaffold is not the deployer.",
 		Value:         &opts.AddSkaffoldLabels,
