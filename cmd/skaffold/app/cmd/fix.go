@@ -57,8 +57,8 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		return err
 	}
 
-	if cfg.GetVersion() == latest.Version {
-		color.Default.Fprintln(out, "config is already latest version")
+	if cfg.GetVersion() == toVersion {
+		color.Default.Fprintln(out, "config is already version", toVersion)
 		return nil
 	}
 
@@ -67,8 +67,12 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		return err
 	}
 
-	if err := validation.Process(cfg.(*latest.SkaffoldConfig)); err != nil {
-		return fmt.Errorf("validating upgraded config: %w", err)
+	// TODO(dgageot): We should be able run validations on any schema version
+	// but that's not the case. They can only run on the latest version for now.
+	if toVersion == latest.Version {
+		if err := validation.Process(cfg.(*latest.SkaffoldConfig)); err != nil {
+			return fmt.Errorf("validating upgraded config: %w", err)
+		}
 	}
 
 	newCfg, err := yaml.Marshal(cfg)
