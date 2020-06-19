@@ -120,12 +120,12 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 	var nonURLManifests, gcsManifests []string
 	for _, manifest := range manifests {
-		if !util.IsURL(manifest) {
-			if strings.HasPrefix(manifest, "gs://") {
-				gcsManifests = append(gcsManifests, manifest)
-			} else {
-				nonURLManifests = append(nonURLManifests, manifest)
-			}
+		switch {
+		case util.IsURL(manifest):
+		case strings.HasPrefix(manifest, "gs://"):
+			gcsManifests = append(gcsManifests, manifest)
+		default:
+			nonURLManifests = append(nonURLManifests, manifest)
 		}
 	}
 
@@ -166,11 +166,12 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 func (k *KubectlDeployer) readManifests(ctx context.Context, offline bool) (deploy.ManifestList, error) {
 	// Get file manifests
 	manifests, err := k.Dependencies()
+	// Clean the temporary directory that holds the manifests downloaded from GCS
+	defer os.RemoveAll(manifestTmpDir)
+
 	if err != nil {
 		return nil, fmt.Errorf("listing manifests: %w", err)
 	}
-	// Clean the temporary directory that holds the manifests downloaded from GCS
-	defer os.RemoveAll(manifestTmpDir)
 
 	// Append URL manifests
 	hasURLManifest := false
