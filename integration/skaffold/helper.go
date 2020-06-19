@@ -274,7 +274,11 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	}
 	args = append(args, b.args...)
 
-	cmd := exec.CommandContext(ctx, "skaffold", args...)
+	skaffoldBinary := "skaffold"
+	if value, found := os.LookupEnv("SKAFFOLD_BINARY"); found {
+		skaffoldBinary = value
+	}
+	cmd := exec.CommandContext(ctx, skaffoldBinary, args...)
 	cmd.Env = append(removeSkaffoldEnvVariables(util.OSEnviron()), b.env...)
 	if b.stdin != nil {
 		cmd.Stdin = bytes.NewReader(b.stdin)
