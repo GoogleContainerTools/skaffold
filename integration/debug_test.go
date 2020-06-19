@@ -38,20 +38,18 @@ func TestDebug(t *testing.T) {
 	}{
 		{
 			description: "kubectl",
-			config:      "skaffold.yaml",
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm", "python3", "go"},
 		},
 		{
 			description: "kustomize",
-			config:      "skaffold.yaml",
 			args:        []string{"--profile", "kustomize"},
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm", "python3", "go"},
 		},
 		{
 			description: "buildpacks",
-			config:      "skaffold-bp.yaml",
+			args:        []string{"--profile", "buildpacks"},
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm", "python3", "go"},
 		},
@@ -59,11 +57,11 @@ func TestDebug(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build(test.args...).InDir("testdata/debug").WithConfig(test.config).RunOrFail(t)
+			skaffold.Build(test.args...).InDir("testdata/debug").RunOrFail(t)
 
 			ns, client := SetupNamespace(t)
 
-			skaffold.Debug(test.args...).InDir("testdata/debug").WithConfig(test.config).InNs(ns.Name).RunBackground(t)
+			skaffold.Debug(test.args...).InDir("testdata/debug").InNs(ns.Name).RunBackground(t)
 
 			verifyDebugAnnotations := func(annotations map[string]string) {
 				var configs map[string]debug.ContainerDebugConfiguration
