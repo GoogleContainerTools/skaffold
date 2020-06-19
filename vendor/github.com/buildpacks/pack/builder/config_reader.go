@@ -73,22 +73,17 @@ func ReadConfig(path string) (config Config, warnings []string, err error) {
 	return config, warnings, nil
 }
 
-// Validate a Config
-func (c Config) Validate() error {
-	return c.Stack.Validate()
-}
-
-// Validate a StackConfig
-func (s StackConfig) Validate() error {
-	if s.ID == "" {
+// ValidateConfig validates the config
+func ValidateConfig(c Config) error {
+	if c.Stack.ID == "" {
 		return errors.New("stack.id is required")
 	}
 
-	if s.BuildImage == "" {
+	if c.Stack.BuildImage == "" {
 		return errors.New("stack.build-image is required")
 	}
 
-	if s.RunImage == "" {
+	if c.Stack.RunImage == "" {
 		return errors.New("stack.run-image is required")
 	}
 

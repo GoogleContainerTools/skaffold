@@ -3,7 +3,6 @@ package build
 import (
 	"context"
 	"math/rand"
-	"sync"
 	"time"
 
 	"github.com/docker/docker/client"
@@ -35,17 +34,31 @@ type Lifecycle struct {
 	logger             logging.Logger
 	docker             client.CommonAPIClient
 	appPath            string
-	appOnce            *sync.Once
 	httpProxy          string
 	httpsProxy         string
 	noProxy            string
 	version            string
 	platformAPIVersion string
-	LayersVolume       string
-	AppVolume          string
-	Volumes            []string
-	DefaultProcessType string
+	layersVolume       string
+	appVolume          string
+	defaultProcessType string
 	fileFilter         func(string) bool
+}
+
+func (l *Lifecycle) Builder() Builder {
+	return l.builder
+}
+
+func (l *Lifecycle) AppPath() string {
+	return l.appPath
+}
+
+func (l *Lifecycle) AppVolume() string {
+	return l.appVolume
+}
+
+func (l *Lifecycle) LayersVolume() string {
+	return l.layersVolume
 }
 
 type Cache interface {
@@ -127,14 +140,24 @@ func (l *Lifecycle) Execute(ctx context.Context, opts LifecycleOptions) error {
 		return l.Export(ctx, opts.Image.Name(), opts.RunImage, opts.Publish, launchCache.Name(), buildCache.Name(), opts.Network, phaseFactory)
 	}
 
-	return l.Create(ctx, opts.Publish, opts.ClearCache, opts.RunImage, launchCache.Name(), buildCache.Name(), opts.Image.Name(), opts.Network, phaseFactory)
+	return l.Create(
+		ctx,
+		opts.Publish,
+		opts.ClearCache,
+		opts.RunImage,
+		launchCache.Name(),
+		buildCache.Name(),
+		opts.Image.Name(),
+		opts.Network,
+		opts.Volumes,
+		phaseFactory,
+	)
 }
 
 func (l *Lifecycle) Setup(opts LifecycleOptions) {
-	l.LayersVolume = "pack-layers-" + randString(10)
-	l.AppVolume = "pack-app-" + randString(10)
+	l.layersVolume = "pack-layers-" + randString(10)
+	l.appVolume = "pack-app-" + randString(10)
 	l.appPath = opts.AppPath
-	l.appOnce = &sync.Once{}
 	l.builder = opts.Builder
 	l.lifecycleImage = opts.LifecycleImage
 	l.httpProxy = opts.HTTPProxy
@@ -142,17 +165,17 @@ func (l *Lifecycle) Setup(opts LifecycleOptions) {
 	l.noProxy = opts.NoProxy
 	l.version = opts.Builder.LifecycleDescriptor().Info.Version.String()
 	l.platformAPIVersion = opts.Builder.LifecycleDescriptor().API.PlatformVersion.String()
-	l.DefaultProcessType = opts.DefaultProcessType
+	l.defaultProcessType = opts.DefaultProcessType
 	l.fileFilter = opts.FileFilter
 }
 
 func (l *Lifecycle) Cleanup() error {
 	var reterr error
-	if err := l.docker.VolumeRemove(context.Background(), l.LayersVolume, true); err != nil {
-		reterr = errors.Wrapf(err, "failed to clean up layers volume %s", l.LayersVolume)
+	if err := l.docker.VolumeRemove(context.Background(), l.layersVolume, true); err != nil {
+		reterr = errors.Wrapf(err, "failed to clean up layers volume %s", l.layersVolume)
 	}
-	if err := l.docker.VolumeRemove(context.Background(), l.AppVolume, true); err != nil {
-		reterr = errors.Wrapf(err, "failed to clean up app volume %s", l.AppVolume)
+	if err := l.docker.VolumeRemove(context.Background(), l.appVolume, true); err != nil {
+		reterr = errors.Wrapf(err, "failed to clean up app volume %s", l.appVolume)
 	}
 	return reterr
 }
