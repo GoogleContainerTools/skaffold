@@ -33,6 +33,7 @@ func TestJdwpTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string
 		source      imageConfiguration
+		launcher    string
 		result      bool
 	}{
 		{
@@ -66,6 +67,12 @@ func TestJdwpTransformer_IsApplicable(t *testing.T) {
 			result:      true,
 		},
 		{
+			description: "launcher entrypoint",
+			source:      imageConfiguration{entrypoint: []string{"launcher"}, arguments: []string{"/usr/bin/java", "-jar", "foo.jar"}},
+			launcher:    "launcher",
+			result:      true,
+		},
+		{
 			description: "entrypoint /bin/sh",
 			source:      imageConfiguration{entrypoint: []string{"/bin/sh"}},
 			result:      false,
@@ -78,6 +85,7 @@ func TestJdwpTransformer_IsApplicable(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&entrypointLaunchers, []string{test.launcher})
 			result := jdwpTransformer{}.IsApplicable(test.source)
 
 			t.CheckDeepEqual(test.result, result)
