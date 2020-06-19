@@ -66,9 +66,6 @@ func TestDebug(t *testing.T) {
 
 			skaffold.Debug(test.args...).InDir("testdata/debug").WithConfig(test.config).InNs(ns.Name).RunBackground(t)
 
-			//client.WaitForPodsReady(test.pods...)
-			//client.WaitForDeploymentsReady()
-			
 			verifyDebugAnnotations := func(annotations map[string]string) {
 				var configs map[string]debug.ContainerDebugConfiguration
 				if anno, found := annotations["debug.cloud.google.com/config"]; !found {
@@ -140,7 +137,7 @@ func waitForDebugEvent(t *testing.T, client *NSKubernetesClient, rpcAddr string)
 	for {
 		select {
 		case <-timeout:
-			t.Fatalf("timed out waiting for port debugging event")
+			t.Fatalf("timed out waiting for debugging event")
 		case entry := <-entries:
 			switch entry.Event.GetEventType().(type) {
 			case *proto.Event_DebuggingContainerEvent:

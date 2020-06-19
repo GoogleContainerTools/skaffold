@@ -22,8 +22,8 @@ build:
     context: go
     buildpacks:
       builder: "gcr.io/buildpacks/builder:v1"
-      #env:
-      #- GOOGLE_GCFLAGS: "-gcflags='all=-N -l'"
+      env:
+      - GOOGLE_GCFLAGS="-gcflags='all=-N -l'"
 
 deploy:
   kubectl:
