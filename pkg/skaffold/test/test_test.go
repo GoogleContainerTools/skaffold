@@ -63,9 +63,10 @@ func TestTestDependencies(t *testing.T) {
 func TestWrongPattern(t *testing.T) {
 	runCtx := &runcontext.RunContext{
 		Cfg: latest.Pipeline{
-			Test: []*latest.TestCase{
-				{StructureTests: []string{"[]"}},
-			},
+			Test: []*latest.TestCase{{
+				ImageName:      "image",
+				StructureTests: []string{"[]"},
+			}},
 		},
 	}
 
@@ -74,7 +75,10 @@ func TestWrongPattern(t *testing.T) {
 	_, err := tester.TestDependencies()
 	testutil.CheckError(t, true, err)
 
-	err = tester.Test(context.Background(), ioutil.Discard, nil)
+	err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		ImageName: "image",
+		Tag:       "image:tag",
+	}})
 	testutil.CheckError(t, true, err)
 }
 
@@ -118,6 +122,11 @@ func TestTestSuccess(t *testing.T) {
 					{
 						ImageName:      "image",
 						StructureTests: []string{"test3.yaml"},
+					},
+					{
+						// This is image is not built so it won't be tested.
+						ImageName:      "not-built",
+						StructureTests: []string{"./tests/*"},
 					},
 				},
 			},
@@ -192,7 +201,7 @@ func TestTestFailure(t *testing.T) {
 		t.NewTempDir().Touch("test.yaml").Chdir()
 
 		t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(
-			"container-structure-test test -v warn --image broken-image --config test.yaml",
+			"container-structure-test test -v warn --image broken-image:tag --config test.yaml",
 			errors.New("FAIL"),
 		))
 
@@ -207,7 +216,10 @@ func TestTestFailure(t *testing.T) {
 			},
 		}
 
-		err := NewTester(runCtx, true).Test(context.Background(), ioutil.Discard, []build.Artifact{{}})
+		err := NewTester(runCtx, true).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+			ImageName: "broken-image",
+			Tag:       "broken-image:tag",
+		}})
 		t.CheckError(true, err)
 	})
 }
