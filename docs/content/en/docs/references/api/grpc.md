@@ -52,6 +52,23 @@ Describes all the methods for the Skaffold API
 
 
 
+<a name="proto.ActionableErr"></a>
+#### ActionableErr
+`ActionableErr` defines an error occurred along with an optional suggestions
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| errCode | [StatusCode](#proto.StatusCode) |  | error code representing the error |
+| message | [string](#string) |  | message describing the error. |
+| suggestions | [Suggestion](#proto.Suggestion) | repeated | list of suggestions |
+
+
+
+
+
+
+
 <a name="proto.BuildEvent"></a>
 #### BuildEvent
 `BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
@@ -62,8 +79,9 @@ If the build fails, an error will be attached to the event.
 | ----- | ---- | ----- | ----------- |
 | artifact | [string](#string) |  | artifact name |
 | status | [string](#string) |  | artifact build status oneof: InProgress, Completed, Failed |
-| err | [string](#string) |  | error when build status is Failed. |
-| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. error when build status is Failed. |
+| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -200,8 +218,9 @@ anytime a deployment starts or completes, successfully or not.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
-| err | [string](#string) |  | error when status is Failed |
-| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. error when status is Failed |
+| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -266,23 +285,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | iteration | [int32](#int32) |  | dev loop iteration. 0 represents initialization loop. |
 | status | [string](#string) |  | dev loop status oneof: In Progress, Completed, Failed |
-| err | [ErrDef](#proto.ErrDef) |  | actionable error message |
-
-
-
-
-
-
-
-<a name="proto.ErrDef"></a>
-#### ErrDef
-`ErrDef` defines an error occurred along with an optional suggestions
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| errCode | [StatusCode](#proto.StatusCode) |  | error code representing the error |
-| message | [string](#string) |  | message describing the error. |
+| err | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -324,8 +327,9 @@ FileSyncEvent describes the sync status.
 | fileCount | [int32](#int32) |  | number of files synced |
 | image | [string](#string) |  | the container image to which files are sycned. |
 | status | [string](#string) |  | status of file sync. one of: Not Started, In progress, Succeeded, Failed. |
-| err | [string](#string) |  | error in case of status failed. |
-| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. error in case of status failed. |
+| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -484,8 +488,9 @@ will be sent with the new status.
 | resource | [string](#string) |  |  |
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
-| err | [string](#string) |  |  |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. |
 | statusCode | [StatusCode](#proto.StatusCode) |  |  |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -569,8 +574,9 @@ will be sent with the new status.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
-| err | [string](#string) |  |  |
-| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. |
+| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -603,6 +609,22 @@ will be sent with the new status.
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+
+<a name="proto.Suggestion"></a>
+#### Suggestion
+Suggestion defines the action a user needs to recover from an error.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| suggestionCode | [SuggestionCode](#proto.SuggestionCode) |  | code representing a suggestion |
+| action | [string](#string) |  | action represents the suggestion action |
 
 
 
@@ -761,6 +783,17 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
 | DEVINIT_REGISTER_DEPLOY_DEPS | 703 | Failed to configure watcher for deploy dependencies in dev loop |
 | DEVINIT_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
+
+
+
+<a name="proto.SuggestionCode"></a>
+
+### SuggestionCode
+Enum for Suggestion codes
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| NIL | 0 | default nil suggestion. This is usually set when no error happens. |
 
 
  <!-- end enums -->

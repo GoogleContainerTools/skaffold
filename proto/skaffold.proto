@@ -115,14 +115,15 @@ message Event {
 message DevLoopEvent {
     int32 iteration = 1; // dev loop iteration. 0 represents initialization loop.
     string status = 2; // dev loop status oneof: In Progress, Completed, Failed
-    ErrDef err = 3; // actionable error message
+    ActionableErr err = 3; // actionable error message
 
 }
 
-// `ErrDef` defines an error occurred along with an optional suggestions
-message ErrDef {
+// `ActionableErr` defines an error occurred along with an optional suggestions
+message ActionableErr {
     StatusCode errCode = 1; // error code representing the error
     string message = 2; // message describing the error.
+    repeated Suggestion suggestions = 3; // list of suggestions
 }
 
 // `MetaEvent` provides general information regarding Skaffold
@@ -138,24 +139,28 @@ message MetaEvent {
 message BuildEvent {
     string artifact = 1; // artifact name
     string status = 2; // artifact build status oneof: InProgress, Completed, Failed
-    string err = 3; // error when build status is Failed.
-    StatusCode errCode = 4; // status code representing success or failure
+    string err = 3; // Deprecated. Use actionableErr.message. error when build status is Failed.
+    StatusCode errCode = 4; // Deprecated. Use actionableErr.errCode. status code representing success or failure
+    ActionableErr actionableErr = 5; // actionable error message
+
 }
 
 // `DeployEvent` represents the status of a deployment, and is emitted by Skaffold
 // anytime a deployment starts or completes, successfully or not.
 message DeployEvent {
     string status = 1; // deployment status oneof: InProgress, Completed, Failed
-    string err = 2; // error when status is Failed
-    StatusCode errCode = 3; // status code representing success or failure
+    string err = 2; // Deprecated. Use actionableErr.message. error when status is Failed
+    StatusCode errCode = 3; // Deprecated. Use actionableErr.errCode. status code representing success or failure
+    ActionableErr actionableErr = 4; // actionable error message
 }
 
 // `StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed.
 message StatusCheckEvent {
     string status = 1;
     string message = 2;
-    string err = 3;
-    StatusCode errCode = 4; // status code representing success or failure
+    string err = 3;  // Deprecated. Use actionableErr.message.
+    StatusCode errCode = 4; // Deprecated. Use actionableErr.errCode. status code representing success or failure
+    ActionableErr actionableErr = 5; // actionable error message
 }
 
 // A Resource StatusCheck Event, indicates progress for each kubernetes deployment.
@@ -167,8 +172,9 @@ message ResourceStatusCheckEvent {
     string resource = 1;
     string status = 2;
     string message = 3;
-    string err = 4;
+    string err = 4;  // Deprecated. Use actionableErr.message.
     StatusCode statusCode = 5;
+    ActionableErr actionableErr = 6; // actionable error message
 }
 
 // PortEvent Event describes each port forwarding event.
@@ -177,7 +183,7 @@ message PortEvent {
     int32 remotePort = 2; // remote port is the resource port that will be forwarded.
     string podName = 3; // pod name if port forwarded resourceType is Pod
     string containerName = 4; // container name if specified in the kubernetes spec
-    string namespace = 5; // 	the namespace of the resource to port forward.
+    string namespace = 5; // the namespace of the resource to port forward.
     string portName = 6;
     string resourceType = 7; // resource type e.g. "pod", "service".
     string resourceName = 8; // name of the resource to forward.
@@ -189,8 +195,9 @@ message FileSyncEvent {
     int32 fileCount = 1; // number of files synced
     string image = 2; // the container image to which files are sycned.
     string status = 3; // status of file sync. one of: Not Started, In progress, Succeeded, Failed.
-    string err = 4; // error in case of status failed.
-    StatusCode errCode = 5; // status code representing success or failure
+    string err = 4; // Deprecated. Use actionableErr.message. error in case of status failed.
+    StatusCode errCode = 5; //// Deprecated. Use actionableErr.errCode. status code representing success or failure
+    ActionableErr actionableErr = 6; // actionable error message
 }
 
 // DebuggingContainerEvent is raised when a debugging container is started or terminated
@@ -233,6 +240,12 @@ message Intent {
     bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once
     bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once
     bool deploy = 3; // in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once
+}
+
+// Suggestion defines the action a user needs to recover from an error.
+message Suggestion {
+    SuggestionCode suggestionCode = 1; // code representing a suggestion
+    string action = 2; // action represents the suggestion action
 }
 
 // Describes all the methods for the Skaffold API
@@ -459,4 +472,12 @@ enum StatusCode {
     DEVINIT_REGISTER_DEPLOY_DEPS = 703;
     // Failed to configure watcher for Skaffold configuration file.
     DEVINIT_REGISTER_CONFIG_DEP = 704;
+}
+
+// Enum for Suggestion codes
+enum SuggestionCode {
+    // default nil suggestion.
+    // This is usually set when no error happens.
+    NIL = 0;
+
 }
