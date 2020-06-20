@@ -301,7 +301,7 @@ func DevLoopFailedWithErrorCode(i int, statusCode proto.StatusCode, err error) {
 // DevLoopFailed notifies that a dev loop has failed in a given phase
 func DevLoopFailedInPhase(iteration int, phase sErrors.Phase, err error) {
 	ai := sErrors.ActionableErr(phase, err)
-	DevLoopFailedWithErrorCode(iteration, ai, err)
+	DevLoopFailedWithErrorCode(iteration, ai.ErrCode, err)
 }
 
 // DevLoopComplete notifies that a dev loop has completed.
