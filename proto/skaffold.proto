@@ -115,14 +115,15 @@ message Event {
 message DevLoopEvent {
     int32 iteration = 1; // dev loop iteration. 0 represents initialization loop.
     string status = 2; // dev loop status oneof: In Progress, Completed, Failed
-    ErrDef err = 3; // actionable error message
+    ActionableErr err = 3; // actionable error message
 
 }
 
-// `ErrDef` defines an error occurred along with an optional suggestions
-message ErrDef {
+// `ActionableErr` defines an error occurred along with an optional suggestions
+message ActionableErr {
     StatusCode errCode = 1; // error code representing the error
     string message = 2; // message describing the error.
+    repeated Suggestion suggestions = 3; // list of suggestions
 }
 
 // `MetaEvent` provides general information regarding Skaffold
@@ -140,7 +141,7 @@ message BuildEvent {
     string status = 2; // artifact build status oneof: InProgress, Completed, Failed
     string err = 3; // Deprecated. Use actionableErr.message. error when build status is Failed.
     StatusCode errCode = 4; // Deprecated. Use actionableErr.errCode. status code representing success or failure
-    ErrDef actionableErr = 5; // actionable error message
+    ActionableErr actionableErr = 5; // actionable error message
 
 }
 
@@ -150,7 +151,7 @@ message DeployEvent {
     string status = 1; // deployment status oneof: InProgress, Completed, Failed
     string err = 2; // Deprecated. Use actionableErr.message. error when status is Failed
     StatusCode errCode = 3; // Deprecated. Use actionableErr.errCode. status code representing success or failure
-    ErrDef actionableErr = 4; // actionable error message
+    ActionableErr actionableErr = 4; // actionable error message
 }
 
 // `StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed.
@@ -159,7 +160,7 @@ message StatusCheckEvent {
     string message = 2;
     string err = 3;  // Deprecated. Use actionableErr.message.
     StatusCode errCode = 4; // Deprecated. Use actionableErr.errCode. status code representing success or failure
-    ErrDef actionableErr = 5; // actionable error message
+    ActionableErr actionableErr = 5; // actionable error message
 }
 
 // A Resource StatusCheck Event, indicates progress for each kubernetes deployment.
@@ -173,7 +174,7 @@ message ResourceStatusCheckEvent {
     string message = 3;
     string err = 4;  // Deprecated. Use actionableErr.message.
     StatusCode statusCode = 5;
-    ErrDef actionableErr = 6; // actionable error message
+    ActionableErr actionableErr = 6; // actionable error message
 }
 
 // PortEvent Event describes each port forwarding event.
@@ -196,7 +197,7 @@ message FileSyncEvent {
     string status = 3; // status of file sync. one of: Not Started, In progress, Succeeded, Failed.
     string err = 4; // Deprecated. Use actionableErr.message. error in case of status failed.
     StatusCode errCode = 5; //// Deprecated. Use actionableErr.errCode. status code representing success or failure
-    ErrDef actionableErr = 6; // actionable error message
+    ActionableErr actionableErr = 6; // actionable error message
 }
 
 // DebuggingContainerEvent is raised when a debugging container is started or terminated

@@ -95,10 +95,13 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		}
 
 		ctx, cancel := context.WithCancel(parentCtx)
-		pfe.cancel = cancel
 
 		buf := &bytes.Buffer{}
 		cmd := portForwardCmd(ctx, k.kubectl, pfe, buf)
+		pfe.cancel = func() {
+			cmd.Process.Kill()
+			cancel()
+		}
 
 		logrus.Debugf("Running command: %s", cmd.Args)
 		if err := cmd.Start(); err != nil {

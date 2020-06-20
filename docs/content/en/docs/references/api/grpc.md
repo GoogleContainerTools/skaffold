@@ -52,6 +52,23 @@ Describes all the methods for the Skaffold API
 
 
 
+<a name="proto.ActionableErr"></a>
+#### ActionableErr
+`ActionableErr` defines an error occurred along with an optional suggestions
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| errCode | [StatusCode](#proto.StatusCode) |  | error code representing the error |
+| message | [string](#string) |  | message describing the error. |
+| suggestions | [Suggestion](#proto.Suggestion) | repeated | list of suggestions |
+
+
+
+
+
+
+
 <a name="proto.BuildEvent"></a>
 #### BuildEvent
 `BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
@@ -64,7 +81,7 @@ If the build fails, an error will be attached to the event.
 | status | [string](#string) |  | artifact build status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. error when build status is Failed. |
 | errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
-| actionableErr | [ErrDef](#proto.ErrDef) |  | actionable error message |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -203,7 +220,7 @@ anytime a deployment starts or completes, successfully or not.
 | status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. error when status is Failed |
 | errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
-| actionableErr | [ErrDef](#proto.ErrDef) |  | actionable error message |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -268,23 +285,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | iteration | [int32](#int32) |  | dev loop iteration. 0 represents initialization loop. |
 | status | [string](#string) |  | dev loop status oneof: In Progress, Completed, Failed |
-| err | [ErrDef](#proto.ErrDef) |  | actionable error message |
-
-
-
-
-
-
-
-<a name="proto.ErrDef"></a>
-#### ErrDef
-`ErrDef` defines an error occurred along with an optional suggestions
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| errCode | [StatusCode](#proto.StatusCode) |  | error code representing the error |
-| message | [string](#string) |  | message describing the error. |
+| err | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -328,7 +329,7 @@ FileSyncEvent describes the sync status.
 | status | [string](#string) |  | status of file sync. one of: Not Started, In progress, Succeeded, Failed. |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. error in case of status failed. |
 | errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
-| actionableErr | [ErrDef](#proto.ErrDef) |  | actionable error message |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -489,7 +490,7 @@ will be sent with the new status.
 | message | [string](#string) |  |  |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. |
 | statusCode | [StatusCode](#proto.StatusCode) |  |  |
-| actionableErr | [ErrDef](#proto.ErrDef) |  | actionable error message |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -575,7 +576,7 @@ will be sent with the new status.
 | message | [string](#string) |  |  |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. |
 | errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
-| actionableErr | [ErrDef](#proto.ErrDef) |  | actionable error message |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
