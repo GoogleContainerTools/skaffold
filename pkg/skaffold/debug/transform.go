@@ -311,7 +311,8 @@ func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
 // Returns a debugging configuration description with associated language runtime support
 // container image, or an error if the rewrite was unsuccessful.
 func transformContainer(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
-	// update image configuration values with those set in the k8s manifest
+	// Update the image configuration's environment with those set in the k8s manifest.
+	// (Environment variables in the k8s container's `env` add to the image configuration's `env` settings rather than replace.)
 	for _, envVar := range container.Env {
 		// FIXME handle ValueFrom?
 		if config.env == nil {

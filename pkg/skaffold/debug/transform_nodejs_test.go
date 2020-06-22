@@ -294,8 +294,19 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				entrypoint: []string{"docker-entrypoint.sh"},
 				arguments:  []string{"npm run script"}},
 			result: v1.Container{
-				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=0.0.0.0:9229"}, {Name: "NODE_VERSION", Value: "10.12"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
+				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=0.0.0.0:9229"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+		},
+		{
+			description:   "image environment not copied",
+			containerSpec: v1.Container{Env: []v1.EnvVar{{Name: "OTHER", Value: "VALUE"}}},
+			configuration: imageConfiguration{entrypoint: []string{"node"}, env: map[string]string{"RANDOM": "VALUE"}},
+			result: v1.Container{
+				Command: []string{"node", "--inspect=0.0.0.0:9229"},
+				Env:     []v1.EnvVar{{Name: "OTHER", Value: "VALUE"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
+				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
