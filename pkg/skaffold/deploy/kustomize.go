@@ -30,6 +30,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -90,6 +91,7 @@ type KustomizeDeployer struct {
 	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
 	BuildArgs          []string
+	globalConfig       string
 	addSkaffoldLabels  bool
 }
 
@@ -103,6 +105,7 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 		},
 		insecureRegistries: runCtx.InsecureRegistries,
 		BuildArgs:          runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
+		globalConfig:       runCtx.Opts.GlobalConfig,
 		addSkaffoldLabels:  runCtx.Opts.AddSkaffoldLabels,
 	}
 }
@@ -150,6 +153,11 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 		color.Default.Fprintln(out, err)
 	}
 
+	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
+	}
+
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("reading manifests: %w", err)
@@ -165,7 +173,7 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 	}
 
 	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds, k.insecureRegistries)
+		manifests, err = transform(manifests, builds, Registries{k.insecureRegistries, debugHelpersRegistry})
 		if err != nil {
 			return nil, fmt.Errorf("unable to transform manifests: %w", err)
 		}

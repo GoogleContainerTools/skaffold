@@ -194,6 +194,19 @@ func GetInsecureRegistries(configFile string) ([]string, error) {
 	return cfg.InsecureRegistries, nil
 }
 
+func GetDebugHelpersRegistry(configFile string) (string, error) {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		return "", err
+	}
+
+	if cfg.DebugHelpersRegistry == "" {
+		return constants.DefaultDebugHelpersRegistry, nil
+	}
+
+	return cfg.DebugHelpersRegistry, nil
+}
+
 func isDefaultLocal(kubeContext string) bool {
 	if kubeContext == constants.DefaultMinikubeContext ||
 		kubeContext == constants.DefaultDockerForDesktopContext ||

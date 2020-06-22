@@ -371,7 +371,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 					}},
 					InitContainers: []v1.Container{{
 						Name:         "install-nodejs-support",
-						Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+						Image:        "HELPERS/nodejs",
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
 					Volumes: []v1.Volume{{
@@ -411,7 +411,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -448,7 +448,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -488,7 +488,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -526,7 +526,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -565,7 +565,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -607,7 +607,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -657,7 +657,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -674,7 +674,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
-			result := transformManifest(value, retriever)
+			result := transformManifest(value, retriever, "HELPERS")
 
 			t.CheckDeepEqual(test.transformed, result)
 			t.CheckDeepEqual(test.out, value)
