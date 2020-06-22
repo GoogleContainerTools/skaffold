@@ -44,8 +44,8 @@ In order to configure your appliction for debugging, your app must be:
     or `GOTRACEBACK`. `GOTRACEBACK=single` is the default setting for Go, and `GOTRACEBACK=all` is a 
     generally useful configuration.
   - Built with the `-gcflags='all=-N -l'` options to disable optimizations.
-    Debugging may be confusing otherwise as execution can jump randomly
-    due to statement reordering and inlining.
+    Debugging can be confusing otherwise due to seemingly-random
+    execution jumps from statement reordering and inlining.
     Skaffold [_Profiles_]({{< relref "/docs/environment/profiles.md" >}}) are a useful option.
 
 Note for users of [VS Code's debug adapter for Go](https://github.com/Microsoft/vscode-go): the debug adapter
