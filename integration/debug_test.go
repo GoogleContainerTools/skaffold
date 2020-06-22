@@ -81,16 +81,17 @@ func TestDebug(t *testing.T) {
 				}
 			}
 
-			for _, depName := range test.deployments {
-				deploy := client.GetDeployment(depName)
-
-				annotations := deploy.Spec.Template.GetAnnotations()
-				verifyDebugAnnotations(annotations)
-			}
 			for _, podName := range test.pods {
 				pod := client.GetPod(podName)
 
 				annotations := pod.Annotations
+				verifyDebugAnnotations(annotations)
+			}
+
+			for _, depName := range test.deployments {
+				deploy := client.GetDeployment(depName)
+
+				annotations := deploy.Spec.Template.GetAnnotations()
 				verifyDebugAnnotations(annotations)
 			}
 		})
