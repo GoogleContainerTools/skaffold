@@ -37,17 +37,16 @@ We are looking for ways to identify this information and to pass it back if foun
 #### Go
 
 Go-based applications are configured to run under [Delve](https://github.com/go-delve/delve) in its headless-server mode.
+In order to configure your appliction for debugging, your app must be:
 
-  - Go applications must identify themselves as being Go-based by setting one of the [standard Go runtime
+  - Identified as being Go-based by setting one of the [standard Go runtime
     environment variables](https://godoc.org/runtime) in the container, such as `GODEBUG`, `GOGC`, `GOMAXPROCS`,
     or `GOTRACEBACK`. `GOTRACEBACK=single` is the default setting for Go, and `GOTRACEBACK=all` is a 
     generally useful configuration.
-  - Go applications should be built without optimizations, so your build should be capable of building with
-    `-gcflags='all=-N -l'`. Skaffold [_Profiles_]({{< relref "/docs/environment/profiles.md" >}}) are a useful option.
-  - Alpine/MUSL-based apps are not supported at the moment, and attempts to debug such apps will result in cryptic errors like 
-    `standard_init_linux.go:211: exec user process caused "no such file or directory"`.
-    The [Distroless project](https://github.com/GoogleContainerTools/distroless)'s `gcr.io/distroless/base`
-    is a minimal Debian/glibc-based image that works well as a base image.
+  - Built with the `-gcflags='all=-N -l'` options to disable optimizations.
+    Debugging can be confusing otherwise due to seemingly-random
+    execution jumps from statement reordering and inlining.
+    Skaffold [_Profiles_]({{< relref "/docs/environment/profiles.md" >}}) are a useful option.
 
 Note for users of [VS Code's debug adapter for Go](https://github.com/Microsoft/vscode-go): the debug adapter
 may require configuring both the _local_ and _remote_ source path prefixes via the `cwd` and `remotePath` properties.
