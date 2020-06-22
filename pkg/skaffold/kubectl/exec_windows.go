@@ -24,6 +24,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// Cmd represents an external command being prepared to run within a job object
 type Cmd struct {
 	*exec.Cmd
 	handle windows.Handle
@@ -36,9 +37,10 @@ type process struct {
 }
 
 func CommandContext(ctx context.Context, name string, arg ...string) *Cmd {
-	return &Cmd{Cmd: exec.Command(name, arg...), ctx: ctx}
+	return &Cmd{Cmd: exec.CommandContext(ctx, name, arg...), ctx: ctx}
 }
 
+// Start starts the specified command in a job object but does not wait for it to complete
 func (c *Cmd) Start() (err error) {
 	var handle windows.Handle
 	handle, err = windows.CreateJobObject(nil, nil)
@@ -51,6 +53,7 @@ func (c *Cmd) Start() (err error) {
 		c.Terminate()
 	}()
 
+	// https://gist.github.com/hallazzang/76f3970bfc949831808bbebc8ca15209
 	info := windows.JOBOBJECT_EXTENDED_LIMIT_INFORMATION{
 		BasicLimitInformation: windows.JOBOBJECT_BASIC_LIMIT_INFORMATION{
 			LimitFlags: windows.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
@@ -77,6 +80,15 @@ func (c *Cmd) Start() (err error) {
 	return
 }
 
+// Run starts the specified command in a job object and waits for it to complete
+func (c *Cmd) Run() error {
+	if err := c.Start(); err != nil {
+		return err
+	}
+	return c.Wait()
+}
+
+// Terminate closes the job object handle which kills all connected processes
 func (c *Cmd) Terminate() error {
 	return windows.CloseHandle(c.handle)
 }

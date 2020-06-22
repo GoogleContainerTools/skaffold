@@ -101,4 +101,26 @@ func TestCLI(t *testing.T) {
 			t.CheckDeepEqual(string(out), output)
 		})
 	}
+
+	// test cli.CommandWithStrictCancellation()
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+				test.expectedCommand,
+				output,
+			))
+
+			cli := NewFromRunContext(&runcontext.RunContext{
+				Opts: config.SkaffoldOptions{
+					Namespace:  test.namespace,
+					KubeConfig: test.kubeconfig,
+				},
+				KubeContext: kubeContext,
+			})
+			cmd := cli.CommandWithStrictCancellation(context.Background(), "exec", "arg1", "arg2")
+			out, err := util.RunCmdOut(cmd.Cmd)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(string(out), output)
+		})
+	}
 }
