@@ -95,7 +95,7 @@ build:
 ```
 Skaffold will create a secret from the service account key file. Skaffold will delete the secret from your cluster at the end of the build.
 
-(**Note**: Please do not check this service account key file in your git repository)
+(**Note**: Do not check this service account key file in your git repository)
 
 
 Similarly, when pushing to a docker registry:
@@ -141,8 +141,7 @@ cluster:
     claimname: kaniko-cache-claim
 ```
 
-**Note:** Due to [go-yaml/yaml#564](https://github.com/go-yaml/yaml/pull/564), all keys under `kaniko.VolumeMounts` and
-`cluster.Volumes` section should be in lower case. 
+**Note:** All keys under `kaniko.VolumeMounts` and `cluster.Volumes` section must be in lower case. For details, please see [skaffold#4175](https://github.com/GoogleContainerTools/skaffold/issues/4175).
 
 ## Dockerfile remotely with Google Cloud Build
 
