@@ -40,7 +40,7 @@ func CommandContext(ctx context.Context, name string, arg ...string) *Cmd {
 }
 
 func (c *Cmd) Start() (err error) {
-	handle := c.handle
+	var handle windows.Handle
 	handle, err = windows.CreateJobObject(nil, nil)
 	if err != nil {
 		return
@@ -73,6 +73,7 @@ func (c *Cmd) Start() (err error) {
 		windows.Handle((*process)(unsafe.Pointer(c.Process)).Handle)); err != nil {
 		return
 	}
+	c.handle = handle
 	return
 }
 
