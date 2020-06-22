@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -76,7 +77,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		case needsPushing:
 			color.Green.Fprintln(out, "Found. Pushing")
 			if err := result.Push(ctx, out, c); err != nil {
-				return nil, fmt.Errorf("pushing image: %w", err)
+				return nil, fmt.Errorf("%s: %w", sErrors.PushImageErrPrefix, err)
 			}
 
 		default:
