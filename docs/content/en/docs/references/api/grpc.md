@@ -54,7 +54,7 @@ Describes all the methods for the Skaffold API
 
 <a name="proto.ActionableErr"></a>
 #### ActionableErr
-`ActionableErr` defines an error occurred along with an optional suggestions
+`ActionableErr` defines an error that occurred along with an optional list of suggestions
 
 
 | Field | Type | Label | Description |

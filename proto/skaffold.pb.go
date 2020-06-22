@@ -1293,7 +1293,7 @@ func (m *DevLoopEvent) GetErr() *ActionableErr {
 	return nil
 }
 
-// `ActionableErr` defines an error occurred along with an optional suggestions
+// `ActionableErr` defines an error that occurred along with an optional list of suggestions
 type ActionableErr struct {
 	ErrCode              StatusCode    `protobuf:"varint,1,opt,name=errCode,proto3,enum=proto.StatusCode" json:"errCode,omitempty"`
 	Message              string        `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`

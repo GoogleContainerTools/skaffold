@@ -1061,7 +1061,7 @@
           }
         }
       },
-      "description": "`ActionableErr` defines an error occurred along with an optional suggestions"
+      "description": "`ActionableErr` defines an error that occurred along with an optional list of suggestions"
     },
     "protoBuildEvent": {
       "type": "object",
