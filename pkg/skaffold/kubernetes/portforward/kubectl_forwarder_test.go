@@ -19,7 +19,6 @@ package portforward
 import (
 	"bytes"
 	"context"
-	"os/exec"
 	"sync"
 	"testing"
 	"time"
@@ -118,7 +117,7 @@ func TestMonitorErrorLogs(t *testing.T) {
 
 			ctx, cancel := context.WithCancel(context.Background())
 
-			cmd := exec.Command("sleep", "5")
+			cmd := kubectl.CommandContext(ctx, "sleep", "5")
 			if err := cmd.Start(); err != nil {
 				t.Fatal("error starting command")
 			}
@@ -153,13 +152,13 @@ func TestMonitorErrorLogs(t *testing.T) {
 	}
 }
 
-func assertCmdIsRunning(t *testutil.T, cmd *exec.Cmd) {
+func assertCmdIsRunning(t *testutil.T, cmd *kubectl.Cmd) {
 	if cmd.ProcessState != nil {
 		t.Fatal("cmd was killed but expected to continue running")
 	}
 }
 
-func assertCmdWasKilled(t *testutil.T, cmd *exec.Cmd) {
+func assertCmdWasKilled(t *testutil.T, cmd *kubectl.Cmd) {
 	if err := cmd.Wait(); err == nil {
 		t.Fatal("cmd was not killed but expected to be killed")
 	}
@@ -189,7 +188,7 @@ func TestDefaultAddressArg(t *testing.T) {
 	assertCmdContainsArgs(t, cmd, false, "--address")
 }
 
-func assertCmdContainsArgs(t *testing.T, cmd *exec.Cmd, expected bool, args ...string) {
+func assertCmdContainsArgs(t *testing.T, cmd *kubectl.Cmd, expected bool, args ...string) {
 	if len(args) == 0 {
 		return
 	}
