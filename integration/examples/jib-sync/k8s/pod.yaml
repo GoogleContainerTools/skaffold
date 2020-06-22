@@ -6,3 +6,5 @@ spec:
   containers:
   - name: test-file-sync
     image: test-file-sync
+    ports:
+      - containerPort: 8080
