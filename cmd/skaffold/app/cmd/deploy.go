@@ -43,16 +43,21 @@ func NewCmdDeploy() *cobra.Command {
 		WithExample("Build the artifacts and collect the tags into a file", "build --file-output=tags.json").
 		WithExample("Deploy those tags", "deploy --build-artifacts=tags.json").
 		WithExample("Build the artifacts and then deploy them", "build -q | skaffold deploy --build-artifacts -").
+		WithExample("Deploy without first rendering the manifests", "deploy --skip-render").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
 			f.VarP(&deployFromBuildOutputFile, "build-artifacts", "a", "File containing build result from a previous 'skaffold build --file-output'")
+			f.BoolVar(&opts.SkipRender, "skip-render", false, "Don't render the manifests, just deploy them")
 		}).
 		NoArgs(doDeploy)
 }
 
 func doDeploy(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
+		if opts.SkipRender {
+			return r.DeployAndLog(ctx, out, []build.Artifact{})
+		}
 		deployed, err := getArtifactsToDeploy(out, deployFromBuildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
 		if err != nil {
 			return err
@@ -63,7 +68,6 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 			if err != nil {
 				return err
 			}
-
 			deployed[i].Tag = tag
 		}
 

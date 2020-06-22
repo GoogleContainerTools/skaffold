@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/segmentio/textio"
@@ -52,6 +53,7 @@ type KubectlDeployer struct {
 	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
 	addSkaffoldLabels  bool
+	skipRender         bool
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
@@ -69,6 +71,7 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 		},
 		insecureRegistries: runCtx.InsecureRegistries,
 		addSkaffoldLabels:  runCtx.Opts.AddSkaffoldLabels,
+		skipRender:         runCtx.Opts.SkipRender,
 	}
 }
 
@@ -83,7 +86,13 @@ func (k *KubectlDeployer) Labels() map[string]string {
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
 	event.DeployInProgress()
 
-	manifests, err := k.renderManifests(ctx, out, builds, labellers, false)
+	var manifests deploy.ManifestList
+	var err error
+	if k.skipRender {
+		manifests, err = k.readManifests(ctx, false)
+	} else {
+		manifests, err = k.renderManifests(ctx, out, builds, labellers, false)
+	}
 	if err != nil {
 		event.DeployFailed(err)
 		return NewDeployErrorResult(err)
@@ -110,9 +119,13 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 }
 
 func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
-	var nonURLManifests []string
+	var nonURLManifests, gcsManifests []string
 	for _, manifest := range manifests {
-		if !util.IsURL(manifest) {
+		switch {
+		case util.IsURL(manifest):
+		case strings.HasPrefix(manifest, "gs://"):
+			gcsManifests = append(gcsManifests, manifest)
+		default:
 			nonURLManifests = append(nonURLManifests, manifest)
 		}
 	}
@@ -120,6 +133,19 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 	list, err := util.ExpandPathsGlob(k.workingDir, nonURLManifests)
 	if err != nil {
 		return nil, fmt.Errorf("expanding kubectl manifest paths: %w", err)
+	}
+
+	if len(gcsManifests) != 0 {
+		// return tmp dir of the downloaded manifests
+		tmpDir, err := downloadManifestsFromGCS(gcsManifests)
+		if err != nil {
+			return nil, fmt.Errorf("downloading from GCS: %w", err)
+		}
+		l, err := util.ExpandPathsGlob(tmpDir, []string{"*"})
+		if err != nil {
+			return nil, fmt.Errorf("expanding kubectl manifest paths: %w", err)
+		}
+		list = append(list, l...)
 	}
 
 	var filteredManifests []string
@@ -141,6 +167,9 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 func (k *KubectlDeployer) readManifests(ctx context.Context, offline bool) (deploy.ManifestList, error) {
 	// Get file manifests
 	manifests, err := k.Dependencies()
+	// Clean the temporary directory that holds the manifests downloaded from GCS
+	defer os.RemoveAll(manifestTmpDir)
+
 	if err != nil {
 		return nil, fmt.Errorf("listing manifests: %w", err)
 	}
