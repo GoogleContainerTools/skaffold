@@ -10,3 +10,8 @@ build:
       - -Psync
     sync:
       auto: {}
+
+portForward:
+- resourceType: pod
+  resourceName: test-file-sync
+  port: 8080

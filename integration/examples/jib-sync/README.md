@@ -41,8 +41,8 @@ You can now see sync in action:
 
 This example contains both maven and gradle build configs and separate skaffold.yamls.
 
-*gradle*: `skaffold-gradle.yaml`
-*maven*: `skaffold-maven.yaml`
+- **gradle**: `skaffold-gradle.yaml`
+- **maven**: `skaffold-maven.yaml`
 
 use the `-f` flag to specify the correct buildfile when running (or rename your preferred option to `skaffold.yaml`)
 ```
@@ -128,7 +128,7 @@ build:
     context: .
     jib: 
       args: 
-        - -Psync
+      - -Psync
     sync: 
       auto: {}
 ```
@@ -155,7 +155,7 @@ profiles:
     # we activate the sync profile in our java builds
     path: /build/artifacts/0/jib/args
     value:
-      - -Psync
+    - -Psync
 ```
 
 skaffold profiles can be activated using the the `-p` flag when running
