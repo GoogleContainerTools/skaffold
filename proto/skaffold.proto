@@ -119,7 +119,7 @@ message DevLoopEvent {
 
 }
 
-// `ActionableErr` defines an error occurred along with an optional suggestions
+// `ActionableErr` defines an error that occurred along with an optional list of suggestions
 message ActionableErr {
     StatusCode errCode = 1; // error code representing the error
     string message = 2; // message describing the error.
