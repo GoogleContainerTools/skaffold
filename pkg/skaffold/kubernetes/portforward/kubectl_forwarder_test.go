@@ -19,7 +19,7 @@ package portforward
 import (
 	"bytes"
 	"context"
-	"os/exec"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -117,8 +117,11 @@ func TestMonitorErrorLogs(t *testing.T) {
 			t.Override(&waitErrorLogs, 50*time.Millisecond)
 
 			ctx, cancel := context.WithCancel(context.Background())
-
-			cmd := exec.Command("sleep", "5")
+			cmdStr := "sleep"
+			if runtime.GOOS == "windows" {
+				cmdStr = "timeout"
+			}
+			cmd := kubectl.CommandContext(ctx, cmdStr, "5")
 			if err := cmd.Start(); err != nil {
 				t.Fatal("error starting command")
 			}
@@ -145,7 +148,7 @@ func TestMonitorErrorLogs(t *testing.T) {
 			// make sure the command is running or killed based on what's expected
 			if test.cmdRunning {
 				assertCmdIsRunning(t, cmd)
-				cmd.Process.Kill()
+				cmd.Terminate()
 			} else {
 				assertCmdWasKilled(t, cmd)
 			}
@@ -153,13 +156,13 @@ func TestMonitorErrorLogs(t *testing.T) {
 	}
 }
 
-func assertCmdIsRunning(t *testutil.T, cmd *exec.Cmd) {
+func assertCmdIsRunning(t *testutil.T, cmd *kubectl.Cmd) {
 	if cmd.ProcessState != nil {
 		t.Fatal("cmd was killed but expected to continue running")
 	}
 }
 
-func assertCmdWasKilled(t *testutil.T, cmd *exec.Cmd) {
+func assertCmdWasKilled(t *testutil.T, cmd *kubectl.Cmd) {
 	if err := cmd.Wait(); err == nil {
 		t.Fatal("cmd was not killed but expected to be killed")
 	}
@@ -189,7 +192,7 @@ func TestDefaultAddressArg(t *testing.T) {
 	assertCmdContainsArgs(t, cmd, false, "--address")
 }
 
-func assertCmdContainsArgs(t *testing.T, cmd *exec.Cmd, expected bool, args ...string) {
+func assertCmdContainsArgs(t *testing.T, cmd *kubectl.Cmd, expected bool, args ...string) {
 	if len(args) == 0 {
 		return
 	}
