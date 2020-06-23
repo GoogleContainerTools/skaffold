@@ -22,6 +22,10 @@ To use Buildpacks, add a `buildpack` field to each artifact you specify in the
 `artifacts` part of the `build` section. `context` should be a path to
 your source.
 
+{{ note }}
+In Skaffold 1.11 (schema `v2beta5`), the singular `buildpack` field was made plural as `buildpacks`.
+{{ /note }}
+
 The following options can optionally be configured:
 
 {{< schema root="BuildpackArtifact" >}}
@@ -70,11 +74,3 @@ buildpacks:
     ignore:
     - vendor/**
 ```
-
-### Limitations
-
-The container images produced by Cloud Native Buildpacks [cannot
-be configured by `skaffold debug` for debugging]({{< relref "/docs/workflows/debug#unsupported-container-entrypoints" >}}).
-These images use a `launcher` binary as an entrypoint to run commands
-that are specified in a set of configuration files, which cannot
-be altered by `debug`.
