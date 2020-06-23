@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jib
+  name: java
 spec:
   selector:
     matchLabels:
-      app: jibweb
+      app: javaweb
   template:
     metadata:
       labels:
-        app: jibweb
+        app: javaweb
     spec:
       containers:
-      - name: web
-        image: skaffold-debug-jib
+      - name: java-web
+        image: skaffold-debug-java
         ports:
         - containerPort: 8080
         # connect to the JDWP port
         readinessProbe:
           exec:
-            command: ["sh", "/check-jdwp.sh", "5005"]
+            command: ["sh", "/workspace/scripts/check-jdwp.sh", "5005"]
           initialDelaySeconds: 2
           periodSeconds: 10
         # connect to the app port
