@@ -22,9 +22,9 @@ To use Buildpacks, add a `buildpack` field to each artifact you specify in the
 `artifacts` part of the `build` section. `context` should be a path to
 your source.
 
-{{ note }}
-In Skaffold 1.11 (schema `v2beta5`), the singular `buildpack` field was made plural as `buildpacks`.
-{{ /note }}
+{{<alert title="Note">}}
+In Skaffold 1.11 (schema `v2beta5`), the singular `buildpack` field was renamed to `buildpacks`.
+{{</alert>}}
 
 The following options can optionally be configured:
 
