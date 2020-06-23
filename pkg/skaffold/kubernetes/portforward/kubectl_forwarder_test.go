@@ -19,6 +19,7 @@ package portforward
 import (
 	"bytes"
 	"context"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -116,8 +117,11 @@ func TestMonitorErrorLogs(t *testing.T) {
 			t.Override(&waitErrorLogs, 50*time.Millisecond)
 
 			ctx, cancel := context.WithCancel(context.Background())
-
-			cmd := kubectl.CommandContext(ctx, "sleep", "5")
+			cmdStr := "sleep"
+			if runtime.GOOS == "windows" {
+				cmdStr = "timeout"
+			}
+			cmd := kubectl.CommandContext(ctx, cmdStr, "5")
 			if err := cmd.Start(); err != nil {
 				t.Fatal("error starting command")
 			}
@@ -144,7 +148,7 @@ func TestMonitorErrorLogs(t *testing.T) {
 			// make sure the command is running or killed based on what's expected
 			if test.cmdRunning {
 				assertCmdIsRunning(t, cmd)
-				cmd.Process.Kill()
+				cmd.Terminate()
 			} else {
 				assertCmdWasKilled(t, cmd)
 			}

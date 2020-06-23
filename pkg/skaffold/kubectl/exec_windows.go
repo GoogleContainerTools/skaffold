@@ -36,6 +36,7 @@ type process struct {
 	Handle uintptr
 }
 
+// CommandContext creates a new Cmd
 func CommandContext(ctx context.Context, name string, arg ...string) *Cmd {
 	return &Cmd{Cmd: exec.CommandContext(ctx, name, arg...), ctx: ctx}
 }
