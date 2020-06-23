@@ -25,8 +25,8 @@ You can now see sync in action:
   ```
 1. Edit the hello controller `src/main/java/hello/HelloController.java`
   ```diff
-  +       return "some-new-text";
-  -       return "text-to-replace";
+  +       return "some-new-text\n";
+  -       return "text-to-replace\n";
   ```
 1. Give skaffold a few seconds to synchronize the file to the container, and give Spring
    Boot Developer Tools a chance to reload your application.
@@ -65,6 +65,7 @@ This example is designed around the functionality available in [Spring Boot Deve
 
 Some additional steps in your java build are required for this to work:
 - Sync requires `tar` on the running container to copy files over. The default base image that Jib uses `gcr.io/distroless/java` does not include `tar` or any utilities. During development you must use a base image that includes `tar`, in this example we use the `debug` flavor of distroless: `gcr.io/distroless/java:debug` 
+
 `maven`
 ```xml
 <plugin>
@@ -101,7 +102,7 @@ jib {
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-devtools</artifactId>
-        <!-- do not use optional -->
+        <!-- <optional>true</optional> not required -->
       </dependency>
     </dependencies>
   </profile>
