@@ -111,8 +111,9 @@ jib {
 
 `gradle`
 ```groovy
-if (project.hasProperty('sync')) {
-  dependencies {
+dependencies {
+  ...
+  if (project.hasProperty('sync')) {
     implementation "org.springframework.boot:spring-boot-devtools"
     // do not use developmentOnly
   }

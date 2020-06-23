@@ -15,7 +15,9 @@ targetCompatibility = 1.8
 dependencies {
   implementation "org.springframework.boot:spring-boot-starter-web"
   implementation "org.springframework.boot:spring-boot-starter-actuator"
-  implementation "org.springframework.boot:spring-boot-devtools"
+  if (project.hasProperty('sync')) {
+    implementation "org.springframework.boot:spring-boot-devtools"
+  }
 
   testImplementation "org.springframework.boot:spring-boot-starter-test"
 }
