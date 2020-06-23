@@ -40,7 +40,29 @@ var (
 
 type Phase string
 
-func ErrorCodeFromError(phase Phase, _ error) proto.StatusCode {
+// ActionableErr returns an actionable error message with suggestions
+func ActionableErr(phase Phase, err error) *proto.ActionableErr {
+	aiErr := proto.ActionableErr{
+		ErrCode:     defaultErrorCodeFromError(phase),
+		Message:     err.Error(),
+		Suggestions: nil,
+	}
+
+	return &aiErr
+}
+
+func ShowAIError(err error, opts config.SkaffoldOptions) error {
+	for _, v := range knownBuildProblems {
+		if v.regexp.MatchString(err.Error()) {
+			if s := v.suggestion(opts); s != "" {
+				return fmt.Errorf("%s. %s", v.description, s)
+			}
+		}
+	}
+	return ErrNoSuggestionFound
+}
+
+func defaultErrorCodeFromError(phase Phase) proto.StatusCode {
 	switch phase {
 	case Build:
 		return proto.StatusCode_BUILD_UNKNOWN
@@ -56,15 +78,4 @@ func ErrorCodeFromError(phase Phase, _ error) proto.StatusCode {
 		return proto.StatusCode_CLEANUP_UNKNOWN
 	}
 	return proto.StatusCode_UNKNOWN_ERROR
-}
-
-func ShowAIError(err error, opts config.SkaffoldOptions) error {
-	for _, v := range knownBuildProblems {
-		if v.regexp.MatchString(err.Error()) {
-			if s := v.suggestion(opts); s != "" {
-				return fmt.Errorf("%s. %s", v.description, s)
-			}
-		}
-	}
-	return ErrNoSuggestionFound
 }
