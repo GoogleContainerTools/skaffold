@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -40,6 +41,7 @@ var createRunner = createNewRunner
 
 func withRunner(ctx context.Context, action func(runner.Runner, *latest.SkaffoldConfig) error) error {
 	runner, config, err := createRunner(opts)
+	sErrors.SetSkaffoldOptions(opts)
 	if err != nil {
 		return err
 	}

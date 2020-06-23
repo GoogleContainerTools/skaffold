@@ -405,6 +405,8 @@ enum StatusCode {
     STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING = 304;
     // Container restarting error
     STATUSCHECK_CONTAINER_RESTARTING = 356;
+    // Readiness probe failed
+    STATUSCHECK_UNHEALTHY = 357;
 
     // K8 infra errors
 
@@ -424,8 +426,8 @@ enum StatusCode {
     STATUSCHECK_NODE_NOT_READY= 406;
     // Scheduler failure error
     STATUSCHECK_FAILED_SCHEDULING = 407;
-    // Readiness probe failed
-    STATUSCHECK_UNHEALTHY = 408;
+    // skip 408 as error code moved to 357
+
     // Kubectl connection error
     STATUSCHECK_KUBECTL_CONNECTION_ERR = 409;
     // Kubectl process killed error
@@ -480,4 +482,11 @@ enum SuggestionCode {
     // This is usually set when no error happens.
     NIL = 0;
 
+    // Build error suggestion codes
+    ADD_DEFAULT_REPO = 100;
+    CHECK_DEFAULT_REPO = 101;
+    CHECK_DEFAULT_REPO_GLOBAL_CONFIG = 102;
+    GCLOUD_DOCKER_AUTH_CONFIGURE = 103;
+    DOCKER_AUTH_CONFIGURE = 104;
+    CHECK_GCLOUD_PROJECT = 105;
 }

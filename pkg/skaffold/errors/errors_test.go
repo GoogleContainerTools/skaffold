@@ -73,7 +73,8 @@ func TestShowAIError(t *testing.T) {
 			t.Override(&getConfigForCurrentContext, func(string) (*config.ContextConfig, error) {
 				return test.context, nil
 			})
-			actual := ShowAIError(test.err, test.opts)
+			skaffoldOpts = test.opts
+			actual := ShowAIError(test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 		})
 	}
