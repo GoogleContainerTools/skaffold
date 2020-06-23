@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	yaml "gopkg.in/yaml.v2"
 )
 
 const yamlFragment string = `global:

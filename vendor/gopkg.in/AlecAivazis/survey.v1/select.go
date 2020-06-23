@@ -2,7 +2,6 @@ package survey
 
 import (
 	"errors"
-	"strings"
 
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
@@ -28,6 +27,7 @@ type Select struct {
 	PageSize      int
 	VimMode       bool
 	FilterMessage string
+	FilterFn      func(string, []string) []string
 	filter        string
 	selectedIndex int
 	useDefault    bool
@@ -50,7 +50,7 @@ var SelectQuestionTemplate = `
 {{- color "default+hb"}}{{ .Message }}{{ .FilterMessage }}{{color "reset"}}
 {{- if .ShowAnswer}}{{color "cyan"}} {{.Answer}}{{color "reset"}}{{"\n"}}
 {{- else}}
-  {{- "  "}}{{- color "cyan"}}[Use arrows to move, type to filter{{- if and .Help (not .ShowHelp)}}, {{ HelpInputRune }} for more help{{end}}]{{color "reset"}}
+  {{- "  "}}{{- color "cyan"}}[Use arrows to move, enter to select, type to filter{{- if and .Help (not .ShowHelp)}}, {{ HelpInputRune }} for more help{{end}}]{{color "reset"}}
   {{- "\n"}}
   {{- range $ix, $choice := .PageEntries}}
     {{- if eq $ix $.SelectedIndex}}{{color "cyan+b"}}{{ SelectFocusIcon }} {{else}}{{color "default+hb"}}  {{end}}
@@ -70,7 +70,7 @@ func (s *Select) OnChange(line []rune, pos int, key rune) (newLine []rune, newPo
 			return []rune(options[s.selectedIndex]), 0, true
 		}
 		// if the user pressed the up arrow or 'k' to emulate vim
-	} else if key == terminal.KeyArrowUp || (s.VimMode && key == 'k') {
+	} else if key == terminal.KeyArrowUp || (s.VimMode && key == 'k') && len(options) > 0 {
 		s.useDefault = false
 
 		// if we are at the top of the list
@@ -81,8 +81,9 @@ func (s *Select) OnChange(line []rune, pos int, key rune) (newLine []rune, newPo
 			// otherwise we are not at the top of the list so decrement the selected index
 			s.selectedIndex--
 		}
+
 		// if the user pressed down or 'j' to emulate vim
-	} else if key == terminal.KeyArrowDown || (s.VimMode && key == 'j') {
+	} else if key == terminal.KeyArrowDown || (s.VimMode && key == 'j') && len(options) > 0 {
 		s.useDefault = false
 		// if we are at the bottom of the list
 		if s.selectedIndex == len(options)-1 {
@@ -154,17 +155,13 @@ func (s *Select) OnChange(line []rune, pos int, key rune) (newLine []rune, newPo
 }
 
 func (s *Select) filterOptions() []string {
-	filter := strings.ToLower(s.filter)
-	if filter == "" {
+	if s.filter == "" {
 		return s.Options
 	}
-	answer := []string{}
-	for _, o := range s.Options {
-		if strings.Contains(strings.ToLower(o), filter) {
-			answer = append(answer, o)
-		}
+	if s.FilterFn != nil {
+		return s.FilterFn(s.filter, s.Options)
 	}
-	return answer
+	return DefaultFilterFn(s.filter, s.Options)
 }
 
 func (s *Select) Prompt() (interface{}, error) {
@@ -180,7 +177,7 @@ func (s *Select) Prompt() (interface{}, error) {
 	if s.Default != "" {
 		// find the choice
 		for i, opt := range s.Options {
-			// if the option correponds to the default
+			// if the option corresponds to the default
 			if opt == s.Default {
 				// we found our initial value
 				sel = i

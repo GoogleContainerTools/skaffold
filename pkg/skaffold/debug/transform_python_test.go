@@ -20,13 +20,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestExtractPtvsdArg(t *testing.T) {
@@ -60,12 +61,13 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string
 		source      imageConfiguration
+		launcher    string
 		result      bool
 	}{
 		{
 			description: "PYTHON_VERSION",
 			source:      imageConfiguration{env: map[string]string{"PYTHON_VERSION": "2.7"}},
-			result:      true,
+			result:      false,
 		},
 		{
 			description: "entrypoint python",
@@ -108,6 +110,12 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 			result:      true,
 		},
 		{
+			description: "entrypoint launcher",
+			source:      imageConfiguration{entrypoint: []string{"launcher"}, arguments: []string{"python3", "app.py"}},
+			launcher:    "launcher",
+			result:      true,
+		},
+		{
 			description: "entrypoint /bin/sh",
 			source:      imageConfiguration{entrypoint: []string{"/bin/sh"}},
 			result:      false,
@@ -121,6 +129,7 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&entrypointLaunchers, []string{test.launcher})
 			result := pythonTransformer{}.IsApplicable(test.source)
 
 			t.CheckDeepEqual(test.result, result)
@@ -128,32 +137,34 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 	}
 }
 
-func TestPythonTransformer_RuntimeSupportImage(t *testing.T) {
-	testutil.CheckDeepEqual(t, "python", pythonTransformer{}.RuntimeSupportImage())
-}
-
-func TestPythonTransformerApply(t *testing.T) {
+func TestPythonTransformer_Apply(t *testing.T) {
 	tests := []struct {
 		description   string
 		containerSpec v1.Container
 		configuration imageConfiguration
+		shouldErr     bool
 		result        v1.Container
+		debugConfig   ContainerDebugConfiguration
+		image         string
 	}{
 		{
 			description:   "empty",
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{},
 			result:        v1.Container{},
+			shouldErr:     true,
 		},
 		{
 			description:   "basic",
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{entrypoint: []string{"python"}},
 			result: v1.Container{
-				Command: []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678"},
+				Command: []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678"},
 				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 				Env:     []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			image:       "python",
 		},
 		{
 			description: "existing port",
@@ -162,20 +173,38 @@ func TestPythonTransformerApply(t *testing.T) {
 			},
 			configuration: imageConfiguration{entrypoint: []string{"python"}},
 			result: v1.Container{
-				Command: []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678"},
+				Command: []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678"},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "dap", ContainerPort: 5678}},
 				Env:     []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			image:       "python",
+		},
+		{
+			description: "existing port and env",
+			containerSpec: v1.Container{
+				Ports: []v1.ContainerPort{{Name: "dap", ContainerPort: 8080}},
+			},
+			configuration: imageConfiguration{entrypoint: []string{"python"}, env: map[string]string{"PYTHONUSERBASE": "/foo"}},
+			result: v1.Container{
+				Command: []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678"},
+				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
+				Env:     []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python:/foo"}},
+			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			image:       "python",
 		},
 		{
 			description:   "command not entrypoint",
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{arguments: []string{"python"}},
 			result: v1.Container{
-				Args:  []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678"},
+				Args:  []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678"},
 				Ports: []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 				Env:   []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			image:       "python",
 		},
 	}
 	var identity portAllocator = func(port int32) int32 {
@@ -183,9 +212,12 @@ func TestPythonTransformerApply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pythonTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
+			config, image, err := pythonTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
 
+			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.result, test.containerSpec)
+			t.CheckDeepEqual(test.debugConfig, config)
+			t.CheckDeepEqual(test.image, image)
 		})
 	}
 }
@@ -228,19 +260,19 @@ func TestTransformManifestPython(t *testing.T) {
 			true,
 			&v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+					Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{
 						Name:         "test",
-						Command:      []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678", "foo.py"},
+						Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
 						Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 						Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
 					InitContainers: []v1.Container{{
 						Name:         "install-python-support",
-						Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+						Image:        "HELPERS/python",
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
 					Volumes: []v1.Volume{{
@@ -270,19 +302,19 @@ func TestTransformManifestPython(t *testing.T) {
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -312,19 +344,19 @@ func TestTransformManifestPython(t *testing.T) {
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -354,19 +386,19 @@ func TestTransformManifestPython(t *testing.T) {
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -394,19 +426,19 @@ func TestTransformManifestPython(t *testing.T) {
 				Spec: appsv1.DaemonSetSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -434,19 +466,19 @@ func TestTransformManifestPython(t *testing.T) {
 				Spec: batchv1.JobSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -476,19 +508,19 @@ func TestTransformManifestPython(t *testing.T) {
 					Replicas: int32p(1),
 					Template: &v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -528,19 +560,19 @@ func TestTransformManifestPython(t *testing.T) {
 						}},
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -558,7 +590,7 @@ func TestTransformManifestPython(t *testing.T) {
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
-			result := transformManifest(value, retriever)
+			result := transformManifest(value, retriever, "HELPERS")
 
 			t.CheckDeepEqual(test.transformed, result)
 			t.CheckDeepEqual(test.out, value)

@@ -16,7 +16,7 @@ Thank you @nkubala  and @tejal29  for all the hard work in exploring this avenue
 Currently there are two major pain points with the event API:
 
 * calling code is clunky, ugly, and not very portable
-* event handler is racey and generally not concurrency-friendly
+* event handler is racy and generally not concurrency-friendly
 
 The second issue here comes more from bad execution rather than bad design. Some fixes for this have already been proposed and/or merged ([#1786](https://github.com/GoogleContainerTools/skaffold/pull/1786) and [#1801](https://github.com/GoogleContainerTools/skaffold/pull/1801)), so progress has already been made, but we can probably improve on this more.
 
@@ -31,7 +31,7 @@ Right now, events are handled directly through the main loop for each builder an
 ```golang
  if err != nil { 
  	event.BuildFailed(artifact.ImageName, err) 
- 	return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName) 
+ 	return nil, fmt.Errorf("building [%s]: %w", artifact.ImageName, err)
  } 
   
  event.BuildComplete(artifact.ImageName) 
@@ -43,7 +43,7 @@ and
  manifests, err := k.readManifests(ctx) 
  if err != nil { 
  	event.DeployFailed(err) 
- 	return errors.Wrap(err, "reading manifests") 
+ 	return fmt.Errorf("reading manifests: %w", err) 
  } 
   
  if len(manifests) == 0 { 

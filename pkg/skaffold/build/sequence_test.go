@@ -141,9 +141,16 @@ func (t *concatTagger) doBuild(ctx context.Context, out io.Writer, artifact *lat
 }
 
 func initializeEvents() {
-	event.InitializeState(latest.BuildConfig{
-		BuildType: latest.BuildType{
-			LocalBuild: &latest.LocalBuild{},
+	event.InitializeState(latest.Pipeline{
+		Deploy: latest.DeployConfig{},
+		Build: latest.BuildConfig{
+			BuildType: latest.BuildType{
+				LocalBuild: &latest.LocalBuild{},
+			},
 		},
-	})
+	},
+		"temp",
+		true,
+		true,
+		true)
 }

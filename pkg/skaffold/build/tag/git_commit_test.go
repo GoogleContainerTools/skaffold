@@ -22,13 +22,15 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	git "gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
-	"gopkg.in/src-d/go-git.v4/plumbing/object"
 )
 
 // These tests do not run on windows
@@ -43,6 +45,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		variantAbbrevTreeSha   string
 		createGitRepo          func(string)
 		subDir                 string
+		shouldErr              bool
 	}{
 		{
 			description:            "clean worktree without tag",
@@ -56,6 +59,25 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 					write("source.go", "code").
 					add("source.go").
 					commit("initial")
+			},
+		},
+		{
+			description:            "clean worktree with tag containing a slash",
+			variantTags:            "test:v_2",
+			variantCommitSha:       "test:aea33bcc86b5af8c8570ff45d8a643202d63c808",
+			variantAbbrevCommitSha: "test:aea33bc",
+			variantTreeSha:         "test:bc69d50cda6897a6f2054e64b9059f038dc6fb0e",
+			variantAbbrevTreeSha:   "test:bc69d50",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", "code").
+					add("source.go").
+					commit("initial").
+					tag("v/1").
+					write("other.go", "other").
+					add("other.go").
+					commit("second commit").
+					tag("v/2")
 			},
 		},
 		{
@@ -191,20 +213,6 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			},
 		},
 		{
-			description:            "sub directory",
-			variantTags:            "test:a7b32a6",
-			variantCommitSha:       "test:a7b32a69335a6daa51bd89cc1bf30bd31df228ba",
-			variantAbbrevCommitSha: "test:a7b32a6",
-			variantTreeSha:         "test:dirty",
-			variantAbbrevTreeSha:   "test:dirty",
-			createGitRepo: func(dir string) {
-				gitInit(t, dir).
-					mkdir("sub/sub").
-					commit("initial")
-			},
-			subDir: "sub/sub",
-		},
-		{
 			description:            "clean artifact1 in tagged repo",
 			variantTags:            "test:v1",
 			variantCommitSha:       "test:b610928dc27484cc56990bc77622aab0dbd67131",
@@ -290,30 +298,23 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			subDir: "artifact1",
 		},
 		{
-			description:            "non git repo",
-			variantTags:            "test:dirty",
-			variantCommitSha:       "test:dirty",
-			variantAbbrevCommitSha: "test:dirty",
-			variantTreeSha:         "test:dirty",
-			variantAbbrevTreeSha:   "test:dirty",
+			description: "non git repo",
 			createGitRepo: func(dir string) {
 				ioutil.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
 			},
+			shouldErr: true,
 		},
 		{
-			description:            "git repo with no commit",
-			variantTags:            "test:dirty",
-			variantCommitSha:       "test:dirty",
-			variantAbbrevCommitSha: "test:dirty",
-			variantTreeSha:         "test:dirty",
-			variantAbbrevTreeSha:   "test:dirty",
+			description: "git repo with no commit",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir)
 			},
+			shouldErr: true,
 		},
 	}
 
 	for _, test := range tests {
+		test := test
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Parallel()
 
@@ -328,15 +329,96 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 				"TreeSha":         test.variantTreeSha,
 				"AbbrevTreeSha":   test.variantAbbrevTreeSha,
 			} {
-				tagger, err := NewGitCommit(variant)
+				tagger, err := NewGitCommit("", variant)
 				t.CheckNoError(err)
 
 				tag, err := tagger.GenerateFullyQualifiedImageName(workspace, "test")
-				t.CheckNoError(err)
-				t.CheckDeepEqual(expectedTag, tag)
+
+				t.CheckErrorAndDeepEqual(test.shouldErr, err, expectedTag, tag)
 			}
 		})
 	}
+}
+
+func TestGitCommitSubDirectory(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir()
+		gitInit(t.T, tmpDir.Root()).mkdir("sub/sub").commit("initial")
+		workspace := tmpDir.Path("sub/sub")
+
+		tagger, err := NewGitCommit("", "Tags")
+		t.CheckNoError(err)
+		tag, err := tagger.GenerateFullyQualifiedImageName(workspace, "test")
+		t.CheckNoError(err)
+		t.CheckDeepEqual("test:a7b32a6", tag)
+
+		tagger, err = NewGitCommit("", "CommitSha")
+		t.CheckNoError(err)
+		tag, err = tagger.GenerateFullyQualifiedImageName(workspace, "test")
+		t.CheckNoError(err)
+		t.CheckDeepEqual("test:a7b32a69335a6daa51bd89cc1bf30bd31df228ba", tag)
+
+		tagger, err = NewGitCommit("", "AbbrevCommitSha")
+		t.CheckNoError(err)
+		tag, err = tagger.GenerateFullyQualifiedImageName(workspace, "test")
+		t.CheckNoError(err)
+		t.CheckDeepEqual("test:a7b32a6", tag)
+
+		tagger, err = NewGitCommit("", "TreeSha")
+		t.CheckNoError(err)
+		_, err = tagger.GenerateFullyQualifiedImageName(workspace, "test")
+		t.CheckErrorAndDeepEqual(true, err, "test:a7b32a6", tag)
+
+		tagger, err = NewGitCommit("", "AbbrevTreeSha")
+		t.CheckNoError(err)
+		_, err = tagger.GenerateFullyQualifiedImageName(workspace, "test")
+		t.CheckErrorAndDeepEqual(true, err, "test:a7b32a6", tag)
+	})
+}
+
+func TestPrefix(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir()
+		gitInit(t.T, tmpDir.Root()).commit("initial")
+		workspace := tmpDir.Path(".")
+
+		tagger, err := NewGitCommit("tag-", "Tags")
+		t.CheckNoError(err)
+		tag, err := tagger.GenerateFullyQualifiedImageName(workspace, "test")
+		t.CheckNoError(err)
+		t.CheckDeepEqual("test:tag-a7b32a6", tag)
+
+		tagger, err = NewGitCommit("commit-", "CommitSha")
+		t.CheckNoError(err)
+		tag, err = tagger.GenerateFullyQualifiedImageName(workspace, "test")
+		t.CheckNoError(err)
+		t.CheckDeepEqual("test:commit-a7b32a69335a6daa51bd89cc1bf30bd31df228ba", tag)
+	})
+}
+
+func TestInvalidVariant(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		_, err := NewGitCommit("", "Invalid")
+
+		t.CheckErrorContains("\"Invalid\" is not a valid git tagger variant", err)
+	})
+}
+
+func TestSanitizeTag(t *testing.T) {
+	testutil.Run(t, "valid tags", func(t *testutil.T) {
+		t.CheckDeepEqual("abcdefghijklmnopqrstuvwxyz", sanitizeTag("abcdefghijklmnopqrstuvwxyz"))
+		t.CheckDeepEqual("ABCDEFGHIJKLMNOPQRSTUVWXYZ", sanitizeTag("ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+		t.CheckDeepEqual("0123456789-_.", sanitizeTag("0123456789-_."))
+		t.CheckDeepEqual("_v1", sanitizeTag("_v1"))
+	})
+
+	testutil.Run(t, "sanitized tags", func(t *testutil.T) {
+		t.CheckDeepEqual("v_1", sanitizeTag("v/1"))
+		t.CheckDeepEqual("v____1", sanitizeTag("v%$@!1"))
+		t.CheckDeepEqual("__v1", sanitizeTag("--v1"))
+		t.CheckDeepEqual("__v1", sanitizeTag("..v1"))
+		t.CheckDeepEqual(128, len(sanitizeTag(strings.Repeat("0123456789", 20))))
+	})
 }
 
 // gitRepo deals with test git repositories

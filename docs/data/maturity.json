@@ -1,0 +1,314 @@
+{
+  "api": {
+    "dev": "x",
+    "debug": "x",
+    "area": "Skaffold API",
+    "maturity": "beta",
+    "description": "Control API, Event API and State API",
+    "url": "/docs/design/api"
+  },
+  "build.buildpacks": {
+    "build": "x",
+    "area": "Build",
+    "feature": "Cloud Native Buildpacks support",
+    "maturity": "beta",
+    "description": "Skaffold natively support for artifacts built with Cloud Native Buildpacks"
+  },
+  "build.custom": {
+    "dev": "x",
+    "build": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Build",
+    "feature": "custom artifact Builder",
+    "maturity": "beta",
+    "description": "build locally using a custom build script "
+  },
+  "build": {
+    "dev": "x",
+    "build": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Build",
+    "maturity": "GA",
+    "description": "Build images based on multiple build tools in a configurable way",
+    "url": "/docs/pipeline-stages/builders/"
+  },
+  "completion": {
+    "area": "Completion",
+    "maturity": "GA",
+    "description": "generate completion scripts for bash, zsh"
+  },
+  "debug": {
+    "debug": "x",
+    "area": "Debug",
+    "maturity": "beta",
+    "description": "Language-aware reconfiguration of containers on the fly to become debuggable ",
+    "url": "/docs/workflows/debug"
+  },
+  "debug.go": {
+    "debug": "x",
+    "area": "Debug",
+    "feature": "debug go apps",
+    "maturity": "alpha",
+    "description": "debug go apps"
+  },
+  "debug.java": {
+    "debug": "x",
+    "area": "Debug",
+    "feature": "debug java apps",
+    "maturity": "beta",
+    "description": "debug java apps"
+  },
+  "debug.node": {
+    "debug": "x",
+    "area": "Debug",
+    "feature": "debug node apps",
+    "maturity": "beta",
+    "description": "debug node apps"
+  },
+  "debug.python": {
+    "debug": "x",
+    "area": "Debug",
+    "feature": "debug python apps",
+    "maturity": "beta",
+    "description": "debug python apps"
+  },
+  "default_repo": {
+    "dev": "x",
+    "build": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "render": "x",
+    "area": "Default-repo",
+    "maturity": "beta",
+    "description": "specify a default image repository & rewrite image names to default repo",
+    "url": "/docs/environment/image-registries/"
+  },
+  "default_repo.preconcatentation": {
+    "dev": "x",
+    "build": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Default-repo",
+    "feature": "preconcatentation strategy",
+    "maturity": "beta",
+    "description": "collision free rewriting strategy"
+  },
+  "default_repo.simple_prefix": {
+    "dev": "x",
+    "build": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Default-repo",
+    "feature": "simple prefix replace strategy",
+    "maturity": "alpha",
+    "description": "more intuitive prefix replacement strategy"
+  },
+  "cleanup": {
+    "dev": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Cleanup",
+    "maturity": "GA",
+    "description": "`skaffold delete` removes everything deployed `skaffold run` from the cluster, and prunes locally",
+    "url": "/docs/pipeline-stages/cleanup"
+  },
+  "deploy": {
+    "dev": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Deploy",
+    "maturity": "GA",
+    "description": "Deploy a set of deployables as your applications and replace the image name with the built images ",
+    "url": "/docs/pipeline-stages/deployers"
+  },
+  "deploy.status_check": {
+    "dev": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Deploy",
+    "feature": "Status check",
+    "maturity": "beta",
+    "description": "User can wait for deployments to stabilize "
+  },
+  "dev": {
+    "dev": "x",
+    "area": "Dev",
+    "maturity": "GA",
+    "description": "Continuous development",
+    "url": "/docs/workflows/dev"
+  },
+  "fix.cmd": {
+    "area": "skaffold fix",
+    "maturity": "GA",
+    "description": "Upgrade an older skaffold config to the current version"
+  },
+  "generate_pipeline.tekton": {
+    "deploy": "x",
+    "area": "Generate tekton pipelines",
+    "maturity": "alpha",
+    "description": "User can generate a starter tekton pipeline using skaffold"
+  },
+  "global_config": {
+    "dev": "x",
+    "build": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "render": "x",
+    "area": "Global config",
+    "maturity": "beta",
+    "description": "store user preferences in a separate preferences file",
+    "url": "/docs/design/global-config/"
+  },
+  "init": {
+    "area": "Init",
+    "maturity": "alpha",
+    "description": "Initialize a skaffold.yaml file based on the contents of the current directory",
+    "url": "/docs/pipeline-stages/init"
+  },
+  "init.dockerfiles": {
+    "area": "Init",
+    "feature": "init for Dockerfiles ",
+    "maturity": "alpha",
+    "description": "skaffold init recognizes Dockerfiles"
+  },
+  "init.interactive": {
+    "area": "Init",
+    "feature": "interactive",
+    "maturity": "alpha",
+    "description": "skaffold init interactive for CLI users"
+  },
+  "init.json_api": {
+    "area": "Init",
+    "feature": "json based ",
+    "maturity": "alpha",
+    "description": "skaffold init JSON based API for IDE integrations"
+  },
+  "init.k8s_manifests": {
+    "area": "Init",
+    "feature": "init for k8s manifests",
+    "maturity": "alpha",
+    "description": "skaffold init recognizes k8s manifest and the image names in them"
+  },
+  "insecure_registry": {
+    "dev": "x",
+    "build": "x",
+    "debug": "x",
+    "area": "Insecure registry handling",
+    "maturity": "GA",
+    "description": "Target registries for built images which are not secure",
+    "url": "/docs/environment/image-registries/#insecure-image-registries"
+  },
+  "logging": {
+    "dev": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Log tailing",
+    "maturity": "GA",
+    "description": "automated log tailing of deployed pods",
+    "url": "/docs/pipeline-stages/log-tailing"
+  },
+  "portforward": {
+    "dev": "x",
+    "debug": "x",
+    "area": "Port-forwarding",
+    "maturity": "GA",
+    "description": "Port forward application to localhost",
+    "url": "/docs/pipeline-stages/port-forwarding/"
+  },
+  "profiles": {
+    "dev": "x",
+    "build": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "render": "x",
+    "area": "Profiles",
+    "maturity": "GA",
+    "description": "Create different pipeline configurations based on overrides and patches defined in one or more profiles",
+    "url": "/docs/environment/profiles/"
+  },
+  "render": {
+    "deploy": "x",
+    "area": "Render",
+    "maturity": "beta",
+    "description": "Produce hydrated Kubernetes manifests that reference the built resources"
+  },
+  "run.cmd": {
+    "run": "x",
+    "area": "skaffold run",
+    "maturity": "GA",
+    "description": "One-off build & deployment of the skaffold application",
+    "url": "/docs/workflows/ci-cd"
+  },
+  "sync.infer": {
+    "dev": "x",
+    "area": "Filesync",
+    "feature": "sync.infer",
+    "maturity": "alpha",
+    "description": "mark files as \"syncable\" - infer the destinations based on the Dockerfile"
+  },
+  "sync": {
+    "dev": "x",
+    "area": "Filesync",
+    "maturity": "beta",
+    "description": "Instead of rebuilding, copy the changed files in the running container",
+    "url": "/docs/pipeline-stages/filesync"
+  },
+  "tagpolicy.latest": {
+    "dev": "x",
+    "build": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Tagpolicy",
+    "feature": "sha256 (== \"latest\") tagger",
+    "maturity": "beta",
+    "description": "tag with latest, use image digest / image ID for deployment"
+  },
+  "tagpolicy": {
+    "dev": "x",
+    "build": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Tagpolicy",
+    "maturity": "GA",
+    "description": "Automated tagging",
+    "url": "/docs/pipeline-stages/taggers"
+  },
+  "templating": {
+    "deploy": "x",
+    "area": "Templating",
+    "maturity": "beta",
+    "description": "certain fields of skaffold.yaml can be parametrized with environment and built-in variables",
+    "url": "/docs/environment/templating/"
+  },
+  "test": {
+    "dev": "x",
+    "run": "x",
+    "area": "Test",
+    "maturity": "GA",
+    "description": "Run tests as part of your pipeline",
+    "url": "/docs/pipeline-stages/testers"
+  },
+  "triggers": {
+    "dev": "x",
+    "debug": "x",
+    "area": "Trigger",
+    "maturity": "GA",
+    "description": "Feature area: Trigger configured actions when source files change"
+  },
+  "version": {
+    "area": "version",
+    "maturity": "beta",
+    "description": "get the version string of the current skaffold binary"
+  }
+}

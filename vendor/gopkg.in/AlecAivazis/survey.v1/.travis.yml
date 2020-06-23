@@ -1,9 +1,18 @@
 language: go
 
+go:
+  - 1.12
+
+os:
+  - linux
+  - linux-ppc64le
+  - osx
+  - windows
+
 go_import_path: gopkg.in/AlecAivazis/survey.v1
 
 before_install:
-  - go get github.com/AlecAivazis/run
+  - go get github.com/alecaivazis/run
 
 install:
   - run install-deps

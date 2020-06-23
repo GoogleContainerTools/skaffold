@@ -17,10 +17,10 @@ limitations under the License.
 package runcontext
 
 import (
+	"fmt"
 	"os"
 	"sort"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -33,7 +33,6 @@ type RunContext struct {
 	Opts config.SkaffoldOptions
 	Cfg  latest.Pipeline
 
-	DefaultRepo        string
 	KubeContext        string
 	WorkingDir         string
 	Namespaces         []string
@@ -43,7 +42,7 @@ type RunContext struct {
 func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContext, error) {
 	kubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting current cluster context")
+		return nil, fmt.Errorf("getting current cluster context: %w", err)
 	}
 	kubeContext := kubeConfig.CurrentContext
 	logrus.Infof("Using kubectl context: %s", kubeContext)
@@ -51,17 +50,12 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 	// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
 	cwd, err := os.Getwd()
 	if err != nil {
-		return nil, errors.Wrap(err, "finding current directory")
+		return nil, fmt.Errorf("finding current directory: %w", err)
 	}
 
 	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace, cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting namespace list")
-	}
-
-	defaultRepo, err := config.GetDefaultRepo(opts.GlobalConfig, opts.DefaultRepo)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting default repo")
+		return nil, fmt.Errorf("getting namespace list: %w", err)
 	}
 
 	// combine all provided lists of insecure registries into a map
@@ -80,7 +74,6 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		Opts:               opts,
 		Cfg:                cfg,
 		WorkingDir:         cwd,
-		DefaultRepo:        defaultRepo,
 		KubeContext:        kubeContext,
 		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,

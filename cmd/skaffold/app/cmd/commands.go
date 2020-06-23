@@ -17,11 +17,14 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 )
 
 // Builder is used to build cobra commands.
@@ -32,8 +35,8 @@ type Builder interface {
 	WithFlags(adder func(*pflag.FlagSet)) Builder
 	WithCommonFlags() Builder
 	Hidden() Builder
-	ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command
-	NoArgs(action func(io.Writer) error) *cobra.Command
+	ExactArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command
+	NoArgs(action func(context.Context, io.Writer) error) *cobra.Command
 }
 
 type builder struct {
@@ -68,7 +71,7 @@ func (b *builder) WithExample(comment, command string) Builder {
 }
 
 func (b *builder) WithCommonFlags() Builder {
-	AddFlags(b.cmd.Flags(), b.cmd.Use)
+	AddFlags(&b.cmd)
 	return b
 }
 
@@ -82,18 +85,30 @@ func (b *builder) Hidden() Builder {
 	return b
 }
 
-func (b *builder) ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command {
+func (b *builder) ExactArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command {
 	b.cmd.Args = cobra.ExactArgs(argCount)
 	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
-		return action(b.cmd.OutOrStdout(), args)
+		return handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout(), args))
 	}
 	return &b.cmd
 }
 
-func (b *builder) NoArgs(action func(io.Writer) error) *cobra.Command {
+func (b *builder) NoArgs(action func(context.Context, io.Writer) error) *cobra.Command {
 	b.cmd.Args = cobra.NoArgs
 	b.cmd.RunE = func(*cobra.Command, []string) error {
-		return action(b.cmd.OutOrStdout())
+		return handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout()))
 	}
 	return &b.cmd
+}
+
+func handleWellKnownErrors(err error) error {
+	if err == nil {
+		return err
+	}
+
+	if aErr := sErrors.ShowAIError(err, opts); aErr != sErrors.ErrNoSuggestionFound {
+		return aErr
+	}
+
+	return err
 }

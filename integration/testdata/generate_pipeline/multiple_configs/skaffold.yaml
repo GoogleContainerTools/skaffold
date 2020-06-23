@@ -1,0 +1,20 @@
+apiVersion: skaffold/v1beta13
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/main-config
+deploy:
+  kubectl:
+    manifests:
+    - k8s-*
+profiles:
+- name: oncluster
+  build:
+    artifacts:
+    - image: gcr.io/k8s-skaffold/main-config-pipeline
+      context: .
+      kaniko: {}
+    tagPolicy:
+      gitCommit: {}
+    cluster:
+      pullSecretName: kaniko-secret

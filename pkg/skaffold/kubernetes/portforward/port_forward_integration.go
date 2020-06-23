@@ -22,34 +22,35 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // For WhiteBox testing only
 // This is testing a port forward + stop + restart in a simulated dev cycle
 func WhiteBoxPortForwardCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
-	em := NewEntryManager(os.Stdout, kubectlCLI)
+	em := NewEntryManager(os.Stdout, NewKubectlForwarder(os.Stdout, kubectlCLI))
 	portForwardEventHandler := portForwardEvent
 	defer func() { portForwardEvent = portForwardEventHandler }()
 	portForwardEvent = func(entry *portForwardEntry) {}
 	ctx := context.Background()
-	localPort := retrieveAvailablePort(9000, em.forwardedPorts)
+	localPort := retrieveAvailablePort("127.0.0.1", 9000, &em.forwardedPorts)
 	pfe := newPortForwardEntry(0, latest.PortForwardResource{
 		Type:      "deployment",
 		Name:      "leeroy-web",
 		Namespace: namespace,
 		Port:      8080,
-	}, "", "dummy container", "", localPort, false)
+	}, "", "dummy container", "", "", localPort, false)
 	defer em.Stop()
 	em.forwardPortForwardEntry(ctx, pfe)
 	em.Stop()
 
 	logrus.Info("waiting for the same port to become available...")
 	if err := wait.Poll(100*time.Millisecond, 5*time.Second, func() (done bool, err error) {
-		nextPort := retrieveAvailablePort(localPort, em.forwardedPorts)
+		nextPort := retrieveAvailablePort("127.0.0.1", localPort, &em.forwardedPorts)
 
 		logrus.Infof("next port %d", nextPort)
 

@@ -14,20 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "Please enter new config version:"
-read NEW_VERSION
+set -e
 
-go run ./hack/new_config_version/version.go ${NEW_VERSION}
+go run ./hack/versions/cmd/new/version.go $@
 
 goimports -w ./pkg/skaffold/schema
 make generate-schemas
 git --no-pager diff --minimal
-make test
+make quicktest
 
 echo
 echo "---------------------------------------"
 echo
-echo "Files generated for $NEW_VERSION."
+echo "Files generated for the new version."
 echo "All tests should have passed. For the docs change, commit the results and rerun 'make test'."
 echo "Please double check manually the generated files as well: the upgrade functionality, and all the examples:"
 echo

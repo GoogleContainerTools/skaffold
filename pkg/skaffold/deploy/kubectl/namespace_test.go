@@ -22,14 +22,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestCollectLabels(t *testing.T) {
+func TestCollectNamespaces(t *testing.T) {
 	tests := []struct {
 		description string
 		manifests   ManifestList
 		expected    []string
 	}{
 		{
-			description: "single manifest in the list",
+			description: "single Pod manifest in the list",
 			manifests: ManifestList{[]byte(`
 apiVersion: v1
 kind: Pod
@@ -40,6 +40,24 @@ spec:
   containers:
   - image: gcr.io/k8s-skaffold/example
     name: example
+`)},
+			expected: []string{"test"},
+		}, {
+			description: "single Service manifest in the list",
+			manifests: ManifestList{[]byte(`
+apiVersion: v1
+kind: Service
+metadata:
+  name: getting-started
+  namespace: test
+spec:
+  type: ClusterIP
+  ports:
+  - port: 443
+    targetPort: 8443
+    protocol: TCP
+  selector:
+    app: getting-started
 `)},
 			expected: []string{"test"},
 		}, {
@@ -113,12 +131,17 @@ spec:
 			description: "empty manifest",
 			manifests:   ManifestList{[]byte(``)},
 			expected:    []string{},
+		}, {
+			description: "unexpected metadata type",
+			manifests:   ManifestList{[]byte(`metadata: []`)},
+			expected:    []string{},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual, err := test.manifests.CollectNamespaces()
-			t.CheckErrorAndDeepEqual(false, err, test.expected, actual)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }

@@ -19,103 +19,97 @@ package color
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
-	"golang.org/x/crypto/ssh/terminal"
+	colors "github.com/heroku/color"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-// IsTerminal will check if the specified output stream is a terminal. This can be changed
-// for testing to an arbitrary method.
-var IsTerminal = isTerminal
+// Maintain compatibility with the old color coding.
+// 34 is the code for blue.
+const DefaultColorCode = 34
 
-// Color can be used to format text using ANSI escape codes so it can be printed to
-// the terminal in color.
-type Color int
+func init() {
+	colors.Disable(true)
+}
+
+// SetupColors enables/disables coloured output.
+func SetupColors(out io.Writer, defaultColor int, forceColors bool) {
+	_, isTerm := util.IsTerminal(out)
+	colors.Disable(!isTerm && !forceColors)
+
+	// Maintain compatibility with the old color coding.
+	Default = map[int]Color{
+		91: LightRed,
+		92: LightGreen,
+		93: LightYellow,
+		94: LightBlue,
+		95: LightPurple,
+		31: Red,
+		32: Green,
+		33: Yellow,
+		34: Blue,
+		35: Purple,
+		36: Cyan,
+		37: White,
+		0:  None,
+	}[defaultColor]
+}
+
+// Color can be used to format text so it can be printed to the terminal in color.
+type Color struct {
+	color *colors.Color
+}
 
 var (
-	// LightRed can format text to be displayed to the terminal in light red, using ANSI escape codes.
-	LightRed = Color(91)
-	// LightGreen can format text to be displayed to the terminal in light green, using ANSI escape codes.
-	LightGreen = Color(92)
-	// LightYellow can format text to be displayed to the terminal in light yellow, using ANSI escape codes.
-	LightYellow = Color(93)
-	// LightBlue can format text to be displayed to the terminal in light blue, using ANSI escape codes.
-	LightBlue = Color(94)
-	// LightPurple can format text to be displayed to the terminal in light purple, using ANSI escape codes.
-	LightPurple = Color(95)
-	// Red can format text to be displayed to the terminal in red, using ANSI escape codes.
-	Red = Color(31)
-	// Green can format text to be displayed to the terminal in green, using ANSI escape codes.
-	Green = Color(32)
-	// Yellow can format text to be displayed to the terminal in yellow, using ANSI escape codes.
-	Yellow = Color(33)
-	// Blue can format text to be displayed to the terminal in blue, using ANSI escape codes.
-	Blue = Color(34)
-	// Purple can format text to be displayed to the terminal in purple, using ANSI escape codes.
-	Purple = Color(35)
-	// Cyan can format text to be displayed to the terminal in cyan, using ANSI escape codes.
-	Cyan = Color(36)
-	// White can format text to be displayed to the terminal in white, using ANSI escape codes.
-	White = Color(37)
+	// LightRed can format text to be displayed to the terminal in light red.
+	LightRed = Color{color: colors.New(colors.FgHiRed)}
+	// LightGreen can format text to be displayed to the terminal in light green.
+	LightGreen = Color{color: colors.New(colors.FgHiGreen)}
+	// LightYellow can format text to be displayed to the terminal in light yellow.
+	LightYellow = Color{color: colors.New(colors.FgHiYellow)}
+	// LightBlue can format text to be displayed to the terminal in light blue.
+	LightBlue = Color{color: colors.New(colors.FgHiBlue)}
+	// LightPurple can format text to be displayed to the terminal in light purple.
+	LightPurple = Color{color: colors.New(colors.FgHiMagenta)}
+	// Red can format text to be displayed to the terminal in red.
+	Red = Color{color: colors.New(colors.FgRed)}
+	// Green can format text to be displayed to the terminal in green.
+	Green = Color{color: colors.New(colors.FgGreen)}
+	// Yellow can format text to be displayed to the terminal in yellow.
+	Yellow = Color{color: colors.New(colors.FgYellow)}
+	// Blue can format text to be displayed to the terminal in blue.
+	Blue = Color{color: colors.New(colors.FgBlue)}
+	// Purple can format text to be displayed to the terminal in purple.
+	Purple = Color{color: colors.New(colors.FgHiMagenta)}
+	// Cyan can format text to be displayed to the terminal in cyan.
+	Cyan = Color{color: colors.New(colors.FgHiCyan)}
+	// White can format text to be displayed to the terminal in white.
+	White = Color{color: colors.New(colors.FgWhite)}
 	// None uses ANSI escape codes to reset all formatting.
-	None = Color(0)
+	None = Color{}
 
 	// Default default output color for output from Skaffold to the user
 	Default = Blue
 )
 
-// Fprintln wraps the operands in c's ANSI escape codes, and outputs the result to
-// out, followed by a newline. If out is not a terminal, the escape codes will not be added.
-// It returns the number of bytes written and any errors encountered.
-func (c Color) Fprintln(out io.Writer, a ...interface{}) (n int, err error) {
-	if IsTerminal(out) {
-		return fmt.Fprintf(out, "\033[%dm%s\033[0m\n", c, strings.TrimSuffix(fmt.Sprintln(a...), "\n"))
+// Fprintln outputs the result to out, followed by a newline.
+func (c Color) Fprintln(out io.Writer, a ...interface{}) {
+	if c.color == nil {
+		fmt.Fprintln(out, a...)
+		return
 	}
-	return fmt.Fprintln(out, a...)
+
+	fmt.Fprintln(out, c.color.Sprint(strings.TrimSuffix(fmt.Sprintln(a...), "\n")))
 }
 
-// Fprintf applies formats according to the format specifier (and the optional interfaces provided),
-// wraps the result in c's ANSI escape codes, and outputs the result to
-// out, followed by a newline. If out is not a terminal, the escape codes will not be added.
-// It returns the number of bytes written and any errors encountered.
-func (c Color) Fprintf(out io.Writer, format string, a ...interface{}) (n int, err error) {
-	if IsTerminal(out) {
-		return fmt.Fprintf(out, "\033[%dm%s\033[0m", c, fmt.Sprintf(format, a...))
-	}
-	return fmt.Fprintf(out, format, a...)
-}
-
-// ColoredWriteCloser forces printing with colors to an io.WriteCloser.
-type ColoredWriteCloser struct {
-	io.WriteCloser
-}
-
-// OverwriteDefault overwrites default color
-func OverwriteDefault(color Color) {
-	Default = color
-}
-
-// This implementation comes from logrus (https://github.com/sirupsen/logrus/blob/master/terminal_check_notappengine.go),
-// unfortunately logrus doesn't expose a public interface we can use to call it.
-func isTerminal(w io.Writer) bool {
-	if _, ok := w.(ColoredWriteCloser); ok {
-		return true
+// Fprintf outputs the result to out.
+func (c Color) Fprintf(out io.Writer, format string, a ...interface{}) {
+	if c.color == nil {
+		fmt.Fprintf(out, format, a...)
+		return
 	}
 
-	switch v := w.(type) {
-	case *os.File:
-		return terminal.IsTerminal(int(v.Fd()))
-	default:
-		return false
-	}
-}
-
-func ForceColors() func() {
-	IsTerminal = func(_ io.Writer) bool {
-		return true
-	}
-	return func() {
-		IsTerminal = isTerminal
-	}
+	fmt.Fprint(out, c.color.Sprintf(format, a...))
 }

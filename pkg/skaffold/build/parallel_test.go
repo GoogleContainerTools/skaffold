@@ -23,10 +23,11 @@ import (
 	"io"
 	"io/ioutil"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -235,9 +236,65 @@ And new lines
 			}
 			initializeEvents()
 
-			InParallel(context.Background(), out, tags, artifacts, test.buildFunc)
+			InParallel(context.Background(), out, tags, artifacts, test.buildFunc, 0)
 
 			t.CheckDeepEqual(test.expected, out.String())
+		})
+	}
+}
+
+func TestInParallelConcurrency(t *testing.T) {
+	tests := []struct {
+		artifacts      int
+		limit          int
+		maxConcurrency int
+	}{
+		{
+			artifacts:      10,
+			limit:          0, // default - no limit
+			maxConcurrency: 10,
+		},
+		{
+			artifacts:      50,
+			limit:          1,
+			maxConcurrency: 1,
+		},
+		{
+			artifacts:      50,
+			limit:          10,
+			maxConcurrency: 10,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, fmt.Sprintf("%d artifacts, max concurrency=%d", test.artifacts, test.limit), func(t *testutil.T) {
+			var artifacts []*latest.Artifact
+			tags := tag.ImageTags{}
+
+			for i := 0; i < test.artifacts; i++ {
+				imageName := fmt.Sprintf("skaffold/image%d", i)
+				tag := fmt.Sprintf("skaffold/image%d:tag", i)
+
+				artifacts = append(artifacts, &latest.Artifact{ImageName: imageName})
+				tags[imageName] = tag
+			}
+
+			var actualConcurrency int32
+
+			builder := func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
+				if atomic.AddInt32(&actualConcurrency, 1) > int32(test.maxConcurrency) {
+					return "", fmt.Errorf("only %d build can run at a time", test.maxConcurrency)
+				}
+				time.Sleep(5 * time.Millisecond)
+				atomic.AddInt32(&actualConcurrency, -1)
+
+				return tag, nil
+			}
+
+			initializeEvents()
+			results, err := InParallel(context.Background(), ioutil.Discard, tags, artifacts, builder, test.limit)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.artifacts, len(results))
 		})
 	}
 }
@@ -288,47 +345,17 @@ func TestInParallelForArgs(t *testing.T) {
 				t.Override(&runInSequence, test.inSeqFunc)
 			}
 			initializeEvents()
-			actual, _ := InParallel(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact)
+			actual, _ := InParallel(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, 0)
 
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }
 
-func TestColoredOutput(t *testing.T) {
-	tests := []struct {
-		description   string
-		isTerminal    func(w io.Writer) bool
-		exceptedColor bool
-	}{
-		{
-			description:   "setUpColorWriter returns color out writer for terminal",
-			isTerminal:    func(w io.Writer) bool { return true },
-			exceptedColor: true,
-		},
-		{
-			description:   "setUpColorWriter returns color out writer if not terminal",
-			isTerminal:    func(w io.Writer) bool { return false },
-			exceptedColor: false,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&color.IsTerminal, test.isTerminal)
-
-			_, w := io.Pipe()
-			actual := setUpColorWriter(w, ioutil.Discard)
-
-			_, isColorWriter := actual.(color.ColoredWriteCloser)
-			t.CheckDeepEqual(test.exceptedColor, isColorWriter)
-		})
-	}
-}
-
-func setUpChannels(n int) []chan []byte {
-	outputs := make([]chan []byte, n)
+func setUpChannels(n int) []chan string {
+	outputs := make([]chan string, n)
 	for i := 0; i < n; i++ {
-		outputs[i] = make(chan []byte, 10)
+		outputs[i] = make(chan string, 10)
 		close(outputs[i])
 	}
 	return outputs

@@ -17,10 +17,9 @@ limitations under the License.
 package kubectl
 
 import (
+	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // CollectNamespaces returns all the namespaces in the manifests.
@@ -28,7 +27,7 @@ func (l *ManifestList) CollectNamespaces() ([]string, error) {
 	replacer := newNamespaceCollector()
 
 	if _, err := l.Visit(replacer); err != nil {
-		return nil, errors.Wrap(err, "collecting namespaces")
+		return nil, fmt.Errorf("collecting namespaces: %w", err)
 	}
 
 	namespaces := make([]string, 0, len(replacer.namespaces))
@@ -49,21 +48,19 @@ func newNamespaceCollector() *namespaceCollector {
 	}
 }
 
-func (r *namespaceCollector) Matches(key string) bool {
-	return key == "metadata"
-}
+func (r *namespaceCollector) Visit(o map[string]interface{}, k string, v interface{}) bool {
+	if k != "metadata" {
+		return true
+	}
 
-func (r *namespaceCollector) NewValue(old interface{}) (bool, interface{}) {
-	metadata, ok := old.(map[interface{}]interface{})
+	metadata, ok := v.(map[string]interface{})
 	if !ok {
-		return false, nil
+		return true
 	}
 	if nsValue, present := metadata["namespace"]; present {
 		if ns := strings.TrimSpace(nsValue.(string)); ns != "" {
 			r.namespaces[ns] = true
 		}
-		return true, metadata
 	}
-
-	return false, nil
+	return false
 }

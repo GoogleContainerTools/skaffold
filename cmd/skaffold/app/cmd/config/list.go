@@ -17,16 +17,15 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
-func List(out io.Writer) error {
+func List(ctx context.Context, out io.Writer) error {
 	var configYaml []byte
 	if showAll {
 		cfg, err := config.ReadConfigFile(configFile)
@@ -38,7 +37,7 @@ func List(out io.Writer) error {
 		}
 		configYaml, err = yaml.Marshal(&cfg)
 		if err != nil {
-			return errors.Wrap(err, "marshaling config")
+			return fmt.Errorf("marshaling config: %w", err)
 		}
 	} else {
 		contextConfig, err := getConfigForKubectx()
@@ -50,7 +49,7 @@ func List(out io.Writer) error {
 		}
 		configYaml, err = yaml.Marshal(&contextConfig)
 		if err != nil {
-			return errors.Wrap(err, "marshaling config")
+			return fmt.Errorf("marshaling config: %w", err)
 		}
 	}
 

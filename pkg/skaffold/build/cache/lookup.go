@@ -23,15 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
-)
-
-var (
-	// For testing
-	hashForArtifact = getHashForArtifact
-	buildInProgress = event.BuildInProgress
 )
 
 func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifacts []*latest.Artifact) []cacheDetails {
@@ -43,7 +35,6 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 
 		i := i
 		go func() {
-			buildInProgress(artifacts[i].ImageName)
 			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName])
 			wg.Done()
 		}()
@@ -54,9 +45,9 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 }
 
 func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string) cacheDetails {
-	hash, err := hashForArtifact(ctx, c.dependencies, a)
+	hash, err := c.hashForArtifact(ctx, a)
 	if err != nil {
-		return failed{err: errors.Wrapf(err, "getting hash for artifact %s", a.ImageName)}
+		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}
 
 	entry, cacheHit := c.artifactCache[hash]

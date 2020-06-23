@@ -24,50 +24,48 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
 
 type testForwarder struct {
 	forwardedResources forwardedResources
-	forwardedPorts     forwardedPorts
+	forwardedPorts     util.PortSet
 }
 
 func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) {
 	f.forwardedResources.Store(pfe.key(), pfe)
-	f.forwardedPorts.Store(pfe.localPort, true)
+	f.forwardedPorts.Set(pfe.localPort)
 }
 
-func (f *testForwarder) Monitor(_ *portForwardEntry, _ func()) {}
+func (f *testForwarder) Monitor(*portForwardEntry, func()) {}
 
 func (f *testForwarder) Terminate(pfe *portForwardEntry) {
 	f.forwardedResources.Delete(pfe.key())
-	f.forwardedPorts.Delete(pfe.resource.Port)
+	f.forwardedPorts.Delete(pfe.localPort)
 }
 
 func newTestForwarder() *testForwarder {
-	return &testForwarder{
-		forwardedResources: newForwardedResources(),
-		forwardedPorts:     newForwardedPorts(),
-	}
+	return &testForwarder{}
 }
 
-func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int, util.ForwardedPorts) int {
+func mockRetrieveAvailablePort(_ string, taken map[int]struct{}, availablePorts []int) func(string, int, *util.PortSet) int {
 	// Return first available port in ports that isn't taken
-	lock := sync.Mutex{}
-	return func(int, util.ForwardedPorts) int {
+	var lock sync.Mutex
+	return func(string, int, *util.PortSet) int {
 		for _, p := range availablePorts {
 			lock.Lock()
 			if _, ok := taken[p]; ok {
@@ -121,25 +119,26 @@ func TestStart(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState(latest.BuildConfig{})
-			fakeForwarder := newTestForwarder()
-			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", nil)
-			rf.EntryForwarder = fakeForwarder
-
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
+			event.InitializeState(latest.Pipeline{}, "", true, true, true)
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, test.availablePorts))
 			t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
 				return test.resources, nil
 			})
 
+			fakeForwarder := newTestForwarder()
+			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
+
+			rf := NewResourceForwarder(entryManager, []string{"test"}, "", nil)
 			if err := rf.Start(context.Background()); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
+
 			// poll up to 10 seconds for the resources to be forwarded
 			err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
 				return len(test.expected) == fakeForwarder.forwardedResources.Length(), nil
 			})
 			if err != nil {
-				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expected, fakeForwarder.forwardedResources)
+				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expected, fakeForwarder.forwardedResources.resources)
 			}
 		})
 	}
@@ -161,7 +160,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 				Port: 8080,
 			},
 			availablePorts: []int{8080},
-			expected:       newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", 8080, false),
+			expected:       newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false),
 		}, {
 			description: "port forward existing deployment",
 			resource: latest.PortForwardResource{
@@ -181,24 +180,23 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 					localPort: 9000,
 				},
 			},
-			expected: newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", 9000, false),
+			expected: newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 9000, false),
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, test.availablePorts))
+
+			entryManager := NewEntryManager(ioutil.Discard, newTestForwarder())
+			entryManager.forwardedResources = forwardedResources{
+				resources: test.forwardedResources,
+			}
+			rf := NewResourceForwarder(entryManager, []string{"test"}, "", nil)
+			actualEntry := rf.getCurrentEntry(test.resource)
+
 			expectedEntry := test.expected
 			expectedEntry.resource = test.resource
-
-			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", nil)
-			rf.forwardedResources = forwardedResources{
-				resources: test.forwardedResources,
-				lock:      &sync.Mutex{},
-			}
-
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
-
-			actualEntry := rf.getCurrentEntry(test.resource)
 			t.CheckDeepEqual(expectedEntry, actualEntry, cmp.AllowUnexported(portForwardEntry{}, sync.Mutex{}))
 		})
 	}
@@ -231,19 +229,20 @@ func TestUserDefinedResources(t *testing.T) {
 	}
 
 	testutil.Run(t, "one service and one user defined pod", func(t *testutil.T) {
-		event.InitializeState(latest.BuildConfig{})
-		fakeForwarder := newTestForwarder()
-		rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", []*latest.PortForwardResource{pod})
-		rf.EntryForwarder = fakeForwarder
-
-		t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, []int{8080, 9000}))
+		event.InitializeState(latest.Pipeline{}, "", true, true, true)
+		t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, []int{8080, 9000}))
 		t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
 			return []*latest.PortForwardResource{svc}, nil
 		})
 
+		fakeForwarder := newTestForwarder()
+		entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
+
+		rf := NewResourceForwarder(entryManager, []string{"test"}, "", []*latest.PortForwardResource{pod})
 		if err := rf.Start(context.Background()); err != nil {
 			t.Fatalf("error starting resource forwarder: %v", err)
 		}
+
 		// poll up to 10 seconds for the resources to be forwarded
 		err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
 			return len(expected) == fakeForwarder.forwardedResources.Length(), nil
@@ -258,7 +257,6 @@ func mockClient(m kubernetes.Interface) func() (kubernetes.Interface, error) {
 	return func() (kubernetes.Interface, error) {
 		return m, nil
 	}
-
 }
 
 func TestRetrieveServices(t *testing.T) {
@@ -297,12 +295,14 @@ func TestRetrieveServices(t *testing.T) {
 				Name:      "svc1",
 				Namespace: "test",
 				Port:      8080,
+				Address:   "127.0.0.1",
 				LocalPort: 8080,
 			}, {
 				Type:      constants.Service,
 				Name:      "svc2",
 				Namespace: "test1",
 				Port:      8081,
+				Address:   "127.0.0.1",
 				LocalPort: 8081,
 			}},
 		}, {
@@ -344,8 +344,10 @@ func TestRetrieveServices(t *testing.T) {
 				objs[i] = s
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
-			t.Override(&getClientSet, mockClient(client))
+			t.Override(&kubernetesutil.Client, mockClient(client))
+
 			actual, err := retrieveServiceResources(fmt.Sprintf("%s=9876-6789", deploy.RunIDLabel), test.namespaces)
+
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 		})

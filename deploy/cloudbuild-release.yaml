@@ -1,17 +1,6 @@
 # using default substitutions, provided by Google Cloud Build
 # see: https://cloud.google.com/container-builder/docs/configuring-builds/substitute-variable-values#using_default_substitutions
 steps:
-
-# Download the latest version of the builder image
-  - name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
-    args:
-    - '-c'
-    - |
-      docker pull gcr.io/$PROJECT_ID/skaffold-builder:latest || exit 0
-# until https://github.com/GoogleCloudPlatform/cloud-builders/issues/253 is fixed
-
-# Rebuild the builder image if necessary
   - name: 'gcr.io/cloud-builders/docker'
     args:
     - 'build'
@@ -19,24 +8,24 @@ steps:
     - 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
     - '-f'
     - 'deploy/skaffold/Dockerfile'
-    - '--cache-from'
-    - 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
-    - '--target'
-    - 'builder'
     - '.'
 
 # Do the go build & push the results to GCS
   - name: 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
     args:
     - 'make'
-    - '-j'
     - 'release'
     - 'VERSION=$TAG_NAME'
     - 'RELEASE_BUCKET=$_RELEASE_BUCKET'
     - 'GCP_PROJECT=$PROJECT_ID'
 
+# Check that skaffold is in the image
+  - name: 'gcr.io/$PROJECT_ID/skaffold:latest'
+    args:
+    - 'skaffold'
+    - 'version'
+
 images:
-- 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
 - 'gcr.io/$PROJECT_ID/skaffold:latest'
 - 'gcr.io/$PROJECT_ID/skaffold:$TAG_NAME'
 

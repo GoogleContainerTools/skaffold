@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"testing"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 const (
@@ -73,26 +74,22 @@ deploy:
    - dep.yaml
    - svc.yaml
 `
-	minimalKanikoConfig = `
+	minimalClusterConfig = `
 build:
   artifacts:
   - image: image1
     context: ./examples/app1
-    kaniko:
-      buildContext:
-        gcsBucket: demo
+    kaniko: {}
   cluster: {}
 `
-	completeKanikoConfig = `
+	completeClusterConfig = `
 build:
   artifacts:
   - image: image1
     context: ./examples/app1
-    kaniko:
-      buildContext:
-        localDir: {}
+    kaniko: {}
   cluster:
-    pullSecret: /secret.json
+    pullSecretPath: /secret.json
     pullSecretName: secret-name
     namespace: nskaniko
     timeout: 120m
@@ -112,7 +109,47 @@ deploy:
 `
 )
 
-func TestParseConfig(t *testing.T) {
+func TestIsSkaffoldConfig(t *testing.T) {
+	tests := []struct {
+		description string
+		contents    string
+		isValid     bool
+	}{
+		{
+			description: "valid skaffold config",
+			contents: `apiVersion: skaffold/v1beta6
+kind: Config
+deploy:
+  kustomize: {}`,
+			isValid: true,
+		},
+		{
+			description: "not a valid format",
+			contents:    "test",
+			isValid:     false,
+		},
+		{
+			description: "invalid skaffold config version",
+			contents: `apiVersion: skaffold/v1beta100
+kind: Config
+deploy:
+  kustomize: {}`,
+			isValid: false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Write("skaffold.yaml", test.contents)
+
+			isValid := IsSkaffoldConfig(tmpDir.Path("skaffold.yaml"))
+
+			t.CheckDeepEqual(test.isValid, isValid)
+		})
+	}
+}
+
+func TestParseConfigAndUpgrade(t *testing.T) {
 	tests := []struct {
 		apiVersion  string
 		description string
@@ -169,25 +206,25 @@ func TestParseConfig(t *testing.T) {
 		},
 		{
 			apiVersion:  latest.Version,
-			description: "Minimal Kaniko config",
-			config:      minimalKanikoConfig,
+			description: "Minimal Cluster config",
+			config:      minimalClusterConfig,
 			expected: config(
-				withClusterBuild("kaniko-secret", "default", "", "20m",
+				withClusterBuild("", "/secret", "default", "", "20m",
 					withGitTagger(),
-					withKanikoArtifact("image1", "./examples/app1", "Dockerfile", "demo"),
+					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{
 			apiVersion:  latest.Version,
-			description: "Complete Kaniko config",
-			config:      completeKanikoConfig,
+			description: "Complete Cluster config",
+			config:      completeClusterConfig,
 			expected: config(
-				withClusterBuild("secret-name", "nskaniko", "/secret.json", "120m",
+				withClusterBuild("secret-name", "/secret", "nskaniko", "/secret.json", "120m",
 					withGitTagger(),
 					withDockerConfig("config-name", "/kaniko/.docker"),
-					withKanikoArtifact("image1", "./examples/app1", "Dockerfile", ""),
+					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
@@ -236,7 +273,7 @@ func TestParseConfig(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config))
 
-			cfg, err := ParseConfig(tmpDir.Path("skaffold.yaml"), true)
+			cfg, err := ParseConfigAndUpgrade(tmpDir.Path("skaffold.yaml"), latest.Version)
 			if cfg != nil {
 				config := cfg.(*latest.SkaffoldConfig)
 				err := defaults.Set(config)
@@ -259,7 +296,7 @@ func config(ops ...func(*latest.SkaffoldConfig)) *latest.SkaffoldConfig {
 
 func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
-		b := latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{}}}
+		b := latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency}}}
 		for _, op := range ops {
 			op(&b)
 		}
@@ -274,6 +311,8 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 			DockerImage: "gcr.io/cloud-builders/docker",
 			MavenImage:  "gcr.io/cloud-builders/mvn",
 			GradleImage: "gcr.io/cloud-builders/gradle",
+			KanikoImage: constants.DefaultKanikoImage,
+			PackImage:   "gcr.io/k8s-skaffold/pack",
 		}}}
 		for _, op := range ops {
 			op(&b)
@@ -282,13 +321,14 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 	}
 }
 
-func withClusterBuild(secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
+func withClusterBuild(secretName, mountPath, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
 		b := latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{
-			PullSecretName: secretName,
-			Namespace:      namespace,
-			PullSecret:     secret,
-			Timeout:        timeout,
+			PullSecretName:      secretName,
+			Namespace:           namespace,
+			PullSecretPath:      secret,
+			PullSecretMountPath: mountPath,
+			Timeout:             timeout,
 		}}}
 		for _, op := range ops {
 			op(&b)
@@ -308,23 +348,23 @@ func withDockerConfig(secretName string, path string) func(*latest.BuildConfig) 
 
 func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
+		cfg.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{
+			Manifests: manifests,
+		}
+	}
+}
+
+func withKubeContext(kubeContext string) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Deploy = latest.DeployConfig{
-			DeployType: latest.DeployType{
-				KubectlDeploy: &latest.KubectlDeploy{
-					Manifests: manifests,
-				},
-			},
+			KubeContext: kubeContext,
 		}
 	}
 }
 
 func withHelmDeploy() func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
-		cfg.Deploy = latest.DeployConfig{
-			DeployType: latest.DeployType{
-				HelmDeploy: &latest.HelmDeploy{},
-			},
-		}
+		cfg.Deploy.DeployType.HelmDeploy = &latest.HelmDeploy{}
 	}
 }
 
@@ -356,24 +396,15 @@ func withBazelArtifact(image, workspace, target string) func(*latest.BuildConfig
 	}
 }
 
-func withKanikoArtifact(image, workspace, dockerfile, bucket string) func(*latest.BuildConfig) {
+func withKanikoArtifact(image, workspace, dockerfile string) func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) {
-		bc := &latest.KanikoBuildContext{}
-		if bucket == "" {
-			bc.LocalDir = &latest.LocalDir{
-				InitImage: constants.DefaultBusyboxImage,
-			}
-		} else {
-			bc.GCSBucket = bucket
-		}
-
 		cfg.Artifacts = append(cfg.Artifacts, &latest.Artifact{
 			ImageName: image,
 			Workspace: workspace,
 			ArtifactType: latest.ArtifactType{
 				KanikoArtifact: &latest.KanikoArtifact{
 					DockerfilePath: dockerfile,
-					BuildContext:   bc,
+					InitImage:      constants.DefaultBusyboxImage,
 					Image:          constants.DefaultKanikoImage,
 				},
 			},
@@ -402,6 +433,12 @@ func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldConfig) {
 func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Test = testCases
+	}
+}
+
+func withPortForward(portForward ...*latest.PortForwardResource) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.PortForward = portForward
 	}
 }
 
@@ -434,4 +471,28 @@ func TestCantUpgradeFromLatestVersion(t *testing.T) {
 
 	_, err := factory().Upgrade()
 	testutil.CheckError(t, true, err)
+}
+
+func TestParseConfigAndUpgradeToUnknownVersion(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.NewTempDir().
+			Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, minimalConfig)).
+			Chdir()
+
+		_, err := ParseConfigAndUpgrade("skaffold.yaml", "unknown")
+
+		t.CheckErrorContains(`unknown api version: "unknown"`, err)
+	})
+}
+
+func TestParseConfigAndUpgradeToOlderVersion(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.NewTempDir().
+			Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, minimalConfig)).
+			Chdir()
+
+		_, err := ParseConfigAndUpgrade("skaffold.yaml", "skaffold/v1alpha1")
+
+		t.CheckErrorContains(`is more recent than target version "skaffold/v1alpha1": upgrade Skaffold`, err)
+	})
 }

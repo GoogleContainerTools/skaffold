@@ -17,10 +17,12 @@ limitations under the License.
 package v1beta4
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	yamlpatch "github.com/krishicks/yaml-patch"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
 const Version string = "skaffold/v1beta4"
 
 // NewSkaffoldConfig creates a SkaffoldConfig

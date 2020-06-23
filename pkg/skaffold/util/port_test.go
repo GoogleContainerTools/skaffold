@@ -22,17 +22,31 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 )
 
-func TestGetAvailablePort(t *testing.T) {
-	AssertCompetingProcessesCanSucceed(&sync.Map{}, t)
+func TestPortSet(t *testing.T) {
+	pf := &PortSet{}
+
+	// Try to store a port
+	pf.Set(9000)
+
+	// Try to load the port
+	if alreadySet := pf.LoadOrSet(9000); !alreadySet {
+		t.Fatal("didn't load port 9000 correctly")
+	}
+
+	if alreadySet := pf.LoadOrSet(4000); alreadySet {
+		t.Fatal("didn't store port 4000 correctly")
+	}
+
+	if alreadySet := pf.LoadOrSet(4000); !alreadySet {
+		t.Fatal("didn't load port 4000 correctly")
+	}
 }
 
-//TODO this is copy pasted to portforward.forwardedPorts testing as well - it should go away when we introduce port brokering
-// https://github.com/GoogleContainerTools/skaffold/issues/2503
-func AssertCompetingProcessesCanSucceed(ports ForwardedPorts, t *testing.T) {
-	t.Helper()
+func TestGetAvailablePort(t *testing.T) {
+	var ports PortSet
+
 	N := 100
 	var (
 		errors int32
@@ -41,8 +55,7 @@ func AssertCompetingProcessesCanSucceed(ports ForwardedPorts, t *testing.T) {
 	wg.Add(N)
 	for i := 0; i < N; i++ {
 		go func() {
-
-			port := GetAvailablePort(4503, ports)
+			port := GetAvailablePort("127.0.0.1", 4503, &ports)
 
 			l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", Loopback, port))
 			if err != nil {
@@ -50,7 +63,6 @@ func AssertCompetingProcessesCanSucceed(ports ForwardedPorts, t *testing.T) {
 			} else {
 				l.Close()
 			}
-			time.Sleep(2 * time.Second)
 			wg.Done()
 		}()
 	}

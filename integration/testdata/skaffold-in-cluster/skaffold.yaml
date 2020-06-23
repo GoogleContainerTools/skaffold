@@ -1,0 +1,26 @@
+apiVersion: skaffold/v1beta13
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+  cluster:
+    pullSecretName: e2esecret
+    namespace: VAR_CLUSTER_NAMESPACE
+profiles:
+  - name: create-build-step
+    build:
+      artifacts:
+        - image: skaffold-in-cluster-builder
+          kaniko:
+            cache: {}
+    deploy:
+      kustomize:
+        path: build-step
+  - name: build-target
+    build:
+      artifacts:
+        - image: gcr.io/k8s-skaffold/test-build-in-cluster
+          kaniko:
+            dockerfile: test-build/Dockerfile
+            cache: {}
+

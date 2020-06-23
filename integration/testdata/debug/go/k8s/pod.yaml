@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: go
+spec:
+  containers:
+  - name: go-web
+    image: skaffold-debug-go
+    ports:
+    - containerPort: 8080
+    # connect to the dlv APIv2 port
+    readinessProbe:
+      tcpSocket:
+        port: 56268
+      initialDelaySeconds: 2
+      periodSeconds: 10
+    # connect to the app port
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 8080
+      failureThreshold: 30
+      periodSeconds: 10

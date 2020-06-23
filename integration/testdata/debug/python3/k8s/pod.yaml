@@ -4,7 +4,20 @@ metadata:
   name: python3
 spec:
   containers:
-  - name: web
-    image: gcr.io/k8s-skaffold/skaffold-debug-python3
+  - name: python3-web
+    image: skaffold-debug-python3
     ports:
     - containerPort: 5000
+    # connect to the debug-adapter port
+    readinessProbe:
+      tcpSocket:
+        port: 5678
+      initialDelaySeconds: 2
+      periodSeconds: 10
+    # connect to the app port
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 5000
+      failureThreshold: 30
+      periodSeconds: 10

@@ -97,3 +97,20 @@ func TestBuildOutputString(t *testing.T) {
 	testutil.CheckDeepEqual(t, "test.in", flag.String())
 	testutil.CheckDeepEqual(t, "*flags.BuildOutputFileFlag", flag.Type())
 }
+
+func TestBuildOutputSetStdin(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.SetStdin([]byte(`{"builds": [{"imageName": "gcr.io/k8s/test1", "tag": "sha256@foo"}]}`))
+
+		flag := NewBuildOutputFileFlag("")
+		err := flag.Set("-")
+		t.CheckNoError(err)
+
+		t.CheckDeepEqual(BuildOutput{
+			Builds: []build.Artifact{{
+				ImageName: "gcr.io/k8s/test1",
+				Tag:       "sha256@foo",
+			}},
+		}, flag.buildOutput)
+	})
+}

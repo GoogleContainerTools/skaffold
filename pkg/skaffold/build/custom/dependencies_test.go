@@ -27,8 +27,7 @@ import (
 )
 
 func TestGetDependenciesDockerfile(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	tmpDir := testutil.NewTempDir(t)
 
 	// Directory structure:
 	//   foo
@@ -58,7 +57,7 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 
 func TestGetDependenciesCommand(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&util.DefaultExecCommand, t.FakeRunOut(
+		t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
 			"echo [\"file1\",\"file2\",\"file3\"]",
 			"[\"file1\",\"file2\",\"file3\"]",
 		))
@@ -83,18 +82,31 @@ func TestGetDependenciesPaths(t *testing.T) {
 		ignore      []string
 		paths       []string
 		expected    []string
+		shouldErr   bool
 	}{
 		{
 			description: "watch everything",
 			paths:       []string{"."},
 			expected:    []string{"bar", filepath.FromSlash("baz/file"), "foo"},
-		}, {
+		},
+		{
 			description: "watch nothing",
-		}, {
+		},
+		{
 			description: "ignore some paths",
 			paths:       []string{"."},
 			ignore:      []string{"b*"},
 			expected:    []string{"foo"},
+		},
+		{
+			description: "glob",
+			paths:       []string{"**"},
+			expected:    []string{"bar", filepath.FromSlash("baz/file"), "foo"},
+		},
+		{
+			description: "error",
+			paths:       []string{"unknown"},
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
@@ -114,8 +126,7 @@ func TestGetDependenciesPaths(t *testing.T) {
 				},
 			}, nil)
 
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, deps)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
 		})
 	}
 }

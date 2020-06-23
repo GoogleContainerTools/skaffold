@@ -20,8 +20,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"testing"
+
+	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
@@ -35,7 +36,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type Actions struct {
@@ -52,7 +52,7 @@ type TestBench struct {
 	deployErrors []error
 	namespaces   []string
 
-	devLoop        func(context.Context, io.Writer) error
+	devLoop        func(context.Context, io.Writer, func() error) error
 	firstMonitor   func(bool) error
 	cycles         int
 	currentCycle   int
@@ -95,13 +95,6 @@ func (t *TestBench) TestDependencies() ([]string, error)              { return n
 func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
 func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
 func (t *TestBench) Prune(ctx context.Context, out io.Writer) error   { return nil }
-func (t *TestBench) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
-	return nil, nil
-}
-
-func (t *TestBench) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-	return nil, nil
-}
 
 func (t *TestBench) enterNewCycle() {
 	t.actions = append(t.actions, t.currentActions)
@@ -170,11 +163,15 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Art
 	return deploy.NewDeploySuccessResult(t.namespaces)
 }
 
+func (t *TestBench) Render(context.Context, io.Writer, []build.Artifact, []deploy.Labeller, bool, string) error {
+	return nil
+}
+
 func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
 
-func (t *TestBench) WatchForChanges(context.Context, io.Writer, func(context.Context, io.Writer) error) error {
+func (t *TestBench) WatchForChanges(ctx context.Context, out io.Writer, doDev func() error) error {
 	// don't actually call the monitor here, because extra actions would be added
 	if err := t.firstMonitor(true); err != nil {
 		return err
@@ -182,7 +179,7 @@ func (t *TestBench) WatchForChanges(context.Context, io.Writer, func(context.Con
 	for i := 0; i < t.cycles; i++ {
 		t.enterNewCycle()
 		t.currentCycle = i
-		if err := t.devLoop(context.Background(), ioutil.Discard); err != nil {
+		if err := t.devLoop(ctx, out, doDev); err != nil {
 			return err
 		}
 	}
@@ -238,11 +235,11 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 	runner.listener = testBench
 	runner.monitor = monitor
 
-	testBench.devLoop = func(context.Context, io.Writer) error {
+	testBench.devLoop = func(ctx context.Context, out io.Writer, doDev func() error) error {
 		if err := monitor.Run(true); err != nil {
 			return err
 		}
-		return runner.doDev(context.Background(), ioutil.Discard)
+		return doDev()
 	}
 
 	testBench.firstMonitor = func(bool) error {
@@ -308,19 +305,6 @@ func TestNewForConfig(t *testing.T) {
 			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
-			description: "unknown deployer",
-			pipeline: latest.Pipeline{
-				Build: latest.BuildConfig{
-					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
-					BuildType: latest.BuildType{
-						LocalBuild: &latest.LocalBuild{},
-					},
-				},
-				Deploy: latest.DeployConfig{},
-			},
-			shouldErr: true,
-		},
-		{
 			description: "no artifacts, cache",
 			pipeline: latest.Pipeline{
 				Build: latest.BuildConfig{
@@ -340,6 +324,31 @@ func TestNewForConfig(t *testing.T) {
 			expectedDeployer: &deploy.KubectlDeployer{},
 			cacheArtifacts:   true,
 		},
+		{
+			description: "multiple deployers",
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
+					},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy:   &latest.KubectlDeploy{},
+						KustomizeDeploy: &latest.KustomizeDeploy{},
+						HelmDeploy:      &latest.HelmDeploy{},
+					},
+				},
+			},
+			expectedBuilder: &local.Builder{},
+			expectedTester:  &test.FullTester{},
+			expectedDeployer: deploy.DeployerMux([]deploy.Deployer{
+				&deploy.HelmDeployer{},
+				&deploy.KubectlDeployer{},
+				&deploy.KustomizeDeployer{},
+			}),
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -358,9 +367,14 @@ func TestNewForConfig(t *testing.T) {
 			if cfg != nil {
 				b, _t, d := WithTimings(test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
 
-				t.CheckErrorAndTypeEquality(test.shouldErr, err, b, cfg.builder)
-				t.CheckErrorAndTypeEquality(test.shouldErr, err, _t, cfg.tester)
-				t.CheckErrorAndTypeEquality(test.shouldErr, err, d, cfg.deployer)
+				if test.shouldErr {
+					t.CheckError(true, err)
+				} else {
+					t.CheckNoError(err)
+					t.CheckTypeEquality(b, cfg.builder)
+					t.CheckTypeEquality(_t, cfg.tester)
+					t.CheckTypeEquality(d, cfg.deployer)
+				}
 			}
 		})
 	}
@@ -415,7 +429,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			opts := config.SkaffoldOptions{
 				Trigger:           "polling",
 				WatchPollInterval: 100,
@@ -444,9 +458,10 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 			r.intents.resetBuild()
 			r.intents.resetSync()
 			r.intents.resetDeploy()
-			testutil.CheckDeepEqual(t, test.expectedBuildIntent, r.intents.build)
-			testutil.CheckDeepEqual(t, test.expectedSyncIntent, r.intents.sync)
-			testutil.CheckDeepEqual(t, test.expectedDeployIntent, r.intents.deploy)
+
+			t.CheckDeepEqual(test.expectedBuildIntent, r.intents.build)
+			t.CheckDeepEqual(test.expectedSyncIntent, r.intents.sync)
+			t.CheckDeepEqual(test.expectedDeployIntent, r.intents.deploy)
 		})
 	}
 }

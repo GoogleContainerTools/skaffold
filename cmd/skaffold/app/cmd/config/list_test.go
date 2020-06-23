@@ -18,13 +18,13 @@ package config
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -163,7 +163,7 @@ kubeContexts:
 
 			buf := &bytes.Buffer{}
 			// list values
-			err := List(buf)
+			err := List(context.Background(), buf)
 			t.CheckNoError(err)
 
 			if test.expectedOutput != "" && !strings.HasSuffix(buf.String(), test.expectedOutput) {

@@ -3,6 +3,7 @@ package system // import "github.com/docker/docker/pkg/system"
 import (
 	"os"
 
+	"github.com/Microsoft/hcsshim/osversion"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,10 +16,9 @@ var (
 	containerdRuntimeSupported = false
 )
 
-// InitLCOW sets whether LCOW is supported or not
+// InitLCOW sets whether LCOW is supported or not. Requires RS5+
 func InitLCOW(experimental bool) {
-	v := GetOSVersion()
-	if experimental && v.Build >= 16299 {
+	if experimental && osversion.Build() >= osversion.RS5 {
 		lcowSupported = true
 	}
 }

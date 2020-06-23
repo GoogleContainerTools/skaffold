@@ -17,7 +17,8 @@ limitations under the License.
 package kubectl
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,7 +28,7 @@ func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error)
 
 	updated, err := l.Visit(replacer)
 	if err != nil {
-		return nil, errors.Wrap(err, "setting labels")
+		return nil, fmt.Errorf("setting labels: %w", err)
 	}
 
 	logrus.Debugln("manifests with labels", updated.String())
@@ -45,34 +46,37 @@ func newLabelsSetter(labels map[string]string) *labelsSetter {
 	}
 }
 
-func (r *labelsSetter) Matches(key string) bool {
-	return key == "metadata"
-}
-
-func (r *labelsSetter) NewValue(old interface{}) (bool, interface{}) {
-	if len(r.labels) == 0 {
-		return false, nil
+func (r *labelsSetter) Visit(o map[string]interface{}, k string, v interface{}) bool {
+	if k != "metadata" {
+		return true
 	}
 
-	metadata, ok := old.(map[interface{}]interface{})
+	if len(r.labels) == 0 {
+		return false
+	}
+
+	metadata, ok := v.(map[string]interface{})
 	if !ok {
-		return false, nil
+		return true
 	}
 
 	l, present := metadata["labels"]
 	if !present {
 		metadata["labels"] = r.labels
-		return true, metadata
+		return false
 	}
 
-	labels, ok := l.(map[interface{}]interface{})
+	labels, ok := l.(map[string]interface{})
 	if !ok {
-		return false, nil
+		return true
 	}
 
 	for k, v := range r.labels {
-		labels[k] = v
+		// Don't replace existing label.
+		if _, present := labels[k]; !present {
+			labels[k] = v
+		}
 	}
 
-	return true, metadata
+	return false
 }

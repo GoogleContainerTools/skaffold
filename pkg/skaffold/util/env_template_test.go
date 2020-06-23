@@ -72,6 +72,9 @@ func TestEnvTemplate_ExecuteEnvTemplate(t *testing.T) {
 
 			got, err := ExecuteEnvTemplate(testTemplate, test.customMap)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, got)
+
+			got, err = ExpandEnvTemplate(test.template, test.customMap)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, got)
 		})
 	}
 }

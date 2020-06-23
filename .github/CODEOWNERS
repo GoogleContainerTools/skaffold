@@ -1,15 +1,18 @@
 # Global owners
 
-* @balopat @dgageot @nkubala @priyawadhwa @tejal29
+* @GoogleContainerTools/skaffold-team
+
+# Buildpacks owners
+
+**/**buildpacks** @GoogleContainerTools/skaffold-team
 
 # JIB owners
 
-**/**jib** @briandealwis @loosebazooka @TadCordle @chanseokoh @balopat @dgageot @nkubala @priyawadhwa @tejal29
-**/jib_** @briandealwis @loosebazooka @TadCordle @chanseokoh @balopat @dgageot @nkubala @priyawadhwa @tejal29
+**/**jib** @GoogleContainerTools/skaffold-team @loosebazooka @TadCordle @chanseokoh
 
 # Debug owners
-pkg/skaffold/debug/** @briandealwis @loosebazooka @quoctruong
-docs/content/en/docs/how-tos/debug/** @briandealwis @loosebazooka @quoctruong
-integration/test-data/debug/** @briandealwis @loosebazooka @quoctruong
-integration/debug_test.go  @briandealwis @loosebazooka @quoctruong
 
+pkg/skaffold/debug/** @GoogleContainerTools/skaffold-team @loosebazooka @quoctruong
+docs/content/en/docs/how-tos/debug/** @GoogleContainerTools/skaffold-team @loosebazooka @quoctruong
+integration/test-data/debug/** @GoogleContainerTools/skaffold-team @loosebazooka @quoctruong
+integration/debug_test.go @GoogleContainerTools/skaffold-team @loosebazooka @quoctruong

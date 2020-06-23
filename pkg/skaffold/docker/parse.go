@@ -24,14 +24,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type from struct {
@@ -66,30 +66,29 @@ var (
 func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]fromTo, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
-		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
+		return nil, err
 	}
 	defer f.Close()
 
 	res, err := parser.Parse(f)
 	if err != nil {
-		return nil, errors.Wrapf(err, "parsing dockerfile %s", absDockerfilePath)
+		return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
 	}
 
 	dockerfileLines := res.AST.Children
 
-	err = expandBuildArgs(dockerfileLines, buildArgs)
-	if err != nil {
-		return nil, errors.Wrap(err, "putting build arguments")
+	if err := expandBuildArgs(dockerfileLines, buildArgs); err != nil {
+		return nil, fmt.Errorf("putting build arguments: %w", err)
 	}
 
 	dockerfileLinesWithOnbuild, err := expandOnbuildInstructions(dockerfileLines, insecureRegistries)
 	if err != nil {
-		return nil, errors.Wrap(err, "expanding ONBUILD instructions")
+		return nil, err
 	}
 
 	cpCmds, err := extractCopyCommands(dockerfileLinesWithOnbuild, onlyLastImage, insecureRegistries)
 	if err != nil {
-		return nil, errors.Wrap(err, "listing copied files")
+		return nil, fmt.Errorf("listing copied files: %w", err)
 	}
 
 	return expandSrcGlobPatterns(workspace, cpCmds)
@@ -98,7 +97,7 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 	args, err := EvaluateBuildArgs(buildArgs)
 	if err != nil {
-		return errors.Wrap(err, "unable to evaluate build args")
+		return fmt.Errorf("unable to evaluate build args: %w", err)
 	}
 
 	for i, node := range nodes {
@@ -148,7 +147,7 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, e
 
 			files, err := filepath.Glob(path)
 			if err != nil {
-				return nil, errors.Wrap(err, "invalid glob pattern")
+				return nil, fmt.Errorf("invalid glob pattern: %w", err)
 			}
 			if files == nil {
 				continue
@@ -213,7 +212,7 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegis
 		case command.Workdir:
 			value, err := slex.ProcessWord(node.Next.Value, envs)
 			if err != nil {
-				return nil, errors.Wrap(err, "processing word")
+				return nil, fmt.Errorf("processing word: %w", err)
 			}
 			workdir = resolveDir(workdir, value)
 		case command.Add, command.Copy:
@@ -237,55 +236,55 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegis
 }
 
 func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCommand, error) {
-	var srcs []string
-	var dest string
-	var destIsDir bool
-
-	slex := shell.NewLex('\\')
-	for i := 0; ; i++ {
-		// Skip last node, since it is the destination, and stop if we arrive at a comment
-		v := value.Next.Value
-		if value.Next.Next == nil || strings.HasPrefix(value.Next.Next.Value, "#") {
-			// COPY or ADD with multiple files must have a directory destination
-			if i > 1 || strings.HasSuffix(v, "/") || path.Base(v) == "." || path.Base(v) == ".." {
-				destIsDir = true
-			}
-			dest = resolveDir(workdir, v)
-			break
-		}
-		src, err := slex.ProcessWord(v, envs)
-		if err != nil {
-			return nil, errors.Wrap(err, "processing word")
-		}
-		// If the --from flag is provided, we are dealing with a multi-stage dockerfile
-		// Adding a dependency from a different stage does not imply a source dependency
-		if hasMultiStageFlag(value.Flags) {
-			return nil, nil
-		}
-		if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") {
-			srcs = append(srcs, src)
-		} else {
-			logrus.Debugf("Skipping watch on remote dependency %s", src)
-		}
-
-		value = value.Next
+	// If the --from flag is provided, we are dealing with a multi-stage dockerfile
+	// Adding a dependency from a different stage does not imply a source dependency
+	if hasMultiStageFlag(value.Flags) {
+		return nil, nil
 	}
 
-	return &copyCommand{srcs: srcs, dest: dest, destIsDir: destIsDir}, nil
+	var paths []string
+	slex := shell.NewLex('\\')
+	for value := value.Next; value != nil && !strings.HasPrefix(value.Value, "#"); value = value.Next {
+		path, err := slex.ProcessWord(value.Value, envs)
+		if err != nil {
+			return nil, fmt.Errorf("expanding src: %w", err)
+		}
+
+		paths = append(paths, path)
+	}
+
+	// All paths are sources except the last one
+	var srcs []string
+	for _, src := range paths[0 : len(paths)-1] {
+		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
+			logrus.Debugln("Skipping watch on remote dependency", src)
+			continue
+		}
+
+		srcs = append(srcs, src)
+	}
+
+	// Destination is last
+	dest := paths[len(paths)-1]
+	destIsDir := strings.HasSuffix(dest, "/") || path.Base(dest) == "." || path.Base(dest) == ".."
+	dest = resolveDir(workdir, dest)
+
+	return &copyCommand{
+		srcs:      srcs,
+		dest:      dest,
+		destIsDir: destIsDir,
+	}, nil
 }
 
 func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[string]bool) ([]*parser.Node, error) {
-	onbuildNodesCache := map[string][]*parser.Node{}
+	onbuildNodesCache := map[string][]*parser.Node{
+		"scratch": nil,
+	}
 	var expandedNodes []*parser.Node
 	n := 0
 	for m, node := range nodes {
 		if node.Value == command.From {
 			from := fromInstruction(node)
-
-			// `scratch` is case insensitive
-			if strings.ToLower(from.image) == "scratch" {
-				continue
-			}
 
 			// onbuild should immediately follow the from command
 			expandedNodes = append(expandedNodes, nodes[n:m+1]...)
@@ -297,7 +296,7 @@ func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[stri
 			} else if ons, err := parseOnbuild(from.image, insecureRegistries); err == nil {
 				onbuildNodes = ons
 			} else {
-				return nil, errors.Wrap(err, "parsing ONBUILD instructions")
+				return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
 			}
 
 			// Stage names are case insensitive
@@ -318,7 +317,7 @@ func parseOnbuild(image string, insecureRegistries map[string]bool) ([]*parser.N
 	// Image names are case SENSITIVE
 	img, err := RetrieveImage(image, insecureRegistries)
 	if err != nil {
-		return nil, fmt.Errorf("processing base image (%s) for ONBUILD triggers: %s", image, err)
+		return nil, fmt.Errorf("retrieving image %q: %w", image, err)
 	}
 
 	if len(img.Config.OnBuild) == 0 {
@@ -342,9 +341,22 @@ func fromInstruction(node *parser.Node) from {
 	}
 
 	return from{
-		image: node.Next.Value,
+		image: unquote(node.Next.Value),
 		as:    strings.ToLower(as),
 	}
+}
+
+// unquote remove single quote/double quote pairs around a string value.
+// It looks like FROM "scratch" and FROM 'scratch' and FROM """scratch"""...
+// are valid forms of FROM scratch.
+func unquote(v string) string {
+	unquoted := strings.TrimFunc(v, func(r rune) bool { return r == '"' })
+	if unquoted != v {
+		return unquoted
+	}
+
+	unquoted = strings.TrimFunc(v, func(r rune) bool { return r == '\'' })
+	return unquoted
 }
 
 func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {
@@ -353,7 +365,7 @@ func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.Config
 		InsecureRegistries: insecureRegistries,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "getting docker client")
+		return nil, fmt.Errorf("getting docker client: %w", err)
 	}
 
 	return localDaemon.ConfigFile(context.Background(), image)

@@ -15,7 +15,6 @@
 package name
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -45,6 +44,6 @@ func ParseReference(s string, opts ...Option) (Reference, error) {
 	if d, err := NewDigest(s, opts...); err == nil {
 		return d, nil
 	}
-	// TODO: Combine above errors into something more useful?
-	return nil, errors.New("could not parse reference")
+	return nil, NewErrBadName("could not parse reference: " + s)
+
 }

@@ -17,11 +17,9 @@ limitations under the License.
 package constants
 
 import (
-	"fmt"
-	"runtime"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -41,7 +39,7 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.10.0@sha256:78d44ec4e9cb5545d7f85c1924695c89503ded86a59f92c7ae658afa3cff5400"
+	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.20.0@sha256:f9a4a760166682c7c7aeda3cc263570682e00848ab47737ed8ffcc3abd2da6c3"
 	DefaultKanikoSecretName             = "kaniko-secret"
 	DefaultKanikoTimeout                = "20m"
 	DefaultKanikoContainerName          = "kaniko"
@@ -51,14 +49,14 @@ const (
 	DefaultKanikoCacheDirMountPath      = "/cache"
 	DefaultKanikoDockerConfigSecretName = "docker-cfg"
 	DefaultKanikoDockerConfigPath       = "/kaniko/.docker"
+	DefaultKanikoSecretMountPath        = "/secret"
 
 	DefaultBusyboxImage = "busybox"
 
-	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
+	// DefaultDebugHelpersRegistry is the default location used for the helper images for `debug`.
+	DefaultDebugHelpersRegistry = "gcr.io/gcp-dev-tools/duct-tape"
 
-	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
-	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
-	DefaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
+	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"
@@ -67,6 +65,9 @@ const (
 	DefaultRPCHTTPPort = 50052
 
 	DefaultPortForwardNamespace = "default"
+	DefaultPortForwardAddress   = "127.0.0.1"
+
+	DefaultProjectDescriptor = "project.toml"
 
 	LeeroyAppResponse = "leeroooooy app!!\n"
 )
@@ -74,11 +75,16 @@ const (
 var (
 	Pod     latest.ResourceType = "pod"
 	Service latest.ResourceType = "service"
+
+	DefaultLocalConcurrency = 1
 )
 
 var (
-	// Images is an environment variable key, whose value is an array of fully qualified image names passed in to a custom build script.
-	Images = "IMAGES"
+	// DeprecatedImages is an environment variable key, whose value is an array of fully qualified image names passed in to a custom build script.
+	DeprecatedImages = "IMAGES"
+
+	// Image is an environment variable key, whose value is the fully qualified image name passed in to a custom build script.
+	Image = "IMAGE"
 
 	// PushImage lets the custom build script know if the image is expected to be pushed to a remote registry
 	PushImage = "PUSH_IMAGE"
@@ -89,7 +95,7 @@ var (
 	// KubeContext is the expected kubecontext to build an artifact with a custom build script on cluster
 	KubeContext = "KUBE_CONTEXT"
 
-	// Namespace is the expected namsepace to build an artifact with a custom build script on cluster.
+	// Namespace is the expected namespace to build an artifact with a custom build script on cluster.
 	Namespace = "NAMESPACE"
 
 	// PullSecretName is the secret with authentication required to pull a base image/push the final image built on cluster.
@@ -102,9 +108,16 @@ var (
 	Timeout = "TIMEOUT"
 )
 
+var ImageRef = struct {
+	Repo   string
+	Tag    string
+	Digest string
+}{
+	Repo:   "IMAGE_REPO",
+	Tag:    "IMAGE_TAG",
+	Digest: "IMAGE_DIGEST",
+}
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
-
-var LatestDownloadURL = fmt.Sprintf("https://storage.googleapis.com/skaffold/releases/latest/skaffold-%s-%s", runtime.GOOS, runtime.GOARCH)
 
 var Labels = struct {
 	TagPolicy        string

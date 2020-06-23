@@ -27,17 +27,20 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestDev(t *testing.T) {
+func TestDevNotification(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
 	tests := []struct {
 		description string
 		trigger     string
@@ -53,24 +56,15 @@ func TestDev(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if testing.Short() {
-				t.Skip("skipping integration test")
-			}
-			if ShouldRunGCPOnlyTests() {
-				t.Skip("skipping test that is not gcp only")
-			}
-
 			Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 			defer Run(t, "testdata/dev", "rm", "foo")
 
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().InDir("testdata/dev").RunOrFail(t)
 
-			ns, client, deleteNs := SetupNamespace(t)
-			defer deleteNs()
+			ns, client := SetupNamespace(t)
 
-			stop := skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
-			defer stop()
+			skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
 			dep := client.GetDeployment("test-dev")
 
@@ -78,21 +72,69 @@ func TestDev(t *testing.T) {
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 			// Make sure the old Deployment and the new Deployment are different
-			err := wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				newDep := client.GetDeployment("test-dev")
+				logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 				return dep.GetGeneration() != newDep.GetGeneration(), nil
 			})
-			testutil.CheckError(t, false, err)
+			failNowIfError(t, err)
 		})
 	}
 }
 
 func TestDevAPITriggers(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+	defer Run(t, "testdata/dev", "rm", "foo")
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
+
+	ns, client := SetupNamespace(t)
+
+	rpcAddr := randomPort()
+	skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+
+	rpcClient, entries := apiEvents(t, rpcAddr)
+
+	// throw away first 5 entries of log (from first run of dev loop)
+	for i := 0; i < 5; i++ {
+		<-entries
 	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+
+	dep := client.GetDeployment("test-dev")
+
+	// Make a change to foo
+	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
+
+	// Issue a build trigger
+	rpcClient.Execute(context.Background(), &proto.UserIntentRequest{
+		Intent: &proto.Intent{
+			Build: true,
+		},
+	})
+
+	// Ensure we see a build triggered in the event log
+	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
+		e := <-entries
+		return e.GetEvent().GetBuildEvent().GetArtifact() == "test-dev", nil
+	})
+	failNowIfError(t, err)
+
+	// Issue a deploy trigger
+	rpcClient.Execute(context.Background(), &proto.UserIntentRequest{
+		Intent: &proto.Intent{
+			Deploy: true,
+		},
+	})
+
+	verifyDeployment(t, entries, client, dep)
+}
+
+func TestDevAPIAutoTriggers(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
@@ -101,181 +143,109 @@ func TestDevAPITriggers(t *testing.T) {
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
 
-	ns, k8sClient, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, client := SetupNamespace(t)
 
 	rpcAddr := randomPort()
+	skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-	stop := skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
-	defer stop()
-
-	client, shutdown := setupRPCClient(t, rpcAddr)
-	defer shutdown()
-
-	stream, err := readEventAPIStream(client, t, readRetries)
-	if stream == nil {
-		t.Fatalf("error retrieving event log: %v\n", err)
-	}
+	rpcClient, entries := apiEvents(t, rpcAddr)
 
 	// throw away first 5 entries of log (from first run of dev loop)
 	for i := 0; i < 5; i++ {
-		stream.Recv()
+		<-entries
 	}
 
-	// read entries from the log
-	entries := make(chan *proto.LogEntry)
-	go func() {
-		for {
-			entry, _ := stream.Recv()
-			if entry != nil {
-				entries <- entry
-			}
-		}
-	}()
-
-	dep := k8sClient.GetDeployment("test-dev")
+	dep := client.GetDeployment("test-dev")
 
 	// Make a change to foo
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
-	// Issue a build trigger
-	client.Execute(context.Background(), &proto.UserIntentRequest{
-		Intent: &proto.Intent{
-			Build: true,
+	// Enable auto build
+	rpcClient.AutoBuild(context.Background(), &proto.TriggerRequest{
+		State: &proto.TriggerState{
+			Val: &proto.TriggerState_Enabled{
+				Enabled: true,
+			},
 		},
 	})
-
 	// Ensure we see a build triggered in the event log
-	err = wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
+	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
-		return e.GetEvent().GetBuildEvent().GetArtifact() == "gcr.io/k8s-skaffold/test-dev", nil
+		return e.GetEvent().GetBuildEvent().GetArtifact() == "test-dev", nil
 	})
-	testutil.CheckError(t, false, err)
+	failNowIfError(t, err)
 
-	// Issue a deploy trigger
-	client.Execute(context.Background(), &proto.UserIntentRequest{
-		Intent: &proto.Intent{
-			Deploy: true,
+	rpcClient.AutoDeploy(context.Background(), &proto.TriggerRequest{
+		State: &proto.TriggerState{
+			Val: &proto.TriggerState_Enabled{
+				Enabled: true,
+			},
 		},
 	})
+	verifyDeployment(t, entries, client, dep)
+}
 
+func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKubernetesClient, dep *appsv1.Deployment) {
 	// Ensure we see a deploy triggered in the event log
-	err = wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
+	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
 		return e.GetEvent().GetDeployEvent().GetStatus() == "In Progress", nil
 	})
-	testutil.CheckError(t, false, err)
+	failNowIfError(t, err)
 
 	// Make sure the old Deployment and the new Deployment are different
-	err = wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
-		newDep := k8sClient.GetDeployment("test-dev")
+	err = wait.Poll(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+		newDep := client.GetDeployment("test-dev")
+		logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 		return dep.GetGeneration() != newDep.GetGeneration(), nil
 	})
-	testutil.CheckError(t, false, err)
+	failNowIfError(t, err)
 }
 
 func TestDevPortForward(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build("--cache-artifacts=true").InDir("examples/microservices").RunOrFail(t)
+	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr, "--cache-artifacts=true").InDir("examples/microservices").InNs(ns.Name).WithEnv(env)
-	stop := cmd.RunBackground(t)
-	defer stop()
+	skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
 
-	client, shutdown := setupRPCClient(t, rpcAddr)
-	defer shutdown()
+	_, entries := apiEvents(t, rpcAddr)
 
-	// create a grpc connection. Increase number of reties for helm.
-	stream, err := readEventAPIStream(client, t, 20)
-	if stream == nil {
-		t.Fatalf("error retrieving event log: %v\n", err)
-	}
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "leeroooooy app!!\n")
 
-	// read entries from the log
-	entries := make(chan *proto.LogEntry)
-	go func() {
-		for {
-			entry, _ := stream.Recv()
-			if entry != nil {
-				entries <- entry
-			}
-		}
-	}()
-
-	originalResponse := "leeroooooy app!!"
-	replacementResponse := "test string"
-
-	waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, originalResponse+"\n")
-
-	original, perms, fErr := replaceInFile(originalResponse, replacementResponse, "examples/microservices/leeroy-app/app.go")
-	if fErr != nil {
-		t.Error(fErr)
-	}
+	original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", "examples/microservices/leeroy-app/app.go")
+	failNowIfError(t, fErr)
 	defer func() {
 		if original != nil {
 			ioutil.WriteFile("examples/microservices/leeroy-app/app.go", original, perms)
 		}
 	}()
 
-	waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, replacementResponse+"\n")
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
 }
 
 func TestDevPortForwardGKELoadBalancer(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if !ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
-	}
+	MarkIntegrationTest(t, NeedsGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/gke_loadbalancer").RunOrFail(t)
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("testdata/gke_loadbalancer").InNs(ns.Name).WithEnv(env)
-	stop := cmd.RunBackground(t)
-	defer stop()
+	skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("testdata/gke_loadbalancer").InNs(ns.Name).WithEnv(env).RunBackground(t)
 
-	client, shutdown := setupRPCClient(t, rpcAddr)
-	defer shutdown()
-
-	// create a grpc connection. Increase number of reties for helm.
-	stream, err := readEventAPIStream(client, t, 20)
-	if stream == nil {
-		t.Fatalf("error retrieving event log: %v\n", err)
-	}
-
-	// read entries from the log
-	entries := make(chan *proto.LogEntry)
-	go func() {
-		for {
-			entry, _ := stream.Recv()
-			if entry != nil {
-				entries <- entry
-			}
-		}
-	}()
+	_, entries := apiEvents(t, rpcAddr)
 
 	waitForPortForwardEvent(t, entries, "gke-loadbalancer", "service", ns.Name, "hello!!\n")
 }
 
-func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace string) int {
+func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace string) (string, int) {
 	timeout := time.After(1 * time.Minute)
 	for {
 		select {
@@ -288,9 +258,10 @@ func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry
 				if e.Event.GetPortEvent().ResourceName == resourceName &&
 					e.Event.GetPortEvent().ResourceType == resourceType &&
 					e.Event.GetPortEvent().Namespace == namespace {
+					address := e.Event.GetPortEvent().Address
 					port := e.Event.GetPortEvent().LocalPort
-					t.Logf("Detected %s/%s is forwarded to port %d", resourceType, resourceName, port)
-					return int(port)
+					t.Logf("Detected %s/%s is forwarded to address %s port %d", resourceType, resourceName, address, port)
+					return address, int(port)
 				}
 			default:
 				t.Logf("event received %v", e)
@@ -300,13 +271,14 @@ func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry
 }
 
 func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace, expected string) {
-	port := getLocalPortFromPortForwardEvent(t, entries, resourceName, resourceType, namespace)
-	assertResponseFromPort(t, port, expected)
+	address, port := getLocalPortFromPortForwardEvent(t, entries, resourceName, resourceType, namespace)
+	assertResponseFromPort(t, address, port, expected)
 }
 
 // assertResponseFromPort waits for two minutes for the expected response at port.
-func assertResponseFromPort(t *testing.T, port int, expected string) {
-	logrus.Infof("Waiting for response %s from port %d", expected, port)
+func assertResponseFromPort(t *testing.T, address string, port int, expected string) {
+	url := fmt.Sprintf("http://%s:%d", address, port)
+	t.Logf("Waiting on %s to return: %s", url, expected)
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancelTimeout()
 
@@ -315,21 +287,22 @@ func assertResponseFromPort(t *testing.T, port int, expected string) {
 		case <-ctx.Done():
 			t.Fatalf("Timed out waiting for response from port %d", port)
 		case <-time.After(1 * time.Second):
-			resp, err := http.Get(fmt.Sprintf("http://%s:%d", util.Loopback, port))
+			client := http.Client{Timeout: 1 * time.Second}
+			resp, err := client.Get(url)
 			if err != nil {
-				logrus.Infof("error getting response from port %d: %v", port, err)
+				t.Logf("[retriable error]: %v", err)
 				continue
 			}
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				logrus.Infof("error reading response: %v", err)
+				t.Logf("[retriable error] reading response: %v", err)
 				continue
 			}
 			if string(body) == expected {
 				return
 			}
-			logrus.Infof("didn't get expected response from port. got: %s, expected: %s", string(body), expected)
+			t.Logf("[retriable error] didn't get expected response from port. got: %s, expected: %s", string(body), expected)
 		}
 	}
 }
@@ -351,50 +324,24 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 	return original, fInfo.Mode(), err
 }
 
-func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retries int) (proto.SkaffoldService_EventLogClient, error) {
-	t.Helper()
-	// read the event log stream from the skaffold grpc server
-	var stream proto.SkaffoldService_EventLogClient
-	var err error
-	for i := 0; i < retries; i++ {
-		stream, err = client.EventLog(context.Background())
-		if err != nil {
-			t.Logf("waiting for connection...")
-			time.Sleep(waitTime)
-			continue
-		}
-	}
-	return stream, err
-}
-
 func TestDev_WithKubecontextOverride(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
 	testutil.Run(t, "skaffold run with kubecontext override", func(t *testutil.T) {
-		if testing.Short() {
-			t.Skip("skipping integration test")
-		}
-
-		dir := "examples/getting-started"
-		pods := []string{"getting-started"}
-
-		ns, client, deleteNs := SetupNamespace(t.T)
-		defer deleteNs()
+		ns, client := SetupNamespace(t.T)
 
 		modifiedKubeconfig, kubecontext, err := createModifiedKubeconfig(ns.Name)
-		if err != nil {
-			t.Fatal(err)
-		}
+		failNowIfError(t, err)
+
 		kubeconfig := t.NewTempDir().
 			Write("kubeconfig", string(modifiedKubeconfig)).
 			Path("kubeconfig")
 		env := []string{fmt.Sprintf("KUBECONFIG=%s", kubeconfig)}
 
 		// n.b. for the sake of this test the namespace must not be given explicitly
-		skaffold.Run("--kube-context", kubecontext).InDir(dir).WithEnv(env).RunOrFailOutput(t.T)
+		skaffold.Run("--kube-context", kubecontext).InDir("examples/getting-started").WithEnv(env).RunOrFail(t.T)
 
-		client.WaitForPodsReady(pods...)
-
-		// n.b. for the sake of this test the namespace must not be given explicitly
-		skaffold.Delete("--kube-context", kubecontext).InDir(dir).WithEnv(env).RunOrFail(t.T)
+		client.WaitForPodsReady("getting-started")
 	})
 }
 
@@ -407,7 +354,11 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 
 	contextName := "modified-context"
 	if config.IsKindCluster(kubeConfig.CurrentContext) {
-		contextName += "@kind"
+		contextName = "kind-" + contextName
+	}
+
+	if kubeConfig.CurrentContext == constants.DefaultMinikubeContext {
+		contextName = constants.DefaultMinikubeContext // skip, since integration test with minikube runs on single cluster
 	}
 
 	activeContext := kubeConfig.Contexts[kubeConfig.CurrentContext]

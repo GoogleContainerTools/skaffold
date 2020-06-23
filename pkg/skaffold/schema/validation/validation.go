@@ -21,6 +21,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
@@ -33,10 +35,13 @@ var (
 // Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
 func Process(config *latest.SkaffoldConfig) error {
 	errs := visitStructs(config, validateYamltags)
+	errs = append(errs, validateImageNames(config.Build.Artifacts)...)
 	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
 	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
 	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
 	errs = append(errs, validatePortForwardResources(config.PortForward)...)
+	errs = append(errs, validateJibPluginTypes(config.Build.Artifacts)...)
+	errs = append(errs, validateArtifactTypes(config.Build)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -47,6 +52,27 @@ func Process(config *latest.SkaffoldConfig) error {
 		messages = append(messages, err.Error())
 	}
 	return fmt.Errorf(strings.Join(messages, " | "))
+}
+
+// validateImageNames makes sure the artifact image names are valid base names,
+// without tags nor digests.
+func validateImageNames(artifacts []*latest.Artifact) (errs []error) {
+	for _, a := range artifacts {
+		parsed, err := docker.ParseReference(a.ImageName)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("invalid imageName '%s': %v", a.ImageName, err))
+			continue
+		}
+
+		if parsed.Tag != "" {
+			errs = append(errs, fmt.Errorf("invalid imageName '%s': no tag should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))
+		}
+
+		if parsed.Digest != "" {
+			errs = append(errs, fmt.Errorf("invalid imageName '%s': no digest should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))
+		}
+	}
+	return
 }
 
 // validateDockerNetworkMode makes sure that networkMode is one of `bridge`, `none`, or `host` if set.
@@ -163,4 +189,45 @@ func validatePortForwardResources(pfrs []*latest.PortForwardResource) []error {
 		}
 	}
 	return errs
+}
+
+// validateJibPluginTypes makes sure that jib type is one of `maven`, or `gradle` if set.
+func validateJibPluginTypes(artifacts []*latest.Artifact) (errs []error) {
+	for _, a := range artifacts {
+		if a.JibArtifact == nil || a.JibArtifact.Type == "" {
+			continue
+		}
+		t := strings.ToLower(a.JibArtifact.Type)
+		if t == "maven" || t == "gradle" {
+			continue
+		}
+		errs = append(errs, fmt.Errorf("artifact %s has invalid Jib plugin type '%s'", a.ImageName, t))
+	}
+	return
+}
+
+// validateArtifactTypes checks that the artifact types are compatible with the specified builder.
+func validateArtifactTypes(bc latest.BuildConfig) (errs []error) {
+	switch {
+	case bc.LocalBuild != nil:
+		for _, a := range bc.Artifacts {
+			if misc.ArtifactType(a) == misc.Kaniko {
+				errs = append(errs, fmt.Errorf("found a '%s' artifact, which is incompatible with the 'local' builder:\n\n%s\n\nTo use the '%s' builder, add the 'cluster' stanza to the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)))
+			}
+		}
+	case bc.GoogleCloudBuild != nil:
+		for _, a := range bc.Artifacts {
+			at := misc.ArtifactType(a)
+			if at != misc.Kaniko && at != misc.Docker && at != misc.Jib && at != misc.Buildpack {
+				errs = append(errs, fmt.Errorf("found a '%s' artifact, which is incompatible with the 'gcb' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'googleCloudBuild' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)))
+			}
+		}
+	case bc.Cluster != nil:
+		for _, a := range bc.Artifacts {
+			if misc.ArtifactType(a) != misc.Kaniko && misc.ArtifactType(a) != misc.Custom {
+				errs = append(errs, fmt.Errorf("found a '%s' artifact, which is incompatible with the 'cluster' builder:\n\n%s\n\nTo use the '%s' builder, remove the 'cluster' stanza from the 'build' section of your configuration. For information, see https://skaffold.dev/docs/pipeline-stages/builders/", misc.ArtifactType(a), misc.FormatArtifact(a), misc.ArtifactType(a)))
+			}
+		}
+	}
+	return
 }

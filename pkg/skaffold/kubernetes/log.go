@@ -25,86 +25,75 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 )
 
-// Client is for tests
-var Client = GetClientset
-var DynamicClient = GetDynamicClient
-
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
 	output      io.Writer
 	kubectlcli  *kubectl.CLI
-	podSelector PodSelector
-	namespaces  []string
+	podWatcher  PodWatcher
 	colorPicker ColorPicker
 
 	muted             int32
 	sinceTime         time.Time
-	cancel            context.CancelFunc
+	events            chan PodEvent
 	trackedContainers trackedContainers
 	outputLock        sync.Mutex
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, cli *kubectl.CLI, baseImageNames []string, podSelector PodSelector, namespaces []string) *LogAggregator {
+func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector PodSelector, namespaces []string) *LogAggregator {
 	return &LogAggregator{
 		output:      out,
 		kubectlcli:  cli,
-		podSelector: podSelector,
-		namespaces:  namespaces,
-		colorPicker: NewColorPicker(baseImageNames),
-		trackedContainers: trackedContainers{
-			ids: map[string]bool{},
-		},
+		podWatcher:  NewPodWatcher(podSelector, namespaces),
+		colorPicker: NewColorPicker(imageNames),
+		events:      make(chan PodEvent),
 	}
 }
 
 func (a *LogAggregator) SetSince(t time.Time) {
+	if a == nil {
+		// Logs are not activated.
+		return
+	}
+
 	a.sinceTime = t
 }
 
 // Start starts a logger that listens to pods and tail their logs
 // if they are matched by the `podSelector`.
 func (a *LogAggregator) Start(ctx context.Context) error {
-	cancelCtx, cancel := context.WithCancel(ctx)
-	a.cancel = cancel
+	if a == nil {
+		// Logs are not activated.
+		return nil
+	}
 
-	aggregate := make(chan watch.Event)
-	stopWatchers, err := AggregatePodWatcher(a.namespaces, aggregate)
+	a.podWatcher.Register(a.events)
+	stopWatcher, err := a.podWatcher.Start()
 	if err != nil {
-		stopWatchers()
-		return errors.Wrap(err, "initializing aggregate pod watcher")
+		return err
 	}
 
 	go func() {
-		defer stopWatchers()
+		defer stopWatcher()
 
 		for {
 			select {
-			case <-cancelCtx.Done():
+			case <-ctx.Done():
 				return
-			case evt, ok := <-aggregate:
+			case evt, ok := <-a.events:
 				if !ok {
 					return
 				}
 
-				pod, ok := evt.Object.(*v1.Pod)
-				if !ok {
-					continue
-				}
-
-				if !a.podSelector.Select(pod) {
-					continue
-				}
-
+				// TODO(dgageot): Add EphemeralContainerStatuses
+				pod := evt.Pod
 				for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 					if c.ContainerID == "" {
 						if c.State.Waiting != nil && c.State.Waiting.Message != "" {
@@ -114,7 +103,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 					}
 
 					if !a.trackedContainers.add(c.ContainerID) {
-						go a.streamContainerLogs(cancelCtx, pod, c)
+						go a.streamContainerLogs(ctx, pod, c)
 					}
 				}
 			}
@@ -126,9 +115,12 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 
 // Stop stops the logger.
 func (a *LogAggregator) Stop() {
-	if a.cancel != nil {
-		a.cancel()
+	if a == nil {
+		// Logs are not activated.
+		return
 	}
+
+	close(a.events)
 }
 
 func sinceSeconds(d time.Duration) int64 {
@@ -152,7 +144,11 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	tr, tw := io.Pipe()
 	go func() {
 		if err := a.kubectlcli.Run(ctx, nil, tw, "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace); err != nil {
-			logrus.Warn(err)
+			// Don't print errors if the user interrupted the logs
+			// or if the logs were interrupted because of a configuration change
+			if ctx.Err() != context.Canceled {
+				logrus.Warn(err)
+			}
 		}
 		_ = tw.Close()
 	}()
@@ -193,11 +189,10 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Col
 			// Read up to newline
 			line, err := r.ReadString('\n')
 			if err == io.EOF {
-				a.printLogLine(headerColor, prefix, "<Container was Terminated>\n")
 				return nil
 			}
 			if err != nil {
-				return errors.Wrap(err, "reading bytes from log stream")
+				return fmt.Errorf("reading bytes from log stream: %w", err)
 			}
 
 			a.printLogLine(headerColor, prefix, line)
@@ -207,11 +202,21 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Col
 
 // Mute mutes the logs.
 func (a *LogAggregator) Mute() {
+	if a == nil {
+		// Logs are not activated.
+		return
+	}
+
 	atomic.StoreInt32(&a.muted, 1)
 }
 
 // Unmute unmutes the logs.
 func (a *LogAggregator) Unmute() {
+	if a == nil {
+		// Logs are not activated.
+		return
+	}
+
 	atomic.StoreInt32(&a.muted, 0)
 }
 
@@ -230,6 +235,9 @@ type trackedContainers struct {
 func (t *trackedContainers) add(id string) bool {
 	t.Lock()
 	alreadyTracked := t.ids[id]
+	if t.ids == nil {
+		t.ids = map[string]bool{}
+	}
 	t.ids[id] = true
 	t.Unlock()
 

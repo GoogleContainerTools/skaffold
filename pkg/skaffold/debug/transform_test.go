@@ -18,14 +18,16 @@ package debug
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestAllocatePort(t *testing.T) {
@@ -129,6 +131,98 @@ func TestDescribe(t *testing.T) {
 			t.CheckDeepEqual(gvk.Kind, kind)
 			t.CheckDeepEqual(gvk.Version, version)
 			t.CheckDeepEqual(test.result, description)
+		})
+	}
+}
+
+func TestExposePort(t *testing.T) {
+	tests := []struct {
+		description string
+		in          []v1.ContainerPort
+		expected    []v1.ContainerPort
+	}{
+		{"no ports", []v1.ContainerPort{}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"existing port", []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"add new port", []v1.ContainerPort{{Name: "foo", ContainerPort: 4444}}, []v1.ContainerPort{{Name: "foo", ContainerPort: 4444}, {Name: "name", ContainerPort: 5555}}},
+		{"clashing port name", []v1.ContainerPort{{Name: "name", ContainerPort: 4444}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"clashing port value", []v1.ContainerPort{{Name: "foo", ContainerPort: 5555}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"clashing port name and value", []v1.ContainerPort{{ContainerPort: 5555}, {Name: "name", ContainerPort: 4444}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"clashing port name and value", []v1.ContainerPort{{Name: "name", ContainerPort: 4444}, {ContainerPort: 5555}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result := exposePort(test.in, "name", 5555)
+			t.CheckDeepEqual(test.expected, result)
+			t.CheckDeepEqual([]v1.ContainerPort{{Name: "name", ContainerPort: 5555}}, filter(result, func(p v1.ContainerPort) bool { return p.Name == "name" }))
+			t.CheckDeepEqual([]v1.ContainerPort{{Name: "name", ContainerPort: 5555}}, filter(result, func(p v1.ContainerPort) bool { return p.ContainerPort == 5555 }))
+		})
+	}
+}
+
+func filter(ports []v1.ContainerPort, predicate func(v1.ContainerPort) bool) []v1.ContainerPort {
+	var selected []v1.ContainerPort
+	for _, p := range ports {
+		if predicate(p) {
+			selected = append(selected, p)
+		}
+	}
+	return selected
+}
+
+func TestSetEnvVar(t *testing.T) {
+	tests := []struct {
+		description string
+		in          []v1.EnvVar
+		expected    []v1.EnvVar
+	}{
+		{"no entry", []v1.EnvVar{}, []v1.EnvVar{{Name: "name", Value: "new-text"}}},
+		{"add new entry", []v1.EnvVar{{Name: "foo", Value: "bar"}}, []v1.EnvVar{{Name: "foo", Value: "bar"}, {Name: "name", Value: "new-text"}}},
+		{"replace existing entry", []v1.EnvVar{{Name: "name", Value: "value"}}, []v1.EnvVar{{Name: "name", Value: "new-text"}}},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result := setEnvVar(test.in, "name", "new-text")
+			t.CheckDeepEqual(test.expected, result)
+		})
+	}
+}
+
+func TestShJoin(t *testing.T) {
+	tests := []struct {
+		in     []string
+		result string
+	}{
+		{[]string{}, ""},
+		{[]string{"a"}, "a"},
+		{[]string{"a b"}, `"a b"`},
+		{[]string{`a"b`}, `"a\"b"`},
+		{[]string{`a"b`}, `"a\"b"`},
+		{[]string{"a", `a"b`, "b c"}, `a "a\"b" "b c"`},
+	}
+	for _, test := range tests {
+		testutil.Run(t, strings.Join(test.in, " "), func(t *testutil.T) {
+			result := shJoin(test.in)
+			t.CheckDeepEqual(test.result, result)
+		})
+	}
+}
+
+func TestIsEntrypointLauncher(t *testing.T) {
+	tests := []struct {
+		description string
+		entrypoint  []string
+		expected    bool
+	}{
+		{"nil", nil, false},
+		{"expected case", []string{"launcher"}, true},
+		{"launchers do not take args", []string{"launcher", "bar"}, false},
+		{"non-launcher", []string{"/bin/sh"}, false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&entrypointLaunchers, []string{"launcher"})
+			result := isEntrypointLauncher(test.entrypoint)
+			t.CheckDeepEqual(test.expected, result)
 		})
 	}
 }

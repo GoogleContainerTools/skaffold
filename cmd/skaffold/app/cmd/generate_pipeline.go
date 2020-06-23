@@ -18,9 +18,9 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -29,19 +29,25 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
+var (
+	configFiles []string
+)
+
 func NewCmdGeneratePipeline() *cobra.Command {
 	return NewCmd("generate-pipeline").
 		Hidden().
 		WithDescription("[ALPHA] Generate tekton pipeline from skaffold.yaml").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {}).
-		NoArgs(cancelWithCtrlC(context.Background(), doGeneratePipeline))
+		WithFlags(func(f *pflag.FlagSet) {
+			f.StringSliceVar(&configFiles, "config-files", nil, "Select additional files whose artifacts to use when generating pipeline.")
+		}).
+		NoArgs(doGeneratePipeline)
 }
 
 func doGeneratePipeline(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		if err := r.GeneratePipeline(ctx, out, config, "pipeline.yaml"); err != nil {
-			return errors.Wrap(err, "generating ")
+		if err := r.GeneratePipeline(ctx, out, config, configFiles, "pipeline.yaml"); err != nil {
+			return fmt.Errorf("generating : %w", err)
 		}
 		color.Default.Fprintln(out, "Pipeline config written to pipeline.yaml!")
 		return nil

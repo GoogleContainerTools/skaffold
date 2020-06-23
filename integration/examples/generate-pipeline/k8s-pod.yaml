@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: generate-pipeline
+spec:
+  containers:
+  - name: generate-pipeline
+    image: pipeline-example

@@ -21,27 +21,32 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestWaitForPodSucceeded(t *testing.T) {
 	tests := []struct {
 		description string
 		phases      []v1.PodPhase
+		timeout     time.Duration
 		shouldErr   bool
 	}{
 		{
 			description: "pod eventually succeeds",
+			timeout:     1 * time.Second,
 			phases:      []v1.PodPhase{v1.PodRunning, v1.PodSucceeded},
 		}, {
 			description: "pod eventually fails",
+			timeout:     1 * time.Second,
 			phases:      []v1.PodPhase{v1.PodRunning, v1.PodFailed},
 			shouldErr:   true,
 		}, {
 			description: "pod times out",
+			timeout:     10 * time.Millisecond,
 			phases:      []v1.PodPhase{v1.PodRunning, v1.PodRunning, v1.PodRunning, v1.PodRunning, v1.PodRunning, v1.PodRunning},
 			shouldErr:   true,
 		},
@@ -58,7 +63,7 @@ func TestWaitForPodSucceeded(t *testing.T) {
 
 			errChan := make(chan error)
 			go func() {
-				errChan <- WaitForPodSucceeded(context.TODO(), fakePods, "", 50*time.Millisecond)
+				errChan <- WaitForPodSucceeded(context.TODO(), fakePods, "", test.timeout)
 			}()
 
 			for _, phase := range test.phases {
@@ -70,7 +75,7 @@ func TestWaitForPodSucceeded(t *testing.T) {
 						Phase: phase,
 					},
 				})
-				time.Sleep(10 * time.Millisecond)
+				time.Sleep(1 * time.Millisecond)
 			}
 			err := <-errChan
 

@@ -32,6 +32,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 		env              []string
 		expected         string
 		expectedWarnings []string
+		shouldErr        bool
 	}{
 		{
 			description: "empty env",
@@ -47,6 +48,11 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			expected:    "BAR-BAT:latest",
 		},
 		{
+			description: "missing env",
+			template:    "{{.FOO}}:latest",
+			shouldErr:   true,
+		},
+		{
 			description: "opts precedence",
 			template:    "{{.IMAGE_NAME}}-{{.FROM_ENV}}:latest",
 			env:         []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
@@ -54,39 +60,34 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			expected:    "image_name-FOO:latest",
 		},
 		{
-			description:      "ignore @{{.DIGEST}} suffix",
-			template:         "{{.IMAGE_NAME}}:tag@{{.DIGEST}}",
-			imageName:        "foo",
-			expected:         "foo:tag",
-			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags"},
+			description: "ignore @{{.DIGEST}} suffix",
+			template:    "{{.IMAGE_NAME}}:tag@{{.DIGEST}}",
+			imageName:   "foo",
+			shouldErr:   true,
 		},
 		{
-			description:      "ignore @{{.DIGEST_ALGO}}:{{.DIGEST_HEX}} suffix",
-			template:         "{{.IMAGE_NAME}}:tag@{{.DIGEST_ALGO}}:{{.DIGEST_HEX}}",
-			imageName:        "image_name",
-			expected:         "image_name:tag",
-			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags"},
+			description: "ignore @{{.DIGEST_ALGO}}:{{.DIGEST_HEX}} suffix",
+			template:    "{{.IMAGE_NAME}}:tag@{{.DIGEST_ALGO}}:{{.DIGEST_HEX}}",
+			imageName:   "image_name",
+			shouldErr:   true,
 		},
 		{
-			description:      "digest is deprecated",
-			template:         "{{.IMAGE_NAME}}:{{.DIGEST}}",
-			imageName:        "foo",
-			expected:         "foo:_DEPRECATED_DIGEST_",
-			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags"},
+			description: "digest is deprecated",
+			template:    "{{.IMAGE_NAME}}:{{.DIGEST}}",
+			imageName:   "foo",
+			shouldErr:   true,
 		},
 		{
-			description:      "digest algo is deprecated",
-			template:         "{{.IMAGE_NAME}}:{{.DIGEST_ALGO}}",
-			imageName:        "foo",
-			expected:         "foo:_DEPRECATED_DIGEST_ALGO_",
-			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags"},
+			description: "digest algo is deprecated",
+			template:    "{{.IMAGE_NAME}}:{{.DIGEST_ALGO}}",
+			imageName:   "foo",
+			shouldErr:   true,
 		},
 		{
-			description:      "digest hex is deprecated",
-			template:         "{{.IMAGE_NAME}}:{{.DIGEST_HEX}}",
-			imageName:        "foo",
-			expected:         "foo:_DEPRECATED_DIGEST_HEX_",
-			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags"},
+			description: "digest hex is deprecated",
+			template:    "{{.IMAGE_NAME}}:{{.DIGEST_HEX}}",
+			imageName:   "foo",
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
@@ -100,8 +101,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 
 			got, err := c.GenerateFullyQualifiedImageName("", test.imageName)
 
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, got)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}

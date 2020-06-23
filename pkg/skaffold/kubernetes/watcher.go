@@ -17,14 +17,49 @@ limitations under the License.
 package kubernetes
 
 import (
-	"github.com/pkg/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"errors"
+	"fmt"
+
+	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
-// AggregatePodWatcher returns a watcher for multiple namespaces.
-func AggregatePodWatcher(namespaces []string, aggregate chan<- watch.Event) (func(), error) {
-	watchers := make([]watch.Interface, 0, len(namespaces))
+type PodWatcher interface {
+	Register(receiver chan<- PodEvent)
+	Start() (func(), error)
+}
+
+// podWatcher is a pod watcher for multiple namespaces.
+type podWatcher struct {
+	podSelector PodSelector
+	namespaces  []string
+	receivers   []chan<- PodEvent
+}
+
+type PodEvent struct {
+	Type watch.EventType
+	Pod  *v1.Pod
+}
+
+func NewPodWatcher(podSelector PodSelector, namespaces []string) PodWatcher {
+	return &podWatcher{
+		podSelector: podSelector,
+		namespaces:  namespaces,
+	}
+}
+
+func (w *podWatcher) Register(receiver chan<- PodEvent) {
+	w.receivers = append(w.receivers, receiver)
+}
+
+func (w *podWatcher) Start() (func(), error) {
+	if len(w.receivers) == 0 {
+		return func() {}, errors.New("no receiver was registered")
+	}
+
+	var watchers []watch.Interface
 	stopWatchers := func() {
 		for _, w := range watchers {
 			w.Stop()
@@ -33,25 +68,46 @@ func AggregatePodWatcher(namespaces []string, aggregate chan<- watch.Event) (fun
 
 	kubeclient, err := Client()
 	if err != nil {
-		return func() {}, errors.Wrap(err, "getting k8s client")
+		return func() {}, fmt.Errorf("getting k8s client: %w", err)
 	}
 
 	var forever int64 = 3600 * 24 * 365 * 100
 
-	for _, ns := range namespaces {
-		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(meta_v1.ListOptions{
+	for _, ns := range w.namespaces {
+		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(metav1.ListOptions{
 			TimeoutSeconds: &forever,
 		})
 		if err != nil {
 			stopWatchers()
-			return func() {}, errors.Wrap(err, "initializing pod watcher for "+ns)
+			return func() {}, fmt.Errorf("initializing pod watcher for %q: %w", ns, err)
 		}
 
 		watchers = append(watchers, watcher)
 
 		go func() {
-			for msg := range watcher.ResultChan() {
-				aggregate <- msg
+			for evt := range watcher.ResultChan() {
+				// If the event's type is "ERROR", warn and continue.
+				if evt.Type == watch.Error {
+					logrus.Warnf("got unexpected event of type %s", evt.Type)
+					continue
+				}
+
+				// Grab the pod from the event.
+				pod, ok := evt.Object.(*v1.Pod)
+				if !ok {
+					continue
+				}
+
+				if !w.podSelector.Select(pod) {
+					continue
+				}
+
+				for _, receiver := range w.receivers {
+					receiver <- PodEvent{
+						Type: evt.Type,
+						Pod:  pod,
+					}
+				}
 			}
 		}()
 	}

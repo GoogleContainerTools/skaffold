@@ -16,7 +16,6 @@ package remote
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 
@@ -26,7 +25,7 @@ import (
 
 // Delete removes the specified image reference from the remote registry.
 func Delete(ref name.Reference, options ...Option) error {
-	o, err := makeOptions(ref.Context().Registry, options...)
+	o, err := makeOptions(ref.Context(), options...)
 	if err != nil {
 		return err
 	}
@@ -54,14 +53,5 @@ func Delete(ref name.Reference, options ...Option) error {
 	}
 	defer resp.Body.Close()
 
-	switch resp.StatusCode {
-	case http.StatusOK, http.StatusAccepted:
-		return nil
-	default:
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("unrecognized status code during DELETE: %v; %v", resp.Status, string(b))
-	}
+	return transport.CheckError(resp, http.StatusOK, http.StatusAccepted)
 }

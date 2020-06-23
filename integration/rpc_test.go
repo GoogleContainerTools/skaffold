@@ -18,42 +18,37 @@ package integration
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/golang/protobuf/jsonpb" //nolint:golint,staticcheck
+	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/grpc"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/ptypes/empty"
-	"google.golang.org/grpc"
 )
 
 var (
 	connectionRetries = 2
-	readRetries       = 5
-	numLogEntries     = 5
+	readRetries       = 20
+	numLogEntries     = 7
 	waitTime          = 1 * time.Second
 )
 
-func TestEventLogRPC(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
-	}
+func TestEventsRPC(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	rpcAddr := randomPort()
-	teardown := setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
-	defer teardown()
+	setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr, "--status-check=false")
 
 	// start a grpc client and make sure we can connect properly
 	var (
@@ -84,9 +79,9 @@ func TestEventLogRPC(t *testing.T) {
 	defer ctxCancel()
 
 	// read the event log stream from the skaffold grpc server
-	var stream proto.SkaffoldService_EventLogClient
+	var stream proto.SkaffoldService_EventsClient
 	for i := 0; i < readRetries; i++ {
-		stream, err = client.EventLog(ctx)
+		stream, err = client.Events(ctx, &empty.Empty{})
 		if err != nil {
 			t.Logf("waiting for connection...")
 			time.Sleep(waitTime)
@@ -114,30 +109,41 @@ func TestEventLogRPC(t *testing.T) {
 			break
 		}
 	}
-	metaEntries, buildEntries, deployEntries := 0, 0, 0
+	metaEntries, buildEntries, deployEntries, devLoopEntries := 0, 0, 0, 0
 	for _, entry := range logEntries {
 		switch entry.Event.GetEventType().(type) {
 		case *proto.Event_MetaEvent:
 			metaEntries++
+			t.Logf("meta event %d: %v", metaEntries, entry.Event)
 		case *proto.Event_BuildEvent:
 			buildEntries++
+			t.Logf("build event %d: %v", buildEntries, entry.Event)
 		case *proto.Event_DeployEvent:
 			deployEntries++
+			t.Logf("deploy event %d: %v", deployEntries, entry.Event)
+		case *proto.Event_DevLoopEvent:
+			devLoopEntries++
+			t.Logf("devloop event event %d: %v", devLoopEntries, entry.Event)
 		default:
+			t.Logf("unknown event: %v", entry.Event)
 		}
 	}
-	// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries
+	// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries and 2 devLoopEntries
 	testutil.CheckDeepEqual(t, 1, metaEntries)
 	testutil.CheckDeepEqual(t, 2, deployEntries)
 	testutil.CheckDeepEqual(t, 2, buildEntries)
+	testutil.CheckDeepEqual(t, 2, devLoopEntries)
 }
 
 func TestEventLogHTTP(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
 	tests := []struct {
 		description string
 		endpoint    string
 	}{
 		{
+			//TODO deprecate (https://github.com/GoogleContainerTools/skaffold/issues/3168)
 			description: "/v1/event_log",
 			endpoint:    "/v1/event_log",
 		},
@@ -146,19 +152,10 @@ func TestEventLogHTTP(t *testing.T) {
 			endpoint:    "/v1/events",
 		},
 	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
-	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if testing.Short() {
-				t.Skip("skipping integration test")
-			}
-
 			httpAddr := randomPort()
-			teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
-			defer teardown()
+			setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr, "--status-check=false")
 			time.Sleep(500 * time.Millisecond) // give skaffold time to process all events
 
 			httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s%s", httpAddr, test.endpoint))
@@ -190,7 +187,7 @@ func TestEventLogHTTP(t *testing.T) {
 					entryStr = strings.Replace(entryStr, "{\"result\":", "", 1)
 					entryStr = entryStr[:len(entryStr)-1]
 					if err := jsonpb.UnmarshalString(entryStr, &entry); err != nil {
-						t.Errorf("error converting http response to proto: %s", err.Error())
+						t.Errorf("error converting http response %s to proto: %s", entryStr, err.Error())
 					}
 					numEntries++
 					logEntries = append(logEntries, entry)
@@ -200,38 +197,40 @@ func TestEventLogHTTP(t *testing.T) {
 				}
 			}
 
-			metaEntries, buildEntries, deployEntries := 0, 0, 0
+			metaEntries, buildEntries, deployEntries, devLoopEntries := 0, 0, 0, 0
 			for _, entry := range logEntries {
 				switch entry.Event.GetEventType().(type) {
 				case *proto.Event_MetaEvent:
 					metaEntries++
+					t.Logf("meta event %d: %v", metaEntries, entry.Event)
 				case *proto.Event_BuildEvent:
 					buildEntries++
+					t.Logf("build event %d: %v", buildEntries, entry.Event)
 				case *proto.Event_DeployEvent:
 					deployEntries++
+					t.Logf("deploy event %d: %v", deployEntries, entry.Event)
+				case *proto.Event_DevLoopEvent:
+					devLoopEntries++
+					t.Logf("devloop event event %d: %v", devLoopEntries, entry.Event)
 				default:
+					t.Logf("unknown event: %v", entry.Event)
 				}
 			}
-			// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries
+			// make sure we have exactly 1 meta entry, 2 deploy entries, 2 build entries and 2 devLoopEntries
 			testutil.CheckDeepEqual(t, 1, metaEntries)
 			testutil.CheckDeepEqual(t, 2, deployEntries)
 			testutil.CheckDeepEqual(t, 2, buildEntries)
+			testutil.CheckDeepEqual(t, 2, devLoopEntries)
 		})
 	}
 }
 
 func TestGetStateRPC(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	rpcAddr := randomPort()
 	// start a skaffold dev loop on an example
-	teardown := setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
-	defer teardown()
+	setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
 
 	// start a grpc client and make sure we can connect properly
 	var (
@@ -265,7 +264,7 @@ func TestGetStateRPC(t *testing.T) {
 	var grpcState *proto.State
 	for i := 0; i < readRetries; i++ {
 		grpcState = retrieveRPCState(ctx, t, client)
-		if checkBuildAndDeployComplete(*grpcState) {
+		if grpcState != nil && checkBuildAndDeployComplete(*grpcState) {
 			success = true
 			break
 		}
@@ -277,16 +276,10 @@ func TestGetStateRPC(t *testing.T) {
 }
 
 func TestGetStateHTTP(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	httpAddr := randomPort()
-	teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
-	defer teardown()
+	setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
 	time.Sleep(3 * time.Second) // give skaffold time to process all events
 
 	success := false
@@ -305,23 +298,22 @@ func TestGetStateHTTP(t *testing.T) {
 }
 
 func retrieveRPCState(ctx context.Context, t *testing.T, client proto.SkaffoldServiceClient) *proto.State {
-	var grpcState *proto.State
-	var err error
 	attempts := 0
 	for {
-		grpcState, err = client.GetState(ctx, &empty.Empty{})
-		if err == nil {
-			break
-		}
-		if attempts < connectionRetries {
-			attempts++
+		grpcState, err := client.GetState(ctx, &empty.Empty{})
+		if err != nil {
+			if attempts >= connectionRetries {
+				t.Fatalf("error retrieving state: %v\n", err)
+			}
+
 			t.Logf("waiting for connection...")
+			attempts++
 			time.Sleep(waitTime)
 			continue
 		}
-		t.Fatalf("error retrieving state: %v\n", err)
+
+		return grpcState
 	}
-	return grpcState
 }
 
 func retrieveHTTPState(t *testing.T, httpAddr string) proto.State {
@@ -338,44 +330,86 @@ func retrieveHTTPState(t *testing.T, httpAddr string) proto.State {
 	if err != nil {
 		t.Errorf("error reading body from http response: %s", err.Error())
 	}
-	if err := json.Unmarshal(b, &httpState); err != nil {
+	if err := jsonpb.UnmarshalString(string(b), &httpState); err != nil {
 		t.Errorf("error converting http response to proto: %s", err.Error())
 	}
 	return httpState
 }
 
-func setupSkaffoldWithArgs(t *testing.T, args ...string) func() {
+func setupSkaffoldWithArgs(t *testing.T, args ...string) {
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
 
 	// start a skaffold dev loop on an example
-	ns, _, deleteNs := SetupNamespace(t)
+	ns, _ := SetupNamespace(t)
 
-	stop := skaffold.Dev(args...).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+	skaffold.Dev(append([]string{"--cache-artifacts=false"}, args...)...).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-	return func() {
-		stop()
-		deleteNs()
+	t.Cleanup(func() {
 		Run(t, "testdata/dev", "rm", "foo")
-	}
+	})
 }
 
+// randomPort chooses a port in range [1024, 65535]
 func randomPort() string {
-	return fmt.Sprintf("%d", rand.Intn(65535))
+	return strconv.Itoa(1024 + rand.Intn(65536-1024))
 }
 
 func checkBuildAndDeployComplete(state proto.State) bool {
+	if state.BuildState == nil || state.DeployState == nil {
+		return false
+	}
+
 	for _, a := range state.BuildState.Artifacts {
 		if a != event.Complete {
 			return false
 		}
 	}
+
 	return state.DeployState.Status == event.Complete
 }
 
-func setupRPCClient(t *testing.T, port string) (proto.SkaffoldServiceClient, func()) {
+func apiEvents(t *testing.T, rpcAddr string) (proto.SkaffoldServiceClient, chan *proto.LogEntry) {
+	client := setupRPCClient(t, rpcAddr)
+
+	stream, err := readEventAPIStream(client, t, readRetries)
+	if stream == nil {
+		t.Fatalf("error retrieving event log: %v\n", err)
+	}
+
+	// read entries from the log
+	entries := make(chan *proto.LogEntry)
+	go func() {
+		for {
+			entry, _ := stream.Recv()
+			if entry != nil {
+				entries <- entry
+			}
+		}
+	}()
+
+	return client, entries
+}
+
+func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retries int) (proto.SkaffoldService_EventLogClient, error) {
+	t.Helper()
+	// read the event log stream from the skaffold grpc server
+	var stream proto.SkaffoldService_EventLogClient
+	var err error
+	for i := 0; i < retries; i++ {
+		stream, err = client.EventLog(context.Background())
+		if err != nil {
+			t.Logf("waiting for connection...")
+			time.Sleep(waitTime)
+			continue
+		}
+	}
+	return stream, err
+}
+
+func setupRPCClient(t *testing.T, port string) proto.SkaffoldServiceClient {
 	// start a grpc client
 	var (
 		conn   *grpc.ClientConn
@@ -399,7 +433,8 @@ func setupRPCClient(t *testing.T, port string) (proto.SkaffoldServiceClient, fun
 	if client == nil {
 		t.Fatalf("error establishing skaffold grpc connection")
 	}
-	return client, func() {
-		conn.Close()
-	}
+
+	t.Cleanup(func() { conn.Close() })
+
+	return client
 }

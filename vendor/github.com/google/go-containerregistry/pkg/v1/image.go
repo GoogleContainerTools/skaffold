@@ -28,13 +28,17 @@ type Image interface {
 	// MediaType of this image's manifest.
 	MediaType() (types.MediaType, error)
 
-	// ConfigName returns the hash of the image's config file.
+	// Size returns the size of the manifest.
+	Size() (int64, error)
+
+	// ConfigName returns the hash of the image's config file, also known as
+	// the Image ID.
 	ConfigName() (Hash, error)
 
 	// ConfigFile returns this image's config file.
 	ConfigFile() (*ConfigFile, error)
 
-	// RawConfigFile returns the serialized bytes of ConfigFile()
+	// RawConfigFile returns the serialized bytes of ConfigFile().
 	RawConfigFile() ([]byte, error)
 
 	// Digest returns the sha256 of this image's manifest.

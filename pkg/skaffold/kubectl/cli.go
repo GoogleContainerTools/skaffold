@@ -29,6 +29,7 @@ import (
 // CLI holds parameters to run kubectl.
 type CLI struct {
 	KubeContext string
+	KubeConfig  string
 	Namespace   string
 
 	version     ClientVersion
@@ -38,6 +39,7 @@ type CLI struct {
 func NewFromRunContext(runCtx *runcontext.RunContext) *CLI {
 	return &CLI{
 		KubeContext: runCtx.KubeContext,
+		KubeConfig:  runCtx.Opts.KubeConfig,
 		Namespace:   runCtx.Opts.Namespace,
 	}
 }
@@ -63,7 +65,7 @@ func (c *CLI) Run(ctx context.Context, in io.Reader, out io.Writer, command stri
 	return util.RunCmd(cmd)
 }
 
-// Run shells out kubectl CLI with given namespace
+// RunInNamespace shells out kubectl CLI with given namespace
 func (c *CLI) RunInNamespace(ctx context.Context, in io.Reader, out io.Writer, command string, namespace string, arg ...string) error {
 	cmd := c.CommandWithNamespaceArg(ctx, command, namespace, arg...)
 	cmd.Stdin = in
@@ -72,10 +74,16 @@ func (c *CLI) RunInNamespace(ctx context.Context, in io.Reader, out io.Writer, c
 	return util.RunCmd(cmd)
 }
 
-// Run shells out kubectl CLI.
+// RunOut shells out kubectl CLI.
 func (c *CLI) RunOut(ctx context.Context, command string, arg ...string) ([]byte, error) {
 	cmd := c.Command(ctx, command, arg...)
 	return util.RunCmdOut(cmd)
+}
+
+// CommandWithStrictCancellation ensures for windows OS that all child process get terminated on cancellation
+func (c *CLI) CommandWithStrictCancellation(ctx context.Context, command string, arg ...string) *Cmd {
+	args := c.args(command, "", arg...)
+	return CommandContext(ctx, "kubectl", args...)
 }
 
 // args builds an argument list for calling kubectl and consistently
@@ -85,6 +93,9 @@ func (c *CLI) args(command string, namespace string, arg ...string) []string {
 	namespace = c.resolveNamespace(namespace)
 	if namespace != "" {
 		args = append(args, "--namespace", namespace)
+	}
+	if c.KubeConfig != "" {
+		args = append(args, "--kubeconfig", c.KubeConfig)
 	}
 	args = append(args, command)
 	args = append(args, arg...)

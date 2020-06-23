@@ -18,24 +18,28 @@ package bazel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
-const sourceQuery = "kind('source file', deps('%[1]s')) union buildfiles('%[1]s')"
+const sourceQuery = "kind('source file', deps('%[1]s')) union buildfiles(deps('%[1]s'))"
 
 func query(target string) string {
 	return fmt.Sprintf(sourceQuery, target)
 }
+
+var once sync.Once
 
 // GetDependencies finds the sources dependencies for the given bazel artifact.
 // All paths are relative to the workspace.
@@ -45,24 +49,24 @@ func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) (
 
 	go func() {
 		<-timer.C
-		logrus.Warnln("Retrieving Bazel dependencies can take a long time the first time")
+		once.Do(func() { logrus.Warnln("Retrieving Bazel dependencies can take a long time the first time") })
 	}()
 
 	topLevelFolder, err := findWorkspace(dir)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to find the WORKSPACE file")
+		return nil, fmt.Errorf("unable to find the WORKSPACE file: %w", err)
 	}
 
 	absDir, err := filepath.Abs(dir)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to find absolute path for %s", dir)
+		return nil, fmt.Errorf("unable to find absolute path for %q: %w", dir, err)
 	}
 
-	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no")
+	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no", "--output=label")
 	cmd.Dir = dir
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting bazel dependencies")
+		return nil, fmt.Errorf("getting bazel dependencies: %w", err)
 	}
 
 	labels := strings.Split(string(stdout), "\n")
@@ -80,14 +84,14 @@ func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) (
 
 		rel, err := filepath.Rel(absDir, filepath.Join(topLevelFolder, depToPath(l)))
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to find absolute path")
+			return nil, fmt.Errorf("unable to find absolute path: %w", err)
 		}
 		deps = append(deps, rel)
 	}
 
 	rel, err := filepath.Rel(absDir, filepath.Join(topLevelFolder, "WORKSPACE"))
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to find absolute path")
+		return nil, fmt.Errorf("unable to find absolute path: %w", err)
 	}
 	deps = append(deps, rel)
 
@@ -103,7 +107,7 @@ func depToPath(dep string) string {
 func findWorkspace(workingDir string) (string, error) {
 	dir, err := filepath.Abs(workingDir)
 	if err != nil {
-		return "", errors.Wrap(err, "invalid working dir")
+		return "", fmt.Errorf("invalid working dir: %w", err)
 	}
 
 	for {

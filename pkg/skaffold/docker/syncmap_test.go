@@ -17,7 +17,6 @@ limitations under the License.
 package docker
 
 import (
-	"context"
 	"path/filepath"
 	"sort"
 	"testing"
@@ -73,13 +72,20 @@ WORKDIR ${foo}
 COPY server.go .
 `
 
+const envCopyTest = `
+FROM busybox
+ENV foo bar
+COPY server.go ${foo}
+`
+
 func TestSyncMap(t *testing.T) {
 	tests := []struct {
-		description string
-		dockerfile  string
-		workspace   string
-		ignore      string
-		buildArgs   map[string]*string
+		description    string
+		dockerfile     string
+		workspace      string
+		ignore         string
+		ignoreFilename string
+		buildArgs      map[string]*string
 
 		expected  map[string][]string
 		badReader bool
@@ -195,6 +201,12 @@ func TestSyncMap(t *testing.T) {
 			dockerfile:  envWorkdirTest,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/bar/server.go"}},
+		},
+		{
+			description: "copy depends on env",
+			dockerfile:  envCopyTest,
+			workspace:   ".",
+			expected:    map[string][]string{"server.go": {"/bar"}},
 		},
 		{
 			description: "multiple env test",
@@ -365,6 +377,14 @@ func TestSyncMap(t *testing.T) {
 			workspace:   ".",
 			expected:    map[string][]string{"file": {"/etc/file"}},
 		},
+		{
+			description:    "find specific dockerignore",
+			dockerfile:     copyDirectory,
+			ignore:         "bar\ndocker/*",
+			ignoreFilename: "Dockerfile.dockerignore",
+			workspace:      ".",
+			expected:       map[string][]string{"Dockerfile.dockerignore": {"/etc/Dockerfile.dockerignore"}, ".dot": {"/etc/.dot"}, "Dockerfile": {"/etc/Dockerfile"}, "file": {"/etc/file"}, "server.go": {"/etc/server.go"}, "test.conf": {"/etc/test.conf"}, "worker.go": {"/etc/worker.go"}},
+		},
 	}
 
 	for _, test := range tests {
@@ -378,12 +398,17 @@ func TestSyncMap(t *testing.T) {
 			if !test.badReader {
 				tmpDir.Write(test.workspace+"/Dockerfile", test.dockerfile)
 			}
+
 			if test.ignore != "" {
-				tmpDir.Write(test.workspace+"/.dockerignore", test.ignore)
+				ignoreFilename := ".dockerignore"
+				if test.ignoreFilename != "" {
+					ignoreFilename = test.ignoreFilename
+				}
+				tmpDir.Write(filepath.Join(test.workspace, ignoreFilename), test.ignore)
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := SyncMap(context.Background(), workspace, "Dockerfile", test.buildArgs, nil)
+			deps, err := SyncMap(workspace, "Dockerfile", test.buildArgs, nil)
 
 			// destinations are not sorted, but for the test assertion they must be
 			for _, dsts := range deps {
@@ -480,7 +505,7 @@ ADD * .
 				Write("Dockerfile", test.dockerfile)
 
 			for i := 0; i < repeat; i++ {
-				deps, err := SyncMap(context.Background(), tmpDir.Root(), "Dockerfile", nil, nil)
+				deps, err := SyncMap(tmpDir.Root(), "Dockerfile", nil, nil)
 
 				// destinations are not sorted, but for the test assertion they must be
 				for _, dsts := range deps {

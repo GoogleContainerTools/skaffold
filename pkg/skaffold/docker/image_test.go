@@ -23,14 +23,15 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestPush(t *testing.T) {
@@ -74,6 +75,27 @@ func TestPush(t *testing.T) {
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDigest, digest)
 		})
 	}
+}
+
+func TestDoNotPushAlreadyPushed(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&DefaultAuthHelper, testAuthHelper{})
+
+		api := &testutil.FakeAPIClient{}
+		api.Add("image", "sha256:imageIDabcab")
+		localDocker := NewLocalDaemon(api, nil, false, nil)
+
+		digest, err := localDocker.Push(context.Background(), ioutil.Discard, "image")
+		t.CheckNoError(err)
+		t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
+
+		// Images already pushed don't need being pushed.
+		api.ErrImagePush = true
+
+		digest, err = localDocker.Push(context.Background(), ioutil.Discard, "image")
+		t.CheckNoError(err)
+		t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
+	})
 }
 
 func TestBuild(t *testing.T) {
@@ -398,8 +420,8 @@ func TestInsecureRegistry(t *testing.T) {
 
 			t.CheckNoError(err)
 			if !test.shouldErr {
-				t.CheckDeepEqual(false, test.insecure && !called)
-				t.CheckDeepEqual(false, !test.insecure && called)
+				t.CheckFalse(test.insecure && !called)
+				t.CheckFalse(!test.insecure && called)
 			}
 		})
 	}
@@ -460,17 +482,28 @@ func TestTagWithImageID(t *testing.T) {
 			expected:    "ref:imageID",
 		},
 		{
+			description: "ignore tag",
+			imageName:   "ref:tag",
+			imageID:     "sha256:imageID",
+			expected:    "ref:imageID",
+		},
+		{
 			description: "not found",
 			imageName:   "ref",
 			imageID:     "sha256:unknownImageID",
+			shouldErr:   true,
+		},
+		{
+			description: "invalid",
+			imageName:   "!!invalid!!",
 			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			api := (&testutil.FakeAPIClient{}).Add("sha256:imageID", "sha256:imageID")
-			localDocker := NewLocalDaemon(api, nil, false, nil)
 
+			localDocker := NewLocalDaemon(api, nil, false, nil)
 			tag, err := localDocker.TagWithImageID(context.Background(), test.imageName, test.imageID)
 
 			t.CheckError(test.shouldErr, err)

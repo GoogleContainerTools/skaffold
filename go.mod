@@ -1,87 +1,89 @@
 module github.com/GoogleContainerTools/skaffold
 
-go 1.12
+go 1.14
 
-require (
-	4d63.com/tz v0.0.0-20190311034157-bd6cee76f731
-	cloud.google.com/go v0.43.0
-	github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e // indirect
-	github.com/Microsoft/go-winio v0.4.11 // indirect
-	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b // indirect
-	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
-	github.com/blang/semver v3.5.1+incompatible
-	github.com/bmatcuk/doublestar v1.1.1
-	github.com/containerd/continuity v0.0.0-20181027224239-bea7585dbfac // indirect
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
-	github.com/docker/cli v0.0.0-20181026145426-51668a30f262
-	github.com/docker/distribution v0.0.0-20180327202408-83389a148052
-	github.com/docker/docker v0.7.3-0.20190327010347-be7ac8be2ae0
-	github.com/docker/docker-credential-helpers v0.6.1 // indirect
-	github.com/docker/go-connections v0.4.0
-	github.com/docker/go-metrics v0.0.0-20180209012529-399ea8c73916 // indirect
-	github.com/docker/go-units v0.3.3 // indirect
-	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
-	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
-	github.com/emirpasic/gods v1.12.0 // indirect
-	github.com/ghodss/yaml v1.0.0
-	github.com/gogo/protobuf v1.1.1 // indirect
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/golang/protobuf v1.3.2
-	github.com/google/go-cmp v0.3.1
-	github.com/google/go-containerregistry v0.0.0-20190717132004-e8c6a4993fa7
-	github.com/google/go-github v17.0.0+incompatible
-	github.com/google/go-querystring v1.0.0 // indirect
-	github.com/google/uuid v1.1.1
-	github.com/googleapis/gnostic v0.2.0 // indirect
-	github.com/gorilla/context v1.1.1 // indirect
-	github.com/gorilla/mux v1.6.2 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.8.5
-	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
-	github.com/imdario/mergo v0.3.6 // indirect
-	github.com/karrick/godirwalk v1.7.5
-	github.com/knative/pkg v0.0.0-20190730155243-972acd413fb9 // indirect
-	github.com/krishicks/yaml-patch v0.0.10
-	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
-	github.com/mattn/go-colorable v0.0.9 // indirect
-	github.com/mattn/go-isatty v0.0.4 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
-	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
-	github.com/mitchellh/go-homedir v1.1.0
-	github.com/moby/buildkit v0.3.3
-	github.com/morikuni/aec v0.0.0-20170113033406-39771216ff4c // indirect
-	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
-	github.com/opencontainers/image-spec v1.0.1 // indirect
-	github.com/opencontainers/runc v0.1.1 // indirect
-	github.com/pkg/errors v0.8.1
-	github.com/prometheus/client_golang v0.9.1 // indirect
-	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910 // indirect
-	github.com/prometheus/common v0.0.0-20181126121408-4724e9255275 // indirect
-	github.com/prometheus/procfs v0.0.0-20181126161756-619930b0b471 // indirect
-	github.com/rjeczalik/notify v0.9.2
-	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
-	github.com/sirupsen/logrus v1.4.1
-	github.com/spf13/cobra v0.0.4
-	github.com/spf13/pflag v1.0.3
-	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
-	golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5
-	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7 // indirect
-	google.golang.org/api v0.7.0
-	google.golang.org/genproto v0.0.0-20190716160619-c506a9f90610
-	google.golang.org/grpc v1.21.1
-	gopkg.in/AlecAivazis/survey.v1 v1.6.1
-	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/russross/blackfriday.v2 v2.0.1
-	gopkg.in/src-d/go-billy.v4 v4.3.0 // indirect
-	gopkg.in/src-d/go-git.v4 v4.11.0
-	gopkg.in/yaml.v2 v2.2.2
-	k8s.io/api v0.0.0-20190620073856-dcce3486da33
-	k8s.io/apimachinery v0.0.0-20190620073744-d16981aedf33
-	k8s.io/client-go v0.0.0-20190620074045-585a16d2e773
-	k8s.io/kubectl v0.0.0-20190622051205-955b067cc6d3
-	k8s.io/utils v0.0.0-20190221042446-c2654d5206da
-	knative.dev/pkg v0.0.0-20190730155243-972acd413fb9 // indirect
+replace (
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.1+incompatible
+	github.com/containerd/containerd => github.com/containerd/containerd v1.3.4
+	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20200221181110-62bd5a33f707
+	github.com/tektoncd/pipeline => github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
+
+	// pin yamlv3 to parent of https://github.com/go-yaml/yaml/commit/ae27a744346343ea814bd6f3bdd41d8669b172d0
+	// Avoid indenting sequences.
+	gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+
+	k8s.io/api => k8s.io/api v0.17.4
+	k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
+	k8s.io/client-go => k8s.io/client-go v0.17.4
+	k8s.io/kubectl => k8s.io/kubectl v0.17.4
+	k8s.io/kubernetes => k8s.io/kubernetes v1.14.10
 )
 
-replace gopkg.in/russross/blackfriday.v2 v2.0.1 => github.com/russross/blackfriday/v2 v2.0.1
+require (
+	4d63.com/tz v1.1.0
+	cloud.google.com/go/storage v1.6.0
+	contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
+	contrib.go.opencensus.io/exporter/prometheus v0.1.0 // indirect
+	contrib.go.opencensus.io/exporter/stackdriver v0.13.1 // indirect
+	github.com/BurntSushi/toml v0.3.1 // indirect
+	github.com/blang/semver v3.5.1+incompatible
+	github.com/bmatcuk/doublestar v1.2.4
+	github.com/buildpacks/imgutil v0.0.0-20200520132953-ba4f77a60397 // indirect
+	github.com/buildpacks/lifecycle v0.7.2
+	github.com/buildpacks/pack v0.11.1-0.20200602171405-91a81f8bf020
+	github.com/cenkalti/backoff/v4 v4.0.2
+	github.com/docker/cli v0.0.0-20200312141509-ef2f64abbd37
+	github.com/docker/distribution v2.7.1+incompatible
+	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
+	github.com/docker/go-connections v0.4.0
+	github.com/ghodss/yaml v1.0.0
+	github.com/go-git/go-git/v5 v5.0.0
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/golang/protobuf v1.4.0
+	github.com/google/go-cmp v0.4.0
+	github.com/google/go-containerregistry v0.0.0-20200413145205-82d30a103c0a
+	github.com/google/go-github v17.0.0+incompatible
+	github.com/google/uuid v1.1.1
+	github.com/grpc-ecosystem/grpc-gateway v1.14.3
+	github.com/heroku/color v0.0.6
+	github.com/imdario/mergo v0.3.9
+	github.com/karrick/godirwalk v1.15.6
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
+	github.com/krishicks/yaml-patch v0.0.10
+	github.com/mattn/go-colorable v0.1.6
+	github.com/mitchellh/go-homedir v1.1.0
+	github.com/moby/buildkit v0.7.1
+	github.com/opencontainers/go-digest v1.0.0-rc1.0.20190228220655-ac19fd6e7483
+	github.com/opencontainers/image-spec v1.0.1
+	github.com/openzipkin/zipkin-go v0.2.2 // indirect
+	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/rakyll/statik v0.1.7
+	github.com/rjeczalik/notify v0.9.2
+	github.com/russross/blackfriday/v2 v2.0.1
+	github.com/segmentio/textio v1.2.0
+	github.com/sirupsen/logrus v1.5.0
+	github.com/spf13/cobra v1.0.0
+	github.com/spf13/pflag v1.0.5
+	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
+	github.com/xeipuuv/gojsonschema v1.2.0
+	go.uber.org/multierr v1.4.0 // indirect
+	go.uber.org/zap v1.12.0 // indirect
+	golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
+	google.golang.org/api v0.21.0
+	google.golang.org/genproto v0.0.0-20200413115906-b5235f65be36
+	google.golang.org/grpc v1.29.1
+	gopkg.in/AlecAivazis/survey.v1 v1.8.8
+	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c
+	k8s.io/api v0.18.1
+	k8s.io/apiextensions-apiserver v0.18.1 // indirect
+	k8s.io/apimachinery v0.18.1
+	k8s.io/client-go v0.18.1
+	k8s.io/kubectl v0.0.0-20190831163037-3b58a944563f
+	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
+	knative.dev/pkg v0.0.0-20200416021448-f68639f04b39 // indirect
+)

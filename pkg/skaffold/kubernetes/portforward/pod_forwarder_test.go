@@ -20,16 +20,13 @@ import (
 	"context"
 	"io/ioutil"
 	"reflect"
-	"sync"
 	"testing"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
-	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -42,17 +39,17 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		description     string
 		pods            []*v1.Pod
 		forwarder       *testForwarder
-		expectedPorts   map[int]struct{}
-		expectedEntries map[string]*portForwardEntry
 		availablePorts  []int
+		expectedPorts   []int
+		expectedEntries map[string]*portForwardEntry
 		shouldErr       bool
 	}{
 		{
 			description:    "single container port",
-			expectedPorts:  map[int]struct{}{8080: {}},
 			availablePorts: []int{8080},
+			expectedPorts:  []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-namespace-portname-8080": {
+				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -61,12 +58,13 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname",
 						Namespace: "namespace",
 						Port:      8080,
+						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
+					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					portName:               "portname",
 					localPort:              8080,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -93,10 +91,11 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description:   "unavailable container port",
-			expectedPorts: map[int]struct{}{9000: {}},
+			description:    "unavailable container port",
+			availablePorts: []int{9000},
+			expectedPorts:  []int{9000},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-namespace-portname-8080": {
+				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					resource: latest.PortForwardResource{
@@ -104,16 +103,16 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname",
 						Namespace: "namespace",
 						Port:      8080,
+						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
+					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					containerName:          "containername",
 					portName:               "portname",
 					localPort:              9000,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
-			availablePorts: []int{9000},
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -139,10 +138,10 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:     "bad resource version",
-			expectedPorts:   map[int]struct{}{},
-			shouldErr:       true,
-			expectedEntries: map[string]*portForwardEntry{},
 			availablePorts:  []int{8080},
+			expectedPorts:   nil,
+			shouldErr:       true,
+			expectedEntries: nil,
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -168,10 +167,10 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "two different container ports",
-			expectedPorts:  map[int]struct{}{8080: {}, 50051: {}},
 			availablePorts: []int{8080, 50051},
+			expectedPorts:  []int{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-namespace-portname-8080": {
+				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -180,14 +179,15 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname",
 						Namespace: "namespace",
 						Port:      8080,
+						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
+					ownerReference:         "owner",
 					portName:               "portname",
 					automaticPodForwarding: true,
 					localPort:              8080,
-					terminationLock:        &sync.Mutex{},
 				},
-				"containername2-namespace2-portname2-50051": {
+				"owner-containername2-namespace2-portname2-50051": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
@@ -196,12 +196,13 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname2",
 						Namespace: "namespace2",
 						Port:      50051,
+						Address:   "127.0.0.1",
 						LocalPort: 50051,
 					},
+					ownerReference:         "owner",
 					portName:               "portname2",
 					automaticPodForwarding: true,
 					localPort:              50051,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -249,10 +250,10 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "two same container ports",
-			expectedPorts:  map[int]struct{}{8080: {}, 9000: {}},
 			availablePorts: []int{8080, 9000},
+			expectedPorts:  []int{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-namespace-portname-8080": {
+				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -262,13 +263,14 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname",
 						Namespace: "namespace",
 						Port:      8080,
+						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
+					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					localPort:              8080,
-					terminationLock:        &sync.Mutex{},
 				},
-				"containername2-namespace2-portname2-8080": {
+				"owner-containername2-namespace2-portname2-8080": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
@@ -278,11 +280,12 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname2",
 						Namespace: "namespace2",
 						Port:      8080,
+						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
+					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					localPort:              9000,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -330,10 +333,10 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "updated pod gets port forwarded",
-			expectedPorts:  map[int]struct{}{8080: {}},
 			availablePorts: []int{8080},
+			expectedPorts:  []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-namespace-portname-8080": {
+				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 2,
 					podName:         "podname",
 					containerName:   "containername",
@@ -343,11 +346,12 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname",
 						Namespace: "namespace",
 						Port:      8080,
+						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
+					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					localPort:              8080,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -396,128 +400,99 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState(latest.BuildConfig{})
+			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 			taken := map[int]struct{}{}
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", taken, test.availablePorts))
+			t.Override(&topLevelOwnerKey, func(metav1.Object, string) string { return "owner" })
 
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
-
-			entryManager := EntryManager{
-				output:             ioutil.Discard,
-				forwardedPorts:     newForwardedPorts(),
-				forwardedResources: newForwardedResources(),
-			}
-			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), nil)
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder()
 			}
-			p.EntryForwarder = test.forwarder
+			entryManager := NewEntryManager(ioutil.Discard, nil)
+			entryManager.entryForwarder = test.forwarder
 
+			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), nil)
 			for _, pod := range test.pods {
 				err := p.portForwardPod(context.Background(), pod)
 				t.CheckError(test.shouldErr, err)
 			}
 
-			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
-			if !reflect.DeepEqual(test.expectedPorts, test.forwarder.forwardedPorts.ports) {
-				t.Errorf("Expected differs from actual entries. Expected: %v, Actual: %v", test.expectedPorts, test.forwarder.forwardedPorts.ports)
-			}
+			t.CheckDeepEqual(test.expectedPorts, test.forwarder.forwardedPorts.List())
 
-			actualForwardedResources := test.forwarder.forwardedResources.resources
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
+			actualForwardedResources := test.forwarder.forwardedResources.resources
 			if !reflect.DeepEqual(test.expectedEntries, actualForwardedResources) {
-				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %v", test.expectedEntries, actualForwardedResources)
+				t.Errorf("Forwarded entries differs from expected entries. Expected: %v, Actual: %v", test.expectedEntries, actualForwardedResources)
 			}
 		})
 	}
 }
 
 func TestStartPodForwarder(t *testing.T) {
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:       "default",
+			ResourceVersion: "9",
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{{
+				Name:  "mycontainer",
+				Image: "image",
+				Ports: []v1.ContainerPort{{
+					Name:          "myport",
+					ContainerPort: 8080,
+				}},
+			}},
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+		},
+	}
+
 	tests := []struct {
 		description   string
 		entryExpected bool
-		obj           runtime.Object
-		event         watch.EventType
+		event         kubernetes.PodEvent
 	}{
 		{
 			description:   "pod modified event",
 			entryExpected: true,
-			event:         watch.Modified,
-		},
-		{
-			description: "pod error event",
-			event:       watch.Error,
-		},
-		{
-			description: "event isn't for a pod",
-			obj:         &v1.Service{},
-			event:       watch.Modified,
+			event: kubernetes.PodEvent{
+				Type: watch.Modified,
+				Pod:  pod,
+			},
 		},
 		{
 			description: "event is deleted",
-			event:       watch.Deleted,
+			event: kubernetes.PodEvent{
+				Type: watch.Deleted,
+				Pod:  pod,
+			},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState(latest.BuildConfig{})
-			client := fakekubeclientset.NewSimpleClientset(&v1.Pod{})
-			fakeWatcher := watch.NewRaceFreeFake()
-			client.PrependWatchReactor("*", testutil.SetupFakeWatcher(fakeWatcher))
-
-			waitForWatcher := make(chan bool)
-			t.Override(&aggregatePodWatcher, func(_ []string, aggregate chan<- watch.Event) (func(), error) {
-				go func() {
-					waitForWatcher <- true
-					for msg := range fakeWatcher.ResultChan() {
-						aggregate <- msg
-					}
-				}()
-				return func() {}, nil
+			event.InitializeState(latest.Pipeline{}, "", true, true, true)
+			t.Override(&topLevelOwnerKey, func(metav1.Object, string) string { return "owner" })
+			t.Override(&newPodWatcher, func(kubernetes.PodSelector, []string) kubernetes.PodWatcher {
+				return &fakePodWatcher{
+					events: []kubernetes.PodEvent{test.event},
+				}
 			})
 
 			imageList := kubernetes.NewImageList()
 			imageList.Add("image")
 
-			p := NewWatchingPodForwarder(NewEntryManager(ioutil.Discard, nil), imageList, nil)
 			fakeForwarder := newTestForwarder()
-			p.EntryForwarder = fakeForwarder
+			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
+
+			p := NewWatchingPodForwarder(entryManager, imageList, nil)
 			p.Start(context.Background())
-
-			// Wait for the watcher to start before we send it an event
-			<-waitForWatcher
-			obj := test.obj
-			if test.obj == nil {
-				obj = &v1.Pod{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace:       "default",
-						ResourceVersion: "9",
-					},
-					Spec: v1.PodSpec{
-						Containers: []v1.Container{
-							{
-								Name:  "mycontainer",
-								Image: "image",
-								Ports: []v1.ContainerPort{
-									{
-										Name:          "myport",
-										ContainerPort: 8080,
-									},
-								},
-							},
-						},
-					},
-					Status: v1.PodStatus{
-						Phase: v1.PodRunning,
-					},
-				}
-			}
-
-			fakeWatcher.Action(test.event, obj)
 
 			// wait for the pod resource to be forwarded
 			err := wait.PollImmediate(10*time.Millisecond, 100*time.Millisecond, func() (bool, error) {
-				_, ok := fakeForwarder.forwardedResources.Load("mycontainer-default-myport-8080")
+				_, ok := fakeForwarder.forwardedResources.Load("owner-mycontainer-default-myport-8080")
 				return ok, nil
 			})
 			if err != nil && test.entryExpected {
@@ -525,4 +500,23 @@ func TestStartPodForwarder(t *testing.T) {
 			}
 		})
 	}
+}
+
+type fakePodWatcher struct {
+	events   []kubernetes.PodEvent
+	receiver chan<- kubernetes.PodEvent
+}
+
+func (f *fakePodWatcher) Register(receiver chan<- kubernetes.PodEvent) {
+	f.receiver = receiver
+}
+
+func (f *fakePodWatcher) Start() (func(), error) {
+	go func() {
+		for _, event := range f.events {
+			f.receiver <- event
+		}
+	}()
+
+	return func() {}, nil
 }

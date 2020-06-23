@@ -1,7 +1,7 @@
 dist: xenial
 
 language: go
-go: "1.12.x"
+go: "1.14.x"
 go_import_path: /skaffold
 
 git:
@@ -14,34 +14,94 @@ branches:
 jobs:
   include:
     - os: linux
-      name: "Linux unit + checks"
+      name: "linters"
       script:
-        - make
-        - make test
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
+        - make linters
+    - os: linux
+      name: "checks"
+      script:
+        - make checks
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+    - os: linux
+      name: "Linux unit"
+      script:
+        - make coverage
+      cache:
+        directories:
+          - $HOME/.cache/go-build
     - os: osx
       name: "OSX unit"
-      env:
-        - GO111MODULE=on
-        - GOFLAGS="-mod=vendor"
+      before_install:
+        - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64
+        - chmod +x ${HOME}/bin/jq
       script:
-        - go build -o out/skaffold cmd/skaffold/skaffold.go
-        - go test -short -timeout 60s ./...
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
+        - make quicktest
+      cache:
+        directories:
+          - $HOME/.cache/go-build
     - os: windows
       name: "Windows unit"
-      env:
-        - GO111MODULE=on
-        - GOFLAGS="-mod=vendor"
       script:
-        - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
         - go test -short -timeout 60s ./...
+      cache:
+        directories:
+          - C:\\Users\\travis\\AppData\\Local\\go-build
     - os: linux
-      name: "integration"
-      before_install:
-        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
-        - chmod +x ${HOME}/bin/kind
+      name: "integration partition 0"
+      language: minimal
       script:
-        - make integration-in-kind
+        - env IT_PARTITION=0 make integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
+          - $HOME/.m2
+    - os: linux
+      name: "integration partition 1"
+      language: minimal
+      script:
+        - env IT_PARTITION=1 make integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
+          - $HOME/.m2
+    - os: linux
+      name: "integration partition 2"
+      language: minimal
+      script:
+        - env IT_PARTITION=2 make integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
+          - $HOME/.m2
+    - os: linux
+      name: "integration partition 3"
+      language: minimal
+      script:
+        - env IT_PARTITION=3 make integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
+          - $HOME/.m2
+    - os: linux
+      name: "diag/Linux unit"
+      script:
+        - make -f Makefile.diag coverage
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+    - os: osx
+      name: "diag/OSX unit"
+      before_install:
+        - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64
+        - chmod +x ${HOME}/bin/jq
+      script:
+        - make -f Makefile.diag test
+      cache:
+        directories:
+          - $HOME/.cache/go-build

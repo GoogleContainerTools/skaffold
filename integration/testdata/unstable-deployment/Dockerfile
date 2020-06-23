@@ -1,3 +1,1 @@
-FROM SCRATCH
-COPY hello /
-CMD ["/hello"]
+FROM busybox

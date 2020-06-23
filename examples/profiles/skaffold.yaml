@@ -1,0 +1,41 @@
+apiVersion: skaffold/v2beta5
+kind: Config
+build:
+  # only build and deploy "world-service" on main profile
+  artifacts:
+  - image: skaffold-world
+    context: world-service
+deploy:
+  kubectl:
+    manifests:
+      - 'world-service/*.yaml'
+
+profiles:
+  - name: minikube-profile
+    # automatically activate this profile when current context is "minikube"
+    activation:
+      - kubeContext: minikube
+    build:
+      # only build and deploy "hello-service" on minikube profile
+      artifacts:
+        - image: skaffold-hello
+          context: hello-service
+    deploy:
+      kubectl:
+        manifests:
+          - 'hello-service/*.yaml'
+
+  - name: staging-profile
+    build:
+      # build and deploy both services on "staging"
+      artifacts:
+        - image: skaffold-hello
+          context: hello-service
+        - image: skaffold-world
+          context: world-service
+    deploy:
+      # use context "staging" for staging-profile
+      kubeContext: staging
+      kubectl:
+        manifests:
+          - '**/*.yaml'

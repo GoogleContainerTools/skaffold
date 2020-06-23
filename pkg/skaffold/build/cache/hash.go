@@ -22,43 +22,131 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"sort"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
 )
 
+// For testing
 var (
-	// For testing
-	hashFunction = cacheHasher
+	hashFunction           = cacheHasher
+	artifactConfigFunction = artifactConfig
 )
 
-func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact) (string, error) {
-	deps, err := depLister.DependenciesForArtifact(ctx, a)
+func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, devMode bool) (string, error) {
+	var inputs []string
+
+	// Append the artifact's configuration
+	config, err := artifactConfigFunction(a, devMode)
 	if err != nil {
-		return "", errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
+		return "", fmt.Errorf("getting artifact's configuration for %q: %w", a.ImageName, err)
+	}
+	inputs = append(inputs, config)
+
+	// Append the digest of each input file
+	deps, err := depLister(ctx, a)
+	if err != nil {
+		return "", fmt.Errorf("getting dependencies for %q: %w", a.ImageName, err)
 	}
 	sort.Strings(deps)
 
-	var hashes []string
 	for _, d := range deps {
 		h, err := hashFunction(d)
 		if err != nil {
-			return "", errors.Wrapf(err, "getting hash for %s", d)
+			if os.IsNotExist(err) {
+				logrus.Tracef("skipping dependency for artifact cache calculation, file not found %s: %s", d, err)
+				continue // Ignore files that don't exist
+			}
+
+			return "", fmt.Errorf("getting hash for %q: %w", d, err)
 		}
-		hashes = append(hashes, h)
+		inputs = append(inputs, h)
+	}
+
+	// add build args for the artifact if specified
+	if buildArgs := retrieveBuildArgs(a); buildArgs != nil {
+		buildArgs, err := docker.EvaluateBuildArgs(buildArgs)
+		if err != nil {
+			return "", fmt.Errorf("evaluating build args: %w", err)
+		}
+		args := convertBuildArgsToStringArray(buildArgs)
+		inputs = append(inputs, args...)
+	}
+
+	// add env variables for the artifact if specified
+	if env := retrieveEnv(a); len(env) > 0 {
+		evaluatedEnv, err := misc.EvaluateEnv(env)
+		if err != nil {
+			return "", fmt.Errorf("evaluating build args: %w", err)
+		}
+		inputs = append(inputs, evaluatedEnv...)
 	}
 
 	// get a key for the hashes
 	hasher := sha256.New()
 	enc := json.NewEncoder(hasher)
-	if err := enc.Encode(hashes); err != nil {
+	if err := enc.Encode(inputs); err != nil {
 		return "", err
 	}
 
 	return hex.EncodeToString(hasher.Sum(nil)), nil
+}
+
+// TODO(dgageot): when the buildpacks builder image digest changes, we need to change the hash
+func artifactConfig(a *latest.Artifact, devMode bool) (string, error) {
+	buf, err := json.Marshal(a.ArtifactType)
+	if err != nil {
+		return "", fmt.Errorf("marshalling the artifact's configuration for %q: %w", a.ImageName, err)
+	}
+
+	if devMode && a.BuildpackArtifact != nil && a.Sync != nil && a.Sync.Auto != nil {
+		return string(buf) + ".DEV", nil
+	}
+
+	return string(buf), nil
+}
+
+func retrieveBuildArgs(artifact *latest.Artifact) map[string]*string {
+	switch {
+	case artifact.DockerArtifact != nil:
+		return artifact.DockerArtifact.BuildArgs
+
+	case artifact.KanikoArtifact != nil:
+		return artifact.KanikoArtifact.BuildArgs
+
+	case artifact.CustomArtifact != nil && artifact.CustomArtifact.Dependencies.Dockerfile != nil:
+		return artifact.CustomArtifact.Dependencies.Dockerfile.BuildArgs
+
+	default:
+		return nil
+	}
+}
+
+func retrieveEnv(artifact *latest.Artifact) []string {
+	if artifact.BuildpackArtifact != nil {
+		return artifact.BuildpackArtifact.Env
+	}
+	return nil
+}
+
+func convertBuildArgsToStringArray(buildArgs map[string]*string) []string {
+	var args []string
+	for k, v := range buildArgs {
+		if v == nil {
+			args = append(args, k)
+			continue
+		}
+		args = append(args, fmt.Sprintf("%s=%s", k, *v))
+	}
+	sort.Strings(args)
+	return args
 }
 
 // cacheHasher takes hashes the contents and name of a file
@@ -70,7 +158,6 @@ func cacheHasher(p string) (string, error) {
 	}
 	h.Write([]byte(fi.Mode().String()))
 	h.Write([]byte(fi.Name()))
-	// TODO: empty folder and empty files should not have the same hash
 	if fi.Mode().IsRegular() {
 		f, err := os.Open(p)
 		if err != nil {

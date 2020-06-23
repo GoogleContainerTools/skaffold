@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Download Docsy theme for Hugo
-FROM alpine:3.9 as download-docsy
+FROM alpine:3.10 as download-docsy
 ENV DOCSY_VERSION a7141a2eac26cb598b707cab87d224f9105c315d
 ENV DOCSY_URL https://github.com/google/docsy.git
 RUN apk add --no-cache git
@@ -24,27 +24,28 @@ RUN git clone "${DOCSY_URL}" . && \
     rm -rf .git
 
 # Download Hugo
-FROM alpine:3.9 as download-hugo
-ENV HUGO_VERSION 0.54.0
+FROM alpine:3.10 as download-hugo
+ENV HUGO_VERSION 0.67.1
 ENV HUGO_URL https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_Linux-64bit.tar.gz
 RUN wget -O- "${HUGO_URL}" | tar xz
 
 # Download kubectl
-FROM alpine:3.9 as download-kubectl
+FROM alpine:3.10 as download-kubectl
 ENV KUBECTL_VERSION v1.12.0
 ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl
 RUN wget -O kubectl "${KUBECTL_URL}"
 RUN chmod +x kubectl
 
 FROM node:10.15.3-stretch as runtime_deps
-RUN npm install -g firebase-tools postcss-cli
+ENV FIREBASE_TOOLS_VERSION 7.13.1
+RUN npm install -g firebase-tools@${FIREBASE_TOOLS_VERSION} postcss-cli
 WORKDIR /app/docs
 RUN npm install autoprefixer
 COPY --from=download-docsy /docsy ./themes/docsy
 COPY --from=download-hugo /hugo /usr/local/bin/
 COPY --from=download-kubectl /kubectl /usr/local/bin/
 
-FROM golang:1.12 as webhook
+FROM golang:1.14 as webhook
 WORKDIR /skaffold
 COPY . .
 RUN go build -mod=vendor -o /webhook webhook/webhook.go

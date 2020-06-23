@@ -23,6 +23,8 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/docker/docker/api/types"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -30,19 +32,16 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/docker/docker/api/types"
 )
 
-type depLister struct {
-	files map[string][]string
-}
-
-func (d *depLister) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-	list, found := d.files[artifact.ImageName]
-	if !found {
-		return nil, errors.New("unknown artifact")
+func depLister(files map[string][]string) DependencyLister {
+	return func(_ context.Context, artifact *latest.Artifact) ([]string, error) {
+		list, found := files[artifact.ImageName]
+		if !found {
+			return nil, errors.New("unknown artifact")
+		}
+		return list, nil
 	}
-	return list, nil
 }
 
 type mockBuilder struct {
@@ -71,7 +70,7 @@ func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.
 
 			built = append(built, build.Artifact{
 				ImageName: artifact.ImageName,
-				Tag:       tag + "@" + digest,
+				Tag:       build.TagWithDigest(tag, digest),
 			})
 		} else {
 			built = append(built, build.Artifact{
@@ -91,9 +90,6 @@ func (t stubAuth) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { ret
 
 func TestCacheBuildLocal(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&buildComplete, func(_ string) {})
-		t.Override(&buildInProgress, func(_ string) {})
-
 		tmpDir := t.NewTempDir().
 			Write("dep1", "content1").
 			Write("dep2", "content2").
@@ -114,14 +110,13 @@ func TestCacheBuildLocal(t *testing.T) {
 			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 			{ImageName: "artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 		}
-		deps := &depLister{
-			files: map[string][]string{
-				"artifact1": {"dep1", "dep2"},
-				"artifact2": {"dep3"},
-			},
-		}
+		deps := depLister(map[string][]string{
+			"artifact1": {"dep1", "dep2"},
+			"artifact2": {"dep3"},
+		})
 
 		// Mock Docker
+		t.Override(&docker.DefaultAuthHelper, stubAuth{})
 		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
 		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
@@ -140,14 +135,18 @@ func TestCacheBuildLocal(t *testing.T) {
 		t.CheckDeepEqual(2, len(bRes))
 
 		// Second build: both artifacts are read from cache
+		// Artifacts should always be returned in their original order
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false}
 		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(0, len(builder.built))
+		t.CheckEmpty(builder.built)
 		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 
-		// Third build: change one artifact's dependencies
+		// Third build: change first artifact's dependency
+		// Artifacts should always be returned in their original order
 		tmpDir.Write("dep1", "new content")
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false}
 		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
@@ -155,14 +154,25 @@ func TestCacheBuildLocal(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckDeepEqual(1, len(builder.built))
 		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
+
+		// Fourth build: change second artifact's dependency
+		// Artifacts should always be returned in their original order
+		tmpDir.Write("dep3", "new content")
+		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false}
+		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(1, len(builder.built))
+		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 	})
 }
 
 func TestCacheBuildRemote(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&buildComplete, func(_ string) {})
-		t.Override(&buildInProgress, func(_ string) {})
-
 		tmpDir := t.NewTempDir().
 			Write("dep1", "content1").
 			Write("dep2", "content2").
@@ -183,12 +193,10 @@ func TestCacheBuildRemote(t *testing.T) {
 			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 			{ImageName: "artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 		}
-		deps := &depLister{
-			files: map[string][]string{
-				"artifact1": {"dep1", "dep2"},
-				"artifact2": {"dep3"},
-			},
-		}
+		deps := depLister(map[string][]string{
+			"artifact1": {"dep1", "dep2"},
+			"artifact2": {"dep3"},
+		})
 
 		// Mock Docker
 		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
@@ -218,14 +226,19 @@ func TestCacheBuildRemote(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckDeepEqual(2, len(builder.built))
 		t.CheckDeepEqual(2, len(bRes))
+		// Artifacts should always be returned in their original order
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 
 		// Second build: both artifacts are read from cache
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: true}
 		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(0, len(builder.built))
+		t.CheckEmpty(builder.built)
 		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 
 		// Third build: change one artifact's dependencies
 		tmpDir.Write("dep1", "new content")
@@ -235,5 +248,7 @@ func TestCacheBuildRemote(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckDeepEqual(1, len(builder.built))
 		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 	})
 }

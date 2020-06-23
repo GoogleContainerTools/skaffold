@@ -24,18 +24,17 @@ import (
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
+	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
-	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
 )
 
 // UploadDeploymentLogsToBucket gets logs from d and uploads them to the bucket
 func UploadDeploymentLogsToBucket(d *appsv1.Deployment, prNumber int) (string, error) {
 	c, err := cstorage.NewClient(context.Background())
 	if err != nil {
-		return "", errors.Wrap(err, "creating GCS client")
+		return "", fmt.Errorf("creating GCS client: %w", err)
 	}
 	defer c.Close()
 	name := fmt.Sprintf("logs-%d-%d", prNumber, time.Now().UnixNano())

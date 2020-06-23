@@ -20,8 +20,12 @@
         },
         "field2": {
           "type": "string",
-          "description": "should be the second field",
-          "x-intellij-html-description": "should be the second field"
+          "description": "should be the second field. Valid modes are `a`: first letter `b` (default): second letter",
+          "x-intellij-html-description": "should be the second field. Valid modes are <code>a</code>: first letter <code>b</code> (default): second letter",
+          "enum": [
+            "a",
+            "b"
+          ]
         },
         "field4": {
           "type": "string",

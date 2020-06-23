@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
 )
 
 // InSequence builds a list of artifacts in sequence.
@@ -45,7 +44,7 @@ func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 		finalTag, err := buildArtifact(ctx, out, artifact, tag)
 		if err != nil {
 			event.BuildFailed(artifact.ImageName, err)
-			return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName)
+			return nil, fmt.Errorf("couldn't build %q: %w", artifact.ImageName, err)
 		}
 
 		event.BuildComplete(artifact.ImageName)

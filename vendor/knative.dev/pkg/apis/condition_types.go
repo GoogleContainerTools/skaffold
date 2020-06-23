@@ -53,9 +53,8 @@ const (
 )
 
 // Conditions defines a readiness condition for a Knative resource.
-// See: https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#typical-status-properties
+// See: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
 // +k8s:deepcopy-gen=true
-// +k8s:openapi-gen=true
 type Condition struct {
 	// Type of condition.
 	// +required
@@ -107,4 +106,20 @@ func (c *Condition) IsUnknown() bool {
 		return true
 	}
 	return c.Status == corev1.ConditionUnknown
+}
+
+// GetReason returns a nil save string of Reason
+func (c *Condition) GetReason() string {
+	if c == nil {
+		return ""
+	}
+	return c.Reason
+}
+
+// GetMessage returns a nil save string of Message
+func (c *Condition) GetMessage() string {
+	if c == nil {
+		return ""
+	}
+	return c.Message
 }

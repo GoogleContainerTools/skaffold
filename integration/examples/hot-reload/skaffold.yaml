@@ -1,18 +1,38 @@
-apiVersion: skaffold/v1beta13
+apiVersion: skaffold/v2beta5
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/node-example
+  - image: node-example
     context: node
-    sync:
-      manual:
-      - src: 'src/**/*.js'
-        dest: .
-        strip: src/
-  - image: gcr.io/k8s-skaffold/python-reload
+
+  - image: python-reload
     context: python
-    sync:
-      manual:
-      - src: 'src/**/*.py'
-        dest: .
-        strip: src/
+
+profiles:
+  - name: dev
+    activation:
+      - command: dev
+    build:
+      artifacts:
+      - image: node-example
+        context: node
+        docker:
+          buildArgs:
+            ENV: development
+        sync:
+          manual:
+          # Sync all the javascript files that are in the src folder
+          # with the container src folder
+          - src: 'src/**/*.js'
+            dest: .
+      - image: python-reload
+        context: python
+        docker:
+          buildArgs:
+            DEBUG: 1
+        sync:
+          manual:
+          # Sync all the javascript files that are in the src folder
+          # with the container src folder
+          - src: 'src/**/*.py'
+            dest: .

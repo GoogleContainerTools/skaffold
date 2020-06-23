@@ -20,54 +20,32 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/proto"
-	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func TestCacheAPITriggers(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
-	// Run skaffold build first to cache artifacts.
+	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("examples/getting-started").RunOrFail(t)
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
-
+	ns, _ := SetupNamespace(t)
 	rpcAddr := randomPort()
 
-	stop := skaffold.Dev("--rpc-port", rpcAddr).InDir("examples/getting-started").InNs(ns.Name).RunBackground(t)
-	defer stop()
-
-	client, shutdown := setupRPCClient(t, rpcAddr)
-	defer shutdown()
-
-	stream, err := readEventAPIStream(client, t, readRetries)
-	if stream == nil {
-		t.Fatalf("error retrieving event log: %v\n", err)
-	}
-
-	// read entries from the log
-	entries := make(chan *proto.LogEntry)
-	go func() {
-		for {
-			entry, _ := stream.Recv()
-			if entry != nil {
-				entries <- entry
-			}
-		}
-	}()
+	// Disable caching to ensure we get a "build in progress" event each time.
+	skaffold.Dev("--cache-artifacts=false", "--rpc-port", rpcAddr).InDir("examples/getting-started").InNs(ns.Name).RunBackground(t)
 
 	// Ensure we see a build triggered in the event log
-	err = wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
-		return e.GetEvent().GetBuildEvent().GetArtifact() == "gcr.io/k8s-skaffold/skaffold-example", nil
+	_, entries := apiEvents(t, rpcAddr)
+
+	waitForEvent(t, entries, func(e *proto.LogEntry) bool {
+		return e.GetEvent().GetBuildEvent().GetArtifact() == "skaffold-example"
 	})
-	testutil.CheckError(t, false, err)
+}
+
+func waitForEvent(t *testing.T, entries chan *proto.LogEntry, condition func(*proto.LogEntry) bool) {
+	failNowIfError(t, wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) { return condition(<-entries), nil }))
 }

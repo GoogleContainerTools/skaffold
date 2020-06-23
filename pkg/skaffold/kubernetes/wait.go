@@ -27,7 +27,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -43,11 +43,11 @@ func watchUntilTimeout(ctx context.Context, timeout time.Duration, w watch.Inter
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.New("context closed while waiting for condition")
+			return ctx.Err()
 		case event := <-w.ResultChan():
 			done, err := condition(&event)
 			if err != nil {
-				return fmt.Errorf("condition error: %s", err)
+				return err
 			}
 			if done {
 				return nil
@@ -60,7 +60,7 @@ func watchUntilTimeout(ctx context.Context, timeout time.Duration, w watch.Inter
 func WaitForPodSucceeded(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
 	logrus.Infof("Waiting for %s to be complete", podName)
 
-	w, err := pods.Watch(meta_v1.ListOptions{})
+	w, err := pods.Watch(metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("initializing pod watcher: %s", err)
 	}
@@ -85,7 +85,7 @@ func isPodSucceeded(podName string) func(event *watch.Event) (bool, error) {
 		case v1.PodRunning:
 			return false, nil
 		case v1.PodFailed:
-			return false, fmt.Errorf("pod already in terminal phase: %s", pod.Status.Phase)
+			return false, errors.New("pod has failed")
 		case v1.PodUnknown, v1.PodPending:
 			return false, nil
 		}
@@ -97,7 +97,7 @@ func isPodSucceeded(podName string) func(event *watch.Event) (bool, error) {
 func WaitForPodInitialized(ctx context.Context, pods corev1.PodInterface, podName string) error {
 	logrus.Infof("Waiting for %s to be initialized", podName)
 
-	w, err := pods.Watch(meta_v1.ListOptions{})
+	w, err := pods.Watch(metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("initializing pod watcher: %s", err)
 	}
@@ -126,7 +126,7 @@ func WaitForDeploymentToStabilize(ctx context.Context, c kubernetes.Interface, n
 		"metadata.name":      name,
 		"metadata.namespace": ns,
 	}
-	w, err := c.AppsV1().Deployments(ns).Watch(meta_v1.ListOptions{
+	w, err := c.AppsV1().Deployments(ns).Watch(metav1.ListOptions{
 		FieldSelector: fields.AsSelector().String(),
 	})
 	if err != nil {

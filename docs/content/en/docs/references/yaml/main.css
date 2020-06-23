@@ -35,6 +35,7 @@ table {
 td {
     border-bottom: 1px solid #EEE;
     padding: 1px 0 !important;
+    vertical-align: top;
 }
 
 td:first-child {
@@ -72,4 +73,17 @@ em {
     border: 1px dotted gray;
     border-radius: 3px;
     padding: 0 .2em;
+}
+
+a.anchor{
+    position: relative;
+    display: inline;
+    visibility: hidden;
+    top: -70px;
+}
+
+@media (max-width: 768px) {
+    a.anchor {
+        top: -10px;
+    }
 }

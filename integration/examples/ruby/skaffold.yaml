@@ -1,0 +1,11 @@
+apiVersion: skaffold/v2beta5
+kind: Config
+build:
+  artifacts:
+  - image: ruby-example
+    context: backend
+    sync:
+      # Sync app.rb file, being watch with rack-unreloader
+      # or add any other rb file to your application 
+      infer:
+      - '*.rb'

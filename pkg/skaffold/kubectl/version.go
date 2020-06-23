@@ -19,11 +19,11 @@ package kubectl
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -52,20 +52,44 @@ func (v ClientVersion) String() string {
 
 // CheckVersion warns the user if their kubectl version is < 1.12.0
 func (c *CLI) CheckVersion(ctx context.Context) error {
-	minor := c.Version(ctx).Minor
-
-	// Some patched versions get a '+' suffix.
-	minor = strings.TrimRight(minor, "+")
-
-	m, err := strconv.Atoi(minor)
+	comp, err := c.CompareVersionTo(ctx, 1, 12)
 	if err != nil {
-		return errors.Wrap(err, "couldn't get kubectl minor version")
+		return err
 	}
 
-	if m < 12 {
+	if comp < 0 {
 		return errors.New("kubectl version 1.12.0 or greater is recommended for use with Skaffold")
 	}
 	return nil
+}
+
+func (c *CLI) CompareVersionTo(ctx context.Context, vMajor, vMinor int) (int, error) {
+	v := c.Version(ctx)
+
+	majorInt, err := strconv.Atoi(v.Major)
+	if err != nil {
+		return 0, fmt.Errorf("couldn't get kubectl minor version: %w", err)
+	}
+
+	// Some patched versions get a '+' suffix.
+	minorInt, err := strconv.Atoi(strings.TrimRight(v.Minor, "+"))
+	if err != nil {
+		return 0, fmt.Errorf("couldn't get kubectl minor version: %w", err)
+	}
+
+	if majorInt > vMajor {
+		return 1, nil
+	}
+	if majorInt == vMajor {
+		if minorInt > vMinor {
+			return 1, nil
+		}
+		if minorInt == vMinor {
+			return 0, nil
+		}
+	}
+
+	return -1, nil
 }
 
 // Version returns the client version of kubectl.

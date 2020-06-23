@@ -101,20 +101,8 @@ func NewUntypedStore(
 }
 
 func (s *UntypedStore) registerConfig(name string, constructor interface{}) {
-	cType := reflect.TypeOf(constructor)
-
-	if cType.Kind() != reflect.Func {
-		panic("config constructor must be a function")
-	}
-
-	if cType.NumIn() != 1 || cType.In(0) != reflect.TypeOf(&corev1.ConfigMap{}) {
-		panic("config constructor must be of the type func(*k8s.io/api/core/v1/ConfigMap) (..., error)")
-	}
-
-	errorType := reflect.TypeOf((*error)(nil)).Elem()
-
-	if cType.NumOut() != 2 || !cType.Out(1).Implements(errorType) {
-		panic("config constructor must be of the type func(*k8s.io/api/core/v1/ConfigMap) (..., error)")
+	if err := ValidateConstructor(constructor); err != nil {
+		panic(err)
 	}
 
 	s.storages[name] = &atomic.Value{}

@@ -17,29 +17,36 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	registryv1 "github.com/google/go-containerregistry/pkg/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestNewSyncItem(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		description  string
 		artifact     *latest.Artifact
 		dependencies map[string][]string
+		labels       map[string]string
 		evt          filemon.Events
 		builds       []build.Artifact
 		shouldErr    bool
@@ -633,15 +640,124 @@ func TestNewSyncItem(t *testing.T) {
 				},
 			},
 		},
+
+		// Buildpacks
+		{
+			description: "auto with buildpacks",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					BuildpackArtifact: &latest.BuildpackArtifact{},
+				},
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Auto: &latest.Auto{},
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"file.go"},
+			},
+			labels: map[string]string{
+				"io.buildpacks.build.metadata": `{
+					"bom":[{
+						"metadata":{
+							"devmode.sync": [
+								{"src":"*.go","dest":"/some"}
+							]
+						}
+					}]
+				}`,
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string][]string{
+					"file.go": {"/some/file.go"},
+				},
+				Delete: map[string][]string{},
+			},
+		},
+		{
+			description: "unknown change with buildpacks",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					BuildpackArtifact: &latest.BuildpackArtifact{},
+				},
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Auto: &latest.Auto{},
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"unknown"},
+			},
+			labels: map[string]string{
+				"io.buildpacks.build.metadata": `{
+					"bom":[{
+						"metadata":{
+							"devmode.sync": [
+								{"src":"*.go","dest":"/some"}
+							]
+						}
+					}]
+				}`,
+			},
+			expected: nil,
+		},
+
+		// Auto with Jib
+		{
+			description: "auto with jib",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Workspace: ".",
+				Sync: &latest.Sync{
+					Auto: &latest.Auto{},
+				},
+				ArtifactType: latest.ArtifactType{
+					JibArtifact: &latest.JibArtifact{},
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"this actually doesn't matter"},
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string][]string{
+					"file.class": {"/some/file.class"},
+				},
+				Delete: nil,
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) {
-				return test.workingDir, nil
+			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return test.workingDir, nil })
+			t.Override(&SyncMap, func(*latest.Artifact, map[string]bool) (map[string][]string, error) { return test.dependencies, nil })
+			t.Override(&Labels, func(string, map[string]bool) (map[string]string, error) { return test.labels, nil })
+			t.Override(&jib.GetSyncDiff, func(context.Context, string, *latest.JibArtifact, filemon.Events) (map[string][]string, map[string][]string, error) {
+				return map[string][]string{"file.class": {"/some/file.class"}}, nil, nil
 			})
 
-			provider := func() (map[string][]string, error) { return test.dependencies, nil }
-			actual, err := NewItem(test.artifact, test.evt, test.builds, nil, provider)
+			actual, err := NewItem(ctx, test.artifact, test.evt, test.builds, nil)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
@@ -743,7 +859,7 @@ func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files syncMap) *exec
 }
 
 var pod = &v1.Pod{
-	ObjectMeta: meta_v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "skaffold-dirty",
@@ -763,7 +879,7 @@ var pod = &v1.Pod{
 }
 
 var nonRunningPod = &v1.Pod{
-	ObjectMeta: meta_v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "skaffold-dirty",
@@ -849,6 +965,145 @@ func TestPerform(t *testing.T) {
 			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cmdRecord.cmds)
+		})
+	}
+}
+
+func TestSyncMap(t *testing.T) {
+	tests := []struct {
+		description  string
+		artifactType latest.ArtifactType
+		files        map[string]string
+		shouldErr    bool
+		expectedMap  map[string][]string
+	}{
+		{
+			description: "docker - supported",
+			artifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					DockerfilePath: "Dockerfile",
+				},
+			},
+			files: map[string]string{
+				"Dockerfile": "FROM alpine\nCOPY *.go /app/",
+				"main.go":    "",
+			},
+			expectedMap: map[string][]string{"main.go": {"/app/main.go"}},
+		},
+		{
+			description: "kaniko - supported",
+			artifactType: latest.ArtifactType{
+				KanikoArtifact: &latest.KanikoArtifact{
+					DockerfilePath: "Dockerfile",
+				},
+			},
+			files: map[string]string{
+				"Dockerfile": "FROM alpine\nCOPY *.go /app/",
+				"main.go":    "",
+			},
+			expectedMap: map[string][]string{"main.go": {"/app/main.go"}},
+		},
+		{
+			description: "custom - supported",
+			artifactType: latest.ArtifactType{
+				CustomArtifact: &latest.CustomArtifact{
+					Dependencies: &latest.CustomDependencies{
+						Dockerfile: &latest.DockerfileDependency{
+							Path: "Dockerfile",
+						},
+					},
+				},
+			},
+			files: map[string]string{
+				"Dockerfile": "FROM alpine\nCOPY *.go /app/",
+				"main.go":    "",
+			},
+			expectedMap: map[string][]string{"main.go": {"/app/main.go"}},
+		},
+		{
+			description: "custom, no dockerfile - not supported",
+			artifactType: latest.ArtifactType{
+				CustomArtifact: &latest.CustomArtifact{},
+			},
+			shouldErr: true,
+		},
+		{
+			description:  "not supported",
+			artifactType: latest.ArtifactType{},
+			shouldErr:    true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			imageFetcher := fakeImageFetcher{}
+			t.Override(&docker.RetrieveImage, imageFetcher.fetch)
+			t.NewTempDir().WriteFiles(test.files).Chdir()
+
+			syncMap, err := SyncMap(&latest.Artifact{ArtifactType: test.artifactType}, nil)
+
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expectedMap, syncMap)
+		})
+	}
+}
+
+type fakeImageFetcher struct{}
+
+func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*registryv1.ConfigFile, error) {
+	return &registryv1.ConfigFile{}, nil
+}
+
+func TestInit(t *testing.T) {
+	ctx := context.Background()
+	tests := []struct {
+		description string
+		artifact    *latest.Artifact
+		shouldInit  bool
+		initErrors  bool
+	}{
+		{
+			description: "sync off",
+			artifact:    &latest.Artifact{},
+			shouldInit:  false,
+		},
+		{
+			description: "sync on, auto off",
+			artifact:    &latest.Artifact{Sync: &latest.Sync{}},
+			shouldInit:  false,
+		},
+		{
+			description: "sync on, auto on, non-jib",
+			artifact:    &latest.Artifact{Sync: &latest.Sync{Auto: &latest.Auto{}}},
+			shouldInit:  false,
+		},
+		{
+			description: "sync on, auto on, jib",
+			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: &latest.Auto{}}},
+			shouldInit:  true,
+			initErrors:  false,
+		},
+		{
+			description: "sync on, auto on, jib, init fails",
+			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: &latest.Auto{}}},
+			shouldInit:  true,
+			initErrors:  true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			isCalled := false
+			t.Override(&jib.InitSync, func(ctx context.Context, workspace string, a *latest.JibArtifact) error {
+				isCalled = true
+				if test.initErrors {
+					return errors.New("intentional test failure")
+				}
+				return nil
+			})
+
+			artifacts := []*latest.Artifact{test.artifact}
+			err := Init(ctx, artifacts)
+			t.CheckDeepEqual(test.shouldInit, isCalled)
+			t.CheckError(test.initErrors, err)
 		})
 	}
 }

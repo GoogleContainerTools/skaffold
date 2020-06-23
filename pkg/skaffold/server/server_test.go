@@ -21,10 +21,11 @@ import (
 	"net"
 	"testing"
 
+	"google.golang.org/grpc"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"google.golang.org/grpc"
 )
 
 var (

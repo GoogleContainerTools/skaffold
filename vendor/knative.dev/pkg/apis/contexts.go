@@ -180,3 +180,34 @@ func DisallowDeprecated(ctx context.Context) context.Context {
 func IsDeprecatedAllowed(ctx context.Context) bool {
 	return ctx.Value(disallowDeprecated{}) == nil
 }
+
+// This is attached to contexts as they are passed down through a resource
+// being validated to direct them to allow namespaces (or missing namespace)
+// outside the parent (as indicated by WithinParent.
+type allowDifferentNamespace struct{}
+
+// AllowDifferentNamespace notes on the context that further validation
+// should allow different namespaces from the encapsulating object. Mainly
+// used by KReference, since it by default requires namespaces to match.
+func AllowDifferentNamespace(ctx context.Context) context.Context {
+	return context.WithValue(ctx, allowDifferentNamespace{}, struct{}{})
+}
+
+// IsDifferentNamespaceAllowed checks the context to see whether different
+// namespace is allowed from the encapsulating object.
+func IsDifferentNamespaceAllowed(ctx context.Context) bool {
+	return ctx.Value(allowDifferentNamespace{}) != nil
+}
+
+// This is attached to contexts passed to webhook interfaces when the user has request DryRun mode.
+type isDryRun struct{}
+
+// WithDryRun is used to indicate that this call is in DryRun mode.
+func WithDryRun(ctx context.Context) context.Context {
+	return context.WithValue(ctx, isDryRun{}, struct{}{})
+}
+
+// IsDryRun indicates that this request is in DryRun mode.
+func IsDryRun(ctx context.Context) bool {
+	return ctx.Value(isDryRun{}) != nil
+}

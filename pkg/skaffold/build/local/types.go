@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -33,7 +32,7 @@ import (
 
 // Builder uses the host docker daemon to build and tag the image.
 type Builder struct {
-	cfg *latest.LocalBuild
+	cfg latest.LocalBuild
 
 	localDocker        docker.LocalDaemon
 	localCluster       bool
@@ -41,6 +40,7 @@ type Builder struct {
 	prune              bool
 	pruneChildren      bool
 	skipTests          bool
+	devMode            bool
 	kubeContext        string
 	builtImages        []string
 	insecureRegistries map[string]bool
@@ -55,12 +55,16 @@ var getLocalCluster = config.GetLocalCluster
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	localDocker, err := docker.NewAPIClient(runCtx)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting docker client")
+		return nil, fmt.Errorf("getting docker client: %w", err)
 	}
 
-	localCluster, err := getLocalCluster(runCtx.Opts.GlobalConfig)
+	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
+	// remove minikubeProfile from here and instead detect it by matching the
+	// kubecontext API Server to minikube profiles
+
+	localCluster, err := getLocalCluster(runCtx.Opts.GlobalConfig, runCtx.Opts.MinikubeProfile)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting localCluster")
+		return nil, fmt.Errorf("getting localCluster: %w", err)
 	}
 
 	var pushImages bool
@@ -72,12 +76,13 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	}
 
 	return &Builder{
-		cfg:                runCtx.Cfg.Build.LocalBuild,
+		cfg:                *runCtx.Cfg.Build.LocalBuild,
 		kubeContext:        runCtx.KubeContext,
 		localDocker:        localDocker,
 		localCluster:       localCluster,
 		pushImages:         pushImages,
 		skipTests:          runCtx.Opts.SkipTests,
+		devMode:            runCtx.Opts.IsDevMode(),
 		prune:              runCtx.Opts.Prune(),
 		pruneChildren:      !runCtx.Opts.NoPruneChildren,
 		insecureRegistries: runCtx.InsecureRegistries,

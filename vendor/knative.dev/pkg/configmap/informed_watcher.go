@@ -18,12 +18,17 @@ package configmap
 
 import (
 	"errors"
-	"time"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	informers "k8s.io/client-go/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/client-go/informers"
 	corev1informers "k8s.io/client-go/informers/core/v1"
+	"k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 )
@@ -35,7 +40,7 @@ func NewDefaultWatcher(kc kubernetes.Interface, namespace string) *InformedWatch
 	return NewInformedWatcher(kc, namespace)
 }
 
-// NewInformedWatcherFromFactory watches a Kubernetes namespace for configmap changes.
+// NewInformedWatcherFromFactory watches a Kubernetes namespace for ConfigMap changes.
 func NewInformedWatcherFromFactory(sif informers.SharedInformerFactory, namespace string) *InformedWatcher {
 	return &InformedWatcher{
 		sif:      sif,
@@ -47,14 +52,44 @@ func NewInformedWatcherFromFactory(sif informers.SharedInformerFactory, namespac
 	}
 }
 
-// NewInformedWatcher watches a Kubernetes namespace for configmap changes.
-func NewInformedWatcher(kc kubernetes.Interface, namespace string) *InformedWatcher {
+// NewInformedWatcher watches a Kubernetes namespace for ConfigMap changes.
+// Optional label requirements allow restricting the list of ConfigMap objects
+// that is tracked by the underlying Informer.
+func NewInformedWatcher(kc kubernetes.Interface, namespace string, lr ...labels.Requirement) *InformedWatcher {
 	return NewInformedWatcherFromFactory(informers.NewSharedInformerFactoryWithOptions(
 		kc,
-		// This is the default resync period from controller-runtime.
-		10*time.Hour,
+		// We noticed that we're getting updates all the time anyway, due to the
+		// watches being terminated and re-spawned.
+		0,
 		informers.WithNamespace(namespace),
+		informers.WithTweakListOptions(addLabelRequirementsToListOptions(lr)),
 	), namespace)
+}
+
+// addLabelRequirementsToListOptions returns a function which injects label
+// requirements to existing metav1.ListOptions.
+func addLabelRequirementsToListOptions(lr []labels.Requirement) internalinterfaces.TweakListOptionsFunc {
+	if len(lr) == 0 {
+		return nil
+	}
+
+	return func(lo *metav1.ListOptions) {
+		sel, err := labels.Parse(lo.LabelSelector)
+		if err != nil {
+			panic(fmt.Errorf("could not parse label selector %q: %w", lo.LabelSelector, err))
+		}
+		lo.LabelSelector = sel.Add(lr...).String()
+	}
+}
+
+// FilterConfigByLabelExists returns an "exists" label requirement for the
+// given label key.
+func FilterConfigByLabelExists(labelKey string) (*labels.Requirement, error) {
+	req, err := labels.NewRequirement(labelKey, selection.Exists, nil)
+	if err != nil {
+		return nil, fmt.Errorf("could not construct label requirement: %w", err)
+	}
+	return req, nil
 }
 
 // InformedWatcher provides an informer-based implementation of Watcher.
@@ -79,7 +114,7 @@ var _ Watcher = (*InformedWatcher)(nil)
 var _ DefaultingWatcher = (*InformedWatcher)(nil)
 
 // WatchWithDefault implements DefaultingWatcher.
-func (i *InformedWatcher) WatchWithDefault(cm corev1.ConfigMap, o Observer) {
+func (i *InformedWatcher) WatchWithDefault(cm corev1.ConfigMap, o ...Observer) {
 	i.defaults[cm.Name] = &cm
 
 	i.m.Lock()
@@ -94,7 +129,7 @@ func (i *InformedWatcher) WatchWithDefault(cm corev1.ConfigMap, o Observer) {
 		panic("cannot WatchWithDefault after the InformedWatcher has started")
 	}
 
-	i.Watch(cm.Name, o)
+	i.Watch(cm.Name, o...)
 }
 
 // Start implements Watcher.
@@ -140,17 +175,14 @@ func (i *InformedWatcher) registerCallbackAndStartInformer(stopCh <-chan struct{
 }
 
 func (i *InformedWatcher) checkObservedResourcesExist() error {
-	i.m.Lock()
-	defer i.m.Unlock()
+	i.m.RLock()
+	defer i.m.RUnlock()
 	// Check that all objects with Observers exist in our informers.
 	for k := range i.observers {
-		_, err := i.informer.Lister().ConfigMaps(i.Namespace).Get(k)
-		if err != nil {
-			if k8serrors.IsNotFound(err) {
-				if _, ok := i.defaults[k]; ok {
-					// It is defaulted, so it is OK that it doesn't exist.
-					continue
-				}
+		if _, err := i.informer.Lister().ConfigMaps(i.Namespace).Get(k); err != nil {
+			if _, ok := i.defaults[k]; ok && k8serrors.IsNotFound(err) {
+				// It is defaulted, so it is OK that it doesn't exist.
+				continue
 			}
 			return err
 		}
@@ -163,8 +195,13 @@ func (i *InformedWatcher) addConfigMapEvent(obj interface{}) {
 	i.OnChange(configMap)
 }
 
-func (i *InformedWatcher) updateConfigMapEvent(old, new interface{}) {
-	configMap := new.(*corev1.ConfigMap)
+func (i *InformedWatcher) updateConfigMapEvent(o, n interface{}) {
+	// Ignore updates that are idempotent. We are seeing those
+	// periodically.
+	if equality.Semantic.DeepEqual(o, n) {
+		return
+	}
+	configMap := n.(*corev1.ConfigMap)
 	i.OnChange(configMap)
 }
 

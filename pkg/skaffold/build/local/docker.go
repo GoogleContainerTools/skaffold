@@ -18,25 +18,32 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"os"
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/pkg/errors"
 )
 
 func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
-	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact); err != nil {
-		return "", errors.Wrap(err, "pulling cache-from images")
+	// Fail fast if the Dockerfile can't be found.
+	dockerfile, err := docker.NormalizeDockerfilePath(a.Workspace, a.DockerArtifact.DockerfilePath)
+	if err != nil {
+		return "", fmt.Errorf("normalizing dockerfile path: %w", err)
+	}
+	if _, err := os.Stat(dockerfile); os.IsNotExist(err) {
+		return "", fmt.Errorf("dockerfile %q not found", dockerfile)
 	}
 
-	var (
-		imageID string
-		err     error
-	)
+	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact); err != nil {
+		return "", fmt.Errorf("pulling cache-from images: %w", err)
+	}
+
+	var imageID string
 
 	if b.cfg.UseDockerCLI || b.cfg.UseBuildkit {
 		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag)
@@ -55,16 +62,20 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 	return imageID, nil
 }
 
+func (b *Builder) retrieveExtraEnv() []string {
+	return b.localDocker.ExtraEnv()
+}
+
 func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, tag string) (string, error) {
 	dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.DockerfilePath)
 	if err != nil {
-		return "", errors.Wrap(err, "normalizing dockerfile path")
+		return "", fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", tag}
 	ba, err := docker.GetBuildArgs(a)
 	if err != nil {
-		return "", errors.Wrap(err, "getting docker build args")
+		return "", fmt.Errorf("getting docker build args: %w", err)
 	}
 	args = append(args, ba...)
 
@@ -73,14 +84,15 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Env = append(util.OSEnviron(), b.retrieveExtraEnv()...)
 	if b.cfg.UseBuildkit {
-		cmd.Env = append(util.OSEnviron(), "DOCKER_BUILDKIT=1")
+		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
 	cmd.Stdout = out
 	cmd.Stderr = out
 
 	if err := util.RunCmd(cmd); err != nil {
-		return "", errors.Wrap(err, "running build")
+		return "", fmt.Errorf("running build: %w", err)
 	}
 
 	return b.localDocker.ImageID(ctx, tag)
@@ -94,7 +106,7 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 	for _, image := range a.CacheFrom {
 		imageID, err := b.localDocker.ImageID(ctx, image)
 		if err != nil {
-			return errors.Wrapf(err, "getting imageID for %s", image)
+			return fmt.Errorf("getting imageID for %q: %w", image, err)
 		}
 		if imageID != "" {
 			// already pulled

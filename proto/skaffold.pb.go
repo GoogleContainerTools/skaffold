@@ -27,6 +27,358 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
+// Enum indicating builders used
+type BuilderType int32
+
+const (
+	// Could not determine builder type
+	BuilderType_UNKNOWN_BUILDER_TYPE BuilderType = 0
+	// JIB Builder
+	BuilderType_JIB BuilderType = 1
+	// Bazel Builder
+	BuilderType_BAZEL BuilderType = 2
+	// Buildpacks Builder
+	BuilderType_BUILDPACKS BuilderType = 3
+	// Custom Builder
+	BuilderType_CUSTOM BuilderType = 4
+	// Kaniko Builder
+	BuilderType_KANIKO BuilderType = 5
+	// Docker Builder
+	BuilderType_DOCKER BuilderType = 6
+)
+
+var BuilderType_name = map[int32]string{
+	0: "UNKNOWN_BUILDER_TYPE",
+	1: "JIB",
+	2: "BAZEL",
+	3: "BUILDPACKS",
+	4: "CUSTOM",
+	5: "KANIKO",
+	6: "DOCKER",
+}
+
+var BuilderType_value = map[string]int32{
+	"UNKNOWN_BUILDER_TYPE": 0,
+	"JIB":                  1,
+	"BAZEL":                2,
+	"BUILDPACKS":           3,
+	"CUSTOM":               4,
+	"KANIKO":               5,
+	"DOCKER":               6,
+}
+
+func (x BuilderType) String() string {
+	return proto.EnumName(BuilderType_name, int32(x))
+}
+
+func (BuilderType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{0}
+}
+
+// Enum indicating build type i.e. local, cluster vs GCB
+type BuildType int32
+
+const (
+	// Could not determine Build Type
+	BuildType_UNKNOWN_BUILD_TYPE BuildType = 0
+	// Cluster Build
+	BuildType_CLUSTER BuildType = 1
+	// GCB Build
+	BuildType_GCB BuildType = 2
+	// Local Build
+	BuildType_LOCAL BuildType = 3
+)
+
+var BuildType_name = map[int32]string{
+	0: "UNKNOWN_BUILD_TYPE",
+	1: "CLUSTER",
+	2: "GCB",
+	3: "LOCAL",
+}
+
+var BuildType_value = map[string]int32{
+	"UNKNOWN_BUILD_TYPE": 0,
+	"CLUSTER":            1,
+	"GCB":                2,
+	"LOCAL":              3,
+}
+
+func (x BuildType) String() string {
+	return proto.EnumName(BuildType_name, int32(x))
+}
+
+func (BuildType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{1}
+}
+
+// Enum indicating deploy tools used
+type DeployerType int32
+
+const (
+	// Could not determine Deployer Type
+	DeployerType_UNKNOWN_DEPLOYER_TYPE DeployerType = 0
+	// Helm Deployer
+	DeployerType_HELM DeployerType = 1
+	// Kustomize Deployer
+	DeployerType_KUSTOMIZE DeployerType = 2
+	// Kubectl Deployer
+	DeployerType_KUBECTL DeployerType = 3
+)
+
+var DeployerType_name = map[int32]string{
+	0: "UNKNOWN_DEPLOYER_TYPE",
+	1: "HELM",
+	2: "KUSTOMIZE",
+	3: "KUBECTL",
+}
+
+var DeployerType_value = map[string]int32{
+	"UNKNOWN_DEPLOYER_TYPE": 0,
+	"HELM":                  1,
+	"KUSTOMIZE":             2,
+	"KUBECTL":               3,
+}
+
+func (x DeployerType) String() string {
+	return proto.EnumName(DeployerType_name, int32(x))
+}
+
+func (DeployerType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{2}
+}
+
+// Enum indicating cluster type the application is deployed to
+type ClusterType int32
+
+const (
+	// Could not determine Cluster Type
+	ClusterType_UNKNOWN_CLUSTER_TYPE ClusterType = 0
+	// Minikube Cluster
+	ClusterType_MINIKUBE ClusterType = 1
+	// GKE cluster
+	ClusterType_GKE ClusterType = 2
+	// All Cluster except Minikube and GKE
+	ClusterType_OTHER ClusterType = 3
+)
+
+var ClusterType_name = map[int32]string{
+	0: "UNKNOWN_CLUSTER_TYPE",
+	1: "MINIKUBE",
+	2: "GKE",
+	3: "OTHER",
+}
+
+var ClusterType_value = map[string]int32{
+	"UNKNOWN_CLUSTER_TYPE": 0,
+	"MINIKUBE":             1,
+	"GKE":                  2,
+	"OTHER":                3,
+}
+
+func (x ClusterType) String() string {
+	return proto.EnumName(ClusterType_name, int32(x))
+}
+
+func (ClusterType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{3}
+}
+
+// Enum for Status codes
+// These error codes are prepended by Phase Name e.g.
+// BUILD, DEPLOY, STATUSCHECK, DEVINIT
+type StatusCode int32
+
+const (
+	// A default status code for events that do not have an associated phase.
+	// Typically seen with the DevEndEvent event on success.
+	StatusCode_OK StatusCode = 0
+	// Status Check Success
+	StatusCode_STATUSCHECK_SUCCESS StatusCode = 200
+	// Build Success
+	StatusCode_BUILD_SUCCESS StatusCode = 201
+	// Build error due to push access denied
+	StatusCode_BUILD_PUSH_ACCESS_DENIED StatusCode = 101
+	// Build error due to GCP project not found.
+	StatusCode_BUILD_PROJECT_NOT_FOUND StatusCode = 102
+	// Container image pull error
+	StatusCode_STATUSCHECK_IMAGE_PULL_ERR StatusCode = 300
+	// Container creating error
+	StatusCode_STATUSCHECK_CONTAINER_CREATING StatusCode = 301
+	// Container run error
+	StatusCode_STATUSCHECK_RUN_CONTAINER_ERR StatusCode = 302
+	// Container is already terminated
+	StatusCode_STATUSCHECK_CONTAINER_TERMINATED StatusCode = 303
+	// Deployment waiting for rollout
+	StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING StatusCode = 304
+	// Container restarting error
+	StatusCode_STATUSCHECK_CONTAINER_RESTARTING StatusCode = 356
+	// Node memory pressure error
+	StatusCode_STATUSCHECK_NODE_MEMORY_PRESSURE StatusCode = 400
+	// Node disk pressure error
+	StatusCode_STATUSCHECK_NODE_DISK_PRESSURE StatusCode = 401
+	// Node network unavailable error
+	StatusCode_STATUSCHECK_NODE_NETWORK_UNAVAILABLE StatusCode = 402
+	// Node PID pressure error
+	StatusCode_STATUSCHECK_NODE_PID_PRESSURE StatusCode = 403
+	// Node unschedulable error
+	StatusCode_STATUSCHECK_NODE_UNSCHEDULABLE StatusCode = 404
+	// Node unreachable error
+	StatusCode_STATUSCHECK_NODE_UNREACHABLE StatusCode = 405
+	// Node not ready error
+	StatusCode_STATUSCHECK_NODE_NOT_READY StatusCode = 406
+	// Scheduler failure error
+	StatusCode_STATUSCHECK_FAILED_SCHEDULING StatusCode = 407
+	// Readiness probe failed
+	StatusCode_STATUSCHECK_UNHEALTHY StatusCode = 408
+	// Kubectl connection error
+	StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR StatusCode = 409
+	// Kubectl process killed error
+	StatusCode_STATUSCHECK_KUBECTL_PID_KILLED StatusCode = 410
+	// Could not determine error and phase
+	StatusCode_UNKNOWN_ERROR StatusCode = 500
+	// Status Check error unknown
+	StatusCode_STATUSCHECK_UNKNOWN StatusCode = 501
+	// Container is unschedulable due to unknown reasons
+	StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE StatusCode = 502
+	// Container is waiting due to unknown reason
+	StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN StatusCode = 503
+	// Container event reason unknown
+	StatusCode_STATUSCHECK_UNKNOWN_EVENT StatusCode = 509
+	// Deploy failed due to unknown reason
+	StatusCode_DEPLOY_UNKNOWN StatusCode = 504
+	// SYNC failed due to known reason
+	StatusCode_SYNC_UNKNOWN StatusCode = 505
+	// Build failed due to unknown reason
+	StatusCode_BUILD_UNKNOWN StatusCode = 506
+	// Dev Init failed due to unknown reason
+	StatusCode_DEVINIT_UNKNOWN StatusCode = 507
+	// Cleanup failed due to unknown reason
+	StatusCode_CLEANUP_UNKNOWN StatusCode = 508
+	// File Sync Initialize failure
+	StatusCode_SYNC_INIT_ERROR StatusCode = 601
+	// Failed to configure watcher for build dependencies in dev loop
+	StatusCode_DEVINIT_REGISTER_BUILD_DEPS StatusCode = 701
+	// Failed to configure watcher for test dependencies in dev loop
+	StatusCode_DEVINIT_REGISTER_TEST_DEPS StatusCode = 702
+	// Failed to configure watcher for deploy dependencies in dev loop
+	StatusCode_DEVINIT_REGISTER_DEPLOY_DEPS StatusCode = 703
+	// Failed to configure watcher for Skaffold configuration file.
+	StatusCode_DEVINIT_REGISTER_CONFIG_DEP StatusCode = 704
+)
+
+var StatusCode_name = map[int32]string{
+	0:   "OK",
+	200: "STATUSCHECK_SUCCESS",
+	201: "BUILD_SUCCESS",
+	101: "BUILD_PUSH_ACCESS_DENIED",
+	102: "BUILD_PROJECT_NOT_FOUND",
+	300: "STATUSCHECK_IMAGE_PULL_ERR",
+	301: "STATUSCHECK_CONTAINER_CREATING",
+	302: "STATUSCHECK_RUN_CONTAINER_ERR",
+	303: "STATUSCHECK_CONTAINER_TERMINATED",
+	304: "STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING",
+	356: "STATUSCHECK_CONTAINER_RESTARTING",
+	400: "STATUSCHECK_NODE_MEMORY_PRESSURE",
+	401: "STATUSCHECK_NODE_DISK_PRESSURE",
+	402: "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
+	403: "STATUSCHECK_NODE_PID_PRESSURE",
+	404: "STATUSCHECK_NODE_UNSCHEDULABLE",
+	405: "STATUSCHECK_NODE_UNREACHABLE",
+	406: "STATUSCHECK_NODE_NOT_READY",
+	407: "STATUSCHECK_FAILED_SCHEDULING",
+	408: "STATUSCHECK_UNHEALTHY",
+	409: "STATUSCHECK_KUBECTL_CONNECTION_ERR",
+	410: "STATUSCHECK_KUBECTL_PID_KILLED",
+	500: "UNKNOWN_ERROR",
+	501: "STATUSCHECK_UNKNOWN",
+	502: "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
+	503: "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+	509: "STATUSCHECK_UNKNOWN_EVENT",
+	504: "DEPLOY_UNKNOWN",
+	505: "SYNC_UNKNOWN",
+	506: "BUILD_UNKNOWN",
+	507: "DEVINIT_UNKNOWN",
+	508: "CLEANUP_UNKNOWN",
+	601: "SYNC_INIT_ERROR",
+	701: "DEVINIT_REGISTER_BUILD_DEPS",
+	702: "DEVINIT_REGISTER_TEST_DEPS",
+	703: "DEVINIT_REGISTER_DEPLOY_DEPS",
+	704: "DEVINIT_REGISTER_CONFIG_DEP",
+}
+
+var StatusCode_value = map[string]int32{
+	"OK":                                     0,
+	"STATUSCHECK_SUCCESS":                    200,
+	"BUILD_SUCCESS":                          201,
+	"BUILD_PUSH_ACCESS_DENIED":               101,
+	"BUILD_PROJECT_NOT_FOUND":                102,
+	"STATUSCHECK_IMAGE_PULL_ERR":             300,
+	"STATUSCHECK_CONTAINER_CREATING":         301,
+	"STATUSCHECK_RUN_CONTAINER_ERR":          302,
+	"STATUSCHECK_CONTAINER_TERMINATED":       303,
+	"STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING": 304,
+	"STATUSCHECK_CONTAINER_RESTARTING":       356,
+	"STATUSCHECK_NODE_MEMORY_PRESSURE":       400,
+	"STATUSCHECK_NODE_DISK_PRESSURE":         401,
+	"STATUSCHECK_NODE_NETWORK_UNAVAILABLE":   402,
+	"STATUSCHECK_NODE_PID_PRESSURE":          403,
+	"STATUSCHECK_NODE_UNSCHEDULABLE":         404,
+	"STATUSCHECK_NODE_UNREACHABLE":           405,
+	"STATUSCHECK_NODE_NOT_READY":             406,
+	"STATUSCHECK_FAILED_SCHEDULING":          407,
+	"STATUSCHECK_UNHEALTHY":                  408,
+	"STATUSCHECK_KUBECTL_CONNECTION_ERR":     409,
+	"STATUSCHECK_KUBECTL_PID_KILLED":         410,
+	"UNKNOWN_ERROR":                          500,
+	"STATUSCHECK_UNKNOWN":                    501,
+	"STATUSCHECK_UNKNOWN_UNSCHEDULABLE":      502,
+	"STATUSCHECK_CONTAINER_WAITING_UNKNOWN":  503,
+	"STATUSCHECK_UNKNOWN_EVENT":              509,
+	"DEPLOY_UNKNOWN":                         504,
+	"SYNC_UNKNOWN":                           505,
+	"BUILD_UNKNOWN":                          506,
+	"DEVINIT_UNKNOWN":                        507,
+	"CLEANUP_UNKNOWN":                        508,
+	"SYNC_INIT_ERROR":                        601,
+	"DEVINIT_REGISTER_BUILD_DEPS":            701,
+	"DEVINIT_REGISTER_TEST_DEPS":             702,
+	"DEVINIT_REGISTER_DEPLOY_DEPS":           703,
+	"DEVINIT_REGISTER_CONFIG_DEP":            704,
+}
+
+func (x StatusCode) String() string {
+	return proto.EnumName(StatusCode_name, int32(x))
+}
+
+func (StatusCode) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{4}
+}
+
+// Enum for Suggestion codes
+type SuggestionCode int32
+
+const (
+	// default nil suggestion.
+	// This is usually set when no error happens.
+	SuggestionCode_NIL SuggestionCode = 0
+)
+
+var SuggestionCode_name = map[int32]string{
+	0: "NIL",
+}
+
+var SuggestionCode_value = map[string]int32{
+	"NIL": 0,
+}
+
+func (x SuggestionCode) String() string {
+	return proto.EnumName(SuggestionCode_name, int32(x))
+}
+
+func (SuggestionCode) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{5}
+}
+
 type StateResponse struct {
 	State                *State   `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -144,13 +496,18 @@ func (m *Request) GetName() string {
 	return ""
 }
 
+// `State` represents the current state of the Skaffold components
 type State struct {
-	BuildState           *BuildState           `protobuf:"bytes,1,opt,name=buildState,proto3" json:"buildState,omitempty"`
-	DeployState          *DeployState          `protobuf:"bytes,2,opt,name=deployState,proto3" json:"deployState,omitempty"`
-	ForwardedPorts       map[string]*PortEvent `protobuf:"bytes,3,rep,name=forwardedPorts,proto3" json:"forwardedPorts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_unrecognized     []byte                `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
+	BuildState           *BuildState                `protobuf:"bytes,1,opt,name=buildState,proto3" json:"buildState,omitempty"`
+	DeployState          *DeployState               `protobuf:"bytes,2,opt,name=deployState,proto3" json:"deployState,omitempty"`
+	ForwardedPorts       map[int32]*PortEvent       `protobuf:"bytes,4,rep,name=forwardedPorts,proto3" json:"forwardedPorts,omitempty" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	StatusCheckState     *StatusCheckState          `protobuf:"bytes,5,opt,name=statusCheckState,proto3" json:"statusCheckState,omitempty"`
+	FileSyncState        *FileSyncState             `protobuf:"bytes,6,opt,name=fileSyncState,proto3" json:"fileSyncState,omitempty"`
+	DebuggingContainers  []*DebuggingContainerEvent `protobuf:"bytes,7,rep,name=debuggingContainers,proto3" json:"debuggingContainers,omitempty"`
+	Metadata             *Metadata                  `protobuf:"bytes,8,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
+	XXX_unrecognized     []byte                     `json:"-"`
+	XXX_sizecache        int32                      `json:"-"`
 }
 
 func (m *State) Reset()         { *m = State{} }
@@ -192,17 +549,313 @@ func (m *State) GetDeployState() *DeployState {
 	return nil
 }
 
-func (m *State) GetForwardedPorts() map[string]*PortEvent {
+func (m *State) GetForwardedPorts() map[int32]*PortEvent {
 	if m != nil {
 		return m.ForwardedPorts
 	}
 	return nil
 }
 
-// BuildState contains a map of all skaffold artifacts to their current build
-// states
+func (m *State) GetStatusCheckState() *StatusCheckState {
+	if m != nil {
+		return m.StatusCheckState
+	}
+	return nil
+}
+
+func (m *State) GetFileSyncState() *FileSyncState {
+	if m != nil {
+		return m.FileSyncState
+	}
+	return nil
+}
+
+func (m *State) GetDebuggingContainers() []*DebuggingContainerEvent {
+	if m != nil {
+		return m.DebuggingContainers
+	}
+	return nil
+}
+
+func (m *State) GetMetadata() *Metadata {
+	if m != nil {
+		return m.Metadata
+	}
+	return nil
+}
+
+type Metadata struct {
+	Build  *BuildMetadata  `protobuf:"bytes,1,opt,name=build,proto3" json:"build,omitempty"`
+	Deploy *DeployMetadata `protobuf:"bytes,2,opt,name=deploy,proto3" json:"deploy,omitempty"`
+	// Additional key value pairs to describe the build pipeline
+	Additional           map[string]string `protobuf:"bytes,99,rep,name=additional,proto3" json:"additional,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *Metadata) Reset()         { *m = Metadata{} }
+func (m *Metadata) String() string { return proto.CompactTextString(m) }
+func (*Metadata) ProtoMessage()    {}
+func (*Metadata) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{4}
+}
+
+func (m *Metadata) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Metadata.Unmarshal(m, b)
+}
+func (m *Metadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Metadata.Marshal(b, m, deterministic)
+}
+func (m *Metadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Metadata.Merge(m, src)
+}
+func (m *Metadata) XXX_Size() int {
+	return xxx_messageInfo_Metadata.Size(m)
+}
+func (m *Metadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_Metadata.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Metadata proto.InternalMessageInfo
+
+func (m *Metadata) GetBuild() *BuildMetadata {
+	if m != nil {
+		return m.Build
+	}
+	return nil
+}
+
+func (m *Metadata) GetDeploy() *DeployMetadata {
+	if m != nil {
+		return m.Deploy
+	}
+	return nil
+}
+
+func (m *Metadata) GetAdditional() map[string]string {
+	if m != nil {
+		return m.Additional
+	}
+	return nil
+}
+
+type BuildMetadata struct {
+	NumberOfArtifacts int32                         `protobuf:"varint,1,opt,name=numberOfArtifacts,proto3" json:"numberOfArtifacts,omitempty"`
+	Builders          []*BuildMetadata_ImageBuilder `protobuf:"bytes,2,rep,name=builders,proto3" json:"builders,omitempty"`
+	Type              BuildType                     `protobuf:"varint,3,opt,name=type,proto3,enum=proto.BuildType" json:"type,omitempty"`
+	// Additional key value pairs to describe the deploy pipeline
+	Additional           map[string]string `protobuf:"bytes,99,rep,name=additional,proto3" json:"additional,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *BuildMetadata) Reset()         { *m = BuildMetadata{} }
+func (m *BuildMetadata) String() string { return proto.CompactTextString(m) }
+func (*BuildMetadata) ProtoMessage()    {}
+func (*BuildMetadata) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{5}
+}
+
+func (m *BuildMetadata) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_BuildMetadata.Unmarshal(m, b)
+}
+func (m *BuildMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_BuildMetadata.Marshal(b, m, deterministic)
+}
+func (m *BuildMetadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BuildMetadata.Merge(m, src)
+}
+func (m *BuildMetadata) XXX_Size() int {
+	return xxx_messageInfo_BuildMetadata.Size(m)
+}
+func (m *BuildMetadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_BuildMetadata.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BuildMetadata proto.InternalMessageInfo
+
+func (m *BuildMetadata) GetNumberOfArtifacts() int32 {
+	if m != nil {
+		return m.NumberOfArtifacts
+	}
+	return 0
+}
+
+func (m *BuildMetadata) GetBuilders() []*BuildMetadata_ImageBuilder {
+	if m != nil {
+		return m.Builders
+	}
+	return nil
+}
+
+func (m *BuildMetadata) GetType() BuildType {
+	if m != nil {
+		return m.Type
+	}
+	return BuildType_UNKNOWN_BUILD_TYPE
+}
+
+func (m *BuildMetadata) GetAdditional() map[string]string {
+	if m != nil {
+		return m.Additional
+	}
+	return nil
+}
+
+type BuildMetadata_ImageBuilder struct {
+	Type                 BuilderType `protobuf:"varint,1,opt,name=type,proto3,enum=proto.BuilderType" json:"type,omitempty"`
+	Count                int32       `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
+	XXX_unrecognized     []byte      `json:"-"`
+	XXX_sizecache        int32       `json:"-"`
+}
+
+func (m *BuildMetadata_ImageBuilder) Reset()         { *m = BuildMetadata_ImageBuilder{} }
+func (m *BuildMetadata_ImageBuilder) String() string { return proto.CompactTextString(m) }
+func (*BuildMetadata_ImageBuilder) ProtoMessage()    {}
+func (*BuildMetadata_ImageBuilder) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{5, 0}
+}
+
+func (m *BuildMetadata_ImageBuilder) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_BuildMetadata_ImageBuilder.Unmarshal(m, b)
+}
+func (m *BuildMetadata_ImageBuilder) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_BuildMetadata_ImageBuilder.Marshal(b, m, deterministic)
+}
+func (m *BuildMetadata_ImageBuilder) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BuildMetadata_ImageBuilder.Merge(m, src)
+}
+func (m *BuildMetadata_ImageBuilder) XXX_Size() int {
+	return xxx_messageInfo_BuildMetadata_ImageBuilder.Size(m)
+}
+func (m *BuildMetadata_ImageBuilder) XXX_DiscardUnknown() {
+	xxx_messageInfo_BuildMetadata_ImageBuilder.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BuildMetadata_ImageBuilder proto.InternalMessageInfo
+
+func (m *BuildMetadata_ImageBuilder) GetType() BuilderType {
+	if m != nil {
+		return m.Type
+	}
+	return BuilderType_UNKNOWN_BUILDER_TYPE
+}
+
+func (m *BuildMetadata_ImageBuilder) GetCount() int32 {
+	if m != nil {
+		return m.Count
+	}
+	return 0
+}
+
+type DeployMetadata struct {
+	Deployers            []*DeployMetadata_Deployer `protobuf:"bytes,1,rep,name=deployers,proto3" json:"deployers,omitempty"`
+	Cluster              ClusterType                `protobuf:"varint,2,opt,name=cluster,proto3,enum=proto.ClusterType" json:"cluster,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
+	XXX_unrecognized     []byte                     `json:"-"`
+	XXX_sizecache        int32                      `json:"-"`
+}
+
+func (m *DeployMetadata) Reset()         { *m = DeployMetadata{} }
+func (m *DeployMetadata) String() string { return proto.CompactTextString(m) }
+func (*DeployMetadata) ProtoMessage()    {}
+func (*DeployMetadata) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{6}
+}
+
+func (m *DeployMetadata) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeployMetadata.Unmarshal(m, b)
+}
+func (m *DeployMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeployMetadata.Marshal(b, m, deterministic)
+}
+func (m *DeployMetadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeployMetadata.Merge(m, src)
+}
+func (m *DeployMetadata) XXX_Size() int {
+	return xxx_messageInfo_DeployMetadata.Size(m)
+}
+func (m *DeployMetadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeployMetadata.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeployMetadata proto.InternalMessageInfo
+
+func (m *DeployMetadata) GetDeployers() []*DeployMetadata_Deployer {
+	if m != nil {
+		return m.Deployers
+	}
+	return nil
+}
+
+func (m *DeployMetadata) GetCluster() ClusterType {
+	if m != nil {
+		return m.Cluster
+	}
+	return ClusterType_UNKNOWN_CLUSTER_TYPE
+}
+
+type DeployMetadata_Deployer struct {
+	Type                 DeployerType `protobuf:"varint,1,opt,name=type,proto3,enum=proto.DeployerType" json:"type,omitempty"`
+	Count                int32        `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
+}
+
+func (m *DeployMetadata_Deployer) Reset()         { *m = DeployMetadata_Deployer{} }
+func (m *DeployMetadata_Deployer) String() string { return proto.CompactTextString(m) }
+func (*DeployMetadata_Deployer) ProtoMessage()    {}
+func (*DeployMetadata_Deployer) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{6, 0}
+}
+
+func (m *DeployMetadata_Deployer) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeployMetadata_Deployer.Unmarshal(m, b)
+}
+func (m *DeployMetadata_Deployer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeployMetadata_Deployer.Marshal(b, m, deterministic)
+}
+func (m *DeployMetadata_Deployer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeployMetadata_Deployer.Merge(m, src)
+}
+func (m *DeployMetadata_Deployer) XXX_Size() int {
+	return xxx_messageInfo_DeployMetadata_Deployer.Size(m)
+}
+func (m *DeployMetadata_Deployer) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeployMetadata_Deployer.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeployMetadata_Deployer proto.InternalMessageInfo
+
+func (m *DeployMetadata_Deployer) GetType() DeployerType {
+	if m != nil {
+		return m.Type
+	}
+	return DeployerType_UNKNOWN_DEPLOYER_TYPE
+}
+
+func (m *DeployMetadata_Deployer) GetCount() int32 {
+	if m != nil {
+		return m.Count
+	}
+	return 0
+}
+
+// `BuildState` maps Skaffold artifacts to their current build states
 type BuildState struct {
+	// A map of `artifact name -> build-state`.
+	// Artifact name is defined in the `skaffold.yaml`.
+	// The `build-state` can be: <br>
+	// - `"Not started"`: not yet started <br>
+	// - `"In progress"`: build started <br>
+	// - `"Complete"`: build succeeded <br>
+	// - `"Failed"`: build failed
 	Artifacts            map[string]string `protobuf:"bytes,1,rep,name=artifacts,proto3" json:"artifacts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	AutoTrigger          bool              `protobuf:"varint,2,opt,name=autoTrigger,proto3" json:"autoTrigger,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -212,7 +865,7 @@ func (m *BuildState) Reset()         { *m = BuildState{} }
 func (m *BuildState) String() string { return proto.CompactTextString(m) }
 func (*BuildState) ProtoMessage()    {}
 func (*BuildState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{4}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{7}
 }
 
 func (m *BuildState) XXX_Unmarshal(b []byte) error {
@@ -240,9 +893,17 @@ func (m *BuildState) GetArtifacts() map[string]string {
 	return nil
 }
 
-// DeployState contains the status of the current deploy
+func (m *BuildState) GetAutoTrigger() bool {
+	if m != nil {
+		return m.AutoTrigger
+	}
+	return false
+}
+
+// `DeployState` describes the status of the current deploy
 type DeployState struct {
 	Status               string   `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	AutoTrigger          bool     `protobuf:"varint,2,opt,name=autoTrigger,proto3" json:"autoTrigger,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -252,7 +913,7 @@ func (m *DeployState) Reset()         { *m = DeployState{} }
 func (m *DeployState) String() string { return proto.CompactTextString(m) }
 func (*DeployState) ProtoMessage()    {}
 func (*DeployState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{5}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{8}
 }
 
 func (m *DeployState) XXX_Unmarshal(b []byte) error {
@@ -280,12 +941,128 @@ func (m *DeployState) GetStatus() string {
 	return ""
 }
 
+func (m *DeployState) GetAutoTrigger() bool {
+	if m != nil {
+		return m.AutoTrigger
+	}
+	return false
+}
+
+// `StatusCheckState` describes the state of status check of current deployed resources.
+type StatusCheckState struct {
+	Status string `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	// A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name.
+	// The `status-check-state` can be <br>
+	// - `"Not started"`: indicates that `status-check` has just started. <br>
+	// - `"In progress"`: InProgress is sent after every resource check is complete. <br>
+	// - `"Succeeded"`:
+	// - `"Failed"`:
+	Resources            map[string]string `protobuf:"bytes,2,rep,name=resources,proto3" json:"resources,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *StatusCheckState) Reset()         { *m = StatusCheckState{} }
+func (m *StatusCheckState) String() string { return proto.CompactTextString(m) }
+func (*StatusCheckState) ProtoMessage()    {}
+func (*StatusCheckState) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{9}
+}
+
+func (m *StatusCheckState) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_StatusCheckState.Unmarshal(m, b)
+}
+func (m *StatusCheckState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_StatusCheckState.Marshal(b, m, deterministic)
+}
+func (m *StatusCheckState) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StatusCheckState.Merge(m, src)
+}
+func (m *StatusCheckState) XXX_Size() int {
+	return xxx_messageInfo_StatusCheckState.Size(m)
+}
+func (m *StatusCheckState) XXX_DiscardUnknown() {
+	xxx_messageInfo_StatusCheckState.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StatusCheckState proto.InternalMessageInfo
+
+func (m *StatusCheckState) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *StatusCheckState) GetResources() map[string]string {
+	if m != nil {
+		return m.Resources
+	}
+	return nil
+}
+
+// `FileSyncState` contains the status of the current file sync
+type FileSyncState struct {
+	Status               string   `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	AutoTrigger          bool     `protobuf:"varint,2,opt,name=autoTrigger,proto3" json:"autoTrigger,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *FileSyncState) Reset()         { *m = FileSyncState{} }
+func (m *FileSyncState) String() string { return proto.CompactTextString(m) }
+func (*FileSyncState) ProtoMessage()    {}
+func (*FileSyncState) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{10}
+}
+
+func (m *FileSyncState) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FileSyncState.Unmarshal(m, b)
+}
+func (m *FileSyncState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FileSyncState.Marshal(b, m, deterministic)
+}
+func (m *FileSyncState) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FileSyncState.Merge(m, src)
+}
+func (m *FileSyncState) XXX_Size() int {
+	return xxx_messageInfo_FileSyncState.Size(m)
+}
+func (m *FileSyncState) XXX_DiscardUnknown() {
+	xxx_messageInfo_FileSyncState.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FileSyncState proto.InternalMessageInfo
+
+func (m *FileSyncState) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *FileSyncState) GetAutoTrigger() bool {
+	if m != nil {
+		return m.AutoTrigger
+	}
+	return false
+}
+
+// `Event` describes an event in the Skaffold process.
+// It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
 type Event struct {
 	// Types that are valid to be assigned to EventType:
 	//	*Event_MetaEvent
 	//	*Event_BuildEvent
 	//	*Event_DeployEvent
 	//	*Event_PortEvent
+	//	*Event_StatusCheckEvent
+	//	*Event_ResourceStatusCheckEvent
+	//	*Event_FileSyncEvent
+	//	*Event_DebuggingContainerEvent
+	//	*Event_DevLoopEvent
 	EventType            isEvent_EventType `protobuf_oneof:"event_type"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
@@ -296,7 +1073,7 @@ func (m *Event) Reset()         { *m = Event{} }
 func (m *Event) String() string { return proto.CompactTextString(m) }
 func (*Event) ProtoMessage()    {}
 func (*Event) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{6}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{11}
 }
 
 func (m *Event) XXX_Unmarshal(b []byte) error {
@@ -337,6 +1114,26 @@ type Event_PortEvent struct {
 	PortEvent *PortEvent `protobuf:"bytes,4,opt,name=portEvent,proto3,oneof"`
 }
 
+type Event_StatusCheckEvent struct {
+	StatusCheckEvent *StatusCheckEvent `protobuf:"bytes,5,opt,name=statusCheckEvent,proto3,oneof"`
+}
+
+type Event_ResourceStatusCheckEvent struct {
+	ResourceStatusCheckEvent *ResourceStatusCheckEvent `protobuf:"bytes,6,opt,name=resourceStatusCheckEvent,proto3,oneof"`
+}
+
+type Event_FileSyncEvent struct {
+	FileSyncEvent *FileSyncEvent `protobuf:"bytes,7,opt,name=fileSyncEvent,proto3,oneof"`
+}
+
+type Event_DebuggingContainerEvent struct {
+	DebuggingContainerEvent *DebuggingContainerEvent `protobuf:"bytes,8,opt,name=debuggingContainerEvent,proto3,oneof"`
+}
+
+type Event_DevLoopEvent struct {
+	DevLoopEvent *DevLoopEvent `protobuf:"bytes,9,opt,name=devLoopEvent,proto3,oneof"`
+}
+
 func (*Event_MetaEvent) isEvent_EventType() {}
 
 func (*Event_BuildEvent) isEvent_EventType() {}
@@ -344,6 +1141,16 @@ func (*Event_BuildEvent) isEvent_EventType() {}
 func (*Event_DeployEvent) isEvent_EventType() {}
 
 func (*Event_PortEvent) isEvent_EventType() {}
+
+func (*Event_StatusCheckEvent) isEvent_EventType() {}
+
+func (*Event_ResourceStatusCheckEvent) isEvent_EventType() {}
+
+func (*Event_FileSyncEvent) isEvent_EventType() {}
+
+func (*Event_DebuggingContainerEvent) isEvent_EventType() {}
+
+func (*Event_DevLoopEvent) isEvent_EventType() {}
 
 func (m *Event) GetEventType() isEvent_EventType {
 	if m != nil {
@@ -380,6 +1187,41 @@ func (m *Event) GetPortEvent() *PortEvent {
 	return nil
 }
 
+func (m *Event) GetStatusCheckEvent() *StatusCheckEvent {
+	if x, ok := m.GetEventType().(*Event_StatusCheckEvent); ok {
+		return x.StatusCheckEvent
+	}
+	return nil
+}
+
+func (m *Event) GetResourceStatusCheckEvent() *ResourceStatusCheckEvent {
+	if x, ok := m.GetEventType().(*Event_ResourceStatusCheckEvent); ok {
+		return x.ResourceStatusCheckEvent
+	}
+	return nil
+}
+
+func (m *Event) GetFileSyncEvent() *FileSyncEvent {
+	if x, ok := m.GetEventType().(*Event_FileSyncEvent); ok {
+		return x.FileSyncEvent
+	}
+	return nil
+}
+
+func (m *Event) GetDebuggingContainerEvent() *DebuggingContainerEvent {
+	if x, ok := m.GetEventType().(*Event_DebuggingContainerEvent); ok {
+		return x.DebuggingContainerEvent
+	}
+	return nil
+}
+
+func (m *Event) GetDevLoopEvent() *DevLoopEvent {
+	if x, ok := m.GetEventType().(*Event_DevLoopEvent); ok {
+		return x.DevLoopEvent
+	}
+	return nil
+}
+
 // XXX_OneofWrappers is for the internal use of the proto package.
 func (*Event) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
@@ -387,21 +1229,142 @@ func (*Event) XXX_OneofWrappers() []interface{} {
 		(*Event_BuildEvent)(nil),
 		(*Event_DeployEvent)(nil),
 		(*Event_PortEvent)(nil),
+		(*Event_StatusCheckEvent)(nil),
+		(*Event_ResourceStatusCheckEvent)(nil),
+		(*Event_FileSyncEvent)(nil),
+		(*Event_DebuggingContainerEvent)(nil),
+		(*Event_DevLoopEvent)(nil),
 	}
 }
 
+// `DevLoopEvent` marks the start and end of a dev loop.
+type DevLoopEvent struct {
+	Iteration            int32          `protobuf:"varint,1,opt,name=iteration,proto3" json:"iteration,omitempty"`
+	Status               string         `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	Err                  *ActionableErr `protobuf:"bytes,3,opt,name=err,proto3" json:"err,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *DevLoopEvent) Reset()         { *m = DevLoopEvent{} }
+func (m *DevLoopEvent) String() string { return proto.CompactTextString(m) }
+func (*DevLoopEvent) ProtoMessage()    {}
+func (*DevLoopEvent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{12}
+}
+
+func (m *DevLoopEvent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DevLoopEvent.Unmarshal(m, b)
+}
+func (m *DevLoopEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DevLoopEvent.Marshal(b, m, deterministic)
+}
+func (m *DevLoopEvent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DevLoopEvent.Merge(m, src)
+}
+func (m *DevLoopEvent) XXX_Size() int {
+	return xxx_messageInfo_DevLoopEvent.Size(m)
+}
+func (m *DevLoopEvent) XXX_DiscardUnknown() {
+	xxx_messageInfo_DevLoopEvent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DevLoopEvent proto.InternalMessageInfo
+
+func (m *DevLoopEvent) GetIteration() int32 {
+	if m != nil {
+		return m.Iteration
+	}
+	return 0
+}
+
+func (m *DevLoopEvent) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *DevLoopEvent) GetErr() *ActionableErr {
+	if m != nil {
+		return m.Err
+	}
+	return nil
+}
+
+// `ActionableErr` defines an error that occurred along with an optional list of suggestions
+type ActionableErr struct {
+	ErrCode              StatusCode    `protobuf:"varint,1,opt,name=errCode,proto3,enum=proto.StatusCode" json:"errCode,omitempty"`
+	Message              string        `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Suggestions          []*Suggestion `protobuf:"bytes,3,rep,name=suggestions,proto3" json:"suggestions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
+}
+
+func (m *ActionableErr) Reset()         { *m = ActionableErr{} }
+func (m *ActionableErr) String() string { return proto.CompactTextString(m) }
+func (*ActionableErr) ProtoMessage()    {}
+func (*ActionableErr) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{13}
+}
+
+func (m *ActionableErr) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ActionableErr.Unmarshal(m, b)
+}
+func (m *ActionableErr) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ActionableErr.Marshal(b, m, deterministic)
+}
+func (m *ActionableErr) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ActionableErr.Merge(m, src)
+}
+func (m *ActionableErr) XXX_Size() int {
+	return xxx_messageInfo_ActionableErr.Size(m)
+}
+func (m *ActionableErr) XXX_DiscardUnknown() {
+	xxx_messageInfo_ActionableErr.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ActionableErr proto.InternalMessageInfo
+
+func (m *ActionableErr) GetErrCode() StatusCode {
+	if m != nil {
+		return m.ErrCode
+	}
+	return StatusCode_OK
+}
+
+func (m *ActionableErr) GetMessage() string {
+	if m != nil {
+		return m.Message
+	}
+	return ""
+}
+
+func (m *ActionableErr) GetSuggestions() []*Suggestion {
+	if m != nil {
+		return m.Suggestions
+	}
+	return nil
+}
+
+// `MetaEvent` provides general information regarding Skaffold
 type MetaEvent struct {
-	Entry                string   `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	// entry, for example: `"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"`
+	Entry string `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
+	// Metadata describing skaffold pipeline
+	Metadata             *Metadata `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
 }
 
 func (m *MetaEvent) Reset()         { *m = MetaEvent{} }
 func (m *MetaEvent) String() string { return proto.CompactTextString(m) }
 func (*MetaEvent) ProtoMessage()    {}
 func (*MetaEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{7}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{14}
 }
 
 func (m *MetaEvent) XXX_Unmarshal(b []byte) error {
@@ -429,20 +1392,31 @@ func (m *MetaEvent) GetEntry() string {
 	return ""
 }
 
+func (m *MetaEvent) GetMetadata() *Metadata {
+	if m != nil {
+		return m.Metadata
+	}
+	return nil
+}
+
+// `BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
+// If the build fails, an error will be attached to the event.
 type BuildEvent struct {
-	Artifact             string   `protobuf:"bytes,1,opt,name=artifact,proto3" json:"artifact,omitempty"`
-	Status               string   `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
-	Err                  string   `protobuf:"bytes,3,opt,name=err,proto3" json:"err,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Artifact             string         `protobuf:"bytes,1,opt,name=artifact,proto3" json:"artifact,omitempty"`
+	Status               string         `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	Err                  string         `protobuf:"bytes,3,opt,name=err,proto3" json:"err,omitempty"`
+	ErrCode              StatusCode     `protobuf:"varint,4,opt,name=errCode,proto3,enum=proto.StatusCode" json:"errCode,omitempty"`
+	ActionableErr        *ActionableErr `protobuf:"bytes,5,opt,name=actionableErr,proto3" json:"actionableErr,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
 }
 
 func (m *BuildEvent) Reset()         { *m = BuildEvent{} }
 func (m *BuildEvent) String() string { return proto.CompactTextString(m) }
 func (*BuildEvent) ProtoMessage()    {}
 func (*BuildEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{8}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{15}
 }
 
 func (m *BuildEvent) XXX_Unmarshal(b []byte) error {
@@ -484,19 +1458,37 @@ func (m *BuildEvent) GetErr() string {
 	return ""
 }
 
+func (m *BuildEvent) GetErrCode() StatusCode {
+	if m != nil {
+		return m.ErrCode
+	}
+	return StatusCode_OK
+}
+
+func (m *BuildEvent) GetActionableErr() *ActionableErr {
+	if m != nil {
+		return m.ActionableErr
+	}
+	return nil
+}
+
+// `DeployEvent` represents the status of a deployment, and is emitted by Skaffold
+// anytime a deployment starts or completes, successfully or not.
 type DeployEvent struct {
-	Status               string   `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	Err                  string   `protobuf:"bytes,2,opt,name=err,proto3" json:"err,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Status               string         `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	Err                  string         `protobuf:"bytes,2,opt,name=err,proto3" json:"err,omitempty"`
+	ErrCode              StatusCode     `protobuf:"varint,3,opt,name=errCode,proto3,enum=proto.StatusCode" json:"errCode,omitempty"`
+	ActionableErr        *ActionableErr `protobuf:"bytes,4,opt,name=actionableErr,proto3" json:"actionableErr,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
 }
 
 func (m *DeployEvent) Reset()         { *m = DeployEvent{} }
 func (m *DeployEvent) String() string { return proto.CompactTextString(m) }
 func (*DeployEvent) ProtoMessage()    {}
 func (*DeployEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{9}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{16}
 }
 
 func (m *DeployEvent) XXX_Unmarshal(b []byte) error {
@@ -531,6 +1523,177 @@ func (m *DeployEvent) GetErr() string {
 	return ""
 }
 
+func (m *DeployEvent) GetErrCode() StatusCode {
+	if m != nil {
+		return m.ErrCode
+	}
+	return StatusCode_OK
+}
+
+func (m *DeployEvent) GetActionableErr() *ActionableErr {
+	if m != nil {
+		return m.ActionableErr
+	}
+	return nil
+}
+
+// `StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed.
+type StatusCheckEvent struct {
+	Status               string         `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	Message              string         `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Err                  string         `protobuf:"bytes,3,opt,name=err,proto3" json:"err,omitempty"`
+	ErrCode              StatusCode     `protobuf:"varint,4,opt,name=errCode,proto3,enum=proto.StatusCode" json:"errCode,omitempty"`
+	ActionableErr        *ActionableErr `protobuf:"bytes,5,opt,name=actionableErr,proto3" json:"actionableErr,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *StatusCheckEvent) Reset()         { *m = StatusCheckEvent{} }
+func (m *StatusCheckEvent) String() string { return proto.CompactTextString(m) }
+func (*StatusCheckEvent) ProtoMessage()    {}
+func (*StatusCheckEvent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{17}
+}
+
+func (m *StatusCheckEvent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_StatusCheckEvent.Unmarshal(m, b)
+}
+func (m *StatusCheckEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_StatusCheckEvent.Marshal(b, m, deterministic)
+}
+func (m *StatusCheckEvent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StatusCheckEvent.Merge(m, src)
+}
+func (m *StatusCheckEvent) XXX_Size() int {
+	return xxx_messageInfo_StatusCheckEvent.Size(m)
+}
+func (m *StatusCheckEvent) XXX_DiscardUnknown() {
+	xxx_messageInfo_StatusCheckEvent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StatusCheckEvent proto.InternalMessageInfo
+
+func (m *StatusCheckEvent) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *StatusCheckEvent) GetMessage() string {
+	if m != nil {
+		return m.Message
+	}
+	return ""
+}
+
+func (m *StatusCheckEvent) GetErr() string {
+	if m != nil {
+		return m.Err
+	}
+	return ""
+}
+
+func (m *StatusCheckEvent) GetErrCode() StatusCode {
+	if m != nil {
+		return m.ErrCode
+	}
+	return StatusCode_OK
+}
+
+func (m *StatusCheckEvent) GetActionableErr() *ActionableErr {
+	if m != nil {
+		return m.ActionableErr
+	}
+	return nil
+}
+
+// A Resource StatusCheck Event, indicates progress for each kubernetes deployment.
+// For every resource, there will be exactly one event with `status` *Succeeded* or *Failed* event.
+// There can be multiple events with `status` *Pending*.
+// Skaffold polls for resource status every 0.5 second. If the resource status changes, an event with `status` “Pending”, “Complete” and “Failed”
+// will be sent with the new status.
+type ResourceStatusCheckEvent struct {
+	Resource             string         `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	Status               string         `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	Message              string         `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	Err                  string         `protobuf:"bytes,4,opt,name=err,proto3" json:"err,omitempty"`
+	StatusCode           StatusCode     `protobuf:"varint,5,opt,name=statusCode,proto3,enum=proto.StatusCode" json:"statusCode,omitempty"`
+	ActionableErr        *ActionableErr `protobuf:"bytes,6,opt,name=actionableErr,proto3" json:"actionableErr,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *ResourceStatusCheckEvent) Reset()         { *m = ResourceStatusCheckEvent{} }
+func (m *ResourceStatusCheckEvent) String() string { return proto.CompactTextString(m) }
+func (*ResourceStatusCheckEvent) ProtoMessage()    {}
+func (*ResourceStatusCheckEvent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{18}
+}
+
+func (m *ResourceStatusCheckEvent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ResourceStatusCheckEvent.Unmarshal(m, b)
+}
+func (m *ResourceStatusCheckEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ResourceStatusCheckEvent.Marshal(b, m, deterministic)
+}
+func (m *ResourceStatusCheckEvent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResourceStatusCheckEvent.Merge(m, src)
+}
+func (m *ResourceStatusCheckEvent) XXX_Size() int {
+	return xxx_messageInfo_ResourceStatusCheckEvent.Size(m)
+}
+func (m *ResourceStatusCheckEvent) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResourceStatusCheckEvent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ResourceStatusCheckEvent proto.InternalMessageInfo
+
+func (m *ResourceStatusCheckEvent) GetResource() string {
+	if m != nil {
+		return m.Resource
+	}
+	return ""
+}
+
+func (m *ResourceStatusCheckEvent) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *ResourceStatusCheckEvent) GetMessage() string {
+	if m != nil {
+		return m.Message
+	}
+	return ""
+}
+
+func (m *ResourceStatusCheckEvent) GetErr() string {
+	if m != nil {
+		return m.Err
+	}
+	return ""
+}
+
+func (m *ResourceStatusCheckEvent) GetStatusCode() StatusCode {
+	if m != nil {
+		return m.StatusCode
+	}
+	return StatusCode_OK
+}
+
+func (m *ResourceStatusCheckEvent) GetActionableErr() *ActionableErr {
+	if m != nil {
+		return m.ActionableErr
+	}
+	return nil
+}
+
+// PortEvent Event describes each port forwarding event.
 type PortEvent struct {
 	LocalPort            int32    `protobuf:"varint,1,opt,name=localPort,proto3" json:"localPort,omitempty"`
 	RemotePort           int32    `protobuf:"varint,2,opt,name=remotePort,proto3" json:"remotePort,omitempty"`
@@ -540,6 +1703,7 @@ type PortEvent struct {
 	PortName             string   `protobuf:"bytes,6,opt,name=portName,proto3" json:"portName,omitempty"`
 	ResourceType         string   `protobuf:"bytes,7,opt,name=resourceType,proto3" json:"resourceType,omitempty"`
 	ResourceName         string   `protobuf:"bytes,8,opt,name=resourceName,proto3" json:"resourceName,omitempty"`
+	Address              string   `protobuf:"bytes,9,opt,name=address,proto3" json:"address,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -549,7 +1713,7 @@ func (m *PortEvent) Reset()         { *m = PortEvent{} }
 func (m *PortEvent) String() string { return proto.CompactTextString(m) }
 func (*PortEvent) ProtoMessage()    {}
 func (*PortEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{10}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{19}
 }
 
 func (m *PortEvent) XXX_Unmarshal(b []byte) error {
@@ -626,6 +1790,190 @@ func (m *PortEvent) GetResourceName() string {
 	return ""
 }
 
+func (m *PortEvent) GetAddress() string {
+	if m != nil {
+		return m.Address
+	}
+	return ""
+}
+
+// FileSyncEvent describes the sync status.
+type FileSyncEvent struct {
+	FileCount            int32          `protobuf:"varint,1,opt,name=fileCount,proto3" json:"fileCount,omitempty"`
+	Image                string         `protobuf:"bytes,2,opt,name=image,proto3" json:"image,omitempty"`
+	Status               string         `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	Err                  string         `protobuf:"bytes,4,opt,name=err,proto3" json:"err,omitempty"`
+	ErrCode              StatusCode     `protobuf:"varint,5,opt,name=errCode,proto3,enum=proto.StatusCode" json:"errCode,omitempty"`
+	ActionableErr        *ActionableErr `protobuf:"bytes,6,opt,name=actionableErr,proto3" json:"actionableErr,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *FileSyncEvent) Reset()         { *m = FileSyncEvent{} }
+func (m *FileSyncEvent) String() string { return proto.CompactTextString(m) }
+func (*FileSyncEvent) ProtoMessage()    {}
+func (*FileSyncEvent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{20}
+}
+
+func (m *FileSyncEvent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FileSyncEvent.Unmarshal(m, b)
+}
+func (m *FileSyncEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FileSyncEvent.Marshal(b, m, deterministic)
+}
+func (m *FileSyncEvent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FileSyncEvent.Merge(m, src)
+}
+func (m *FileSyncEvent) XXX_Size() int {
+	return xxx_messageInfo_FileSyncEvent.Size(m)
+}
+func (m *FileSyncEvent) XXX_DiscardUnknown() {
+	xxx_messageInfo_FileSyncEvent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FileSyncEvent proto.InternalMessageInfo
+
+func (m *FileSyncEvent) GetFileCount() int32 {
+	if m != nil {
+		return m.FileCount
+	}
+	return 0
+}
+
+func (m *FileSyncEvent) GetImage() string {
+	if m != nil {
+		return m.Image
+	}
+	return ""
+}
+
+func (m *FileSyncEvent) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *FileSyncEvent) GetErr() string {
+	if m != nil {
+		return m.Err
+	}
+	return ""
+}
+
+func (m *FileSyncEvent) GetErrCode() StatusCode {
+	if m != nil {
+		return m.ErrCode
+	}
+	return StatusCode_OK
+}
+
+func (m *FileSyncEvent) GetActionableErr() *ActionableErr {
+	if m != nil {
+		return m.ActionableErr
+	}
+	return nil
+}
+
+// DebuggingContainerEvent is raised when a debugging container is started or terminated
+type DebuggingContainerEvent struct {
+	Status               string            `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	PodName              string            `protobuf:"bytes,2,opt,name=podName,proto3" json:"podName,omitempty"`
+	ContainerName        string            `protobuf:"bytes,3,opt,name=containerName,proto3" json:"containerName,omitempty"`
+	Namespace            string            `protobuf:"bytes,4,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Artifact             string            `protobuf:"bytes,5,opt,name=artifact,proto3" json:"artifact,omitempty"`
+	Runtime              string            `protobuf:"bytes,6,opt,name=runtime,proto3" json:"runtime,omitempty"`
+	WorkingDir           string            `protobuf:"bytes,7,opt,name=workingDir,proto3" json:"workingDir,omitempty"`
+	DebugPorts           map[string]uint32 `protobuf:"bytes,8,rep,name=debugPorts,proto3" json:"debugPorts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *DebuggingContainerEvent) Reset()         { *m = DebuggingContainerEvent{} }
+func (m *DebuggingContainerEvent) String() string { return proto.CompactTextString(m) }
+func (*DebuggingContainerEvent) ProtoMessage()    {}
+func (*DebuggingContainerEvent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{21}
+}
+
+func (m *DebuggingContainerEvent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DebuggingContainerEvent.Unmarshal(m, b)
+}
+func (m *DebuggingContainerEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DebuggingContainerEvent.Marshal(b, m, deterministic)
+}
+func (m *DebuggingContainerEvent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DebuggingContainerEvent.Merge(m, src)
+}
+func (m *DebuggingContainerEvent) XXX_Size() int {
+	return xxx_messageInfo_DebuggingContainerEvent.Size(m)
+}
+func (m *DebuggingContainerEvent) XXX_DiscardUnknown() {
+	xxx_messageInfo_DebuggingContainerEvent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DebuggingContainerEvent proto.InternalMessageInfo
+
+func (m *DebuggingContainerEvent) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetPodName() string {
+	if m != nil {
+		return m.PodName
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetContainerName() string {
+	if m != nil {
+		return m.ContainerName
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetArtifact() string {
+	if m != nil {
+		return m.Artifact
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetRuntime() string {
+	if m != nil {
+		return m.Runtime
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetWorkingDir() string {
+	if m != nil {
+		return m.WorkingDir
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetDebugPorts() map[string]uint32 {
+	if m != nil {
+		return m.DebugPorts
+	}
+	return nil
+}
+
+// LogEntry describes an event and a string description of the event.
 type LogEntry struct {
 	Timestamp            *timestamp.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Event                *Event               `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
@@ -639,7 +1987,7 @@ func (m *LogEntry) Reset()         { *m = LogEntry{} }
 func (m *LogEntry) String() string { return proto.CompactTextString(m) }
 func (*LogEntry) ProtoMessage()    {}
 func (*LogEntry) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{11}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{22}
 }
 
 func (m *LogEntry) XXX_Unmarshal(b []byte) error {
@@ -692,7 +2040,7 @@ func (m *UserIntentRequest) Reset()         { *m = UserIntentRequest{} }
 func (m *UserIntentRequest) String() string { return proto.CompactTextString(m) }
 func (*UserIntentRequest) ProtoMessage()    {}
 func (*UserIntentRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{12}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{23}
 }
 
 func (m *UserIntentRequest) XXX_Unmarshal(b []byte) error {
@@ -720,6 +2068,112 @@ func (m *UserIntentRequest) GetIntent() *Intent {
 	return nil
 }
 
+type TriggerRequest struct {
+	State                *TriggerState `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
+}
+
+func (m *TriggerRequest) Reset()         { *m = TriggerRequest{} }
+func (m *TriggerRequest) String() string { return proto.CompactTextString(m) }
+func (*TriggerRequest) ProtoMessage()    {}
+func (*TriggerRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{24}
+}
+
+func (m *TriggerRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TriggerRequest.Unmarshal(m, b)
+}
+func (m *TriggerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TriggerRequest.Marshal(b, m, deterministic)
+}
+func (m *TriggerRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TriggerRequest.Merge(m, src)
+}
+func (m *TriggerRequest) XXX_Size() int {
+	return xxx_messageInfo_TriggerRequest.Size(m)
+}
+func (m *TriggerRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_TriggerRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TriggerRequest proto.InternalMessageInfo
+
+func (m *TriggerRequest) GetState() *TriggerState {
+	if m != nil {
+		return m.State
+	}
+	return nil
+}
+
+// TriggerState represents trigger state for a given phase.
+type TriggerState struct {
+	// Types that are valid to be assigned to Val:
+	//	*TriggerState_Enabled
+	Val                  isTriggerState_Val `protobuf_oneof:"val"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
+}
+
+func (m *TriggerState) Reset()         { *m = TriggerState{} }
+func (m *TriggerState) String() string { return proto.CompactTextString(m) }
+func (*TriggerState) ProtoMessage()    {}
+func (*TriggerState) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{25}
+}
+
+func (m *TriggerState) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TriggerState.Unmarshal(m, b)
+}
+func (m *TriggerState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TriggerState.Marshal(b, m, deterministic)
+}
+func (m *TriggerState) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TriggerState.Merge(m, src)
+}
+func (m *TriggerState) XXX_Size() int {
+	return xxx_messageInfo_TriggerState.Size(m)
+}
+func (m *TriggerState) XXX_DiscardUnknown() {
+	xxx_messageInfo_TriggerState.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TriggerState proto.InternalMessageInfo
+
+type isTriggerState_Val interface {
+	isTriggerState_Val()
+}
+
+type TriggerState_Enabled struct {
+	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3,oneof"`
+}
+
+func (*TriggerState_Enabled) isTriggerState_Val() {}
+
+func (m *TriggerState) GetVal() isTriggerState_Val {
+	if m != nil {
+		return m.Val
+	}
+	return nil
+}
+
+func (m *TriggerState) GetEnabled() bool {
+	if x, ok := m.GetVal().(*TriggerState_Enabled); ok {
+		return x.Enabled
+	}
+	return false
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*TriggerState) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*TriggerState_Enabled)(nil),
+	}
+}
+
+// Intent represents user intents for a given phase.
 type Intent struct {
 	Build                bool     `protobuf:"varint,1,opt,name=build,proto3" json:"build,omitempty"`
 	Sync                 bool     `protobuf:"varint,2,opt,name=sync,proto3" json:"sync,omitempty"`
@@ -733,7 +2187,7 @@ func (m *Intent) Reset()         { *m = Intent{} }
 func (m *Intent) String() string { return proto.CompactTextString(m) }
 func (*Intent) ProtoMessage()    {}
 func (*Intent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{13}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{26}
 }
 
 func (m *Intent) XXX_Unmarshal(b []byte) error {
@@ -775,84 +2229,266 @@ func (m *Intent) GetDeploy() bool {
 	return false
 }
 
+// Suggestion defines the action a user needs to recover from an error.
+type Suggestion struct {
+	SuggestionCode       SuggestionCode `protobuf:"varint,1,opt,name=suggestionCode,proto3,enum=proto.SuggestionCode" json:"suggestionCode,omitempty"`
+	Action               string         `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *Suggestion) Reset()         { *m = Suggestion{} }
+func (m *Suggestion) String() string { return proto.CompactTextString(m) }
+func (*Suggestion) ProtoMessage()    {}
+func (*Suggestion) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{27}
+}
+
+func (m *Suggestion) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Suggestion.Unmarshal(m, b)
+}
+func (m *Suggestion) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Suggestion.Marshal(b, m, deterministic)
+}
+func (m *Suggestion) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Suggestion.Merge(m, src)
+}
+func (m *Suggestion) XXX_Size() int {
+	return xxx_messageInfo_Suggestion.Size(m)
+}
+func (m *Suggestion) XXX_DiscardUnknown() {
+	xxx_messageInfo_Suggestion.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Suggestion proto.InternalMessageInfo
+
+func (m *Suggestion) GetSuggestionCode() SuggestionCode {
+	if m != nil {
+		return m.SuggestionCode
+	}
+	return SuggestionCode_NIL
+}
+
+func (m *Suggestion) GetAction() string {
+	if m != nil {
+		return m.Action
+	}
+	return ""
+}
+
 func init() {
+	proto.RegisterEnum("proto.BuilderType", BuilderType_name, BuilderType_value)
+	proto.RegisterEnum("proto.BuildType", BuildType_name, BuildType_value)
+	proto.RegisterEnum("proto.DeployerType", DeployerType_name, DeployerType_value)
+	proto.RegisterEnum("proto.ClusterType", ClusterType_name, ClusterType_value)
+	proto.RegisterEnum("proto.StatusCode", StatusCode_name, StatusCode_value)
+	proto.RegisterEnum("proto.SuggestionCode", SuggestionCode_name, SuggestionCode_value)
 	proto.RegisterType((*StateResponse)(nil), "proto.StateResponse")
 	proto.RegisterType((*Response)(nil), "proto.Response")
 	proto.RegisterType((*Request)(nil), "proto.Request")
 	proto.RegisterType((*State)(nil), "proto.State")
-	proto.RegisterMapType((map[string]*PortEvent)(nil), "proto.State.ForwardedPortsEntry")
+	proto.RegisterMapType((map[int32]*PortEvent)(nil), "proto.State.ForwardedPortsEntry")
+	proto.RegisterType((*Metadata)(nil), "proto.Metadata")
+	proto.RegisterMapType((map[string]string)(nil), "proto.Metadata.AdditionalEntry")
+	proto.RegisterType((*BuildMetadata)(nil), "proto.BuildMetadata")
+	proto.RegisterMapType((map[string]string)(nil), "proto.BuildMetadata.AdditionalEntry")
+	proto.RegisterType((*BuildMetadata_ImageBuilder)(nil), "proto.BuildMetadata.ImageBuilder")
+	proto.RegisterType((*DeployMetadata)(nil), "proto.DeployMetadata")
+	proto.RegisterType((*DeployMetadata_Deployer)(nil), "proto.DeployMetadata.Deployer")
 	proto.RegisterType((*BuildState)(nil), "proto.BuildState")
 	proto.RegisterMapType((map[string]string)(nil), "proto.BuildState.ArtifactsEntry")
 	proto.RegisterType((*DeployState)(nil), "proto.DeployState")
+	proto.RegisterType((*StatusCheckState)(nil), "proto.StatusCheckState")
+	proto.RegisterMapType((map[string]string)(nil), "proto.StatusCheckState.ResourcesEntry")
+	proto.RegisterType((*FileSyncState)(nil), "proto.FileSyncState")
 	proto.RegisterType((*Event)(nil), "proto.Event")
+	proto.RegisterType((*DevLoopEvent)(nil), "proto.DevLoopEvent")
+	proto.RegisterType((*ActionableErr)(nil), "proto.ActionableErr")
 	proto.RegisterType((*MetaEvent)(nil), "proto.MetaEvent")
 	proto.RegisterType((*BuildEvent)(nil), "proto.BuildEvent")
 	proto.RegisterType((*DeployEvent)(nil), "proto.DeployEvent")
+	proto.RegisterType((*StatusCheckEvent)(nil), "proto.StatusCheckEvent")
+	proto.RegisterType((*ResourceStatusCheckEvent)(nil), "proto.ResourceStatusCheckEvent")
 	proto.RegisterType((*PortEvent)(nil), "proto.PortEvent")
+	proto.RegisterType((*FileSyncEvent)(nil), "proto.FileSyncEvent")
+	proto.RegisterType((*DebuggingContainerEvent)(nil), "proto.DebuggingContainerEvent")
+	proto.RegisterMapType((map[string]uint32)(nil), "proto.DebuggingContainerEvent.DebugPortsEntry")
 	proto.RegisterType((*LogEntry)(nil), "proto.LogEntry")
 	proto.RegisterType((*UserIntentRequest)(nil), "proto.UserIntentRequest")
+	proto.RegisterType((*TriggerRequest)(nil), "proto.TriggerRequest")
+	proto.RegisterType((*TriggerState)(nil), "proto.TriggerState")
 	proto.RegisterType((*Intent)(nil), "proto.Intent")
+	proto.RegisterType((*Suggestion)(nil), "proto.Suggestion")
 }
 
 func init() { proto.RegisterFile("skaffold.proto", fileDescriptor_4f2d38e344f9dbf5) }
 
 var fileDescriptor_4f2d38e344f9dbf5 = []byte{
-	// 868 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x55, 0xcd, 0x6e, 0x23, 0x45,
-	0x10, 0x66, 0xc6, 0xb1, 0x33, 0x53, 0xce, 0xcf, 0xa6, 0x61, 0x57, 0xd6, 0x6c, 0x80, 0xd0, 0x62,
-	0x51, 0xc4, 0xc1, 0xde, 0x4d, 0x10, 0xac, 0x22, 0x84, 0x44, 0x20, 0x6c, 0x40, 0x01, 0xa1, 0xf1,
-	0x22, 0x71, 0x43, 0x1d, 0xbb, 0x6c, 0xac, 0x8c, 0xa7, 0x87, 0xe9, 0x76, 0xc0, 0x17, 0x0e, 0x1c,
-	0xd9, 0x03, 0x07, 0x1e, 0x8d, 0x57, 0x40, 0x3c, 0x07, 0xea, 0xea, 0xee, 0xf9, 0xc9, 0x8f, 0xb4,
-	0x27, 0x77, 0x55, 0x7d, 0xf5, 0x4d, 0x55, 0x7d, 0xdd, 0x65, 0xd8, 0x51, 0x57, 0x62, 0x36, 0x93,
-	0xd9, 0x74, 0x58, 0x94, 0x52, 0x4b, 0xd6, 0xa5, 0x9f, 0x64, 0x7f, 0x2e, 0xe5, 0x3c, 0xc3, 0x91,
-	0x28, 0x16, 0x23, 0x91, 0xe7, 0x52, 0x0b, 0xbd, 0x90, 0xb9, 0xb2, 0xa0, 0xe4, 0x5d, 0x17, 0x25,
-	0xeb, 0x72, 0x35, 0x1b, 0xe9, 0xc5, 0x12, 0x95, 0x16, 0xcb, 0xc2, 0x01, 0x1e, 0xdf, 0x04, 0xe0,
-	0xb2, 0xd0, 0x6b, 0x1b, 0xe4, 0xc7, 0xb0, 0x3d, 0xd6, 0x42, 0x63, 0x8a, 0xaa, 0x90, 0xb9, 0x42,
-	0xc6, 0xa1, 0xab, 0x8c, 0x63, 0x10, 0x1c, 0x04, 0x87, 0xfd, 0xa3, 0x2d, 0x8b, 0x1b, 0x5a, 0x90,
-	0x0d, 0xf1, 0x7d, 0x88, 0x2a, 0xfc, 0x03, 0xe8, 0x2c, 0xd5, 0x9c, 0xd0, 0x71, 0x6a, 0x8e, 0xfc,
-	0x6d, 0xd8, 0x4c, 0xf1, 0x97, 0x15, 0x2a, 0xcd, 0x18, 0x6c, 0xe4, 0x62, 0x89, 0x2e, 0x4a, 0x67,
-	0xfe, 0x57, 0x08, 0x5d, 0x62, 0x63, 0xcf, 0x00, 0x2e, 0x57, 0x8b, 0x6c, 0x3a, 0x6e, 0x7c, 0x6f,
-	0xcf, 0x7d, 0xef, 0xb4, 0x0a, 0xa4, 0x0d, 0x10, 0xfb, 0x08, 0xfa, 0x53, 0x2c, 0x32, 0xb9, 0xb6,
-	0x39, 0x21, 0xe5, 0x30, 0x97, 0xf3, 0x65, 0x1d, 0x49, 0x9b, 0x30, 0x76, 0x0e, 0x3b, 0x33, 0x59,
-	0xfe, 0x2a, 0xca, 0x29, 0x4e, 0xbf, 0x97, 0xa5, 0x56, 0x83, 0xce, 0x41, 0xe7, 0xb0, 0x7f, 0x74,
-	0xd0, 0x6c, 0x6e, 0xf8, 0x55, 0x0b, 0x72, 0x96, 0xeb, 0x72, 0x9d, 0xde, 0xc8, 0x4b, 0xc6, 0xf0,
-	0xe6, 0x1d, 0x30, 0x33, 0x84, 0x2b, 0x5c, 0xfb, 0x21, 0x5c, 0xe1, 0x9a, 0x7d, 0x00, 0xdd, 0x6b,
-	0x91, 0xad, 0x7c, 0x89, 0x0f, 0xdc, 0x97, 0x4c, 0xce, 0xd9, 0x35, 0xe6, 0x3a, 0xb5, 0xe1, 0x93,
-	0xf0, 0x79, 0xc0, 0xff, 0x0c, 0x00, 0xea, 0x7e, 0xd9, 0x67, 0x10, 0x8b, 0x52, 0x2f, 0x66, 0x62,
-	0xa2, 0xd5, 0x20, 0x68, 0x15, 0x5a, 0xa3, 0x86, 0x9f, 0x7b, 0x88, 0x2d, 0xb4, 0x4e, 0x49, 0x3e,
-	0x85, 0x9d, 0x76, 0xf0, 0x8e, 0xf2, 0xde, 0x6a, 0x96, 0x17, 0x37, 0x8b, 0x79, 0x02, 0xfd, 0xc6,
-	0x1c, 0xd9, 0x23, 0xe8, 0x19, 0xcd, 0x57, 0xca, 0x65, 0x3b, 0x8b, 0xff, 0x17, 0x40, 0x97, 0x1a,
-	0x61, 0x4f, 0x21, 0x5e, 0xa2, 0x16, 0x64, 0x38, 0x11, 0x7d, 0xb7, 0xdf, 0x7a, 0xff, 0xf9, 0x1b,
-	0x69, 0x0d, 0x62, 0xc7, 0x4e, 0x77, 0x9b, 0x12, 0xde, 0xd6, 0xdd, 0xe7, 0x34, 0x60, 0xec, 0x63,
-	0xaf, 0xbc, 0xcd, 0xea, 0xdc, 0xa1, 0xbc, 0x4f, 0x6b, 0x02, 0x4d, 0x79, 0x85, 0x1f, 0xfa, 0x60,
-	0xe3, 0x6e, 0x31, 0x4c, 0x79, 0x15, 0xe8, 0x74, 0x0b, 0x00, 0xcd, 0xe1, 0x27, 0xbd, 0x2e, 0x90,
-	0xbf, 0x07, 0x71, 0xd5, 0x86, 0x19, 0x1b, 0x9a, 0x89, 0xba, 0x61, 0x58, 0x83, 0xa7, 0x4e, 0x3e,
-	0x8b, 0x49, 0x20, 0xf2, 0x5a, 0x38, 0x58, 0x65, 0x37, 0xa6, 0x19, 0x36, 0xa7, 0x69, 0x04, 0xc2,
-	0xb2, 0xa4, 0xa6, 0xe2, 0xd4, 0x1c, 0xf9, 0x27, 0x5e, 0x06, 0x4b, 0x7a, 0x8f, 0x0c, 0x3e, 0x31,
-	0xac, 0x13, 0x5f, 0x85, 0x10, 0x57, 0x8d, 0xb1, 0x7d, 0x88, 0x33, 0x39, 0x11, 0x99, 0xf1, 0x50,
-	0x6a, 0x37, 0xad, 0x1d, 0xec, 0x1d, 0x80, 0x12, 0x97, 0x52, 0x23, 0x85, 0x43, 0x0a, 0x37, 0x3c,
-	0x6c, 0x00, 0x9b, 0x85, 0x9c, 0x7e, 0x67, 0x5e, 0xb0, 0x2d, 0xcd, 0x9b, 0xec, 0x7d, 0xd8, 0x9e,
-	0xc8, 0x5c, 0x8b, 0x45, 0x8e, 0x25, 0xc5, 0x37, 0x28, 0xde, 0x76, 0x9a, 0xaf, 0x9b, 0x27, 0xaf,
-	0x0a, 0x31, 0xc1, 0x41, 0x97, 0x10, 0xb5, 0xc3, 0x0c, 0xca, 0x0c, 0x9d, 0xd2, 0x7b, 0x76, 0x50,
-	0xde, 0x66, 0x1c, 0xb6, 0x4a, 0x54, 0x72, 0x55, 0x4e, 0xf0, 0xe5, 0xba, 0xc0, 0xc1, 0x26, 0xc5,
-	0x5b, 0xbe, 0x26, 0x86, 0x38, 0xa2, 0x36, 0xc6, 0xf8, 0xf8, 0xef, 0x10, 0x5d, 0xc8, 0xb9, 0x7d,
-	0x05, 0xcf, 0x21, 0xae, 0x56, 0xa3, 0xbb, 0xa8, 0xc9, 0xd0, 0xee, 0xc6, 0xa1, 0xdf, 0x8d, 0xc3,
-	0x97, 0x1e, 0x91, 0xd6, 0x60, 0xb3, 0x13, 0xb1, 0x71, 0x57, 0xfd, 0x4e, 0x74, 0x0f, 0x19, 0xdb,
-	0x57, 0xa3, 0xd3, 0xbc, 0x1a, 0x27, 0xb0, 0xf7, 0x83, 0xc2, 0xf2, 0xeb, 0x5c, 0x1b, 0xa8, 0xdb,
-	0x8a, 0x4f, 0xa0, 0xb7, 0x20, 0x87, 0xab, 0x62, 0xdb, 0xf1, 0x39, 0x94, 0x0b, 0xf2, 0x6f, 0xa0,
-	0x67, 0x3d, 0x86, 0x9b, 0x5e, 0x02, 0xe1, 0xa3, 0xd4, 0x1a, 0x66, 0xb9, 0xaa, 0x75, 0x3e, 0xa1,
-	0xa2, 0xa2, 0x94, 0xce, 0xe6, 0x9e, 0xd8, 0xcb, 0x4f, 0x65, 0x44, 0xa9, 0xb3, 0x8e, 0x5e, 0x75,
-	0x60, 0x77, 0xec, 0xfe, 0x5c, 0xc6, 0x58, 0x5e, 0x2f, 0x26, 0xc8, 0xbe, 0x80, 0xe8, 0x05, 0x6a,
-	0xf7, 0xcc, 0x6f, 0x0d, 0xe2, 0xcc, 0xfc, 0x49, 0x24, 0xad, 0xf5, 0xcf, 0xf7, 0xfe, 0xf8, 0xe7,
-	0xdf, 0xbf, 0xc3, 0x3e, 0x8b, 0x47, 0xd7, 0xcf, 0x46, 0xf4, 0x57, 0xc0, 0x5e, 0x40, 0x44, 0x63,
-	0xb8, 0x90, 0x73, 0xb6, 0xeb, 0xc0, 0x7e, 0xe2, 0xc9, 0x4d, 0x07, 0x7f, 0x48, 0x04, 0xbb, 0x6c,
-	0xdb, 0x10, 0xd8, 0x47, 0x96, 0xc9, 0xf9, 0x61, 0xf0, 0x34, 0x60, 0xa7, 0xd0, 0x23, 0x22, 0xf5,
-	0x1a, 0x34, 0x8c, 0x68, 0xb6, 0x18, 0x54, 0x34, 0x8a, 0x38, 0x2e, 0xa0, 0x77, 0x2e, 0xf2, 0x69,
-	0x86, 0xac, 0x25, 0x51, 0x72, 0x4f, 0x77, 0x7c, 0x9f, 0x78, 0x1e, 0xf1, 0xbd, 0x9a, 0x67, 0xf4,
-	0x33, 0x11, 0x9c, 0x04, 0x1f, 0xb2, 0x1f, 0x61, 0xf3, 0xec, 0x37, 0x9c, 0xac, 0x34, 0xb2, 0x81,
-	0xa3, 0xbb, 0xa5, 0xe5, 0xbd, 0xd4, 0x8f, 0x89, 0xfa, 0x21, 0xef, 0x13, 0xb5, 0xa5, 0x39, 0x71,
-	0xca, 0x5e, 0xf6, 0x08, 0x7c, 0xfc, 0x7f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x99, 0x57, 0x1f, 0xfd,
-	0xf0, 0x07, 0x00, 0x00,
+	// 2600 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x59, 0x4d, 0x90, 0x1b, 0x47,
+	0x15, 0x5e, 0x69, 0xa4, 0x5d, 0xe9, 0xed, 0x8f, 0xc7, 0x6d, 0xaf, 0xad, 0xc8, 0x8e, 0xbd, 0x19,
+	0xec, 0x8d, 0xb3, 0x09, 0xbb, 0x71, 0x4c, 0x51, 0xc1, 0x24, 0x50, 0xda, 0xd1, 0x78, 0x35, 0x5e,
+	0xed, 0x68, 0xab, 0x35, 0x4a, 0x70, 0xaa, 0x28, 0xd5, 0x58, 0xea, 0x55, 0x54, 0xd6, 0x6a, 0xc4,
+	0xcc, 0xc8, 0x61, 0x2f, 0x1c, 0xb8, 0x72, 0x01, 0x42, 0xf8, 0x2b, 0x0e, 0x5c, 0xb8, 0x85, 0xc0,
+	0x95, 0xa2, 0x20, 0xdc, 0x80, 0x33, 0x55, 0x54, 0x71, 0xa4, 0x2a, 0x1c, 0xb8, 0x27, 0xfc, 0x53,
+	0x45, 0xf5, 0xdf, 0x4c, 0x8f, 0x7e, 0xbc, 0xd9, 0xca, 0x81, 0xd3, 0xaa, 0x5f, 0x7f, 0xef, 0xb7,
+	0x5f, 0xbf, 0xf7, 0xa6, 0x17, 0xd6, 0xc2, 0x47, 0xde, 0xd1, 0x91, 0x3f, 0xe8, 0x6e, 0x8f, 0x02,
+	0x3f, 0xf2, 0x51, 0x9e, 0xfd, 0x29, 0x5f, 0xed, 0xf9, 0x7e, 0x6f, 0x40, 0x76, 0xbc, 0x51, 0x7f,
+	0xc7, 0x1b, 0x0e, 0xfd, 0xc8, 0x8b, 0xfa, 0xfe, 0x30, 0xe4, 0xa0, 0xf2, 0x75, 0xb1, 0xcb, 0x56,
+	0x0f, 0xc7, 0x47, 0x3b, 0x51, 0xff, 0x98, 0x84, 0x91, 0x77, 0x3c, 0x12, 0x80, 0x2b, 0x93, 0x00,
+	0x72, 0x3c, 0x8a, 0x4e, 0xf8, 0xa6, 0x71, 0x07, 0x56, 0x9b, 0x91, 0x17, 0x11, 0x4c, 0xc2, 0x91,
+	0x3f, 0x0c, 0x09, 0x32, 0x20, 0x1f, 0x52, 0x42, 0x29, 0xb3, 0x91, 0xb9, 0xb5, 0xfc, 0xd2, 0x0a,
+	0xc7, 0x6d, 0x73, 0x10, 0xdf, 0x32, 0xae, 0x42, 0x21, 0xc6, 0xeb, 0xa0, 0x1d, 0x87, 0x3d, 0x86,
+	0x2e, 0x62, 0xfa, 0xd3, 0x78, 0x1a, 0x96, 0x30, 0xf9, 0xca, 0x98, 0x84, 0x11, 0x42, 0x90, 0x1b,
+	0x7a, 0xc7, 0x44, 0xec, 0xb2, 0xdf, 0xc6, 0x3b, 0x39, 0xc8, 0x33, 0x69, 0xe8, 0x36, 0xc0, 0xc3,
+	0x71, 0x7f, 0xd0, 0x6d, 0x2a, 0xfa, 0xce, 0x0b, 0x7d, 0xbb, 0xf1, 0x06, 0x56, 0x40, 0xe8, 0x33,
+	0xb0, 0xdc, 0x25, 0xa3, 0x81, 0x7f, 0xc2, 0x79, 0xb2, 0x8c, 0x07, 0x09, 0x9e, 0x6a, 0xb2, 0x83,
+	0x55, 0x18, 0xaa, 0xc1, 0xda, 0x91, 0x1f, 0xbc, 0xe5, 0x05, 0x5d, 0xd2, 0x3d, 0xf4, 0x83, 0x28,
+	0x2c, 0xe5, 0x36, 0xb4, 0x5b, 0xcb, 0x2f, 0x6d, 0xa8, 0xce, 0x6d, 0xdf, 0x4b, 0x41, 0xac, 0x61,
+	0x14, 0x9c, 0xe0, 0x09, 0x3e, 0x64, 0x82, 0x4e, 0x43, 0x30, 0x0e, 0xcd, 0x37, 0x49, 0xe7, 0x11,
+	0x37, 0x22, 0xcf, 0x8c, 0xb8, 0xac, 0xc8, 0x52, 0xb7, 0xf1, 0x14, 0x03, 0xba, 0x0b, 0xab, 0x47,
+	0xfd, 0x01, 0x69, 0x9e, 0x0c, 0x3b, 0x5c, 0xc2, 0x22, 0x93, 0x70, 0x51, 0x48, 0xb8, 0xa7, 0xee,
+	0xe1, 0x34, 0x14, 0x1d, 0xc2, 0x85, 0x2e, 0x79, 0x38, 0xee, 0xf5, 0xfa, 0xc3, 0x9e, 0xe9, 0x0f,
+	0x23, 0xaf, 0x3f, 0x24, 0x41, 0x58, 0x5a, 0x62, 0xfe, 0x5c, 0x8b, 0x03, 0x31, 0x89, 0xb0, 0x1e,
+	0x93, 0x61, 0x84, 0x67, 0xb1, 0xa2, 0xe7, 0xa1, 0x70, 0x4c, 0x22, 0xaf, 0xeb, 0x45, 0x5e, 0xa9,
+	0xc0, 0x0c, 0x39, 0x27, 0xc4, 0x1c, 0x08, 0x32, 0x8e, 0x01, 0xe5, 0x26, 0x5c, 0x98, 0x11, 0x26,
+	0x9a, 0x04, 0x8f, 0xc8, 0x09, 0x3b, 0xc2, 0x3c, 0xa6, 0x3f, 0xd1, 0x26, 0xe4, 0x1f, 0x7b, 0x83,
+	0xb1, 0x3c, 0x22, 0x5d, 0x88, 0xa4, 0x3c, 0xdc, 0x16, 0xbe, 0x7d, 0x37, 0xfb, 0x72, 0xe6, 0x7e,
+	0xae, 0xa0, 0xe9, 0x39, 0xe3, 0x2f, 0x19, 0x28, 0x48, 0x8d, 0x68, 0x0b, 0xf2, 0xec, 0xd4, 0x45,
+	0x56, 0x5c, 0x54, 0xb3, 0x22, 0x36, 0x8b, 0x43, 0xd0, 0xa7, 0x61, 0x91, 0x1f, 0xb6, 0xd0, 0xb5,
+	0x9e, 0x4a, 0x87, 0x18, 0x2d, 0x40, 0xe8, 0x8b, 0x00, 0x5e, 0xb7, 0xdb, 0xa7, 0x57, 0xc8, 0x1b,
+	0x94, 0x3a, 0x2c, 0x70, 0xd7, 0x27, 0x3c, 0xde, 0xae, 0xc4, 0x08, 0x9e, 0x07, 0x0a, 0x4b, 0xf9,
+	0x55, 0x38, 0x37, 0xb1, 0xad, 0xfa, 0x5f, 0xe4, 0xfe, 0x5f, 0x54, 0xfd, 0x2f, 0x2a, 0xde, 0x1a,
+	0x1f, 0x65, 0x61, 0x35, 0xe5, 0x07, 0x7a, 0x01, 0xce, 0x0f, 0xc7, 0xc7, 0x0f, 0x49, 0xd0, 0x38,
+	0xaa, 0x04, 0x51, 0xff, 0xc8, 0xeb, 0x44, 0xa1, 0x88, 0xe5, 0xf4, 0x06, 0x7a, 0x15, 0x0a, 0xcc,
+	0x6f, 0x7a, 0xec, 0x59, 0x66, 0xfd, 0x33, 0xb3, 0xa2, 0xb3, 0x6d, 0x1f, 0x7b, 0x3d, 0xb2, 0xcb,
+	0x91, 0x38, 0x66, 0x41, 0x37, 0x20, 0x17, 0x9d, 0x8c, 0x48, 0x49, 0xdb, 0xc8, 0xdc, 0x5a, 0x8b,
+	0xcf, 0x85, 0xe1, 0xdc, 0x93, 0x11, 0xc1, 0x6c, 0x17, 0x55, 0x67, 0x04, 0xe9, 0xc6, 0x4c, 0x35,
+	0x4f, 0x8a, 0x54, 0x1d, 0x56, 0x54, 0x2b, 0xd0, 0xa6, 0xd0, 0x9d, 0x61, 0xba, 0x91, 0x2a, 0x8f,
+	0x04, 0x8a, 0xf6, 0x8b, 0x90, 0xef, 0xf8, 0xe3, 0x61, 0xc4, 0x82, 0x97, 0xc7, 0x7c, 0xf1, 0x49,
+	0xe3, 0xfe, 0xdb, 0x0c, 0xac, 0xa5, 0x53, 0x02, 0xbd, 0x02, 0x45, 0x9e, 0x14, 0x34, 0x96, 0x99,
+	0x89, 0x2b, 0xa4, 0x22, 0xc5, 0x92, 0x04, 0x38, 0x61, 0x40, 0x2f, 0xc0, 0x52, 0x67, 0x30, 0x0e,
+	0x23, 0x12, 0x30, 0x65, 0x89, 0x43, 0x26, 0xa7, 0x32, 0x87, 0x24, 0xa4, 0x6c, 0x43, 0x41, 0x0a,
+	0x41, 0xcf, 0xa6, 0xe2, 0x70, 0x21, 0xa5, 0xf2, 0xf4, 0x40, 0x18, 0xef, 0x66, 0x00, 0x92, 0xfa,
+	0x88, 0xbe, 0x00, 0x45, 0x4f, 0x49, 0x1b, 0xb5, 0xb0, 0x25, 0xa8, 0xed, 0x38, 0x81, 0xf8, 0x31,
+	0x25, 0x2c, 0x68, 0x03, 0x96, 0xbd, 0x71, 0xe4, 0xbb, 0x41, 0xbf, 0xd7, 0x13, 0xbe, 0x14, 0xb0,
+	0x4a, 0x2a, 0xbf, 0x02, 0x6b, 0x69, 0xf6, 0x33, 0x05, 0x7e, 0x0f, 0x96, 0x95, 0xca, 0x8c, 0x2e,
+	0xc1, 0x22, 0xaf, 0x88, 0x82, 0x5b, 0xac, 0x4e, 0x37, 0xc3, 0x78, 0x2f, 0x03, 0xfa, 0x64, 0x79,
+	0x9d, 0x2b, 0xae, 0x0a, 0xc5, 0x80, 0x84, 0xfe, 0x38, 0xe8, 0x10, 0x79, 0x4f, 0x36, 0xe7, 0x94,
+	0xe8, 0x6d, 0x2c, 0x81, 0x22, 0x36, 0x31, 0x23, 0xf5, 0x3c, 0xbd, 0x79, 0x26, 0xcf, 0x6d, 0x58,
+	0x4d, 0x15, 0xf3, 0x4f, 0xe0, 0xfb, 0x9f, 0x73, 0x90, 0x67, 0x85, 0x13, 0xbd, 0x08, 0x45, 0x5a,
+	0x8e, 0xd9, 0x42, 0x94, 0x47, 0x5d, 0x29, 0x5f, 0x8c, 0x5e, 0x5b, 0xc0, 0x09, 0x08, 0xdd, 0x11,
+	0x7d, 0x96, 0xb3, 0x64, 0xa7, 0xfb, 0xac, 0xe4, 0x51, 0x60, 0xe8, 0xb3, 0xb2, 0xd3, 0x72, 0x2e,
+	0x6d, 0x46, 0xa7, 0x95, 0x6c, 0x2a, 0x90, 0x9a, 0x37, 0x92, 0x45, 0xbe, 0x94, 0x9b, 0x5d, 0xfc,
+	0xa9, 0x79, 0x31, 0x08, 0x59, 0xa9, 0x9e, 0xca, 0x19, 0xe7, 0xf6, 0x54, 0xc9, 0x3f, 0xc5, 0x82,
+	0xbe, 0x0c, 0x25, 0x79, 0x6e, 0x93, 0x78, 0xd1, 0x60, 0x65, 0x95, 0xc7, 0x73, 0x60, 0xb5, 0x05,
+	0x3c, 0x57, 0x04, 0x7a, 0x25, 0x69, 0xda, 0x5c, 0xe6, 0xd2, 0xcc, 0xa6, 0x2d, 0x05, 0xa5, 0xc1,
+	0xe8, 0x0d, 0xb8, 0xdc, 0x9d, 0xdd, 0x94, 0x45, 0xcf, 0x3d, 0xa5, 0x75, 0xd7, 0x16, 0xf0, 0x3c,
+	0x01, 0xe8, 0x73, 0xb0, 0xd2, 0x25, 0x8f, 0xeb, 0xbe, 0x3f, 0xe2, 0x02, 0x8b, 0x4c, 0x60, 0x52,
+	0x55, 0x92, 0xad, 0xda, 0x02, 0x4e, 0x41, 0x77, 0x57, 0x00, 0x08, 0xfd, 0xd1, 0xa6, 0xd5, 0xc6,
+	0x18, 0xc0, 0x8a, 0x8a, 0x46, 0x57, 0xa1, 0xd8, 0x8f, 0x48, 0xc0, 0xa6, 0x4d, 0xd1, 0x8f, 0x12,
+	0x82, 0x92, 0xcb, 0xd9, 0x54, 0x2e, 0x6f, 0x82, 0x46, 0x82, 0x40, 0x24, 0x8c, 0x0c, 0x4f, 0xa5,
+	0xc3, 0xca, 0xf6, 0xc3, 0x01, 0xb1, 0x82, 0x00, 0x53, 0x80, 0xf1, 0x8d, 0x0c, 0xac, 0xa6, 0xc8,
+	0xe8, 0x79, 0x58, 0x22, 0x41, 0x60, 0xfa, 0x5d, 0x59, 0x19, 0xcf, 0xa7, 0xcf, 0xdf, 0xef, 0x12,
+	0x2c, 0x11, 0xa8, 0x04, 0x4b, 0xc7, 0x24, 0x0c, 0xbd, 0x9e, 0xbc, 0x77, 0x72, 0x89, 0xee, 0xc0,
+	0x72, 0x38, 0xee, 0xf5, 0x48, 0xc8, 0xa6, 0xe4, 0x92, 0xc6, 0xee, 0x7e, 0x2c, 0x2a, 0xde, 0xc1,
+	0x2a, 0xca, 0x70, 0xa0, 0x18, 0xdf, 0x1e, 0x7a, 0xa3, 0x09, 0xbd, 0xec, 0xe2, 0x96, 0xf2, 0x45,
+	0x6a, 0x50, 0xca, 0x9e, 0x32, 0x28, 0x19, 0xbf, 0x94, 0x35, 0x9a, 0x4b, 0x2c, 0x43, 0x41, 0x16,
+	0x5c, 0x21, 0x34, 0x5e, 0xcf, 0x0d, 0xa4, 0x9e, 0x04, 0xb2, 0xc8, 0x42, 0xa6, 0x06, 0x28, 0x77,
+	0x6a, 0x80, 0xee, 0xc2, 0xaa, 0xa7, 0x86, 0x57, 0xdc, 0xa9, 0xd9, 0x27, 0x92, 0x86, 0x1a, 0x3f,
+	0xce, 0xc8, 0x9a, 0xcd, 0xcd, 0x9f, 0x57, 0xb7, 0x84, 0x89, 0xd9, 0x99, 0x26, 0x6a, 0x67, 0x37,
+	0x31, 0xf7, 0xf1, 0x4d, 0x7c, 0x3f, 0xdd, 0x0c, 0x9e, 0x6c, 0xe7, 0xfc, 0x64, 0xf9, 0x3f, 0x06,
+	0xf9, 0xaf, 0x19, 0x28, 0xcd, 0x2b, 0x45, 0x34, 0x61, 0x64, 0x29, 0x92, 0x09, 0x23, 0xd7, 0x73,
+	0x13, 0x46, 0xf1, 0x52, 0x9b, 0xe9, 0x65, 0x2e, 0xf1, 0xf2, 0x36, 0x40, 0x18, 0xfb, 0xc3, 0xac,
+	0x9e, 0xe9, 0xa8, 0x02, 0x9a, 0xf6, 0x75, 0xf1, 0xe3, 0xfb, 0xfa, 0x93, 0x2c, 0x14, 0xe3, 0xf2,
+	0x4f, 0x0b, 0xcb, 0xc0, 0xef, 0x78, 0x03, 0x4a, 0x91, 0x85, 0x25, 0x26, 0xa0, 0x6b, 0x00, 0x01,
+	0x39, 0xf6, 0x23, 0xc2, 0xb6, 0xf9, 0xe4, 0xa3, 0x50, 0xa8, 0x9b, 0x23, 0xbf, 0xeb, 0xd0, 0xef,
+	0x4a, 0xe1, 0xa6, 0x58, 0xa2, 0x1b, 0xb0, 0xda, 0x91, 0xb5, 0x91, 0xed, 0x73, 0x87, 0xd3, 0x44,
+	0xaa, 0x9d, 0x7e, 0x88, 0x86, 0x23, 0xaf, 0xc3, 0x3d, 0x2f, 0xe2, 0x84, 0x40, 0x03, 0x4f, 0x5b,
+	0x13, 0x63, 0x5f, 0xe4, 0x81, 0x97, 0x6b, 0x64, 0xc0, 0x8a, 0x3c, 0x04, 0x3a, 0xa4, 0xb1, 0x16,
+	0x50, 0xc4, 0x29, 0x9a, 0x8a, 0x61, 0x32, 0x0a, 0x69, 0x0c, 0x93, 0x53, 0x82, 0x25, 0xaf, 0xdb,
+	0x0d, 0x48, 0x18, 0xb2, 0x62, 0x5d, 0xc4, 0x72, 0x69, 0xfc, 0x31, 0x93, 0x8c, 0x0c, 0x71, 0xac,
+	0x68, 0x2b, 0x31, 0xd9, 0x18, 0x28, 0x62, 0x15, 0x13, 0x68, 0xa5, 0xea, 0x1f, 0x27, 0x69, 0xcd,
+	0x17, 0x4a, 0x82, 0x68, 0xb3, 0xae, 0x6b, 0x6e, 0x66, 0xb2, 0xe7, 0xcf, 0x9e, 0xec, 0x67, 0x48,
+	0x80, 0x0f, 0xb3, 0x70, 0x79, 0x4e, 0x6f, 0x7b, 0xd2, 0xad, 0x95, 0x07, 0x9d, 0x3d, 0xe5, 0xa0,
+	0xb5, 0x53, 0x0f, 0x3a, 0x37, 0xe3, 0xa0, 0xe3, 0x92, 0x9c, 0x9f, 0x28, 0xc9, 0x25, 0x58, 0x0a,
+	0xc6, 0xc3, 0xa8, 0x1f, 0xe7, 0x80, 0x5c, 0xd2, 0xe4, 0x7c, 0xcb, 0x0f, 0x1e, 0xf5, 0x87, 0xbd,
+	0x6a, 0x3f, 0x10, 0x09, 0xa0, 0x50, 0x90, 0x03, 0xc0, 0xfa, 0x34, 0x7f, 0x66, 0x28, 0xb0, 0xde,
+	0xb3, 0xfd, 0xe4, 0xde, 0xce, 0xe9, 0xca, 0xa3, 0x83, 0x22, 0x81, 0x7e, 0xf4, 0x4c, 0x6c, 0x9f,
+	0x36, 0x81, 0xae, 0xaa, 0x13, 0xe8, 0xd7, 0xa0, 0x50, 0xf7, 0x7b, 0x9c, 0xef, 0x65, 0x28, 0xc6,
+	0x4f, 0x43, 0x62, 0x70, 0x2c, 0x6f, 0xf3, 0xb7, 0xa1, 0x6d, 0xf9, 0x36, 0xb4, 0xed, 0x4a, 0x04,
+	0x4e, 0xc0, 0xc8, 0x80, 0x3c, 0x51, 0x66, 0x47, 0xf9, 0x26, 0x24, 0x3e, 0xe4, 0x49, 0xba, 0x67,
+	0x6a, 0x4a, 0xcf, 0x34, 0xee, 0xc2, 0xf9, 0x56, 0x48, 0x02, 0x7b, 0x18, 0x51, 0xa8, 0x78, 0x15,
+	0xba, 0x09, 0x8b, 0x7d, 0x46, 0x10, 0x56, 0xac, 0x0a, 0x79, 0x02, 0x25, 0x36, 0x8d, 0xcf, 0xc3,
+	0x9a, 0x98, 0x7e, 0x25, 0xe3, 0x73, 0xe9, 0xb7, 0x29, 0x39, 0xe2, 0x08, 0x54, 0xea, 0x89, 0xea,
+	0x36, 0xac, 0xa8, 0x64, 0x54, 0x86, 0x25, 0xc2, 0x92, 0x91, 0x3f, 0x29, 0x14, 0x6a, 0x0b, 0x58,
+	0x12, 0x76, 0xf3, 0xa0, 0x3d, 0xf6, 0x06, 0xc6, 0x7d, 0x58, 0xe4, 0x16, 0x50, 0x5f, 0x92, 0xd7,
+	0x87, 0x82, 0x7c, 0x67, 0x40, 0x90, 0x0b, 0x4f, 0x86, 0x1d, 0x31, 0x9d, 0xb3, 0xdf, 0x34, 0x75,
+	0xc5, 0xdb, 0x83, 0xc6, 0xa8, 0x62, 0x65, 0x74, 0x00, 0x92, 0x49, 0x03, 0xbd, 0x0a, 0x6b, 0xc9,
+	0xac, 0xa1, 0xcc, 0x37, 0xeb, 0x53, 0x43, 0x09, 0xbb, 0x70, 0x13, 0x60, 0xaa, 0x84, 0x5f, 0x26,
+	0x59, 0xef, 0xf9, 0x6a, 0xcb, 0x87, 0x65, 0xe5, 0xdb, 0x19, 0x95, 0xe0, 0x62, 0xcb, 0xd9, 0x77,
+	0x1a, 0xaf, 0x3b, 0xed, 0xdd, 0x96, 0x5d, 0xaf, 0x5a, 0xb8, 0xed, 0x3e, 0x38, 0xb4, 0xf4, 0x05,
+	0xb4, 0x04, 0xda, 0x7d, 0x7b, 0x57, 0xcf, 0xa0, 0x22, 0xe4, 0x77, 0x2b, 0x6f, 0x58, 0x75, 0x3d,
+	0x8b, 0xd6, 0x00, 0x18, 0xea, 0xb0, 0x62, 0xee, 0x37, 0x75, 0x0d, 0x01, 0x2c, 0x9a, 0xad, 0xa6,
+	0xdb, 0x38, 0xd0, 0x73, 0xf4, 0xf7, 0x7e, 0xc5, 0xb1, 0xf7, 0x1b, 0x7a, 0x9e, 0xfe, 0xae, 0x36,
+	0xcc, 0x7d, 0x0b, 0xeb, 0x8b, 0x5b, 0x55, 0x28, 0xc6, 0x0f, 0x05, 0xe8, 0x12, 0xa0, 0x94, 0x3a,
+	0xa9, 0x6c, 0x19, 0x96, 0xcc, 0x7a, 0xab, 0xe9, 0x5a, 0x58, 0xcf, 0x50, 0xcd, 0x7b, 0xe6, 0xae,
+	0x9e, 0xa5, 0x9a, 0xeb, 0x0d, 0xb3, 0x52, 0xd7, 0xb5, 0xad, 0x06, 0x1d, 0x33, 0x93, 0x4f, 0x5d,
+	0xf4, 0x14, 0xac, 0x4b, 0x41, 0x55, 0xeb, 0xb0, 0xde, 0x78, 0x90, 0x18, 0x5e, 0x80, 0x5c, 0xcd,
+	0xaa, 0x1f, 0xe8, 0x19, 0xb4, 0x0a, 0xc5, 0x7d, 0x66, 0x9e, 0xfd, 0x86, 0xa5, 0x67, 0xa9, 0x92,
+	0xfd, 0xd6, 0xae, 0x65, 0xba, 0x54, 0xa0, 0x0d, 0xcb, 0xca, 0x27, 0xb7, 0x1a, 0x07, 0x61, 0x88,
+	0x14, 0xb7, 0x02, 0x85, 0x03, 0xdb, 0xb1, 0x29, 0xa7, 0xb0, 0x6d, 0xdf, 0xe2, 0xb6, 0x35, 0xdc,
+	0x9a, 0x85, 0x75, 0x6d, 0xeb, 0x47, 0x45, 0x80, 0xa4, 0xf4, 0xa1, 0x45, 0xc8, 0x36, 0xf6, 0xf5,
+	0x05, 0x54, 0x82, 0x0b, 0x4d, 0xb7, 0xe2, 0xb6, 0x9a, 0x66, 0xcd, 0x32, 0xf7, 0xdb, 0xcd, 0x96,
+	0x69, 0x5a, 0xcd, 0xa6, 0xfe, 0xbb, 0x0c, 0x42, 0xb0, 0xca, 0xbd, 0x97, 0xb4, 0xdf, 0x67, 0xd0,
+	0x55, 0x28, 0x71, 0xda, 0x61, 0xab, 0x59, 0x6b, 0x57, 0x18, 0xbd, 0x5d, 0xb5, 0x1c, 0xdb, 0xaa,
+	0xea, 0x04, 0x5d, 0x81, 0xcb, 0x62, 0x17, 0x37, 0xee, 0x5b, 0xa6, 0xdb, 0x76, 0x1a, 0x6e, 0xfb,
+	0x5e, 0xa3, 0xe5, 0x54, 0xf5, 0x23, 0x74, 0x1d, 0xca, 0xaa, 0x22, 0xfb, 0xa0, 0xb2, 0x67, 0xb5,
+	0x0f, 0x5b, 0xf5, 0x7a, 0xdb, 0xc2, 0x58, 0x7f, 0x37, 0x8b, 0x3e, 0x05, 0xd7, 0x54, 0x80, 0xd9,
+	0x70, 0xdc, 0x8a, 0xed, 0x58, 0xb8, 0x6d, 0x62, 0xab, 0xe2, 0xda, 0xce, 0x9e, 0xfe, 0xd3, 0x2c,
+	0x32, 0xe0, 0x69, 0x15, 0x84, 0x5b, 0x8e, 0x02, 0xa4, 0x82, 0xde, 0xcb, 0xa2, 0x9b, 0xb0, 0x31,
+	0x5b, 0x90, 0x6b, 0xe1, 0x03, 0xdb, 0xa9, 0xb8, 0x56, 0x55, 0xff, 0x59, 0x16, 0x3d, 0x0f, 0x9b,
+	0x2a, 0x8c, 0x1f, 0xd0, 0x81, 0xe5, 0xb8, 0x6d, 0xdc, 0xa8, 0xd7, 0x1b, 0x2d, 0xb7, 0x7d, 0x68,
+	0x39, 0x55, 0xaa, 0xf7, 0xe7, 0x4f, 0x90, 0x89, 0xad, 0xa6, 0x5b, 0xc1, 0xcc, 0xbc, 0x0f, 0xa6,
+	0x60, 0x4e, 0xa3, 0x6a, 0xb5, 0x0f, 0xac, 0x83, 0x06, 0x7e, 0xd0, 0x3e, 0xc4, 0x56, 0xb3, 0xd9,
+	0xc2, 0x96, 0xfe, 0x4d, 0x6d, 0xd2, 0x55, 0x06, 0xab, 0xda, 0xcd, 0xfd, 0x04, 0xf4, 0x2d, 0x0d,
+	0x3d, 0x07, 0x37, 0xa6, 0x40, 0x8e, 0xe5, 0xbe, 0xde, 0xc0, 0xfb, 0xed, 0x96, 0x53, 0x79, 0xad,
+	0x62, 0xd7, 0x2b, 0xbb, 0x75, 0x4b, 0xff, 0xb6, 0x36, 0x19, 0x15, 0x06, 0x3d, 0xb4, 0xab, 0x89,
+	0xb8, 0xb7, 0x67, 0xeb, 0x6c, 0x39, 0x74, 0x55, 0x6d, 0x71, 0x41, 0xdf, 0xd1, 0xd0, 0x33, 0x70,
+	0x75, 0x06, 0x08, 0x5b, 0x15, 0xb3, 0xc6, 0x20, 0xef, 0x68, 0x93, 0xe7, 0xc8, 0xcd, 0x6a, 0xb8,
+	0x6d, 0x6c, 0x55, 0xaa, 0x0f, 0xf4, 0xef, 0x4e, 0x19, 0x73, 0xaf, 0x62, 0xd7, 0xad, 0x6a, 0x5b,
+	0x28, 0xa2, 0x71, 0xfa, 0x9e, 0x86, 0xca, 0xb0, 0xae, 0x62, 0x5a, 0x4e, 0xcd, 0xaa, 0xd4, 0xdd,
+	0xda, 0x03, 0xfd, 0xfb, 0x1a, 0x7a, 0x16, 0x0c, 0x75, 0x4f, 0x5c, 0x06, 0x1a, 0x72, 0xc7, 0x32,
+	0x5d, 0xbb, 0xe1, 0xb0, 0x73, 0xfe, 0xc1, 0x94, 0x47, 0x12, 0x48, 0x1d, 0xdf, 0xb7, 0xeb, 0x75,
+	0xab, 0xaa, 0xff, 0x50, 0xa3, 0x59, 0x2c, 0xaf, 0x8c, 0x85, 0x71, 0x03, 0xeb, 0x1f, 0x6a, 0x93,
+	0x39, 0x2f, 0xf6, 0xf5, 0x8f, 0x34, 0xb4, 0x09, 0xcf, 0xcc, 0xd8, 0x99, 0x88, 0xd3, 0xdf, 0x34,
+	0xb4, 0x05, 0x37, 0x67, 0xa7, 0xc3, 0xeb, 0x15, 0x9b, 0xe6, 0x42, 0x2c, 0xf3, 0xef, 0x1a, 0xba,
+	0x06, 0x4f, 0xcd, 0x92, 0x69, 0xbd, 0x66, 0x39, 0xae, 0xfe, 0x5f, 0x0d, 0x5d, 0x80, 0x35, 0x9e,
+	0x7b, 0x31, 0xd3, 0x3f, 0x34, 0x74, 0x1e, 0x56, 0x9a, 0x0f, 0x1c, 0x33, 0x26, 0xfd, 0x53, 0x4b,
+	0xee, 0xa3, 0xa4, 0xfd, 0x4b, 0x43, 0x17, 0xe1, 0x5c, 0xd5, 0x7a, 0xcd, 0x76, 0x6c, 0x37, 0xa6,
+	0xfe, 0x9b, 0x51, 0xcd, 0xba, 0x55, 0x71, 0x5a, 0x87, 0x31, 0xf5, 0x3f, 0x8c, 0xca, 0x44, 0x32,
+	0x34, 0x8f, 0xc5, 0x9f, 0x72, 0x68, 0x03, 0xae, 0x48, 0x09, 0xd8, 0xda, 0xb3, 0x59, 0x4d, 0xe1,
+	0x6a, 0xaa, 0xd6, 0x61, 0x53, 0xff, 0x55, 0x9e, 0x1e, 0xf8, 0x14, 0xc2, 0xb5, 0x9a, 0x2e, 0x07,
+	0xfc, 0x3a, 0x4f, 0x93, 0x66, 0x0a, 0x20, 0x3c, 0x62, 0x90, 0xf7, 0xf3, 0x33, 0xb5, 0x98, 0x0d,
+	0xe7, 0x9e, 0xbd, 0x47, 0x21, 0xfa, 0x6f, 0xf2, 0x5b, 0x4f, 0xc1, 0x5a, 0xba, 0x57, 0xd0, 0x22,
+	0xe6, 0xd8, 0x75, 0x7d, 0xe1, 0xa5, 0x5f, 0xe4, 0xe1, 0x5c, 0x53, 0xfc, 0xfb, 0xa8, 0x49, 0x82,
+	0xc7, 0xfd, 0x0e, 0x41, 0x26, 0x14, 0xf6, 0x48, 0x24, 0x9e, 0x9e, 0xa6, 0x5a, 0xbd, 0x75, 0x3c,
+	0x8a, 0x4e, 0xca, 0xa9, 0x7f, 0xf0, 0x18, 0xe7, 0xbf, 0xfe, 0x87, 0x0f, 0xde, 0xce, 0x2e, 0xa3,
+	0xe2, 0xce, 0xe3, 0xdb, 0x3b, 0xac, 0x93, 0xa2, 0x3d, 0x28, 0xb0, 0x46, 0x5f, 0xf7, 0x7b, 0x48,
+	0x7e, 0xf0, 0xca, 0x99, 0xa2, 0x3c, 0x49, 0x30, 0xd6, 0x99, 0x80, 0x73, 0x68, 0x95, 0x0a, 0xe0,
+	0x6f, 0x0b, 0x03, 0xbf, 0x77, 0x2b, 0xf3, 0x62, 0x06, 0xed, 0xc1, 0x22, 0x13, 0x14, 0xce, 0xb5,
+	0x65, 0x4a, 0x1a, 0x62, 0xd2, 0x56, 0x10, 0xc4, 0xd2, 0xc2, 0x17, 0x33, 0xe8, 0x4b, 0xb0, 0x64,
+	0x7d, 0x95, 0x74, 0xc6, 0x11, 0x41, 0x25, 0xc1, 0x31, 0x35, 0x64, 0x94, 0xe7, 0xe8, 0x30, 0xae,
+	0x30, 0x91, 0xeb, 0xc6, 0x32, 0x13, 0xc9, 0xc5, 0xdc, 0x15, 0x23, 0x07, 0xf2, 0xa0, 0x58, 0x19,
+	0x47, 0x3e, 0x6b, 0x72, 0x68, 0x3d, 0x3d, 0x5e, 0x9c, 0x26, 0xf8, 0x26, 0x13, 0x7c, 0xbd, 0x7c,
+	0x89, 0x0a, 0x66, 0x13, 0xc3, 0x8e, 0x37, 0x8e, 0xfc, 0xb6, 0xd4, 0xc1, 0x07, 0x13, 0xd4, 0x86,
+	0x02, 0x55, 0x41, 0x07, 0xfc, 0xb3, 0x6a, 0xb8, 0xc1, 0x34, 0x5c, 0x2b, 0xaf, 0xb3, 0xc3, 0x39,
+	0x19, 0x76, 0x66, 0x2a, 0xe8, 0x00, 0x50, 0x05, 0xbc, 0xc5, 0x9e, 0x55, 0xc5, 0x26, 0x53, 0xb1,
+	0x51, 0xbe, 0x4c, 0x55, 0xf0, 0x59, 0x66, 0xa6, 0x92, 0x3a, 0x2c, 0xd6, 0xbc, 0x61, 0x77, 0x40,
+	0x50, 0x6a, 0x18, 0x9c, 0x2b, 0xf7, 0x2a, 0x93, 0x7b, 0xc9, 0x38, 0x9f, 0x1c, 0xe4, 0xce, 0x9b,
+	0x4c, 0xc0, 0xdd, 0xcc, 0xd6, 0xc3, 0x45, 0x86, 0xbe, 0xf3, 0xbf, 0x00, 0x00, 0x00, 0xff, 0xff,
+	0xf7, 0xa1, 0x48, 0x69, 0x00, 0x1d, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -867,11 +2503,23 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type SkaffoldServiceClient interface {
+	// Returns the state of the current Skaffold execution
 	GetState(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*State, error)
+	// DEPRECATED. Events should be used instead.
+	// TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)
 	EventLog(ctx context.Context, opts ...grpc.CallOption) (SkaffoldService_EventLogClient, error)
-	Events(ctx context.Context, opts ...grpc.CallOption) (SkaffoldService_EventsClient, error)
-	Handle(ctx context.Context, in *Event, opts ...grpc.CallOption) (*empty.Empty, error)
+	// Returns all the events of the current Skaffold execution from the start
+	Events(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (SkaffoldService_EventsClient, error)
+	// Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
 	Execute(ctx context.Context, in *UserIntentRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	// Allows for enabling or disabling automatic build trigger
+	AutoBuild(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	// Allows for enabling or disabling automatic sync trigger
+	AutoSync(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	// Allows for enabling or disabling automatic deploy trigger
+	AutoDeploy(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	// EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.
+	Handle(ctx context.Context, in *Event, opts ...grpc.CallOption) (*empty.Empty, error)
 }
 
 type skaffoldServiceClient struct {
@@ -922,17 +2570,22 @@ func (x *skaffoldServiceEventLogClient) Recv() (*LogEntry, error) {
 	return m, nil
 }
 
-func (c *skaffoldServiceClient) Events(ctx context.Context, opts ...grpc.CallOption) (SkaffoldService_EventsClient, error) {
+func (c *skaffoldServiceClient) Events(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (SkaffoldService_EventsClient, error) {
 	stream, err := c.cc.NewStream(ctx, &_SkaffoldService_serviceDesc.Streams[1], "/proto.SkaffoldService/Events", opts...)
 	if err != nil {
 		return nil, err
 	}
 	x := &skaffoldServiceEventsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
 type SkaffoldService_EventsClient interface {
-	Send(*LogEntry) error
 	Recv() (*LogEntry, error)
 	grpc.ClientStream
 }
@@ -941,25 +2594,12 @@ type skaffoldServiceEventsClient struct {
 	grpc.ClientStream
 }
 
-func (x *skaffoldServiceEventsClient) Send(m *LogEntry) error {
-	return x.ClientStream.SendMsg(m)
-}
-
 func (x *skaffoldServiceEventsClient) Recv() (*LogEntry, error) {
 	m := new(LogEntry)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
-}
-
-func (c *skaffoldServiceClient) Handle(ctx context.Context, in *Event, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
-	err := c.cc.Invoke(ctx, "/proto.SkaffoldService/Handle", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *skaffoldServiceClient) Execute(ctx context.Context, in *UserIntentRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
@@ -971,13 +2611,61 @@ func (c *skaffoldServiceClient) Execute(ctx context.Context, in *UserIntentReque
 	return out, nil
 }
 
+func (c *skaffoldServiceClient) AutoBuild(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/proto.SkaffoldService/AutoBuild", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *skaffoldServiceClient) AutoSync(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/proto.SkaffoldService/AutoSync", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *skaffoldServiceClient) AutoDeploy(ctx context.Context, in *TriggerRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/proto.SkaffoldService/AutoDeploy", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *skaffoldServiceClient) Handle(ctx context.Context, in *Event, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/proto.SkaffoldService/Handle", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SkaffoldServiceServer is the server API for SkaffoldService service.
 type SkaffoldServiceServer interface {
+	// Returns the state of the current Skaffold execution
 	GetState(context.Context, *empty.Empty) (*State, error)
+	// DEPRECATED. Events should be used instead.
+	// TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)
 	EventLog(SkaffoldService_EventLogServer) error
-	Events(SkaffoldService_EventsServer) error
-	Handle(context.Context, *Event) (*empty.Empty, error)
+	// Returns all the events of the current Skaffold execution from the start
+	Events(*empty.Empty, SkaffoldService_EventsServer) error
+	// Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
 	Execute(context.Context, *UserIntentRequest) (*empty.Empty, error)
+	// Allows for enabling or disabling automatic build trigger
+	AutoBuild(context.Context, *TriggerRequest) (*empty.Empty, error)
+	// Allows for enabling or disabling automatic sync trigger
+	AutoSync(context.Context, *TriggerRequest) (*empty.Empty, error)
+	// Allows for enabling or disabling automatic deploy trigger
+	AutoDeploy(context.Context, *TriggerRequest) (*empty.Empty, error)
+	// EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.
+	Handle(context.Context, *Event) (*empty.Empty, error)
 }
 
 // UnimplementedSkaffoldServiceServer can be embedded to have forward compatible implementations.
@@ -990,14 +2678,23 @@ func (*UnimplementedSkaffoldServiceServer) GetState(ctx context.Context, req *em
 func (*UnimplementedSkaffoldServiceServer) EventLog(srv SkaffoldService_EventLogServer) error {
 	return status.Errorf(codes.Unimplemented, "method EventLog not implemented")
 }
-func (*UnimplementedSkaffoldServiceServer) Events(srv SkaffoldService_EventsServer) error {
+func (*UnimplementedSkaffoldServiceServer) Events(req *empty.Empty, srv SkaffoldService_EventsServer) error {
 	return status.Errorf(codes.Unimplemented, "method Events not implemented")
-}
-func (*UnimplementedSkaffoldServiceServer) Handle(ctx context.Context, req *Event) (*empty.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Handle not implemented")
 }
 func (*UnimplementedSkaffoldServiceServer) Execute(ctx context.Context, req *UserIntentRequest) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Execute not implemented")
+}
+func (*UnimplementedSkaffoldServiceServer) AutoBuild(ctx context.Context, req *TriggerRequest) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AutoBuild not implemented")
+}
+func (*UnimplementedSkaffoldServiceServer) AutoSync(ctx context.Context, req *TriggerRequest) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AutoSync not implemented")
+}
+func (*UnimplementedSkaffoldServiceServer) AutoDeploy(ctx context.Context, req *TriggerRequest) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AutoDeploy not implemented")
+}
+func (*UnimplementedSkaffoldServiceServer) Handle(ctx context.Context, req *Event) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Handle not implemented")
 }
 
 func RegisterSkaffoldServiceServer(s *grpc.Server, srv SkaffoldServiceServer) {
@@ -1049,12 +2746,15 @@ func (x *skaffoldServiceEventLogServer) Recv() (*LogEntry, error) {
 }
 
 func _SkaffoldService_Events_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(SkaffoldServiceServer).Events(&skaffoldServiceEventsServer{stream})
+	m := new(empty.Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SkaffoldServiceServer).Events(m, &skaffoldServiceEventsServer{stream})
 }
 
 type SkaffoldService_EventsServer interface {
 	Send(*LogEntry) error
-	Recv() (*LogEntry, error)
 	grpc.ServerStream
 }
 
@@ -1064,32 +2764,6 @@ type skaffoldServiceEventsServer struct {
 
 func (x *skaffoldServiceEventsServer) Send(m *LogEntry) error {
 	return x.ServerStream.SendMsg(m)
-}
-
-func (x *skaffoldServiceEventsServer) Recv() (*LogEntry, error) {
-	m := new(LogEntry)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func _SkaffoldService_Handle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Event)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SkaffoldServiceServer).Handle(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/proto.SkaffoldService/Handle",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SkaffoldServiceServer).Handle(ctx, req.(*Event))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _SkaffoldService_Execute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -1110,6 +2784,78 @@ func _SkaffoldService_Execute_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SkaffoldService_AutoBuild_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SkaffoldServiceServer).AutoBuild(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.SkaffoldService/AutoBuild",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SkaffoldServiceServer).AutoBuild(ctx, req.(*TriggerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SkaffoldService_AutoSync_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SkaffoldServiceServer).AutoSync(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.SkaffoldService/AutoSync",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SkaffoldServiceServer).AutoSync(ctx, req.(*TriggerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SkaffoldService_AutoDeploy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SkaffoldServiceServer).AutoDeploy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.SkaffoldService/AutoDeploy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SkaffoldServiceServer).AutoDeploy(ctx, req.(*TriggerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SkaffoldService_Handle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Event)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SkaffoldServiceServer).Handle(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.SkaffoldService/Handle",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SkaffoldServiceServer).Handle(ctx, req.(*Event))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _SkaffoldService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.SkaffoldService",
 	HandlerType: (*SkaffoldServiceServer)(nil),
@@ -1119,12 +2865,24 @@ var _SkaffoldService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _SkaffoldService_GetState_Handler,
 		},
 		{
-			MethodName: "Handle",
-			Handler:    _SkaffoldService_Handle_Handler,
-		},
-		{
 			MethodName: "Execute",
 			Handler:    _SkaffoldService_Execute_Handler,
+		},
+		{
+			MethodName: "AutoBuild",
+			Handler:    _SkaffoldService_AutoBuild_Handler,
+		},
+		{
+			MethodName: "AutoSync",
+			Handler:    _SkaffoldService_AutoSync_Handler,
+		},
+		{
+			MethodName: "AutoDeploy",
+			Handler:    _SkaffoldService_AutoDeploy_Handler,
+		},
+		{
+			MethodName: "Handle",
+			Handler:    _SkaffoldService_Handle_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -1138,7 +2896,6 @@ var _SkaffoldService_serviceDesc = grpc.ServiceDesc{
 			StreamName:    "Events",
 			Handler:       _SkaffoldService_Events_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 	},
 	Metadata: "skaffold.proto",

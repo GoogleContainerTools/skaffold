@@ -17,20 +17,28 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"reflect"
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func Set(out io.Writer, args []string) error {
+const (
+	surveyFieldName = "Survey"
+)
+
+type cfgStruct struct {
+	value reflect.Value
+	rType reflect.Type
+	idx   []int
+}
+
+func Set(ctx context.Context, out io.Writer, args []string) error {
 	if err := setConfigValue(args[0], args[1]); err != nil {
 		return err
 	}
@@ -44,34 +52,66 @@ func setConfigValue(name string, value string) error {
 		return err
 	}
 
-	fieldName := getFieldName(cfg, name)
-	if fieldName == "" {
-		return fmt.Errorf("%s is not a valid config field", name)
+	fieldIdx, err := getFieldIndex(cfg, name)
+	if err != nil {
+		return err
 	}
 
-	field := reflect.Indirect(reflect.ValueOf(cfg)).FieldByName(fieldName)
+	field := reflect.Indirect(reflect.ValueOf(cfg)).FieldByIndex(fieldIdx)
 	val, err := parseAsType(value, field)
 	if err != nil {
 		return fmt.Errorf("%s is not a valid value for field %s", value, name)
 	}
 
-	reflect.ValueOf(cfg).Elem().FieldByName(fieldName).Set(val)
+	reflect.ValueOf(cfg).Elem().FieldByIndex(fieldIdx).Set(val)
 
 	return writeConfig(cfg)
 }
 
-func getFieldName(cfg *config.ContextConfig, name string) string {
-	cfgValue := reflect.Indirect(reflect.ValueOf(cfg))
-	var fieldName string
-	for i := 0; i < cfgValue.NumField(); i++ {
-		fieldType := reflect.TypeOf(*cfg).Field(i)
+func getFieldIndex(cfg *config.ContextConfig, name string) ([]int, error) {
+	cs, err := getConfigStructWithIndex(cfg)
+	if err != nil {
+		return nil, err
+	}
+	for i := 0; i < cs.value.NumField(); i++ {
+		fieldType := cs.rType.Field(i)
 		for _, tag := range strings.Split(fieldType.Tag.Get("yaml"), ",") {
 			if tag == name {
-				fieldName = fieldType.Name
+				if f, ok := cs.rType.FieldByName(fieldType.Name); ok {
+					return append(cs.idx, f.Index...), nil
+				}
+				return nil, fmt.Errorf("could not find config field %s", name)
 			}
 		}
 	}
-	return fieldName
+	return nil, fmt.Errorf("%s is not a valid config field", name)
+}
+
+func getConfigStructWithIndex(cfg *config.ContextConfig) (*cfgStruct, error) {
+	t := reflect.TypeOf(*cfg)
+	if survey {
+		if cfg.Survey == nil {
+			cfg.Survey = &config.SurveyConfig{}
+		}
+		return surveyStruct(cfg.Survey, t)
+	}
+	return &cfgStruct{
+		value: reflect.Indirect(reflect.ValueOf(cfg)),
+		rType: t,
+		idx:   []int{},
+	}, nil
+}
+
+func surveyStruct(s *config.SurveyConfig, t reflect.Type) (*cfgStruct, error) {
+	surveyType := reflect.TypeOf(*s)
+	if surveyField, ok := t.FieldByName(surveyFieldName); ok {
+		return &cfgStruct{
+			value: reflect.Indirect(reflect.ValueOf(s)),
+			rType: surveyType,
+			idx:   surveyField.Index,
+		}, nil
+	}
+	return nil, fmt.Errorf("survey config field 'Survey' not found in config struct %s", t.Name())
 }
 
 func parseAsType(value string, field reflect.Value) (reflect.Value, error) {
@@ -108,7 +148,7 @@ func writeConfig(cfg *config.ContextConfig) error {
 	} else {
 		found := false
 		for i, contextCfg := range fullConfig.ContextConfigs {
-			if contextCfg.Kubecontext == kubecontext {
+			if util.RegexEqual(contextCfg.Kubecontext, kubecontext) {
 				fullConfig.ContextConfigs[i] = cfg
 				found = true
 			}
@@ -117,23 +157,7 @@ func writeConfig(cfg *config.ContextConfig) error {
 			fullConfig.ContextConfigs = append(fullConfig.ContextConfigs, cfg)
 		}
 	}
-	return writeFullConfig(fullConfig)
-}
-
-func writeFullConfig(cfg *config.GlobalConfig) error {
-	contents, err := yaml.Marshal(cfg)
-	if err != nil {
-		return errors.Wrap(err, "marshaling config")
-	}
-	configFileOrDefault, err := config.ResolveConfigFile(configFile)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(configFileOrDefault, contents, 0644)
-	if err != nil {
-		return errors.Wrap(err, "writing config file")
-	}
-	return nil
+	return config.WriteFullConfig(configFile, fullConfig)
 }
 
 func logSetConfigForUser(out io.Writer, key string, value string) {

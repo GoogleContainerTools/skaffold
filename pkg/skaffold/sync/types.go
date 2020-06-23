@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	kubectlcli "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
@@ -31,8 +30,6 @@ type Item struct {
 	Copy   map[string][]string
 	Delete map[string][]string
 }
-
-type DestinationProvider func() (map[string][]string, error)
 
 type Syncer interface {
 	Sync(context.Context, *Item) error
@@ -45,7 +42,7 @@ type podSyncer struct {
 
 func NewSyncer(runCtx *runcontext.RunContext) Syncer {
 	return &podSyncer{
-		kubectl:    kubectlcli.NewFromRunContext(runCtx),
+		kubectl:    kubectl.NewFromRunContext(runCtx),
 		namespaces: runCtx.Namespaces,
 	}
 }

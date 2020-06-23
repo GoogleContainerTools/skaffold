@@ -18,16 +18,18 @@ package runner
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 type Listener interface {
-	WatchForChanges(context.Context, io.Writer, func(context.Context, io.Writer) error) error
+	WatchForChanges(context.Context, io.Writer, func() error) error
 	LogWatchToUser(io.Writer)
 }
 
@@ -43,17 +45,17 @@ func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
 
 // WatchForChanges listens to a trigger, and when one is received, computes file changes and
 // conditionally runs the dev loop.
-func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, devLoop func(context.Context, io.Writer) error) error {
+func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, devLoop func() error) error {
 	ctxTrigger, cancelTrigger := context.WithCancel(ctx)
 	defer cancelTrigger()
 	trigger, err := trigger.StartTrigger(ctxTrigger, l.Trigger)
 	if err != nil {
-		return errors.Wrap(err, "unable to start trigger")
+		return fmt.Errorf("unable to start trigger: %w", err)
 	}
 
 	// exit if file monitor fails the first time
 	if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
-		return errors.Wrap(err, "failed to monitor files")
+		return fmt.Errorf("failed to monitor files: %w", err)
 	}
 
 	l.LogWatchToUser(out)
@@ -63,29 +65,31 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 		case <-ctx.Done():
 			return nil
 		case <-l.intentChan:
-			if err := l.do(ctx, out, devLoop); err != nil {
+			if err := l.do(devLoop); err != nil {
 				return err
 			}
 		case <-trigger:
-			if err := l.do(ctx, out, devLoop); err != nil {
+			if err := l.do(devLoop); err != nil {
 				return err
 			}
 		}
 	}
 }
 
-func (l *SkaffoldListener) do(ctx context.Context, out io.Writer, devLoop func(context.Context, io.Writer) error) error {
+func (l *SkaffoldListener) do(devLoop func() error) error {
 	if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
-		logrus.Warnf("error computing file changes: %s", err.Error())
-		logrus.Warnf("skaffold may not run successfully!")
+		logrus.Warnf("Ignoring changes: %s", err.Error())
+		return nil
 	}
-	if err := devLoop(ctx, out); err != nil {
+
+	if err := devLoop(); err != nil {
 		// propagating this error up causes a new runner to be created
 		// and a new dev loop to start
-		if errors.Cause(err) == ErrorConfigurationChanged {
+		if errors.Is(err, ErrorConfigurationChanged) {
 			return err
 		}
 		logrus.Errorf("error running dev loop: %s", err.Error())
 	}
+
 	return nil
 }

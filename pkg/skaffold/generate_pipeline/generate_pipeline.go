@@ -19,6 +19,7 @@ package generatepipeline
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -26,61 +27,65 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
+	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/pipeline"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-
-	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 )
 
-func Yaml(out io.Writer, config *latest.SkaffoldConfig, profile *latest.Profile) (*bytes.Buffer, error) {
+// ConfigFile keeps track of config files and their corresponding SkaffoldConfigs and generated Profiles
+type ConfigFile struct {
+	Path    string
+	Config  *latest.SkaffoldConfig
+	Profile *latest.Profile
+}
+
+func Yaml(out io.Writer, runCtx *runcontext.RunContext, configFiles []*ConfigFile) (*bytes.Buffer, error) {
 	// Generate git resource for pipeline
 	gitResource, err := generateGitResource()
 	if err != nil {
-		return nil, errors.Wrap(err, "generating git resource for pipeline")
+		return nil, fmt.Errorf("generating git resource for pipeline: %w", err)
 	}
 
 	// Generate build task for pipeline
 	var tasks []*tekton.Task
-	taskBuild, err := generateBuildTask(profile.Pipeline.Build)
+	buildTasks, err := generateBuildTasks(runCtx.Opts.Namespace, configFiles)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating build task")
+		return nil, fmt.Errorf("generating build task: %w", err)
 	}
-	tasks = append(tasks, taskBuild)
+	tasks = append(tasks, buildTasks...)
 
 	// Generate deploy task for pipeline
-	taskDeploy, err := generateDeployTask(config.Pipeline.Deploy)
+	deployTasks, err := generateDeployTasks(runCtx.Opts.Namespace, configFiles)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating deploy task")
+		return nil, fmt.Errorf("generating deploy task: %w", err)
 	}
-	tasks = append(tasks, taskDeploy)
+	tasks = append(tasks, deployTasks...)
 
 	// Generate pipeline from git resource and tasks
 	pipeline, err := generatePipeline(tasks)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating tekton pipeline")
+		return nil, fmt.Errorf("generating tekton pipeline: %w", err)
 	}
 
 	// json.Marshal all pieces of pipeline, then convert all jsons to yamls
 	var jsons [][]byte
 	bGitResource, err := json.Marshal(gitResource)
 	if err != nil {
-		return nil, errors.Wrap(err, "marshaling git resource")
+		return nil, fmt.Errorf("marshaling git resource: %w", err)
 	}
 	jsons = append(jsons, bGitResource)
 	for _, task := range tasks {
 		bTask, err := json.Marshal(task)
 		if err != nil {
-			return nil, errors.Wrap(err, "marshaling task")
+			return nil, fmt.Errorf("marshaling task: %w", err)
 		}
 		jsons = append(jsons, bTask)
 	}
 	bPipeline, err := json.Marshal(pipeline)
 	if err != nil {
-		return nil, errors.Wrap(err, "marshaling pipeline")
+		return nil, fmt.Errorf("marshaling pipeline: %w", err)
 	}
 	jsons = append(jsons, bPipeline)
 
@@ -88,7 +93,7 @@ func Yaml(out io.Writer, config *latest.SkaffoldConfig, profile *latest.Profile)
 	for _, item := range jsons {
 		itemYaml, err := yaml.JSONToYAML(item)
 		if err != nil {
-			return nil, errors.Wrap(err, "converting jsons to yamls")
+			return nil, fmt.Errorf("converting jsons to yamls: %w", err)
 		}
 		output.Write(append(itemYaml, []byte("---\n")...))
 	}
@@ -102,105 +107,12 @@ func generateGitResource() (*tekton.PipelineResource, error) {
 		getGitRepo := exec.Command("git", "config", "--get", "remote.origin.url")
 		bGitRepo, err := getGitRepo.Output()
 		if err != nil {
-			return nil, errors.Wrap(err, "getting git repo from git config")
+			return nil, fmt.Errorf("getting git repo from git config: %w", err)
 		}
 		gitURL = string(bGitRepo)
 	}
 
 	return pipeline.NewGitResource("source-git", gitURL), nil
-}
-
-func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
-	if len(buildConfig.Artifacts) == 0 {
-		return nil, errors.New("no artifacts to build")
-	}
-
-	skaffoldVersion := os.Getenv("PIPELINE_SKAFFOLD_VERSION")
-	if skaffoldVersion == "" {
-		skaffoldVersion = version.Get().Version
-	}
-
-	resources := []tekton.TaskResource{
-		{
-			Name: "source",
-			Type: tekton.PipelineResourceTypeGit,
-		},
-	}
-	inputs := &tekton.Inputs{Resources: resources}
-	outputs := &tekton.Outputs{Resources: resources}
-	steps := []corev1.Container{
-		{
-			Name:       "run-build",
-			Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),
-			WorkingDir: "/workspace/source",
-			Command:    []string{"skaffold", "build"},
-			Args: []string{
-				"--profile", "oncluster",
-				"--file-output", "build.out",
-			},
-		},
-	}
-
-	// Add secret volume mounting for artifacts that need to be built with kaniko
-	var volumes []corev1.Volume
-	if buildConfig.Artifacts[0].KanikoArtifact != nil {
-		volumes = []corev1.Volume{
-			{
-				Name: kanikoSecretName,
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: kanikoSecretName,
-					},
-				},
-			},
-		}
-		steps[0].VolumeMounts = []corev1.VolumeMount{
-			{
-				Name:      kanikoSecretName,
-				MountPath: "/secret",
-			},
-		}
-		steps[0].Env = []corev1.EnvVar{
-			{
-				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-				Value: "/secret/" + kanikoSecretName,
-			},
-		}
-	}
-
-	return pipeline.NewTask("skaffold-build", inputs, outputs, steps, volumes), nil
-}
-
-func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) {
-	if deployConfig.HelmDeploy == nil && deployConfig.KubectlDeploy == nil && deployConfig.KustomizeDeploy == nil {
-		return nil, errors.New("no Helm/Kubectl/Kustomize deploy config")
-	}
-
-	skaffoldVersion := os.Getenv("PIPELINE_SKAFFOLD_VERSION")
-	if skaffoldVersion == "" {
-		skaffoldVersion = version.Get().Version
-	}
-
-	resources := []tekton.TaskResource{
-		{
-			Name: "source",
-			Type: tekton.PipelineResourceTypeGit,
-		},
-	}
-	inputs := &tekton.Inputs{Resources: resources}
-	steps := []corev1.Container{
-		{
-			Name:       "run-deploy",
-			Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),
-			WorkingDir: "/workspace/source",
-			Command:    []string{"skaffold", "deploy"},
-			Args: []string{
-				"--build-artifacts", "build.out",
-			},
-		},
-	}
-
-	return pipeline.NewTask("skaffold-deploy", inputs, nil, steps, nil), nil
 }
 
 func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
@@ -216,7 +128,7 @@ func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
 	}
 	// Create tasks in pipeline spec for all corresponding tasks
 	pipelineTasks := make([]tekton.PipelineTask, 0)
-	for i, task := range tasks {
+	for _, task := range tasks {
 		pipelineTask := tekton.PipelineTask{
 			Name: fmt.Sprintf("%s-task", task.Name),
 			TaskRef: tekton.TaskRef{
@@ -240,7 +152,9 @@ func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
 				},
 			}
 		} else {
-			pipelineTask.Resources.Inputs[0].From = []string{pipelineTasks[i-1].Name}
+			// Get the git resource for deploy commands from their corresponding build command
+			from := strings.Replace(pipelineTask.Name, "deploy", "build", 1)
+			pipelineTask.Resources.Inputs[0].From = []string{from}
 		}
 
 		pipelineTasks = append(pipelineTasks, pipelineTask)

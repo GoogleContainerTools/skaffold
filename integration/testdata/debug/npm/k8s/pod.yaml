@@ -4,7 +4,21 @@ metadata:
   name: npm
 spec:
   containers:
-  - name: web
-    image: gcr.io/k8s-skaffold/skaffold-debug-npm
+  - name: npm-web
+    image: skaffold-debug-npm
     ports:
     - containerPort: 3000
+    # connect to the devtools debugger endpoint
+    readinessProbe:
+      httpGet:
+        path: /json
+        port: 9229
+      initialDelaySeconds: 2
+      periodSeconds: 10
+    # connect to the app port
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 3000
+      failureThreshold: 30
+      periodSeconds: 10

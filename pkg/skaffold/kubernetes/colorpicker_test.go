@@ -19,9 +19,10 @@ package kubernetes
 import (
 	"testing"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	v1 "k8s.io/api/core/v1"
 )
 
 func TestColorPicker(t *testing.T) {
@@ -70,13 +71,13 @@ func TestColorPicker(t *testing.T) {
 		},
 	}
 
-	picker := NewColorPicker([]string{"image", "second"})
+	picker := NewColorPicker([]string{"image:ignored", "second"})
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			color := picker.Pick(test.pod)
 
-			t.CheckDeepEqual(test.expectedColor, color)
+			t.CheckTrue(test.expectedColor == color)
 		})
 	}
 }

@@ -13,24 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package apiversion
 
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/blang/semver"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
-
-func TestMustParse(t *testing.T) {
-	MustParse("skaffold/v1alpha4")
-}
-
-func TestMustParse_panic(t *testing.T) {
-	defer testutil.EnsureTestPanicked(t)
-
-	MustParse("invalid version")
-}
 
 func TestParseVersion(t *testing.T) {
 	tests := []struct {

@@ -18,11 +18,11 @@ package pipeline
 
 import (
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func NewTask(taskName string, inputs *tekton.Inputs, outputs *tekton.Outputs, steps []corev1.Container, volumes []corev1.Volume) *tekton.Task {
+func NewTask(taskName string, inputs *tekton.Inputs, outputs *tekton.Outputs, steps []v1.Container, volumes []v1.Volume) *tekton.Task {
 	return &tekton.Task{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Task",

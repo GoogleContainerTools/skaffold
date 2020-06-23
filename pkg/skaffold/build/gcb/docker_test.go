@@ -19,10 +19,11 @@ package gcb
 import (
 	"testing"
 
+	cloudbuild "google.golang.org/api/cloudbuild/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
 func TestDockerBuildSpec(t *testing.T) {

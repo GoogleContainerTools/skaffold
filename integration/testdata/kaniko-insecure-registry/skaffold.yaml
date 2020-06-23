@@ -1,0 +1,22 @@
+apiVersion: skaffold/v2beta5
+kind: Config
+profiles:
+  - name: build-artifact
+    build:
+      artifacts:
+        - image: kaniko-insecure
+          context: app
+          kaniko:
+            cache: {}
+      cluster:
+        pullSecretName: e2esecret
+  - name: deploy-insecure-registry
+    build:
+      artifacts:
+        - image: devreg
+          context: insecure-registry
+          docker: {}
+    deploy:
+      kubectl:
+        manifests:
+          - insecure-registry/reg.yaml

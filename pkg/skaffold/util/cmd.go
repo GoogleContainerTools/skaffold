@@ -17,12 +17,34 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os/exec"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
+
+type cmdError struct {
+	args   []string
+	stdout []byte
+	stderr []byte
+	cause  error
+}
+
+func (e *cmdError) Error() string {
+	return fmt.Sprintf("running %s\n - stdout: %q\n - stderr: %q\n - cause: %s", e.args, e.stdout, e.stderr, e.cause)
+}
+
+func (e *cmdError) Unwrap() error {
+	return e.cause
+}
+
+func (e *cmdError) ExitCode() int {
+	if exitError, ok := e.cause.(*exec.ExitError); ok {
+		return exitError.ExitCode()
+	}
+	return 0
+}
 
 // DefaultExecCommand runs commands using exec.Cmd
 var DefaultExecCommand Command = &Commander{}
@@ -59,7 +81,7 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	}
 
 	if err := cmd.Start(); err != nil {
-		return nil, errors.Wrapf(err, "starting command %v", cmd)
+		return nil, fmt.Errorf("starting command %v: %w", cmd, err)
 	}
 
 	stdout, err := ioutil.ReadAll(stdoutPipe)
@@ -72,9 +94,13 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 		return nil, err
 	}
 
-	err = cmd.Wait()
-	if err != nil {
-		return stdout, errors.Wrapf(err, "Running %s: stdout %s, stderr: %s, err: %v", cmd.Args, stdout, stderr, err)
+	if err := cmd.Wait(); err != nil {
+		return stdout, &cmdError{
+			args:   cmd.Args,
+			stdout: stdout,
+			stderr: stderr,
+			cause:  err,
+		}
 	}
 
 	if len(stderr) > 0 {

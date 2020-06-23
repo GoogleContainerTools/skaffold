@@ -18,21 +18,18 @@ package cache
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
-)
-
-var (
-	// For testing
-	buildComplete = event.BuildComplete
 )
 
 func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildAndTest BuildAndTestFn) ([]build.Artifact, error) {
@@ -62,42 +59,48 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		result := results[i]
 		switch result := result.(type) {
 		case failed:
-			return nil, errors.Wrap(result.err, "checking cache")
+			color.Red.Fprintln(out, "Error checking cache.")
+			return nil, result.err
 
 		case needsBuilding:
-			color.Red.Fprintln(out, "Not found. Building")
-			hashByName[artifact.ImageName] = result.hash
+			color.Yellow.Fprintln(out, "Not found. Building")
+			hashByName[artifact.ImageName] = result.Hash()
 			needToBuild = append(needToBuild, artifact)
 			continue
 
 		case needsTagging:
 			color.Green.Fprintln(out, "Found. Tagging")
 			if err := result.Tag(ctx, c); err != nil {
-				return nil, errors.Wrap(err, "tagging image")
+				return nil, fmt.Errorf("tagging image: %w", err)
 			}
 
 		case needsPushing:
 			color.Green.Fprintln(out, "Found. Pushing")
 			if err := result.Push(ctx, out, c); err != nil {
-				return nil, errors.Wrap(err, "pushing image")
+				return nil, fmt.Errorf("%s: %w", sErrors.PushImageErrPrefix, err)
 			}
 
 		default:
-			color.Green.Fprintln(out, "Found")
+			if c.imagesAreLocal {
+				color.Green.Fprintln(out, "Found Locally")
+			} else {
+				color.Green.Fprintln(out, "Found Remotely")
+			}
 		}
 
 		// Image is already built
-		buildComplete(artifact.ImageName)
 		entry := c.artifactCache[result.Hash()]
+		tag := tags[artifact.ImageName]
+
 		var uniqueTag string
 		if c.imagesAreLocal {
 			var err error
-			uniqueTag, err = c.client.TagWithImageID(ctx, artifact.ImageName, entry.ID)
+			uniqueTag, err = build.TagWithImageID(ctx, tag, entry.ID, c.client)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			uniqueTag = tags[artifact.ImageName] + "@" + entry.Digest
+			uniqueTag = build.TagWithDigest(tag, entry.Digest)
 		}
 
 		alreadyBuilt = append(alreadyBuilt, build.Artifact{
@@ -106,22 +109,39 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		})
 	}
 
-	color.Default.Fprintln(out, "Cache check complete in", time.Since(start))
+	logrus.Infoln("Cache check complete in", time.Since(start))
 
 	bRes, err := buildAndTest(ctx, out, tags, needToBuild)
 	if err != nil {
-		return nil, errors.Wrap(err, "build failed")
+		return nil, err
 	}
 
 	if err := c.addArtifacts(ctx, bRes, hashByName); err != nil {
-		return nil, errors.Wrap(err, "adding artifacts to cache")
+		logrus.Warnf("error adding artifacts to cache; caching may not work as expected: %v", err)
+		return append(bRes, alreadyBuilt...), nil
 	}
 
 	if err := saveArtifactCache(c.cacheFile, c.artifactCache); err != nil {
-		return nil, errors.Wrap(err, "saving cache")
+		logrus.Warnf("error saving cache file; caching may not work as expected: %v", err)
+		return append(bRes, alreadyBuilt...), nil
 	}
 
-	return append(bRes, alreadyBuilt...), err
+	return maintainArtifactOrder(append(bRes, alreadyBuilt...), artifacts), err
+}
+
+func maintainArtifactOrder(built []build.Artifact, artifacts []*latest.Artifact) []build.Artifact {
+	byName := make(map[string]build.Artifact)
+	for _, build := range built {
+		byName[build.ImageName] = build
+	}
+
+	var ordered []build.Artifact
+
+	for _, artifact := range artifacts {
+		ordered = append(ordered, byName[artifact.ImageName])
+	}
+
+	return ordered
 }
 
 func (c *cache) addArtifacts(ctx context.Context, bRes []build.Artifact, hashByName map[string]string) error {
@@ -131,7 +151,7 @@ func (c *cache) addArtifacts(ctx context.Context, bRes []build.Artifact, hashByN
 		if !c.imagesAreLocal {
 			ref, err := docker.ParseReference(a.Tag)
 			if err != nil {
-				return errors.Wrapf(err, "parsing reference %s", a.Tag)
+				return fmt.Errorf("parsing reference %q: %w", a.Tag, err)
 			}
 
 			entry.Digest = ref.Digest

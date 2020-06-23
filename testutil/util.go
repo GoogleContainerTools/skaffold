@@ -21,7 +21,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -32,47 +35,108 @@ import (
 
 type T struct {
 	*testing.T
-	teardownActions []func()
 }
 
-func (t *T) NewFakeCmd() *FakeCmd {
-	return NewFakeCmd(t.T)
-}
-
-func (t *T) FakeRun(command string) *FakeCmd {
-	return FakeRun(t.T, command)
-}
-
-func (t *T) FakeRunOut(command string, output string) *FakeCmd {
-	return FakeRunOut(t.T, command, output)
-}
-
-func (t *T) FakeRunOutErr(command string, output string, err error) *FakeCmd {
-	return FakeRunOutErr(t.T, command, output, err)
+type ForTester interface {
+	ForTest(t *testing.T)
 }
 
 func (t *T) Override(dest, tmp interface{}) {
-	teardown, err := override(t.T, dest, tmp)
+	err := override(t.T, dest, tmp)
 	if err != nil {
 		t.Errorf("temporary override value is invalid: %v", err)
 		return
 	}
-	t.teardownActions = append(t.teardownActions, teardown)
+
+	if forTester, ok := tmp.(ForTester); ok {
+		forTester.ForTest(t.T)
+	}
+}
+
+func (t *T) CheckMatches(pattern, actual string) {
+	t.Helper()
+	if matches, _ := regexp.MatchString(pattern, actual); !matches {
+		t.Errorf("expected output %s to match: %s", actual, pattern)
+	}
 }
 
 func (t *T) CheckContains(expected, actual string) {
+	t.Helper()
 	CheckContains(t.T, expected, actual)
 }
 
+func (t *T) CheckNil(actual interface{}) {
+	t.Helper()
+
+	if !isNil(actual) {
+		t.Errorf("expected `nil`, but was `%+v`", actual)
+	}
+}
+
+func (t *T) CheckNotNil(actual interface{}) {
+	t.Helper()
+
+	if isNil(actual) {
+		t.Error("expected `not nil`, but was `nil`")
+	}
+}
+
+func isNil(actual interface{}) bool {
+	return actual == nil || (reflect.ValueOf(actual).Kind() == reflect.Ptr && reflect.ValueOf(actual).IsNil())
+}
+
+func (t *T) CheckTrue(actual bool) {
+	t.Helper()
+	if !actual {
+		t.Error("expected `true`, but was `false`")
+	}
+}
+
+func (t *T) CheckFalse(actual bool) {
+	t.Helper()
+	if actual {
+		t.Error("expected `false`, but was `true`")
+	}
+}
+
+func (t *T) CheckEmpty(actual interface{}) {
+	t.Helper()
+
+	var len int
+	v := reflect.ValueOf(actual)
+	switch v.Kind() {
+	case reflect.Array:
+		len = v.Len()
+	case reflect.Chan:
+		len = v.Len()
+	case reflect.Map:
+		len = v.Len()
+	case reflect.Slice:
+		len = v.Len()
+	case reflect.String:
+		len = v.Len()
+	default:
+		t.Errorf("expected `empty`, but was `%+v`", actual)
+		return
+	}
+
+	if len != 0 {
+		t.Errorf("expected `empty`, but was `%+v`", actual)
+	}
+}
+
 func (t *T) CheckDeepEqual(expected, actual interface{}, opts ...cmp.Option) {
+	t.Helper()
 	CheckDeepEqual(t.T, expected, actual, opts...)
 }
 
 func (t *T) CheckErrorAndDeepEqual(shouldErr bool, err error, expected, actual interface{}, opts ...cmp.Option) {
+	t.Helper()
 	CheckErrorAndDeepEqual(t.T, shouldErr, err, expected, actual, opts...)
 }
 
 func (t *T) CheckError(shouldErr bool, err error) {
+	t.Helper()
 	CheckError(t.T, shouldErr, err)
 }
 
@@ -90,16 +154,60 @@ func (t *T) CheckErrorContains(message string, err error) {
 	}
 }
 
+// SetArgs override os.Args for the duration of a test.
+func (t *T) SetArgs(args []string) {
+	prevArgs := os.Args
+	t.Cleanup(func() { os.Args = prevArgs })
+
+	os.Args = args
+}
+
+// SetStdin replaces os.Stdin with a given content.
+func (t *T) SetStdin(content []byte) {
+	origStdin := os.Stdin
+	t.Cleanup(func() { os.Stdin = origStdin })
+
+	tmpFile := t.TempFile("stdin", content)
+	file, err := os.Open(tmpFile)
+	if err != nil {
+		t.Error("unable to read temp file")
+		return
+	}
+
+	os.Stdin = file
+}
+
 func (t *T) TempFile(prefix string, content []byte) string {
-	name, teardown := TempFile(t.T, prefix, content)
-	t.teardownActions = append(t.teardownActions, teardown)
-	return name
+	return TempFile(t.T, prefix, content)
 }
 
 func (t *T) NewTempDir() *TempDir {
-	tmpDir, teardown := NewTempDir(t.T)
-	t.teardownActions = append(t.teardownActions, teardown)
-	return tmpDir
+	return NewTempDir(t.T)
+}
+
+func (t *T) Chdir(dir string) {
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal("unable to get current directory")
+	}
+
+	t.Cleanup(func() {
+		if err = os.Chdir(pwd); err != nil {
+			t.Fatal("unable to reset working direcrory")
+		}
+	})
+
+	if err = os.Chdir(dir); err != nil {
+		t.Fatal("unable to change current directory")
+	}
+}
+
+func Abs(t *testing.T, path string) string {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		t.Fatalf("Failed to get absolute path for file %s: %s", path, absPath)
+	}
+	return absPath
 }
 
 func Run(t *testing.T, name string, f func(t *T)) {
@@ -108,17 +216,7 @@ func Run(t *testing.T, name string, f func(t *T)) {
 	}
 
 	t.Run(name, func(tt *testing.T) {
-		testWrapper := &T{
-			T: tt,
-		}
-
-		defer func() {
-			for _, teardownAction := range testWrapper.teardownActions {
-				teardownAction()
-			}
-		}()
-
-		f(testWrapper)
+		f(&T{T: tt})
 	})
 }
 
@@ -177,27 +275,28 @@ func checkErr(shouldErr bool, err error) error {
 
 // ServeFile serves a file with http. Returns the url to the file and a teardown
 // function that should be called to properly stop the server.
-func ServeFile(t *testing.T, content []byte) (url string, tearDown func()) {
+func ServeFile(t *testing.T, content []byte) string {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write(content)
 	}))
 
-	return ts.URL, ts.Close
+	t.Cleanup(ts.Close)
+
+	return ts.URL
 }
 
-func override(t *testing.T, dest, tmp interface{}) (f func(), err error) {
+func override(t *testing.T, dest, tmp interface{}) (err error) {
 	t.Helper()
 
 	defer func() {
 		if r := recover(); r != nil {
-			f = nil
 			switch x := r.(type) {
 			case string:
-				err = errors.New(x)
+				t.Errorf("unable to override value: %s", x)
 			case error:
-				err = x
+				t.Errorf("unable to override value: %w", x)
 			default:
-				err = errors.New("unknown panic")
+				t.Error("unable to override value")
 			}
 		}
 	}()
@@ -206,9 +305,11 @@ func override(t *testing.T, dest, tmp interface{}) (f func(), err error) {
 
 	// Save current value
 	curValue := reflect.New(dValue.Type()).Elem()
-	curValue.Set(dValue)
+	t.Cleanup(func() { dValue.Set(curValue) })
 
 	// Set to temporary value
+	curValue.Set(dValue)
+
 	var tmpV reflect.Value
 	if tmp == nil {
 		tmpV = reflect.Zero(dValue.Type())
@@ -217,14 +318,7 @@ func override(t *testing.T, dest, tmp interface{}) (f func(), err error) {
 	}
 	dValue.Set(tmpV)
 
-	return func() {
-		defer func() {
-			if r := recover(); r != nil {
-				t.Error("panic while restoring original value")
-			}
-		}()
-		dValue.Set(curValue)
-	}, nil
+	return nil
 }
 
 // SetupFakeWatcher helps set up a fake Kubernetes watcher

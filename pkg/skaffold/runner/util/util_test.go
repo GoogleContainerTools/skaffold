@@ -19,11 +19,11 @@ package util
 import (
 	"testing"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/client-go/tools/clientcmd/api"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 func TestGetAllPodNamespaces(t *testing.T) {
@@ -71,7 +71,7 @@ func TestGetAllPodNamespaces(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
-			t.Override(&context.CurrentConfig, func() (clientcmdapi.Config, error) {
+			t.Override(&context.CurrentConfig, func() (api.Config, error) {
 				return api.Config{
 					CurrentContext: test.currentContext,
 					Contexts: map[string]*api.Context{

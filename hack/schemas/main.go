@@ -29,10 +29,11 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
+
+	blackfriday "github.com/russross/blackfriday/v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
-	"github.com/pkg/errors"
-	blackfriday "gopkg.in/russross/blackfriday.v2"
 )
 
 const (
@@ -44,6 +45,11 @@ var (
 	regexpDefaults = regexp.MustCompile("(.*)Defaults to `(.*)`")
 	regexpExample  = regexp.MustCompile("(.*)For example: `(.*)`")
 	pTags          = regexp.MustCompile("(<p>)|(</p>)")
+
+	// patterns for enum-type values
+	enumValuePattern     = "^[ \t]*`(?P<name>[^`]+)`([ \t]*\\(default\\))?: .*$"
+	regexpEnumDefinition = regexp.MustCompile("(?m).*Valid [a-z]+ are((\\n" + enumValuePattern + ")*)")
+	regexpEnumValues     = regexp.MustCompile("(?m)" + enumValuePattern)
 )
 
 type schemaGenerator struct {
@@ -69,6 +75,7 @@ type Definition struct {
 	HTMLDescription      string                 `json:"x-intellij-html-description,omitempty"`
 	Default              interface{}            `json:"default,omitempty"`
 	Examples             []string               `json:"examples,omitempty"`
+	Enum                 []string               `json:"enum,omitempty"`
 
 	inlines []*Definition
 	tags    string
@@ -80,55 +87,86 @@ func main() {
 	}
 }
 
+type sameErr struct {
+	same bool
+	err  error
+}
+
 func generateSchemas(root string, dryRun bool) (bool, error) {
-	same := true
+	var results [](chan sameErr)
+	for range schema.SchemaVersions {
+		results = append(results, make(chan sameErr, 1))
+	}
 
+	var wg sync.WaitGroup
 	for i, version := range schema.SchemaVersions {
-		apiVersion := strings.TrimPrefix(version.APIVersion, "skaffold/")
+		wg.Add(1)
+		go func(i int, version schema.Version) {
+			same, err := generateSchema(root, dryRun, version)
+			results[i] <- sameErr{
+				same: same,
+				err:  err,
+			}
+			wg.Done()
+		}(i, version)
+	}
+	wg.Wait()
 
-		folder := apiVersion
-		strict := false
-		if i == len(schema.SchemaVersions)-1 {
-			folder = "latest"
-			strict = true
+	same := true
+	for i := range schema.SchemaVersions {
+		result := <-results[i]
+		if result.err != nil {
+			return false, result.err
 		}
 
-		input := filepath.Join(root, "pkg", "skaffold", "schema", folder, "config.go")
-		output := filepath.Join(root, "docs", "content", "en", "schemas", apiVersion+".json")
+		same = same && result.same
+	}
 
-		generator := schemaGenerator{
-			strict: strict,
-		}
+	return same, nil
+}
 
-		buf, err := generator.Apply(input)
+func generateSchema(root string, dryRun bool, version schema.Version) (bool, error) {
+	apiVersion := strings.TrimPrefix(version.APIVersion, "skaffold/")
+
+	folder := apiVersion
+	strict := false
+	if version.APIVersion == schema.SchemaVersions[len(schema.SchemaVersions)-1].APIVersion {
+		folder = "latest"
+		strict = true
+	}
+
+	input := filepath.Join(root, "pkg", "skaffold", "schema", folder, "config.go")
+	output := filepath.Join(root, "docs", "content", "en", "schemas", apiVersion+".json")
+
+	generator := schemaGenerator{
+		strict: strict,
+	}
+
+	buf, err := generator.Apply(input)
+	if err != nil {
+		return false, fmt.Errorf("unable to generate schema for version %q: %w", version.APIVersion, err)
+	}
+
+	var current []byte
+	if _, err := os.Stat(output); err == nil {
+		var err error
+		current, err = ioutil.ReadFile(output)
 		if err != nil {
-			return false, errors.Wrapf(err, "unable to generate schema for version %s", version.APIVersion)
+			return false, fmt.Errorf("unable to read existing schema for version %q: %w", version.APIVersion, err)
 		}
+	} else if !os.IsNotExist(err) {
+		return false, fmt.Errorf("unable to check that file exists %q: %w", output, err)
+	}
 
-		var current []byte
-		if _, err := os.Stat(output); err == nil {
-			var err error
-			current, err = ioutil.ReadFile(output)
-			if err != nil {
-				return false, errors.Wrapf(err, "unable to read existing schema for version %s", version.APIVersion)
-			}
-		} else if !os.IsNotExist(err) {
-			return false, errors.Wrapf(err, "unable to check that file exists %s", output)
-		}
+	current = bytes.Replace(current, []byte("\r\n"), []byte("\n"), -1)
 
-		current = bytes.Replace(current, []byte("\r\n"), []byte("\n"), -1)
-
-		if string(current) != string(buf) {
-			same = false
-		}
-
-		if !dryRun {
-			if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
-				return false, errors.Wrapf(err, "unable to write schema %s", output)
-			}
+	if !dryRun {
+		if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
+			return false, fmt.Errorf("unable to write schema %q: %w", output, err)
 		}
 	}
 
+	same := string(current) == string(buf)
 	return same, nil
 }
 
@@ -140,10 +178,13 @@ func yamlFieldName(field *ast.Field) string {
 	return strings.Split(yamlTag, ",")[0]
 }
 
+//nolint:golint,goconst
 func setTypeOrRef(def *Definition, typeName string) {
 	switch typeName {
-	case "string":
-		def.Type = typeName
+	// Special case for ResourceType that is an alias of string.
+	// Fixes #3623
+	case "string", "ResourceType":
+		def.Type = "string"
 	case "bool":
 		def.Type = "boolean"
 	case "int", "int64", "int32":
@@ -176,8 +217,6 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 		if ident, ok := tt.X.(*ast.Ident); ok {
 			typeName := ident.Name
 			setTypeOrRef(def, typeName)
-		} else if _, ok := tt.X.(*ast.SelectorExpr); ok {
-			def.Type = "object"
 		}
 
 	case *ast.ArrayType:
@@ -225,6 +264,17 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 	if g.strict && name != "" {
 		if !strings.HasPrefix(comment, name+" ") {
 			panic(fmt.Sprintf("comment should start with field name on field %s", name))
+		}
+	}
+
+	// process enums before stripping out newlines
+	if m := regexpEnumDefinition.FindStringSubmatch(comment); m != nil {
+		enums := make([]string, 0)
+		if n := regexpEnumValues.FindAllStringSubmatch(m[1], -1); n != nil {
+			for _, matches := range n {
+				enums = append(enums, matches[1])
+			}
+			def.Enum = enums
 		}
 	}
 

@@ -39,7 +39,7 @@ func TestMainHelp(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckContains("End-to-end pipelines", output.String())
 		t.CheckContains("Getting started with a new project", output.String())
-		t.CheckDeepEqual("", errOutput.String())
+		t.CheckEmpty(errOutput.String())
 	})
 }
 

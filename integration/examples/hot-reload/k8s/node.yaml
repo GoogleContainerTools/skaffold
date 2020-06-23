@@ -22,8 +22,10 @@ spec:
       labels:
         app: node
     spec:
+      securityContext:
+        runAsUser: 1000
       containers:
       - name: node
-        image: gcr.io/k8s-skaffold/node-example
+        image: node-example
         ports:
         - containerPort: 3000

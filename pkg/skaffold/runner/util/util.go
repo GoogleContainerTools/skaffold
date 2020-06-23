@@ -17,11 +17,11 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"sort"
 
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
 )
 
 // GetAllPodNamespaces lists the namespaces that should be watched.
@@ -35,7 +35,7 @@ func GetAllPodNamespaces(configNamespace string, cfg latest.Pipeline) ([]string,
 		// Get current kube context's namespace
 		config, err := kubectx.CurrentConfig()
 		if err != nil {
-			return nil, errors.Wrap(err, "getting k8s configuration")
+			return nil, fmt.Errorf("getting k8s configuration: %w", err)
 		}
 
 		context, ok := config.Contexts[config.CurrentContext]

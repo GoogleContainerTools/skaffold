@@ -25,21 +25,28 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
+const (
+	remoteDigestSource = "remote"
+	noneDigestSource   = "none"
+)
+
 // Runner is responsible for running the skaffold build, test and deploy config.
 type Runner interface {
-	DiagnoseArtifacts(io.Writer) error
+	DiagnoseArtifacts(context.Context, io.Writer) error
 	Dev(context.Context, io.Writer, []*latest.Artifact) error
+	ApplyDefaultRepo(tag string) (string, error)
 	BuildAndTest(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)
 	DeployAndLog(context.Context, io.Writer, []build.Artifact) error
-	GeneratePipeline(context.Context, io.Writer, *latest.SkaffoldConfig, string) error
+	GeneratePipeline(context.Context, io.Writer, *latest.SkaffoldConfig, []string, string) error
+	Render(context.Context, io.Writer, []build.Artifact, bool, string) error
 	Cleanup(context.Context, io.Writer) error
 	Prune(context.Context, io.Writer) error
 	HasDeployed() bool
@@ -48,29 +55,30 @@ type Runner interface {
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
-	builder          build.Builder
-	deployer         deploy.Deployer
-	tester           test.Tester
-	tagger           tag.Tagger
-	syncer           sync.Syncer
-	monitor          filemon.Monitor
-	listener         Listener
-	forwarderManager *portforward.ForwarderManager
+	builder  build.Builder
+	deployer deploy.Deployer
+	tester   test.Tester
+	tagger   tag.Tagger
+	syncer   sync.Syncer
+	monitor  filemon.Monitor
+	listener Listener
 
-	logger               *kubernetes.LogAggregator
-	cache                cache.Cache
-	changeSet            *changeSet
-	runCtx               *runcontext.RunContext
-	labellers            []deploy.Labeller
-	defaultLabeller      *deploy.DefaultLabeller
-	portForwardResources []*latest.PortForwardResource
-	builds               []build.Artifact
-	imageList            *kubernetes.ImageList
+	kubectlCLI      *kubectl.CLI
+	cache           cache.Cache
+	changeSet       changeSet
+	runCtx          *runcontext.RunContext
+	labellers       []deploy.Labeller
+	defaultLabeller *deploy.DefaultLabeller
+	builds          []build.Artifact
 
-	hasBuilt    bool
-	hasDeployed bool
+	// podSelector is used to determine relevant pods for logging and portForwarding
+	podSelector *kubernetes.ImageList
 
-	intents *intents
+	imagesAreLocal bool
+	hasBuilt       bool
+	hasDeployed    bool
+	intents        *intents
+	devIteration   int
 }
 
 // for testing

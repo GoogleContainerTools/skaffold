@@ -1,3 +1,0 @@
-=== Example: This example is used in integration tests.
-
-This is an invalid deployment. Please do not use it.

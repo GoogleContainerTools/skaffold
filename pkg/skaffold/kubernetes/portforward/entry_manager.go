@@ -24,7 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 var (
@@ -38,112 +38,57 @@ var (
 			entry.resource.Namespace,
 			entry.portName,
 			string(entry.resource.Type),
-			entry.resource.Name)
+			entry.resource.Name,
+			entry.resource.Address)
 	}
 )
 
-type forwardedPorts struct {
-	ports map[int]struct{}
-	lock  *sync.Mutex
-}
-
-func (f forwardedPorts) Store(key, _ interface{}) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	val, ok := key.(int)
-	if !ok {
-		panic("only store keys of type int in forwardedPorts")
-	}
-	// this map is only used as a set of keys, we don't care about the values
-	f.ports[val] = dummy()
-}
-
-func (f forwardedPorts) LoadOrStore(key, _ interface{}) (interface{}, bool) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	k, ok := key.(int)
-	if !ok {
-		return nil, false
-	}
-	// this map is only used as a set of keys, we don't care about the values
-	_, exists := f.ports[k]
-	val := dummy()
-	if !exists {
-		f.ports[k] = val
-	}
-	return val, exists
-}
-
-func dummy() struct{} {
-	return struct{}{}
-}
-
-func (f forwardedPorts) Delete(port int) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	delete(f.ports, port)
-}
-
 type forwardedResources struct {
 	resources map[string]*portForwardEntry
-	lock      *sync.Mutex
+	lock      sync.Mutex
 }
 
-func (f forwardedResources) Store(key, value interface{}) {
+func (f *forwardedResources) Store(k string, v *portForwardEntry) {
 	f.lock.Lock()
-	defer f.lock.Unlock()
-	k, ok := key.(string)
-	if !ok {
-		panic("only store keys of type string in forwardedResources")
+
+	if f.resources == nil {
+		f.resources = map[string]*portForwardEntry{}
 	}
-	val, ok := value.(*portForwardEntry)
-	if !ok {
-		panic("only store values of type *portForwardEntry in forwardedResources")
-	}
-	f.resources[k] = val
+	f.resources[k] = v
+
+	f.lock.Unlock()
 }
 
-func (f forwardedResources) Load(key string) (*portForwardEntry, bool) {
+func (f *forwardedResources) Load(key string) (*portForwardEntry, bool) {
 	f.lock.Lock()
-	defer f.lock.Unlock()
 	val, exists := f.resources[key]
+	f.lock.Unlock()
+
 	return val, exists
 }
 
-func (f forwardedResources) Delete(resource string) {
+func (f *forwardedResources) Delete(key string) {
 	f.lock.Lock()
-	defer f.lock.Unlock()
-	delete(f.resources, resource)
+	delete(f.resources, key)
+	f.lock.Unlock()
 }
 
-func (f forwardedResources) Length() int {
+func (f *forwardedResources) Length() int {
 	f.lock.Lock()
-	defer f.lock.Unlock()
-	return len(f.resources)
-}
+	length := len(f.resources)
+	f.lock.Unlock()
 
-func newForwardedPorts() forwardedPorts {
-	return forwardedPorts{
-		lock:  &sync.Mutex{},
-		ports: map[int]struct{}{},
-	}
-}
-
-func newForwardedResources() forwardedResources {
-	return forwardedResources{
-		lock:      &sync.Mutex{},
-		resources: map[string]*portForwardEntry{},
-	}
+	return length
 }
 
 // EntryManager handles forwarding entries and keeping track of
 // forwarded ports and resources.
 type EntryManager struct {
-	EntryForwarder
-	output io.Writer
+	output         io.Writer
+	entryForwarder EntryForwarder
 
 	// forwardedPorts serves as a synchronized set of ports we've forwarded.
-	forwardedPorts forwardedPorts
+	forwardedPorts util.PortSet
 
 	// forwardedResources is a map of portForwardEntry key (string) -> portForwardEntry
 	forwardedResources forwardedResources
@@ -151,12 +96,10 @@ type EntryManager struct {
 
 // NewEntryManager returns a new port forward entry manager to keep track
 // of forwarded ports and resources
-func NewEntryManager(out io.Writer, cli *kubectl.CLI) EntryManager {
-	return EntryManager{
-		output:             out,
-		forwardedPorts:     newForwardedPorts(),
-		forwardedResources: newForwardedResources(),
-		EntryForwarder:     &KubectlForwarder{kubectl: cli, out: out},
+func NewEntryManager(out io.Writer, entryForwarder EntryForwarder) *EntryManager {
+	return &EntryManager{
+		output:         out,
+		entryForwarder: entryForwarder,
 	}
 }
 
@@ -167,15 +110,16 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 	}
 	b.forwardedResources.Store(entry.key(), entry)
 
-	b.Forward(ctx, entry)
+	b.entryForwarder.Forward(ctx, entry)
 
 	color.Green.Fprintln(
 		b.output,
-		fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %d -> local port %d",
+		fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %d -> address %s port %d",
 			entry.resource.Type,
 			entry.resource.Name,
 			entry.resource.Namespace,
 			entry.resource.Port,
+			entry.resource.Address,
 			entry.localPort))
 	portForwardEvent(entry)
 }
@@ -191,5 +135,5 @@ func (b *EntryManager) Stop() {
 func (b *EntryManager) Terminate(p *portForwardEntry) {
 	b.forwardedResources.Delete(p.key())
 	b.forwardedPorts.Delete(p.localPort)
-	b.EntryForwarder.Terminate(p)
+	b.entryForwarder.Terminate(p)
 }

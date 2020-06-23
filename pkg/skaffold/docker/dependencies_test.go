@@ -19,12 +19,14 @@ package docker
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 const copyServerGo = `
@@ -193,6 +195,11 @@ FROM scratch
 ADD ./file /etc/file
 `
 
+const fromScratchQuoted = `
+FROM "scratch"
+ADD ./file /etc/file
+`
+
 const fromScratchUppercase = `
 FROM SCRATCH
 ADD ./file /etc/file
@@ -200,6 +207,12 @@ ADD ./file /etc/file
 
 const fromImageCaseSensitive = `
 FROM jboss/wildfly:14.0.1.Final
+ADD ./file /etc/file
+`
+
+const fromScratchWithStageName = `
+FROM scratch as stage
+FROM stage
 ADD ./file /etc/file
 `
 
@@ -224,15 +237,15 @@ func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*v1.ConfigFil
 
 func TestGetDependencies(t *testing.T) {
 	tests := []struct {
-		description string
-		dockerfile  string
-		workspace   string
-		ignore      string
-		buildArgs   map[string]*string
-		env         []string
+		description    string
+		dockerfile     string
+		workspace      string
+		ignore         string
+		ignoreFilename string
+		buildArgs      map[string]*string
+		env            []string
 
 		expected  []string
-		badReader bool
 		shouldErr bool
 	}{
 		{
@@ -266,9 +279,8 @@ func TestGetDependencies(t *testing.T) {
 			expected:    []string{"Dockerfile", "server.go", "worker.go"},
 		},
 		{
-			description: "bad read",
-			badReader:   true,
-			shouldErr:   true,
+			description: "not found",
+			expected:    []string{"Dockerfile"},
 		},
 		{
 			// https://github.com/GoogleContainerTools/skaffold/issues/158
@@ -458,6 +470,12 @@ func TestGetDependencies(t *testing.T) {
 			expected:    []string{"Dockerfile", "file"},
 		},
 		{
+			description: "from scratch quoted",
+			dockerfile:  fromScratchQuoted,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file"},
+		},
+		{
 			description: "from scratch, ignoring case",
 			dockerfile:  fromScratchUppercase,
 			workspace:   ".",
@@ -498,6 +516,20 @@ func TestGetDependencies(t *testing.T) {
 			ignore:      "**\n!server.go",
 			expected:    []string{"Dockerfile", "server.go"},
 		},
+		{
+			description: "from scratch witch stage name",
+			dockerfile:  fromScratchWithStageName,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file"},
+		},
+		{
+			description:    "find specific dockerignore",
+			dockerfile:     copyDirectory,
+			workspace:      ".",
+			ignore:         "bar\ndocker/*",
+			ignoreFilename: "Dockerfile.dockerignore",
+			expected:       []string{".dot", "Dockerfile", "Dockerfile.dockerignore", "file", "server.go", "test.conf", "worker.go"},
+		},
 	}
 
 	for _, test := range tests {
@@ -508,13 +540,16 @@ func TestGetDependencies(t *testing.T) {
 
 			tmpDir := t.NewTempDir().
 				Touch("docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot")
-
-			if !test.badReader {
+			if test.dockerfile != "" {
 				tmpDir.Write(test.workspace+"/Dockerfile", test.dockerfile)
 			}
 
 			if test.ignore != "" {
-				tmpDir.Write(test.workspace+"/.dockerignore", test.ignore)
+				ignoreFilename := ".dockerignore"
+				if test.ignoreFilename != "" {
+					ignoreFilename = test.ignoreFilename
+				}
+				tmpDir.Write(filepath.Join(test.workspace, ignoreFilename), test.ignore)
 			}
 
 			workspace := tmpDir.Path(test.workspace)
@@ -523,5 +558,70 @@ func TestGetDependencies(t *testing.T) {
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, deps)
 		})
+	}
+}
+
+func TestNormalizeDockerfilePath(t *testing.T) {
+	tests := []struct {
+		description string
+		files       []string
+		dockerfile  string
+
+		expected string // relative path
+	}{
+		{
+			description: "dockerfile found in context",
+			files:       []string{"Dockerfile", "context/Dockerfile"},
+			dockerfile:  "Dockerfile",
+			expected:    "context/Dockerfile",
+		},
+		{
+			description: "path to dockerfile resolved in context first",
+			files:       []string{"context/context/Dockerfile", "context/Dockerfile"},
+			dockerfile:  "context/Dockerfile",
+			expected:    "context/context/Dockerfile",
+		},
+		{
+			description: "path to dockerfile in working directory",
+			files:       []string{"context/Dockerfile"},
+			dockerfile:  "context/Dockerfile",
+			expected:    "context/Dockerfile",
+		},
+		{
+			description: "workspace dockerfile when missing in context",
+			files:       []string{"Dockerfile", "context/randomfile.txt"},
+			dockerfile:  "Dockerfile",
+			expected:    "Dockerfile",
+		},
+		{
+			description: "explicit dockerfile path",
+			files:       []string{"context/Dockerfile", "elsewhere/Dockerfile"},
+			dockerfile:  "elsewhere/Dockerfile",
+			expected:    "elsewhere/Dockerfile",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			d := t.NewTempDir()
+			t.Chdir(d.Root())
+
+			d.Mkdir("context")
+			d.Touch(test.files...)
+
+			f, err := NormalizeDockerfilePath(d.Path("context"), test.dockerfile)
+			t.CheckError(false, err)
+			checkSameFile(t, d.Path(test.expected), f)
+		})
+	}
+}
+
+func checkSameFile(t *testutil.T, expected, result string) {
+	t.Helper()
+	i1, err := os.Stat(expected)
+	t.CheckError(false, err)
+	i2, err := os.Stat(result)
+	t.CheckError(false, err)
+	if !os.SameFile(i1, i2) {
+		t.Errorf("returned wrong file\n   got: %s\nwanted: %s", result, expected)
 	}
 }

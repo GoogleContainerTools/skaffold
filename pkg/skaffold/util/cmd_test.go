@@ -25,16 +25,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func helperCommandContext(s ...string) (cmd *exec.Cmd) {
+func helperCommand(s ...string) *exec.Cmd {
 	cs := []string{"-test.run=TestHelperProcess", "--"}
 	cs = append(cs, s...)
-	cmd = exec.Command(os.Args[0], cs...)
+	cmd := exec.Command(os.Args[0], cs...)
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
 	return cmd
-}
-
-func helperCommand(s ...string) *exec.Cmd {
-	return helperCommandContext(s...)
 }
 
 // adapted from https://npf.io/2015/06/testing-exec-command
@@ -60,7 +56,7 @@ func TestHelperProcess(*testing.T) {
 	cmd, args := args[0], args[1:]
 	switch cmd {
 	case "skaffold":
-		iargs := []interface{}{}
+		var iargs []interface{}
 		for _, s := range args {
 			iargs = append(iargs, s)
 		}

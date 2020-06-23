@@ -23,17 +23,11 @@ import (
 )
 
 func TestFix(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
-	out := skaffold.Fix().WithConfig("skaffold.yaml").InDir("testdata/fix").RunOrFailOutput(t)
+	out := skaffold.Fix().InDir("testdata/fix").RunOrFailOutput(t)
 
 	skaffold.Run().WithConfig("-").InDir("testdata/fix").InNs(ns.Name).WithStdin(out).RunOrFail(t)
 }

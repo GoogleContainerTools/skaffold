@@ -22,11 +22,15 @@ import (
 	"io/ioutil"
 	"testing"
 
+	k8s "k8s.io/client-go/kubernetes"
+	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type NoopMonitor struct{}
@@ -83,6 +87,10 @@ func (t *TestMonitor) Run(bool) error {
 
 func (t *TestMonitor) Reset() {}
 
+func mockK8sClient() (k8s.Interface, error) {
+	return fakekubeclientset.NewSimpleClientset(), nil
+}
+
 func TestDevFailFirstCycle(t *testing.T) {
 	tests := []struct {
 		description     string
@@ -127,6 +135,7 @@ func TestDevFailFirstCycle(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&kubernetes.Client, mockK8sClient)
 
 			// runner := createRunner(t, test.testBench).WithMonitor(test.monitor)
 			runner := createRunner(t, test.testBench, test.monitor)
@@ -232,7 +241,7 @@ func TestDev(t *testing.T) {
 				{
 					Built:    []string{"img2:2"},
 					Tested:   []string{"img2:2"},
-					Deployed: []string{"img2:2", "img1:1"},
+					Deployed: []string{"img1:1", "img2:2"},
 				},
 			},
 		},
@@ -257,6 +266,7 @@ func TestDev(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&kubernetes.Client, mockK8sClient)
 			test.testBench.cycles = len(test.watchEvents)
 
 			runner := createRunner(t, test.testBench, &TestMonitor{
@@ -276,11 +286,18 @@ func TestDev(t *testing.T) {
 }
 
 func TestDevSync(t *testing.T) {
+	type fileSyncEventCalls struct {
+		InProgress int
+		Failed     int
+		Succeeded  int
+	}
+
 	tests := []struct {
-		description     string
-		testBench       *TestBench
-		watchEvents     []filemon.Events
-		expectedActions []Actions
+		description                string
+		testBench                  *TestBench
+		watchEvents                []filemon.Events
+		expectedActions            []Actions
+		expectedFileSyncEventCalls fileSyncEventCalls
 	}{
 		{
 			description: "sync",
@@ -297,6 +314,11 @@ func TestDevSync(t *testing.T) {
 				{
 					Synced: []string{"img1:1"},
 				},
+			},
+			expectedFileSyncEventCalls: fileSyncEventCalls{
+				InProgress: 1,
+				Failed:     0,
+				Succeeded:  1,
 			},
 		},
 		{
@@ -319,11 +341,21 @@ func TestDevSync(t *testing.T) {
 					Synced: []string{"img1:1"},
 				},
 			},
+			expectedFileSyncEventCalls: fileSyncEventCalls{
+				InProgress: 2,
+				Failed:     0,
+				Succeeded:  2,
+			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			var actualFileSyncEventCalls fileSyncEventCalls
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&kubernetes.Client, mockK8sClient)
+			t.Override(&fileSyncInProgress, func(int, string) { actualFileSyncEventCalls.InProgress++ })
+			t.Override(&fileSyncFailed, func(int, string, error) { actualFileSyncEventCalls.Failed++ })
+			t.Override(&fileSyncSucceeded, func(int, string) { actualFileSyncEventCalls.Succeeded++ })
 			t.Override(&sync.WorkingDir, func(string, map[string]bool) (string, error) { return "/", nil })
 			test.testBench.cycles = len(test.watchEvents)
 
@@ -346,6 +378,7 @@ func TestDevSync(t *testing.T) {
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())
+			t.CheckDeepEqual(test.expectedFileSyncEventCalls, actualFileSyncEventCalls)
 		})
 	}
 }

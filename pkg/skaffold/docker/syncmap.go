@@ -17,23 +17,21 @@ limitations under the License.
 package docker
 
 import (
-	"context"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 
-	"github.com/docker/docker/pkg/fileutils"
-	"github.com/karrick/godirwalk"
-	"github.com/pkg/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
 // SyncMap creates a map of syncable files by looking at the COPY/ADD commands in the Dockerfile.
 // All keys are relative to the Skaffold root, the destinations are absolute container paths.
 // TODO(corneliusweig) destinations are not resolved across stages in multistage dockerfiles. Is there a use-case for that?
-func SyncMap(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) (map[string][]string, error) {
+func SyncMap(workspace string, dockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) (map[string][]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
-		return nil, errors.Wrap(err, "normalizing dockerfile path")
+		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
 	// only the COPY/ADD commands from the last image are syncable
@@ -42,14 +40,14 @@ func SyncMap(ctx context.Context, workspace string, dockerfilePath string, build
 		return nil, err
 	}
 
-	excludes, err := readDockerignore(workspace)
+	excludes, err := readDockerignore(workspace, absDockerfilePath)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading .dockerignore")
+		return nil, fmt.Errorf("reading .dockerignore: %w", err)
 	}
 
 	srcByDest, err := walkWorkspaceWithDestinations(workspace, excludes, fts)
 	if err != nil {
-		return nil, errors.Wrap(err, "walking workspace")
+		return nil, fmt.Errorf("walking workspace: %w", err)
 	}
 
 	return invertMap(srcByDest), nil
@@ -59,9 +57,9 @@ func SyncMap(ctx context.Context, workspace string, dockerfilePath string, build
 // location in the container. It returns a map of host path by container destination.
 // Note: if you change this function, you might also want to modify `WalkWorkspace`.
 func walkWorkspaceWithDestinations(workspace string, excludes []string, fts []fromTo) (map[string]string, error) {
-	pExclude, err := fileutils.NewPatternMatcher(excludes)
+	dockerIgnored, err := NewDockerIgnorePredicate(workspace, excludes)
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid exclude patterns")
+		return nil, err
 	}
 
 	// Walk the workspace
@@ -71,54 +69,50 @@ func walkWorkspaceWithDestinations(workspace string, excludes []string, fts []fr
 
 		fi, err := os.Stat(absFrom)
 		if err != nil {
-			return nil, errors.Wrapf(err, "stating file %s", absFrom)
+			return nil, fmt.Errorf("stating file %q: %w", absFrom, err)
 		}
 
 		switch mode := fi.Mode(); {
 		case mode.IsDir():
-			if err := godirwalk.Walk(absFrom, &godirwalk.Options{
-				Unsorted: true,
-				Callback: func(fpath string, info *godirwalk.Dirent) error {
-					if fpath == absFrom {
-						return nil
-					}
+			keepFile := func(path string, info walk.Dirent) (bool, error) {
+				// Always keep root folders.
+				if info.IsDir() && path == absFrom {
+					return true, nil
+				}
 
-					relPath, err := filepath.Rel(workspace, fpath)
-					if err != nil {
-						return err
-					}
+				ignored, err := dockerIgnored(path, info)
+				if err != nil {
+					return false, err
+				}
 
-					ignored, err := pExclude.Matches(relPath)
-					if err != nil {
-						return err
-					}
+				return !ignored, nil
+			}
 
-					if info.IsDir() {
-						if ignored {
-							return filepath.SkipDir
-						}
-					} else if !ignored {
-						relBase, err := filepath.Rel(absFrom, fpath)
-						if err != nil {
-							return err
-						}
-						srcByDest[path.Join(ft.to, filepath.ToSlash(relBase))] = relPath
-					}
+			if err := walk.From(absFrom).Unsorted().When(keepFile).WhenIsFile().Do(func(fpath string, info walk.Dirent) error {
+				relPath, err := filepath.Rel(workspace, fpath)
+				if err != nil {
+					return err
+				}
 
-					return nil
-				},
+				relBase, err := filepath.Rel(absFrom, fpath)
+				if err != nil {
+					return err
+				}
+
+				srcByDest[path.Join(ft.to, filepath.ToSlash(relBase))] = relPath
+				return nil
 			}); err != nil {
-				return nil, errors.Wrapf(err, "walking folder %s", absFrom)
+				return nil, fmt.Errorf("walking %q: %w", absFrom, err)
 			}
 		case mode.IsRegular():
-			ignored, err := pExclude.Matches(ft.from)
+			ignored, err := dockerIgnored(filepath.Join(workspace, ft.from), fi)
 			if err != nil {
 				return nil, err
 			}
 
 			if !ignored {
-				base := filepath.Base(ft.from)
 				if ft.toIsDir {
+					base := filepath.Base(ft.from)
 					srcByDest[path.Join(ft.to, base)] = ft.from
 				} else {
 					srcByDest[ft.to] = ft.from

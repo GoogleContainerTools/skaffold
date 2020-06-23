@@ -33,7 +33,7 @@ const maxInt = int(^uint(0) >> 1)
 // Doc returns un-indented string as here-document.
 func Doc(raw string) string {
 	skipFirstLine := false
-	if len(raw) > 0 && raw[0] == '\n' {
+	if raw[0] == '\n' {
 		raw = raw[1:]
 	} else {
 		skipFirstLine = true

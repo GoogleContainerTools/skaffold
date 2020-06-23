@@ -17,36 +17,51 @@ limitations under the License.
 package kubectl
 
 import (
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
+	"fmt"
+
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
-// Replacer is used to replace portions of yaml manifests that match a given key.
-type Replacer interface {
-	Matches(key string) bool
-
-	NewValue(old interface{}) (bool, interface{})
+// transformableWhitelist is the set of kinds that can be transformed by Skaffold.
+var transformableWhitelist = map[apimachinery.GroupKind]bool{
+	{Group: "", Kind: "Pod"}:                        true,
+	{Group: "apps", Kind: "DaemonSet"}:              true,
+	{Group: "apps", Kind: "Deployment"}:             true,
+	{Group: "apps", Kind: "ReplicaSet"}:             true,
+	{Group: "apps", Kind: "StatefulSet"}:            true,
+	{Group: "batch", Kind: "CronJob"}:               true,
+	{Group: "batch", Kind: "Job"}:                   true,
+	{Group: "serving.knative.dev", Kind: "Service"}: true,
 }
 
-// Visit recursively visits a list of manifests and applies transformations of them.
-func (l *ManifestList) Visit(replacer Replacer) (ManifestList, error) {
+// FieldVisitor represents the aggregation/transformation that should be performed on each traversed field.
+type FieldVisitor interface {
+	// Visit is called for each transformable key contained in the object and may apply transformations/aggregations on it.
+	// It should return true to allow recursive traversal or false when the entry was transformed.
+	Visit(object map[string]interface{}, key string, value interface{}) bool
+}
+
+// Visit recursively visits all transformable object fields within the manifests and lets the visitor apply transformations/aggregations on them.
+func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 	var updated ManifestList
 
 	for _, manifest := range *l {
-		m := make(map[interface{}]interface{})
+		m := make(map[string]interface{})
 		if err := yaml.Unmarshal(manifest, &m); err != nil {
-			return nil, errors.Wrap(err, "reading kubernetes YAML")
+			return nil, fmt.Errorf("reading Kubernetes YAML: %w", err)
 		}
 
 		if len(m) == 0 {
 			continue
 		}
 
-		recursiveVisit(m, replacer)
+		traverseManifestFields(m, visitor)
 
 		updatedManifest, err := yaml.Marshal(m)
 		if err != nil {
-			return nil, errors.Wrap(err, "marshalling yaml")
+			return nil, fmt.Errorf("marshalling yaml: %w", err)
 		}
 
 		updated = append(updated, updatedManifest)
@@ -55,25 +70,62 @@ func (l *ManifestList) Visit(replacer Replacer) (ManifestList, error) {
 	return updated, nil
 }
 
-func recursiveVisit(i interface{}, replacer Replacer) {
-	switch t := i.(type) {
+// traverseManifest traverses all transformable fields contained within the manifest.
+func traverseManifestFields(manifest map[string]interface{}, visitor FieldVisitor) {
+	if shouldTransformManifest(manifest) {
+		visitor = &recursiveVisitorDecorator{visitor}
+	}
+	visitFields(manifest, visitor)
+}
+
+func shouldTransformManifest(manifest map[string]interface{}) bool {
+	var apiVersion string
+	switch value := manifest["apiVersion"].(type) {
+	case string:
+		apiVersion = value
+	default:
+		return false
+	}
+
+	var kind string
+	switch value := manifest["kind"].(type) {
+	case string:
+		kind = value
+	default:
+		return false
+	}
+
+	gvk := apimachinery.FromAPIVersionAndKind(apiVersion, kind)
+	groupKind := apimachinery.GroupKind{
+		Group: gvk.Group,
+		Kind:  gvk.Kind,
+	}
+
+	return transformableWhitelist[groupKind]
+}
+
+// recursiveVisitorDecorator adds recursion to a FieldVisitor.
+type recursiveVisitorDecorator struct {
+	delegate FieldVisitor
+}
+
+func (d *recursiveVisitorDecorator) Visit(o map[string]interface{}, k string, v interface{}) bool {
+	if d.delegate.Visit(o, k, v) {
+		visitFields(v, d)
+	}
+	return false
+}
+
+// visitFields traverses all fields and calls the visitor for each.
+func visitFields(o interface{}, visitor FieldVisitor) {
+	switch entries := o.(type) {
 	case []interface{}:
-		for _, v := range t {
-			recursiveVisit(v, replacer)
+		for _, v := range entries {
+			visitFields(v, visitor)
 		}
-	case map[interface{}]interface{}:
-		for k, v := range t {
-			key := k.(string)
-
-			if !replacer.Matches(key) {
-				recursiveVisit(v, replacer)
-				continue
-			}
-
-			ok, newValue := replacer.NewValue(v)
-			if ok {
-				t[k] = newValue
-			}
+	case map[string]interface{}:
+		for k, v := range entries {
+			visitor.Visit(entries, k, v)
 		}
 	}
 }

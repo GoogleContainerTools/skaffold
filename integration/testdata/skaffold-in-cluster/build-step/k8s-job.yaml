@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: skaffold-in-cluster
+spec:
+    serviceAccountName: skaffold-svc
+    containers:
+    - name: skaffold-in-cluster
+      image: skaffold-in-cluster-builder
+      command: ["/usr/bin/skaffold"]
+      args: ["build", "--cache-artifacts=false", "-p", "build-target", "-v", "debug"]
+      imagePullPolicy: Always
+    imagePullSecrets:
+      - name: e2esecret
+    restartPolicy: Never
