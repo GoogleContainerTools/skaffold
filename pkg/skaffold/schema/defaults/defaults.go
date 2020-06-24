@@ -265,7 +265,7 @@ func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
 	if cluster.PullSecretPath != "" {
 		absPath, err := homedir.Expand(cluster.PullSecretPath)
 		if err != nil {
-			return fmt.Errorf("unable to expand pullSecret %s", cluster.PullSecretPath)
+			return fmt.Errorf("unable to expand pullSecretPath %s", cluster.PullSecretPath)
 		}
 		cluster.PullSecretPath = absPath
 		random := ""

@@ -56,7 +56,7 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 	}
 	if b.PullSecretPath == "" {
 		// TODO: Remove the warning when pod health check can display pod failure errors.
-		logrus.Warnf("Setting secret keyfile path to %s. If this is incorrect, please specify using config key `pullSecret`.\nSee https://skaffold.dev/docs/references/yaml/#build-cluster-pullSecret", defaultKanikoSecretPath)
+		logrus.Warnf("Assuming the secret %s is mounted inside Kaniko pod with the filename %s. If your secret is mounted at different path, please specify using config key `pullSecretPath`.\nSee https://skaffold.dev/docs/references/yaml/#build-cluster-pullSecretPath", b.PullSecretName, defaultKanikoSecretPath)
 		b.PullSecretPath = defaultKanikoSecretPath
 		return func() {}, nil
 	}
