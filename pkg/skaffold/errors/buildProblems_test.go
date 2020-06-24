@@ -23,17 +23,17 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestErrMessage(t *testing.T) {
+func TestMakeAuthSuggestionsForRepo(t *testing.T) {
 	testutil.CheckDeepEqual(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `docker login`",
-	}, errMessage(""))
+	}, makeAuthSuggestionsForRepo(""))
 	testutil.CheckDeepEqual(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `gcloud auth configure-docker`",
-	}, errMessage("gcr.io/test"))
+	}, makeAuthSuggestionsForRepo("gcr.io/test"))
 	testutil.CheckDeepEqual(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `gcloud auth configure-docker`",
-	}, errMessage("eu.gcr.io/test"))
+	}, makeAuthSuggestionsForRepo("eu.gcr.io/test"))
 }

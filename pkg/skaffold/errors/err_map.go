@@ -32,19 +32,22 @@ func re(s string) *regexp.Regexp {
 type problem struct {
 	regexp      *regexp.Regexp
 	description string
+	errCode     proto.StatusCode
 	suggestion  func(opts config.SkaffoldOptions) []*proto.Suggestion
 }
 
 // Build Problems are Errors in build phase
-var knownBuildProblems = map[proto.StatusCode]problem{
-	proto.StatusCode_BUILD_PUSH_ACCESS_DENIED: {
+var knownBuildProblems = []problem{
+	{
 		regexp:      re(fmt.Sprintf(".*%s.* denied: .*", PushImageErrPrefix)),
+		errCode:     proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
 		description: "Build Failed. No push access to specified image repository",
 		suggestion:  suggestBuildPushAccessDeniedAction,
 	},
-	proto.StatusCode_BUILD_PROJECT_NOT_FOUND: {
+	{
 		regexp:      re(fmt.Sprintf(".*%s.* unknown: Project", PushImageErrPrefix)),
 		description: "Build Failed",
+		errCode:     proto.StatusCode_BUILD_PROJECT_NOT_FOUND,
 		suggestion: func(config.SkaffoldOptions) []*proto.Suggestion {
 			return []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_GCLOUD_PROJECT,

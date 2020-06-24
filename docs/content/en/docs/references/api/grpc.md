@@ -767,7 +767,7 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_NODE_NOT_READY | 406 | Node not ready error |
 | STATUSCHECK_FAILED_SCHEDULING | 407 | Scheduler failure error
 
-skip 408 as error code moved to 357 |
+skip 408 as STATUSCHECK_UNHEALTH code renumbered as 357 |
 | STATUSCHECK_KUBECTL_CONNECTION_ERR | 409 | Kubectl connection error |
 | STATUSCHECK_KUBECTL_PID_KILLED | 410 | Kubectl process killed error |
 | UNKNOWN_ERROR | 500 | Could not determine error and phase |

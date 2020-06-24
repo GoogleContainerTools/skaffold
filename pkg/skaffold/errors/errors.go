@@ -77,9 +77,9 @@ func ShowAIError(err error) error {
 func getErrorCodeFromError(phase Phase, err error) (proto.StatusCode, []*proto.Suggestion) {
 	switch phase {
 	case Build:
-		for errCode, v := range knownBuildProblems {
+		for _, v := range knownBuildProblems {
 			if v.regexp.MatchString(err.Error()) {
-				return errCode, v.suggestion(skaffoldOpts)
+				return v.errCode, v.suggestion(skaffoldOpts)
 			}
 		}
 		return proto.StatusCode_BUILD_UNKNOWN, nil

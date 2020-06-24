@@ -426,7 +426,7 @@ enum StatusCode {
     STATUSCHECK_NODE_NOT_READY= 406;
     // Scheduler failure error
     STATUSCHECK_FAILED_SCHEDULING = 407;
-    // skip 408 as error code moved to 357
+    // skip 408 as STATUSCHECK_UNHEALTH code renumbered as 357
 
     // Kubectl connection error
     STATUSCHECK_KUBECTL_CONNECTION_ERR = 409;

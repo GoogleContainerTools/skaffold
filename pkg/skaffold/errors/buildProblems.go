@@ -36,7 +36,7 @@ func suggestBuildPushAccessDeniedAction(opts config.SkaffoldOptions) []*proto.Su
 			SuggestionCode: proto.SuggestionCode_CHECK_DEFAULT_REPO,
 			Action:         "Check your `--default-repo` value",
 		}}
-		return append(suggestions, errMessage(*defaultRepo))
+		return append(suggestions, makeAuthSuggestionsForRepo(*defaultRepo))
 	}
 
 	// check if global repo is set
@@ -46,7 +46,7 @@ func suggestBuildPushAccessDeniedAction(opts config.SkaffoldOptions) []*proto.Su
 				SuggestionCode: proto.SuggestionCode_CHECK_DEFAULT_REPO_GLOBAL_CONFIG,
 				Action:         "Check your default-repo setting in skaffold config",
 			}}
-			return append(suggestions, errMessage(defaultRepo))
+			return append(suggestions, makeAuthSuggestionsForRepo(defaultRepo))
 		}
 	}
 
@@ -56,7 +56,7 @@ func suggestBuildPushAccessDeniedAction(opts config.SkaffoldOptions) []*proto.Su
 	}}
 }
 
-func errMessage(repo string) *proto.Suggestion {
+func makeAuthSuggestionsForRepo(repo string) *proto.Suggestion {
 	if re(`(.+\.)?gcr\.io.*`).MatchString(repo) {
 		return &proto.Suggestion{
 			SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
