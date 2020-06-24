@@ -47,7 +47,11 @@ spec:
 			},
 		},
 	}
-	testutil.CheckDeepEqual(t, expectedConfig, k.DeployConfig())
+	deployConfig, profiles := k.DeployConfig()
+	testutil.CheckDeepEqual(t, expectedConfig, deployConfig)
+	if profiles != nil {
+		t.Errorf("generated profiles should be nil, but got: %+v\n", profiles)
+	}
 }
 
 func TestParseImagesFromKubernetesYaml(t *testing.T) {
@@ -58,14 +62,14 @@ func TestParseImagesFromKubernetesYaml(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
-			description: "incorrect k8 yaml",
+			description: "incorrect k8s yaml",
 			contents: `no apiVersion: t
 kind: Pod`,
 			images:    nil,
 			shouldErr: true,
 		},
 		{
-			description: "correct k8 yaml",
+			description: "correct k8s yaml",
 			contents: `apiVersion: v1
 kind: Pod
 metadata:
@@ -129,31 +133,31 @@ func TestIsKubernetesManifest(t *testing.T) {
 		expected    bool
 	}{
 		{
-			description: "valid k8 yaml filename format",
+			description: "valid k8s yaml filename format",
 			filename:    "test1.yaml",
 			content:     "apiVersion: v1\nkind: Service\nmetadata:\n  name: test\n",
 			expected:    true,
 		},
 		{
-			description: "valid k8 json filename format",
+			description: "valid k8s json filename format",
 			filename:    "test1.json",
 			content:     `{"apiVersion":"v1","kind":"Service","metadata":{"name": "test"}}`,
 			expected:    true,
 		},
 		{
-			description: "valid k8 yaml filename format",
+			description: "valid k8s yaml filename format",
 			filename:    "test1.yml",
 			content:     "apiVersion: v1\nkind: Service\nmetadata:\n  name: test\n",
 			expected:    true,
 		},
 		{
-			description: "invalid k8 yaml",
+			description: "invalid k8s yaml",
 			filename:    "test1.yaml",
 			content:     "key: value",
 			expected:    false,
 		},
 		{
-			description: "invalid k8 json",
+			description: "invalid k8s json",
 			filename:    "test1.json",
 			content:     `{}`,
 			expected:    false,

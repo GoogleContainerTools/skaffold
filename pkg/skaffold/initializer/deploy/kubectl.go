@@ -48,14 +48,14 @@ func newKubectlInitializer(potentialConfigs []string) *kubectl {
 
 // deployConfig implements the Initializer interface and generates
 // skaffold kubectl deployment config.
-func (k *kubectl) DeployConfig() latest.DeployConfig {
+func (k *kubectl) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 	return latest.DeployConfig{
 		DeployType: latest.DeployType{
 			KubectlDeploy: &latest.KubectlDeploy{
 				Manifests: k.configs,
 			},
 		},
-	}
+	}, nil
 }
 
 // GetImages implements the Initializer interface and lists all the

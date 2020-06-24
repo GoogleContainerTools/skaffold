@@ -59,6 +59,10 @@ func (a *ProjectAnalysis) KustomizePaths() []string {
 	return a.kustomizeAnalyzer.kustomizePaths
 }
 
+func (a *ProjectAnalysis) KustomizeBases() []string {
+	return a.kustomizeAnalyzer.bases
+}
+
 func (a *ProjectAnalysis) analyzers() []analyzer {
 	return []analyzer{
 		a.kubeAnalyzer,
