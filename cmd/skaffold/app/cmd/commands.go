@@ -88,7 +88,12 @@ func (b *builder) Hidden() Builder {
 func (b *builder) ExactArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command {
 	b.cmd.Args = cobra.ExactArgs(argCount)
 	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
-		return handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout(), args))
+		err := handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout(), args))
+		// clean up server.
+		if shutdownAPIServer != nil {
+			shutdownAPIServer()
+		}
+		return err
 	}
 	return &b.cmd
 }
@@ -96,7 +101,11 @@ func (b *builder) ExactArgs(argCount int, action func(context.Context, io.Writer
 func (b *builder) NoArgs(action func(context.Context, io.Writer) error) *cobra.Command {
 	b.cmd.Args = cobra.NoArgs
 	b.cmd.RunE = func(*cobra.Command, []string) error {
-		return handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout()))
+		err := handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout()))
+		if shutdownAPIServer != nil {
+			shutdownAPIServer()
+		}
+		return err
 	}
 	return &b.cmd
 }

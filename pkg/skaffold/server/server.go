@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/sirupsen/logrus"
@@ -34,7 +35,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
-var srv *server
+var (
+	srv *server
+
+	// waits for 1 second before shutting down the server
+	secondTimeout = 1 * time.Second
+)
 
 type server struct {
 	buildIntentCallback  func()
@@ -155,8 +161,21 @@ func newGRPCServer(port int) (func() error, error) {
 		}
 	}()
 	return func() error {
-		s.Stop()
-		return l.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), secondTimeout)
+		defer cancel()
+		ch := make(chan bool, 1)
+		go func() {
+			s.GracefulStop()
+			ch <- true
+		}()
+		for {
+			select {
+			case <-ctx.Done():
+				return l.Close()
+			case <-ch:
+				return l.Close()
+			}
+		}
 	}, nil
 }
 
@@ -174,9 +193,18 @@ func newHTTPServer(port, proxyPort int) (func() error, error) {
 	}
 	logrus.Infof("starting gRPC HTTP server on port %d", port)
 
+	server := &http.Server{
+		Handler:     mux,
+		ReadTimeout: 10 * time.Second,
+	}
+
 	go http.Serve(l, mux)
 
-	return l.Close, nil
+	return func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), secondTimeout)
+		defer cancel()
+		return server.Shutdown(ctx)
+	}, nil
 }
 
 type errResponse struct {

@@ -39,17 +39,17 @@ import (
 )
 
 var (
-	opts         config.SkaffoldOptions
-	v            string
-	forceColors  bool
-	defaultColor int
-	overwrite    bool
+	opts              config.SkaffoldOptions
+	v                 string
+	forceColors       bool
+	defaultColor      int
+	overwrite         bool
+	shutdownAPIServer func() error
 )
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	updateMsg := make(chan string)
 	surveyPrompt := make(chan bool)
-	var shutdownAPIServer func() error
 
 	rootCmd := &cobra.Command{
 		Use: "skaffold",
@@ -114,10 +114,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 					}
 				}
 			default:
-			}
-
-			if shutdownAPIServer != nil {
-				shutdownAPIServer()
 			}
 		},
 	}
