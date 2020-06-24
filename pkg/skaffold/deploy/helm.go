@@ -752,3 +752,7 @@ func pairParamsToArtifacts(builds []build.Artifact, params map[string]string) (m
 
 	return paramToBuildResult, nil
 }
+
+func IsHelmChart(path string) bool {
+	return filepath.Base(path) == "Chart.yaml"
+}

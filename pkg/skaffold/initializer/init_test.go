@@ -196,6 +196,16 @@ func TestDoInit(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "helm fails",
+			dir:  "testdata/init/helm-deployment",
+			config: initconfig.Config{
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+			shouldErr: true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
