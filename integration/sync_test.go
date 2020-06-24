@@ -82,32 +82,33 @@ func TestDevSync(t *testing.T) {
 func TestDevAutoSync(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
-	dir := "testdata/jib-sync/"
+	dir := "examples/jib-sync/"
 
 	tests := []struct {
 		description string
+		configFile  string
 		profiles    []string
 		uniqueStr   string
 	}{
 		{
 			description: "jib maven auto sync",
-			profiles:    []string{"maven"},
+			configFile:  "skaffold-maven.yaml",
 			uniqueStr:   "maven-maven",
 		},
 		{
 			description: "jib gradle auto sync",
-			profiles:    []string{"gradle"},
+			configFile:  "skaffold-gradle.yaml",
 			uniqueStr:   "gradle-gradle",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build().WithProfiles(test.profiles).InDir(dir).RunOrFail(t)
+			skaffold.Build().WithConfig(test.configFile).InDir(dir).RunOrFail(t)
 
 			ns, client := SetupNamespace(t)
 
-			output := skaffold.Dev("--trigger", "notify").WithProfiles(test.profiles).InDir(dir).InNs(ns.Name).RunBackground(t)
+			output := skaffold.Dev("--trigger", "notify").WithConfig(test.configFile).InDir(dir).InNs(ns.Name).RunBackground(t)
 
 			client.WaitForPodsReady("test-file-sync")
 
