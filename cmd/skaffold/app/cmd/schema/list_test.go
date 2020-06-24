@@ -18,7 +18,7 @@ package schema
 
 import (
 	"bytes"
-	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -26,14 +26,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestList(t *testing.T) {
+func TestListPlain(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		var out bytes.Buffer
 
-		err := List(context.Background(), &out)
+		err := list(&out, "plain")
+		t.CheckNoError(err)
 
 		versions := out.String()
-		t.CheckNoError(err)
 		t.CheckTrue(strings.HasSuffix(versions, latest.Version+"\n"))
 		t.CheckTrue(strings.HasPrefix(versions, `skaffold/v1alpha1
 skaffold/v1alpha2
@@ -59,5 +59,27 @@ skaffold/v1beta16
 skaffold/v1beta17
 skaffold/v1
 skaffold/v2alpha1`))
+	})
+}
+
+func TestListJson(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		var out bytes.Buffer
+
+		err := list(&out, "json")
+		t.CheckNoError(err)
+
+		versions := out.String()
+		t.CheckTrue(strings.HasPrefix(versions, `{"versions":["skaffold/v1alpha1","skaffold/v1alpha2",`))
+		t.CheckTrue(strings.HasSuffix(versions, fmt.Sprintf(",\"%s\"]}\n", latest.Version)))
+	})
+}
+
+func TestListInvalidType(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		var out bytes.Buffer
+
+		err := list(&out, "invalid")
+		t.CheckErrorContains(`invalid output type: "invalid". Must be "plain" or "json"`, err)
 	})
 }

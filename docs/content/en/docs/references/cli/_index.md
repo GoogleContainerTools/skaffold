@@ -869,6 +869,12 @@ Examples:
   # List all the versions
   skaffold schema list
 
+  # List all the versions, in json format
+  skaffold schema list -o json
+
+Options:
+  -o, --output='plain': Type of output: `plain` or `json`.
+
 Usage:
   skaffold schema list [options]
 
@@ -876,6 +882,9 @@ Use "skaffold options" for a list of global command-line options (applies to all
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_OUTPUT` (same as `--output`)
 
 ### skaffold survey
 
