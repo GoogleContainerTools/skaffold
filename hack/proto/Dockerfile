@@ -30,7 +30,7 @@ RUN go get \
     github.com/golang/protobuf/protoc-gen-go@v1.3.2 \
     github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.9.1 \
     github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.9.1 \
-    github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.3.0
+    github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.3.2
 
 WORKDIR /proto
 COPY skaffold.proto markdown.tmpl ./

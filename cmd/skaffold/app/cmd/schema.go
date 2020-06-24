@@ -21,6 +21,7 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/schema"
 )
@@ -40,6 +41,10 @@ func NewCmdSchemaList() *cobra.Command {
 	return NewCmd("list").
 		WithDescription("List skaffold.yaml's json schema versions").
 		WithExample("List all the versions", "schema list").
+		WithExample("List all the versions, in json format", "schema list -o json").
+		WithFlags(func(f *pflag.FlagSet) {
+			f.StringVarP(&schema.OutputType, "output", "o", "plain", "Type of output: `plain` or `json`.")
+		}).
 		NoArgs(schema.List)
 }
 
