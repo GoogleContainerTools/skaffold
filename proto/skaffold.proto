@@ -474,6 +474,14 @@ enum StatusCode {
     DEVINIT_REGISTER_DEPLOY_DEPS = 703;
     // Failed to configure watcher for Skaffold configuration file.
     DEVINIT_REGISTER_CONFIG_DEP = 704;
+
+     // Timeout or User Cancellation Errors
+
+     // User cancelled the skaffold dev run
+     STATUSCHECK_CONTEXT_CANCELLED = 800;
+
+     // Deadline for status check exceeded
+     STATUSCHECK_DEADLINE_EXCEEDED = 801;
 }
 
 // Enum for Suggestion codes

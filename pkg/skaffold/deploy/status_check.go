@@ -18,7 +18,6 @@ package deploy
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -36,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 var (
@@ -143,8 +143,9 @@ func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r 
 	for {
 		select {
 		case <-timeoutContext.Done():
-			err := fmt.Errorf("could not stabilize within %v: %w", r.Deadline(), timeoutContext.Err())
-			r.UpdateStatus(err.Error(), err)
+			msg := fmt.Sprintf("could not stabilize within %v: %v", r.Deadline(), timeoutContext.Err())
+			r.UpdateStatus(&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED,
+				Message: msg})
 			return
 		case <-time.After(pollDuration):
 			r.CheckStatus(timeoutContext, runCtx)
@@ -172,18 +173,18 @@ func getDeadline(d int) time.Duration {
 }
 
 func printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
-	err := r.Status().Error()
-	if errors.Is(err, context.Canceled) {
+	ae := r.Status().ActionableError()
+	if ae.ErrCode == proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED {
 		// Don't print the status summary if the user ctrl-C
 		return
 	}
-	event.ResourceStatusCheckEventCompleted(r.String(), r.StatusCode, err)
+	event.ResourceStatusCheckEventCompleted(r.String(), r.Status().ActionableError())
 	status := fmt.Sprintf("%s %s", tabHeader, r)
-	if err != nil {
+	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
 			trimNewLine(getPendingMessage(c.pending, c.total)),
-			trimNewLine(err.Error()),
+			trimNewLine(ae.Message),
 		)
 	} else {
 		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(c.pending, c.total))
@@ -218,7 +219,7 @@ func printStatus(deployments []*resource.Deployment, out io.Writer) bool {
 		}
 		allDone = false
 		if str := r.ReportSinceLastUpdated(); str != "" {
-			event.ResourceStatusCheckEventUpdated(r.String(), r.StatusCode, str)
+			event.ResourceStatusCheckEventUpdated(r.String(), r.Status().ActionableError())
 			fmt.Fprintln(out, trimNewLine(str))
 		}
 	}

@@ -17,47 +17,39 @@ limitations under the License.
 package resource
 
 import (
+	"fmt"
+
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 type Status struct {
-	err      error
-	details  string
-	errCode  proto.StatusCode
+	ae       *proto.ActionableErr
 	changed  bool
 	reported bool
 }
 
 func (rs Status) Error() error {
-	return rs.err
+	return fmt.Errorf(rs.ae.Message)
 }
 
-func (rs Status) ErrorCode() proto.StatusCode {
-	return rs.errCode
+func (rs Status) ActionableError() *proto.ActionableErr {
+	return rs.ae
 }
 
 func (rs Status) String() string {
-	if rs.err != nil {
-		return rs.err.Error()
-	}
-	return rs.details
+	return rs.ae.Message
 }
 
 func (rs Status) Equal(other Status) bool {
-	if rs.details != other.details {
-		return false
+	if rs.ae != nil && other.ae != nil {
+		return rs.ae.Message == other.ae.Message && rs.ae.ErrCode == other.ae.ErrCode
 	}
-	if rs.err != nil && other.err != nil {
-		return rs.err.Error() == other.err.Error()
-	}
-	return rs.err == other.err
+	return rs.ae == other.ae
 }
 
-func newStatus(msg string, errCode proto.StatusCode, err error) Status {
+func newStatus(ae *proto.ActionableErr) Status {
 	return Status{
-		details: msg,
-		err:     err,
-		errCode: errCode,
+		ae:      ae,
 		changed: true,
 	}
 }
