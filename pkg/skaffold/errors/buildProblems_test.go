@@ -19,11 +19,21 @@ package errors
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestErrMessage(t *testing.T) {
-	testutil.CheckDeepEqual(t, "do something or try `docker login`.", errMessage("", "do something"))
-	testutil.CheckDeepEqual(t, "do something or try `gcloud auth configure-docker`.", errMessage("gcr.io/test", "do something"))
-	testutil.CheckDeepEqual(t, "do something or try `gcloud auth configure-docker`.", errMessage("eu.gcr.io/test", "do something"))
+func TestMakeAuthSuggestionsForRepo(t *testing.T) {
+	testutil.CheckDeepEqual(t, &proto.Suggestion{
+		SuggestionCode: proto.SuggestionCode_DOCKER_AUTH_CONFIGURE,
+		Action:         "try `docker login`",
+	}, makeAuthSuggestionsForRepo(""))
+	testutil.CheckDeepEqual(t, &proto.Suggestion{
+		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
+		Action:         "try `gcloud auth configure-docker`",
+	}, makeAuthSuggestionsForRepo("gcr.io/test"))
+	testutil.CheckDeepEqual(t, &proto.Suggestion{
+		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
+		Action:         "try `gcloud auth configure-docker`",
+	}, makeAuthSuggestionsForRepo("eu.gcr.io/test"))
 }

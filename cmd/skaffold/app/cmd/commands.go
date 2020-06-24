@@ -118,7 +118,7 @@ func handleWellKnownErrors(err error) error {
 		return err
 	}
 
-	if aErr := sErrors.ShowAIError(err, opts); aErr != sErrors.ErrNoSuggestionFound {
+	if aErr := sErrors.ShowAIError(err); aErr != sErrors.ErrNoSuggestionFound {
 		return aErr
 	}
 

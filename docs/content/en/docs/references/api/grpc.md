@@ -757,6 +757,7 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_CONTAINER_TERMINATED | 303 | Container is already terminated |
 | STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING | 304 | Deployment waiting for rollout |
 | STATUSCHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
+| STATUSCHECK_UNHEALTHY | 357 | Readiness probe failed |
 | STATUSCHECK_NODE_MEMORY_PRESSURE | 400 | Node memory pressure error |
 | STATUSCHECK_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
 | STATUSCHECK_NODE_NETWORK_UNAVAILABLE | 402 | Node network unavailable error |
@@ -764,8 +765,9 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_NODE_UNSCHEDULABLE | 404 | Node unschedulable error |
 | STATUSCHECK_NODE_UNREACHABLE | 405 | Node unreachable error |
 | STATUSCHECK_NODE_NOT_READY | 406 | Node not ready error |
-| STATUSCHECK_FAILED_SCHEDULING | 407 | Scheduler failure error |
-| STATUSCHECK_UNHEALTHY | 408 | Readiness probe failed |
+| STATUSCHECK_FAILED_SCHEDULING | 407 | Scheduler failure error
+
+skip 408 as STATUSCHECK_UNHEALTH code renumbered as 357 |
 | STATUSCHECK_KUBECTL_CONNECTION_ERR | 409 | Kubectl connection error |
 | STATUSCHECK_KUBECTL_PID_KILLED | 410 | Kubectl process killed error |
 | UNKNOWN_ERROR | 500 | Could not determine error and phase |
@@ -794,6 +796,12 @@ Enum for Suggestion codes
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | NIL | 0 | default nil suggestion. This is usually set when no error happens. |
+| ADD_DEFAULT_REPO | 100 | Build error suggestion codes |
+| CHECK_DEFAULT_REPO | 101 |  |
+| CHECK_DEFAULT_REPO_GLOBAL_CONFIG | 102 |  |
+| GCLOUD_DOCKER_AUTH_CONFIGURE | 103 |  |
+| DOCKER_AUTH_CONFIGURE | 104 |  |
+| CHECK_GCLOUD_PROJECT | 105 |  |
 
 
  <!-- end enums -->
