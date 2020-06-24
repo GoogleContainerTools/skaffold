@@ -38,8 +38,8 @@ import (
 var (
 	srv *server
 
-	// waits for 1 second before shutting down the server
-	secondTimeout = 1 * time.Second
+	// waits for 1 second before forcing a server shutdown
+	forceShutdownTimeout = 1 * time.Second
 )
 
 type server struct {
@@ -161,7 +161,7 @@ func newGRPCServer(port int) (func() error, error) {
 		}
 	}()
 	return func() error {
-		ctx, cancel := context.WithTimeout(context.Background(), secondTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), forceShutdownTimeout)
 		defer cancel()
 		ch := make(chan bool, 1)
 		go func() {
@@ -194,14 +194,13 @@ func newHTTPServer(port, proxyPort int) (func() error, error) {
 	logrus.Infof("starting gRPC HTTP server on port %d", port)
 
 	server := &http.Server{
-		Handler:     mux,
-		ReadTimeout: 10 * time.Second,
+		Handler: mux,
 	}
 
-	go http.Serve(l, mux)
+	go server.Serve(l)
 
 	return func() error {
-		ctx, cancel := context.WithTimeout(context.Background(), secondTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), forceShutdownTimeout)
 		defer cancel()
 		return server.Shutdown(ctx)
 	}, nil

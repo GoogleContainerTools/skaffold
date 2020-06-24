@@ -89,7 +89,8 @@ func (b *builder) ExactArgs(argCount int, action func(context.Context, io.Writer
 	b.cmd.Args = cobra.ExactArgs(argCount)
 	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
 		err := handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout(), args))
-		// clean up server.
+		// clean up server at end of the execution since post run hooks are only executed if
+		// RunE is successful
 		if shutdownAPIServer != nil {
 			shutdownAPIServer()
 		}
@@ -102,6 +103,8 @@ func (b *builder) NoArgs(action func(context.Context, io.Writer) error) *cobra.C
 	b.cmd.Args = cobra.NoArgs
 	b.cmd.RunE = func(*cobra.Command, []string) error {
 		err := handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout()))
+		// clean up server at end of the execution since post run hooks are only executed if
+		// RunE is successful
 		if shutdownAPIServer != nil {
 			shutdownAPIServer()
 		}
