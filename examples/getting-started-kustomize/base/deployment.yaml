@@ -5,7 +5,6 @@ metadata:
   labels:
     app: skaffold-kustomize
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: skaffold-kustomize
@@ -13,3 +12,7 @@ spec:
     metadata:
       labels:
         app: skaffold-kustomize
+    spec:
+      containers:
+      - name: skaffold-kustomize
+        image: skaffold-kustomize
