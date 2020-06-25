@@ -29,6 +29,9 @@ type Status struct {
 }
 
 func (rs Status) Error() error {
+	if rs.ae.ErrCode == proto.StatusCode_STATUSCHECK_SUCCESS {
+		return nil
+	}
 	return fmt.Errorf(rs.ae.Message)
 }
 
