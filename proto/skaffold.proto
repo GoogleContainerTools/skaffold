@@ -499,20 +499,32 @@ enum SuggestionCode {
     CHECK_GCLOUD_PROJECT = 105;
 
 
-    // Infra Error suggestion codes
-    STATUSCHECK_NODE_MEMORY_PRESSURE = 400;
+    // Container Run time error
+
+    // Container run error
+
+    // Pod Health check error
+
+
+    // Common infra errors
+
+    // Node pressure error
+    ADDRESS_NODE_MEMORY_PRESSURE = 400;
     // Node disk pressure error
-    STATUSCHECK_NODE_DISK_PRESSURE = 401;
+    ADDRESS_NODE_DISK_PRESSURE = 401;
     // Node network unavailable error
-    STATUSCHECK_NODE_NETWORK_UNAVAILABLE = 402;
+    ADDRESS_NODE_NETWORK_UNAVAILABLE = 402;
     // Node PID pressure error
-    STATUSCHECK_NODE_PID_PRESSURE = 403;
+    ADDRESS_NODE_PID_PRESSURE = 403;
     // Node unschedulable error
-    STATUSCHECK_NODE_UNSCHEDULABLE= 404;
+    ADDRESS_NODE_UNSCHEDULABLE = 404;
     // Node unreachable error
-    STATUSCHECK_NODE_UNREACHABLE = 405;
+    ADDRESS_NODE_UNREACHABLE = 405;
     // Node not ready error
-    STATUSCHECK_NODE_NOT_READY= 406;
+    ADDRESS_NODE_NOT_READY = 406;
     // Scheduler failure error
-    STATUSCHECK_FAILED_SCHEDULING = 407;
+    ADDRESS_FAILED_SCHEDULING = 407;
+    // Cluster Connectivity error
+    CHECK_HOST_CONNECTION = 408;
 }
+

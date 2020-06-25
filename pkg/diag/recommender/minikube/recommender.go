@@ -28,21 +28,37 @@ func (r Recommender) Make(ae proto.ActionableErr) {
 	// Suggestion actions for all K8 infra error
 	switch ae.ErrCode {
 	case proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE:
-		ae.Suggestions = append(ae.Suggestions, proto.Suggestion{
-			SuggestionCode:
+		ae.Suggestions = append(ae.Suggestions, &proto.Suggestion{
+			SuggestionCode: proto.SuggestionCode_ADDRESS_NODE_DISK_PRESSURE,
 		})
 	case proto.StatusCode_STATUSCHECK_NODE_MEMORY_PRESSURE:
-
+		ae.Suggestions = append(ae.Suggestions, &proto.Suggestion{
+			SuggestionCode: proto.SuggestionCode_ADDRESS_NODE_DISK_PRESSURE,
+		})
 	case proto.StatusCode_STATUSCHECK_NODE_NETWORK_UNAVAILABLE:
-
+		ae.Suggestions = append(ae.Suggestions, &proto.Suggestion{
+			SuggestionCode: proto.SuggestionCode_ADDRESS_NODE_DISK_PRESSURE,
+		})
 	case proto.StatusCode_STATUSCHECK_NODE_PID_PRESSURE:
-
+		ae.Suggestions = append(ae.Suggestions, &proto.Suggestion{
+			SuggestionCode: proto.SuggestionCode_ADDRESS_NODE_DISK_PRESSURE,
+		})
 	case proto.StatusCode_STATUSCHECK_NODE_UNSCHEDULABLE:
+		ae.Suggestions = append(ae.Suggestions, &proto.Suggestion{
+			SuggestionCode: proto.SuggestionCode_ADDRESS_NODE_DISK_PRESSURE,
+		})
 	case proto.StatusCode_STATUSCHECK_NODE_UNREACHABLE:
-
+		ae.Suggestions = append(ae.Suggestions, &proto.Suggestion{
+			SuggestionCode: proto.SuggestionCode_ADDRESS_NODE_DISK_PRESSURE,
+		})
 	case proto.StatusCode_STATUSCHECK_NODE_NOT_READY:
+		ae.Suggestions = append(ae.Suggestions, &proto.Suggestion{
+			SuggestionCode: proto.SuggestionCode_ADDRESS_NODE_DISK_PRESSURE,
+		})
 
 	case proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING:
-
+		ae.Suggestions = append(ae.Suggestions, &proto.Suggestion{
+			SuggestionCode: proto.SuggestionCode_ADDRESS_MK_NODE_DISK_PRESSURE,
+		})
 	}
 }
