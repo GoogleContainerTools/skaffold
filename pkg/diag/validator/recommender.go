@@ -17,13 +17,11 @@ limitations under the License.
 package validator
 
 import (
-
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
-
 
 // Recommender makes recommendations based on err in the actionable error
 type Recommender interface {
 	// Makes one or more recommendations for the ErrorCode in err and updates the err with suggestions
-	Make(err *proto.ActionableErr)
+	Make(errCode proto.StatusCode) proto.Suggestion
 }

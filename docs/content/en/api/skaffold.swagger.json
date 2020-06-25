@@ -1624,6 +1624,9 @@
         "GCLOUD_DOCKER_AUTH_CONFIGURE",
         "DOCKER_AUTH_CONFIGURE",
         "CHECK_GCLOUD_PROJECT",
+        "CHECK_CONTAINER_LOGS",
+        "CHECK_READINESS_PROBE",
+        "CHECK_CONTAINER_IMAGE",
         "ADDRESS_NODE_MEMORY_PRESSURE",
         "ADDRESS_NODE_DISK_PRESSURE",
         "ADDRESS_NODE_NETWORK_UNAVAILABLE",
@@ -1635,7 +1638,7 @@
         "CHECK_HOST_CONNECTION"
       ],
       "default": "NIL",
-      "description": "Enum for Suggestion codes\n- NIL: default nil suggestion.\nThis is usually set when no error happens.\n - ADD_DEFAULT_REPO: Build error suggestion codes\n - ADDRESS_NODE_MEMORY_PRESSURE: Node pressure error\n - ADDRESS_NODE_DISK_PRESSURE: Node disk pressure error\n - ADDRESS_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - ADDRESS_NODE_PID_PRESSURE: Node PID pressure error\n - ADDRESS_NODE_UNSCHEDULABLE: Node unschedulable error\n - ADDRESS_NODE_UNREACHABLE: Node unreachable error\n - ADDRESS_NODE_NOT_READY: Node not ready error\n - ADDRESS_FAILED_SCHEDULING: Scheduler failure error\n - CHECK_HOST_CONNECTION: Cluster Connectivity error"
+      "description": "Enum for Suggestion codes\n- NIL: default nil suggestion.\nThis is usually set when no error happens.\n - ADD_DEFAULT_REPO: Build error suggestion codes\n - CHECK_CONTAINER_LOGS: Container run error\n - CHECK_READINESS_PROBE: Pod Health check error\n - CHECK_CONTAINER_IMAGE: Check Container image\n - ADDRESS_NODE_MEMORY_PRESSURE: Node pressure error\n - ADDRESS_NODE_DISK_PRESSURE: Node disk pressure error\n - ADDRESS_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - ADDRESS_NODE_PID_PRESSURE: Node PID pressure error\n - ADDRESS_NODE_UNSCHEDULABLE: Node unschedulable error\n - ADDRESS_NODE_UNREACHABLE: Node unreachable error\n - ADDRESS_NODE_NOT_READY: Node not ready error\n - ADDRESS_FAILED_SCHEDULING: Scheduler failure error\n - CHECK_HOST_CONNECTION: Cluster Connectivity error"
     },
     "protoTriggerState": {
       "type": "object",

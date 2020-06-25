@@ -475,13 +475,13 @@ enum StatusCode {
     // Failed to configure watcher for Skaffold configuration file.
     DEVINIT_REGISTER_CONFIG_DEP = 704;
 
-     // Timeout or User Cancellation Errors
+    // Timeout or User Cancellation Errors
 
-     // User cancelled the skaffold dev run
-     STATUSCHECK_CONTEXT_CANCELLED = 800;
+    // User cancelled the skaffold dev run
+    STATUSCHECK_CONTEXT_CANCELLED = 800;
 
-     // Deadline for status check exceeded
-     STATUSCHECK_DEADLINE_EXCEEDED = 801;
+    // Deadline for status check exceeded
+    STATUSCHECK_DEADLINE_EXCEEDED = 801;
 }
 
 // Enum for Suggestion codes
@@ -502,8 +502,11 @@ enum SuggestionCode {
     // Container Run time error
 
     // Container run error
-
+    CHECK_CONTAINER_LOGS = 301;
     // Pod Health check error
+    CHECK_READINESS_PROBE = 302;
+    // Check Container image
+    CHECK_CONTAINER_IMAGE = 303;
 
 
     // Common infra errors

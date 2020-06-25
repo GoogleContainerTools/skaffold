@@ -14,17 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package minikube
+package download
 
 import (
-
-	"github.com/GoogleContainerTools/skaffold/proto"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 )
 
-type Recommender struct {
-
-}
-
-func (r Recommender) Make(ae proto.ActionableErr) {
-
+// HTTPDownload reads the file at given url and return the read bytes.
+func HTTPDownload(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("downloading the http url %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http %d, error %q", resp.StatusCode, resp.Status)
+	}
+	return ioutil.ReadAll(resp.Body)
 }

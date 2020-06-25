@@ -14,17 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package minikube
+package download
 
 import (
+	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-type Recommender struct {
-
-}
-
-func (r Recommender) Make(ae proto.ActionableErr) {
-
+func TestHTTPDownload(t *testing.T) {
+	v, err := HTTPDownload("https://storage.googleapis.com/skaffold/releases/v1.0.0/VERSION")
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, "v1.0.0\n", string(v))
 }

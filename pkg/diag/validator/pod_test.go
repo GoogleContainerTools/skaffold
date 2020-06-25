@@ -27,8 +27,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -87,6 +89,10 @@ func TestRun(t *testing.T) {
 				proto.ActionableErr{
 					Message: "container foo-container is waiting to start: foo-image can't be pulled",
 					ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR,
+					Suggestions: []*proto.Suggestion{{
+						SuggestionCode: proto.SuggestionCode_CHECK_CONTAINER_IMAGE,
+						Action:         "Try checking container config `image`",
+					}},
 				}, nil)},
 		},
 		{
@@ -118,6 +124,10 @@ func TestRun(t *testing.T) {
 				proto.ActionableErr{
 					Message: "container foo-container is waiting to start: foo-image can't be pulled",
 					ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR,
+					Suggestions: []*proto.Suggestion{{
+						SuggestionCode: proto.SuggestionCode_CHECK_CONTAINER_IMAGE,
+						Action:         "Try checking container config `image`",
+					}},
 				}, nil)},
 		},
 		{
@@ -149,6 +159,10 @@ func TestRun(t *testing.T) {
 				proto.ActionableErr{
 					Message: "container foo-container is waiting to start: foo-image can't be pulled",
 					ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR,
+					Suggestions: []*proto.Suggestion{{
+						SuggestionCode: proto.SuggestionCode_CHECK_CONTAINER_IMAGE,
+						Action:         "Try checking container config `image`",
+					}},
 				}, nil)},
 		},
 		{
@@ -268,6 +282,10 @@ func TestRun(t *testing.T) {
 				proto.ActionableErr{
 					Message: "container foo-container terminated with exit code 1",
 					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED,
+					Suggestions: []*proto.Suggestion{{
+						SuggestionCode: proto.SuggestionCode_CHECK_CONTAINER_LOGS,
+						Action:         "Try checking container logs",
+					}},
 				}, []string{
 					"[foo foo-container] main.go:57 ",
 					"[foo foo-container] go panic"},
@@ -298,6 +316,10 @@ func TestRun(t *testing.T) {
 				proto.ActionableErr{
 					Message: "container foo-container terminated with exit code 1",
 					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED,
+					Suggestions: []*proto.Suggestion{{
+						SuggestionCode: proto.SuggestionCode_CHECK_CONTAINER_LOGS,
+						Action:         "Try checking container logs",
+					}},
 				}, []string{
 					"Error retrieving logs for pod foo. Try `kubectl logs foo -n test -c foo-container`"},
 			)},
@@ -456,7 +478,7 @@ func TestRun(t *testing.T) {
 			rs = append(rs, &v1.EventList{Items: test.events})
 			f := fakekubeclientset.NewSimpleClientset(rs...)
 
-			actual, err := NewPodValidator(f).Validate(context.Background(), "test", metav1.ListOptions{})
+			actual, err := testPodValidator(f, map[string]string{}).Validate(context.Background(), "test", metav1.ListOptions{})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
 				if x == nil && y == nil {
@@ -468,4 +490,10 @@ func TestRun(t *testing.T) {
 			}))
 		})
 	}
+}
+
+// testPodValidator initializes a PodValidator like NewPodValidator except for loading custom rules
+func testPodValidator(k kubernetes.Interface, _ map[string]string) *PodValidator {
+	rs := []Recommender{recommender.ContainerError{}}
+	return &PodValidator{k: k, recos: rs}
 }
