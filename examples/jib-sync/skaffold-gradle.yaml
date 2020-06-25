@@ -1,0 +1,16 @@
+apiVersion: skaffold/v2beta5
+kind: Config
+build:
+  artifacts:
+  - image: test-file-sync
+    jib:
+      type: gradle
+      args: 
+      - -Psync
+    sync:
+      auto: {}
+
+portForward:
+- resourceType: pod
+  resourceName: test-file-sync
+  port: 8080

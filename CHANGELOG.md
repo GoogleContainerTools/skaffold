@@ -1,3 +1,83 @@
+# v1.12.0 Release - 06/25/2020
+
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.12.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.12.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.12.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.12.0`
+
+
+Highlights:
+* `skaffold init` now supports Java and Python projects with Buildpacks projects
+* A bunch of debug improvements to `skaffold debug`
+* `skaffold render` can now render manifests from previous build results.
+
+
+New Features:
+* `skaffold init` supports Java and Python Buildpacks projects [#4318](https://github.com/GoogleContainerTools/skaffold/pull/4318) [#4309](https://github.com/GoogleContainerTools/skaffold/pull/4309)
+* Add json output to `skaffold schema list` [#4385](https://github.com/GoogleContainerTools/skaffold/pull/4385)
+* `debug` now supports buildpacks-produced images [#4375](https://github.com/GoogleContainerTools/skaffold/pull/4375)
+* Skaffold deploy hydrated manifests [#4316](https://github.com/GoogleContainerTools/skaffold/pull/4316)
+* Add option to render manifest from previous build result [#3567](https://github.com/GoogleContainerTools/skaffold/pull/3567)
+
+Fixes:
+* 'skaffold init' for Kustomize projects generates profiles for each overlay [#4349](https://github.com/GoogleContainerTools/skaffold/pull/4349)
+* Fix proto generation [#4387](https://github.com/GoogleContainerTools/skaffold/pull/4387)
+* Fix `skaffold init` for java projects. [#4379](https://github.com/GoogleContainerTools/skaffold/pull/4379)
+* gracefull shutdown RPC even when build is in error [#4384](https://github.com/GoogleContainerTools/skaffold/pull/4384)
+* Fix port forwarding on Windows [#4373](https://github.com/GoogleContainerTools/skaffold/pull/4373)
+* Add debugHelpersRegistry property [#3945](https://github.com/GoogleContainerTools/skaffold/pull/3945)
+* `debug` nodejs results can result in duplicated environment variables [#4360](https://github.com/GoogleContainerTools/skaffold/pull/4360)
+* Enable file-watching for `debug` [#4089](https://github.com/GoogleContainerTools/skaffold/pull/4089)
+* Fix `skaffold fix --version` [#4336](https://github.com/GoogleContainerTools/skaffold/pull/4336)
+* [buildpacks] `debug` detect direct processes with `/bin/sh -c ...` [#4345](https://github.com/GoogleContainerTools/skaffold/pull/4345)
+* Fix render not fully overwriting output files. [#4323](https://github.com/GoogleContainerTools/skaffold/pull/4323)
+* chore: use setValues not values in helm docs example [#4334](https://github.com/GoogleContainerTools/skaffold/pull/4334)
+* Fix propagation of buildpacks working directory [#4337](https://github.com/GoogleContainerTools/skaffold/pull/4337)
+* Debug should report CNB_APP_DIR as working directory for buildpacks images [#4326](https://github.com/GoogleContainerTools/skaffold/pull/4326)
+* Support mktemp on older Macs [#4319](https://github.com/GoogleContainerTools/skaffold/pull/4319)
+
+
+Updates & Refactors:
+* Refactor Add proto.ActionableErr to diag.Resource and deploy.Resource.Status [#4390](https://github.com/GoogleContainerTools/skaffold/pull/4390)
+* create a constant for pushing image and use that to parse error codes [#4372](https://github.com/GoogleContainerTools/skaffold/pull/4372)
+* add suggestion protos and hook up with Event API [#4364](https://github.com/GoogleContainerTools/skaffold/pull/4364)
+* Extend `skaffold debug` integration tests to buildpacks [#4352](https://github.com/GoogleContainerTools/skaffold/pull/4352)
+* Restore buildpacks-java integration test [#4365](https://github.com/GoogleContainerTools/skaffold/pull/4365)
+* Improve the error message when a released schema is changed [#4355](https://github.com/GoogleContainerTools/skaffold/pull/4355)
+
+Docs updates:
+* Move jib sync testdata to `integration/examples` [#4367](https://github.com/GoogleContainerTools/skaffold/pull/4367)
+* Fix docs and error message about pullSecretPath [#4381](https://github.com/GoogleContainerTools/skaffold/pull/4381)
+* Tweaks to `debug` docs [#4369](https://github.com/GoogleContainerTools/skaffold/pull/4369)
+* Print Custom Builder command [#4359](https://github.com/GoogleContainerTools/skaffold/pull/4359)
+* [Docs] add an example for global config [#4341](https://github.com/GoogleContainerTools/skaffold/pull/4341)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Alex Lewis
+- Andreas Sommer
+- Appu Goundan
+- Balint Pato
+- Brian de Alwis
+- Chanseok Oh
+- Chris Ge
+- David Gageot
+- Gaurav
+- Lennox Stevenson
+- Nick Kubala
+- Nils Breunese
+- Stefan Büringer
+- Tejal Desai
+- tejal29
+
 # v1.11.0 Release - 06/11/2020
 
 Note: This release comes with a new config version `v2beta5`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
