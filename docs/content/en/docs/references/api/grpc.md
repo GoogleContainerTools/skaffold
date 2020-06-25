@@ -804,6 +804,18 @@ Enum for Suggestion codes
 | GCLOUD_DOCKER_AUTH_CONFIGURE | 103 |  |
 | DOCKER_AUTH_CONFIGURE | 104 |  |
 | CHECK_GCLOUD_PROJECT | 105 |  |
+| CHECK_CONTAINER_LOGS | 301 | Container run error |
+| CHECK_READINESS_PROBE | 302 | Pod Health check error |
+| CHECK_CONTAINER_IMAGE | 303 | Check Container image |
+| ADDRESS_NODE_MEMORY_PRESSURE | 400 | Node pressure error |
+| ADDRESS_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
+| ADDRESS_NODE_NETWORK_UNAVAILABLE | 402 | Node network unavailable error |
+| ADDRESS_NODE_PID_PRESSURE | 403 | Node PID pressure error |
+| ADDRESS_NODE_UNSCHEDULABLE | 404 | Node unschedulable error |
+| ADDRESS_NODE_UNREACHABLE | 405 | Node unreachable error |
+| ADDRESS_NODE_NOT_READY | 406 | Node not ready error |
+| ADDRESS_FAILED_SCHEDULING | 407 | Scheduler failure error |
+| CHECK_HOST_CONNECTION | 408 | Cluster Connectivity error |
 
 
  <!-- end enums -->

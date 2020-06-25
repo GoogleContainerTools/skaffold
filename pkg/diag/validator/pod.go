@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -60,12 +61,17 @@ var (
 
 // PodValidator implements the Validator interface for Pods
 type PodValidator struct {
-	k kubernetes.Interface
+	k     kubernetes.Interface
+	recos []Recommender
 }
 
 // NewPodValidator initializes a PodValidator
-func NewPodValidator(k kubernetes.Interface) *PodValidator {
-	return &PodValidator{k: k}
+func NewPodValidator(k kubernetes.Interface, deployContext map[string]string) *PodValidator {
+	rs := []Recommender{recommender.ContainerError{}}
+	if r, err := recommender.NewCustom(recommender.DiagDefaultRules, deployContext); err == nil {
+		rs = append(rs, r)
+	}
+	return &PodValidator{k: k, recos: rs}
 }
 
 // Validate implements the Validate method for Validator interface
@@ -84,6 +90,12 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 		// See https://github.com/kubernetes-sigs/controller-runtime/pull/389
 		if po.Kind == "" {
 			po.Kind = podKind
+		}
+		// Add recommendations
+		for _, r := range p.recos {
+			if s := r.Make(ps.ae.ErrCode); s.SuggestionCode != proto.SuggestionCode_NIL {
+				ps.ae.Suggestions = append(ps.ae.Suggestions, &s)
+			}
 		}
 		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.ae, ps.logs))
 	}
