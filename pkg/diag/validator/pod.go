@@ -85,7 +85,7 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 		if po.Kind == "" {
 			po.Kind = podKind
 		}
-		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.statusCode, ps.logs))
+		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.ae, ps.logs))
 	}
 	return rs, nil
 }
@@ -209,36 +209,43 @@ func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
 	}
 	switch recentEvent.Reason {
 	case failedScheduling:
-		ps.statusCode = proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING
-		ps.err = fmt.Errorf(recentEvent.Message)
+		ps.updateAE(proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING, recentEvent.Message)
 	case unhealthy:
-		ps.statusCode = proto.StatusCode_STATUSCHECK_UNHEALTHY
-		ps.err = fmt.Errorf(recentEvent.Message)
+		ps.updateAE(proto.StatusCode_STATUSCHECK_UNHEALTHY, recentEvent.Message)
 	default:
 		// TODO: Add unique error codes for reasons
-		ps.statusCode = proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT
-		ps.err = fmt.Errorf("%s: %s", recentEvent.Reason, recentEvent.Message)
+		ps.updateAE(
+			proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
+			fmt.Sprintf("%s: %s", recentEvent.Reason, recentEvent.Message),
+		)
 	}
 }
 
 type podStatus struct {
-	name       string
-	namespace  string
-	phase      string
-	logs       []string
-	err        error
-	statusCode proto.StatusCode
+	name      string
+	namespace string
+	phase     string
+	logs      []string
+	ae        proto.ActionableErr
 }
 
 func (p *podStatus) isStable() bool {
-	return p.phase == success || (p.phase == running && p.err == nil)
+	return p.phase == success || (p.phase == running && p.ae.Message == "")
 }
 
 func (p *podStatus) withErrAndLogs(errCode proto.StatusCode, l []string, err error) *podStatus {
-	p.err = err
-	p.statusCode = errCode
+	var msg string
+	if err != nil {
+		msg = err.Error()
+	}
+	p.updateAE(errCode, msg)
 	p.logs = l
 	return p
+}
+
+func (p *podStatus) updateAE(errCode proto.StatusCode, msg string) {
+	p.ae.ErrCode = errCode
+	p.ae.Message = msg
 }
 
 func (p *podStatus) String() string {
@@ -246,8 +253,8 @@ func (p *podStatus) String() string {
 	case p.isStable():
 		return ""
 	default:
-		if p.err != nil {
-			return fmt.Sprintf("%s", p.err)
+		if p.ae.Message != "" {
+			return p.ae.Message
 		}
 	}
 	return fmt.Sprintf(actionableMessage, p.namespace, p.name)
@@ -275,10 +282,12 @@ func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerSta
 
 func newPodStatus(n string, ns string, p string) *podStatus {
 	return &podStatus{
-		name:       n,
-		namespace:  ns,
-		phase:      p,
-		statusCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+		name:      n,
+		namespace: ns,
+		phase:     p,
+		ae: proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+		},
 	}
 }
 

@@ -26,20 +26,18 @@ import (
 )
 
 type Resource struct {
-	namespace  string
-	kind       string
-	name       string
-	logs       []string
-	status     Status
-	err        error
-	StatusCode proto.StatusCode
+	namespace string
+	kind      string
+	name      string
+	logs      []string
+	status    Status
+	ae        proto.ActionableErr
 }
 
 func (r Resource) Kind() string      { return r.kind }
 func (r Resource) Name() string      { return r.name }
 func (r Resource) Namespace() string { return r.namespace }
 func (r Resource) Status() Status    { return r.status }
-func (r Resource) Error() error      { return r.err }
 func (r Resource) Logs() []string    { return r.logs }
 func (r Resource) String() string {
 	if r.namespace == "default" {
@@ -47,10 +45,16 @@ func (r Resource) String() string {
 	}
 	return fmt.Sprintf("%s:%s/%s", r.namespace, r.kind, r.name)
 }
+func (r Resource) ActionableError() proto.ActionableErr {
+	return r.ae
+}
+func (r Resource) StatusUpdated(another Resource) bool {
+	return r.ae.ErrCode != another.ae.ErrCode
+}
 
 // NewResource creates new Resource of kind
-func NewResource(namespace, kind, name string, status Status, err error, statusCode proto.StatusCode, logs []string) Resource {
-	return Resource{namespace: namespace, kind: kind, name: name, status: status, err: err, StatusCode: statusCode, logs: logs}
+func NewResource(namespace, kind, name string, status Status, ae proto.ActionableErr, logs []string) Resource {
+	return Resource{namespace: namespace, kind: kind, name: name, status: status, ae: ae, logs: logs}
 }
 
 // objectWithMetadata is any k8s object that has kind and object metadata.
@@ -60,6 +64,6 @@ type objectWithMetadata interface {
 }
 
 // NewResourceFromObject creates new Resource with fields populated from object metadata.
-func NewResourceFromObject(object objectWithMetadata, status Status, err error, statusCode proto.StatusCode, logs []string) Resource {
-	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, err, statusCode, logs)
+func NewResourceFromObject(object objectWithMetadata, status Status, ae proto.ActionableErr, logs []string) Resource {
+	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, ae, logs)
 }

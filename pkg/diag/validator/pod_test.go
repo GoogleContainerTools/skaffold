@@ -84,8 +84,10 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil)},
+				proto.ActionableErr{
+					Message: "container foo-container is waiting to start: foo-image can't be pulled",
+					ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR,
+				}, nil)},
 		},
 		{
 			description: "pod is Waiting condition due to ErrImageBackOffPullErr",
@@ -113,8 +115,10 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil)},
+				proto.ActionableErr{
+					Message: "container foo-container is waiting to start: foo-image can't be pulled",
+					ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR,
+				}, nil)},
 		},
 		{
 			description: "pod is Waiting due to Image Backoff Pull error",
@@ -142,8 +146,10 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil)},
+				proto.ActionableErr{
+					Message: "container foo-container is waiting to start: foo-image can't be pulled",
+					ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR,
+				}, nil)},
 		},
 		{
 			description: "pod is in Terminated State",
@@ -158,8 +164,11 @@ func TestRun(t *testing.T) {
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
 				},
 			}},
-			expected: []Resource{NewResource("test", "Pod", "foo", "Succeeded", nil,
-				proto.StatusCode_STATUSCHECK_SUCCESS, nil)},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Succeeded",
+				proto.ActionableErr{
+					Message: "",
+					ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+				}, nil)},
 		},
 		{
 			description: "pod is in Stable State",
@@ -180,8 +189,11 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "Pod", "foo", "Running", nil,
-				proto.StatusCode_STATUSCHECK_SUCCESS, nil)},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
+				proto.ActionableErr{
+					Message: "",
+					ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+				}, nil)},
 		},
 		{
 			description: "pod condition unknown",
@@ -201,7 +213,10 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN, nil)},
+				proto.ActionableErr{
+					Message: "could not determine",
+					ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN,
+				}, nil)},
 		},
 		{
 			description: "pod could not be scheduled",
@@ -222,8 +237,10 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"),
-				proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE, nil)},
+				proto.ActionableErr{
+					Message: "Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable",
+					ErrCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
+				}, nil)},
 		},
 		{
 			description: "pod is running but container terminated",
@@ -248,8 +265,10 @@ func TestRun(t *testing.T) {
 				output: []byte("main.go:57 \ngo panic"),
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
-				fmt.Errorf("container foo-container terminated with exit code 1"),
-				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, []string{
+				proto.ActionableErr{
+					Message: "container foo-container terminated with exit code 1",
+					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED,
+				}, []string{
 					"[foo foo-container] main.go:57 ",
 					"[foo foo-container] go panic"},
 			)},
@@ -276,8 +295,10 @@ func TestRun(t *testing.T) {
 				err: fmt.Errorf("error"),
 			},
 			expected: []Resource{NewResource("test", "pod", "foo", "Running",
-				fmt.Errorf("container foo-container terminated with exit code 1"),
-				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, []string{
+				proto.ActionableErr{
+					Message: "container foo-container terminated with exit code 1",
+					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED,
+				}, []string{
 					"Error retrieving logs for pod foo. Try `kubectl logs foo -n test -c foo-container`"},
 			)},
 		},
@@ -306,7 +327,10 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("eventCode: dummy event"), proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT, nil)},
+				proto.ActionableErr{
+					Message: "eventCode: dummy event",
+					ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
+				}, nil)},
 		},
 		{
 			description: "pod condition a warning event followed up normal event",
@@ -338,7 +362,10 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("eventCode: dummy event"), proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT, nil)},
+				proto.ActionableErr{
+					Message: "eventCode: dummy event",
+					ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
+				}, nil)},
 		},
 		{
 			description: "pod condition a normal event followed by a warning event",
@@ -370,7 +397,10 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("eventCode: dummy event"), proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT, nil)},
+				proto.ActionableErr{
+					Message: "eventCode: dummy event",
+					ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
+				}, nil)},
 		},
 		{
 			description: "pod condition a warning event followed up by warning adds last warning seen",
@@ -402,7 +432,10 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				fmt.Errorf("0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate"), proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING, nil)},
+				proto.ActionableErr{
+					Message: "0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate",
+					ErrCode: proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING,
+				}, nil)},
 		},
 	}
 

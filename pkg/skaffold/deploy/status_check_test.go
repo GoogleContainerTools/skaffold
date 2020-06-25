@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -269,7 +270,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 		namespace   string
 		deployment  string
 		pending     int32
-		err         error
+		ae          proto.ActionableErr
 		expected    string
 	}{
 		{
@@ -277,7 +278,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     0,
-			err:         nil,
+			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 			expected:    " - test:deployment/dep is ready.\n",
 		},
 		{
@@ -285,7 +286,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "default",
 			deployment:  "dep",
 			pending:     0,
-			err:         nil,
+			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 			expected:    " - deployment/dep is ready.\n",
 		},
 		{
@@ -293,7 +294,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     0,
-			err:         errors.New("context deadline expired"),
+			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, Message: "context deadline expired"},
 			expected:    " - test:deployment/dep failed. Error: context deadline expired.\n",
 		},
 		{
@@ -301,7 +302,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     4,
-			err:         nil,
+			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 			expected:    " - test:deployment/dep is ready. [4/10 deployment(s) still pending]\n",
 		},
 		{
@@ -309,7 +310,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     8,
-			err:         errors.New("context deadline expired"),
+			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, Message: "context deadline expired"},
 			expected:    " - test:deployment/dep failed. [8/10 deployment(s) still pending] Error: context deadline expired.\n",
 		},
 	}
@@ -319,9 +320,10 @@ func TestPrintSummaryStatus(t *testing.T) {
 			out := new(bytes.Buffer)
 			rc := newCounter(10)
 			rc.pending = test.pending
+			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 			printStatusCheckSummary(
 				out,
-				withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), "", test.err),
+				withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), test.ae),
 				*rc,
 			)
 			t.CheckDeepEqual(test.expected, out.String())
@@ -341,8 +343,7 @@ func TestPrintStatus(t *testing.T) {
 			rs: []*resource.Deployment{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					"deployment successfully rolled out",
-					nil,
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 			},
 			expected: true,
@@ -352,8 +353,7 @@ func TestPrintStatus(t *testing.T) {
 			rs: []*resource.Deployment{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					"error",
-					errors.New("error"),
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: "error"},
 				),
 			},
 			expected: true,
@@ -363,13 +363,12 @@ func TestPrintStatus(t *testing.T) {
 			rs: []*resource.Deployment{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					"deployment successfully rolled out",
-					nil,
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
 					resource.NewDeployment("r2", "test", 1),
-					"pending",
-					nil,
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
+						Message: "pending"},
 				),
 			},
 			expectedOut: " - test:deployment/r2: pending\n",
@@ -379,13 +378,13 @@ func TestPrintStatus(t *testing.T) {
 			rs: []*resource.Deployment{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					"eployment successfully rolled out",
-					nil,
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
 					resource.NewDeployment("r2", "test", 1),
-					"",
-					resource.ErrKubectlConnection,
+					proto.ActionableErr{
+						ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
+						Message: resource.MsgKubectlConnection},
 				),
 			},
 			expectedOut: " - test:deployment/r2: kubectl connection error\n",
@@ -395,6 +394,7 @@ func TestPrintStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
+			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 			actual := printStatus(test.rs, out)
 			t.CheckDeepEqual(test.expectedOut, out.String())
 			t.CheckDeepEqual(test.expected, actual)
@@ -402,8 +402,8 @@ func TestPrintStatus(t *testing.T) {
 	}
 }
 
-func withStatus(d *resource.Deployment, details string, err error) *resource.Deployment {
-	d.UpdateStatus(details, err)
+func withStatus(d *resource.Deployment, ae proto.ActionableErr) *resource.Deployment {
+	d.UpdateStatus(ae)
 	return d
 }
 
@@ -446,7 +446,7 @@ func TestResourceMarkProcessed(t *testing.T) {
 		{
 			description: "when deployment failed, counter is updated",
 			c:           newCounter(10),
-			err:         errors.New("some err"),
+			err:         errors.New("some ae"),
 			expected:    counter{total: 10, failed: 1, pending: 9},
 		},
 		{

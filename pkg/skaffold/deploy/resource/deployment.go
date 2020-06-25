@@ -18,7 +18,6 @@ package resource
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -44,8 +43,8 @@ const (
 )
 
 var (
-	errKubectlKilled     = errors.New("kubectl rollout status command interrupted")
-	ErrKubectlConnection = errors.New("kubectl connection error")
+	msgKubectlKilled     = "kubectl rollout status command interrupted"
+	MsgKubectlConnection = "kubectl connection error"
 )
 
 type Deployment struct {
@@ -64,19 +63,15 @@ func (d *Deployment) Deadline() time.Duration {
 	return d.deadline
 }
 
-func (d *Deployment) UpdateStatus(details string, err error) {
-	errCode := proto.StatusCode_STATUSCHECK_SUCCESS
-	if err != nil {
-		errCode = proto.StatusCode_STATUSCHECK_UNKNOWN
-	}
-	updated := newStatus(details, errCode, err)
+func (d *Deployment) UpdateStatus(ae proto.ActionableErr) {
+	updated := newStatus(ae)
 	if d.status.Equal(updated) {
 		d.status.changed = false
 		return
 	}
 	d.status = updated
 	d.status.changed = true
-	if strings.Contains(details, rollOutSuccess) || isErrAndNotRetryAble(err) {
+	if ae.ErrCode == proto.StatusCode_STATUSCHECK_SUCCESS || isErrAndNotRetryAble(ae.ErrCode) {
 		d.done = true
 	}
 }
@@ -86,7 +81,7 @@ func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 		name:         name,
 		namespace:    ns,
 		rType:        deploymentType,
-		status:       newStatus("", proto.StatusCode_STATUSCHECK_UNKNOWN, nil),
+		status:       newStatus(proto.ActionableErr{}),
 		deadline:     deadline,
 		podValidator: diag.New(nil),
 	}
@@ -107,12 +102,12 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 
 	details := d.cleanupStatus(string(b))
 
-	d.StatusCode, err = parseKubectlRolloutError(err)
-	if err == errKubectlKilled {
-		err = fmt.Errorf("received Ctrl-C or deployments could not stabilize within %v: %w", d.deadline, err)
+	ae := parseKubectlRolloutError(details, err)
+	if ae.ErrCode == proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED {
+		ae.Message = fmt.Sprintf("received Ctrl-C or deployments could not stabilize within %v: %v", d.deadline, err)
 	}
 
-	d.UpdateStatus(details, err)
+	d.UpdateStatus(ae)
 	if err := d.fetchPods(ctx); err != nil {
 		logrus.Debugf("pod statuses could be fetched this time due to %s", err)
 	}
@@ -153,8 +148,8 @@ func (d *Deployment) ReportSinceLastUpdated() string {
 	var result strings.Builder
 	result.WriteString(fmt.Sprintf("%s %s: %s", tabHeader, d, d.status))
 	for _, p := range d.pods {
-		if p.Error() != nil {
-			result.WriteString(fmt.Sprintf("%s %s %s: %s\n", tab, tabHeader, p, p.Error()))
+		if s := p.ActionableError().Message; s != "" {
+			result.WriteString(fmt.Sprintf("%s %s %s: %s\n", tab, tabHeader, p, s))
 			for _, l := range p.Logs() {
 				result.WriteString(fmt.Sprintf("%s\n", l))
 			}
@@ -179,24 +174,39 @@ func (d *Deployment) cleanupStatus(msg string) string {
 // $kubectl logs testPod  -f
 // 2020/06/18 17:28:31 service is running
 // Killed: 9
-func parseKubectlRolloutError(err error) (proto.StatusCode, error) {
-	if err == nil {
-		return proto.StatusCode_STATUSCHECK_SUCCESS, err
+func parseKubectlRolloutError(details string, err error) proto.ActionableErr {
+	switch {
+	case err == nil && strings.Contains(details, rollOutSuccess):
+		return proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+			Message: details,
+		}
+	case err == nil:
+		return proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
+			Message: details,
+		}
+	case strings.Contains(err.Error(), connectionErrMsg):
+		return proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
+			Message: MsgKubectlConnection,
+		}
+	case strings.Contains(err.Error(), killedErrMsg):
+		return proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED,
+			Message: msgKubectlKilled,
+		}
+	default:
+		return proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN,
+			Message: err.Error(),
+		}
 	}
-	if strings.Contains(err.Error(), connectionErrMsg) {
-		return proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR, ErrKubectlConnection
-	}
-	if strings.Contains(err.Error(), killedErrMsg) {
-		return proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED, errKubectlKilled
-	}
-	return proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING, err
 }
 
-func isErrAndNotRetryAble(err error) bool {
-	if err == nil {
-		return false
-	}
-	return err != ErrKubectlConnection
+func isErrAndNotRetryAble(statusCode proto.StatusCode) bool {
+	return statusCode != proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR &&
+		statusCode != proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING
 }
 
 func (d *Deployment) fetchPods(ctx context.Context) error {
@@ -211,13 +221,13 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 	d.status.changed = false
 	for _, p := range pods {
 		originalPod, found := d.pods[p.String()]
-		if !found || originalPod.StatusCode != p.StatusCode {
+		if !found || originalPod.StatusUpdated(p) {
 			d.status.changed = true
-			switch p.StatusCode {
+			switch p.ActionableError().ErrCode {
 			case proto.StatusCode_STATUSCHECK_CONTAINER_CREATING:
-				event.ResourceStatusCheckEventUpdated(p.String(), p.StatusCode, p.Error().Error())
+				event.ResourceStatusCheckEventUpdated(p.String(), p.ActionableError())
 			default:
-				event.ResourceStatusCheckEventCompleted(p.String(), p.StatusCode, p.Error())
+				event.ResourceStatusCheckEventCompleted(p.String(), p.ActionableError())
 			}
 		}
 		newPods[p.String()] = p
