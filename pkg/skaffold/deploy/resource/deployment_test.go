@@ -105,12 +105,12 @@ func TestParseKubectlError(t *testing.T) {
 		description string
 		details     string
 		err         error
-		expectedAe  *proto.ActionableErr
+		expectedAe  proto.ActionableErr
 	}{
 		{
 			description: "rollout status connection error",
 			err:         errors.New("Unable to connect to the server"),
-			expectedAe: &proto.ActionableErr{
+			expectedAe: proto.ActionableErr{
 				ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
 				Message: MsgKubectlConnection,
 			},
@@ -118,7 +118,7 @@ func TestParseKubectlError(t *testing.T) {
 		{
 			description: "rollout status kubectl command killed",
 			err:         errors.New("signal: killed"),
-			expectedAe: &proto.ActionableErr{
+			expectedAe: proto.ActionableErr{
 				ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED,
 				Message: msgKubectlKilled,
 			},
@@ -126,7 +126,7 @@ func TestParseKubectlError(t *testing.T) {
 		{
 			description: "rollout status random error",
 			err:         errors.New("deployment test not found"),
-			expectedAe: &proto.ActionableErr{
+			expectedAe: proto.ActionableErr{
 				ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN,
 				Message: "deployment test not found",
 			},
@@ -134,7 +134,7 @@ func TestParseKubectlError(t *testing.T) {
 		{
 			description: "rollout status nil error",
 			details:     "successfully rolled out",
-			expectedAe: &proto.ActionableErr{
+			expectedAe: proto.ActionableErr{
 				ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 				Message: "successfully rolled out",
 			},
@@ -195,17 +195,17 @@ func TestIsErrAndNotRetriable(t *testing.T) {
 func TestReportSinceLastUpdated(t *testing.T) {
 	var tests = []struct {
 		description string
-		ae          *proto.ActionableErr
+		ae          proto.ActionableErr
 		expected    string
 	}{
 		{
 			description: "updating an error status",
-			ae:          &proto.ActionableErr{Message: "cannot pull image"},
+			ae:          proto.ActionableErr{Message: "cannot pull image"},
 			expected:    " - test-ns:deployment/test: cannot pull image",
 		},
 		{
 			description: "updating a non error status",
-			ae:          &proto.ActionableErr{Message: "waiting for container"},
+			ae:          proto.ActionableErr{Message: "waiting for container"},
 			expected:    " - test-ns:deployment/test: waiting for container",
 		},
 	}
@@ -251,7 +251,7 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 			var actual string
 			for i, status := range test.statuses {
 				// update to same status
-				dep.UpdateStatus(&proto.ActionableErr{
+				dep.UpdateStatus(proto.ActionableErr{
 					ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 					Message: status,
 				})

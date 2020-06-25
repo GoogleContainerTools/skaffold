@@ -209,15 +209,15 @@ func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
 	}
 	switch recentEvent.Reason {
 	case failedScheduling:
-		ps.ae.ErrCode = proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING
-		ps.ae.Message = recentEvent.Message
+		ps.updateAE(proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING, recentEvent.Message)
 	case unhealthy:
-		ps.ae.ErrCode = proto.StatusCode_STATUSCHECK_UNHEALTHY
-		ps.ae.Message = recentEvent.Message
+		ps.updateAE(proto.StatusCode_STATUSCHECK_UNHEALTHY, recentEvent.Message)
 	default:
 		// TODO: Add unique error codes for reasons
-		ps.ae.ErrCode = proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT
-		ps.ae.Message = fmt.Sprintf("%s: %s", recentEvent.Reason, recentEvent.Message)
+		ps.updateAE(
+			proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
+			fmt.Sprintf("%s: %s", recentEvent.Reason, recentEvent.Message),
+		)
 	}
 }
 
@@ -226,7 +226,7 @@ type podStatus struct {
 	namespace string
 	phase     string
 	logs      []string
-	ae        *proto.ActionableErr
+	ae        proto.ActionableErr
 }
 
 func (p *podStatus) isStable() bool {
@@ -234,12 +234,18 @@ func (p *podStatus) isStable() bool {
 }
 
 func (p *podStatus) withErrAndLogs(errCode proto.StatusCode, l []string, err error) *podStatus {
+	var msg string
 	if err != nil {
-		p.ae.Message = err.Error()
+		msg = err.Error()
 	}
-	p.ae.ErrCode = errCode
+	p.updateAE(errCode, msg)
 	p.logs = l
 	return p
+}
+
+func (p *podStatus) updateAE(errCode proto.StatusCode, msg string) {
+	p.ae.ErrCode = errCode
+	p.ae.Message = msg
 }
 
 func (p *podStatus) String() string {
@@ -279,7 +285,7 @@ func newPodStatus(n string, ns string, p string) *podStatus {
 		name:      n,
 		namespace: ns,
 		phase:     p,
-		ae: &proto.ActionableErr{
+		ae: proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 		},
 	}

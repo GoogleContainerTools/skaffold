@@ -217,7 +217,7 @@ func StatusCheckEventInProgress(s string) {
 	})
 }
 
-func ResourceStatusCheckEventCompleted(r string, ae *proto.ActionableErr) {
+func ResourceStatusCheckEventCompleted(r string, ae proto.ActionableErr) {
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		resourceStatusCheckEventFailed(r, ae)
 		return
@@ -234,23 +234,23 @@ func resourceStatusCheckEventSucceeded(r string) {
 	})
 }
 
-func resourceStatusCheckEventFailed(r string, ae *proto.ActionableErr) {
+func resourceStatusCheckEventFailed(r string, ae proto.ActionableErr) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource:      r,
 		Status:        Failed,
 		Err:           ae.Message,
 		StatusCode:    ae.ErrCode,
-		ActionableErr: ae,
+		ActionableErr: &ae,
 	})
 }
 
-func ResourceStatusCheckEventUpdated(r string, ae *proto.ActionableErr) {
+func ResourceStatusCheckEventUpdated(r string, ae proto.ActionableErr) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource:      r,
 		Status:        InProgress,
 		Message:       ae.Message,
 		StatusCode:    ae.ErrCode,
-		ActionableErr: ae,
+		ActionableErr: &ae,
 	})
 }
 

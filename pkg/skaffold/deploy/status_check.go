@@ -144,7 +144,7 @@ func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r 
 		select {
 		case <-timeoutContext.Done():
 			msg := fmt.Sprintf("could not stabilize within %v: %v", r.Deadline(), timeoutContext.Err())
-			r.UpdateStatus(&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED,
+			r.UpdateStatus(proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED,
 				Message: msg})
 			return
 		case <-time.After(pollDuration):

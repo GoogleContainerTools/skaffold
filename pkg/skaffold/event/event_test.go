@@ -221,7 +221,7 @@ func TestResourceStatusCheckEventUpdated(t *testing.T) {
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	ResourceStatusCheckEventUpdated("ns:pod/foo", &proto.ActionableErr{
+	ResourceStatusCheckEventUpdated("ns:pod/foo", proto.ActionableErr{
 		ErrCode: 509,
 		Message: "image pull error",
 	})
@@ -248,7 +248,7 @@ func TestResourceStatusCheckEventFailed(t *testing.T) {
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	resourceStatusCheckEventFailed("ns:pod/foo", &proto.ActionableErr{
+	resourceStatusCheckEventFailed("ns:pod/foo", proto.ActionableErr{
 		ErrCode: 309,
 		Message: "one or more deployments failed",
 	})

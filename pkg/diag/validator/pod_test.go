@@ -84,7 +84,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				&proto.ActionableErr{
+				proto.ActionableErr{
 					Message: "container foo-container is waiting to start: foo-image can't be pulled",
 					ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR,
 				}, nil)},
@@ -115,7 +115,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				&proto.ActionableErr{
+				proto.ActionableErr{
 					Message: "container foo-container is waiting to start: foo-image can't be pulled",
 					ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR,
 				}, nil)},
@@ -146,7 +146,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				&proto.ActionableErr{
+				proto.ActionableErr{
 					Message: "container foo-container is waiting to start: foo-image can't be pulled",
 					ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR,
 				}, nil)},
@@ -165,7 +165,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Succeeded",
-				&proto.ActionableErr{
+				proto.ActionableErr{
 					Message: "",
 					ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 				}, nil)},
@@ -190,7 +190,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
-				&proto.ActionableErr{
+				proto.ActionableErr{
 					Message: "",
 					ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 				}, nil)},
@@ -213,7 +213,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				&proto.ActionableErr{
+				proto.ActionableErr{
 					Message: "could not determine",
 					ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN,
 				}, nil)},
@@ -237,7 +237,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				&proto.ActionableErr{
+				proto.ActionableErr{
 					Message: "Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable",
 					ErrCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
 				}, nil)},
@@ -265,7 +265,7 @@ func TestRun(t *testing.T) {
 				output: []byte("main.go:57 \ngo panic"),
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
-				&proto.ActionableErr{
+				proto.ActionableErr{
 					Message: "container foo-container terminated with exit code 1",
 					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED,
 				}, []string{
@@ -295,7 +295,7 @@ func TestRun(t *testing.T) {
 				err: fmt.Errorf("error"),
 			},
 			expected: []Resource{NewResource("test", "pod", "foo", "Running",
-				&proto.ActionableErr{
+				proto.ActionableErr{
 					Message: "container foo-container terminated with exit code 1",
 					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED,
 				}, []string{
@@ -327,7 +327,7 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				&proto.ActionableErr{
+				proto.ActionableErr{
 					Message: "eventCode: dummy event",
 					ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
 				}, nil)},
@@ -362,7 +362,7 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				&proto.ActionableErr{
+				proto.ActionableErr{
 					Message: "eventCode: dummy event",
 					ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
 				}, nil)},
@@ -397,7 +397,7 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				&proto.ActionableErr{
+				proto.ActionableErr{
 					Message: "eventCode: dummy event",
 					ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
 				}, nil)},
@@ -432,7 +432,7 @@ func TestRun(t *testing.T) {
 				},
 			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
-				&proto.ActionableErr{
+				proto.ActionableErr{
 					Message: "0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate",
 					ErrCode: proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING,
 				}, nil)},
