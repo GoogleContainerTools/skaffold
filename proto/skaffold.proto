@@ -497,4 +497,22 @@ enum SuggestionCode {
     GCLOUD_DOCKER_AUTH_CONFIGURE = 103;
     DOCKER_AUTH_CONFIGURE = 104;
     CHECK_GCLOUD_PROJECT = 105;
+
+
+    // Infra Error suggestion codes
+    STATUSCHECK_NODE_MEMORY_PRESSURE = 400;
+    // Node disk pressure error
+    STATUSCHECK_NODE_DISK_PRESSURE = 401;
+    // Node network unavailable error
+    STATUSCHECK_NODE_NETWORK_UNAVAILABLE = 402;
+    // Node PID pressure error
+    STATUSCHECK_NODE_PID_PRESSURE = 403;
+    // Node unschedulable error
+    STATUSCHECK_NODE_UNSCHEDULABLE= 404;
+    // Node unreachable error
+    STATUSCHECK_NODE_UNREACHABLE = 405;
+    // Node not ready error
+    STATUSCHECK_NODE_NOT_READY= 406;
+    // Scheduler failure error
+    STATUSCHECK_FAILED_SCHEDULING = 407;
 }
