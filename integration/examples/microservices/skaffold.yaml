@@ -3,14 +3,14 @@ kind: Config
 build:
   artifacts:
     - image: leeroy-web
-      context: ./leeroy-web/
+      context: leeroy-web
     - image: leeroy-app
-      context: ./leeroy-app/
+      context: leeroy-app
 deploy:
   kubectl:
     manifests:
-      - ./leeroy-web/kubernetes/*
-      - ./leeroy-app/kubernetes/*
+      - leeroy-web/kubernetes/*
+      - leeroy-app/kubernetes/*
 portForward:
   - resourceType: deployment
     resourceName: leeroy-web
