@@ -52,6 +52,23 @@ Describes all the methods for the Skaffold API
 
 
 
+<a name="proto.ActionableErr"></a>
+#### ActionableErr
+`ActionableErr` defines an error that occurred along with an optional list of suggestions
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| errCode | [StatusCode](#proto.StatusCode) |  | error code representing the error |
+| message | [string](#string) |  | message describing the error. |
+| suggestions | [Suggestion](#proto.Suggestion) | repeated | list of suggestions |
+
+
+
+
+
+
+
 <a name="proto.BuildEvent"></a>
 #### BuildEvent
 `BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
@@ -62,8 +79,9 @@ If the build fails, an error will be attached to the event.
 | ----- | ---- | ----- | ----------- |
 | artifact | [string](#string) |  | artifact name |
 | status | [string](#string) |  | artifact build status oneof: InProgress, Completed, Failed |
-| err | [string](#string) |  | error when build status is Failed. |
-| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. error when build status is Failed. |
+| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -200,8 +218,9 @@ anytime a deployment starts or completes, successfully or not.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
-| err | [string](#string) |  | error when status is Failed |
-| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. error when status is Failed |
+| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -266,23 +285,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | iteration | [int32](#int32) |  | dev loop iteration. 0 represents initialization loop. |
 | status | [string](#string) |  | dev loop status oneof: In Progress, Completed, Failed |
-| err | [ErrDef](#proto.ErrDef) |  | actionable error message |
-
-
-
-
-
-
-
-<a name="proto.ErrDef"></a>
-#### ErrDef
-`ErrDef` defines an error occurred along with an optional suggestions
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| errCode | [StatusCode](#proto.StatusCode) |  | error code representing the error |
-| message | [string](#string) |  | message describing the error. |
+| err | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -324,8 +327,9 @@ FileSyncEvent describes the sync status.
 | fileCount | [int32](#int32) |  | number of files synced |
 | image | [string](#string) |  | the container image to which files are sycned. |
 | status | [string](#string) |  | status of file sync. one of: Not Started, In progress, Succeeded, Failed. |
-| err | [string](#string) |  | error in case of status failed. |
-| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. error in case of status failed. |
+| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -484,7 +488,9 @@ will be sent with the new status.
 | resource | [string](#string) |  |  |
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
-| err | [string](#string) |  |  |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. |
+| statusCode | [StatusCode](#proto.StatusCode) |  |  |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -568,8 +574,9 @@ will be sent with the new status.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
-| err | [string](#string) |  |  |
-| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. |
+| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -602,6 +609,22 @@ will be sent with the new status.
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+
+<a name="proto.Suggestion"></a>
+#### Suggestion
+Suggestion defines the action a user needs to recover from an error.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| suggestionCode | [SuggestionCode](#proto.SuggestionCode) |  | code representing a suggestion |
+| action | [string](#string) |  | action represents the suggestion action |
 
 
 
@@ -723,7 +746,7 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| UNKNOWN_ERROR | 0 | Could not determine error and phase |
+| OK | 0 | A default status code for events that do not have an associated phase. Typically seen with the DevEndEvent event on success. |
 | STATUSCHECK_SUCCESS | 200 | Status Check Success |
 | BUILD_SUCCESS | 201 | Build Success |
 | BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
@@ -732,6 +755,7 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
 | STATUSCHECK_CONTAINER_TERMINATED | 303 | Container is already terminated |
+| STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING | 304 | Deployment waiting for rollout |
 | STATUSCHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
 | STATUSCHECK_NODE_MEMORY_PRESSURE | 400 | Node memory pressure error |
 | STATUSCHECK_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
@@ -740,9 +764,15 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_NODE_UNSCHEDULABLE | 404 | Node unschedulable error |
 | STATUSCHECK_NODE_UNREACHABLE | 405 | Node unreachable error |
 | STATUSCHECK_NODE_NOT_READY | 406 | Node not ready error |
+| STATUSCHECK_FAILED_SCHEDULING | 407 | Scheduler failure error |
+| STATUSCHECK_UNHEALTHY | 408 | Readiness probe failed |
+| STATUSCHECK_KUBECTL_CONNECTION_ERR | 409 | Kubectl connection error |
+| STATUSCHECK_KUBECTL_PID_KILLED | 410 | Kubectl process killed error |
+| UNKNOWN_ERROR | 500 | Could not determine error and phase |
 | STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
 | STATUSCHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |
 | STATUSCHECK_CONTAINER_WAITING_UNKNOWN | 503 | Container is waiting due to unknown reason |
+| STATUSCHECK_UNKNOWN_EVENT | 509 | Container event reason unknown |
 | DEPLOY_UNKNOWN | 504 | Deploy failed due to unknown reason |
 | SYNC_UNKNOWN | 505 | SYNC failed due to known reason |
 | BUILD_UNKNOWN | 506 | Build failed due to unknown reason |
@@ -753,6 +783,17 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
 | DEVINIT_REGISTER_DEPLOY_DEPS | 703 | Failed to configure watcher for deploy dependencies in dev loop |
 | DEVINIT_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
+
+
+
+<a name="proto.SuggestionCode"></a>
+
+### SuggestionCode
+Enum for Suggestion codes
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| NIL | 0 | default nil suggestion. This is usually set when no error happens. |
 
 
  <!-- end enums -->

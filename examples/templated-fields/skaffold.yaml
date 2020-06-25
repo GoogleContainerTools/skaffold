@@ -1,0 +1,24 @@
+apiVersion: skaffold/v2beta5
+kind: Config
+metadata:
+  name: my-app
+
+build:
+  artifacts:
+    - image: skaffold-templated
+      custom:
+        buildCommand: "./build.sh"
+        dependencies:
+          paths:
+          - "go.mod"
+          - "**.go"
+deploy:
+  helm:
+    releases:
+      - name: skaffold-templated
+        chartPath: charts
+        artifactOverrides:
+          image: skaffold-templated
+        setValueTemplates:
+          imageRepo: "{{.IMAGE_REPO}}"
+          imageTag: "{{.IMAGE_TAG}}"

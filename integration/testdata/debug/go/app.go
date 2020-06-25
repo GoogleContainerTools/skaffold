@@ -12,7 +12,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	log.Print("example web app ready on port 8080")
+	log.Print("Go web app ready on port 8080")
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":8080", nil)
 }

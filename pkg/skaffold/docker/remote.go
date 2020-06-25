@@ -24,6 +24,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/sirupsen/logrus"
+
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 )
 
 // for testing
@@ -92,7 +94,7 @@ func Push(tarPath, tag string, insecureRegistries map[string]bool) (string, erro
 	}
 
 	if err := remote.Write(t, i, remote.WithAuthFromKeychain(masterKeychain)); err != nil {
-		return "", fmt.Errorf("writing image %q: %w", t, err)
+		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErrPrefix, t, err)
 	}
 
 	return getRemoteDigest(tag, insecureRegistries)

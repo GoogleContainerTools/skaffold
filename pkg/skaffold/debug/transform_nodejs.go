@@ -17,7 +17,6 @@ limitations under the License.
 package debug
 
 import (
-	"sort"
 	"strconv"
 	"strings"
 
@@ -50,13 +49,13 @@ type inspectSpec struct {
 
 // isLaunchingNode determines if the arguments seems to be invoking node
 func isLaunchingNode(args []string) bool {
-	return args[0] == "node" || strings.HasSuffix(args[0], "/node") ||
-		args[0] == "nodemon" || strings.HasSuffix(args[0], "/nodemon")
+	return len(args) > 0 && (args[0] == "node" || strings.HasSuffix(args[0], "/node") ||
+		args[0] == "nodemon" || strings.HasSuffix(args[0], "/nodemon"))
 }
 
 // isLaunchingNpm determines if the arguments seems to be invoking npm
 func isLaunchingNpm(args []string) bool {
-	return args[0] == "npm" || strings.HasSuffix(args[0], "/npm")
+	return len(args) > 0 && (args[0] == "npm" || strings.HasSuffix(args[0], "/npm"))
 }
 
 func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
@@ -70,10 +69,8 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 	}
 	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return isLaunchingNode(config.entrypoint) || isLaunchingNpm(config.entrypoint)
-	} else if len(config.arguments) > 0 {
-		return isLaunchingNode(config.arguments) || isLaunchingNpm(config.arguments)
 	}
-	return false
+	return isLaunchingNode(config.arguments) || isLaunchingNpm(config.arguments)
 }
 
 // Apply configures a container definition for NodeJS Chrome V8 Inspector.
@@ -81,49 +78,40 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for node.js debugging", container.Name)
 
-	if config.env == nil {
-		config.env = make(map[string]string)
-	}
-	// Add our debug-helper path to resolve to our node wrapper
-	if v, found := config.env["PATH"]; found {
-		config.env["PATH"] = "/dbg/nodejs/bin:" + v
-	} else {
-		config.env["PATH"] = "/dbg/nodejs/bin"
-	}
-
 	// try to find existing `--inspect` command
 	spec := retrieveNodeInspectSpec(config)
 	if spec == nil {
 		spec = &inspectSpec{host: "0.0.0.0", port: portAlloc(defaultDevtoolsPort)}
 		switch {
-		case len(config.entrypoint) > 0 && isLaunchingNode(config.entrypoint):
+		case isLaunchingNode(config.entrypoint):
 			container.Command = rewriteNodeCommandLine(config.entrypoint, *spec)
 
-		case len(config.entrypoint) > 0 && isLaunchingNpm(config.entrypoint):
+		case isLaunchingNpm(config.entrypoint):
 			container.Command = rewriteNpmCommandLine(config.entrypoint, *spec)
 
-		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && len(config.arguments) > 0 && isLaunchingNode(config.arguments):
+		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingNode(config.arguments):
 			container.Args = rewriteNodeCommandLine(config.arguments, *spec)
 
-		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && len(config.arguments) > 0 && isLaunchingNpm(config.arguments):
+		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingNpm(config.arguments):
 			container.Args = rewriteNpmCommandLine(config.arguments, *spec)
 
 		default:
 			if v, found := config.env["NODE_OPTIONS"]; found {
-				config.env["NODE_OPTIONS"] = v + " " + spec.String()
+				container.Env = setEnvVar(container.Env, "NODE_OPTIONS", v+" "+spec.String())
 			} else {
-				config.env["NODE_OPTIONS"] = spec.String()
+				container.Env = setEnvVar(container.Env, "NODE_OPTIONS", spec.String())
 			}
 		}
 	}
 
-	container.Ports = exposePort(container.Ports, "devtools", spec.port)
-	for k, v := range config.env {
-		container.Env = append(container.Env, v1.EnvVar{Name: k, Value: v})
+	// Add our debug-helper path to resolve to our node wrapper
+	if v, found := config.env["PATH"]; found {
+		container.Env = setEnvVar(container.Env, "PATH", "/dbg/nodejs/bin:"+v)
+	} else {
+		container.Env = setEnvVar(container.Env, "PATH", "/dbg/nodejs/bin")
 	}
-	sort.Slice(container.Env, func(i, j int) bool {
-		return container.Env[i].Name < container.Env[j].Name
-	})
+
+	container.Ports = exposePort(container.Ports, "devtools", spec.port)
 
 	return ContainerDebugConfiguration{
 		Runtime: "nodejs",

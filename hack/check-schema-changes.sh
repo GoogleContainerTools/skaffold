@@ -24,8 +24,4 @@
 # If the change is latest and it is released, we fail the PR for the same reason.
 # If the change is in latest and it is not released yet, it is fine to make changes.
 
-
-
-set +x
-
 go run hack/versions/cmd/schema_check/check.go

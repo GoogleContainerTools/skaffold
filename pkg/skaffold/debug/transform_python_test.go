@@ -61,6 +61,7 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string
 		source      imageConfiguration
+		launcher    string
 		result      bool
 	}{
 		{
@@ -109,6 +110,12 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 			result:      true,
 		},
 		{
+			description: "entrypoint launcher",
+			source:      imageConfiguration{entrypoint: []string{"launcher"}, arguments: []string{"python3", "app.py"}},
+			launcher:    "launcher",
+			result:      true,
+		},
+		{
 			description: "entrypoint /bin/sh",
 			source:      imageConfiguration{entrypoint: []string{"/bin/sh"}},
 			result:      false,
@@ -122,6 +129,7 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&entrypointLaunchers, []string{test.launcher})
 			result := pythonTransformer{}.IsApplicable(test.source)
 
 			t.CheckDeepEqual(test.result, result)
@@ -264,7 +272,7 @@ func TestTransformManifestPython(t *testing.T) {
 					}},
 					InitContainers: []v1.Container{{
 						Name:         "install-python-support",
-						Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+						Image:        "HELPERS/python",
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
 					Volumes: []v1.Volume{{
@@ -306,7 +314,7 @@ func TestTransformManifestPython(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -348,7 +356,7 @@ func TestTransformManifestPython(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -390,7 +398,7 @@ func TestTransformManifestPython(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -430,7 +438,7 @@ func TestTransformManifestPython(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -470,7 +478,7 @@ func TestTransformManifestPython(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -512,7 +520,7 @@ func TestTransformManifestPython(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -564,7 +572,7 @@ func TestTransformManifestPython(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-python-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/python",
+								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -582,7 +590,7 @@ func TestTransformManifestPython(t *testing.T) {
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
-			result := transformManifest(value, retriever)
+			result := transformManifest(value, retriever, "HELPERS")
 
 			t.CheckDeepEqual(test.transformed, result)
 			t.CheckDeepEqual(test.out, value)

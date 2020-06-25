@@ -41,12 +41,13 @@ func init() {
 //
 //   1. _predefined processes_ are named sets of command+arguments.  There are two types:
 //      - direct: these are passed uninterpreted to os.exec; the command is resolved in PATH
+//        Note that these may actually be configured to execute `/bin/sh -c ...`
 //      - script: the command is treated as a shell script and passed to `sh -c`, the remaining
 //        arguments are added to the shell, and so available as positional arguments.
 //        For example: `sh -c 'echo $0 $1 $2 $3' arg0 arg1 arg2 arg3` => `arg0 arg1 arg2 arg3`.
 //        (https://github.com/buildpacks/lifecycle/issues/218#issuecomment-567091462).
 //   2. _direct execs_ where the container's arg[0] == `--` are treated like direct processes
-//   3. _shell scripts_ where the container's arg[0] is the script and treated are like indirect processes.
+//   3. _shell scripts_ where the container's arg[0] is the script, and are treated are like indirect processes.
 //
 // A key point is that the script-style launches allow support references to environment variables.
 // So we find the command line to be executed, whether that is a script or a direct, and turn it into
@@ -69,9 +70,21 @@ func updateForCNBImage(container *v1.Container, ic imageConfiguration, transform
 		return ContainerDebugConfiguration{}, "", fmt.Errorf("buildpacks metadata has no processes")
 	}
 
-	// The buildpacks launcher is retained as the entrypoint
+	// The CNB launcher is retained as the entrypoint.
 	ic, rewriter := adjustCommandLine(m, ic)
+
+	// The CNB launcher uses CNB_APP_DIR (defaults to /workspace) and ignores the image's working directory.
+	if appDir := ic.env["CNB_APP_DIR"]; appDir != "" {
+		ic.workingDir = appDir
+	} else {
+		ic.workingDir = "/workspace"
+	}
+
 	c, img, err := transformer(container, ic)
+	// must explicitly modify the working dir as the imageConfig is lost after we return
+	if c.WorkingDir == "" {
+		c.WorkingDir = ic.workingDir
+	}
 
 	// Only rewrite the container.Args if set: some transforms only alter env vars,
 	// and the image's arguments are not changed.
@@ -105,11 +118,18 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 
 	for _, p := range m.Processes {
 		if p.Type == processType {
+			// Direct: p.Command is the command and p.Args are the arguments
 			if p.Direct {
-				// p.Command is the command and p.Args are the arguments
-				ic.arguments = append([]string{p.Command}, p.Args...)
-				return ic, func(transformed []string) []string {
-					return append([]string{"--"}, transformed...)
+				// Detect and unwrap `/bin/sh -c ...`-style command lines; GCP Buildpacks turn Procfiles into `/bin/bash -c ...`
+				if (p.Command == "/bin/sh" || p.Command == "/bin/bash") && len(p.Args) >= 2 && p.Args[0] == "-c" {
+					p.Command = p.Args[1]
+					p.Args = p.Args[2:]
+					// and fall through to script type below
+				} else {
+					ic.arguments = append([]string{p.Command}, p.Args...)
+					return ic, func(transformed []string) []string {
+						return append([]string{"--"}, transformed...)
+					}
 				}
 			}
 			// Script type: split p.Command, pass it through the transformer, and then reassemble in the rewriter.

@@ -17,10 +17,12 @@ limitations under the License.
 package integration
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -29,42 +31,68 @@ func TestDebug(t *testing.T) {
 
 	tests := []struct {
 		description string
-		dir         string
+		config      string
 		args        []string
 		deployments []string
 		pods        []string
 	}{
 		{
 			description: "kubectl",
-			dir:         "testdata/debug",
-			deployments: []string{"jib"},
+			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm", "python3", "go"},
 		},
 		{
 			description: "kustomize",
 			args:        []string{"--profile", "kustomize"},
-			dir:         "testdata/debug",
-			deployments: []string{"jib"},
+			deployments: []string{"java"},
+			pods:        []string{"nodejs", "npm", "python3", "go"},
+		},
+		{
+			description: "buildpacks",
+			args:        []string{"--profile", "buildpacks"},
+			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm", "python3", "go"},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
+			skaffold.Build(test.args...).InDir("testdata/debug").RunOrFail(t)
 
 			ns, client := SetupNamespace(t)
 
-			skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
+			skaffold.Debug(test.args...).InDir("testdata/debug").InNs(ns.Name).RunBackground(t)
 
-			client.WaitForPodsReady(test.pods...)
+			verifyDebugAnnotations := func(annotations map[string]string) {
+				var configs map[string]debug.ContainerDebugConfiguration
+				if anno, found := annotations["debug.cloud.google.com/config"]; !found {
+					t.Errorf("deployment missing debug annotation: %v", annotations)
+				} else if err := json.Unmarshal([]byte(anno), &configs); err != nil {
+					t.Errorf("error unmarshalling debug annotation: %v: %v", anno, err)
+				} else {
+					for k, config := range configs {
+						if config.WorkingDir == "" {
+							t.Errorf("debug config for %q missing WorkingDir: %v: %v", k, anno, config)
+						}
+						if config.Runtime == "" {
+							t.Errorf("debug config for %q missing Runtime: %v: %v", k, anno, config)
+						}
+					}
+				}
+			}
+
+			for _, podName := range test.pods {
+				pod := client.GetPod(podName)
+
+				annotations := pod.Annotations
+				verifyDebugAnnotations(annotations)
+			}
+
 			for _, depName := range test.deployments {
 				deploy := client.GetDeployment(depName)
 
 				annotations := deploy.Spec.Template.GetAnnotations()
-				if _, found := annotations["debug.cloud.google.com/config"]; !found {
-					t.Errorf("deployment missing debug annotation: %v", annotations)
-				}
+				verifyDebugAnnotations(annotations)
 			}
 		})
 	}
@@ -107,7 +135,7 @@ func waitForDebugEvent(t *testing.T, client *NSKubernetesClient, rpcAddr string)
 	for {
 		select {
 		case <-timeout:
-			t.Fatalf("timed out waiting for port debugging event")
+			t.Fatalf("timed out waiting for debugging event")
 		case entry := <-entries:
 			switch entry.Event.GetEventType().(type) {
 			case *proto.Event_DebuggingContainerEvent:

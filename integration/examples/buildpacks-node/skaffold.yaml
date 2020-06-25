@@ -4,6 +4,6 @@ build:
   artifacts:
   - image: skaffold-buildpacks-node
     buildpacks:
-      builder: "gcr.io/buildpacks/builder"
+      builder: "gcr.io/buildpacks/builder:v1"
     sync:
       auto: {}

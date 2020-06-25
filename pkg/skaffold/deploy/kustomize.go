@@ -30,6 +30,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -90,6 +91,8 @@ type KustomizeDeployer struct {
 	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
 	BuildArgs          []string
+	globalConfig       string
+	addSkaffoldLabels  bool
 }
 
 func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
@@ -102,6 +105,8 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 		},
 		insecureRegistries: runCtx.InsecureRegistries,
 		BuildArgs:          runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
+		globalConfig:       runCtx.Opts.GlobalConfig,
+		addSkaffoldLabels:  runCtx.Opts.AddSkaffoldLabels,
 	}
 }
 
@@ -148,6 +153,11 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 		color.Default.Fprintln(out, err)
 	}
 
+	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
+	}
+
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("reading manifests: %w", err)
@@ -163,13 +173,13 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 	}
 
 	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds, k.insecureRegistries)
+		manifests, err = transform(manifests, builds, Registries{k.insecureRegistries, debugHelpersRegistry})
 		if err != nil {
 			return nil, fmt.Errorf("unable to transform manifests: %w", err)
 		}
 	}
 
-	manifests, err = manifests.SetLabels(merge(k, labellers...))
+	manifests, err = manifests.SetLabels(merge(k.addSkaffoldLabels, k, labellers...))
 	if err != nil {
 		return nil, fmt.Errorf("setting labels in manifests: %w", err)
 	}
@@ -204,25 +214,12 @@ func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 	return deps.toList(), nil
 }
 
-func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, filepath string) error {
+func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, offline bool, filepath string) error {
 	manifests, err := k.renderManifests(ctx, out, builds, labellers)
 	if err != nil {
 		return err
 	}
-
-	manifestOut := out
-	if filepath != "" {
-		f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
-		if err != nil {
-			return fmt.Errorf("opening file for writing manifests: %w", err)
-		}
-		defer f.Close()
-		f.WriteString(manifests.String() + "\n")
-		return nil
-	}
-
-	fmt.Fprintln(manifestOut, manifests.String())
-	return nil
+	return outputRenderedManifests(manifests.String(), filepath, out)
 }
 
 // UnmarshalYAML implements JSON unmarshalling by reading an inline yaml fragment.

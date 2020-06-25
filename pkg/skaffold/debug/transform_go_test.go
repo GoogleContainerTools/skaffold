@@ -68,6 +68,7 @@ func TestDlvTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string
 		source      imageConfiguration
+		launcher    string
 		result      bool
 	}{
 		{
@@ -96,6 +97,12 @@ func TestDlvTransformer_IsApplicable(t *testing.T) {
 			result:      true,
 		},
 		{
+			description: "launcher entrypoint",
+			source:      imageConfiguration{entrypoint: []string{"launcher"}, arguments: []string{"dlv", "exec", "--headless"}},
+			launcher:    "launcher",
+			result:      true,
+		},
+		{
 			description: "entrypoint /bin/sh",
 			source:      imageConfiguration{entrypoint: []string{"/bin/sh"}},
 			result:      false,
@@ -109,6 +116,7 @@ func TestDlvTransformer_IsApplicable(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&entrypointLaunchers, []string{test.launcher})
 			result := dlvTransformer{}.IsApplicable(test.source)
 
 			t.CheckDeepEqual(test.result, result)
@@ -261,7 +269,7 @@ func TestTransformManifestDelve(t *testing.T) {
 					}},
 					InitContainers: []v1.Container{{
 						Name:         "install-go-support",
-						Image:        "gcr.io/gcp-dev-tools/duct-tape/go",
+						Image:        "HELPERS/go",
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
 					Volumes: []v1.Volume{{
@@ -304,7 +312,7 @@ func TestTransformManifestDelve(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-go-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/go",
+								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -347,7 +355,7 @@ func TestTransformManifestDelve(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-go-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/go",
+								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -390,7 +398,7 @@ func TestTransformManifestDelve(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-go-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/go",
+								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -431,7 +439,7 @@ func TestTransformManifestDelve(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-go-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/go",
+								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -472,7 +480,7 @@ func TestTransformManifestDelve(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-go-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/go",
+								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -515,7 +523,7 @@ func TestTransformManifestDelve(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-go-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/go",
+								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -568,7 +576,7 @@ func TestTransformManifestDelve(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-go-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/go",
+								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -586,7 +594,7 @@ func TestTransformManifestDelve(t *testing.T) {
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
-			result := transformManifest(value, retriever)
+			result := transformManifest(value, retriever, "HELPERS")
 
 			t.CheckDeepEqual(test.transformed, result)
 			t.CheckDeepEqual(test.out, value)

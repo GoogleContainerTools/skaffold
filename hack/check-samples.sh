@@ -16,8 +16,8 @@
 
 set -e -o pipefail
 
-EXAMPLES=`mktemp`
-INTEGRATION_EXAMPLES=`mktemp`
+EXAMPLES=`mktemp ${TMPDIR:-/tmp}/check-samples.XXXXXX`
+INTEGRATION_EXAMPLES=`mktemp ${TMPDIR:-/tmp}/check-samples.XXXXXX`
 
 find examples -mindepth 1 -maxdepth 1 -type d -not -empty -exec basename {} \; | sort > $EXAMPLES
 find integration/examples -mindepth 1 -maxdepth 1 -type d -not -empty -exec basename {} \; | sort > $INTEGRATION_EXAMPLES

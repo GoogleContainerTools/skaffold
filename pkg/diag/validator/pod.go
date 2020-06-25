@@ -19,12 +19,16 @@ package validator
 import (
 	"context"
 	"fmt"
+	"os/exec"
 	"regexp"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
@@ -42,11 +46,16 @@ const (
 	errImagePullBackOff = "ErrImagePullBackOff"
 	containerCreating   = "ContainerCreating"
 	podKind             = "pod"
+
+	failedScheduling = "FailedScheduling"
+	unhealthy        = "Unhealthy"
 )
 
 var (
 	runContainerRe = regexp.MustCompile(errorPrefix)
 	taintsRe       = regexp.MustCompile(taintsExp)
+	// for testing
+	runCli = executeCLI
 )
 
 // PodValidator implements the Validator interface for Pods
@@ -65,18 +74,19 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	if err != nil {
 		return nil, err
 	}
-
+	eventsClient := p.k.CoreV1().Events(ns)
 	var rs []Resource
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
+		// Update Pod status from Pod events if required
+		processPodEvents(eventsClient, po, ps)
 		// The GVK group is not populated for List Objects. Hence set `kind` to `pod`
 		// See https://github.com/kubernetes-sigs/controller-runtime/pull/389
 		if po.Kind == "" {
 			po.Kind = podKind
 		}
-		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.statusCode))
+		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.statusCode, ps.logs))
 	}
-
 	return rs, nil
 }
 
@@ -86,43 +96,44 @@ func (p *PodValidator) getPodStatus(pod *v1.Pod) *podStatus {
 	case v1.PodSucceeded:
 		return ps
 	default:
-		return ps.withErr(getContainerStatus(pod))
+		return ps.withErrAndLogs(getContainerStatus(pod))
 	}
 }
 
-func getContainerStatus(pod *v1.Pod) (proto.StatusCode, error) {
+func getContainerStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
 	for _, c := range pod.Status.Conditions {
 		if c.Type == v1.PodScheduled {
 			switch c.Status {
 			case v1.ConditionFalse:
-				return getUntoleratedTaints(c.Reason, c.Message)
+				sc, err := getUntoleratedTaints(c.Reason, c.Message)
+				return sc, nil, err
 			case v1.ConditionTrue:
 				// TODO(dgageot): Add EphemeralContainerStatuses
 				cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
 				// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
-				return getWaitingContainerStatus(cs)
+				return getWaitingContainerStatus(pod, cs)
 			case v1.ConditionUnknown:
-				return proto.StatusCode_STATUSCHECK_UNKNOWN, fmt.Errorf(c.Message)
+				return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf(c.Message)
 			}
 		}
 	}
-	return proto.StatusCode_STATUSCHECK_SUCCESS, nil
+	return proto.StatusCode_STATUSCHECK_SUCCESS, nil, nil
 }
 
-func getWaitingContainerStatus(cs []v1.ContainerStatus) (proto.StatusCode, error) {
+func getWaitingContainerStatus(po *v1.Pod, cs []v1.ContainerStatus) (proto.StatusCode, []string, error) {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
 	for _, c := range cs {
 		switch {
 		case c.State.Waiting != nil:
-			return extractErrorMessageFromWaitingContainerStatus(c)
+			return extractErrorMessageFromWaitingContainerStatus(po, c)
 		case c.State.Terminated != nil:
-			// TODO Add pod logs
-			return proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, fmt.Errorf("container %s terminated with exit code %d", c.Name, c.State.Terminated.ExitCode)
+			l := getPodLogs(po, c.Name)
+			return proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, l, fmt.Errorf("container %s terminated with exit code %d", c.Name, c.State.Terminated.ExitCode)
 		}
 	}
 	// No waiting or terminated containers, pod should be in good health.
-	return proto.StatusCode_STATUSCHECK_SUCCESS, nil
+	return proto.StatusCode_STATUSCHECK_SUCCESS, nil, nil
 }
 
 func getUntoleratedTaints(reason string, message string) (proto.StatusCode, error) {
@@ -173,10 +184,48 @@ func getUntoleratedTaints(reason string, message string) (proto.StatusCode, erro
 	return errCode, fmt.Errorf("%s: 0/%d nodes available: %s", reason, len(messages), strings.Join(messages, ", "))
 }
 
+func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
+	// Get pod events.
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypes(v1.SchemeGroupVersion, &pod)
+	events, err := e.Search(scheme, &pod)
+	if err != nil {
+		logrus.Debugf("could not fetch events for resource %s due to %v", pod.Name, err)
+		return
+	}
+	// find the latest failed event.
+	var recentEvent *v1.Event
+	for _, e := range events.Items {
+		if e.Type == v1.EventTypeNormal {
+			continue
+		}
+		event := e.DeepCopy()
+		if recentEvent == nil || recentEvent.EventTime.Before(&event.EventTime) {
+			recentEvent = event
+		}
+	}
+	if recentEvent == nil {
+		return
+	}
+	switch recentEvent.Reason {
+	case failedScheduling:
+		ps.statusCode = proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING
+		ps.err = fmt.Errorf(recentEvent.Message)
+	case unhealthy:
+		ps.statusCode = proto.StatusCode_STATUSCHECK_UNHEALTHY
+		ps.err = fmt.Errorf(recentEvent.Message)
+	default:
+		// TODO: Add unique error codes for reasons
+		ps.statusCode = proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT
+		ps.err = fmt.Errorf("%s: %s", recentEvent.Reason, recentEvent.Message)
+	}
+}
+
 type podStatus struct {
 	name       string
 	namespace  string
 	phase      string
+	logs       []string
 	err        error
 	statusCode proto.StatusCode
 }
@@ -185,9 +234,10 @@ func (p *podStatus) isStable() bool {
 	return p.phase == success || (p.phase == running && p.err == nil)
 }
 
-func (p *podStatus) withErr(errCode proto.StatusCode, err error) *podStatus {
+func (p *podStatus) withErrAndLogs(errCode proto.StatusCode, l []string, err error) *podStatus {
 	p.err = err
 	p.statusCode = errCode
+	p.logs = l
 	return p
 }
 
@@ -203,24 +253,24 @@ func (p *podStatus) String() string {
 	return fmt.Sprintf(actionableMessage, p.namespace, p.name)
 }
 
-func extractErrorMessageFromWaitingContainerStatus(c v1.ContainerStatus) (proto.StatusCode, error) {
+func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerStatus) (proto.StatusCode, []string, error) {
 	switch c.State.Waiting.Reason {
 	// Extract meaning full error out of container statuses.
 	case containerCreating:
-		return proto.StatusCode_STATUSCHECK_CONTAINER_CREATING, fmt.Errorf("creating container %s", c.Name)
+		return proto.StatusCode_STATUSCHECK_CONTAINER_CREATING, nil, fmt.Errorf("creating container %s", c.Name)
 	case crashLoopBackOff:
 		// TODO, in case of container restarting, return the original failure reason due to which container failed.
-		// TODO Add pod logs
-		return proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING, fmt.Errorf("container %s is backing off waiting to restart", c.Name)
+		l := getPodLogs(po, c.Name)
+		return proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING, l, fmt.Errorf("container %s is backing off waiting to restart", c.Name)
 	case imagePullErr, imagePullBackOff, errImagePullBackOff:
-		return proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
+		return proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
 	case runContainerError:
 		match := runContainerRe.FindStringSubmatch(c.State.Waiting.Message)
 		if len(match) != 0 {
-			return proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(match[3]))
+			return proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR, nil, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(match[3]))
 		}
 	}
-	return proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(c.State.Waiting.Message))
+	return proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN, nil, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(c.State.Waiting.Message))
 }
 
 func newPodStatus(n string, ns string, p string) *podStatus {
@@ -234,4 +284,22 @@ func newPodStatus(n string, ns string, p string) *podStatus {
 
 func trimSpace(msg string) string {
 	return strings.Trim(msg, " ")
+}
+
+func getPodLogs(po *v1.Pod, c string) []string {
+	logCommand := []string{"kubectl", "logs", po.Name, "-n", po.Namespace, "-c", c}
+	logs, err := runCli(logCommand[0], logCommand[1:])
+	if err != nil {
+		return []string{fmt.Sprintf("Error retrieving logs for pod %s. Try `%s`", po.Name, strings.Join(logCommand, " "))}
+	}
+	lines := strings.Split(string(logs), "\n")
+	for i, s := range lines {
+		lines[i] = fmt.Sprintf("[%s %s] %s", po.Name, c, s)
+	}
+	return lines
+}
+
+func executeCLI(cmdName string, args []string) ([]byte, error) {
+	cmd := exec.Command(cmdName, args...)
+	return cmd.CombinedOutput()
 }

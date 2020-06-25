@@ -64,6 +64,7 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string
 		source      imageConfiguration
+		launcher    string
 		result      bool
 	}{
 		{
@@ -152,8 +153,9 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 			result:      false,
 		},
 		{
-			description: "`node` docker-entrypoint.sh",
+			description: "entrypoint launcher", // `node` image docker-entrypoint.sh"
 			source:      imageConfiguration{entrypoint: []string{"docker-entrypoint.sh"}, arguments: []string{"npm", "run", "dev"}},
+			launcher:    "docker-entrypoint.sh",
 			result:      true,
 		},
 		{
@@ -164,6 +166,7 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&entrypointLaunchers, []string{test.launcher})
 			result := nodeTransformer{}.IsApplicable(test.source)
 
 			t.CheckDeepEqual(test.result, result)
@@ -291,8 +294,19 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				entrypoint: []string{"docker-entrypoint.sh"},
 				arguments:  []string{"npm run script"}},
 			result: v1.Container{
-				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=0.0.0.0:9229"}, {Name: "NODE_VERSION", Value: "10.12"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
+				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=0.0.0.0:9229"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+		},
+		{
+			description:   "image environment not copied",
+			containerSpec: v1.Container{Env: []v1.EnvVar{{Name: "OTHER", Value: "VALUE"}}},
+			configuration: imageConfiguration{entrypoint: []string{"node"}, env: map[string]string{"RANDOM": "VALUE"}},
+			result: v1.Container{
+				Command: []string{"node", "--inspect=0.0.0.0:9229"},
+				Env:     []v1.EnvVar{{Name: "OTHER", Value: "VALUE"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
+				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
@@ -357,7 +371,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 					}},
 					InitContainers: []v1.Container{{
 						Name:         "install-nodejs-support",
-						Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+						Image:        "HELPERS/nodejs",
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
 					Volumes: []v1.Volume{{
@@ -397,7 +411,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -434,7 +448,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -474,7 +488,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -512,7 +526,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -551,7 +565,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -593,7 +607,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -643,7 +657,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 							}},
 							InitContainers: []v1.Container{{
 								Name:         "install-nodejs-support",
-								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							Volumes: []v1.Volume{{
@@ -660,7 +674,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
-			result := transformManifest(value, retriever)
+			result := transformManifest(value, retriever, "HELPERS")
 
 			t.CheckDeepEqual(test.transformed, result)
 			t.CheckDeepEqual(test.out, value)

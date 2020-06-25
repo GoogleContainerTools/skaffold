@@ -4,7 +4,7 @@ metadata:
   name: go
 spec:
   containers:
-  - name: web
+  - name: go-web
     image: skaffold-debug-go
     ports:
     - containerPort: 8080

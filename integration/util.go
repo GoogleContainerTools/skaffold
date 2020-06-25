@@ -228,6 +228,18 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 }
 
 // GetDeployment gets a deployment by name.
+func (k *NSKubernetesClient) GetPod(podName string) *v1.Pod {
+	k.t.Helper()
+	k.WaitForPodsReady(podName)
+
+	pod, err := k.Pods().Get(podName, metav1.GetOptions{})
+	if err != nil {
+		k.t.Fatalf("Could not find pod: %s in namespace %s", podName, k.ns)
+	}
+	return pod
+}
+
+// GetDeployment gets a deployment by name.
 func (k *NSKubernetesClient) GetDeployment(depName string) *appsv1.Deployment {
 	k.t.Helper()
 	k.WaitForDeploymentsToStabilize(depName)

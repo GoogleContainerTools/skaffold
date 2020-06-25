@@ -20,6 +20,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
 
+const (
+	PushImageErrPrefix = "could not push image"
+)
+
 var (
 	// for testing
 	getConfigForCurrentContext = config.GetConfigForCurrentKubectx

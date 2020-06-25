@@ -4,7 +4,7 @@ metadata:
   name: python3
 spec:
   containers:
-  - name: web
+  - name: python3-web
     image: skaffold-debug-python3
     ports:
     - containerPort: 5000

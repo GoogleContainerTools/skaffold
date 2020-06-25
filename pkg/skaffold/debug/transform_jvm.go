@@ -46,10 +46,8 @@ func (t jdwpTransformer) IsApplicable(config imageConfiguration) bool {
 	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return config.entrypoint[0] == "java" || strings.HasSuffix(config.entrypoint[0], "/java")
 	}
-	if len(config.arguments) > 0 {
-		return config.arguments[0] == "java" || strings.HasSuffix(config.arguments[0], "/java")
-	}
-	return false
+	return len(config.arguments) > 0 &&
+		(config.arguments[0] == "java" || strings.HasSuffix(config.arguments[0], "/java"))
 }
 
 // captures the useful jdwp options (see `java -agentlib:jdwp=help`)
