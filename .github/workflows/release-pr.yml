@@ -27,9 +27,10 @@ jobs:
         
     - name: Install release-notes
       run: |
+        mkdir -p $HOME/deps
         curl -Lo $HOME/release-notes.tar.gz https://github.com/gsquared94/release-notes/releases/download/v0.1.2/release-notes-linux-amd64.tar.gz
-        tar xfz $HOME/release-notes.tar.gz -C $HOME
-        echo ::add-path::$HOME/gsutil
+        tar xfz $HOME/release-notes.tar.gz -C $HOME/deps
+        echo ::add-path::$HOME/deps
     
     - name: Generate Changelog
       id: changelog
