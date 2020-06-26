@@ -91,12 +91,8 @@ func validate(path string) bool {
 		valid = true
 
 	// Python.
-	// TODO(dgageot): When the Procfile is missing, we might want to inform the user
-	// that this still might be a valid python project.
 	case "requirements.txt":
-		if _, err := os.Stat(filepath.Join(filepath.Dir(path), "Procfile")); err == nil {
-			valid = true
-		}
+		valid = true
 	}
 
 	return valid && !hasParent(path, "node_modules") && !hasParent(path, "vendor")

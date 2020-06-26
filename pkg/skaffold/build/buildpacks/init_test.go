@@ -28,7 +28,6 @@ func TestValidate(t *testing.T) {
 	var tests = []struct {
 		description   string
 		path          string
-		otherFiles    []string
 		expectedValid bool
 	}{
 		{
@@ -52,24 +51,13 @@ func TestValidate(t *testing.T) {
 			expectedValid: true,
 		},
 		{
-			description: "Python",
-			path:        filepath.Join("path", "to", "requirements.txt"),
-			otherFiles: []string{
-				filepath.Join("path", "to", "Procfile"),
-			},
+			description:   "Python",
+			path:          filepath.Join("path", "to", "requirements.txt"),
 			expectedValid: true,
 		},
 		{
-			description:   "Python missing Procfile",
-			path:          filepath.Join("path", "to", "requirements.txt"),
-			expectedValid: false,
-		},
-		{
-			description: "Python (root)",
-			path:        "requirements.txt",
-			otherFiles: []string{
-				filepath.Join("Procfile"),
-			},
+			description:   "Python (root)",
+			path:          "requirements.txt",
 			expectedValid: true,
 		},
 		{
@@ -100,7 +88,7 @@ func TestValidate(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().Touch(test.path).Touch(test.otherFiles...)
+			tmpDir := t.NewTempDir().Touch(test.path)
 
 			isValid := Validate(tmpDir.Path(test.path))
 
