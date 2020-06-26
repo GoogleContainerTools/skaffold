@@ -1,10 +1,13 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
-on: create
+name: Create Release PR
+on:
+  create:
+    branches:
+     - 'release/v**'
+
 jobs:
   build:
-    if: github.event.ref_type == 'branch' && contains(github.event.ref, 'heads/release/v')
     name: Create Release PR
     runs-on: ubuntu-latest
     steps:
@@ -13,10 +16,15 @@ jobs:
       with:
         fetch-depth: 0
     
-    - name: Calculate Tag and release names
+    - name: Calculate Tag
       run: |
-        tag_ref=github.event.ref
-        tag_name="${tag_ref/heads\/release\//}"
+        t=$(echo ${{ github.ref }} | sed -ne 's/.*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')
+        if [ -z "$t" ]; then
+        echo Malformed release branch name; failed to extract semVer tag
+        return 1
+        fi
+        echo ::set-env name=TAG_NAME::"v${t}"
+        
     - name: Install release-notes
       run: |
         curl -Lo $HOME/release-notes.tar.gz https://github.com/gsquared94/release-notes/releases/download/v0.1.2/release-notes-linux-amd64.tar.gz
