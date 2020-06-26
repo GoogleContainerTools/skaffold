@@ -62,11 +62,15 @@ jobs:
         printf "%s\n" "${{ env.CHANGE_LOG }}" >> ${PWD}/CHANGELOG.md
         printf "%s" "${OLD}" >> ${PWD}/CHANGELOG.md
       
+    - name: Commit changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A && git commit -m "Release ${{ env.TAG_NAME }}" && git push origin release/${{ env.TAG_NAME }}
+
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v2
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        commit-message: Update for release ${{ env.TAG_NAME }}
-        title: "Release ${{ env.TAG_NAME }}"
-        labels: draft-release
-        branch: release/${{ env.TAG_NAME }}
+      run: |
+        curl -fsSL https://github.com/github/hub/raw/master/script/get | bash -s 2.14.1
+        bin/hub pull-request --no-edit -l draft-release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
