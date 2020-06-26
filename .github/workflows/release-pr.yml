@@ -1,0 +1,63 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+on: create
+jobs:
+  build:
+    if: github.event.ref_type == 'branch' && contains(github.event.ref, 'heads/release/v')
+    name: Create Release PR
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    
+    - name: Calculate Tag and release names
+      run: |
+        tag_ref=github.event.ref
+        tag_name="${tag_ref/heads\/release\//}"
+    - name: Install release-notes
+      run: |
+        curl -Lo $HOME/release-notes.tar.gz https://github.com/gsquared94/release-notes/releases/download/v0.1.2/release-notes-linux-amd64.tar.gz
+        tar xfz $HOME/release-notes.tar.gz -C $HOME
+        echo ::add-path::$HOME/gsutil
+    
+    - name: Generate Changelog
+      id: changelog
+      run: |
+        changelog=$(release-notes GoogleContainerTools skaffold --since=v1.11.0 --token=${{ secrets.GITHUB_TOKEN }})
+        echo "::set-env name=CHANGE_LOG::$changelog"
+        
+    - name: Sync examples
+      run: |
+        EXAMPLES_DIR=${PWD}/examples
+        INTEGRATION_EXAMPLES_DIR=${PWD}/integration/examples
+        rm -rf ${EXAMPLES_DIR} && rm -rf ${INTEGRATION_EXAMPLES_DIR}/bazel/bazel-* && cp -r ${INTEGRATION_EXAMPLES_DIR} ${EXAMPLES_DIR} && rm -rf ${EXAMPLES_DIR}/test-*
+    
+    - name: Mark latest config
+      id: config
+      run: |
+        config=$(go run hack/versions/cmd/mark_latest_released/main.go)
+        echo "::set-env name=CONGIF_UPDATE_MESSAGE::$config"
+      
+    - name: Update CHANGELOG.md
+      run: |
+        OLD=$(<${PWD}/CHANGELOG.md)
+        printf "# %s Release - %s" "${{ env.TAG_NAME }}" "$(date +'%m/%d/%Y')" > ${PWD}/CHANGELOG.md
+        printf "%s" "${{ env.CONGIF_UPDATE_MESSAGE }}" >> ${PWD}/CHANGELOG.md
+        printf "%s\n%s\n\n " '**Linux**' '`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/'${{ env.TAG_NAME }}'/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`'  >> ${PWD}/CHANGELOG.md
+        printf "%s\n%s\n\n " '**macOS**' '`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/'${{ env.TAG_NAME }}'/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`' >> ${PWD}/CHANGELOG.md
+        printf "%s\n%s\n\n " '**Windows**' "https://storage.googleapis.com/skaffold/releases/${{ env.TAG_NAME }}/skaffold-windows-amd64.exe" >> ${PWD}/CHANGELOG.md
+        printf "%s\n%s\n\n " '**Docker image**' '`gcr.io/k8s-skaffold/skaffold:'${{ env.TAG_NAME }}'`' >> ${PWD}/CHANGELOG.md
+        printf "%s\n" "${{ env.CHANGE_LOG }}" >> ${PWD}/CHANGELOG.md
+        printf "%s" "${OLD}" >> ${PWD}/CHANGELOG.md
+      
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v2
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: Update for release ${{ env.TAG_NAME }}
+        title: "Release ${{ env.TAG_NAME }}"
+        labels: draft-release
+        branch: release/${{ env.TAG_NAME }}
