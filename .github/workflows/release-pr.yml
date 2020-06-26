@@ -36,7 +36,7 @@ jobs:
       id: changelog
       run: |
         changelog=$(release-notes GoogleContainerTools skaffold --since=v1.11.0 --token=${{ secrets.GITHUB_TOKEN }})
-        echo "::set-env name=CHANGE_LOG::$changelog"
+        echo changelog > $HOME/change.txt
         
     - name: Sync examples
       run: |
@@ -48,18 +48,20 @@ jobs:
       id: config
       run: |
         config=$(go run hack/versions/cmd/mark_latest_released/main.go)
-        echo "::set-env name=CONGIF_UPDATE_MESSAGE::$config"
+        echo config > $HOME/config.txt
       
     - name: Update CHANGELOG.md
       run: |
         OLD=$(<${PWD}/CHANGELOG.md)
-        printf "# %s Release - %s" "${{ env.TAG_NAME }}" "$(date +'%m/%d/%Y')" > ${PWD}/CHANGELOG.md
-        printf "%s" "${{ env.CONGIF_UPDATE_MESSAGE }}" >> ${PWD}/CHANGELOG.md
+        CHANGE_LOG=$(<${HOME}/change.txt)
+        CONGIF_UPDATE_MESSAGE=$(<${HOME}/config.txt)
+        printf "# %s Release - %s\n" "${{ env.TAG_NAME }}" "$(date +'%m/%d/%Y')" > ${PWD}/CHANGELOG.md
+        printf "%s\n" "${CONGIF_UPDATE_MESSAGE}" >> ${PWD}/CHANGELOG.md
         printf "%s\n%s\n\n " '**Linux**' '`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/'${{ env.TAG_NAME }}'/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`'  >> ${PWD}/CHANGELOG.md
         printf "%s\n%s\n\n " '**macOS**' '`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/'${{ env.TAG_NAME }}'/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`' >> ${PWD}/CHANGELOG.md
         printf "%s\n%s\n\n " '**Windows**' "https://storage.googleapis.com/skaffold/releases/${{ env.TAG_NAME }}/skaffold-windows-amd64.exe" >> ${PWD}/CHANGELOG.md
         printf "%s\n%s\n\n " '**Docker image**' '`gcr.io/k8s-skaffold/skaffold:'${{ env.TAG_NAME }}'`' >> ${PWD}/CHANGELOG.md
-        printf "%s\n" "${{ env.CHANGE_LOG }}" >> ${PWD}/CHANGELOG.md
+        printf "%s\n" "${CHANGE_LOG}" >> ${PWD}/CHANGELOG.md
         printf "%s" "${OLD}" >> ${PWD}/CHANGELOG.md
       
     - name: Commit changes
