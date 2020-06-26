@@ -34,8 +34,7 @@ jobs:
     
     - name: Generate Changelog
       run: |
-        changelog=$(release-notes GoogleContainerTools skaffold --since=v1.11.0 --token=${{ secrets.GITHUB_TOKEN }})
-        echo $changelog > $HOME/change.txt
+        release-notes GoogleContainerTools skaffold --since=v1.11.0 --token=${{ secrets.GITHUB_TOKEN }} > $HOME/change.txt
         
     - name: Sync examples
       run: |
@@ -45,22 +44,19 @@ jobs:
     
     - name: Mark latest config
       run: |
-        config=$(go run hack/versions/cmd/mark_latest_released/main.go)
-        echo $config > $HOME/config.txt
+        go run hack/versions/cmd/mark_latest_released/main.go > $HOME/config.txt
       
     - name: Update CHANGELOG.md
       run: |
-        OLD=$(<${PWD}/CHANGELOG.md)
-        CHANGE_LOG=$(<${HOME}/change.txt)
-        CONGIF_UPDATE_MESSAGE=$(<${HOME}/config.txt)
-        printf "# %s Release - %s\n" "${{ env.TAG_NAME }}" "$(date +'%m/%d/%Y')" > ${PWD}/CHANGELOG.md
-        printf "%s\n" "${CONGIF_UPDATE_MESSAGE}" >> ${PWD}/CHANGELOG.md
+        mv ${PWD}/CHANGELOG.md ${HOME}
+        printf "# %s Release - %s\n" "${{ env.TAG_NAME }}" "$(date +'%m/%d/%Y')" >> ${PWD}/CHANGELOG.md
+        ${HOME}/config.txt >> ${PWD}/CHANGELOG.md
         printf "%s\n%s\n\n " '**Linux**' '`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/'${{ env.TAG_NAME }}'/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`'  >> ${PWD}/CHANGELOG.md
         printf "%s\n%s\n\n " '**macOS**' '`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/'${{ env.TAG_NAME }}'/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`' >> ${PWD}/CHANGELOG.md
         printf "%s\n%s\n\n " '**Windows**' "https://storage.googleapis.com/skaffold/releases/${{ env.TAG_NAME }}/skaffold-windows-amd64.exe" >> ${PWD}/CHANGELOG.md
         printf "%s\n%s\n\n " '**Docker image**' '`gcr.io/k8s-skaffold/skaffold:'${{ env.TAG_NAME }}'`' >> ${PWD}/CHANGELOG.md
-        printf "%s\n" "${CHANGE_LOG}" >> ${PWD}/CHANGELOG.md
-        printf "%s" "${OLD}" >> ${PWD}/CHANGELOG.md
+        ${HOME}/change.txt >> ${PWD}/CHANGELOG.md
+        ${HOME}/CHANGELOG.md >> ${PWD}/CHANGELOG.md
       
     - name: Commit changes
       run: |
