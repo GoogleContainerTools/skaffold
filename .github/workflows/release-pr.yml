@@ -48,7 +48,7 @@ jobs:
       
     - name: Update CHANGELOG.md
       run: |
-        mv ${PWD}/CHANGELOG.md ${HOME}
+        mv ${PWD}/CHANGELOG.md ${HOME}/CHANGELOG.md
         printf "# %s Release - %s\n" "${{ env.TAG_NAME }}" "$(date +'%m/%d/%Y')" >> ${PWD}/CHANGELOG.md
         ${HOME}/config.txt >> ${PWD}/CHANGELOG.md
         printf "%s\n%s\n\n " '**Linux**' '`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/'${{ env.TAG_NAME }}'/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`'  >> ${PWD}/CHANGELOG.md
