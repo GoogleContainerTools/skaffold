@@ -33,10 +33,9 @@ jobs:
         echo ::add-path::$HOME/deps
     
     - name: Generate Changelog
-      id: changelog
       run: |
         changelog=$(release-notes GoogleContainerTools skaffold --since=v1.11.0 --token=${{ secrets.GITHUB_TOKEN }})
-        echo changelog > $HOME/change.txt
+        echo $changelog > $HOME/change.txt
         
     - name: Sync examples
       run: |
@@ -45,10 +44,9 @@ jobs:
         rm -rf ${EXAMPLES_DIR} && rm -rf ${INTEGRATION_EXAMPLES_DIR}/bazel/bazel-* && cp -r ${INTEGRATION_EXAMPLES_DIR} ${EXAMPLES_DIR} && rm -rf ${EXAMPLES_DIR}/test-*
     
     - name: Mark latest config
-      id: config
       run: |
         config=$(go run hack/versions/cmd/mark_latest_released/main.go)
-        echo config > $HOME/config.txt
+        echo $config > $HOME/config.txt
       
     - name: Update CHANGELOG.md
       run: |
