@@ -32,7 +32,7 @@ jobs:
 
     - name: Generate Changelog
       run: |
-        release-notes GoogleContainerTools skaffold --since=v1.11.0 --token=${{ secrets.GITHUB_TOKEN }} > $HOME/change.txt
+        release-notes GoogleContainerTools skaffold --token=${{ secrets.GITHUB_TOKEN }} > $HOME/change.txt
 
     - name: Sync examples
       run: |
