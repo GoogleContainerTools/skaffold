@@ -50,6 +50,15 @@ func GetLatestVersion() (string, bool) {
 	return current, latestIsReleased
 }
 
+func IsReleasingNewVersion() (string, bool) {
+	current := strings.TrimPrefix(latest.Version, "skaffold/")
+	config, err := ioutil.ReadFile("pkg/skaffold/schema/latest/config.go")
+	if err != nil {
+		logrus.Fatalf("failed to read latest config: %s", err)
+	}
+	return current, !strings.Contains(string(config), "This config version is already released")
+}
+
 func getLastReleasedConfigVersion() string {
 	lastTag, err := update.DownloadLatestVersion()
 	if err != nil {

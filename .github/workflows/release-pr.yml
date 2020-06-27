@@ -1,0 +1,69 @@
+name: Create Release PR
+on:
+  create:
+    branches:
+    - 'release/v**'
+
+jobs:
+  build:
+    name: Create Release PR
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Calculate Tag
+      run: |
+        t=$(echo ${{ github.ref }} | sed -ne 's/.*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')
+        if [ -z "$t" ]; then
+        echo Malformed release branch name; failed to extract semVer tag
+        return 1
+        fi
+        echo ::set-env name=TAG_NAME::"v${t}"
+
+    - name: Install release-notes
+      run: |
+        mkdir -p $HOME/deps
+        curl -Lo $HOME/release-notes.tar.gz https://github.com/gsquared94/release-notes/releases/download/v0.1.2/release-notes-linux-amd64.tar.gz
+        tar xfz $HOME/release-notes.tar.gz -C $HOME/deps
+        echo ::add-path::$HOME/deps
+
+    - name: Generate Changelog
+      run: |
+        release-notes GoogleContainerTools skaffold --since=v1.11.0 --token=${{ secrets.GITHUB_TOKEN }} > $HOME/change.txt
+
+    - name: Sync examples
+      run: |
+        EXAMPLES_DIR=${PWD}/examples
+        INTEGRATION_EXAMPLES_DIR=${PWD}/integration/examples
+        rm -rf ${EXAMPLES_DIR} && rm -rf ${INTEGRATION_EXAMPLES_DIR}/bazel/bazel-* && cp -r ${INTEGRATION_EXAMPLES_DIR} ${EXAMPLES_DIR} && rm -rf ${EXAMPLES_DIR}/test-*
+
+    - name: Mark latest config
+      run: |
+        go run hack/versions/cmd/mark_latest_released/main.go > $HOME/config.txt
+
+    - name: Update CHANGELOG.md
+      run: |
+        mv ${PWD}/CHANGELOG.md ${HOME}/CHANGELOG.md
+        printf "# %s Release - %s\n" "${{ env.TAG_NAME }}" "$(date +'%m/%d/%Y')" >> ${PWD}/CHANGELOG.md
+        cat ${HOME}/config.txt >> ${PWD}/CHANGELOG.md
+        printf "%s\n%s\n\n " '**Linux**' '`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/'${{ env.TAG_NAME }}'/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`'  >> ${PWD}/CHANGELOG.md
+        printf "%s\n%s\n\n " '**macOS**' '`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/'${{ env.TAG_NAME }}'/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`' >> ${PWD}/CHANGELOG.md
+        printf "%s\n%s\n\n " '**Windows**' "https://storage.googleapis.com/skaffold/releases/${{ env.TAG_NAME }}/skaffold-windows-amd64.exe" >> ${PWD}/CHANGELOG.md
+        printf "%s\n%s\n\n " '**Docker image**' '`gcr.io/k8s-skaffold/skaffold:'${{ env.TAG_NAME }}'`' >> ${PWD}/CHANGELOG.md
+        cat ${HOME}/change.txt >> ${PWD}/CHANGELOG.md
+        cat ${HOME}/CHANGELOG.md >> ${PWD}/CHANGELOG.md
+
+    - name: Commit changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A && git commit -m "Release ${{ env.TAG_NAME }}" && git push origin release/${{ env.TAG_NAME }}
+    - name: Create Pull Request
+      run: |
+        curl -fsSL https://github.com/github/hub/raw/master/script/get | bash -s 2.14.1
+        bin/hub pull-request --no-edit -l draft-release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

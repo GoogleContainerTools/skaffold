@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"path"
 
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
@@ -24,5 +25,8 @@ import (
 
 func main() {
 	latest := path.Join("pkg", "skaffold", "schema", "latest", "config.go")
+	if ver, ok := schema.IsReleasingNewVersion(); ok {
+		fmt.Printf("*Note*: This release comes with a new config version `%s`. To upgrade your `skaffold.yaml`, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best it can.\n\n", ver)
+	}
 	schema.UpdateVersionComment(latest, true)
 }
