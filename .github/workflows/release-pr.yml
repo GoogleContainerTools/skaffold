@@ -18,7 +18,7 @@ jobs:
       run: |
         t=$(echo ${{ github.ref }} | sed -ne 's/.*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')
         if [ -z "$t" ]; then
-        echo Malformed release branch name; failed to extract semVer tag
+        echo "Malformed release branch name ${{ github.ref }}; failed to extract semVer tag"
         return 1
         fi
         echo ::set-env name=TAG_NAME::"v${t}"
