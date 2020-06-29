@@ -20,7 +20,6 @@ import (
 	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 )
 
 // kustomizeAnalyzer is a Visitor during the directory analysis that finds kustomize files
@@ -33,7 +32,6 @@ type kustomizeAnalyzer struct {
 
 func (k *kustomizeAnalyzer) analyzeFile(path string) error {
 	switch {
-	case schema.IsSkaffoldConfig(path):
 	case deploy.IsKustomizationBase(path):
 		k.bases = append(k.bases, filepath.Dir(path))
 	case deploy.IsKustomizationPath(path):
