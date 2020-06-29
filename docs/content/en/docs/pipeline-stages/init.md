@@ -9,18 +9,20 @@ featureId: init
 
 Skaffold auto-generates `build` and `deploy` config for supported builders and deployers.
 
-
 ## Build Config Initialization
-`skaffold init` currently supports build detection for two builders:
+
+`skaffold init` currently supports build detection for those builders:
 
 1. [Docker]({{<relref "/docs/pipeline-stages/builders/docker">}})
-2. [Jib]({{<relref "/docs/pipeline-stages/builders/jib">}})
+2. [Jib]({{<relref "/docs/pipeline-stages/builders/jib">}}) (with `--XXenableJibInit` flag)
+2. [Buildpacks]({{<relref "/docs/pipeline-stages/builders/buildpacks">}}) (with `--XXenableBuildpacksInit` flag)
 
-`skaffold init` will walk your project directory and look for any `Dockerfiles` 
-or `build.gradle/pom.xml`. Please note, `skaffold init` skips files that are larger than 500MB.
+`skaffold init` walks your project directory and looks for any build configuration files such as `Dockerfile`,
+`build.gradle/pom.xml`, `package.json`, `requirements.txt` or `go.mod`. `init` skips files that are larger
+than 500MB.
 
-If you have multiple `Dockerfile` or `build.gradle/pom.xml` files, Skaffold will prompt you to
-pair your build config files with any images detected in your deploy configuration.
+If there are multiple build configuration files, Skaffold will prompt you to pair your build configuration files
+with any images detected in your deploy configuration.
 
 E.g. For an application with [two microservices] (https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices):
 
@@ -93,7 +95,7 @@ When overlay directories are found, these will be listed in the generated Skaffo
 *Note: order is guaranteed, since Skaffold's directory parsing is always deterministic.*
 
 ## Init API
-`skaffold init` also exposes an AP:I which tools like IDEs can integrate with via flags.
+`skaffold init` also exposes an API which tools like IDEs can integrate with via flags.
 
 This API can be used to 
 
@@ -176,3 +178,14 @@ deploy:
     - leeroy-app/kubernetes/deployment.yaml
     - leeroy-web/kubernetes/deployment.yaml
 ```
+
+### Exit Codes
+
+When `skaffold init` fails, it exits with an code that depends on the error:
+
+| Exit Code | Error |
+| ---- | --- |
+| 101 | No build configuration could be found |
+| 102 | No k8s manifest could be found or generated |
+| 102 | An existing skaffold.yaml was found |
+| 104 | Couldn't match builder with image names automatically |
