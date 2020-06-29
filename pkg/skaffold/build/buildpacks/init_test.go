@@ -109,26 +109,6 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-func TestValidateIgnored(t *testing.T) {
-	paths := []string{
-		filepath.Join("parent", "node_modules", "package.json"),
-		filepath.Join("node_modules", "package.json"),
-		filepath.Join("vendor", "go.mod"),
-		filepath.Join("parent", "vendor", "go.mod"),
-		filepath.Join("parent", "vendor", "project.toml"),
-		filepath.Join("parent", "vendor", "requirements.txt"),
-		filepath.Join("node_modules", "project.toml"),
-	}
-
-	for _, path := range paths {
-		testutil.Run(t, path, func(t *testutil.T) {
-			isValid := Validate(path)
-
-			t.CheckFalse(isValid)
-		})
-	}
-}
-
 func TestDescribe(t *testing.T) {
 	var tests = []struct {
 		description    string

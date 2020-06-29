@@ -243,6 +243,44 @@ func TestAnalyze(t *testing.T) {
 			shouldErr: false,
 		},
 		{
+			description: "should skip vendor folder",
+			filesWithContents: map[string]string{
+				"Dockerfile":            emptyFile,
+				"vendor/Dockerfile":     emptyFile,
+				"vendor/pom.xml":        emptyFile,
+				"vendor/package.json":   emptyFile,
+				"sub/vendor/Dockerfile": emptyFile,
+			},
+			config: initconfig.Config{
+				Force:                false,
+				EnableBuildpacksInit: true,
+				EnableJibInit:        true,
+			},
+			expectedBuilders: []builder{
+				{name: "Docker", path: "Dockerfile"},
+			},
+			shouldErr: false,
+		},
+		{
+			description: "should skip node_modules folder",
+			filesWithContents: map[string]string{
+				"Dockerfile":                  emptyFile,
+				"node_modules/Dockerfile":     emptyFile,
+				"node_modules/pom.xml":        emptyFile,
+				"node_modules/package.json":   emptyFile,
+				"sub/node_modules/Dockerfile": emptyFile,
+			},
+			config: initconfig.Config{
+				Force:                false,
+				EnableBuildpacksInit: true,
+				EnableJibInit:        true,
+			},
+			expectedBuilders: []builder{
+				{name: "Docker", path: "Dockerfile"},
+			},
+			shouldErr: false,
+		},
+		{
 			description: "should skip large files",
 			filesWithContents: map[string]string{
 				"k8pod.yml":               validK8sManifest,
