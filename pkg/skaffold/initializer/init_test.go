@@ -204,7 +204,10 @@ func TestDoInit(t *testing.T) {
 					ConfigurationFile: "skaffold.yaml.out",
 				},
 			},
-			shouldErr: true,
+			expectedError: `Projects set up to deploy with helm must be manually configured.
+
+See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed guide on setting your project up with skaffold.`,
+			expectedExitCode: 1,
 		},
 	}
 	for _, test := range tests {

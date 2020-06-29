@@ -1,7 +1,7 @@
 ### Example: deploy multiple releases with Helm
 
-You can deploy multiple releases with skaffold, each will need a chartPath, a values file, and namespace.
-Skaffold can inject intermediate build tags in the the values map in the skaffold.yaml.
+You can deploy multiple releases with Skaffold, each will need a chartPath, a values file, and an optional namespace.
+Skaffold can inject intermediate build tags in the the values map in the `skaffold.yaml`.
 
 Let's walk through the skaffold yaml:
 
