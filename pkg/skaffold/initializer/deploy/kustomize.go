@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -140,7 +141,7 @@ func (k *kustomize) GetImages() []string {
 // we have at least one manifest before generating a config
 func (k *kustomize) Validate() error {
 	if len(k.images) == 0 {
-		return NoManifest
+		return errors.NoManifestErr{}
 	}
 	return nil
 }

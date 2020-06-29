@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -38,7 +39,7 @@ type cliBuildInitializer struct {
 
 func (c *cliBuildInitializer) ProcessImages(images []string) error {
 	if len(c.builders) == 0 && len(c.cliArtifacts) == 0 {
-		return ErrorNoBuilder
+		return errors.NoBuilderErr{}
 	}
 	if err := c.processCliArtifacts(); err != nil {
 		return fmt.Errorf("processing cli artifacts: %w", err)

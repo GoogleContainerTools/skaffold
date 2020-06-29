@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/generator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -37,7 +38,7 @@ type defaultBuildInitializer struct {
 
 func (d *defaultBuildInitializer) ProcessImages(images []string) error {
 	if len(d.builders) == 0 {
-		return ErrorNoBuilder
+		return errors.NoBuilderErr{}
 	}
 	if d.skipBuild {
 		return nil

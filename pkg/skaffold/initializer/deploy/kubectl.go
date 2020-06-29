@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -68,7 +69,7 @@ func (k *kubectl) GetImages() []string {
 // we have at least one manifest before generating a config
 func (k *kubectl) Validate() error {
 	if len(k.images) == 0 {
-		return NoManifest
+		return errors.NoManifestErr{}
 	}
 	return nil
 }
