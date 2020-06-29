@@ -114,11 +114,17 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 
 	// Traverse files
 	for _, file := range dirents {
-		if util.IsHiddenFile(file.Name()) || util.IsHiddenDir(file.Name()) {
+		name := file.Name()
+
+		if file.IsDir() {
+			if util.IsHiddenDir(name) || skipFolder(name) {
+				continue
+			}
+		} else if util.IsHiddenFile(name) {
 			continue
 		}
 
-		filePath := filepath.Join(dir, file.Name())
+		filePath := filepath.Join(dir, name)
 
 		// If we found a directory, keep track of it until we've gone through all the files first
 		if file.IsDir() {
@@ -160,4 +166,8 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 	}
 
 	return nil
+}
+
+func skipFolder(name string) bool {
+	return name == "vendor" || name == "node_modules"
 }
