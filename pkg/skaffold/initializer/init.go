@@ -48,7 +48,7 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 	// helm projects can't currently be bootstrapped automatically by skaffold, so we fail fast and link to our docs instead.
 	if len(a.ChartPaths()) > 0 {
 		//nolint
-		return errors.New(`Projects set up to deploy with helm must be configured with skaffold manually.
+		return errors.New(`Projects set up to deploy with helm must be manually configured.
 
 See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed guide on setting your project up with skaffold.`)
 	}
