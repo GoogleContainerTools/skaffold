@@ -53,6 +53,20 @@ func withRunner(ctx context.Context, action func(runner.Runner, *latest.Skaffold
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
 func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+	runCtx, config, err := runContext(opts)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	runner, err := runner.NewForConfig(runCtx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("creating runner: %w", err)
+	}
+
+	return runner, config, nil
+}
+
+func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.SkaffoldConfig, error) {
 	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
 	if err != nil {
 		if os.IsNotExist(errors.Unwrap(err)) {
@@ -87,12 +101,7 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 		return nil, nil, fmt.Errorf("getting run context: %w", err)
 	}
 
-	runner, err := runner.NewForConfig(runCtx)
-	if err != nil {
-		return nil, nil, fmt.Errorf("creating runner: %w", err)
-	}
-
-	return runner, config, nil
+	return runCtx, config, nil
 }
 
 func warnIfUpdateIsAvailable() {
