@@ -20,7 +20,7 @@ go run ./hack/versions/cmd/new/version.go $@
 
 goimports -w ./pkg/skaffold/schema
 make generate-schemas
-git --no-pager diff --minimal
+./hack/generate-man.sh
 make quicktest
 
 echo

@@ -57,14 +57,21 @@ func main() {
 	next := readNextVersion()
 
 	// Create code to upgrade from current to new
-	cp(path(prev, "upgrade.go"), path(current, "upgrade.go"))
-	sed(path(current, "upgrade.go"), current, next)
-	sed(path(current, "upgrade.go"), prev, current)
+
+	original := "v2beta2" // arbitrarily chosen because it's a blank slate
+	originalNext := "v2beta3"
+
+	cp(path(original, "upgrade.go"), path(current, "upgrade.go"))
+	sed(path(current, "upgrade.go"), originalNext, "latest")
+	sed(path(current, "upgrade.go"), original, current)
 
 	// Create a test for the upgrade from current to new
-	cp(path(prev, "upgrade_test.go"), path(current, "upgrade_test.go"))
-	sed(path(current, "upgrade_test.go"), current, next)
-	sed(path(current, "upgrade_test.go"), prev, current)
+	cp(path(original, "upgrade_test.go"), path(current, "upgrade_test.go"))
+
+	// upgrade the import to latest, but the expected config string to the next version
+	sed(path(current, "upgrade_test.go"), "skaffold/schema/"+originalNext, "skaffold/schema/latest")
+	sed(path(current, "upgrade_test.go"), "skaffold/"+originalNext, "skaffold/"+next)
+	sed(path(current, "upgrade_test.go"), original, current)
 
 	// Previous version now upgrades to current instead of latest
 	sed(path(prev, "upgrade.go"), "latest", current)
