@@ -37,7 +37,7 @@ func CheckArtifacts(ctx context.Context, runCtx *runcontext.RunContext, out io.W
 		color.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.ImageName)
 
 		if artifact.DockerArtifact != nil {
-			size, err := sizeOfDockerContext(ctx, artifact, runCtx.InsecureRegistries)
+			size, err := sizeOfDockerContext(artifact)
 			if err != nil {
 				return fmt.Errorf("computing the size of the Docker context: %w", err)
 			}
@@ -128,16 +128,11 @@ func timeToComputeMTimes(deps []string) (time.Duration, error) {
 	return time.Since(start), nil
 }
 
-func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, insecureRegistries map[string]bool) (int64, error) {
-	buildCtx, buildCtxWriter := io.Pipe()
-	go func() {
-		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, a.Workspace, a.DockerArtifact, insecureRegistries)
-		if err != nil {
-			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
-			return
-		}
-		buildCtxWriter.Close()
-	}()
+func sizeOfDockerContext(a *latest.Artifact) (int64, error) {
+	buildCtx, _, err := docker.BuildContext(a.Workspace, a.DockerArtifact.DockerfilePath)
+	if err != nil {
+		return 0, fmt.Errorf("creating docker context: %w", err)
+	}
 
 	return io.Copy(ioutil.Discard, buildCtx)
 }

@@ -18,59 +18,85 @@ package docker
 
 import (
 	"archive/tar"
-	"context"
 	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestDockerContext(t *testing.T) {
+func TestBuildContext(t *testing.T) {
 	for _, dir := range []string{".", "sub"} {
 		testutil.Run(t, dir, func(t *testutil.T) {
-			imageFetcher := fakeImageFetcher{}
-			t.Override(&RetrieveImage, imageFetcher.fetch)
 			t.NewTempDir().
 				Write(dir+"/.dockerignore", "**/ignored.txt\nalsoignored.txt").
-				Write(dir+"/Dockerfile", "FROM busybox\nCOPY ./files /files").
+				Touch(dir + "/Dockerfile").
 				Touch(dir + "/files/ignored.txt").
 				Touch(dir + "/files/included.txt").
 				Touch(dir + "/ignored.txt").
 				Touch(dir + "/alsoignored.txt").
 				Chdir()
 
-			artifact := &latest.DockerArtifact{
-				DockerfilePath: "Dockerfile",
-			}
+			buildCtx, relDockerfile, err := BuildContext(dir, "Dockerfile")
+			t.CheckNoError(err)
+			t.CheckDeepEqual("Dockerfile", relDockerfile)
 
-			reader, writer := io.Pipe()
-			go func() {
-				err := CreateDockerTarContext(context.Background(), writer, dir, artifact, nil)
-				if err != nil {
-					writer.CloseWithError(err)
-				} else {
-					writer.Close()
-				}
-			}()
-
-			files := make(map[string]bool)
-			tr := tar.NewReader(reader)
-			for {
-				header, err := tr.Next()
-				if err == io.EOF {
-					break
-				}
-				t.CheckNoError(err)
-
-				files[header.Name] = true
-			}
-
+			files, err := readFiles(buildCtx)
+			t.CheckNoError(err)
 			t.CheckFalse(files["ignored.txt"])
 			t.CheckFalse(files["alsoignored.txt"])
 			t.CheckFalse(files["files/ignored.txt"])
+			t.CheckTrue(files[".dockerignore"])
 			t.CheckTrue(files["files/included.txt"])
 			t.CheckTrue(files["Dockerfile"])
 		})
 	}
+}
+
+func TestBuildContextDockerfileOutsideContext(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.NewTempDir().
+			Touch("Dockerfile").
+			Touch("sub/file.txt").
+			Chdir()
+
+		buildCtx, relDockerfile, err := BuildContext("sub", "../Dockerfile")
+		t.CheckNoError(err)
+
+		files, err := readFiles(buildCtx)
+		t.CheckNoError(err)
+		t.CheckTrue(files["file.txt"])
+		t.CheckTrue(files[".dockerignore"]) // Created on the fly by BuildContext()
+		t.CheckTrue(files[relDockerfile])
+	})
+}
+
+func TestBuildContextDockerfileNotFound(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.NewTempDir().Chdir()
+
+		_, _, err := BuildContext(".", "Dockerfile.notfound")
+
+		t.CheckError(true, err)
+	})
+}
+
+func readFiles(buildCtx io.ReadCloser) (map[string]bool, error) {
+	defer buildCtx.Close()
+
+	files := make(map[string]bool)
+
+	tr := tar.NewReader(buildCtx)
+	for {
+		header, err := tr.Next()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+
+		files[header.Name] = true
+	}
+
+	return files, nil
 }

@@ -46,19 +46,6 @@ func CreateMappedTar(w io.Writer, root string, pathMap map[string][]string) erro
 	return nil
 }
 
-func CreateTar(w io.Writer, root string, paths []string) error {
-	tw := tar.NewWriter(w)
-	defer tw.Close()
-
-	for _, path := range paths {
-		if err := addFileToTar(root, path, "", tw, nil); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func CreateTarWithParents(w io.Writer, root string, paths []string, uid, gid int, modTime time.Time) error {
 	headerModifier := func(header *tar.Header) {
 		header.ModTime = modTime
@@ -96,7 +83,17 @@ func CreateTarWithParents(w io.Writer, root string, paths []string, uid, gid int
 func CreateTarGz(w io.Writer, root string, paths []string) error {
 	gw := gzip.NewWriter(w)
 	defer gw.Close()
-	return CreateTar(gw, root, paths)
+
+	tw := tar.NewWriter(gw)
+	defer tw.Close()
+
+	for _, path := range paths {
+		if err := addFileToTar(root, path, "", tw, nil); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func addFileToTar(root string, src string, dst string, tw *tar.Writer, hm headerModifier) error {

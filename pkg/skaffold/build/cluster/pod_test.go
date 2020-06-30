@@ -139,13 +139,13 @@ func TestKanikoArgs(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			commonArgs := []string{"--dockerfile", "Dockerfile", "--context", "dir:///kaniko/buildcontext", "--destination", "gcr.io/tag", "-v", "info"}
+			commonArgs := []string{"--dockerfile", "Dockerfile.rel", "--context", "dir:///kaniko/buildcontext", "--destination", "gcr.io/tag", "-v", "info"}
 
 			tag := "gcr.io/tag"
 			if test.tag != "" {
 				tag = test.tag
 			}
-			args, err := kanikoArgs(test.artifact, tag, test.insecureRegistries)
+			args, err := kanikoArgs(test.artifact, "Dockerfile.rel", tag, test.insecureRegistries)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
@@ -230,7 +230,7 @@ func TestKanikoPodSpec(t *testing.T) {
 			},
 		},
 	}
-	pod, _ := builder.kanikoPodSpec(artifact, "tag")
+	pod, _ := builder.kanikoPodSpec(artifact, "Dockerfile", "tag")
 
 	expectedPod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

@@ -167,22 +167,17 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
 
-	buildCtx, buildCtxWriter := io.Pipe()
-	go func() {
-		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a, l.insecureRegistries)
-		if err != nil {
-			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
-			return
-		}
-		buildCtxWriter.Close()
-	}()
+	buildCtx, relDockerfile, err := BuildContext(workspace, a.DockerfilePath)
+	if err != nil {
+		return "", fmt.Errorf("unable to prepare build conetxt: %w", err)
+	}
 
 	progressOutput := streamformatter.NewProgressOutput(out)
 	body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
 
 	resp, err := l.apiClient.ImageBuild(ctx, body, types.ImageBuildOptions{
 		Tags:        []string{ref},
-		Dockerfile:  a.DockerfilePath,
+		Dockerfile:  relDockerfile,
 		BuildArgs:   buildArgs,
 		CacheFrom:   a.CacheFrom,
 		AuthConfigs: authConfigs,

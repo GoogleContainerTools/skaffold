@@ -17,29 +17,68 @@ limitations under the License.
 package docker
 
 import (
-	"context"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/docker/cli/cli/command/image/build"
+	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/idtools"
 )
 
-func CreateDockerTarContext(ctx context.Context, w io.Writer, workspace string, a *latest.DockerArtifact, insecureRegistries map[string]bool) error {
-	paths, err := GetDependencies(ctx, workspace, a.DockerfilePath, a.BuildArgs, insecureRegistries)
+// BuildContext creates an archive of the build context to be sent to `docker build`.
+// This code is mostly copied from docker/cli codebase:
+// https://github.com/docker/cli/blob/ae66898200af606f900face29c3c6e8a738a1f40/cli/command/image/build.go#L228
+func BuildContext(workspace, dockerfilePath string) (io.ReadCloser, string, error) {
+	absDockerfile, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
-		return fmt.Errorf("getting relative tar paths: %w", err)
+		return nil, "", fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
-	var p []string
-	for _, path := range paths {
-		p = append(p, filepath.Join(workspace, path))
+	contextDir, relDockerfile, err := build.GetContextFromLocalDir(workspace, absDockerfile)
+	if err != nil {
+		return nil, "", fmt.Errorf("unable to prepare context: %w", err)
 	}
 
-	if err := util.CreateTar(w, workspace, p); err != nil {
-		return fmt.Errorf("creating tar gz: %w", err)
+	var dockerfileCtx io.ReadCloser
+	if strings.HasPrefix(relDockerfile, ".."+string(filepath.Separator)) {
+		// Dockerfile is outside of build-context; read the Dockerfile and pass it as dockerfileCtx
+		dockerfileCtx, err = os.Open(absDockerfile)
+		if err != nil {
+			return nil, "", fmt.Errorf("unable to open Dockerfile: %w", err)
+		}
+		defer dockerfileCtx.Close()
 	}
 
-	return nil
+	excludes, err := build.ReadDockerignore(contextDir)
+	if err != nil {
+		return nil, "", err
+	}
+
+	if err := build.ValidateContextDirectory(contextDir, excludes); err != nil {
+		return nil, "", fmt.Errorf("error checking context: %w", err)
+	}
+
+	relDockerfile = archive.CanonicalTarNameForPath(relDockerfile)
+	excludes = build.TrimBuildFilesFromExcludes(excludes, relDockerfile, false)
+
+	buildCtx, err := archive.TarWithOptions(contextDir, &archive.TarOptions{
+		ExcludePatterns: excludes,
+		ChownOpts:       &idtools.Identity{UID: 0, GID: 0},
+	})
+	if err != nil {
+		return nil, "", fmt.Errorf("can't create tar from folder %q: %w", contextDir, err)
+	}
+
+	// replace Dockerfile if it was added from a file outside the build-context.
+	if dockerfileCtx != nil {
+		buildCtx, relDockerfile, err = build.AddDockerfileToBuildContext(dockerfileCtx, buildCtx)
+		if err != nil {
+			return nil, "", err
+		}
+	}
+
+	return buildCtx, relDockerfile, nil
 }

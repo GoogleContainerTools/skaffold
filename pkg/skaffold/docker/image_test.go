@@ -112,8 +112,11 @@ func TestBuild(t *testing.T) {
 			description: "build",
 			api:         &testutil.FakeAPIClient{},
 			workspace:   ".",
-			artifact:    &latest.DockerArtifact{},
+			artifact: &latest.DockerArtifact{
+				DockerfilePath: "Dockerfile",
+			},
 			expected: types.ImageBuildOptions{
+				Dockerfile:  "Dockerfile",
 				Tags:        []string{"finalimage"},
 				AuthConfigs: allAuthConfig,
 			},
@@ -185,6 +188,7 @@ func TestBuild(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().Touch("Dockerfile").Chdir()
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
 			t.SetEnvs(test.env)
 

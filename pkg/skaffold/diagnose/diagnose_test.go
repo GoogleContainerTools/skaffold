@@ -28,50 +28,46 @@ import (
 
 func TestSizeOfDockerContext(t *testing.T) {
 	tests := []struct {
-		description        string
-		artifactName       string
-		DockerfileContents string
-		files              map[string]string
-		expected           int64
-		shouldErr          bool
+		description string
+		dockerfile  string
+		files       map[string]string
+		expected    int64
+		shouldErr   bool
 	}{
 		{
-			description:        "test size",
-			artifactName:       "empty",
-			DockerfileContents: "From Scratch",
-			expected:           2048,
+			description: "test size",
+			dockerfile:  "Dockerfile",
+			expected:    2048,
 		},
 		{
-			description:        "test size for a image with file",
-			artifactName:       "image",
-			DockerfileContents: "From Scratch \n Copy foo /",
-			files:              map[string]string{"foo": "foo"},
-			expected:           3072,
+			description: "test size for a image with file",
+			dockerfile:  "Dockerfile",
+			files:       map[string]string{"foo": "foo"},
+			expected:    3072,
 		},
 		{
-			description:        "incorrect docker file",
-			artifactName:       "error-artifact",
-			DockerfileContents: "From Scratch \n Copy doesNotExists /",
-			shouldErr:          true,
+			description: "dockerfile not found",
+			dockerfile:  "Dockerfile.notfound",
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir().
-				Write("Dockerfile", test.DockerfileContents).
+				Write("Dockerfile", "FROM scratch").
 				WriteFiles(test.files)
 
 			dummyArtifact := &latest.Artifact{
 				Workspace: tmpDir.Root(),
-				ImageName: test.artifactName,
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
-						DockerfilePath: "Dockerfile",
+						DockerfilePath: test.dockerfile,
 					},
 				},
 			}
 
-			actual, err := sizeOfDockerContext(context.TODO(), dummyArtifact, nil)
+			actual, err := sizeOfDockerContext(dummyArtifact)
+
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}

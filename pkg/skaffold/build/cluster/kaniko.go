@@ -35,13 +35,18 @@ import (
 const initContainer = "kaniko-init-container"
 
 func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifact *latest.KanikoArtifact, tag string) (string, error) {
+	buildCtx, relDockerfile, err := docker.BuildContext(workspace, artifact.DockerfilePath)
+	if err != nil {
+		return "", fmt.Errorf("creating docker context: %w", err)
+	}
+
 	client, err := kubernetes.Client()
 	if err != nil {
 		return "", fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 	pods := client.CoreV1().Pods(b.Namespace)
 
-	podSpec, err := b.kanikoPodSpec(artifact, tag)
+	podSpec, err := b.kanikoPodSpec(artifact, relDockerfile, tag)
 	if err != nil {
 		return "", err
 	}
@@ -58,7 +63,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 		}
 	}()
 
-	if err := b.copyKanikoBuildContext(ctx, workspace, artifact, pods, pod.Name); err != nil {
+	if err := b.copyKanikoBuildContext(ctx, buildCtx, pods, pod.Name); err != nil {
 		return "", fmt.Errorf("copying sources: %w", err)
 	}
 
@@ -78,28 +83,15 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 // first copy over the buildcontext tarball into the init container tmp dir via kubectl cp
 // Via kubectl exec, we extract the tarball to the empty dir
 // Then, via kubectl exec, create the /tmp/complete file via kubectl exec to complete the init container
-func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, artifact *latest.KanikoArtifact, pods corev1.PodInterface, podName string) error {
+func (b *Builder) copyKanikoBuildContext(ctx context.Context, buildContext io.ReadCloser, pods corev1.PodInterface, podName string) error {
 	if err := kubernetes.WaitForPodInitialized(ctx, pods, podName); err != nil {
 		return fmt.Errorf("waiting for pod to initialize: %w", err)
 	}
 
-	buildCtx, buildCtxWriter := io.Pipe()
-	go func() {
-		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, workspace, &latest.DockerArtifact{
-			BuildArgs:      artifact.BuildArgs,
-			DockerfilePath: artifact.DockerfilePath,
-		}, b.insecureRegistries)
-		if err != nil {
-			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
-			return
-		}
-		buildCtxWriter.Close()
-	}()
-
 	// Send context by piping into `tar`.
 	// In case of an error, print the command's output. (The `err` itself is useless: exit status 1).
 	var out bytes.Buffer
-	if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", constants.DefaultKanikoEmptyDirMountPath); err != nil {
+	if err := b.kubectlcli.Run(ctx, buildContext, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", constants.DefaultKanikoEmptyDirMountPath); err != nil {
 		return fmt.Errorf("uploading build context: %s", out.String())
 	}
 
