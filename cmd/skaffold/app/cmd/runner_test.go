@@ -23,6 +23,8 @@ import (
 	"github.com/blang/semver"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -84,6 +86,9 @@ func TestCreateNewRunner(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+				return nil, nil
+			})
 			t.Override(&update.GetLatestAndCurrentVersion, func() (semver.Version, semver.Version, error) {
 				return semver.Version{}, semver.Version{}, nil
 			})
