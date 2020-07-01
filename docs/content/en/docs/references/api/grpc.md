@@ -8,7 +8,7 @@ weight: 30
 WARNING!!!
 
 The file docs/content/en/docs/references/api/grpc.md is generated based on proto/markdown.tmpl,
-and generated with hack/generate_protos.sh!
+and generated with ./hack/generate_proto.sh!
 Please edit the template file and not the markdown one directly!
 
 ******
@@ -684,7 +684,7 @@ TriggerState represents trigger state for a given phase.
 Enum indicating build type i.e. local, cluster vs GCB
 
 | Name | Number | Description |
-| ---- | ------ | ----------- |
+| ---- |:------:| ----------- |
 | UNKNOWN_BUILD_TYPE | 0 | Could not determine Build Type |
 | CLUSTER | 1 | Cluster Build |
 | GCB | 2 | GCB Build |
@@ -698,7 +698,7 @@ Enum indicating build type i.e. local, cluster vs GCB
 Enum indicating builders used
 
 | Name | Number | Description |
-| ---- | ------ | ----------- |
+| ---- |:------:| ----------- |
 | UNKNOWN_BUILDER_TYPE | 0 | Could not determine builder type |
 | JIB | 1 | JIB Builder |
 | BAZEL | 2 | Bazel Builder |
@@ -715,7 +715,7 @@ Enum indicating builders used
 Enum indicating cluster type the application is deployed to
 
 | Name | Number | Description |
-| ---- | ------ | ----------- |
+| ---- |:------:| ----------- |
 | UNKNOWN_CLUSTER_TYPE | 0 | Could not determine Cluster Type |
 | MINIKUBE | 1 | Minikube Cluster |
 | GKE | 2 | GKE cluster |
@@ -729,7 +729,7 @@ Enum indicating cluster type the application is deployed to
 Enum indicating deploy tools used
 
 | Name | Number | Description |
-| ---- | ------ | ----------- |
+| ---- |:------:| ----------- |
 | UNKNOWN_DEPLOYER_TYPE | 0 | Could not determine Deployer Type |
 | HELM | 1 | Helm Deployer |
 | KUSTOMIZE | 2 | Kustomize Deployer |
@@ -745,7 +745,7 @@ These error codes are prepended by Phase Name e.g.
 BUILD, DEPLOY, STATUSCHECK, DEVINIT
 
 | Name | Number | Description |
-| ---- | ------ | ----------- |
+| ---- |:------:| ----------- |
 | OK | 0 | A default status code for events that do not have an associated phase. Typically seen with the DevEndEvent event on success. |
 | STATUSCHECK_SUCCESS | 200 | Status Check Success |
 | BUILD_SUCCESS | 201 | Build Success |
@@ -765,9 +765,7 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_NODE_UNSCHEDULABLE | 404 | Node unschedulable error |
 | STATUSCHECK_NODE_UNREACHABLE | 405 | Node unreachable error |
 | STATUSCHECK_NODE_NOT_READY | 406 | Node not ready error |
-| STATUSCHECK_FAILED_SCHEDULING | 407 | Scheduler failure error
-
-skip 408 as STATUSCHECK_UNHEALTH code renumbered as 357 |
+| STATUSCHECK_FAILED_SCHEDULING | 407 | Scheduler failure error |
 | STATUSCHECK_KUBECTL_CONNECTION_ERR | 409 | Kubectl connection error |
 | STATUSCHECK_KUBECTL_PID_KILLED | 410 | Kubectl process killed error |
 | UNKNOWN_ERROR | 500 | Could not determine error and phase |
@@ -796,7 +794,7 @@ skip 408 as STATUSCHECK_UNHEALTH code renumbered as 357 |
 Enum for Suggestion codes
 
 | Name | Number | Description |
-| ---- | ------ | ----------- |
+| ---- |:------:| ----------- |
 | NIL | 0 | default nil suggestion. This is usually set when no error happens. |
 | ADD_DEFAULT_REPO | 100 | Build error suggestion codes |
 | CHECK_DEFAULT_REPO | 101 |  |
