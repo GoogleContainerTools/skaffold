@@ -143,14 +143,17 @@ deploy:
 
 func verifyUpgrade(t *testutil.T, input, output string) {
 	config := NewSkaffoldConfig()
+
 	err := yaml.UnmarshalStrict([]byte(input), config)
-	t.CheckErrorAndDeepEqual(false, err, Version, config.GetVersion())
+	t.CheckNoError(err)
+	t.CheckDeepEqual(Version, config.GetVersion())
 
 	upgraded, err := config.Upgrade()
-	t.CheckError(false, err)
+	t.CheckNoError(err)
 
 	expected := next.NewSkaffoldConfig()
 	err = yaml.UnmarshalStrict([]byte(output), expected)
 
-	t.CheckErrorAndDeepEqual(false, err, expected, upgraded)
+	t.CheckNoError(err)
+	t.CheckDeepEqual(expected, upgraded)
 }
