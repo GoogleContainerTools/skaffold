@@ -609,7 +609,8 @@ func TestNormalizeDockerfilePath(t *testing.T) {
 			d.Touch(test.files...)
 
 			f, err := NormalizeDockerfilePath(d.Path("context"), test.dockerfile)
-			t.CheckError(false, err)
+
+			t.CheckNoError(err)
 			checkSameFile(t, d.Path(test.expected), f)
 		})
 	}
@@ -617,10 +618,13 @@ func TestNormalizeDockerfilePath(t *testing.T) {
 
 func checkSameFile(t *testutil.T, expected, result string) {
 	t.Helper()
+
 	i1, err := os.Stat(expected)
-	t.CheckError(false, err)
+	t.CheckNoError(err)
+
 	i2, err := os.Stat(result)
-	t.CheckError(false, err)
+	t.CheckNoError(err)
+
 	if !os.SameFile(i1, i2) {
 		t.Errorf("returned wrong file\n   got: %s\nwanted: %s", result, expected)
 	}
