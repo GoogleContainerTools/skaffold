@@ -1,44 +1,58 @@
-version: 1
-update_configs:
+version: 2
+updates:
   - directory: "/examples"
-    package_manager: "javascript"
-    update_schedule: "live"
+    package-ecosystem: "npm"
+    schedule:
+      interval: "daily"
   - directory: "/examples"
-    package_manager: "ruby:bundler"
-    update_schedule: "live"
+    package-ecosystem: "bundler"
+    schedule:
+      interval: "daily"
   - directory: "/examples"
-    package_manager: "php:composer"
-    update_schedule: "live"
+    package-ecosystem: "composer"
+    schedule:
+      interval: "daily"
   - directory: "/examples"
-    package_manager: "python"
-    update_schedule: "live"
+    package-ecosystem: "pip"
+    schedule:
+      interval: "daily"
   - directory: "/examples"
-    package_manager: "java:maven"
-    update_schedule: "daily"
+    package-ecosystem: "maven"
+    schedule:
+      interval: "daily"
   - directory: "/examples"
-    package_manager: "java:gradle"
-    update_schedule: "daily"
+    package-ecosystem: "gradle"
+    schedule:
+      interval: "daily"
   - directory: "/examples"
-    package_manager: "go:modules"
-    update_schedule: "daily"
+    package-ecosystem: "gomod"
+    schedule:
+      interval: "daily"
   - directory: "/integration/examples"
-    package_manager: "javascript"
-    update_schedule: "live"
+    package-ecosystem: "npm"
+    schedule:
+      interval: "daily"
   - directory: "/integration/examples"
-    package_manager: "ruby:bundler"
-    update_schedule: "live"
+    package-ecosystem: "bundler"
+    schedule:
+      interval: "daily"
   - directory: "/integration/examples"
-    package_manager: "php:composer"
-    update_schedule: "live"
+    package-ecosystem: "composer"
+    schedule:
+      interval: "daily"
   - directory: "/integration/examples"
-    package_manager: "python"
-    update_schedule: "live"
+    package-ecosystem: "pip"
+    schedule:
+      interval: "daily"
   - directory: "/integration/examples"
-    package_manager: "java:maven"
-    update_schedule: "daily"
+    package-ecosystem: "maven"
+    schedule:
+      interval: "daily"
   - directory: "/integration/examples"
-    package_manager: "java:gradle"
-    update_schedule: "daily"
+    package-ecosystem: "gradle"
+    schedule:
+      interval: "daily"
   - directory: "/integration/examples"
-    package_manager: "go:modules"
-    update_schedule: "daily"
+    package-ecosystem: "gomod"
+    schedule:
+      interval: "daily"
