@@ -212,7 +212,7 @@ func getMinikubeDockerEnv(minikubeProfile string) (map[string]string, error) {
 
 	env := map[string]string{}
 	for _, line := range strings.Split(string(out), "\n") {
-		if line == "" {
+		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
 		kv := strings.SplitN(line, "=", 2)
