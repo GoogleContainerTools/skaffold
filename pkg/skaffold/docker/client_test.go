@@ -73,6 +73,18 @@ DOCKER_API_VERSION=1.23`),
 			expectedEnv: []string{"DOCKER_API_VERSION=1.23", "DOCKER_CERT_PATH=testdata", "DOCKER_HOST=http://127.0.0.1:8080", "DOCKER_TLS_VERIFY=1"},
 		},
 		{
+			description: "correct client - work around minikube #8615",
+			command: testutil.CmdRunOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+DOCKER_HOST=http://127.0.0.1:8080
+DOCKER_CERT_PATH=testdata
+DOCKER_API_VERSION=1.23
+
+# To point your shell to minikube's docker-daemon, run:
+# eval $(minikube -p minikube docker-env)
+`),
+			expectedEnv: []string{"DOCKER_API_VERSION=1.23", "DOCKER_CERT_PATH=testdata", "DOCKER_HOST=http://127.0.0.1:8080", "DOCKER_TLS_VERIFY=1"},
+		},
+		{
 			description: "bad certificate",
 			command: testutil.CmdRunOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
 DOCKER_HOST=http://127.0.0.1:8080
