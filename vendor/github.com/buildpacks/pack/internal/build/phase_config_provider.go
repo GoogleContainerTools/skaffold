@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
 
 	"github.com/buildpacks/pack/logging"
 )
@@ -13,11 +12,12 @@ import (
 type PhaseConfigProviderOperation func(*PhaseConfigProvider)
 
 type PhaseConfigProvider struct {
-	ctrConf     *container.Config
-	hostConf    *container.HostConfig
-	name        string
-	infoWriter  io.Writer
-	errorWriter io.Writer
+	ctrConf      *container.Config
+	hostConf     *container.HostConfig
+	name         string
+	containerOps []ContainerOperation
+	infoWriter   io.Writer
+	errorWriter  io.Writer
 }
 
 func NewPhaseConfigProvider(name string, lifecycle *Lifecycle, ops ...PhaseConfigProviderOperation) *PhaseConfigProvider {
@@ -29,15 +29,14 @@ func NewPhaseConfigProvider(name string, lifecycle *Lifecycle, ops ...PhaseConfi
 		errorWriter: logging.GetWriterForLevel(lifecycle.logger, logging.ErrorLevel),
 	}
 
-	provider.ctrConf.Cmd = []string{"/cnb/lifecycle/" + name}
 	provider.ctrConf.Image = lifecycle.builder.Name()
 	provider.ctrConf.Labels = map[string]string{"author": "pack"}
 
 	ops = append(ops,
 		WithLifecycleProxy(lifecycle),
 		WithBinds([]string{
-			fmt.Sprintf("%s:%s", lifecycle.LayersVolume, layersDir),
-			fmt.Sprintf("%s:%s", lifecycle.AppVolume, appDir),
+			fmt.Sprintf("%s:%s", lifecycle.layersVolume, layersDir),
+			fmt.Sprintf("%s:%s", lifecycle.appVolume, appDir),
 		}...),
 	)
 
@@ -45,11 +44,17 @@ func NewPhaseConfigProvider(name string, lifecycle *Lifecycle, ops ...PhaseConfi
 		op(provider)
 	}
 
+	provider.ctrConf.Cmd = append([]string{"/cnb/lifecycle/" + name}, provider.ctrConf.Cmd...)
+
 	return provider
 }
 
 func (p *PhaseConfigProvider) ContainerConfig() *container.Config {
 	return p.ctrConf
+}
+
+func (p *PhaseConfigProvider) ContainerOps() []ContainerOperation {
+	return p.containerOps
 }
 
 func (p *PhaseConfigProvider) HostConfig() *container.HostConfig {
@@ -71,6 +76,13 @@ func (p *PhaseConfigProvider) InfoWriter() io.Writer {
 func WithArgs(args ...string) PhaseConfigProviderOperation {
 	return func(provider *PhaseConfigProvider) {
 		provider.ctrConf.Cmd = append(provider.ctrConf.Cmd, args...)
+	}
+}
+
+// WithFlags differs from WithArgs as flags are always prepended
+func WithFlags(flags ...string) PhaseConfigProviderOperation {
+	return func(provider *PhaseConfigProvider) {
+		provider.ctrConf.Cmd = append(flags, provider.ctrConf.Cmd...)
 	}
 }
 
@@ -128,12 +140,6 @@ func WithLifecycleProxy(lifecycle *Lifecycle) PhaseConfigProviderOperation {
 	}
 }
 
-func WithMounts(mounts ...mount.Mount) PhaseConfigProviderOperation {
-	return func(provider *PhaseConfigProvider) {
-		provider.hostConf.Mounts = append(provider.hostConf.Mounts, mounts...)
-	}
-}
-
 func WithNetwork(networkMode string) PhaseConfigProviderOperation {
 	return func(provider *PhaseConfigProvider) {
 		provider.hostConf.NetworkMode = container.NetworkMode(networkMode)
@@ -149,5 +155,11 @@ func WithRegistryAccess(authConfig string) PhaseConfigProviderOperation {
 func WithRoot() PhaseConfigProviderOperation {
 	return func(provider *PhaseConfigProvider) {
 		provider.ctrConf.User = "root"
+	}
+}
+
+func WithContainerOperations(operations ...ContainerOperation) PhaseConfigProviderOperation {
+	return func(provider *PhaseConfigProvider) {
+		provider.containerOps = append(provider.containerOps, operations...)
 	}
 }

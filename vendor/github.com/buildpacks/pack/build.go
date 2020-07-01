@@ -19,7 +19,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 
-	"github.com/buildpacks/pack/cmd"
 	"github.com/buildpacks/pack/internal/api"
 	"github.com/buildpacks/pack/internal/archive"
 	"github.com/buildpacks/pack/internal/build"
@@ -133,7 +132,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		}
 	}
 	if !supportsPlatform {
-		c.logger.Debugf("pack %s supports Platform API version(s): %s", cmd.Version, strings.Join(build.SupportedPlatformAPIVersions, ", "))
+		c.logger.Debugf("pack %s supports Platform API version(s): %s", Version, strings.Join(build.SupportedPlatformAPIVersions, ", "))
 		c.logger.Debugf("Builder %s has Platform API version: %s", style.Symbol(opts.Builder), lcPlatformAPIVersion)
 		return errors.Errorf("Builder %s is incompatible with this version of pack", style.Symbol(opts.Builder))
 	}
@@ -193,7 +192,11 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		}
 	}
 
-	return c.lifecycle.Execute(ctx, lifecycleOpts)
+	if err := c.lifecycle.Execute(ctx, lifecycleOpts); err != nil {
+		return errors.Wrap(err, "executing lifecycle. This may be the result of using an untrusted builder")
+	}
+
+	return nil
 }
 
 func (c *Client) processBuilderName(builderName string) (name.Reference, error) {
@@ -602,7 +605,7 @@ func (c *Client) createEphemeralBuilder(rawBuilderImage imgutil.Image, env map[s
 		bldr.SetOrder(order)
 	}
 
-	if err := bldr.Save(c.logger); err != nil {
+	if err := bldr.Save(c.logger, builder.CreatorMetadata{Version: Version}); err != nil {
 		return nil, err
 	}
 	return bldr, nil

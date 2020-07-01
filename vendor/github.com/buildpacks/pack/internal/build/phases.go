@@ -1,19 +1,12 @@
 package build
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 
-	"github.com/BurntSushi/toml"
 	"github.com/Masterminds/semver"
 	"github.com/buildpacks/lifecycle/auth"
-	"github.com/docker/docker/api/types/mount"
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/pkg/errors"
 
 	"github.com/buildpacks/pack/internal/builder"
 )
@@ -24,6 +17,7 @@ const (
 	cacheDir                  = "/cache"
 	launchCacheDir            = "/launch-cache"
 	platformDir               = "/platform"
+	stackPath                 = layersDir + "/stack.toml"
 	defaultProcessPlatformAPI = "0.3"
 )
 
@@ -36,33 +30,36 @@ type PhaseFactory interface {
 	New(provider *PhaseConfigProvider) RunnerCleaner
 }
 
-func (l *Lifecycle) Create(ctx context.Context, publish, clearCache bool, runImage, launchCacheName, cacheName, repoName, networkMode string, phaseFactory PhaseFactory) error {
-	var configProvider *PhaseConfigProvider
-
-	args := []string{
+func (l *Lifecycle) Create(
+	ctx context.Context,
+	publish, clearCache bool,
+	runImage, launchCacheName, cacheName, repoName, networkMode string,
+	volumes []string,
+	phaseFactory PhaseFactory,
+) error {
+	flags := []string{
+		"-cache-dir", cacheDir,
 		"-run-image", runImage,
-		repoName,
 	}
-
-	binds := []string{fmt.Sprintf("%s:%s", cacheName, cacheDir)}
 
 	if clearCache {
-		args = append([]string{"-skip-restore"}, args...)
+		flags = append(flags, "-skip-restore")
 	}
 
-	args = append([]string{"-cache-dir", cacheDir}, args...)
-
-	if l.DefaultProcessType != "" {
+	if l.defaultProcessType != "" {
 		if l.supportsDefaultProcess() {
-			args = append([]string{"-process-type", l.DefaultProcessType}, args...)
+			flags = append(flags, "-process-type", l.defaultProcessType)
 		} else {
 			l.logger.Warn("You specified a default process type but that is not supported by this version of the lifecycle")
 		}
 	}
 
-	if !publish {
-		args = append([]string{"-daemon", "-launch-cache", launchCacheDir}, args...)
-		binds = append([]string{fmt.Sprintf("%s:%s", launchCacheName, launchCacheDir)}, binds...)
+	opts := []PhaseConfigProviderOperation{
+		WithFlags(l.withLogLevel(flags...)...),
+		WithArgs(repoName),
+		WithNetwork(networkMode),
+		WithBinds(append(volumes, fmt.Sprintf("%s:%s", cacheName, cacheDir))...),
+		WithContainerOperations(CopyDir(l.appPath, appDir, l.builder.UID(), l.builder.GID(), l.fileFilter)),
 	}
 
 	if publish {
@@ -71,35 +68,16 @@ func (l *Lifecycle) Create(ctx context.Context, publish, clearCache bool, runIma
 			return err
 		}
 
-		configProvider = NewPhaseConfigProvider(
-			"creator",
-			l,
-			WithArgs(
-				l.withLogLevel(
-					args...,
-				)...,
-			),
-			WithRoot(),
-			WithRegistryAccess(authConfig),
-			WithNetwork(networkMode),
-			WithBinds(binds...),
-		)
+		opts = append(opts, WithRoot(), WithRegistryAccess(authConfig))
 	} else {
-		configProvider = NewPhaseConfigProvider(
-			"creator",
-			l,
+		opts = append(opts,
 			WithDaemonAccess(),
-			WithArgs(
-				l.withLogLevel(
-					args...,
-				)...,
-			),
-			WithNetwork(networkMode),
-			WithBinds(binds...),
+			WithFlags("-daemon", "-launch-cache", launchCacheDir),
+			WithBinds(fmt.Sprintf("%s:%s", launchCacheName, launchCacheDir)),
 		)
 	}
 
-	create := phaseFactory.New(configProvider)
+	create := phaseFactory.New(NewPhaseConfigProvider("creator", l, opts...))
 	defer create.Cleanup()
 	return create.Run(ctx)
 }
@@ -117,6 +95,7 @@ func (l *Lifecycle) Detect(ctx context.Context, networkMode string, volumes []st
 		),
 		WithNetwork(networkMode),
 		WithBinds(volumes...),
+		WithContainerOperations(CopyDir(l.appPath, appDir, l.builder.UID(), l.builder.GID(), l.fileFilter)),
 	)
 
 	detect := phaseFactory.New(configProvider)
@@ -194,6 +173,11 @@ func (l *Lifecycle) newAnalyze(repoName, cacheName, networkMode string, publish,
 		"analyzer",
 		l,
 		WithLogPrefix("analyzer"),
+		WithImage(l.lifecycleImage),
+		WithEnv(
+			fmt.Sprintf("%s=%d", builder.EnvUID, l.builder.UID()),
+			fmt.Sprintf("%s=%d", builder.EnvGID, l.builder.GID()),
+		),
 		WithDaemonAccess(),
 		WithArgs(
 			l.withLogLevel(
@@ -241,18 +225,7 @@ func (l *Lifecycle) Build(ctx context.Context, networkMode string, volumes []str
 }
 
 func (l *Lifecycle) Export(ctx context.Context, repoName string, runImage string, publish bool, launchCacheName, cacheName, networkMode string, phaseFactory PhaseFactory) error {
-	var stackMount mount.Mount
-	if publish {
-		stackPath, err := l.writeStackToml()
-		if err != nil {
-			return errors.Wrap(err, "writing stack toml")
-		}
-		defer os.Remove(stackPath)
-
-		stackMount = mount.Mount{Type: "bind", Source: stackPath, Target: builder.StackPath, ReadOnly: true}
-	}
-
-	export, err := l.newExport(repoName, runImage, publish, launchCacheName, cacheName, networkMode, []mount.Mount{stackMount}, phaseFactory)
+	export, err := l.newExport(repoName, runImage, publish, launchCacheName, cacheName, networkMode, phaseFactory)
 	if err != nil {
 		return err
 	}
@@ -260,23 +233,38 @@ func (l *Lifecycle) Export(ctx context.Context, repoName string, runImage string
 	return export.Run(ctx)
 }
 
-func (l *Lifecycle) newExport(repoName, runImage string, publish bool, launchCacheName, cacheName, networkMode string, mounts []mount.Mount, phaseFactory PhaseFactory) (RunnerCleaner, error) {
-	args := l.exportImageArgs(runImage)
-	args = append(args, []string{
+func (l *Lifecycle) newExport(repoName, runImage string, publish bool, launchCacheName, cacheName, networkMode string, phaseFactory PhaseFactory) (RunnerCleaner, error) {
+	flags := l.exportImageFlags(runImage)
+	flags = append(flags, []string{
 		"-cache-dir", cacheDir,
 		"-layers", layersDir,
+		"-stack", stackPath,
 		"-app", appDir,
-		repoName,
 	}...)
 
-	binds := []string{fmt.Sprintf("%s:%s", cacheName, cacheDir)}
-
-	if l.DefaultProcessType != "" {
+	if l.defaultProcessType != "" {
 		if l.supportsDefaultProcess() {
-			args = append([]string{"-process-type", l.DefaultProcessType}, args...)
+			flags = append(flags, "-process-type", l.defaultProcessType)
 		} else {
 			l.logger.Warn("You specified a default process type but that is not supported by this version of the lifecycle")
 		}
+	}
+
+	opts := []PhaseConfigProviderOperation{
+		WithLogPrefix("exporter"),
+		WithImage(l.lifecycleImage),
+		WithEnv(
+			fmt.Sprintf("%s=%d", builder.EnvUID, l.builder.UID()),
+			fmt.Sprintf("%s=%d", builder.EnvGID, l.builder.GID()),
+		),
+		WithFlags(
+			l.withLogLevel(flags...)...,
+		),
+		WithArgs(repoName),
+		WithRoot(),
+		WithNetwork(networkMode),
+		WithBinds(fmt.Sprintf("%s:%s", cacheName, cacheDir)),
+		WithContainerOperations(WriteStackToml(stackPath, l.builder.Stack())),
 	}
 
 	if publish {
@@ -285,68 +273,21 @@ func (l *Lifecycle) newExport(repoName, runImage string, publish bool, launchCac
 			return nil, err
 		}
 
-		configProvider := NewPhaseConfigProvider(
-			"exporter",
-			l,
-			WithLogPrefix("exporter"),
-			WithImage(l.lifecycleImage),
-			WithEnv(fmt.Sprintf("%s=%d", builder.EnvUID, l.builder.UID()), fmt.Sprintf("%s=%d", builder.EnvGID, l.builder.GID())),
+		opts = append(
+			opts,
 			WithRegistryAccess(authConfig),
-			WithArgs(
-				l.withLogLevel(args...)...,
-			),
 			WithRoot(),
-			WithNetwork(networkMode),
-			WithBinds(binds...),
-			WithMounts(mounts...),
 		)
-
-		return phaseFactory.New(configProvider), nil
+	} else {
+		opts = append(
+			opts,
+			WithDaemonAccess(),
+			WithFlags("-daemon", "-launch-cache", launchCacheDir),
+			WithBinds(fmt.Sprintf("%s:%s", launchCacheName, launchCacheDir)),
+		)
 	}
 
-	// TODO: when platform API 0.2 is no longer supported we can delete this code: https://github.com/buildpacks/pack/issues/629.
-	args = append([]string{"-daemon", "-launch-cache", launchCacheDir}, args...)
-	binds = append(binds, fmt.Sprintf("%s:%s", launchCacheName, launchCacheDir))
-
-	configProvider := NewPhaseConfigProvider(
-		"exporter",
-		l,
-		WithLogPrefix("exporter"),
-		WithDaemonAccess(),
-		WithArgs(
-			l.withLogLevel(args...)...,
-		),
-		WithNetwork(networkMode),
-		WithBinds(binds...),
-	)
-
-	return phaseFactory.New(configProvider), nil
-}
-
-func (l *Lifecycle) writeStackToml() (string, error) {
-	buf := &bytes.Buffer{}
-	err := toml.NewEncoder(buf).Encode(l.builder.Stack())
-	if err != nil {
-		return "", errors.Wrap(err, "marshaling stack metadata")
-	}
-
-	var stackFile *os.File
-	if stackFile, err = ioutil.TempFile("", "stack.toml"); err != nil {
-		return "", errors.Wrap(err, "opening stack.toml tempfile")
-	}
-
-	if _, err = stackFile.Write(buf.Bytes()); err != nil {
-		return "", errors.Wrapf(err, "writing stack.toml tempfile: %s", stackFile.Name())
-	}
-
-	// Override umask
-	if err = os.Chmod(stackFile.Name(), 0755); err != nil {
-		return "", errors.Wrapf(err, "overriding umask for stack.toml tempfile: %s", stackFile.Name())
-	}
-
-	// Some OSes (like macOS) use symlinks for the standard temp dir.
-	// Resolve it so it can be properly mounted by the Docker daemon.
-	return filepath.EvalSymlinks(stackFile.Name())
+	return phaseFactory.New(NewPhaseConfigProvider("exporter", l, opts...)), nil
 }
 
 func (l *Lifecycle) withLogLevel(args ...string) []string {
@@ -359,7 +300,7 @@ func (l *Lifecycle) withLogLevel(args ...string) []string {
 	return args
 }
 
-func (l *Lifecycle) exportImageArgs(runImage string) []string {
+func (l *Lifecycle) exportImageFlags(runImage string) []string {
 	platformAPIVersion := semver.MustParse(l.platformAPIVersion)
 	if semver.MustParse("0.2").LessThan(platformAPIVersion) {
 		return []string{"-run-image", runImage}

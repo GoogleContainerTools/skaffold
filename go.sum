@@ -152,8 +152,8 @@ github.com/buildpacks/imgutil v0.0.0-20200520132953-ba4f77a60397 h1:EVMQIte6zLeS
 github.com/buildpacks/imgutil v0.0.0-20200520132953-ba4f77a60397/go.mod h1:5AWk59DdFQopBvOPhpx0tRum31cIjO1Ln/kABKFOzKQ=
 github.com/buildpacks/lifecycle v0.7.2 h1:FO7i2cokLNc7lcuThq/LYt1jmkB8HBrjpK+2GWWsaLI=
 github.com/buildpacks/lifecycle v0.7.2/go.mod h1:k41tT3XOt7ufaMGAvOpEsXyuJpUPoo4F686Z652lU3E=
-github.com/buildpacks/pack v0.11.1-0.20200602171405-91a81f8bf020 h1:fWZ2X2YxSYBPGHzXeohBYaXw4mtv5SblPUdgVMLYw+k=
-github.com/buildpacks/pack v0.11.1-0.20200602171405-91a81f8bf020/go.mod h1:lW6nn3FXzR8NHH12RlOILXf++qGk5BbaclEqwY+rflg=
+github.com/buildpacks/pack v0.11.3-0.20200701155454-2b1bc5eff635 h1:ARS1bQ4QesdzSwX/YMlCS4H7Rwh2OlJgGreD8P/8knI=
+github.com/buildpacks/pack v0.11.3-0.20200701155454-2b1bc5eff635/go.mod h1:lW6nn3FXzR8NHH12RlOILXf++qGk5BbaclEqwY+rflg=
 github.com/cenkalti/backoff/v4 v4.0.2 h1:JIufpQLbh4DkbQoii76ItQIUFzevQSqOLZca4eamEDs=
 github.com/cenkalti/backoff/v4 v4.0.2/go.mod h1:eEew/i+1Q6OrCDZh3WiXYv3+nJwBASZ8Bog/87DQnVg=
 github.com/census-instrumentation/opencensus-proto v0.2.1 h1:glEXhBS5PSLLv4IXzLA5yPRVX4bilULVyxxbrfOtDAk=

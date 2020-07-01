@@ -18,7 +18,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/buildpacks/pack/builder"
-	"github.com/buildpacks/pack/cmd"
 	"github.com/buildpacks/pack/internal/api"
 	"github.com/buildpacks/pack/internal/archive"
 	"github.com/buildpacks/pack/internal/dist"
@@ -34,7 +33,7 @@ const (
 	cnbDir = "/cnb"
 
 	orderPath          = "/cnb/order.toml"
-	StackPath          = "/cnb/stack.toml"
+	stackPath          = "/cnb/stack.toml"
 	platformDir        = "/platform"
 	lifecycleDir       = "/cnb/lifecycle"
 	compatLifecycleDir = "/lifecycle"
@@ -259,7 +258,7 @@ func (b *Builder) SetStack(stackConfig builder.StackConfig) {
 }
 
 // Save saves the builder
-func (b *Builder) Save(logger logging.Logger) error {
+func (b *Builder) Save(logger logging.Logger, creatorMetadata CreatorMetadata) error {
 	logger.Debugf("Creating builder with the following buildpacks:")
 	for _, bpInfo := range b.metadata.Buildpacks {
 		logger.Debugf("-> %s", style.Symbol(bpInfo.FullName()))
@@ -328,7 +327,7 @@ func (b *Builder) Save(logger logging.Logger) error {
 
 		bpInfo := bp.Descriptor().Info
 		if _, ok := bpLayers[bpInfo.ID][bpInfo.Version]; ok {
-			logger.Warnf(
+			logger.Debugf(
 				"buildpack %s already exists on builder and will be overwritten",
 				style.Symbol(bpInfo.FullName()),
 			)
@@ -371,10 +370,11 @@ func (b *Builder) Save(logger logging.Logger) error {
 		return errors.Wrap(err, "adding env layer")
 	}
 
-	b.metadata.CreatedBy = CreatorMetadata{
-		Name:    packName,
-		Version: cmd.Version,
+	if creatorMetadata.Name == "" {
+		creatorMetadata.Name = packName
 	}
+
+	b.metadata.CreatedBy = creatorMetadata
 
 	if err := dist.SetLabel(b.image, metadataLabel, b.metadata); err != nil {
 		return err
@@ -601,7 +601,7 @@ func (b *Builder) stackLayer(dest string) (string, error) {
 	}
 
 	layerTar := filepath.Join(dest, "stack.tar")
-	err = layer.CreateSingleFileTar(layerTar, StackPath, buf.String(), b.layerWriterFactory)
+	err = layer.CreateSingleFileTar(layerTar, stackPath, buf.String(), b.layerWriterFactory)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create stack.toml layer tar")
 	}

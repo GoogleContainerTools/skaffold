@@ -75,8 +75,8 @@ Here's a simple template you can use:
 ```
 
 
-[code-of-conduct]: https://github.com/buildpacks/.github/blob/master/CODE_OF_CONDUCT.md
-[contributing]: https://github.com/buildpacks/.github/blob/master/CONTRIBUTING.md
-[security]: https://github.com/buildpacks/.github/blob/master/SECURITY.md
-[support]: https://github.com/buildpacks/.github/blob/master/SUPPORT.md
-[pull-request-process]: https://github.com/buildpacks/.github/blob/master/CONTRIBUTIONS.md#pull-request-process
+[code-of-conduct]: https://github.com/buildpacks/.github/blob/main/CODE_OF_CONDUCT.md
+[contributing]: https://github.com/buildpacks/.github/blob/main/CONTRIBUTING.md
+[security]: https://github.com/buildpacks/.github/blob/main/SECURITY.md
+[support]: https://github.com/buildpacks/.github/blob/main/SUPPORT.md
+[pull-request-process]: https://github.com/buildpacks/.github/blob/main/CONTRIBUTIONS.md#pull-request-process
