@@ -60,7 +60,7 @@ You can find the source for {{.Name}} [on Github](https://github.com/GoogleConta
 
 {{if .HasExtensions}}
 | Extension | Type | Base | Number | Description |
-| --------- | ---- | ---- | ------ | ----------- |
+| --------- | ---- | ---- |:------:| ----------- |
 {{range .Extensions -}}
   | {{.Name}} | {{.LongType}} | {{.ContainingLongType}} | {{.Number}} | {{nobr .Description}}{{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
 {{end}}
@@ -75,7 +75,7 @@ You can find the source for {{.Name}} [on Github](https://github.com/GoogleConta
 {{.Description}}
 
 | Name | Number | Description |
-| ---- | ------ | ----------- |
+| ---- |:------:| ----------- |
 {{range .Values -}}
   | {{.Name}} | {{.Number}} | {{nobr .Description}} |
 {{end}}
@@ -87,7 +87,7 @@ You can find the source for {{.Name}} [on Github](https://github.com/GoogleConta
 
 ### File-level Extensions
 | Extension | Type | Base | Number | Description |
-| --------- | ---- | ---- | ------ | ----------- |
+| --------- | ---- | ---- |:------:| ----------- |
 {{range .Extensions -}}
   | {{.Name}} | {{.LongType}} | {{.ContainingLongType}} | {{.Number}} | {{nobr .Description}}{{if .DefaultValue}} Default: `{{.DefaultValue}}`{{end}} |
 {{end}}
