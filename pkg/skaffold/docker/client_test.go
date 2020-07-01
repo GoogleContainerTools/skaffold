@@ -103,11 +103,17 @@ DOCKER_API_VERSION=1.23`),
 			shouldErr: true,
 		},
 		{
-			description: "bad env output",
+			description: "allow `=` in urls",
 			command: testutil.CmdRunOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
-DOCKER_HOST=http://127.0.0.1:8080=toomanyvalues
+DOCKER_HOST=http://127.0.0.1:8080?k=v
 DOCKER_CERT_PATH=testdata
 DOCKER_API_VERSION=1.23`),
+			expectedEnv: []string{"DOCKER_API_VERSION=1.23", "DOCKER_CERT_PATH=testdata", "DOCKER_HOST=http://127.0.0.1:8080?k=v", "DOCKER_TLS_VERIFY=1"},
+		},
+		{
+			description: "bad env output",
+			command: testutil.CmdRunOut("minikube docker-env --shell none", `DOCKER_TLS_VERIFY=1
+DOCKER_HOST`),
 			shouldErr: true,
 		},
 		{

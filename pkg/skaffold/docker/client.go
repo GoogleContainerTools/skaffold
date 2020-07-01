@@ -215,7 +215,7 @@ func getMinikubeDockerEnv(minikubeProfile string) (map[string]string, error) {
 		if line == "" {
 			continue
 		}
-		kv := strings.Split(line, "=")
+		kv := strings.SplitN(line, "=", 2)
 		if len(kv) != 2 {
 			return nil, fmt.Errorf("unable to parse minikube docker-env keyvalue: %s, line: %s, output: %s", kv, line, string(out))
 		}
