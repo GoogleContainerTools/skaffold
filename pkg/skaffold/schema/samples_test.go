@@ -23,6 +23,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
@@ -65,6 +68,8 @@ func TestParseSamples(t *testing.T) {
 		}
 
 		testutil.Run(t, name, func(t *testutil.T) {
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{}, nil })
+
 			buf, err := ioutil.ReadFile(path)
 			t.CheckNoError(err)
 
@@ -99,6 +104,8 @@ func parseConfigFiles(t *testing.T, root string) {
 		name := filepath.Base(filepath.Dir(path))
 
 		testutil.Run(t, name, func(t *testutil.T) {
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{}, nil })
+
 			buf, err := ioutil.ReadFile(path)
 			t.CheckNoError(err)
 

@@ -38,6 +38,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/binpack"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	k8s "github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 )
 
@@ -100,6 +101,8 @@ func Run(t *testing.T, dir, command string, args ...string) {
 
 // SetupNamespace creates a Kubernetes namespace to run a test.
 func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient) {
+	kubectx.ConfigureKubeConfig("", "", "")
+
 	client, err := pkgkubernetes.Client()
 	if err != nil {
 		t.Fatalf("Test setup error: getting Kubernetes client: %s", err)

@@ -98,11 +98,13 @@ func TestSetDefaults(t *testing.T) {
 
 func TestSetDefaultsOnCluster(t *testing.T) {
 	testutil.Run(t, "no docker config", func(t *testutil.T) {
-		t.SetupFakeKubernetesContext(api.Config{
-			CurrentContext: "cluster1",
-			Contexts: map[string]*api.Context{
-				"cluster1": {Namespace: "ns"},
-			},
+		t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
+			return api.Config{
+				CurrentContext: "cluster1",
+				Contexts: map[string]*api.Context{
+					"cluster1": {Namespace: "ns"},
+				},
+			}, nil
 		})
 
 		// no docker config
@@ -218,30 +220,34 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 }
 
 func TestCustomBuildWithCluster(t *testing.T) {
-	cfg := &latest.SkaffoldConfig{
-		Pipeline: latest.Pipeline{
-			Build: latest.BuildConfig{
-				Artifacts: []*latest.Artifact{
-					{
-						ImageName: "image",
-						ArtifactType: latest.ArtifactType{
-							CustomArtifact: &latest.CustomArtifact{
-								BuildCommand: "./build.sh",
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{}, nil })
+
+		cfg := &latest.SkaffoldConfig{
+			Pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					Artifacts: []*latest.Artifact{
+						{
+							ImageName: "image",
+							ArtifactType: latest.ArtifactType{
+								CustomArtifact: &latest.CustomArtifact{
+									BuildCommand: "./build.sh",
+								},
 							},
 						},
 					},
-				},
-				BuildType: latest.BuildType{
-					Cluster: &latest.ClusterDetails{},
+					BuildType: latest.BuildType{
+						Cluster: &latest.ClusterDetails{},
+					},
 				},
 			},
-		},
-	}
+		}
 
-	err := Set(cfg)
+		err := Set(cfg)
 
-	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, (*latest.KanikoArtifact)(nil), cfg.Build.Artifacts[0].KanikoArtifact)
+		t.CheckNoError(err)
+		t.CheckDeepEqual((*latest.KanikoArtifact)(nil), cfg.Build.Artifacts[0].KanikoArtifact)
+	})
 }
 
 func TestSetDefaultsOnCloudBuild(t *testing.T) {

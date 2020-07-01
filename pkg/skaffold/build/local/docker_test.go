@@ -22,7 +22,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -71,6 +74,7 @@ func TestDockerCLIBuild(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Touch("Dockerfile").Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{}, nil })
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunEnv(
 				"docker build . --file "+dockerfilePath+" -t tag --force-rm",

@@ -749,7 +749,7 @@ func TestActivatedProfiles(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetEnvs(test.envs)
-			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "prod-context"})
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{CurrentContext: "prod-context"}, nil })
 
 			activated, _, err := activatedProfiles(test.profiles, test.opts)
 
@@ -785,6 +785,7 @@ profiles:
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().
 			Write("skaffold.yaml", addVersion(config))
+		t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{}, nil })
 
 		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"))
 		t.RequireNoError(err)

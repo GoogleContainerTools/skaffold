@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -66,7 +67,7 @@ func TestDeploy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{CurrentContext: "cluster1"}, nil })
 			t.Override(&kubernetes.Client, mockK8sClient)
 			t.Override(&statusCheck, dummyStatusCheck)
 
@@ -117,7 +118,7 @@ func TestDeployNamespace(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{CurrentContext: "cluster1"}, nil })
 			t.Override(&kubernetes.Client, mockK8sClient)
 			t.Override(&statusCheck, dummyStatusCheck)
 

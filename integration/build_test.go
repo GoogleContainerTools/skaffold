@@ -147,6 +147,7 @@ func checkImageExists(t *testing.T, image string) {
 		return
 	}
 
+	kubectx.ConfigureKubeConfig("", "", "")
 	cfg, err := kubectx.CurrentConfig()
 	failNowIfError(t, err)
 

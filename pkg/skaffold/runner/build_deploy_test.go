@@ -26,6 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -72,7 +73,7 @@ func TestBuildTestDeploy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{CurrentContext: "cluster1"}, nil })
 			t.Override(&kubernetes.Client, mockK8sClient)
 
 			ctx := context.Background()
@@ -93,6 +94,8 @@ func TestBuildTestDeploy(t *testing.T) {
 
 func TestBuildAndTestDryRun(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{}, nil })
+
 		testBench := &TestBench{}
 		runner := createRunner(t, testBench, nil)
 		runner.runCtx.Opts.DryRun = true
@@ -113,6 +116,8 @@ func TestBuildAndTestDryRun(t *testing.T) {
 
 func TestBuildAndTestSkipBuild(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{}, nil })
+
 		testBench := &TestBench{}
 		runner := createRunner(t, testBench, nil)
 		runner.runCtx.Opts.DigestSource = "none"

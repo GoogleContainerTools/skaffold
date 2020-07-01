@@ -23,6 +23,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -268,7 +269,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{CurrentContext: "cluster1"}, nil })
 
 			tmpDir := t.NewTempDir().
 				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config))

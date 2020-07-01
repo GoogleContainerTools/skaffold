@@ -24,8 +24,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -90,9 +93,9 @@ func TestKustomizeDeploy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().Chdir()
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.NewTempDir().
-				Chdir()
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{}, nil })
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
@@ -652,6 +655,7 @@ spec:
 				kustomizationPaths = append(kustomizationPaths, kustomizationCall.folder)
 			}
 			t.Override(&util.DefaultExecCommand, fakeCmd)
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{}, nil })
 			t.NewTempDir().
 				Chdir()
 

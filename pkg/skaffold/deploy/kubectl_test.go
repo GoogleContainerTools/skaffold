@@ -26,8 +26,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -186,10 +190,13 @@ func TestKubectlDeploy(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{}, nil })
 			t.NewTempDir().
 				Write("deployment.yaml", deploymentWebYAML).
 				Touch("empty.ignored").
 				Chdir()
+
+			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 
 			k := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
@@ -612,14 +619,14 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().
-				Write("deployment.yaml", test.input)
-
+			tmpDir := t.NewTempDir().Write("deployment.yaml", test.input)
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{}, nil })
 			t.Override(&util.DefaultExecCommand, testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), test.input))
 			defaultRepo := config.StringOrUndefined{}
 			defaultRepo.Set("gcr.io/project")
+
 			deployer := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
 				Cfg: latest.Pipeline{
@@ -639,6 +646,7 @@ spec:
 			})
 			var b bytes.Buffer
 			err := deployer.Render(context.Background(), &b, test.builds, test.labels, true, "")
+
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})

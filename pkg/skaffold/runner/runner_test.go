@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -352,7 +353,7 @@ func TestNewForConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{CurrentContext: "cluster1"}, nil })
 
 			runCtx := &runcontext.RunContext{
 				Cfg: test.pipeline,
@@ -430,6 +431,8 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) { return api.Config{}, nil })
+
 			opts := config.SkaffoldOptions{
 				Trigger:           "polling",
 				WatchPollInterval: 100,
