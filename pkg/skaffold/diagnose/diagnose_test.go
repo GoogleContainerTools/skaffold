@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package diagnose
 
 import (
 	"context"
+	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -73,4 +75,28 @@ func TestSizeOfDockerContext(t *testing.T) {
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
+}
+
+func TestCheckArtifacts(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().Write("Dockerfile", "FROM busybox")
+
+		runCtx := &runcontext.RunContext{
+			Cfg: latest.Pipeline{
+				Build: latest.BuildConfig{
+					Artifacts: []*latest.Artifact{{
+						Workspace: tmpDir.Root(),
+						ArtifactType: latest.ArtifactType{
+							DockerArtifact: &latest.DockerArtifact{
+								DockerfilePath: "Dockerfile",
+							},
+						},
+					}},
+				},
+			},
+		}
+		err := CheckArtifacts(context.Background(), runCtx, ioutil.Discard)
+
+		t.CheckNoError(err)
+	})
 }

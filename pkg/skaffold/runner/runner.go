@@ -40,7 +40,6 @@ const (
 
 // Runner is responsible for running the skaffold build, test and deploy config.
 type Runner interface {
-	DiagnoseArtifacts(context.Context, io.Writer) error
 	Dev(context.Context, io.Writer, []*latest.Artifact) error
 	ApplyDefaultRepo(tag string) (string, error)
 	BuildAndTest(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)

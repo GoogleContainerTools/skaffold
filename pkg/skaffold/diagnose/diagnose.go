@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package diagnose
 
 import (
 	"context"
@@ -27,16 +27,17 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
-func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) error {
-	for _, artifact := range r.runCtx.Cfg.Build.Artifacts {
+func CheckArtifacts(ctx context.Context, runCtx *runcontext.RunContext, out io.Writer) error {
+	for _, artifact := range runCtx.Cfg.Build.Artifacts {
 		color.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.ImageName)
 
 		if artifact.DockerArtifact != nil {
-			size, err := sizeOfDockerContext(ctx, artifact, r.runCtx.InsecureRegistries)
+			size, err := sizeOfDockerContext(ctx, artifact, runCtx.InsecureRegistries)
 			if err != nil {
 				return fmt.Errorf("computing the size of the Docker context: %w", err)
 			}
@@ -44,11 +45,11 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) e
 			fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
 		}
 
-		timeDeps1, deps, err := timeToListDependencies(ctx, artifact, r.runCtx.InsecureRegistries)
+		timeDeps1, deps, err := timeToListDependencies(ctx, artifact, runCtx.InsecureRegistries)
 		if err != nil {
 			return fmt.Errorf("listing artifact dependencies: %w", err)
 		}
-		timeDeps2, _, err := timeToListDependencies(ctx, artifact, r.runCtx.InsecureRegistries)
+		timeDeps2, _, err := timeToListDependencies(ctx, artifact, runCtx.InsecureRegistries)
 		if err != nil {
 			return fmt.Errorf("listing artifact dependencies: %w", err)
 		}
@@ -56,13 +57,13 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) e
 		fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
 		fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
 
-		timeSyncMap1, err := timeToConstructSyncMap(artifact, r.runCtx.InsecureRegistries)
+		timeSyncMap1, err := timeToConstructSyncMap(artifact, runCtx.InsecureRegistries)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return fmt.Errorf("construct artifact dependencies: %w", err)
 			}
 		}
-		timeSyncMap2, err := timeToConstructSyncMap(artifact, r.runCtx.InsecureRegistries)
+		timeSyncMap2, err := timeToConstructSyncMap(artifact, runCtx.InsecureRegistries)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return fmt.Errorf("construct artifact dependencies: %w", err)
