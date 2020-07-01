@@ -186,6 +186,7 @@ skaffold-builder:
 integration-in-kind: skaffold-builder
 	echo '{}' > /tmp/docker-config
 	docker network inspect kind >/dev/null || docker network create kind
+	docker pull kindest/node:v1.13.12@sha256:214476f1514e47fe3f6f54d0f9e24cfb1e4cda449529791286c7161b7f9c08e7
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.gradle:/root/.gradle \
