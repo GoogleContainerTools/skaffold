@@ -78,7 +78,7 @@ func getRestClientConfig(kctx string, kcfg string) (*restclient.Config, error) {
 		return nil, err
 	}
 
-	clientConfig := clientcmd.NewNonInteractiveClientConfig(rawConfig, kctx, &clientcmd.ConfigOverrides{CurrentContext: kctx}, nil)
+	clientConfig := clientcmd.NewNonInteractiveClientConfig(rawConfig, kctx, &clientcmd.ConfigOverrides{CurrentContext: kctx}, clientcmd.NewDefaultClientConfigLoadingRules())
 	restConfig, err := clientConfig.ClientConfig()
 	if kctx == "" && kcfg == "" && clientcmd.IsEmptyConfig(err) {
 		logrus.Debug("no kube-context set and no kubeConfig found, attempting in-cluster config")
