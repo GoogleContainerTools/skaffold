@@ -41,7 +41,7 @@ sudo install skaffold /usr/local/bin/
 
 {{% /tab %}}
 
-{{% tab "OS X" %}}
+{{% tab "MACOS" %}}
 
 The latest **stable** binary can be found here:
 
@@ -131,4 +131,3 @@ Then, install Skaffold:
 {{% /tab %}}
 
 {{% /tabs %}}
-
