@@ -233,8 +233,15 @@ func TestDependenciesForKustomization(t *testing.T) {
 		},
 		{
 			description:    "patchesStrategicMerge",
-			kustomizations: map[string]string{"kustomization.yaml": `patchesStrategicMerge: [patch1.yaml, path/patch2.yaml]`},
-			expected:       []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
+			kustomizations: map[string]string{"kustomization.yaml": `patchesStrategicMerge: [patch1.yaml, "patch2.yaml", 'path/patch3.yaml']`},
+			expected:       []string{"kustomization.yaml", "patch1.yaml", "patch2.yaml", "path/patch3.yaml"},
+		},
+		{
+			description: "inline patchesStrategicMerge",
+			kustomizations: map[string]string{"kustomization.yaml": `patchesStrategicMerge:
+- |-
+ apiVersion: v1`},
+			expected: []string{"kustomization.yaml"},
 		},
 		{
 			description:    "crds",
@@ -247,6 +254,15 @@ func TestDependenciesForKustomization(t *testing.T) {
 - path: patch1.json
 - path: path/patch2.json`},
 			expected: []string{"kustomization.yaml", "patch1.json", "path/patch2.json"},
+		},
+		{
+			description: "ignore patch without path",
+			kustomizations: map[string]string{"kustomization.yaml": `patchesJson6902:
+- patch: |-
+    - op: replace
+      path: /path
+      value: any`},
+			expected: []string{"kustomization.yaml"},
 		},
 		{
 			description: "configMapGenerator",

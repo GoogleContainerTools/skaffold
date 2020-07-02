@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/segmentio/textio"
+	yamlv3 "gopkg.in/yaml.v3"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -48,6 +49,18 @@ var (
 	basePath             = "base"
 )
 
+// kustomization is the content of a kustomization.yaml file.
+type kustomization struct {
+	Bases                 []string              `yaml:"bases"`
+	Resources             []string              `yaml:"resources"`
+	Patches               []patchWrapper        `yaml:"patches"`
+	PatchesStrategicMerge []strategicMergePatch `yaml:"patchesStrategicMerge"`
+	CRDs                  []string              `yaml:"crds"`
+	PatchesJSON6902       []patchJSON6902       `yaml:"patchesJson6902"`
+	ConfigMapGenerator    []configMapGenerator  `yaml:"configMapGenerator"`
+	SecretGenerator       []secretGenerator     `yaml:"secretGenerator"`
+}
+
 type patchPath struct {
 	Path  string `yaml:"path"`
 	Patch string `yaml:"patch"`
@@ -57,16 +70,9 @@ type patchWrapper struct {
 	*patchPath
 }
 
-// kustomization is the content of a kustomization.yaml file.
-type kustomization struct {
-	Bases                 []string             `yaml:"bases"`
-	Resources             []string             `yaml:"resources"`
-	Patches               []patchWrapper       `yaml:"patches"`
-	PatchesStrategicMerge []string             `yaml:"patchesStrategicMerge"`
-	CRDs                  []string             `yaml:"crds"`
-	PatchesJSON6902       []patchJSON6902      `yaml:"patchesJson6902"`
-	ConfigMapGenerator    []configMapGenerator `yaml:"configMapGenerator"`
-	SecretGenerator       []secretGenerator    `yaml:"secretGenerator"`
+type strategicMergePatch struct {
+	Path  string
+	Patch string
 }
 
 type patchJSON6902 struct {
@@ -223,6 +229,19 @@ func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []
 	return outputRenderedManifests(manifests.String(), filepath, out)
 }
 
+// Values of `patchesStrategicMerge` can be either:
+// + a file path, referenced as a plain string
+// + an inline patch referenced as a string literal
+func (p *strategicMergePatch) UnmarshalYAML(node *yamlv3.Node) error {
+	if node.Style == 0 || node.Style == yamlv3.DoubleQuotedStyle || node.Style == yamlv3.SingleQuotedStyle {
+		p.Path = node.Value
+	} else {
+		p.Patch = node.Value
+	}
+
+	return nil
+}
+
 // UnmarshalYAML implements JSON unmarshalling by reading an inline yaml fragment.
 func (p *patchWrapper) UnmarshalYAML(unmarshal func(interface{}) error) (err error) {
 	pp := &patchPath{}
@@ -281,16 +300,26 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 		}
 	}
 
-	deps = append(deps, util.AbsolutePaths(dir, content.PatchesStrategicMerge)...)
+	for _, patch := range content.PatchesStrategicMerge {
+		if patch.Path != "" {
+			deps = append(deps, filepath.Join(dir, patch.Path))
+		}
+	}
+
 	deps = append(deps, util.AbsolutePaths(dir, content.CRDs)...)
+
 	for _, patch := range content.Patches {
 		if patch.Path != "" {
 			deps = append(deps, filepath.Join(dir, patch.Path))
 		}
 	}
+
 	for _, jsonPatch := range content.PatchesJSON6902 {
-		deps = append(deps, filepath.Join(dir, jsonPatch.Path))
+		if jsonPatch.Path != "" {
+			deps = append(deps, filepath.Join(dir, jsonPatch.Path))
+		}
 	}
+
 	for _, generator := range content.ConfigMapGenerator {
 		deps = append(deps, util.AbsolutePaths(dir, generator.Files)...)
 		envs := generator.Envs
@@ -299,6 +328,7 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 		}
 		deps = append(deps, util.AbsolutePaths(dir, envs)...)
 	}
+
 	for _, generator := range content.SecretGenerator {
 		deps = append(deps, util.AbsolutePaths(dir, generator.Files)...)
 		envs := generator.Envs
