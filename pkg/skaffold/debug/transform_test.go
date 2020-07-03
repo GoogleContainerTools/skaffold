@@ -329,7 +329,6 @@ func TestUpdateForShDashC(t *testing.T) {
 					return ContainerDebugConfiguration{}, "image", nil
 				})
 			t.CheckDeepEqual(test.expected, container)
-
 		})
 	}
 }
