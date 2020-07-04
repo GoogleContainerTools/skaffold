@@ -121,7 +121,7 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 			// Direct: p.Command is the command and p.Args are the arguments
 			if p.Direct {
 				// Detect and unwrap `/bin/sh -c ...`-style command lines; GCP Buildpacks turn Procfiles into `/bin/bash -c ...`
-				if (p.Command == "/bin/sh" || p.Command == "/bin/bash") && len(p.Args) >= 2 && p.Args[0] == "-c" {
+				if len(p.Args) >= 2 && isShDashC(p.Command, p.Args[0]) {
 					p.Command = p.Args[1]
 					p.Args = p.Args[2:]
 					// and fall through to script type below
