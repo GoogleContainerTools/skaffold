@@ -45,6 +45,7 @@ func (b *Builder) buildSpec(artifact *latest.Artifact, tag, bucket, object strin
 	}
 	buildSpec.Options.DiskSizeGb = b.DiskSizeGb
 	buildSpec.Options.MachineType = b.MachineType
+	buildSpec.Options.WorkerPool = b.WorkerPool
 	buildSpec.Options.Logging = b.Logging
 	buildSpec.Options.LogStreamingOption = b.LogStreamingOption
 	buildSpec.Timeout = b.Timeout
