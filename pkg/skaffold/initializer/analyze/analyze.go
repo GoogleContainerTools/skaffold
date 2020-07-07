@@ -40,10 +40,11 @@ type analyzer interface {
 }
 
 type ProjectAnalysis struct {
-	configAnalyzer  *skaffoldConfigAnalyzer
-	kubeAnalyzer    *kubeAnalyzer
-	builderAnalyzer *builderAnalyzer
-	maxFileSize     int64
+	configAnalyzer    *skaffoldConfigAnalyzer
+	kubeAnalyzer      *kubeAnalyzer
+	kustomizeAnalyzer *kustomizeAnalyzer
+	builderAnalyzer   *builderAnalyzer
+	maxFileSize       int64
 }
 
 func (a *ProjectAnalysis) Builders() []build.InitBuilder {
@@ -54,9 +55,18 @@ func (a *ProjectAnalysis) Manifests() []string {
 	return a.kubeAnalyzer.kubernetesManifests
 }
 
+func (a *ProjectAnalysis) KustomizePaths() []string {
+	return a.kustomizeAnalyzer.kustomizePaths
+}
+
+func (a *ProjectAnalysis) KustomizeBases() []string {
+	return a.kustomizeAnalyzer.bases
+}
+
 func (a *ProjectAnalysis) analyzers() []analyzer {
 	return []analyzer{
 		a.kubeAnalyzer,
+		a.kustomizeAnalyzer,
 		a.configAnalyzer,
 		a.builderAnalyzer,
 	}
@@ -65,7 +75,8 @@ func (a *ProjectAnalysis) analyzers() []analyzer {
 // NewAnalyzer sets up the analysis of the directory based on the initializer configuration
 func NewAnalyzer(c config.Config) *ProjectAnalysis {
 	return &ProjectAnalysis{
-		kubeAnalyzer: &kubeAnalyzer{},
+		kubeAnalyzer:      &kubeAnalyzer{},
+		kustomizeAnalyzer: &kustomizeAnalyzer{},
 		builderAnalyzer: &builderAnalyzer{
 			findBuilders:         !c.SkipBuild,
 			enableJibInit:        c.EnableJibInit,
@@ -99,34 +110,44 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 	// init should have the same results.
 	sort.Sort(dirents)
 
-	var subdirectories []*godirwalk.Dirent
+	var subdirectories []string
 
 	// Traverse files
 	for _, file := range dirents {
-		if util.IsHiddenFile(file.Name()) || util.IsHiddenDir(file.Name()) {
+		name := file.Name()
+
+		if file.IsDir() {
+			if util.IsHiddenDir(name) || skipFolder(name) {
+				continue
+			}
+		} else if util.IsHiddenFile(name) {
 			continue
 		}
+
+		filePath := filepath.Join(dir, name)
 
 		// If we found a directory, keep track of it until we've gone through all the files first
 		if file.IsDir() {
-			subdirectories = append(subdirectories, file)
+			subdirectories = append(subdirectories, filePath)
 			continue
 		}
 
-		filePath := filepath.Join(dir, file.Name())
-		stat, err := os.Stat(filePath)
-		if err != nil {
-			// this is highly unexpected but in case there could be a racey situation where
-			// the file gets removed right between ReadDirents and Stat
-			continue
+		if a.maxFileSize > 0 {
+			stat, err := os.Stat(filePath)
+			if err != nil {
+				// this is highly unexpected but in case there could be a racey situation where
+				// the file gets removed right between ReadDirents and Stat
+				continue
+			}
+			if stat.Size() > a.maxFileSize {
+				logrus.Debugf("skipping %s as it is larger (%d) than max allowed size %d", filePath, stat.Size(), a.maxFileSize)
+				continue
+			}
 		}
-		if a.maxFileSize > 0 && stat.Size() > a.maxFileSize {
-			logrus.Debugf("skipping %s as it is larger (%d) than max allowed size %d", filePath, stat.Size(), a.maxFileSize)
-			continue
-		}
+
+		// to make skaffold.yaml more portable across OS-es we should always generate / based filePaths
+		filePath = strings.ReplaceAll(filePath, string(os.PathSeparator), "/")
 		for _, analyzer := range a.analyzers() {
-			// to make skaffold.yaml more portable across OS-es we should generate always / based filePaths
-			filePath = strings.ReplaceAll(filePath, string(os.PathSeparator), "/")
 			if err := analyzer.analyzeFile(filePath); err != nil {
 				return err
 			}
@@ -135,7 +156,7 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 
 	// Recurse into subdirectories
 	for _, subdir := range subdirectories {
-		if err = a.Analyze(filepath.Join(dir, subdir.Name())); err != nil {
+		if err := a.Analyze(subdir); err != nil {
 			return err
 		}
 	}
@@ -143,5 +164,10 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 	for _, analyzer := range a.analyzers() {
 		analyzer.exitDir(dir)
 	}
+
 	return nil
+}
+
+func skipFolder(name string) bool {
+	return name == "vendor" || name == "node_modules"
 }

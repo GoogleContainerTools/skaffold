@@ -19,6 +19,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -557,5 +558,74 @@ func TestGetDependencies(t *testing.T) {
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, deps)
 		})
+	}
+}
+
+func TestNormalizeDockerfilePath(t *testing.T) {
+	tests := []struct {
+		description string
+		files       []string
+		dockerfile  string
+
+		expected string // relative path
+	}{
+		{
+			description: "dockerfile found in context",
+			files:       []string{"Dockerfile", "context/Dockerfile"},
+			dockerfile:  "Dockerfile",
+			expected:    "context/Dockerfile",
+		},
+		{
+			description: "path to dockerfile resolved in context first",
+			files:       []string{"context/context/Dockerfile", "context/Dockerfile"},
+			dockerfile:  "context/Dockerfile",
+			expected:    "context/context/Dockerfile",
+		},
+		{
+			description: "path to dockerfile in working directory",
+			files:       []string{"context/Dockerfile"},
+			dockerfile:  "context/Dockerfile",
+			expected:    "context/Dockerfile",
+		},
+		{
+			description: "workspace dockerfile when missing in context",
+			files:       []string{"Dockerfile", "context/randomfile.txt"},
+			dockerfile:  "Dockerfile",
+			expected:    "Dockerfile",
+		},
+		{
+			description: "explicit dockerfile path",
+			files:       []string{"context/Dockerfile", "elsewhere/Dockerfile"},
+			dockerfile:  "elsewhere/Dockerfile",
+			expected:    "elsewhere/Dockerfile",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			d := t.NewTempDir()
+			t.Chdir(d.Root())
+
+			d.Mkdir("context")
+			d.Touch(test.files...)
+
+			f, err := NormalizeDockerfilePath(d.Path("context"), test.dockerfile)
+
+			t.CheckNoError(err)
+			checkSameFile(t, d.Path(test.expected), f)
+		})
+	}
+}
+
+func checkSameFile(t *testutil.T, expected, result string) {
+	t.Helper()
+
+	i1, err := os.Stat(expected)
+	t.CheckNoError(err)
+
+	i2, err := os.Stat(result)
+	t.CheckNoError(err)
+
+	if !os.SameFile(i1, i2) {
+		t.Errorf("returned wrong file\n   got: %s\nwanted: %s", result, expected)
 	}
 }

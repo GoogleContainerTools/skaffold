@@ -32,7 +32,7 @@ const (
 	defaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
 	defaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
 	defaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
-	defaultCloudBuildKanikoImage = "gcr.io/kaniko-project/executor"
+	defaultCloudBuildKanikoImage = constants.DefaultKanikoImage
 	defaultCloudBuildPackImage   = "gcr.io/k8s-skaffold/pack"
 )
 
@@ -200,6 +200,9 @@ func setCustomArtifactDefaults(a *latest.CustomArtifact) {
 }
 
 func setBuildpackArtifactDefaults(a *latest.BuildpackArtifact) {
+	if a.ProjectDescriptor == "" {
+		a.ProjectDescriptor = constants.DefaultProjectDescriptor
+	}
 	if a.Dependencies == nil {
 		a.Dependencies = &latest.BuildpackDependencies{
 			Paths: []string{"."},
@@ -259,12 +262,12 @@ func setDefaultClusterTimeout(cluster *latest.ClusterDetails) error {
 
 func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
 	cluster.PullSecretMountPath = valueOrDefault(cluster.PullSecretMountPath, constants.DefaultKanikoSecretMountPath)
-	if cluster.PullSecret != "" {
-		absPath, err := homedir.Expand(cluster.PullSecret)
+	if cluster.PullSecretPath != "" {
+		absPath, err := homedir.Expand(cluster.PullSecretPath)
 		if err != nil {
-			return fmt.Errorf("unable to expand pullSecret %s", cluster.PullSecret)
+			return fmt.Errorf("unable to expand pullSecretPath %s", cluster.PullSecretPath)
 		}
-		cluster.PullSecret = absPath
+		cluster.PullSecretPath = absPath
 		random := ""
 		if cluster.RandomPullSecret {
 			uid, _ := uuid.NewUUID()

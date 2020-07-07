@@ -89,7 +89,7 @@ build:
     context: ./examples/app1
     kaniko: {}
   cluster:
-    pullSecret: /secret.json
+    pullSecretPath: /secret.json
     pullSecretName: secret-name
     namespace: nskaniko
     timeout: 120m
@@ -311,7 +311,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 			DockerImage: "gcr.io/cloud-builders/docker",
 			MavenImage:  "gcr.io/cloud-builders/mvn",
 			GradleImage: "gcr.io/cloud-builders/gradle",
-			KanikoImage: "gcr.io/kaniko-project/executor",
+			KanikoImage: constants.DefaultKanikoImage,
 			PackImage:   "gcr.io/k8s-skaffold/pack",
 		}}}
 		for _, op := range ops {
@@ -326,7 +326,7 @@ func withClusterBuild(secretName, mountPath, namespace, secret string, timeout s
 		b := latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{
 			PullSecretName:      secretName,
 			Namespace:           namespace,
-			PullSecret:          secret,
+			PullSecretPath:      secret,
 			PullSecretMountPath: mountPath,
 			Timeout:             timeout,
 		}}}

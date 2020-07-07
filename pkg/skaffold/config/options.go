@@ -37,7 +37,6 @@ type SkaffoldOptions struct {
 	Cleanup               bool
 	Notification          bool
 	Tail                  bool
-	TailDev               bool
 	SkipTests             bool
 	CacheArtifacts        bool
 	EnableRPC             bool
@@ -51,22 +50,31 @@ type SkaffoldOptions struct {
 	RenderOnly            bool
 	ProfileAutoActivation bool
 	DryRun                bool
-	PortForward           PortForwardOptions
-	CustomTag             string
-	Namespace             string
-	CacheFile             string
-	Trigger               string
-	KubeContext           string
-	KubeConfig            string
-	WatchPollInterval     int
-	DefaultRepo           StringOrUndefined
-	CustomLabels          []string
-	TargetImages          []string
-	Profiles              []string
-	InsecureRegistries    []string
-	Command               string
-	RPCPort               int
-	RPCHTTPPort           int
+	SkipRender            bool
+
+	// Add Skaffold-specific labels including runID, deployer labels, etc.
+	// `CustomLabels` are still applied if this is false. Must only be used in
+	// commands which don't deploy (e.g. `skaffold render`) since the runID
+	// label isn't available.
+	AddSkaffoldLabels bool
+
+	PortForward        PortForwardOptions
+	CustomTag          string
+	Namespace          string
+	CacheFile          string
+	Trigger            string
+	KubeContext        string
+	KubeConfig         string
+	DigestSource       string
+	WatchPollInterval  int
+	DefaultRepo        StringOrUndefined
+	CustomLabels       []string
+	TargetImages       []string
+	Profiles           []string
+	InsecureRegistries []string
+	Command            string
+	RPCPort            int
+	RPCHTTPPort        int
 
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the

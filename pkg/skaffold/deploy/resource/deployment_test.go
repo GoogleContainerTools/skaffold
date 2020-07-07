@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -76,7 +77,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 				"",
 				errors.New("Unable to connect to the server"),
 			),
-			expectedErr: ErrKubectlConnection.Error(),
+			expectedErr: MsgKubectlConnection,
 		},
 	}
 
@@ -93,7 +94,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 			if test.expectedErr != "" {
 				t.CheckErrorContains(test.expectedErr, r.Status().Error())
 			} else {
-				t.CheckDeepEqual(r.status.details, test.expectedDetails)
+				t.CheckDeepEqual(r.status.ae.Message, test.expectedDetails)
 			}
 		})
 	}
@@ -102,39 +103,47 @@ func TestDeploymentCheckStatus(t *testing.T) {
 func TestParseKubectlError(t *testing.T) {
 	tests := []struct {
 		description string
+		details     string
 		err         error
-		expected    string
-		shouldErr   bool
+		expectedAe  proto.ActionableErr
 	}{
 		{
 			description: "rollout status connection error",
 			err:         errors.New("Unable to connect to the server"),
-			expected:    ErrKubectlConnection.Error(),
-			shouldErr:   true,
+			expectedAe: proto.ActionableErr{
+				ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
+				Message: MsgKubectlConnection,
+			},
 		},
 		{
 			description: "rollout status kubectl command killed",
 			err:         errors.New("signal: killed"),
-			expected:    errKubectlKilled.Error(),
-			shouldErr:   true,
+			expectedAe: proto.ActionableErr{
+				ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED,
+				Message: msgKubectlKilled,
+			},
 		},
 		{
 			description: "rollout status random error",
 			err:         errors.New("deployment test not found"),
-			expected:    "deployment test not found",
-			shouldErr:   true,
+			expectedAe: proto.ActionableErr{
+				ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN,
+				Message: "deployment test not found",
+			},
 		},
 		{
 			description: "rollout status nil error",
+			details:     "successfully rolled out",
+			expectedAe: proto.ActionableErr{
+				ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+				Message: "successfully rolled out",
+			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := parseKubectlRolloutError(test.err)
-			t.CheckError(test.shouldErr, actual)
-			if test.shouldErr {
-				t.CheckErrorContains(test.expected, actual)
-			}
+			ae := parseKubectlRolloutError(test.details, test.err)
+			t.CheckDeepEqual(test.expectedAe, ae)
 		})
 	}
 }
@@ -142,40 +151,114 @@ func TestParseKubectlError(t *testing.T) {
 func TestIsErrAndNotRetriable(t *testing.T) {
 	tests := []struct {
 		description string
-		err         error
+		statusCode  proto.StatusCode
 		expected    bool
 	}{
 		{
 			description: "rollout status connection error",
-			err:         ErrKubectlConnection,
+			statusCode:  proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
 		},
 		{
 			description: "rollout status kubectl command killed",
-			err:         errKubectlKilled,
+			statusCode:  proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED,
 			expected:    true,
 		},
 		{
 			description: "rollout status random error",
-			err:         errors.New("deployment test not found"),
+			statusCode:  proto.StatusCode_STATUSCHECK_UNKNOWN,
 			expected:    true,
 		},
 		{
-			description: "rollout status parent context cancelled",
-			err:         context.Canceled,
+			description: "rollout status parent context canceled",
+			statusCode:  proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED,
 			expected:    true,
 		},
 		{
 			description: "rollout status parent context timed out",
-			err:         context.DeadlineExceeded,
+			statusCode:  proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED,
 			expected:    true,
 		},
 		{
 			description: "rollout status nil error",
+			statusCode:  proto.StatusCode_STATUSCHECK_SUCCESS,
+			expected:    true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := isErrAndNotRetryAble(test.err)
+			actual := isErrAndNotRetryAble(test.statusCode)
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+func TestReportSinceLastUpdated(t *testing.T) {
+	var tests = []struct {
+		description string
+		ae          proto.ActionableErr
+		expected    string
+	}{
+		{
+			description: "updating an error status",
+			ae:          proto.ActionableErr{Message: "cannot pull image"},
+			expected:    " - test-ns:deployment/test: cannot pull image",
+		},
+		{
+			description: "updating a non error status",
+			ae:          proto.ActionableErr{Message: "waiting for container"},
+			expected:    " - test-ns:deployment/test: waiting for container",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			dep := NewDeployment("test", "test-ns", 1)
+			dep.UpdateStatus(test.ae)
+			t.CheckDeepEqual(test.expected, dep.ReportSinceLastUpdated())
+			t.CheckTrue(dep.status.changed)
+		})
+	}
+}
+
+func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
+	var tests = []struct {
+		description     string
+		statuses        []string
+		reportStatusSeq []bool
+		expected        string
+	}{
+		{
+			description:     "report first time should return status",
+			statuses:        []string{"cannot pull image"},
+			reportStatusSeq: []bool{true},
+			expected:        " - test-ns:deployment/test: cannot pull image",
+		},
+		{
+			description:     "report 2nd time should not return when same status",
+			statuses:        []string{"cannot pull image", "cannot pull image"},
+			reportStatusSeq: []bool{true, true},
+			expected:        "",
+		},
+		{
+			description:     "report called after multiple changes but last status was not changed.",
+			statuses:        []string{"cannot pull image", "changed but not reported", "changed but not reported", "changed but not reported"},
+			reportStatusSeq: []bool{true, false, false, true},
+			expected:        " - test-ns:deployment/test: changed but not reported",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			dep := NewDeployment("test", "test-ns", 1)
+			var actual string
+			for i, status := range test.statuses {
+				// update to same status
+				dep.UpdateStatus(proto.ActionableErr{
+					ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
+					Message: status,
+				})
+				if test.reportStatusSeq[i] {
+					actual = dep.ReportSinceLastUpdated()
+				}
+			}
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}

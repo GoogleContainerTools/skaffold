@@ -24,8 +24,11 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -41,6 +44,7 @@ func (b *Builder) runBuildScript(ctx context.Context, out io.Writer, a *latest.A
 		return fmt.Errorf("retrieving cmd: %w", err)
 	}
 
+	logrus.Debugf("Running command: %s", cmd.Args)
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("starting cmd: %w", err)
 	}
@@ -95,6 +99,16 @@ func (b *Builder) retrieveEnv(a *latest.Artifact, tag string) ([]string, error) 
 		fmt.Sprintf("%s=%t", constants.PushImage, b.pushImages),
 		fmt.Sprintf("%s=%s", constants.BuildContext, buildContext),
 	}
+
+	ref, err := docker.ParseReference(tag)
+	if err != nil {
+		return nil, fmt.Errorf("parsing image %v: %w", tag, err)
+	}
+
+	// Standardize access to Image reference fields in templates
+	envs = append(envs, fmt.Sprintf("%s=%s", constants.ImageRef.Repo, ref.BaseName))
+	envs = append(envs, fmt.Sprintf("%s=%s", constants.ImageRef.Tag, ref.Tag))
+
 	envs = append(envs, b.additionalEnv...)
 	envs = append(envs, util.OSEnviron()...)
 	return envs, nil

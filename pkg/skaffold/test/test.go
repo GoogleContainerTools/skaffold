@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -74,17 +76,17 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifa
 	return nil
 }
 
-func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact, testCase *latest.TestCase) error {
-	if len(testCase.StructureTests) == 0 {
+func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact, tc *latest.TestCase) error {
+	if len(tc.StructureTests) == 0 {
 		return nil
 	}
 
-	files, err := util.ExpandPathsGlob(t.workingDir, testCase.StructureTests)
-	if err != nil {
-		return fmt.Errorf("expanding test file paths: %w", err)
+	fqn, found := resolveArtifactImageTag(tc.ImageName, bRes)
+	if !found {
+		logrus.Debugln("Skipping tests for", tc.ImageName, "since it wasn't built")
+		return nil
 	}
 
-	fqn := resolveArtifactImageTag(testCase.ImageName, bRes)
 	if !t.imagesAreLocal {
 		// The image is remote so we have to pull it locally.
 		// `container-structure-test` currently can't do it:
@@ -94,16 +96,22 @@ func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes [
 		}
 	}
 
+	files, err := util.ExpandPathsGlob(t.workingDir, tc.StructureTests)
+	if err != nil {
+		return fmt.Errorf("expanding test file paths: %w", err)
+	}
+
 	runner := structure.NewRunner(files, t.localDaemon.ExtraEnv())
+
 	return runner.Test(ctx, out, fqn)
 }
 
-func resolveArtifactImageTag(imageName string, bRes []build.Artifact) string {
+func resolveArtifactImageTag(imageName string, bRes []build.Artifact) (string, bool) {
 	for _, res := range bRes {
 		if imageName == res.ImageName {
-			return res.Tag
+			return res.Tag, true
 		}
 	}
 
-	return imageName
+	return "", false
 }

@@ -27,11 +27,11 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 const (
@@ -58,6 +58,8 @@ var (
 
 	// update global config with the time the survey was last taken
 	updateLastTaken = "skaffold config set --survey --global last-taken %s"
+	// update global config with the time the survey was last prompted
+	updateLastPrompted = "skaffold config set --survey --global last-prompted %s"
 )
 
 // readConfigFileCached reads the specified file and returns the contents
@@ -132,7 +134,7 @@ func getConfigForKubeContextWithGlobalDefaults(cfg *GlobalConfig, kubeContext st
 
 	var mergedConfig ContextConfig
 	for _, contextCfg := range cfg.ContextConfigs {
-		if contextCfg.Kubecontext == kubeContext {
+		if util.RegexEqual(contextCfg.Kubecontext, kubeContext) {
 			logrus.Debugf("found config for context %q", kubeContext)
 			mergedConfig = *contextCfg
 		}
@@ -192,6 +194,19 @@ func GetInsecureRegistries(configFile string) ([]string, error) {
 	return cfg.InsecureRegistries, nil
 }
 
+func GetDebugHelpersRegistry(configFile string) (string, error) {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		return "", err
+	}
+
+	if cfg.DebugHelpersRegistry == "" {
+		return constants.DefaultDebugHelpersRegistry, nil
+	}
+
+	return cfg.DebugHelpersRegistry, nil
+}
+
 func isDefaultLocal(kubeContext string) bool {
 	if kubeContext == constants.DefaultMinikubeContext ||
 		kubeContext == constants.DefaultDockerForDesktopContext ||
@@ -199,31 +214,68 @@ func isDefaultLocal(kubeContext string) bool {
 		return true
 	}
 
-	isKind, _ := IsKindCluster(kubeContext)
-	return isKind
+	return IsKindCluster(kubeContext) || IsK3dCluster(kubeContext)
+}
+
+// IsImageLoadingRequired checks if the cluster requires loading images into it
+func IsImageLoadingRequired(kubeContext string) bool {
+	return IsKindCluster(kubeContext) || IsK3dCluster(kubeContext)
 }
 
 // IsKindCluster checks that the given `kubeContext` is talking to `kind`.
-// It also returns the name of the `kind` cluster.
-func IsKindCluster(kubeContext string) (bool, string) {
+func IsKindCluster(kubeContext string) bool {
 	switch {
 	// With kind version < 0.6.0, the k8s context
 	// is `[CLUSTER NAME]@kind`.
 	// For eg: `cluster@kind`
 	// the default name is `kind@kind`
 	case strings.HasSuffix(kubeContext, "@kind"):
-		return true, strings.TrimSuffix(kubeContext, "@kind")
+		return true
 
 	// With kind version >= 0.6.0, the k8s context
 	// is `kind-[CLUSTER NAME]`.
 	// For eg: `kind-cluster`
 	// the default name is `kind-kind`
 	case strings.HasPrefix(kubeContext, "kind-"):
-		return true, strings.TrimPrefix(kubeContext, "kind-")
+		return true
 
 	default:
-		return false, ""
+		return false
 	}
+}
+
+// KindClusterName returns the internal kind name of a kubernetes cluster.
+func KindClusterName(clusterName string) string {
+	switch {
+	// With kind version < 0.6.0, the k8s context
+	// is `[CLUSTER NAME]@kind`.
+	// For eg: `cluster@kind`
+	// the default name is `kind@kind`
+	case strings.HasSuffix(clusterName, "@kind"):
+		return strings.TrimSuffix(clusterName, "@kind")
+
+	// With kind version >= 0.6.0, the k8s context
+	// is `kind-[CLUSTER NAME]`.
+	// For eg: `kind-cluster`
+	// the default name is `kind-kind`
+	case strings.HasPrefix(clusterName, "kind-"):
+		return strings.TrimPrefix(clusterName, "kind-")
+	}
+
+	return clusterName
+}
+
+// IsK3dCluster checks that the given `kubeContext` is talking to `k3d`.
+func IsK3dCluster(kubeContext string) bool {
+	return strings.HasPrefix(kubeContext, "k3d-")
+}
+
+// K3dClusterName returns the internal name of a k3d cluster.
+func K3dClusterName(clusterName string) string {
+	if strings.HasPrefix(clusterName, "k3d-") {
+		return strings.TrimPrefix(clusterName, "k3d-")
+	}
+	return clusterName
 }
 
 func IsUpdateCheckEnabled(configfile string) bool {
@@ -244,7 +296,7 @@ func isSurveyPromptDisabled(configfile string) (*ContextConfig, bool) {
 	if err != nil {
 		return nil, false
 	}
-	return cfg, cfg != nil && cfg.Survey != nil && *cfg.Survey.DisablePrompt
+	return cfg, cfg != nil && cfg.Survey != nil && cfg.Survey.DisablePrompt != nil && *cfg.Survey.DisablePrompt
 }
 
 func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
@@ -284,6 +336,34 @@ func UpdateGlobalSurveyTaken(configFile string) error {
 		fullConfig.Global.Survey = &SurveyConfig{}
 	}
 	fullConfig.Global.Survey.LastTaken = today
+	err = WriteFullConfig(configFile, fullConfig)
+	if err != nil {
+		return aiErr
+	}
+	return err
+}
+
+func UpdateGlobalSurveyPrompted(configFile string) error {
+	// Today's date
+	today := current().Format(time.RFC3339)
+	ai := fmt.Sprintf(updateLastPrompted, today)
+	aiErr := fmt.Errorf("could not automatically update the survey prompted timestamp - please run `%s`", ai)
+
+	configFile, err := ResolveConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	fullConfig, err := ReadConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	if fullConfig.Global == nil {
+		fullConfig.Global = &ContextConfig{}
+	}
+	if fullConfig.Global.Survey == nil {
+		fullConfig.Global.Survey = &SurveyConfig{}
+	}
+	fullConfig.Global.Survey.LastPrompted = today
 	err = WriteFullConfig(configFile, fullConfig)
 	if err != nil {
 		return aiErr

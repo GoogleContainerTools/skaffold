@@ -45,6 +45,8 @@ func generateSkaffoldConfig(b build.Initializer, d deploy.Initializer) *latest.S
 		warnings.Printf("Couldn't generate default config name: %s", err.Error())
 	}
 
+	deploy, profiles := d.DeployConfig()
+
 	return &latest.SkaffoldConfig{
 		APIVersion: latest.Version,
 		Kind:       "Config",
@@ -53,8 +55,9 @@ func generateSkaffoldConfig(b build.Initializer, d deploy.Initializer) *latest.S
 		},
 		Pipeline: latest.Pipeline{
 			Build:  b.BuildConfig(),
-			Deploy: d.DeployConfig(),
+			Deploy: deploy,
 		},
+		Profiles: profiles,
 	}
 }
 

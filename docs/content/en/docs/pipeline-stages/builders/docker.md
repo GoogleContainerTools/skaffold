@@ -68,13 +68,13 @@ These credentials are configured in the `cluster` section with the following opt
 {{< schema root="ClusterDetails" >}}
 
 To set up the credentials for Kaniko refer to the [kaniko docs](https://github.com/GoogleContainerTools/kaniko#kubernetes-secret) (**Note**: Rename the downloaded JSON key to *kaniko-secret* without appending *.json*).
-Alternatively, the path to a credentials file can be set with the `pullSecret` option:
+Alternatively, the path to a credentials file can be set with the `pullSecretPath` option:
 ```yaml
 build:
   cluster:
     pullSecretName: pull-secret-in-kubernetes
     # OR
-    pullSecret: path-to-service-account-key-file
+    pullSecretPath: path-to-service-account-key-file
 ```
 Similarly, when pushing to a docker registry:
 ```yaml

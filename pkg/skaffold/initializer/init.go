@@ -22,14 +22,13 @@ import (
 	"io"
 	"io/ioutil"
 
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 // DoInit executes the `skaffold init` flow.
@@ -45,7 +44,7 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 		return err
 	}
 
-	deployInitializer := deploy.NewInitializer(a.Manifests(), c)
+	deployInitializer := deploy.NewInitializer(a.Manifests(), a.KustomizeBases(), a.KustomizePaths(), c)
 	images := deployInitializer.GetImages()
 
 	buildInitializer := build.NewInitializer(a.Builders(), c)

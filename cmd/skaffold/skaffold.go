@@ -27,13 +27,26 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 )
 
+type ExitCoder interface {
+	ExitCode() int
+}
+
 func main() {
 	if err := app.Run(os.Stdout, os.Stderr); err != nil {
 		if errors.Is(err, context.Canceled) {
 			logrus.Debugln("ignore error since context is cancelled:", err)
 		} else {
 			color.Red.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			os.Exit(exitCode(err))
 		}
 	}
+}
+
+func exitCode(err error) int {
+	var exitCoder ExitCoder
+	if errors.As(err, &exitCoder) {
+		return exitCoder.ExitCode()
+	}
+
+	return 1
 }

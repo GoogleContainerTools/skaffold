@@ -37,12 +37,12 @@ message Metadata {
 }
 
 message BuildMetadata {
-  message Builder {
+  message ImageBuilder {
       BuilderType type = 1;
       int32 count = 2;
   }
   int32 numberOfArtifacts = 1;
-  repeated Builder builders= 2;
+  repeated ImageBuilder builders= 2;
   BuildType type = 3;
   // Additional key value pairs to describe the deploy pipeline
   map<string, string> additional = 99;
@@ -67,11 +67,13 @@ message BuildState {
     // - `"Complete"`: build succeeded <br>
     // - `"Failed"`: build failed
     map<string, string> artifacts = 1;
+    bool autoTrigger = 2;
 }
 
 // `DeployState` describes the status of the current deploy
 message DeployState {
     string status = 1;
+    bool autoTrigger = 2;
 }
 
 // `StatusCheckState` describes the state of status check of current deployed resources.
@@ -90,6 +92,7 @@ message StatusCheckState {
 // `FileSyncState` contains the status of the current file sync
 message FileSyncState {
     string status = 1;
+    bool autoTrigger = 2;
 }
 
 // `Event` describes an event in the Skaffold process.
@@ -112,14 +115,15 @@ message Event {
 message DevLoopEvent {
     int32 iteration = 1; // dev loop iteration. 0 represents initialization loop.
     string status = 2; // dev loop status oneof: In Progress, Completed, Failed
-    ErrDef err = 3; // actionable error message
+    ActionableErr err = 3; // actionable error message
 
 }
 
-// `ErrDef` defines an error occurred along with an optional suggestions
-message ErrDef {
+// `ActionableErr` defines an error that occurred along with an optional list of suggestions
+message ActionableErr {
     StatusCode errCode = 1; // error code representing the error
     string message = 2; // message describing the error.
+    repeated Suggestion suggestions = 3; // list of suggestions
 }
 
 // `MetaEvent` provides general information regarding Skaffold
@@ -135,24 +139,28 @@ message MetaEvent {
 message BuildEvent {
     string artifact = 1; // artifact name
     string status = 2; // artifact build status oneof: InProgress, Completed, Failed
-    string err = 3; // error when build status is Failed.
-    StatusCode errCode = 4; // status code representing success or failure
+    string err = 3; // Deprecated. Use actionableErr.message. error when build status is Failed.
+    StatusCode errCode = 4; // Deprecated. Use actionableErr.errCode. status code representing success or failure
+    ActionableErr actionableErr = 5; // actionable error message
+
 }
 
 // `DeployEvent` represents the status of a deployment, and is emitted by Skaffold
 // anytime a deployment starts or completes, successfully or not.
 message DeployEvent {
     string status = 1; // deployment status oneof: InProgress, Completed, Failed
-    string err = 2; // error when status is Failed
-    StatusCode errCode = 3; // status code representing success or failure
+    string err = 2; // Deprecated. Use actionableErr.message. error when status is Failed
+    StatusCode errCode = 3; // Deprecated. Use actionableErr.errCode. status code representing success or failure
+    ActionableErr actionableErr = 4; // actionable error message
 }
 
 // `StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed.
 message StatusCheckEvent {
     string status = 1;
     string message = 2;
-    string err = 3;
-    StatusCode errCode = 4; // status code representing success or failure
+    string err = 3;  // Deprecated. Use actionableErr.message.
+    StatusCode errCode = 4; // Deprecated. Use actionableErr.errCode. status code representing success or failure
+    ActionableErr actionableErr = 5; // actionable error message
 }
 
 // A Resource StatusCheck Event, indicates progress for each kubernetes deployment.
@@ -164,7 +172,9 @@ message ResourceStatusCheckEvent {
     string resource = 1;
     string status = 2;
     string message = 3;
-    string err = 4;
+    string err = 4;  // Deprecated. Use actionableErr.message.
+    StatusCode statusCode = 5;
+    ActionableErr actionableErr = 6; // actionable error message
 }
 
 // PortEvent Event describes each port forwarding event.
@@ -173,7 +183,7 @@ message PortEvent {
     int32 remotePort = 2; // remote port is the resource port that will be forwarded.
     string podName = 3; // pod name if port forwarded resourceType is Pod
     string containerName = 4; // container name if specified in the kubernetes spec
-    string namespace = 5; // 	the namespace of the resource to port forward.
+    string namespace = 5; // the namespace of the resource to port forward.
     string portName = 6;
     string resourceType = 7; // resource type e.g. "pod", "service".
     string resourceName = 8; // name of the resource to forward.
@@ -185,8 +195,9 @@ message FileSyncEvent {
     int32 fileCount = 1; // number of files synced
     string image = 2; // the container image to which files are sycned.
     string status = 3; // status of file sync. one of: Not Started, In progress, Succeeded, Failed.
-    string err = 4; // error in case of status failed.
-    StatusCode errCode = 5; // status code representing success or failure
+    string err = 4; // Deprecated. Use actionableErr.message. error in case of status failed.
+    StatusCode errCode = 5; //// Deprecated. Use actionableErr.errCode. status code representing success or failure
+    ActionableErr actionableErr = 6; // actionable error message
 }
 
 // DebuggingContainerEvent is raised when a debugging container is started or terminated
@@ -213,11 +224,28 @@ message UserIntentRequest {
     Intent intent = 1;
 }
 
-// Intent represents user intents for a given phase to be unblocked, once.
+message TriggerRequest {
+  TriggerState state = 1;
+}
+
+// TriggerState represents trigger state for a given phase.
+message TriggerState {
+  oneof val {
+    bool enabled = 1; // enable or disable a trigger state
+  }
+}
+
+// Intent represents user intents for a given phase.
 message Intent {
     bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once
     bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once
     bool deploy = 3; // in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once
+}
+
+// Suggestion defines the action a user needs to recover from an error.
+message Suggestion {
+    SuggestionCode suggestionCode = 1; // code representing a suggestion
+    string action = 2; // action represents the suggestion action
 }
 
 // Describes all the methods for the Skaffold API
@@ -251,6 +279,30 @@ service SkaffoldService {
             post: "/v1/execute"
             body: "intent"
     };
+    }
+
+    // Allows for enabling or disabling automatic build trigger
+    rpc AutoBuild (TriggerRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            put: "/v1/build/auto_execute"
+            body: "state"
+        };
+    }
+
+    // Allows for enabling or disabling automatic sync trigger
+    rpc AutoSync (TriggerRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            put: "/v1/sync/auto_execute"
+            body: "state"
+        };
+    }
+
+    // Allows for enabling or disabling automatic deploy trigger
+    rpc AutoDeploy (TriggerRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            put: "/v1/deploy/auto_execute"
+            body: "state"
+        };
     }
 
     // EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.
@@ -321,8 +373,9 @@ enum ClusterType {
 // These error codes are prepended by Phase Name e.g.
 // BUILD, DEPLOY, STATUSCHECK, DEVINIT
 enum StatusCode {
-    // Could not determine error and phase
-    UNKNOWN_ERROR = 0;
+    // A default status code for events that do not have an associated phase.
+    // Typically seen with the DevEndEvent event on success.
+    OK = 0;
 
     // No Error codes
 
@@ -348,8 +401,12 @@ enum StatusCode {
     STATUSCHECK_RUN_CONTAINER_ERR = 302;
     // Container is already terminated
     STATUSCHECK_CONTAINER_TERMINATED = 303;
+    // Deployment waiting for rollout
+    STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING = 304;
     // Container restarting error
     STATUSCHECK_CONTAINER_RESTARTING = 356;
+    // Readiness probe failed
+    STATUSCHECK_UNHEALTHY = 357;
 
     // K8 infra errors
 
@@ -367,15 +424,28 @@ enum StatusCode {
     STATUSCHECK_NODE_UNREACHABLE = 405;
     // Node not ready error
     STATUSCHECK_NODE_NOT_READY= 406;
+    // Scheduler failure error
+    STATUSCHECK_FAILED_SCHEDULING = 407;
+    // Kubectl connection error
+    STATUSCHECK_KUBECTL_CONNECTION_ERR = 409;
+    // Kubectl process killed error
+    STATUSCHECK_KUBECTL_PID_KILLED = 410;
+
+    // 408 is skipped as STATUSCHECK_UNHEALTH code renumbered as 357
 
     // Unknown Error Codes
 
+    // Could not determine error and phase
+    UNKNOWN_ERROR = 500;
     // Status Check error unknown
     STATUSCHECK_UNKNOWN = 501;
     // Container is unschedulable due to unknown reasons
     STATUSCHECK_UNKNOWN_UNSCHEDULABLE = 502;
     // Container is waiting due to unknown reason
     STATUSCHECK_CONTAINER_WAITING_UNKNOWN = 503;
+    // Container event reason unknown
+    STATUSCHECK_UNKNOWN_EVENT = 509;
+
     // Deploy failed due to unknown reason
     DEPLOY_UNKNOWN = 504;
     // SYNC failed due to known reason
@@ -403,4 +473,60 @@ enum StatusCode {
     DEVINIT_REGISTER_DEPLOY_DEPS = 703;
     // Failed to configure watcher for Skaffold configuration file.
     DEVINIT_REGISTER_CONFIG_DEP = 704;
+
+    // Timeout or User Cancellation Errors
+
+    // User cancelled the skaffold dev run
+    STATUSCHECK_CONTEXT_CANCELLED = 800;
+
+    // Deadline for status check exceeded
+    STATUSCHECK_DEADLINE_EXCEEDED = 801;
 }
+
+// Enum for Suggestion codes
+enum SuggestionCode {
+    // default nil suggestion.
+    // This is usually set when no error happens.
+    NIL = 0;
+
+    // Build error suggestion codes
+    ADD_DEFAULT_REPO = 100;
+    CHECK_DEFAULT_REPO = 101;
+    CHECK_DEFAULT_REPO_GLOBAL_CONFIG = 102;
+    GCLOUD_DOCKER_AUTH_CONFIGURE = 103;
+    DOCKER_AUTH_CONFIGURE = 104;
+    CHECK_GCLOUD_PROJECT = 105;
+
+
+    // Container Run time error
+
+    // Container run error
+    CHECK_CONTAINER_LOGS = 301;
+    // Pod Health check error
+    CHECK_READINESS_PROBE = 302;
+    // Check Container image
+    CHECK_CONTAINER_IMAGE = 303;
+
+
+    // Common infra errors
+
+    // Node pressure error
+    ADDRESS_NODE_MEMORY_PRESSURE = 400;
+    // Node disk pressure error
+    ADDRESS_NODE_DISK_PRESSURE = 401;
+    // Node network unavailable error
+    ADDRESS_NODE_NETWORK_UNAVAILABLE = 402;
+    // Node PID pressure error
+    ADDRESS_NODE_PID_PRESSURE = 403;
+    // Node unschedulable error
+    ADDRESS_NODE_UNSCHEDULABLE = 404;
+    // Node unreachable error
+    ADDRESS_NODE_UNREACHABLE = 405;
+    // Node not ready error
+    ADDRESS_NODE_NOT_READY = 406;
+    // Scheduler failure error
+    ADDRESS_FAILED_SCHEDULING = 407;
+    // Cluster Connectivity error
+    CHECK_HOST_CONNECTION = 408;
+}
+

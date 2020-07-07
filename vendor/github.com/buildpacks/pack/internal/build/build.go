@@ -3,7 +3,6 @@ package build
 import (
 	"context"
 	"math/rand"
-	"sync"
 	"time"
 
 	"github.com/docker/docker/client"
@@ -26,24 +25,40 @@ type Builder interface {
 	UID() int
 	GID() int
 	LifecycleDescriptor() builder.LifecycleDescriptor
+	Stack() builder.StackMetadata
 }
 
 type Lifecycle struct {
 	builder            Builder
+	lifecycleImage     string
 	logger             logging.Logger
 	docker             client.CommonAPIClient
 	appPath            string
-	appOnce            *sync.Once
 	httpProxy          string
 	httpsProxy         string
 	noProxy            string
 	version            string
 	platformAPIVersion string
-	LayersVolume       string
-	AppVolume          string
-	Volumes            []string
-	DefaultProcessType string
+	layersVolume       string
+	appVolume          string
+	defaultProcessType string
 	fileFilter         func(string) bool
+}
+
+func (l *Lifecycle) Builder() Builder {
+	return l.builder
+}
+
+func (l *Lifecycle) AppPath() string {
+	return l.appPath
+}
+
+func (l *Lifecycle) AppVolume() string {
+	return l.appVolume
+}
+
+func (l *Lifecycle) LayersVolume() string {
+	return l.layersVolume
 }
 
 type Cache interface {
@@ -65,9 +80,12 @@ type LifecycleOptions struct {
 	AppPath            string
 	Image              name.Reference
 	Builder            Builder
+	LifecycleImage     string
 	RunImage           string
 	ClearCache         bool
 	Publish            bool
+	TrustBuilder       bool
+	UseCreator         bool
 	HTTPProxy          string
 	HTTPSProxy         string
 	NoProxy            string
@@ -81,10 +99,10 @@ func (l *Lifecycle) Execute(ctx context.Context, opts LifecycleOptions) error {
 	l.Setup(opts)
 	defer l.Cleanup()
 
-	buildCache := cache.NewVolumeCache(opts.Image, "build", l.docker)
-	launchCache := cache.NewVolumeCache(opts.Image, "launch", l.docker)
-	l.logger.Debugf("Using build cache volume %s", style.Symbol(buildCache.Name()))
+	phaseFactory := NewDefaultPhaseFactory(l)
 
+	buildCache := cache.NewVolumeCache(opts.Image, "build", l.docker)
+	l.logger.Debugf("Using build cache volume %s", style.Symbol(buildCache.Name()))
 	if opts.ClearCache {
 		if err := buildCache.Clear(ctx); err != nil {
 			return errors.Wrap(err, "clearing build cache")
@@ -92,61 +110,72 @@ func (l *Lifecycle) Execute(ctx context.Context, opts LifecycleOptions) error {
 		l.logger.Debugf("Build cache %s cleared", style.Symbol(buildCache.Name()))
 	}
 
-	phaseFactory := NewDefaultPhaseFactory(l)
+	launchCache := cache.NewVolumeCache(opts.Image, "launch", l.docker)
 
-	l.logger.Info(style.Step("DETECTING"))
-	if err := l.Detect(ctx, opts.Network, opts.Volumes, phaseFactory); err != nil {
-		return err
+	if !opts.UseCreator {
+		l.logger.Info(style.Step("DETECTING"))
+		if err := l.Detect(ctx, opts.Network, opts.Volumes, phaseFactory); err != nil {
+			return err
+		}
+
+		l.logger.Info(style.Step("ANALYZING"))
+		if err := l.Analyze(ctx, opts.Image.Name(), buildCache.Name(), opts.Network, opts.Publish, opts.ClearCache, phaseFactory); err != nil {
+			return err
+		}
+
+		l.logger.Info(style.Step("RESTORING"))
+		if opts.ClearCache {
+			l.logger.Info("Skipping 'restore' due to clearing cache")
+		} else if err := l.Restore(ctx, buildCache.Name(), opts.Network, phaseFactory); err != nil {
+			return err
+		}
+
+		l.logger.Info(style.Step("BUILDING"))
+
+		if err := l.Build(ctx, opts.Network, opts.Volumes, phaseFactory); err != nil {
+			return err
+		}
+
+		l.logger.Info(style.Step("EXPORTING"))
+		return l.Export(ctx, opts.Image.Name(), opts.RunImage, opts.Publish, launchCache.Name(), buildCache.Name(), opts.Network, phaseFactory)
 	}
 
-	l.logger.Info(style.Step("ANALYZING"))
-	if err := l.Analyze(ctx, opts.Image.Name(), buildCache.Name(), opts.Publish, opts.ClearCache, phaseFactory); err != nil {
-		return err
-	}
-
-	l.logger.Info(style.Step("RESTORING"))
-	if opts.ClearCache {
-		l.logger.Info("Skipping 'restore' due to clearing cache")
-	} else if err := l.Restore(ctx, buildCache.Name(), phaseFactory); err != nil {
-		return err
-	}
-
-	l.logger.Info(style.Step("BUILDING"))
-
-	if err := l.Build(ctx, opts.Network, opts.Volumes, phaseFactory); err != nil {
-		return err
-	}
-
-	l.logger.Info(style.Step("EXPORTING"))
-	if err := l.Export(ctx, opts.Image.Name(), opts.RunImage, opts.Publish, launchCache.Name(), buildCache.Name(), phaseFactory); err != nil {
-		return err
-	}
-
-	return nil
+	return l.Create(
+		ctx,
+		opts.Publish,
+		opts.ClearCache,
+		opts.RunImage,
+		launchCache.Name(),
+		buildCache.Name(),
+		opts.Image.Name(),
+		opts.Network,
+		opts.Volumes,
+		phaseFactory,
+	)
 }
 
 func (l *Lifecycle) Setup(opts LifecycleOptions) {
-	l.LayersVolume = "pack-layers-" + randString(10)
-	l.AppVolume = "pack-app-" + randString(10)
+	l.layersVolume = "pack-layers-" + randString(10)
+	l.appVolume = "pack-app-" + randString(10)
 	l.appPath = opts.AppPath
-	l.appOnce = &sync.Once{}
 	l.builder = opts.Builder
+	l.lifecycleImage = opts.LifecycleImage
 	l.httpProxy = opts.HTTPProxy
 	l.httpsProxy = opts.HTTPSProxy
 	l.noProxy = opts.NoProxy
 	l.version = opts.Builder.LifecycleDescriptor().Info.Version.String()
 	l.platformAPIVersion = opts.Builder.LifecycleDescriptor().API.PlatformVersion.String()
-	l.DefaultProcessType = opts.DefaultProcessType
+	l.defaultProcessType = opts.DefaultProcessType
 	l.fileFilter = opts.FileFilter
 }
 
 func (l *Lifecycle) Cleanup() error {
 	var reterr error
-	if err := l.docker.VolumeRemove(context.Background(), l.LayersVolume, true); err != nil {
-		reterr = errors.Wrapf(err, "failed to clean up layers volume %s", l.LayersVolume)
+	if err := l.docker.VolumeRemove(context.Background(), l.layersVolume, true); err != nil {
+		reterr = errors.Wrapf(err, "failed to clean up layers volume %s", l.layersVolume)
 	}
-	if err := l.docker.VolumeRemove(context.Background(), l.AppVolume, true); err != nil {
-		reterr = errors.Wrapf(err, "failed to clean up app volume %s", l.AppVolume)
+	if err := l.docker.VolumeRemove(context.Background(), l.appVolume, true); err != nil {
+		reterr = errors.Wrapf(err, "failed to clean up app volume %s", l.appVolume)
 	}
 	return reterr
 }

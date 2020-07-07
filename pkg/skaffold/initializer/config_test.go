@@ -29,11 +29,12 @@ import (
 )
 
 type stubDeploymentInitializer struct {
-	config latest.DeployConfig
+	config   latest.DeployConfig
+	profiles []latest.Profile
 }
 
-func (s stubDeploymentInitializer) DeployConfig() latest.DeployConfig {
-	return s.config
+func (s stubDeploymentInitializer) DeployConfig() (latest.DeployConfig, []latest.Profile) {
+	return s.config, s.profiles
 }
 
 func (s stubDeploymentInitializer) GetImages() []string {
@@ -75,6 +76,7 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 		name                   string
 		expectedSkaffoldConfig *latest.SkaffoldConfig
 		deployConfig           latest.DeployConfig
+		profiles               []latest.Profile
 		builderConfigPairs     []build.BuilderImagePair
 		getWd                  func() (string, error)
 	}{
@@ -144,6 +146,7 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			deploymentInitializer := stubDeploymentInitializer{
 				test.deployConfig,
+				test.profiles,
 			}
 			buildInitializer := stubBuildInitializer{
 				test.builderConfigPairs,

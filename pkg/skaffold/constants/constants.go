@@ -39,7 +39,7 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.14.0@sha256:9c40a04cf1bc9d886f7f000e0b7fa5300c31c89e2ad001e97eeeecdce9f07a29"
+	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.20.0@sha256:f9a4a760166682c7c7aeda3cc263570682e00848ab47737ed8ffcc3abd2da6c3"
 	DefaultKanikoSecretName             = "kaniko-secret"
 	DefaultKanikoTimeout                = "20m"
 	DefaultKanikoContainerName          = "kaniko"
@@ -53,6 +53,9 @@ const (
 
 	DefaultBusyboxImage = "busybox"
 
+	// DefaultDebugHelpersRegistry is the default location used for the helper images for `debug`.
+	DefaultDebugHelpersRegistry = "gcr.io/gcp-dev-tools/duct-tape"
+
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
 	DefaultSkaffoldDir = ".skaffold"
@@ -63,6 +66,8 @@ const (
 
 	DefaultPortForwardNamespace = "default"
 	DefaultPortForwardAddress   = "127.0.0.1"
+
+	DefaultProjectDescriptor = "project.toml"
 
 	LeeroyAppResponse = "leeroooooy app!!\n"
 )
@@ -103,6 +108,15 @@ var (
 	Timeout = "TIMEOUT"
 )
 
+var ImageRef = struct {
+	Repo   string
+	Tag    string
+	Digest string
+}{
+	Repo:   "IMAGE_REPO",
+	Tag:    "IMAGE_TAG",
+	Digest: "IMAGE_DIGEST",
+}
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
 
 var Labels = struct {

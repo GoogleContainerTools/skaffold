@@ -36,6 +36,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sirupsen/logrus"
 
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -247,7 +248,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 		RegistryAuth: registryAuth,
 	})
 	if err != nil {
-		return "", fmt.Errorf("pushing image to repository: %w", err)
+		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErrPrefix, ref, err)
 	}
 	defer rc.Close()
 
@@ -266,7 +267,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	}
 
 	if err := streamDockerMessages(out, rc, auxCallback); err != nil {
-		return "", err
+		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErrPrefix, ref, err)
 	}
 
 	if digest == "" {

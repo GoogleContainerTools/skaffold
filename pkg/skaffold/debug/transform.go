@@ -56,6 +56,7 @@ import (
 	"fmt"
 	"strings"
 
+	shell "github.com/kballard/go-shellquote"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -66,6 +67,7 @@ import (
 )
 
 // ContainerDebugConfiguration captures debugging information for a specific container.
+// This structure is serialized out and included in the pod metadata.
 type ContainerDebugConfiguration struct {
 	// Artifact is the corresponding artifact's image name used in the skaffold.yaml
 	Artifact string `json:"artifact,omitempty"`
@@ -140,15 +142,15 @@ func isEntrypointLauncher(entrypoint []string) bool {
 
 // transformManifest attempts to configure a manifest for debugging.
 // Returns true if changed, false otherwise.
-func transformManifest(obj runtime.Object, retrieveImageConfiguration configurationRetriever) bool {
+func transformManifest(obj runtime.Object, retrieveImageConfiguration configurationRetriever, debugHelpersRegistry string) bool {
 	one := int32(1)
 	switch o := obj.(type) {
 	case *v1.Pod:
-		return transformPodSpec(&o.ObjectMeta, &o.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.ObjectMeta, &o.Spec, retrieveImageConfiguration, debugHelpersRegistry)
 	case *v1.PodList:
 		changed := false
 		for i := range o.Items {
-			if transformPodSpec(&o.Items[i].ObjectMeta, &o.Items[i].Spec, retrieveImageConfiguration) {
+			if transformPodSpec(&o.Items[i].ObjectMeta, &o.Items[i].Spec, retrieveImageConfiguration, debugHelpersRegistry) {
 				changed = true
 			}
 		}
@@ -157,26 +159,26 @@ func transformManifest(obj runtime.Object, retrieveImageConfiguration configurat
 		if o.Spec.Replicas != nil {
 			o.Spec.Replicas = &one
 		}
-		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration, debugHelpersRegistry)
 	case *appsv1.Deployment:
 		if o.Spec.Replicas != nil {
 			o.Spec.Replicas = &one
 		}
-		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration, debugHelpersRegistry)
 	case *appsv1.DaemonSet:
-		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration, debugHelpersRegistry)
 	case *appsv1.ReplicaSet:
 		if o.Spec.Replicas != nil {
 			o.Spec.Replicas = &one
 		}
-		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration, debugHelpersRegistry)
 	case *appsv1.StatefulSet:
 		if o.Spec.Replicas != nil {
 			o.Spec.Replicas = &one
 		}
-		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration, debugHelpersRegistry)
 	case *batchv1.Job:
-		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration, debugHelpersRegistry)
 
 	default:
 		group, version, _, description := describe(obj)
@@ -196,7 +198,7 @@ func transformManifest(obj runtime.Object, retrieveImageConfiguration configurat
 
 // transformPodSpec attempts to configure a podspec for debugging.
 // Returns true if changed, false otherwise.
-func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieveImageConfiguration configurationRetriever) bool {
+func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieveImageConfiguration configurationRetriever, debugHelpersRegistry string) bool {
 	// skip annotated podspecs — allows users to customize their own image
 	if _, found := metadata.Annotations[DebugConfigAnnotation]; found {
 		return false
@@ -222,7 +224,9 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		// `err != nil` means that the container did not or could not be transformed
 		if configuration, requiredImage, err := transformContainer(container, imageConfig, portAlloc); err == nil {
 			configuration.Artifact = imageConfig.artifact
-			configuration.WorkingDir = imageConfig.workingDir
+			if configuration.WorkingDir == "" {
+				configuration.WorkingDir = imageConfig.workingDir
+			}
 			configurations[container.Name] = configuration
 			if len(requiredImage) > 0 {
 				logrus.Infof("%q requires debugging support image %q", container.Name, requiredImage)
@@ -245,11 +249,10 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		// this volume is mounted in the containers at `/dbg`
 		supportVolumeMount := v1.VolumeMount{Name: debuggingSupportFilesVolume, MountPath: "/dbg"}
 		// the initContainers are responsible for populating the contents of `/dbg`
-		// TODO make this pluggable for airgapped clusters? or is making container `imagePullPolicy:IfNotPresent` sufficient?
 		for imageID := range requiredSupportImages {
 			supportFilesInitContainer := v1.Container{
 				Name:         fmt.Sprintf("install-%s-support", imageID),
-				Image:        fmt.Sprintf("gcr.io/gcp-dev-tools/duct-tape/%s", imageID),
+				Image:        fmt.Sprintf("%s/%s", debugHelpersRegistry, imageID),
 				VolumeMounts: []v1.VolumeMount{supportVolumeMount},
 			}
 			podSpec.InitContainers = append(podSpec.InitContainers, supportFilesInitContainer)
@@ -308,7 +311,8 @@ func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
 // Returns a debugging configuration description with associated language runtime support
 // container image, or an error if the rewrite was unsuccessful.
 func transformContainer(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
-	// update image configuration values with those set in the k8s manifest
+	// Update the image configuration's environment with those set in the k8s manifest.
+	// (Environment variables in the k8s container's `env` add to the image configuration's `env` settings rather than replace.)
 	for _, envVar := range container.Env {
 		// FIXME handle ValueFrom?
 		if config.env == nil {
@@ -324,15 +328,62 @@ func transformContainer(container *v1.Container, config imageConfiguration, port
 		config.arguments = container.Args
 	}
 
-	// Buildpack-generated images require special handling
+	// Apply command-line unwrapping for buildpack images and images using `sh -c`-style command-lines
+	next := func(container *v1.Container, config imageConfiguration) (ContainerDebugConfiguration, string, error) {
+		return performContainerTransform(container, config, portAlloc)
+	}
 	if _, found := config.labels["io.buildpacks.stack.id"]; found && len(config.entrypoint) > 0 && config.entrypoint[0] == "/cnb/lifecycle/launcher" {
-		next := func(container *v1.Container, config imageConfiguration) (ContainerDebugConfiguration, string, error) {
-			return performContainerTransform(container, config, portAlloc)
-		}
 		return updateForCNBImage(container, config, next)
 	}
+	return updateForShDashC(container, config, next)
+}
 
-	return performContainerTransform(container, config, portAlloc)
+func updateForShDashC(container *v1.Container, ic imageConfiguration, transformer func(*v1.Container, imageConfiguration) (ContainerDebugConfiguration, string, error)) (ContainerDebugConfiguration, string, error) {
+	var rewriter func([]string)
+	copy := ic
+	switch {
+	// Case 1: entrypoint = ["/bin/sh", "-c"], arguments = ["<cmd-line>", args ...]
+	case len(ic.entrypoint) == 2 && len(ic.arguments) > 0 && isShDashC(ic.entrypoint[0], ic.entrypoint[1]):
+		if split, err := shell.Split(ic.arguments[0]); err == nil {
+			copy.entrypoint = split
+			copy.arguments = nil
+			rewriter = func(rewrite []string) {
+				container.Command = nil // inherit from container
+				container.Args = append([]string{shJoin(rewrite)}, ic.arguments[1:]...)
+			}
+		}
+
+	// Case 2: entrypoint = ["/bin/sh", "-c", "<cmd-line>", args...], arguments = [args ...]
+	case len(ic.entrypoint) > 2 && isShDashC(ic.entrypoint[0], ic.entrypoint[1]):
+		if split, err := shell.Split(ic.entrypoint[2]); err == nil {
+			copy.entrypoint = split
+			copy.arguments = nil
+			rewriter = func(rewrite []string) {
+				container.Command = append([]string{ic.entrypoint[0], ic.entrypoint[1], shJoin(rewrite)}, ic.entrypoint[3:]...)
+			}
+		}
+
+	// Case 3: entrypoint = [] or an entrypoint launcher (and so ignored), arguments = ["/bin/sh", "-c", "<cmd-line>", args...]
+	case (len(ic.entrypoint) == 0 || isEntrypointLauncher(ic.entrypoint)) && len(ic.arguments) > 2 && isShDashC(ic.arguments[0], ic.arguments[1]):
+		if split, err := shell.Split(ic.arguments[2]); err == nil {
+			copy.entrypoint = split
+			copy.arguments = nil
+			rewriter = func(rewrite []string) {
+				container.Command = nil
+				container.Args = append([]string{ic.arguments[0], ic.arguments[1], shJoin(rewrite)}, ic.arguments[3:]...)
+			}
+		}
+	}
+
+	c, image, err := transformer(container, copy)
+	if err == nil && rewriter != nil && container.Command != nil {
+		rewriter(container.Command)
+	}
+	return c, image, err
+}
+
+func isShDashC(cmd, arg string) bool {
+	return (cmd == "/bin/sh" || cmd == "/bin/bash") && arg == "-c"
 }
 
 func performContainerTransform(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {

@@ -17,43 +17,36 @@ limitations under the License.
 package resource
 
 import (
-	"errors"
-	"fmt"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestString(t *testing.T) {
 	var tests = []struct {
 		description string
-		details     string
-		err         error
+		ae          proto.ActionableErr
 		expected    string
 	}{
 		{
 			description: "should return error string if error is set",
-			err:         errors.New("some error"),
+			ae:          proto.ActionableErr{Message: "some error"},
 			expected:    "some error",
 		},
 		{
-			description: "should return error details if error is not set",
-			details:     "details",
-			expected:    "details",
-		},
-		{
 			description: "should return error if both details and error are set",
-			details:     "error details",
-			err:         errors.New("error happened due to something"),
+			ae:          proto.ActionableErr{Message: "error happened due to something"},
 			expected:    "error happened due to something",
 		},
 		{
 			description: "should return empty string if all empty",
+			ae:          proto.ActionableErr{},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			status := newStatus(test.details, test.err)
+			status := newStatus(test.ae)
 			t.CheckDeepEqual(test.expected, status.String())
 		})
 	}
@@ -67,31 +60,25 @@ func TestEqual(t *testing.T) {
 		expected    bool
 	}{
 		{
-			description: "status should be same for same details and error",
-			old:         Status{details: "Waiting for 0/1 replicas to be available...", err: nil},
-			new:         Status{details: "Waiting for 0/1 replicas to be available...", err: nil},
-			expected:    true,
-		},
-		{
-			description: "status should be new if error messages are same",
-			old:         Status{details: "same", err: errors.New("same error")},
-			new:         Status{details: "same", err: errors.New("same error")},
+			description: "status should be same if error messages are same",
+			old:         Status{ae: proto.ActionableErr{ErrCode: 100, Message: "Waiting for 0/1 replicas to be available..."}},
+			new:         Status{ae: proto.ActionableErr{ErrCode: 100, Message: "Waiting for 0/1 replicas to be available..."}},
 			expected:    true,
 		},
 		{
 			description: "status should be new if error is different",
-			old:         Status{details: "same", err: nil},
-			new:         Status{details: "same", err: fmt.Errorf("see this error")},
+			old:         Status{ae: proto.ActionableErr{}},
+			new:         Status{ae: proto.ActionableErr{ErrCode: 100, Message: "see this error"}},
 		},
 		{
-			description: "status should be new if details and err are different",
-			old:         Status{details: "same", err: nil},
-			new:         Status{details: "same", err: fmt.Errorf("see this error")},
+			description: "status should be new if errcode are different but same message",
+			old:         Status{ae: proto.ActionableErr{ErrCode: 100, Message: "see this error"}},
+			new:         Status{ae: proto.ActionableErr{ErrCode: 101, Message: "see this error"}},
 		},
 		{
-			description: "status should be new if details change",
-			old:         Status{details: "same", err: nil},
-			new:         Status{details: "error", err: nil},
+			description: "status should be new if messages change",
+			old:         Status{ae: proto.ActionableErr{ErrCode: 100, Message: "Waiting for 2/2 replicas to be available..."}},
+			new:         Status{ae: proto.ActionableErr{ErrCode: 100, Message: "Waiting for 1/2 replicas to be available..."}},
 		},
 	}
 	for _, test := range tests {

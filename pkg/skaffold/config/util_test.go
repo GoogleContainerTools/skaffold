@@ -23,9 +23,8 @@ import (
 	"testing"
 	"time"
 
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -271,13 +270,14 @@ func TestIsDefaultLocal(t *testing.T) {
 	}{
 		{context: "kind-other", expectedLocal: true},
 		{context: "kind@kind", expectedLocal: true},
+		{context: "k3d-k3s-default", expectedLocal: true},
 		{context: "docker-for-desktop", expectedLocal: true},
 		{context: "minikube", expectedLocal: true},
-		{context: "docker-for-desktop", expectedLocal: true},
 		{context: "docker-desktop", expectedLocal: true},
 		{context: "anything-else", expectedLocal: false},
 		{context: "kind@blah", expectedLocal: false},
 		{context: "other-kind", expectedLocal: false},
+		{context: "not-k3d", expectedLocal: false},
 	}
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
@@ -288,25 +288,105 @@ func TestIsDefaultLocal(t *testing.T) {
 	}
 }
 
-func TestIsKindCluster(t *testing.T) {
+func TestIsImageLoadingRequired(t *testing.T) {
 	tests := []struct {
-		context        string
-		expectedName   string
-		expectedIsKind bool
+		context                      string
+		expectedImageLoadingRequired bool
 	}{
-		{context: "kind-kind", expectedName: "kind", expectedIsKind: true},
-		{context: "kind-other", expectedName: "other", expectedIsKind: true},
-		{context: "kind@kind", expectedName: "kind", expectedIsKind: true},
-		{context: "other@kind", expectedName: "other", expectedIsKind: true},
-		{context: "docker-for-desktop", expectedName: "", expectedIsKind: false},
-		{context: "not-kind", expectedName: "", expectedIsKind: false},
+		{context: "kind-other", expectedImageLoadingRequired: true},
+		{context: "kind@kind", expectedImageLoadingRequired: true},
+		{context: "k3d-k3s-default", expectedImageLoadingRequired: true},
+		{context: "docker-for-desktop", expectedImageLoadingRequired: false},
+		{context: "minikube", expectedImageLoadingRequired: false},
+		{context: "docker-desktop", expectedImageLoadingRequired: false},
+		{context: "anything-else", expectedImageLoadingRequired: false},
+		{context: "kind@blah", expectedImageLoadingRequired: false},
+		{context: "other-kind", expectedImageLoadingRequired: false},
+		{context: "not-k3d", expectedImageLoadingRequired: false},
 	}
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
-			isKind, name := IsKindCluster(test.context)
+			imageLoadingRequired := IsImageLoadingRequired(test.context)
+
+			t.CheckDeepEqual(test.expectedImageLoadingRequired, imageLoadingRequired)
+		})
+	}
+}
+
+func TestIsKindCluster(t *testing.T) {
+	tests := []struct {
+		context        string
+		expectedIsKind bool
+	}{
+		{context: "kind-kind", expectedIsKind: true},
+		{context: "kind-other", expectedIsKind: true},
+		{context: "kind@kind", expectedIsKind: true},
+		{context: "other@kind", expectedIsKind: true},
+		{context: "docker-for-desktop", expectedIsKind: false},
+		{context: "not-kind", expectedIsKind: false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.context, func(t *testutil.T) {
+			isKind := IsKindCluster(test.context)
 
 			t.CheckDeepEqual(test.expectedIsKind, isKind)
-			t.CheckDeepEqual(test.expectedName, name)
+		})
+	}
+}
+
+func TestKindClusterName(t *testing.T) {
+	tests := []struct {
+		kubeCluster  string
+		expectedName string
+	}{
+		{kubeCluster: "kind", expectedName: "kind"},
+		{kubeCluster: "kind-kind", expectedName: "kind"},
+		{kubeCluster: "kind-other", expectedName: "other"},
+		{kubeCluster: "kind@kind", expectedName: "kind"},
+		{kubeCluster: "other@kind", expectedName: "other"},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.kubeCluster, func(t *testutil.T) {
+			kindCluster := KindClusterName(test.kubeCluster)
+
+			t.CheckDeepEqual(test.expectedName, kindCluster)
+		})
+	}
+}
+
+func TestIsK3dCluster(t *testing.T) {
+	tests := []struct {
+		context       string
+		expectedIsK3d bool
+	}{
+		{context: "k3d-k3s-default", expectedIsK3d: true},
+		{context: "k3d-other", expectedIsK3d: true},
+		{context: "kind-kind", expectedIsK3d: false},
+		{context: "docker-for-desktop", expectedIsK3d: false},
+		{context: "not-k3d", expectedIsK3d: false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			isK3d := IsK3dCluster(test.context)
+
+			t.CheckDeepEqual(test.expectedIsK3d, isK3d)
+		})
+	}
+}
+
+func TestK3dClusterName(t *testing.T) {
+	tests := []struct {
+		kubeCluster  string
+		expectedName string
+	}{
+		{kubeCluster: "k3d-k3s-default", expectedName: "k3s-default"},
+		{kubeCluster: "k3d-other", expectedName: "other"},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			k3dCluster := K3dClusterName(test.kubeCluster)
+
+			t.CheckDeepEqual(test.expectedName, k3dCluster)
 		})
 	}
 }
@@ -330,6 +410,10 @@ func TestIsSurveyPromptDisabled(t *testing.T) {
 		{
 			description: "config disable-prompt is false",
 			cfg:         &ContextConfig{Survey: &SurveyConfig{DisablePrompt: util.BoolPtr(false)}},
+		},
+		{
+			description: "disable prompt is nil",
+			cfg:         &ContextConfig{Survey: &SurveyConfig{}},
 		},
 		{
 			description: "config is nil",
@@ -556,6 +640,66 @@ kubeContexts: []`,
 			t.CheckNoError(cfgErr)
 			// update time in expected cfg.
 			test.expectedCfg.Global.Survey.LastTaken = testTime.Format(time.RFC3339)
+			t.CheckDeepEqual(test.expectedCfg, actualConfig)
+		})
+	}
+}
+
+func TestUpdateGlobalSurveyPrompted(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         string
+		expectedCfg *GlobalConfig
+	}{
+		{
+			description: "update global context when context is empty",
+			expectedCfg: &GlobalConfig{
+				Global:         &ContextConfig{Survey: &SurveyConfig{}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "update global context when survey config is not nil",
+			cfg: `
+global:
+  survey:
+    last-taken: "some date"
+kubeContexts: []`,
+			expectedCfg: &GlobalConfig{
+				Global:         &ContextConfig{Survey: &SurveyConfig{LastTaken: "some date"}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "update global context when survey config last prompted is in past",
+			cfg: `
+global:
+  survey:
+    last-prompted: "some date in past"
+kubeContexts: []`,
+			expectedCfg: &GlobalConfig{
+				Global:         &ContextConfig{Survey: &SurveyConfig{}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfg := t.TempFile("config", []byte(test.cfg))
+			testTime := time.Now()
+			t.Override(&ReadConfigFile, ReadConfigFileNoCache)
+			t.Override(&current, func() time.Time {
+				return testTime
+			})
+
+			// update the time
+			err := UpdateGlobalSurveyPrompted(cfg)
+			t.CheckNoError(err)
+
+			actualConfig, cfgErr := ReadConfigFile(cfg)
+			t.CheckNoError(cfgErr)
+			// update time in expected cfg.
+			test.expectedCfg.Global.Survey.LastPrompted = testTime.Format(time.RFC3339)
 			t.CheckDeepEqual(test.expectedCfg, actualConfig)
 		})
 	}

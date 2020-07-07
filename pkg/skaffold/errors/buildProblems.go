@@ -17,9 +17,12 @@ limitations under the License.
 package errors
 
 import (
-	"strings"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/proto"
+)
+
+const (
+	PushImageErrPrefix = "could not push image"
 )
 
 var (
@@ -27,23 +30,41 @@ var (
 	getConfigForCurrentContext = config.GetConfigForCurrentKubectx
 )
 
-func suggestBuildPushAccessDeniedAction(opts config.SkaffoldOptions) string {
-	action := "Trying running with `--default-repo` flag."
-	if opts.DefaultRepo.Value() != nil {
-		return curateErrorMessage(*opts.DefaultRepo.Value(), "Check your `--default-repo` value")
+func suggestBuildPushAccessDeniedAction(opts config.SkaffoldOptions) []*proto.Suggestion {
+	if defaultRepo := opts.DefaultRepo.Value(); defaultRepo != nil {
+		suggestions := []*proto.Suggestion{{
+			SuggestionCode: proto.SuggestionCode_CHECK_DEFAULT_REPO,
+			Action:         "Check your `--default-repo` value",
+		}}
+		return append(suggestions, makeAuthSuggestionsForRepo(*defaultRepo))
 	}
+
 	// check if global repo is set
 	if cfg, err := getConfigForCurrentContext(opts.GlobalConfig); err == nil {
-		if cfg.DefaultRepo != "" {
-			return curateErrorMessage(cfg.DefaultRepo, "Check your default-repo setting in skaffold config")
+		if defaultRepo := cfg.DefaultRepo; defaultRepo != "" {
+			suggestions := []*proto.Suggestion{{
+				SuggestionCode: proto.SuggestionCode_CHECK_DEFAULT_REPO_GLOBAL_CONFIG,
+				Action:         "Check your default-repo setting in skaffold config",
+			}}
+			return append(suggestions, makeAuthSuggestionsForRepo(defaultRepo))
 		}
 	}
-	return action
+
+	return []*proto.Suggestion{{
+		SuggestionCode: proto.SuggestionCode_ADD_DEFAULT_REPO,
+		Action:         "Trying running with `--default-repo` flag",
+	}}
 }
 
-func curateErrorMessage(repo string, prefix string) string {
-	if strings.HasPrefix(repo, "gcr.io") {
-		return prefix + " or try `gcloud auth configure-docker`."
+func makeAuthSuggestionsForRepo(repo string) *proto.Suggestion {
+	if re(`(.+\.)?gcr\.io.*`).MatchString(repo) {
+		return &proto.Suggestion{
+			SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
+			Action:         "try `gcloud auth configure-docker`",
+		}
 	}
-	return prefix + " or try `docker login`."
+	return &proto.Suggestion{
+		SuggestionCode: proto.SuggestionCode_DOCKER_AUTH_CONFIGURE,
+		Action:         "try `docker login`",
+	}
 }

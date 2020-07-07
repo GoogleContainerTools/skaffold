@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.skaffold</groupId>
+  <artifactId>hello-java</artifactId>
+  <version>0.1.0</version>
+  <description>Simple Java server with Skaffold and Jib</description>
+
+  <properties>
+    <jib.maven-plugin-version>2.4.0</jib.maven-plugin-version>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+  </properties>
+
+  <build>
+    <finalName>hello</finalName>
+    <plugins>
+      <plugin>
+        <groupId>com.google.cloud.tools</groupId>
+        <artifactId>jib-maven-plugin</artifactId>
+        <version>${jib.maven-plugin-version}</version>
+        <configuration>
+          <from>
+            <image>openjdk</image> <!-- has jdb -->
+          </from>
+          <container>
+            <jvmFlags>
+              <jvmFlag>-Djava.security.egd=file:/dev/./urandom</jvmFlag>
+            </jvmFlags>
+            <workingDirectory>/app</workingDirectory>
+          </container>
+          <extraDirectories>
+            <paths>
+              <path>
+                <from>scripts</from>
+                <into>/workspace/scripts</into>
+              </path>
+            </paths>
+          </extraDirectories>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>libs/</classpathPrefix>
+              <mainClass>hello.Application</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

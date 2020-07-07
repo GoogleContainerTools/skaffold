@@ -23,9 +23,7 @@ import (
 )
 
 func TestBuildGCBWithExplicitRepo(t *testing.T) {
-	if testing.Short() || !RunOnGCP() {
-		t.Skip("skipping GCP integration test")
-	}
+	MarkIntegrationTest(t, NeedsGcp)
 
 	// Other integration tests run with the --default-repo option.
 	// This one explicitly specifies the full image name.

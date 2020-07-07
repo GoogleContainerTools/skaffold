@@ -40,6 +40,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
+const minikubeBadUsageExitCode = 64
+
 // For testing
 var (
 	NewAPIClient = NewAPIClientImpl
@@ -87,11 +89,23 @@ func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
 	return nil, cli, nil
 }
 
+type ExitCoder interface {
+	ExitCode() int
+}
+
 // newMinikubeAPIClient returns a docker client using the environment variables
 // provided by minikube.
 func newMinikubeAPIClient(minikubeProfile string) ([]string, client.CommonAPIClient, error) {
 	env, err := getMinikubeDockerEnv(minikubeProfile)
 	if err != nil {
+		// When minikube uses the infamous `none` driver, it'll exit `minikube docker-env` with code 64.
+		var exitError ExitCoder
+		if errors.As(err, &exitError) && exitError.ExitCode() == minikubeBadUsageExitCode {
+			// Let's ignore the error and fall back to local docker daemon.
+			logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
+			return newEnvAPIClient()
+		}
+
 		return nil, nil, err
 	}
 
@@ -198,10 +212,10 @@ func getMinikubeDockerEnv(minikubeProfile string) (map[string]string, error) {
 
 	env := map[string]string{}
 	for _, line := range strings.Split(string(out), "\n") {
-		if line == "" {
+		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		kv := strings.Split(line, "=")
+		kv := strings.SplitN(line, "=", 2)
 		if len(kv) != 2 {
 			return nil, fmt.Errorf("unable to parse minikube docker-env keyvalue: %s, line: %s, output: %s", kv, line, string(out))
 		}

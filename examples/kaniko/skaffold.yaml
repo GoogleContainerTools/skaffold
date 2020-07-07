@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta3
+apiVersion: skaffold/v2beta5
 kind: Config
 build:
   artifacts:
@@ -6,7 +6,8 @@ build:
       kaniko:
         cache: {}
   cluster:
-    pullSecretName: e2esecret
+    pullSecretName: e2esecret-with-path
+    pullSecretPath:     kaniko-secret.json
     namespace: default
 deploy:
   kubectl:

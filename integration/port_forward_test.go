@@ -31,9 +31,7 @@ import (
 )
 
 func TestPortForward(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
 
@@ -55,9 +53,7 @@ func TestPortForward(t *testing.T) {
 }
 
 func TestRunPortForward(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
 
@@ -74,9 +70,7 @@ func TestRunPortForward(t *testing.T) {
 // as expected. Then, the test force deletes a pod,
 // and tests that the pod eventually comes up at the same port again.
 func TestDevPortForwardDeletePod(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
 

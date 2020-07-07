@@ -17,10 +17,7 @@ limitations under the License.
 package runner
 
 import (
-	"context"
 	"errors"
-	"io"
-	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -61,7 +58,7 @@ func TestSkipDevLoopOnMonitorError(t *testing.T) {
 	}
 
 	var devLoopWasCalled bool
-	err := listener.do(context.Background(), ioutil.Discard, func(context.Context, io.Writer) error {
+	err := listener.do(func() error {
 		devLoopWasCalled = true
 		return nil
 	})
@@ -75,7 +72,7 @@ func TestContinueOnDevLoopError(t *testing.T) {
 		Trigger: &fakeTriggger{},
 	}
 
-	err := listener.do(context.Background(), ioutil.Discard, func(context.Context, io.Writer) error {
+	err := listener.do(func() error {
 		return errors.New("devloop error")
 	})
 
@@ -88,7 +85,7 @@ func TestReportDevLoopError(t *testing.T) {
 		Trigger: &fakeTriggger{},
 	}
 
-	err := listener.do(context.Background(), ioutil.Discard, func(context.Context, io.Writer) error {
+	err := listener.do(func() error {
 		return ErrorConfigurationChanged
 	})
 

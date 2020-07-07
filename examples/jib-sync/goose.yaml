@@ -1,0 +1,24 @@
+apiVersion: skaffold/v2beta5
+kind: Config
+build:
+  artifacts:
+  - image: test-file-sync
+    jib:
+      type: must-use-profile
+    sync: {}
+
+profiles:
+- name: maven
+  patches:
+  - op: add
+    path: /build/artifacts/0/jib/args
+    value:
+      - --no-transfer-progress
+  - op: replace
+    path: /build/artifacts/0/jib/type
+    value: maven
+- name: gradle
+  patches:
+  - op: replace
+    path: /build/artifacts/0/jib/type
+    value: gradle

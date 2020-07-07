@@ -14,7 +14,7 @@ deploy:
       chartPath: skaffold-helm
       namespace: skaffold
       skipBuildDependencies: true # Skip helm dep build
-      values:
+      artifactOverrides :
         image: skaffold-helm
         "subchart.image": skaffold-helm # Set image for subchart
       valuesFiles:

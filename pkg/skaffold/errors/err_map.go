@@ -17,6 +17,7 @@ limitations under the License.
 package errors
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -31,19 +32,27 @@ func re(s string) *regexp.Regexp {
 type problem struct {
 	regexp      *regexp.Regexp
 	description string
-	suggestion  func(opts config.SkaffoldOptions) string
+	errCode     proto.StatusCode
+	suggestion  func(opts config.SkaffoldOptions) []*proto.Suggestion
 }
 
 // Build Problems are Errors in build phase
-var knownBuildProblems = map[proto.StatusCode]problem{
-	proto.StatusCode_BUILD_PUSH_ACCESS_DENIED: {
-		regexp:      re(".* pushing image: denied: .*"),
+var knownBuildProblems = []problem{
+	{
+		regexp:      re(fmt.Sprintf(".*%s.* denied: .*", PushImageErrPrefix)),
+		errCode:     proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
 		description: "Build Failed. No push access to specified image repository",
 		suggestion:  suggestBuildPushAccessDeniedAction,
 	},
-	proto.StatusCode_BUILD_PROJECT_NOT_FOUND: {
-		regexp:      re("build failed: pushing image: unknown: Project"),
+	{
+		regexp:      re(fmt.Sprintf(".*%s.* unknown: Project", PushImageErrPrefix)),
 		description: "Build Failed",
-		suggestion:  func(_ config.SkaffoldOptions) string { return "Check your GCR project." },
+		errCode:     proto.StatusCode_BUILD_PROJECT_NOT_FOUND,
+		suggestion: func(config.SkaffoldOptions) []*proto.Suggestion {
+			return []*proto.Suggestion{{
+				SuggestionCode: proto.SuggestionCode_CHECK_GCLOUD_PROJECT,
+				Action:         "Check your GCR project",
+			}}
+		},
 	},
 }

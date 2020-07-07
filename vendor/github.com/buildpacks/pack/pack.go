@@ -10,6 +10,11 @@ import (
 	"github.com/buildpacks/pack/internal/style"
 )
 
+var (
+	// Version is the version of `pack`. It is injected at compile time.
+	Version = "0.0.0"
+)
+
 func extractPackagedBuildpacks(ctx context.Context, pkgImageRef string, fetcher ImageFetcher, publish, noPull bool) (mainBP dist.Buildpack, depBPs []dist.Buildpack, err error) {
 	pkgImage, err := fetcher.Fetch(ctx, pkgImageRef, !publish, !noPull)
 	if err != nil {

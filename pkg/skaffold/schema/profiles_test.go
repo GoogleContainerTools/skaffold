@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -141,7 +142,7 @@ func TestApplyProfiles(t *testing.T) {
 									DockerImage: "gcr.io/cloud-builders/docker",
 									MavenImage:  "gcr.io/cloud-builders/mvn",
 									GradleImage: "gcr.io/cloud-builders/gradle",
-									KanikoImage: "gcr.io/kaniko-project/executor",
+									KanikoImage: constants.DefaultKanikoImage,
 									PackImage:   "gcr.io/k8s-skaffold/pack",
 								},
 							},

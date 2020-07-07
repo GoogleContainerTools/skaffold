@@ -33,21 +33,23 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/survey"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 var (
-	opts         config.SkaffoldOptions
-	v            string
-	forceColors  bool
-	defaultColor int
-	overwrite    bool
+	opts              config.SkaffoldOptions
+	v                 string
+	forceColors       bool
+	defaultColor      int
+	overwrite         bool
+	shutdownAPIServer func() error
 )
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	updateMsg := make(chan string)
-	var shutdownAPIServer func() error
+	surveyPrompt := make(chan bool)
 
 	rootCmd := &cobra.Command{
 		Use: "skaffold",
@@ -71,16 +73,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				return err
 			}
 
-			// In dev mode, the default is to enable the rpc server
-			if cmd.Use == "dev" && !cmd.Flag("enable-rpc").Changed {
-				opts.EnableRPC = true
-			}
-
-			// In dev mode, the default is to force deployments
-			if cmd.Use == "dev" && !cmd.Flag("force").Changed {
-				opts.Force = true
-			}
-
 			// Start API Server
 			shutdown, err := server.Initialize(opts)
 			if err != nil {
@@ -94,14 +86,15 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 			switch {
 			case quietFlag:
-				logrus.Debugf("Update check is disabled because of quiet mode")
+				logrus.Debugf("Update check and survey prompt disabled in quiet mode")
 			case analyze:
-				logrus.Debugf("Update check is disabled because of init --analyze")
+				logrus.Debugf("Update check and survey prompt when running `init --analyze`")
 			default:
 				go func() {
 					if err := updateCheck(updateMsg, opts.GlobalConfig); err != nil {
 						logrus.Infof("update check failed: %s", err)
 					}
+					surveyPrompt <- config.ShouldDisplayPrompt(opts.GlobalConfig)
 				}()
 			}
 			return nil
@@ -112,9 +105,15 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s\n", msg)
 			default:
 			}
-
-			if shutdownAPIServer != nil {
-				shutdownAPIServer()
+			// check if survey prompt needs to be displayed
+			select {
+			case shouldDisplay := <-surveyPrompt:
+				if shouldDisplay {
+					if err := survey.New(opts.GlobalConfig).DisplaySurveyPrompt(cmd.OutOrStdout()); err != nil {
+						fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
+					}
+				}
+			default:
 			}
 		},
 	}

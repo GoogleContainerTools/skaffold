@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -208,27 +209,126 @@ func TestShJoin(t *testing.T) {
 }
 
 func TestIsEntrypointLauncher(t *testing.T) {
-	// make full copy of entrypointLaunchers
-	oldEntrypointLaunchers := append(entrypointLaunchers[:0:0], entrypointLaunchers...)
-	entrypointLaunchers = append(entrypointLaunchers, "foo")
-	t.Cleanup(func() {
-		entrypointLaunchers = oldEntrypointLaunchers
-	})
-
 	tests := []struct {
 		description string
 		entrypoint  []string
 		expected    bool
 	}{
 		{"nil", nil, false},
-		{"expected case", []string{"foo"}, true},
-		{"unexpected arg", []string{"foo", "bar"}, false},
-		{"unexpected entrypoint", []string{"bar"}, false},
+		{"expected case", []string{"launcher"}, true},
+		{"launchers do not take args", []string{"launcher", "bar"}, false},
+		{"non-launcher", []string{"/bin/sh"}, false},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&entrypointLaunchers, []string{"launcher"})
 			result := isEntrypointLauncher(test.entrypoint)
 			t.CheckDeepEqual(test.expected, result)
+		})
+	}
+}
+
+func TestUpdateForShDashC(t *testing.T) {
+	// This test uses a transformer that reverses the entrypoint.  As a result:
+	//  - any "/bin/sh -c script" style command-line should see only the script portion reversed
+	//  - any non-"/bin/sh -c" command-line should have its entrypoint reversed
+	tests := []struct {
+		description string
+		input       imageConfiguration
+		unwrapped   imageConfiguration
+		expected    v1.Container
+	}{
+		{description: "empty"},
+		{
+			description: "no unwrapping: entrypoint ['a', 'b']",
+			input:       imageConfiguration{entrypoint: []string{"a", "b"}},
+			unwrapped:   imageConfiguration{entrypoint: []string{"a", "b"}},
+			expected:    v1.Container{Command: []string{"b", "a"}},
+		},
+		{
+			description: "no unwrapping: args ['d', 'e', 'f']",
+			input:       imageConfiguration{arguments: []string{"d", "e", "f"}},
+			unwrapped:   imageConfiguration{arguments: []string{"d", "e", "f"}},
+		},
+		{
+			description: "no unwrapping: entrypoint ['a', 'b'], args [d]",
+			input:       imageConfiguration{entrypoint: []string{"a", "b"}, arguments: []string{"d"}},
+			unwrapped:   imageConfiguration{entrypoint: []string{"a", "b"}, arguments: []string{"d"}},
+			expected:    v1.Container{Command: []string{"b", "a"}},
+		},
+		{
+			description: "no unwrapping: entrypoint ['/bin/sh', '-x'] (only `-c`)",
+			input:       imageConfiguration{entrypoint: []string{"/bin/sh", "-x"}, arguments: []string{"d"}},
+			unwrapped:   imageConfiguration{entrypoint: []string{"/bin/sh", "-x"}, arguments: []string{"d"}},
+			expected:    v1.Container{Command: []string{"-x", "/bin/sh"}},
+		},
+		{
+			description: "no unwrapping: entrypoint ['sh', '-c', 'foo'] (not /bin/sh)",
+			input:       imageConfiguration{entrypoint: []string{"sh", "-c"}, arguments: []string{"d"}},
+			unwrapped:   imageConfiguration{entrypoint: []string{"sh", "-c"}, arguments: []string{"d"}},
+			expected:    v1.Container{Command: []string{"-c", "sh"}},
+		},
+		{
+			description: "unwwrapped: entrypoint ['/bin/sh', '-c', 'cmd']",
+			input:       imageConfiguration{entrypoint: []string{"/bin/sh", "-c", "d e f"}},
+			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
+			expected:    v1.Container{Command: []string{"/bin/sh", "-c", "f e d"}},
+		},
+		{
+			description: "unwwrapped: entrypoint ['/bin/sh', '-c'], args ['d e f']",
+			input:       imageConfiguration{entrypoint: []string{"/bin/sh", "-c"}, arguments: []string{"d e f"}},
+			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
+			expected:    v1.Container{Args: []string{"f e d"}},
+		},
+		{
+			description: "unwwrapped: args ['/bin/sh', '-c', 'd e f']",
+			input:       imageConfiguration{arguments: []string{"/bin/sh", "-c", "d e f"}},
+			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
+			expected:    v1.Container{Args: []string{"/bin/sh", "-c", "f e d"}},
+		},
+		{
+			description: "unwwrapped: entrypoint ['/bin/bash', '-c', 'd e f']",
+			input:       imageConfiguration{entrypoint: []string{"/bin/bash", "-c", "d e f"}},
+			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
+			expected:    v1.Container{Command: []string{"/bin/bash", "-c", "f e d"}},
+		},
+		{
+			description: "entrypoint ['/bin/bash','-c'], args ['d e f']",
+			input:       imageConfiguration{entrypoint: []string{"/bin/bash", "-c"}, arguments: []string{"d e f"}},
+			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
+			expected:    v1.Container{Args: []string{"f e d"}},
+		},
+		{
+			description: "unwwrapped: args ['/bin/bash','-c','d e f']",
+			input:       imageConfiguration{arguments: []string{"/bin/bash", "-c", "d e f"}},
+			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
+			expected:    v1.Container{Args: []string{"/bin/bash", "-c", "f e d"}},
+		},
+		{
+			description: "unwwrapped: entrypoint-launcher and args ['/bin/sh','-c','d e f']",
+			input:       imageConfiguration{entrypoint: []string{"launcher"}, arguments: []string{"/bin/bash", "-c", "d e f"}},
+			unwrapped:   imageConfiguration{entrypoint: []string{"d", "e", "f"}},
+			expected:    v1.Container{Args: []string{"/bin/bash", "-c", "f e d"}},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&entrypointLaunchers, []string{"launcher"})
+
+			container := v1.Container{}
+			// The transformer reverses the unwrapped entrypoint which should be reflected into the container.Entrypoint
+			updateForShDashC(&container, test.input,
+				func(c *v1.Container, result imageConfiguration) (ContainerDebugConfiguration, string, error) {
+					t.CheckDeepEqual(test.unwrapped, result, cmp.AllowUnexported(imageConfiguration{}))
+					if len(result.entrypoint) > 0 {
+						c.Command = make([]string, len(result.entrypoint))
+						for i, s := range result.entrypoint {
+							c.Command[len(result.entrypoint)-i-1] = s
+						}
+					}
+					return ContainerDebugConfiguration{}, "image", nil
+				})
+			t.CheckDeepEqual(test.expected, container)
 		})
 	}
 }

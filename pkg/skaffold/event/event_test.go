@@ -57,7 +57,7 @@ func TestGetLogEvents(t *testing.T) {
 
 func TestGetState(t *testing.T) {
 	ev := &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	ev.stateLock.Lock()
@@ -73,7 +73,7 @@ func TestDeployInProgress(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
@@ -85,7 +85,7 @@ func TestDeployFailed(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
@@ -97,7 +97,7 @@ func TestDeployComplete(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
@@ -113,7 +113,7 @@ func TestBuildInProgress(t *testing.T) {
 			Artifacts: []*latest.Artifact{{
 				ImageName: "img",
 			}},
-		}}, "test"),
+		}}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
@@ -129,7 +129,7 @@ func TestBuildFailed(t *testing.T) {
 			Artifacts: []*latest.Artifact{{
 				ImageName: "img",
 			}},
-		}}, "test"),
+		}}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
@@ -145,7 +145,7 @@ func TestBuildComplete(t *testing.T) {
 			Artifacts: []*latest.Artifact{{
 				ImageName: "img",
 			}},
-		}}, "test"),
+		}}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
@@ -157,7 +157,7 @@ func TestPortForwarded(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] == nil })
@@ -169,7 +169,7 @@ func TestStatusCheckEventStarted(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
@@ -181,7 +181,7 @@ func TestStatusCheckEventInProgress(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
@@ -193,11 +193,11 @@ func TestStatusCheckEventSucceeded(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	StatusCheckEventSucceeded()
+	statusCheckEventSucceeded()
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == Succeeded })
 }
 
@@ -205,11 +205,11 @@ func TestStatusCheckEventFailed(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	StatusCheckEventFailed(errors.New("one or more deployments failed"))
+	statusCheckEventFailed(errors.New("one or more deployments failed"))
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == Failed })
 }
 
@@ -217,11 +217,14 @@ func TestResourceStatusCheckEventUpdated(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	ResourceStatusCheckEventUpdated("ns:pod/foo", "img pull error")
+	ResourceStatusCheckEventUpdated("ns:pod/foo", proto.ActionableErr{
+		ErrCode: 509,
+		Message: "image pull error",
+	})
 	wait(t, func() bool { return handler.getState().StatusCheckState.Resources["ns:pod/foo"] == InProgress })
 }
 
@@ -229,11 +232,11 @@ func TestResourceStatusCheckEventSucceeded(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	ResourceStatusCheckEventSucceeded("ns:pod/foo")
+	resourceStatusCheckEventSucceeded("ns:pod/foo")
 	wait(t, func() bool { return handler.getState().StatusCheckState.Resources["ns:pod/foo"] == Succeeded })
 }
 
@@ -241,11 +244,14 @@ func TestResourceStatusCheckEventFailed(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	ResourceStatusCheckEventFailed("ns:pod/foo", errors.New("one or more deployments failed"))
+	resourceStatusCheckEventFailed("ns:pod/foo", proto.ActionableErr{
+		ErrCode: 309,
+		Message: "one or more deployments failed",
+	})
 	wait(t, func() bool { return handler.getState().StatusCheckState.Resources["ns:pod/foo"] == Failed })
 }
 
@@ -253,7 +259,7 @@ func TestFileSyncInProgress(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().FileSyncState.Status == NotStarted })
@@ -265,7 +271,7 @@ func TestFileSyncFailed(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().FileSyncState.Status == NotStarted })
@@ -277,7 +283,7 @@ func TestFileSyncSucceeded(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	wait(t, func() bool { return handler.getState().FileSyncState.Status == NotStarted })
@@ -289,7 +295,7 @@ func TestDebuggingContainer(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{}, "test"),
+		state: emptyState(latest.Pipeline{}, "test", true, true, true),
 	}
 
 	found := func() bool {
@@ -404,4 +410,57 @@ func TestEmptyStateCheckState(t *testing.T) {
 		Resources: map[string]string{},
 	}
 	testutil.CheckDeepEqual(t, expected, actual, cmpopts.EquateEmpty())
+}
+
+func TestUpdateStateAutoTriggers(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+	handler = &eventHandler{
+		state: proto.State{
+			BuildState: &proto.BuildState{
+				Artifacts: map[string]string{
+					"image1": Complete,
+				},
+				AutoTrigger: false,
+			},
+			DeployState: &proto.DeployState{Status: Complete, AutoTrigger: false},
+			ForwardedPorts: map[int32]*proto.PortEvent{
+				2001: {
+					LocalPort:  2000,
+					RemotePort: 2001,
+					PodName:    "test/pod",
+				},
+			},
+			StatusCheckState: &proto.StatusCheckState{Status: Complete},
+			FileSyncState: &proto.FileSyncState{
+				Status:      "Complete",
+				AutoTrigger: false,
+			},
+		},
+	}
+	UpdateStateAutoBuildTrigger(true)
+	UpdateStateAutoDeployTrigger(true)
+	UpdateStateAutoSyncTrigger(true)
+
+	expected := proto.State{
+		BuildState: &proto.BuildState{
+			Artifacts: map[string]string{
+				"image1": Complete,
+			},
+			AutoTrigger: true,
+		},
+		DeployState: &proto.DeployState{Status: Complete, AutoTrigger: true},
+		ForwardedPorts: map[int32]*proto.PortEvent{
+			2001: {
+				LocalPort:  2000,
+				RemotePort: 2001,
+				PodName:    "test/pod",
+			},
+		},
+		StatusCheckState: &proto.StatusCheckState{Status: Complete},
+		FileSyncState: &proto.FileSyncState{
+			Status:      "Complete",
+			AutoTrigger: true,
+		},
+	}
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
 }

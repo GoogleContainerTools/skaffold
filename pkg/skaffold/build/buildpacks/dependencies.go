@@ -25,5 +25,6 @@ import (
 
 // GetDependencies returns dependencies listed for a buildpack artifact
 func GetDependencies(ctx context.Context, workspace string, a *latest.BuildpackArtifact) ([]string, error) {
+	// TODO(dgageot): Support project.toml include/exclude.
 	return list.Files(workspace, a.Dependencies.Paths, a.Dependencies.Ignore)
 }

@@ -509,7 +509,7 @@ spec:
 				return imageConfiguration{}, nil
 			}
 
-			result, err := applyDebuggingTransforms(kubectl.ManifestList{[]byte(test.in)}, retriever)
+			result, err := applyDebuggingTransforms(kubectl.ManifestList{[]byte(test.in)}, retriever, "HELPERS")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, result.String())
 		})
@@ -529,7 +529,7 @@ func TestWorkingDir(t *testing.T) {
 		return imageConfiguration{workingDir: "/a/dir"}, nil
 	}
 
-	result := transformManifest(pod, retriever)
+	result := transformManifest(pod, retriever, "HELPERS")
 	testutil.CheckDeepEqual(t, true, result)
 	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
 	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"workingDir":"/a/dir"`))
@@ -548,7 +548,7 @@ func TestArtifactImage(t *testing.T) {
 		return imageConfiguration{artifact: "gcr.io/random/image"}, nil
 	}
 
-	result := transformManifest(pod, retriever)
+	result := transformManifest(pod, retriever, "HELPERS")
 	testutil.CheckDeepEqual(t, true, result)
 	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
 	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"artifact":"gcr.io/random/image"`))
@@ -570,7 +570,7 @@ func TestTransformPodSpecSkips(t *testing.T) {
 	}
 
 	copy := pod
-	result := transformManifest(&pod, retriever)
+	result := transformManifest(&pod, retriever, "HELPERS")
 	testutil.CheckDeepEqual(t, false, result)
 	testutil.CheckDeepEqual(t, copy, pod) // should be unchanged
 }

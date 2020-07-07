@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -72,18 +71,27 @@ func (c ArtifactConfig) Path() string {
 // validate checks if a file is a valid Buildpack configuration.
 func validate(path string) bool {
 	switch filepath.Base(path) {
-	case "package.json":
-		return !hasParent(path, "node_modules")
-	case "go.mod":
-		return !hasParent(path, "vendor")
-	default:
-		return false
-	}
-}
+	// Buildpacks project descriptor.
+	case "project.toml":
+		return true
 
-func hasParent(path, parent string) bool {
-	for _, p := range strings.Split(path, string(os.PathSeparator)) {
-		if p == parent {
+	// NodeJS.
+	case "package.json":
+		return true
+
+	// Go.
+	case "go.mod":
+		return true
+
+	// Java.
+	case "pom.xml", "build.gradle", "build.gradle.kts":
+		return true
+
+	// Python.
+	// TODO(dgageot): When the Procfile is missing, we might want to inform the user
+	// that this still might be a valid python project.
+	case "requirements.txt":
+		if _, err := os.Stat(filepath.Join(filepath.Dir(path), "Procfile")); err == nil {
 			return true
 		}
 	}

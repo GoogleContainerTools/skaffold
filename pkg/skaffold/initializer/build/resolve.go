@@ -17,13 +17,13 @@ limitations under the License.
 package build
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -53,7 +53,7 @@ func (d *defaultBuildInitializer) resolveBuilderImages() error {
 	}
 
 	if d.force {
-		return errors.New("unable to automatically resolve builder/image pairs; run `skaffold init` without `--force` to manually resolve ambiguities")
+		return errors.BuilderImageAmbiguitiesErr{}
 	}
 
 	return d.resolveBuilderImagesInteractively()

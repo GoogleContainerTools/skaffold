@@ -1,0 +1,29 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '2.0.5.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.7.RELEASE'
+    id 'com.google.cloud.tools.jib' version '2.4.0'
+}
+
+repositories {
+  mavenCentral()
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+  implementation "org.springframework.boot:spring-boot-starter-web"
+  implementation "org.springframework.boot:spring-boot-starter-actuator"
+  if (project.hasProperty('sync')) {
+    implementation "org.springframework.boot:spring-boot-devtools"
+  }
+
+  testImplementation "org.springframework.boot:spring-boot-starter-test"
+}
+
+jib {
+  from {
+    image = "gcr.io/distroless/java:debug"
+  }
+}

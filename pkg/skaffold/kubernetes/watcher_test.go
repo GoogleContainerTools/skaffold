@@ -18,6 +18,7 @@ package kubernetes
 
 import (
 	"errors"
+	"sort"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -34,11 +35,42 @@ func pod(name string) *v1.Pod {
 	return &v1.Pod{ObjectMeta: metav1.ObjectMeta{Name: name}}
 }
 
-func TestAggregatePodWatcher(t *testing.T) {
+func service(name string) *v1.Service {
+	return &v1.Service{ObjectMeta: metav1.ObjectMeta{Name: name}}
+}
+
+type anyPod struct{}
+
+func (p *anyPod) Select(pod *v1.Pod) bool { return true }
+
+type hasName struct {
+	validNames []string
+}
+
+func (h *hasName) Select(pod *v1.Pod) bool {
+	for _, validName := range h.validNames {
+		if validName == pod.Name {
+			return true
+		}
+	}
+	return false
+}
+
+func TestPodWatcher(t *testing.T) {
+	testutil.Run(t, "need to register first", func(t *testutil.T) {
+		watcher := NewPodWatcher(&anyPod{}, []string{"ns"})
+		cleanup, err := watcher.Start()
+		defer cleanup()
+
+		t.CheckErrorContains("no receiver was registered", err)
+	})
+
 	testutil.Run(t, "fail to get client", func(t *testutil.T) {
 		t.Override(&Client, func() (kubernetes.Interface, error) { return nil, errors.New("unable to get client") })
 
-		cleanup, err := AggregatePodWatcher("", []string{"ns"}, nil)
+		watcher := NewPodWatcher(&anyPod{}, []string{"ns"})
+		watcher.Register(make(chan PodEvent))
+		cleanup, err := watcher.Start()
 		defer cleanup()
 
 		t.CheckErrorContains("unable to get client", err)
@@ -52,29 +84,47 @@ func TestAggregatePodWatcher(t *testing.T) {
 			return true, nil, errors.New("unable to watch")
 		})
 
-		cleanup, err := AggregatePodWatcher("", []string{"ns"}, nil)
+		watcher := NewPodWatcher(&anyPod{}, []string{"ns"})
+		watcher.Register(make(chan PodEvent))
+		cleanup, err := watcher.Start()
 		defer cleanup()
 
 		t.CheckErrorContains("unable to watch", err)
 	})
 
-	testutil.Run(t, "watch 3 events", func(t *testutil.T) {
+	testutil.Run(t, "filter 3 events", func(t *testutil.T) {
 		clientset := fake.NewSimpleClientset()
 		t.Override(&Client, func() (kubernetes.Interface, error) { return clientset, nil })
 
-		events := make(chan watch.Event)
-		cleanup, err := AggregatePodWatcher("", []string{"ns1", "ns2"}, events)
+		podSelector := &hasName{
+			validNames: []string{"pod1", "pod2", "pod3"},
+		}
+		events := make(chan PodEvent)
+		watcher := NewPodWatcher(podSelector, []string{"ns1", "ns2"})
+		watcher.Register(events)
+		cleanup, err := watcher.Start()
 		defer cleanup()
 		t.CheckNoError(err)
 
-		// Send three events
+		// Send three pod events among other events
 		clientset.CoreV1().Pods("ns1").Create(pod("pod1"))
+		clientset.CoreV1().Pods("ignored").Create(pod("ignored"))     // Different namespace
+		clientset.CoreV1().Services("ns1").Create(service("ignored")) // Not a pod
+		clientset.CoreV1().Pods("ns2").Create(pod("ignored"))         // Rejected by podSelector
 		clientset.CoreV1().Pods("ns2").Create(pod("pod2"))
 		clientset.CoreV1().Pods("ns2").Create(pod("pod3"))
 
 		// Retrieve three events
-		<-events
-		<-events
-		<-events
+		var podEvents []PodEvent
+		podEvents = append(podEvents, <-events)
+		podEvents = append(podEvents, <-events)
+		podEvents = append(podEvents, <-events)
+		close(events)
+
+		// Order is not guaranteed since we watch multiple names concurrently.
+		sort.Slice(podEvents, func(i, j int) bool { return podEvents[i].Pod.Name < podEvents[j].Pod.Name })
+		t.CheckDeepEqual("pod1", podEvents[0].Pod.Name)
+		t.CheckDeepEqual("pod2", podEvents[1].Pod.Name)
+		t.CheckDeepEqual("pod3", podEvents[2].Pod.Name)
 	})
 }

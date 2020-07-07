@@ -36,28 +36,28 @@ func TestShowAIError(t *testing.T) {
 			description: "Push access denied when neither default repo or global config is defined",
 			opts:        config.SkaffoldOptions{},
 			context:     &config.ContextConfig{},
-			err:         fmt.Errorf("skaffold build failed: pushing image: denied: push access to resource"),
+			err:         fmt.Errorf("skaffold build failed: could not push image: denied: push access to resource"),
 			expected:    "Build Failed. No push access to specified image repository. Trying running with `--default-repo` flag.",
 		},
 		{
 			description: "Push access denied when default repo is defined",
 			opts:        config.SkaffoldOptions{DefaultRepo: stringOrUndefined("gcr.io/test")},
 			context:     &config.ContextConfig{},
-			err:         fmt.Errorf("skaffold build failed: pushing image: denied: push access to resource"),
+			err:         fmt.Errorf("skaffold build failed: could not push image image1 : denied: push access to resource"),
 			expected:    "Build Failed. No push access to specified image repository. Check your `--default-repo` value or try `gcloud auth configure-docker`.",
 		},
 		{
 			description: "Push access denied when global repo is defined",
 			opts:        config.SkaffoldOptions{},
 			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
-			err:         fmt.Errorf("skaffold build failed: pushing image: denied: push access to resource"),
+			err:         fmt.Errorf("skaffold build failed: could not push image: denied: push access to resource"),
 			expected:    "Build Failed. No push access to specified image repository. Check your default-repo setting in skaffold config or try `docker login`.",
 		},
 		{
 			description: "unknown project error",
 			opts:        config.SkaffoldOptions{},
 			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
-			err:         fmt.Errorf("build failed: pushing image: unknown: Project"),
+			err:         fmt.Errorf("build failed: could not push image: unknown: Project"),
 			expected:    "Build Failed. Check your GCR project.",
 		},
 		{
@@ -73,7 +73,8 @@ func TestShowAIError(t *testing.T) {
 			t.Override(&getConfigForCurrentContext, func(string) (*config.ContextConfig, error) {
 				return test.context, nil
 			})
-			actual := ShowAIError(test.err, test.opts)
+			skaffoldOpts = test.opts
+			actual := ShowAIError(test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 		})
 	}

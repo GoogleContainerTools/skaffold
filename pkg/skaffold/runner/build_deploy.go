@@ -27,22 +27,25 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // BuildAndTest builds and tests a list of artifacts.
 func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	// Use tags directly from the Kubernetes manifests.
+	if r.runCtx.Opts.DigestSource == noneDigestSource {
+		return []build.Artifact{}, nil
+	}
+
 	tags, err := r.imageTags(ctx, out, artifacts)
 	if err != nil {
 		return nil, err
 	}
 
-	// In dry-run mode, we don't build anything, just return the tag for each artifact.
-	if r.runCtx.Opts.DryRun {
+	// In dry-run mode or with --digest-source  set to 'remote', we don't build anything, just return the tag for each artifact.
+	if r.runCtx.Opts.DryRun || (r.runCtx.Opts.DigestSource == remoteDigestSource) {
 		var bRes []build.Artifact
-
 		for _, artifact := range artifacts {
 			bRes = append(bRes, build.Artifact{
 				ImageName: artifact.ImageName,
@@ -78,9 +81,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	}
 
 	// Update which images are logged.
-	for _, build := range bRes {
-		r.podSelector.Add(build.Tag)
-	}
+	r.addTagsToPodSelector(bRes)
 
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
@@ -90,46 +91,45 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
-	if !r.runCtx.Opts.Tail && !r.runCtx.Opts.PortForward.Enabled {
-		return r.Deploy(ctx, out, artifacts)
-	}
+	// Update which images are logged.
+	r.addTagsToPodSelector(artifacts)
 
-	var imageNames []string
-	for _, artifact := range artifacts {
-		imageNames = append(imageNames, artifact.ImageName)
-		r.podSelector.Add(artifact.Tag)
-	}
+	logger := r.createLogger(out, artifacts)
+	defer logger.Stop()
 
-	r.createLoggerForImages(out, imageNames)
-	defer r.logger.Stop()
-
-	r.createForwarder(out)
-	defer r.forwarderManager.Stop()
+	forwarderManager := r.createForwarder(out)
+	defer forwarderManager.Stop()
 
 	// Logs should be retrieved up to just before the deploy
-	r.logger.SetSince(time.Now())
+	logger.SetSince(time.Now())
 
 	// First deploy
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
 		return err
 	}
 
-	if r.runCtx.Opts.PortForward.Enabled {
-		if err := r.forwarderManager.Start(ctx); err != nil {
-			logrus.Warnln("Error starting port forwarding:", err)
-		}
+	if err := forwarderManager.Start(ctx); err != nil {
+		logrus.Warnln("Error starting port forwarding:", err)
 	}
 
 	// Start printing the logs after deploy is finished
-	if r.runCtx.Opts.Tail {
-		if err := r.logger.Start(ctx); err != nil {
-			return fmt.Errorf("starting logger: %w", err)
-		}
+	if err := logger.Start(ctx); err != nil {
+		return fmt.Errorf("starting logger: %w", err)
 	}
 
-	<-ctx.Done()
+	if r.runCtx.Opts.Tail || r.runCtx.Opts.PortForward.Enabled {
+		color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
+		<-ctx.Done()
+	}
 
 	return nil
+}
+
+// Update which images are logged.
+func (r *SkaffoldRunner) addTagsToPodSelector(artifacts []build.Artifact) {
+	for _, artifact := range artifacts {
+		r.podSelector.Add(artifact.Tag)
+	}
 }
 
 type tagErr struct {
@@ -137,19 +137,9 @@ type tagErr struct {
 	err error
 }
 
-// ApplyDefaultRepo spplies the default repo to a given image tag.
+// ApplyDefaultRepo applies the default repo to a given image tag.
 func (r *SkaffoldRunner) ApplyDefaultRepo(tag string) (string, error) {
-	defaultRepo, err := config.GetDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo.Value())
-	if err != nil {
-		return "", fmt.Errorf("getting default repo: %w", err)
-	}
-
-	newTag, err := docker.SubstituteDefaultRepoIntoImage(defaultRepo, tag)
-	if err != nil {
-		return "", fmt.Errorf("applying default repo to %q: %w", tag, err)
-	}
-
-	return newTag, nil
+	return deploy.ApplyDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo.Value(), tag)
 }
 
 // imageTags generates tags for a list of artifacts

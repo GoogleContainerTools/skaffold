@@ -15,6 +15,60 @@
     "application/json"
   ],
   "paths": {
+    "/v1/build/auto_execute": {
+      "put": {
+        "summary": "Allows for enabling or disabling automatic build trigger",
+        "operationId": "AutoBuild",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoTriggerState"
+            }
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v1/deploy/auto_execute": {
+      "put": {
+        "summary": "Allows for enabling or disabling automatic deploy trigger",
+        "operationId": "AutoDeploy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoTriggerState"
+            }
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
     "/v1/event_log": {
       "get": {
         "summary": "DEPRECATED. Events should be used instead.\nTODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)",
@@ -97,12 +151,12 @@
           },
           {
             "name": "event.buildEvent.errCode",
-            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - OK: A default status code for events that do not have an associated phase.\nTypically seen with the DevEndEvent event on success.\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING: Deployment waiting for rollout\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_UNHEALTHY: Readiness probe failed\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_KUBECTL_CONNECTION_ERR: Kubectl connection error\n - STATUSCHECK_KUBECTL_PID_KILLED: Kubectl process killed error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - STATUSCHECK_UNKNOWN_EVENT: Container event reason unknown\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.\n - STATUSCHECK_CONTEXT_CANCELLED: User cancelled the skaffold dev run\n - STATUSCHECK_DEADLINE_EXCEEDED: Deadline for status check exceeded",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "UNKNOWN_ERROR",
+              "OK",
               "STATUSCHECK_SUCCESS",
               "BUILD_SUCCESS",
               "BUILD_PUSH_ACCESS_DENIED",
@@ -111,7 +165,9 @@
               "STATUSCHECK_CONTAINER_CREATING",
               "STATUSCHECK_RUN_CONTAINER_ERR",
               "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING",
               "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_UNHEALTHY",
               "STATUSCHECK_NODE_MEMORY_PRESSURE",
               "STATUSCHECK_NODE_DISK_PRESSURE",
               "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
@@ -119,9 +175,14 @@
               "STATUSCHECK_NODE_UNSCHEDULABLE",
               "STATUSCHECK_NODE_UNREACHABLE",
               "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_FAILED_SCHEDULING",
+              "STATUSCHECK_KUBECTL_CONNECTION_ERR",
+              "STATUSCHECK_KUBECTL_PID_KILLED",
+              "UNKNOWN_ERROR",
               "STATUSCHECK_UNKNOWN",
               "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_EVENT",
               "DEPLOY_UNKNOWN",
               "SYNC_UNKNOWN",
               "BUILD_UNKNOWN",
@@ -131,9 +192,66 @@
               "DEVINIT_REGISTER_BUILD_DEPS",
               "DEVINIT_REGISTER_TEST_DEPS",
               "DEVINIT_REGISTER_DEPLOY_DEPS",
-              "DEVINIT_REGISTER_CONFIG_DEP"
+              "DEVINIT_REGISTER_CONFIG_DEP",
+              "STATUSCHECK_CONTEXT_CANCELLED",
+              "STATUSCHECK_DEADLINE_EXCEEDED"
             ],
-            "default": "UNKNOWN_ERROR"
+            "default": "OK"
+          },
+          {
+            "name": "event.buildEvent.actionableErr.errCode",
+            "description": " - OK: A default status code for events that do not have an associated phase.\nTypically seen with the DevEndEvent event on success.\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING: Deployment waiting for rollout\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_UNHEALTHY: Readiness probe failed\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_KUBECTL_CONNECTION_ERR: Kubectl connection error\n - STATUSCHECK_KUBECTL_PID_KILLED: Kubectl process killed error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - STATUSCHECK_UNKNOWN_EVENT: Container event reason unknown\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.\n - STATUSCHECK_CONTEXT_CANCELLED: User cancelled the skaffold dev run\n - STATUSCHECK_DEADLINE_EXCEEDED: Deadline for status check exceeded",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "OK",
+              "STATUSCHECK_SUCCESS",
+              "BUILD_SUCCESS",
+              "BUILD_PUSH_ACCESS_DENIED",
+              "BUILD_PROJECT_NOT_FOUND",
+              "STATUSCHECK_IMAGE_PULL_ERR",
+              "STATUSCHECK_CONTAINER_CREATING",
+              "STATUSCHECK_RUN_CONTAINER_ERR",
+              "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING",
+              "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_UNHEALTHY",
+              "STATUSCHECK_NODE_MEMORY_PRESSURE",
+              "STATUSCHECK_NODE_DISK_PRESSURE",
+              "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUSCHECK_NODE_PID_PRESSURE",
+              "STATUSCHECK_NODE_UNSCHEDULABLE",
+              "STATUSCHECK_NODE_UNREACHABLE",
+              "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_FAILED_SCHEDULING",
+              "STATUSCHECK_KUBECTL_CONNECTION_ERR",
+              "STATUSCHECK_KUBECTL_PID_KILLED",
+              "UNKNOWN_ERROR",
+              "STATUSCHECK_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_EVENT",
+              "DEPLOY_UNKNOWN",
+              "SYNC_UNKNOWN",
+              "BUILD_UNKNOWN",
+              "DEVINIT_UNKNOWN",
+              "CLEANUP_UNKNOWN",
+              "SYNC_INIT_ERROR",
+              "DEVINIT_REGISTER_BUILD_DEPS",
+              "DEVINIT_REGISTER_TEST_DEPS",
+              "DEVINIT_REGISTER_DEPLOY_DEPS",
+              "DEVINIT_REGISTER_CONFIG_DEP",
+              "STATUSCHECK_CONTEXT_CANCELLED",
+              "STATUSCHECK_DEADLINE_EXCEEDED"
+            ],
+            "default": "OK"
+          },
+          {
+            "name": "event.buildEvent.actionableErr.message",
+            "in": "query",
+            "required": false,
+            "type": "string"
           },
           {
             "name": "event.deployEvent.status",
@@ -149,12 +267,12 @@
           },
           {
             "name": "event.deployEvent.errCode",
-            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - OK: A default status code for events that do not have an associated phase.\nTypically seen with the DevEndEvent event on success.\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING: Deployment waiting for rollout\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_UNHEALTHY: Readiness probe failed\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_KUBECTL_CONNECTION_ERR: Kubectl connection error\n - STATUSCHECK_KUBECTL_PID_KILLED: Kubectl process killed error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - STATUSCHECK_UNKNOWN_EVENT: Container event reason unknown\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.\n - STATUSCHECK_CONTEXT_CANCELLED: User cancelled the skaffold dev run\n - STATUSCHECK_DEADLINE_EXCEEDED: Deadline for status check exceeded",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "UNKNOWN_ERROR",
+              "OK",
               "STATUSCHECK_SUCCESS",
               "BUILD_SUCCESS",
               "BUILD_PUSH_ACCESS_DENIED",
@@ -163,7 +281,9 @@
               "STATUSCHECK_CONTAINER_CREATING",
               "STATUSCHECK_RUN_CONTAINER_ERR",
               "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING",
               "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_UNHEALTHY",
               "STATUSCHECK_NODE_MEMORY_PRESSURE",
               "STATUSCHECK_NODE_DISK_PRESSURE",
               "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
@@ -171,9 +291,14 @@
               "STATUSCHECK_NODE_UNSCHEDULABLE",
               "STATUSCHECK_NODE_UNREACHABLE",
               "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_FAILED_SCHEDULING",
+              "STATUSCHECK_KUBECTL_CONNECTION_ERR",
+              "STATUSCHECK_KUBECTL_PID_KILLED",
+              "UNKNOWN_ERROR",
               "STATUSCHECK_UNKNOWN",
               "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_EVENT",
               "DEPLOY_UNKNOWN",
               "SYNC_UNKNOWN",
               "BUILD_UNKNOWN",
@@ -183,9 +308,66 @@
               "DEVINIT_REGISTER_BUILD_DEPS",
               "DEVINIT_REGISTER_TEST_DEPS",
               "DEVINIT_REGISTER_DEPLOY_DEPS",
-              "DEVINIT_REGISTER_CONFIG_DEP"
+              "DEVINIT_REGISTER_CONFIG_DEP",
+              "STATUSCHECK_CONTEXT_CANCELLED",
+              "STATUSCHECK_DEADLINE_EXCEEDED"
             ],
-            "default": "UNKNOWN_ERROR"
+            "default": "OK"
+          },
+          {
+            "name": "event.deployEvent.actionableErr.errCode",
+            "description": " - OK: A default status code for events that do not have an associated phase.\nTypically seen with the DevEndEvent event on success.\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING: Deployment waiting for rollout\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_UNHEALTHY: Readiness probe failed\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_KUBECTL_CONNECTION_ERR: Kubectl connection error\n - STATUSCHECK_KUBECTL_PID_KILLED: Kubectl process killed error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - STATUSCHECK_UNKNOWN_EVENT: Container event reason unknown\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.\n - STATUSCHECK_CONTEXT_CANCELLED: User cancelled the skaffold dev run\n - STATUSCHECK_DEADLINE_EXCEEDED: Deadline for status check exceeded",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "OK",
+              "STATUSCHECK_SUCCESS",
+              "BUILD_SUCCESS",
+              "BUILD_PUSH_ACCESS_DENIED",
+              "BUILD_PROJECT_NOT_FOUND",
+              "STATUSCHECK_IMAGE_PULL_ERR",
+              "STATUSCHECK_CONTAINER_CREATING",
+              "STATUSCHECK_RUN_CONTAINER_ERR",
+              "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING",
+              "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_UNHEALTHY",
+              "STATUSCHECK_NODE_MEMORY_PRESSURE",
+              "STATUSCHECK_NODE_DISK_PRESSURE",
+              "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUSCHECK_NODE_PID_PRESSURE",
+              "STATUSCHECK_NODE_UNSCHEDULABLE",
+              "STATUSCHECK_NODE_UNREACHABLE",
+              "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_FAILED_SCHEDULING",
+              "STATUSCHECK_KUBECTL_CONNECTION_ERR",
+              "STATUSCHECK_KUBECTL_PID_KILLED",
+              "UNKNOWN_ERROR",
+              "STATUSCHECK_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_EVENT",
+              "DEPLOY_UNKNOWN",
+              "SYNC_UNKNOWN",
+              "BUILD_UNKNOWN",
+              "DEVINIT_UNKNOWN",
+              "CLEANUP_UNKNOWN",
+              "SYNC_INIT_ERROR",
+              "DEVINIT_REGISTER_BUILD_DEPS",
+              "DEVINIT_REGISTER_TEST_DEPS",
+              "DEVINIT_REGISTER_DEPLOY_DEPS",
+              "DEVINIT_REGISTER_CONFIG_DEP",
+              "STATUSCHECK_CONTEXT_CANCELLED",
+              "STATUSCHECK_DEADLINE_EXCEEDED"
+            ],
+            "default": "OK"
+          },
+          {
+            "name": "event.deployEvent.actionableErr.message",
+            "in": "query",
+            "required": false,
+            "type": "string"
           },
           {
             "name": "event.portEvent.localPort",
@@ -263,12 +445,12 @@
           },
           {
             "name": "event.statusCheckEvent.errCode",
-            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - OK: A default status code for events that do not have an associated phase.\nTypically seen with the DevEndEvent event on success.\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING: Deployment waiting for rollout\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_UNHEALTHY: Readiness probe failed\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_KUBECTL_CONNECTION_ERR: Kubectl connection error\n - STATUSCHECK_KUBECTL_PID_KILLED: Kubectl process killed error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - STATUSCHECK_UNKNOWN_EVENT: Container event reason unknown\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.\n - STATUSCHECK_CONTEXT_CANCELLED: User cancelled the skaffold dev run\n - STATUSCHECK_DEADLINE_EXCEEDED: Deadline for status check exceeded",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "UNKNOWN_ERROR",
+              "OK",
               "STATUSCHECK_SUCCESS",
               "BUILD_SUCCESS",
               "BUILD_PUSH_ACCESS_DENIED",
@@ -277,7 +459,9 @@
               "STATUSCHECK_CONTAINER_CREATING",
               "STATUSCHECK_RUN_CONTAINER_ERR",
               "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING",
               "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_UNHEALTHY",
               "STATUSCHECK_NODE_MEMORY_PRESSURE",
               "STATUSCHECK_NODE_DISK_PRESSURE",
               "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
@@ -285,9 +469,14 @@
               "STATUSCHECK_NODE_UNSCHEDULABLE",
               "STATUSCHECK_NODE_UNREACHABLE",
               "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_FAILED_SCHEDULING",
+              "STATUSCHECK_KUBECTL_CONNECTION_ERR",
+              "STATUSCHECK_KUBECTL_PID_KILLED",
+              "UNKNOWN_ERROR",
               "STATUSCHECK_UNKNOWN",
               "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_EVENT",
               "DEPLOY_UNKNOWN",
               "SYNC_UNKNOWN",
               "BUILD_UNKNOWN",
@@ -297,9 +486,66 @@
               "DEVINIT_REGISTER_BUILD_DEPS",
               "DEVINIT_REGISTER_TEST_DEPS",
               "DEVINIT_REGISTER_DEPLOY_DEPS",
-              "DEVINIT_REGISTER_CONFIG_DEP"
+              "DEVINIT_REGISTER_CONFIG_DEP",
+              "STATUSCHECK_CONTEXT_CANCELLED",
+              "STATUSCHECK_DEADLINE_EXCEEDED"
             ],
-            "default": "UNKNOWN_ERROR"
+            "default": "OK"
+          },
+          {
+            "name": "event.statusCheckEvent.actionableErr.errCode",
+            "description": " - OK: A default status code for events that do not have an associated phase.\nTypically seen with the DevEndEvent event on success.\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING: Deployment waiting for rollout\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_UNHEALTHY: Readiness probe failed\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_KUBECTL_CONNECTION_ERR: Kubectl connection error\n - STATUSCHECK_KUBECTL_PID_KILLED: Kubectl process killed error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - STATUSCHECK_UNKNOWN_EVENT: Container event reason unknown\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.\n - STATUSCHECK_CONTEXT_CANCELLED: User cancelled the skaffold dev run\n - STATUSCHECK_DEADLINE_EXCEEDED: Deadline for status check exceeded",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "OK",
+              "STATUSCHECK_SUCCESS",
+              "BUILD_SUCCESS",
+              "BUILD_PUSH_ACCESS_DENIED",
+              "BUILD_PROJECT_NOT_FOUND",
+              "STATUSCHECK_IMAGE_PULL_ERR",
+              "STATUSCHECK_CONTAINER_CREATING",
+              "STATUSCHECK_RUN_CONTAINER_ERR",
+              "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING",
+              "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_UNHEALTHY",
+              "STATUSCHECK_NODE_MEMORY_PRESSURE",
+              "STATUSCHECK_NODE_DISK_PRESSURE",
+              "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUSCHECK_NODE_PID_PRESSURE",
+              "STATUSCHECK_NODE_UNSCHEDULABLE",
+              "STATUSCHECK_NODE_UNREACHABLE",
+              "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_FAILED_SCHEDULING",
+              "STATUSCHECK_KUBECTL_CONNECTION_ERR",
+              "STATUSCHECK_KUBECTL_PID_KILLED",
+              "UNKNOWN_ERROR",
+              "STATUSCHECK_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_EVENT",
+              "DEPLOY_UNKNOWN",
+              "SYNC_UNKNOWN",
+              "BUILD_UNKNOWN",
+              "DEVINIT_UNKNOWN",
+              "CLEANUP_UNKNOWN",
+              "SYNC_INIT_ERROR",
+              "DEVINIT_REGISTER_BUILD_DEPS",
+              "DEVINIT_REGISTER_TEST_DEPS",
+              "DEVINIT_REGISTER_DEPLOY_DEPS",
+              "DEVINIT_REGISTER_CONFIG_DEP",
+              "STATUSCHECK_CONTEXT_CANCELLED",
+              "STATUSCHECK_DEADLINE_EXCEEDED"
+            ],
+            "default": "OK"
+          },
+          {
+            "name": "event.statusCheckEvent.actionableErr.message",
+            "in": "query",
+            "required": false,
+            "type": "string"
           },
           {
             "name": "event.resourceStatusCheckEvent.resource",
@@ -321,6 +567,110 @@
           },
           {
             "name": "event.resourceStatusCheckEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.statusCode",
+            "description": " - OK: A default status code for events that do not have an associated phase.\nTypically seen with the DevEndEvent event on success.\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING: Deployment waiting for rollout\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_UNHEALTHY: Readiness probe failed\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_KUBECTL_CONNECTION_ERR: Kubectl connection error\n - STATUSCHECK_KUBECTL_PID_KILLED: Kubectl process killed error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - STATUSCHECK_UNKNOWN_EVENT: Container event reason unknown\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.\n - STATUSCHECK_CONTEXT_CANCELLED: User cancelled the skaffold dev run\n - STATUSCHECK_DEADLINE_EXCEEDED: Deadline for status check exceeded",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "OK",
+              "STATUSCHECK_SUCCESS",
+              "BUILD_SUCCESS",
+              "BUILD_PUSH_ACCESS_DENIED",
+              "BUILD_PROJECT_NOT_FOUND",
+              "STATUSCHECK_IMAGE_PULL_ERR",
+              "STATUSCHECK_CONTAINER_CREATING",
+              "STATUSCHECK_RUN_CONTAINER_ERR",
+              "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING",
+              "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_UNHEALTHY",
+              "STATUSCHECK_NODE_MEMORY_PRESSURE",
+              "STATUSCHECK_NODE_DISK_PRESSURE",
+              "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUSCHECK_NODE_PID_PRESSURE",
+              "STATUSCHECK_NODE_UNSCHEDULABLE",
+              "STATUSCHECK_NODE_UNREACHABLE",
+              "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_FAILED_SCHEDULING",
+              "STATUSCHECK_KUBECTL_CONNECTION_ERR",
+              "STATUSCHECK_KUBECTL_PID_KILLED",
+              "UNKNOWN_ERROR",
+              "STATUSCHECK_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_EVENT",
+              "DEPLOY_UNKNOWN",
+              "SYNC_UNKNOWN",
+              "BUILD_UNKNOWN",
+              "DEVINIT_UNKNOWN",
+              "CLEANUP_UNKNOWN",
+              "SYNC_INIT_ERROR",
+              "DEVINIT_REGISTER_BUILD_DEPS",
+              "DEVINIT_REGISTER_TEST_DEPS",
+              "DEVINIT_REGISTER_DEPLOY_DEPS",
+              "DEVINIT_REGISTER_CONFIG_DEP",
+              "STATUSCHECK_CONTEXT_CANCELLED",
+              "STATUSCHECK_DEADLINE_EXCEEDED"
+            ],
+            "default": "OK"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.actionableErr.errCode",
+            "description": " - OK: A default status code for events that do not have an associated phase.\nTypically seen with the DevEndEvent event on success.\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING: Deployment waiting for rollout\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_UNHEALTHY: Readiness probe failed\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_KUBECTL_CONNECTION_ERR: Kubectl connection error\n - STATUSCHECK_KUBECTL_PID_KILLED: Kubectl process killed error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - STATUSCHECK_UNKNOWN_EVENT: Container event reason unknown\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.\n - STATUSCHECK_CONTEXT_CANCELLED: User cancelled the skaffold dev run\n - STATUSCHECK_DEADLINE_EXCEEDED: Deadline for status check exceeded",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "OK",
+              "STATUSCHECK_SUCCESS",
+              "BUILD_SUCCESS",
+              "BUILD_PUSH_ACCESS_DENIED",
+              "BUILD_PROJECT_NOT_FOUND",
+              "STATUSCHECK_IMAGE_PULL_ERR",
+              "STATUSCHECK_CONTAINER_CREATING",
+              "STATUSCHECK_RUN_CONTAINER_ERR",
+              "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING",
+              "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_UNHEALTHY",
+              "STATUSCHECK_NODE_MEMORY_PRESSURE",
+              "STATUSCHECK_NODE_DISK_PRESSURE",
+              "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUSCHECK_NODE_PID_PRESSURE",
+              "STATUSCHECK_NODE_UNSCHEDULABLE",
+              "STATUSCHECK_NODE_UNREACHABLE",
+              "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_FAILED_SCHEDULING",
+              "STATUSCHECK_KUBECTL_CONNECTION_ERR",
+              "STATUSCHECK_KUBECTL_PID_KILLED",
+              "UNKNOWN_ERROR",
+              "STATUSCHECK_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_EVENT",
+              "DEPLOY_UNKNOWN",
+              "SYNC_UNKNOWN",
+              "BUILD_UNKNOWN",
+              "DEVINIT_UNKNOWN",
+              "CLEANUP_UNKNOWN",
+              "SYNC_INIT_ERROR",
+              "DEVINIT_REGISTER_BUILD_DEPS",
+              "DEVINIT_REGISTER_TEST_DEPS",
+              "DEVINIT_REGISTER_DEPLOY_DEPS",
+              "DEVINIT_REGISTER_CONFIG_DEP",
+              "STATUSCHECK_CONTEXT_CANCELLED",
+              "STATUSCHECK_DEADLINE_EXCEEDED"
+            ],
+            "default": "OK"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.actionableErr.message",
             "in": "query",
             "required": false,
             "type": "string"
@@ -352,12 +702,12 @@
           },
           {
             "name": "event.fileSyncEvent.errCode",
-            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - OK: A default status code for events that do not have an associated phase.\nTypically seen with the DevEndEvent event on success.\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING: Deployment waiting for rollout\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_UNHEALTHY: Readiness probe failed\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_KUBECTL_CONNECTION_ERR: Kubectl connection error\n - STATUSCHECK_KUBECTL_PID_KILLED: Kubectl process killed error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - STATUSCHECK_UNKNOWN_EVENT: Container event reason unknown\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.\n - STATUSCHECK_CONTEXT_CANCELLED: User cancelled the skaffold dev run\n - STATUSCHECK_DEADLINE_EXCEEDED: Deadline for status check exceeded",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "UNKNOWN_ERROR",
+              "OK",
               "STATUSCHECK_SUCCESS",
               "BUILD_SUCCESS",
               "BUILD_PUSH_ACCESS_DENIED",
@@ -366,7 +716,9 @@
               "STATUSCHECK_CONTAINER_CREATING",
               "STATUSCHECK_RUN_CONTAINER_ERR",
               "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING",
               "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_UNHEALTHY",
               "STATUSCHECK_NODE_MEMORY_PRESSURE",
               "STATUSCHECK_NODE_DISK_PRESSURE",
               "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
@@ -374,9 +726,14 @@
               "STATUSCHECK_NODE_UNSCHEDULABLE",
               "STATUSCHECK_NODE_UNREACHABLE",
               "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_FAILED_SCHEDULING",
+              "STATUSCHECK_KUBECTL_CONNECTION_ERR",
+              "STATUSCHECK_KUBECTL_PID_KILLED",
+              "UNKNOWN_ERROR",
               "STATUSCHECK_UNKNOWN",
               "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_EVENT",
               "DEPLOY_UNKNOWN",
               "SYNC_UNKNOWN",
               "BUILD_UNKNOWN",
@@ -386,9 +743,66 @@
               "DEVINIT_REGISTER_BUILD_DEPS",
               "DEVINIT_REGISTER_TEST_DEPS",
               "DEVINIT_REGISTER_DEPLOY_DEPS",
-              "DEVINIT_REGISTER_CONFIG_DEP"
+              "DEVINIT_REGISTER_CONFIG_DEP",
+              "STATUSCHECK_CONTEXT_CANCELLED",
+              "STATUSCHECK_DEADLINE_EXCEEDED"
             ],
-            "default": "UNKNOWN_ERROR"
+            "default": "OK"
+          },
+          {
+            "name": "event.fileSyncEvent.actionableErr.errCode",
+            "description": " - OK: A default status code for events that do not have an associated phase.\nTypically seen with the DevEndEvent event on success.\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING: Deployment waiting for rollout\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_UNHEALTHY: Readiness probe failed\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_KUBECTL_CONNECTION_ERR: Kubectl connection error\n - STATUSCHECK_KUBECTL_PID_KILLED: Kubectl process killed error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - STATUSCHECK_UNKNOWN_EVENT: Container event reason unknown\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.\n - STATUSCHECK_CONTEXT_CANCELLED: User cancelled the skaffold dev run\n - STATUSCHECK_DEADLINE_EXCEEDED: Deadline for status check exceeded",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "OK",
+              "STATUSCHECK_SUCCESS",
+              "BUILD_SUCCESS",
+              "BUILD_PUSH_ACCESS_DENIED",
+              "BUILD_PROJECT_NOT_FOUND",
+              "STATUSCHECK_IMAGE_PULL_ERR",
+              "STATUSCHECK_CONTAINER_CREATING",
+              "STATUSCHECK_RUN_CONTAINER_ERR",
+              "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING",
+              "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_UNHEALTHY",
+              "STATUSCHECK_NODE_MEMORY_PRESSURE",
+              "STATUSCHECK_NODE_DISK_PRESSURE",
+              "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUSCHECK_NODE_PID_PRESSURE",
+              "STATUSCHECK_NODE_UNSCHEDULABLE",
+              "STATUSCHECK_NODE_UNREACHABLE",
+              "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_FAILED_SCHEDULING",
+              "STATUSCHECK_KUBECTL_CONNECTION_ERR",
+              "STATUSCHECK_KUBECTL_PID_KILLED",
+              "UNKNOWN_ERROR",
+              "STATUSCHECK_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_EVENT",
+              "DEPLOY_UNKNOWN",
+              "SYNC_UNKNOWN",
+              "BUILD_UNKNOWN",
+              "DEVINIT_UNKNOWN",
+              "CLEANUP_UNKNOWN",
+              "SYNC_INIT_ERROR",
+              "DEVINIT_REGISTER_BUILD_DEPS",
+              "DEVINIT_REGISTER_TEST_DEPS",
+              "DEVINIT_REGISTER_DEPLOY_DEPS",
+              "DEVINIT_REGISTER_CONFIG_DEP",
+              "STATUSCHECK_CONTEXT_CANCELLED",
+              "STATUSCHECK_DEADLINE_EXCEEDED"
+            ],
+            "default": "OK"
+          },
+          {
+            "name": "event.fileSyncEvent.actionableErr.message",
+            "in": "query",
+            "required": false,
+            "type": "string"
           },
           {
             "name": "event.debuggingContainerEvent.status",
@@ -447,12 +861,12 @@
           },
           {
             "name": "event.devLoopEvent.err.errCode",
-            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - OK: A default status code for events that do not have an associated phase.\nTypically seen with the DevEndEvent event on success.\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING: Deployment waiting for rollout\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_UNHEALTHY: Readiness probe failed\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_KUBECTL_CONNECTION_ERR: Kubectl connection error\n - STATUSCHECK_KUBECTL_PID_KILLED: Kubectl process killed error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - STATUSCHECK_UNKNOWN_EVENT: Container event reason unknown\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.\n - STATUSCHECK_CONTEXT_CANCELLED: User cancelled the skaffold dev run\n - STATUSCHECK_DEADLINE_EXCEEDED: Deadline for status check exceeded",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "UNKNOWN_ERROR",
+              "OK",
               "STATUSCHECK_SUCCESS",
               "BUILD_SUCCESS",
               "BUILD_PUSH_ACCESS_DENIED",
@@ -461,7 +875,9 @@
               "STATUSCHECK_CONTAINER_CREATING",
               "STATUSCHECK_RUN_CONTAINER_ERR",
               "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING",
               "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_UNHEALTHY",
               "STATUSCHECK_NODE_MEMORY_PRESSURE",
               "STATUSCHECK_NODE_DISK_PRESSURE",
               "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
@@ -469,9 +885,14 @@
               "STATUSCHECK_NODE_UNSCHEDULABLE",
               "STATUSCHECK_NODE_UNREACHABLE",
               "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_FAILED_SCHEDULING",
+              "STATUSCHECK_KUBECTL_CONNECTION_ERR",
+              "STATUSCHECK_KUBECTL_PID_KILLED",
+              "UNKNOWN_ERROR",
               "STATUSCHECK_UNKNOWN",
               "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_EVENT",
               "DEPLOY_UNKNOWN",
               "SYNC_UNKNOWN",
               "BUILD_UNKNOWN",
@@ -481,9 +902,11 @@
               "DEVINIT_REGISTER_BUILD_DEPS",
               "DEVINIT_REGISTER_TEST_DEPS",
               "DEVINIT_REGISTER_DEPLOY_DEPS",
-              "DEVINIT_REGISTER_CONFIG_DEP"
+              "DEVINIT_REGISTER_CONFIG_DEP",
+              "STATUSCHECK_CONTEXT_CANCELLED",
+              "STATUSCHECK_DEADLINE_EXCEEDED"
             ],
-            "default": "UNKNOWN_ERROR"
+            "default": "OK"
           },
           {
             "name": "event.devLoopEvent.err.message",
@@ -590,10 +1013,37 @@
           "SkaffoldService"
         ]
       }
+    },
+    "/v1/sync/auto_execute": {
+      "put": {
+        "summary": "Allows for enabling or disabling automatic sync trigger",
+        "operationId": "AutoSync",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoTriggerState"
+            }
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
     }
   },
   "definitions": {
-    "BuildMetadataBuilder": {
+    "BuildMetadataImageBuilder": {
       "type": "object",
       "properties": {
         "type": {
@@ -617,6 +1067,24 @@
         }
       }
     },
+    "protoActionableErr": {
+      "type": "object",
+      "properties": {
+        "errCode": {
+          "$ref": "#/definitions/protoStatusCode"
+        },
+        "message": {
+          "type": "string"
+        },
+        "suggestions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protoSuggestion"
+          }
+        }
+      },
+      "description": "`ActionableErr` defines an error that occurred along with an optional list of suggestions"
+    },
     "protoBuildEvent": {
       "type": "object",
       "properties": {
@@ -631,6 +1099,9 @@
         },
         "errCode": {
           "$ref": "#/definitions/protoStatusCode"
+        },
+        "actionableErr": {
+          "$ref": "#/definitions/protoActionableErr"
         }
       },
       "description": "`BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."
@@ -645,7 +1116,7 @@
         "builders": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/BuildMetadataBuilder"
+            "$ref": "#/definitions/BuildMetadataImageBuilder"
           }
         },
         "type": {
@@ -669,6 +1140,10 @@
             "type": "string"
           },
           "description": "A map of `artifact name -> build-state`.\nArtifact name is defined in the `skaffold.yaml`.\nThe `build-state` can be: <br>\n- `\"Not started\"`: not yet started <br>\n- `\"In progress\"`: build started <br>\n- `\"Complete\"`: build succeeded <br>\n- `\"Failed\"`: build failed"
+        },
+        "autoTrigger": {
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "`BuildState` maps Skaffold artifacts to their current build states"
@@ -754,6 +1229,9 @@
         },
         "errCode": {
           "$ref": "#/definitions/protoStatusCode"
+        },
+        "actionableErr": {
+          "$ref": "#/definitions/protoActionableErr"
         }
       },
       "description": "`DeployEvent` represents the status of a deployment, and is emitted by Skaffold\nanytime a deployment starts or completes, successfully or not."
@@ -777,6 +1255,10 @@
       "properties": {
         "status": {
           "type": "string"
+        },
+        "autoTrigger": {
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "`DeployState` describes the status of the current deploy"
@@ -803,22 +1285,10 @@
           "type": "string"
         },
         "err": {
-          "$ref": "#/definitions/protoErrDef"
+          "$ref": "#/definitions/protoActionableErr"
         }
       },
       "description": "`DevLoopEvent` marks the start and end of a dev loop."
-    },
-    "protoErrDef": {
-      "type": "object",
-      "properties": {
-        "errCode": {
-          "$ref": "#/definitions/protoStatusCode"
-        },
-        "message": {
-          "type": "string"
-        }
-      },
-      "description": "`ErrDef` defines an error occurred along with an optional suggestions"
     },
     "protoEvent": {
       "type": "object",
@@ -871,6 +1341,9 @@
         },
         "errCode": {
           "$ref": "#/definitions/protoStatusCode"
+        },
+        "actionableErr": {
+          "$ref": "#/definitions/protoActionableErr"
         }
       },
       "description": "FileSyncEvent describes the sync status."
@@ -880,6 +1353,10 @@
       "properties": {
         "status": {
           "type": "string"
+        },
+        "autoTrigger": {
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "`FileSyncState` contains the status of the current file sync"
@@ -900,7 +1377,7 @@
           "format": "boolean"
         }
       },
-      "description": "Intent represents user intents for a given phase to be unblocked, once."
+      "description": "Intent represents user intents for a given phase."
     },
     "protoLogEntry": {
       "type": "object",
@@ -999,6 +1476,12 @@
         },
         "err": {
           "type": "string"
+        },
+        "statusCode": {
+          "$ref": "#/definitions/protoStatusCode"
+        },
+        "actionableErr": {
+          "$ref": "#/definitions/protoActionableErr"
         }
       },
       "description": "A Resource StatusCheck Event, indicates progress for each kubernetes deployment.\nFor every resource, there will be exactly one event with `status` *Succeeded* or *Failed* event.\nThere can be multiple events with `status` *Pending*.\nSkaffold polls for resource status every 0.5 second. If the resource status changes, an event with `status` “Pending”, “Complete” and “Failed”\nwill be sent with the new status."
@@ -1050,6 +1533,9 @@
         },
         "errCode": {
           "$ref": "#/definitions/protoStatusCode"
+        },
+        "actionableErr": {
+          "$ref": "#/definitions/protoActionableErr"
         }
       },
       "description": "`StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed."
@@ -1073,7 +1559,7 @@
     "protoStatusCode": {
       "type": "string",
       "enum": [
-        "UNKNOWN_ERROR",
+        "OK",
         "STATUSCHECK_SUCCESS",
         "BUILD_SUCCESS",
         "BUILD_PUSH_ACCESS_DENIED",
@@ -1082,7 +1568,9 @@
         "STATUSCHECK_CONTAINER_CREATING",
         "STATUSCHECK_RUN_CONTAINER_ERR",
         "STATUSCHECK_CONTAINER_TERMINATED",
+        "STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING",
         "STATUSCHECK_CONTAINER_RESTARTING",
+        "STATUSCHECK_UNHEALTHY",
         "STATUSCHECK_NODE_MEMORY_PRESSURE",
         "STATUSCHECK_NODE_DISK_PRESSURE",
         "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
@@ -1090,9 +1578,14 @@
         "STATUSCHECK_NODE_UNSCHEDULABLE",
         "STATUSCHECK_NODE_UNREACHABLE",
         "STATUSCHECK_NODE_NOT_READY",
+        "STATUSCHECK_FAILED_SCHEDULING",
+        "STATUSCHECK_KUBECTL_CONNECTION_ERR",
+        "STATUSCHECK_KUBECTL_PID_KILLED",
+        "UNKNOWN_ERROR",
         "STATUSCHECK_UNKNOWN",
         "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
         "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+        "STATUSCHECK_UNKNOWN_EVENT",
         "DEPLOY_UNKNOWN",
         "SYNC_UNKNOWN",
         "BUILD_UNKNOWN",
@@ -1102,10 +1595,60 @@
         "DEVINIT_REGISTER_BUILD_DEPS",
         "DEVINIT_REGISTER_TEST_DEPS",
         "DEVINIT_REGISTER_DEPLOY_DEPS",
-        "DEVINIT_REGISTER_CONFIG_DEP"
+        "DEVINIT_REGISTER_CONFIG_DEP",
+        "STATUSCHECK_CONTEXT_CANCELLED",
+        "STATUSCHECK_DEADLINE_EXCEEDED"
       ],
-      "default": "UNKNOWN_ERROR",
-      "description": "Enum for Status codes\nThese error codes are prepended by Phase Name e.g.\nBUILD, DEPLOY, STATUSCHECK, DEVINIT\n- UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file."
+      "default": "OK",
+      "description": "Enum for Status codes\nThese error codes are prepended by Phase Name e.g.\nBUILD, DEPLOY, STATUSCHECK, DEVINIT\n- OK: A default status code for events that do not have an associated phase.\nTypically seen with the DevEndEvent event on success.\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING: Deployment waiting for rollout\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_UNHEALTHY: Readiness probe failed\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_FAILED_SCHEDULING: Scheduler failure error\n - STATUSCHECK_KUBECTL_CONNECTION_ERR: Kubectl connection error\n - STATUSCHECK_KUBECTL_PID_KILLED: Kubectl process killed error\n - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - STATUSCHECK_UNKNOWN_EVENT: Container event reason unknown\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.\n - STATUSCHECK_CONTEXT_CANCELLED: User cancelled the skaffold dev run\n - STATUSCHECK_DEADLINE_EXCEEDED: Deadline for status check exceeded"
+    },
+    "protoSuggestion": {
+      "type": "object",
+      "properties": {
+        "suggestionCode": {
+          "$ref": "#/definitions/protoSuggestionCode"
+        },
+        "action": {
+          "type": "string"
+        }
+      },
+      "description": "Suggestion defines the action a user needs to recover from an error."
+    },
+    "protoSuggestionCode": {
+      "type": "string",
+      "enum": [
+        "NIL",
+        "ADD_DEFAULT_REPO",
+        "CHECK_DEFAULT_REPO",
+        "CHECK_DEFAULT_REPO_GLOBAL_CONFIG",
+        "GCLOUD_DOCKER_AUTH_CONFIGURE",
+        "DOCKER_AUTH_CONFIGURE",
+        "CHECK_GCLOUD_PROJECT",
+        "CHECK_CONTAINER_LOGS",
+        "CHECK_READINESS_PROBE",
+        "CHECK_CONTAINER_IMAGE",
+        "ADDRESS_NODE_MEMORY_PRESSURE",
+        "ADDRESS_NODE_DISK_PRESSURE",
+        "ADDRESS_NODE_NETWORK_UNAVAILABLE",
+        "ADDRESS_NODE_PID_PRESSURE",
+        "ADDRESS_NODE_UNSCHEDULABLE",
+        "ADDRESS_NODE_UNREACHABLE",
+        "ADDRESS_NODE_NOT_READY",
+        "ADDRESS_FAILED_SCHEDULING",
+        "CHECK_HOST_CONNECTION"
+      ],
+      "default": "NIL",
+      "description": "Enum for Suggestion codes\n- NIL: default nil suggestion.\nThis is usually set when no error happens.\n - ADD_DEFAULT_REPO: Build error suggestion codes\n - CHECK_CONTAINER_LOGS: Container run error\n - CHECK_READINESS_PROBE: Pod Health check error\n - CHECK_CONTAINER_IMAGE: Check Container image\n - ADDRESS_NODE_MEMORY_PRESSURE: Node pressure error\n - ADDRESS_NODE_DISK_PRESSURE: Node disk pressure error\n - ADDRESS_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - ADDRESS_NODE_PID_PRESSURE: Node PID pressure error\n - ADDRESS_NODE_UNSCHEDULABLE: Node unschedulable error\n - ADDRESS_NODE_UNREACHABLE: Node unreachable error\n - ADDRESS_NODE_NOT_READY: Node not ready error\n - ADDRESS_FAILED_SCHEDULING: Scheduler failure error\n - CHECK_HOST_CONNECTION: Cluster Connectivity error"
+    },
+    "protoTriggerState": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "description": "TriggerState represents trigger state for a given phase."
     },
     "protobufAny": {
       "type": "object",

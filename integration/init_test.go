@@ -17,7 +17,10 @@ limitations under the License.
 package integration
 
 import (
+	"errors"
 	"io/ioutil"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -26,9 +29,7 @@ import (
 )
 
 func TestInitCompose(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		name string
@@ -57,9 +58,7 @@ func TestInitCompose(t *testing.T) {
 }
 
 func TestInitManifestGeneration(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		name                  string
@@ -97,6 +96,30 @@ func TestInitManifestGeneration(t *testing.T) {
 	}
 }
 
+func TestInitKustomize(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	testutil.Run(t, "kustomize init", func(t *testutil.T) {
+		dir := "examples/getting-started-kustomize"
+		ns, _ := SetupNamespace(t.T)
+
+		initArgs := []string{"--force"}
+		defer func() {
+			path := filepath.Join(dir, "skaffold.yaml.out")
+			_, err := os.Stat(path)
+			if os.IsNotExist(err) {
+				return
+			}
+			os.Remove(path)
+		}()
+		skaffold.Init(initArgs...).InDir(dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
+
+		checkGeneratedConfig(t, dir)
+
+		skaffold.Run().InDir(dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
+	})
+}
+
 func checkGeneratedConfig(t *testutil.T, dir string) {
 	expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml"))
 	t.CheckNoError(err)
@@ -115,4 +138,24 @@ func checkGeneratedManifests(t *testutil.T, dir string, manifestPaths []string) 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(string(expectedOutput), string(output))
 	}
+}
+
+func TestInitFailures(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	testutil.Run(t, "no builder", func(t *testutil.T) {
+		out, err := skaffold.Init().InDir("testdata/init/no-builder").RunWithCombinedOutput(t.T)
+
+		t.CheckContains("please provide at least one build config", string(out))
+		t.CheckDeepEqual(101, exitCode(err))
+	})
+}
+
+func exitCode(err error) int {
+	var exitErr *exec.ExitError
+	if ok := errors.As(err, &exitErr); ok {
+		return exitErr.ExitCode()
+	}
+
+	return 1
 }

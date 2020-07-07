@@ -8,7 +8,7 @@ weight: 30
 WARNING!!!
 
 The file docs/content/en/docs/references/api/grpc.md is generated based on proto/markdown.tmpl,
-and generated with hack/generate_protos.sh!
+and generated with ./hack/generate_proto.sh!
 Please edit the template file and not the markdown one directly!
 
 ******
@@ -40,12 +40,32 @@ Describes all the methods for the Skaffold API
 | EventLog | [LogEntry](#proto.LogEntry) stream | [LogEntry](#proto.LogEntry) stream | DEPRECATED. Events should be used instead. TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168) |
 | Events | [.google.protobuf.Empty](#google.protobuf.Empty) | [LogEntry](#proto.LogEntry) stream | Returns all the events of the current Skaffold execution from the start |
 | Execute | [UserIntentRequest](#proto.UserIntentRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled. |
+| AutoBuild | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic build trigger |
+| AutoSync | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic sync trigger |
+| AutoDeploy | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic deploy trigger |
 | Handle | [Event](#proto.Event) | [.google.protobuf.Empty](#google.protobuf.Empty) | EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example. |
 
  <!-- end services -->
 
 
 ### Data types
+
+
+
+<a name="proto.ActionableErr"></a>
+#### ActionableErr
+`ActionableErr` defines an error that occurred along with an optional list of suggestions
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| errCode | [StatusCode](#proto.StatusCode) |  | error code representing the error |
+| message | [string](#string) |  | message describing the error. |
+| suggestions | [Suggestion](#proto.Suggestion) | repeated | list of suggestions |
+
+
+
+
 
 
 
@@ -59,8 +79,9 @@ If the build fails, an error will be attached to the event.
 | ----- | ---- | ----- | ----------- |
 | artifact | [string](#string) |  | artifact name |
 | status | [string](#string) |  | artifact build status oneof: InProgress, Completed, Failed |
-| err | [string](#string) |  | error when build status is Failed. |
-| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. error when build status is Failed. |
+| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -76,7 +97,7 @@ If the build fails, an error will be attached to the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | numberOfArtifacts | [int32](#int32) |  |  |
-| builders | [BuildMetadata.Builder](#proto.BuildMetadata.Builder) | repeated |  |
+| builders | [BuildMetadata.ImageBuilder](#proto.BuildMetadata.ImageBuilder) | repeated |  |
 | type | [BuildType](#proto.BuildType) |  |  |
 | additional | [BuildMetadata.AdditionalEntry](#proto.BuildMetadata.AdditionalEntry) | repeated | Additional key value pairs to describe the deploy pipeline |
 
@@ -102,8 +123,8 @@ If the build fails, an error will be attached to the event.
 
 
 
-<a name="proto.BuildMetadata.Builder"></a>
-#### BuildMetadata.Builder
+<a name="proto.BuildMetadata.ImageBuilder"></a>
+#### BuildMetadata.ImageBuilder
 
 
 
@@ -126,6 +147,7 @@ If the build fails, an error will be attached to the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | artifacts | [BuildState.ArtifactsEntry](#proto.BuildState.ArtifactsEntry) | repeated | A map of `artifact name -> build-state`. Artifact name is defined in the `skaffold.yaml`. The `build-state` can be: <br> - `"Not started"`: not yet started <br> - `"In progress"`: build started <br> - `"Complete"`: build succeeded <br> - `"Failed"`: build failed |
+| autoTrigger | [bool](#bool) |  |  |
 
 
 
@@ -196,8 +218,9 @@ anytime a deployment starts or completes, successfully or not.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
-| err | [string](#string) |  | error when status is Failed |
-| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. error when status is Failed |
+| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -245,6 +268,7 @@ anytime a deployment starts or completes, successfully or not.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
+| autoTrigger | [bool](#bool) |  |  |
 
 
 
@@ -261,23 +285,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | iteration | [int32](#int32) |  | dev loop iteration. 0 represents initialization loop. |
 | status | [string](#string) |  | dev loop status oneof: In Progress, Completed, Failed |
-| err | [ErrDef](#proto.ErrDef) |  | actionable error message |
-
-
-
-
-
-
-
-<a name="proto.ErrDef"></a>
-#### ErrDef
-`ErrDef` defines an error occurred along with an optional suggestions
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| errCode | [StatusCode](#proto.StatusCode) |  | error code representing the error |
-| message | [string](#string) |  | message describing the error. |
+| err | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -319,8 +327,9 @@ FileSyncEvent describes the sync status.
 | fileCount | [int32](#int32) |  | number of files synced |
 | image | [string](#string) |  | the container image to which files are sycned. |
 | status | [string](#string) |  | status of file sync. one of: Not Started, In progress, Succeeded, Failed. |
-| err | [string](#string) |  | error in case of status failed. |
-| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. error in case of status failed. |
+| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -336,6 +345,7 @@ FileSyncEvent describes the sync status.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
+| autoTrigger | [bool](#bool) |  |  |
 
 
 
@@ -345,7 +355,7 @@ FileSyncEvent describes the sync status.
 
 <a name="proto.Intent"></a>
 #### Intent
-Intent represents user intents for a given phase to be unblocked, once.
+Intent represents user intents for a given phase.
 
 
 | Field | Type | Label | Description |
@@ -478,7 +488,9 @@ will be sent with the new status.
 | resource | [string](#string) |  |  |
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
-| err | [string](#string) |  |  |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. |
+| statusCode | [StatusCode](#proto.StatusCode) |  |  |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -562,8 +574,9 @@ will be sent with the new status.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
-| err | [string](#string) |  |  |
-| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. |
+| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -603,6 +616,52 @@ will be sent with the new status.
 
 
 
+<a name="proto.Suggestion"></a>
+#### Suggestion
+Suggestion defines the action a user needs to recover from an error.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| suggestionCode | [SuggestionCode](#proto.SuggestionCode) |  | code representing a suggestion |
+| action | [string](#string) |  | action represents the suggestion action |
+
+
+
+
+
+
+
+<a name="proto.TriggerRequest"></a>
+#### TriggerRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| state | [TriggerState](#proto.TriggerState) |  |  |
+
+
+
+
+
+
+
+<a name="proto.TriggerState"></a>
+#### TriggerState
+TriggerState represents trigger state for a given phase.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  | enable or disable a trigger state |
+
+
+
+
+
+
+
 <a name="proto.UserIntentRequest"></a>
 #### UserIntentRequest
 
@@ -625,7 +684,7 @@ will be sent with the new status.
 Enum indicating build type i.e. local, cluster vs GCB
 
 | Name | Number | Description |
-| ---- | ------ | ----------- |
+| ---- |:------:| ----------- |
 | UNKNOWN_BUILD_TYPE | 0 | Could not determine Build Type |
 | CLUSTER | 1 | Cluster Build |
 | GCB | 2 | GCB Build |
@@ -639,7 +698,7 @@ Enum indicating build type i.e. local, cluster vs GCB
 Enum indicating builders used
 
 | Name | Number | Description |
-| ---- | ------ | ----------- |
+| ---- |:------:| ----------- |
 | UNKNOWN_BUILDER_TYPE | 0 | Could not determine builder type |
 | JIB | 1 | JIB Builder |
 | BAZEL | 2 | Bazel Builder |
@@ -656,7 +715,7 @@ Enum indicating builders used
 Enum indicating cluster type the application is deployed to
 
 | Name | Number | Description |
-| ---- | ------ | ----------- |
+| ---- |:------:| ----------- |
 | UNKNOWN_CLUSTER_TYPE | 0 | Could not determine Cluster Type |
 | MINIKUBE | 1 | Minikube Cluster |
 | GKE | 2 | GKE cluster |
@@ -670,7 +729,7 @@ Enum indicating cluster type the application is deployed to
 Enum indicating deploy tools used
 
 | Name | Number | Description |
-| ---- | ------ | ----------- |
+| ---- |:------:| ----------- |
 | UNKNOWN_DEPLOYER_TYPE | 0 | Could not determine Deployer Type |
 | HELM | 1 | Helm Deployer |
 | KUSTOMIZE | 2 | Kustomize Deployer |
@@ -686,8 +745,8 @@ These error codes are prepended by Phase Name e.g.
 BUILD, DEPLOY, STATUSCHECK, DEVINIT
 
 | Name | Number | Description |
-| ---- | ------ | ----------- |
-| UNKNOWN_ERROR | 0 | Could not determine error and phase |
+| ---- |:------:| ----------- |
+| OK | 0 | A default status code for events that do not have an associated phase. Typically seen with the DevEndEvent event on success. |
 | STATUSCHECK_SUCCESS | 200 | Status Check Success |
 | BUILD_SUCCESS | 201 | Build Success |
 | BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
@@ -696,7 +755,9 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
 | STATUSCHECK_CONTAINER_TERMINATED | 303 | Container is already terminated |
+| STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING | 304 | Deployment waiting for rollout |
 | STATUSCHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
+| STATUSCHECK_UNHEALTHY | 357 | Readiness probe failed |
 | STATUSCHECK_NODE_MEMORY_PRESSURE | 400 | Node memory pressure error |
 | STATUSCHECK_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
 | STATUSCHECK_NODE_NETWORK_UNAVAILABLE | 402 | Node network unavailable error |
@@ -704,9 +765,14 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_NODE_UNSCHEDULABLE | 404 | Node unschedulable error |
 | STATUSCHECK_NODE_UNREACHABLE | 405 | Node unreachable error |
 | STATUSCHECK_NODE_NOT_READY | 406 | Node not ready error |
+| STATUSCHECK_FAILED_SCHEDULING | 407 | Scheduler failure error |
+| STATUSCHECK_KUBECTL_CONNECTION_ERR | 409 | Kubectl connection error |
+| STATUSCHECK_KUBECTL_PID_KILLED | 410 | Kubectl process killed error |
+| UNKNOWN_ERROR | 500 | Could not determine error and phase |
 | STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
 | STATUSCHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |
 | STATUSCHECK_CONTAINER_WAITING_UNKNOWN | 503 | Container is waiting due to unknown reason |
+| STATUSCHECK_UNKNOWN_EVENT | 509 | Container event reason unknown |
 | DEPLOY_UNKNOWN | 504 | Deploy failed due to unknown reason |
 | SYNC_UNKNOWN | 505 | SYNC failed due to known reason |
 | BUILD_UNKNOWN | 506 | Build failed due to unknown reason |
@@ -717,6 +783,37 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
 | DEVINIT_REGISTER_DEPLOY_DEPS | 703 | Failed to configure watcher for deploy dependencies in dev loop |
 | DEVINIT_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
+| STATUSCHECK_CONTEXT_CANCELLED | 800 | User cancelled the skaffold dev run |
+| STATUSCHECK_DEADLINE_EXCEEDED | 801 | Deadline for status check exceeded |
+
+
+
+<a name="proto.SuggestionCode"></a>
+
+### SuggestionCode
+Enum for Suggestion codes
+
+| Name | Number | Description |
+| ---- |:------:| ----------- |
+| NIL | 0 | default nil suggestion. This is usually set when no error happens. |
+| ADD_DEFAULT_REPO | 100 | Build error suggestion codes |
+| CHECK_DEFAULT_REPO | 101 |  |
+| CHECK_DEFAULT_REPO_GLOBAL_CONFIG | 102 |  |
+| GCLOUD_DOCKER_AUTH_CONFIGURE | 103 |  |
+| DOCKER_AUTH_CONFIGURE | 104 |  |
+| CHECK_GCLOUD_PROJECT | 105 |  |
+| CHECK_CONTAINER_LOGS | 301 | Container run error |
+| CHECK_READINESS_PROBE | 302 | Pod Health check error |
+| CHECK_CONTAINER_IMAGE | 303 | Check Container image |
+| ADDRESS_NODE_MEMORY_PRESSURE | 400 | Node pressure error |
+| ADDRESS_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
+| ADDRESS_NODE_NETWORK_UNAVAILABLE | 402 | Node network unavailable error |
+| ADDRESS_NODE_PID_PRESSURE | 403 | Node PID pressure error |
+| ADDRESS_NODE_UNSCHEDULABLE | 404 | Node unschedulable error |
+| ADDRESS_NODE_UNREACHABLE | 405 | Node unreachable error |
+| ADDRESS_NODE_NOT_READY | 406 | Node not ready error |
+| ADDRESS_FAILED_SCHEDULING | 407 | Scheduler failure error |
+| CHECK_HOST_CONNECTION | 408 | Cluster Connectivity error |
 
 
  <!-- end enums -->

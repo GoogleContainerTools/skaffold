@@ -27,12 +27,6 @@ import (
 // an image we parse out from a Kubernetes manifest
 const NoBuilder = "None (image not built from these sources)"
 
-type Error string
-
-func (e Error) Error() string { return string(e) }
-
-const ErrorNoBuilder = Error("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
-
 // InitBuilder represents a builder that can be chosen by skaffold init.
 type InitBuilder interface {
 	// Name returns the name of the builder.

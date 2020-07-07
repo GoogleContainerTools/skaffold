@@ -5,9 +5,13 @@ go 1.14
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.1+incompatible
 	github.com/containerd/containerd => github.com/containerd/containerd v1.3.4
-	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20190319215453-e7b5f7dbe98c
+	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20200221181110-62bd5a33f707
 	github.com/tektoncd/pipeline => github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
-	golang.org/x/sys => golang.org/x/sys v0.0.0-20190507160741-ecd444e8653b
+
+	// pin yamlv3 to parent of https://github.com/go-yaml/yaml/commit/ae27a744346343ea814bd6f3bdd41d8669b172d0
+	// Avoid indenting sequences.
+	gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+
 	k8s.io/api => k8s.io/api v0.17.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
 	k8s.io/client-go => k8s.io/client-go v0.17.4
@@ -23,8 +27,10 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.4
-	github.com/buildpacks/lifecycle v0.7.1
-	github.com/buildpacks/pack v0.10.0
+	github.com/buildpacks/imgutil v0.0.0-20200520132953-ba4f77a60397 // indirect
+	github.com/buildpacks/lifecycle v0.7.2
+	github.com/buildpacks/pack v0.11.3-0.20200701155454-2b1bc5eff635
+	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/docker/cli v0.0.0-20200312141509-ef2f64abbd37
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
@@ -64,12 +70,14 @@ require (
 	golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527
 	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
 	google.golang.org/api v0.21.0
 	google.golang.org/genproto v0.0.0-20200413115906-b5235f65be36
-	google.golang.org/grpc v1.28.1
+	google.golang.org/grpc v1.29.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c
 	k8s.io/api v0.18.1
 	k8s.io/apiextensions-apiserver v0.18.1 // indirect
 	k8s.io/apimachinery v0.18.1

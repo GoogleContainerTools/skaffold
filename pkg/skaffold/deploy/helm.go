@@ -20,7 +20,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -31,11 +30,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/blang/semver"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -47,24 +47,29 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 var (
 	// versionRegex extracts version from "helm version --client", for instance: "2.14.0-rc.2"
-	versionRegex = regexp.MustCompile(`\"v(\d[\w\.\-\.]+)`)
+	versionRegex = regexp.MustCompile(`v(\d[\w.\-]+)`)
 
 	// helm3Version represents the version cut-off for helm3 behavior
 	helm3Version = semver.MustParse("3.0.0-beta.0")
+
+	// error to throw when helm version can't be determined
+	versionErrorString = "failed to determine binary version: %w"
 )
 
 // HelmDeployer deploys workflows using the helm CLI
 type HelmDeployer struct {
 	*latest.HelmDeploy
 
-	kubeContext string
-	kubeConfig  string
-	namespace   string
-	forceDeploy bool
+	kubeContext       string
+	kubeConfig        string
+	namespace         string
+	forceDeploy       bool
+	addSkaffoldLabels bool
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
@@ -76,11 +81,12 @@ type HelmDeployer struct {
 // NewHelmDeployer returns a configured HelmDeployer
 func NewHelmDeployer(runCtx *runcontext.RunContext) *HelmDeployer {
 	return &HelmDeployer{
-		HelmDeploy:  runCtx.Cfg.Deploy.HelmDeploy,
-		kubeContext: runCtx.KubeContext,
-		kubeConfig:  runCtx.Opts.KubeConfig,
-		namespace:   runCtx.Opts.Namespace,
-		forceDeploy: runCtx.Opts.Force,
+		HelmDeploy:        runCtx.Cfg.Deploy.HelmDeploy,
+		kubeContext:       runCtx.KubeContext,
+		kubeConfig:        runCtx.Opts.KubeConfig,
+		namespace:         runCtx.Opts.Namespace,
+		forceDeploy:       runCtx.Opts.Force,
+		addSkaffoldLabels: runCtx.Opts.AddSkaffoldLabels,
 	}
 }
 
@@ -97,7 +103,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 
 	hv, err := h.binVer(ctx)
 	if err != nil {
-		return NewDeployErrorResult(fmt.Errorf("failed to determine binary version: %w", err))
+		return NewDeployErrorResult(fmt.Errorf(versionErrorString, err))
 	}
 	logrus.Infof("Deploying with helm v%s ...", hv)
 
@@ -127,17 +133,17 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 
 	// Let's make sure that every image tag is set with `--set`.
 	// Otherwise, templates have no way to use the images that were built.
-	for _, build := range builds {
-		if !valuesSet[build.Tag] {
-			warnings.Printf("image [%s] is not used.", build.Tag)
-			warnings.Printf("image [%s] is used instead.", build.ImageName)
+	for _, b := range builds {
+		if !valuesSet[b.Tag] {
+			warnings.Printf("image [%s] is not used.", b.Tag)
+			warnings.Printf("image [%s] is used instead.", b.ImageName)
 			warnings.Printf("See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml")
 		}
 	}
 
 	event.DeployComplete()
 
-	labels := merge(h, labellers...)
+	labels := merge(h.addSkaffoldLabels, h, labellers...)
 	labelDeployResults(labels, dRes)
 
 	// Collect namespaces in a string
@@ -162,14 +168,43 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 			continue
 		}
 
-		chartDepsDir := filepath.Join(release.ChartPath, "charts")
+		chartDepsDirs := []string{
+			"charts",
+			"tmpcharts",
+		}
 
-		// We can always add a dependency if it is not contained in our chartDepsDir.
+		lockFiles := []string{
+			"Chart.lock",
+			"requirements.lock",
+		}
+
+		// We can always add a dependency if it is not contained in our chartDepsDirs.
 		// However, if the file is in our chartDepsDir, we can only include the file
 		// if we are not running the helm dep build phase, as that modifies files inside
 		// the chartDepsDir and results in an infinite build loop.
+		// We additionally exclude ChartFile.lock (Helm 3) and requirements.lock (Helm 2)
+		// since they also get modified on helm dep build phase
 		isDep := func(path string, info walk.Dirent) (bool, error) {
-			return !info.IsDir() && (!strings.HasPrefix(path, chartDepsDir) || r.SkipBuildDependencies), nil
+			if info.IsDir() {
+				return false, nil
+			}
+			if r.SkipBuildDependencies {
+				return true, nil
+			}
+
+			for _, v := range chartDepsDirs {
+				if strings.HasPrefix(path, filepath.Join(release.ChartPath, v)) {
+					return false, nil
+				}
+			}
+
+			for _, v := range lockFiles {
+				if strings.EqualFold(info.Name(), v) {
+					return false, nil
+				}
+			}
+
+			return true, nil
 		}
 
 		if err := walk.From(release.ChartPath).When(isDep).AppendPaths(&deps); err != nil {
@@ -184,7 +219,7 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	hv, err := h.binVer(ctx)
 	if err != nil {
-		return fmt.Errorf("binary version: %w", err)
+		return fmt.Errorf(versionErrorString, err)
 	}
 
 	for _, r := range h.Releases {
@@ -194,10 +229,10 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		}
 
 		var namespace string
-		if r.Namespace != "" {
-			namespace = r.Namespace
-		} else if h.namespace != "" {
+		if h.namespace != "" {
 			namespace = h.namespace
+		} else if r.Namespace != "" {
+			namespace = r.Namespace
 		}
 
 		args := []string{"delete", releaseName}
@@ -214,8 +249,61 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 // Render generates the Kubernetes manifests and writes them out
-func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, []Labeller, string) error {
-	return errors.New("not yet implemented")
+func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, offline bool, filepath string) error {
+	hv, err := h.binVer(ctx)
+	if err != nil {
+		return fmt.Errorf(versionErrorString, err)
+	}
+
+	renderedManifests := new(bytes.Buffer)
+
+	for _, r := range h.Releases {
+		args := []string{"template", r.ChartPath}
+
+		if hv.GTE(helm3Version) {
+			// Helm 3 requires the name to be before the chart path
+			args = append(args[:1], append([]string{r.Name}, args[1:]...)...)
+		} else {
+			args = append(args, "--name", r.Name)
+		}
+
+		for _, vf := range r.ValuesFiles {
+			args = append(args, "--values", vf)
+		}
+
+		params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
+		if err != nil {
+			return fmt.Errorf("matching build results to chart values: %w", err)
+		}
+
+		for k, v := range params {
+			var value string
+
+			cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
+
+			value, err = imageSetFromConfig(cfg, k, v.Tag)
+			if err != nil {
+				return err
+			}
+
+			args = append(args, "--set-string", value)
+		}
+
+		args, err = constructOverrideArgs(&r, builds, args, func(string) {})
+		if err != nil {
+			return err
+		}
+
+		if r.Namespace != "" {
+			args = append(args, "--namespace", r.Namespace)
+		}
+
+		if err := h.exec(ctx, renderedManifests, false, args...); err != nil {
+			return err
+		}
+	}
+
+	return outputRenderedManifests(renderedManifests.String(), filepath, out)
 }
 
 // exec executes the helm command, writing combined stdout/stderr to the provided writer
@@ -267,6 +355,14 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 
 		opts.upgrade = false
 		opts.flags = h.Flags.Install
+	} else {
+		if r.UpgradeOnChange != nil && !*r.UpgradeOnChange {
+			logrus.Infof("Release %s already installed...", releaseName)
+			return []Artifact{}, nil
+		} else if r.UpgradeOnChange == nil && r.Remote {
+			logrus.Infof("Release %s not upgraded as it is remote...", releaseName)
+			return []Artifact{}, nil
+		}
 	}
 
 	// Only build local dependencies, but allow a user to skip them.
@@ -308,18 +404,37 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		return nil, fmt.Errorf("release args: %w", err)
 	}
 
-	iErr := h.exec(ctx, out, r.UseHelmSecrets, args...)
+	err = h.exec(ctx, out, r.UseHelmSecrets, args...)
+	if err != nil {
+		return nil, fmt.Errorf("install: %w", err)
+	}
 
-	var b bytes.Buffer
-
-	// Be accepting of failure
-	if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, opts.namespace)...); err != nil {
-		logrus.Warnf(err.Error())
-		return nil, nil
+	b, err := h.getRelease(ctx, helmVersion, releaseName, opts.namespace)
+	if err != nil {
+		return nil, fmt.Errorf("get release: %w", err)
 	}
 
 	artifacts := parseReleaseInfo(opts.namespace, bufio.NewReader(&b))
-	return artifacts, iErr
+	return artifacts, nil
+}
+
+// getRelease confirms that a release is visible to helm
+func (h *HelmDeployer) getRelease(ctx context.Context, helmVersion semver.Version, releaseName string, namespace string) (bytes.Buffer, error) {
+	// Retry, because under Helm 2, at least, a release may not be immediately visible
+	opts := backoff.NewExponentialBackOff()
+	opts.MaxElapsedTime = 4 * time.Second
+	var b bytes.Buffer
+
+	err := backoff.Retry(
+		func() error {
+			if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, namespace)...); err != nil {
+				logrus.Debugf("unable to get release: %v (may retry):\n%s", err, b.String())
+				return err
+			}
+			return nil
+		}, opts)
+
+	return b, err
 }
 
 // binVer returns the version of the helm binary found in PATH. May be cached.
@@ -330,8 +445,8 @@ func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
 	}
 
 	var b bytes.Buffer
-	// Omits --client & --short, as some versions do not support it (v3.0.0-beta, for instance)
-	if err := h.exec(ctx, &b, false, "version"); err != nil {
+	// Only 3.0.0-beta doesn't support --client
+	if err := h.exec(ctx, &b, false, "version", "--client"); err != nil {
 		return semver.Version{}, fmt.Errorf("helm version command failed %q: %w", b.String(), err)
 	}
 	raw := b.String()
@@ -400,7 +515,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		args = append(args, "--namespace", o.namespace)
 	}
 
-	params, err := pairParamsToArtifacts(builds, r.Values)
+	params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
 	if err != nil {
 		return nil, fmt.Errorf("matching build results to chart values: %w", err)
 	}
@@ -423,18 +538,34 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		args = append(args, "--set-string", value)
 	}
 
+	args, err = constructOverrideArgs(&r, builds, args, func(k string) {
+		valuesSet[k] = true
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if r.Wait {
+		args = append(args, "--wait")
+	}
+
+	return args, nil
+}
+
+// constructOverrideArgs creates the command line arguments for overrides
+func constructOverrideArgs(r *latest.HelmRelease, builds []build.Artifact, args []string, record func(string)) ([]string, error) {
 	sortedKeys := make([]string, 0, len(r.SetValues))
 	for k := range r.SetValues {
 		sortedKeys = append(sortedKeys, k)
 	}
 	sort.Strings(sortedKeys)
 	for _, k := range sortedKeys {
-		valuesSet[r.SetValues[k]] = true
+		record(r.SetValues[k])
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
 	}
 
 	for k, v := range r.SetFiles {
-		valuesSet[v] = true
+		record(v)
 		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, v))
 	}
 
@@ -462,7 +593,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 			return nil, err
 		}
 
-		valuesSet[v] = true
+		record(v)
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
 	}
 
@@ -479,11 +610,6 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 
 		args = append(args, "-f", exp)
 	}
-
-	if r.Wait {
-		args = append(args, "--wait")
-	}
-
 	return args, nil
 }
 
@@ -504,6 +630,16 @@ func envVarForImage(imageName string, digest string) map[string]string {
 	customMap := map[string]string{
 		"IMAGE_NAME": imageName,
 		"DIGEST":     digest, // The `DIGEST` name is kept for compatibility reasons
+	}
+
+	// Standardize access to Image reference fields in templates
+	ref, err := docker.ParseReference(digest)
+	if err == nil {
+		customMap[constants.ImageRef.Repo] = ref.BaseName
+		customMap[constants.ImageRef.Tag] = ref.Tag
+		customMap[constants.ImageRef.Digest] = ref.Digest
+	} else {
+		logrus.Warnf("unable to extract values for %v, %v and %v from image %v due to error:\n%v", constants.ImageRef.Repo, constants.ImageRef.Tag, constants.ImageRef.Digest, digest, err)
 	}
 
 	if digest == "" {
