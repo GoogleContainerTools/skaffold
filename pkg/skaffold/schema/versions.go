@@ -59,6 +59,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta4"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta5"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -99,6 +100,7 @@ var SchemaVersions = Versions{
 	{v2beta2.Version, v2beta2.NewSkaffoldConfig},
 	{v2beta3.Version, v2beta3.NewSkaffoldConfig},
 	{v2beta4.Version, v2beta4.NewSkaffoldConfig},
+	{v2beta5.Version, v2beta5.NewSkaffoldConfig},
 	{latest.Version, latest.NewSkaffoldConfig},
 }
 
