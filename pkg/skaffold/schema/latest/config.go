@@ -273,6 +273,9 @@ type GoogleCloudBuild struct {
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `0`.
 	Concurrency int `yaml:"concurrency,omitempty"`
+
+	// WorkerPool configures a pool of workers to run the build.
+	WorkerPool string `yaml:"workerPool,omitempty"`
 }
 
 // KanikoCache configures Kaniko caching. If a cache is specified, Kaniko will

@@ -1057,6 +1057,11 @@
           "type": "string",
           "description": "amount of time (in seconds) that this build should be allowed to run. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build).",
           "x-intellij-html-description": "amount of time (in seconds) that this build should be allowed to run. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build\">Cloud Build Reference</a>."
+        },
+        "workerPool": {
+          "type": "string",
+          "description": "configures a pool of workers to run the build.",
+          "x-intellij-html-description": "configures a pool of workers to run the build."
         }
       },
       "preferredOrder": [
@@ -1071,7 +1076,8 @@
         "mavenImage",
         "gradleImage",
         "packImage",
-        "concurrency"
+        "concurrency",
+        "workerPool"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/docs/). Docker and Jib artifacts can be built on Cloud Build. The `projectId` needs to be provided and the currently logged in user should be given permissions to trigger new builds.",
