@@ -470,12 +470,18 @@ func TestKustomizeBuildCommandArgs(t *testing.T) {
 }
 
 type testLabels struct {
-	labels map[string]string
+	labels      map[string]string
+	annotations map[string]string
 }
 
 func (t *testLabels) Labels() map[string]string {
 	return t.labels
 }
+
+func (t *testLabels) Annotations() map[string]string {
+	return t.annotations
+}
+
 func TestKustomizeRender(t *testing.T) {
 	type kustomizationCall struct {
 		folder      string
@@ -520,7 +526,7 @@ spec:
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kustomize
   namespace: default
 spec:
@@ -568,8 +574,9 @@ spec:
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kustomize
+  labels:
     user/label: test
   namespace: default
 spec:
@@ -621,7 +628,7 @@ spec:
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kustomize
   namespace: default
 spec:
@@ -632,7 +639,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kustomize
   namespace: default
 spec:

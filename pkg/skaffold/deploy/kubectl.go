@@ -76,6 +76,10 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 }
 
 func (k *KubectlDeployer) Labels() map[string]string {
+	return map[string]string{}
+}
+
+func (k *KubectlDeployer) Annotations() map[string]string {
 	return map[string]string{
 		constants.Labels.Deployer: "kubectl",
 	}
@@ -298,7 +302,7 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 		}
 	}
 
-	manifests, err = manifests.SetLabels(merge(k.addSkaffoldLabels, k, labellers...))
+	manifests, err = manifests.SetLabelsAndAnnotations(merge(k.addSkaffoldLabels, k, labellers...))
 	if err != nil {
 		return nil, fmt.Errorf("setting labels in manifests: %w", err)
 	}

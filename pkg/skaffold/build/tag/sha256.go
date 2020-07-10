@@ -26,6 +26,11 @@ type ChecksumTagger struct{}
 
 // Labels are labels specific to the sha256 tagger.
 func (c *ChecksumTagger) Labels() map[string]string {
+	return map[string]string{}
+}
+
+// Labels are labels specific to the sha256 tagger.
+func (c *ChecksumTagger) Annotations() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "sha256",
 	}

@@ -60,6 +60,11 @@ func NewGitCommit(prefix, variant string) (*GitCommit, error) {
 
 // Labels are labels specific to the git tagger.
 func (c *GitCommit) Labels() map[string]string {
+	return map[string]string{}
+}
+
+// Labels are labels specific to the git tagger.
+func (c *GitCommit) Annotations() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "git-commit",
 	}

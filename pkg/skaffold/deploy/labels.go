@@ -41,25 +41,32 @@ type Artifact struct {
 	Namespace string
 }
 
-// Labeller can give key/value labels to set on deployed resources.
+// Labeller can give key/value labels and annotations to set on deployed resources.
 type Labeller interface {
 	// Labels keys must be prefixed with "skaffold.dev/"
 	Labels() map[string]string
+
+	Annotations() map[string]string
 }
 
 // merge merges the labels from multiple sources.
-func merge(addSkaffoldLabels bool, deployer Labeller, sources ...Labeller) map[string]string {
+func merge(addSkaffoldLabels bool, deployer Labeller, sources ...Labeller) (map[string]string, map[string]string) {
 	if !addSkaffoldLabels {
-		return map[string]string{}
+		return map[string]string{}, map[string]string{}
 	}
 
-	merged := deployer.Labels()
+	mergedLabels := deployer.Labels()
 
 	for _, src := range sources {
-		copyMap(merged, src.Labels())
+		copyMap(mergedLabels, src.Labels())
 	}
 
-	return merged
+	mergedAnnotations := deployer.Annotations()
+	for _, src := range sources {
+		copyMap(mergedAnnotations, src.Annotations())
+	}
+
+	return mergedLabels, mergedAnnotations
 }
 
 // retry 3 times to give the object time to propagate to the API server
@@ -68,7 +75,7 @@ const (
 	sleeptime = 300 * time.Millisecond
 )
 
-func labelDeployResults(labels map[string]string, results []Artifact) {
+func labelAndAnnotateDeployResults(labels, annotations map[string]string, results []Artifact) {
 	// use the kubectl client to update all k8s objects with a skaffold watermark
 	dynClient, err := kubernetes.DynamicClient()
 	if err != nil {
@@ -85,7 +92,7 @@ func labelDeployResults(labels map[string]string, results []Artifact) {
 	for _, res := range results {
 		err = nil
 		for i := 0; i < tries; i++ {
-			if err = updateRuntimeObject(dynClient, client.Discovery(), labels, res); err == nil {
+			if err = updateRuntimeObject(dynClient, client.Discovery(), labels, annotations, res); err == nil {
 				break
 			}
 			time.Sleep(sleeptime)
@@ -105,7 +112,16 @@ func addLabels(labels map[string]string, accessor metav1.Object) {
 	accessor.SetLabels(kv)
 }
 
-func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInterface, labels map[string]string, res Artifact) error {
+func addAnnotations(annotations map[string]string, accessor metav1.Object) {
+	kv := make(map[string]string)
+
+	copyMap(kv, annotations)
+	copyMap(kv, accessor.GetAnnotations())
+
+	accessor.SetAnnotations(kv)
+}
+
+func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInterface, labels, annotations map[string]string, res Artifact) error {
 	originalJSON, _ := json.Marshal(res.Obj)
 	modifiedObj := res.Obj.DeepCopyObject()
 	accessor, err := meta.Accessor(modifiedObj)
@@ -115,6 +131,7 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 	name := accessor.GetName()
 
 	addLabels(labels, accessor)
+	addAnnotations(annotations, accessor)
 
 	modifiedJSON, _ := json.Marshal(modifiedObj)
 	p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, modifiedObj)

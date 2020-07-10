@@ -50,6 +50,10 @@ func TestLabelDeployResults(t *testing.T) {
 		existingLabels map[string]string
 		appliedLabels  map[string]string
 		expectedLabels map[string]string
+
+		existingAnnotations map[string]string
+		appliedAnnotations  map[string]string
+		expectedAnnotations map[string]string
 	}{
 		{
 			description:    "set labels",
@@ -77,6 +81,32 @@ func TestLabelDeployResults(t *testing.T) {
 				"key1": "value1",
 			},
 		},
+		{
+			description:         "set annotations",
+			existingAnnotations: map[string]string{},
+			appliedAnnotations: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+			expectedAnnotations: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+		},
+		{
+			description: "add annotations",
+			existingAnnotations: map[string]string{
+				"key0": "value0",
+			},
+			appliedAnnotations: map[string]string{
+				"key0": "should-be-ignored",
+				"key1": "value1",
+			},
+			expectedAnnotations: map[string]string{
+				"key0": "value0",
+				"key1": "value1",
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -87,8 +117,9 @@ func TestLabelDeployResults(t *testing.T) {
 					Kind:       "Deployment",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name:   "foo",
-					Labels: test.existingLabels,
+					Name:        "foo",
+					Labels:      test.existingLabels,
+					Annotations: test.existingAnnotations,
 				},
 			}
 
@@ -106,12 +137,13 @@ func TestLabelDeployResults(t *testing.T) {
 			t.Override(&k8s.DynamicClient, mockDynamicClient(dynClient))
 
 			// Patch labels
-			labelDeployResults(test.appliedLabels, []Artifact{{Obj: dep}})
+			labelAndAnnotateDeployResults(test.appliedLabels, test.appliedAnnotations, []Artifact{{Obj: dep}})
 
 			// Check modified value
 			modified, err := dynClient.Resource(schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}).Get("foo", metav1.GetOptions{})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedLabels, modified.GetLabels())
+			t.CheckDeepEqual(test.expectedAnnotations, modified.GetAnnotations())
 		})
 	}
 }

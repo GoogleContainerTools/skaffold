@@ -22,7 +22,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestSetLabels(t *testing.T) {
+func TestSetLabelsAndAnnotations(t *testing.T) {
 	manifests := ManifestList{[]byte(`
 apiVersion: v1
 kind: Pod
@@ -38,6 +38,9 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  annotations:
+    key1: value1
+    key2: value2
   labels:
     key1: value1
     key2: value2
@@ -48,7 +51,10 @@ spec:
     name: example
 `)}
 
-	resultManifest, err := manifests.SetLabels(map[string]string{
+	resultManifest, err := manifests.SetLabelsAndAnnotations(map[string]string{
+		"key1": "value1",
+		"key2": "value2",
+	}, map[string]string{
 		"key1": "value1",
 		"key2": "value2",
 	})
@@ -56,11 +62,13 @@ spec:
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }
 
-func TestAddLabels(t *testing.T) {
+func TestAddLabelsAndAnnotations(t *testing.T) {
 	manifests := ManifestList{[]byte(`
 apiVersion: v1
 kind: Pod
 metadata:
+  annotations:
+    key0: value0
   labels:
     key0: value0
   name: getting-started
@@ -74,6 +82,10 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  annotations:
+    key0: value0
+    key1: value1
+    key2: value2
   labels:
     key0: value0
     key1: value1
@@ -85,7 +97,11 @@ spec:
     name: example
 `)}
 
-	resultManifest, err := manifests.SetLabels(map[string]string{
+	resultManifest, err := manifests.SetLabelsAndAnnotations(map[string]string{
+		"key0": "should-be-ignored",
+		"key1": "value1",
+		"key2": "value2",
+	}, map[string]string{
 		"key0": "should-be-ignored",
 		"key1": "value1",
 		"key2": "value2",
@@ -94,7 +110,7 @@ spec:
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }
 
-func TestSetNoLabel(t *testing.T) {
+func TestSetNoLabelOrAnnotation(t *testing.T) {
 	manifests := ManifestList{[]byte(`
 apiVersion: v1
 kind: Pod
@@ -117,12 +133,12 @@ spec:
     name: example
 `)}
 
-	resultManifest, err := manifests.SetLabels(nil)
+	resultManifest, err := manifests.SetLabelsAndAnnotations(nil, nil)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }
 
-func TestSetNoLabelWhenTypeUnexpected(t *testing.T) {
+func TestSetNoLabelOrAnnotationWhenTypeUnexpected(t *testing.T) {
 	manifests := ManifestList{[]byte(`
 apiVersion: v1
 kind: Pod
@@ -132,16 +148,17 @@ metadata: 3
 apiVersion: v1
 kind: Pod
 metadata:
+  annotations: 3
   labels: 3
   name: getting-started
 `)}
 
-	resultManifest, err := manifests.SetLabels(map[string]string{"key0": "value0"})
+	resultManifest, err := manifests.SetLabelsAndAnnotations(map[string]string{"key0": "value0"}, map[string]string{"key0": "value0"})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), resultManifest.String())
 }
 
-func TestSetNoLabelInCRDSchema(t *testing.T) {
+func TestSetLabelAndAnnotationInCRDSchema(t *testing.T) {
 	manifests := ManifestList{[]byte(`apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
@@ -163,6 +180,9 @@ spec:
 	expected := ManifestList{[]byte(`apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    key0: value0
+    key1: value1
   labels:
     key0: value0
     key1: value1
@@ -181,7 +201,10 @@ spec:
         metadata:
           type: object`)}
 
-	resultManifest, err := manifests.SetLabels(map[string]string{
+	resultManifest, err := manifests.SetLabelsAndAnnotations(map[string]string{
+		"key0": "value0",
+		"key1": "value1",
+	}, map[string]string{
 		"key0": "value0",
 		"key1": "value1",
 	})

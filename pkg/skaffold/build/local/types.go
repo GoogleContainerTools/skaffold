@@ -95,6 +95,10 @@ func (b *Builder) PushImages() bool {
 
 // Labels are labels specific to local builder.
 func (b *Builder) Labels() map[string]string {
+	return map[string]string{}
+}
+
+func (b *Builder) Annotations() map[string]string {
 	labels := map[string]string{
 		constants.Labels.Builder: "local",
 	}

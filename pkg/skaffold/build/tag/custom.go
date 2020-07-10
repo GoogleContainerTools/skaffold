@@ -28,6 +28,10 @@ type CustomTag struct {
 }
 
 func (c *CustomTag) Labels() map[string]string {
+	return map[string]string{}
+}
+
+func (c *CustomTag) Annotations() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "custom",
 	}

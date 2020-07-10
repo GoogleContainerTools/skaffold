@@ -23,8 +23,8 @@ import (
 )
 
 // SetLabels add labels to a list of Kubernetes manifests.
-func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error) {
-	replacer := newLabelsSetter(labels)
+func (l *ManifestList) SetLabelsAndAnnotations(labels, annotations map[string]string) (ManifestList, error) {
+	replacer := newLabelsAndAnnotationsSetter(labels, annotations)
 
 	updated, err := l.Visit(replacer)
 	if err != nil {
@@ -36,23 +36,21 @@ func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error)
 	return updated, nil
 }
 
-type labelsSetter struct {
-	labels map[string]string
+type labelsAndAnnotationsSetter struct {
+	labels      map[string]string
+	annotations map[string]string
 }
 
-func newLabelsSetter(labels map[string]string) *labelsSetter {
-	return &labelsSetter{
-		labels: labels,
+func newLabelsAndAnnotationsSetter(labels, annotations map[string]string) *labelsAndAnnotationsSetter {
+	return &labelsAndAnnotationsSetter{
+		labels:      labels,
+		annotations: annotations,
 	}
 }
 
-func (r *labelsSetter) Visit(o map[string]interface{}, k string, v interface{}) bool {
+func (r *labelsAndAnnotationsSetter) Visit(o map[string]interface{}, k string, v interface{}) bool {
 	if k != "metadata" {
 		return true
-	}
-
-	if len(r.labels) == 0 {
-		return false
 	}
 
 	metadata, ok := v.(map[string]interface{})
@@ -60,21 +58,32 @@ func (r *labelsSetter) Visit(o map[string]interface{}, k string, v interface{}) 
 		return true
 	}
 
-	l, present := metadata["labels"]
-	if !present {
-		metadata["labels"] = r.labels
+	if visitAndReplace("labels", r.labels, &metadata) {
+		return true
+	}
+	return visitAndReplace("annotations", r.annotations, &metadata)
+}
+
+func visitAndReplace(fieldName string, values map[string]string, metadata *map[string]interface{}) bool {
+	if len(values) == 0 {
 		return false
 	}
 
-	labels, ok := l.(map[string]interface{})
+	field, present := (*metadata)[fieldName]
+	if !present {
+		(*metadata)[fieldName] = values
+		return false
+	}
+
+	existingValues, ok := field.(map[string]interface{})
 	if !ok {
 		return true
 	}
 
-	for k, v := range r.labels {
-		// Don't replace existing label.
-		if _, present := labels[k]; !present {
-			labels[k] = v
+	for k, v := range values {
+		// Don't overwrite existing values
+		if _, present := existingValues[k]; !present {
+			existingValues[k] = v
 		}
 	}
 

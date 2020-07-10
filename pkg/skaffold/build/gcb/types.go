@@ -93,6 +93,10 @@ func NewBuilder(runCtx *runcontext.RunContext) *Builder {
 
 // Labels are labels specific to Google Cloud Build.
 func (b *Builder) Labels() map[string]string {
+	return nil
+}
+
+func (b *Builder) Annotations() map[string]string {
 	return map[string]string{
 		constants.Labels.Builder: "google-cloud-build",
 	}

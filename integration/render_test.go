@@ -68,7 +68,7 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kubectl
   name: my-pod-123
   namespace: default
@@ -105,7 +105,7 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kubectl
   name: my-pod-123
   namespace: default
@@ -150,7 +150,7 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kubectl
   name: my-pod-123
   namespace: default
@@ -162,7 +162,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kubectl
   name: my-pod-456
   namespace: default

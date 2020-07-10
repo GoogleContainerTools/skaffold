@@ -56,6 +56,10 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 
 // Labels are labels specific to cluster builder.
 func (b *Builder) Labels() map[string]string {
+	return map[string]string{}
+}
+
+func (b *Builder) Annotations() map[string]string {
 	return map[string]string{
 		constants.Labels.Builder: "cluster",
 	}

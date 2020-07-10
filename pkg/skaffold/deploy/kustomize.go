@@ -119,6 +119,10 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 
 // Labels returns the labels specific to kustomize.
 func (k *KustomizeDeployer) Labels() map[string]string {
+	return map[string]string{}
+}
+
+func (k *KustomizeDeployer) Annotations() map[string]string {
 	return map[string]string{
 		constants.Labels.Deployer: "kustomize",
 	}
@@ -186,7 +190,7 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 		}
 	}
 
-	manifests, err = manifests.SetLabels(merge(k.addSkaffoldLabels, k, labellers...))
+	manifests, err = manifests.SetLabelsAndAnnotations(merge(k.addSkaffoldLabels, k, labellers...))
 	if err != nil {
 		return nil, fmt.Errorf("setting labels in manifests: %w", err)
 	}

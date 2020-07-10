@@ -363,7 +363,7 @@ func TestKubectlRedeploy(t *testing.T) {
 			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kubectl
   name: leeroy-app
 spec:
@@ -374,7 +374,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kubectl
   name: leeroy-web
 spec:
@@ -385,7 +385,7 @@ spec:
 			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kubectl
   name: leeroy-app
 spec:
@@ -535,7 +535,7 @@ spec:
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kubectl
   namespace: default
 spec:
@@ -570,7 +570,7 @@ spec:
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kubectl
   namespace: default
 spec:
@@ -598,7 +598,7 @@ spec:
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
+  annotations:
     skaffold.dev/deployer: kubectl
   namespace: default
 spec:

@@ -56,23 +56,10 @@ func NewLabeller(opts config.SkaffoldOptions) *DefaultLabeller {
 
 func (d *DefaultLabeller) Labels() map[string]string {
 	labels := map[string]string{
-		K8sManagedByLabelKey: fmt.Sprintf("skaffold-%s", d.version),
+		K8sManagedByLabelKey: "skaffold",
 		RunIDLabel:           d.runID,
 	}
 
-	if d.opts.Cleanup {
-		labels["skaffold.dev/cleanup"] = "true"
-	}
-	if d.opts.Tail {
-		labels["skaffold.dev/tail"] = "true"
-	}
-	if d.opts.Namespace != "" {
-		labels["skaffold.dev/namespace"] = d.opts.Namespace
-	}
-	for i, profile := range d.opts.Profiles {
-		key := fmt.Sprintf("skaffold.dev/profile.%d", i)
-		labels[key] = profile
-	}
 	for _, cl := range d.opts.CustomLabels {
 		l := strings.SplitN(cl, "=", 2)
 		if len(l) == 1 {
@@ -82,6 +69,25 @@ func (d *DefaultLabeller) Labels() map[string]string {
 		labels[l[0]] = l[1]
 	}
 	return labels
+}
+
+func (d *DefaultLabeller) Annotations() map[string]string {
+	annotations := map[string]string{}
+
+	if d.opts.Cleanup {
+		annotations["skaffold.dev/cleanup"] = "true"
+	}
+	if d.opts.Tail {
+		annotations["skaffold.dev/tail"] = "true"
+	}
+	if d.opts.Namespace != "" {
+		annotations["skaffold.dev/namespace"] = d.opts.Namespace
+	}
+	for i, profile := range d.opts.Profiles {
+		key := fmt.Sprintf("skaffold.dev/profile.%d", i)
+		annotations[key] = profile
+	}
+	return annotations
 }
 
 func (d *DefaultLabeller) RunIDSelector() string {

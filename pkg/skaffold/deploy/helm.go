@@ -92,6 +92,10 @@ func NewHelmDeployer(runCtx *runcontext.RunContext) *HelmDeployer {
 
 // Labels returns the Kubernetes labels used by this deployer
 func (h *HelmDeployer) Labels() map[string]string {
+	return map[string]string{}
+}
+
+func (h *HelmDeployer) Annotations() map[string]string {
 	return map[string]string{
 		constants.Labels.Deployer: "helm",
 	}
@@ -143,8 +147,8 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 
 	event.DeployComplete()
 
-	labels := merge(h.addSkaffoldLabels, h, labellers...)
-	labelDeployResults(labels, dRes)
+	labels, annotations := merge(h.addSkaffoldLabels, h, labellers...)
+	labelAndAnnotateDeployResults(labels, annotations, dRes)
 
 	// Collect namespaces in a string
 	namespaces := make([]string, 0, len(nsMap))

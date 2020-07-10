@@ -37,6 +37,8 @@ type Artifact struct {
 type Builder interface {
 	Labels() map[string]string
 
+	Annotations() map[string]string
+
 	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error)
 
 	// Prune removes images built with Skaffold
