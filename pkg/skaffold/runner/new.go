@@ -78,10 +78,9 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
 
-	defaultLabeller := deploy.NewLabeller(runCtx.Opts)
 	// runCtx.Opts is last to let users override/remove any label
-	// deployer labels are added during deployment
-	labellers := []deploy.Labeller{builder, tagger, defaultLabeller}
+	defaultLabeller := deploy.NewLabeller(runCtx.Opts.CustomLabels)
+	labeller := defaultLabeller
 
 	builder, tester, deployer = WithTimings(builder, tester, deployer, runCtx.Opts.CacheArtifacts)
 	if runCtx.Opts.Notification {
@@ -112,7 +111,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 			intentChan: intentChan,
 		},
 		kubectlCLI:      kubectlCLI,
-		labellers:       labellers,
+		labeller:        labeller,
 		defaultLabeller: defaultLabeller,
 		podSelector:     kubernetes.NewImageList(),
 		cache:           artifactCache,
@@ -192,18 +191,19 @@ func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
 }
 
 func getDeployer(runCtx *runcontext.RunContext) deploy.Deployer {
+	labels := deploy.NewLabeller(runCtx.Opts.CustomLabels).Labels()
 	var deployers deploy.DeployerMux
 
 	if runCtx.Cfg.Deploy.HelmDeploy != nil {
-		deployers = append(deployers, deploy.NewHelmDeployer(runCtx))
+		deployers = append(deployers, deploy.NewHelmDeployer(runCtx, labels))
 	}
 
 	if runCtx.Cfg.Deploy.KubectlDeploy != nil {
-		deployers = append(deployers, deploy.NewKubectlDeployer(runCtx))
+		deployers = append(deployers, deploy.NewKubectlDeployer(runCtx, labels))
 	}
 
 	if runCtx.Cfg.Deploy.KustomizeDeploy != nil {
-		deployers = append(deployers, deploy.NewKustomizeDeployer(runCtx))
+		deployers = append(deployers, deploy.NewKustomizeDeployer(runCtx, labels))
 	}
 
 	// avoid muxing overhead when only a single deployer is configured

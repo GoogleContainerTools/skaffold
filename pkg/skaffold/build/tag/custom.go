@@ -19,18 +19,10 @@ package tag
 import (
 	"errors"
 	"fmt"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 type CustomTag struct {
 	Tag string
-}
-
-func (c *CustomTag) Labels() map[string]string {
-	return map[string]string{
-		constants.Labels.TagPolicy: "custom",
-	}
 }
 
 // GenerateFullyQualifiedImageName tags an image with the custom tag

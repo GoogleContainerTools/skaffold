@@ -43,23 +43,7 @@ type Artifact struct {
 
 // Labeller can give key/value labels to set on deployed resources.
 type Labeller interface {
-	// Labels keys must be prefixed with "skaffold.dev/"
 	Labels() map[string]string
-}
-
-// merge merges the labels from multiple sources.
-func merge(addSkaffoldLabels bool, deployer Labeller, sources ...Labeller) map[string]string {
-	if !addSkaffoldLabels {
-		return map[string]string{}
-	}
-
-	merged := deployer.Labels()
-
-	for _, src := range sources {
-		copyMap(merged, src.Labels())
-	}
-
-	return merged
 }
 
 // retry 3 times to give the object time to propagate to the API server

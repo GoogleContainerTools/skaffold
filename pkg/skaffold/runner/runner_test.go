@@ -150,7 +150,7 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []build.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ []deploy.Labeller) *deploy.Result {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact) *deploy.Result {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
@@ -163,7 +163,7 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Art
 	return deploy.NewDeploySuccessResult(t.namespaces)
 }
 
-func (t *TestBench) Render(context.Context, io.Writer, []build.Artifact, []deploy.Labeller, bool, string) error {
+func (t *TestBench) Render(context.Context, io.Writer, []build.Artifact, bool, string) error {
 	return nil
 }
 

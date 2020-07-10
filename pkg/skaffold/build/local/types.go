@@ -24,7 +24,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -91,20 +90,6 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 
 func (b *Builder) PushImages() bool {
 	return b.pushImages
-}
-
-// Labels are labels specific to local builder.
-func (b *Builder) Labels() map[string]string {
-	labels := map[string]string{
-		constants.Labels.Builder: "local",
-	}
-
-	v, err := b.localDocker.ServerVersion(context.Background())
-	if err == nil {
-		labels[constants.Labels.DockerAPIVersion] = fmt.Sprintf("%v", v.APIVersion)
-	}
-
-	return labels
 }
 
 // Prune uses the docker API client to remove all images built with Skaffold

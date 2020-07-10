@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -49,10 +48,6 @@ type withTimings struct {
 	test.Tester
 	deploy.Deployer
 	cacheArtifacts bool
-}
-
-func (w withTimings) Labels() map[string]string {
-	return labels.Merge(w.Builder.Labels(), w.Deployer.Labels())
 }
 
 func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
@@ -82,11 +77,11 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Art
 	return nil
 }
 
-func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []deploy.Labeller) *deploy.Result {
+func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) *deploy.Result {
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting deploy...")
 
-	dr := w.Deployer.Deploy(ctx, out, builds, labellers)
+	dr := w.Deployer.Deploy(ctx, out, builds)
 	if err := dr.GetError(); err != nil {
 		return dr
 	}

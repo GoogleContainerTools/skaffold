@@ -31,7 +31,6 @@ import (
 	utilpointer "k8s.io/utils/pointer"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -40,7 +39,7 @@ import (
 )
 
 func TestGetDeployments(t *testing.T) {
-	labeller := NewLabeller(config.SkaffoldOptions{})
+	labeller := NewLabeller(nil)
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment

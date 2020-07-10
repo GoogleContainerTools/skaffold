@@ -17,19 +17,11 @@ limitations under the License.
 package tag
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
 // ChecksumTagger tags an image by the sha256 of the image tarball
 type ChecksumTagger struct{}
-
-// Labels are labels specific to the sha256 tagger.
-func (c *ChecksumTagger) Labels() map[string]string {
-	return map[string]string{
-		constants.Labels.TagPolicy: "sha256",
-	}
-}
 
 func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
 	parsed, err := docker.ParseReference(imageName)
