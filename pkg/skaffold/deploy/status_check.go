@@ -80,11 +80,16 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		"clusterName": runCtx.KubeContext,
 	}
 
-	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller,
-		getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds))
-	if err != nil {
-		return fmt.Errorf("could not fetch deployments: %w", err)
+	deployments := make([]*resource.Deployment, 0)
+	for _, n := range runCtx.Namespaces {
+		newDeployments, err := getDeployments(client, n, defaultLabeller,
+			getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds))
+		if err != nil {
+			return fmt.Errorf("could not fetch deployments: %w", err)
+		}
+		deployments = append(deployments, newDeployments...)
 	}
+
 	deadline := statusCheckMaxDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds, deployments)
 
 	var wg sync.WaitGroup
