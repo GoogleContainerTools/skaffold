@@ -37,6 +37,72 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func TestKubectlRenderOutput(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
+	test := struct {
+		description string
+		builds      []build.Artifact
+		labels      []deploy.Labeller
+		renderPath  string
+		input       string
+		expectedOut string
+	}{
+		description: "write rendered manifest to provided filepath",
+		builds: []build.Artifact{
+			{
+				ImageName: "gcr.io/k8s-skaffold/skaffold",
+				Tag:       "gcr.io/k8s-skaffold/skaffold:test",
+			},
+		},
+		labels:     []deploy.Labeller{},
+		renderPath: "./test-output",
+		input: `apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold
+    name: skaffold
+`,
+		expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold:test
+    name: skaffold
+`}
+
+	testutil.Run(t, test.description, func(t *testutil.T) {
+		t.NewTempDir().
+			Write("deployment.yaml", test.input).
+			Chdir()
+		deployer := deploy.NewKubectlDeployer(&runcontext.RunContext{
+			WorkingDir: ".",
+			Cfg: latest.Pipeline{
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{
+							Manifests: []string{"deployment.yaml"},
+						},
+					},
+				},
+			},
+		})
+		var b bytes.Buffer
+		err := deployer.Render(context.Background(), &b, test.builds, test.labels, false, test.renderPath)
+
+		t.CheckNoError(err)
+		dat, err := ioutil.ReadFile(test.renderPath)
+		t.CheckNoError(err)
+
+		t.CheckDeepEqual(test.expectedOut, string(dat))
+	})
+}
+
 func TestKubectlRender(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 

@@ -17,10 +17,12 @@ limitations under the License.
 package integration
 
 import (
+	"io/ioutil"
 	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestRun(t *testing.T) {
@@ -131,6 +133,36 @@ func TestRun(t *testing.T) {
 			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})
 	}
+}
+
+func TestRunRenderOnly(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
+	testutil.Run(t, "write rendered manifest to provided filepath", func(tu *testutil.T) {
+		tmpDir := tu.NewTempDir()
+		renderPath := tmpDir.Path("output.yaml")
+
+		test := struct {
+			description string
+			renderPath  string
+			args        []string
+			dir         string
+			pods        []string
+		}{
+			args: []string{"--render-only", "--render-output", renderPath},
+			dir:  "examples/getting-started",
+			pods: []string{"getting-started"},
+		}
+
+		skaffold.Run(test.args...).InDir(test.dir).RunOrFail(t)
+
+		dat, err := ioutil.ReadFile(renderPath)
+		tu.CheckNoError(err)
+
+		tu.CheckMatches("name: getting-started", string(dat))
+	})
 }
 
 func TestRunGCPOnly(t *testing.T) {

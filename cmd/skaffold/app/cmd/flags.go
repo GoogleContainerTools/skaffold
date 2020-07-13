@@ -234,6 +234,14 @@ var FlagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "run"},
 	},
 	{
+		Name:          "render-output",
+		Usage:         "Writes '--render-only' output to the specified file",
+		Value:         &opts.RenderOutput,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"run"},
+	},
+	{
 		Name:          "config",
 		Shorthand:     "c",
 		Usage:         "File for global configurations (defaults to $HOME/.skaffold/config)",
