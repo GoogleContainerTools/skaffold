@@ -46,6 +46,7 @@ const (
 	imagePullBackOff    = "ImagePullBackOff"
 	errImagePullBackOff = "ErrImagePullBackOff"
 	containerCreating   = "ContainerCreating"
+	podInitializing     = "PodInitializing"
 	podKind             = "pod"
 
 	failedScheduling = "FailedScheduling"
@@ -283,8 +284,11 @@ func (p *podStatus) String() string {
 }
 
 func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerStatus) (proto.StatusCode, []string, error) {
-	switch c.State.Waiting.Reason {
 	// Extract meaning full error out of container statuses.
+	switch c.State.Waiting.Reason {
+	case podInitializing:
+		// container is waiting to run
+		return proto.StatusCode_STATUSCHECK_SUCCESS, nil, nil
 	case containerCreating:
 		return proto.StatusCode_STATUSCHECK_CONTAINER_CREATING, nil, fmt.Errorf("creating container %s", c.Name)
 	case crashLoopBackOff:
@@ -299,7 +303,8 @@ func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerSta
 			return proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR, nil, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(match[3]))
 		}
 	}
-	return proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN, nil, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(c.State.Waiting.Message))
+	logrus.Debugf("Failed to extract error condition for waiting container %q: %v", c.Name, c.State)
+	return proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN, nil, fmt.Errorf("container %s in error: %v", c.Name, c.State.Waiting)
 }
 
 func newPodStatus(n string, ns string, p string) *podStatus {
