@@ -2,8 +2,8 @@ FROM golang:1.12 as builder
 
 COPY app.go .
 # Must use eval to handle GOGCFLAGS with spaces like `-gcflags='all=-N -l'`
-ARG GOGCFLAGS
-RUN eval go build "${GOGCFLAGS}" -o /app .
+ARG GO_GCFLAGS
+RUN eval go build "${GO_GCFLAGS}" -o /app .
 
 FROM gcr.io/distroless/base
 # `skaffold debug` uses GOTRACEBACK as an indicator of the Go runtime

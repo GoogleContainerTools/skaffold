@@ -41,8 +41,8 @@ func TestInSequence(t *testing.T) {
 	}{
 		{
 			description: "build succeeds",
-			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-				return fmt.Sprintf("%s@sha256:abac", tag), nil
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
+				return fmt.Sprintf("%s@sha256:abac", opts.Tag), nil
 			},
 			tags: tag.ImageTags{
 				"skaffold/image1": "skaffold/image1:v0.0.1",
@@ -56,7 +56,7 @@ func TestInSequence(t *testing.T) {
 		},
 		{
 			description: "build fails",
-			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
 				return "", fmt.Errorf("build fails")
 			},
 			tags: tag.ImageTags{
@@ -135,8 +135,8 @@ type concatTagger struct {
 // doBuild calculate the tag based by concatinating the tag values for artifact
 // builds seen so far. It mimics artifact dependency where the next build result
 // depends on the previous build result.
-func (t *concatTagger) doBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	t.tag += tag
+func (t *concatTagger) doBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
+	t.tag += opts.Tag
 	return fmt.Sprintf("%s:%s", artifact.ImageName, t.tag), nil
 }
 

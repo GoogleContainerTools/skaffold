@@ -15,9 +15,6 @@ build:
     context: python3
   - image: skaffold-debug-go
     context: go
-    docker:
-      buildArgs:
-        GOGCFLAGS: "-gcflags='all=-N -l'"
 
 deploy:
   kubectl:

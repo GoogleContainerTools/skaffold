@@ -31,7 +31,7 @@ import (
 
 const bufferedLinesPerArtifact = 10000
 
-type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
+type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error)
 
 // For testing
 var (
@@ -116,7 +116,7 @@ func getBuildResult(ctx context.Context, cw io.Writer, tags tag.ImageTags, artif
 	if !present {
 		return "", fmt.Errorf("unable to find tag for image %s", artifact.ImageName)
 	}
-	return build(ctx, cw, artifact, tag)
+	return build(ctx, cw, artifact, CreateBuilderOptions(tag))
 }
 
 func collectResults(out io.Writer, artifacts []*latest.Artifact, results *sync.Map, outputs []chan string) ([]Artifact, error) {

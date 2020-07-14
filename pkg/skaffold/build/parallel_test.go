@@ -43,9 +43,9 @@ func TestGetBuild(t *testing.T) {
 	}{
 		{
 			description: "build succeeds",
-			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
 				out.Write([]byte("build succeeds"))
-				return fmt.Sprintf("%s@sha256:abac", tag), nil
+				return fmt.Sprintf("%s@sha256:abac", opts.Tag), nil
 			},
 			tags: tag.ImageTags{
 				"skaffold/image1": "skaffold/image1:v0.0.1",
@@ -56,7 +56,7 @@ func TestGetBuild(t *testing.T) {
 		},
 		{
 			description: "build fails",
-			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
 				return "", fmt.Errorf("build fails")
 			},
 			tags: tag.ImageTags{
@@ -203,7 +203,7 @@ func TestInParallel(t *testing.T) {
 		{
 			description: "short and nice build log",
 			expected:    "Building [skaffold/image1]...\nshort\nBuilding [skaffold/image2]...\nshort\n",
-			buildFunc: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+			buildFunc: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
 				out.Write([]byte("short"))
 				return fmt.Sprintf("%s:tag", artifact.ImageName), nil
 			},
@@ -217,7 +217,7 @@ Building [skaffold/image2]...
 This is a long string more than 10 bytes.
 And new lines
 `,
-			buildFunc: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+			buildFunc: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
 				out.Write([]byte("This is a long string more than 10 bytes.\nAnd new lines"))
 				return fmt.Sprintf("%s:tag", artifact.ImageName), nil
 			},
@@ -280,14 +280,14 @@ func TestInParallelConcurrency(t *testing.T) {
 
 			var actualConcurrency int32
 
-			builder := func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
+			builder := func(_ context.Context, _ io.Writer, _ *latest.Artifact, opts *ImageOptions) (string, error) {
 				if atomic.AddInt32(&actualConcurrency, 1) > int32(test.maxConcurrency) {
 					return "", fmt.Errorf("only %d build can run at a time", test.maxConcurrency)
 				}
 				time.Sleep(5 * time.Millisecond)
 				atomic.AddInt32(&actualConcurrency, -1)
 
-				return tag, nil
+				return opts.Tag, nil
 			}
 
 			initializeEvents()
@@ -317,8 +317,8 @@ func TestInParallelForArgs(t *testing.T) {
 		},
 		{
 			description: "runs in parallel for 2 artifacts",
-			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
-				return tag, nil
+			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, opts *ImageOptions) (string, error) {
+				return opts.Tag, nil
 			},
 			artifactLen: 2,
 			expected: []Artifact{

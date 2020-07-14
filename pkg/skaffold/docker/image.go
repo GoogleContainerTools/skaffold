@@ -61,7 +61,7 @@ type LocalDaemon interface {
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
-	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error)
+	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, opts *BuildOptions) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
@@ -155,7 +155,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 }
 
 // Build performs a docker build and returns the imageID.
-func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error) {
+func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, opts *BuildOptions) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	// Like `docker build`, we ignore the errors
@@ -180,8 +180,8 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	progressOutput := streamformatter.NewProgressOutput(out)
 	body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
 
-	resp, err := l.apiClient.ImageBuild(ctx, body, types.ImageBuildOptions{
-		Tags:        []string{ref},
+	imageOpts := &types.ImageBuildOptions{
+		Tags:        []string{opts.Tag},
 		Dockerfile:  a.DockerfilePath,
 		BuildArgs:   buildArgs,
 		CacheFrom:   a.CacheFrom,
@@ -190,7 +190,10 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 		ForceRemove: l.forceRemove,
 		NetworkMode: strings.ToLower(a.NetworkMode),
 		NoCache:     a.NoCache,
-	})
+	}
+
+	imageOpts = opts.ApplyModifiers(imageOpts)
+	resp, err := l.apiClient.ImageBuild(ctx, body, *imageOpts)
 	if err != nil {
 		return "", fmt.Errorf("docker build: %w", err)
 	}
@@ -217,7 +220,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	if imageID == "" {
 		// Maybe this version of Docker doesn't return the digest of the image
 		// that has been built.
-		imageID, err = l.ImageID(ctx, ref)
+		imageID, err = l.ImageID(ctx, opts.Tag)
 		if err != nil {
 			return "", fmt.Errorf("getting digest: %w", err)
 		}
@@ -404,13 +407,17 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 }
 
 // GetBuildArgs gives the build args flags for docker build.
-func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
+func GetBuildArgs(a *latest.DockerArtifact, opts *BuildOptions) ([]string, error) {
 	var args []string
 
 	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
 	if err != nil {
 		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
 	}
+
+	buildArgs = opts.ApplyModifiers(&types.ImageBuildOptions{
+		BuildArgs: buildArgs,
+	}).BuildArgs
 
 	var keys []string
 	for k := range buildArgs {

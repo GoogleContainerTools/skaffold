@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -35,7 +36,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 
 		i := i
 		go func() {
-			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName])
+			details[i] = c.lookup(ctx, artifacts[i], build.CreateBuilderOptions(tags[artifacts[i].ImageName]))
 			wg.Done()
 		}()
 	}
@@ -44,8 +45,8 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 	return details
 }
 
-func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string) cacheDetails {
-	hash, err := c.hashForArtifact(ctx, a)
+func (c *cache) lookup(ctx context.Context, a *latest.Artifact, opts *build.ImageOptions) cacheDetails {
+	hash, err := c.hashForArtifact(ctx, a, opts)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}
@@ -56,9 +57,9 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string) cach
 	}
 
 	if c.imagesAreLocal {
-		return c.lookupLocal(ctx, hash, tag, entry)
+		return c.lookupLocal(ctx, hash, opts.Tag, entry)
 	}
-	return c.lookupRemote(ctx, hash, tag, entry)
+	return c.lookupRemote(ctx, hash, opts.Tag, entry)
 }
 
 func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDetails) cacheDetails {

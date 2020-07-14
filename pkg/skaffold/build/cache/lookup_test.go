@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -30,7 +31,7 @@ import (
 func TestLookupLocal(t *testing.T) {
 	tests := []struct {
 		description string
-		hasher      func(context.Context, *latest.Artifact) (string, error)
+		hasher      func(context.Context, *latest.Artifact, *build.ImageOptions) (string, error)
 		cache       map[string]ImageDetails
 		api         *testutil.FakeAPIClient
 		expected    cacheDetails
@@ -124,7 +125,7 @@ func TestLookupLocal(t *testing.T) {
 func TestLookupRemote(t *testing.T) {
 	tests := []struct {
 		description string
-		hasher      func(context.Context, *latest.Artifact) (string, error)
+		hasher      func(context.Context, *latest.Artifact, *build.ImageOptions) (string, error)
 		cache       map[string]ImageDetails
 		api         *testutil.FakeAPIClient
 		expected    cacheDetails
@@ -205,14 +206,14 @@ func TestLookupRemote(t *testing.T) {
 	}
 }
 
-func mockHasher(value string) func(context.Context, *latest.Artifact) (string, error) {
-	return func(context.Context, *latest.Artifact) (string, error) {
+func mockHasher(value string) func(context.Context, *latest.Artifact, *build.ImageOptions) (string, error) {
+	return func(context.Context, *latest.Artifact, *build.ImageOptions) (string, error) {
 		return value, nil
 	}
 }
 
-func failingHasher(errMessage string) func(context.Context, *latest.Artifact) (string, error) {
-	return func(context.Context, *latest.Artifact) (string, error) {
+func failingHasher(errMessage string) func(context.Context, *latest.Artifact, *build.ImageOptions) (string, error) {
+	return func(context.Context, *latest.Artifact, *build.ImageOptions) (string, error) {
 		return "", errors.New(errMessage)
 	}
 }

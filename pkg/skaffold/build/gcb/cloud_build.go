@@ -49,7 +49,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithCloudBuild, b.GoogleCloudBuild.Concurrency)
 }
 
-func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *build.ImageOptions) (string, error) {
 	cbclient, err := cloudbuild.NewService(ctx, gcp.ClientOptions()...)
 	if err != nil {
 		return "", fmt.Errorf("getting cloudbuild client: %w", err)
@@ -63,7 +63,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 
 	projectID := b.ProjectID
 	if projectID == "" {
-		guessedProjectID, err := gcp.ExtractProjectID(tag)
+		guessedProjectID, err := gcp.ExtractProjectID(opts.Tag)
 		if err != nil {
 			return "", fmt.Errorf("extracting projectID from image name: %w", err)
 		}
@@ -103,7 +103,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", fmt.Errorf("uploading source tarball: %w", err)
 	}
 
-	buildSpec, err := b.buildSpec(artifact, tag, cbBucket, buildObject)
+	buildSpec, err := b.buildSpec(artifact, opts.Tag, cbBucket, buildObject)
 	if err != nil {
 		return "", fmt.Errorf("could not create build description: %w", err)
 	}
@@ -165,7 +165,7 @@ watch:
 		switch cb.Status {
 		case StatusQueued, StatusWorking, StatusUnknown:
 		case StatusSuccess:
-			digest, err = getDigest(cb, tag)
+			digest, err = getDigest(cb, opts.Tag)
 			if err != nil {
 				return "", fmt.Errorf("getting image id from finished build: %w", err)
 			}
@@ -184,7 +184,7 @@ watch:
 	}
 	logrus.Infof("Deleted object %s", buildObject)
 
-	return build.TagWithDigest(tag, digest), nil
+	return build.TagWithDigest(opts.Tag, digest), nil
 }
 
 func getBuildID(op *cloudbuild.Operation) (string, error) {

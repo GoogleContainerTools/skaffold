@@ -41,7 +41,7 @@ func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 			return nil, fmt.Errorf("unable to find tag for image %s", artifact.ImageName)
 		}
 
-		finalTag, err := buildArtifact(ctx, out, artifact, tag)
+		finalTag, err := buildArtifact(ctx, out, artifact, CreateBuilderOptions(tag))
 		if err != nil {
 			event.BuildFailed(artifact.ImageName, err)
 			return nil, fmt.Errorf("couldn't build %q: %w", artifact.ImageName, err)

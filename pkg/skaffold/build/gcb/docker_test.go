@@ -19,6 +19,7 @@ package gcb
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -79,7 +80,7 @@ func TestPullCacheFrom(t *testing.T) {
 	builder := newBuilder(latest.GoogleCloudBuild{
 		DockerImage: "docker/docker",
 	})
-	desc, err := builder.dockerBuildSpec(artifact, "nginx2")
+	desc, err := builder.dockerBuildSpec(artifact, &docker.BuildOptions{Tag: "nginx2"})
 
 	expected := []*cloudbuild.BuildStep{{
 		Name:       "docker/docker",

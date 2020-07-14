@@ -190,7 +190,7 @@ func TestBuild(t *testing.T) {
 			t.SetEnvs(test.env)
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
-			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage")
+			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, &BuildOptions{Tag: "finalimage"})
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
@@ -322,7 +322,7 @@ func TestGetBuildArgs(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.env })
 
-			result, err := GetBuildArgs(test.artifact)
+			result, err := GetBuildArgs(test.artifact, &BuildOptions{Tag: ""})
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {

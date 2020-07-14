@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 
@@ -49,7 +50,7 @@ type cache struct {
 	insecureRegistries map[string]bool
 	cacheFile          string
 	imagesAreLocal     bool
-	hashForArtifact    func(ctx context.Context, a *latest.Artifact) (string, error)
+	hashForArtifact    func(ctx context.Context, a *latest.Artifact, opts *build.ImageOptions) (string, error)
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
@@ -84,8 +85,8 @@ func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies D
 		insecureRegistries: runCtx.InsecureRegistries,
 		cacheFile:          cacheFile,
 		imagesAreLocal:     imagesAreLocal,
-		hashForArtifact: func(ctx context.Context, a *latest.Artifact) (string, error) {
-			return getHashForArtifact(ctx, dependencies, a, runCtx.Opts.IsDevMode())
+		hashForArtifact: func(ctx context.Context, a *latest.Artifact, opts *build.ImageOptions) (string, error) {
+			return getHashForArtifact(ctx, dependencies, a, opts, runCtx.Opts.IsDevMode())
 		},
 	}, nil
 }

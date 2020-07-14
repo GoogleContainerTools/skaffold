@@ -48,13 +48,13 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifact, b.ClusterDetails.Concurrency)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	digest, err := b.runBuildForArtifact(ctx, out, artifact, tag)
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *build.ImageOptions) (string, error) {
+	digest, err := b.runBuildForArtifact(ctx, out, artifact, opts.Tag)
 	if err != nil {
 		return "", err
 	}
 
-	return build.TagWithDigest(tag, digest), nil
+	return build.TagWithDigest(opts.Tag, digest), nil
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -45,8 +46,8 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifact, *b.cfg.Concurrency)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
-	digestOrImageID, err := b.runBuildForArtifact(ctx, out, a, tag)
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, opts *build.ImageOptions) (string, error) {
+	digestOrImageID, err := b.runBuildForArtifact(ctx, out, a, opts)
 	if err != nil {
 		return "", err
 	}
@@ -55,7 +56,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 		// only track images for pruning when building with docker
 		// if we're pushing a bazel image, it was built directly to the registry
 		if a.DockerArtifact != nil {
-			imageID, err := b.getImageIDForTag(ctx, tag)
+			imageID, err := b.getImageIDForTag(ctx, opts.Tag)
 			if err != nil {
 				logrus.Warnf("unable to inspect image: built images may not be cleaned up correctly by skaffold")
 			}
@@ -65,15 +66,15 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 		}
 
 		digest := digestOrImageID
-		return build.TagWithDigest(tag, digest), nil
+		return build.TagWithDigest(opts.Tag, digest), nil
 	}
 
 	imageID := digestOrImageID
 	b.builtImages = append(b.builtImages, imageID)
-	return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
+	return build.TagWithImageID(ctx, opts.Tag, imageID, b.localDocker)
 }
 
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, opts *build.ImageOptions) (string, error) {
 	if !b.pushImages {
 		// All of the builders will rely on a local Docker:
 		// + Either to build the image,
@@ -86,19 +87,19 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 
 	switch {
 	case a.DockerArtifact != nil:
-		return b.buildDocker(ctx, out, a, tag)
+		return b.buildDocker(ctx, out, a, ToDockerOpts(opts))
 
 	case a.BazelArtifact != nil:
-		return bazel.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages).Build(ctx, out, a, tag)
+		return bazel.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages).Build(ctx, out, a, opts.Tag)
 
 	case a.JibArtifact != nil:
-		return jib.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.skipTests).Build(ctx, out, a, tag)
+		return jib.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.skipTests).Build(ctx, out, a, opts.Tag)
 
 	case a.CustomArtifact != nil:
-		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
+		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, a, opts.Tag)
 
 	case a.BuildpackArtifact != nil:
-		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.devMode).Build(ctx, out, a, tag)
+		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.devMode).Build(ctx, out, a, opts.Tag)
 
 	default:
 		return "", fmt.Errorf("unexpected type %q for local artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
@@ -111,4 +112,12 @@ func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, err
 		return "", err
 	}
 	return insp.ID, nil
+}
+
+func ToDockerOpts(opts *build.ImageOptions) *docker.BuildOptions {
+	d := &docker.BuildOptions{Tag: opts.Tag}
+	if opts.Configuration == build.Debug {
+		return d.AddModifier(docker.OptimizeBuildForDebug)
+	}
+	return d.AddModifier(docker.OptimizeBuildForRelease)
 }

@@ -57,7 +57,7 @@ func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.
 		b.built = append(b.built, artifact)
 		tag := tags[artifact.ImageName]
 
-		_, err := b.dockerDaemon.Build(ctx, out, artifact.Workspace, artifact.DockerArtifact, tag)
+		_, err := b.dockerDaemon.Build(ctx, out, artifact.Workspace, artifact.DockerArtifact, &docker.BuildOptions{Tag: tag})
 		if err != nil {
 			return nil, err
 		}

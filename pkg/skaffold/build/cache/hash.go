@@ -27,6 +27,7 @@ import (
 	"os"
 	"sort"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
@@ -40,7 +41,7 @@ var (
 	artifactConfigFunction = artifactConfig
 )
 
-func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, devMode bool) (string, error) {
+func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, opts *build.ImageOptions, devMode bool) (string, error) {
 	var inputs []string
 
 	// Append the artifact's configuration
@@ -87,6 +88,15 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 			return "", fmt.Errorf("evaluating build args: %w", err)
 		}
 		inputs = append(inputs, evaluatedEnv...)
+	}
+
+	// add image options hash
+	if opts != nil {
+		if h, err := opts.Hash(); err != nil {
+			return "", fmt.Errorf("evaluating build args: %w", err)
+		} else {
+			inputs = append(inputs, h)
+		}
 	}
 
 	// get a key for the hashes
