@@ -94,7 +94,7 @@ func getDeploy(d latest.DeployConfig, c string) *proto.DeployMetadata {
 
 	return &proto.DeployMetadata{
 		Deployers: deployers,
-		Cluster:   getClusterType(c),
+		Cluster:   GetClusterType(c),
 	}
 }
 
@@ -106,7 +106,7 @@ func updateOrAddKey(m map[proto.BuilderType]int, k proto.BuilderType) {
 	m[k] = 1
 }
 
-func getClusterType(c string) proto.ClusterType {
+func GetClusterType(c string) proto.ClusterType {
 	switch {
 	case strings.Contains(c, "minikube"):
 		return proto.ClusterType_MINIKUBE

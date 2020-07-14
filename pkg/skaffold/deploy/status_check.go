@@ -135,7 +135,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 		}
 		pd := diag.New([]string{d.Namespace}).
 			WithLabel(RunIDLabel, l.Labels()[RunIDLabel]).
-			WithValidators([]validator.Validator{validator.NewPodValidator(client, deployContext)})
+			WithValidators([]validator.Validator{validator.NewPodValidator(client, event.GetClusterType(runCtx.KubeContext))})
 
 		for k, v := range d.Spec.Template.Labels {
 			pd = pd.WithLabel(k, v)
