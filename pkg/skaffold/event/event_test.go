@@ -23,10 +23,11 @@ import (
 	"testing"
 	"time"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -493,7 +494,9 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 			},
 			phase: sErrors.Build,
 			waitFn: func() bool {
+				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
+				handler.logLock.Unlock()
 				return logEntry.Entry == fmt.Sprintf("DevInit Iteration 1 failed with error code %v", proto.StatusCode_BUILD_PUSH_ACCESS_DENIED)
 			},
 		},
@@ -505,7 +508,9 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 			},
 			phase: sErrors.Deploy,
 			waitFn: func() bool {
+				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
+				handler.logLock.Unlock()
 				return logEntry.Entry == fmt.Sprintf("DevInit Iteration 1 failed with error code %v", proto.StatusCode_DEPLOY_UNKNOWN)
 			},
 		},
@@ -518,7 +523,9 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 			},
 			phase: sErrors.Deploy,
 			waitFn: func() bool {
+				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
+				handler.logLock.Unlock()
 				return logEntry.Entry == fmt.Sprintf("DevInit Iteration 1 failed with error code %v", proto.StatusCode_STATUSCHECK_UNHEALTHY)
 			},
 		},

@@ -237,8 +237,7 @@ func TestGetDeployStatus(t *testing.T) {
 			counter:     &counter{total: 2, failed: 1},
 			deployments: []*resource.Deployment{
 				resource.NewDeployment("foo", "test", time.Second).
-					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
-						proto.StatusCode_STATUSCHECK_UNHEALTHY}),
+					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE}),
 			},
 			expected:     "1/2 deployment(s) failed",
 			expectedCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
@@ -264,8 +263,7 @@ func TestGetDeployStatus(t *testing.T) {
 			expected:    "2/3 deployment(s) failed",
 			deployments: []*resource.Deployment{
 				resource.NewDeployment("foo", "test", time.Second).
-					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
-						proto.StatusCode_STATUSCHECK_UNHEALTHY}),
+					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE}),
 			},
 			expectedCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
 			shouldErr:    true,
