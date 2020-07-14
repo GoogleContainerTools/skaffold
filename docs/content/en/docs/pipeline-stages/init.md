@@ -24,7 +24,7 @@ than 500MB.
 If there are multiple build configuration files, Skaffold will prompt you to pair your build configuration files
 with any images detected in your deploy configuration.
 
-E.g. For an application with [two microservices] (https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices):
+E.g. For an application with [two microservices](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices):
 
 ```bash
 skaffold init
