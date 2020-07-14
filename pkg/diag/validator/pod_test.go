@@ -465,6 +465,41 @@ func TestRun(t *testing.T) {
 					ErrCode: proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING,
 				}, nil)},
 		},
+		{
+			description: "health check failed",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+					Conditions: []v1.PodCondition{{
+						Type:   v1.PodScheduled,
+						Status: v1.ConditionTrue,
+					}},
+				},
+			}},
+			events: []v1.Event{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "test"}, Reason: "Unhealthy", Type: "Warning",
+					Message:   "Readiness probe failed: cat: /tmp/healthy: No such file or directory",
+					EventTime: metav1.MicroTime{Time: after},
+				},
+			},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
+				proto.ActionableErr{
+					Message: "Readiness probe failed: cat: /tmp/healthy: No such file or directory",
+					ErrCode: proto.StatusCode_STATUSCHECK_UNHEALTHY,
+					Suggestions: []*proto.Suggestion{
+						{
+							SuggestionCode: proto.SuggestionCode_CHECK_READINESS_PROBE,
+							Action:         "Try checking container config `readinessProbe`",
+						},
+					},
+				}, nil)},
+		},
 	}
 
 	for _, test := range tests {

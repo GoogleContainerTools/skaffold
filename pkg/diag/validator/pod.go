@@ -58,10 +58,11 @@ var (
 	// for testing
 	runCli = executeCLI
 
-	unknownConditions = map[proto.StatusCode]struct{}{
+	unknownConditionsOrSuccess = map[proto.StatusCode]struct{}{
 		proto.StatusCode_STATUSCHECK_UNKNOWN:                   {},
 		proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN: {},
 		proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE:     {},
+		proto.StatusCode_STATUSCHECK_SUCCESS:                   {},
 	}
 )
 
@@ -203,7 +204,7 @@ func getUntoleratedTaints(reason string, message string) (proto.StatusCode, erro
 }
 
 func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
-	if _, ok := unknownConditions[ps.ae.ErrCode]; !ok {
+	if _, ok := unknownConditionsOrSuccess[ps.ae.ErrCode]; !ok {
 		return
 	}
 	// Get pod events.
