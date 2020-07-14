@@ -148,6 +148,7 @@ If the build fails, an error will be attached to the event.
 | ----- | ---- | ----- | ----------- |
 | artifacts | [BuildState.ArtifactsEntry](#proto.BuildState.ArtifactsEntry) | repeated | A map of `artifact name -> build-state`. Artifact name is defined in the `skaffold.yaml`. The `build-state` can be: <br> - `"Not started"`: not yet started <br> - `"In progress"`: build started <br> - `"Complete"`: build succeeded <br> - `"Failed"`: build failed |
 | autoTrigger | [bool](#bool) |  |  |
+| statusCode | [StatusCode](#proto.StatusCode) |  |  |
 
 
 
@@ -269,6 +270,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
 | autoTrigger | [bool](#bool) |  |  |
+| statusCode | [StatusCode](#proto.StatusCode) |  |  |
 
 
 
@@ -593,6 +595,7 @@ will be sent with the new status.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
 | resources | [StatusCheckState.ResourcesEntry](#proto.StatusCheckState.ResourcesEntry) | repeated | A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name. The `status-check-state` can be <br> - `"Not started"`: indicates that `status-check` has just started. <br> - `"In progress"`: InProgress is sent after every resource check is complete. <br> - `"Succeeded"`: - `"Failed"`: |
+| statusCode | [StatusCode](#proto.StatusCode) |  | StatusCheck statusCode |
 
 
 
@@ -749,6 +752,7 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | OK | 0 | A default status code for events that do not have an associated phase. Typically seen with the DevEndEvent event on success. |
 | STATUSCHECK_SUCCESS | 200 | Status Check Success |
 | BUILD_SUCCESS | 201 | Build Success |
+| DEPLOY_SUCCESS | 202 | Deploy Success |
 | BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
 | BUILD_PROJECT_NOT_FOUND | 102 | Build error due to GCP project not found. |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
@@ -768,6 +772,8 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_FAILED_SCHEDULING | 407 | Scheduler failure error |
 | STATUSCHECK_KUBECTL_CONNECTION_ERR | 409 | Kubectl connection error |
 | STATUSCHECK_KUBECTL_PID_KILLED | 410 | Kubectl process killed error |
+| STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR | 411 | Kubectl client fetch err |
+| STATUSCHECK_DEPLOYMENT_FETCH_ERR | 412 |  |
 | UNKNOWN_ERROR | 500 | Could not determine error and phase |
 | STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
 | STATUSCHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |

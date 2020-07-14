@@ -155,6 +155,12 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
+			events: []v1.Event{
+				{
+					ObjectMeta: metav1.ObjectMeta{Namespace: "test"},
+					Reason:     "Failed", Type: "Warning", Message: "Failed to pull image foo-image: rpc error: code = Unknown desc = Error response from daemon: pull access denied for foo-image, repository does not exist or may require 'docker login'",
+				},
+			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				proto.ActionableErr{
 					Message: "container foo-container is waiting to start: foo-image can't be pulled",

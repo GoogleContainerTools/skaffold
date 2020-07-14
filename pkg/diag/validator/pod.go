@@ -57,6 +57,12 @@ var (
 	taintsRe       = regexp.MustCompile(taintsExp)
 	// for testing
 	runCli = executeCLI
+
+	unknownConditions = map[proto.StatusCode]struct{}{
+		proto.StatusCode_STATUSCHECK_UNKNOWN:                   {},
+		proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN: {},
+		proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE:     {},
+	}
 )
 
 // PodValidator implements the Validator interface for Pods
@@ -197,6 +203,9 @@ func getUntoleratedTaints(reason string, message string) (proto.StatusCode, erro
 }
 
 func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
+	if _, ok := unknownConditions[ps.ae.ErrCode]; !ok {
+		return
+	}
 	// Get pod events.
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &pod)

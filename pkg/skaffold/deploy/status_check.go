@@ -65,15 +65,15 @@ type counter struct {
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	event.StatusCheckEventStarted()
-	err := statusCheck(ctx, defaultLabeller, runCtx, out)
-	event.StatusCheckEventEnded(err)
+	errCode, err := statusCheck(ctx, defaultLabeller, runCtx, out)
+	event.StatusCheckEventEnded(errCode, err)
 	return err
 }
 
-func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
+func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) (proto.StatusCode, error) {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
-		return fmt.Errorf("getting Kubernetes client: %w", err)
+		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
 	deployContext = map[string]string{
@@ -83,7 +83,7 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller,
 		getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds))
 	if err != nil {
-		return fmt.Errorf("could not fetch deployments: %w", err)
+		return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
 	}
 	deadline := statusCheckMaxDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds, deployments)
 
@@ -109,7 +109,7 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Wait for all deployment statuses to be fetched
 	wg.Wait()
-	return getSkaffoldDeployStatus(c)
+	return getSkaffoldDeployStatus(c, deployments)
 }
 
 func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
@@ -164,13 +164,16 @@ func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r 
 	}
 }
 
-func getSkaffoldDeployStatus(c *counter) error {
-	if c.failed == 0 {
-		return nil
+func getSkaffoldDeployStatus(c *counter, rs []*resource.Deployment) (proto.StatusCode, error) {
+	if c.failed > 0 {
+		err := fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
+		for _, r := range rs {
+			if r.StatusCode != proto.StatusCode_STATUSCHECK_SUCCESS {
+				return r.FirstPodErrOccurred(), err
+			}
+		}
 	}
-	err := fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
-
-	return err
+	return proto.StatusCode_STATUSCHECK_SUCCESS, nil
 }
 
 func getDeadline(d int) time.Duration {
