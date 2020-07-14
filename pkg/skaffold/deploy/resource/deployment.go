@@ -235,3 +235,24 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 	d.pods = newPods
 	return nil
 }
+
+// Return first pod status in error.
+// TODO: should we return all distinct error codes in future?
+func (d *Deployment) FirstPodErrOccurred() proto.StatusCode {
+	for _, p := range d.pods {
+		if s := p.ActionableError().ErrCode; s != proto.StatusCode_STATUSCHECK_SUCCESS {
+			return s
+		}
+	}
+	return proto.StatusCode_STATUSCHECK_SUCCESS
+}
+
+func (d *Deployment) WithPodStatuses(scs []proto.StatusCode) *Deployment {
+	d.pods = map[string]validator.Resource{}
+	for i, s := range scs {
+		name := fmt.Sprintf("%s-%d", d.name, i)
+		d.pods[name] = validator.NewResource("test", "pod", "foo", validator.Status("failed"),
+			proto.ActionableErr{Message: "pod failed", ErrCode: s}, nil)
+	}
+	return d
+}

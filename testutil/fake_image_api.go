@@ -54,6 +54,7 @@ type FakeAPIClient struct {
 
 	nextImageID int
 	Pushed      map[string]string
+	Pulled      []string
 	Built       []types.ImageBuildOptions
 }
 
@@ -181,7 +182,8 @@ func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ types.ImagePu
 	return f.body(digest), nil
 }
 
-func (f *FakeAPIClient) ImagePull(context.Context, string, types.ImagePullOptions) (io.ReadCloser, error) {
+func (f *FakeAPIClient) ImagePull(_ context.Context, ref string, _ types.ImagePullOptions) (io.ReadCloser, error) {
+	f.Pulled = append(f.Pulled, ref)
 	if f.ErrImagePull {
 		return nil, fmt.Errorf("")
 	}

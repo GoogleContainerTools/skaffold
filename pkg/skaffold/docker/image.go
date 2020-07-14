@@ -312,13 +312,22 @@ func (l *localDaemon) isAlreadyPushed(ctx context.Context, ref, registryAuth str
 
 // Pull pulls an image reference from a registry.
 func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string) error {
+	// Eargerly create credentials.
 	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
-	if err != nil {
-		return fmt.Errorf("getting auth config for %q: %w", ref, err)
-	}
+	// Let's ignore the error because maybe the image is public
+	// and can be pulled without credentials.
 
 	rc, err := l.apiClient.ImagePull(ctx, ref, types.ImagePullOptions{
 		RegistryAuth: registryAuth,
+		PrivilegeFunc: func() (string, error) {
+			// The first pull is unauthorized. There are two situations:
+			//   1. if `encodedRegistryAuth()` errored, then `registryAuth == ""` and so we've
+			//     tried an anonymous pull which has failed.  So return the original error from
+			//     `encodedRegistryAuth()`.
+			//   2. If `encodedRegistryAuth()` succeeded (so `err == nil`), then our credential was rejected, so
+			//     return "" to retry as an anonymous pull.
+			return "", err
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("pulling image from repository: %w", err)

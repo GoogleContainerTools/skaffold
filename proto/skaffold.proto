@@ -68,12 +68,14 @@ message BuildState {
     // - `"Failed"`: build failed
     map<string, string> artifacts = 1;
     bool autoTrigger = 2;
+    StatusCode statusCode = 3;
 }
 
 // `DeployState` describes the status of the current deploy
 message DeployState {
     string status = 1;
     bool autoTrigger = 2;
+    StatusCode statusCode = 3;
 }
 
 // `StatusCheckState` describes the state of status check of current deployed resources.
@@ -86,6 +88,8 @@ message StatusCheckState {
     // - `"Succeeded"`:
     // - `"Failed"`:
     map<string, string> resources = 2;
+    // StatusCheck statusCode
+    StatusCode statusCode = 3;
 
 }
 
@@ -383,6 +387,8 @@ enum StatusCode {
     STATUSCHECK_SUCCESS = 200;
     // Build Success
     BUILD_SUCCESS = 201;
+    // Deploy Success
+    DEPLOY_SUCCESS = 202;
 
     // Build Errors
 
@@ -432,6 +438,10 @@ enum StatusCode {
     STATUSCHECK_KUBECTL_PID_KILLED = 410;
 
     // 408 is skipped as STATUSCHECK_UNHEALTH code renumbered as 357
+
+    // Kubectl client fetch err
+    STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR = 411;
+    STATUSCHECK_DEPLOYMENT_FETCH_ERR = 412;
 
     // Unknown Error Codes
 

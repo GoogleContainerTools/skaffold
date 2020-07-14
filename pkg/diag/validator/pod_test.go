@@ -155,6 +155,12 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
+			events: []v1.Event{
+				{
+					ObjectMeta: metav1.ObjectMeta{Namespace: "test"},
+					Reason:     "Failed", Type: "Warning", Message: "Failed to pull image foo-image: rpc error: code = Unknown desc = Error response from daemon: pull access denied for foo-image, repository does not exist or may require 'docker login'",
+				},
+			},
 			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
 				proto.ActionableErr{
 					Message: "container foo-container is waiting to start: foo-image can't be pulled",
@@ -457,6 +463,41 @@ func TestRun(t *testing.T) {
 				proto.ActionableErr{
 					Message: "0/1 nodes are available: 1 node(s) had taint {key: value}, that the pod didn't tolerate",
 					ErrCode: proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING,
+				}, nil)},
+		},
+		{
+			description: "health check failed",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+					Conditions: []v1.PodCondition{{
+						Type:   v1.PodScheduled,
+						Status: v1.ConditionTrue,
+					}},
+				},
+			}},
+			events: []v1.Event{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "test"}, Reason: "Unhealthy", Type: "Warning",
+					Message:   "Readiness probe failed: cat: /tmp/healthy: No such file or directory",
+					EventTime: metav1.MicroTime{Time: after},
+				},
+			},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
+				proto.ActionableErr{
+					Message: "Readiness probe failed: cat: /tmp/healthy: No such file or directory",
+					ErrCode: proto.StatusCode_STATUSCHECK_UNHEALTHY,
+					Suggestions: []*proto.Suggestion{
+						{
+							SuggestionCode: proto.SuggestionCode_CHECK_READINESS_PROBE,
+							Action:         "Try checking container config `readinessProbe`",
+						},
+					},
 				}, nil)},
 		},
 	}

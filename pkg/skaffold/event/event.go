@@ -142,10 +142,12 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 		BuildState: &proto.BuildState{
 			Artifacts:   builds,
 			AutoTrigger: autoBuild,
+			StatusCode:  proto.StatusCode_OK,
 		},
 		DeployState: &proto.DeployState{
 			Status:      NotStarted,
 			AutoTrigger: autoDeploy,
+			StatusCode:  proto.StatusCode_OK,
 		},
 		StatusCheckState: emptyStatusCheckState(),
 		ForwardedPorts:   make(map[int32]*proto.PortEvent),
@@ -170,6 +172,9 @@ func DeployInProgress() {
 // DeployFailed notifies that non-fatal errors were encountered during a deployment.
 func DeployFailed(err error) {
 	aiErr := sErrors.ActionableErr(sErrors.Deploy, err)
+	handler.stateLock.Lock()
+	handler.state.DeployState.StatusCode = aiErr.ErrCode
+	handler.stateLock.Unlock()
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed,
 		Err:           err.Error(),
 		ErrCode:       aiErr.ErrCode,
@@ -181,11 +186,17 @@ func DeployInfoEvent(err error) {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Info, Err: err.Error()})
 }
 
-func StatusCheckEventEnded(err error) {
+func StatusCheckEventEnded(errCode proto.StatusCode, err error) {
 	if err != nil {
-		statusCheckEventFailed(err)
+		handler.stateLock.Lock()
+		handler.state.StatusCheckState.StatusCode = errCode
+		handler.stateLock.Unlock()
+		statusCheckEventFailed(err, errCode)
 		return
 	}
+	handler.stateLock.Lock()
+	handler.state.StatusCheckState.StatusCode = proto.StatusCode_STATUSCHECK_SUCCESS
+	handler.stateLock.Unlock()
 	statusCheckEventSucceeded()
 }
 
@@ -195,12 +206,15 @@ func statusCheckEventSucceeded() {
 	})
 }
 
-func statusCheckEventFailed(err error) {
-	aiErr := sErrors.ActionableErr(sErrors.StatusCheck, err)
+func statusCheckEventFailed(err error, errCode proto.StatusCode) {
+	aiErr := &proto.ActionableErr{
+		ErrCode: errCode,
+		Message: err.Error(),
+	}
 	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
 		Status:        Failed,
 		Err:           err.Error(),
-		ErrCode:       aiErr.ErrCode,
+		ErrCode:       errCode,
 		ActionableErr: aiErr})
 }
 
@@ -256,6 +270,9 @@ func ResourceStatusCheckEventUpdated(r string, ae proto.ActionableErr) {
 
 // DeployComplete notifies that a deployment has completed.
 func DeployComplete() {
+	handler.stateLock.Lock()
+	handler.state.DeployState.StatusCode = proto.StatusCode_DEPLOY_SUCCESS
+	handler.stateLock.Unlock()
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Complete})
 }
 
@@ -267,6 +284,9 @@ func BuildInProgress(imageName string) {
 // BuildFailed notifies that a build has failed.
 func BuildFailed(imageName string, err error) {
 	aiErr := sErrors.ActionableErr(sErrors.Build, err)
+	handler.stateLock.Lock()
+	handler.state.BuildState.StatusCode = aiErr.ErrCode
+	handler.stateLock.Unlock()
 	handler.handleBuildEvent(&proto.BuildEvent{
 		Artifact:      imageName,
 		Status:        Failed,
@@ -299,8 +319,22 @@ func DevLoopFailedWithErrorCode(i int, statusCode proto.StatusCode, err error) {
 
 // DevLoopFailed notifies that a dev loop has failed in a given phase
 func DevLoopFailedInPhase(iteration int, phase sErrors.Phase, err error) {
-	ai := sErrors.ActionableErr(phase, err)
-	DevLoopFailedWithErrorCode(iteration, ai.ErrCode, err)
+	state := handler.getState()
+	switch phase {
+	case sErrors.Deploy:
+		if state.DeployState.StatusCode != proto.StatusCode_DEPLOY_SUCCESS {
+			DevLoopFailedWithErrorCode(iteration, state.DeployState.StatusCode, err)
+		} else {
+			DevLoopFailedWithErrorCode(iteration, state.StatusCheckState.StatusCode, err)
+		}
+	case sErrors.StatusCheck:
+		DevLoopFailedWithErrorCode(iteration, state.StatusCheckState.StatusCode, err)
+	case sErrors.Build:
+		DevLoopFailedWithErrorCode(iteration, state.BuildState.StatusCode, err)
+	default:
+		ai := sErrors.ActionableErr(phase, err)
+		DevLoopFailedWithErrorCode(iteration, ai.ErrCode, err)
+	}
 }
 
 // DevLoopComplete notifies that a dev loop has completed.
@@ -594,6 +628,7 @@ func ResetStateOnBuild() {
 func ResetStateOnDeploy() {
 	newState := handler.getState()
 	newState.DeployState.Status = NotStarted
+	newState.DeployState.StatusCode = proto.StatusCode_OK
 	newState.StatusCheckState = emptyStatusCheckState()
 	newState.ForwardedPorts = map[int32]*proto.PortEvent{}
 	newState.DebuggingContainers = nil
@@ -620,8 +655,9 @@ func UpdateStateAutoSyncTrigger(t bool) {
 
 func emptyStatusCheckState() *proto.StatusCheckState {
 	return &proto.StatusCheckState{
-		Status:    NotStarted,
-		Resources: map[string]string{},
+		Status:     NotStarted,
+		Resources:  map[string]string{},
+		StatusCode: proto.StatusCode_OK,
 	}
 }
 

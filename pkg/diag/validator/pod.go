@@ -57,6 +57,13 @@ var (
 	taintsRe       = regexp.MustCompile(taintsExp)
 	// for testing
 	runCli = executeCLI
+
+	unknownConditionsOrSuccess = map[proto.StatusCode]struct{}{
+		proto.StatusCode_STATUSCHECK_UNKNOWN:                   {},
+		proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN: {},
+		proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE:     {},
+		proto.StatusCode_STATUSCHECK_SUCCESS:                   {},
+	}
 )
 
 // PodValidator implements the Validator interface for Pods
@@ -197,6 +204,9 @@ func getUntoleratedTaints(reason string, message string) (proto.StatusCode, erro
 }
 
 func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
+	if _, ok := unknownConditionsOrSuccess[ps.ae.ErrCode]; !ok {
+		return
+	}
 	// Get pod events.
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &pod)
@@ -314,6 +324,10 @@ func getPodLogs(po *v1.Pod, c string) []string {
 		return []string{fmt.Sprintf("Error retrieving logs for pod %s. Try `%s`", po.Name, strings.Join(logCommand, " "))}
 	}
 	lines := strings.Split(string(logs), "\n")
+	// remove spurious empty lines (empty string or from trailing newline)
+	if len(lines) > 0 && len(lines[len(lines)-1]) == 0 {
+		lines = lines[:len(lines)-1]
+	}
 	for i, s := range lines {
 		lines[i] = fmt.Sprintf("[%s %s] %s", po.Name, c, s)
 	}
