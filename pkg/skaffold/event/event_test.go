@@ -18,12 +18,14 @@ package event
 
 import (
 	"errors"
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -90,7 +92,10 @@ func TestDeployFailed(t *testing.T) {
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
 	DeployFailed(errors.New("BUG"))
-	wait(t, func() bool { return handler.getState().DeployState.Status == Failed })
+	wait(t, func() bool {
+		dState := handler.getState().DeployState
+		return dState.Status == Failed && dState.StatusCode == proto.StatusCode_DEPLOY_UNKNOWN
+	})
 }
 
 func TestDeployComplete(t *testing.T) {
@@ -102,7 +107,10 @@ func TestDeployComplete(t *testing.T) {
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
 	DeployComplete()
-	wait(t, func() bool { return handler.getState().DeployState.Status == Complete })
+	wait(t, func() bool {
+		dState := handler.getState().DeployState
+		return dState.Status == Complete && dState.StatusCode == proto.StatusCode_DEPLOY_SUCCESS
+	})
 }
 
 func TestBuildInProgress(t *testing.T) {
@@ -134,7 +142,10 @@ func TestBuildFailed(t *testing.T) {
 
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
 	BuildFailed("img", errors.New("BUG"))
-	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == Failed })
+	wait(t, func() bool {
+		bState := handler.getState().BuildState
+		return bState.Artifacts["img"] == Failed && bState.StatusCode == proto.StatusCode_BUILD_UNKNOWN
+	})
 }
 
 func TestBuildComplete(t *testing.T) {
@@ -209,8 +220,11 @@ func TestStatusCheckEventFailed(t *testing.T) {
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	statusCheckEventFailed(errors.New("one or more deployments failed"))
-	wait(t, func() bool { return handler.getState().StatusCheckState.Status == Failed })
+	StatusCheckEventEnded(proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING, errors.New("one or more deployments failed"))
+	wait(t, func() bool {
+		state := handler.getState().StatusCheckState
+		return state.Status == Failed && state.StatusCode == proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING
+	})
 }
 
 func TestResourceStatusCheckEventUpdated(t *testing.T) {
@@ -463,4 +477,63 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 		},
 	}
 	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
+}
+
+func TestDevLoopFailedInPhase(t *testing.T) {
+	tcs := []struct {
+		description string
+		state       proto.State
+		phase       sErrors.Phase
+		waitFn      func() bool
+	}{
+		{
+			description: "build failed",
+			state: proto.State{
+				BuildState: &proto.BuildState{StatusCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED},
+			},
+			phase: sErrors.Build,
+			waitFn: func() bool {
+				handler.logLock.Lock()
+				logEntry := handler.eventLog[len(handler.eventLog)-1]
+				handler.logLock.Unlock()
+				return logEntry.Entry == fmt.Sprintf("DevInit Iteration 1 failed with error code %v", proto.StatusCode_BUILD_PUSH_ACCESS_DENIED)
+			},
+		},
+		{
+			description: "deploy failed",
+			state: proto.State{
+				BuildState:  &proto.BuildState{},
+				DeployState: &proto.DeployState{StatusCode: proto.StatusCode_DEPLOY_UNKNOWN},
+			},
+			phase: sErrors.Deploy,
+			waitFn: func() bool {
+				handler.logLock.Lock()
+				logEntry := handler.eventLog[len(handler.eventLog)-1]
+				handler.logLock.Unlock()
+				return logEntry.Entry == fmt.Sprintf("DevInit Iteration 1 failed with error code %v", proto.StatusCode_DEPLOY_UNKNOWN)
+			},
+		},
+		{
+			description: "status check failed",
+			state: proto.State{
+				BuildState:       &proto.BuildState{},
+				DeployState:      &proto.DeployState{StatusCode: proto.StatusCode_DEPLOY_SUCCESS},
+				StatusCheckState: &proto.StatusCheckState{StatusCode: proto.StatusCode_STATUSCHECK_UNHEALTHY},
+			},
+			phase: sErrors.Deploy,
+			waitFn: func() bool {
+				handler.logLock.Lock()
+				logEntry := handler.eventLog[len(handler.eventLog)-1]
+				handler.logLock.Unlock()
+				return logEntry.Entry == fmt.Sprintf("DevInit Iteration 1 failed with error code %v", proto.StatusCode_STATUSCHECK_UNHEALTHY)
+			},
+		},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.description, func(t *testing.T) {
+			handler.setState(tc.state)
+			DevLoopFailedInPhase(1, tc.phase, errors.New("random error"))
+			wait(t, tc.waitFn)
+		})
+	}
 }

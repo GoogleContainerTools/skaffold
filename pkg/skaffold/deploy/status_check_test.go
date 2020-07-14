@@ -225,26 +225,48 @@ func TestGetDeployments(t *testing.T) {
 
 func TestGetDeployStatus(t *testing.T) {
 	tests := []struct {
-		description string
-		counter     *counter
-		expected    string
-		shouldErr   bool
+		description  string
+		counter      *counter
+		deployments  []*resource.Deployment
+		expected     string
+		expectedCode proto.StatusCode
+		shouldErr    bool
 	}{
 		{
 			description: "one error",
 			counter:     &counter{total: 2, failed: 1},
-			expected:    "1/2 deployment(s) failed",
-			shouldErr:   true,
+			deployments: []*resource.Deployment{
+				resource.NewDeployment("foo", "test", time.Second).
+					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE}),
+			},
+			expected:     "1/2 deployment(s) failed",
+			expectedCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
+			shouldErr:    true,
 		},
 		{
 			description: "no error",
 			counter:     &counter{total: 2},
+			deployments: []*resource.Deployment{
+				withStatus(
+					resource.NewDeployment("r1", "test", 1),
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+				),
+				withStatus(
+					resource.NewDeployment("r2", "test", 1),
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+				),
+			},
 		},
 		{
 			description: "multiple errors",
 			counter:     &counter{total: 3, failed: 2},
 			expected:    "2/3 deployment(s) failed",
-			shouldErr:   true,
+			deployments: []*resource.Deployment{
+				resource.NewDeployment("foo", "test", time.Second).
+					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE}),
+			},
+			expectedCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
+			shouldErr:    true,
 		},
 		{
 			description: "0 deployments",
@@ -255,10 +277,11 @@ func TestGetDeployStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
-			err := getSkaffoldDeployStatus(test.counter)
+			errCode, err := getSkaffoldDeployStatus(test.counter, test.deployments)
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
 				t.CheckErrorContains(test.expected, err)
+				t.CheckDeepEqual(test.expectedCode, errCode)
 			}
 		})
 	}
