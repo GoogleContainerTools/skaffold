@@ -147,6 +147,9 @@ func getWaitingContainerStatus(po *v1.Pod, cs []v1.ContainerStatus) (proto.Statu
 		case c.State.Waiting != nil:
 			return extractErrorMessageFromWaitingContainerStatus(po, c)
 		case c.State.Terminated != nil:
+			if c.State.Terminated.ExitCode == 0 {
+				return proto.StatusCode_STATUSCHECK_SUCCESS, nil, nil
+			}
 			l := getPodLogs(po, c.Name)
 			return proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, l, fmt.Errorf("container %s terminated with exit code %d", c.Name, c.State.Terminated.ExitCode)
 		}

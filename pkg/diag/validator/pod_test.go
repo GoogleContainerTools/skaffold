@@ -191,6 +191,64 @@ func TestRun(t *testing.T) {
 				}, nil)},
 		},
 		{
+			description: "One of the pod containers is in Terminated State",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase:      v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							Image: "foo-image",
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{ExitCode: 0},
+							},
+						},
+					},
+				},
+			}},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
+				proto.ActionableErr{
+					Message: "",
+					ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+				}, nil)},
+		},
+		{
+			description: "one of the pod containers is in Terminated State with non zero exit code",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase:      v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							Image: "foo-image",
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{ExitCode: 1, Message: "panic caused"},
+							},
+						},
+					}},
+			}},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
+				proto.ActionableErr{
+					Message: "container foo-container terminated with exit code 1",
+					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED,
+					Suggestions: []*proto.Suggestion{
+						{SuggestionCode: proto.SuggestionCode_CHECK_CONTAINER_LOGS,
+							Action: "Try checking container logs"},
+					}}, []string{})},
+		},
+		{
 			description: "pod is in Stable State",
 			pods: []*v1.Pod{{
 				ObjectMeta: metav1.ObjectMeta{
