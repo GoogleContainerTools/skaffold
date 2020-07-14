@@ -82,7 +82,7 @@ func TestGeneratePipeline(t *testing.T) {
 
 			skaffoldEnv := []string{
 				"PIPELINE_GIT_URL=this-is-a-test",
-				"PIPELINE_SKAFFOLD_VERSION=test-version",
+				"PIPELINE_SKAFFOLD_VERSION=latest",
 			}
 			skaffold.GeneratePipeline(args...).WithStdin(test.input).WithEnv(skaffoldEnv).InDir(test.dir).RunOrFail(t)
 
