@@ -1,3 +1,31 @@
+# v1.12.1 Release - 07/14/2020
+
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.12.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.12.1/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.12.1/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.12.1`
+
+Fixes:
+* Lenient parsing of `minikube docker-env` (#4421)
+* Ignore comments in `minikuke docker-env` output (#4422)
+* Debug supports `/bin/sh -c` and `/bin/bash -c` command-lines (#4442)
+* When pulling images and authentication fails, first try anonymous pulling. (#4451)
+* Propagate status error code to devloopEndEvent (#4468)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Brian de Alwis
+- David Gageot
+- Tejal Desai
+
+
 # v1.12.0 Release - 06/25/2020
 
 **Linux**
