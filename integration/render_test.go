@@ -528,14 +528,15 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    app.kubernetes.io/managed-by: SOMEDYNAMICVALUE
+  annotations:
     skaffold.dev/builder: local
     skaffold.dev/cleanup: "true"
     skaffold.dev/deployer: kubectl
     skaffold.dev/docker-api-version: SOMEDYNAMICVALUE
-    skaffold.dev/run-id: SOMEDYNAMICVALUE
     skaffold.dev/tag-policy: git-commit
+  labels:
+    app.kubernetes.io/managed-by: SOMEDYNAMICVALUE
+    skaffold.dev/run-id: SOMEDYNAMICVALUE
   name: my-pod-123
 spec:
   containers:
@@ -636,14 +637,15 @@ resources:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    app.kubernetes.io/managed-by: SOMEDYNAMICVALUE
+  annotations:
     skaffold.dev/builder: local
     skaffold.dev/cleanup: "true"
     skaffold.dev/deployer: kustomize
     skaffold.dev/docker-api-version: SOMEDYNAMICVALUE
-    skaffold.dev/run-id: SOMEDYNAMICVALUE
     skaffold.dev/tag-policy: git-commit
+  labels:
+    app.kubernetes.io/managed-by: SOMEDYNAMICVALUE
+    skaffold.dev/run-id: SOMEDYNAMICVALUE
     this-is-from: kustomization.yaml
   name: my-pod-123
 spec:
