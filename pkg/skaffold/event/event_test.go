@@ -223,7 +223,6 @@ func TestStatusCheckEventFailed(t *testing.T) {
 	StatusCheckEventEnded(proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING, errors.New("one or more deployments failed"))
 	wait(t, func() bool {
 		state := handler.getState().StatusCheckState
-		fmt.Println(state.StatusCode)
 		return state.Status == Failed && state.StatusCode == proto.StatusCode_STATUSCHECK_FAILED_SCHEDULING
 	})
 }
