@@ -21,7 +21,7 @@ replace (
 
 require (
 	4d63.com/tz v1.1.0
-	cloud.google.com/go/storage v1.6.0
+	cloud.google.com/go/storage v1.8.0
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.1 // indirect
@@ -38,9 +38,9 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.0.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/golang/protobuf v1.4.0
-	github.com/google/go-cmp v0.4.0
-	github.com/google/go-containerregistry v0.0.0-20200413145205-82d30a103c0a
+	github.com/golang/protobuf v1.4.2
+	github.com/google/go-cmp v0.4.1
+	github.com/google/go-containerregistry v0.1.1
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/grpc-gateway v1.14.3
@@ -60,23 +60,23 @@ require (
 	github.com/rjeczalik/notify v0.9.2
 	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/segmentio/textio v1.2.0
-	github.com/sirupsen/logrus v1.5.0
+	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.uber.org/multierr v1.4.0 // indirect
 	go.uber.org/zap v1.12.0 // indirect
-	golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
+	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527
+	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
+	golang.org/x/sys v0.0.0-20200523222454-059865788121
 	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
-	google.golang.org/api v0.21.0
-	google.golang.org/genproto v0.0.0-20200413115906-b5235f65be36
+	google.golang.org/api v0.25.0
+	google.golang.org/genproto v0.0.0-20200527145253-8367513e4ece
 	google.golang.org/grpc v1.29.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c
 	k8s.io/api v0.18.1
 	k8s.io/apiextensions-apiserver v0.18.1 // indirect
