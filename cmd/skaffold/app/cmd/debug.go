@@ -20,9 +20,9 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/spf13/cobra"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 )

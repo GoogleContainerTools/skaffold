@@ -27,9 +27,9 @@ import (
 	"os"
 	"sort"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -92,11 +92,11 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 
 	// add image options hash
 	if opts != nil {
-		if h, err := opts.Hash(); err != nil {
+		h, err := opts.Hash()
+		if err != nil {
 			return "", fmt.Errorf("evaluating build args: %w", err)
-		} else {
-			inputs = append(inputs, h)
 		}
+		inputs = append(inputs, h)
 	}
 
 	// get a key for the hashes

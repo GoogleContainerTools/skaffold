@@ -21,7 +21,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -143,7 +142,7 @@ func TestGetHashForArtifact(t *testing.T) {
 			t.Override(&artifactConfigFunction, fakeArtifactConfig)
 
 			depLister := stubDependencyLister(test.dependencies)
-			actual, err := getHashForArtifact(context.Background(), depLister, test.artifact, build.CreateBuilderOptions(""), test.devMode)
+			actual, err := getHashForArtifact(context.Background(), depLister, test.artifact, nil, test.devMode)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
