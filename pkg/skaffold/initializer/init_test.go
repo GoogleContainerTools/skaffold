@@ -196,6 +196,19 @@ func TestDoInit(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "helm fails",
+			dir:  "testdata/init/helm-deployment",
+			config: initconfig.Config{
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+			expectedError: `Projects set up to deploy with helm must be manually configured.
+
+See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed guide on setting your project up with skaffold.`,
+			expectedExitCode: 1,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {

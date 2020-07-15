@@ -1,0 +1,12 @@
+apiVersion: skaffold/v2beta5
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-helm
+deploy:
+  helm:
+    releases:
+    - name: skaffold-helm
+      chartPath: charts
+      artifactOverrides:
+        image: skaffold-helm

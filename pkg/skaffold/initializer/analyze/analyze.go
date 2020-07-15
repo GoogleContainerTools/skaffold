@@ -43,6 +43,7 @@ type ProjectAnalysis struct {
 	configAnalyzer    *skaffoldConfigAnalyzer
 	kubeAnalyzer      *kubeAnalyzer
 	kustomizeAnalyzer *kustomizeAnalyzer
+	helmAnalyzer      *helmAnalyzer
 	builderAnalyzer   *builderAnalyzer
 	maxFileSize       int64
 }
@@ -63,10 +64,15 @@ func (a *ProjectAnalysis) KustomizeBases() []string {
 	return a.kustomizeAnalyzer.bases
 }
 
+func (a *ProjectAnalysis) ChartPaths() []string {
+	return a.helmAnalyzer.chartPaths
+}
+
 func (a *ProjectAnalysis) analyzers() []analyzer {
 	return []analyzer{
 		a.kubeAnalyzer,
 		a.kustomizeAnalyzer,
+		a.helmAnalyzer,
 		a.configAnalyzer,
 		a.builderAnalyzer,
 	}
@@ -77,6 +83,7 @@ func NewAnalyzer(c config.Config) *ProjectAnalysis {
 	return &ProjectAnalysis{
 		kubeAnalyzer:      &kubeAnalyzer{},
 		kustomizeAnalyzer: &kustomizeAnalyzer{},
+		helmAnalyzer:      &helmAnalyzer{},
 		builderAnalyzer: &builderAnalyzer{
 			findBuilders:         !c.SkipBuild,
 			enableJibInit:        c.EnableJibInit,

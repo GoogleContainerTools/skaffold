@@ -17,25 +17,18 @@ limitations under the License.
 package analyze
 
 import (
-	"path/filepath"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 )
 
-// kustomizeAnalyzer is a Visitor during the directory analysis that finds kustomize files
-type kustomizeAnalyzer struct {
+// helmAnalyzer is a Visitor during the directory analysis that finds helm charts
+type helmAnalyzer struct {
 	directoryAnalyzer
-
-	bases          []string
-	kustomizePaths []string
+	chartPaths []string
 }
 
-func (k *kustomizeAnalyzer) analyzeFile(path string) error {
-	switch {
-	case deploy.IsKustomizationBase(path):
-		k.bases = append(k.bases, filepath.Dir(path))
-	case deploy.IsKustomizationPath(path):
-		k.kustomizePaths = append(k.kustomizePaths, filepath.Dir(path))
+func (h *helmAnalyzer) analyzeFile(filePath string) error {
+	if deploy.IsHelmChart(filePath) {
+		h.chartPaths = append(h.chartPaths, filePath)
 	}
 	return nil
 }
