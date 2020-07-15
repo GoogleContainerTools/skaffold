@@ -33,7 +33,12 @@ import (
 	"github.com/buildpacks/pack/internal/style"
 )
 
-const lifecycleImageRepo = "buildpacksio/lifecycle"
+const (
+	lifecycleImageRepo                   = "buildpacksio/lifecycle"
+	minLifecycleVersionSupportingCreator = "0.7.4"
+	prevLifecycleVersionSupportingImage  = "0.6.1"
+	minLifecycleVersionSupportingImage   = "0.7.5"
+)
 
 type Lifecycle interface {
 	Execute(ctx context.Context, opts build.LifecycleOptions) error
@@ -164,7 +169,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 	lifecycleVersion := ephemeralBuilder.LifecycleDescriptor().Info.Version
 	// Technically the creator is supported as of platform API version 0.3 (lifecycle version 0.7.0+) but earlier versions
 	// have bugs that make using the creator problematic.
-	lifecycleSupportsCreator := !lifecycleVersion.LessThan(semver.MustParse("0.7.4"))
+	lifecycleSupportsCreator := !lifecycleVersion.LessThan(semver.MustParse(minLifecycleVersionSupportingCreator))
 
 	if lifecycleSupportsCreator && opts.TrustBuilder {
 		lifecycleOpts.UseCreator = true
@@ -172,7 +177,8 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		return c.lifecycle.Execute(ctx, lifecycleOpts)
 	}
 
-	lifecycleImageSupported := lifecycleVersion.Equal(builder.VersionMustParse("0.6.1")) || !lifecycleVersion.LessThan(semver.MustParse("0.7.5"))
+	lifecycleImageSupported := lifecycleVersion.Equal(builder.VersionMustParse(prevLifecycleVersionSupportingImage)) || !lifecycleVersion.LessThan(semver.MustParse(minLifecycleVersionSupportingImage))
+
 	if !opts.TrustBuilder {
 		switch lifecycleImageSupported {
 		case true:

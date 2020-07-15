@@ -69,7 +69,7 @@ github.com/buildpacks/lifecycle/archive
 github.com/buildpacks/lifecycle/auth
 github.com/buildpacks/lifecycle/cmd
 github.com/buildpacks/lifecycle/launch
-# github.com/buildpacks/pack v0.11.3-0.20200701155454-2b1bc5eff635
+# github.com/buildpacks/pack v0.12.0
 ## explicit
 github.com/buildpacks/pack
 github.com/buildpacks/pack/builder
