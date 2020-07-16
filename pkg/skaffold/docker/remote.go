@@ -30,9 +30,8 @@ import (
 
 // for testing
 var (
-	getInsecureRegistryImpl = getInsecureRegistry
-	getRemoteImageImpl      = getRemoteImage
-	RemoteDigest            = getRemoteDigest
+	getRemoteImageImpl = getRemoteImage
+	RemoteDigest       = getRemoteDigest
 )
 
 func AddRemoteTag(src, target string, insecureRegistries map[string]bool) error {
@@ -42,16 +41,9 @@ func AddRemoteTag(src, target string, insecureRegistries map[string]bool) error 
 		return fmt.Errorf("getting image: %w", err)
 	}
 
-	targetRef, err := name.ParseReference(target, name.WeakValidation)
+	targetRef, err := parseReference(target, insecureRegistries, name.WeakValidation)
 	if err != nil {
-		return fmt.Errorf("getting target reference: %w", err)
-	}
-
-	if IsInsecure(targetRef.Context().Registry.Name(), insecureRegistries) {
-		targetRef, err = getInsecureRegistryImpl(target)
-		if err != nil {
-			logrus.Warnf("error getting insecure registry: %s\nremote references may not be retrieved", err.Error())
-		}
+		return err
 	}
 
 	return remote.Write(targetRef, img, remote.WithAuthFromKeychain(masterKeychain))
@@ -101,34 +93,35 @@ func Push(tarPath, tag string, insecureRegistries map[string]bool) (string, erro
 }
 
 func remoteImage(identifier string, insecureRegistries map[string]bool) (v1.Image, error) {
-	ref, err := name.ParseReference(identifier)
+	ref, err := parseReference(identifier, insecureRegistries)
 	if err != nil {
-		return nil, fmt.Errorf("parsing reference [%s]: %w", identifier, err)
-	}
-
-	if IsInsecure(ref.Context().Registry.Name(), insecureRegistries) {
-		ref, err = getInsecureRegistryImpl(identifier)
-		if err != nil {
-			logrus.Warnf("error getting insecure registry: %s\nremote references may not be retrieved", err.Error())
-		}
+		return nil, err
 	}
 
 	return getRemoteImageImpl(ref)
 }
 
-func getInsecureRegistry(identifier string) (name.Reference, error) {
-	ref, err := name.ParseReference(identifier, name.Insecure)
-	if err != nil {
-		return nil, fmt.Errorf("parsing reference %q: %w", identifier, err)
-	}
-	return ref, nil
-}
-
-// IsInsecure tests if the registry is listed as an insecure registry; default is false
-func IsInsecure(reg string, insecureRegistries map[string]bool) bool {
-	return insecureRegistries[reg]
+// IsInsecure tests if an image is pulled from an insecure registry; default is false
+func IsInsecure(ref name.Reference, insecureRegistries map[string]bool) bool {
+	return insecureRegistries[ref.Context().Registry.Name()]
 }
 
 func getRemoteImage(ref name.Reference) (v1.Image, error) {
 	return remote.Image(ref, remote.WithAuthFromKeychain(masterKeychain))
+}
+
+func parseReference(s string, insecureRegistries map[string]bool, opts ...name.Option) (name.Reference, error) {
+	ref, err := name.ParseReference(s, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("parsing reference %q: %w", s, err)
+	}
+
+	if IsInsecure(ref, insecureRegistries) {
+		ref, err = name.ParseReference(s, name.Insecure)
+		if err != nil {
+			logrus.Warnf("error getting insecure registry: %s\nremote references may not be retrieved", err.Error())
+		}
+	}
+
+	return ref, nil
 }

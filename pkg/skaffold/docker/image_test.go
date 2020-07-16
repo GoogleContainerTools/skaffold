@@ -27,7 +27,6 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/random"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -373,13 +372,14 @@ func TestInsecureRegistry(t *testing.T) {
 		description        string
 		image              string
 		insecureRegistries map[string]bool
-		insecure           bool
+		scheme             string
 		shouldErr          bool
 	}{
 		{
 			description:        "secure image",
 			image:              "gcr.io/secure/image",
 			insecureRegistries: map[string]bool{},
+			scheme:             "https",
 		},
 		{
 			description: "insecure image",
@@ -387,12 +387,11 @@ func TestInsecureRegistry(t *testing.T) {
 			insecureRegistries: map[string]bool{
 				"my.insecure.registry": true,
 			},
-			insecure: true,
+			scheme: "http",
 		},
 		{
 			description: "insecure image not provided by user",
 			image:       "my.insecure.registry/image",
-			insecure:    true,
 			shouldErr:   true,
 		},
 		{
@@ -406,25 +405,23 @@ func TestInsecureRegistry(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			called := false // variable to make sure we've called our getInsecureRegistry function
-
-			t.Override(&getInsecureRegistryImpl, func(string) (name.Reference, error) {
-				called = true
-				return name.Tag{}, nil
-			})
-			t.Override(&getRemoteImageImpl, func(name.Reference) (v1.Image, error) {
-				return random.Image(0, 0)
+			t.Override(&getRemoteImageImpl, func(ref name.Reference) (v1.Image, error) {
+				return &fakeImage{Reference: ref}, nil
 			})
 
-			_, err := remoteImage(test.image, test.insecureRegistries)
+			img, err := remoteImage(test.image, test.insecureRegistries)
 
 			t.CheckNoError(err)
 			if !test.shouldErr {
-				t.CheckFalse(test.insecure && !called)
-				t.CheckFalse(!test.insecure && called)
+				t.CheckDeepEqual(test.scheme, img.(*fakeImage).Reference.Context().Registry.Scheme())
 			}
 		})
 	}
+}
+
+type fakeImage struct {
+	v1.Image
+	Reference name.Reference
 }
 
 func TestConfigFile(t *testing.T) {
