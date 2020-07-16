@@ -21,27 +21,21 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // InSequence builds a list of artifacts in sequence.
-func InSequence(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+func InSequence(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, options []BuilderOptions, buildArtifact artifactBuilder) ([]Artifact, error) {
 	var builds []Artifact
 
-	for _, artifact := range artifacts {
+	for i, artifact := range artifacts {
 		color.Default.Fprintf(out, "Building [%s]...\n", artifact.ImageName)
 
 		event.BuildInProgress(artifact.ImageName)
 
-		tag, present := tags[artifact.ImageName]
-		if !present {
-			return nil, fmt.Errorf("unable to find tag for image %s", artifact.ImageName)
-		}
-
-		finalTag, err := buildArtifact(ctx, out, artifact, CreateBuilderOptions(tag))
+		finalTag, err := buildArtifact(ctx, out, artifact, options[i])
 		if err != nil {
 			event.BuildFailed(artifact.ImageName, err)
 			return nil, fmt.Errorf("couldn't build %q: %w", artifact.ImageName, err)

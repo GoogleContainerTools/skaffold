@@ -22,44 +22,33 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strconv"
 )
 
-// Configuration denotes build configuration for the artifact builder as either Release or Debug
-type Configuration int
+// Configuration denotes build configuration for the artifact builder as either Dev or Debug
+type Configuration string
 
 const (
-	Release = iota
-	Debug
+	Dev   = Configuration("dev")
+	Debug = Configuration("debug")
 )
 
-// ImageOptions provides options for the artifact builder
-type ImageOptions struct {
-	// FIXME: Tag should be []string but we don't support multiple tags yet
+// BuilderOptions provides options for the artifact builder
+type BuilderOptions struct {
 	Tag           string             // image tag
-	Configuration Configuration      // build image for release or debug
-	Args          map[string]*string // additional builder specific args
-}
-
-var CurrentConfiguration Configuration
-
-func CreateBuilderOptions(tag string) *ImageOptions {
-	return &ImageOptions{
-		Tag:           tag,
-		Configuration: CurrentConfiguration,
-	}
+	Configuration Configuration      // build image for dev or debug
+	BuildArgs     map[string]*string // additional builder specific args
 }
 
 // Hash returns the hash of given image option, useful for image caching
-func (opts *ImageOptions) Hash() (string, error) {
+func (opts *BuilderOptions) Hash() (string, error) {
 	var inputs []string
 	if opts == nil {
 		return "", nil
 	}
 
-	inputs = append(inputs, strconv.Itoa(int(opts.Configuration)))
-	if opts.Args != nil {
-		inputs = append(inputs, convertBuildArgsToStringArray(opts.Args)...)
+	inputs = append(inputs, string(opts.Configuration))
+	if opts.BuildArgs != nil {
+		inputs = append(inputs, convertBuildArgsToStringArray(opts.BuildArgs)...)
 	}
 
 	hasher := sha256.New()

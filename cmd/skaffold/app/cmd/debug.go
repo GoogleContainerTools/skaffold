@@ -22,7 +22,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 )
@@ -44,7 +43,6 @@ func NewCmdDebug() *cobra.Command {
 
 func runDebug(ctx context.Context, out io.Writer) error {
 	opts.PortForward.ForwardPods = true
-	build.CurrentConfiguration = build.Debug
 	deploy.AddManifestTransform(debugging.ApplyDebuggingTransforms)
 
 	return doDev(ctx, out)

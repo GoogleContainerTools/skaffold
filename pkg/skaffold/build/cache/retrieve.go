@@ -25,14 +25,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildAndTest BuildAndTestFn) ([]build.Artifact, error) {
+func (c *cache) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, options []build.BuilderOptions, buildAndTest BuildAndTestFn) ([]build.Artifact, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -41,7 +40,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	color.Default.Fprintln(out, "Checking cache...")
 
 	lookup := make(chan []cacheDetails)
-	go func() { lookup <- c.lookupArtifacts(ctx, tags, artifacts) }()
+	go func() { lookup <- c.lookupArtifacts(ctx, artifacts, options) }()
 
 	var results []cacheDetails
 	select {
@@ -90,7 +89,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 		// Image is already built
 		entry := c.artifactCache[result.Hash()]
-		tag := tags[artifact.ImageName]
+		tag := options[i].Tag
 
 		var uniqueTag string
 		if c.imagesAreLocal {
@@ -111,7 +110,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 	logrus.Infoln("Cache check complete in", time.Since(start))
 
-	bRes, err := buildAndTest(ctx, out, tags, needToBuild)
+	bRes, err := buildAndTest(ctx, out, needToBuild, options)
 	if err != nil {
 		return nil, err
 	}

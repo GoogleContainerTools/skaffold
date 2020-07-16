@@ -16,15 +16,17 @@ limitations under the License.
 
 package docker
 
-import "github.com/docker/docker/api/types"
+import (
+	"github.com/docker/docker/api/types"
+)
 
 var buildArgsForDebug = map[string]string{
-	"GO_GCFLAGS": "'all=-N -l'", // disable build optimization for Golang
+	"SKAFFOLD_GO_GCFLAGS": "'all=-N -l'", // disable build optimization for Golang
 	// TODO: Add for other languages
 }
 
-var buildArgsForRelease = map[string]string{
-	"GO_LDFLAGS": "-w", // omit debug information in build output for Golang
+var buildArgsForDev = map[string]string{
+	"SKAFFOLD_GO_LDFLAGS": "-w", // omit debug information in build output for Golang
 	// TODO: Add for other languages
 }
 
@@ -61,11 +63,10 @@ func OptimizeBuildForDebug(opts *types.ImageBuildOptions) *types.ImageBuildOptio
 			opts.BuildArgs[k] = &v
 		}
 	}
-
 	return opts
 }
 
-func OptimizeBuildForRelease(opts *types.ImageBuildOptions) *types.ImageBuildOptions {
+func OptimizeBuildForDev(opts *types.ImageBuildOptions) *types.ImageBuildOptions {
 	if opts == nil {
 		opts = &types.ImageBuildOptions{}
 	}
@@ -74,7 +75,7 @@ func OptimizeBuildForRelease(opts *types.ImageBuildOptions) *types.ImageBuildOpt
 		opts.BuildArgs = make(map[string]*string)
 	}
 
-	for k, v := range buildArgsForRelease {
+	for k, v := range buildArgsForDev {
 		if opts.BuildArgs[k] == nil {
 			opts.BuildArgs[k] = &v
 		}

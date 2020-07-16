@@ -26,7 +26,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -48,7 +47,7 @@ func TestLocalRun(t *testing.T) {
 	tests := []struct {
 		description      string
 		api              *testutil.FakeAPIClient
-		tags             tag.ImageTags
+		opts             []build.BuilderOptions
 		artifacts        []*latest.Artifact
 		expected         []build.Artifact
 		expectedWarnings []string
@@ -64,7 +63,12 @@ func TestLocalRun(t *testing.T) {
 					DockerArtifact: &latest.DockerArtifact{},
 				}},
 			},
-			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			opts: []build.BuilderOptions{
+				{
+					Tag:           "gcr.io/test/image:tag",
+					Configuration: build.Dev,
+				},
+			},
 			api:        &testutil.FakeAPIClient{},
 			pushImages: false,
 			expected: []build.Artifact{{
@@ -80,7 +84,12 @@ func TestLocalRun(t *testing.T) {
 					DockerArtifact: &latest.DockerArtifact{},
 				}},
 			},
-			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			opts: []build.BuilderOptions{
+				{
+					Tag:           "gcr.io/test/image:tag",
+					Configuration: build.Dev,
+				},
+			},
 			api: &testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
@@ -94,7 +103,12 @@ func TestLocalRun(t *testing.T) {
 					DockerArtifact: &latest.DockerArtifact{},
 				}},
 			},
-			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			opts: []build.BuilderOptions{
+				{
+					Tag:           "gcr.io/test/image:tag",
+					Configuration: build.Dev,
+				},
+			},
 			api:        &testutil.FakeAPIClient{},
 			pushImages: true,
 			expected: []build.Artifact{{
@@ -113,7 +127,12 @@ func TestLocalRun(t *testing.T) {
 					DockerArtifact: &latest.DockerArtifact{},
 				}},
 			},
-			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			opts: []build.BuilderOptions{
+				{
+					Tag:           "gcr.io/test/image:tag",
+					Configuration: build.Dev,
+				},
+			},
 			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
@@ -127,18 +146,17 @@ func TestLocalRun(t *testing.T) {
 					DockerArtifact: &latest.DockerArtifact{},
 				}},
 			},
-			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			opts: []build.BuilderOptions{
+				{
+					Tag:           "gcr.io/test/image:tag",
+					Configuration: build.Dev,
+				},
+			},
 			pushImages: true,
 			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
 			shouldErr: true,
-		},
-		{
-			description: "unknown artifact type",
-			artifacts:   []*latest.Artifact{{}},
-			api:         &testutil.FakeAPIClient{},
-			shouldErr:   true,
 		},
 		{
 			description: "cache-from images already pulled",
@@ -150,8 +168,13 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api:  (&testutil.FakeAPIClient{}).Add("pull1", "imageID1").Add("pull2", "imageID2"),
-			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			api: (&testutil.FakeAPIClient{}).Add("pull1", "imageID1").Add("pull2", "imageID2"),
+			opts: []build.BuilderOptions{
+				{
+					Tag:           "gcr.io/test/image:tag",
+					Configuration: build.Dev,
+				},
+			},
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:1",
@@ -167,8 +190,13 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api:  (&testutil.FakeAPIClient{}).Add("pull1", "imageid").Add("pull2", "anotherimageid"),
-			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			api: (&testutil.FakeAPIClient{}).Add("pull1", "imageid").Add("pull2", "anotherimageid"),
+			opts: []build.BuilderOptions{
+				{
+					Tag:           "gcr.io/test/image:tag",
+					Configuration: build.Dev,
+				},
+			},
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:1",
@@ -187,7 +215,12 @@ func TestLocalRun(t *testing.T) {
 			api: (&testutil.FakeAPIClient{
 				ErrImagePull: true,
 			}).Add("pull1", ""),
-			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			opts: []build.BuilderOptions{
+				{
+					Tag:           "gcr.io/test/image:tag",
+					Configuration: build.Dev,
+				},
+			},
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:1",
@@ -207,7 +240,12 @@ func TestLocalRun(t *testing.T) {
 			api: &testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
-			tags:      tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			opts: []build.BuilderOptions{
+				{
+					Tag:           "gcr.io/test/image:tag",
+					Configuration: build.Dev,
+				},
+			},
 			shouldErr: true,
 		},
 		{
@@ -218,7 +256,12 @@ func TestLocalRun(t *testing.T) {
 					DockerArtifact: &latest.DockerArtifact{},
 				}},
 			},
-			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			opts: []build.BuilderOptions{
+				{
+					Tag:           "gcr.io/test/image:tag",
+					Configuration: build.Dev,
+				},
+			},
 			api: &testutil.FakeAPIClient{
 				ErrVersion: true,
 			},
@@ -249,7 +292,7 @@ func TestLocalRun(t *testing.T) {
 			}))
 			t.CheckNoError(err)
 
-			res, err := builder.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
+			res, err := builder.Build(context.Background(), ioutil.Discard, test.artifacts, test.opts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)

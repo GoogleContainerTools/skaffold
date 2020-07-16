@@ -21,18 +21,17 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-type BuildAndTestFn func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact) ([]build.Artifact, error)
+type BuildAndTestFn func(context.Context, io.Writer, []*latest.Artifact, []build.BuilderOptions) ([]build.Artifact, error)
 
 type Cache interface {
-	Build(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, BuildAndTestFn) ([]build.Artifact, error)
+	Build(context.Context, io.Writer, []*latest.Artifact, []build.BuilderOptions, BuildAndTestFn) ([]build.Artifact, error)
 }
 
 type noCache struct{}
 
-func (n *noCache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildAndTest BuildAndTestFn) ([]build.Artifact, error) {
-	return buildAndTest(ctx, out, tags, artifacts)
+func (n *noCache) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, options []build.BuilderOptions, buildAndTest BuildAndTestFn) ([]build.Artifact, error) {
+	return buildAndTest(ctx, out, artifacts, options)
 }

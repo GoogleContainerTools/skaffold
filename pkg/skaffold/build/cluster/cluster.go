@@ -24,13 +24,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // Build builds a list of artifacts with Kaniko.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, options []build.BuilderOptions) ([]build.Artifact, error) {
 	teardownPullSecret, err := b.setupPullSecret(out)
 	if err != nil {
 		return nil, fmt.Errorf("setting up pull secret: %w", err)
@@ -45,10 +44,10 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		defer teardownDockerConfigSecret()
 	}
 
-	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifact, b.ClusterDetails.Concurrency)
+	return build.InParallel(ctx, out, artifacts, options, b.buildArtifact, b.ClusterDetails.Concurrency)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *build.ImageOptions) (string, error) {
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts build.BuilderOptions) (string, error) {
 	digest, err := b.runBuildForArtifact(ctx, out, artifact, opts.Tag)
 	if err != nil {
 		return "", err

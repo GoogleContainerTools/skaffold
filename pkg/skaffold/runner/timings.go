@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -55,13 +54,13 @@ func (w withTimings) Labels() map[string]string {
 	return labels.Merge(w.Builder.Labels(), w.Deployer.Labels())
 }
 
-func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (w withTimings) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, options []build.BuilderOptions) ([]build.Artifact, error) {
 	if len(artifacts) == 0 && w.cacheArtifacts {
 		return nil, nil
 	}
 	start := time.Now()
 
-	bRes, err := w.Builder.Build(ctx, out, tags, artifacts)
+	bRes, err := w.Builder.Build(ctx, out, artifacts, options)
 	if err != nil {
 		return nil, err
 	}

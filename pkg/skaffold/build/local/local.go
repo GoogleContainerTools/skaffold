@@ -29,7 +29,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -37,16 +36,16 @@ import (
 
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, options []build.BuilderOptions) ([]build.Artifact, error) {
 	if b.localCluster {
 		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
 	}
 	defer b.localDocker.Close()
 
-	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifact, *b.cfg.Concurrency)
+	return build.InParallel(ctx, out, artifacts, options, b.buildArtifact, *b.cfg.Concurrency)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, opts *build.ImageOptions) (string, error) {
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, opts build.BuilderOptions) (string, error) {
 	digestOrImageID, err := b.runBuildForArtifact(ctx, out, a, opts)
 	if err != nil {
 		return "", err
@@ -74,7 +73,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 	return build.TagWithImageID(ctx, opts.Tag, imageID, b.localDocker)
 }
 
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, opts *build.ImageOptions) (string, error) {
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, opts build.BuilderOptions) (string, error) {
 	if !b.pushImages {
 		// All of the builders will rely on a local Docker:
 		// + Either to build the image,
@@ -114,10 +113,10 @@ func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, err
 	return insp.ID, nil
 }
 
-func ToDockerOpts(opts *build.ImageOptions) *docker.BuildOptions {
+func ToDockerOpts(opts build.BuilderOptions) *docker.BuildOptions {
 	d := &docker.BuildOptions{Tag: opts.Tag}
 	if opts.Configuration == build.Debug {
 		return d.AddModifier(docker.OptimizeBuildForDebug)
 	}
-	return d.AddModifier(docker.OptimizeBuildForRelease)
+	return d.AddModifier(docker.OptimizeBuildForDev)
 }

@@ -24,7 +24,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -34,19 +33,19 @@ func TestInSequence(t *testing.T) {
 	tests := []struct {
 		description       string
 		buildArtifact     artifactBuilder
-		tags              tag.ImageTags
 		expectedArtifacts []Artifact
+		options           []BuilderOptions
 		expectedOut       string
 		shouldErr         bool
 	}{
 		{
 			description: "build succeeds",
-			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts BuilderOptions) (string, error) {
 				return fmt.Sprintf("%s@sha256:abac", opts.Tag), nil
 			},
-			tags: tag.ImageTags{
-				"skaffold/image1": "skaffold/image1:v0.0.1",
-				"skaffold/image2": "skaffold/image2:v0.0.2",
+			options: []BuilderOptions{
+				{Tag: "skaffold/image1:v0.0.1"},
+				{Tag: "skaffold/image2:v0.0.2"},
 			},
 			expectedArtifacts: []Artifact{
 				{ImageName: "skaffold/image1", Tag: "skaffold/image1:v0.0.1@sha256:abac"},
@@ -56,18 +55,12 @@ func TestInSequence(t *testing.T) {
 		},
 		{
 			description: "build fails",
-			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts BuilderOptions) (string, error) {
 				return "", fmt.Errorf("build fails")
 			},
-			tags: tag.ImageTags{
-				"skaffold/image1": "",
+			options: []BuilderOptions{
+				{Tag: ""},
 			},
-			expectedOut: "Building [skaffold/image1]...\n",
-			shouldErr:   true,
-		},
-		{
-			description: "tag not found",
-			tags:        tag.ImageTags{},
 			expectedOut: "Building [skaffold/image1]...\n",
 			shouldErr:   true,
 		},
@@ -80,7 +73,7 @@ func TestInSequence(t *testing.T) {
 				{ImageName: "skaffold/image2"},
 			}
 
-			got, err := InSequence(context.Background(), out, test.tags, artifacts, test.buildArtifact)
+			got, err := InSequence(context.Background(), out, artifacts, test.options, test.buildArtifact)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedArtifacts, got)
 			t.CheckDeepEqual(test.expectedOut, out.String())
@@ -111,16 +104,16 @@ func TestInSequenceResultsOrder(t *testing.T) {
 			out := ioutil.Discard
 			initializeEvents()
 			artifacts := make([]*latest.Artifact, len(test.images))
-			tags := tag.ImageTags{}
+			opts := make([]BuilderOptions, 0)
 			for i, image := range test.images {
 				artifacts[i] = &latest.Artifact{
 					ImageName: image,
 				}
-				tags[image] = image
+				opts = append(opts, BuilderOptions{Tag: image})
 			}
 			builder := concatTagger{}
 
-			got, err := InSequence(context.Background(), out, tags, artifacts, builder.doBuild)
+			got, err := InSequence(context.Background(), out, artifacts, opts, builder.doBuild)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 		})
@@ -135,7 +128,7 @@ type concatTagger struct {
 // doBuild calculate the tag based by concatinating the tag values for artifact
 // builds seen so far. It mimics artifact dependency where the next build result
 // depends on the previous build result.
-func (t *concatTagger) doBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
+func (t *concatTagger) doBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts BuilderOptions) (string, error) {
 	t.tag += opts.Tag
 	return fmt.Sprintf("%s:%s", artifact.ImageName, t.tag), nil
 }

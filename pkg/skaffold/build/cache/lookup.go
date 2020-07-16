@@ -22,12 +22,11 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifacts []*latest.Artifact) []cacheDetails {
+func (c *cache) lookupArtifacts(ctx context.Context, artifacts []*latest.Artifact, options []build.BuilderOptions) []cacheDetails {
 	details := make([]cacheDetails, len(artifacts))
 
 	var wg sync.WaitGroup
@@ -36,7 +35,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 
 		i := i
 		go func() {
-			details[i] = c.lookup(ctx, artifacts[i], build.CreateBuilderOptions(tags[artifacts[i].ImageName]))
+			details[i] = c.lookup(ctx, artifacts[i], options[i])
 			wg.Done()
 		}()
 	}
@@ -45,7 +44,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 	return details
 }
 
-func (c *cache) lookup(ctx context.Context, a *latest.Artifact, opts *build.ImageOptions) cacheDetails {
+func (c *cache) lookup(ctx context.Context, a *latest.Artifact, opts build.BuilderOptions) cacheDetails {
 	hash, err := c.hashForArtifact(ctx, a, opts)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}

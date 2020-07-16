@@ -56,14 +56,19 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return bRes, nil
 	}
 
-	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	options := make([]build.BuilderOptions, 0)
+	for _, artifact := range artifacts {
+		options = append(options, r.CreateBuilderOptions(artifact, tags[artifact.ImageName]))
+	}
+
+	bRes, err := r.cache.Build(ctx, out, artifacts, options, func(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, options []build.BuilderOptions) ([]build.Artifact, error) {
 		if len(artifacts) == 0 {
 			return nil, nil
 		}
 
 		r.hasBuilt = true
 
-		bRes, err := r.builder.Build(ctx, out, tags, artifacts)
+		bRes, err := r.builder.Build(ctx, out, artifacts, options)
 		if err != nil {
 			return nil, err
 		}
@@ -200,4 +205,11 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 	logrus.Infoln("Tags generated in", time.Since(start))
 	return imageTags, nil
+}
+
+func (r *SkaffoldRunner) CreateBuilderOptions(artifact *latest.Artifact, tag string) build.BuilderOptions {
+	return build.BuilderOptions{
+		Tag:           tag,
+		Configuration: build.Configuration(r.runCtx.Opts.Command),
+	}
 }

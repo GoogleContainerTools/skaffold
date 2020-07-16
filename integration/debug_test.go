@@ -39,19 +39,7 @@ func TestDebug(t *testing.T) {
 		{
 			description: "kubectl",
 			deployments: []string{"java"},
-			pods:        []string{"nodejs", "npm", "python3", "go"},
-		},
-		{
-			description: "kustomize",
-			args:        []string{"--profile", "kustomize"},
-			deployments: []string{"java"},
-			pods:        []string{"nodejs", "npm", "python3", "go"},
-		},
-		{
-			description: "buildpacks",
-			args:        []string{"--profile", "buildpacks"},
-			deployments: []string{"java"},
-			pods:        []string{"nodejs", "npm", "python3", "go"},
+			pods:        []string{"go"},
 		},
 	}
 	for _, test := range tests {

@@ -41,7 +41,7 @@ var (
 	artifactConfigFunction = artifactConfig
 )
 
-func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, opts *build.ImageOptions, devMode bool) (string, error) {
+func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, opts build.BuilderOptions, devMode bool) (string, error) {
 	var inputs []string
 
 	// Append the artifact's configuration
@@ -91,13 +91,11 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 	}
 
 	// add image options hash
-	if opts != nil {
-		h, err := opts.Hash()
-		if err != nil {
-			return "", fmt.Errorf("evaluating build args: %w", err)
-		}
-		inputs = append(inputs, h)
+	h, err := opts.Hash()
+	if err != nil {
+		return "", fmt.Errorf("evaluating build args: %w", err)
 	}
+	inputs = append(inputs, h)
 
 	// get a key for the hashes
 	hasher := sha256.New()

@@ -193,6 +193,12 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	}
 
 	imageOpts = opts.ApplyModifiers(imageOpts)
+
+	if logrus.GetLevel() <= logrus.DebugLevel {
+		d, _ := json.Marshal(imageOpts.BuildArgs)
+		logrus.Debugf("docker build args: %s\n", string(d))
+	}
+
 	resp, err := l.apiClient.ImageBuild(ctx, body, *imageOpts)
 	if err != nil {
 		return "", fmt.Errorf("docker build: %w", err)

@@ -23,7 +23,6 @@ import (
 	"io"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -31,7 +30,7 @@ import (
 
 const bufferedLinesPerArtifact = 10000
 
-type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error)
+type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts BuilderOptions) (string, error)
 
 // For testing
 var (
@@ -40,13 +39,13 @@ var (
 )
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder, concurrency int) ([]Artifact, error) {
+func InParallel(ctx context.Context, out io.Writer, artifacts []*latest.Artifact, options []BuilderOptions, buildArtifact artifactBuilder, concurrency int) ([]Artifact, error) {
 	if len(artifacts) == 0 {
 		return nil, nil
 	}
 
 	if len(artifacts) == 1 || concurrency == 1 {
-		return runInSequence(ctx, out, tags, artifacts, buildArtifact)
+		return runInSequence(ctx, out, artifacts, options, buildArtifact)
 	}
 
 	var wg sync.WaitGroup
@@ -73,7 +72,7 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 		// sync.Map
 		go func(i int) {
 			sem <- true
-			runBuild(ctx, w, tags, artifacts[i], results, buildArtifact)
+			runBuild(ctx, w, artifacts[i], options[i], results, buildArtifact)
 			<-sem
 
 			wg.Done()
@@ -87,10 +86,10 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	return collectResults(out, artifacts, results, outputs)
 }
 
-func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build artifactBuilder) {
+func runBuild(ctx context.Context, cw io.WriteCloser, artifact *latest.Artifact, opts BuilderOptions, results *sync.Map, build artifactBuilder) {
 	event.BuildInProgress(artifact.ImageName)
 
-	finalTag, err := getBuildResult(ctx, cw, tags, artifact, build)
+	finalTag, err := getBuildResult(ctx, cw, artifact, opts, build)
 	if err != nil {
 		event.BuildFailed(artifact.ImageName, err)
 		results.Store(artifact.ImageName, err)
@@ -110,13 +109,9 @@ func readOutputAndWriteToChannel(r io.Reader, lines chan string) {
 	close(lines)
 }
 
-func getBuildResult(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latest.Artifact, build artifactBuilder) (string, error) {
+func getBuildResult(ctx context.Context, cw io.Writer, artifact *latest.Artifact, opts BuilderOptions, build artifactBuilder) (string, error) {
 	color.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
-	tag, present := tags[artifact.ImageName]
-	if !present {
-		return "", fmt.Errorf("unable to find tag for image %s", artifact.ImageName)
-	}
-	return build(ctx, cw, artifact, CreateBuilderOptions(tag))
+	return build(ctx, cw, artifact, opts)
 }
 
 func collectResults(out io.Writer, artifacts []*latest.Artifact, results *sync.Map, outputs []chan string) ([]Artifact, error) {

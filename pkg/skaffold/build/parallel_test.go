@@ -27,47 +27,35 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGetBuild(t *testing.T) {
 	tests := []struct {
-		description   string
+		shouldErr     bool
 		buildArtifact artifactBuilder
-		tags          tag.ImageTags
+		description   string
 		expectedTag   string
 		expectedOut   string
-		shouldErr     bool
+		opts          BuilderOptions
 	}{
 		{
 			description: "build succeeds",
-			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts BuilderOptions) (string, error) {
 				out.Write([]byte("build succeeds"))
 				return fmt.Sprintf("%s@sha256:abac", opts.Tag), nil
 			},
-			tags: tag.ImageTags{
-				"skaffold/image1": "skaffold/image1:v0.0.1",
-				"skaffold/image2": "skaffold/image2:v0.0.2",
-			},
+			opts:        BuilderOptions{Tag: "skaffold/image1:v0.0.1"},
 			expectedTag: "skaffold/image1:v0.0.1@sha256:abac",
 			expectedOut: "Building [skaffold/image1]...\nbuild succeeds",
 		},
 		{
 			description: "build fails",
-			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts BuilderOptions) (string, error) {
 				return "", fmt.Errorf("build fails")
 			},
-			tags: tag.ImageTags{
-				"skaffold/image1": "",
-			},
-			expectedOut: "Building [skaffold/image1]...\n",
-			shouldErr:   true,
-		},
-		{
-			description: "tag not found",
-			tags:        tag.ImageTags{},
+			opts:        BuilderOptions{},
 			expectedOut: "Building [skaffold/image1]...\n",
 			shouldErr:   true,
 		},
@@ -77,7 +65,7 @@ func TestGetBuild(t *testing.T) {
 			out := new(bytes.Buffer)
 
 			artifact := &latest.Artifact{ImageName: "skaffold/image1"}
-			got, err := getBuildResult(context.Background(), out, test.tags, artifact, test.buildArtifact)
+			got, err := getBuildResult(context.Background(), out, artifact, test.opts, test.buildArtifact)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedTag, got)
 			t.CheckDeepEqual(test.expectedOut, out.String())
@@ -203,7 +191,7 @@ func TestInParallel(t *testing.T) {
 		{
 			description: "short and nice build log",
 			expected:    "Building [skaffold/image1]...\nshort\nBuilding [skaffold/image2]...\nshort\n",
-			buildFunc: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
+			buildFunc: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts BuilderOptions) (string, error) {
 				out.Write([]byte("short"))
 				return fmt.Sprintf("%s:tag", artifact.ImageName), nil
 			},
@@ -217,7 +205,7 @@ Building [skaffold/image2]...
 This is a long string more than 10 bytes.
 And new lines
 `,
-			buildFunc: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts *ImageOptions) (string, error) {
+			buildFunc: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, opts BuilderOptions) (string, error) {
 				out.Write([]byte("This is a long string more than 10 bytes.\nAnd new lines"))
 				return fmt.Sprintf("%s:tag", artifact.ImageName), nil
 			},
@@ -230,13 +218,15 @@ And new lines
 				{ImageName: "skaffold/image1"},
 				{ImageName: "skaffold/image2"},
 			}
-			tags := tag.ImageTags{
-				"skaffold/image1": "skaffold/image1:v0.0.1",
-				"skaffold/image2": "skaffold/image2:v0.0.2",
+
+			options := []BuilderOptions{
+				{Tag: "skaffold/image1"},
+				{Tag: "skaffold/image2"},
 			}
+
 			initializeEvents()
 
-			InParallel(context.Background(), out, tags, artifacts, test.buildFunc, 0)
+			InParallel(context.Background(), out, artifacts, options, test.buildFunc, 0)
 
 			t.CheckDeepEqual(test.expected, out.String())
 		})
@@ -268,19 +258,19 @@ func TestInParallelConcurrency(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, fmt.Sprintf("%d artifacts, max concurrency=%d", test.artifacts, test.limit), func(t *testutil.T) {
 			var artifacts []*latest.Artifact
-			tags := tag.ImageTags{}
+			opts := make([]BuilderOptions, 0)
 
 			for i := 0; i < test.artifacts; i++ {
 				imageName := fmt.Sprintf("skaffold/image%d", i)
 				tag := fmt.Sprintf("skaffold/image%d:tag", i)
 
 				artifacts = append(artifacts, &latest.Artifact{ImageName: imageName})
-				tags[imageName] = tag
+				opts = append(opts, BuilderOptions{Tag: tag})
 			}
 
 			var actualConcurrency int32
 
-			builder := func(_ context.Context, _ io.Writer, _ *latest.Artifact, opts *ImageOptions) (string, error) {
+			builder := func(_ context.Context, _ io.Writer, _ *latest.Artifact, opts BuilderOptions) (string, error) {
 				if atomic.AddInt32(&actualConcurrency, 1) > int32(test.maxConcurrency) {
 					return "", fmt.Errorf("only %d build can run at a time", test.maxConcurrency)
 				}
@@ -291,7 +281,7 @@ func TestInParallelConcurrency(t *testing.T) {
 			}
 
 			initializeEvents()
-			results, err := InParallel(context.Background(), ioutil.Discard, tags, artifacts, builder, test.limit)
+			results, err := InParallel(context.Background(), ioutil.Discard, artifacts, opts, builder, test.limit)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.artifacts, len(results))
@@ -302,14 +292,14 @@ func TestInParallelConcurrency(t *testing.T) {
 func TestInParallelForArgs(t *testing.T) {
 	tests := []struct {
 		description   string
-		inSeqFunc     func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, artifactBuilder) ([]Artifact, error)
+		inSeqFunc     func(context.Context, io.Writer, []*latest.Artifact, []BuilderOptions, artifactBuilder) ([]Artifact, error)
 		buildArtifact artifactBuilder
 		artifactLen   int
 		expected      []Artifact
 	}{
 		{
 			description: "runs in sequence for 1 artifact",
-			inSeqFunc: func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, artifactBuilder) ([]Artifact, error) {
+			inSeqFunc: func(context.Context, io.Writer, []*latest.Artifact, []BuilderOptions, artifactBuilder) ([]Artifact, error) {
 				return []Artifact{{ImageName: "singleArtifact", Tag: "one"}}, nil
 			},
 			artifactLen: 1,
@@ -317,7 +307,7 @@ func TestInParallelForArgs(t *testing.T) {
 		},
 		{
 			description: "runs in parallel for 2 artifacts",
-			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, opts *ImageOptions) (string, error) {
+			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, opts BuilderOptions) (string, error) {
 				return opts.Tag, nil
 			},
 			artifactLen: 2,
@@ -335,17 +325,17 @@ func TestInParallelForArgs(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifacts := make([]*latest.Artifact, test.artifactLen)
-			tags := tag.ImageTags{}
+			opts := make([]BuilderOptions, 0)
 			for i := 0; i < test.artifactLen; i++ {
 				a := fmt.Sprintf("artifact%d", i+1)
 				artifacts[i] = &latest.Artifact{ImageName: a}
-				tags[a] = fmt.Sprintf("%s@tag%d", a, i+1)
+				opts = append(opts, BuilderOptions{Tag: fmt.Sprintf("%s@tag%d", a, i+1)})
 			}
 			if test.inSeqFunc != nil {
 				t.Override(&runInSequence, test.inSeqFunc)
 			}
 			initializeEvents()
-			actual, _ := InParallel(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, 0)
+			actual, _ := InParallel(context.Background(), ioutil.Discard, artifacts, opts, test.buildArtifact, 0)
 
 			t.CheckDeepEqual(test.expected, actual)
 		})

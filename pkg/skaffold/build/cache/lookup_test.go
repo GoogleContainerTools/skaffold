@@ -31,7 +31,7 @@ import (
 func TestLookupLocal(t *testing.T) {
 	tests := []struct {
 		description string
-		hasher      func(context.Context, *latest.Artifact, *build.ImageOptions) (string, error)
+		hasher      func(context.Context, *latest.Artifact, build.BuilderOptions) (string, error)
 		cache       map[string]ImageDetails
 		api         *testutil.FakeAPIClient
 		expected    cacheDetails
@@ -110,8 +110,10 @@ func TestLookupLocal(t *testing.T) {
 				client:          docker.NewLocalDaemon(test.api, nil, false, nil),
 				hashForArtifact: test.hasher,
 			}
-			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
+			details := cache.lookupArtifacts(context.Background(), []*latest.Artifact{{
 				ImageName: "artifact",
+			}}, []build.BuilderOptions{{
+				Tag: "tag",
 			}})
 
 			// cmp.Diff cannot access unexported fields in *exec.Cmd, so use reflect.DeepEqual here directly
@@ -125,7 +127,7 @@ func TestLookupLocal(t *testing.T) {
 func TestLookupRemote(t *testing.T) {
 	tests := []struct {
 		description string
-		hasher      func(context.Context, *latest.Artifact, *build.ImageOptions) (string, error)
+		hasher      func(context.Context, *latest.Artifact, build.BuilderOptions) (string, error)
 		cache       map[string]ImageDetails
 		api         *testutil.FakeAPIClient
 		expected    cacheDetails
@@ -194,8 +196,10 @@ func TestLookupRemote(t *testing.T) {
 				client:          docker.NewLocalDaemon(test.api, nil, false, nil),
 				hashForArtifact: test.hasher,
 			}
-			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
+			details := cache.lookupArtifacts(context.Background(), []*latest.Artifact{{
 				ImageName: "artifact",
+			}}, []build.BuilderOptions{{
+				Tag: "tag",
 			}})
 
 			// cmp.Diff cannot access unexported fields in *exec.Cmd, so use reflect.DeepEqual here directly
@@ -206,14 +210,14 @@ func TestLookupRemote(t *testing.T) {
 	}
 }
 
-func mockHasher(value string) func(context.Context, *latest.Artifact, *build.ImageOptions) (string, error) {
-	return func(context.Context, *latest.Artifact, *build.ImageOptions) (string, error) {
+func mockHasher(value string) func(context.Context, *latest.Artifact, build.BuilderOptions) (string, error) {
+	return func(context.Context, *latest.Artifact, build.BuilderOptions) (string, error) {
 		return value, nil
 	}
 }
 
-func failingHasher(errMessage string) func(context.Context, *latest.Artifact, *build.ImageOptions) (string, error) {
-	return func(context.Context, *latest.Artifact, *build.ImageOptions) (string, error) {
+func failingHasher(errMessage string) func(context.Context, *latest.Artifact, build.BuilderOptions) (string, error) {
+	return func(context.Context, *latest.Artifact, build.BuilderOptions) (string, error) {
 		return "", errors.New(errMessage)
 	}
 }
