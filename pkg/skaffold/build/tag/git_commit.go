@@ -65,7 +65,7 @@ func (t *GitCommit) Labels() map[string]string {
 	}
 }
 
-// GenerateTag resolves the tag portion of the fully qualified image name for an artifact.
+// GenerateTag generates a tag from the git commit.
 func (t *GitCommit) GenerateTag(workingDir, imageName string) (string, error) {
 	ref, err := t.runGitFn(workingDir)
 	if err != nil {

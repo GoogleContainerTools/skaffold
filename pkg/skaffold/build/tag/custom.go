@@ -34,7 +34,7 @@ func (t *CustomTag) Labels() map[string]string {
 	}
 }
 
-// GenerateTag resolves the tag portion of the fully qualified image name for an artifact.
+// GenerateTag generates a tag using the custom tag.
 func (t *CustomTag) GenerateTag(workingDir, imageName string) (string, error) {
 	tag := t.Tag
 	if tag == "" {

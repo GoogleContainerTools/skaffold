@@ -51,7 +51,7 @@ func (t *dateTimeTagger) Labels() map[string]string {
 	}
 }
 
-// GenerateTag resolves the tag portion of the fully qualified image name for an artifact.
+// GenerateTag generates a tag using the current timestamp.
 func (t *dateTimeTagger) GenerateTag(workingDir, imageName string) (string, error) {
 	format := tagTime
 	if len(t.Format) > 0 {

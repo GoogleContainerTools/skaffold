@@ -49,7 +49,7 @@ func (t *envTemplateTagger) Labels() map[string]string {
 	}
 }
 
-// GenerateTag resolves the tag portion of the fully qualified image name for an artifact.
+// GenerateTag generates a tag from a template referencing environment variables.
 func (t *envTemplateTagger) GenerateTag(workingDir, imageName string) (string, error) {
 	tag, err := util.ExecuteEnvTemplate(t.Template.Option("missingkey=error"), map[string]string{
 		"IMAGE_NAME":  imageName,
@@ -70,7 +70,7 @@ func (t *envTemplateTagger) GenerateTag(workingDir, imageName string) (string, e
 	return tag, nil
 }
 
-// GenerateFullyQualifiedImageName tags an image with the custom tag
+// GenerateFullyQualifiedImageName tags an image with a tag from a template referencing environment variables
 func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
 	tag, err := t.GenerateTag(workingDir, imageName)
 	if err != nil {

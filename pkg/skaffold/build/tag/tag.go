@@ -24,7 +24,7 @@ type Tagger interface {
 	// Labels produces labels to indicate the used tagger in deployed pods.
 	Labels() map[string]string
 
-	// GenerateTag resolves the tag portion of the fully qualified image name for an artifact.
+	// GenerateTag generates a tag for an artifact.
 	GenerateTag(workingDir, imageName string) (string, error)
 
 	// GenerateFullyQualifiedImageName resolves the fully qualified image name for an artifact.

@@ -33,7 +33,8 @@ func (t *ChecksumTagger) Labels() map[string]string {
 	}
 }
 
-// GenerateTag resolves the tag portion of the fully qualified image name for an artifact.
+// GenerateTag returns either the current tag or `latest`. This tagger relies on the fact
+// that Skaffold references the image using its sha256 digest during deploy.
 func (t *ChecksumTagger) GenerateTag(workingDir, imageName string) (string, error) {
 	parsed, err := docker.ParseReference(imageName)
 	if err != nil {
@@ -42,7 +43,7 @@ func (t *ChecksumTagger) GenerateTag(workingDir, imageName string) (string, erro
 
 	if parsed.Tag == "" {
 		// No supplied tag, so use "latest".
-		return ":latest", nil
+		return "latest", nil
 	}
 
 	//They already have a tag.
@@ -55,5 +56,10 @@ func (t *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName s
 	if err != nil {
 		return "", fmt.Errorf("generating tag: %w", err)
 	}
-	return imageName + tag, nil
+
+	if tag == "" {
+		return imageName, nil
+	}
+
+	return fmt.Sprintf("%s:%s", imageName, tag), nil
 }
