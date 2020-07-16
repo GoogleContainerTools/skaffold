@@ -17,6 +17,8 @@ limitations under the License.
 package tag
 
 import (
+	"fmt"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
@@ -25,13 +27,14 @@ import (
 type ChecksumTagger struct{}
 
 // Labels are labels specific to the sha256 tagger.
-func (c *ChecksumTagger) Labels() map[string]string {
+func (t *ChecksumTagger) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "sha256",
 	}
 }
 
-func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+// GenerateTag resolves the tag portion of the fully qualified image name for an artifact.
+func (t *ChecksumTagger) GenerateTag(workingDir, imageName string) (string, error) {
 	parsed, err := docker.ParseReference(imageName)
 	if err != nil {
 		return "", err
@@ -39,9 +42,18 @@ func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName s
 
 	if parsed.Tag == "" {
 		// No supplied tag, so use "latest".
-		return imageName + ":latest", nil
+		return ":latest", nil
 	}
 
-	// They already have a tag.
-	return imageName, nil
+	//They already have a tag.
+	return "", nil
+}
+
+// GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
+func (t *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+	tag, err := t.GenerateTag(workingDir, imageName)
+	if err != nil {
+		return "", fmt.Errorf("generating tag: %w", err)
+	}
+	return imageName + tag, nil
 }

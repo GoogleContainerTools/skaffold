@@ -27,17 +27,27 @@ type CustomTag struct {
 	Tag string
 }
 
-func (c *CustomTag) Labels() map[string]string {
+// Labels are labels specific to the custom tagger.
+func (t *CustomTag) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "custom",
 	}
 }
 
-// GenerateFullyQualifiedImageName tags an image with the custom tag
-func (c *CustomTag) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
-	tag := c.Tag
+// GenerateTag resolves the tag portion of the fully qualified image name for an artifact.
+func (t *CustomTag) GenerateTag(workingDir, imageName string) (string, error) {
+	tag := t.Tag
 	if tag == "" {
 		return "", errors.New("custom tag not provided")
+	}
+	return tag, nil
+}
+
+// GenerateFullyQualifiedImageName tags an image with the custom tag.
+func (t *CustomTag) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+	tag, err := t.GenerateTag(workingDir, imageName)
+	if err != nil {
+		return "", fmt.Errorf("generating tag: %w", err)
 	}
 
 	return fmt.Sprintf("%s:%s", imageName, tag), nil

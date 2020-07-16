@@ -49,8 +49,8 @@ func (t *envTemplateTagger) Labels() map[string]string {
 	}
 }
 
-// GenerateFullyQualifiedImageName tags an image with the custom tag
-func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+// GenerateTag resolves the tag portion of the fully qualified image name for an artifact.
+func (t *envTemplateTagger) GenerateTag(workingDir, imageName string) (string, error) {
 	tag, err := util.ExecuteEnvTemplate(t.Template.Option("missingkey=error"), map[string]string{
 		"IMAGE_NAME":  imageName,
 		"DIGEST":      "_DEPRECATED_DIGEST_",
@@ -67,5 +67,14 @@ func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir, imageNam
 		return "", errors.New("{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags")
 	}
 
+	return tag, nil
+}
+
+// GenerateFullyQualifiedImageName tags an image with the custom tag
+func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+	tag, err := t.GenerateTag(workingDir, imageName)
+	if err != nil {
+		return "", fmt.Errorf("generating tag: %w", err)
+	}
 	return tag, nil
 }
