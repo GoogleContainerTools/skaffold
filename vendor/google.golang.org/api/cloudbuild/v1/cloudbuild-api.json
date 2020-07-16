@@ -574,7 +574,7 @@
       }
     }
   },
-  "revision": "20200308",
+  "revision": "20200506",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ArtifactObjects": {
@@ -682,6 +682,11 @@
         },
         "projectId": {
           "description": "Output only. ID of the project.",
+          "type": "string"
+        },
+        "queueTtl": {
+          "description": "TTL in queue for this build. If provided and the build is enqueued longer\nthan this value, the build will expire and the build status will be\n`EXPIRED`.\n\nThe TTL starts ticking from create_time.",
+          "format": "google-duration",
           "type": "string"
         },
         "results": {
@@ -1057,7 +1062,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Substitutions data for Build resource.",
+          "description": "Substitutions for Build resource. The keys must match the following\nregular expression: `^_[A-Z0-9_]+$`.The keys cannot conflict with the\nkeys in bindings.",
           "type": "object"
         },
         "tags": {
@@ -1277,7 +1282,7 @@
           "type": "string"
         },
         "commentControl": {
-          "description": "Whether to block builds on a \"/gcbrun\" comment from a repository admin or\ncollaborator.",
+          "description": "Configure builds to run only when a repository owner or collaborator\ncomments `/gcbrun`.",
           "enum": [
             "COMMENTS_DISABLED",
             "COMMENTS_ENABLED"
