@@ -18,7 +18,6 @@ package tag
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
@@ -41,14 +40,4 @@ func (t *CustomTag) GenerateTag(workingDir, imageName string) (string, error) {
 		return "", errors.New("custom tag not provided")
 	}
 	return tag, nil
-}
-
-// GenerateFullyQualifiedImageName tags an image with the custom tag.
-func (t *CustomTag) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
-	tag, err := t.GenerateTag(workingDir, imageName)
-	if err != nil {
-		return "", fmt.Errorf("generating tag: %w", err)
-	}
-
-	return fmt.Sprintf("%s:%s", imageName, tag), nil
 }

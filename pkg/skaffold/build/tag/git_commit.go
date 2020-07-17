@@ -84,15 +84,6 @@ func (t *GitCommit) GenerateTag(workingDir, imageName string) (string, error) {
 	return t.prefix + sanitizeTag(ref), nil
 }
 
-// GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
-func (t *GitCommit) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
-	tag, err := t.GenerateTag(workingDir, imageName)
-	if err != nil {
-		return "", fmt.Errorf("generating tag: %w", err)
-	}
-	return fmt.Sprintf("%s:%s", imageName, tag), nil
-}
-
 // sanitizeTag takes a git tag and converts it to a docker tag by removing
 // all the characters that are not allowed by docker.
 func sanitizeTag(tag string) string {

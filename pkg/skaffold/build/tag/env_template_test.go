@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
+func TestEnvTemplateTagger_GenerateTag(t *testing.T) {
 	tests := []struct {
 		description      string
 		template         string
@@ -35,10 +35,18 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 		shouldErr        bool
 	}{
 		{
-			description: "empty env",
-			template:    "{{.IMAGE_NAME}}",
+			description: "only tag value",
+			template:    "{{.FOO}}-{{.BAZ}}",
+			env:         []string{"FOO=BAR", "BAZ=BAT"},
 			imageName:   "foo",
-			expected:    "foo",
+			expected:    "BAR-BAT",
+		},
+		{
+			description:      "empty env",
+			template:         "{{.IMAGE_NAME}}",
+			imageName:        "foo",
+			expected:         "foo",
+			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
 		},
 		{
 			description: "env",
@@ -53,41 +61,47 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			shouldErr:   true,
 		},
 		{
-			description: "opts precedence",
-			template:    "{{.IMAGE_NAME}}-{{.FROM_ENV}}:latest",
-			env:         []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
-			imageName:   "image_name",
-			expected:    "image_name-FOO:latest",
+			description:      "opts precedence",
+			template:         "{{.IMAGE_NAME}}-{{.FROM_ENV}}:latest",
+			env:              []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
+			imageName:        "image_name",
+			expected:         "image_name-FOO:latest",
+			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
 		},
 		{
-			description: "ignore @{{.DIGEST}} suffix",
-			template:    "{{.IMAGE_NAME}}:tag@{{.DIGEST}}",
-			imageName:   "foo",
-			shouldErr:   true,
+			description:      "ignore @{{.DIGEST}} suffix",
+			template:         "{{.IMAGE_NAME}}:tag@{{.DIGEST}}",
+			imageName:        "foo",
+			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
+			shouldErr:        true,
 		},
 		{
-			description: "ignore @{{.DIGEST_ALGO}}:{{.DIGEST_HEX}} suffix",
-			template:    "{{.IMAGE_NAME}}:tag@{{.DIGEST_ALGO}}:{{.DIGEST_HEX}}",
-			imageName:   "image_name",
-			shouldErr:   true,
+			description:      "ignore @{{.DIGEST_ALGO}}:{{.DIGEST_HEX}} suffix",
+			template:         "{{.IMAGE_NAME}}:tag@{{.DIGEST_ALGO}}:{{.DIGEST_HEX}}",
+			imageName:        "image_name",
+			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
+			shouldErr:        true,
 		},
 		{
-			description: "digest is deprecated",
-			template:    "{{.IMAGE_NAME}}:{{.DIGEST}}",
-			imageName:   "foo",
-			shouldErr:   true,
+			description:      "digest is deprecated",
+			template:         "{{.IMAGE_NAME}}:{{.DIGEST}}",
+			imageName:        "foo",
+			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
+			shouldErr:        true,
 		},
 		{
-			description: "digest algo is deprecated",
-			template:    "{{.IMAGE_NAME}}:{{.DIGEST_ALGO}}",
-			imageName:   "foo",
-			shouldErr:   true,
+			description:      "digest algo is deprecated",
+			template:         "{{.IMAGE_NAME}}:{{.DIGEST_ALGO}}",
+			imageName:        "foo",
+			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
+			shouldErr:        true,
 		},
 		{
-			description: "digest hex is deprecated",
-			template:    "{{.IMAGE_NAME}}:{{.DIGEST_HEX}}",
-			imageName:   "foo",
-			shouldErr:   true,
+			description:      "digest hex is deprecated",
+			template:         "{{.IMAGE_NAME}}:{{.DIGEST_HEX}}",
+			imageName:        "foo",
+			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
+			shouldErr:        true,
 		},
 	}
 	for _, test := range tests {
@@ -99,7 +113,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			c, err := NewEnvTemplateTagger(test.template)
 			t.CheckNoError(err)
 
-			got, err := c.GenerateFullyQualifiedImageName("", test.imageName)
+			got, err := c.GenerateTag(".", test.imageName)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)

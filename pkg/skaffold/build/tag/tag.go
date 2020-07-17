@@ -16,6 +16,8 @@ limitations under the License.
 
 package tag
 
+import "fmt"
+
 // ImageTags maps image names to tags
 type ImageTags map[string]string
 
@@ -26,9 +28,22 @@ type Tagger interface {
 
 	// GenerateTag generates a tag for an artifact.
 	GenerateTag(workingDir, imageName string) (string, error)
+}
 
-	// GenerateFullyQualifiedImageName resolves the fully qualified image name for an artifact.
-	// The workingDir is the root directory of the artifact with respect to the Skaffold root,
-	// and imageName is the base name of the image.
-	GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error)
+// GenerateFullyQualifiedImageName resolves the fully qualified image name for an artifact.
+// The workingDir is the root directory of the artifact with respect to the Skaffold root,
+// and imageName is the base name of the image.
+func GenerateFullyQualifiedImageName(t Tagger, workingDir, imageName string) (string, error) {
+	tag, err := t.GenerateTag(workingDir, imageName)
+	if err != nil {
+		return "", fmt.Errorf("generating tag: %w", err)
+	}
+
+	// It makes more sense to return imageName rather than imageName: when tag is empty.
+	// This primarily concerns sha256.
+	if tag == "" {
+		return imageName, nil
+	}
+
+	return fmt.Sprintf("%s:%s", imageName, tag), nil
 }

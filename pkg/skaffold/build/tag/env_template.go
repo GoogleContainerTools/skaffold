@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 // envTemplateTagger implements Tagger
@@ -52,13 +53,25 @@ func (t *envTemplateTagger) Labels() map[string]string {
 // GenerateTag generates a tag from a template referencing environment variables.
 func (t *envTemplateTagger) GenerateTag(workingDir, imageName string) (string, error) {
 	tag, err := util.ExecuteEnvTemplate(t.Template.Option("missingkey=error"), map[string]string{
-		"IMAGE_NAME":  imageName,
+		"IMAGE_NAME":  "_DEPRECATED_IMAGE_NAME_",
 		"DIGEST":      "_DEPRECATED_DIGEST_",
 		"DIGEST_ALGO": "_DEPRECATED_DIGEST_ALGO_",
 		"DIGEST_HEX":  "_DEPRECATED_DIGEST_HEX_",
 	})
+
 	if err != nil {
 		return "", err
+	}
+
+	if strings.Contains(tag, "_DEPRECATED_IMAGE_NAME_") {
+		warnings.Printf("{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/")
+		tag, _ = util.ExecuteEnvTemplate(t.Template.Option("missingkey=error"), map[string]string{
+			"IMAGE_NAME":  imageName,
+			"DIGEST":      "_DEPRECATED_DIGEST_",
+			"DIGEST_ALGO": "_DEPRECATED_DIGEST_ALGO_",
+			"DIGEST_HEX":  "_DEPRECATED_DIGEST_HEX_",
+		})
+		// if the first execution did not err, this one will not err either
 	}
 
 	if strings.Contains(tag, "_DEPRECATED_DIGEST_") ||
@@ -67,14 +80,5 @@ func (t *envTemplateTagger) GenerateTag(workingDir, imageName string) (string, e
 		return "", errors.New("{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags")
 	}
 
-	return tag, nil
-}
-
-// GenerateFullyQualifiedImageName tags an image with a tag from a template referencing environment variables
-func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
-	tag, err := t.GenerateTag(workingDir, imageName)
-	if err != nil {
-		return "", fmt.Errorf("generating tag: %w", err)
-	}
 	return tag, nil
 }
