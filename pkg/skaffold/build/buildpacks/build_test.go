@@ -42,7 +42,7 @@ func TestBuild(t *testing.T) {
 	tests := []struct {
 		description     string
 		artifact        *latest.Artifact
-		tag             string
+		opts            BuildOptions
 		api             *testutil.FakeAPIClient
 		files           map[string]string
 		pushImages      bool
@@ -53,7 +53,7 @@ func TestBuild(t *testing.T) {
 		{
 			description: "success",
 			artifact:    buildpacksArtifact("my/builder", "my/run"),
-			tag:         "img:tag",
+			opts:        BuildOptions{Tag: "img:tag"},
 			api:         &testutil.FakeAPIClient{},
 			expectedOptions: &pack.BuildOptions{
 				AppPath:  ".",
@@ -66,7 +66,7 @@ func TestBuild(t *testing.T) {
 		{
 			description: "success with buildpacks",
 			artifact:    withTrustedBuilder(withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun"))),
-			tag:         "img:tag",
+			opts:        BuildOptions{Tag: "img:tag"},
 			api:         &testutil.FakeAPIClient{},
 			expectedOptions: &pack.BuildOptions{
 				AppPath:      ".",
@@ -81,7 +81,7 @@ func TestBuild(t *testing.T) {
 		{
 			description: "project.toml",
 			artifact:    buildpacksArtifact("my/builder2", "my/run2"),
-			tag:         "img:tag",
+			opts:        BuildOptions{Tag: "img:tag"},
 			api:         &testutil.FakeAPIClient{},
 			files: map[string]string{
 				"project.toml": `[[build.env]]
@@ -108,7 +108,7 @@ version = "1.0"
 		{
 			description: "Buildpacks in skaffold.yaml override those in project.toml",
 			artifact:    withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/builder3", "my/run3")),
-			tag:         "img:tag",
+			opts:        BuildOptions{Tag: "img:tag"},
 			api:         &testutil.FakeAPIClient{},
 			files: map[string]string{
 				"project.toml": `[[build.buildpacks]]
@@ -127,7 +127,7 @@ id = "my/ignored"
 		{
 			description: "Combine env from skaffold.yaml and project.toml",
 			artifact:    withEnv([]string{"KEY1=VALUE1"}, buildpacksArtifact("my/builder4", "my/run4")),
-			tag:         "img:tag",
+			opts:        BuildOptions{Tag: "img:tag"},
 			api:         &testutil.FakeAPIClient{},
 			files: map[string]string{
 				"project.toml": `[[build.env]]
@@ -149,7 +149,7 @@ value = "VALUE2"
 		{
 			description: "dev mode",
 			artifact:    withSync(&latest.Sync{Auto: &latest.Auto{}}, buildpacksArtifact("another/builder", "another/run")),
-			tag:         "img:tag",
+			opts:        BuildOptions{Tag: "img:tag"},
 			api:         &testutil.FakeAPIClient{},
 			devMode:     true,
 			expectedOptions: &pack.BuildOptions{
@@ -165,7 +165,7 @@ value = "VALUE2"
 		{
 			description: "dev mode but no sync",
 			artifact:    buildpacksArtifact("my/other-builder", "my/run"),
-			tag:         "img:tag",
+			opts:        BuildOptions{Tag: "img:tag"},
 			api:         &testutil.FakeAPIClient{},
 			devMode:     true,
 			expectedOptions: &pack.BuildOptions{
@@ -179,14 +179,14 @@ value = "VALUE2"
 		{
 			description: "invalid ref",
 			artifact:    buildpacksArtifact("my/builder", "my/run"),
-			tag:         "in valid ref",
+			opts:        BuildOptions{Tag: "in valid ref"},
 			api:         &testutil.FakeAPIClient{},
 			shouldErr:   true,
 		},
 		{
 			description: "push error",
 			artifact:    buildpacksArtifact("my/builder", "my/run"),
-			tag:         "img:tag",
+			opts:        BuildOptions{Tag: "img:tag"},
 			pushImages:  true,
 			api: &testutil.FakeAPIClient{
 				ErrImagePush: true,
@@ -196,14 +196,14 @@ value = "VALUE2"
 		{
 			description: "invalid env",
 			artifact:    withEnv([]string{"INVALID"}, buildpacksArtifact("my/builder", "my/run")),
-			tag:         "img:tag",
+			opts:        BuildOptions{Tag: "img:tag"},
 			api:         &testutil.FakeAPIClient{},
 			shouldErr:   true,
 		},
 		{
 			description: "invalid project.toml",
 			artifact:    buildpacksArtifact("my/builder2", "my/run2"),
-			tag:         "img:tag",
+			opts:        BuildOptions{Tag: "img:tag"},
 			api:         &testutil.FakeAPIClient{},
 			files: map[string]string{
 				"project.toml": `INVALID`,
@@ -224,7 +224,7 @@ value = "VALUE2"
 			localDocker := docker.NewLocalDaemon(test.api, nil, false, nil)
 
 			builder := NewArtifactBuilder(localDocker, test.pushImages, test.devMode)
-			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag)
+			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.opts)
 
 			t.CheckError(test.shouldErr, err)
 			if test.expectedOptions != nil {

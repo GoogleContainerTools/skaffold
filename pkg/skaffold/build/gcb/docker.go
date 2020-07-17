@@ -26,7 +26,7 @@ import (
 )
 
 // dockerBuildSpec lists the build steps required to build a docker image.
-func (b *Builder) dockerBuildSpec(artifact *latest.DockerArtifact, opts *docker.BuildOptions) (cloudbuild.Build, error) {
+func (b *Builder) dockerBuildSpec(artifact *latest.DockerArtifact, opts docker.BuildOptions) (cloudbuild.Build, error) {
 	args, err := b.dockerBuildArgs(artifact, opts)
 	if err != nil {
 		return cloudbuild.Build{}, err
@@ -60,7 +60,7 @@ func (b *Builder) cacheFromSteps(artifact *latest.DockerArtifact) []*cloudbuild.
 }
 
 // dockerBuildArgs lists the arguments passed to `docker` to build a given image.
-func (b *Builder) dockerBuildArgs(artifact *latest.DockerArtifact, opts *docker.BuildOptions) ([]string, error) {
+func (b *Builder) dockerBuildArgs(artifact *latest.DockerArtifact, opts docker.BuildOptions) ([]string, error) {
 	ba, err := docker.GetBuildArgs(artifact, opts)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker build args: %w", err)

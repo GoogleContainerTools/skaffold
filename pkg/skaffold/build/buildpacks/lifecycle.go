@@ -45,7 +45,7 @@ var (
 // to pull the images that are already pulled.
 var images pulledImages
 
-func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, opts BuildOptions) (string, error) {
 	artifact := a.BuildpackArtifact
 	workspace := a.Workspace
 
@@ -59,9 +59,9 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	// To improve caching, we always build the image with [:latest] tag
 	// This way, the lifecycle is able to "bootstrap" from the previously built image.
 	// The image will then be tagged as usual with the tag provided by the tag policy.
-	parsed, err := docker.ParseReference(tag)
+	parsed, err := docker.ParseReference(opts.Tag)
 	if err != nil {
-		return "", fmt.Errorf("parsing tag %q: %w", tag, err)
+		return "", fmt.Errorf("parsing tag %q: %w", opts.Tag, err)
 	}
 	latest := parsed.BaseName + ":latest"
 
@@ -99,8 +99,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 
 	// Does the builder image need to be pulled?
 	alreadyPulled := images.AreAlreadyPulled(artifact.Builder, artifact.RunImage)
-
-	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
+	packOpts := &pack.BuildOptions{
 		AppPath:      workspace,
 		Builder:      artifact.Builder,
 		RunImage:     artifact.RunImage,
@@ -111,7 +110,10 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		TrustBuilder: artifact.TrustBuilder,
 		// TODO(dgageot): Support project.toml include/exclude.
 		// FileFilter: func(string) bool { return true },
-	}); err != nil {
+	}
+
+	packOpts = opts.ApplyModifiers(packOpts)
+	if err := runPackBuildFunc(ctx, out, b.localDocker, *packOpts); err != nil {
 		return "", err
 	}
 

@@ -86,7 +86,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 
 	switch {
 	case a.DockerArtifact != nil:
-		return b.buildDocker(ctx, out, a, ToDockerOpts(opts))
+		return b.buildDocker(ctx, out, a, *ToDockerOpts(opts))
 
 	case a.BazelArtifact != nil:
 		return bazel.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages).Build(ctx, out, a, opts.Tag)
@@ -98,7 +98,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, a, opts.Tag)
 
 	case a.BuildpackArtifact != nil:
-		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.devMode).Build(ctx, out, a, opts.Tag)
+		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.devMode).Build(ctx, out, a, *ToBuildPacksOpts(opts))
 
 	default:
 		return "", fmt.Errorf("unexpected type %q for local artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
@@ -119,4 +119,12 @@ func ToDockerOpts(opts build.BuilderOptions) *docker.BuildOptions {
 		return d.AddModifier(docker.OptimizeBuildForDebug)
 	}
 	return d.AddModifier(docker.OptimizeBuildForDev)
+}
+
+func ToBuildPacksOpts(opts build.BuilderOptions) *buildpacks.BuildOptions {
+	d := &buildpacks.BuildOptions{Tag: opts.Tag}
+	if opts.Configuration == build.Debug {
+		return d.AddModifier(buildpacks.OptimizeBuildForDebug)
+	}
+	return d.AddModifier(buildpacks.OptimizeBuildForDev)
 }

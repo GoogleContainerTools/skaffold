@@ -59,7 +59,7 @@ func (b *Builder) buildSpecForArtifact(a *latest.Artifact, tag string) (cloudbui
 		return b.kanikoBuildSpec(a.KanikoArtifact, tag)
 
 	case a.DockerArtifact != nil:
-		return b.dockerBuildSpec(a.DockerArtifact, &docker.BuildOptions{Tag: tag})
+		return b.dockerBuildSpec(a.DockerArtifact, docker.BuildOptions{Tag: tag})
 
 	case a.JibArtifact != nil:
 		return b.jibBuildSpec(a, tag)

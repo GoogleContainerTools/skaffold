@@ -80,7 +80,7 @@ func TestPullCacheFrom(t *testing.T) {
 	builder := newBuilder(latest.GoogleCloudBuild{
 		DockerImage: "docker/docker",
 	})
-	desc, err := builder.dockerBuildSpec(artifact, &docker.BuildOptions{Tag: "nginx2"})
+	desc, err := builder.dockerBuildSpec(artifact, docker.BuildOptions{Tag: "nginx2"})
 
 	expected := []*cloudbuild.BuildStep{{
 		Name:       "docker/docker",

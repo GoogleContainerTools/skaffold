@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
-func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Artifact, opts *docker.BuildOptions) (string, error) {
+func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Artifact, opts docker.BuildOptions) (string, error) {
 	// Fail fast if the Dockerfile can't be found.
 	dockerfile, err := docker.NormalizeDockerfilePath(a.Workspace, a.DockerArtifact.DockerfilePath)
 	if err != nil {
@@ -66,7 +66,7 @@ func (b *Builder) retrieveExtraEnv() []string {
 	return b.localDocker.ExtraEnv()
 }
 
-func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, opts *docker.BuildOptions) (string, error) {
+func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, opts docker.BuildOptions) (string, error) {
 	dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.DockerfilePath)
 	if err != nil {
 		return "", fmt.Errorf("normalizing dockerfile path: %w", err)

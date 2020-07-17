@@ -61,7 +61,7 @@ type LocalDaemon interface {
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
-	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, opts *BuildOptions) (string, error)
+	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, opts BuildOptions) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
@@ -155,7 +155,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 }
 
 // Build performs a docker build and returns the imageID.
-func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, opts *BuildOptions) (string, error) {
+func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, opts BuildOptions) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	// Like `docker build`, we ignore the errors
@@ -413,7 +413,7 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 }
 
 // GetBuildArgs gives the build args flags for docker build.
-func GetBuildArgs(a *latest.DockerArtifact, opts *BuildOptions) ([]string, error) {
+func GetBuildArgs(a *latest.DockerArtifact, opts BuildOptions) ([]string, error) {
 	var args []string
 
 	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
