@@ -1181,6 +1181,68 @@ func TestHelmRender(t *testing.T) {
 	}
 }
 
+func TestWriteBuildArtifacts(t *testing.T) {
+	tests := []struct {
+		description string
+		builds      []build.Artifact
+		result      string
+	}{
+		{
+			description: "nil",
+			builds:      nil,
+			result:      `{"builds":null}`,
+		},
+		{
+			description: "empty",
+			builds:      []build.Artifact{},
+			result:      `{"builds":[]}`,
+		},
+		{
+			description: "multiple images with tags",
+			builds:      []build.Artifact{{ImageName: "name", Tag: "name:tag"}, {ImageName: "name2", Tag: "name2:tag"}},
+			result:      `{"builds":[{"imageName":"name","tag":"name:tag"},{"imageName":"name2","tag":"name2:tag"}]}`,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			file, cleanup, err := writeBuildArtifacts(test.builds)
+			t.CheckError(false, err)
+			if content, err := ioutil.ReadFile(file); err != nil {
+				t.Errorf("error reading file %q: %v", file, err)
+			} else {
+				t.CheckDeepEqual(test.result, string(content))
+			}
+			cleanup()
+		})
+	}
+}
+
+func TestGenerateSkaffoldDebugFilter(t *testing.T) {
+	tests := []struct {
+		description string
+		buildFile   string
+		result      []string
+	}{
+		{
+			description: "empty buildfile is skipped",
+			buildFile:   "",
+			result:      []string{"debug", "--filter", "--kube-context", "kubecontext", "--kubeconfig", "kubeconfig"},
+		},
+		{
+			description: "buildfile is added",
+			buildFile:   "buildfile",
+			result:      []string{"debug", "--filter", "--kube-context", "kubecontext", "--build-artifacts", "buildfile", "--kubeconfig", "kubeconfig"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			h := NewHelmDeployer(makeRunContext(testDeployConfig, false), nil)
+			result := h.generateSkaffoldDebugFilter(test.buildFile)
+			t.CheckDeepEqual(test.result, result)
+		})
+	}
+}
+
 func makeRunContext(deploy latest.HelmDeploy, force bool) *runcontext.RunContext {
 	pipeline := latest.Pipeline{}
 	pipeline.Deploy.DeployType.HelmDeploy = &deploy

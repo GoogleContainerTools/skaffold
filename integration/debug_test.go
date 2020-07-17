@@ -32,38 +32,49 @@ func TestDebug(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
-		description string
-		config      string
-		args        []string
-		deployments []string
-		pods        []string
+		description   string
+		dir           string
+		config        string
+		args          []string
+		deployments   []string
+		pods          []string
+		ignoreWorkdir bool
 	}{
 		{
 			description: "kubectl",
+			dir:         "testdata/debug",
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm", "python3", "go", "netcore"},
 		},
 		{
 			description: "kustomize",
+			dir:         "testdata/debug",
 			args:        []string{"--profile", "kustomize"},
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm", "python3", "go", "netcore"},
 		},
 		{
 			description: "buildpacks",
+			dir:         "testdata/debug",
 			args:        []string{"--profile", "buildpacks"},
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm", "python3", "go", "netcore"},
+		},
+		{
+			description:   "helm",
+			dir:           "examples/helm-deployment",
+			deployments:   []string{"skaffold-helm"},
+			ignoreWorkdir: true, // dockerfile doesn't have a workdir
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build(test.args...).InDir("testdata/debug").RunOrFail(t)
+			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
 
 			ns, client := SetupNamespace(t)
 
-			skaffold.Debug(test.args...).InDir("testdata/debug").InNs(ns.Name).RunBackground(t)
+			skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 
 			verifyDebugAnnotations := func(annotations map[string]string) {
 				var configs map[string]debug.ContainerDebugConfiguration
@@ -73,7 +84,7 @@ func TestDebug(t *testing.T) {
 					t.Errorf("error unmarshalling debug annotation: %v: %v", anno, err)
 				} else {
 					for k, config := range configs {
-						if config.WorkingDir == "" {
+						if !test.ignoreWorkdir && config.WorkingDir == "" {
 							t.Errorf("debug config for %q missing WorkingDir: %v: %v", k, anno, config)
 						}
 						if config.Runtime == "" {
