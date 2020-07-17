@@ -20,11 +20,82 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestEnvTemplateTagger_GenerateTag(t *testing.T) {
+	tests := []struct {
+		description string
+		template    string
+		imageName   string
+		env         []string
+		expected    string
+		shouldErr   bool
+	}{
+		{
+			description: "only tag value",
+			template:    "{{.FOO}}-{{.BAZ}}",
+			env:         []string{"FOO=BAR", "BAZ=BAT"},
+			imageName:   "foo",
+			expected:    "BAR-BAT",
+		},
+		{
+			description: "empty env",
+			template:    "foo",
+			imageName:   "foo",
+			expected:    "foo",
+		},
+		{
+			description: "missing env",
+			template:    "{{.FOO}}:latest",
+			shouldErr:   true,
+		},
+		{
+			description: "ignore @{{.DIGEST}} suffix",
+			template:    "tag@{{.DIGEST}}",
+			imageName:   "foo",
+			shouldErr:   true,
+		},
+		{
+			description: "ignore @{{.DIGEST_ALGO}}:{{.DIGEST_HEX}} suffix",
+			template:    "tag@{{.DIGEST_ALGO}}:{{.DIGEST_HEX}}",
+			imageName:   "image_name",
+			shouldErr:   true,
+		},
+		{
+			description: "digest is deprecated",
+			template:    "{{.DIGEST}}",
+			imageName:   "foo",
+			shouldErr:   true,
+		},
+		{
+			description: "digest algo is deprecated",
+			template:    "{{.DIGEST_ALGO}}",
+			imageName:   "foo",
+			shouldErr:   true,
+		},
+		{
+			description: "digest hex is deprecated",
+			template:    "{{.DIGEST_HEX}}",
+			imageName:   "foo",
+			shouldErr:   true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.OSEnviron, func() []string { return test.env })
+
+			c, err := NewEnvTemplateTagger(test.template)
+			t.CheckNoError(err)
+
+			got, err := c.GenerateTag(".", test.imageName)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
+		})
+	}
+}
+
+func TestEnvTemplateTagger_GenerateTagDeprecated(t *testing.T) {
 	tests := []struct {
 		description      string
 		template         string
@@ -42,11 +113,10 @@ func TestEnvTemplateTagger_GenerateTag(t *testing.T) {
 			expected:    "BAR-BAT",
 		},
 		{
-			description:      "empty env",
-			template:         "{{.IMAGE_NAME}}",
-			imageName:        "foo",
-			expected:         "foo",
-			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
+			description: "empty env",
+			template:    "{{.IMAGE_NAME}}",
+			imageName:   "foo",
+			expected:    "foo",
 		},
 		{
 			description: "env",
@@ -61,62 +131,54 @@ func TestEnvTemplateTagger_GenerateTag(t *testing.T) {
 			shouldErr:   true,
 		},
 		{
-			description:      "opts precedence",
-			template:         "{{.IMAGE_NAME}}-{{.FROM_ENV}}:latest",
-			env:              []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
-			imageName:        "image_name",
-			expected:         "image_name-FOO:latest",
-			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
+			description: "opts precedence",
+			template:    "{{.IMAGE_NAME}}-{{.FROM_ENV}}:latest",
+			env:         []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
+			imageName:   "image_name",
+			expected:    "image_name-FOO:latest",
 		},
 		{
-			description:      "ignore @{{.DIGEST}} suffix",
-			template:         "{{.IMAGE_NAME}}:tag@{{.DIGEST}}",
-			imageName:        "foo",
-			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
-			shouldErr:        true,
+			description: "ignore @{{.DIGEST}} suffix",
+			template:    "{{.IMAGE_NAME}}:tag@{{.DIGEST}}",
+			imageName:   "foo",
+			shouldErr:   true,
 		},
 		{
-			description:      "ignore @{{.DIGEST_ALGO}}:{{.DIGEST_HEX}} suffix",
-			template:         "{{.IMAGE_NAME}}:tag@{{.DIGEST_ALGO}}:{{.DIGEST_HEX}}",
-			imageName:        "image_name",
-			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
-			shouldErr:        true,
+			description: "ignore @{{.DIGEST_ALGO}}:{{.DIGEST_HEX}} suffix",
+			template:    "{{.IMAGE_NAME}}:tag@{{.DIGEST_ALGO}}:{{.DIGEST_HEX}}",
+			imageName:   "image_name",
+			shouldErr:   true,
 		},
 		{
-			description:      "digest is deprecated",
-			template:         "{{.IMAGE_NAME}}:{{.DIGEST}}",
-			imageName:        "foo",
-			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
-			shouldErr:        true,
+			description: "digest is deprecated",
+			template:    "{{.IMAGE_NAME}}:{{.DIGEST}}",
+			imageName:   "foo",
+			shouldErr:   true,
 		},
 		{
-			description:      "digest algo is deprecated",
-			template:         "{{.IMAGE_NAME}}:{{.DIGEST_ALGO}}",
-			imageName:        "foo",
-			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
-			shouldErr:        true,
+			description: "digest algo is deprecated",
+			template:    "{{.IMAGE_NAME}}:{{.DIGEST_ALGO}}",
+			imageName:   "foo",
+			shouldErr:   true,
 		},
 		{
-			description:      "digest hex is deprecated",
-			template:         "{{.IMAGE_NAME}}:{{.DIGEST_HEX}}",
-			imageName:        "foo",
-			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, templates will be expected to only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
-			shouldErr:        true,
+			description: "digest hex is deprecated",
+			template:    "{{.IMAGE_NAME}}:{{.DIGEST_HEX}}",
+			imageName:   "foo",
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			fakeWarner := &warnings.Collect{}
-			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return test.env })
 
 			c, err := NewEnvTemplateTagger(test.template)
 			t.CheckNoError(err)
 
-			got, err := c.GenerateTag(".", test.imageName)
+			v, _ := c.(*envTemplateTagger)
+			got, err := v.GenerateTagDeprecated(".", test.imageName)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
-			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}
 }

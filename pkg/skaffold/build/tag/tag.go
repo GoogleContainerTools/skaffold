@@ -16,7 +16,12 @@ limitations under the License.
 
 package tag
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+)
 
 // ImageTags maps image names to tags
 type ImageTags map[string]string
@@ -35,11 +40,24 @@ type Tagger interface {
 // and imageName is the base name of the image.
 func GenerateFullyQualifiedImageName(t Tagger, workingDir, imageName string) (string, error) {
 	tag, err := t.GenerateTag(workingDir, imageName)
+
+	if v, ok := t.(*envTemplateTagger); ok { //this is to support the deprecated {{.IMAGE_NAME}}
+		if strings.Contains(tag, "_DEPRECATED_IMAGE_NAME_") {
+			warnings.Printf("{{.IMAGE_NAME}} is deprecated, envTemplate's template should only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/")
+			tag, err = v.GenerateTagDeprecated(workingDir, imageName)
+			if err != nil {
+
+				return "", fmt.Errorf("generating envTemplate tag: %w", err)
+			}
+			return tag, nil
+		}
+	}
+
 	if err != nil {
 		return "", fmt.Errorf("generating tag: %w", err)
 	}
 
-	// It makes more sense to return imageName rather than imageName: when tag is empty.
+	// It makes more sense to return imageName rather than imageName: (when tag is empty).
 	// This primarily concerns sha256.
 	if tag == "" {
 		return imageName, nil
