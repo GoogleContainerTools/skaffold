@@ -158,6 +158,36 @@ spec:
 			expected: []string{"apiVersion=apps...", "kind=Depl...", "metadata=map[...", "name=app", "labels=map[...", "name=x", "spec=map[...", "replicas=0", "name=foo"},
 		},
 		{
+			description: "deprecated daemonset.extensions",
+			manifests: ManifestList{[]byte(`apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: app
+spec:
+  replicas: 0`)},
+			expected: []string{"apiVersion=exte...", "kind=Daem...", "metadata=map[...", "name=app", "spec=map[...", "replicas=0"},
+		},
+		{
+			description: "deprecated deployment.extensions",
+			manifests: ManifestList{[]byte(`apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  replicas: 0`)},
+			expected: []string{"apiVersion=exte...", "kind=Depl...", "metadata=map[...", "name=app", "spec=map[...", "replicas=0"},
+		},
+		{
+			description: "deprecated replicaset.extensions",
+			manifests: ManifestList{[]byte(`apiVersion: extensions/v1beta1
+kind: ReplicaSet
+metadata:
+  name: app
+spec:
+  replicas: 0`)},
+			expected: []string{"apiVersion=exte...", "kind=Repl...", "metadata=map[...", "name=app", "spec=map[...", "replicas=0"},
+		},
+		{
 			description: "invalid input",
 			manifests:   ManifestList{[]byte(`test:bar`)},
 			shouldErr:   true,
