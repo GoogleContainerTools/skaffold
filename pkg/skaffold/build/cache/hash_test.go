@@ -55,6 +55,7 @@ func TestGetHashForArtifact(t *testing.T) {
 		description  string
 		dependencies []string
 		artifact     *latest.Artifact
+		opts         build.BuilderOptions
 		devMode      bool
 		expected     string
 	}{
@@ -136,6 +137,72 @@ func TestGetHashForArtifact(t *testing.T) {
 			devMode:      true,
 			expected:     "d18a2202185518cd139dbdff9be2e4fb972a5de7f2f2448c41b05cb310d1e875",
 		},
+		{
+			description:  "build options for dev",
+			dependencies: []string{"a", "b"},
+			artifact:     &latest.Artifact{},
+			opts: build.BuilderOptions{
+				Tag:           "tag",
+				Configuration: build.Dev,
+				BuildArgs:     nil,
+			},
+			expected: "e1f69fa9734709714f69a532a7edcda1cafe8aac165bbccfb28e7dfa7435e525",
+		},
+		{
+			description:  "build options for debug",
+			dependencies: []string{"a", "b"},
+			artifact:     &latest.Artifact{},
+			opts: build.BuilderOptions{
+				Tag:           "tag",
+				Configuration: build.Debug,
+				BuildArgs:     nil,
+			},
+			expected: "121f79bd6d6e80446324aff291bfc4d54da3d5e3eefd6c1d11cd989f1a95cb7a",
+		},
+		{
+			description:  "ignore tag in options",
+			dependencies: []string{"a", "b"},
+			artifact:     &latest.Artifact{},
+			opts: build.BuilderOptions{
+				Tag:           "different-tag",
+				Configuration: build.Debug,
+				BuildArgs:     nil,
+			},
+			expected: "121f79bd6d6e80446324aff291bfc4d54da3d5e3eefd6c1d11cd989f1a95cb7a",
+		},
+		{
+			description:  "options args (set 1)",
+			dependencies: []string{"a", "b"},
+			artifact:     &latest.Artifact{},
+			opts: build.BuilderOptions{
+				Tag:           "tag",
+				Configuration: build.Debug,
+				BuildArgs:     map[string]*string{"one": stringPointer("1"), "two": stringPointer("2")},
+			},
+			expected: "da5cf2a8a386aafc89ea8ad070f0d5f8eee9046fb4ea641cd3da54c2a6139e80",
+		},
+		{
+			description:  "options args (set 1, different order)",
+			dependencies: []string{"a", "b"},
+			artifact:     &latest.Artifact{},
+			opts: build.BuilderOptions{
+				Tag:           "tag",
+				Configuration: build.Debug,
+				BuildArgs:     map[string]*string{"two": stringPointer("2"), "one": stringPointer("1")},
+			},
+			expected: "da5cf2a8a386aafc89ea8ad070f0d5f8eee9046fb4ea641cd3da54c2a6139e80",
+		},
+		{
+			description:  "options args (set 2)",
+			dependencies: []string{"a", "b"},
+			artifact:     &latest.Artifact{},
+			opts: build.BuilderOptions{
+				Tag:           "tag",
+				Configuration: build.Debug,
+				BuildArgs:     map[string]*string{"two": stringPointer("2"), "three": stringPointer("3")},
+			},
+			expected: "1543293a81f8724a7552b4df49143a87b2be33a40fc3940bef790b7ddfaf7839",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -143,7 +210,7 @@ func TestGetHashForArtifact(t *testing.T) {
 			t.Override(&artifactConfigFunction, fakeArtifactConfig)
 
 			depLister := stubDependencyLister(test.dependencies)
-			actual, err := getHashForArtifact(context.Background(), depLister, test.artifact, build.BuilderOptions{}, test.devMode)
+			actual, err := getHashForArtifact(context.Background(), depLister, test.artifact, test.opts, test.devMode)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
