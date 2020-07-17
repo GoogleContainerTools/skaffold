@@ -49,7 +49,7 @@ func TestPortForward(t *testing.T) {
 	})
 
 	logrus.SetLevel(logrus.TraceLevel)
-	portforward.WhiteBoxPortForwardCycle(t, kubectlCLI, ns.Name)
+	portforward.SimulateDevCycle(t, kubectlCLI, ns.Name)
 }
 
 func TestRunPortForward(t *testing.T) {

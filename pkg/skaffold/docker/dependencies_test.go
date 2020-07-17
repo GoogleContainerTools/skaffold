@@ -503,14 +503,14 @@ func TestGetDependencies(t *testing.T) {
 			shouldErr:   true,
 		},
 		{
-			description: "ignore with whitelisting",
+			description: "ignore with negative pattern",
 			dockerfile:  copyAll,
 			workspace:   ".",
 			ignore:      "**\n!docker/**",
 			expected:    []string{"Dockerfile", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf")},
 		},
 		{
-			description: "ignore with whitelisting files",
+			description: "ignore with negative filename",
 			dockerfile:  copyAll,
 			workspace:   ".",
 			ignore:      "**\n!server.go",

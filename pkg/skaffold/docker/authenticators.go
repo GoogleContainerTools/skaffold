@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/google"
 )
 
-var masterKeychain = &Keychain{
+var primaryKeychain = &Keychain{
 	configDir: configDir,
 }
 
