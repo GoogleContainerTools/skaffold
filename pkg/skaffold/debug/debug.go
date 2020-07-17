@@ -84,8 +84,13 @@ func applyDebuggingTransforms(l kubectl.ManifestList, retriever configurationRet
 	return updated, nil
 }
 
-// findArtifact finds the corresponding artifact for the given image
+// findArtifact finds the corresponding artifact for the given image.
+// If `builds` is empty, then treat all `image` images as a build artifact.
 func findArtifact(image string, builds []build.Artifact) *build.Artifact {
+	if len(builds) == 0 {
+		logrus.Debugf("No build artifacts specified: using image as-is %q", image)
+		return &build.Artifact{ImageName: image, Tag: image}
+	}
 	for _, artifact := range builds {
 		if image == artifact.ImageName || image == artifact.Tag {
 			logrus.Debugf("Found artifact for image %q", image)

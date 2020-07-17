@@ -28,8 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
-// TempFile creates a temporary file with a given content. Returns the file name
-// and a teardown function that should be called to properly delete the file.
+// TempFile creates a temporary file with a given content. Returns the file name.
 func TempFile(t *testing.T, prefix string, content []byte) string {
 	file, err := ioutil.TempFile("", prefix)
 	if err != nil {
