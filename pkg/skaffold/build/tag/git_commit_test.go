@@ -393,7 +393,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 				tagger, err := NewGitCommit("", variant)
 				t.CheckNoError(err)
 
-				tag, err := tagger.GenerateTag(workspace, "test")
+				tag, err := GenerateFullyQualifiedImageName(tagger, workspace, "test")
 
 				t.CheckErrorAndDeepEqual(test.shouldErr, err, expectedTag, tag)
 			}
