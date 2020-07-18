@@ -26,15 +26,6 @@ import (
 )
 
 func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
-	//This is for testing gitCommit
-	createGitRepo := func(dir string) {
-		gitInit(t, dir).
-			write("source.go", "code").
-			add("source.go").
-			commit("initial")
-	}
-	gitCommitExample, _ := NewGitCommit("foo-", "AbbrevCommitSha")
-
 	// This is for testing envTemplate
 	envTemplateExample, _ := NewEnvTemplateTagger("{{.IMAGE_NAME}}:{{.FOO}}")
 	invalidEnvTemplate, _ := NewEnvTemplateTagger("{{.IMAGE_NAME}}:{{.BAR}}")
@@ -57,12 +48,6 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 		expectedWarnings []string
 		shouldErr        bool
 	}{
-		{
-			description: "gitCommit",
-			imageName:   "test",
-			tagger:      gitCommitExample,
-			expected:    "test:foo-eefe1b9",
-		},
 		{
 			description: "sha256 w/o tag",
 			imageName:   "test",
@@ -100,11 +85,7 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return env })
 
-			tmpDir := t.NewTempDir()
-			createGitRepo(tmpDir.Root())
-			workspace := tmpDir.Path("")
-
-			tag, err := GenerateFullyQualifiedImageName(test.tagger, workspace, test.imageName)
+			tag, err := GenerateFullyQualifiedImageName(test.tagger, ".", test.imageName)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, tag)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})

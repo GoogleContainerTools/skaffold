@@ -340,6 +340,67 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 	}
 }
 
+func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
+	tests := []struct {
+		description            string
+		variantTags            string
+		variantCommitSha       string
+		variantAbbrevCommitSha string
+		variantTreeSha         string
+		variantAbbrevTreeSha   string
+		createGitRepo          func(string)
+		subDir                 string
+		shouldErr              bool
+	}{
+		{
+			description:            "clean worktree without tag",
+			variantTags:            "test:eefe1b9",
+			variantCommitSha:       "test:eefe1b9c44eb0aa87199c9a079f2d48d8eb8baed",
+			variantAbbrevCommitSha: "test:eefe1b9",
+			variantTreeSha:         "test:3bed02ca656e336307e4eb4d80080d7221cba62c",
+			variantAbbrevTreeSha:   "test:3bed02c",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", "code").
+					add("source.go").
+					commit("initial")
+			},
+		},
+		{
+			description: "non git repo",
+			createGitRepo: func(dir string) {
+				ioutil.WriteFile(filepath.Join(dir, "source.go"), []byte("code"), os.ModePerm)
+			},
+			shouldErr: true,
+		},
+	}
+	for _, test := range tests {
+		test := test
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Parallel()
+
+			tmpDir := t.NewTempDir()
+			test.createGitRepo(tmpDir.Root())
+			workspace := tmpDir.Path(test.subDir)
+
+			for variant, expectedTag := range map[string]string{
+				"Tags":            test.variantTags,
+				"CommitSha":       test.variantCommitSha,
+				"AbbrevCommitSha": test.variantAbbrevCommitSha,
+				"TreeSha":         test.variantTreeSha,
+				"AbbrevTreeSha":   test.variantAbbrevTreeSha,
+			} {
+				tagger, err := NewGitCommit("", variant)
+				t.CheckNoError(err)
+
+				tag, err := tagger.GenerateTag(workspace, "test")
+
+				t.CheckErrorAndDeepEqual(test.shouldErr, err, expectedTag, tag)
+			}
+		})
+	}
+}
+
 func TestGitCommitSubDirectory(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir()
