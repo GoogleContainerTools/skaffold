@@ -59,15 +59,15 @@ func NewGitCommit(prefix, variant string) (*GitCommit, error) {
 }
 
 // Labels are labels specific to the git tagger.
-func (c *GitCommit) Labels() map[string]string {
+func (t *GitCommit) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "git-commit",
 	}
 }
 
-// GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
-func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, imageName string) (string, error) {
-	ref, err := c.runGitFn(workingDir)
+// GenerateTag generates a tag from the git commit.
+func (t *GitCommit) GenerateTag(workingDir, imageName string) (string, error) {
+	ref, err := t.runGitFn(workingDir)
 	if err != nil {
 		return "", fmt.Errorf("unable to find git commit: %w", err)
 	}
@@ -78,10 +78,10 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, imageName
 	}
 
 	if len(changes) > 0 {
-		return fmt.Sprintf("%s:%s%s-dirty", imageName, c.prefix, ref), nil
+		return fmt.Sprintf("%s%s-dirty", t.prefix, ref), nil
 	}
 
-	return fmt.Sprintf("%s:%s%s", imageName, c.prefix, sanitizeTag(ref)), nil
+	return t.prefix + sanitizeTag(ref), nil
 }
 
 // sanitizeTag takes a git tag and converts it to a docker tag by removing

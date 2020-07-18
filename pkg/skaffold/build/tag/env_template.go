@@ -43,14 +43,15 @@ func NewEnvTemplateTagger(t string) (Tagger, error) {
 	}, nil
 }
 
+// Labels are labels specific to the envTemplate tagger.
 func (t *envTemplateTagger) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "envTemplateTagger",
 	}
 }
 
-// GenerateFullyQualifiedImageName tags an image with the custom tag
-func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+// GenerateTag generates a tag from a template referencing environment variable.
+func (t *envTemplateTagger) GenerateTag(workingDir, imageName string) (string, error) {
 	tag, err := util.ExecuteEnvTemplate(t.Template.Option("missingkey=error"), map[string]string{
 		"IMAGE_NAME":  imageName,
 		"DIGEST":      "_DEPRECATED_DIGEST_",

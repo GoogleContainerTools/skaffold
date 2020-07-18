@@ -44,22 +44,23 @@ func NewDateTimeTagger(format, timezone string) Tagger {
 	}
 }
 
-func (tagger *dateTimeTagger) Labels() map[string]string {
+// Labels are labels specific to the dateTime tagger.
+func (t *dateTimeTagger) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "dateTimeTagger",
 	}
 }
 
-// GenerateFullyQualifiedImageName tags an image with the supplied image name and the current timestamp
-func (tagger *dateTimeTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+// GenerateTag generates a tag using the current timestamp.
+func (t *dateTimeTagger) GenerateTag(workingDir, imageName string) (string, error) {
 	format := tagTime
-	if len(tagger.Format) > 0 {
-		format = tagger.Format
+	if len(t.Format) > 0 {
+		format = t.Format
 	}
 
 	timezone := "Local"
-	if len(tagger.TimeZone) > 0 {
-		timezone = tagger.TimeZone
+	if len(t.TimeZone) > 0 {
+		timezone = t.TimeZone
 	}
 
 	loc, err := tz.LoadLocation(timezone)
@@ -67,5 +68,5 @@ func (tagger *dateTimeTagger) GenerateFullyQualifiedImageName(workingDir, imageN
 		return "", fmt.Errorf("bad timezone provided: \"%s\", error: %s", timezone, err)
 	}
 
-	return fmt.Sprintf("%s:%s", imageName, tagger.timeFn().In(loc).Format(format)), nil
+	return t.timeFn().In(loc).Format(format), nil
 }
