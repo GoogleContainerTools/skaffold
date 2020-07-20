@@ -744,7 +744,7 @@ func TestValidateWorkspaces(t *testing.T) {
 			},
 		},
 		{
-			description: "error on non-existant location",
+			description: "error on non-existent location",
 			artifacts: []*latest.Artifact{
 				{
 					ImageName: "image",
