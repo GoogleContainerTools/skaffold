@@ -61,7 +61,7 @@ func validateWorkspaces(artifacts []*latest.Artifact) (errs []error) {
 	for _, a := range artifacts {
 		if a.Workspace != "" {
 			if info, err := os.Stat(a.Workspace); err != nil {
-		        // err could be permission-related
+				// err could be permission-related
 				if os.IsNotExist(err) {
 					errs = append(errs, fmt.Errorf("image %q context %q does not exist", a.ImageName, a.Workspace))
 				} else {

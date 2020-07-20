@@ -74,7 +74,15 @@ func TestParseSamples(t *testing.T) {
 }
 
 func checkSkaffoldConfig(t *testutil.T, yaml []byte) {
-	configFile := t.TempFile("skaffold.yaml", yaml)
+	root := t.NewTempDir()
+	configFile := root.Path("skaffold.yaml")
+	root.Write("skaffold.yaml", string(yaml))
+	// create workspace directories referenced in these samples
+	for _, d := range []string{"app", "node", "python", "leeroy-web", "leeroy-app", "backend", "base-service", "world-service"} {
+		root.Mkdir(d)
+	}
+	root.Chdir()
+
 	cfg, err := ParseConfigAndUpgrade(configFile, latest.Version)
 	t.CheckNoError(err)
 
