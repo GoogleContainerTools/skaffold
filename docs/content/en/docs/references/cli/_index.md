@@ -98,6 +98,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_COLOR` (same as `--color`)
+* `SKAFFOLD_INTERACTIVE` (same as `--interactive`)
 * `SKAFFOLD_VERBOSITY` (same as `--verbosity`)
 
 ### skaffold build
@@ -695,6 +696,7 @@ Env vars:
 The following options can be passed to any command:
 
       --color=34: Specify the default output color in ANSI escape codes
+      --interactive=true: Allow user prompts for more information
   -v, --verbosity='warning': Log level (debug, info, warn, error, fatal, panic)
 
 
