@@ -42,7 +42,7 @@ func (r *SkaffoldRunner) loadImagesInKindNodes(ctx context.Context, out io.Write
 func (r *SkaffoldRunner) loadImagesInK3dNodes(ctx context.Context, out io.Writer, k3dCluster string, artifacts []build.Artifact) error {
 	color.Default.Fprintln(out, "Loading images into k3d cluster nodes...")
 	return r.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
-		return exec.CommandContext(ctx, "k3d", "load", "image", "--cluster", k3dCluster, tag)
+		return exec.CommandContext(ctx, "k3d", "image", "import", "--cluster", k3dCluster, tag)
 	})
 }
 

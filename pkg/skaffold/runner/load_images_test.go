@@ -114,7 +114,7 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 			deployed:    []build.Artifact{{Tag: "tag1"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
-				AndRunOut("k3d load image --cluster k3d tag1", "output: image loaded"),
+				AndRunOut("k3d image import --cluster k3d tag1", "output: image loaded"),
 		},
 		{
 			description: "load missing image",
@@ -123,7 +123,7 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 			deployed:    []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "tag1").
-				AndRunOut("k3d load image --cluster other-k3d tag2", "output: image loaded"),
+				AndRunOut("k3d image import --cluster other-k3d tag2", "output: image loaded"),
 		},
 		{
 			description: "inspect error",
@@ -141,7 +141,7 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 			deployed:    []build.Artifact{{Tag: "tag"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
-				AndRunOutErr("k3d load image --cluster k3d tag", "output: error!", errors.New("BUG")),
+				AndRunOutErr("k3d image import --cluster k3d tag", "output: error!", errors.New("BUG")),
 			shouldErr:     true,
 			expectedError: "output: error!",
 		},
@@ -152,7 +152,7 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 			deployed:    []build.Artifact{{Tag: "built"}, {Tag: "busybox"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
-				AndRunOut("k3d load image --cluster k3d built", ""),
+				AndRunOut("k3d image import --cluster k3d built", ""),
 		},
 		{
 			description: "no artifact",
