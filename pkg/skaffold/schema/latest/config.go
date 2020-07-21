@@ -67,6 +67,9 @@ type Pipeline struct {
 
 	// PortForward describes user defined resources to port-forward.
 	PortForward []*PortForwardResource `yaml:"portForward,omitempty"`
+
+	// SuppressLogs specifies which stages of the pipeline should suppress logs in favor of just surfacing statuses.
+	SuppressLogs []string `yaml:"suppressLogs,omitempty"`
 }
 
 func (c *SkaffoldConfig) GetVersion() string {

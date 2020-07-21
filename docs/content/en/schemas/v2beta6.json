@@ -1831,6 +1831,15 @@
           "description": "describes user defined resources to port-forward.",
           "x-intellij-html-description": "describes user defined resources to port-forward."
         },
+        "suppressLogs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "specifies which stages of the pipeline should suppress logs in favor of just surfacing statuses.",
+          "x-intellij-html-description": "specifies which stages of the pipeline should suppress logs in favor of just surfacing statuses.",
+          "default": "[]"
+        },
         "test": {
           "items": {
             "$ref": "#/definitions/TestCase"
@@ -1847,7 +1856,8 @@
         "build",
         "test",
         "deploy",
-        "portForward"
+        "portForward",
+        "suppressLogs"
       ],
       "additionalProperties": false,
       "description": "used to override any `build`, `test` or `deploy` configuration.",
@@ -1976,6 +1986,15 @@
           "description": "*beta* can override be used to `build`, `test` or `deploy` configuration.",
           "x-intellij-html-description": "<em>beta</em> can override be used to <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
         },
+        "suppressLogs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "specifies which stages of the pipeline should suppress logs in favor of just surfacing statuses.",
+          "x-intellij-html-description": "specifies which stages of the pipeline should suppress logs in favor of just surfacing statuses.",
+          "default": "[]"
+        },
         "test": {
           "items": {
             "$ref": "#/definitions/TestCase"
@@ -1993,6 +2012,7 @@
         "test",
         "deploy",
         "portForward",
+        "suppressLogs",
         "profiles"
       ],
       "additionalProperties": false,
