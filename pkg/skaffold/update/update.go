@@ -20,22 +20,22 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
+
+// EnableCheck enabled the check for a more recent version of Skaffold.
+var EnableCheck bool
 
 // For testing
 var (
 	GetLatestAndCurrentVersion = getLatestAndCurrentVersion
 	isConfigUpdateCheckEnabled = config.IsUpdateCheckEnabled
-	getEnv                     = os.Getenv
 )
 
 const LatestVersionURL = "https://storage.googleapis.com/skaffold/releases/latest/VERSION"
@@ -48,14 +48,7 @@ func IsUpdateCheckEnabled(configfile string) bool {
 		return false
 	}
 
-	return isUpdateCheckEnabledByEnvOrConfig(configfile)
-}
-
-func isUpdateCheckEnabledByEnvOrConfig(configfile string) bool {
-	if v := getEnv(constants.UpdateCheckEnvironmentVariable); v != "" {
-		return strings.ToLower(v) == "true"
-	}
-	return isConfigUpdateCheckEnabled(configfile)
+	return EnableCheck && isConfigUpdateCheckEnabled(configfile)
 }
 
 // getLatestAndCurrentVersion uses a VERSION file stored on GCS to determine the latest released version

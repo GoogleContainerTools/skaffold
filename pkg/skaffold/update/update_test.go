@@ -22,42 +22,46 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestIsUpdateCheckEnabledByEnvOrConfig(t *testing.T) {
+func TestIsUpdateCheckEnabled(t *testing.T) {
 	tests := []struct {
 		description string
-		envVariable string
+		enabled     bool
 		configCheck bool
 		expected    bool
 	}{
 		{
-			description: "env variable is set to true",
-			envVariable: "true",
-			expected:    true,
+			description: "globally disabled - disabled in config -> disabled",
+			enabled:     false,
+			configCheck: false,
+			expected:    false,
 		},
 		{
-			description: "env variable is set to false",
-			envVariable: "false",
+			description: "globally enabled - disabled in config -> disabled",
+			enabled:     true,
+			configCheck: false,
+			expected:    false,
 		},
 		{
-			description: "env variable is set to random string",
-			envVariable: "foo",
+			description: "globally disabled - enabled in config -> disabled",
+			enabled:     false,
+			configCheck: true,
+			expected:    false,
 		},
 		{
-			description: "env variable is empty and config is enabled",
+			description: "globally enabled - enabled in config -> enabled",
+			enabled:     true,
 			configCheck: true,
 			expected:    true,
-		},
-		{
-			description: "env variable is false but Global update-check config is true",
-			envVariable: "false",
-			configCheck: true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&EnableCheck, test.enabled)
 			t.Override(&isConfigUpdateCheckEnabled, func(string) bool { return test.configCheck })
-			t.Override(&getEnv, func(string) string { return test.envVariable })
-			t.CheckDeepEqual(test.expected, isUpdateCheckEnabledByEnvOrConfig("dummyconfig"))
+
+			isEnabled := IsUpdateCheckEnabled("dummyconfig")
+
+			t.CheckDeepEqual(test.expected, isEnabled)
 		})
 	}
 }
