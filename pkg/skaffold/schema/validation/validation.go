@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
@@ -43,6 +44,7 @@ func Process(config *latest.SkaffoldConfig) error {
 	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
 	errs = append(errs, validatePortForwardResources(config.PortForward)...)
 	errs = append(errs, validateJibPluginTypes(config.Build.Artifacts)...)
+	errs = append(errs, validateLogPrefix(config.Deploy.Logs)...)
 	errs = append(errs, validateArtifactTypes(config.Build)...)
 
 	if len(errs) == 0 {
@@ -251,4 +253,15 @@ func validateArtifactTypes(bc latest.BuildConfig) (errs []error) {
 		}
 	}
 	return
+}
+
+// validateLogPrefix checks that logs are configured with a valid prefix.
+func validateLogPrefix(lc latest.LogsConfig) []error {
+	validPrefixes := []string{"", "auto", "container", "podAndContainer", "none"}
+
+	if !util.StrSliceContains(validPrefixes, lc.Prefix) {
+		return []error{fmt.Errorf("invalid log prefix '%s'. Valid values are 'auto', 'container', 'podAndContainer' or 'none'", lc.Prefix)}
+	}
+
+	return nil
 }

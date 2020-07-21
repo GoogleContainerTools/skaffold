@@ -407,3 +407,44 @@ func TestSetDefaultPortForwardAddress(t *testing.T) {
 	testutil.CheckDeepEqual(t, "0.0.0.0", cfg.PortForward[0].Address)
 	testutil.CheckDeepEqual(t, constants.DefaultPortForwardAddress, cfg.PortForward[1].Address)
 }
+
+func TestSetLogsConfig(t *testing.T) {
+	tests := []struct {
+		description string
+		input       latest.LogsConfig
+		expected    latest.LogsConfig
+	}{
+		{
+			description: "prefix defaults to 'container'",
+			input:       latest.LogsConfig{},
+			expected: latest.LogsConfig{
+				Prefix: "container",
+			},
+		},
+		{
+			description: "don't override existing prefix",
+			input: latest.LogsConfig{
+				Prefix: "none",
+			},
+			expected: latest.LogsConfig{
+				Prefix: "none",
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfg := latest.SkaffoldConfig{
+				Pipeline: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						Logs: test.input,
+					},
+				},
+			}
+
+			err := Set(&cfg)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, cfg.Deploy.Logs)
+		})
+	}
+}
