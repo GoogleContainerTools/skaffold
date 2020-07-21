@@ -86,6 +86,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			logrus.Infof("Skaffold %+v", version)
 
 			switch {
+			case !interactive:
+				logrus.Debugf("Update check and survey prompt disabled in non-interactive mode")
 			case quietFlag:
 				logrus.Debugf("Update check and survey prompt disabled in quiet mode")
 			case analyze:
