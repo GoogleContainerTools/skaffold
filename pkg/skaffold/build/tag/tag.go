@@ -46,7 +46,7 @@ func GenerateFullyQualifiedImageName(t Tagger, workingDir, imageName string) (st
 		return tag, nil
 	}
 
-	if tag == "" { //Do not append :tag to imageName if tag is empty.
+	if tag == "" { // Do not append :tag to imageName if tag is empty.
 		return imageName, nil
 	}
 

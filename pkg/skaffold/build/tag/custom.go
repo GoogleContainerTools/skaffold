@@ -34,7 +34,7 @@ func (t *CustomTag) Labels() map[string]string {
 }
 
 // GenerateTag generates a tag using the custom tag.
-func (t *CustomTag) GenerateTag(workingDir, imageName string) (string, error) {
+func (t *CustomTag) GenerateTag(_, _ string) (string, error) {
 	tag := t.Tag
 	if tag == "" {
 		return "", errors.New("custom tag not provided")

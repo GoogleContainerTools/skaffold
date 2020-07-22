@@ -66,7 +66,7 @@ func (t *GitCommit) Labels() map[string]string {
 }
 
 // GenerateTag generates a tag from the git commit.
-func (t *GitCommit) GenerateTag(workingDir, imageName string) (string, error) {
+func (t *GitCommit) GenerateTag(workingDir, _ string) (string, error) {
 	ref, err := t.runGitFn(workingDir)
 	if err != nil {
 		return "", fmt.Errorf("unable to find git commit: %w", err)

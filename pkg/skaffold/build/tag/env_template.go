@@ -51,7 +51,7 @@ func (t *envTemplateTagger) Labels() map[string]string {
 }
 
 // GenerateTag generates a tag from a template referencing environment variables.
-func (t *envTemplateTagger) GenerateTag(workingDir, imageName string) (string, error) {
+func (t *envTemplateTagger) GenerateTag(_, imageName string) (string, error) {
 	tag, err := util.ExecuteEnvTemplate(t.Template.Option("missingkey=error"), map[string]string{
 		"IMAGE_NAME":  imageName,
 		"DIGEST":      "_DEPRECATED_DIGEST_",

@@ -32,7 +32,7 @@ func (t *ChecksumTagger) Labels() map[string]string {
 }
 
 // GenerateTag returns either the current tag or `latest`.
-func (t *ChecksumTagger) GenerateTag(workingDir, imageName string) (string, error) {
+func (t *ChecksumTagger) GenerateTag(_, imageName string) (string, error) {
 	parsed, err := docker.ParseReference(imageName)
 	if err != nil {
 		return "", err
@@ -43,6 +43,6 @@ func (t *ChecksumTagger) GenerateTag(workingDir, imageName string) (string, erro
 		return "latest", nil
 	}
 
-	//imageName already has a tag
+	// imageName already has a tag
 	return "", nil
 }
