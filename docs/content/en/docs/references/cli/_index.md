@@ -340,7 +340,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
@@ -461,7 +461,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
   -i, --images=: A list of pre-built images to deploy
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
@@ -522,7 +522,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
@@ -771,7 +771,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.

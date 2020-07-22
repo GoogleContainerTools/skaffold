@@ -173,7 +173,7 @@ func TestNewCmdDev(t *testing.T) {
 		cmd.Execute()
 
 		t.CheckDeepEqual(true, opts.Tail)
-		t.CheckDeepEqual(true, opts.Force)
+		t.CheckDeepEqual(false, opts.Force)
 		t.CheckDeepEqual(true, opts.EnableRPC)
 	})
 }
