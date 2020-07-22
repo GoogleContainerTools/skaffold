@@ -508,9 +508,8 @@ type HelmRelease struct {
 	// ValuesFiles are the paths to the Helm `values` files.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty"`
 
-	// ArtifactOverrides are key value pairs where
-	// key represents the parameter used in `values` file to define a container image and
-	// value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section.
+	// ArtifactOverrides are key value pairs.
+	// If present, Skaffold will send `--set-string` flag to Helm CLI and append all pairs after the flag.
 	ArtifactOverrides util.FlatMap `yaml:"artifactOverrides,omitempty,omitempty"`
 
 	// Namespace is the Kubernetes namespace.
