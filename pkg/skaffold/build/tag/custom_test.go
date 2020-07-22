@@ -22,12 +22,28 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestCustomTag_GenerateFullyQualifiedImageName(t *testing.T) {
-	c := &CustomTag{
-		Tag: "1.2.3-beta",
+func TestCustomTag_GenerateTag(t *testing.T) {
+	tests := []struct {
+		description string
+		c           *CustomTag
+		expected    string
+		shouldErr   bool
+	}{
+		{
+			description: "valid custom tag",
+			c: &CustomTag{
+				Tag: "1.2.3-beta",
+			},
+			expected: "1.2.3-beta",
+		},
+		{
+			description: "invalid custom tag",
+			c:           &CustomTag{},
+			shouldErr:   true,
+		},
 	}
-
-	tag, err := c.GenerateFullyQualifiedImageName(".", "test")
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, "test:1.2.3-beta", tag)
+	for _, test := range tests {
+		tag, err := test.c.GenerateTag(".", "test")
+		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, tag)
+	}
 }

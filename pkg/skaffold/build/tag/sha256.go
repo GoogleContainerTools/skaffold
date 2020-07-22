@@ -25,13 +25,14 @@ import (
 type ChecksumTagger struct{}
 
 // Labels are labels specific to the sha256 tagger.
-func (c *ChecksumTagger) Labels() map[string]string {
+func (t *ChecksumTagger) Labels() map[string]string {
 	return map[string]string{
 		constants.Labels.TagPolicy: "sha256",
 	}
 }
 
-func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+// GenerateTag returns either the current tag or `latest`.
+func (t *ChecksumTagger) GenerateTag(_, imageName string) (string, error) {
 	parsed, err := docker.ParseReference(imageName)
 	if err != nil {
 		return "", err
@@ -39,9 +40,9 @@ func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName s
 
 	if parsed.Tag == "" {
 		// No supplied tag, so use "latest".
-		return imageName + ":latest", nil
+		return "latest", nil
 	}
 
-	// They already have a tag.
-	return imageName, nil
+	// imageName already has a tag
+	return "", nil
 }
