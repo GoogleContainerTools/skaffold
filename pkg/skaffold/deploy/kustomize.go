@@ -147,7 +147,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 
 	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		event.DeployFailed(err)
-		return NewDeployErrorResult(fmt.Errorf("kubectl error: %w", err))
+		return NewDeployErrorResult(err)
 	}
 
 	event.DeployComplete()

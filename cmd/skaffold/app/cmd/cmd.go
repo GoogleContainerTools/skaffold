@@ -41,9 +41,10 @@ import (
 var (
 	opts              config.SkaffoldOptions
 	v                 string
-	forceColors       bool
 	defaultColor      int
+	forceColors       bool
 	overwrite         bool
+	interactive       bool
 	shutdownAPIServer func() error
 )
 
@@ -85,6 +86,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			logrus.Infof("Skaffold %+v", version)
 
 			switch {
+			case !interactive:
+				logrus.Debugf("Update check and survey prompt disabled in non-interactive mode")
 			case quietFlag:
 				logrus.Debugf("Update check and survey prompt disabled in quiet mode")
 			case analyze:
@@ -163,6 +166,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
 	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.DefaultColorCode), "Specify the default output color in ANSI escape codes")
 	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
+	rootCmd.PersistentFlags().BoolVar(&interactive, "interactive", true, "Allow user prompts for more information")
+	rootCmd.PersistentFlags().BoolVar(&update.EnableCheck, "update-check", true, "Check for a more recent version of Skaffold")
 	rootCmd.PersistentFlags().MarkHidden("force-colors")
 
 	setFlagsFromEnvVariables(rootCmd)
