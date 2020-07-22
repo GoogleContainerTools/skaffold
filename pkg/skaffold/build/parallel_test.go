@@ -35,7 +35,7 @@ import (
 func TestGetBuild(t *testing.T) {
 	tests := []struct {
 		description   string
-		buildArtifact artifactBuilder
+		buildArtifact ArtifactBuilder
 		tags          tag.ImageTags
 		expectedTag   string
 		expectedOut   string
@@ -197,7 +197,7 @@ func TestCollectResults(t *testing.T) {
 func TestInParallel(t *testing.T) {
 	tests := []struct {
 		description string
-		buildFunc   artifactBuilder
+		buildFunc   ArtifactBuilder
 		expected    string
 	}{
 		{
@@ -302,14 +302,14 @@ func TestInParallelConcurrency(t *testing.T) {
 func TestInParallelForArgs(t *testing.T) {
 	tests := []struct {
 		description   string
-		inSeqFunc     func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, artifactBuilder) ([]Artifact, error)
-		buildArtifact artifactBuilder
+		inSeqFunc     func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, ArtifactBuilder) ([]Artifact, error)
+		buildArtifact ArtifactBuilder
 		artifactLen   int
 		expected      []Artifact
 	}{
 		{
 			description: "runs in sequence for 1 artifact",
-			inSeqFunc: func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, artifactBuilder) ([]Artifact, error) {
+			inSeqFunc: func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, ArtifactBuilder) ([]Artifact, error) {
 				return []Artifact{{ImageName: "singleArtifact", Tag: "one"}}, nil
 			},
 			artifactLen: 1,
