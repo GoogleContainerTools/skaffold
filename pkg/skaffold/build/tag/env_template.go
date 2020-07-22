@@ -22,7 +22,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -41,13 +40,6 @@ func NewEnvTemplateTagger(t string) (Tagger, error) {
 	return &envTemplateTagger{
 		Template: tmpl,
 	}, nil
-}
-
-// Labels are labels specific to the envTemplate tagger.
-func (t *envTemplateTagger) Labels() map[string]string {
-	return map[string]string{
-		constants.Labels.TagPolicy: "envTemplateTagger",
-	}
 }
 
 // GenerateTag generates a tag from a template referencing environment variables.

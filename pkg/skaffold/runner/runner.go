@@ -66,7 +66,7 @@ type SkaffoldRunner struct {
 	cache           cache.Cache
 	changeSet       changeSet
 	runCtx          *runcontext.RunContext
-	labellers       []deploy.Labeller
+	labeller        deploy.Labeller
 	defaultLabeller *deploy.DefaultLabeller
 	builds          []build.Artifact
 
