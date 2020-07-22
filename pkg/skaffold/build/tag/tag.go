@@ -18,6 +18,9 @@ package tag
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 // ImageTags maps image names to tags
@@ -36,17 +39,33 @@ type Tagger interface {
 // The workingDir is the root directory of the artifact with respect to the Skaffold root,
 // and imageName is the base name of the image.
 func GenerateFullyQualifiedImageName(t Tagger, workingDir, imageName string) (string, error) {
+	// Supporting the use of the deprecated {{.IMAGE_NAME}} in envTemplate
+	if v, ok := t.(*envTemplateTagger); ok {
+		tag, err := v.GenerateTag(workingDir, "_DEPRECATED_IMAGE_NAME_")
+
+		if err != nil {
+			return "", fmt.Errorf("generating deprecated envTemplate tag: %w", err)
+		}
+
+		if strings.Contains(tag, "_DEPRECATED_IMAGE_NAME_") {
+			warnings.Printf("{{.IMAGE_NAME}} is deprecated, envTemplate's template should only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/")
+
+			tag, _ = v.GenerateTag(workingDir, imageName)
+
+			return tag, nil
+		}
+
+		return fmt.Sprintf("%s:%s", imageName, tag), nil
+	}
+
 	tag, err := t.GenerateTag(workingDir, imageName)
 
 	if err != nil {
 		return "", fmt.Errorf("generating tag: %w", err)
 	}
 
-	if _, ok := t.(*envTemplateTagger); ok { // envTemplate's GenerateTag is currently designed to return the full image name
-		return tag, nil
-	}
-
-	if tag == "" { // Do not append :tag to imageName if tag is empty.
+	// Do not append :tag to imageName if tag is empty.
+	if tag == "" {
 		return imageName, nil
 	}
 
