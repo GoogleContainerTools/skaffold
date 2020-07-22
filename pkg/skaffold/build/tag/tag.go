@@ -46,9 +46,7 @@ func GenerateFullyQualifiedImageName(t Tagger, workingDir, imageName string) (st
 		return tag, nil
 	}
 
-	// It makes more sense to return imageName rather than imageName: (when tag is empty).
-	// This primarily concerns sha256.
-	if tag == "" {
+	if tag == "" { //Do not append :tag to imageName if tag is empty.
 		return imageName, nil
 	}
 

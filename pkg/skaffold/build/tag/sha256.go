@@ -31,8 +31,7 @@ func (t *ChecksumTagger) Labels() map[string]string {
 	}
 }
 
-// GenerateTag returns either the current tag or `latest`. This tagger relies on the fact
-// that Skaffold references the image using its sha256 digest during deploy.
+// GenerateTag returns either the current tag or `latest`.
 func (t *ChecksumTagger) GenerateTag(workingDir, imageName string) (string, error) {
 	parsed, err := docker.ParseReference(imageName)
 	if err != nil {

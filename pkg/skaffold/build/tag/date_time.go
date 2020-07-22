@@ -65,7 +65,7 @@ func (t *dateTimeTagger) GenerateTag(workingDir, imageName string) (string, erro
 
 	loc, err := tz.LoadLocation(timezone)
 	if err != nil {
-		return "", fmt.Errorf("bad timezone provided: \"%s\", error: %s", timezone, err)
+		return "", fmt.Errorf("bad timezone provided: %q, error: %s", timezone, err)
 	}
 
 	return t.timeFn().In(loc).Format(format), nil
