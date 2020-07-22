@@ -56,8 +56,6 @@ const (
 	// DefaultDebugHelpersRegistry is the default location used for the helper images for `debug`.
 	DefaultDebugHelpersRegistry = "gcr.io/gcp-dev-tools/duct-tape"
 
-	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
-
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"
 
