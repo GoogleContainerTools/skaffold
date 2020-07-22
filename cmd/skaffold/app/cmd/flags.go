@@ -373,6 +373,14 @@ var flagRegistry = []Flag{
 		FlagAddMethod: "StringSliceVar",
 		DefinedOn:     []string{"dev", "run", "debug", "build", "deploy"},
 	},
+	{
+		Name:          "wait-for-deletions",
+		Usage:         "Wait for pending deletions to complete before a deployment",
+		Value:         &opts.WaitForDeletions,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+	},
 }
 
 func (fl *Flag) flag() *pflag.Flag {

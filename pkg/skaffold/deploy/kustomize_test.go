@@ -26,6 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -58,10 +59,11 @@ func TestKustomizeDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kustomize build .", deploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
-				Tag:       "leeroy-web:123",
+				Tag:       "leeroy-web:v1",
 			}},
 			forceDeploy: true,
 		},
@@ -74,15 +76,16 @@ func TestKustomizeDeploy(t *testing.T) {
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kustomize build a", deploymentWebYAML).
 				AndRunOut("kustomize build b", deploymentAppYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1+"\n---\n"+deploymentAppYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
-					Tag:       "leeroy-web:123",
+					Tag:       "leeroy-web:v1",
 				},
 				{
 					ImageName: "leeroy-app",
-					Tag:       "leeroy-app:123",
+					Tag:       "leeroy-app:v1",
 				},
 			},
 			forceDeploy: true,
@@ -93,6 +96,7 @@ func TestKustomizeDeploy(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.NewTempDir().
 				Chdir()
+			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
@@ -105,8 +109,9 @@ func TestKustomizeDeploy(t *testing.T) {
 				},
 				KubeContext: testKubeContext,
 				Opts: config.SkaffoldOptions{
-					Namespace: testNamespace,
-					Force:     test.forceDeploy,
+					Namespace:        testNamespace,
+					Force:            test.forceDeploy,
+					WaitForDeletions: true,
 				},
 			}, nil)
 			err := k.Deploy(context.Background(), ioutil.Discard, test.builds).GetError()

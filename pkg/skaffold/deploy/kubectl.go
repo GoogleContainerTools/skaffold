@@ -53,6 +53,7 @@ type KubectlDeployer struct {
 	insecureRegistries map[string]bool
 	labels             map[string]string
 	skipRender         bool
+	waitForDeletions   bool
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
@@ -70,6 +71,7 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext, labels map[string]string)
 		},
 		insecureRegistries: runCtx.InsecureRegistries,
 		skipRender:         runCtx.Opts.SkipRender,
+		waitForDeletions:   runCtx.Opts.WaitForDeletions,
 		labels:             labels,
 	}
 }
@@ -100,6 +102,13 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not fetch deployed resource namespace. "+
 			"This might cause port-forward and deploy health-check to fail: %w", err))
+	}
+
+	if k.waitForDeletions {
+		if err := k.kubectl.WaitForDeletions(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
+			event.DeployFailed(err)
+			return NewDeployErrorResult(err)
+		}
 	}
 
 	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {

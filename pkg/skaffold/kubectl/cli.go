@@ -80,6 +80,13 @@ func (c *CLI) RunOut(ctx context.Context, command string, arg ...string) ([]byte
 	return util.RunCmdOut(cmd)
 }
 
+// RunOutInput shells out kubectl CLI with a given input stream.
+func (c *CLI) RunOutInput(ctx context.Context, in io.Reader, command string, arg ...string) ([]byte, error) {
+	cmd := c.Command(ctx, command, arg...)
+	cmd.Stdin = in
+	return util.RunCmdOut(cmd)
+}
+
 // CommandWithStrictCancellation ensures for windows OS that all child process get terminated on cancellation
 func (c *CLI) CommandWithStrictCancellation(ctx context.Context, command string, arg ...string) *Cmd {
 	args := c.args(command, "", arg...)
