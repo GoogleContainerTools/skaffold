@@ -1243,13 +1243,8 @@
       ],
       "properties": {
         "artifactOverrides": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object",
           "description": "key value pairs. If present, Skaffold will send `--set-string` flag to Helm CLI and append all pairs after the flag.",
-          "x-intellij-html-description": "key value pairs. If present, Skaffold will send <code>--set-string</code> flag to Helm CLI and append all pairs after the flag.",
-          "default": "{}"
+          "x-intellij-html-description": "key value pairs. If present, Skaffold will send <code>--set-string</code> flag to Helm CLI and append all pairs after the flag."
         },
         "chartPath": {
           "type": "string",
@@ -1302,22 +1297,12 @@
           "default": "{}"
         },
         "setValueTemplates": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object",
           "description": "key-value pairs. If present, Skaffold will try to parse the value part of each key-value pair using environment variables in the system, then send `--set` flag to Helm CLI and append all parsed pairs after the flag.",
-          "x-intellij-html-description": "key-value pairs. If present, Skaffold will try to parse the value part of each key-value pair using environment variables in the system, then send <code>--set</code> flag to Helm CLI and append all parsed pairs after the flag.",
-          "default": "{}"
+          "x-intellij-html-description": "key-value pairs. If present, Skaffold will try to parse the value part of each key-value pair using environment variables in the system, then send <code>--set</code> flag to Helm CLI and append all parsed pairs after the flag."
         },
         "setValues": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object",
           "description": "key-value pairs. If present, Skaffold will send `--set` flag to Helm CLI and append all pairs after the flag.",
-          "x-intellij-html-description": "key-value pairs. If present, Skaffold will send <code>--set</code> flag to Helm CLI and append all pairs after the flag.",
-          "default": "{}"
+          "x-intellij-html-description": "key-value pairs. If present, Skaffold will send <code>--set</code> flag to Helm CLI and append all pairs after the flag."
         },
         "skipBuildDependencies": {
           "type": "boolean",

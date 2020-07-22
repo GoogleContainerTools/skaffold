@@ -18,6 +18,7 @@ package util
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -35,6 +36,9 @@ type VersionedConfig interface {
 type HelmOverrides struct {
 	Values map[string]interface{} `yaml:",inline"`
 }
+
+// FlatMap flattens deeply nested yaml into a map with corresponding dot separated keys
+type FlatMap map[string]string
 
 // MarshalJSON implements JSON marshalling by including the value as an inline yaml fragment.
 func (h *HelmOverrides) MarshalJSON() ([]byte, error) {
@@ -80,6 +84,44 @@ func (n *YamlpatchNode) MarshalYAML() (interface{}, error) {
 // UnmarshalYAML implements yaml.Unmarshaler
 func (n *YamlpatchNode) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return n.Node.UnmarshalYAML(unmarshal)
+}
+
+func (m *FlatMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var obj map[string]interface{}
+	if err := unmarshal(&obj); err != nil {
+		return err
+	}
+	result := make(map[string]string)
+	if err := buildFlatMap(obj, result, ""); err != nil {
+		return err
+	}
+	*m = result
+	return nil
+}
+
+func buildFlatMap(obj map[string]interface{}, result map[string]string, currK string) (err error) {
+	var prevK string
+	for k, v := range obj {
+		prevK = currK
+		if currK == "" {
+			currK = fmt.Sprintf("%v", k)
+		} else {
+			currK = fmt.Sprintf("%v.%v", currK, k)
+		}
+
+		switch v := v.(type) {
+		case map[string]interface{}:
+			if err = buildFlatMap(v, result, currK); err != nil {
+				return
+			}
+		case string:
+			result[currK] = v
+		default:
+			result[currK] = fmt.Sprintf("%v", v)
+		}
+		currK = prevK
+	}
+	return
 }
 
 func marshalInlineYaml(in interface{}) ([]byte, error) {

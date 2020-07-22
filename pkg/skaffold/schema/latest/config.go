@@ -510,7 +510,7 @@ type HelmRelease struct {
 
 	// ArtifactOverrides are key value pairs.
 	// If present, Skaffold will send `--set-string` flag to Helm CLI and append all pairs after the flag.
-	ArtifactOverrides map[string]string `yaml:"artifactOverrides,omitempty,omitempty"`
+	ArtifactOverrides util.FlatMap `yaml:"artifactOverrides,omitempty,omitempty"`
 
 	// Namespace is the Kubernetes namespace.
 	Namespace string `yaml:"namespace,omitempty"`
@@ -520,13 +520,13 @@ type HelmRelease struct {
 
 	// SetValues are key-value pairs.
 	// If present, Skaffold will send `--set` flag to Helm CLI and append all pairs after the flag.
-	SetValues map[string]string `yaml:"setValues,omitempty"`
+	SetValues util.FlatMap `yaml:"setValues,omitempty"`
 
 	// SetValueTemplates are key-value pairs.
 	// If present, Skaffold will try to parse the value part of each key-value pair using
 	// environment variables in the system, then send `--set` flag to Helm CLI and append
 	// all parsed pairs after the flag.
-	SetValueTemplates map[string]string `yaml:"setValueTemplates,omitempty"`
+	SetValueTemplates util.FlatMap `yaml:"setValueTemplates,omitempty"`
 
 	// SetFiles are key-value pairs.
 	// If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.
