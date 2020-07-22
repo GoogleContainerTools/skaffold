@@ -112,7 +112,7 @@ func buildFlatMap(obj map[string]interface{}, result map[string]string, currK st
 		switch v := v.(type) {
 		case map[string]interface{}:
 			if err = buildFlatMap(v, result, currK); err != nil {
-				return err
+				return
 			}
 		case string:
 			result[currK] = v
