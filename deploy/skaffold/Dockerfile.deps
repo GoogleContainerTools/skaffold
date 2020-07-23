@@ -54,6 +54,13 @@ ENV KIND_URL https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VE
 RUN wget -O kind "${KIND_URL}"
 RUN chmod +x kind
 
+# Download k3d
+FROM alpine:3.10 as download-k3d
+ENV K3D_VERSION v3.0.0
+ENV K3D_URL https://github.com/rancher/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
+RUN wget -O k3d "${K3D_URL}"
+RUN chmod +x k3d
+
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
 ENV GCLOUD_VERSION 276.0.0
@@ -84,6 +91,7 @@ COPY --from=download-container-structure-test container-structure-test /usr/loca
 COPY --from=download-bazel bazel /usr/local/bin/
 COPY --from=download-gcloud google-cloud-sdk/ /google-cloud-sdk/
 COPY --from=download-kind kind /usr/local/bin/
+COPY --from=download-k3d k3d /usr/local/bin/
 
 # Finish installation of bazel
 RUN bazel version
