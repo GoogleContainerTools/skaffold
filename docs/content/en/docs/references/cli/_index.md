@@ -98,6 +98,8 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_COLOR` (same as `--color`)
+* `SKAFFOLD_INTERACTIVE` (same as `--interactive`)
+* `SKAFFOLD_UPDATE_CHECK` (same as `--update-check`)
 * `SKAFFOLD_VERBOSITY` (same as `--verbosity`)
 
 ### skaffold build
@@ -339,7 +341,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
@@ -460,7 +462,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
   -i, --images=: A list of pre-built images to deploy
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
@@ -521,7 +523,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
@@ -695,6 +697,8 @@ Env vars:
 The following options can be passed to any command:
 
       --color=34: Specify the default output color in ANSI escape codes
+      --interactive=true: Allow user prompts for more information
+      --update-check=true: Check for a more recent version of Skaffold
   -v, --verbosity='warning': Log level (debug, info, warn, error, fatal, panic)
 
 
@@ -769,7 +773,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.

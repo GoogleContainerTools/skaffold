@@ -19,24 +19,29 @@ package docker
 import (
 	"testing"
 
+	"github.com/google/go-containerregistry/pkg/name"
+
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestIsInsecure(t *testing.T) {
 	tests := []struct {
 		description        string
-		registry           string
+		image              string
 		insecureRegistries map[string]bool
 		result             bool
 	}{
-		{"nil registries", "localhost:5000", nil, false},
-		{"unlisted registry", "other.tld", map[string]bool{"registry.tld": true}, false},
-		{"listed insecure", "registry.tld", map[string]bool{"registry.tld": true}, true},
-		{"listed secure", "registry.tld", map[string]bool{"registry.tld": false}, false},
+		{"nil registries", "localhost:5000/img", nil, false},
+		{"unlisted registry", "other.tld/img", map[string]bool{"registry.tld": true}, false},
+		{"listed insecure", "registry.tld/img", map[string]bool{"registry.tld": true}, true},
+		{"listed secure", "registry.tld/img", map[string]bool{"registry.tld": false}, false},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			result := IsInsecure(test.registry, test.insecureRegistries)
+			ref, err := name.ParseReference(test.image)
+			t.CheckNoError(err)
+
+			result := IsInsecure(ref, test.insecureRegistries)
 
 			t.CheckDeepEqual(test.result, result)
 		})

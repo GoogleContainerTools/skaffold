@@ -18,12 +18,14 @@ package validation
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
@@ -35,12 +37,14 @@ var (
 // Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
 func Process(config *latest.SkaffoldConfig) error {
 	errs := visitStructs(config, validateYamltags)
+	errs = append(errs, validateWorkspaces(config.Build.Artifacts)...)
 	errs = append(errs, validateImageNames(config.Build.Artifacts)...)
 	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
 	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
 	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
 	errs = append(errs, validatePortForwardResources(config.PortForward)...)
 	errs = append(errs, validateJibPluginTypes(config.Build.Artifacts)...)
+	errs = append(errs, validateLogPrefix(config.Deploy.Logs)...)
 	errs = append(errs, validateArtifactTypes(config.Build)...)
 
 	if len(errs) == 0 {
@@ -52,6 +56,25 @@ func Process(config *latest.SkaffoldConfig) error {
 		messages = append(messages, err.Error())
 	}
 	return fmt.Errorf(strings.Join(messages, " | "))
+}
+
+// validateWorkspaces makes sure the artifact workspaces are valid directories.
+func validateWorkspaces(artifacts []*latest.Artifact) (errs []error) {
+	for _, a := range artifacts {
+		if a.Workspace != "" {
+			if info, err := os.Stat(a.Workspace); err != nil {
+				// err could be permission-related
+				if os.IsNotExist(err) {
+					errs = append(errs, fmt.Errorf("image %q context %q does not exist", a.ImageName, a.Workspace))
+				} else {
+					errs = append(errs, fmt.Errorf("image %q context %q: %w", a.ImageName, a.Workspace, err))
+				}
+			} else if !info.IsDir() {
+				errs = append(errs, fmt.Errorf("image %q context %q is not a directory", a.ImageName, a.Workspace))
+			}
+		}
+	}
+	return
 }
 
 // validateImageNames makes sure the artifact image names are valid base names,
@@ -230,4 +253,15 @@ func validateArtifactTypes(bc latest.BuildConfig) (errs []error) {
 		}
 	}
 	return
+}
+
+// validateLogPrefix checks that logs are configured with a valid prefix.
+func validateLogPrefix(lc latest.LogsConfig) []error {
+	validPrefixes := []string{"", "auto", "container", "podAndContainer", "none"}
+
+	if !util.StrSliceContains(validPrefixes, lc.Prefix) {
+		return []error{fmt.Errorf("invalid log prefix '%s'. Valid values are 'auto', 'container', 'podAndContainer' or 'none'", lc.Prefix)}
+	}
+
+	return nil
 }

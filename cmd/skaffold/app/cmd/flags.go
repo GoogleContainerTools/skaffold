@@ -167,13 +167,10 @@ var FlagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "run", "debug", "deploy"},
 	},
 	{
-		Name:     "force",
-		Usage:    "Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)",
-		Value:    &opts.Force,
-		DefValue: false,
-		DefValuePerCommand: map[string]interface{}{
-			"dev": true,
-		},
+		Name:          "force",
+		Usage:         "Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!",
+		Value:         &opts.Force,
+		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
 	},

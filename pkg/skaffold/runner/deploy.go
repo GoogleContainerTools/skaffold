@@ -64,7 +64,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		}
 	}
 
-	deployResult := r.deployer.Deploy(ctx, out, artifacts, r.labellers)
+	deployResult := r.deployer.Deploy(ctx, out, artifacts)
 	r.hasDeployed = true
 	if err := deployResult.GetError(); err != nil {
 		return err
@@ -134,7 +134,7 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 	start := time.Now()
 	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
 
-	err := statusCheck(ctx, r.defaultLabeller, r.runCtx, out)
+	err := statusCheck(ctx, r.labeller, r.runCtx, out)
 	if err != nil {
 		return err
 	}

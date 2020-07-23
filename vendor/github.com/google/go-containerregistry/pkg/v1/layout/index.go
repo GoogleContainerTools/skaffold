@@ -16,6 +16,7 @@ package layout
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -129,6 +130,13 @@ func (i *layoutIndex) findDescriptor(h v1.Hash) (*v1.Descriptor, error) {
 	im, err := i.IndexManifest()
 	if err != nil {
 		return nil, err
+	}
+
+	if h == (v1.Hash{}) {
+		if len(im.Manifests) != 1 {
+			return nil, errors.New("oci layout must contain only a single image to be used with layout.Image")
+		}
+		return &(im.Manifests)[0], nil
 	}
 
 	for _, desc := range im.Manifests {

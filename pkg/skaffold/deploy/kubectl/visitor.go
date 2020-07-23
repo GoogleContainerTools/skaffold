@@ -24,16 +24,21 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
-// transformableWhitelist is the set of kinds that can be transformed by Skaffold.
-var transformableWhitelist = map[apimachinery.GroupKind]bool{
+// transformableAllowlist is the set of kinds that can be transformed by Skaffold.
+var transformableAllowlist = map[apimachinery.GroupKind]bool{
 	{Group: "", Kind: "Pod"}:                        true,
 	{Group: "apps", Kind: "DaemonSet"}:              true,
-	{Group: "apps", Kind: "Deployment"}:             true,
+	{Group: "apps", Kind: "Deployment"}:             true, // v1beta1, v1beta2: deprecated in K8s 1.9, removed in 1.16
 	{Group: "apps", Kind: "ReplicaSet"}:             true,
 	{Group: "apps", Kind: "StatefulSet"}:            true,
 	{Group: "batch", Kind: "CronJob"}:               true,
 	{Group: "batch", Kind: "Job"}:                   true,
+	{Group: "extensions", Kind: "DaemonSet"}:        true, // v1beta1: deprecated in K8s 1.9, removed in 1.16
+	{Group: "extensions", Kind: "Deployment"}:       true, // v1beta1: deprecated in K8s 1.9, removed in 1.16
+	{Group: "extensions", Kind: "ReplicaSet"}:       true, // v1beta1: deprecated in K8s 1.9, removed in 1.16
 	{Group: "serving.knative.dev", Kind: "Service"}: true,
+	{Group: "agones.dev", Kind: "Fleet"}:            true,
+	{Group: "agones.dev", Kind: "GameServer"}:       true,
 }
 
 // FieldVisitor represents the aggregation/transformation that should be performed on each traversed field.
@@ -101,7 +106,7 @@ func shouldTransformManifest(manifest map[string]interface{}) bool {
 		Kind:  gvk.Kind,
 	}
 
-	return transformableWhitelist[groupKind]
+	return transformableAllowlist[groupKind]
 }
 
 // recursiveVisitorDecorator adds recursion to a FieldVisitor.

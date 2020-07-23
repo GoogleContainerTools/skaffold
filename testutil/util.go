@@ -292,11 +292,11 @@ func override(t *testing.T, dest, tmp interface{}) (err error) {
 		if r := recover(); r != nil {
 			switch x := r.(type) {
 			case string:
-				t.Errorf("unable to override value: %s", x)
+				t.Fatalf("unable to override value: %s", x)
 			case error:
-				t.Errorf("unable to override value: %w", x)
+				t.Fatalf("unable to override value: %s", x)
 			default:
-				t.Error("unable to override value")
+				t.Fatal("unable to override value")
 			}
 		}
 	}()

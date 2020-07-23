@@ -22,24 +22,24 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGenerateFullyQualifiedImageName(t *testing.T) {
+func TestSha256_GenerateTag(t *testing.T) {
 	c := &ChecksumTagger{}
 
-	tag, err := c.GenerateFullyQualifiedImageName(".", "img:tag")
-	testutil.CheckErrorAndDeepEqual(t, false, err, "img:tag", tag)
+	tag, err := c.GenerateTag(".", "img:tag")
+	testutil.CheckErrorAndDeepEqual(t, false, err, "", tag)
 
-	tag, err = c.GenerateFullyQualifiedImageName(".", "img")
-	testutil.CheckErrorAndDeepEqual(t, false, err, "img:latest", tag)
+	tag, err = c.GenerateTag(".", "img")
+	testutil.CheckErrorAndDeepEqual(t, false, err, "latest", tag)
 
-	tag, err = c.GenerateFullyQualifiedImageName(".", "registry.example.com:8080/img:tag")
-	testutil.CheckErrorAndDeepEqual(t, false, err, "registry.example.com:8080/img:tag", tag)
+	tag, err = c.GenerateTag(".", "registry.example.com:8080/img:tag")
+	testutil.CheckErrorAndDeepEqual(t, false, err, "", tag)
 
-	tag, err = c.GenerateFullyQualifiedImageName(".", "registry.example.com:8080/img")
-	testutil.CheckErrorAndDeepEqual(t, false, err, "registry.example.com:8080/img:latest", tag)
+	tag, err = c.GenerateTag(".", "registry.example.com:8080/img")
+	testutil.CheckErrorAndDeepEqual(t, false, err, "latest", tag)
 
-	tag, err = c.GenerateFullyQualifiedImageName(".", "registry.example.com/img")
-	testutil.CheckErrorAndDeepEqual(t, false, err, "registry.example.com/img:latest", tag)
+	tag, err = c.GenerateTag(".", "registry.example.com/img")
+	testutil.CheckErrorAndDeepEqual(t, false, err, "latest", tag)
 
-	tag, err = c.GenerateFullyQualifiedImageName(".", "registry.example.com:8080:garbage")
+	tag, err = c.GenerateTag(".", "registry.example.com:8080:garbage")
 	testutil.CheckErrorAndDeepEqual(t, true, err, "", tag)
 }

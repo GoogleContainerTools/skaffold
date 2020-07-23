@@ -24,11 +24,14 @@ import (
 
 // SetLabels add labels to a list of Kubernetes manifests.
 func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error) {
-	replacer := newLabelsSetter(labels)
+	if len(labels) == 0 {
+		return *l, nil
+	}
 
+	replacer := newLabelsSetter(labels)
 	updated, err := l.Visit(replacer)
 	if err != nil {
-		return nil, fmt.Errorf("setting labels: %w", err)
+		return nil, fmt.Errorf("setting labels in manifests: %w", err)
 	}
 
 	logrus.Debugln("manifests with labels", updated.String())
@@ -72,7 +75,7 @@ func (r *labelsSetter) Visit(o map[string]interface{}, k string, v interface{}) 
 	}
 
 	for k, v := range r.labels {
-		// Don't replace existing label.
+		// Don't overwrite existing labels
 		if _, present := labels[k]; !present {
 			labels[k] = v
 		}

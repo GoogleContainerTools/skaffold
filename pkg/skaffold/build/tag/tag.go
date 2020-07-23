@@ -16,16 +16,36 @@ limitations under the License.
 
 package tag
 
+import (
+	"fmt"
+)
+
 // ImageTags maps image names to tags
 type ImageTags map[string]string
 
 // Tagger is an interface for tag strategies to be implemented against
 type Tagger interface {
-	// Labels produces labels to indicate the used tagger in deployed pods.
-	Labels() map[string]string
+	// GenerateTag generates a tag for an artifact.
+	GenerateTag(workingDir, imageName string) (string, error)
+}
 
-	// GenerateFullyQualifiedImageName resolves the fully qualified image name for an artifact.
-	// The workingDir is the root directory of the artifact with respect to the Skaffold root,
-	// and imageName is the base name of the image.
-	GenerateFullyQualifiedImageName(workingDir string, imageName string) (string, error)
+// GenerateFullyQualifiedImageName resolves the fully qualified image name for an artifact.
+// The workingDir is the root directory of the artifact with respect to the Skaffold root,
+// and imageName is the base name of the image.
+func GenerateFullyQualifiedImageName(t Tagger, workingDir, imageName string) (string, error) {
+	tag, err := t.GenerateTag(workingDir, imageName)
+
+	if err != nil {
+		return "", fmt.Errorf("generating tag: %w", err)
+	}
+
+	if _, ok := t.(*envTemplateTagger); ok { // envTemplate's GenerateTag is currently designed to return the full image name
+		return tag, nil
+	}
+
+	if tag == "" { // Do not append :tag to imageName if tag is empty.
+		return imageName, nil
+	}
+
+	return fmt.Sprintf("%s:%s", imageName, tag), nil
 }

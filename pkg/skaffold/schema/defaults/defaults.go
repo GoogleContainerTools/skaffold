@@ -43,6 +43,7 @@ func Set(c *latest.SkaffoldConfig) error {
 	setDefaultTagger(c)
 	setDefaultKustomizePath(c)
 	setDefaultKubectlManifests(c)
+	setDefaultLogsConfig(c)
 
 	for _, a := range c.Build.Artifacts {
 		setDefaultWorkspace(a)
@@ -180,6 +181,12 @@ func setDefaultKustomizePath(c *latest.SkaffoldConfig) {
 func setDefaultKubectlManifests(c *latest.SkaffoldConfig) {
 	if c.Deploy.KubectlDeploy != nil && len(c.Deploy.KubectlDeploy.Manifests) == 0 {
 		c.Deploy.KubectlDeploy.Manifests = constants.DefaultKubectlManifests
+	}
+}
+
+func setDefaultLogsConfig(c *latest.SkaffoldConfig) {
+	if c.Deploy.Logs.Prefix == "" {
+		c.Deploy.Logs.Prefix = "container"
 	}
 }
 

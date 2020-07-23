@@ -16,6 +16,8 @@ package transport
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -83,7 +85,12 @@ func ping(reg name.Registry, t http.RoundTripper) (*pingResp, error) {
 			// Potentially retry with http.
 			continue
 		}
-		defer resp.Body.Close()
+		defer func() {
+			// By draining the body, make sure to reuse the connection made by
+			// the ping for the following access to the registry
+			io.Copy(ioutil.Discard, resp.Body)
+			resp.Body.Close()
+		}()
 
 		switch resp.StatusCode {
 		case http.StatusOK:

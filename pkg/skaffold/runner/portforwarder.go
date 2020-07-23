@@ -31,7 +31,7 @@ func (r *SkaffoldRunner) createForwarder(out io.Writer) *portforward.ForwarderMa
 		r.kubectlCLI,
 		r.podSelector,
 		r.runCtx.Namespaces,
-		r.defaultLabeller.RunIDSelector(),
+		r.labeller.RunIDSelector(),
 		r.runCtx.Opts.PortForward,
 		r.runCtx.Cfg.PortForward)
 }

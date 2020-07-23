@@ -205,9 +205,9 @@ func TestKubectlDeploy(t *testing.T) {
 					Namespace: testNamespace,
 					Force:     test.forceDeploy,
 				},
-			})
+			}, nil)
 
-			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil).GetError()
+			err := k.Deploy(context.Background(), ioutil.Discard, test.builds).GetError()
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -288,7 +288,7 @@ func TestKubectlCleanup(t *testing.T) {
 				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
-			})
+			}, nil)
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
 			t.CheckError(test.shouldErr, err)
@@ -343,7 +343,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
-			})
+			}, nil)
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
 			t.CheckNoError(err)
@@ -363,8 +363,6 @@ func TestKubectlRedeploy(t *testing.T) {
 			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kubectl
   name: leeroy-app
 spec:
   containers:
@@ -374,8 +372,6 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kubectl
   name: leeroy-web
 spec:
   containers:
@@ -385,8 +381,6 @@ spec:
 			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kubectl
   name: leeroy-app
 spec:
   containers:
@@ -409,30 +403,29 @@ spec:
 			},
 			KubeContext: testKubeContext,
 			Opts: config.SkaffoldOptions{
-				Namespace:         testNamespace,
-				AddSkaffoldLabels: true,
+				Namespace: testNamespace,
 			},
-		})
+		}, nil)
 
 		// Deploy one manifest
 		err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-		}, nil).GetError()
+		}).GetError()
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, nil).GetError()
+		}).GetError()
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, nil).GetError()
+		}).GetError()
 		t.CheckNoError(err)
 	})
 }
@@ -497,7 +490,7 @@ func TestDependencies(t *testing.T) {
 						},
 					},
 				},
-			})
+			}, nil)
 			dependencies, err := k.Dependencies()
 
 			t.CheckNoError(err)
@@ -510,7 +503,6 @@ func TestKubectlRender(t *testing.T) {
 	tests := []struct {
 		description string
 		builds      []build.Artifact
-		labels      []Labeller
 		input       string
 		expected    string
 	}{
@@ -522,7 +514,6 @@ func TestKubectlRender(t *testing.T) {
 					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
 				},
 			},
-			labels: []Labeller{},
 			input: `apiVersion: v1
 kind: Pod
 metadata:
@@ -535,8 +526,6 @@ spec:
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kubectl
   namespace: default
 spec:
   containers:
@@ -570,8 +559,6 @@ spec:
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kubectl
   namespace: default
 spec:
   containers:
@@ -598,8 +585,6 @@ spec:
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kubectl
   namespace: default
 spec:
   containers:
@@ -633,12 +618,11 @@ spec:
 				},
 				KubeContext: testKubeContext,
 				Opts: config.SkaffoldOptions{
-					AddSkaffoldLabels: true,
-					DefaultRepo:       defaultRepo,
+					DefaultRepo: defaultRepo,
 				},
-			})
+			}, nil)
 			var b bytes.Buffer
-			err := deployer.Render(context.Background(), &b, test.builds, test.labels, true, "")
+			err := deployer.Render(context.Background(), &b, test.builds, true, "")
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})
@@ -688,9 +672,9 @@ func TestGCSManifests(t *testing.T) {
 					Namespace:  testNamespace,
 					SkipRender: test.skipRender,
 				},
-			})
+			}, nil)
 
-			err := k.Deploy(context.Background(), ioutil.Discard, nil, nil).GetError()
+			err := k.Deploy(context.Background(), ioutil.Discard, nil).GetError()
 
 			t.CheckError(test.shouldErr, err)
 		})

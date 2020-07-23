@@ -27,13 +27,13 @@ import (
 
 func TestMainHelp(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
+		// --interactive=false removes the update check and survey prompt.
+		t.Override(&os.Args, []string{"skaffold", "help", "--interactive=false"})
+
 		var (
 			output    bytes.Buffer
 			errOutput bytes.Buffer
 		)
-
-		t.Override(&os.Args, []string{"skaffold", "help"})
-
 		err := Run(&output, &errOutput)
 
 		t.CheckNoError(err)
@@ -45,7 +45,8 @@ func TestMainHelp(t *testing.T) {
 
 func TestMainUnknownCommand(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&os.Args, []string{"skaffold", "unknown"})
+		// --interactive=false removes the update check and survey prompt.
+		t.Override(&os.Args, []string{"skaffold", "unknown", "--interactive=false"})
 
 		err := Run(ioutil.Discard, ioutil.Discard)
 

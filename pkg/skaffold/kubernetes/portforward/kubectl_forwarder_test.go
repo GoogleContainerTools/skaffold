@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -114,9 +115,10 @@ func TestMonitorErrorLogs(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&waitErrorLogs, 50*time.Millisecond)
+			t.Override(&waitErrorLogs, 10*time.Millisecond)
+			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+			defer cancel()
 
-			ctx, cancel := context.WithCancel(context.Background())
 			cmdStr := "sleep"
 			if runtime.GOOS == "windows" {
 				cmdStr = "timeout"
@@ -130,19 +132,14 @@ func TestMonitorErrorLogs(t *testing.T) {
 			wg.Add(1)
 
 			go func() {
-				defer wg.Done()
+				logs := strings.NewReader(test.input)
+
 				k := KubectlForwarder{}
-				logs := bytes.NewBuffer([]byte(test.input))
 				k.monitorErrorLogs(ctx, logs, cmd, &portForwardEntry{})
+
+				wg.Done()
 			}()
 
-			// need to sleep for one second before cancelling the context
-			// because there is a one second sleep in the switch statement
-			// of monitorLogs
-			time.Sleep(50 * time.Millisecond)
-
-			// cancel the context and then wait for monitorErrorLogs to return
-			cancel()
 			wg.Wait()
 
 			// make sure the command is running or killed based on what's expected

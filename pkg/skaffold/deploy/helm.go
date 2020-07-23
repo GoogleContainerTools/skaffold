@@ -65,40 +65,35 @@ var (
 type HelmDeployer struct {
 	*latest.HelmDeploy
 
-	kubeContext       string
-	kubeConfig        string
-	namespace         string
-	forceDeploy       bool
-	addSkaffoldLabels bool
+	kubeContext string
+	kubeConfig  string
+	namespace   string
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
+
+	labels map[string]string
+
+	forceDeploy bool
 
 	// bV is the helm binary version
 	bV semver.Version
 }
 
 // NewHelmDeployer returns a configured HelmDeployer
-func NewHelmDeployer(runCtx *runcontext.RunContext) *HelmDeployer {
+func NewHelmDeployer(runCtx *runcontext.RunContext, labels map[string]string) *HelmDeployer {
 	return &HelmDeployer{
-		HelmDeploy:        runCtx.Cfg.Deploy.HelmDeploy,
-		kubeContext:       runCtx.KubeContext,
-		kubeConfig:        runCtx.Opts.KubeConfig,
-		namespace:         runCtx.Opts.Namespace,
-		forceDeploy:       runCtx.Opts.Force,
-		addSkaffoldLabels: runCtx.Opts.AddSkaffoldLabels,
-	}
-}
-
-// Labels returns the Kubernetes labels used by this deployer
-func (h *HelmDeployer) Labels() map[string]string {
-	return map[string]string{
-		constants.Labels.Deployer: "helm",
+		HelmDeploy:  runCtx.Cfg.Deploy.HelmDeploy,
+		kubeContext: runCtx.KubeContext,
+		kubeConfig:  runCtx.Opts.KubeConfig,
+		namespace:   runCtx.Opts.Namespace,
+		forceDeploy: runCtx.Opts.Force,
+		labels:      labels,
 	}
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
+func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) *Result {
 	event.DeployInProgress()
 
 	hv, err := h.binVer(ctx)
@@ -143,8 +138,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 
 	event.DeployComplete()
 
-	labels := merge(h.addSkaffoldLabels, h, labellers...)
-	labelDeployResults(labels, dRes)
+	labelDeployResults(h.labels, dRes)
 
 	// Collect namespaces in a string
 	namespaces := make([]string, 0, len(nsMap))
@@ -249,7 +243,7 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 // Render generates the Kubernetes manifests and writes them out
-func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, offline bool, filepath string) error {
+func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool, filepath string) error {
 	hv, err := h.binVer(ctx)
 	if err != nil {
 		return fmt.Errorf(versionErrorString, err)

@@ -324,6 +324,5 @@ func isOnInsecureRegistry(image string, insecureRegistries map[string]bool) (boo
 		return false, err
 	}
 
-	registry := ref.Context().Registry.Name()
-	return docker.IsInsecure(registry, insecureRegistries), nil
+	return docker.IsInsecure(ref, insecureRegistries), nil
 }

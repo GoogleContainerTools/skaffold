@@ -141,7 +141,7 @@ metadata:
 	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), resultManifest.String())
 }
 
-func TestSetNoLabelInCRDSchema(t *testing.T) {
+func TestSetLabelInCRDSchema(t *testing.T) {
 	manifests := ManifestList{[]byte(`apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
