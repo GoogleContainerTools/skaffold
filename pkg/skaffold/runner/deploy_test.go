@@ -46,17 +46,17 @@ func TestDeploy(t *testing.T) {
 		shouldWait  bool
 	}{
 		{
-			description: "deploy shd perform status check",
+			description: "deploy should perform status check",
 			testBench:   &TestBench{},
 			statusCheck: true,
 			shouldWait:  true,
 		},
 		{
-			description: "deploy shd not perform status check",
+			description: "deploy should not perform status check",
 			testBench:   &TestBench{},
 		},
 		{
-			description: "deploy shd not perform status check when deployer is in error",
+			description: "deploy should not perform status check when deployer is in error",
 			testBench:   &TestBench{deployErrors: []error{errors.New("deploy error")}},
 			shouldErr:   true,
 			statusCheck: true,
@@ -95,7 +95,7 @@ func TestDeployNamespace(t *testing.T) {
 		expected    []string
 	}{
 		{
-			description: "deploy shd add all namespaces to run Context",
+			description: "deploy should add all namespaces to run context",
 			Namespaces:  []string{"test", "test-ns"},
 			testBench:   NewTestBench().WithDeployNamespaces([]string{"test-ns", "test-ns-1"}),
 			expected:    []string{"test", "test-ns", "test-ns-1"},

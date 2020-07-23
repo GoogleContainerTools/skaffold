@@ -106,7 +106,7 @@ func TestLabelDeployResults(t *testing.T) {
 			t.Override(&kubernetesclient.DynamicClient, mockDynamicClient(dynClient))
 
 			// Patch labels
-			labelDeployResults(test.appliedLabels, []Artifact{{Obj: dep}})
+			labelDeployResults(true, "", test.appliedLabels, []Artifact{{Obj: dep}})
 
 			// Check modified value
 			modified, err := dynClient.Resource(schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}).Get("foo", metav1.GetOptions{})

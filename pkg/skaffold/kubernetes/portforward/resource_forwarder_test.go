@@ -18,7 +18,6 @@ package portforward
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"sync"
 	"testing"
@@ -33,7 +32,6 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -274,8 +272,8 @@ func TestRetrieveServices(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "svc1",
 						Namespace: "test",
-						Labels: map[string]string{
-							deploy.RunIDLabel: "9876-6789",
+						Annotations: map[string]string{
+							constants.RunIDAnnotation: "9876-6789",
 						},
 					},
 					Spec: v1.ServiceSpec{Ports: []v1.ServicePort{{Port: 8080}}},
@@ -283,8 +281,8 @@ func TestRetrieveServices(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "svc2",
 						Namespace: "test1",
-						Labels: map[string]string{
-							deploy.RunIDLabel: "9876-6789",
+						Annotations: map[string]string{
+							constants.RunIDAnnotation: "9876-6789",
 						},
 					},
 					Spec: v1.ServiceSpec{Ports: []v1.ServicePort{{Port: 8081}}},
@@ -313,8 +311,8 @@ func TestRetrieveServices(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "svc1",
 						Namespace: "test",
-						Labels: map[string]string{
-							deploy.RunIDLabel: "9876-6789",
+						Annotations: map[string]string{
+							constants.RunIDAnnotation: "9876-6789",
 						},
 					},
 					Spec: v1.ServiceSpec{Ports: []v1.ServicePort{{Port: 8080}}},
@@ -328,8 +326,8 @@ func TestRetrieveServices(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "svc1",
 						Namespace: "test",
-						Labels: map[string]string{
-							deploy.RunIDLabel: "9876-6789",
+						Annotations: map[string]string{
+							constants.RunIDAnnotation: "9876-6789",
 						},
 					},
 				},
@@ -346,7 +344,7 @@ func TestRetrieveServices(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(objs...)
 			t.Override(&kubernetesclient.Client, mockClient(client))
 
-			actual, err := retrieveServiceResources(fmt.Sprintf("%s=9876-6789", deploy.RunIDLabel), test.namespaces)
+			actual, err := retrieveServiceResources("9876-6789", test.namespaces)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)

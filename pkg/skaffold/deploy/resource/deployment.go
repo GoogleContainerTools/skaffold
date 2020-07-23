@@ -84,14 +84,14 @@ func (d *Deployment) UpdateStatus(ae proto.ActionableErr) {
 	}
 }
 
-func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
+func NewDeployment(name, ns, runID string, deadline time.Duration) *Deployment {
 	return &Deployment{
 		name:         name,
 		namespace:    ns,
 		rType:        deploymentType,
 		status:       newStatus(proto.ActionableErr{}),
 		deadline:     deadline,
-		podValidator: diag.New(nil),
+		podValidator: diag.New(runID, nil),
 	}
 }
 

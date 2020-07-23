@@ -30,6 +30,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -106,6 +107,7 @@ func TestKubectlRender(t *testing.T) {
 		builds      []build.Artifact
 		input       string
 		expectedOut string
+		labels      map[string]string
 	}{
 		{
 			description: "normal render",
@@ -134,6 +136,37 @@ spec:
   - image: gcr.io/k8s-skaffold/skaffold:test
     name: skaffold
 `,
+		},
+		{
+			description: "normal render with custom label",
+			builds: []build.Artifact{
+				{
+					ImageName: "gcr.io/k8s-skaffold/skaffold",
+					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
+				},
+			},
+			input: `apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-123
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold
+    name: skaffold
+`,
+			expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    foo: bar
+  name: my-pod-123
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold:test
+    name: skaffold
+`,
+			labels: map[string]string{"foo": "bar"},
 		},
 		{
 			description: "two artifacts",
@@ -230,6 +263,9 @@ spec:
 				Chdir()
 
 			deployer := deploy.NewKubectlDeployer(&runcontext.RunContext{
+				Opts: config.SkaffoldOptions{
+					AddSkaffoldLabels: false,
+				},
 				WorkingDir: ".",
 				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
@@ -240,7 +276,7 @@ spec:
 						},
 					},
 				},
-			}, nil)
+			}, test.labels)
 			var b bytes.Buffer
 			err := deployer.Render(context.Background(), &b, test.builds, false, "")
 
@@ -258,6 +294,7 @@ func TestHelmRender(t *testing.T) {
 		builds       []build.Artifact
 		helmReleases []latest.HelmRelease
 		expectedOut  string
+		customLabels map[string]string
 	}{
 		{
 			description: "Bare bones render",
@@ -414,6 +451,9 @@ spec:
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			deployer := deploy.NewHelmDeployer(&runcontext.RunContext{
+				Opts: config.SkaffoldOptions{
+					AddSkaffoldLabels: false,
+				},
 				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
@@ -423,7 +463,7 @@ spec:
 						},
 					},
 				},
-			}, nil)
+			}, test.customLabels)
 			var b bytes.Buffer
 			err := deployer.Render(context.Background(), &b, test.builds, true, "")
 
@@ -568,9 +608,10 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
+  annotations:
+    skaffold.dev/run-id: SOMEDYNAMICVALUE
   labels:
     app.kubernetes.io/managed-by: SOMEDYNAMICVALUE
-    skaffold.dev/run-id: SOMEDYNAMICVALUE
   name: my-pod-123
 spec:
   containers:
@@ -671,9 +712,10 @@ resources:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
+  annotations:
+    skaffold.dev/run-id: SOMEDYNAMICVALUE
   labels:
     app.kubernetes.io/managed-by: SOMEDYNAMICVALUE
-    skaffold.dev/run-id: SOMEDYNAMICVALUE
     this-is-from: kustomization.yaml
   name: my-pod-123
 spec:

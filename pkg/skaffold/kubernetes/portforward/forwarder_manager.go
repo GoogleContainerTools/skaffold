@@ -38,11 +38,11 @@ type ForwarderManager struct {
 }
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
-func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string, label string, opts config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
+func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string, runID string, opts config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
 	entryManager := NewEntryManager(out, NewKubectlForwarder(out, cli))
 
 	var forwarders []Forwarder
-	forwarders = append(forwarders, NewResourceForwarder(entryManager, namespaces, label, userDefined))
+	forwarders = append(forwarders, NewResourceForwarder(entryManager, namespaces, runID, userDefined))
 	if opts.ForwardPods {
 		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, namespaces))
 	}

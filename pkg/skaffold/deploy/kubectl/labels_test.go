@@ -38,6 +38,8 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  annotations:
+    skaffold.dev/run-id: run-id
   labels:
     key1: value1
     key2: value2
@@ -48,10 +50,43 @@ spec:
     name: example
 `)}
 
-	resultManifest, err := manifests.SetLabels(map[string]string{
+	resultManifest, err := manifests.SetLabels(true, "run-id", map[string]string{
 		"key1": "value1",
 		"key2": "value2",
 	})
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
+}
+
+func TestExistingAnnotations(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    existingAnnotation: here
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)}
+
+	expected := ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    existingAnnotation: here
+    skaffold.dev/run-id: run-id
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)}
+
+	resultManifest, err := manifests.SetLabels(true, "run-id", map[string]string{})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }
@@ -74,6 +109,8 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  annotations:
+    skaffold.dev/run-id: run-id
   labels:
     key0: value0
     key1: value1
@@ -85,7 +122,7 @@ spec:
     name: example
 `)}
 
-	resultManifest, err := manifests.SetLabels(map[string]string{
+	resultManifest, err := manifests.SetLabels(true, "run-id", map[string]string{
 		"key0": "should-be-ignored",
 		"key1": "value1",
 		"key2": "value2",
@@ -110,6 +147,8 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  annotations:
+    skaffold.dev/run-id: run-id
   name: getting-started
 spec:
   containers:
@@ -117,7 +156,7 @@ spec:
     name: example
 `)}
 
-	resultManifest, err := manifests.SetLabels(nil)
+	resultManifest, err := manifests.SetLabels(true, "run-id", nil)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }
@@ -132,11 +171,13 @@ metadata: 3
 apiVersion: v1
 kind: Pod
 metadata:
+  annotations:
+    skaffold.dev/run-id: run-id
   labels: 3
   name: getting-started
 `)}
 
-	resultManifest, err := manifests.SetLabels(map[string]string{"key0": "value0"})
+	resultManifest, err := manifests.SetLabels(true, "run-id", map[string]string{"key0": "value0"})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), resultManifest.String())
 }
@@ -163,6 +204,8 @@ spec:
 	expected := ManifestList{[]byte(`apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    skaffold.dev/run-id: run-id
   labels:
     key0: value0
     key1: value1
@@ -181,7 +224,7 @@ spec:
         metadata:
           type: object`)}
 
-	resultManifest, err := manifests.SetLabels(map[string]string{
+	resultManifest, err := manifests.SetLabels(true, "run-id", map[string]string{
 		"key0": "value0",
 		"key1": "value1",
 	})

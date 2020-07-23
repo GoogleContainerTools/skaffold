@@ -33,6 +33,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -43,23 +44,26 @@ import (
 )
 
 func TestGetDeployments(t *testing.T) {
-	labeller := NewLabeller(true, nil)
 	tests := []struct {
 		description string
+		runID       string
 		deps        []*appsv1.Deployment
 		expected    []*resource.Deployment
 		shouldErr   bool
 	}{
 		{
 			description: "multiple deployments in same namespace",
+			runID:       "foo",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							RunIDLabel: labeller.runID,
-							"random":   "foo",
+							"random": "foo",
+						},
+						Annotations: map[string]string{
+							constants.RunIDAnnotation: "foo",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(10)},
@@ -68,46 +72,50 @@ func TestGetDeployments(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "dep2",
 						Namespace: "test",
-						Labels: map[string]string{
-							RunIDLabel: labeller.runID,
+						Annotations: map[string]string{
+							constants.RunIDAnnotation: "foo",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(20)},
 				},
 			},
 			expected: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 10*time.Second),
-				resource.NewDeployment("dep2", "test", 20*time.Second),
+				resource.NewDeployment("dep1", "test", "foo", 10*time.Second),
+				resource.NewDeployment("dep2", "test", "foo", 20*time.Second),
 			},
 		},
 		{
 			description: "command flag deadline is less than deployment spec.",
+			runID:       "foo",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							RunIDLabel: labeller.runID,
-							"random":   "foo",
+							"random": "foo",
+						},
+						Annotations: map[string]string{
+							constants.RunIDAnnotation: "foo",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(300)},
 				},
 			},
 			expected: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 300*time.Second),
+				resource.NewDeployment("dep1", "test", "foo", 300*time.Second),
 			},
 		},
 		{
 			description: "multiple deployments with no progress deadline set",
+			runID:       "foo",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "dep1",
 						Namespace: "test",
-						Labels: map[string]string{
-							RunIDLabel: labeller.runID,
+						Annotations: map[string]string{
+							constants.RunIDAnnotation: "foo",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -116,33 +124,34 @@ func TestGetDeployments(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "dep2",
 						Namespace: "test",
-						Labels: map[string]string{
-							RunIDLabel: labeller.runID,
+						Annotations: map[string]string{
+							constants.RunIDAnnotation: "foo",
 						},
 					},
 				},
 			},
 			expected: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 100*time.Second),
-				resource.NewDeployment("dep2", "test", 200*time.Second),
+				resource.NewDeployment("dep1", "test", "foo", 100*time.Second),
+				resource.NewDeployment("dep2", "test", "foo", 200*time.Second),
 			},
 		},
 		{
 			description: "multiple deployments with progress deadline set to max",
+			runID:       "foo",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "dep1",
 						Namespace: "test",
-						Labels: map[string]string{
-							RunIDLabel: labeller.runID,
+						Annotations: map[string]string{
+							constants.RunIDAnnotation: "foo",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(600)},
 				},
 			},
 			expected: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 200*time.Second),
+				resource.NewDeployment("dep1", "test", "foo", 200*time.Second),
 			},
 		},
 		{
@@ -151,13 +160,14 @@ func TestGetDeployments(t *testing.T) {
 		},
 		{
 			description: "multiple deployments in different namespaces",
+			runID:       "foo",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "dep1",
 						Namespace: "test",
-						Labels: map[string]string{
-							RunIDLabel: labeller.runID,
+						Annotations: map[string]string{
+							constants.RunIDAnnotation: "foo",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -166,19 +176,20 @@ func TestGetDeployments(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "dep2",
 						Namespace: "test1",
-						Labels: map[string]string{
-							RunIDLabel: labeller.runID,
+						Annotations: map[string]string{
+							constants.RunIDAnnotation: "foo",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
 			expected: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 100*time.Second),
+				resource.NewDeployment("dep1", "test", "foo", 100*time.Second),
 			},
 		},
 		{
 			description: "deployment in correct namespace but not deployed by skaffold",
+			runID:       "foo",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -195,13 +206,14 @@ func TestGetDeployments(t *testing.T) {
 		},
 		{
 			description: "deployment in correct namespace deployed by skaffold but different run",
+			runID:       "foo",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "dep1",
 						Namespace: "test",
-						Labels: map[string]string{
-							RunIDLabel: "9876-6789",
+						Annotations: map[string]string{
+							constants.RunIDAnnotation: "9876-6789",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -218,7 +230,7 @@ func TestGetDeployments(t *testing.T) {
 				objs[i] = dep
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
-			actual, err := getDeployments(client, "test", labeller, 200*time.Second)
+			actual, err := getDeployments(client, "test", test.runID, 200*time.Second)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
 				cmp.AllowUnexported(resource.Deployment{}, resource.Status{}),
 				cmpopts.IgnoreInterfaces(struct{ diag.Diagnose }{}))
@@ -239,7 +251,7 @@ func TestGetDeployStatus(t *testing.T) {
 			description: "one error",
 			counter:     &counter{total: 2, failed: 1},
 			deployments: []*resource.Deployment{
-				resource.NewDeployment("foo", "test", time.Second).
+				resource.NewDeployment("foo", "test", "", time.Second).
 					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE}),
 			},
 			expected:     "1/2 deployment(s) failed",
@@ -251,11 +263,11 @@ func TestGetDeployStatus(t *testing.T) {
 			counter:     &counter{total: 2},
 			deployments: []*resource.Deployment{
 				withStatus(
-					resource.NewDeployment("r1", "test", 1),
+					resource.NewDeployment("r1", "test", "", 1),
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
-					resource.NewDeployment("r2", "test", 1),
+					resource.NewDeployment("r2", "test", "", 1),
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 			},
@@ -265,7 +277,7 @@ func TestGetDeployStatus(t *testing.T) {
 			counter:     &counter{total: 3, failed: 2},
 			expected:    "2/3 deployment(s) failed",
 			deployments: []*resource.Deployment{
-				resource.NewDeployment("foo", "test", time.Second).
+				resource.NewDeployment("foo", "test", "", time.Second).
 					WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE}),
 			},
 			expectedCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE,
@@ -280,7 +292,7 @@ func TestGetDeployStatus(t *testing.T) {
 			counter:     &counter{total: 1, failed: 1},
 			deployments: []*resource.Deployment{
 				withStatus(
-					resource.NewDeployment("deployment", "test", 1),
+					resource.NewDeployment("deployment", "test", "", 1),
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
 				),
 			},
@@ -369,7 +381,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			rc := newCounter(10)
 			rc.pending = test.pending
 			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
-			r := withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), test.ae)
+			r := withStatus(resource.NewDeployment(test.deployment, test.namespace, "", 0), test.ae)
 			// report status once and set it changed to false.
 			r.ReportSinceLastUpdated(false)
 			r.UpdateStatus(test.ae)
@@ -391,7 +403,7 @@ func TestPrintStatus(t *testing.T) {
 			description: "single resource successful marked complete - skip print",
 			rs: []*resource.Deployment{
 				withStatus(
-					resource.NewDeployment("r1", "test", 1),
+					resource.NewDeployment("r1", "test", "", 1),
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 			},
@@ -401,7 +413,7 @@ func TestPrintStatus(t *testing.T) {
 			description: "single resource in error marked complete -skip print",
 			rs: []*resource.Deployment{
 				withStatus(
-					resource.NewDeployment("r1", "test", 1),
+					resource.NewDeployment("r1", "test", "", 1),
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: "error"},
 				),
 			},
@@ -411,11 +423,11 @@ func TestPrintStatus(t *testing.T) {
 			description: "multiple resources 1 not complete",
 			rs: []*resource.Deployment{
 				withStatus(
-					resource.NewDeployment("r1", "test", 1),
+					resource.NewDeployment("r1", "test", "", 1),
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
-					resource.NewDeployment("r2", "test", 1).
+					resource.NewDeployment("r2", "test", "", 1).
 						WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR}),
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 						Message: "pending\n"},
@@ -429,11 +441,11 @@ func TestPrintStatus(t *testing.T) {
 			description: "multiple resources 1 not complete and retry-able error",
 			rs: []*resource.Deployment{
 				withStatus(
-					resource.NewDeployment("r1", "test", 1),
+					resource.NewDeployment("r1", "test", "", 1),
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
-					resource.NewDeployment("r2", "test", 1),
+					resource.NewDeployment("r2", "test", "", 1),
 					proto.ActionableErr{
 						ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
 						Message: resource.MsgKubectlConnection},
@@ -446,7 +458,7 @@ func TestPrintStatus(t *testing.T) {
 			description: "skip printing if status check is cancelled",
 			rs: []*resource.Deployment{
 				withStatus(
-					resource.NewDeployment("r1", "test", 1),
+					resource.NewDeployment("r1", "test", "", 1),
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
 				),
 			},
@@ -543,7 +555,7 @@ func TestPollDeployment(t *testing.T) {
 	}{
 		{
 			description: "pollDeploymentStatus errors out immediately when container error can't recover",
-			dep:         resource.NewDeployment("dep", "test", time.Second),
+			dep:         resource.NewDeployment("dep", "test", "", time.Second),
 			command:     testutil.CmdRunOut(rolloutCmd, "Waiting for replicas to be available"),
 			runs: [][]validator.Resource{
 				{validator.NewResource(
@@ -558,7 +570,7 @@ func TestPollDeployment(t *testing.T) {
 		},
 		{
 			description: "pollDeploymentStatus waits when a container can recover and eventually succeeds",
-			dep:         resource.NewDeployment("dep", "test", time.Second),
+			dep:         resource.NewDeployment("dep", "test", "", time.Second),
 			command: testutil.CmdRunOutErr(
 				// pending due to recoverable error
 				rolloutCmd, "", errors.New("Unable to connect to the server")).

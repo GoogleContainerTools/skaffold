@@ -97,6 +97,8 @@ type KustomizeDeployer struct {
 	insecureRegistries map[string]bool
 	labels             map[string]string
 	globalConfig       string
+	runID              string
+	addRunIDAnnotation bool
 }
 
 func NewKustomizeDeployer(cfg Config, labels map[string]string) *KustomizeDeployer {
@@ -105,6 +107,8 @@ func NewKustomizeDeployer(cfg Config, labels map[string]string) *KustomizeDeploy
 		kubectl:            deploy.NewCLI(cfg, cfg.Pipeline().Deploy.KustomizeDeploy.Flags),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		globalConfig:       cfg.GlobalConfig(),
+		runID:              cfg.GetRunID(),
+		addRunIDAnnotation: cfg.AddSkaffoldLabels(),
 		labels:             labels,
 	}
 }
@@ -169,7 +173,7 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 		}
 	}
 
-	return manifests.SetLabels(k.labels)
+	return manifests.SetLabels(k.addRunIDAnnotation, k.runID, k.labels)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.

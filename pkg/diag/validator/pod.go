@@ -31,6 +31,7 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
+	pkgk8s "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -81,14 +82,23 @@ func NewPodValidator(k kubernetes.Interface) *PodValidator {
 }
 
 // Validate implements the Validate method for Validator interface
-func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.ListOptions) ([]Resource, error) {
-	pods, err := p.k.CoreV1().Pods(ns).List(opts)
+func (p *PodValidator) Validate(ctx context.Context, ns, runID string, opts metav1.ListOptions) ([]Resource, error) {
+	unfilteredPods, err := p.k.CoreV1().Pods(ns).List(opts)
 	if err != nil {
 		return nil, err
 	}
+
+	// only select pods with matching run-id annotation
+	var pods []v1.Pod
+	for _, p := range unfilteredPods.Items {
+		if pkgk8s.HasRunIDAnnotation(p.GetAnnotations(), runID) {
+			pods = append(pods, p)
+		}
+	}
+
 	eventsClient := p.k.CoreV1().Events(ns)
 	var rs []Resource
-	for _, po := range pods.Items {
+	for _, po := range pods {
 		ps := p.getPodStatus(&po)
 		// Update Pod status from Pod events if required
 		processPodEvents(eventsClient, po, ps)

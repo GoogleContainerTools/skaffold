@@ -28,12 +28,14 @@ import (
 )
 
 type mockValidator struct {
+	runID       string
 	ns          []string
 	listOptions metav1.ListOptions
 }
 
-func (m *mockValidator) Validate(_ context.Context, ns string, opts metav1.ListOptions) ([]validator.Resource, error) {
+func (m *mockValidator) Validate(_ context.Context, ns, runID string, opts metav1.ListOptions) ([]validator.Resource, error) {
 	m.ns = append(m.ns, ns)
+	m.runID = runID
 	m.listOptions = opts
 	return nil, nil
 }
@@ -41,6 +43,7 @@ func (m *mockValidator) Validate(_ context.Context, ns string, opts metav1.ListO
 func TestRun(t *testing.T) {
 	tests := []struct {
 		description string
+		runID       string
 		labels      map[string]string
 		ns          []string
 		expected    *mockValidator
@@ -50,6 +53,7 @@ func TestRun(t *testing.T) {
 			ns:          []string{"foo", "bar", ""},
 			expected: &mockValidator{
 				ns:          []string{"foo", "bar"},
+				runID:       "",
 				listOptions: metav1.ListOptions{},
 			},
 		},
@@ -75,7 +79,7 @@ func TestRun(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			d := New(test.ns)
+			d := New(test.runID, test.ns)
 			for k, v := range test.labels {
 				d = d.WithLabel(k, v)
 			}

@@ -49,14 +49,18 @@ type KptDeployer struct {
 	insecureRegistries map[string]bool
 	labels             map[string]string
 	globalConfig       string
+	runID              string
+	addRunIDAnnotation bool
 }
 
-func NewKptDeployer(ctx Config, labels map[string]string) *KptDeployer {
+func NewKptDeployer(cfg Config, labels map[string]string) *KptDeployer {
 	return &KptDeployer{
-		KptDeploy:          ctx.Pipeline().Deploy.KptDeploy,
-		insecureRegistries: ctx.GetInsecureRegistries(),
+		KptDeploy:          cfg.Pipeline().Deploy.KptDeploy,
+		insecureRegistries: cfg.GetInsecureRegistries(),
+		globalConfig:       cfg.GlobalConfig(),
+		runID:              cfg.GetRunID(),
+		addRunIDAnnotation: cfg.AddSkaffoldLabels(),
 		labels:             labels,
-		globalConfig:       ctx.GlobalConfig(),
 	}
 }
 
@@ -198,7 +202,7 @@ func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds [
 		}
 	}
 
-	return manifests.SetLabels(k.labels)
+	return manifests.SetLabels(k.addRunIDAnnotation, k.runID, k.labels)
 }
 
 // readConfigs uses `kpt fn source` to read config manifests from k.Dir

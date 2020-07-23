@@ -68,13 +68,15 @@ type HelmDeployer struct {
 	kubeContext string
 	kubeConfig  string
 	namespace   string
+	runID       string
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
 
 	labels map[string]string
 
-	forceDeploy bool
+	addRunIDAnnotation bool
+	forceDeploy        bool
 
 	// bV is the helm binary version
 	bV semver.Version
@@ -83,12 +85,14 @@ type HelmDeployer struct {
 // NewHelmDeployer returns a configured HelmDeployer
 func NewHelmDeployer(cfg Config, labels map[string]string) *HelmDeployer {
 	return &HelmDeployer{
-		HelmDeploy:  cfg.Pipeline().Deploy.HelmDeploy,
-		kubeContext: cfg.GetKubeContext(),
-		kubeConfig:  cfg.GetKubeConfig(),
-		namespace:   cfg.GetKubeNamespace(),
-		forceDeploy: cfg.ForceDeploy(),
-		labels:      labels,
+		HelmDeploy:         cfg.Pipeline().Deploy.HelmDeploy,
+		kubeContext:        cfg.GetKubeContext(),
+		kubeConfig:         cfg.GetKubeConfig(),
+		namespace:          cfg.GetKubeNamespace(),
+		forceDeploy:        cfg.ForceDeploy(),
+		runID:              cfg.GetRunID(),
+		addRunIDAnnotation: cfg.AddSkaffoldLabels(),
+		labels:             labels,
 	}
 }
 
@@ -133,7 +137,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		}
 	}
 
-	if err := labelDeployResults(h.labels, dRes); err != nil {
+	if err := labelDeployResults(h.addRunIDAnnotation, h.runID, h.labels, dRes); err != nil {
 		return nil, fmt.Errorf("adding labels: %w", err)
 	}
 

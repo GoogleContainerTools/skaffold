@@ -20,9 +20,11 @@ import (
 	"context"
 	"fmt"
 
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -33,7 +35,7 @@ import (
 type ResourceForwarder struct {
 	entryManager         *EntryManager
 	namespaces           []string
-	label                string
+	runID                string
 	userDefinedResources []*latest.PortForwardResource
 }
 
@@ -44,11 +46,11 @@ var (
 )
 
 // NewResourceForwarder returns a struct that tracks and port-forwards services as they are created and modified
-func NewResourceForwarder(entryManager *EntryManager, namespaces []string, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
+func NewResourceForwarder(entryManager *EntryManager, namespaces []string, runID string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
 	return &ResourceForwarder{
 		entryManager:         entryManager,
 		namespaces:           namespaces,
-		label:                label,
+		runID:                runID,
 		userDefinedResources: userDefinedResources,
 	}
 }
@@ -56,7 +58,7 @@ func NewResourceForwarder(entryManager *EntryManager, namespaces []string, label
 // Start gets a list of services deployed by skaffold as []latest.PortForwardResource and
 // forwards them.
 func (p *ResourceForwarder) Start(ctx context.Context) error {
-	serviceResources, err := retrieveServices(p.label, p.namespaces)
+	serviceResources, err := retrieveServices(p.runID, p.namespaces)
 	if err != nil {
 		return fmt.Errorf("retrieving services for automatic port forwarding: %w", err)
 	}
@@ -102,7 +104,7 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 
 // retrieveServiceResources retrieves all services in the cluster matching the given label
 // as a list of PortForwardResources
-func retrieveServiceResources(label string, namespaces []string) ([]*latest.PortForwardResource, error) {
+func retrieveServiceResources(runID string, namespaces []string) ([]*latest.PortForwardResource, error) {
 	client, err := kubernetesclient.Client()
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
@@ -110,13 +112,20 @@ func retrieveServiceResources(label string, namespaces []string) ([]*latest.Port
 
 	var resources []*latest.PortForwardResource
 	for _, ns := range namespaces {
-		services, err := client.CoreV1().Services(ns).List(metav1.ListOptions{
-			LabelSelector: label,
-		})
+		unfilteredServices, err := client.CoreV1().Services(ns).List(metav1.ListOptions{})
 		if err != nil {
-			return nil, fmt.Errorf("selecting services by label %q: %w", label, err)
+			return nil, fmt.Errorf("retrieving all services: %w", err)
 		}
-		for _, s := range services.Items {
+
+		// only select services with matching run-id annotation
+		var services []v1.Service
+		for _, s := range unfilteredServices.Items {
+			if kubernetes.HasRunIDAnnotation(s.GetAnnotations(), runID) {
+				services = append(services, s)
+			}
+		}
+
+		for _, s := range services {
 			for _, p := range s.Spec.Ports {
 				resources = append(resources, &latest.PortForwardResource{
 					Type:      constants.Service,

@@ -47,20 +47,24 @@ type KubectlDeployer struct {
 	originalImages     []build.Artifact
 	workingDir         string
 	globalConfig       string
+	runID              string
 	defaultRepo        *string
 	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
 	labels             map[string]string
 	skipRender         bool
+	addRunIDAnnotation bool
 }
 
 type Config interface {
 	deploy.Config
 	docker.Config
 
+	AddSkaffoldLabels() bool
 	Pipeline() latest.Pipeline
 	GetWorkingDir() string
 	GlobalConfig() string
+	GetRunID() string
 	DefaultRepo() *string
 	SkipRender() bool
 }
@@ -76,6 +80,8 @@ func NewKubectlDeployer(cfg Config, labels map[string]string) *KubectlDeployer {
 		kubectl:            deploy.NewCLI(cfg, cfg.Pipeline().Deploy.KubectlDeploy.Flags),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		skipRender:         cfg.SkipRender(),
+		runID:              cfg.GetRunID(),
+		addRunIDAnnotation: cfg.AddSkaffoldLabels(),
 		labels:             labels,
 	}
 }
@@ -297,7 +303,7 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 		}
 	}
 
-	return manifests.SetLabels(k.labels)
+	return manifests.SetLabels(k.addRunIDAnnotation, k.runID, k.labels)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.

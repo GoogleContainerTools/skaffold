@@ -68,6 +68,8 @@ const (
 	DefaultProjectDescriptor = "project.toml"
 
 	LeeroyAppResponse = "leeroooooy app!!\n"
+
+	RunIDAnnotation = "skaffold.dev/run-id"
 )
 
 var (

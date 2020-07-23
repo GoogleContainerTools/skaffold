@@ -656,7 +656,7 @@ func TestRun(t *testing.T) {
 			rs = append(rs, &v1.EventList{Items: test.events})
 			f := fakekubeclientset.NewSimpleClientset(rs...)
 
-			actual, err := testPodValidator(f, map[string]string{}).Validate(context.Background(), "test", metav1.ListOptions{})
+			actual, err := testPodValidator(f, map[string]string{}).Validate(context.Background(), "test", "", metav1.ListOptions{})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
 				if x == nil && y == nil {

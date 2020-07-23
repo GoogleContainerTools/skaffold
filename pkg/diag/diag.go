@@ -33,12 +33,13 @@ type Diagnose interface {
 }
 
 type diag struct {
+	runID      string
 	namespaces []string
 	labels     map[string]string
 	validators []validator.Validator
 }
 
-func New(namespaces []string) Diagnose {
+func New(runID string, namespaces []string) Diagnose {
 	var ns []string
 	for _, n := range namespaces {
 		if n != "" {
@@ -46,6 +47,7 @@ func New(namespaces []string) Diagnose {
 		}
 	}
 	return &diag{
+		runID:      runID,
 		namespaces: ns,
 		labels:     map[string]string{},
 	}
@@ -66,15 +68,18 @@ func (d *diag) Run(ctx context.Context) ([]validator.Resource, error) {
 		res  []validator.Resource
 		errs []error
 	)
-	// get selector from labels
-	selector := labels.SelectorFromSet(d.labels)
-	listOptions := metav1.ListOptions{
-		LabelSelector: selector.String(),
+
+	listOptions := metav1.ListOptions{}
+	if len(d.labels) > 0 {
+		selector := labels.SelectorFromSet(d.labels)
+		listOptions = metav1.ListOptions{
+			LabelSelector: selector.String(),
+		}
 	}
 
 	for _, v := range d.validators {
 		for _, ns := range d.namespaces {
-			r, err := v.Validate(ctx, ns, listOptions)
+			r, err := v.Validate(ctx, ns, d.runID, listOptions)
 			res = append(res, r...)
 			if err != nil {
 				errs = append(errs, err)

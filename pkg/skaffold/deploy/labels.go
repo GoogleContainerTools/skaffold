@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
@@ -47,9 +48,13 @@ const (
 	sleeptime = 300 * time.Millisecond
 )
 
-func labelDeployResults(labels map[string]string, results []Artifact) error {
+func labelDeployResults(addRunIDAnnotation bool, runID string, labels map[string]string, results []Artifact) error {
 	if len(labels) == 0 {
 		return nil
+	}
+	if !addRunIDAnnotation {
+		// empty run-id will skip setting the annotation altogether
+		runID = ""
 	}
 
 	// use the kubectl client to update all k8s objects with a skaffold watermark
@@ -66,7 +71,7 @@ func labelDeployResults(labels map[string]string, results []Artifact) error {
 	for _, res := range results {
 		err = nil
 		for i := 0; i < tries; i++ {
-			if err = updateRuntimeObject(dynClient, client.Discovery(), labels, res); err == nil {
+			if err = updateRuntimeObject(dynClient, client.Discovery(), runID, labels, res); err == nil {
 				break
 			}
 			time.Sleep(sleeptime)
@@ -88,7 +93,19 @@ func addLabels(labels map[string]string, accessor metav1.Object) {
 	accessor.SetLabels(kv)
 }
 
-func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInterface, labels map[string]string, res Artifact) error {
+func addRunIDAnnotation(runID string, accessor metav1.Object) {
+	if runID == "" {
+		return
+	}
+	annotation := map[string]string{constants.RunIDAnnotation: runID}
+	kv := make(map[string]string)
+
+	copyMap(kv, annotation)
+	copyMap(kv, accessor.GetAnnotations())
+	accessor.SetAnnotations(annotation)
+}
+
+func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInterface, runID string, labels map[string]string, res Artifact) error {
 	originalJSON, _ := json.Marshal(res.Obj)
 	modifiedObj := res.Obj.DeepCopyObject()
 	accessor, err := meta.Accessor(modifiedObj)
@@ -98,6 +115,7 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 	name := accessor.GetName()
 
 	addLabels(labels, accessor)
+	addRunIDAnnotation(runID, accessor)
 
 	modifiedJSON, _ := json.Marshal(modifiedObj)
 	p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, modifiedObj)

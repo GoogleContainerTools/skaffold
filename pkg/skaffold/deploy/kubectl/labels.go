@@ -20,15 +20,17 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 // SetLabels add labels to a list of Kubernetes manifests.
-func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error) {
-	if len(labels) == 0 {
-		return *l, nil
+func (l *ManifestList) SetLabels(addRunIDAnnotation bool, runID string, labels map[string]string) (ManifestList, error) {
+	if !addRunIDAnnotation {
+		// empty run-id will skip setting the annotation altogether
+		runID = ""
 	}
-
-	replacer := newLabelsSetter(labels)
+	replacer := newLabelsSetter(runID, labels)
 	updated, err := l.Visit(replacer)
 	if err != nil {
 		return nil, fmt.Errorf("setting labels in manifests: %w", err)
@@ -40,11 +42,13 @@ func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error)
 }
 
 type labelsSetter struct {
+	runID  string
 	labels map[string]string
 }
 
-func newLabelsSetter(labels map[string]string) *labelsSetter {
+func newLabelsSetter(runID string, labels map[string]string) *labelsSetter {
 	return &labelsSetter{
+		runID:  runID,
 		labels: labels,
 	}
 }
@@ -54,13 +58,26 @@ func (r *labelsSetter) Visit(o map[string]interface{}, k string, v interface{}) 
 		return true
 	}
 
-	if len(r.labels) == 0 {
-		return false
-	}
-
 	metadata, ok := v.(map[string]interface{})
 	if !ok {
 		return true
+	}
+
+	if r.runID != "" {
+		a, present := metadata["annotations"]
+		if !present {
+			metadata["annotations"] = map[string]string{constants.RunIDAnnotation: r.runID}
+		} else {
+			annotations, ok := a.(map[string]interface{})
+			if !ok {
+				return true
+			}
+			annotations[constants.RunIDAnnotation] = r.runID
+		}
+	}
+
+	if len(r.labels) == 0 {
+		return false
 	}
 
 	l, present := metadata["labels"]

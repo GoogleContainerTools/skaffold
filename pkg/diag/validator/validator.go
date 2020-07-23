@@ -26,5 +26,5 @@ type Status string
 
 type Validator interface {
 	// Validate runs the validator and returns the list of resources with status.
-	Validate(ctx context.Context, ns string, opts metav1.ListOptions) ([]Resource, error)
+	Validate(ctx context.Context, ns, runID string, opts metav1.ListOptions) ([]Resource, error)
 }

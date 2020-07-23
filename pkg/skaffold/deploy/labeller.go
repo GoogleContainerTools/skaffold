@@ -17,31 +17,23 @@ limitations under the License.
 package deploy
 
 import (
-	"fmt"
 	"strings"
-
-	"github.com/google/uuid"
 )
 
 const (
 	K8sManagedByLabelKey = "app.kubernetes.io/managed-by"
-	RunIDLabel           = "skaffold.dev/run-id"
 )
 
-var runID = uuid.New().String()
-
-// DefaultLabeller adds K8s style managed-by label and a run-specific UUID label
+// DefaultLabeller adds K8s style managed-by label and a run-specific UUID annotation
 type DefaultLabeller struct {
 	addSkaffoldLabels bool
 	customLabels      []string
-	runID             string
 }
 
 func NewLabeller(addSkaffoldLabels bool, customLabels []string) *DefaultLabeller {
 	return &DefaultLabeller{
 		addSkaffoldLabels: addSkaffoldLabels,
 		customLabels:      customLabels,
-		runID:             runID,
 	}
 }
 
@@ -50,7 +42,6 @@ func (d *DefaultLabeller) Labels() map[string]string {
 
 	if d.addSkaffoldLabels {
 		labels[K8sManagedByLabelKey] = "skaffold"
-		labels[RunIDLabel] = d.runID
 	}
 
 	for _, cl := range d.customLabels {
@@ -63,8 +54,4 @@ func (d *DefaultLabeller) Labels() map[string]string {
 	}
 
 	return labels
-}
-
-func (d *DefaultLabeller) RunIDSelector() string {
-	return fmt.Sprintf("%s=%s", RunIDLabel, d.Labels()[RunIDLabel])
 }

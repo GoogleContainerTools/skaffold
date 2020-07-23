@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -150,4 +151,16 @@ func parseImagesFromYaml(obj interface{}) []string {
 	}
 
 	return images
+}
+
+func HasRunIDAnnotation(annotations map[string]string, runID string) bool {
+	if runID == "" {
+		return true
+	}
+	for k, v := range annotations {
+		if k == constants.RunIDAnnotation && v == runID {
+			return true
+		}
+	}
+	return false
 }

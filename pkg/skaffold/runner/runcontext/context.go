@@ -21,6 +21,7 @@ import (
 	"os"
 	"sort"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -33,10 +34,13 @@ const (
 	emptyNamespace = ""
 )
 
+var runID = uuid.New().String()
+
 type RunContext struct {
 	Opts config.SkaffoldOptions
 	Cfg  latest.Pipeline
 
+	RunID              string
 	KubeContext        string
 	Namespaces         []string
 	WorkingDir         string
@@ -65,6 +69,7 @@ func (rc *RunContext) DryRun() bool                              { return rc.Opt
 func (rc *RunContext) ForceDeploy() bool                         { return rc.Opts.Force }
 func (rc *RunContext) GetKubeConfig() string                     { return rc.Opts.KubeConfig }
 func (rc *RunContext) GetKubeNamespace() string                  { return rc.Opts.Namespace }
+func (rc *RunContext) GetRunID() string                          { return rc.RunID }
 func (rc *RunContext) GlobalConfig() string                      { return rc.Opts.GlobalConfig }
 func (rc *RunContext) MinikubeProfile() string                   { return rc.Opts.MinikubeProfile }
 func (rc *RunContext) DetectMinikube() bool                      { return rc.Opts.DetectMinikube }
@@ -118,6 +123,7 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		Opts:               opts,
 		Cfg:                cfg,
 		WorkingDir:         cwd,
+		RunID:              runID,
 		KubeContext:        kubeContext,
 		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,

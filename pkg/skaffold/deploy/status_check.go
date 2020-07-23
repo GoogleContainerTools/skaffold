@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -36,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	pkgk8s "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/proto"
@@ -66,6 +68,7 @@ type StatusCheckConfig interface {
 	kubectl.Config
 
 	GetNamespaces() []string
+	GetRunID() string
 	Pipeline() latest.Pipeline
 	Muted() config.Muted
 }
@@ -80,6 +83,7 @@ type statusChecker struct {
 	cfg             StatusCheckConfig
 	labeller        *DefaultLabeller
 	deadlineSeconds int
+	runID           string
 	muteLogs        bool
 }
 
@@ -89,6 +93,7 @@ func NewStatusChecker(cfg StatusCheckConfig, labeller *DefaultLabeller) StatusCh
 		muteLogs:        cfg.Muted().MuteStatusCheck(),
 		cfg:             cfg,
 		labeller:        labeller,
+		runID:           cfg.GetRunID(),
 		deadlineSeconds: cfg.Pipeline().Deploy.StatusCheckDeadlineSeconds,
 	}
 }
@@ -109,7 +114,7 @@ func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.St
 
 	deployments := make([]*resource.Deployment, 0)
 	for _, n := range s.cfg.GetNamespaces() {
-		newDeployments, err := getDeployments(client, n, s.labeller,
+		newDeployments, err := getDeployments(client, n, s.runID,
 			getDeadline(s.cfg.Pipeline().Deploy.StatusCheckDeadlineSeconds))
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
@@ -150,31 +155,36 @@ func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.St
 	return getSkaffoldDeployStatus(c, deployments)
 }
 
-func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
-	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
-		LabelSelector: l.RunIDSelector(),
-	})
+func getDeployments(client kubernetes.Interface, ns string, runID string, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
+	unfilteredDeps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch deployments: %w", err)
 	}
 
-	deployments := make([]*resource.Deployment, len(deps.Items))
-	for i, d := range deps.Items {
+	// only select deployments with matching run-id annotation
+	var deps []v1.Deployment
+	for _, d := range unfilteredDeps.Items {
+		if pkgk8s.HasRunIDAnnotation(d.GetAnnotations(), runID) {
+			deps = append(deps, d)
+		}
+	}
+
+	deployments := make([]*resource.Deployment, len(deps))
+	for i, d := range deps {
 		var deadline time.Duration
 		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds == kubernetesMaxDeadline {
 			deadline = deadlineDuration
 		} else {
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
 		}
-		pd := diag.New([]string{d.Namespace}).
-			WithLabel(RunIDLabel, l.Labels()[RunIDLabel]).
+		pd := diag.New(runID, []string{d.Namespace}).
 			WithValidators([]validator.Validator{validator.NewPodValidator(client)})
 
 		for k, v := range d.Spec.Template.Labels {
 			pd = pd.WithLabel(k, v)
 		}
 
-		deployments[i] = resource.NewDeployment(d.Name, d.Namespace, deadline).WithValidator(pd)
+		deployments[i] = resource.NewDeployment(d.Name, d.Namespace, runID, deadline).WithValidator(pd)
 	}
 	return deployments, nil
 }
