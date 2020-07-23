@@ -18,41 +18,28 @@ package kubectl
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
 
-// Cmd represents an external command being prepared to run within a job object
-type Cmd struct {
-	*exec.Cmd
-	handle windows.Handle
-	ctx    context.Context
-}
+var jobObject windows.Handle
 
-type process struct {
-	Pid    int
-	Handle uintptr
-}
-
-// CommandContext creates a new Cmd
-func CommandContext(ctx context.Context, name string, arg ...string) *Cmd {
-	return &Cmd{Cmd: exec.CommandContext(ctx, name, arg...), ctx: ctx}
-}
-
-// Start starts the specified command in a job object but does not wait for it to complete
-func (c *Cmd) Start() (err error) {
-	var handle windows.Handle
-	handle, err = windows.CreateJobObject(nil, nil)
+func init() {
+	var err error
+	jobObject, err = createJobObject()
 	if err != nil {
-		return
+		panic("unable to create job object: " + err.Error())
 	}
+}
 
-	go func() {
-		<-c.ctx.Done()
-		c.Terminate()
-	}()
+func createJobObject() (handle windows.Handle, err error) {
+	jobObject, err := windows.CreateJobObject(nil, nil)
+	if err != nil {
+		return 0, fmt.Errorf("unable to create job object: %w", err)
+	}
 
 	// https://gist.github.com/hallazzang/76f3970bfc949831808bbebc8ca15209
 	info := windows.JOBOBJECT_EXTENDED_LIMIT_INFORMATION{
@@ -60,36 +47,42 @@ func (c *Cmd) Start() (err error) {
 			LimitFlags: windows.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
 		},
 	}
-	if _, err = windows.SetInformationJobObject(
-		handle,
+	if _, err := windows.SetInformationJobObject(
+		jobObject,
 		windows.JobObjectExtendedLimitInformation,
 		uintptr(unsafe.Pointer(&info)),
 		uint32(unsafe.Sizeof(info))); err != nil {
-		return
+
+		return 0, fmt.Errorf("unable to set job object: %w", err)
 	}
 
-	if err = c.Cmd.Start(); err != nil {
-		return
-	}
-
-	if err = windows.AssignProcessToJobObject(
-		handle,
-		windows.Handle((*process)(unsafe.Pointer(c.Process)).Handle)); err != nil {
-		return
-	}
-	c.handle = handle
-	return
+	return jobObject, nil
 }
 
-// Run starts the specified command in a job object and waits for it to complete
-func (c *Cmd) Run() error {
-	if err := c.Start(); err != nil {
-		return err
-	}
-	return c.Wait()
+// Cmd represents an external command being prepared to run within a job object
+type Cmd struct {
+	*exec.Cmd
 }
 
-// Terminate closes the job object handle which kills all connected processes
-func (c *Cmd) Terminate() error {
-	return windows.CloseHandle(c.handle)
+// CommandContext creates a new Cmd
+func CommandContext(ctx context.Context, name string, arg ...string) *Cmd {
+	return &Cmd{Cmd: exec.CommandContext(ctx, name, arg...)}
+}
+
+// Start starts the specified command in a job object but does not wait for it to complete
+func (c *Cmd) Start() error {
+	if err := c.Cmd.Start(); err != nil {
+		return fmt.Errorf("unable to start: %w", err)
+	}
+
+	handle := (*struct {
+		Pid    int
+		handle windows.Handle
+	})(unsafe.Pointer(c.Cmd.Process)).handle
+
+	if err := windows.AssignProcessToJobObject(jobObject, handle); err != nil {
+		return fmt.Errorf("unable assign process to job object: %w", err)
+	}
+
+	return nil
 }

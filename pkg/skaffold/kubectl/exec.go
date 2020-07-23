@@ -32,8 +32,3 @@ type Cmd struct {
 func CommandContext(ctx context.Context, name string, arg ...string) *Cmd {
 	return &Cmd{Cmd: exec.CommandContext(ctx, name, arg...)}
 }
-
-// Terminate kills the underlying process
-func (c *Cmd) Terminate() error {
-	return c.Process.Kill()
-}

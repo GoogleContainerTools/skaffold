@@ -169,7 +169,10 @@ func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, logs io.Reader, c
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			s, _ := r.ReadString('\n')
+			s, err := r.ReadString('\n')
+			if err == io.EOF && s == "" {
+				return
+			}
 			if s == "" {
 				continue
 			}
@@ -181,7 +184,7 @@ func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, logs io.Reader, c
 				strings.Contains(s, "error upgrading connection") {
 				// kubectl is having an error. retry the command
 				logrus.Tracef("killing port forwarding %v", p)
-				if err := cmd.Terminate(); err != nil {
+				if err := cmd.Process.Kill(); err != nil {
 					logrus.Tracef("failed to kill port forwarding %v, err: %s", p, err)
 				}
 				return

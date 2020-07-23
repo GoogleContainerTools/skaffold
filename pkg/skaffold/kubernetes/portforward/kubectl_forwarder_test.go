@@ -115,17 +115,17 @@ func TestMonitorErrorLogs(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&waitErrorLogs, 10*time.Millisecond)
-			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+			t.Override(&waitErrorLogs, time.Millisecond)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			cmdStr := "sleep"
 			if runtime.GOOS == "windows" {
 				cmdStr = "timeout"
 			}
-			cmd := kubectl.CommandContext(ctx, cmdStr, "5")
+			cmd := kubectl.CommandContext(ctx, cmdStr, "10")
 			if err := cmd.Start(); err != nil {
-				t.Fatal("error starting command")
+				t.Fatalf("error starting command: %s", err)
 			}
 
 			var wg sync.WaitGroup
@@ -145,7 +145,7 @@ func TestMonitorErrorLogs(t *testing.T) {
 			// make sure the command is running or killed based on what's expected
 			if test.cmdRunning {
 				assertCmdIsRunning(t, cmd)
-				cmd.Terminate()
+				cmd.Process.Kill()
 			} else {
 				assertCmdWasKilled(t, cmd)
 			}
