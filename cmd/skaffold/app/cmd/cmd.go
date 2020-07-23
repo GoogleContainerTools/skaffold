@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/blang/semver"
@@ -196,7 +197,7 @@ func updateCheck(ch chan string, configfile string) error {
 	if err != nil {
 		return fmt.Errorf("get latest and current Skaffold version: %w", err)
 	}
-	if latest.GT(current) {
+	if !fromCloudSdk() && latest.GT(current) {
 		ch <- fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it from:\n  %s\n", latest, releaseURL(latest))
 	}
 	return nil
@@ -204,6 +205,31 @@ func updateCheck(ch chan string, configfile string) error {
 
 func releaseURL(v semver.Version) string {
 	return fmt.Sprintf("https://github.com/GoogleContainerTools/skaffold/releases/tag/v" + v.String())
+}
+
+// fromCloudSdk returns true if this executable is from the Google Cloud SDK installation.
+func fromCloudSdk() bool {
+	path, err := os.Executable()
+	if err != nil {
+		return false
+	}
+	return inCloudSdk(path)
+}
+
+// inCloudSdk return true if the given path is installed in the Google Cloud SDK installation.
+func inCloudSdk(path string) bool {
+	for path != "" {
+		dir, file := filepath.Split(path)
+		switch file {
+		case "":
+			// happens if path == "/"
+			return false
+		case "google-cloud-sdk":
+			return true
+		}
+		path = filepath.Clean(dir)
+	}
+	return false
 }
 
 // Each flag can also be set with an env variable whose name starts with `SKAFFOLD_`.
