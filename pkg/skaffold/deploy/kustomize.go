@@ -106,7 +106,7 @@ type KustomizeDeployer struct {
 
 func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 	// if user has kustomize binary, prioritize that over kubectl kustomize
-	useKubectl := !kustomizeBinaryCheck()
+	useKubectl := !kustomizeBinaryCheck() && kubectlVersionCheck(runCtx)
 
 	return &KustomizeDeployer{
 		KustomizeDeploy: runCtx.Cfg.Deploy.KustomizeDeploy,
@@ -125,12 +125,30 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 
 // Check for existence of kustomize binary in user's PATH
 func kustomizeBinaryExists() bool {
-	cmd := exec.Command("which", "kustomize")
-	if err := util.RunCmd(cmd); err != nil {
+	if _, err := exec.LookPath("kustomize"); err != nil {
 		return false
 	}
 
 	return true
+}
+
+// Check that kubectl version is valid to use kubectl kustomize
+func kubectlVersionCheck(runCtx *runcontext.RunContext) bool {
+	kubectl := deploy.CLI{
+		CLI:         kubectl.NewFromRunContext(runCtx),
+		Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
+		ForceDeploy: runCtx.Opts.Force,
+	}
+
+	gt, err := kubectl.CompareVersionTo(context.Background(), 1, 14)
+	if err != nil {
+		return false
+	}
+	if gt == 1 {
+		return true
+	}
+
+	return false
 }
 
 // Labels returns the labels specific to kustomize.

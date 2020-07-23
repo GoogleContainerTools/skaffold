@@ -48,8 +48,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
-				CmdRun("which kustomize").
-				AndRunOut("kubectl version --client -ojson", kubectlVersion112).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kustomize build .", ""),
 		},
 		{
@@ -58,8 +57,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
-				CmdRun("which kustomize").
-				AndRunOut("kubectl version --client -ojson", kubectlVersion112).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kustomize build .", deploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
 			builds: []build.Artifact{{
@@ -74,8 +72,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				KustomizePaths: []string{"a", "b"},
 			},
 			commands: testutil.
-				CmdRun("which kustomize").
-				AndRunOut("kubectl version --client -ojson", kubectlVersion112).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kustomize build a", deploymentWebYAML).
 				AndRunOut("kustomize build b", deploymentAppYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
@@ -98,6 +95,7 @@ func TestKustomizeDeploy(t *testing.T) {
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion118).
+				AndRunOut("kubectl version --client -ojson", kubectlVersion118).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace kustomize a", deploymentWebYAML).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace kustomize b", deploymentAppYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
@@ -166,8 +164,7 @@ func TestKustomizeCleanup(t *testing.T) {
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
-				CmdRun("which kustomize").
-				AndRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
+				CmdRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
 		},
 		{
@@ -176,8 +173,7 @@ func TestKustomizeCleanup(t *testing.T) {
 				KustomizePaths: tmpDir.Paths("a", "b"),
 			},
 			commands: testutil.
-				CmdRun("which kustomize").
-				AndRunOut("kustomize build "+tmpDir.Path("a"), deploymentWebYAML).
+				CmdRunOut("kustomize build "+tmpDir.Path("a"), deploymentWebYAML).
 				AndRunOut("kustomize build "+tmpDir.Path("b"), deploymentAppYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
 		},
@@ -187,8 +183,7 @@ func TestKustomizeCleanup(t *testing.T) {
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
-				CmdRun("which kustomize").
-				AndRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
+				CmdRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
@@ -198,8 +193,7 @@ func TestKustomizeCleanup(t *testing.T) {
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
-				CmdRun("which kustomize").
-				AndRunOutErr("kustomize build "+tmpDir.Root(), "", errors.New("BUG")),
+				CmdRunOutErr("kustomize build "+tmpDir.Root(), "", errors.New("BUG")),
 			shouldErr: true,
 		},
 	}
@@ -682,8 +676,7 @@ spec:
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var kustomizationPaths []string
 			fakeCmd := testutil.
-				CmdRun("which kustomize").
-				AndRunOut("kubectl version --client -ojson", kubectlVersion112)
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112)
 			for _, kustomizationCall := range test.kustomizations {
 				fakeCmd.AndRunOut("kustomize build "+kustomizationCall.folder, kustomizationCall.buildResult)
 				kustomizationPaths = append(kustomizationPaths, kustomizationCall.folder)
