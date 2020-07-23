@@ -512,7 +512,7 @@ type HelmRelease struct {
 	// key represents the parameter used in the `--set-string` Helm CLI flag to define a container
 	// image and the value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section.
 	// The resulting command-line is controlled by `ImageStrategy`.
-	ArtifactOverrides util.FlatMap `yaml:"artifactOverrides,omitempty,omitempty"`
+	ArtifactOverrides util.FlatMap `yaml:"artifactOverrides,omitempty"`
 
 	// Namespace is the Kubernetes namespace.
 	Namespace string `yaml:"namespace,omitempty"`
