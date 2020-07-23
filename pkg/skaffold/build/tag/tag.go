@@ -35,19 +35,21 @@ type Tagger interface {
 	GenerateTag(workingDir, imageName string) (string, error)
 }
 
+const DEPRECATED_IMAGE_NAME = "_DEPRECATED_IMAGE_NAME_"
+
 // GenerateFullyQualifiedImageName resolves the fully qualified image name for an artifact.
 // The workingDir is the root directory of the artifact with respect to the Skaffold root,
 // and imageName is the base name of the image.
 func GenerateFullyQualifiedImageName(t Tagger, workingDir, imageName string) (string, error) {
 	// Supporting the use of the deprecated {{.IMAGE_NAME}} in envTemplate
 	if v, ok := t.(*envTemplateTagger); ok {
-		tag, err := v.GenerateTag(workingDir, "_DEPRECATED_IMAGE_NAME_")
+		tag, err := v.GenerateTag(workingDir, DEPRECATED_IMAGE_NAME)
 
 		if err != nil {
 			return "", fmt.Errorf("generating deprecated envTemplate tag: %w", err)
 		}
 
-		if strings.Contains(tag, "_DEPRECATED_IMAGE_NAME_") {
+		if strings.Contains(tag, DEPRECATED_IMAGE_NAME) {
 			warnings.Printf("{{.IMAGE_NAME}} is deprecated, envTemplate's template should only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/")
 
 			tag, _ = v.GenerateTag(workingDir, imageName)
