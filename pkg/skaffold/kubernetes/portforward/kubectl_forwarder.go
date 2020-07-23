@@ -17,6 +17,7 @@ limitations under the License.
 package portforward
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -96,8 +97,8 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		ctx, cancel := context.WithCancel(parentCtx)
 		pfe.cancel = cancel
 
-		buf := &bytes.Buffer{}
-		cmd := portForwardCmd(ctx, k.kubectl, pfe, buf)
+		var buf bytes.Buffer
+		cmd := portForwardCmd(ctx, k.kubectl, pfe, &buf)
 
 		logrus.Debugf("Running command: %s", cmd.Args)
 		if err := cmd.Start(); err != nil {
@@ -112,7 +113,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		}
 
 		//kill kubectl on port forwarding error logs
-		go k.monitorErrorLogs(ctx, buf, cmd, pfe)
+		go k.monitorErrorLogs(ctx, &buf, cmd, pfe)
 		if err := cmd.Wait(); err != nil {
 			if ctx.Err() == context.Canceled {
 				logrus.Debugf("terminated %v due to context cancellation", pfe)
@@ -158,15 +159,17 @@ func (*KubectlForwarder) Terminate(p *portForwardEntry) {
 // Monitor monitors the logs for a kubectl port forward command
 // If it sees an error, it calls back to the EntryManager to
 // retry the entire port forward operation.
-func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, buf *bytes.Buffer, cmd *kubectl.Cmd, p *portForwardEntry) {
+func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, logs io.Reader, cmd *kubectl.Cmd, p *portForwardEntry) {
+	ticker := time.NewTicker(waitErrorLogs)
+	defer ticker.Stop()
+
+	r := bufio.NewReader(logs)
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		default:
-			time.Sleep(waitErrorLogs)
-
-			s, _ := buf.ReadString(byte('\n'))
+		case <-ticker.C:
+			s, _ := r.ReadString('\n')
 			if s == "" {
 				continue
 			}
