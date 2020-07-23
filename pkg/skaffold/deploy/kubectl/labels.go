@@ -72,7 +72,7 @@ func (r *labelsSetter) Visit(o map[string]interface{}, k string, v interface{}) 
 	}
 
 	for k, v := range r.labels {
-		// Don't replace existing label.
+		// Don't overwrite existing labels
 		if _, present := labels[k]; !present {
 			labels[k] = v
 		}

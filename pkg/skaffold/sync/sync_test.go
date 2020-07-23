@@ -862,7 +862,7 @@ var pod = &v1.Pod{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
-			"app.kubernetes.io/managed-by": "skaffold-dirty",
+			"app.kubernetes.io/managed-by": "skaffold",
 		},
 	},
 	Status: v1.PodStatus{
@@ -882,7 +882,7 @@ var nonRunningPod = &v1.Pod{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
-			"app.kubernetes.io/managed-by": "skaffold-dirty",
+			"app.kubernetes.io/managed-by": "skaffold",
 		},
 	},
 	Status: v1.PodStatus{

@@ -18,19 +18,10 @@ package tag
 
 import (
 	"errors"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 type CustomTag struct {
 	Tag string
-}
-
-// Labels are labels specific to the custom tagger.
-func (t *CustomTag) Labels() map[string]string {
-	return map[string]string{
-		constants.Labels.TagPolicy: "custom",
-	}
 }
 
 // GenerateTag generates a tag using the custom tag.

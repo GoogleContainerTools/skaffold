@@ -26,7 +26,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -56,13 +55,6 @@ func NewGitCommit(prefix, variant string) (*GitCommit, error) {
 		prefix:   prefix,
 		runGitFn: runGitFn,
 	}, nil
-}
-
-// Labels are labels specific to the git tagger.
-func (t *GitCommit) Labels() map[string]string {
-	return map[string]string{
-		constants.Labels.TagPolicy: "git-commit",
-	}
 }
 
 // GenerateTag generates a tag from the git commit.

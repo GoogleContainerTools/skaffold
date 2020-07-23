@@ -105,10 +105,6 @@ func TestNewBuilder(t *testing.T) {
 	}
 }
 
-func TestLabels(t *testing.T) {
-	testutil.CheckDeepEqual(t, map[string]string{"skaffold.dev/builder": "cluster"}, (&Builder{}).Labels())
-}
-
 func TestPruneIsNoop(t *testing.T) {
 	pruneError := (&Builder{}).Prune(context.TODO(), nil)
 	testutil.CheckDeepEqual(t, nil, pruneError)

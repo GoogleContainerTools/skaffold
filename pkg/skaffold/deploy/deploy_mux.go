@@ -57,18 +57,10 @@ func (s stringSet) toList() []string {
 	return res
 }
 
-func (m DeployerMux) Labels() map[string]string {
-	labels := make(map[string]string)
-	for _, deployer := range m {
-		copyMap(labels, deployer.Labels())
-	}
-	return labels
-}
-
-func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []build.Artifact, ls []Labeller) *Result {
+func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []build.Artifact) *Result {
 	seenNamespaces := newStringSet()
 	for _, deployer := range m {
-		result := deployer.Deploy(ctx, w, as, ls)
+		result := deployer.Deploy(ctx, w, as)
 		if result.err != nil {
 			return result
 		}
@@ -98,11 +90,11 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
-func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []build.Artifact, ls []Labeller, offline bool, filepath string) error {
+func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []build.Artifact, offline bool, filepath string) error {
 	resources, buf := []string{}, &bytes.Buffer{}
 	for _, deployer := range m {
 		buf.Reset()
-		if err := deployer.Render(ctx, buf, as, ls, offline, "" /* never write to files */); err != nil {
+		if err := deployer.Render(ctx, buf, as, offline, "" /* never write to files */); err != nil {
 			return err
 		}
 		resources = append(resources, buf.String())

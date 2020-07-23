@@ -108,8 +108,8 @@ func TestKustomizeDeploy(t *testing.T) {
 					Namespace: testNamespace,
 					Force:     test.forceDeploy,
 				},
-			})
-			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil).GetError()
+			}, nil)
+			err := k.Deploy(context.Background(), ioutil.Discard, test.builds).GetError()
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -184,7 +184,7 @@ func TestKustomizeCleanup(t *testing.T) {
 				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
-			})
+			}, nil)
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
 			t.CheckError(test.shouldErr, err)
@@ -396,7 +396,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-			})
+			}, nil)
 			deps, err := k.Dependencies()
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, tmpDir.Paths(test.expected...), deps)
@@ -469,13 +469,6 @@ func TestKustomizeBuildCommandArgs(t *testing.T) {
 	}
 }
 
-type testLabels struct {
-	labels map[string]string
-}
-
-func (t *testLabels) Labels() map[string]string {
-	return t.labels
-}
 func TestKustomizeRender(t *testing.T) {
 	type kustomizationCall struct {
 		folder      string
@@ -484,7 +477,7 @@ func TestKustomizeRender(t *testing.T) {
 	tests := []struct {
 		description    string
 		builds         []build.Artifact
-		labels         []Labeller
+		labels         map[string]string
 		kustomizations []kustomizationCall
 		expected       string
 		shouldErr      bool
@@ -520,8 +513,6 @@ spec:
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kustomize
   namespace: default
 spec:
   containers:
@@ -543,12 +534,7 @@ spec:
 					Tag:       "gcr.io/project/image2:tag2",
 				},
 			},
-			labels: []Labeller{
-				&testLabels{
-					labels: map[string]string{
-						"user/label": "test",
-					}},
-			},
+			labels: map[string]string{"user/label": "test"},
 			kustomizations: []kustomizationCall{
 				{
 					folder: ".",
@@ -569,7 +555,6 @@ spec:
 kind: Pod
 metadata:
   labels:
-    skaffold.dev/deployer: kustomize
     user/label: test
   namespace: default
 spec:
@@ -621,8 +606,6 @@ spec:
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kustomize
   namespace: default
 spec:
   containers:
@@ -632,8 +615,6 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kustomize
   namespace: default
 spec:
   containers:
@@ -671,9 +652,9 @@ spec:
 					Namespace:         testNamespace,
 					AddSkaffoldLabels: true,
 				},
-			})
+			}, test.labels)
 			var b bytes.Buffer
-			err := k.Render(context.Background(), &b, test.builds, test.labels, true, "")
+			err := k.Render(context.Background(), &b, test.builds, true, "")
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})

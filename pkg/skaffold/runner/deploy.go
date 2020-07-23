@@ -64,7 +64,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		}
 	}
 
-	deployResult := r.deployer.Deploy(ctx, out, artifacts, r.labellers)
+	deployResult := r.deployer.Deploy(ctx, out, artifacts)
 	r.hasDeployed = true
 	if err := deployResult.GetError(); err != nil {
 		return err
