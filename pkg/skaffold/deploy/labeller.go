@@ -32,21 +32,25 @@ var runID = uuid.New().String()
 
 // DefaultLabeller adds K8s style managed-by label and a run-specific UUID label
 type DefaultLabeller struct {
-	customLabels []string
-	runID        string
+	addSkaffoldLabels bool
+	customLabels      []string
+	runID             string
 }
 
-func NewLabeller(customLabels []string) *DefaultLabeller {
+func NewLabeller(addSkaffoldLabels bool, customLabels []string) *DefaultLabeller {
 	return &DefaultLabeller{
-		customLabels: customLabels,
-		runID:        runID,
+		addSkaffoldLabels: addSkaffoldLabels,
+		customLabels:      customLabels,
+		runID:             runID,
 	}
 }
 
 func (d *DefaultLabeller) Labels() map[string]string {
-	labels := map[string]string{
-		K8sManagedByLabelKey: "skaffold",
-		RunIDLabel:           d.runID,
+	labels := map[string]string{}
+
+	if d.addSkaffoldLabels {
+		labels[K8sManagedByLabelKey] = "skaffold"
+		labels[RunIDLabel] = d.runID
 	}
 
 	for _, cl := range d.customLabels {
@@ -57,6 +61,7 @@ func (d *DefaultLabeller) Labels() map[string]string {
 		}
 		labels[l[0]] = l[1]
 	}
+
 	return labels
 }
 

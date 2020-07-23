@@ -52,7 +52,6 @@ type KubectlDeployer struct {
 	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
 	labels             map[string]string
-	addSkaffoldLabels  bool
 	skipRender         bool
 }
 
@@ -70,7 +69,6 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext, labels map[string]string)
 			ForceDeploy: runCtx.Opts.Force,
 		},
 		insecureRegistries: runCtx.InsecureRegistries,
-		addSkaffoldLabels:  runCtx.Opts.AddSkaffoldLabels,
 		skipRender:         runCtx.Opts.SkipRender,
 		labels:             labels,
 	}
@@ -293,14 +291,7 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 		}
 	}
 
-	if k.addSkaffoldLabels {
-		manifests, err = manifests.SetLabels(k.labels)
-		if err != nil {
-			return nil, fmt.Errorf("setting labels in manifests: %w", err)
-		}
-	}
-
-	return manifests, nil
+	return manifests.SetLabels(k.labels)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.

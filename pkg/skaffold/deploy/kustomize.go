@@ -99,7 +99,6 @@ type KustomizeDeployer struct {
 	labels             map[string]string
 	BuildArgs          []string
 	globalConfig       string
-	addSkaffoldLabels  bool
 }
 
 func NewKustomizeDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KustomizeDeployer {
@@ -113,7 +112,6 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext, labels map[string]strin
 		insecureRegistries: runCtx.InsecureRegistries,
 		BuildArgs:          runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
 		globalConfig:       runCtx.Opts.GlobalConfig,
-		addSkaffoldLabels:  runCtx.Opts.AddSkaffoldLabels,
 		labels:             labels,
 	}
 }
@@ -180,14 +178,7 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 		}
 	}
 
-	if k.addSkaffoldLabels {
-		manifests, err = manifests.SetLabels(k.labels)
-		if err != nil {
-			return nil, fmt.Errorf("setting labels in manifests: %w", err)
-		}
-	}
-
-	return manifests, nil
+	return manifests.SetLabels(k.labels)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
