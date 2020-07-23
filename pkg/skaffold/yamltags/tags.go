@@ -30,7 +30,7 @@ type fieldSet map[string]struct{}
 func ValidateStruct(s interface{}) error {
 	parentStruct := reflect.Indirect(reflect.ValueOf(s))
 	t := parentStruct.Type()
-	logrus.Debugf("validating yamltags of struct %s", t.Name())
+	logrus.Tracef("validating yamltags of struct %s", t.Name())
 
 	// Loop through the fields on the struct, looking for tags.
 	for i := 0; i < t.NumField(); i++ {
