@@ -816,6 +816,11 @@
           "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
           "x-intellij-html-description": "<em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
         },
+        "logs": {
+          "$ref": "#/definitions/LogsConfig",
+          "description": "configures how container logs are printed as a result of a deployment.",
+          "x-intellij-html-description": "configures how container logs are printed as a result of a deployment."
+        },
         "statusCheckDeadlineSeconds": {
           "type": "integer",
           "description": "*beta* deadline for deployments to stabilize in seconds.",
@@ -827,7 +832,8 @@
         "kubectl",
         "kustomize",
         "statusCheckDeadlineSeconds",
-        "kubeContext"
+        "kubeContext",
+        "logs"
       ],
       "additionalProperties": false,
       "description": "contains all the configuration needed by the deploy steps.",
@@ -1708,6 +1714,28 @@
       "additionalProperties": false,
       "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",
       "x-intellij-html-description": "<em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository."
+    },
+    "LogsConfig": {
+      "properties": {
+        "prefix": {
+          "type": "string",
+          "description": "defines the prefix shown on each log line. Valid values are `container`: prefix logs lines with the name of the container. `podAndContainer`: prefix logs lines with the names of the pod and of the container. `auto`: same as `podAndContainer` except that the pod name is skipped if it's the same as the container name. `none`: don't add a prefix.",
+          "x-intellij-html-description": "defines the prefix shown on each log line. Valid values are <code>container</code>: prefix logs lines with the name of the container. <code>podAndContainer</code>: prefix logs lines with the names of the pod and of the container. <code>auto</code>: same as <code>podAndContainer</code> except that the pod name is skipped if it's the same as the container name. <code>none</code>: don't add a prefix.",
+          "default": "auto",
+          "enum": [
+            "container",
+            "podAndContainer",
+            "auto",
+            "none"
+          ]
+        }
+      },
+      "preferredOrder": [
+        "prefix"
+      ],
+      "additionalProperties": false,
+      "description": "configures how container logs are printed as a result of a deployment.",
+      "x-intellij-html-description": "configures how container logs are printed as a result of a deployment."
     },
     "Metadata": {
       "properties": {
