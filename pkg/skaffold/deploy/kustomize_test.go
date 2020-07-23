@@ -649,8 +649,7 @@ spec:
 				},
 				KubeContext: testKubeContext,
 				Opts: config.SkaffoldOptions{
-					Namespace:         testNamespace,
-					AddSkaffoldLabels: true,
+					Namespace: testNamespace,
 				},
 			}, test.labels)
 			var b bytes.Buffer

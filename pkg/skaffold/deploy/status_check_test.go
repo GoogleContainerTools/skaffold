@@ -39,7 +39,7 @@ import (
 )
 
 func TestGetDeployments(t *testing.T) {
-	labeller := NewLabeller(nil)
+	labeller := NewLabeller(true, nil)
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment

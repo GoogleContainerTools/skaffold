@@ -30,7 +30,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -45,7 +44,6 @@ func TestKubectlRenderOutput(t *testing.T) {
 	test := struct {
 		description string
 		builds      []build.Artifact
-		labels      []deploy.Labeller
 		renderPath  string
 		input       string
 		expectedOut string
@@ -57,7 +55,6 @@ func TestKubectlRenderOutput(t *testing.T) {
 				Tag:       "gcr.io/k8s-skaffold/skaffold:test",
 			},
 		},
-		labels:     []deploy.Labeller{},
 		renderPath: "./test-output",
 		input: `apiVersion: v1
 kind: Pod
@@ -244,9 +241,6 @@ spec:
 							},
 						},
 					},
-				},
-				Opts: config.SkaffoldOptions{
-					AddSkaffoldLabels: true,
 				},
 			}, nil)
 			var b bytes.Buffer
