@@ -81,9 +81,9 @@ func (c *CLI) RunOut(ctx context.Context, command string, arg ...string) ([]byte
 }
 
 // CommandWithStrictCancellation ensures for windows OS that all child process get terminated on cancellation
-func (c *CLI) CommandWithStrictCancellation(ctx context.Context, command string, arg ...string) *Cmd {
+func (c *CLI) CommandWithStrictCancellation(ctx context.Context, command string, arg ...string) *exec.Cmd {
 	args := c.args(command, "", arg...)
-	return CommandContext(ctx, "kubectl", args...)
+	return exec.CommandContext(ctx, "kubectl", args...)
 }
 
 // args builds an argument list for calling kubectl and consistently

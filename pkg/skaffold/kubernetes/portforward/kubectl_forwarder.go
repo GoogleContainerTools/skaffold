@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -127,7 +128,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 	}
 }
 
-func portForwardCommand(ctx context.Context, k *kubectl.CLI, pfe *portForwardEntry, buf io.Writer) *kubectl.Cmd {
+func portForwardCommand(ctx context.Context, k *kubectl.CLI, pfe *portForwardEntry, buf io.Writer) *exec.Cmd {
 	args := []string{
 		"--pod-running-timeout", "1s",
 		fmt.Sprintf("%s/%s", pfe.resource.Type, pfe.resource.Name),
@@ -159,7 +160,7 @@ func (*KubectlForwarder) Terminate(p *portForwardEntry) {
 // Monitor monitors the logs for a kubectl port forward command
 // If it sees an error, it calls back to the EntryManager to
 // retry the entire port forward operation.
-func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, logs io.Reader, cmd *kubectl.Cmd, p *portForwardEntry) {
+func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, logs io.Reader, cmd *exec.Cmd, p *portForwardEntry) {
 	ticker := time.NewTicker(waitErrorLogs)
 	defer ticker.Stop()
 
@@ -169,7 +170,10 @@ func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, logs io.Reader, c
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			s, _ := r.ReadString('\n')
+			s, err := r.ReadString('\n')
+			if err == io.EOF && s == "" {
+				return
+			}
 			if s == "" {
 				continue
 			}
@@ -181,7 +185,7 @@ func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, logs io.Reader, c
 				strings.Contains(s, "error upgrading connection") {
 				// kubectl is having an error. retry the command
 				logrus.Tracef("killing port forwarding %v", p)
-				if err := cmd.Terminate(); err != nil {
+				if err := cmd.Process.Kill(); err != nil {
 					logrus.Tracef("failed to kill port forwarding %v, err: %s", p, err)
 				}
 				return

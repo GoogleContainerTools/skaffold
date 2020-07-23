@@ -118,7 +118,7 @@ func TestCLI(t *testing.T) {
 				KubeContext: kubeContext,
 			})
 			cmd := cli.CommandWithStrictCancellation(context.Background(), "exec", "arg1", "arg2")
-			out, err := util.RunCmdOut(cmd.Cmd)
+			out, err := util.RunCmdOut(cmd)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(string(out), output)
 		})
