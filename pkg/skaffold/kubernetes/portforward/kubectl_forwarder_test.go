@@ -104,13 +104,16 @@ func TestMonitorErrorLogs(t *testing.T) {
 			description: "no error logs appear",
 			input:       "some random logs",
 			cmdRunning:  true,
-		}, {
+		},
+		{
 			description: "match on 'error forwarding port'",
 			input:       "error forwarding port 8080",
-		}, {
+		},
+		{
 			description: "match on 'unable to forward'",
 			input:       "unable to forward 8080",
-		}, {
+		},
+		{
 			description: "match on 'error upgrading connection'",
 			input:       "error upgrading connection 8080",
 		},
@@ -128,7 +131,7 @@ func TestMonitorErrorLogs(t *testing.T) {
 			}
 			cmd := kubectl.CommandContext(ctx, cmdStr, "5")
 			if err := cmd.Start(); err != nil {
-				t.Fatal("error starting command")
+				t.Fatalf("error starting command: %v", err)
 			}
 
 			var wg sync.WaitGroup
