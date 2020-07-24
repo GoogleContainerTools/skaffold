@@ -309,7 +309,7 @@ func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
 func lessThan(date string, duration time.Duration) bool {
 	t, err := time.Parse(time.RFC3339, date)
 	if err != nil {
-		logrus.Debugf("could not parse data %s", date)
+		logrus.Debugf("could not parse date %q", date)
 		return false
 	}
 	return current().Sub(t) < duration
