@@ -169,7 +169,10 @@ func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, logs io.Reader, c
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			s, _ := r.ReadString('\n')
+			s, err := r.ReadString('\n')
+			if err == io.EOF && s == "" {
+				return
+			}
 			if s == "" {
 				continue
 			}
