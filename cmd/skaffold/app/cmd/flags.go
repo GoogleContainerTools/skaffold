@@ -365,6 +365,14 @@ var flagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"render"},
 	},
+	{
+		Name:          "suppress-logs",
+		Usage:         "Suppress logs for specified stages in pipeline (build, deploy, status-check, none, all)",
+		Value:         &opts.SuppressLogs,
+		DefValue:      []string{},
+		FlagAddMethod: "StringSliceVar",
+		DefinedOn:     []string{"dev", "run", "debug", "build", "deploy"},
+	},
 }
 
 func (fl *Flag) flag() *pflag.Flag {
