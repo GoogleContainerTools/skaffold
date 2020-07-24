@@ -73,6 +73,9 @@ func readConfigFileCached(filename string) (*GlobalConfig, error) {
 			return
 		}
 		configFile, configFileErr = ReadConfigFileNoCache(filenameOrDefault)
+		if configFileErr == nil {
+			logrus.Infof("Loaded Skaffold defaults from %q", filenameOrDefault)
+		}
 	})
 	return configFile, configFileErr
 }
