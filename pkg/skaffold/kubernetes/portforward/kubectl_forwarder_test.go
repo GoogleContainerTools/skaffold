@@ -92,6 +92,9 @@ func TestTerminate(t *testing.T) {
 }
 
 func TestMonitorErrorLogs(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skip flaky test until it's fixed")
+	}
 	tests := []struct {
 		description string
 		input       string
