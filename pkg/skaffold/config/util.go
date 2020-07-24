@@ -161,7 +161,9 @@ func GetDefaultRepo(configFile string, cliValue *string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
+	if cfg.DefaultRepo != "" {
+		logrus.Infof("Using default-repo=%s from config", cfg.DefaultRepo)
+	}
 	return cfg.DefaultRepo, nil
 }
 
@@ -175,6 +177,7 @@ func GetLocalCluster(configFile string, minikubeProfile string) (bool, error) {
 	}
 	// when set, the local-cluster config takes precedence
 	if cfg.LocalCluster != nil {
+		logrus.Infof("Using local-cluster=%v from config", *cfg.LocalCluster)
 		return *cfg.LocalCluster, nil
 	}
 
@@ -190,7 +193,9 @@ func GetInsecureRegistries(configFile string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	if len(cfg.InsecureRegistries) > 0 {
+		logrus.Infof("Using insecure-registries=%v from config", cfg.InsecureRegistries)
+	}
 	return cfg.InsecureRegistries, nil
 }
 
@@ -200,11 +205,11 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 		return "", err
 	}
 
-	if cfg.DebugHelpersRegistry == "" {
-		return constants.DefaultDebugHelpersRegistry, nil
+	if cfg.DebugHelpersRegistry != "" {
+		logrus.Infof("Using debug-helpers-registry=%s from config", cfg.DebugHelpersRegistry)
+		return cfg.DebugHelpersRegistry, nil
 	}
-
-	return cfg.DebugHelpersRegistry, nil
+	return constants.DefaultDebugHelpersRegistry, nil
 }
 
 func isDefaultLocal(kubeContext string) bool {
