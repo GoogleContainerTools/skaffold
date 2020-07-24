@@ -42,14 +42,14 @@ type Flag struct {
 	pflag *pflag.Flag
 }
 
-// FlagRegistry is a list of all Skaffold CLI flags.
+// flagRegistry is a list of all Skaffold CLI flags.
 // When adding a new flag to the registry, please specify the
 // command/commands to which the flag belongs in `DefinedOn` field.
 // If the flag is a global flag, or belongs to all the subcommands,
 /// specify "all"
 // FlagAddMethod is method which defines a flag value with specified
 // name, default value, and usage string. e.g. `StringVar`, `BoolVar`
-var FlagRegistry = []Flag{
+var flagRegistry = []Flag{
 	{
 		Name:          "filename",
 		Shorthand:     "f",
@@ -400,8 +400,8 @@ func reflectValueOf(values []interface{}) []reflect.Value {
 func AddFlags(cmd *cobra.Command) {
 	var flagsForCommand []*Flag
 
-	for i := range FlagRegistry {
-		fl := &FlagRegistry[i]
+	for i := range flagRegistry {
+		fl := &flagRegistry[i]
 		if !hasCmdAnnotation(cmd.Use, fl.DefinedOn) {
 			continue
 		}

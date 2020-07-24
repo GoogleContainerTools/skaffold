@@ -61,7 +61,7 @@ func TestHasCmdAnnotation(t *testing.T) {
 func TestAddFlagsSmoke(t *testing.T) {
 	// Collect all commands that have common flags.
 	commands := map[string]bool{}
-	for _, fr := range FlagRegistry {
+	for _, fr := range flagRegistry {
 		for _, command := range fr.DefinedOn {
 			commands[command] = true
 		}
