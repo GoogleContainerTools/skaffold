@@ -370,7 +370,7 @@ var FlagRegistry = []Flag{
 	},
 	{
 		Name:          "suppress-logs",
-		Usage:         "Suppress logs for specified stages in pipeline (build, deploy, status-check)",
+		Usage:         "Suppress logs for specified stages in pipeline (build, deploy, status-check, none, all)",
 		Value:         &opts.SuppressLogs,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
