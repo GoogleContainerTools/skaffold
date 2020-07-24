@@ -25,7 +25,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -767,13 +766,11 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			event.InitializeState(test.runContext.Cfg, "test", true, true, true)
-
 			deployer := NewHelmDeployer(test.runContext, nil)
 			deployer.pkgTmpDir = tmpDir
-			result := deployer.Deploy(context.Background(), ioutil.Discard, test.builds)
+			_, err := deployer.Deploy(context.Background(), ioutil.Discard, test.builds)
 
-			t.CheckError(test.shouldErr, result.GetError())
+			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}
@@ -835,8 +832,6 @@ func TestHelmCleanup(t *testing.T) {
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
-
-			event.InitializeState(test.runContext.Cfg, "test", true, true, true)
 
 			deployer := NewHelmDeployer(test.runContext, nil)
 			err := deployer.Cleanup(context.Background(), ioutil.Discard)

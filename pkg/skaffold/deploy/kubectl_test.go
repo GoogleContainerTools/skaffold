@@ -207,7 +207,7 @@ func TestKubectlDeploy(t *testing.T) {
 				},
 			}, nil)
 
-			err := k.Deploy(context.Background(), ioutil.Discard, test.builds).GetError()
+			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -408,24 +408,24 @@ spec:
 		}, nil)
 
 		// Deploy one manifest
-		err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+		_, err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-		}).GetError()
+		})
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
-		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}).GetError()
+		})
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
-		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}).GetError()
+		})
 		t.CheckNoError(err)
 	})
 }
@@ -674,7 +674,7 @@ func TestGCSManifests(t *testing.T) {
 				},
 			}, nil)
 
-			err := k.Deploy(context.Background(), ioutil.Discard, nil).GetError()
+			_, err := k.Deploy(context.Background(), ioutil.Discard, nil)
 
 			t.CheckError(test.shouldErr, err)
 		})

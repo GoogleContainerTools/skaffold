@@ -41,7 +41,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -93,13 +92,12 @@ func NewHelmDeployer(runCtx *runcontext.RunContext, labels map[string]string) *H
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) *Result {
-	event.DeployInProgress()
-
+func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
 	hv, err := h.binVer(ctx)
 	if err != nil {
-		return NewDeployErrorResult(fmt.Errorf(versionErrorString, err))
+		return nil, fmt.Errorf(versionErrorString, err)
 	}
+
 	logrus.Infof("Deploying with helm v%s ...", hv)
 
 	var dRes []Artifact
@@ -111,9 +109,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		results, err := h.deployRelease(ctx, out, r, builds, valuesSet, hv)
 		if err != nil {
 			releaseName, _ := util.ExpandEnvTemplate(r.Name, nil)
-
-			event.DeployFailed(err)
-			return NewDeployErrorResult(fmt.Errorf("deploying %q: %w", releaseName, err))
+			return nil, fmt.Errorf("deploying %q: %w", releaseName, err)
 		}
 
 		// collect namespaces
@@ -136,8 +132,6 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		}
 	}
 
-	event.DeployComplete()
-
 	labelDeployResults(h.labels, dRes)
 
 	// Collect namespaces in a string
@@ -146,7 +140,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		namespaces = append(namespaces, ns)
 	}
 
-	return NewDeploySuccessResult(namespaces)
+	return namespaces, nil
 }
 
 // Dependencies returns a list of files that the deployer depends on.
