@@ -152,9 +152,8 @@ type EnvTemplateTagger struct {
 	// Template used to produce the image name and tag.
 	// See golang [text/template](https://golang.org/pkg/text/template/).
 	// The template is executed against the current environment,
-	// with those variables injected:
-	//   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.
-	// For example: `{{.RELEASE}}-{{.IMAGE_NAME}}`.
+	// with those variables injected.
+	// For example: `{{.RELEASE}}`.
 	Template string `yaml:"template,omitempty" yamltags:"required"`
 }
 
