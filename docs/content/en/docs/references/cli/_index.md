@@ -148,7 +148,7 @@ Options:
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
-      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check)
+      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --toot=false: Emit a terminal beep after the deploy is complete
 
@@ -357,7 +357,7 @@ Options:
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
-      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check)
+      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
@@ -478,7 +478,7 @@ Options:
       --rpc-port=50051: tcp port to expose event API
       --skip-render=false: Don't render the manifests, just deploy them
       --status-check=true: Wait for deployed resources to stabilize
-      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check)
+      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check, none, all)
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
 
@@ -544,7 +544,7 @@ Options:
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
-      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check)
+      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
@@ -796,7 +796,7 @@ Options:
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
-      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check)
+      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
