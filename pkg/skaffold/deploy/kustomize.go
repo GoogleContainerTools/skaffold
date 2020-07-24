@@ -97,7 +97,6 @@ type KustomizeDeployer struct {
 	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
 	labels             map[string]string
-	BuildArgs          []string
 	globalConfig       string
 }
 
@@ -110,7 +109,6 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext, labels map[string]strin
 			ForceDeploy: runCtx.Opts.Force,
 		},
 		insecureRegistries: runCtx.InsecureRegistries,
-		BuildArgs:          runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
 		globalConfig:       runCtx.Opts.GlobalConfig,
 		labels:             labels,
 	}
