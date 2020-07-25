@@ -436,7 +436,6 @@ func TestGitCommit_TagTemplate(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		testutil.Run(t, test.description, func(t *testutil.T) {
-
 			tmpDir := t.NewTempDir()
 			test.createGitRepo(tmpDir.Root())
 			workspace := tmpDir.Path(test.subDir)
