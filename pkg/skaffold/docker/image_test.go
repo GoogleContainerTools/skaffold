@@ -25,8 +25,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/google/go-containerregistry/pkg/name"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -365,63 +363,6 @@ func TestImageExists(t *testing.T) {
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
-}
-
-func TestInsecureRegistry(t *testing.T) {
-	tests := []struct {
-		description        string
-		image              string
-		insecureRegistries map[string]bool
-		scheme             string
-		shouldErr          bool
-	}{
-		{
-			description:        "secure image",
-			image:              "gcr.io/secure/image",
-			insecureRegistries: map[string]bool{},
-			scheme:             "https",
-		},
-		{
-			description: "insecure image",
-			image:       "my.insecure.registry/image",
-			insecureRegistries: map[string]bool{
-				"my.insecure.registry": true,
-			},
-			scheme: "http",
-		},
-		{
-			description: "insecure image not provided by user",
-			image:       "my.insecure.registry/image",
-			shouldErr:   true,
-		},
-		{
-			description: "secure image provided in insecure registries list",
-			image:       "gcr.io/secure/image",
-			insecureRegistries: map[string]bool{
-				"gcr.io": true,
-			},
-			shouldErr: true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&getRemoteImageImpl, func(ref name.Reference) (v1.Image, error) {
-				return &fakeImage{Reference: ref}, nil
-			})
-
-			img, err := remoteImage(test.image, test.insecureRegistries)
-
-			t.CheckNoError(err)
-			if !test.shouldErr {
-				t.CheckDeepEqual(test.scheme, img.(*fakeImage).Reference.Context().Registry.Scheme())
-			}
-		})
-	}
-}
-
-type fakeImage struct {
-	v1.Image
-	Reference name.Reference
 }
 
 func TestConfigFile(t *testing.T) {
