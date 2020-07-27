@@ -31,11 +31,11 @@ import (
 )
 
 var WaitDeletion = struct {
-	MaxRetry int
-	Delay    time.Duration
+	Max   time.Duration
+	Delay time.Duration
 }{
-	MaxRetry: 30,
-	Delay:    2 * time.Second,
+	Max:   60 * time.Second,
+	Delay: 2 * time.Second,
 }
 
 // CLI holds parameters to run kubectl.
@@ -95,54 +95,63 @@ type getResult struct {
 
 // WaitForDeletions waits for resource marked for deletion to complete their deletion.
 func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests ManifestList) error {
+	ctx, cancel := context.WithTimeout(ctx, WaitDeletion.Max)
+	defer cancel()
+
 	previousList := ""
 	previousCount := 0
 
-	for try := 0; try < WaitDeletion.MaxRetry; try++ {
-		// List resources in json format.
-		buf, err := c.RunOutInput(ctx, manifests.Reader(), "get", c.args(nil, "-f", "-", "--ignore-not-found", "-ojson")...)
-		if err != nil {
-			return err
-		}
-
-		// No resource found.
-		if len(buf) == 0 {
-			return nil
-		}
-
-		// Find which ones are marked for deletion. They have a `metadata.deletionTimestamp` field.
-		var result getResult
-		if err := json.Unmarshal(buf, &result); err != nil {
-			return err
-		}
-
-		var marked []string
-		for _, item := range result.Items {
-			if item.Metadata.DeletionTimestamp != "" {
-				marked = append(marked, item.Metadata.Name)
-			}
-		}
-		if len(marked) == 0 {
-			return nil
-		}
-
-		list := `"` + strings.Join(marked, `", "`) + `"`
-		logrus.Debugln("Resources are marked for deletion:", list)
-		if list != previousList {
-			if len(marked) == 1 {
-				fmt.Fprintf(out, "%s is marked for deletion, waiting for completion\n", list)
-			} else {
-				fmt.Fprintf(out, "%d resources are marked for deletion, waiting for completion: %s\n", len(marked), list)
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("%d resources failed to complete their deletion before a new deployment: %s", previousCount, previousList)
+		default:
+			// List resources in json format.
+			buf, err := c.RunOutInput(ctx, manifests.Reader(), "get", c.args(nil, "-f", "-", "--ignore-not-found", "-ojson")...)
+			if err != nil {
+				return err
 			}
 
-			previousList = list
-			previousCount = len(marked)
-		}
+			// No resource found.
+			if len(buf) == 0 {
+				return nil
+			}
 
-		time.Sleep(WaitDeletion.Delay)
+			// Find which ones are marked for deletion. They have a `metadata.deletionTimestamp` field.
+			var result getResult
+			if err := json.Unmarshal(buf, &result); err != nil {
+				return err
+			}
+
+			var marked []string
+			for _, item := range result.Items {
+				if item.Metadata.DeletionTimestamp != "" {
+					marked = append(marked, item.Metadata.Name)
+				}
+			}
+			if len(marked) == 0 {
+				return nil
+			}
+
+			list := `"` + strings.Join(marked, `", "`) + `"`
+			logrus.Debugln("Resources are marked for deletion:", list)
+			if list != previousList {
+				if len(marked) == 1 {
+					fmt.Fprintf(out, "%s is marked for deletion, waiting for completion\n", list)
+				} else {
+					fmt.Fprintf(out, "%d resources are marked for deletion, waiting for completion: %s\n", len(marked), list)
+				}
+
+				previousList = list
+				previousCount = len(marked)
+			}
+
+			select {
+			case <-ctx.Done():
+			case <-time.After(WaitDeletion.Delay):
+			}
+		}
 	}
-
-	return fmt.Errorf("%d resources failed to complete their deletion before a new deployment: %s", previousCount, previousList)
 }
 
 // ReadManifests reads a list of manifests in yaml format.

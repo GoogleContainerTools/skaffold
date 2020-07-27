@@ -526,8 +526,8 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Write("deployment-web.yaml", deploymentWebYAML)
 
-		t.Override(&kubectl.WaitDeletion.Delay, 0*time.Millisecond)
-		t.Override(&kubectl.WaitDeletion.MaxRetry, 1)
+		t.Override(&kubectl.WaitDeletion.Delay, 10*time.Second)
+		t.Override(&kubectl.WaitDeletion.Max, 100*time.Millisecond)
 		t.Override(&util.DefaultExecCommand, testutil.
 			CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 			AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-web.yaml"), deploymentWebYAML).
