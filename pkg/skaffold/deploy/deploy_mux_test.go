@@ -75,11 +75,8 @@ func (m *MockDeployer) WithRenderErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []build.Artifact) *Result {
-	return &Result{
-		namespaces: m.deployNamespaces,
-		err:        m.deployErr,
-	}
+func (m *MockDeployer) Deploy(context.Context, io.Writer, []build.Artifact) ([]string, error) {
+	return m.deployNamespaces, m.deployErr
 }
 
 func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []build.Artifact, _ bool, _ string) error {
@@ -129,7 +126,7 @@ func TestDeployerMux_Deploy(t *testing.T) {
 			namespaces1: []string{"ns-a"},
 			err1:        fmt.Errorf("failed in first"),
 			namespaces2: []string{"ns-b"},
-			expectedNs:  []string{"ns-a"},
+			expectedNs:  nil,
 			shouldErr:   true,
 		},
 		{
@@ -137,7 +134,7 @@ func TestDeployerMux_Deploy(t *testing.T) {
 			namespaces1: []string{"ns-a"},
 			namespaces2: []string{"ns-b"},
 			err2:        fmt.Errorf("failed in second"),
-			expectedNs:  []string{"ns-b"},
+			expectedNs:  nil,
 			shouldErr:   true,
 		},
 	}
@@ -149,8 +146,9 @@ func TestDeployerMux_Deploy(t *testing.T) {
 				NewMockDeployer().WithDeployNamespaces(test.namespaces2).WithDeployErr(test.err2),
 			})
 
-			result := deployerMux.Deploy(context.Background(), nil, nil)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, result.err, test.expectedNs, result.namespaces)
+			namespaces, err := deployerMux.Deploy(context.Background(), nil, nil)
+
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedNs, namespaces)
 		})
 	}
 }

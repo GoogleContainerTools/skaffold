@@ -71,24 +71,22 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext, labels map[string]string)
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) *Result {
-	event.DeployInProgress()
-
-	var manifests deploy.ManifestList
-	var err error
+func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+	var (
+		manifests deploy.ManifestList
+		err       error
+	)
 	if k.skipRender {
 		manifests, err = k.readManifests(ctx, false)
 	} else {
 		manifests, err = k.renderManifests(ctx, out, builds, false)
 	}
 	if err != nil {
-		event.DeployFailed(err)
-		return NewDeployErrorResult(err)
+		return nil, err
 	}
 
 	if len(manifests) == 0 {
-		event.DeployComplete()
-		return NewDeploySuccessResult(nil)
+		return nil, nil
 	}
 
 	namespaces, err := manifests.CollectNamespaces()
@@ -103,12 +101,10 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	}
 
 	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
-		event.DeployFailed(err)
-		return NewDeployErrorResult(err)
+		return nil, err
 	}
 
-	event.DeployComplete()
-	return NewDeploySuccessResult(namespaces)
+	return namespaces, nil
 }
 
 func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {

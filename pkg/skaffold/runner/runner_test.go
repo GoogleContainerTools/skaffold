@@ -149,17 +149,17 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []build.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact) *deploy.Result {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact) ([]string, error) {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
 		if err != nil {
-			return deploy.NewDeployErrorResult(err)
+			return nil, err
 		}
 	}
 
 	t.currentActions.Deployed = findTags(artifacts)
-	return deploy.NewDeploySuccessResult(t.namespaces)
+	return t.namespaces, nil
 }
 
 func (t *TestBench) Render(context.Context, io.Writer, []build.Artifact, bool, string) error {

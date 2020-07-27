@@ -77,17 +77,17 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Art
 	return nil
 }
 
-func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) *deploy.Result {
+func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting deploy...")
 
-	dr := w.Deployer.Deploy(ctx, out, builds)
-	if err := dr.GetError(); err != nil {
-		return dr
+	ns, err := w.Deployer.Deploy(ctx, out, builds)
+	if err != nil {
+		return nil, err
 	}
 
 	logrus.Infoln("Deploy complete in", time.Since(start))
-	return dr
+	return ns, err
 }
 
 func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
