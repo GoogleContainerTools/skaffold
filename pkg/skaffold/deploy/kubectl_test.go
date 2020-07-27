@@ -25,9 +25,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -50,6 +53,15 @@ spec:
   - name: leeroy-web
     image: leeroy-web`
 
+const deploymentWebYAMLv1 = `apiVersion: v1
+kind: Pod
+metadata:
+  name: leeroy-web
+spec:
+  containers:
+  - image: leeroy-web:v1
+    name: leeroy-web`
+
 const deploymentAppYAML = `apiVersion: v1
 kind: Pod
 metadata:
@@ -59,19 +71,39 @@ spec:
   - name: leeroy-app
     image: leeroy-app`
 
+const deploymentAppYAMLv1 = `apiVersion: v1
+kind: Pod
+metadata:
+  name: leeroy-app
+spec:
+  containers:
+  - image: leeroy-app:v1
+    name: leeroy-app`
+
+const deploymentAppYAMLv2 = `apiVersion: v1
+kind: Pod
+metadata:
+  name: leeroy-app
+spec:
+  containers:
+  - image: leeroy-app:v2
+    name: leeroy-app`
+
 func TestKubectlDeploy(t *testing.T) {
 	tests := []struct {
-		description string
-		cfg         *latest.KubectlDeploy
-		builds      []build.Artifact
-		commands    util.Command
-		shouldErr   bool
-		forceDeploy bool
+		description      string
+		cfg              *latest.KubectlDeploy
+		builds           []build.Artifact
+		commands         util.Command
+		shouldErr        bool
+		forceDeploy      bool
+		waitForDeletions bool
 	}{
 		{
-			description: "no manifest",
-			cfg:         &latest.KubectlDeploy{},
-			commands:    testutil.CmdRunOut("kubectl version --client -ojson", kubectlVersion112),
+			description:      "no manifest",
+			cfg:              &latest.KubectlDeploy{},
+			commands:         testutil.CmdRunOut("kubectl version --client -ojson", kubectlVersion112),
+			waitForDeletions: true,
 		},
 		{
 			description: "deploy success (disable validation)",
@@ -84,11 +116,13 @@ func TestKubectlDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml --validate=false", deploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --validate=false"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
-				Tag:       "leeroy-web:123",
+				Tag:       "leeroy-web:v1",
 			}},
+			waitForDeletions: true,
 		},
 		{
 			description: "deploy success (forced)",
@@ -98,12 +132,14 @@ func TestKubectlDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
-				Tag:       "leeroy-web:123",
+				Tag:       "leeroy-web:v1",
 			}},
-			forceDeploy: true,
+			forceDeploy:      true,
+			waitForDeletions: true,
 		},
 		{
 			description: "deploy success",
@@ -113,11 +149,13 @@ func TestKubectlDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
-				Tag:       "leeroy-web:123",
+				Tag:       "leeroy-web:v1",
 			}},
+			waitForDeletions: true,
 		},
 		{
 			description: "deploy success (kubectl v1.18)",
@@ -127,11 +165,13 @@ func TestKubectlDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion118).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run=client -oyaml -f deployment.yaml", deploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
-				Tag:       "leeroy-web:123",
+				Tag:       "leeroy-web:v1",
 			}},
+			waitForDeletions: true,
 		},
 		{
 			description: "http manifest",
@@ -144,7 +184,7 @@ func TestKubectlDeploy(t *testing.T) {
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
-				Tag:       "leeroy-web:123",
+				Tag:       "leeroy-web:v1",
 			}},
 		},
 		{
@@ -158,7 +198,7 @@ func TestKubectlDeploy(t *testing.T) {
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -f -", fmt.Errorf("")),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
-				Tag:       "leeroy-web:123",
+				Tag:       "leeroy-web:v1",
 			}},
 			shouldErr: true,
 		},
@@ -175,12 +215,14 @@ func TestKubectlDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create -v=0 --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -v=0 -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -v=0 --overwrite=true -f -", fmt.Errorf("")),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
-				Tag:       "leeroy-web:123",
+				Tag:       "leeroy-web:v1",
 			}},
-			shouldErr: true,
+			waitForDeletions: true,
+			shouldErr:        true,
 		},
 	}
 	for _, test := range tests {
@@ -190,6 +232,7 @@ func TestKubectlDeploy(t *testing.T) {
 				Write("deployment.yaml", deploymentWebYAML).
 				Touch("empty.ignored").
 				Chdir()
+			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 
 			k := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
@@ -202,8 +245,9 @@ func TestKubectlDeploy(t *testing.T) {
 				},
 				KubeContext: testKubeContext,
 				Opts: config.SkaffoldOptions{
-					Namespace: testNamespace,
-					Force:     test.forceDeploy,
+					Namespace:        testNamespace,
+					Force:            test.forceDeploy,
+					WaitForDeletions: test.waitForDeletions,
 				},
 			}, nil)
 
@@ -360,34 +404,16 @@ func TestKubectlRedeploy(t *testing.T) {
 		t.Override(&util.DefaultExecCommand, testutil.
 			CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 			AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
-			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
-kind: Pod
-metadata:
-  name: leeroy-app
-spec:
-  containers:
-  - image: leeroy-app:v1
-    name: leeroy-app
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: leeroy-web
-spec:
-  containers:
-  - image: leeroy-web:v1
-    name: leeroy-web`).
+			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentAppYAMLv1+"\n---\n"+deploymentWebYAMLv1, "").
+			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", deploymentAppYAMLv1+"\n---\n"+deploymentWebYAMLv1).
 			AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
-			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
-kind: Pod
-metadata:
-  name: leeroy-app
-spec:
-  containers:
-  - image: leeroy-app:v2
-    name: leeroy-app`).
-			AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML),
+			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentAppYAMLv2+"\n---\n"+deploymentWebYAMLv1, "").
+			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", deploymentAppYAMLv2).
+			AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
+			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentAppYAMLv2+"\n---\n"+deploymentWebYAMLv1, ""),
 		)
+
+		event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 
 		cfg := &latest.KubectlDeploy{
 			Manifests: []string{tmpDir.Path("deployment-app.yaml"), "deployment-web.yaml"},
@@ -403,7 +429,8 @@ spec:
 			},
 			KubeContext: testKubeContext,
 			Opts: config.SkaffoldOptions{
-				Namespace: testNamespace,
+				Namespace:        testNamespace,
+				WaitForDeletions: true,
 			},
 		}, nil)
 
@@ -427,6 +454,117 @@ spec:
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
 		}).GetError()
 		t.CheckNoError(err)
+	})
+}
+
+func TestKubectlWaitForDeletions(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().Write("deployment-web.yaml", deploymentWebYAML)
+
+		t.Override(&kubectl.WaitDeletion.Delay, 0*time.Millisecond)
+		t.Override(&util.DefaultExecCommand, testutil.
+			CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+			AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-web.yaml"), deploymentWebYAML).
+			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, `{
+				"items":[
+					{"metadata":{"deletionTimestamp":"2020-07-24T12:40:32Z","name":"leeroy-web"}},
+					{"metadata":{"deletionTimestamp":"2020-07-24T12:40:32Z","name":"leeroy-app"}},
+					{"metadata":{"name":"leeroy-front"}}
+				]
+			}`).
+			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, `{
+				"items":[
+					{"metadata":{"deletionTimestamp":"2020-07-24T12:40:32Z","name":"leeroy-web"}},
+					{"metadata":{"deletionTimestamp":"2020-07-24T12:40:32Z","name":"leeroy-app"}},
+					{"metadata":{"name":"leeroy-front"}}
+				]
+			}`).
+			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, `{
+				"items":[
+					{"metadata":{"deletionTimestamp":"2020-07-24T12:40:32Z","name":"leeroy-web"}},
+					{"metadata":{"name":"leeroy-front"}}
+				]
+			}`).
+			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
+			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", deploymentWebYAMLv1),
+		)
+
+		event.InitializeState(latest.Pipeline{}, "test", true, true, true)
+
+		cfg := &latest.KubectlDeploy{
+			Manifests: []string{tmpDir.Path("deployment-web.yaml")},
+		}
+		deployer := NewKubectlDeployer(&runcontext.RunContext{
+			WorkingDir: tmpDir.Root(),
+			Cfg: latest.Pipeline{
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: cfg,
+					},
+				},
+			},
+			KubeContext: testKubeContext,
+			Opts: config.SkaffoldOptions{
+				Namespace:        testNamespace,
+				WaitForDeletions: true,
+			},
+		}, nil)
+
+		var out bytes.Buffer
+		err := deployer.Deploy(context.Background(), &out, []build.Artifact{
+			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
+		}).GetError()
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(` - 2 resources are marked for deletion, waiting for completion: "leeroy-web", "leeroy-app"
+ - "leeroy-web" is marked for deletion, waiting for completion
+`, out.String())
+	})
+}
+
+func TestKubectlWaitForDeletionsFails(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().Write("deployment-web.yaml", deploymentWebYAML)
+
+		t.Override(&kubectl.WaitDeletion.Delay, 0*time.Millisecond)
+		t.Override(&kubectl.WaitDeletion.MaxRetry, 1)
+		t.Override(&util.DefaultExecCommand, testutil.
+			CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+			AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-web.yaml"), deploymentWebYAML).
+			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, `{
+				"items":[
+					{"metadata":{"deletionTimestamp":"2020-07-24T12:40:32Z","name":"leeroy-web"}},
+					{"metadata":{"deletionTimestamp":"2020-07-24T12:40:32Z","name":"leeroy-app"}}
+				]
+			}`),
+		)
+
+		event.InitializeState(latest.Pipeline{}, "test", true, true, true)
+
+		cfg := &latest.KubectlDeploy{
+			Manifests: []string{tmpDir.Path("deployment-web.yaml")},
+		}
+		deployer := NewKubectlDeployer(&runcontext.RunContext{
+			WorkingDir: tmpDir.Root(),
+			Cfg: latest.Pipeline{
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: cfg,
+					},
+				},
+			},
+			KubeContext: testKubeContext,
+			Opts: config.SkaffoldOptions{
+				Namespace:        testNamespace,
+				WaitForDeletions: true,
+			},
+		}, nil)
+
+		err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
+		}).GetError()
+
+		t.CheckErrorContains(`2 resources failed to complete their deletion before a new deployment: "leeroy-web", "leeroy-app"`, err)
 	})
 }
 
@@ -658,6 +796,7 @@ func TestGCSManifests(t *testing.T) {
 			if err := ioutil.WriteFile(manifestTmpDir+"/deployment.yaml", []byte(deploymentWebYAML), os.ModePerm); err != nil {
 				t.Fatal(err)
 			}
+
 			k := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
 				Cfg: latest.Pipeline{

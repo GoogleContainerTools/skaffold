@@ -18,14 +18,25 @@ package kubectl
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
+
+var WaitDeletion = struct {
+	MaxRetry int
+	Delay    time.Duration
+}{
+	MaxRetry: 30,
+	Delay:    2 * time.Second,
+}
 
 // CLI holds parameters to run kubectl.
 type CLI struct {
@@ -71,6 +82,67 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 	}
 
 	return nil
+}
+
+type getResult struct {
+	Items []struct {
+		Metadata struct {
+			Name              string `json:"name"`
+			DeletionTimestamp string `json:"deletionTimestamp"`
+		} `json:"metadata"`
+	} `json:"items"`
+}
+
+// WaitForDeletions waits for resource marked for deletion to complete their deletion.
+func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests ManifestList) error {
+	previousList := ""
+	previousCount := 0
+
+	for try := 0; try < WaitDeletion.MaxRetry; try++ {
+		// List resources in json format.
+		buf, err := c.RunOutInput(ctx, manifests.Reader(), "get", c.args(nil, "-f", "-", "--ignore-not-found", "-ojson")...)
+		if err != nil {
+			return err
+		}
+
+		// No resource found.
+		if len(buf) == 0 {
+			return nil
+		}
+
+		// Find which ones are marked for deletion. They have a `metadata.deletionTimestamp` field.
+		var result getResult
+		if err := json.Unmarshal(buf, &result); err != nil {
+			return err
+		}
+
+		var marked []string
+		for _, item := range result.Items {
+			if item.Metadata.DeletionTimestamp != "" {
+				marked = append(marked, item.Metadata.Name)
+			}
+		}
+		if len(marked) == 0 {
+			return nil
+		}
+
+		list := `"` + strings.Join(marked, `", "`) + `"`
+		logrus.Debugln("Resources are marked for deletion:", list)
+		if list != previousList {
+			if len(marked) == 1 {
+				fmt.Fprintf(out, "%s is marked for deletion, waiting for completion\n", list)
+			} else {
+				fmt.Fprintf(out, "%d resources are marked for deletion, waiting for completion: %s\n", len(marked), list)
+			}
+
+			previousList = list
+			previousCount = len(marked)
+		}
+
+		time.Sleep(WaitDeletion.Delay)
+	}
+
+	return fmt.Errorf("%d resources failed to complete their deletion before a new deployment: %s", previousCount, previousList)
 }
 
 // ReadManifests reads a list of manifests in yaml format.
