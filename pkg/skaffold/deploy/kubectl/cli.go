@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -45,6 +46,14 @@ type CLI struct {
 
 	ForceDeploy   bool
 	previousApply ManifestList
+}
+
+func NewCLI(runCtx *runcontext.RunContext, flags latest.KubectlFlags) CLI {
+	return CLI{
+		CLI:         pkgkubectl.NewFromRunContext(runCtx),
+		Flags:       flags,
+		ForceDeploy: runCtx.Opts.Force,
+	}
 }
 
 // Delete runs `kubectl delete` on a list of manifests.

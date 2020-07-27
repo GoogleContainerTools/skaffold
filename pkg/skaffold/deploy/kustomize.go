@@ -34,7 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -103,12 +102,8 @@ type KustomizeDeployer struct {
 
 func NewKustomizeDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KustomizeDeployer {
 	return &KustomizeDeployer{
-		KustomizeDeploy: runCtx.Cfg.Deploy.KustomizeDeploy,
-		kubectl: deploy.CLI{
-			CLI:         kubectl.NewFromRunContext(runCtx),
-			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
-			ForceDeploy: runCtx.Opts.Force,
-		},
+		KustomizeDeploy:    runCtx.Cfg.Deploy.KustomizeDeploy,
+		kubectl:            deploy.NewCLI(runCtx, runCtx.Cfg.Deploy.KustomizeDeploy.Flags),
 		insecureRegistries: runCtx.InsecureRegistries,
 		globalConfig:       runCtx.Opts.GlobalConfig,
 		waitForDeletions:   runCtx.Opts.WaitForDeletions,
