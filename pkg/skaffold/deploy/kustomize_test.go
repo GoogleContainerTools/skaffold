@@ -27,7 +27,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -97,7 +96,6 @@ func TestKustomizeDeploy(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.NewTempDir().
 				Chdir()
-			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
