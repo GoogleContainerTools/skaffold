@@ -52,18 +52,13 @@ func GenerateFullyQualifiedImageName(t Tagger, workingDir, imageName string) (st
 		if strings.Contains(tag, DeprecatedImageName) {
 			warnings.Printf("{{.IMAGE_NAME}} is deprecated, envTemplate's template should only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/")
 
-			tag, err = v.GenerateTag(workingDir, imageName)
-
-			if err != nil {
-				return "", fmt.Errorf("generating deprecated envTemplate tag: %w", err)
-			}
-
-			return tag, nil
+			return strings.Replace(tag, DeprecatedImageName, imageName, -1), nil
 		}
+
 		return fmt.Sprintf("%s:%s", imageName, tag), nil
 	}
-	tag, err := t.GenerateTag(workingDir, imageName)
 
+	tag, err := t.GenerateTag(workingDir, imageName)
 	if err != nil {
 		return "", fmt.Errorf("generating tag: %w", err)
 	}
