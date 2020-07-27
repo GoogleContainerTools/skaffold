@@ -364,6 +364,8 @@ Options:
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
+      --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
+      --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
   -w, --watch-image=[]: Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
   -i, --watch-poll-interval=1000: Interval (in ms) between two checks for file changes
 
@@ -404,6 +406,8 @@ Env vars:
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_TRIGGER` (same as `--trigger`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
 * `SKAFFOLD_WATCH_IMAGE` (same as `--watch-image`)
 * `SKAFFOLD_WATCH_POLL_INTERVAL` (same as `--watch-poll-interval`)
 
@@ -485,6 +489,8 @@ Options:
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
+      --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
+      --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
 
 Usage:
   skaffold deploy [options]
@@ -517,6 +523,8 @@ Env vars:
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
 
 ### skaffold dev
 
@@ -555,6 +563,8 @@ Options:
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
+      --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
+      --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
   -w, --watch-image=[]: Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
   -i, --watch-poll-interval=1000: Interval (in ms) between two checks for file changes
 
@@ -596,6 +606,8 @@ Env vars:
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_TRIGGER` (same as `--trigger`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
 * `SKAFFOLD_WATCH_IMAGE` (same as `--watch-image`)
 * `SKAFFOLD_WATCH_POLL_INTERVAL` (same as `--watch-poll-interval`)
 
@@ -809,6 +821,8 @@ Options:
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
+      --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
+      --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
 
 Usage:
   skaffold run [options]
@@ -848,6 +862,8 @@ Env vars:
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
 
 ### skaffold schema
 

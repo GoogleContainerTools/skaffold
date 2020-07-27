@@ -18,6 +18,7 @@ package config
 
 import (
 	"strings"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -27,6 +28,13 @@ import (
 type PortForwardOptions struct {
 	Enabled     bool
 	ForwardPods bool
+}
+
+// WaitForDeletions configures the wait for pending deletions.
+type WaitForDeletions struct {
+	Max     time.Duration
+	Delay   time.Duration
+	Enabled bool
 }
 
 // SkaffoldOptions are options that are set by command line arguments not included
@@ -52,7 +60,6 @@ type SkaffoldOptions struct {
 	ProfileAutoActivation bool
 	DryRun                bool
 	SkipRender            bool
-	WaitForDeletions      bool
 
 	// Add Skaffold-specific labels including runID, deployer labels, etc.
 	// `CustomLabels` are still applied if this is false. Must only be used in
@@ -83,6 +90,8 @@ type SkaffoldOptions struct {
 	// kubecontext API Server to minikube profiles
 	MinikubeProfile string
 	SuppressLogs    []string
+
+	WaitForDeletions WaitForDeletions
 }
 
 // Prune returns true iff the user did NOT specify the --no-prune flag,

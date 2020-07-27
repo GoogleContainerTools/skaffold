@@ -26,33 +26,28 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
-
-var WaitDeletion = struct {
-	Max   time.Duration
-	Delay time.Duration
-}{
-	Max:   60 * time.Second,
-	Delay: 2 * time.Second,
-}
 
 // CLI holds parameters to run kubectl.
 type CLI struct {
 	*pkgkubectl.CLI
 	Flags latest.KubectlFlags
 
-	ForceDeploy   bool
-	previousApply ManifestList
+	forceDeploy      bool
+	waitForDeletions config.WaitForDeletions
+	previousApply    ManifestList
 }
 
 func NewCLI(runCtx *runcontext.RunContext, flags latest.KubectlFlags) CLI {
 	return CLI{
-		CLI:         pkgkubectl.NewFromRunContext(runCtx),
-		Flags:       flags,
-		ForceDeploy: runCtx.Opts.Force,
+		CLI:              pkgkubectl.NewFromRunContext(runCtx),
+		Flags:            flags,
+		forceDeploy:      runCtx.Opts.Force,
+		waitForDeletions: runCtx.Opts.WaitForDeletions,
 	}
 }
 
@@ -78,7 +73,7 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 	}
 
 	args := []string{"-f", "-"}
-	if c.ForceDeploy {
+	if c.forceDeploy {
 		args = append(args, "--force", "--grace-period=0")
 	}
 
@@ -104,7 +99,11 @@ type getResult struct {
 
 // WaitForDeletions waits for resource marked for deletion to complete their deletion.
 func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests ManifestList) error {
-	ctx, cancel := context.WithTimeout(ctx, WaitDeletion.Max)
+	if !c.waitForDeletions.Enabled {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, c.waitForDeletions.Max)
 	defer cancel()
 
 	previousList := ""
@@ -157,7 +156,7 @@ func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests Man
 
 			select {
 			case <-ctx.Done():
-			case <-time.After(WaitDeletion.Delay):
+			case <-time.After(c.waitForDeletions.Delay):
 			}
 		}
 	}

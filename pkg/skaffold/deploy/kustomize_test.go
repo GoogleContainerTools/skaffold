@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -109,9 +110,13 @@ func TestKustomizeDeploy(t *testing.T) {
 				},
 				KubeContext: testKubeContext,
 				Opts: config.SkaffoldOptions{
-					Namespace:        testNamespace,
-					Force:            test.forceDeploy,
-					WaitForDeletions: true,
+					Namespace: testNamespace,
+					Force:     test.forceDeploy,
+					WaitForDeletions: config.WaitForDeletions{
+						Enabled: true,
+						Delay:   0 * time.Second,
+						Max:     10 * time.Second,
+					},
 				},
 			}, nil)
 			err := k.Deploy(context.Background(), ioutil.Discard, test.builds).GetError()

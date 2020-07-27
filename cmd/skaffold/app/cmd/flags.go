@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -376,9 +377,25 @@ var flagRegistry = []Flag{
 	{
 		Name:          "wait-for-deletions",
 		Usage:         "Wait for pending deletions to complete before a deployment",
-		Value:         &opts.WaitForDeletions,
+		Value:         &opts.WaitForDeletions.Enabled,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+	},
+	{
+		Name:          "wait-for-deletions-max",
+		Usage:         "Max duration to wait for pending deletions",
+		Value:         &opts.WaitForDeletions.Max,
+		DefValue:      60 * time.Second,
+		FlagAddMethod: "DurationVar",
+		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+	},
+	{
+		Name:          "wait-for-deletions-delay",
+		Usage:         "Delay between two checks for pending deletions",
+		Value:         &opts.WaitForDeletions.Delay,
+		DefValue:      2 * time.Second,
+		FlagAddMethod: "DurationVar",
 		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
 	},
 }
@@ -395,6 +412,7 @@ func (fl *Flag) flag() *pflag.Flag {
 	inputs = append(inputs, fl.Usage)
 
 	fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
+
 	reflect.ValueOf(fs).MethodByName(fl.FlagAddMethod).Call(reflectValueOf(inputs))
 	f := fs.Lookup(fl.Name)
 	f.Shorthand = fl.Shorthand

@@ -97,7 +97,6 @@ type KustomizeDeployer struct {
 	insecureRegistries map[string]bool
 	labels             map[string]string
 	globalConfig       string
-	waitForDeletions   bool
 }
 
 func NewKustomizeDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KustomizeDeployer {
@@ -106,7 +105,6 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext, labels map[string]strin
 		kubectl:            deploy.NewCLI(runCtx, runCtx.Cfg.Deploy.KustomizeDeploy.Flags),
 		insecureRegistries: runCtx.InsecureRegistries,
 		globalConfig:       runCtx.Opts.GlobalConfig,
-		waitForDeletions:   runCtx.Opts.WaitForDeletions,
 		labels:             labels,
 	}
 }
@@ -132,11 +130,9 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 			"This might cause port-forward and deploy health-check to fail: %w", err))
 	}
 
-	if k.waitForDeletions {
-		if err := k.kubectl.WaitForDeletions(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
-			event.DeployFailed(err)
-			return NewDeployErrorResult(err)
-		}
+	if err := k.kubectl.WaitForDeletions(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
+		event.DeployFailed(err)
+		return NewDeployErrorResult(err)
 	}
 
 	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
