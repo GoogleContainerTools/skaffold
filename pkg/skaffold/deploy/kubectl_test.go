@@ -29,7 +29,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -245,9 +244,13 @@ func TestKubectlDeploy(t *testing.T) {
 				},
 				KubeContext: testKubeContext,
 				Opts: config.SkaffoldOptions{
-					Namespace:        testNamespace,
-					Force:            test.forceDeploy,
-					WaitForDeletions: test.waitForDeletions,
+					Namespace: testNamespace,
+					Force:     test.forceDeploy,
+					WaitForDeletions: config.WaitForDeletions{
+						Enabled: test.waitForDeletions,
+						Delay:   0 * time.Second,
+						Max:     10 * time.Second,
+					},
 				},
 			}, nil)
 
@@ -429,8 +432,12 @@ func TestKubectlRedeploy(t *testing.T) {
 			},
 			KubeContext: testKubeContext,
 			Opts: config.SkaffoldOptions{
-				Namespace:        testNamespace,
-				WaitForDeletions: true,
+				Namespace: testNamespace,
+				WaitForDeletions: config.WaitForDeletions{
+					Enabled: true,
+					Delay:   0 * time.Millisecond,
+					Max:     10 * time.Second,
+				},
 			},
 		}, nil)
 
@@ -461,7 +468,6 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Write("deployment-web.yaml", deploymentWebYAML)
 
-		t.Override(&kubectl.WaitDeletion.Delay, 0*time.Millisecond)
 		t.Override(&util.DefaultExecCommand, testutil.
 			CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 			AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-web.yaml"), deploymentWebYAML).
@@ -505,8 +511,12 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 			},
 			KubeContext: testKubeContext,
 			Opts: config.SkaffoldOptions{
-				Namespace:        testNamespace,
-				WaitForDeletions: true,
+				Namespace: testNamespace,
+				WaitForDeletions: config.WaitForDeletions{
+					Enabled: true,
+					Delay:   0 * time.Millisecond,
+					Max:     10 * time.Second,
+				},
 			},
 		}, nil)
 
@@ -526,8 +536,6 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Write("deployment-web.yaml", deploymentWebYAML)
 
-		t.Override(&kubectl.WaitDeletion.Delay, 0*time.Millisecond)
-		t.Override(&kubectl.WaitDeletion.MaxRetry, 1)
 		t.Override(&util.DefaultExecCommand, testutil.
 			CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 			AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-web.yaml"), deploymentWebYAML).
@@ -555,8 +563,12 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 			},
 			KubeContext: testKubeContext,
 			Opts: config.SkaffoldOptions{
-				Namespace:        testNamespace,
-				WaitForDeletions: true,
+				Namespace: testNamespace,
+				WaitForDeletions: config.WaitForDeletions{
+					Enabled: true,
+					Delay:   10 * time.Second,
+					Max:     100 * time.Millisecond,
+				},
 			},
 		}, nil)
 

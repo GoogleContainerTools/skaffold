@@ -34,7 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -98,20 +97,14 @@ type KustomizeDeployer struct {
 	insecureRegistries map[string]bool
 	labels             map[string]string
 	globalConfig       string
-	waitForDeletions   bool
 }
 
 func NewKustomizeDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KustomizeDeployer {
 	return &KustomizeDeployer{
-		KustomizeDeploy: runCtx.Cfg.Deploy.KustomizeDeploy,
-		kubectl: deploy.CLI{
-			CLI:         kubectl.NewFromRunContext(runCtx),
-			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
-			ForceDeploy: runCtx.Opts.Force,
-		},
+		KustomizeDeploy:    runCtx.Cfg.Deploy.KustomizeDeploy,
+		kubectl:            deploy.NewCLI(runCtx, runCtx.Cfg.Deploy.KustomizeDeploy.Flags),
 		insecureRegistries: runCtx.InsecureRegistries,
 		globalConfig:       runCtx.Opts.GlobalConfig,
-		waitForDeletions:   runCtx.Opts.WaitForDeletions,
 		labels:             labels,
 	}
 }
@@ -137,11 +130,9 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 			"This might cause port-forward and deploy health-check to fail: %w", err))
 	}
 
-	if k.waitForDeletions {
-		if err := k.kubectl.WaitForDeletions(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
-			event.DeployFailed(err)
-			return NewDeployErrorResult(err)
-		}
+	if err := k.kubectl.WaitForDeletions(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
+		event.DeployFailed(err)
+		return NewDeployErrorResult(err)
 	}
 
 	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {

@@ -34,7 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -53,25 +52,19 @@ type KubectlDeployer struct {
 	insecureRegistries map[string]bool
 	labels             map[string]string
 	skipRender         bool
-	waitForDeletions   bool
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
 func NewKubectlDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KubectlDeployer {
 	return &KubectlDeployer{
-		KubectlDeploy: runCtx.Cfg.Deploy.KubectlDeploy,
-		workingDir:    runCtx.WorkingDir,
-		globalConfig:  runCtx.Opts.GlobalConfig,
-		defaultRepo:   runCtx.Opts.DefaultRepo.Value(),
-		kubectl: deploy.CLI{
-			CLI:         kubectl.NewFromRunContext(runCtx),
-			Flags:       runCtx.Cfg.Deploy.KubectlDeploy.Flags,
-			ForceDeploy: runCtx.Opts.Force,
-		},
+		KubectlDeploy:      runCtx.Cfg.Deploy.KubectlDeploy,
+		workingDir:         runCtx.WorkingDir,
+		globalConfig:       runCtx.Opts.GlobalConfig,
+		defaultRepo:        runCtx.Opts.DefaultRepo.Value(),
+		kubectl:            deploy.NewCLI(runCtx, runCtx.Cfg.Deploy.KubectlDeploy.Flags),
 		insecureRegistries: runCtx.InsecureRegistries,
 		skipRender:         runCtx.Opts.SkipRender,
-		waitForDeletions:   runCtx.Opts.WaitForDeletions,
 		labels:             labels,
 	}
 }
@@ -104,11 +97,9 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 			"This might cause port-forward and deploy health-check to fail: %w", err))
 	}
 
-	if k.waitForDeletions {
-		if err := k.kubectl.WaitForDeletions(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
-			event.DeployFailed(err)
-			return NewDeployErrorResult(err)
-		}
+	if err := k.kubectl.WaitForDeletions(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
+		event.DeployFailed(err)
+		return NewDeployErrorResult(err)
 	}
 
 	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
