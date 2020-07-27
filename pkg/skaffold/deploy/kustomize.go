@@ -127,8 +127,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 	}
 
 	if err := k.kubectl.WaitForDeletions(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
-		event.DeployFailed(err)
-		return NewDeployErrorResult(err)
+		return nil, err
 	}
 
 	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {

@@ -29,7 +29,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -231,7 +230,6 @@ func TestKubectlDeploy(t *testing.T) {
 				Write("deployment.yaml", deploymentWebYAML).
 				Touch("empty.ignored").
 				Chdir()
-			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 
 			k := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
@@ -416,8 +414,6 @@ func TestKubectlRedeploy(t *testing.T) {
 			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentAppYAMLv2+"\n---\n"+deploymentWebYAMLv1, ""),
 		)
 
-		event.InitializeState(latest.Pipeline{}, "test", true, true, true)
-
 		cfg := &latest.KubectlDeploy{
 			Manifests: []string{tmpDir.Path("deployment-app.yaml"), "deployment-web.yaml"},
 		}
@@ -495,8 +491,6 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", deploymentWebYAMLv1),
 		)
 
-		event.InitializeState(latest.Pipeline{}, "test", true, true, true)
-
 		cfg := &latest.KubectlDeploy{
 			Manifests: []string{tmpDir.Path("deployment-web.yaml")},
 		}
@@ -521,9 +515,9 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 		}, nil)
 
 		var out bytes.Buffer
-		err := deployer.Deploy(context.Background(), &out, []build.Artifact{
+		_, err := deployer.Deploy(context.Background(), &out, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		}).GetError()
+		})
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(` - 2 resources are marked for deletion, waiting for completion: "leeroy-web", "leeroy-app"
@@ -546,8 +540,6 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 				]
 			}`),
 		)
-
-		event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 
 		cfg := &latest.KubectlDeploy{
 			Manifests: []string{tmpDir.Path("deployment-web.yaml")},
@@ -572,9 +564,9 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 			},
 		}, nil)
 
-		err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+		_, err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		}).GetError()
+		})
 
 		t.CheckErrorContains(`2 resources failed to complete their deletion before a new deployment: "leeroy-web", "leeroy-app"`, err)
 	})
