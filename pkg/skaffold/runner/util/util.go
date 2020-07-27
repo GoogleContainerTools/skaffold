@@ -68,7 +68,9 @@ func collectHelmReleasesNamespaces(cfg latest.Pipeline) []string {
 
 	if cfg.Deploy.HelmDeploy != nil {
 		for _, release := range cfg.Deploy.HelmDeploy.Releases {
-			namespaces = append(namespaces, release.Namespace)
+			if release.Namespace != "" {
+				namespaces = append(namespaces, release.Namespace)
+			}
 		}
 	}
 
