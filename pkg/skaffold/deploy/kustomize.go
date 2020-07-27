@@ -34,7 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -93,19 +92,17 @@ type secretGenerator struct {
 type KustomizeDeployer struct {
 	*latest.KustomizeDeploy
 
-	kubectl            deploy.CLI
-	insecureRegistries map[string]bool
-	labels             map[string]string
-	globalConfig       string
+	cfg     Config
+	kubectl deploy.CLI
+	labels  map[string]string
 }
 
-func NewKustomizeDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KustomizeDeployer {
+func NewKustomizeDeployer(cfg Config, labels map[string]string) *KustomizeDeployer {
 	return &KustomizeDeployer{
-		KustomizeDeploy:    runCtx.Cfg.Deploy.KustomizeDeploy,
-		kubectl:            deploy.NewCLI(runCtx, runCtx.Cfg.Deploy.KustomizeDeploy.Flags),
-		insecureRegistries: runCtx.InsecureRegistries,
-		globalConfig:       runCtx.Opts.GlobalConfig,
-		labels:             labels,
+		KustomizeDeploy: cfg.Pipeline().Deploy.KustomizeDeploy,
+		cfg:             cfg,
+		kubectl:         deploy.NewCLI(cfg, cfg.Pipeline().Deploy.KustomizeDeploy.Flags),
+		labels:          labels,
 	}
 }
 
@@ -143,7 +140,7 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 		color.Default.Fprintln(out, err)
 	}
 
-	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
+	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.cfg.GlobalConfig())
 	if err != nil {
 		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
 	}
@@ -163,7 +160,7 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 	}
 
 	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds, Registries{k.insecureRegistries, debugHelpersRegistry})
+		manifests, err = transform(manifests, builds, Registries{k.cfg, debugHelpersRegistry})
 		if err != nil {
 			return nil, fmt.Errorf("unable to transform manifests: %w", err)
 		}

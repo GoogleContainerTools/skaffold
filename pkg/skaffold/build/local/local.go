@@ -38,12 +38,12 @@ import (
 // its checksum. It streams build progress to the writer argument.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if b.localCluster {
-		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
+		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.cfg.GetKubeContext())
 	}
 	defer b.localDocker.Close()
 
-	builder := build.WithLogFile(b.buildArtifact, b.suppressLogs)
-	return build.InParallel(ctx, out, tags, artifacts, builder, *b.cfg.Concurrency)
+	builder := build.WithLogFile(b.buildArtifact, b.cfg.SuppressLogs())
+	return build.InParallel(ctx, out, tags, artifacts, builder, *b.localBuild().Concurrency)
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
@@ -90,16 +90,16 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 		return b.buildDocker(ctx, out, a, tag)
 
 	case a.BazelArtifact != nil:
-		return bazel.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages).Build(ctx, out, a, tag)
+		return bazel.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages).Build(ctx, out, a, tag)
 
 	case a.JibArtifact != nil:
-		return jib.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.skipTests).Build(ctx, out, a, tag)
+		return jib.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages).Build(ctx, out, a, tag)
 
 	case a.CustomArtifact != nil:
-		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
+		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
 
 	case a.BuildpackArtifact != nil:
-		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.devMode).Build(ctx, out, a, tag)
+		return buildpacks.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages).Build(ctx, out, a, tag)
 
 	default:
 		return "", fmt.Errorf("unexpected type %q for local artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))

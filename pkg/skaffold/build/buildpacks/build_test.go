@@ -221,9 +221,9 @@ value = "VALUE2"
 				Add(test.artifact.BuildpackArtifact.Builder, "builderImageID").
 				Add(test.artifact.BuildpackArtifact.RunImage, "runImageID").
 				Add("img:latest", "builtImageID")
-			localDocker := docker.NewLocalDaemon(test.api, nil, false, nil)
+			localDocker := fakeLocalDaemon(test.api)
 
-			builder := NewArtifactBuilder(localDocker, test.pushImages, test.devMode)
+			builder := NewArtifactBuilder(localDocker, &buildpacksConfig{devMode: test.devMode}, test.pushImages)
 			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag)
 
 			t.CheckError(test.shouldErr, err)
@@ -232,39 +232,4 @@ value = "VALUE2"
 			}
 		})
 	}
-}
-
-func buildpacksArtifact(builder, runImage string) *latest.Artifact {
-	return &latest.Artifact{
-		Workspace: ".",
-		ArtifactType: latest.ArtifactType{
-			BuildpackArtifact: &latest.BuildpackArtifact{
-				Builder:           builder,
-				RunImage:          runImage,
-				ProjectDescriptor: "project.toml",
-				Dependencies: &latest.BuildpackDependencies{
-					Paths: []string{"."},
-				},
-			},
-		},
-	}
-}
-
-func withEnv(env []string, artifact *latest.Artifact) *latest.Artifact {
-	artifact.BuildpackArtifact.Env = env
-	return artifact
-}
-
-func withSync(sync *latest.Sync, artifact *latest.Artifact) *latest.Artifact {
-	artifact.Sync = sync
-	return artifact
-}
-
-func withTrustedBuilder(artifact *latest.Artifact) *latest.Artifact {
-	artifact.BuildpackArtifact.TrustBuilder = true
-	return artifact
-}
-func withBuildpacks(buildpacks []string, artifact *latest.Artifact) *latest.Artifact {
-	artifact.BuildpackArtifact.Buildpacks = buildpacks
-	return artifact
 }

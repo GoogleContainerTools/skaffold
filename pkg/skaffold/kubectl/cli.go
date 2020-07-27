@@ -22,25 +22,26 @@ import (
 	"os/exec"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // CLI holds parameters to run kubectl.
 type CLI struct {
-	KubeContext string
-	KubeConfig  string
-	Namespace   string
+	cfg Config
 
 	version     ClientVersion
 	versionOnce sync.Once
 }
 
-func NewFromRunContext(runCtx *runcontext.RunContext) *CLI {
+type Config interface {
+	GetKubeContext() string
+	GetKubeConfig() string
+	GetKubeNamespace() string
+}
+
+func NewCLI(config Config) *CLI {
 	return &CLI{
-		KubeContext: runCtx.KubeContext,
-		KubeConfig:  runCtx.Opts.KubeConfig,
-		Namespace:   runCtx.Opts.Namespace,
+		cfg: config,
 	}
 }
 
@@ -96,13 +97,13 @@ func (c *CLI) CommandWithStrictCancellation(ctx context.Context, command string,
 // args builds an argument list for calling kubectl and consistently
 // adds the `--context` and `--namespace` flags.
 func (c *CLI) args(command string, namespace string, arg ...string) []string {
-	args := []string{"--context", c.KubeContext}
+	args := []string{"--context", c.cfg.GetKubeContext()}
 	namespace = c.resolveNamespace(namespace)
 	if namespace != "" {
 		args = append(args, "--namespace", namespace)
 	}
-	if c.KubeConfig != "" {
-		args = append(args, "--kubeconfig", c.KubeConfig)
+	if c.cfg.GetKubeConfig() != "" {
+		args = append(args, "--kubeconfig", c.cfg.GetKubeConfig())
 	}
 	args = append(args, command)
 	args = append(args, arg...)
@@ -113,5 +114,5 @@ func (c *CLI) resolveNamespace(ns string) string {
 	if ns != "" {
 		return ns
 	}
-	return c.Namespace
+	return c.cfg.GetKubeNamespace()
 }

@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -33,7 +32,6 @@ func TestBuildBazel(t *testing.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar").AndRunOut("bazel info bazel-bin", "bin"))
 		testutil.CreateFakeImageTar("bazel:app", "bin/app.tar")
 
-		localDocker := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
 		artifact := &latest.Artifact{
 			Workspace: ".",
 			ArtifactType: latest.ArtifactType{
@@ -42,6 +40,7 @@ func TestBuildBazel(t *testing.T) {
 				},
 			},
 		}
+		localDocker := fakeLocalDaemon()
 
 		builder := NewArtifactBuilder(localDocker, nil, false)
 		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag")

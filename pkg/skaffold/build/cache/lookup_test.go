@@ -106,7 +106,7 @@ func TestLookupLocal(t *testing.T) {
 			cache := &cache{
 				imagesAreLocal:  true,
 				artifactCache:   test.cache,
-				client:          docker.NewLocalDaemon(test.api, nil, false, nil),
+				client:          fakeLocalDaemon(test.api),
 				hashForArtifact: test.hasher,
 			}
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
@@ -176,7 +176,7 @@ func TestLookupRemote(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&docker.RemoteDigest, func(identifier string, _ map[string]bool) (string, error) {
+			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config) (string, error) {
 				switch {
 				case identifier == "tag":
 					return "digest", nil
@@ -188,9 +188,10 @@ func TestLookupRemote(t *testing.T) {
 			})
 
 			cache := &cache{
+				cfg:             &cacheConfig{},
 				imagesAreLocal:  false,
 				artifactCache:   test.cache,
-				client:          docker.NewLocalDaemon(test.api, nil, false, nil),
+				client:          fakeLocalDaemon(test.api),
 				hashForArtifact: test.hasher,
 			}
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
@@ -202,17 +203,5 @@ func TestLookupRemote(t *testing.T) {
 				t.Errorf("Expected result different from actual result. Expected: \n%v, \nActual: \n%v", test.expected, details)
 			}
 		})
-	}
-}
-
-func mockHasher(value string) func(context.Context, *latest.Artifact) (string, error) {
-	return func(context.Context, *latest.Artifact) (string, error) {
-		return value, nil
-	}
-}
-
-func failingHasher(errMessage string) func(context.Context, *latest.Artifact) (string, error) {
-	return func(context.Context, *latest.Artifact) (string, error) {
-		return "", errors.New(errMessage)
 	}
 }

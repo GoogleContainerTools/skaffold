@@ -31,7 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // Trigger describes a mechanism that triggers the watch.
@@ -41,29 +41,35 @@ type Trigger interface {
 	Debounce() bool
 }
 
+type Config interface {
+	Pipeline() latest.Pipeline
+	Trigger() string
+	WatchPollInterval() int
+}
+
 // NewTrigger creates a new trigger.
-func NewTrigger(runctx *runcontext.RunContext) (Trigger, error) {
-	switch strings.ToLower(runctx.Opts.Trigger) {
+func NewTrigger(cfg Config) (Trigger, error) {
+	switch strings.ToLower(cfg.Trigger()) {
 	case "polling":
 		return &pollTrigger{
-			Interval: time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
+			Interval: time.Duration(cfg.WatchPollInterval()) * time.Millisecond,
 		}, nil
 	case "notify":
-		return newFSNotifyTrigger(runctx), nil
+		return newFSNotifyTrigger(cfg), nil
 	case "manual":
 		return &manualTrigger{}, nil
 	default:
-		return nil, fmt.Errorf("unsupported trigger: %s", runctx.Opts.Trigger)
+		return nil, fmt.Errorf("unsupported trigger: %s", cfg.Trigger())
 	}
 }
 
-func newFSNotifyTrigger(runctx *runcontext.RunContext) *fsNotifyTrigger {
+func newFSNotifyTrigger(cfg Config) *fsNotifyTrigger {
 	workspaces := map[string]struct{}{}
-	for _, a := range runctx.Cfg.Build.Artifacts {
+	for _, a := range cfg.Pipeline().Build.Artifacts {
 		workspaces[a.Workspace] = struct{}{}
 	}
 	return &fsNotifyTrigger{
-		Interval:   time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
+		Interval:   time.Duration(cfg.WatchPollInterval()) * time.Millisecond,
 		workspaces: workspaces,
 	}
 }

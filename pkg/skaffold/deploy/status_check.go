@@ -33,8 +33,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -63,34 +64,41 @@ type counter struct {
 	failed  int32
 }
 
-func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
+type StatusCheckConfig interface {
+	kubectl.Config
+
+	GetNamespaces() []string
+	Pipeline() latest.Pipeline
+}
+
+func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, cfg StatusCheckConfig, out io.Writer) error {
 	event.StatusCheckEventStarted()
-	errCode, err := statusCheck(ctx, defaultLabeller, runCtx, out)
+	errCode, err := statusCheck(ctx, defaultLabeller, cfg, out)
 	event.StatusCheckEventEnded(errCode, err)
 	return err
 }
 
-func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) (proto.StatusCode, error) {
+func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, cfg StatusCheckConfig, out io.Writer) (proto.StatusCode, error) {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
 	deployContext = map[string]string{
-		"clusterName": runCtx.KubeContext,
+		"clusterName": cfg.GetKubeContext(),
 	}
 
 	deployments := make([]*resource.Deployment, 0)
-	for _, n := range runCtx.Namespaces {
+	for _, n := range cfg.GetNamespaces() {
 		newDeployments, err := getDeployments(client, n, defaultLabeller,
-			getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds))
+			getDeadline(cfg.Pipeline().Deploy.StatusCheckDeadlineSeconds))
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
 		}
 		deployments = append(deployments, newDeployments...)
 	}
 
-	deadline := statusCheckMaxDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds, deployments)
+	deadline := statusCheckMaxDeadline(cfg.Pipeline().Deploy.StatusCheckDeadlineSeconds, deployments)
 
 	var wg sync.WaitGroup
 
@@ -101,7 +109,7 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		go func(r *resource.Deployment) {
 			defer wg.Done()
 			// keep updating the resource status until it fails/succeeds/times out
-			pollDeploymentStatus(ctx, runCtx, r)
+			pollDeploymentStatus(ctx, cfg, r)
 			rcCopy := c.markProcessed(r.Status().Error())
 			printStatusCheckSummary(out, r, rcCopy)
 		}(d)
@@ -147,7 +155,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	return deployments, nil
 }
 
-func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r *resource.Deployment) {
+func pollDeploymentStatus(ctx context.Context, cfg kubectl.Config, r *resource.Deployment) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
@@ -161,7 +169,7 @@ func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r 
 				Message: msg})
 			return
 		case <-time.After(pollDuration):
-			r.CheckStatus(timeoutContext, runCtx)
+			r.CheckStatus(timeoutContext, cfg)
 			if r.IsStatusCheckComplete() {
 				return
 			}

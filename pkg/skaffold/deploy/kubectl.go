@@ -33,9 +33,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -44,28 +44,32 @@ import (
 type KubectlDeployer struct {
 	*latest.KubectlDeploy
 
-	originalImages     []build.Artifact
-	workingDir         string
-	globalConfig       string
-	defaultRepo        *string
-	kubectl            deploy.CLI
-	insecureRegistries map[string]bool
-	labels             map[string]string
-	skipRender         bool
+	cfg     Config
+	kubectl deploy.CLI
+	labels  map[string]string
+
+	originalImages []build.Artifact
+}
+
+type Config interface {
+	deploy.Config
+	docker.Config
+
+	Pipeline() latest.Pipeline
+	WorkingDir() string
+	GlobalConfig() string
+	DefaultRepo() *string
+	SkipRender() bool
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KubectlDeployer {
+func NewKubectlDeployer(cfg Config, labels map[string]string) *KubectlDeployer {
 	return &KubectlDeployer{
-		KubectlDeploy:      runCtx.Cfg.Deploy.KubectlDeploy,
-		workingDir:         runCtx.WorkingDir,
-		globalConfig:       runCtx.Opts.GlobalConfig,
-		defaultRepo:        runCtx.Opts.DefaultRepo.Value(),
-		kubectl:            deploy.NewCLI(runCtx, runCtx.Cfg.Deploy.KubectlDeploy.Flags),
-		insecureRegistries: runCtx.InsecureRegistries,
-		skipRender:         runCtx.Opts.SkipRender,
-		labels:             labels,
+		KubectlDeploy: cfg.Pipeline().Deploy.KubectlDeploy,
+		cfg:           cfg,
+		kubectl:       deploy.NewCLI(cfg, cfg.Pipeline().Deploy.KubectlDeploy.Flags),
+		labels:        labels,
 	}
 }
 
@@ -76,7 +80,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		manifests deploy.ManifestList
 		err       error
 	)
-	if k.skipRender {
+	if k.cfg.SkipRender() {
 		manifests, err = k.readManifests(ctx, false)
 	} else {
 		manifests, err = k.renderManifests(ctx, out, builds, false)
@@ -118,7 +122,7 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 		}
 	}
 
-	list, err := util.ExpandPathsGlob(k.workingDir, nonURLManifests)
+	list, err := util.ExpandPathsGlob(k.cfg.WorkingDir(), nonURLManifests)
 	if err != nil {
 		return nil, fmt.Errorf("expanding kubectl manifest paths: %w", err)
 	}
@@ -231,7 +235,7 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 		color.Default.Fprintln(out, err)
 	}
 
-	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
+	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.cfg.GlobalConfig())
 	if err != nil {
 		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
 	}
@@ -263,7 +267,7 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 
 	if len(builds) == 0 {
 		for _, artifact := range k.originalImages {
-			tag, err := ApplyDefaultRepo(k.globalConfig, k.defaultRepo, artifact.Tag)
+			tag, err := ApplyDefaultRepo(k.cfg.GlobalConfig(), k.cfg.DefaultRepo(), artifact.Tag)
 			if err != nil {
 				return nil, err
 			}
@@ -280,7 +284,7 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 	}
 
 	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds, Registries{k.insecureRegistries, debugHelpersRegistry})
+		manifests, err = transform(manifests, builds, Registries{k.cfg, debugHelpersRegistry})
 		if err != nil {
 			return nil, fmt.Errorf("unable to transform manifests: %w", err)
 		}

@@ -33,8 +33,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
-func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v1.Pod, error) {
-	args, err := kanikoArgs(artifact, tag, b.insecureRegistries)
+func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string, insecureRegistries map[string]bool) (*v1.Pod, error) {
+	args, err := kanikoArgs(artifact, tag, insecureRegistries)
 	if err != nil {
 		return nil, fmt.Errorf("building args list: %w", err)
 	}

@@ -21,15 +21,19 @@ import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 // Builder is an artifact builder that uses buildpacks
 type Builder struct {
 	localDocker docker.LocalDaemon
+	cfg         Config
 	pushImages  bool
-	devMode     bool
+}
+
+type Config interface {
+	DevMode() bool
 }
 
 // NewArtifactBuilder returns a new buildpack artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages, devMode bool) *Builder {
+func NewArtifactBuilder(localDocker docker.LocalDaemon, cfg Config, pushImages bool) *Builder {
 	return &Builder{
 		localDocker: localDocker,
+		cfg:         cfg,
 		pushImages:  pushImages,
-		devMode:     devMode,
 	}
 }

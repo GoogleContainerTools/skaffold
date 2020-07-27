@@ -24,54 +24,41 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestNoTestDependencies(t *testing.T) {
-	runCtx := &runcontext.RunContext{}
-
-	deps, err := NewTester(runCtx, true).TestDependencies()
+	deps, err := NewTester(&testConfig{}, true).TestDependencies()
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, 0, len(deps))
 }
 
 func TestTestDependencies(t *testing.T) {
-	tmpDir := testutil.NewTempDir(t)
+	tmpDir := testutil.NewTempDir(t).Touch("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 
-	tmpDir.Touch("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
-
-	runCtx := &runcontext.RunContext{
-		WorkingDir: tmpDir.Root(),
-		Cfg: latest.Pipeline{
-			Test: []*latest.TestCase{
-				{StructureTests: []string{"./tests/*"}},
-				{},
-				{StructureTests: []string{"test3.yaml"}},
-			},
+	cfg := &testConfig{
+		workingDir: tmpDir.Root(),
+		tests: []*latest.TestCase{
+			testCase("", "./tests/*"),
+			testCase(""),
+			testCase("", "test3.yaml"),
 		},
 	}
-
-	deps, err := NewTester(runCtx, true).TestDependencies()
+	deps, err := NewTester(cfg, true).TestDependencies()
 
 	expectedDeps := tmpDir.Paths("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 	testutil.CheckErrorAndDeepEqual(t, false, err, expectedDeps, deps)
 }
 
 func TestWrongPattern(t *testing.T) {
-	runCtx := &runcontext.RunContext{
-		Cfg: latest.Pipeline{
-			Test: []*latest.TestCase{{
-				ImageName:      "image",
-				StructureTests: []string{"[]"},
-			}},
+	cfg := &testConfig{
+		tests: []*latest.TestCase{
+			testCase("image", "[]"),
 		},
 	}
-
-	tester := NewTester(runCtx, true)
-
+	tester := NewTester(cfg, true)
 	_, err := tester.TestDependencies()
 	testutil.CheckError(t, true, err)
 
@@ -83,20 +70,18 @@ func TestWrongPattern(t *testing.T) {
 }
 
 func TestNoTest(t *testing.T) {
-	runCtx := &runcontext.RunContext{}
-
-	err := NewTester(runCtx, true).Test(context.Background(), ioutil.Discard, nil)
+	err := NewTester(&testConfig{}, true).Test(context.Background(), ioutil.Discard, nil)
 
 	testutil.CheckError(t, false, err)
 }
 
 func TestIgnoreDockerNotFound(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 			return nil, errors.New("not found")
 		})
 
-		tester := NewTester(&runcontext.RunContext{}, true)
+		tester := NewTester(&testConfig{}, true)
 
 		t.CheckNil(tester)
 	})
@@ -105,35 +90,21 @@ func TestIgnoreDockerNotFound(t *testing.T) {
 func TestTestSuccess(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
-
 		t.Override(&util.DefaultExecCommand, testutil.
 			CmdRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("tests/test1.yaml")+" --config "+tmpDir.Path("tests/test2.yaml")).
 			AndRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test3.yaml")))
 
-		runCtx := &runcontext.RunContext{
-			WorkingDir: tmpDir.Root(),
-			Cfg: latest.Pipeline{
-				Test: []*latest.TestCase{
-					{
-						ImageName:      "image",
-						StructureTests: []string{"./tests/*"},
-					},
-					{},
-					{
-						ImageName:      "image",
-						StructureTests: []string{"test3.yaml"},
-					},
-					{
-						// This is image is not built so it won't be tested.
-						ImageName:      "not-built",
-						StructureTests: []string{"./tests/*"},
-					},
-				},
+		imagesAreLocal := true
+		cfg := &testConfig{
+			workingDir: tmpDir.Root(),
+			tests: []*latest.TestCase{
+				testCase("image", "./tests/*"),
+				testCase(""),
+				testCase("image", "test3.yaml"),
+				testCase("not-built", "./tests/*"),
 			},
 		}
-
-		imagesAreLocal := true
-		err := NewTester(runCtx, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err := NewTester(cfg, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -146,21 +117,17 @@ func TestTestSuccessRemoteImage(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.NewTempDir().Touch("test.yaml").Chdir()
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config test.yaml"))
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
-			return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil), nil
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+			return fakeLocalDaemon(&testutil.FakeAPIClient{}), nil
 		})
 
-		runCtx := &runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Test: []*latest.TestCase{{
-					ImageName:      "image",
-					StructureTests: []string{"test.yaml"},
-				}},
+		imagesAreLocal := false
+		cfg := &testConfig{
+			tests: []*latest.TestCase{
+				testCase("image", "test.yaml"),
 			},
 		}
-
-		imagesAreLocal := false
-		err := NewTester(runCtx, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err := NewTester(cfg, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -173,21 +140,17 @@ func TestTestFailureRemoteImage(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.NewTempDir().Touch("test.yaml").Chdir()
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config test.yaml"))
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
-			return docker.NewLocalDaemon(&testutil.FakeAPIClient{ErrImagePull: true}, nil, false, nil), nil
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+			return fakeLocalDaemon(&testutil.FakeAPIClient{ErrImagePull: true}), nil
 		})
 
-		runCtx := &runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Test: []*latest.TestCase{{
-					ImageName:      "image",
-					StructureTests: []string{"test.yaml"},
-				}},
+		imagesAreLocal := false
+		cfg := &testConfig{
+			tests: []*latest.TestCase{
+				testCase("image", "test.yaml"),
 			},
 		}
-
-		imagesAreLocal := false
-		err := NewTester(runCtx, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err := NewTester(cfg, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -199,27 +162,21 @@ func TestTestFailureRemoteImage(t *testing.T) {
 func TestTestFailure(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.NewTempDir().Touch("test.yaml").Chdir()
-
 		t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(
 			"container-structure-test test -v warn --image broken-image:tag --config test.yaml",
 			errors.New("FAIL"),
 		))
 
-		runCtx := &runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Test: []*latest.TestCase{
-					{
-						ImageName:      "broken-image",
-						StructureTests: []string{"test.yaml"},
-					},
-				},
+		cfg := &testConfig{
+			tests: []*latest.TestCase{
+				testCase("broken-image", "test.yaml"),
 			},
 		}
-
-		err := NewTester(runCtx, true).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err := NewTester(cfg, true).Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "broken-image",
 			Tag:       "broken-image:tag",
 		}})
+
 		t.CheckError(true, err)
 	})
 }

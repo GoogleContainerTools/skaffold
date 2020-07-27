@@ -750,9 +750,9 @@ func TestNewSyncItem(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return test.workingDir, nil })
-			t.Override(&SyncMap, func(*latest.Artifact, map[string]bool) (map[string][]string, error) { return test.dependencies, nil })
-			t.Override(&Labels, func(string, map[string]bool) (map[string]string, error) { return test.labels, nil })
+			t.Override(&WorkingDir, func(string, docker.Config) (string, error) { return test.workingDir, nil })
+			t.Override(&SyncMap, func(*latest.Artifact, docker.Config) (map[string][]string, error) { return test.dependencies, nil })
+			t.Override(&Labels, func(string, docker.Config) (map[string]string, error) { return test.labels, nil })
 			t.Override(&jib.GetSyncDiff, func(context.Context, string, *latest.JibArtifact, filemon.Events) (map[string][]string, map[string][]string, error) {
 				return map[string][]string{"file.class": {"/some/file.class"}}, nil, nil
 			})
@@ -1049,7 +1049,7 @@ func TestSyncMap(t *testing.T) {
 
 type fakeImageFetcher struct{}
 
-func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*registryv1.ConfigFile, error) {
+func (f *fakeImageFetcher) fetch(string, docker.Config) (*registryv1.ConfigFile, error) {
 	return &registryv1.ConfigFile{}, nil
 }
 

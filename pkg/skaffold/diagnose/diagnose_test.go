@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -81,8 +80,8 @@ func TestCheckArtifacts(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Write("Dockerfile", "FROM busybox")
 
-		runCtx := &runcontext.RunContext{
-			Cfg: latest.Pipeline{
+		cfg := &diagnoseConfig{
+			pipeline: latest.Pipeline{
 				Build: latest.BuildConfig{
 					Artifacts: []*latest.Artifact{{
 						Workspace: tmpDir.Root(),
@@ -95,8 +94,19 @@ func TestCheckArtifacts(t *testing.T) {
 				},
 			},
 		}
-		err := CheckArtifacts(context.Background(), runCtx, ioutil.Discard)
+		err := CheckArtifacts(context.Background(), cfg, ioutil.Discard)
 
 		t.CheckNoError(err)
 	})
 }
+
+type diagnoseConfig struct {
+	Config
+
+	pipeline latest.Pipeline
+}
+
+func (c *diagnoseConfig) Pipeline() latest.Pipeline           { return c.pipeline }
+func (c *diagnoseConfig) GetKubeContext() string              { return "" }
+func (c *diagnoseConfig) InsecureRegistries() map[string]bool { return nil }
+func (c *diagnoseConfig) MinikubeProfile() string             { return "" }

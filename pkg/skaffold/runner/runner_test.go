@@ -214,7 +214,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 	}
 	defaults.Set(cfg)
 
-	runCtx := &runcontext.RunContext{
+	runner, err := NewForConfig(&runcontext.RunContext{
 		Cfg: cfg.Pipeline,
 		Opts: config.SkaffoldOptions{
 			Trigger:           "polling",
@@ -223,8 +223,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 			AutoSync:          true,
 			AutoDeploy:        true,
 		},
-	}
-	runner, err := NewForConfig(runCtx)
+	})
 	t.CheckNoError(err)
 
 	runner.builder = testBench
@@ -353,14 +352,12 @@ func TestNewForConfig(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 
-			runCtx := &runcontext.RunContext{
+			cfg, err := NewForConfig(&runcontext.RunContext{
 				Cfg: test.pipeline,
 				Opts: config.SkaffoldOptions{
 					Trigger: "polling",
 				},
-			}
-
-			cfg, err := NewForConfig(runCtx)
+			})
 
 			t.CheckError(test.shouldErr, err)
 			if cfg != nil {

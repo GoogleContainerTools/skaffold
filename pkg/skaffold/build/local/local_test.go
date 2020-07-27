@@ -30,7 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -231,8 +230,8 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
-				return docker.NewLocalDaemon(test.api, nil, false, nil), nil
+			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+				return fakeLocalDaemon(test.api), nil
 			})
 
 			event.InitializeState(latest.Pipeline{
@@ -243,10 +242,12 @@ func TestLocalRun(t *testing.T) {
 					},
 				}}, "", true, true, true)
 
-			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
-				Push:        util.BoolPtr(test.pushImages),
-				Concurrency: &constants.DefaultLocalConcurrency,
-			}))
+			builder, err := NewBuilder(&localConfig{
+				local: latest.LocalBuild{
+					Push:        util.BoolPtr(test.pushImages),
+					Concurrency: &constants.DefaultLocalConcurrency,
+				},
+			})
 			t.CheckNoError(err)
 
 			res, err := builder.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
@@ -265,96 +266,77 @@ type dummyLocalDaemon struct {
 func TestNewBuilder(t *testing.T) {
 	dummyDaemon := dummyLocalDaemon{}
 
+	cfgDefault := &localConfig{
+		local: latest.LocalBuild{},
+	}
+
+	cfgNoPush := &localConfig{
+		local: latest.LocalBuild{
+			Push: util.BoolPtr(false),
+		},
+	}
+
 	tests := []struct {
 		description     string
-		shouldErr       bool
-		localBuild      latest.LocalBuild
-		expectedBuilder *Builder
 		localClusterFn  func(string, string) (bool, error)
-		localDockerFn   func(*runcontext.RunContext) (docker.LocalDaemon, error)
+		localDockerFn   func(docker.Config) (docker.LocalDaemon, error)
+		cfg             Config
+		shouldErr       bool
+		expectedBuilder *Builder
 	}{
 		{
-			description: "failed to get docker client",
-			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
-				return nil, errors.New("dummy docker error")
-			},
-			shouldErr: true,
-		},
-		{
 			description: "pushImages becomes !localCluster when local:push is not defined",
-			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
 			localClusterFn: func(string, string) (b bool, e error) {
 				b = false //because this is false and localBuild.push is nil
 				return
 			},
-			shouldErr: false,
+			cfg: cfgDefault,
 			expectedBuilder: &Builder{
-				cfg:                latest.LocalBuild{},
-				kubeContext:        "",
-				localDocker:        dummyDaemon,
-				localCluster:       false,
-				pushImages:         true, //this will be true
-				skipTests:          false,
-				prune:              true,
-				pruneChildren:      true,
-				insecureRegistries: nil,
+				cfg:          cfgDefault,
+				localDocker:  dummyDaemon,
+				localCluster: false,
+				pushImages:   true,
 			},
 		},
 		{
 			description: "pushImages defined in config (local:push)",
-			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
 			localClusterFn: func(string, string) (b bool, e error) {
 				b = false
 				return
 			},
-			localBuild: latest.LocalBuild{
-				Push: util.BoolPtr(false),
-			},
-			shouldErr: false,
+			cfg: cfgNoPush,
 			expectedBuilder: &Builder{
-				pushImages: false, //this will be false too
-				cfg: latest.LocalBuild{ // and the config is inherited
-					Push: util.BoolPtr(false),
-				},
-				kubeContext:  "",
+				cfg:          cfgNoPush,
 				localDocker:  dummyDaemon,
 				localCluster: false,
-
-				skipTests:          false,
-				prune:              true,
-				pruneChildren:      true,
-				insecureRegistries: nil,
+				pushImages:   false,
 			},
+		},
+		{
+			description: "failed to get docker client",
+			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
+				return nil, errors.New("dummy docker error")
+			},
+			shouldErr: true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			if test.localDockerFn != nil {
-				t.Override(&docker.NewAPIClient, test.localDockerFn)
-			}
-			if test.localClusterFn != nil {
-				t.Override(&getLocalCluster, test.localClusterFn)
-			}
+			t.Override(&docker.NewAPIClient, test.localDockerFn)
+			t.Override(&getLocalCluster, test.localClusterFn)
 
-			builder, err := NewBuilder(stubRunContext(test.localBuild))
+			builder, err := NewBuilder(test.cfg)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
-				t.CheckDeepEqual(test.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, dummyDaemon))
+				t.CheckDeepEqual(test.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, dummyDaemon, localConfig{}))
 			}
 		})
-	}
-}
-
-func stubRunContext(localBuild latest.LocalBuild) *runcontext.RunContext {
-	pipeline := latest.Pipeline{}
-	pipeline.Build.BuildType.LocalBuild = &localBuild
-
-	return &runcontext.RunContext{
-		Cfg: pipeline,
 	}
 }

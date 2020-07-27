@@ -72,10 +72,9 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 			t.NewTempDir().Touch("build.gradle").Chdir()
 			t.Override(&gradleBuildArgsFunc, getGradleBuildArgsFuncFake(t, MinimumJibGradleVersion))
 			t.Override(&util.DefaultExecCommand, test.commands)
-			api := (&testutil.FakeAPIClient{}).Add("img:tag", "imageID")
-			localDocker := docker.NewLocalDaemon(api, nil, false, nil)
+			localDocker := fakeLocalDaemon((&testutil.FakeAPIClient{}).Add("img:tag", "imageID"))
 
-			builder := NewArtifactBuilder(localDocker, nil, false, false)
+			builder := NewArtifactBuilder(localDocker, &jibConfig{}, false)
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
@@ -131,15 +130,15 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 			t.NewTempDir().Touch("build.gradle").Chdir()
 			t.Override(&gradleBuildArgsFunc, getGradleBuildArgsFuncFake(t, MinimumJibGradleVersion))
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(&docker.RemoteDigest, func(identifier string, _ map[string]bool) (string, error) {
+			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config) (string, error) {
 				if identifier == "img:tag" {
 					return "digest", nil
 				}
 				return "", errors.New("unknown remote tag")
 			})
-			localDocker := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
+			localDocker := fakeLocalDaemon(&testutil.FakeAPIClient{})
 
-			builder := NewArtifactBuilder(localDocker, nil, true, false)
+			builder := NewArtifactBuilder(localDocker, &jibConfig{}, true)
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,

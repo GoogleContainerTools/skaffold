@@ -28,32 +28,35 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
+
+type Config interface {
+	pkgkubectl.Config
+	ForceDeploy() bool
+	WaitForDeletions() config.WaitForDeletions
+}
 
 // CLI holds parameters to run kubectl.
 type CLI struct {
 	*pkgkubectl.CLI
-	Flags latest.KubectlFlags
+	cfg   Config
+	flags latest.KubectlFlags
 
-	forceDeploy      bool
-	waitForDeletions config.WaitForDeletions
-	previousApply    ManifestList
+	previousApply ManifestList
 }
 
-func NewCLI(runCtx *runcontext.RunContext, flags latest.KubectlFlags) CLI {
+func NewCLI(cfg Config, flags latest.KubectlFlags) CLI {
 	return CLI{
-		CLI:              pkgkubectl.NewFromRunContext(runCtx),
-		Flags:            flags,
-		forceDeploy:      runCtx.Opts.Force,
-		waitForDeletions: runCtx.Opts.WaitForDeletions,
+		CLI:   pkgkubectl.NewCLI(cfg),
+		cfg:   cfg,
+		flags: flags,
 	}
 }
 
 // Delete runs `kubectl delete` on a list of manifests.
 func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests ManifestList) error {
-	args := c.args(c.Flags.Delete, "--ignore-not-found=true", "-f", "-")
+	args := c.args(c.flags.Delete, "--ignore-not-found=true", "-f", "-")
 	if err := c.Run(ctx, manifests.Reader(), out, "delete", args...); err != nil {
 		return fmt.Errorf("kubectl delete: %w", err)
 	}
@@ -73,15 +76,15 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 	}
 
 	args := []string{"-f", "-"}
-	if c.forceDeploy {
+	if c.cfg.ForceDeploy() {
 		args = append(args, "--force", "--grace-period=0")
 	}
 
-	if c.Flags.DisableValidation {
+	if c.flags.DisableValidation {
 		args = append(args, "--validate=false")
 	}
 
-	if err := c.Run(ctx, updated.Reader(), out, "apply", c.args(c.Flags.Apply, args...)...); err != nil {
+	if err := c.Run(ctx, updated.Reader(), out, "apply", c.args(c.flags.Apply, args...)...); err != nil {
 		return fmt.Errorf("kubectl apply: %w", err)
 	}
 
@@ -99,11 +102,11 @@ type getResult struct {
 
 // WaitForDeletions waits for resource marked for deletion to complete their deletion.
 func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests ManifestList) error {
-	if !c.waitForDeletions.Enabled {
+	if !c.cfg.WaitForDeletions().Enabled {
 		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, c.waitForDeletions.Max)
+	ctx, cancel := context.WithTimeout(ctx, c.cfg.WaitForDeletions().Max)
 	defer cancel()
 
 	previousList := ""
@@ -156,7 +159,7 @@ func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests Man
 
 			select {
 			case <-ctx.Done():
-			case <-time.After(c.waitForDeletions.Delay):
+			case <-time.After(c.cfg.WaitForDeletions().Delay):
 			}
 		}
 	}
@@ -179,7 +182,7 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (ManifestLi
 	}
 
 	args := c.args([]string{dryRun, "-oyaml"}, list...)
-	if c.Flags.DisableValidation {
+	if c.flags.DisableValidation {
 		args = append(args, "--validate=false")
 	}
 
@@ -195,9 +198,9 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (ManifestLi
 }
 
 func (c *CLI) args(commandFlags []string, additionalArgs ...string) []string {
-	args := make([]string, 0, len(c.Flags.Global)+len(commandFlags)+len(additionalArgs))
+	args := make([]string, 0, len(c.flags.Global)+len(commandFlags)+len(additionalArgs))
 
-	args = append(args, c.Flags.Global...)
+	args = append(args, c.flags.Global...)
 	args = append(args, commandFlags...)
 	args = append(args, additionalArgs...)
 

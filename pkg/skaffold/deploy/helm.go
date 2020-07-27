@@ -41,7 +41,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -64,30 +63,22 @@ var (
 type HelmDeployer struct {
 	*latest.HelmDeploy
 
-	kubeContext string
-	kubeConfig  string
-	namespace   string
+	cfg    Config
+	labels map[string]string
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
-
-	labels map[string]string
-
-	forceDeploy bool
 
 	// bV is the helm binary version
 	bV semver.Version
 }
 
 // NewHelmDeployer returns a configured HelmDeployer
-func NewHelmDeployer(runCtx *runcontext.RunContext, labels map[string]string) *HelmDeployer {
+func NewHelmDeployer(cfg Config, labels map[string]string) *HelmDeployer {
 	return &HelmDeployer{
-		HelmDeploy:  runCtx.Cfg.Deploy.HelmDeploy,
-		kubeContext: runCtx.KubeContext,
-		kubeConfig:  runCtx.Opts.KubeConfig,
-		namespace:   runCtx.Opts.Namespace,
-		forceDeploy: runCtx.Opts.Force,
-		labels:      labels,
+		cfg:        cfg,
+		HelmDeploy: cfg.Pipeline().Deploy.HelmDeploy,
+		labels:     labels,
 	}
 }
 
@@ -219,8 +210,8 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		}
 
 		var namespace string
-		if h.namespace != "" {
-			namespace = h.namespace
+		if h.cfg.GetKubeNamespace() != "" {
+			namespace = h.cfg.GetKubeNamespace()
 		} else if r.Namespace != "" {
 			namespace = r.Namespace
 		}
@@ -299,11 +290,11 @@ func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build
 // exec executes the helm command, writing combined stdout/stderr to the provided writer
 func (h *HelmDeployer) exec(ctx context.Context, out io.Writer, useSecrets bool, args ...string) error {
 	if args[0] != "version" {
-		args = append([]string{"--kube-context", h.kubeContext}, args...)
+		args = append([]string{"--kube-context", h.cfg.GetKubeContext()}, args...)
 		args = append(args, h.Flags.Global...)
 
-		if h.kubeConfig != "" {
-			args = append(args, "--kubeconfig", h.kubeConfig)
+		if h.cfg.GetKubeConfig() != "" {
+			args = append(args, "--kubeconfig", h.cfg.GetKubeConfig())
 		}
 
 		if useSecrets {
@@ -329,13 +320,13 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		releaseName: releaseName,
 		upgrade:     true,
 		flags:       h.Flags.Upgrade,
-		force:       h.forceDeploy,
+		force:       h.cfg.ForceDeploy(),
 		chartPath:   r.ChartPath,
 		helmVersion: helmVersion,
 	}
 
-	if h.namespace != "" {
-		opts.namespace = h.namespace
+	if h.cfg.GetKubeNamespace() != "" {
+		opts.namespace = h.cfg.GetKubeNamespace()
 	} else if r.Namespace != "" {
 		opts.namespace = r.Namespace
 	}

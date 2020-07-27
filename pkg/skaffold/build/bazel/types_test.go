@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,28 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package jib
+package bazel
 
-import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/testutil"
+)
 
-// Builder is a builder for jib artifacts
-type Builder struct {
-	localDocker docker.LocalDaemon
-	cfg         Config
-	pushImages  bool
+func fakeLocalDaemon() docker.LocalDaemon {
+	return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, &dockerConfig{})
 }
 
-type Config interface {
+type dockerConfig struct {
 	docker.Config
-
-	SkipTests() bool
-}
-
-// NewArtifactBuilder returns a new customjib artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, cfg Config, pushImages bool) *Builder {
-	return &Builder{
-		localDocker: localDocker,
-		cfg:         cfg,
-		pushImages:  pushImages,
-	}
 }

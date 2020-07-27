@@ -21,7 +21,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -45,7 +44,7 @@ func TestFetcher(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			api := &testutil.FakeAPIClient{}
-			docker := docker.NewLocalDaemon(api, nil, false, nil)
+			docker := fakeLocalDaemon(api)
 
 			var out bytes.Buffer
 

@@ -19,8 +19,6 @@ package gcb
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -45,24 +43,11 @@ func TestBuildSpecFail(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			builder := newBuilder(latest.GoogleCloudBuild{})
+			builder := NewBuilder(&gcbConfig{})
 
 			_, err := builder.buildSpec(test.artifact, "tag", "bucket", "object")
 
 			t.CheckError(true, err)
 		})
 	}
-}
-
-func newBuilder(gcb latest.GoogleCloudBuild) *Builder {
-	return NewBuilder(&runcontext.RunContext{
-		Opts: config.SkaffoldOptions{},
-		Cfg: latest.Pipeline{
-			Build: latest.BuildConfig{
-				BuildType: latest.BuildType{
-					GoogleCloudBuild: &gcb,
-				},
-			},
-		},
-	})
 }

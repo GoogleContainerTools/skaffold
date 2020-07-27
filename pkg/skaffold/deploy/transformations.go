@@ -19,10 +19,11 @@ package deploy
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
 type Registries struct {
-	InsecureRegistries   map[string]bool
+	Config               docker.Config
 	DebugHelpersRegistry string
 }
 

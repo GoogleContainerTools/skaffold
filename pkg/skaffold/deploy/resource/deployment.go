@@ -28,7 +28,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -92,8 +91,8 @@ func (d *Deployment) WithValidator(pd diag.Diagnose) *Deployment {
 	return d
 }
 
-func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunContext) {
-	kubeCtl := kubectl.NewFromRunContext(runCtx)
+func (d *Deployment) CheckStatus(ctx context.Context, cfg kubectl.Config) {
+	kubeCtl := kubectl.NewCLI(cfg)
 
 	b, err := kubeCtl.RunOut(ctx, "rollout", "status", "deployment", d.name, "--namespace", d.namespace, "--watch=false")
 	if ctx.Err() != nil {

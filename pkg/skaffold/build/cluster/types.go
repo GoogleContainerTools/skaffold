@@ -22,8 +22,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -31,27 +31,32 @@ import (
 type Builder struct {
 	*latest.ClusterDetails
 
-	kubectlcli         *kubectl.CLI
-	kubeContext        string
-	timeout            time.Duration
-	insecureRegistries map[string]bool
-	suppressLogs       []string
+	cfg        Config
+	kubectlcli *kubectl.CLI
+	timeout    time.Duration
+}
+
+type Config interface {
+	kubectl.Config
+	docker.Config
+
+	Pipeline() latest.Pipeline
+	GetKubeContext() string
+	SuppressLogs() []string
 }
 
 // NewBuilder creates a new Builder that builds artifacts on cluster.
-func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
-	timeout, err := time.ParseDuration(runCtx.Cfg.Build.Cluster.Timeout)
+func NewBuilder(cfg Config) (*Builder, error) {
+	timeout, err := time.ParseDuration(cfg.Pipeline().Build.Cluster.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("parsing timeout: %w", err)
 	}
 
 	return &Builder{
-		ClusterDetails:     runCtx.Cfg.Build.Cluster,
-		kubectlcli:         kubectl.NewFromRunContext(runCtx),
-		timeout:            timeout,
-		kubeContext:        runCtx.KubeContext,
-		insecureRegistries: runCtx.InsecureRegistries,
-		suppressLogs:       runCtx.Opts.SuppressLogs,
+		ClusterDetails: cfg.Pipeline().Build.Cluster,
+		cfg:            cfg,
+		kubectlcli:     kubectl.NewCLI(cfg),
+		timeout:        timeout,
 	}, nil
 }
 

@@ -74,25 +74,19 @@ spec:
 `}
 
 	testutil.Run(t, test.description, func(t *testutil.T) {
-		t.NewTempDir().
-			Write("deployment.yaml", test.input).
-			Chdir()
-		deployer := deploy.NewKubectlDeployer(&runcontext.RunContext{
-			WorkingDir: ".",
-			Cfg: latest.Pipeline{
-				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
-						KubectlDeploy: &latest.KubectlDeploy{
-							Manifests: []string{"deployment.yaml"},
-						},
-					},
-				},
+		t.NewTempDir().Write("deployment.yaml", test.input).Chdir()
+
+		deployer := deploy.NewKubectlDeployer(&kubectlConfig{
+			workingDir: ".",
+			deploy: latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
 			},
 		}, nil)
+
 		var b bytes.Buffer
 		err := deployer.Render(context.Background(), &b, test.builds, false, test.renderPath)
-
 		t.CheckNoError(err)
+
 		dat, err := ioutil.ReadFile(test.renderPath)
 		t.CheckNoError(err)
 
@@ -231,16 +225,10 @@ spec:
 				Write("deployment.yaml", test.input).
 				Chdir()
 
-			deployer := deploy.NewKubectlDeployer(&runcontext.RunContext{
-				WorkingDir: ".",
-				Cfg: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: &latest.KubectlDeploy{
-								Manifests: []string{"deployment.yaml"},
-							},
-						},
-					},
+			deployer := deploy.NewKubectlDeployer(&kubectlConfig{
+				workingDir: ".",
+				deploy: latest.KubectlDeploy{
+					Manifests: []string{"deployment.yaml"},
 				},
 			}, nil)
 			var b bytes.Buffer
@@ -417,15 +405,9 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployer := deploy.NewHelmDeployer(&runcontext.RunContext{
-				Cfg: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: &latest.HelmDeploy{
-								Releases: test.helmReleases,
-							},
-						},
-					},
+			deployer := deploy.NewHelmDeployer(&helmConfig{
+				deploy: latest.HelmDeploy{
+					Releases: test.helmReleases,
 				},
 			}, nil)
 			var b bytes.Buffer
@@ -732,4 +714,30 @@ spec:
 			t.CheckDeepEqual(test.expectedOut, string(fileContentReplaced))
 		})
 	}
+}
+
+type kubectlConfig struct {
+	runcontext.RunContext // Shortcut to implement functions with default return values.
+
+	workingDir string
+	deploy     latest.KubectlDeploy
+}
+
+func (c *kubectlConfig) WorkingDir() string { return c.workingDir }
+func (c *kubectlConfig) Pipeline() latest.Pipeline {
+	var pipeline latest.Pipeline
+	pipeline.Deploy.DeployType.KubectlDeploy = &c.deploy
+	return pipeline
+}
+
+type helmConfig struct {
+	runcontext.RunContext // Shortcut to implement functions with default return values.
+
+	deploy latest.HelmDeploy
+}
+
+func (c *helmConfig) Pipeline() latest.Pipeline {
+	var pipeline latest.Pipeline
+	pipeline.Deploy.DeployType.HelmDeploy = &c.deploy
+	return pipeline
 }

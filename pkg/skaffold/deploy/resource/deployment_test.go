@@ -21,7 +21,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -84,12 +84,12 @@ func TestDeploymentCheckStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			r := NewDeployment("dep", "test", 0)
-			runCtx := &runcontext.RunContext{
-				KubeContext: "kubecontext",
-			}
 
-			r.CheckStatus(context.Background(), runCtx)
+			r := NewDeployment("dep", "test", 0)
+			r.CheckStatus(context.Background(), &statusCheckConfig{
+				kubeContext: "kubecontext",
+			})
+
 			t.CheckDeepEqual(test.complete, r.IsStatusCheckComplete())
 			if test.expectedErr != "" {
 				t.CheckErrorContains(test.expectedErr, r.Status().Error())
@@ -263,3 +263,13 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 		})
 	}
 }
+
+type statusCheckConfig struct {
+	kubeContext string
+}
+
+func (c *statusCheckConfig) GetKubeContext() string    { return c.kubeContext }
+func (c *statusCheckConfig) GetKubeConfig() string     { return "" }
+func (c *statusCheckConfig) GetKubeNamespace() string  { return "" }
+func (c *statusCheckConfig) GetNamespaces() []string   { return nil }
+func (c *statusCheckConfig) Pipeline() latest.Pipeline { return latest.Pipeline{} }

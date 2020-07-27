@@ -45,7 +45,7 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 
 	var imageID string
 
-	if b.cfg.UseDockerCLI || b.cfg.UseBuildkit {
+	if b.localBuild().UseDockerCLI || b.localBuild().UseBuildkit {
 		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag)
 	} else {
 		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag)
@@ -79,13 +79,13 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	}
 	args = append(args, ba...)
 
-	if b.prune {
+	if b.cfg.Prune() {
 		args = append(args, "--force-rm")
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Env = append(util.OSEnviron(), b.retrieveExtraEnv()...)
-	if b.cfg.UseBuildkit {
+	if b.localBuild().UseBuildkit {
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
 	cmd.Stdout = out

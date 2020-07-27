@@ -230,7 +230,7 @@ func TestKanikoPodSpec(t *testing.T) {
 			},
 		},
 	}
-	pod, _ := builder.kanikoPodSpec(artifact, "tag")
+	pod, _ := builder.kanikoPodSpec(artifact, "tag", nil)
 
 	expectedPod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

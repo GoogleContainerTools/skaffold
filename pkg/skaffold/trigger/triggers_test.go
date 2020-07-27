@@ -23,29 +23,30 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestNewTrigger(t *testing.T) {
 	tests := []struct {
-		description string
-		opts        config.SkaffoldOptions
-		expected    Trigger
-		shouldErr   bool
+		description       string
+		trigger           string
+		watchPollInterval int
+		expected          Trigger
+		shouldErr         bool
 	}{
 		{
-			description: "polling trigger",
-			opts:        config.SkaffoldOptions{Trigger: "polling", WatchPollInterval: 1},
+			description:       "polling trigger",
+			trigger:           "polling",
+			watchPollInterval: 1,
 			expected: &pollTrigger{
 				Interval: 1 * time.Millisecond,
 			},
 		},
 		{
-			description: "notify trigger",
-			opts:        config.SkaffoldOptions{Trigger: "notify", WatchPollInterval: 1},
+			description:       "notify trigger",
+			trigger:           "notify",
+			watchPollInterval: 1,
 			expected: &fsNotifyTrigger{
 				Interval: 1 * time.Millisecond,
 				workspaces: map[string]struct{}{
@@ -56,35 +57,31 @@ func TestNewTrigger(t *testing.T) {
 		},
 		{
 			description: "manual trigger",
-			opts:        config.SkaffoldOptions{Trigger: "manual"},
+			trigger:     "manual",
 			expected:    &manualTrigger{},
 		},
 		{
 			description: "unknown trigger",
-			opts:        config.SkaffoldOptions{Trigger: "unknown"},
+			trigger:     "unknown",
 			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			runCtx := &runcontext.RunContext{
-				Opts: test.opts,
-				Cfg: latest.Pipeline{
+			got, err := NewTrigger(&triggersConfig{
+				trigger:           test.trigger,
+				watchPollInterval: test.watchPollInterval,
+				pipeline: latest.Pipeline{
 					Build: latest.BuildConfig{
 						Artifacts: []*latest.Artifact{
-							{
-								Workspace: "../workspace",
-							}, {
-								Workspace: "../workspace",
-							}, {
-								Workspace: "../some/other/workspace",
-							},
+							{Workspace: "../workspace"},
+							{Workspace: "../workspace"},
+							{Workspace: "../some/other/workspace"},
 						},
 					},
 				},
-			}
+			})
 
-			got, err := NewTrigger(runCtx)
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
 				t.CheckDeepEqual(test.expected, got, cmp.AllowUnexported(fsNotifyTrigger{}))
@@ -139,4 +136,18 @@ func TestManualTrigger_LogWatchToUser(t *testing.T) {
 
 	got, want := out.String(), "Press any key to rebuild/redeploy the changes\n"
 	testutil.CheckDeepEqual(t, want, got)
+}
+
+type triggersConfig struct {
+	Config
+
+	trigger           string
+	watchPollInterval int
+	pipeline          latest.Pipeline
+}
+
+func (c *triggersConfig) Trigger() string        { return c.trigger }
+func (c *triggersConfig) WatchPollInterval() int { return c.watchPollInterval }
+func (c *triggersConfig) Pipeline() latest.Pipeline {
+	return c.pipeline
 }

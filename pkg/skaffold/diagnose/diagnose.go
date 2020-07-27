@@ -27,17 +27,22 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
-func CheckArtifacts(ctx context.Context, runCtx *runcontext.RunContext, out io.Writer) error {
-	for _, artifact := range runCtx.Cfg.Build.Artifacts {
+type Config interface {
+	docker.Config
+
+	Pipeline() latest.Pipeline
+}
+
+func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
+	for _, artifact := range cfg.Pipeline().Build.Artifacts {
 		color.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.ImageName)
 
 		if artifact.DockerArtifact != nil {
-			size, err := sizeOfDockerContext(ctx, artifact, runCtx.InsecureRegistries)
+			size, err := sizeOfDockerContext(ctx, artifact, cfg)
 			if err != nil {
 				return fmt.Errorf("computing the size of the Docker context: %w", err)
 			}
@@ -45,11 +50,11 @@ func CheckArtifacts(ctx context.Context, runCtx *runcontext.RunContext, out io.W
 			fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
 		}
 
-		timeDeps1, deps, err := timeToListDependencies(ctx, artifact, runCtx.InsecureRegistries)
+		timeDeps1, deps, err := timeToListDependencies(ctx, artifact, cfg)
 		if err != nil {
 			return fmt.Errorf("listing artifact dependencies: %w", err)
 		}
-		timeDeps2, _, err := timeToListDependencies(ctx, artifact, runCtx.InsecureRegistries)
+		timeDeps2, _, err := timeToListDependencies(ctx, artifact, cfg)
 		if err != nil {
 			return fmt.Errorf("listing artifact dependencies: %w", err)
 		}
@@ -57,13 +62,13 @@ func CheckArtifacts(ctx context.Context, runCtx *runcontext.RunContext, out io.W
 		fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
 		fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
 
-		timeSyncMap1, err := timeToConstructSyncMap(artifact, runCtx.InsecureRegistries)
+		timeSyncMap1, err := timeToConstructSyncMap(artifact, cfg)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return fmt.Errorf("construct artifact dependencies: %w", err)
 			}
 		}
-		timeSyncMap2, err := timeToConstructSyncMap(artifact, runCtx.InsecureRegistries)
+		timeSyncMap2, err := timeToConstructSyncMap(artifact, cfg)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return fmt.Errorf("construct artifact dependencies: %w", err)
@@ -106,15 +111,15 @@ func typeOfArtifact(a *latest.Artifact) string {
 	}
 }
 
-func timeToListDependencies(ctx context.Context, a *latest.Artifact, insecureRegistries map[string]bool) (time.Duration, []string, error) {
+func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg docker.Config) (time.Duration, []string, error) {
 	start := time.Now()
-	paths, err := build.DependenciesForArtifact(ctx, a, insecureRegistries)
+	paths, err := build.DependenciesForArtifact(ctx, a, cfg)
 	return time.Since(start), paths, err
 }
 
-func timeToConstructSyncMap(a *latest.Artifact, insecureRegistries map[string]bool) (time.Duration, error) {
+func timeToConstructSyncMap(a *latest.Artifact, cfg docker.Config) (time.Duration, error) {
 	start := time.Now()
-	_, err := sync.SyncMap(a, insecureRegistries)
+	_, err := sync.SyncMap(a, cfg)
 	return time.Since(start), err
 }
 
@@ -128,10 +133,10 @@ func timeToComputeMTimes(deps []string) (time.Duration, error) {
 	return time.Since(start), nil
 }
 
-func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, insecureRegistries map[string]bool) (int64, error) {
+func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, cfg docker.Config) (int64, error) {
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, a.Workspace, a.DockerArtifact, insecureRegistries)
+		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, a.Workspace, a.DockerArtifact, cfg)
 		if err != nil {
 			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return

@@ -29,7 +29,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -90,7 +89,7 @@ spec:
 func TestKubectlDeploy(t *testing.T) {
 	tests := []struct {
 		description      string
-		cfg              *latest.KubectlDeploy
+		cfg              latest.KubectlDeploy
 		builds           []build.Artifact
 		commands         util.Command
 		shouldErr        bool
@@ -99,13 +98,13 @@ func TestKubectlDeploy(t *testing.T) {
 	}{
 		{
 			description:      "no manifest",
-			cfg:              &latest.KubectlDeploy{},
+			cfg:              latest.KubectlDeploy{},
 			commands:         testutil.CmdRunOut("kubectl version --client -ojson", kubectlVersion112),
 			waitForDeletions: true,
 		},
 		{
 			description: "deploy success (disable validation)",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 				Flags: latest.KubectlFlags{
 					DisableValidation: true,
@@ -124,7 +123,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (forced)",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -141,7 +140,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -157,7 +156,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (kubectl v1.18)",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -173,7 +172,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "http manifest",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml", "http://remote.yaml"},
 			},
 			commands: testutil.
@@ -187,7 +186,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy command error",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -202,7 +201,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "additional flags",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 				Flags: latest.KubectlFlags{
 					Global: []string{"-v=0"},
@@ -231,27 +230,17 @@ func TestKubectlDeploy(t *testing.T) {
 				Touch("empty.ignored").
 				Chdir()
 
-			k := NewKubectlDeployer(&runcontext.RunContext{
-				WorkingDir: ".",
-				Cfg: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: test.cfg,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: config.SkaffoldOptions{
-					Namespace: testNamespace,
-					Force:     test.forceDeploy,
-					WaitForDeletions: config.WaitForDeletions{
-						Enabled: test.waitForDeletions,
-						Delay:   0 * time.Second,
-						Max:     10 * time.Second,
-					},
+			k := NewKubectlDeployer(&kubectlConfig{
+				workingDir:  ".",
+				deploy:      test.cfg,
+				kubeContext: testKubeContext,
+				force:       test.forceDeploy,
+				waitForDeletions: config.WaitForDeletions{
+					Enabled: test.waitForDeletions,
+					Delay:   0 * time.Second,
+					Max:     10 * time.Second,
 				},
 			}, nil)
-
 			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
 			t.CheckError(test.shouldErr, err)
@@ -262,13 +251,13 @@ func TestKubectlDeploy(t *testing.T) {
 func TestKubectlCleanup(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         *latest.KubectlDeploy
+		cfg         latest.KubectlDeploy
 		commands    util.Command
 		shouldErr   bool
 	}{
 		{
 			description: "cleanup success",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -278,7 +267,7 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup success (kubectl v1.18)",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -288,7 +277,7 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup error",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -299,7 +288,7 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "additional flags",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 				Flags: latest.KubectlFlags{
 					Global: []string{"-v=0"},
@@ -320,19 +309,10 @@ func TestKubectlCleanup(t *testing.T) {
 				Write("deployment.yaml", deploymentWebYAML).
 				Chdir()
 
-			k := NewKubectlDeployer(&runcontext.RunContext{
-				WorkingDir: ".",
-				Cfg: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: test.cfg,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
+			k := NewKubectlDeployer(&kubectlConfig{
+				workingDir:  ".",
+				deploy:      test.cfg,
+				kubeContext: testKubeContext,
 			}, nil)
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
@@ -344,12 +324,12 @@ func TestKubectlCleanup(t *testing.T) {
 func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         *latest.KubectlDeploy
+		cfg         latest.KubectlDeploy
 		commands    util.Command
 	}{
 		{
 			description: "cleanup success",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				RemoteManifests: []string{"pod/leeroy-web"},
 			},
 			commands: testutil.
@@ -359,7 +339,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup error",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				RemoteManifests: []string{"anotherNamespace:pod/leeroy-web"},
 			},
 			commands: testutil.
@@ -375,19 +355,10 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 				Write("deployment.yaml", deploymentWebYAML).
 				Chdir()
 
-			k := NewKubectlDeployer(&runcontext.RunContext{
-				WorkingDir: ".",
-				Cfg: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: test.cfg,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: config.SkaffoldOptions{
-					Namespace: testNamespace,
-				},
+			k := NewKubectlDeployer(&kubectlConfig{
+				workingDir:  ".",
+				deploy:      test.cfg,
+				kubeContext: testKubeContext,
 			}, nil)
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
@@ -414,26 +385,16 @@ func TestKubectlRedeploy(t *testing.T) {
 			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentAppYAMLv2+"\n---\n"+deploymentWebYAMLv1, ""),
 		)
 
-		cfg := &latest.KubectlDeploy{
-			Manifests: []string{tmpDir.Path("deployment-app.yaml"), "deployment-web.yaml"},
-		}
-		deployer := NewKubectlDeployer(&runcontext.RunContext{
-			WorkingDir: tmpDir.Root(),
-			Cfg: latest.Pipeline{
-				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
-						KubectlDeploy: cfg,
-					},
-				},
+		deployer := NewKubectlDeployer(&kubectlConfig{
+			workingDir: tmpDir.Root(),
+			deploy: latest.KubectlDeploy{
+				Manifests: []string{tmpDir.Path("deployment-app.yaml"), "deployment-web.yaml"},
 			},
-			KubeContext: testKubeContext,
-			Opts: config.SkaffoldOptions{
-				Namespace: testNamespace,
-				WaitForDeletions: config.WaitForDeletions{
-					Enabled: true,
-					Delay:   0 * time.Millisecond,
-					Max:     10 * time.Second,
-				},
+			kubeContext: testKubeContext,
+			waitForDeletions: config.WaitForDeletions{
+				Enabled: true,
+				Delay:   0 * time.Millisecond,
+				Max:     10 * time.Second,
 			},
 		}, nil)
 
@@ -491,26 +452,16 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", deploymentWebYAMLv1),
 		)
 
-		cfg := &latest.KubectlDeploy{
-			Manifests: []string{tmpDir.Path("deployment-web.yaml")},
-		}
-		deployer := NewKubectlDeployer(&runcontext.RunContext{
-			WorkingDir: tmpDir.Root(),
-			Cfg: latest.Pipeline{
-				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
-						KubectlDeploy: cfg,
-					},
-				},
+		deployer := NewKubectlDeployer(&kubectlConfig{
+			workingDir: tmpDir.Root(),
+			deploy: latest.KubectlDeploy{
+				Manifests: []string{tmpDir.Path("deployment-web.yaml")},
 			},
-			KubeContext: testKubeContext,
-			Opts: config.SkaffoldOptions{
-				Namespace: testNamespace,
-				WaitForDeletions: config.WaitForDeletions{
-					Enabled: true,
-					Delay:   0 * time.Millisecond,
-					Max:     10 * time.Second,
-				},
+			kubeContext: testKubeContext,
+			waitForDeletions: config.WaitForDeletions{
+				Enabled: true,
+				Delay:   0 * time.Millisecond,
+				Max:     10 * time.Second,
 			},
 		}, nil)
 
@@ -541,26 +492,16 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 			}`),
 		)
 
-		cfg := &latest.KubectlDeploy{
-			Manifests: []string{tmpDir.Path("deployment-web.yaml")},
-		}
-		deployer := NewKubectlDeployer(&runcontext.RunContext{
-			WorkingDir: tmpDir.Root(),
-			Cfg: latest.Pipeline{
-				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
-						KubectlDeploy: cfg,
-					},
-				},
+		deployer := NewKubectlDeployer(&kubectlConfig{
+			workingDir: tmpDir.Root(),
+			deploy: latest.KubectlDeploy{
+				Manifests: []string{tmpDir.Path("deployment-web.yaml")},
 			},
-			KubeContext: testKubeContext,
-			Opts: config.SkaffoldOptions{
-				Namespace: testNamespace,
-				WaitForDeletions: config.WaitForDeletions{
-					Enabled: true,
-					Delay:   10 * time.Second,
-					Max:     100 * time.Millisecond,
-				},
+			kubeContext: testKubeContext,
+			waitForDeletions: config.WaitForDeletions{
+				Enabled: true,
+				Delay:   10 * time.Second,
+				Max:     100 * time.Millisecond,
 			},
 		}, nil)
 
@@ -622,15 +563,9 @@ func TestDependencies(t *testing.T) {
 				Touch("00/b.yaml", "00/a.yaml").
 				Chdir()
 
-			k := NewKubectlDeployer(&runcontext.RunContext{
-				Cfg: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: &latest.KubectlDeploy{
-								Manifests: test.manifests,
-							},
-						},
-					},
+			k := NewKubectlDeployer(&kubectlConfig{
+				deploy: latest.KubectlDeploy{
+					Manifests: test.manifests,
 				},
 			}, nil)
 			dependencies, err := k.Dependencies()
@@ -739,32 +674,23 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().
-				Write("deployment.yaml", test.input)
-
+			tmpDir := t.NewTempDir().Write("deployment.yaml", test.input)
 			t.Override(&util.DefaultExecCommand, testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), test.input))
-			defaultRepo := config.StringOrUndefined{}
-			defaultRepo.Set("gcr.io/project")
-			deployer := NewKubectlDeployer(&runcontext.RunContext{
-				WorkingDir: ".",
-				Cfg: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: &latest.KubectlDeploy{
-								Manifests: []string{tmpDir.Path("deployment.yaml")},
-							},
-						},
-					},
+
+			deployer := NewKubectlDeployer(&kubectlConfig{
+				workingDir: ".",
+				deploy: latest.KubectlDeploy{
+					Manifests: []string{tmpDir.Path("deployment.yaml")},
 				},
-				KubeContext: testKubeContext,
-				Opts: config.SkaffoldOptions{
-					DefaultRepo: defaultRepo,
-				},
+				kubeContext: testKubeContext,
+				defaultRepo: "gcr.io/project",
 			}, nil)
+
 			var b bytes.Buffer
 			err := deployer.Render(context.Background(), &b, test.builds, true, "")
+
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})
@@ -774,14 +700,14 @@ spec:
 func TestGCSManifests(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         *latest.KubectlDeploy
+		cfg         latest.KubectlDeploy
 		commands    util.Command
 		shouldErr   bool
 		skipRender  bool
 	}{
 		{
 			description: "manifest from GCS",
-			cfg: &latest.KubectlDeploy{
+			cfg: latest.KubectlDeploy{
 				Manifests: []string{"gs://dev/deployment.yaml"},
 			},
 			commands: testutil.
@@ -801,25 +727,43 @@ func TestGCSManifests(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			k := NewKubectlDeployer(&runcontext.RunContext{
-				WorkingDir: ".",
-				Cfg: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: test.cfg,
-						},
-					},
-				},
-				KubeContext: testKubeContext,
-				Opts: config.SkaffoldOptions{
-					Namespace:  testNamespace,
-					SkipRender: test.skipRender,
-				},
-			}, nil)
-
+			cfg := &kubectlConfig{
+				workingDir:  ".",
+				kubeContext: testKubeContext,
+				deploy:      test.cfg,
+				skipRender:  test.skipRender,
+			}
+			k := NewKubectlDeployer(cfg, nil)
 			_, err := k.Deploy(context.Background(), ioutil.Discard, nil)
 
 			t.CheckError(test.shouldErr, err)
 		})
 	}
+}
+
+type kubectlConfig struct {
+	Config
+
+	skipRender       bool
+	force            bool
+	workingDir       string
+	kubeContext      string
+	defaultRepo      string
+	waitForDeletions config.WaitForDeletions
+	deploy           latest.KubectlDeploy
+}
+
+func (c *kubectlConfig) ForceDeploy() bool                         { return c.force }
+func (c *kubectlConfig) WaitForDeletions() config.WaitForDeletions { return c.waitForDeletions }
+func (c *kubectlConfig) WorkingDir() string                        { return c.workingDir }
+func (c *kubectlConfig) GlobalConfig() string                      { return "" }
+func (c *kubectlConfig) GetKubeConfig() string                     { return "" }
+func (c *kubectlConfig) GetKubeContext() string                    { return c.kubeContext }
+func (c *kubectlConfig) GetKubeNamespace() string                  { return testNamespace }
+func (c *kubectlConfig) SkipRender() bool                          { return c.skipRender }
+func (c *kubectlConfig) DefaultRepo() *string                      { return &c.defaultRepo }
+func (c *kubectlConfig) Pipeline() latest.Pipeline {
+	var pipeline latest.Pipeline
+	pipeline.Deploy.DeployType.KubectlDeploy = &c.deploy
+	return pipeline
 }

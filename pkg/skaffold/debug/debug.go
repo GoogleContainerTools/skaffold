@@ -32,7 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
 var (
@@ -56,7 +55,7 @@ func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, r
 
 	retriever := func(image string) (imageConfiguration, error) {
 		if artifact := findArtifact(image, builds); artifact != nil {
-			return retrieveImageConfiguration(ctx, artifact, registries.InsecureRegistries)
+			return retrieveImageConfiguration(ctx, artifact, registries.Config)
 		}
 		return imageConfiguration{}, fmt.Errorf("no build artifact for %q", image)
 	}
@@ -97,11 +96,9 @@ func findArtifact(image string, builds []build.Artifact) *build.Artifact {
 
 // retrieveImageConfiguration retrieves the image container configuration for
 // the given build artifact
-func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact, insecureRegistries map[string]bool) (imageConfiguration, error) {
-	// TODO: use the proper RunContext
-	apiClient, err := docker.NewAPIClient(&runcontext.RunContext{
-		InsecureRegistries: insecureRegistries,
-	})
+func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact, cfg docker.Config) (imageConfiguration, error) {
+	// TODO: use the proper apiClient.
+	apiClient, err := docker.NewAPIClient(cfg)
 	if err != nil {
 		return imageConfiguration{}, fmt.Errorf("could not connect to local docker daemon: %w", err)
 	}

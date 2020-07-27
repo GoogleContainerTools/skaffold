@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -174,7 +173,7 @@ func assertCmdWasKilled(t *testutil.T, cmd *kubectl.Cmd) {
 func TestAddressArg(t *testing.T) {
 	ctx := context.Background()
 	pfe := newPortForwardEntry(0, latest.PortForwardResource{Address: "0.0.0.0"}, "", "", "", "", 8080, false)
-	cli := kubectl.NewFromRunContext(&runcontext.RunContext{})
+	cli := kubectl.NewCLI(&cliConfig{})
 	cmd := portForwardCommand(ctx, cli, pfe, nil)
 	assertCmdContainsArgs(t, cmd, true, "--address", "0.0.0.0")
 }
@@ -182,7 +181,7 @@ func TestAddressArg(t *testing.T) {
 func TestNoAddressArg(t *testing.T) {
 	ctx := context.Background()
 	pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false)
-	cli := kubectl.NewFromRunContext(&runcontext.RunContext{})
+	cli := kubectl.NewCLI(&cliConfig{})
 	cmd := portForwardCommand(ctx, cli, pfe, nil)
 	assertCmdContainsArgs(t, cmd, false, "--address")
 }
@@ -190,7 +189,7 @@ func TestNoAddressArg(t *testing.T) {
 func TestDefaultAddressArg(t *testing.T) {
 	ctx := context.Background()
 	pfe := newPortForwardEntry(0, latest.PortForwardResource{Address: "127.0.0.1"}, "", "", "", "", 8080, false)
-	cli := kubectl.NewFromRunContext(&runcontext.RunContext{})
+	cli := kubectl.NewCLI(&cliConfig{})
 	cmd := portForwardCommand(ctx, cli, pfe, nil)
 	assertCmdContainsArgs(t, cmd, false, "--address")
 }
@@ -229,3 +228,11 @@ func assertCmdContainsArgs(t *testing.T, cmd *kubectl.Cmd, expected bool, args .
 		}
 	}
 }
+
+type cliConfig struct {
+	kubectl.Config
+}
+
+func (c *cliConfig) GetKubeContext() string   { return "" }
+func (c *cliConfig) GetKubeConfig() string    { return "" }
+func (c *cliConfig) GetKubeNamespace() string { return "" }

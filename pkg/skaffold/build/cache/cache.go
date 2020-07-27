@@ -27,7 +27,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
@@ -44,24 +43,33 @@ type ArtifactCache map[string]ImageDetails
 
 // cache holds any data necessary for accessing the cache
 type cache struct {
-	artifactCache      ArtifactCache
-	client             docker.LocalDaemon
-	insecureRegistries map[string]bool
-	cacheFile          string
-	imagesAreLocal     bool
-	hashForArtifact    func(ctx context.Context, a *latest.Artifact) (string, error)
+	cfg             Config
+	artifactCache   ArtifactCache
+	client          docker.LocalDaemon
+	cacheFile       string
+	imagesAreLocal  bool
+	hashForArtifact func(ctx context.Context, a *latest.Artifact) (string, error)
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
 type DependencyLister func(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 
+type Config interface {
+	docker.Config
+
+	CacheArtifacts() bool
+	CacheFile() string
+	InsecureRegistries() map[string]bool
+	DevMode() bool
+}
+
 // NewCache returns the current state of the cache
-func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies DependencyLister) (Cache, error) {
-	if !runCtx.Opts.CacheArtifacts {
+func NewCache(cfg Config, imagesAreLocal bool, dependencies DependencyLister) (Cache, error) {
+	if !cfg.CacheArtifacts() {
 		return &noCache{}, nil
 	}
 
-	cacheFile, err := resolveCacheFile(runCtx.Opts.CacheFile)
+	cacheFile, err := resolveCacheFile(cfg.CacheFile())
 	if err != nil {
 		logrus.Warnf("Error resolving cache file, not using skaffold cache: %v", err)
 		return &noCache{}, nil
@@ -73,19 +81,19 @@ func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies D
 		return &noCache{}, nil
 	}
 
-	client, err := docker.NewAPIClient(runCtx)
+	client, err := docker.NewAPIClient(cfg)
 	if imagesAreLocal && err != nil {
 		return nil, fmt.Errorf("getting local Docker client: %w", err)
 	}
 
 	return &cache{
-		artifactCache:      artifactCache,
-		client:             client,
-		insecureRegistries: runCtx.InsecureRegistries,
-		cacheFile:          cacheFile,
-		imagesAreLocal:     imagesAreLocal,
+		cfg:            cfg,
+		artifactCache:  artifactCache,
+		client:         client,
+		cacheFile:      cacheFile,
+		imagesAreLocal: imagesAreLocal,
 		hashForArtifact: func(ctx context.Context, a *latest.Artifact) (string, error) {
-			return getHashForArtifact(ctx, dependencies, a, runCtx.Opts.IsDevMode())
+			return getHashForArtifact(ctx, dependencies, a, cfg.DevMode())
 		},
 	}, nil
 }

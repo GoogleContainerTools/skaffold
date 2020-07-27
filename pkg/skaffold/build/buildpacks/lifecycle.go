@@ -71,7 +71,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		return "", fmt.Errorf("unable to evaluate env variables: %w", err)
 	}
 
-	if b.devMode && a.Sync != nil && a.Sync.Auto != nil {
+	if b.cfg.DevMode() && a.Sync != nil && a.Sync.Auto != nil {
 		envVars = append(envVars, "GOOGLE_DEVMODE=1")
 	}
 

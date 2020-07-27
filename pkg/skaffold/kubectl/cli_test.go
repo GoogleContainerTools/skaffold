@@ -20,8 +20,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -67,12 +65,10 @@ func TestCLI(t *testing.T) {
 				test.expectedCommand,
 			))
 
-			cli := NewFromRunContext(&runcontext.RunContext{
-				Opts: config.SkaffoldOptions{
-					Namespace:  test.namespace,
-					KubeConfig: test.kubeconfig,
-				},
-				KubeContext: kubeContext,
+			cli := NewCLI(&cliConfig{
+				namespace:   test.namespace,
+				kubeConfig:  test.kubeconfig,
+				kubeContext: kubeContext,
 			})
 			err := cli.Run(context.Background(), nil, nil, "exec", "arg1", "arg2")
 
@@ -88,12 +84,10 @@ func TestCLI(t *testing.T) {
 				output,
 			))
 
-			cli := NewFromRunContext(&runcontext.RunContext{
-				Opts: config.SkaffoldOptions{
-					Namespace:  test.namespace,
-					KubeConfig: test.kubeconfig,
-				},
-				KubeContext: kubeContext,
+			cli := NewCLI(&cliConfig{
+				namespace:   test.namespace,
+				kubeConfig:  test.kubeconfig,
+				kubeContext: kubeContext,
 			})
 			out, err := cli.RunOut(context.Background(), "exec", "arg1", "arg2")
 
@@ -110,12 +104,10 @@ func TestCLI(t *testing.T) {
 				output,
 			))
 
-			cli := NewFromRunContext(&runcontext.RunContext{
-				Opts: config.SkaffoldOptions{
-					Namespace:  test.namespace,
-					KubeConfig: test.kubeconfig,
-				},
-				KubeContext: kubeContext,
+			cli := NewCLI(&cliConfig{
+				namespace:   test.namespace,
+				kubeConfig:  test.kubeconfig,
+				kubeContext: kubeContext,
 			})
 			cmd := cli.CommandWithStrictCancellation(context.Background(), "exec", "arg1", "arg2")
 			out, err := util.RunCmdOut(cmd.Cmd)
@@ -124,3 +116,15 @@ func TestCLI(t *testing.T) {
 		})
 	}
 }
+
+type cliConfig struct {
+	Config
+
+	kubeContext string
+	kubeConfig  string
+	namespace   string
+}
+
+func (c *cliConfig) GetKubeContext() string   { return c.kubeContext }
+func (c *cliConfig) GetKubeConfig() string    { return c.kubeConfig }
+func (c *cliConfig) GetKubeNamespace() string { return c.namespace }

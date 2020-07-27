@@ -76,22 +76,21 @@ type LocalDaemon interface {
 }
 
 type localDaemon struct {
-	forceRemove        bool
-	insecureRegistries map[string]bool
-	apiClient          client.CommonAPIClient
-	extraEnv           []string
-	imageCache         map[string]*v1.ConfigFile
-	imageCacheLock     sync.Mutex
+	apiClient client.CommonAPIClient
+	extraEnv  []string
+	cfg       Config
+
+	imageCache     map[string]*v1.ConfigFile
+	imageCacheLock sync.Mutex
 }
 
 // NewLocalDaemon creates a new LocalDaemon.
-func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool, insecureRegistries map[string]bool) LocalDaemon {
+func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, cfg Config) LocalDaemon {
 	return &localDaemon{
-		apiClient:          apiClient,
-		extraEnv:           extraEnv,
-		forceRemove:        forceRemove,
-		insecureRegistries: insecureRegistries,
-		imageCache:         make(map[string]*v1.ConfigFile),
+		apiClient:  apiClient,
+		extraEnv:   extraEnv,
+		cfg:        cfg,
+		imageCache: make(map[string]*v1.ConfigFile),
 	}
 }
 
@@ -143,7 +142,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 			return nil, err
 		}
 	} else {
-		cfg, err = RetrieveRemoteConfig(image, l.insecureRegistries)
+		cfg, err = RetrieveRemoteConfig(image, l.cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -169,7 +168,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a, l.insecureRegistries)
+		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a, l.cfg)
 		if err != nil {
 			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return
@@ -187,7 +186,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 		CacheFrom:   a.CacheFrom,
 		AuthConfigs: authConfigs,
 		Target:      a.Target,
-		ForceRemove: l.forceRemove,
+		ForceRemove: l.cfg.Prune(),
 		NetworkMode: strings.ToLower(a.NetworkMode),
 		NoCache:     a.NoCache,
 	})
@@ -273,7 +272,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	if digest == "" {
 		// Maybe this version of Docker doesn't return the digest of the image
 		// that has been pushed.
-		digest, err = RemoteDigest(ref, l.insecureRegistries)
+		digest, err = RemoteDigest(ref, l.cfg)
 		if err != nil {
 			return "", fmt.Errorf("getting digest: %w", err)
 		}

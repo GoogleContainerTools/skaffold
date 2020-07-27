@@ -27,9 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -96,12 +94,6 @@ func TestCacheBuildLocal(t *testing.T) {
 			Write("dep3", "content3").
 			Chdir()
 
-		runCtx := &runcontext.RunContext{
-			Opts: config.SkaffoldOptions{
-				CacheArtifacts: true,
-				CacheFile:      tmpDir.Path("cache"),
-			},
-		}
 		tags := map[string]string{
 			"artifact1": "artifact1:tag1",
 			"artifact2": "artifact2:tag2",
@@ -117,13 +109,16 @@ func TestCacheBuildLocal(t *testing.T) {
 
 		// Mock Docker
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
-		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
 
 		// Create cache
-		artifactCache, err := NewCache(runCtx, true, deps)
+		cfg := &cacheConfig{
+			cacheFile: tmpDir.Path("cache"),
+		}
+		artifactCache, err := NewCache(cfg, true, deps)
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -179,12 +174,6 @@ func TestCacheBuildRemote(t *testing.T) {
 			Write("dep3", "content3").
 			Chdir()
 
-		runCtx := &runcontext.RunContext{
-			Opts: config.SkaffoldOptions{
-				CacheArtifacts: true,
-				CacheFile:      tmpDir.Path("cache"),
-			},
-		}
 		tags := map[string]string{
 			"artifact1": "artifact1:tag1",
 			"artifact2": "artifact2:tag2",
@@ -199,12 +188,12 @@ func TestCacheBuildRemote(t *testing.T) {
 		})
 
 		// Mock Docker
-		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
-		t.Override(&docker.RemoteDigest, func(ref string, _ map[string]bool) (string, error) {
+		t.Override(&docker.RemoteDigest, func(ref string, _ docker.Config) (string, error) {
 			switch ref {
 			case "artifact1:tag1":
 				return "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165", nil
@@ -216,7 +205,10 @@ func TestCacheBuildRemote(t *testing.T) {
 		})
 
 		// Create cache
-		artifactCache, err := NewCache(runCtx, false, deps)
+		cfg := &cacheConfig{
+			cacheFile: tmpDir.Path("cache"),
+		}
+		artifactCache, err := NewCache(cfg, false, deps)
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
