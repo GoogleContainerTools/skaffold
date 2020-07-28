@@ -73,7 +73,7 @@ func (t *tagTemplateTagger) EvaluateComponents(workingDir, imageName string) (ma
 
 	for k, v := range t.Components {
 		if _, ok := v.(*tagTemplateTagger); ok {
-			return nil, errors.New("invalid component tagTemplate")
+			return nil, fmt.Errorf("invalid component specified in tag template: %v", v)
 		}
 		tag, err := v.GenerateTag(workingDir, imageName)
 		if err != nil {
