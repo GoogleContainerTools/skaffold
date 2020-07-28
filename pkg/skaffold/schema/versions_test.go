@@ -107,6 +107,12 @@ deploy:
 deploy:
   statusCheckDeadlineSeconds: 10
 `
+
+	customLogPrefix = `
+deploy:
+  logs:
+    prefix: none
+`
 )
 
 func TestIsSkaffoldConfig(t *testing.T) {
@@ -166,6 +172,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withGitTagger(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
 			),
 		},
 		{
@@ -177,6 +184,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withGitTagger(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
 			),
 		},
 		{
@@ -189,6 +197,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withDockerArtifact("example", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
 			),
 		},
 		{
@@ -202,6 +211,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
 				),
 				withKubectlDeploy("dep.yaml", "svc.yaml"),
+				withLogsPrefix("container"),
 			),
 		},
 		{
@@ -214,6 +224,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
 			),
 		},
 		{
@@ -227,6 +238,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
 			),
 		},
 		{
@@ -263,6 +275,19 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 				withStatusCheckDeadline(10),
+				withLogsPrefix("container"),
+			),
+		},
+		{
+			apiVersion:  latest.Version,
+			description: "custom log prefix",
+			config:      customLogPrefix,
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("none"),
 			),
 		},
 	}
@@ -445,6 +470,12 @@ func withPortForward(portForward ...*latest.PortForwardResource) func(*latest.Sk
 func withStatusCheckDeadline(deadline int) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Deploy.StatusCheckDeadlineSeconds = deadline
+	}
+}
+
+func withLogsPrefix(prefix string) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.Deploy.Logs.Prefix = prefix
 	}
 }
 

@@ -65,7 +65,7 @@ Any paths in `Ignore` will be ignored by the skaffold file watcher, even if they
 `Ignore` will only work in conjunction with `Paths`, and with none of the other custom artifact dependency types.
 
 ```yaml
-buildpacks:
+buildpack:
   builder: "gcr.io/buildpacks/builder:v1"
   dependencies:
     paths:

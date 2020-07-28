@@ -18,12 +18,17 @@ package kubectl
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -32,8 +37,18 @@ type CLI struct {
 	*pkgkubectl.CLI
 	Flags latest.KubectlFlags
 
-	ForceDeploy   bool
-	previousApply ManifestList
+	forceDeploy      bool
+	waitForDeletions config.WaitForDeletions
+	previousApply    ManifestList
+}
+
+func NewCLI(runCtx *runcontext.RunContext, flags latest.KubectlFlags) CLI {
+	return CLI{
+		CLI:              pkgkubectl.NewFromRunContext(runCtx),
+		Flags:            flags,
+		forceDeploy:      runCtx.Opts.Force,
+		waitForDeletions: runCtx.Opts.WaitForDeletions,
+	}
 }
 
 // Delete runs `kubectl delete` on a list of manifests.
@@ -58,7 +73,7 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 	}
 
 	args := []string{"-f", "-"}
-	if c.ForceDeploy {
+	if c.forceDeploy {
 		args = append(args, "--force", "--grace-period=0")
 	}
 
@@ -71,6 +86,80 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 	}
 
 	return nil
+}
+
+type getResult struct {
+	Items []struct {
+		Metadata struct {
+			Name              string `json:"name"`
+			DeletionTimestamp string `json:"deletionTimestamp"`
+		} `json:"metadata"`
+	} `json:"items"`
+}
+
+// WaitForDeletions waits for resource marked for deletion to complete their deletion.
+func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests ManifestList) error {
+	if !c.waitForDeletions.Enabled {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, c.waitForDeletions.Max)
+	defer cancel()
+
+	previousList := ""
+	previousCount := 0
+
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("%d resources failed to complete their deletion before a new deployment: %s", previousCount, previousList)
+		default:
+			// List resources in json format.
+			buf, err := c.RunOutInput(ctx, manifests.Reader(), "get", c.args(nil, "-f", "-", "--ignore-not-found", "-ojson")...)
+			if err != nil {
+				return err
+			}
+
+			// No resource found.
+			if len(buf) == 0 {
+				return nil
+			}
+
+			// Find which ones are marked for deletion. They have a `metadata.deletionTimestamp` field.
+			var result getResult
+			if err := json.Unmarshal(buf, &result); err != nil {
+				return err
+			}
+
+			var marked []string
+			for _, item := range result.Items {
+				if item.Metadata.DeletionTimestamp != "" {
+					marked = append(marked, item.Metadata.Name)
+				}
+			}
+			if len(marked) == 0 {
+				return nil
+			}
+
+			list := `"` + strings.Join(marked, `", "`) + `"`
+			logrus.Debugln("Resources are marked for deletion:", list)
+			if list != previousList {
+				if len(marked) == 1 {
+					fmt.Fprintf(out, "%s is marked for deletion, waiting for completion\n", list)
+				} else {
+					fmt.Fprintf(out, "%d resources are marked for deletion, waiting for completion: %s\n", len(marked), list)
+				}
+
+				previousList = list
+				previousCount = len(marked)
+			}
+
+			select {
+			case <-ctx.Done():
+			case <-time.After(c.waitForDeletions.Delay):
+			}
+		}
+	}
 }
 
 // ReadManifests reads a list of manifests in yaml format.

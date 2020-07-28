@@ -25,7 +25,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -767,13 +766,11 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			event.InitializeState(test.runContext.Cfg, "test", true, true, true)
-
-			deployer := NewHelmDeployer(test.runContext)
+			deployer := NewHelmDeployer(test.runContext, nil)
 			deployer.pkgTmpDir = tmpDir
-			result := deployer.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+			_, err := deployer.Deploy(context.Background(), ioutil.Discard, test.builds)
 
-			t.CheckError(test.shouldErr, result.GetError())
+			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}
@@ -836,9 +833,7 @@ func TestHelmCleanup(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			event.InitializeState(test.runContext.Cfg, "test", true, true, true)
-
-			deployer := NewHelmDeployer(test.runContext)
+			deployer := NewHelmDeployer(test.runContext, nil)
 			err := deployer.Cleanup(context.Background(), ioutil.Discard)
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
@@ -946,9 +941,8 @@ func TestHelmDependencies(t *testing.T) {
 					SetValues:             map[string]string{"some.key": "somevalue"},
 					SkipBuildDependencies: test.skipBuildDependencies,
 					Remote:                test.remote,
-				},
-				},
-			}, false))
+				}},
+			}, false), nil)
 
 			deps, err := deployer.Dependencies()
 
@@ -1120,10 +1114,10 @@ func TestHelmRender(t *testing.T) {
 				file = t.NewTempDir().Path(test.outputFile)
 			}
 
-			deployer := NewHelmDeployer(test.runContext)
+			deployer := NewHelmDeployer(test.runContext, nil)
 
 			t.Override(&util.DefaultExecCommand, test.commands)
-			err := deployer.Render(context.Background(), ioutil.Discard, test.builds, nil, true, file)
+			err := deployer.Render(context.Background(), ioutil.Discard, test.builds, true, file)
 			t.CheckError(test.shouldErr, err)
 
 			if file != "" {

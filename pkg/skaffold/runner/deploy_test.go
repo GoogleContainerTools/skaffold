@@ -149,7 +149,7 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 		r := SkaffoldRunner{
 			runCtx:     runCtx,
 			kubectlCLI: kubectl.NewFromRunContext(runCtx),
-			deployer:   getDeployer(runCtx),
+			deployer:   getDeployer(runCtx, nil),
 		}
 		var builds []build.Artifact
 

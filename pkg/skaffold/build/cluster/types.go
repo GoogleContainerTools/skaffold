@@ -22,7 +22,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -52,13 +51,6 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 		kubeContext:        runCtx.KubeContext,
 		insecureRegistries: runCtx.InsecureRegistries,
 	}, nil
-}
-
-// Labels are labels specific to cluster builder.
-func (b *Builder) Labels() map[string]string {
-	return map[string]string{
-		constants.Labels.Builder: "cluster",
-	}
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {

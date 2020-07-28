@@ -782,3 +782,37 @@ func TestValidateWorkspaces(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateLogsConfig(t *testing.T) {
+	tests := []struct {
+		prefix    string
+		cfg       latest.LogsConfig
+		shouldErr bool
+	}{
+		{prefix: "auto", shouldErr: false},
+		{prefix: "container", shouldErr: false},
+		{prefix: "podAndContainer", shouldErr: false},
+		{prefix: "none", shouldErr: false},
+		{prefix: "", shouldErr: false},
+		{prefix: "unknown", shouldErr: true},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.prefix, func(t *testutil.T) {
+			// disable yamltags validation
+			t.Override(&validateYamltags, func(interface{}) error { return nil })
+
+			err := Process(
+				&latest.SkaffoldConfig{
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							Logs: latest.LogsConfig{
+								Prefix: test.prefix,
+							},
+						},
+					},
+				})
+
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}

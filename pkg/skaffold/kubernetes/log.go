@@ -30,12 +30,14 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
 	output      io.Writer
 	kubectlcli  *kubectl.CLI
+	config      latest.LogsConfig
 	podWatcher  PodWatcher
 	colorPicker ColorPicker
 
@@ -47,10 +49,11 @@ type LogAggregator struct {
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector PodSelector, namespaces []string) *LogAggregator {
+func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector PodSelector, namespaces []string, config latest.LogsConfig) *LogAggregator {
 	return &LogAggregator{
 		output:      out,
 		kubectlcli:  cli,
+		config:      config,
 		podWatcher:  NewPodWatcher(podSelector, namespaces),
 		colorPicker: NewColorPicker(imageNames),
 		events:      make(chan PodEvent),
@@ -154,7 +157,7 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	}()
 
 	headerColor := a.colorPicker.Pick(pod)
-	prefix := prefix(pod, container)
+	prefix := a.prefix(pod, container)
 	if err := a.streamRequest(ctx, headerColor, prefix, tr); err != nil {
 		logrus.Errorf("streaming request %s", err)
 	}
@@ -171,11 +174,37 @@ func (a *LogAggregator) printLogLine(headerColor color.Color, prefix, text strin
 	}
 }
 
-func prefix(pod *v1.Pod, container v1.ContainerStatus) string {
+func (a *LogAggregator) prefix(pod *v1.Pod, container v1.ContainerStatus) string {
+	switch a.config.Prefix {
+	case "auto":
+		if pod.Name != container.Name {
+			return podAndContainerPrefix(pod, container)
+		}
+		return autoPrefix(pod, container)
+	case "container":
+		return containerPrefix(container)
+	case "podAndContainer":
+		return podAndContainerPrefix(pod, container)
+	case "none":
+		return ""
+	default:
+		panic("unsupported prefix: " + a.config.Prefix)
+	}
+}
+
+func autoPrefix(pod *v1.Pod, container v1.ContainerStatus) string {
 	if pod.Name != container.Name {
 		return fmt.Sprintf("[%s %s]", pod.Name, container.Name)
 	}
 	return fmt.Sprintf("[%s]", container.Name)
+}
+
+func containerPrefix(container v1.ContainerStatus) string {
+	return fmt.Sprintf("[%s]", container.Name)
+}
+
+func podAndContainerPrefix(pod *v1.Pod, container v1.ContainerStatus) string {
+	return fmt.Sprintf("[%s %s]", pod.Name, container.Name)
 }
 
 func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Color, prefix string, rc io.Reader) error {

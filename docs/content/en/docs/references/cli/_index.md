@@ -99,6 +99,7 @@ Env vars:
 
 * `SKAFFOLD_COLOR` (same as `--color`)
 * `SKAFFOLD_INTERACTIVE` (same as `--interactive`)
+* `SKAFFOLD_UPDATE_CHECK` (same as `--update-check`)
 * `SKAFFOLD_VERBOSITY` (same as `--verbosity`)
 
 ### skaffold build
@@ -149,6 +150,7 @@ Options:
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
+      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --toot=false: Emit a terminal beep after the deploy is complete
 
@@ -182,6 +184,7 @@ Env vars:
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
+* `SKAFFOLD_SUPPRESS_LOGS` (same as `--suppress-logs`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 
@@ -342,7 +345,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
@@ -358,10 +361,14 @@ Options:
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
+      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
+      --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
+      --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
+      --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
   -w, --watch-image=[]: Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
   -i, --watch-poll-interval=1000: Interval (in ms) between two checks for file changes
 
@@ -397,10 +404,14 @@ Env vars:
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
+* `SKAFFOLD_SUPPRESS_LOGS` (same as `--suppress-logs`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_TRIGGER` (same as `--trigger`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
 * `SKAFFOLD_WATCH_IMAGE` (same as `--watch-image`)
 * `SKAFFOLD_WATCH_POLL_INTERVAL` (same as `--watch-poll-interval`)
 
@@ -467,7 +478,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
   -i, --images=: A list of pre-built images to deploy
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
@@ -481,8 +492,12 @@ Options:
       --rpc-port=50051: tcp port to expose event API
       --skip-render=false: Don't render the manifests, just deploy them
       --status-check=true: Wait for deployed resources to stabilize
+      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check, none, all)
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
+      --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
+      --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
+      --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
 
 Usage:
   skaffold deploy [options]
@@ -512,8 +527,12 @@ Env vars:
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_RENDER` (same as `--skip-render`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
+* `SKAFFOLD_SUPPRESS_LOGS` (same as `--suppress-logs`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
 
 ### skaffold dev
 
@@ -530,7 +549,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
@@ -547,10 +566,14 @@ Options:
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
+      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
+      --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
+      --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
+      --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
   -w, --watch-image=[]: Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
   -i, --watch-poll-interval=1000: Interval (in ms) between two checks for file changes
 
@@ -587,10 +610,14 @@ Env vars:
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
+* `SKAFFOLD_SUPPRESS_LOGS` (same as `--suppress-logs`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_TRIGGER` (same as `--trigger`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
 * `SKAFFOLD_WATCH_IMAGE` (same as `--watch-image`)
 * `SKAFFOLD_WATCH_POLL_INTERVAL` (same as `--watch-poll-interval`)
 
@@ -707,6 +734,7 @@ The following options can be passed to any command:
 
       --color=34: Specify the default output color in ANSI escape codes
       --interactive=true: Allow user prompts for more information
+      --update-check=true: Check for a more recent version of Skaffold
   -v, --verbosity='warning': Log level (debug, info, warn, error, fatal, panic)
 
 
@@ -783,7 +811,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
@@ -801,9 +829,13 @@ Options:
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
+      --suppress-logs=[]: Suppress logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
+      --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
+      --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
+      --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
 
 Usage:
   skaffold run [options]
@@ -839,9 +871,13 @@ Env vars:
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
+* `SKAFFOLD_SUPPRESS_LOGS` (same as `--suppress-logs`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
+* `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
 
 ### skaffold schema
 

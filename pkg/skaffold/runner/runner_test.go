@@ -90,7 +90,6 @@ func (t *TestBench) WithTestErrors(testErrors []error) *TestBench {
 	return t
 }
 
-func (t *TestBench) Labels() map[string]string                        { return map[string]string{} }
 func (t *TestBench) TestDependencies() ([]string, error)              { return nil, nil }
 func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
 func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
@@ -150,20 +149,20 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []build.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ []deploy.Labeller) *deploy.Result {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact) ([]string, error) {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
 		if err != nil {
-			return deploy.NewDeployErrorResult(err)
+			return nil, err
 		}
 	}
 
 	t.currentActions.Deployed = findTags(artifacts)
-	return deploy.NewDeploySuccessResult(t.namespaces)
+	return t.namespaces, nil
 }
 
-func (t *TestBench) Render(context.Context, io.Writer, []build.Artifact, []deploy.Labeller, bool, string) error {
+func (t *TestBench) Render(context.Context, io.Writer, []build.Artifact, bool, string) error {
 	return nil
 }
 

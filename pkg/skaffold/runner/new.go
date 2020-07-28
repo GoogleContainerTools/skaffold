@@ -55,9 +55,10 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating builder: %w", err)
 	}
 
+	labeller := deploy.NewLabeller(runCtx.Opts.AddSkaffoldLabels, runCtx.Opts.CustomLabels)
 	tester := getTester(runCtx, imagesAreLocal)
 	syncer := getSyncer(runCtx)
-	deployer := getDeployer(runCtx)
+	deployer := getDeployer(runCtx, labeller.Labels())
 
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx.InsecureRegistries)
@@ -77,11 +78,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	if err != nil {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
-
-	defaultLabeller := deploy.NewLabeller(runCtx.Opts)
-	// runCtx.Opts is last to let users override/remove any label
-	// deployer labels are added during deployment
-	labellers := []deploy.Labeller{builder, tagger, defaultLabeller}
 
 	builder, tester, deployer = WithTimings(builder, tester, deployer, runCtx.Opts.CacheArtifacts)
 	if runCtx.Opts.Notification {
@@ -111,14 +107,13 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 			Trigger:    trigger,
 			intentChan: intentChan,
 		},
-		kubectlCLI:      kubectlCLI,
-		labellers:       labellers,
-		defaultLabeller: defaultLabeller,
-		podSelector:     kubernetes.NewImageList(),
-		cache:           artifactCache,
-		runCtx:          runCtx,
-		intents:         intents,
-		imagesAreLocal:  imagesAreLocal,
+		kubectlCLI:     kubectlCLI,
+		labeller:       labeller,
+		podSelector:    kubernetes.NewImageList(),
+		cache:          artifactCache,
+		runCtx:         runCtx,
+		intents:        intents,
+		imagesAreLocal: imagesAreLocal,
 	}, nil
 }
 
@@ -191,19 +186,19 @@ func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
 	return sync.NewSyncer(runCtx)
 }
 
-func getDeployer(runCtx *runcontext.RunContext) deploy.Deployer {
+func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) deploy.Deployer {
 	var deployers deploy.DeployerMux
 
 	if runCtx.Cfg.Deploy.HelmDeploy != nil {
-		deployers = append(deployers, deploy.NewHelmDeployer(runCtx))
+		deployers = append(deployers, deploy.NewHelmDeployer(runCtx, labels))
 	}
 
 	if runCtx.Cfg.Deploy.KubectlDeploy != nil {
-		deployers = append(deployers, deploy.NewKubectlDeployer(runCtx))
+		deployers = append(deployers, deploy.NewKubectlDeployer(runCtx, labels))
 	}
 
 	if runCtx.Cfg.Deploy.KustomizeDeploy != nil {
-		deployers = append(deployers, deploy.NewKustomizeDeployer(runCtx))
+		deployers = append(deployers, deploy.NewKustomizeDeployer(runCtx, labels))
 	}
 
 	// avoid muxing overhead when only a single deployer is configured

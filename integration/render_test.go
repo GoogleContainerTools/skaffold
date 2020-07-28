@@ -30,7 +30,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -45,7 +44,6 @@ func TestKubectlRenderOutput(t *testing.T) {
 	test := struct {
 		description string
 		builds      []build.Artifact
-		labels      []deploy.Labeller
 		renderPath  string
 		input       string
 		expectedOut string
@@ -57,7 +55,6 @@ func TestKubectlRenderOutput(t *testing.T) {
 				Tag:       "gcr.io/k8s-skaffold/skaffold:test",
 			},
 		},
-		labels:     []deploy.Labeller{},
 		renderPath: "./test-output",
 		input: `apiVersion: v1
 kind: Pod
@@ -91,9 +88,9 @@ spec:
 					},
 				},
 			},
-		})
+		}, nil)
 		var b bytes.Buffer
-		err := deployer.Render(context.Background(), &b, test.builds, test.labels, false, test.renderPath)
+		err := deployer.Render(context.Background(), &b, test.builds, false, test.renderPath)
 
 		t.CheckNoError(err)
 		dat, err := ioutil.ReadFile(test.renderPath)
@@ -109,7 +106,6 @@ func TestKubectlRender(t *testing.T) {
 	tests := []struct {
 		description string
 		builds      []build.Artifact
-		labels      []deploy.Labeller
 		input       string
 		expectedOut string
 	}{
@@ -121,7 +117,6 @@ func TestKubectlRender(t *testing.T) {
 					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
 				},
 			},
-			labels: []deploy.Labeller{},
 			input: `apiVersion: v1
 kind: Pod
 metadata:
@@ -134,8 +129,6 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kubectl
   name: my-pod-123
   namespace: default
 spec:
@@ -156,7 +149,6 @@ spec:
 					Tag:       "gcr.io/project/image2:tag2",
 				},
 			},
-			labels: []deploy.Labeller{},
 			input: `apiVersion: v1
 kind: Pod
 metadata:
@@ -171,8 +163,6 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kubectl
   name: my-pod-123
   namespace: default
 spec:
@@ -216,8 +206,6 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kubectl
   name: my-pod-123
   namespace: default
 spec:
@@ -228,8 +216,6 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kubectl
   name: my-pod-456
   namespace: default
 spec:
@@ -256,12 +242,9 @@ spec:
 						},
 					},
 				},
-				Opts: config.SkaffoldOptions{
-					AddSkaffoldLabels: true,
-				},
-			})
+			}, nil)
 			var b bytes.Buffer
-			err := deployer.Render(context.Background(), &b, test.builds, test.labels, false, "")
+			err := deployer.Render(context.Background(), &b, test.builds, false, "")
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedOut, b.String())
@@ -277,7 +260,6 @@ func TestHelmRender(t *testing.T) {
 	tests := []struct {
 		description  string
 		builds       []build.Artifact
-		labels       []deploy.Labeller
 		helmReleases []latest.HelmRelease
 		expectedOut  string
 	}{
@@ -289,7 +271,6 @@ func TestHelmRender(t *testing.T) {
 					Tag:       "gke-loadbalancer:test",
 				},
 			},
-			labels: []deploy.Labeller{},
 			helmReleases: []latest.HelmRelease{{
 				Name:      "gke_loadbalancer",
 				ChartPath: "testdata/gke_loadbalancer/loadbalancer-helm",
@@ -348,7 +329,6 @@ spec:
 					Tag:       "gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenslettersandnumbers",
 				},
 			},
-			labels: []deploy.Labeller{},
 			helmReleases: []latest.HelmRelease{{
 				Name:      "skaffold-helm",
 				ChartPath: "testdata/helm/skaffold-helm",
@@ -447,9 +427,9 @@ spec:
 						},
 					},
 				},
-			})
+			}, nil)
 			var b bytes.Buffer
-			err := deployer.Render(context.Background(), &b, test.builds, test.labels, true, "")
+			err := deployer.Render(context.Background(), &b, test.builds, true, "")
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedOut, b.String())
@@ -596,12 +576,7 @@ kind: Pod
 metadata:
   labels:
     app.kubernetes.io/managed-by: SOMEDYNAMICVALUE
-    skaffold.dev/builder: local
-    skaffold.dev/cleanup: "true"
-    skaffold.dev/deployer: kubectl
-    skaffold.dev/docker-api-version: SOMEDYNAMICVALUE
     skaffold.dev/run-id: SOMEDYNAMICVALUE
-    skaffold.dev/tag-policy: git-commit
   name: my-pod-123
 spec:
   containers:
@@ -704,12 +679,7 @@ kind: Pod
 metadata:
   labels:
     app.kubernetes.io/managed-by: SOMEDYNAMICVALUE
-    skaffold.dev/builder: local
-    skaffold.dev/cleanup: "true"
-    skaffold.dev/deployer: kustomize
-    skaffold.dev/docker-api-version: SOMEDYNAMICVALUE
     skaffold.dev/run-id: SOMEDYNAMICVALUE
-    skaffold.dev/tag-policy: git-commit
     this-is-from: kustomization.yaml
   name: my-pod-123
 spec:

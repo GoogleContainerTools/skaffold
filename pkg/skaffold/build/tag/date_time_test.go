@@ -23,7 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
+func TestDateTime_GenerateTag(t *testing.T) {
 	aLocalTimeStamp := time.Date(2015, 03, 07, 11, 06, 39, 123456789, time.Local)
 	localZone, _ := aLocalTimeStamp.Zone()
 
@@ -32,28 +32,32 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 		format      string
 		buildTime   time.Time
 		timezone    string
-		imageName   string
 		want        string
+		shouldErr   bool
 	}{
 		{
 			description: "default formatter",
 			buildTime:   aLocalTimeStamp,
-			imageName:   "test_image",
-			want:        "test_image:2015-03-07_11-06-39.123_" + localZone,
+			want:        "2015-03-07_11-06-39.123_" + localZone,
 		},
 		{
 			description: "user provided timezone",
 			buildTime:   time.Unix(1234, 123456789),
 			timezone:    "UTC",
-			imageName:   "test_image",
-			want:        "test_image:1970-01-01_00-20-34.123_UTC",
+			want:        "1970-01-01_00-20-34.123_UTC",
 		},
 		{
 			description: "user provided format",
 			buildTime:   aLocalTimeStamp,
 			format:      "2006-01-02",
-			imageName:   "test_image",
-			want:        "test_image:2015-03-07",
+			want:        "2015-03-07",
+		},
+		{
+			description: "invalid timezone",
+			buildTime:   aLocalTimeStamp,
+			format:      "2006-01-02",
+			timezone:    "foo",
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
@@ -64,10 +68,9 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 				timeFn:   func() time.Time { return test.buildTime },
 			}
 
-			tag, err := c.GenerateFullyQualifiedImageName(".", test.imageName)
+			tag, err := c.GenerateTag(".", "test")
 
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.want, tag)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, tag)
 		})
 	}
 }

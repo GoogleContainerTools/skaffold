@@ -41,27 +41,6 @@ type Artifact struct {
 	Namespace string
 }
 
-// Labeller can give key/value labels to set on deployed resources.
-type Labeller interface {
-	// Labels keys must be prefixed with "skaffold.dev/"
-	Labels() map[string]string
-}
-
-// merge merges the labels from multiple sources.
-func merge(addSkaffoldLabels bool, deployer Labeller, sources ...Labeller) map[string]string {
-	if !addSkaffoldLabels {
-		return map[string]string{}
-	}
-
-	merged := deployer.Labels()
-
-	for _, src := range sources {
-		copyMap(merged, src.Labels())
-	}
-
-	return merged
-}
-
 // retry 3 times to give the object time to propagate to the API server
 const (
 	tries     = 3
@@ -69,6 +48,10 @@ const (
 )
 
 func labelDeployResults(labels map[string]string, results []Artifact) {
+	if len(labels) == 0 {
+		return
+	}
+
 	// use the kubectl client to update all k8s objects with a skaffold watermark
 	dynClient, err := kubernetes.DynamicClient()
 	if err != nil {

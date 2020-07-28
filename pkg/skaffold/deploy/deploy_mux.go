@@ -57,24 +57,18 @@ func (s stringSet) toList() []string {
 	return res
 }
 
-func (m DeployerMux) Labels() map[string]string {
-	labels := make(map[string]string)
-	for _, deployer := range m {
-		copyMap(labels, deployer.Labels())
-	}
-	return labels
-}
-
-func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []build.Artifact, ls []Labeller) *Result {
+func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []build.Artifact) ([]string, error) {
 	seenNamespaces := newStringSet()
+
 	for _, deployer := range m {
-		result := deployer.Deploy(ctx, w, as, ls)
-		if result.err != nil {
-			return result
+		namespaces, err := deployer.Deploy(ctx, w, as)
+		if err != nil {
+			return nil, err
 		}
-		seenNamespaces.insert(result.Namespaces()...)
+		seenNamespaces.insert(namespaces...)
 	}
-	return NewDeploySuccessResult(seenNamespaces.toList())
+
+	return seenNamespaces.toList(), nil
 }
 
 func (m DeployerMux) Dependencies() ([]string, error) {
@@ -98,11 +92,11 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
-func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []build.Artifact, ls []Labeller, offline bool, filepath string) error {
+func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []build.Artifact, offline bool, filepath string) error {
 	resources, buf := []string{}, &bytes.Buffer{}
 	for _, deployer := range m {
 		buf.Reset()
-		if err := deployer.Render(ctx, buf, as, ls, offline, "" /* never write to files */); err != nil {
+		if err := deployer.Render(ctx, buf, as, offline, "" /* never write to files */); err != nil {
 			return err
 		}
 		resources = append(resources, buf.String())

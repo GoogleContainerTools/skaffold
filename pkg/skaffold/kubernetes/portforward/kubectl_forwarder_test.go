@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -91,6 +92,9 @@ func TestTerminate(t *testing.T) {
 }
 
 func TestMonitorErrorLogs(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skip flaky test until it's fixed")
+	}
 	tests := []struct {
 		description string
 		input       string
@@ -100,13 +104,16 @@ func TestMonitorErrorLogs(t *testing.T) {
 			description: "no error logs appear",
 			input:       "some random logs",
 			cmdRunning:  true,
-		}, {
+		},
+		{
 			description: "match on 'error forwarding port'",
 			input:       "error forwarding port 8080",
-		}, {
+		},
+		{
 			description: "match on 'unable to forward'",
 			input:       "unable to forward 8080",
-		}, {
+		},
+		{
 			description: "match on 'error upgrading connection'",
 			input:       "error upgrading connection 8080",
 		},
@@ -114,35 +121,31 @@ func TestMonitorErrorLogs(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&waitErrorLogs, 50*time.Millisecond)
+			t.Override(&waitErrorLogs, 10*time.Millisecond)
+			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+			defer cancel()
 
-			ctx, cancel := context.WithCancel(context.Background())
 			cmdStr := "sleep"
 			if runtime.GOOS == "windows" {
 				cmdStr = "timeout"
 			}
 			cmd := kubectl.CommandContext(ctx, cmdStr, "5")
 			if err := cmd.Start(); err != nil {
-				t.Fatal("error starting command")
+				t.Fatalf("error starting command: %v", err)
 			}
 
 			var wg sync.WaitGroup
 			wg.Add(1)
 
 			go func() {
-				defer wg.Done()
+				logs := strings.NewReader(test.input)
+
 				k := KubectlForwarder{}
-				logs := bytes.NewBuffer([]byte(test.input))
 				k.monitorErrorLogs(ctx, logs, cmd, &portForwardEntry{})
+
+				wg.Done()
 			}()
 
-			// need to sleep for one second before cancelling the context
-			// because there is a one second sleep in the switch statement
-			// of monitorLogs
-			time.Sleep(50 * time.Millisecond)
-
-			// cancel the context and then wait for monitorErrorLogs to return
-			cancel()
 			wg.Wait()
 
 			// make sure the command is running or killed based on what's expected

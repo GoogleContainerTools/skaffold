@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -58,10 +59,11 @@ func TestKustomizeDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kustomize build .", deploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
-				Tag:       "leeroy-web:123",
+				Tag:       "leeroy-web:v1",
 			}},
 			forceDeploy: true,
 		},
@@ -74,15 +76,16 @@ func TestKustomizeDeploy(t *testing.T) {
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kustomize build a", deploymentWebYAML).
 				AndRunOut("kustomize build b", deploymentAppYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1+"\n---\n"+deploymentAppYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
-					Tag:       "leeroy-web:123",
+					Tag:       "leeroy-web:v1",
 				},
 				{
 					ImageName: "leeroy-app",
-					Tag:       "leeroy-app:123",
+					Tag:       "leeroy-app:v1",
 				},
 			},
 			forceDeploy: true,
@@ -107,9 +110,14 @@ func TestKustomizeDeploy(t *testing.T) {
 				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 					Force:     test.forceDeploy,
+					WaitForDeletions: config.WaitForDeletions{
+						Enabled: true,
+						Delay:   0 * time.Second,
+						Max:     10 * time.Second,
+					},
 				},
-			})
-			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil).GetError()
+			}, nil)
+			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -184,7 +192,7 @@ func TestKustomizeCleanup(t *testing.T) {
 				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
-			})
+			}, nil)
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
 			t.CheckError(test.shouldErr, err)
@@ -396,7 +404,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-			})
+			}, nil)
 			deps, err := k.Dependencies()
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, tmpDir.Paths(test.expected...), deps)
@@ -469,13 +477,6 @@ func TestKustomizeBuildCommandArgs(t *testing.T) {
 	}
 }
 
-type testLabels struct {
-	labels map[string]string
-}
-
-func (t *testLabels) Labels() map[string]string {
-	return t.labels
-}
 func TestKustomizeRender(t *testing.T) {
 	type kustomizationCall struct {
 		folder      string
@@ -484,7 +485,7 @@ func TestKustomizeRender(t *testing.T) {
 	tests := []struct {
 		description    string
 		builds         []build.Artifact
-		labels         []Labeller
+		labels         map[string]string
 		kustomizations []kustomizationCall
 		expected       string
 		shouldErr      bool
@@ -520,8 +521,6 @@ spec:
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kustomize
   namespace: default
 spec:
   containers:
@@ -543,12 +542,7 @@ spec:
 					Tag:       "gcr.io/project/image2:tag2",
 				},
 			},
-			labels: []Labeller{
-				&testLabels{
-					labels: map[string]string{
-						"user/label": "test",
-					}},
-			},
+			labels: map[string]string{"user/label": "test"},
 			kustomizations: []kustomizationCall{
 				{
 					folder: ".",
@@ -569,7 +563,6 @@ spec:
 kind: Pod
 metadata:
   labels:
-    skaffold.dev/deployer: kustomize
     user/label: test
   namespace: default
 spec:
@@ -621,8 +614,6 @@ spec:
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kustomize
   namespace: default
 spec:
   containers:
@@ -632,8 +623,6 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    skaffold.dev/deployer: kustomize
   namespace: default
 spec:
   containers:
@@ -668,12 +657,11 @@ spec:
 				},
 				KubeContext: testKubeContext,
 				Opts: config.SkaffoldOptions{
-					Namespace:         testNamespace,
-					AddSkaffoldLabels: true,
+					Namespace: testNamespace,
 				},
-			})
+			}, test.labels)
 			var b bytes.Buffer
-			err := k.Render(context.Background(), &b, test.builds, test.labels, true, "")
+			err := k.Render(context.Background(), &b, test.builds, true, "")
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})
