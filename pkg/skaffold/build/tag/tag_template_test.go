@@ -110,6 +110,42 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 	}
 }
 
+func TestTagTemplate_NewTagTemplateTagger(t *testing.T) {
+	tests := []struct {
+		description string
+		template    string
+		customMap   map[string]Tagger
+		shouldErr   bool
+	}{
+		{
+			description: "valid template with nil map",
+			template:    "{{.FOO}}",
+		},
+		{
+			description: "valid template with atleast one mapping",
+			template:    "{{.FOO}}",
+			customMap:   map[string]Tagger{"FOO": &ChecksumTagger{}},
+		},
+		{
+			description: "invalid template with nil mapping",
+			template:    "{{.FOO",
+			shouldErr:   true,
+		},
+		{
+			description: "invalid template with atleast one mapping",
+			template:    "{{.FOO",
+			customMap:   map[string]Tagger{"FOO": &ChecksumTagger{}},
+			shouldErr:   true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			_, err := NewTagTemplateTagger(test.template, test.customMap)
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
 func TestTagTemplate_ExecuteTagTemplate(t *testing.T) {
 	tests := []struct {
 		description string
