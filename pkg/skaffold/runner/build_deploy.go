@@ -189,6 +189,8 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 				return nil, err
 			}
 
+			tag = deploy.ApplyRepoPrefix(r.runCtx.Opts.RepoPrefix, tag)
+
 			fmt.Fprintln(out, tag)
 			imageTags[imageName] = tag
 		}

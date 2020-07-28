@@ -145,6 +145,7 @@ Options:
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
   -q, --quiet=false: Suppress the build output and print image built on success. See --output to format output.
+      --repo-prefix='': Prefix to attach to container image names
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
@@ -177,6 +178,7 @@ Env vars:
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_QUIET` (same as `--quiet`)
+* `SKAFFOLD_REPO_PREFIX` (same as `--repo-prefix`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
@@ -351,6 +353,7 @@ Options:
       --port-forward=false: Port-forward exposed container ports within pods
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --repo-prefix='': Prefix to attach to container image names
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
@@ -389,6 +392,7 @@ Env vars:
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_REPO_PREFIX` (same as `--repo-prefix`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
@@ -416,6 +420,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --repo-prefix='': Prefix to attach to container image names
 
 Usage:
   skaffold delete [options]
@@ -434,6 +439,7 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_REPO_PREFIX` (same as `--repo-prefix`)
 
 ### skaffold deploy
 
@@ -470,6 +476,7 @@ Options:
       --port-forward=false: Port-forward exposed container ports within pods
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --repo-prefix='': Prefix to attach to container image names
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-render=false: Don't render the manifests, just deploy them
@@ -500,6 +507,7 @@ Env vars:
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_REPO_PREFIX` (same as `--repo-prefix`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_RENDER` (same as `--skip-render`)
@@ -534,6 +542,7 @@ Options:
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --render-only=false: Print rendered Kubernetes manifests instead of deploying them
+      --repo-prefix='': Prefix to attach to container image names
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
@@ -573,6 +582,7 @@ Env vars:
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_RENDER_ONLY` (same as `--render-only`)
+* `SKAFFOLD_REPO_PREFIX` (same as `--repo-prefix`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
@@ -726,6 +736,7 @@ Options:
       --output='': file to write rendered manifests to
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --repo-prefix='': Prefix to attach to container image names
 
 Usage:
   skaffold render [options]
@@ -748,6 +759,7 @@ Env vars:
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_REPO_PREFIX` (same as `--repo-prefix`)
 
 ### skaffold run
 
@@ -784,6 +796,7 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --render-only=false: Print rendered Kubernetes manifests instead of deploying them
       --render-output='': Writes '--render-only' output to the specified file
+      --repo-prefix='': Prefix to attach to container image names
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
@@ -821,6 +834,7 @@ Env vars:
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_RENDER_ONLY` (same as `--render-only`)
 * `SKAFFOLD_RENDER_OUTPUT` (same as `--render-output`)
+* `SKAFFOLD_REPO_PREFIX` (same as `--repo-prefix`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)

@@ -24,6 +24,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -166,4 +167,9 @@ func ApplyDefaultRepo(globalConfig string, defaultRepo *string, tag string) (str
 	}
 
 	return newTag, nil
+}
+
+// ApplyRepoPrefix applies prefix to the given image tag
+func ApplyRepoPrefix(prefix string, image string) string {
+	return path.Join(prefix, image)
 }

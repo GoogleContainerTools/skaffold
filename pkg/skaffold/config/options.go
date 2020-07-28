@@ -81,6 +81,7 @@ type SkaffoldOptions struct {
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
 	MinikubeProfile string
+	RepoPrefix      string
 }
 
 // Prune returns true iff the user did NOT specify the --no-prune flag,

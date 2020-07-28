@@ -368,6 +368,14 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"render"},
 	},
+	{
+		Name:          "repo-prefix",
+		Usage:         "Prefix to attach to container image names",
+		Value:         &opts.RepoPrefix,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
+	},
 }
 
 func (fl *Flag) flag() *pflag.Flag {
