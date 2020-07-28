@@ -18,7 +18,6 @@ package tag
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"text/template"
 
