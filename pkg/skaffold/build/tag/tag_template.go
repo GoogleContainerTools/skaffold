@@ -50,6 +50,7 @@ func (t *tagTemplateTagger) GenerateTag(workingDir, imageName string) (string, e
 		return "", err
 	}
 
+	// missingkey=error throws error when map is indexed with an undefined key
 	tag, err := ExecuteTagTemplate(t.Template.Option("missingkey=error"), customMap)
 	if err != nil {
 		return "", err
