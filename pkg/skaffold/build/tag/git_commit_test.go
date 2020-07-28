@@ -440,7 +440,7 @@ func TestGitCommit_TagTemplate(t *testing.T) {
 			test.createGitRepo(tmpDir.Root())
 			workspace := tmpDir.Path(test.subDir)
 
-			c, err := NewTagTemplateTagger(test.template, test.customMap)
+			c, err := NewTemplateTagger(test.template, test.customMap)
 
 			t.CheckNoError(err)
 

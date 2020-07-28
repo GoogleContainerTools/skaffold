@@ -37,7 +37,7 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 	invalidEnvTemplate, _ := NewEnvTemplateTagger("{{.BAR}}")
 	env := []string{"FOO=BAR"}
 
-	tagTemplateExample, _ := NewTagTemplateTagger("", nil)
+	tagTemplateExample, _ := NewTemplateTagger("", nil)
 
 	tests := []struct {
 		description string
@@ -99,7 +99,7 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return env })
 
-			c, err := NewTagTemplateTagger(test.template, test.customMap)
+			c, err := NewTemplateTagger(test.template, test.customMap)
 
 			t.CheckNoError(err)
 
@@ -110,7 +110,7 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 	}
 }
 
-func TestTagTemplate_NewTagTemplateTagger(t *testing.T) {
+func TestTagTemplate_NewTemplateTagger(t *testing.T) {
 	tests := []struct {
 		description string
 		template    string
@@ -140,7 +140,7 @@ func TestTagTemplate_NewTagTemplateTagger(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := NewTagTemplateTagger(test.template, test.customMap)
+			_, err := NewTemplateTagger(test.template, test.customMap)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
