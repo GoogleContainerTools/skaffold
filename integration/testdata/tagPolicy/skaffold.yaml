@@ -27,5 +27,5 @@ profiles:
   build:
     tagPolicy:
       envTemplate:
-        template: "{{.IMAGE_NAME}}:tag"
+        template: "tag"
 - name: args
