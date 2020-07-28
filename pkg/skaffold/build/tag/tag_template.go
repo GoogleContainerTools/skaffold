@@ -77,7 +77,7 @@ func (t *tagTemplateTagger) EvaluateComponents(workingDir, imageName string) (ma
 		}
 		tag, err := v.GenerateTag(workingDir, imageName)
 		if err != nil {
-			return nil, fmt.Errorf("evaluating component: %w", err)
+			return nil, fmt.Errorf("evaluating tag template component: %w", err)
 		}
 		customMap[k] = tag
 	}
