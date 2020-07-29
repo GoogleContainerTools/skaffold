@@ -356,8 +356,8 @@ func TestFindNewestPodForService(t *testing.T) {
 			},
 			serviceName: "notfound",
 			servicePort: 80,
-			shouldErr: true,
-			chosenPort: -1,
+			shouldErr:   true,
+			chosenPort:  -1,
 		},
 		{
 			description: "port not found",
@@ -368,16 +368,16 @@ func TestFindNewestPodForService(t *testing.T) {
 			},
 			serviceName: "svc",
 			servicePort: 90,
-			shouldErr: true,
-			chosenPort: -1,
+			shouldErr:   true,
+			chosenPort:  -1,
 		},
 		{
 			description: "port not found",
-			clientErr: errors.New("injected failure"),
+			clientErr:   errors.New("injected failure"),
 			serviceName: "svc",
 			servicePort: 90,
-			shouldErr: true,
-			chosenPort: -1,
+			shouldErr:   true,
+			chosenPort:  -1,
 		},
 	}
 	for _, test := range tests {
