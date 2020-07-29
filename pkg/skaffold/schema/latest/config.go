@@ -128,6 +128,9 @@ type TagPolicy struct {
 
 	// DateTimeTagger *beta* tags images with the build timestamp.
 	DateTimeTagger *DateTimeTagger `yaml:"dateTime,omitempty" yamltags:"oneOf=tag"`
+
+	// TagTemplateTagger *beta* tags images with a configurable template string *composed of other taggers*.
+	TagTemplateTagger *TagTemplateTagger `yaml:"tagTemplate,omitempty" yamltags:"oneOf=tag"`
 }
 
 // ShaTagger *beta* tags images with their sha256 digest.
@@ -168,6 +171,27 @@ type DateTimeTagger struct {
 	// See [Time.LoadLocation](https://golang.org/pkg/time/#Time.LoadLocation).
 	// Defaults to the local timezone.
 	TimeZone string `yaml:"timezone,omitempty"`
+}
+
+// TagTemplateTagger *beta* tags images with a configurable template string.
+type TagTemplateTagger struct {
+	// Template used to produce the image name and tag.
+	// See golang [text/template](https://golang.org/pkg/text/template/).
+	// The template is executed against the provided components with those variables injected.
+	// For example: `{{.DATE}}` where DATE references a TaggerComponent.
+	Template string `yaml:"template,omitempty" yamltags:"required"`
+
+	// Components lists TaggerComponents that the template (see field above) can be executed against.
+	Components []TaggerComponent `yaml:"components,omitempty"`
+}
+
+// TaggerComponent *beta* is a component of TagTemplateTagger.
+type TaggerComponent struct {
+	// Name is an identifier for the component.
+	Name string `yaml:"name,omitempty"`
+
+	// Component is a tagging strategy to be used in TagTemplateTagger.
+	Component TagPolicy `yaml:",inline"`
 }
 
 // BuildType contains the specific implementation and parameters needed

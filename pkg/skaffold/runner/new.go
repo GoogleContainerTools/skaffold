@@ -230,7 +230,51 @@ func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {
 	case t.DateTimeTagger != nil:
 		return tag.NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil
 
+	case t.TagTemplateTagger != nil:
+		components, err := CreateComponents(t.TagTemplateTagger)
+
+		if err != nil {
+			return nil, fmt.Errorf("creating components: %w", err)
+		}
+
+		return tag.NewTemplateTagger(t.TagTemplateTagger.Template, components)
+
 	default:
 		return nil, fmt.Errorf("unknown tagger for strategy %+v", t)
 	}
+}
+
+// CreateComponents creates a map of taggers for TagTemplateTagger
+func CreateComponents(t *latest.TagTemplateTagger) (map[string]tag.Tagger, error) {
+	components := map[string]tag.Tagger{}
+
+	for _, taggerComponent := range t.Components {
+		name, c := taggerComponent.Name, taggerComponent.Component
+
+		if _, ok := components[name]; ok {
+			return nil, fmt.Errorf("multiple components with name %s", name)
+		}
+
+		switch {
+		case c.EnvTemplateTagger != nil:
+			components[name], _ = tag.NewEnvTemplateTagger(c.EnvTemplateTagger.Template)
+
+		case c.ShaTagger != nil:
+			components[name] = &tag.ChecksumTagger{}
+
+		case c.GitTagger != nil:
+			components[name], _ = tag.NewGitCommit(c.GitTagger.Prefix, c.GitTagger.Variant)
+
+		case c.DateTimeTagger != nil:
+			components[name] = tag.NewDateTimeTagger(c.DateTimeTagger.Format, c.DateTimeTagger.TimeZone)
+
+		case c.TagTemplateTagger != nil:
+			return nil, fmt.Errorf("cannot use tagTemplate as a component: %s %+v", name, c)
+
+		default:
+			return nil, fmt.Errorf("unknown component for tagTemplate: %s %+v", name, c)
+		}
+	}
+
+	return components, nil
 }
