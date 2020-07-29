@@ -43,6 +43,6 @@ type podSyncer struct {
 func NewSyncer(runCtx *runcontext.RunContext) Syncer {
 	return &podSyncer{
 		kubectl:    kubectl.NewFromRunContext(runCtx),
-		namespaces: runCtx.Namespaces,
+		namespaces: runCtx.GetNamespaces(),
 	}
 }

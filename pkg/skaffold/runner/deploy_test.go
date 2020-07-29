@@ -131,7 +131,7 @@ func TestDeployNamespace(t *testing.T) {
 				{ImageName: "img2", Tag: "img2:tag2"},
 			})
 
-			t.CheckDeepEqual(test.expected, runner.runCtx.Namespaces)
+			t.CheckDeepEqual(test.expected, runner.runCtx.GetNamespaces())
 		})
 	}
 }

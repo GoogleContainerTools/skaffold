@@ -41,18 +41,18 @@ type Builder struct {
 
 // NewBuilder creates a new Builder that builds artifacts on cluster.
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
-	timeout, err := time.ParseDuration(runCtx.Cfg.Build.Cluster.Timeout)
+	timeout, err := time.ParseDuration(runCtx.Pipeline().Build.Cluster.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("parsing timeout: %w", err)
 	}
 
 	return &Builder{
-		ClusterDetails:     runCtx.Cfg.Build.Cluster,
+		ClusterDetails:     runCtx.Pipeline().Build.Cluster,
 		kubectlcli:         kubectl.NewFromRunContext(runCtx),
 		timeout:            timeout,
-		kubeContext:        runCtx.KubeContext,
-		insecureRegistries: runCtx.InsecureRegistries,
-		muted:              runCtx.Opts.Muted,
+		kubeContext:        runCtx.GetKubeContext(),
+		insecureRegistries: runCtx.GetInsecureRegistries(),
+		muted:              runCtx.Muted(),
 	}, nil
 }
 

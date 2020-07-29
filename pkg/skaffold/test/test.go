@@ -44,9 +44,9 @@ func NewTester(runCtx *runcontext.RunContext, imagesAreLocal bool) Tester {
 	}
 
 	return FullTester{
-		testCases:      runCtx.Cfg.Test,
-		muted:          runCtx.Opts.Muted,
-		workingDir:     runCtx.WorkingDir,
+		testCases:      runCtx.Pipeline().Test,
+		workingDir:     runCtx.GetWorkingDir(),
+		muted:          runCtx.Muted(),
 		localDaemon:    localDaemon,
 		imagesAreLocal: imagesAreLocal,
 	}

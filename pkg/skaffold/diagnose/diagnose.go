@@ -33,11 +33,11 @@ import (
 )
 
 func CheckArtifacts(ctx context.Context, runCtx *runcontext.RunContext, out io.Writer) error {
-	for _, artifact := range runCtx.Cfg.Build.Artifacts {
+	for _, artifact := range runCtx.Pipeline().Build.Artifacts {
 		color.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.ImageName)
 
 		if artifact.DockerArtifact != nil {
-			size, err := sizeOfDockerContext(ctx, artifact, runCtx.InsecureRegistries)
+			size, err := sizeOfDockerContext(ctx, artifact, runCtx.GetInsecureRegistries())
 			if err != nil {
 				return fmt.Errorf("computing the size of the Docker context: %w", err)
 			}
@@ -45,11 +45,11 @@ func CheckArtifacts(ctx context.Context, runCtx *runcontext.RunContext, out io.W
 			fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
 		}
 
-		timeDeps1, deps, err := timeToListDependencies(ctx, artifact, runCtx.InsecureRegistries)
+		timeDeps1, deps, err := timeToListDependencies(ctx, artifact, runCtx.GetInsecureRegistries())
 		if err != nil {
 			return fmt.Errorf("listing artifact dependencies: %w", err)
 		}
-		timeDeps2, _, err := timeToListDependencies(ctx, artifact, runCtx.InsecureRegistries)
+		timeDeps2, _, err := timeToListDependencies(ctx, artifact, runCtx.GetInsecureRegistries())
 		if err != nil {
 			return fmt.Errorf("listing artifact dependencies: %w", err)
 		}
@@ -57,13 +57,13 @@ func CheckArtifacts(ctx context.Context, runCtx *runcontext.RunContext, out io.W
 		fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
 		fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
 
-		timeSyncMap1, err := timeToConstructSyncMap(artifact, runCtx.InsecureRegistries)
+		timeSyncMap1, err := timeToConstructSyncMap(artifact, runCtx.GetInsecureRegistries())
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return fmt.Errorf("construct artifact dependencies: %w", err)
 			}
 		}
-		timeSyncMap2, err := timeToConstructSyncMap(artifact, runCtx.InsecureRegistries)
+		timeSyncMap2, err := timeToConstructSyncMap(artifact, runCtx.GetInsecureRegistries())
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return fmt.Errorf("construct artifact dependencies: %w", err)

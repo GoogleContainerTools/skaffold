@@ -63,31 +63,31 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
 
-	localCluster, err := getLocalCluster(runCtx.Opts.GlobalConfig, runCtx.Opts.MinikubeProfile)
+	localCluster, err := getLocalCluster(runCtx.GlobalConfig(), runCtx.MinikubeProfile())
 	if err != nil {
 		return nil, fmt.Errorf("getting localCluster: %w", err)
 	}
 
 	var pushImages bool
-	if runCtx.Cfg.Build.LocalBuild.Push == nil {
+	if runCtx.Pipeline().Build.LocalBuild.Push == nil {
 		pushImages = !localCluster
 		logrus.Debugf("push value not present, defaulting to %t because localCluster is %t", pushImages, localCluster)
 	} else {
-		pushImages = *runCtx.Cfg.Build.LocalBuild.Push
+		pushImages = *runCtx.Pipeline().Build.LocalBuild.Push
 	}
 
 	return &Builder{
-		cfg:                *runCtx.Cfg.Build.LocalBuild,
-		kubeContext:        runCtx.KubeContext,
+		cfg:                *runCtx.Pipeline().Build.LocalBuild,
+		kubeContext:        runCtx.GetKubeContext(),
 		localDocker:        localDocker,
 		localCluster:       localCluster,
 		pushImages:         pushImages,
-		skipTests:          runCtx.Opts.SkipTests,
-		devMode:            runCtx.Opts.IsDevMode(),
-		prune:              runCtx.Opts.Prune(),
-		pruneChildren:      !runCtx.Opts.NoPruneChildren,
-		insecureRegistries: runCtx.InsecureRegistries,
-		muted:              runCtx.Opts.Muted,
+		skipTests:          runCtx.SkipTests(),
+		devMode:            runCtx.DevMode(),
+		prune:              runCtx.Prune(),
+		pruneChildren:      !runCtx.NoPruneChildren(),
+		insecureRegistries: runCtx.GetInsecureRegistries(),
+		muted:              runCtx.Muted(),
 	}, nil
 }
 

@@ -86,10 +86,10 @@ type Builder struct {
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
 func NewBuilder(runCtx *runcontext.RunContext) *Builder {
 	return &Builder{
-		GoogleCloudBuild:   runCtx.Cfg.Build.GoogleCloudBuild,
-		skipTests:          runCtx.Opts.SkipTests,
-		insecureRegistries: runCtx.InsecureRegistries,
-		muted:              runCtx.Opts.Muted,
+		GoogleCloudBuild:   runCtx.Pipeline().Build.GoogleCloudBuild,
+		skipTests:          runCtx.SkipTests(),
+		insecureRegistries: runCtx.GetInsecureRegistries(),
+		muted:              runCtx.Muted(),
 	}
 }
 

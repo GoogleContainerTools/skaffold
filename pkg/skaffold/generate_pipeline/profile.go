@@ -63,7 +63,7 @@ confirmLoop:
 	}
 
 	color.Default.Fprintln(out, "Creating skaffold profile \"oncluster\"...")
-	profile, err := generateProfile(out, runCtx.Opts.Namespace, configFile.Config)
+	profile, err := generateProfile(out, runCtx.GetKubeNamespace(), configFile.Config)
 	if err != nil {
 		return fmt.Errorf("generating profile \"oncluster\": %w", err)
 	}

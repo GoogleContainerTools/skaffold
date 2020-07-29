@@ -56,8 +56,8 @@ var (
 // NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.
 func NewAPIClientImpl(runCtx *runcontext.RunContext) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
-		env, apiClient, err := newAPIClient(runCtx.KubeContext, runCtx.Opts.MinikubeProfile)
-		dockerAPIClient = NewLocalDaemon(apiClient, env, runCtx.Opts.Prune(), runCtx.InsecureRegistries)
+		env, apiClient, err := newAPIClient(runCtx.GetKubeContext(), runCtx.MinikubeProfile())
+		dockerAPIClient = NewLocalDaemon(apiClient, env, runCtx.Prune(), runCtx.GetInsecureRegistries())
 		dockerAPIClientErr = err
 	})
 
