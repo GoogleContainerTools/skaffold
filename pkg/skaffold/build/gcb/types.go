@@ -79,6 +79,7 @@ type Builder struct {
 	*latest.GoogleCloudBuild
 	skipTests          bool
 	insecureRegistries map[string]bool
+	suppressLogs       []string
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
@@ -87,6 +88,7 @@ func NewBuilder(runCtx *runcontext.RunContext) *Builder {
 		GoogleCloudBuild:   runCtx.Cfg.Build.GoogleCloudBuild,
 		skipTests:          runCtx.Opts.SkipTests,
 		insecureRegistries: runCtx.InsecureRegistries,
+		suppressLogs:       runCtx.Opts.SuppressLogs,
 	}
 }
 

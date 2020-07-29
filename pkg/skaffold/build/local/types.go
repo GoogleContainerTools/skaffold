@@ -43,6 +43,7 @@ type Builder struct {
 	kubeContext        string
 	builtImages        []string
 	insecureRegistries map[string]bool
+	suppressLogs       []string
 }
 
 // external dependencies are wrapped
@@ -85,6 +86,7 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 		prune:              runCtx.Opts.Prune(),
 		pruneChildren:      !runCtx.Opts.NoPruneChildren,
 		insecureRegistries: runCtx.InsecureRegistries,
+		suppressLogs:       runCtx.Opts.SuppressLogs,
 	}, nil
 }
 
