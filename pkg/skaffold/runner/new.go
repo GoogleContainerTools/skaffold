@@ -230,22 +230,22 @@ func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {
 	case t.DateTimeTagger != nil:
 		return tag.NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil
 
-	case t.TagTemplateTagger != nil:
-		components, err := CreateComponents(t.TagTemplateTagger)
+	case t.TemplateTagger != nil:
+		components, err := CreateComponents(t.TemplateTagger)
 
 		if err != nil {
 			return nil, fmt.Errorf("creating components: %w", err)
 		}
 
-		return tag.NewTemplateTagger(t.TagTemplateTagger.Template, components)
+		return tag.NewTemplateTagger(t.TemplateTagger.Template, components)
 
 	default:
 		return nil, fmt.Errorf("unknown tagger for strategy %+v", t)
 	}
 }
 
-// CreateComponents creates a map of taggers for TagTemplateTagger
-func CreateComponents(t *latest.TagTemplateTagger) (map[string]tag.Tagger, error) {
+// CreateComponents creates a map of taggers for TemplateTagger
+func CreateComponents(t *latest.TemplateTagger) (map[string]tag.Tagger, error) {
 	components := map[string]tag.Tagger{}
 
 	for _, taggerComponent := range t.Components {
@@ -268,7 +268,7 @@ func CreateComponents(t *latest.TagTemplateTagger) (map[string]tag.Tagger, error
 		case c.DateTimeTagger != nil:
 			components[name] = tag.NewDateTimeTagger(c.DateTimeTagger.Format, c.DateTimeTagger.TimeZone)
 
-		case c.TagTemplateTagger != nil:
+		case c.TemplateTagger != nil:
 			return nil, fmt.Errorf("cannot use tagTemplate as a component: %s %+v", name, c)
 
 		default:

@@ -29,14 +29,14 @@ func TestCreateComponents(t *testing.T) {
 	envExample, _ := tag.NewEnvTemplateTagger("test")
 
 	tests := []struct {
-		description       string
-		tagTemplateTagger *latest.TagTemplateTagger
-		expected          map[string]tag.Tagger
-		shouldErr         bool
+		description    string
+		templateTagger *latest.TemplateTagger
+		expected       map[string]tag.Tagger
+		shouldErr      bool
 	}{
 		{
 			description: "correct component types",
-			tagTemplateTagger: &latest.TagTemplateTagger{
+			templateTagger: &latest.TemplateTagger{
 				Components: []latest.TaggerComponent{
 					latest.TaggerComponent{Name: "FOO", Component: latest.TagPolicy{GitTagger: &latest.GitTagger{}}},
 					latest.TaggerComponent{Name: "FOE", Component: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}}},
@@ -53,16 +53,16 @@ func TestCreateComponents(t *testing.T) {
 		},
 		{
 			description: "tagTemplate is an invalid component",
-			tagTemplateTagger: &latest.TagTemplateTagger{
+			templateTagger: &latest.TemplateTagger{
 				Components: []latest.TaggerComponent{
-					latest.TaggerComponent{Name: "FOO", Component: latest.TagPolicy{TagTemplateTagger: &latest.TagTemplateTagger{Template: "test"}}},
+					latest.TaggerComponent{Name: "FOO", Component: latest.TagPolicy{TemplateTagger: &latest.TemplateTagger{Template: "test"}}},
 				},
 			},
 			shouldErr: true,
 		},
 		{
 			description: "recurring names",
-			tagTemplateTagger: &latest.TagTemplateTagger{
+			templateTagger: &latest.TemplateTagger{
 				Components: []latest.TaggerComponent{
 					latest.TaggerComponent{Name: "FOO", Component: latest.TagPolicy{GitTagger: &latest.GitTagger{}}},
 					latest.TaggerComponent{Name: "FOO", Component: latest.TagPolicy{GitTagger: &latest.GitTagger{}}},
@@ -72,7 +72,7 @@ func TestCreateComponents(t *testing.T) {
 		},
 		{
 			description: "unknown component",
-			tagTemplateTagger: &latest.TagTemplateTagger{
+			templateTagger: &latest.TemplateTagger{
 				Components: []latest.TaggerComponent{
 					latest.TaggerComponent{Name: "FOO", Component: latest.TagPolicy{}},
 				},
@@ -82,7 +82,7 @@ func TestCreateComponents(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			components, err := CreateComponents(test.tagTemplateTagger)
+			components, err := CreateComponents(test.templateTagger)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, len(test.expected), len(components))
 			for k, v := range test.expected {
 				t.CheckTypeEquality(v, components[k])
