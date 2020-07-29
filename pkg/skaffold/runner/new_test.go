@@ -38,10 +38,10 @@ func TestCreateComponents(t *testing.T) {
 			description: "correct component types",
 			templateTagger: &latest.TemplateTagger{
 				Components: []latest.TaggerComponent{
-					latest.TaggerComponent{Name: "FOO", Component: latest.TagPolicy{GitTagger: &latest.GitTagger{}}},
-					latest.TaggerComponent{Name: "FOE", Component: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}}},
-					latest.TaggerComponent{Name: "BAR", Component: latest.TagPolicy{EnvTemplateTagger: &latest.EnvTemplateTagger{Template: "test"}}},
-					latest.TaggerComponent{Name: "BAT", Component: latest.TagPolicy{DateTimeTagger: &latest.DateTimeTagger{}}},
+					{Name: "FOO", Component: latest.TagPolicy{GitTagger: &latest.GitTagger{}}},
+					{Name: "FOE", Component: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}}},
+					{Name: "BAR", Component: latest.TagPolicy{EnvTemplateTagger: &latest.EnvTemplateTagger{Template: "test"}}},
+					{Name: "BAT", Component: latest.TagPolicy{DateTimeTagger: &latest.DateTimeTagger{}}},
 				},
 			},
 			expected: map[string]tag.Tagger{
@@ -55,7 +55,7 @@ func TestCreateComponents(t *testing.T) {
 			description: "tagTemplate is an invalid component",
 			templateTagger: &latest.TemplateTagger{
 				Components: []latest.TaggerComponent{
-					latest.TaggerComponent{Name: "FOO", Component: latest.TagPolicy{TemplateTagger: &latest.TemplateTagger{Template: "test"}}},
+					{Name: "FOO", Component: latest.TagPolicy{TemplateTagger: &latest.TemplateTagger{Template: "test"}}},
 				},
 			},
 			shouldErr: true,
@@ -64,8 +64,8 @@ func TestCreateComponents(t *testing.T) {
 			description: "recurring names",
 			templateTagger: &latest.TemplateTagger{
 				Components: []latest.TaggerComponent{
-					latest.TaggerComponent{Name: "FOO", Component: latest.TagPolicy{GitTagger: &latest.GitTagger{}}},
-					latest.TaggerComponent{Name: "FOO", Component: latest.TagPolicy{GitTagger: &latest.GitTagger{}}},
+					{Name: "FOO", Component: latest.TagPolicy{GitTagger: &latest.GitTagger{}}},
+					{Name: "FOO", Component: latest.TagPolicy{GitTagger: &latest.GitTagger{}}},
 				},
 			},
 			shouldErr: true,
@@ -74,7 +74,7 @@ func TestCreateComponents(t *testing.T) {
 			description: "unknown component",
 			templateTagger: &latest.TemplateTagger{
 				Components: []latest.TaggerComponent{
-					latest.TaggerComponent{Name: "FOO", Component: latest.TagPolicy{}},
+					{Name: "FOO", Component: latest.TagPolicy{}},
 				},
 			},
 			shouldErr: true,

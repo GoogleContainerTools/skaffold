@@ -2087,38 +2087,149 @@
       "description": "specifies which local files to sync to remote folders.",
       "x-intellij-html-description": "specifies which local files to sync to remote folders."
     },
-    "TagPolicy": {
+    "TaggerComponent": {
+      "anyOf": [
+        {
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "an identifier for the component.",
+              "x-intellij-html-description": "an identifier for the component."
+            }
+          },
+          "preferredOrder": [
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "gitCommit": {
+              "$ref": "#/definitions/GitTagger",
+              "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",
+              "x-intellij-html-description": "<em>beta</em> tags images with the git tag or commit of the artifact's workspace."
+            },
+            "name": {
+              "type": "string",
+              "description": "an identifier for the component.",
+              "x-intellij-html-description": "an identifier for the component."
+            }
+          },
+          "preferredOrder": [
+            "name",
+            "gitCommit"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "an identifier for the component.",
+              "x-intellij-html-description": "an identifier for the component."
+            },
+            "sha256": {
+              "$ref": "#/definitions/ShaTagger",
+              "description": "*beta* tags images with their sha256 digest.",
+              "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest."
+            }
+          },
+          "preferredOrder": [
+            "name",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "envTemplate": {
+              "$ref": "#/definitions/EnvTemplateTagger",
+              "description": "*beta* tags images with a configurable template string.",
+              "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string."
+            },
+            "name": {
+              "type": "string",
+              "description": "an identifier for the component.",
+              "x-intellij-html-description": "an identifier for the component."
+            }
+          },
+          "preferredOrder": [
+            "name",
+            "envTemplate"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "dateTime": {
+              "$ref": "#/definitions/DateTimeTagger",
+              "description": "*beta* tags images with the build timestamp.",
+              "x-intellij-html-description": "<em>beta</em> tags images with the build timestamp."
+            },
+            "name": {
+              "type": "string",
+              "description": "an identifier for the component.",
+              "x-intellij-html-description": "an identifier for the component."
+            }
+          },
+          "preferredOrder": [
+            "name",
+            "dateTime"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "an identifier for the component.",
+              "x-intellij-html-description": "an identifier for the component."
+            },
+            "tagTemplate": {
+              "$ref": "#/definitions/TemplateTagger",
+              "description": "*beta* tags images with a configurable template string *composed of other taggers*.",
+              "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string <em>composed of other taggers</em>."
+            }
+          },
+          "preferredOrder": [
+            "name",
+            "tagTemplate"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "*beta* a component of TemplateTagger.",
+      "x-intellij-html-description": "<em>beta</em> a component of TemplateTagger."
+    },
+    "TemplateTagger": {
+      "required": [
+        "template"
+      ],
       "properties": {
-        "dateTime": {
-          "$ref": "#/definitions/DateTimeTagger",
-          "description": "*beta* tags images with the build timestamp.",
-          "x-intellij-html-description": "<em>beta</em> tags images with the build timestamp."
+        "components": {
+          "items": {
+            "$ref": "#/definitions/TaggerComponent"
+          },
+          "type": "array",
+          "description": "TaggerComponents that the template (see field above) can be executed against.",
+          "x-intellij-html-description": "TaggerComponents that the template (see field above) can be executed against."
         },
-        "envTemplate": {
-          "$ref": "#/definitions/EnvTemplateTagger",
-          "description": "*beta* tags images with a configurable template string.",
-          "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string."
-        },
-        "gitCommit": {
-          "$ref": "#/definitions/GitTagger",
-          "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",
-          "x-intellij-html-description": "<em>beta</em> tags images with the git tag or commit of the artifact's workspace."
-        },
-        "sha256": {
-          "$ref": "#/definitions/ShaTagger",
-          "description": "*beta* tags images with their sha256 digest.",
-          "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest."
+        "template": {
+          "type": "string",
+          "description": "used to produce the image name and tag. See golang [text/template](https://golang.org/pkg/text/template/). The template is executed against the provided components with those variables injected.",
+          "x-intellij-html-description": "used to produce the image name and tag. See golang <a href=\"https://golang.org/pkg/text/template/\">text/template</a>. The template is executed against the provided components with those variables injected.",
+          "examples": [
+            "{{.DATE}}"
+          ]
         }
       },
       "preferredOrder": [
-        "gitCommit",
-        "sha256",
-        "envTemplate",
-        "dateTime"
+        "template",
+        "components"
       ],
       "additionalProperties": false,
-      "description": "contains all the configuration for the tagging step.",
-      "x-intellij-html-description": "contains all the configuration for the tagging step."
+      "description": "*beta* tags images with a configurable template string.",
+      "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string."
     },
     "TestCase": {
       "required": [
