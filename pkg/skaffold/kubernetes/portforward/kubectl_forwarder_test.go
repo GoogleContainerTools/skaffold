@@ -19,14 +19,23 @@ package portforward
 import (
 	"bytes"
 	"context"
+	"errors"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	pkgruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -171,61 +180,245 @@ func assertCmdWasKilled(t *testutil.T, cmd *kubectl.Cmd) {
 	}
 }
 
-func TestAddressArg(t *testing.T) {
-	ctx := context.Background()
-	pfe := newPortForwardEntry(0, latest.PortForwardResource{Address: "0.0.0.0"}, "", "", "", "", 8080, false)
-	cli := kubectl.NewFromRunContext(&runcontext.RunContext{})
-	cmd := portForwardCommand(ctx, cli, pfe, nil)
-	assertCmdContainsArgs(t, cmd, true, "--address", "0.0.0.0")
+func TestPortForwardArgs(t *testing.T) {
+	tests := []struct {
+		description string
+		input       *portForwardEntry
+		shouldErr   bool
+		result      []string
+	}{
+		{
+			description: "non-default address",
+			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: 9, Address: "0.0.0.0"}, "", "", "", "", 8080, false),
+			shouldErr:   false,
+			result:      []string{"--pod-running-timeout", "1s", "pod/p", "8080:9", "--namespace", "ns", "--address", "0.0.0.0"},
+		},
+		{
+			description: "localhost is the default",
+			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: 9, Address: "127.0.0.1"}, "", "", "", "", 8080, false),
+			shouldErr:   false,
+			result:      []string{"--pod-running-timeout", "1s", "pod/p", "8080:9", "--namespace", "ns"},
+		},
+		{
+			description: "no address",
+			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: 9}, "", "", "", "", 8080, false),
+			shouldErr:   false,
+			result:      []string{"--pod-running-timeout", "1s", "pod/p", "8080:9", "--namespace", "ns"},
+		},
+		{
+			description: "service to pod",
+			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "service", Name: "svc", Namespace: "ns", Port: 9}, "", "", "", "", 8080, false),
+			shouldErr:   false,
+			result:      []string{"--pod-running-timeout", "1s", "pod/servicePod", "8080:9999", "--namespace", "ns"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+			defer cancel()
+
+			t.Override(&findNewestPodForSvc, func(ctx context.Context, ns, serviceName string, servicePort int) (string, int, error) {
+				return "servicePod", 9999, nil
+			})
+
+			args, err := portForwardArgs(ctx, test.input)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.result, args)
+		})
+	}
 }
 
-func TestNoAddressArg(t *testing.T) {
-	ctx := context.Background()
-	pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false)
-	cli := kubectl.NewFromRunContext(&runcontext.RunContext{})
-	cmd := portForwardCommand(ctx, cli, pfe, nil)
-	assertCmdContainsArgs(t, cmd, false, "--address")
+func TestNewestPodFirst(t *testing.T) {
+	new := mockPod("new", nil, time.Now().Add(-time.Minute))
+	old := mockPod("old", nil, time.Now().Add(-time.Hour))
+	starting := mockPod("starting", nil, time.Now().Add(-2*time.Minute))
+	starting.Status.Phase = corev1.PodPending
+	dead := mockPod("dead", nil, time.Now().Add(-time.Hour))
+	dead.Status.Phase = corev1.PodSucceeded
+
+	pods := []corev1.Pod{*dead, *starting, *old, *new}
+	sort.Slice(pods, newestPodsFirst(pods))
+
+	expected := []corev1.Pod{*new, *old, *starting, *dead}
+	testutil.CheckDeepEqual(t, expected, pods)
 }
 
-func TestDefaultAddressArg(t *testing.T) {
-	ctx := context.Background()
-	pfe := newPortForwardEntry(0, latest.PortForwardResource{Address: "127.0.0.1"}, "", "", "", "", 8080, false)
-	cli := kubectl.NewFromRunContext(&runcontext.RunContext{})
-	cmd := portForwardCommand(ctx, cli, pfe, nil)
-	assertCmdContainsArgs(t, cmd, false, "--address")
+func TestFindServicePort(t *testing.T) {
+	tests := []struct {
+		description string
+		service     *corev1.Service
+		port        int
+		shouldErr   bool
+		expected    corev1.ServicePort
+	}{
+		{
+			description: "simple case",
+			service:     mockService("svc", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 90, TargetPort: intstr.FromInt(80)}, {Port: 80, TargetPort: intstr.FromInt(8080)}}),
+			port:        80,
+			expected:    corev1.ServicePort{Port: 80, TargetPort: intstr.FromInt(8080)},
+		},
+		{
+			description: "no ports",
+			service:     mockService("svc", corev1.ServiceTypeLoadBalancer, nil),
+			port:        80,
+			shouldErr:   true,
+		},
+		{
+			description: "no matching ports",
+			service:     mockService("svc", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 90, TargetPort: intstr.FromInt(80)}, {Port: 80, TargetPort: intstr.FromInt(8080)}}),
+			port:        100,
+			shouldErr:   true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result, err := findServicePort(*test.service, test.port)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, result)
+		})
+	}
 }
 
-func assertCmdContainsArgs(t *testing.T, cmd *kubectl.Cmd, expected bool, args ...string) {
-	if len(args) == 0 {
-		return
+func TestFindTargetPort(t *testing.T) {
+	tests := []struct {
+		description string
+		servicePort corev1.ServicePort
+		pod         corev1.Pod
+		expected    int
+	}{
+		{
+			description: "integer port",
+			servicePort: corev1.ServicePort{TargetPort: intstr.FromInt(8080)},
+			pod:         *mockPod("new", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Time{}),
+			expected:    8080,
+		},
+		{
+			description: "named port",
+			servicePort: corev1.ServicePort{TargetPort: intstr.FromString("http")},
+			pod:         *mockPod("new", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Time{}),
+			expected:    8080,
+		},
+		{
+			description: "no port found",
+			servicePort: corev1.ServicePort{TargetPort: intstr.FromString("http")},
+			pod:         *mockPod("new", nil, time.Time{}),
+			expected:    -1,
+		},
 	}
-	contains := false
-	cmdArgs := cmd.Args
-	var start int
-	var cmdArg string
-	for start, cmdArg = range cmdArgs {
-		if cmdArg == args[0] {
-			contains = true
-			break
-		}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result := findTargetPort(test.servicePort, test.pod)
+			t.CheckDeepEqual(test.expected, result)
+		})
 	}
-	if !contains {
-		if expected {
-			t.Fatalf("cmd expected to contain args %v but args are %v", args, cmdArgs)
-		}
-		return
+}
+
+func TestFindNewestPodForService(t *testing.T) {
+	tests := []struct {
+		description     string
+		clientResources []pkgruntime.Object
+		clientErr       error
+		serviceName     string
+		servicePort     int
+		shouldErr       bool
+		chosenPod       string
+		chosenPort      int
+	}{
+		{
+			description: "chooses new with port 8080 via int targetport",
+			clientResources: []pkgruntime.Object{
+				mockService("svc", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 80, TargetPort: intstr.FromInt(8080)}}),
+				mockPod("new", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Now().Add(-time.Minute)),
+				mockPod("old", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Now().Add(-time.Hour)),
+			},
+			serviceName: "svc",
+			servicePort: 80,
+			chosenPod:   "new",
+			chosenPort:  8080,
+		},
+		{
+			description: "chooses new with port 8080 via string targetport",
+			clientResources: []pkgruntime.Object{
+				mockService("svc", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 80, TargetPort: intstr.FromString("http")}}),
+				mockPod("new", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Now().Add(-time.Minute)),
+				mockPod("old", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Now().Add(-time.Hour)),
+			},
+			serviceName: "svc",
+			servicePort: 80,
+			chosenPod:   "new",
+			chosenPort:  8080,
+		},
+		{
+			description: "service not found",
+			clientResources: []pkgruntime.Object{
+				mockService("svc", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 80, TargetPort: intstr.FromInt(8080)}}),
+				mockPod("new", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Now().Add(-time.Minute)),
+				mockPod("old", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Now().Add(-time.Hour)),
+			},
+			serviceName: "notfound",
+			servicePort: 80,
+			shouldErr: true,
+			chosenPort: -1,
+		},
+		{
+			description: "port not found",
+			clientResources: []pkgruntime.Object{
+				mockService("svc", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 80, TargetPort: intstr.FromInt(8080)}}),
+				mockPod("new", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Now().Add(-time.Minute)),
+				mockPod("old", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Now().Add(-time.Hour)),
+			},
+			serviceName: "svc",
+			servicePort: 90,
+			shouldErr: true,
+			chosenPort: -1,
+		},
+		{
+			description: "port not found",
+			clientErr: errors.New("injected failure"),
+			serviceName: "svc",
+			servicePort: 90,
+			shouldErr: true,
+			chosenPort: -1,
+		},
 	}
-	for i, arg := range args[1:] {
-		if arg != cmdArgs[start+i+1] {
-			contains = false
-			break
-		}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+			defer cancel()
+
+			t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
+				return fake.NewSimpleClientset(test.clientResources...), test.clientErr
+			})
+
+			pod, port, err := findNewestPodForService(ctx, "", test.serviceName, test.servicePort)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.chosenPod, pod)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.chosenPort, port)
+		})
 	}
-	if contains != expected {
-		if expected {
-			t.Fatalf("cmd expected to contain args %v but args are %v", args, cmdArgs)
-		} else {
-			t.Fatalf("cmd expected not to contain args %v but args are %v", args, cmdArgs)
-		}
+}
+
+func mockService(name string, serviceType corev1.ServiceType, ports []corev1.ServicePort) *corev1.Service {
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Spec: corev1.ServiceSpec{
+			Type:  serviceType,
+			Ports: ports,
+		}}
+}
+
+func mockPod(name string, ports []corev1.ContainerPort, creationTime time.Time) *corev1.Pod {
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              name,
+			CreationTimestamp: metav1.NewTime(creationTime),
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{
+				Name:  "container",
+				Ports: ports,
+			}},
+		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+		},
 	}
 }

@@ -22,13 +22,19 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -52,11 +58,11 @@ func NewKubectlForwarder(out io.Writer, cli *kubectl.CLI) *KubectlForwarder {
 
 // For testing
 var (
-	isPortFree      = util.IsPortFree
-	portForwardCmd  = portForwardCommand
-	deferFunc       = func() {}
-	waitPortNotFree = 5 * time.Second
-	waitErrorLogs   = 1 * time.Second
+	isPortFree          = util.IsPortFree
+	findNewestPodForSvc = findNewestPodForService
+	deferFunc           = func() {}
+	waitPortNotFree     = 5 * time.Second
+	waitErrorLogs       = 1 * time.Second
 )
 
 // Forward port-forwards a pod using kubectl port-forward in the background
@@ -97,8 +103,15 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		ctx, cancel := context.WithCancel(parentCtx)
 		pfe.cancel = cancel
 
+		args, err := portForwardArgs(ctx, pfe)
+		if err != nil {
+			logrus.Warnf("couldn't port-forward to %v: %v", pfe, err)
+			return
+		}
 		var buf bytes.Buffer
-		cmd := portForwardCmd(ctx, k.kubectl, pfe, &buf)
+		cmd := k.kubectl.CommandWithStrictCancellation(ctx, "port-forward", args...)
+		cmd.Stdout = &buf
+		cmd.Stderr = &buf
 
 		logrus.Debugf("Running command: %s", cmd.Args)
 		if err := cmd.Start(); err != nil {
@@ -127,20 +140,28 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 	}
 }
 
-func portForwardCommand(ctx context.Context, k *kubectl.CLI, pfe *portForwardEntry, buf io.Writer) *kubectl.Cmd {
-	args := []string{
-		"--pod-running-timeout", "1s",
-		fmt.Sprintf("%s/%s", pfe.resource.Type, pfe.resource.Name),
-		fmt.Sprintf("%d:%d", pfe.localPort, pfe.resource.Port),
-		"--namespace", pfe.resource.Namespace,
+func portForwardArgs(ctx context.Context, pfe *portForwardEntry) ([]string, error) {
+	args := []string{"--pod-running-timeout", "1s"}
+
+	switch pfe.resource.Type {
+	// Services need special handling: https://github.com/GoogleContainerTools/skaffold/issues/4522
+	case "service":
+		podName, remotePort, err := findNewestPodForSvc(ctx, pfe.resource.Namespace, pfe.resource.Name, pfe.resource.Port)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, fmt.Sprintf("pod/%s", podName), fmt.Sprintf("%d:%d", pfe.localPort, remotePort))
+
+	default:
+		args = append(args, fmt.Sprintf("%s/%s", pfe.resource.Type, pfe.resource.Name), fmt.Sprintf("%d:%d", pfe.localPort, pfe.resource.Port))
 	}
+
+	args = append(args, "--namespace", pfe.resource.Namespace)
+
 	if pfe.resource.Address != "" && pfe.resource.Address != util.Loopback {
 		args = append(args, []string{"--address", pfe.resource.Address}...)
 	}
-	cmd := k.CommandWithStrictCancellation(ctx, "port-forward", args...)
-	cmd.Stdout = buf
-	cmd.Stderr = buf
-	return cmd
+	return args, nil
 }
 
 // Terminate terminates an existing kubectl port-forward command using SIGTERM
@@ -188,4 +209,91 @@ func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, logs io.Reader, c
 			}
 		}
 	}
+}
+
+// findNewestPodForService queries the cluster to find a pod that fulfills the given service, giving
+// preference to pods that were most recently created.  This is in contrast to the selection algorithm
+// used by kubectl (see https://github.com/GoogleContainerTools/skaffold/issues/4522 for details).
+func findNewestPodForService(ctx context.Context, ns, serviceName string, servicePort int) (string, int, error) {
+	client, err := kubernetes.Client()
+	if err != nil {
+		return "", -1, fmt.Errorf("getting Kubernetes client: %w", err)
+	}
+	svc, err := client.CoreV1().Services(ns).Get(serviceName, metav1.GetOptions{})
+	if err != nil {
+		return "", -1, fmt.Errorf("getting service: %w", err)
+	}
+	svcPort, err := findServicePort(*svc, servicePort)
+	if err != nil {
+		return "", -1, err
+	}
+
+	set := labels.Set(svc.Spec.Selector)
+	listOptions := metav1.ListOptions{LabelSelector: set.AsSelector().String()}
+	pods, err := client.CoreV1().Pods(ns).List(listOptions)
+	if err != nil {
+		return "", -1, fmt.Errorf("listing pods: %w", err)
+	}
+	sort.Slice(pods.Items, newestPodsFirst(pods.Items))
+
+	if logrus.IsLevelEnabled((logrus.TraceLevel)) {
+		var names []string
+		for _, p := range pods.Items {
+			names = append(names, fmt.Sprintf("pod %s (phase:%v, created:%s)", p.Name, p.Status.Phase, p.CreationTimestamp))
+		}
+		logrus.Tracef("service %s/%d maps to %d pods: %v", serviceName, servicePort, len(pods.Items), names)
+	}
+
+	for _, p := range pods.Items {
+		if targetPort := findTargetPort(svcPort, p); targetPort > 0 {
+			logrus.Debugf("Mapping service %s/%d to pod %s/%d", serviceName, servicePort, p.Name, targetPort)
+			return p.Name, targetPort, nil
+		}
+	}
+
+	return "", -1, fmt.Errorf("no pods match service %s/%d", serviceName, servicePort)
+}
+
+// newestPodsFirst sorts pods by their running state and then by creation time.
+func newestPodsFirst(pods []corev1.Pod) func(int, int) bool {
+	// prefer Running then Pending
+	phases := map[corev1.PodPhase]int{
+		corev1.PodRunning:   0,
+		corev1.PodPending:   1,
+		corev1.PodUnknown:   2,
+		corev1.PodSucceeded: 3,
+		corev1.PodFailed:    4,
+	}
+	return func(i, j int) bool {
+		if pods[i].Status.Phase != pods[j].Status.Phase {
+			// sort running pods ahead of non-running pods
+			return phases[pods[i].Status.Phase] < phases[pods[j].Status.Phase]
+		}
+		ti := pods[i].CreationTimestamp.Time
+		tj := pods[j].CreationTimestamp.Time
+		return ti.After(tj)
+	}
+}
+
+func findServicePort(svc corev1.Service, servicePort int) (corev1.ServicePort, error) {
+	for _, s := range svc.Spec.Ports {
+		if int(s.Port) == servicePort {
+			return s, nil
+		}
+	}
+	return corev1.ServicePort{}, fmt.Errorf("service %q does not expose port %d", svc.Name, servicePort)
+}
+
+func findTargetPort(svcPort corev1.ServicePort, pod corev1.Pod) int {
+	if svcPort.TargetPort.Type == intstr.Int {
+		return svcPort.TargetPort.IntValue()
+	}
+	for _, c := range pod.Spec.Containers {
+		for _, p := range c.Ports {
+			if svcPort.TargetPort.StrVal == p.Name {
+				return int(p.ContainerPort)
+			}
+		}
+	}
+	return -1
 }
