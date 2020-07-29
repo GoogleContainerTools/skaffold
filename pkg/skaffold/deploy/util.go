@@ -80,6 +80,7 @@ func parseReleaseInfo(namespace string, b *bufio.Reader) []Artifact {
 			logrus.Infof(err.Error())
 		} else {
 			results = append(results, *obj)
+			logrus.Debugf("found deployed object: %+v", obj.Obj)
 		}
 	}
 
