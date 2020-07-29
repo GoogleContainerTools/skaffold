@@ -118,7 +118,7 @@ func TestCacheBuildLocal(t *testing.T) {
 		// Mock Docker
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
 		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
 
@@ -205,7 +205,7 @@ func TestCacheBuildRemote(t *testing.T) {
 
 		// Mock Docker
 		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})

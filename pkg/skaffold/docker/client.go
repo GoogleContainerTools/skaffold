@@ -32,7 +32,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
@@ -50,11 +49,18 @@ var (
 	dockerAPIClientErr  error
 )
 
+type Config interface {
+	Prune() bool
+	GetKubeContext() string
+	MinikubeProfile() string
+	GetInsecureRegistries() map[string]bool
+}
+
 // NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.
-func NewAPIClientImpl(runCtx *runcontext.RunContext) (LocalDaemon, error) {
+func NewAPIClientImpl(cfg Config) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
-		env, apiClient, err := newAPIClient(runCtx.GetKubeContext(), runCtx.MinikubeProfile())
-		dockerAPIClient = NewLocalDaemon(apiClient, env, runCtx.Prune(), runCtx.GetInsecureRegistries())
+		env, apiClient, err := newAPIClient(cfg.GetKubeContext(), cfg.MinikubeProfile())
+		dockerAPIClient = NewLocalDaemon(apiClient, env, cfg.Prune(), cfg.GetInsecureRegistries())
 		dockerAPIClientErr = err
 	})
 

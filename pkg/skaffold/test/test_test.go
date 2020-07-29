@@ -36,7 +36,7 @@ import (
 
 func TestNoTestDependencies(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) { return nil, nil })
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) { return nil, nil })
 
 		runCtx := &runcontext.RunContext{}
 		deps, err := NewTester(runCtx, true).TestDependencies()
@@ -105,7 +105,7 @@ func TestNoTest(t *testing.T) {
 
 func TestIgnoreDockerNotFound(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 			return nil, errors.New("not found")
 		})
 
@@ -159,7 +159,7 @@ func TestTestSuccessRemoteImage(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.NewTempDir().Touch("test.yaml").Chdir()
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config test.yaml"))
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 			return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil), nil
 		})
 
@@ -186,7 +186,7 @@ func TestTestFailureRemoteImage(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.NewTempDir().Touch("test.yaml").Chdir()
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config test.yaml"))
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 			return docker.NewLocalDaemon(&testutil.FakeAPIClient{ErrImagePull: true}, nil, false, nil), nil
 		})
 

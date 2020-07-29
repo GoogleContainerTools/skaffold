@@ -24,7 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -83,13 +84,21 @@ type Builder struct {
 	muted              build.Muted
 }
 
+type Config interface {
+	docker.Config
+
+	Pipeline() latest.Pipeline
+	SkipTests() bool
+	Muted() config.Muted
+}
+
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
-func NewBuilder(runCtx *runcontext.RunContext) *Builder {
+func NewBuilder(cfg Config) *Builder {
 	return &Builder{
-		GoogleCloudBuild:   runCtx.Pipeline().Build.GoogleCloudBuild,
-		skipTests:          runCtx.SkipTests(),
-		insecureRegistries: runCtx.GetInsecureRegistries(),
-		muted:              runCtx.Muted(),
+		GoogleCloudBuild:   cfg.Pipeline().Build.GoogleCloudBuild,
+		skipTests:          cfg.SkipTests(),
+		insecureRegistries: cfg.GetInsecureRegistries(),
+		muted:              cfg.Muted(),
 	}
 }
 

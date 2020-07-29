@@ -403,7 +403,7 @@ func TestHelmDeploy(t *testing.T) {
 	tests := []struct {
 		description      string
 		commands         util.Command
-		runContext       *runcontext.RunContext
+		runContext       Config
 		builds           []build.Artifact
 		shouldErr        bool
 		expectedWarnings []string
@@ -833,7 +833,7 @@ func TestHelmCleanup(t *testing.T) {
 	tests := []struct {
 		description      string
 		commands         util.Command
-		runContext       *runcontext.RunContext
+		runContext       Config
 		builds           []build.Artifact
 		shouldErr        bool
 		expectedWarnings []string
@@ -1081,7 +1081,7 @@ func TestHelmRender(t *testing.T) {
 		description string
 		shouldErr   bool
 		commands    util.Command
-		runContext  *runcontext.RunContext
+		runContext  Config
 		outputFile  string
 		expected    string
 		builds      []build.Artifact

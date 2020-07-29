@@ -232,7 +232,7 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 				return docker.NewLocalDaemon(test.api, nil, false, nil), nil
 			})
 			t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
@@ -274,18 +274,18 @@ func TestNewBuilder(t *testing.T) {
 		localBuild      latest.LocalBuild
 		expectedBuilder *Builder
 		localClusterFn  func(string, string) (bool, error)
-		localDockerFn   func(*runcontext.RunContext) (docker.LocalDaemon, error)
+		localDockerFn   func(docker.Config) (docker.LocalDaemon, error)
 	}{
 		{
 			description: "failed to get docker client",
-			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
 				return nil, errors.New("dummy docker error")
 			},
 			shouldErr: true,
 		},
 		{
 			description: "pushImages becomes !localCluster when local:push is not defined",
-			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
 			localClusterFn: func(string, string) (b bool, e error) {
@@ -308,7 +308,7 @@ func TestNewBuilder(t *testing.T) {
 		},
 		{
 			description: "pushImages defined in config (local:push)",
-			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
 			localClusterFn: func(string, string) (b bool, e error) {
