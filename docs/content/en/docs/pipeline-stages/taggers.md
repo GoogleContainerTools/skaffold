@@ -93,16 +93,15 @@ process.
 
 The following `build` section, for example, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with the `envTemplate`
-tag policy. The tag template is `{{.IMAGE_NAME}}:{{.FOO}}`; when Skaffold
+tag policy. The tag template is `{{.FOO}}`; when Skaffold
 finishes building the image, it will check the list of available environment
 variables in the system for the variable `FOO`, and use its value to tag the
 image.
 
 {{< alert >}}
-<b>Note</b><br>
+<b>Deprecated</b><br>
 
-`IMAGE_NAME` is a built-in variable whose value is the `imageName` field in
-the `artifacts` part of the `build` section.
+The use of `IMAGE_NAME` as a built-in variable whose value is the `imageName` field in the `artifacts` part of the `build` section has been deprecated. Please use the envTemplate to express solely the tag value for the image.
 {{< /alert >}}
 
 ### Example
