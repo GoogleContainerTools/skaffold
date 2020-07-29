@@ -70,7 +70,8 @@ type SkaffoldRunner struct {
 	builds     []build.Artifact
 
 	// podSelector is used to determine relevant pods for logging and portForwarding
-	podSelector *kubernetes.ImageList
+	// podSelector *kubernetes.ImageList
+	podSelector *kubernetes.ParentList
 
 	imagesAreLocal bool
 	hasBuilt       bool

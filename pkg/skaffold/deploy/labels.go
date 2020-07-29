@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
@@ -47,26 +48,27 @@ const (
 	sleeptime = 300 * time.Millisecond
 )
 
-func labelDeployResults(labels map[string]string, results []Artifact) error {
-	if len(labels) == 0 {
-		return nil
-	}
-
+func labelDeployResults(labels map[string]string, results []Artifact) (kubectl.Resources, error) {
 	// use the kubectl client to update all k8s objects with a skaffold watermark
 	dynClient, err := kubernetes.DynamicClient()
 	if err != nil {
-		return fmt.Errorf("error getting Kubernetes dynamic client: %w", err)
+		return nil, fmt.Errorf("error getting Kubernetes dynamic client: %w", err)
 	}
 
 	client, err := kubernetes.Client()
 	if err != nil {
-		return fmt.Errorf("error getting Kubernetes client: %w", err)
+		return nil, fmt.Errorf("error getting Kubernetes client: %w", err)
 	}
+
+	var resources kubectl.Resources
 
 	for _, res := range results {
 		err = nil
 		for i := 0; i < tries; i++ {
-			if err = updateRuntimeObject(dynClient, client.Discovery(), labels, res); err == nil {
+			var resource kubectl.Resource
+			resource, err = updateRuntimeObject(dynClient, client.Discovery(), labels, res)
+			if err == nil {
+				resources = append(resources, resource)
 				break
 			}
 			time.Sleep(sleeptime)
@@ -76,7 +78,7 @@ func labelDeployResults(labels map[string]string, results []Artifact) error {
 		}
 	}
 
-	return nil
+	return resources, nil
 }
 
 func addLabels(labels map[string]string, accessor metav1.Object) {
@@ -88,12 +90,12 @@ func addLabels(labels map[string]string, accessor metav1.Object) {
 	accessor.SetLabels(kv)
 }
 
-func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInterface, labels map[string]string, res Artifact) error {
+func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInterface, labels map[string]string, res Artifact) (kubectl.Resource, error) {
 	originalJSON, _ := json.Marshal(res.Obj)
 	modifiedObj := res.Obj.DeepCopyObject()
 	accessor, err := meta.Accessor(modifiedObj)
 	if err != nil {
-		return fmt.Errorf("getting metadata accessor: %w", err)
+		return kubectl.Resource{}, fmt.Errorf("getting metadata accessor: %w", err)
 	}
 	name := accessor.GetName()
 
@@ -104,7 +106,7 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 
 	namespaced, gvr, err := groupVersionResource(disco, modifiedObj.GetObjectKind().GroupVersionKind())
 	if err != nil {
-		return fmt.Errorf("getting group version resource from obj: %w", err)
+		return kubectl.Resource{}, fmt.Errorf("getting group version resource from obj: %w", err)
 	}
 
 	if namespaced {
@@ -117,21 +119,37 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 
 		ns, err := resolveNamespace(namespace)
 		if err != nil {
-			return fmt.Errorf("resolving namespace: %w", err)
+			return kubectl.Resource{}, fmt.Errorf("resolving namespace: %w", err)
 		}
 
 		logrus.Debugln("Patching", name, "in namespace", ns)
-		if _, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
-			return fmt.Errorf("patching resource %s/%q: %w", ns, name, err)
+		r, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{})
+		if err != nil {
+			return kubectl.Resource{}, fmt.Errorf("patching resource %s/%q: %w", ns, name, err)
 		}
+
+		return kubectl.Resource{
+			APIVersion: r.GetAPIVersion(),
+			Kind:       r.GetKind(),
+			Namespace:  r.GetNamespace(),
+			Name:       r.GetName(),
+			UID:        string(r.GetUID()),
+		}, nil
 	} else {
 		logrus.Debugln("Patching", name)
-		if _, err := client.Resource(gvr).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
-			return fmt.Errorf("patching resource %q: %w", name, err)
+		r, err := client.Resource(gvr).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{})
+		if err != nil {
+			return kubectl.Resource{}, fmt.Errorf("patching resource %q: %w", name, err)
 		}
-	}
 
-	return nil
+		return kubectl.Resource{
+			APIVersion: r.GetAPIVersion(),
+			Kind:       r.GetKind(),
+			Namespace:  r.GetNamespace(),
+			Name:       r.GetName(),
+			UID:        string(r.GetUID()),
+		}, nil
+	}
 }
 
 func resolveNamespace(ns string) (string, error) {

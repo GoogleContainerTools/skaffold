@@ -411,7 +411,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			entryManager := NewEntryManager(ioutil.Discard, nil)
 			entryManager.entryForwarder = test.forwarder
 
-			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), nil)
+			p := NewWatchingPodForwarder(entryManager, kubernetes.NewParentList(), nil)
 			for _, pod := range test.pods {
 				err := p.portForwardPod(context.Background(), pod)
 				t.CheckError(test.shouldErr, err)
@@ -481,7 +481,7 @@ func TestStartPodForwarder(t *testing.T) {
 				}
 			})
 
-			imageList := kubernetes.NewImageList()
+			imageList := kubernetes.NewParentList()
 			imageList.Add("image")
 
 			fakeForwarder := newTestForwarder()

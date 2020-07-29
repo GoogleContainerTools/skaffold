@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
@@ -77,17 +78,17 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Art
 	return nil
 }
 
-func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) (kubectl.Resources, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting deploy...")
 
-	ns, err := w.Deployer.Deploy(ctx, out, builds)
+	r, err := w.Deployer.Deploy(ctx, out, builds)
 	if err != nil {
 		return nil, err
 	}
 
 	logrus.Infoln("Deploy complete in", time.Since(start))
-	return ns, err
+	return r, err
 }
 
 func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {

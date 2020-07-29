@@ -41,15 +41,15 @@ func service(name string) *v1.Service {
 
 type anyPod struct{}
 
-func (p *anyPod) Select(pod *v1.Pod) bool { return true }
+func (p *anyPod) Select(pod Pod) bool { return true }
 
 type hasName struct {
 	validNames []string
 }
 
-func (h *hasName) Select(pod *v1.Pod) bool {
+func (h *hasName) Select(pod Pod) bool {
 	for _, validName := range h.validNames {
-		if validName == pod.Name {
+		if validName == pod.GetName() {
 			return true
 		}
 	}

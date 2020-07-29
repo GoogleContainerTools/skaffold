@@ -72,7 +72,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	event.DeployInProgress()
-	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
+	resources, err := r.deployer.Deploy(ctx, deployOut, artifacts)
 	r.hasDeployed = true
 	postDeployFn(err)
 	if err != nil {
@@ -80,8 +80,13 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return err
 	}
 
+	// Update which pods are logged.
+	for _, resource := range resources {
+		r.podSelector.Add(resource.UID)
+	}
+
 	event.DeployComplete()
-	r.runCtx.UpdateNamespaces(namespaces)
+	r.runCtx.UpdateNamespaces(resources.Namespaces())
 	return r.performStatusCheck(ctx, out)
 }
 

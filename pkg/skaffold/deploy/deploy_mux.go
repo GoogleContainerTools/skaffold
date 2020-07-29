@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 )
 
 // DeployerMux forwards all method calls to the deployers it contains.
@@ -57,18 +58,19 @@ func (s stringSet) toList() []string {
 	return res
 }
 
-func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []build.Artifact) ([]string, error) {
-	seenNamespaces := newStringSet()
+func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []build.Artifact) (kubectl.Resources, error) {
+	var allResources kubectl.Resources
 
 	for _, deployer := range m {
-		namespaces, err := deployer.Deploy(ctx, w, as)
+		resources, err := deployer.Deploy(ctx, w, as)
 		if err != nil {
 			return nil, err
 		}
-		seenNamespaces.insert(namespaces...)
+
+		allResources = append(allResources, resources...)
 	}
 
-	return seenNamespaces.toList(), nil
+	return allResources, nil
 }
 
 func (m DeployerMux) Dependencies() ([]string, error) {

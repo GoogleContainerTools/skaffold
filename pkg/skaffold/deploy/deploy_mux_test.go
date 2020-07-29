@@ -19,6 +19,7 @@ package deploy
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -26,20 +27,21 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func NewMockDeployer() *MockDeployer { return &MockDeployer{labels: make(map[string]string)} }
 
 type MockDeployer struct {
-	labels           map[string]string
-	deployNamespaces []string
-	deployErr        error
-	dependencies     []string
-	dependenciesErr  error
-	cleanupErr       error
-	renderResult     string
-	renderErr        error
+	labels          map[string]string
+	deployResources kubectl.Resources
+	deployErr       error
+	dependencies    []string
+	dependenciesErr error
+	cleanupErr      error
+	renderResult    string
+	renderErr       error
 }
 
 func (m *MockDeployer) Dependencies() ([]string, error) {
@@ -75,8 +77,8 @@ func (m *MockDeployer) WithRenderErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []build.Artifact) ([]string, error) {
-	return m.deployNamespaces, m.deployErr
+func (m *MockDeployer) Deploy(context.Context, io.Writer, []build.Artifact) (kubectl.Resources, error) {
+	return m.deployResources, m.deployErr
 }
 
 func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []build.Artifact, _ bool, _ string) error {
@@ -84,8 +86,8 @@ func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []build.Artifact
 	return m.renderErr
 }
 
-func (m *MockDeployer) WithDeployNamespaces(namespaces []string) *MockDeployer {
-	m.deployNamespaces = namespaces
+func (m *MockDeployer) WithDeployResources(deployResources kubectl.Resources) *MockDeployer {
+	m.deployResources = deployResources
 	return m
 }
 
@@ -101,54 +103,48 @@ func (m *MockDeployer) WithRenderResult(renderResult string) *MockDeployer {
 
 func TestDeployerMux_Deploy(t *testing.T) {
 	tests := []struct {
-		name        string
-		namespaces1 []string
-		namespaces2 []string
-		err1        error
-		err2        error
-		expectedNs  []string
-		shouldErr   bool
+		name              string
+		resources1        kubectl.Resources
+		resources2        kubectl.Resources
+		err1              error
+		err2              error
+		expectedResources kubectl.Resources
+		shouldErr         bool
 	}{
 		{
-			name:        "disjoint namespaces are combined",
-			namespaces1: []string{"ns-a"},
-			namespaces2: []string{"ns-b"},
-			expectedNs:  []string{"ns-a", "ns-b"},
+			name:              "combine resources",
+			resources1:        []kubectl.Resource{{Name: "a"}},
+			resources2:        []kubectl.Resource{{Name: "b"}},
+			expectedResources: []kubectl.Resource{{Name: "a"}, {Name: "b"}},
 		},
 		{
-			name:        "repeated namespaces are not duplicated",
-			namespaces1: []string{"ns-a", "ns-c"},
-			namespaces2: []string{"ns-b", "ns-c"},
-			expectedNs:  []string{"ns-a", "ns-b", "ns-c"},
+			name:              "short-circuits when first call fails",
+			resources1:        []kubectl.Resource{{Name: "a"}},
+			err1:              errors.New("failed in first"),
+			resources2:        []kubectl.Resource{{Name: "b"}},
+			expectedResources: nil,
+			shouldErr:         true,
 		},
 		{
-			name:        "short-circuits when first call fails",
-			namespaces1: []string{"ns-a"},
-			err1:        fmt.Errorf("failed in first"),
-			namespaces2: []string{"ns-b"},
-			expectedNs:  nil,
-			shouldErr:   true,
-		},
-		{
-			name:        "when second call fails",
-			namespaces1: []string{"ns-a"},
-			namespaces2: []string{"ns-b"},
-			err2:        fmt.Errorf("failed in second"),
-			expectedNs:  nil,
-			shouldErr:   true,
+			name:              "when second call fails",
+			resources1:        []kubectl.Resource{{Name: "a"}},
+			resources2:        []kubectl.Resource{{Name: "b"}},
+			err2:              errors.New("failed in second"),
+			expectedResources: nil,
+			shouldErr:         true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			deployerMux := DeployerMux([]Deployer{
-				NewMockDeployer().WithDeployNamespaces(test.namespaces1).WithDeployErr(test.err1),
-				NewMockDeployer().WithDeployNamespaces(test.namespaces2).WithDeployErr(test.err2),
+				NewMockDeployer().WithDeployResources(test.resources1).WithDeployErr(test.err1),
+				NewMockDeployer().WithDeployResources(test.resources2).WithDeployErr(test.err2),
 			})
 
-			namespaces, err := deployerMux.Deploy(context.Background(), nil, nil)
+			resources, err := deployerMux.Deploy(context.Background(), nil, nil)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedNs, namespaces)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedResources, resources)
 		})
 	}
 }

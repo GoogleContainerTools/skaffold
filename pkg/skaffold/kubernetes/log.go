@@ -27,6 +27,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -273,41 +275,118 @@ func (t *trackedContainers) add(id string) bool {
 	return alreadyTracked
 }
 
+type Pod interface {
+	// TODO(dgageot): remove GetName().
+	GetName() string
+	// TODO(dgageot): remove GetNamespace().
+	GetNamespace() string
+	GetUID() types.UID
+	GetOwnerReferences() []metav1.OwnerReference
+}
+
 // PodSelector is used to choose which pods to log.
 type PodSelector interface {
-	Select(pod *v1.Pod) bool
+	Select(pod Pod) bool
 }
 
-// ImageList implements PodSelector based on a list of images names.
-type ImageList struct {
+// ParentList implements PodSelector based on a list of parent UIDs.
+type ParentList struct {
 	sync.RWMutex
-	names map[string]bool
+	uids map[string]bool
 }
 
-// NewImageList creates a new ImageList.
-func NewImageList() *ImageList {
-	return &ImageList{
-		names: make(map[string]bool),
+// NewParentList creates a new ImageList.
+func NewParentList() *ParentList {
+	return &ParentList{
+		uids: make(map[string]bool),
 	}
 }
 
-// Add adds an image to the list.
-func (l *ImageList) Add(image string) {
+// Add adds an uid to the list.
+func (l *ParentList) Add(uid string) {
 	l.Lock()
-	l.names[image] = true
+	l.uids[uid] = true
 	l.Unlock()
 }
 
 // Select returns true if one of the pod's images is in the list.
-func (l *ImageList) Select(pod *v1.Pod) bool {
+func (l *ParentList) Select(pod Pod) bool {
 	l.RLock()
 	defer l.RUnlock()
 
-	for _, container := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
-		if l.names[container.Image] {
+	if l.uids[string(pod.GetUID())] {
+		return true
+	}
+
+	for _, ref := range pod.GetOwnerReferences() {
+		if l.uids[string(ref.UID)] {
+			return true
+		}
+
+		owner, err := l.topLevelOwner(pod.GetNamespace(), ref)
+		if err != nil {
+			// TODO(dgageot): handle error
+			return false
+		}
+
+		if l.uids[string(owner.UID)] {
 			return true
 		}
 	}
 
 	return false
+}
+
+func (l *ParentList) topLevelOwner(ns string, ref metav1.OwnerReference) (metav1.OwnerReference, error) {
+	for {
+		obj, err := ownerMetaObject(ns, ref)
+		if err != nil {
+			return metav1.OwnerReference{}, err
+		}
+
+		parents := obj.GetOwnerReferences()
+		if len(parents) > 0 {
+			return l.topLevelOwner(ns, parents[0])
+		}
+
+		return ref, nil
+	}
+}
+
+func (l *ParentList) ownerMetaObject(ns string, owner metav1.OwnerReference) (metav1.Object, error) {
+	// dynClient, err := DynamicClient()
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// gvr := schema.GroupVersionResource{
+	// 	Group:    owner.Get,
+	// 	Version:  owner.APIVersion,
+	// 	Resource: owner.Kind,
+	// }
+	// dynClient.Resource(gvr).Namespace(p.GetNamespace()).Get(pod.GetName(), metav1.GetOptions{})
+
+	client, err := Client()
+	if err != nil {
+		return nil, err
+	}
+
+	switch owner.Kind {
+	case "Deployment":
+		return client.AppsV1().Deployments(ns).Get(owner.Name, metav1.GetOptions{})
+	case "ReplicaSet":
+		return client.AppsV1().ReplicaSets(ns).Get(owner.Name, metav1.GetOptions{})
+	case "Job":
+		return client.BatchV1().Jobs(ns).Get(owner.Name, metav1.GetOptions{})
+	case "CronJob":
+		return client.BatchV1beta1().CronJobs(ns).Get(owner.Name, metav1.GetOptions{})
+	case "StatefulSet":
+		return client.AppsV1().StatefulSets(ns).Get(owner.Name, metav1.GetOptions{})
+	case "ReplicationController":
+		return client.CoreV1().ReplicationControllers(ns).Get(owner.Name, metav1.GetOptions{})
+	case "Pod":
+		return client.CoreV1().Pods(ns).Get(owner.Name, metav1.GetOptions{})
+	default:
+		return nil, fmt.Errorf("kind %s is not supported", owner.Kind)
+	}
 }

@@ -30,7 +30,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -98,13 +99,19 @@ func TestDeployNamespace(t *testing.T) {
 		{
 			description: "deploy shd add all namespaces to run Context",
 			Namespaces:  []string{"test", "test-ns"},
-			testBench:   NewTestBench().WithDeployNamespaces([]string{"test-ns", "test-ns-1"}),
-			expected:    []string{"test", "test-ns", "test-ns-1"},
+			testBench: NewTestBench().WithDeployResources([]kubectl.Resource{
+				{Namespace: "test-ns"},
+				{Namespace: "test-ns-1"},
+			}),
+			expected: []string{"test", "test-ns", "test-ns-1"},
 		},
 		{
 			description: "deploy without command opts namespace",
-			testBench:   NewTestBench().WithDeployNamespaces([]string{"test-ns", "test-ns-1"}),
-			expected:    []string{"test-ns", "test-ns-1"},
+			testBench: NewTestBench().WithDeployResources([]kubectl.Resource{
+				{Namespace: "test-ns"},
+				{Namespace: "test-ns-1"},
+			}),
+			expected: []string{"test-ns", "test-ns-1"},
 		},
 		{
 			description: "deploy with no namespaces returned",
@@ -148,7 +155,7 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 
 		r := SkaffoldRunner{
 			runCtx:     runCtx,
-			kubectlCLI: kubectl.NewFromRunContext(runCtx),
+			kubectlCLI: pkgkubectl.NewFromRunContext(runCtx),
 			deployer:   getDeployer(runCtx, nil),
 		}
 		var builds []build.Artifact

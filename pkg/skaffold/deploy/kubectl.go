@@ -32,8 +32,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -44,14 +44,15 @@ import (
 type KubectlDeployer struct {
 	*latest.KubectlDeploy
 
-	originalImages     []build.Artifact
 	workingDir         string
 	globalConfig       string
 	defaultRepo        *string
 	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
-	labels             map[string]string
 	skipRender         bool
+	labels             map[string]string
+
+	originalImages []build.Artifact
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
@@ -71,7 +72,7 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext, labels map[string]string)
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) (kubectl.Resources, error) {
 	var (
 		manifests deploy.ManifestList
 		err       error
@@ -89,21 +90,11 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return nil, nil
 	}
 
-	namespaces, err := manifests.CollectNamespaces()
-	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not fetch deployed resource namespace. "+
-			"This might cause port-forward and deploy health-check to fail: %w", err))
-	}
-
 	if err := k.kubectl.WaitForDeletions(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		return nil, err
 	}
 
-	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
-		return nil, err
-	}
-
-	return namespaces, nil
+	return k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests)
 }
 
 func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
@@ -314,7 +305,7 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 			return fmt.Errorf("replacing with originals: %w", err)
 		}
 
-		if err := k.kubectl.Apply(ctx, out, upd); err != nil {
+		if _, err := k.kubectl.Apply(ctx, out, upd); err != nil {
 			return fmt.Errorf("apply original: %w", err)
 		}
 	}

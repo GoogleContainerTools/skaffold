@@ -21,6 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 )
 
 // Deployer is the Deploy API of skaffold and responsible for deploying
@@ -28,7 +29,7 @@ import (
 type Deployer interface {
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster. Returns the list of impacted namespaces.
-	Deploy(context.Context, io.Writer, []build.Artifact) ([]string, error)
+	Deploy(context.Context, io.Writer, []build.Artifact) (kubectl.Resources, error)
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered

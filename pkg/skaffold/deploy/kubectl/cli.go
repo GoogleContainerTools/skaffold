@@ -42,6 +42,18 @@ type CLI struct {
 	previousApply    ManifestList
 }
 
+// Resource describes a deployed resource.
+type Resource struct {
+	APIVersion string
+	Kind       string
+	Namespace  string
+	Name       string
+	UID        string
+}
+
+// Resources describes a list of deployed resources.
+type Resources []Resource
+
 func NewCLI(runCtx *runcontext.RunContext, flags latest.KubectlFlags) CLI {
 	return CLI{
 		CLI:              pkgkubectl.NewFromRunContext(runCtx),
@@ -62,17 +74,17 @@ func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests ManifestList)
 }
 
 // Apply runs `kubectl apply` on a list of manifests.
-func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) error {
+func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) (Resources, error) {
 	// Only redeploy modified or new manifests
 	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
 	updated := c.previousApply.Diff(manifests)
 	logrus.Debugln(len(manifests), "manifests to deploy.", len(updated), "are updated or new")
 	c.previousApply = manifests
 	if len(updated) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	args := []string{"-f", "-"}
+	args := []string{"-f", "-", "-ojson"}
 	if c.forceDeploy {
 		args = append(args, "--force", "--grace-period=0")
 	}
@@ -81,20 +93,28 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 		args = append(args, "--validate=false")
 	}
 
-	if err := c.Run(ctx, updated.Reader(), out, "apply", c.args(c.Flags.Apply, args...)...); err != nil {
-		return fmt.Errorf("kubectl apply: %w", err)
+	buf, err := c.RunOutInput(ctx, updated.Reader(), "apply", c.args(c.Flags.Apply, args...)...)
+	if err != nil {
+		return nil, fmt.Errorf("kubectl apply: %w", err)
 	}
 
-	return nil
-}
+	result, err := parseJSONOutput(buf)
+	if err != nil {
+		return nil, err
+	}
 
-type getResult struct {
-	Items []struct {
-		Metadata struct {
-			Name              string `json:"name"`
-			DeletionTimestamp string `json:"deletionTimestamp"`
-		} `json:"metadata"`
-	} `json:"items"`
+	var resources Resources
+	for _, item := range result.Items {
+		resources = append(resources, Resource{
+			APIVersion: item.APIVersion,
+			Kind:       item.Kind,
+			Namespace:  item.Metadata.Name,
+			Name:       item.Metadata.Name,
+			UID:        item.Metadata.UID,
+		})
+	}
+
+	return resources, nil
 }
 
 // WaitForDeletions waits for resource marked for deletion to complete their deletion.
@@ -120,17 +140,12 @@ func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests Man
 				return err
 			}
 
-			// No resource found.
-			if len(buf) == 0 {
-				return nil
-			}
-
-			// Find which ones are marked for deletion. They have a `metadata.deletionTimestamp` field.
-			var result getResult
-			if err := json.Unmarshal(buf, &result); err != nil {
+			result, err := parseJSONOutput(buf)
+			if err != nil {
 				return err
 			}
 
+			// Find which ones are marked for deletion. They have a `metadata.deletionTimestamp` field.
 			var marked []string
 			for _, item := range result.Items {
 				if item.Metadata.DeletionTimestamp != "" {
@@ -202,4 +217,55 @@ func (c *CLI) args(commandFlags []string, additionalArgs ...string) []string {
 	args = append(args, additionalArgs...)
 
 	return args
+}
+
+func (r *Resources) Namespaces() []string {
+	var namespaces []string
+
+	for _, resource := range *r {
+		namespaces = append(namespaces, resource.Namespace)
+	}
+
+	return namespaces
+}
+
+type list struct {
+	Items []item `json:"items"`
+}
+
+type item struct {
+	APIVersion string `json:"apiVersion"`
+	Kind       string `json:"kind"`
+	Metadata   struct {
+		Name              string `json:"name"`
+		UID               string `json:"uid"`
+		DeletionTimestamp string `json:"deletionTimestamp"`
+	} `json:"metadata"`
+}
+
+func parseJSONOutput(buf []byte) (list, error) {
+	// No resource found.
+	if len(buf) == 0 {
+		return list{}, nil
+	}
+
+	// First, try to parse a list of items.
+	var l list
+	if err := json.Unmarshal(buf, &l); err != nil {
+		return list{}, err
+	}
+
+	if len(l.Items) > 0 {
+		return l, nil
+	}
+
+	// It could also be a single item.
+	var i item
+	if err := json.Unmarshal(buf, &i); err != nil {
+		return list{}, err
+	}
+
+	return list{
+		Items: []item{i},
+	}, nil
 }

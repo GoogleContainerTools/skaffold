@@ -109,7 +109,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		},
 		kubectlCLI:     kubectlCLI,
 		labeller:       labeller,
-		podSelector:    kubernetes.NewImageList(),
+		podSelector:    kubernetes.NewParentList(),
 		cache:          artifactCache,
 		runCtx:         runCtx,
 		intents:        intents,

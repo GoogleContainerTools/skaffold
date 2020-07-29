@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 )
 
 const (
@@ -41,10 +42,10 @@ type withNotification struct {
 	deploy.Deployer
 }
 
-func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
-	ns, err := w.Deployer.Deploy(ctx, out, builds)
+func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) (kubectl.Resources, error) {
+	r, err := w.Deployer.Deploy(ctx, out, builds)
 	if err != nil {
 		fmt.Fprint(out, terminalBell)
 	}
-	return ns, err
+	return r, err
 }

@@ -40,6 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -92,7 +93,7 @@ func NewHelmDeployer(runCtx *runcontext.RunContext, labels map[string]string) *H
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) (kubectl.Resources, error) {
 	hv, err := h.binVer(ctx)
 	if err != nil {
 		return nil, fmt.Errorf(versionErrorString, err)
@@ -101,7 +102,6 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 	logrus.Infof("Deploying with helm v%s ...", hv)
 
 	var dRes []Artifact
-	nsMap := map[string]struct{}{}
 	valuesSet := map[string]bool{}
 
 	// Deploy every release
@@ -110,13 +110,6 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		if err != nil {
 			releaseName, _ := util.ExpandEnvTemplate(r.Name, nil)
 			return nil, fmt.Errorf("deploying %q: %w", releaseName, err)
-		}
-
-		// collect namespaces
-		for _, r := range results {
-			if trimmed := strings.TrimSpace(r.Namespace); trimmed != "" {
-				nsMap[trimmed] = struct{}{}
-			}
 		}
 
 		dRes = append(dRes, results...)
@@ -132,17 +125,11 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		}
 	}
 
-	if err := labelDeployResults(h.labels, dRes); err != nil {
-		return nil, fmt.Errorf("adding labels: %w", err)
-	}
+	resources, err := labelDeployResults(h.labels, dRes)
 
-	// Collect namespaces in a string
-	namespaces := make([]string, 0, len(nsMap))
-	for ns := range nsMap {
-		namespaces = append(namespaces, ns)
-	}
+	logrus.Debugf("resources: %+v", resources)
 
-	return namespaces, nil
+	return resources, err
 }
 
 // Dependencies returns a list of files that the deployer depends on.

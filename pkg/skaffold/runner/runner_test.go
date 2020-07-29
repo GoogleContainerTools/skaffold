@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
@@ -50,7 +51,7 @@ type TestBench struct {
 	syncErrors   []error
 	testErrors   []error
 	deployErrors []error
-	namespaces   []string
+	resources    kubectl.Resources
 
 	devLoop        func(context.Context, io.Writer, func() error) error
 	firstMonitor   func(bool) error
@@ -80,8 +81,8 @@ func (t *TestBench) WithDeployErrors(deployErrors []error) *TestBench {
 	return t
 }
 
-func (t *TestBench) WithDeployNamespaces(ns []string) *TestBench {
-	t.namespaces = ns
+func (t *TestBench) WithDeployResources(r kubectl.Resources) *TestBench {
+	t.resources = r
 	return t
 }
 
@@ -149,7 +150,7 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []build.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact) ([]string, error) {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact) (kubectl.Resources, error) {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
@@ -159,7 +160,7 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Art
 	}
 
 	t.currentActions.Deployed = findTags(artifacts)
-	return t.namespaces, nil
+	return t.resources, nil
 }
 
 func (t *TestBench) Render(context.Context, io.Writer, []build.Artifact, bool, string) error {
@@ -185,7 +186,7 @@ func (t *TestBench) WatchForChanges(ctx context.Context, out io.Writer, doDev fu
 	return nil
 }
 
-func (t *TestBench) LogWatchToUser(_ io.Writer) {}
+func (t *TestBench) LogWatchToUser(io.Writer) {}
 
 func findTags(artifacts []build.Artifact) []string {
 	var tags []string

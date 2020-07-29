@@ -62,34 +62,49 @@ func TestSinceSeconds(t *testing.T) {
 func TestSelect(t *testing.T) {
 	tests := []struct {
 		description   string
-		podSpec       v1.PodSpec
+		resource      *v1.Pod
 		expectedMatch bool
 	}{
 		{
-			description:   "match container",
-			podSpec:       v1.PodSpec{Containers: []v1.Container{{Image: "image1"}}},
+			description: "match own uid",
+			resource: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					UID: "uid_pod",
+				},
+			},
 			expectedMatch: true,
 		},
 		{
-			description:   "match init container",
-			podSpec:       v1.PodSpec{InitContainers: []v1.Container{{Image: "image2"}}},
+			description: "match parent uid",
+			resource: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					OwnerReferences: []metav1.OwnerReference{
+						{UID: "uid_deployment"},
+					},
+				},
+			},
 			expectedMatch: true,
 		},
 		{
-			description:   "no match",
-			podSpec:       v1.PodSpec{Containers: []v1.Container{{Image: "image3"}}},
+			description: "no match",
+			resource: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					UID: "other_uid",
+					OwnerReferences: []metav1.OwnerReference{
+						{UID: "unknown_uid"},
+					},
+				},
+			},
 			expectedMatch: false,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			list := NewImageList()
-			list.Add("image1")
-			list.Add("image2")
+			list := NewParentList()
+			list.Add("uid_pod")
+			list.Add("uid_deployment")
 
-			selected := list.Select(&v1.Pod{
-				Spec: test.podSpec,
-			})
+			selected := list.Select(test.resource)
 
 			t.CheckDeepEqual(test.expectedMatch, selected)
 		})
