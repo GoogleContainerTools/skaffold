@@ -443,6 +443,11 @@ enum StatusCode {
     STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR = 411;
     STATUSCHECK_DEPLOYMENT_FETCH_ERR = 412;
 
+    // Pod States
+
+    // Pod Initializing
+    STATUSCHECK_POD_INITIALIZING= 451;
+
     // Unknown Error Codes
 
     // Could not determine error and phase
