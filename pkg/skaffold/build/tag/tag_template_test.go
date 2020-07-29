@@ -18,9 +18,133 @@ package tag
 
 import (
 	"testing"
+	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+func TestTagTemplate_GenerateTag(t *testing.T) {
+	aLocalTimeStamp := time.Date(2015, 03, 07, 11, 06, 39, 123456789, time.Local)
+
+	dateTimeExample := &dateTimeTagger{
+		Format:   "2006-01-02",
+		TimeZone: "UTC",
+		timeFn:   func() time.Time { return aLocalTimeStamp },
+	}
+
+	envTemplateExample, _ := NewEnvTemplateTagger("{{.FOO}}")
+	invalidEnvTemplate, _ := NewEnvTemplateTagger("{{.BAR}}")
+	env := []string{"FOO=BAR"}
+
+	tagTemplateExample, _ := NewTemplateTagger("", nil)
+
+	tests := []struct {
+		description string
+		template    string
+		customMap   map[string]Tagger
+		expected    string
+		shouldErr   bool
+	}{
+		{
+			description: "empty template",
+		},
+		{
+			description: "only text",
+			template:    "foo-bar",
+			expected:    "foo-bar",
+		},
+		{
+			description: "only component (dateTime) in template, providing more components than necessary",
+			template:    "{{.FOO}}",
+			customMap:   map[string]Tagger{"FOO": dateTimeExample, "BAR": envTemplateExample},
+			expected:    "2015-03-07",
+		},
+		{
+			description: "envTemplate and sha256 as components",
+			template:    "foo-{{.FOO}}-{{.BAR}}",
+			customMap:   map[string]Tagger{"FOO": envTemplateExample, "BAR": &ChecksumTagger{}},
+			expected:    "foo-BAR-latest",
+		},
+		{
+			description: "using tagTemplate as a component",
+			template:    "{{.FOO}}",
+			customMap:   map[string]Tagger{"FOO": tagTemplateExample},
+			shouldErr:   true,
+		},
+		{
+			description: "faulty component, envTemplate has undefined references",
+			template:    "{{.FOO}}",
+			customMap:   map[string]Tagger{"FOO": invalidEnvTemplate},
+			shouldErr:   true,
+		},
+		{
+			description: "missing required components",
+			template:    "{{.FOO}}",
+			shouldErr:   true,
+		},
+		{
+			description: "default component name SHA",
+			template:    "{{.SHA}}",
+			expected:    "latest",
+		},
+		{
+			description: "override default components",
+			template:    "{{.GIT}}-{{.DATE}}-{{.SHA}}",
+			customMap:   map[string]Tagger{"GIT": dateTimeExample, "DATE": envTemplateExample, "SHA": dateTimeExample},
+			expected:    "2015-03-07-BAR-2015-03-07",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.OSEnviron, func() []string { return env })
+
+			c, err := NewTemplateTagger(test.template, test.customMap)
+
+			t.CheckNoError(err)
+
+			tag, err := c.GenerateTag(".", "test")
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, tag)
+		})
+	}
+}
+
+func TestTagTemplate_NewTemplateTagger(t *testing.T) {
+	tests := []struct {
+		description string
+		template    string
+		customMap   map[string]Tagger
+		shouldErr   bool
+	}{
+		{
+			description: "valid template with nil map",
+			template:    "{{.FOO}}",
+		},
+		{
+			description: "valid template with atleast one mapping",
+			template:    "{{.FOO}}",
+			customMap:   map[string]Tagger{"FOO": &ChecksumTagger{}},
+		},
+		{
+			description: "invalid template with nil mapping",
+			template:    "{{.FOO",
+			shouldErr:   true,
+		},
+		{
+			description: "invalid template with atleast one mapping",
+			template:    "{{.FOO",
+			customMap:   map[string]Tagger{"FOO": &ChecksumTagger{}},
+			shouldErr:   true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			_, err := NewTemplateTagger(test.template, test.customMap)
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
 
 func TestTagTemplate_ExecuteTagTemplate(t *testing.T) {
 	tests := []struct {
