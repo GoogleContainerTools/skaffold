@@ -132,7 +132,9 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		}
 	}
 
-	labelDeployResults(h.labels, dRes)
+	if err := labelDeployResults(h.labels, dRes); err != nil {
+		return nil, fmt.Errorf("adding labels: %w", err)
+	}
 
 	// Collect namespaces in a string
 	namespaces := make([]string, 0, len(nsMap))
