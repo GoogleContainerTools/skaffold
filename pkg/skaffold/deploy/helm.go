@@ -424,6 +424,8 @@ func (h *HelmDeployer) getRelease(ctx context.Context, helmVersion semver.Versio
 			return nil
 		}, opts)
 
+	logrus.Debug(b.String())
+
 	return b, err
 }
 
