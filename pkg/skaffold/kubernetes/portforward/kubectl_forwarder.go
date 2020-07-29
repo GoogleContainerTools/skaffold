@@ -239,14 +239,14 @@ func findNewestPodForService(ctx context.Context, ns, serviceName string, servic
 	if logrus.IsLevelEnabled((logrus.TraceLevel)) {
 		var names []string
 		for _, p := range pods.Items {
-			names = append(names, fmt.Sprintf("pod %s (phase:%v, created:%s)", p.Name, p.Status.Phase, p.CreationTimestamp))
+			names = append(names, fmt.Sprintf("(pod:%q phase:%v created:%v)", p.Name, p.Status.Phase, p.CreationTimestamp))
 		}
 		logrus.Tracef("service %s/%d maps to %d pods: %v", serviceName, servicePort, len(pods.Items), names)
 	}
 
 	for _, p := range pods.Items {
 		if targetPort := findTargetPort(svcPort, p); targetPort > 0 {
-			logrus.Debugf("Mapping service %s/%d to pod %s/%d", serviceName, servicePort, p.Name, targetPort)
+			logrus.Debugf("Forwarding service %s/%d to pod %s/%d", serviceName, servicePort, p.Name, targetPort)
 			return p.Name, targetPort, nil
 		}
 	}
