@@ -57,11 +57,11 @@ type DependencyLister func(ctx context.Context, artifact *latest.Artifact) ([]st
 
 // NewCache returns the current state of the cache
 func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies DependencyLister) (Cache, error) {
-	if !runCtx.Opts.CacheArtifacts {
+	if !runCtx.CacheArtifacts() {
 		return &noCache{}, nil
 	}
 
-	cacheFile, err := resolveCacheFile(runCtx.Opts.CacheFile)
+	cacheFile, err := resolveCacheFile(runCtx.CacheFile())
 	if err != nil {
 		logrus.Warnf("Error resolving cache file, not using skaffold cache: %v", err)
 		return &noCache{}, nil
@@ -81,11 +81,11 @@ func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies D
 	return &cache{
 		artifactCache:      artifactCache,
 		client:             client,
-		insecureRegistries: runCtx.InsecureRegistries,
+		insecureRegistries: runCtx.GetInsecureRegistries(),
 		cacheFile:          cacheFile,
 		imagesAreLocal:     imagesAreLocal,
 		hashForArtifact: func(ctx context.Context, a *latest.Artifact) (string, error) {
-			return getHashForArtifact(ctx, dependencies, a, runCtx.Opts.IsDevMode())
+			return getHashForArtifact(ctx, dependencies, a, runCtx.DevMode())
 		},
 	}, nil
 }

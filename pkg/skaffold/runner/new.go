@@ -55,13 +55,13 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating builder: %w", err)
 	}
 
-	labeller := deploy.NewLabeller(runCtx.Opts.AddSkaffoldLabels, runCtx.Opts.CustomLabels)
+	labeller := deploy.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels())
 	tester := getTester(runCtx, imagesAreLocal)
 	syncer := getSyncer(runCtx)
 	deployer := getDeployer(runCtx, labeller.Labels())
 
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx.InsecureRegistries)
+		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx.GetInsecureRegistries())
 		if err != nil {
 			return nil, err
 		}
@@ -79,8 +79,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
 
-	builder, tester, deployer = WithTimings(builder, tester, deployer, runCtx.Opts.CacheArtifacts)
-	if runCtx.Opts.Notification {
+	builder, tester, deployer = WithTimings(builder, tester, deployer, runCtx.CacheArtifacts())
+	if runCtx.Notification() {
 		deployer = WithNotification(deployer)
 	}
 
@@ -89,7 +89,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
-	event.InitializeState(runCtx.Cfg, runCtx.KubeContext, runCtx.Opts.AutoBuild, runCtx.Opts.AutoDeploy, runCtx.Opts.AutoSync)
+	event.InitializeState(runCtx.Pipeline(), runCtx.GetKubeContext(), runCtx.AutoBuild(), runCtx.AutoDeploy(), runCtx.AutoSync())
 	event.LogMetaEvent()
 
 	monitor := filemon.NewMonitor()
@@ -118,7 +118,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 }
 
 func setupIntents(runCtx *runcontext.RunContext) (*intents, chan bool) {
-	intents := newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy)
+	intents := newIntents(runCtx.AutoBuild(), runCtx.AutoSync(), runCtx.AutoDeploy())
 
 	intentChan := make(chan bool, 1)
 	setupTrigger("build", intents.setBuild, intents.setAutoBuild, intents.getAutoBuild, server.SetBuildCallback, server.SetAutoBuildCallback, intentChan)
@@ -155,8 +155,10 @@ func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(
 // Returns that builder, a bool to indicate that images are local
 // (ie don't need to be pushed) and an error.
 func getBuilder(runCtx *runcontext.RunContext) (build.Builder, bool, error) {
+	b := runCtx.Pipeline().Build
+
 	switch {
-	case runCtx.Cfg.Build.LocalBuild != nil:
+	case b.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
 		builder, err := local.NewBuilder(runCtx)
 		if err != nil {
@@ -164,17 +166,17 @@ func getBuilder(runCtx *runcontext.RunContext) (build.Builder, bool, error) {
 		}
 		return builder, !builder.PushImages(), nil
 
-	case runCtx.Cfg.Build.GoogleCloudBuild != nil:
+	case b.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
 		return gcb.NewBuilder(runCtx), false, nil
 
-	case runCtx.Cfg.Build.Cluster != nil:
+	case b.Cluster != nil:
 		logrus.Debugln("Using builder: cluster")
 		builder, err := cluster.NewBuilder(runCtx)
 		return builder, false, err
 
 	default:
-		return nil, false, fmt.Errorf("unknown builder for config %+v", runCtx.Cfg.Build)
+		return nil, false, fmt.Errorf("unknown builder for config %+v", b)
 	}
 }
 
@@ -187,17 +189,19 @@ func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
 }
 
 func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) deploy.Deployer {
+	d := runCtx.Pipeline().Deploy
+
 	var deployers deploy.DeployerMux
 
-	if runCtx.Cfg.Deploy.HelmDeploy != nil {
+	if d.HelmDeploy != nil {
 		deployers = append(deployers, deploy.NewHelmDeployer(runCtx, labels))
 	}
 
-	if runCtx.Cfg.Deploy.KubectlDeploy != nil {
+	if d.KubectlDeploy != nil {
 		deployers = append(deployers, deploy.NewKubectlDeployer(runCtx, labels))
 	}
 
-	if runCtx.Cfg.Deploy.KustomizeDeploy != nil {
+	if d.KustomizeDeploy != nil {
 		deployers = append(deployers, deploy.NewKustomizeDeployer(runCtx, labels))
 	}
 
@@ -210,12 +214,12 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) deploy
 }
 
 func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {
-	t := runCtx.Cfg.Build.TagPolicy
+	t := runCtx.Pipeline().Build.TagPolicy
 
 	switch {
-	case runCtx.Opts.CustomTag != "":
+	case runCtx.CustomTag() != "":
 		return &tag.CustomTag{
-			Tag: runCtx.Opts.CustomTag,
+			Tag: runCtx.CustomTag(),
 		}, nil
 
 	case t.EnvTemplateTagger != nil:

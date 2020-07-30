@@ -34,7 +34,7 @@ import (
 // BuildAndTest builds and tests a list of artifacts.
 func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	// Use tags directly from the Kubernetes manifests.
-	if r.runCtx.Opts.DigestSource == noneDigestSource {
+	if r.runCtx.DigestSource() == noneDigestSource {
 		return []build.Artifact{}, nil
 	}
 
@@ -44,7 +44,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	}
 
 	// In dry-run mode or with --digest-source  set to 'remote', we don't build anything, just return the tag for each artifact.
-	if r.runCtx.Opts.DryRun || (r.runCtx.Opts.DigestSource == remoteDigestSource) {
+	if r.runCtx.DryRun() || (r.runCtx.DigestSource() == remoteDigestSource) {
 		var bRes []build.Artifact
 		for _, artifact := range artifacts {
 			bRes = append(bRes, build.Artifact{
@@ -68,7 +68,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 			return nil, err
 		}
 
-		if !r.runCtx.Opts.SkipTests {
+		if !r.runCtx.SkipTests() {
 			if err = r.tester.Test(ctx, out, bRes); err != nil {
 				return nil, err
 			}
@@ -117,7 +117,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		return fmt.Errorf("starting logger: %w", err)
 	}
 
-	if r.runCtx.Opts.Tail || r.runCtx.Opts.PortForward.Enabled {
+	if r.runCtx.Tail() || r.runCtx.PortForward() {
 		color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
 		<-ctx.Done()
 	}
@@ -139,7 +139,7 @@ type tagErr struct {
 
 // ApplyDefaultRepo applies the default repo to a given image tag.
 func (r *SkaffoldRunner) ApplyDefaultRepo(tag string) (string, error) {
-	return deploy.ApplyDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo.Value(), tag)
+	return deploy.ApplyDefaultRepo(r.runCtx.GlobalConfig(), r.runCtx.DefaultRepo(), tag)
 }
 
 // imageTags generates tags for a list of artifacts
