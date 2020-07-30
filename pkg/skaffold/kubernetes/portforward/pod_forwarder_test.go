@@ -403,7 +403,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 			taken := map[int]struct{}{}
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", taken, test.availablePorts))
-			t.Override(&topLevelOwnerKey, func(metav1.Object, string) string { return "owner" })
+			t.Override(&topLevelOwnerKey, func(metav1.Object, string) (string, error) { return "owner", nil })
 
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder()
@@ -474,7 +474,7 @@ func TestStartPodForwarder(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(latest.Pipeline{}, "", true, true, true)
-			t.Override(&topLevelOwnerKey, func(metav1.Object, string) string { return "owner" })
+			t.Override(&topLevelOwnerKey, func(metav1.Object, string) (string, error) { return "owner", nil })
 			t.Override(&newPodWatcher, func(kubernetes.PodSelector, []string) kubernetes.PodWatcher {
 				return &fakePodWatcher{
 					events: []kubernetes.PodEvent{test.event},

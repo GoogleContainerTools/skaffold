@@ -77,6 +77,7 @@ func TestTopLevelOwnerKey(t *testing.T) {
 		kind          string
 		objects       []runtime.Object
 		expected      string
+		shouldErr     bool
 	}{
 		{
 			description:   "owner is two levels up",
@@ -84,17 +85,20 @@ func TestTopLevelOwnerKey(t *testing.T) {
 			kind:          "Pod",
 			objects:       []runtime.Object{pod, rs, deployment},
 			expected:      "Deployment-dep",
-		}, {
+		},
+		{
 			description:   "object is owner",
 			initialObject: deployment,
 			kind:          "Deployment",
 			objects:       []runtime.Object{pod, rs, deployment},
 			expected:      "Deployment-dep",
-		}, {
+		},
+		{
 			description:   "error, owner doesn't exist",
 			initialObject: pod,
 			kind:          "Pod",
 			objects:       []runtime.Object{pod, rs},
+			shouldErr:     true,
 		},
 	}
 
@@ -103,9 +107,9 @@ func TestTopLevelOwnerKey(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(test.objects...)
 			t.Override(&Client, mockClient(client))
 
-			actual := TopLevelOwnerKey(test.initialObject, test.kind)
+			actual, err := TopLevelOwnerKey(test.initialObject, test.kind)
 
-			t.CheckDeepEqual(test.expected, actual)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
 }

@@ -19,24 +19,22 @@ package kubernetes
 import (
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // TopLevelOwnerKey returns a key associated with the top level
 // owner of a Kubernetes resource in the form Kind-Name
-func TopLevelOwnerKey(obj metav1.Object, kind string) string {
+func TopLevelOwnerKey(obj metav1.Object, kind string) (string, error) {
 	for {
 		or := obj.GetOwnerReferences()
 		if or == nil {
-			return fmt.Sprintf("%s-%s", kind, obj.GetName())
+			return fmt.Sprintf("%s-%s", kind, obj.GetName()), nil
 		}
 		var err error
 		kind = or[0].Kind
 		obj, err = ownerMetaObject(obj.GetNamespace(), or[0])
 		if err != nil {
-			logrus.Warnf("unable to get owner from reference: %v", or[0])
-			return ""
+			return "", err
 		}
 	}
 }
