@@ -176,4 +176,4 @@ Suppose the current time is `15:04:09.999 January 2nd, 2006` and the abbreviated
 
 The tag template uses the [Golang Templating Syntax](https://golang.org/pkg/text/template/).
 As showcased in the example, `tagTemplate` tag policy features one
-**required** parameter, `template`, which is the tag template to use. To learn more about templating support in Skaffold.yaml see [Templated fields]({{< relref "../environment/templating.md" >}})
+**required** parameter, `template`, which is the tag template to use. To learn more about templating support in the skaffold.yaml, see [Templated fields]({{< relref "../environment/templating.md" >}})
