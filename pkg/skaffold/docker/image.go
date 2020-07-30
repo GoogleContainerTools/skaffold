@@ -160,7 +160,9 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 
 	// Like `docker build`, we ignore the errors
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
+	start := time.Now()
 	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
+	logrus.Debugln("GetAllAuthConfigs took", time.Since(start))
 
 	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
 	if err != nil {
