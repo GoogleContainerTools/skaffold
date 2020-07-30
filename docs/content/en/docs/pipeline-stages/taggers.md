@@ -150,7 +150,7 @@ tag policy features two optional parameters: `format` and `timezone`.
 `tagTemplate` allows you to combine all existing taggers to create a custom tagging policy.
 This policy requires that you specify a tag template,
 using a combination of plaintext and references to other tagging strategies which will be evaluated at runtime.
-These other tagging strategies are called components, which can be
+We refer to these individual parts as "components", which can be
 a `gitCommit`, `sha256`, `envTemplate`, or `dateTime` tagger.
 
 The following `build` section, for example, instructs Skaffold to build a Docker image
