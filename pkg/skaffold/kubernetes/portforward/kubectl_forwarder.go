@@ -104,11 +104,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		ctx, cancel := context.WithCancel(parentCtx)
 		pfe.cancel = cancel
 
-		args, err := portForwardArgs(ctx, pfe)
-		if err != nil {
-			logrus.Warnf("couldn't port-forward to %v: %v", pfe, err)
-			return
-		}
+		args := portForwardArgs(ctx, pfe)
 		var buf bytes.Buffer
 		cmd := k.kubectl.CommandWithStrictCancellation(ctx, "port-forward", args...)
 		cmd.Stdout = &buf
@@ -141,28 +137,29 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 	}
 }
 
-func portForwardArgs(ctx context.Context, pfe *portForwardEntry) ([]string, error) {
-	args := []string{"--pod-running-timeout", "1s"}
+func portForwardArgs(ctx context.Context, pfe *portForwardEntry) []string {
+	args := []string{"--pod-running-timeout", "1s", "--namespace", pfe.resource.Namespace}
 
 	switch {
 	case pfe.resource.Type == "service" && os.Getenv("SKAFFOLD_DISABLE_SERVICE_FORWARDING") == "":
 		// Services need special handling: https://github.com/GoogleContainerTools/skaffold/issues/4522
-		podName, remotePort, err := findNewestPodForSvc(ctx, pfe.resource.Namespace, pfe.resource.Name, pfe.resource.Port)
-		if err != nil {
-			return nil, err
+		podName, remotePort, err := findNewestPodForSvc(ctx, pfe.resource.Namespace, pfe.resource.Name, pfe.resource.Port);
+		if err == nil {
+			args = append(args, fmt.Sprintf("pod/%s", podName), fmt.Sprintf("%d:%d", pfe.localPort, remotePort))
+			break
 		}
-		args = append(args, fmt.Sprintf("pod/%s", podName), fmt.Sprintf("%d:%d", pfe.localPort, remotePort))
+		logrus.Warnf("could not map pods to service %s/%s/%d: %v", pfe.resource.Namespace, pfe.resource.Name, pfe.resource.Port, err)
+		fallthrough // and let kubectl try to handle it
 
 	default:
 		args = append(args, fmt.Sprintf("%s/%s", pfe.resource.Type, pfe.resource.Name), fmt.Sprintf("%d:%d", pfe.localPort, pfe.resource.Port))
 	}
 
-	args = append(args, "--namespace", pfe.resource.Namespace)
 
 	if pfe.resource.Address != "" && pfe.resource.Address != util.Loopback {
 		args = append(args, []string{"--address", pfe.resource.Address}...)
 	}
-	return args, nil
+	return args
 }
 
 // Terminate terminates an existing kubectl port-forward command using SIGTERM
@@ -222,30 +219,41 @@ func findNewestPodForService(ctx context.Context, ns, serviceName string, servic
 	}
 	svc, err := client.CoreV1().Services(ns).Get(serviceName, metav1.GetOptions{})
 	if err != nil {
-		return "", -1, fmt.Errorf("getting service: %w", err)
+		return "", -1, fmt.Errorf("getting service %s/%s: %w", ns, serviceName, err)
 	}
 	svcPort, err := findServicePort(*svc, servicePort)
 	if err != nil {
 		return "", -1, err
 	}
 
+	// Look for pods with matching selectors and that are not terminated.
+	// We cannot use field selectors as they are only supported in 1.16
+	// https://github.com/flant/shell-operator/blob/8fa3c3b8cfeb1ddb37b070b7a871561fdffe788b/HOOKS.md#fieldselector
 	set := labels.Set(svc.Spec.Selector)
-	listOptions := metav1.ListOptions{LabelSelector: set.AsSelector().String()}
-	pods, err := client.CoreV1().Pods(ns).List(listOptions)
+	listOptions := metav1.ListOptions{
+		LabelSelector: set.AsSelector().String(),
+	}
+	podsList, err := client.CoreV1().Pods(ns).List(listOptions)
 	if err != nil {
 		return "", -1, fmt.Errorf("listing pods: %w", err)
 	}
-	sort.Slice(pods.Items, newestPodsFirst(pods.Items))
+	var pods []corev1.Pod
+	for _, pod := range podsList.Items {
+		if pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodRunning {
+			pods = append(pods, pod)
+		} 
+	} 
+	sort.Slice(pods, newestPodsFirst(pods))
 
 	if logrus.IsLevelEnabled((logrus.TraceLevel)) {
 		var names []string
-		for _, p := range pods.Items {
+		for _, p := range pods {
 			names = append(names, fmt.Sprintf("(pod:%q phase:%v created:%v)", p.Name, p.Status.Phase, p.CreationTimestamp))
 		}
-		logrus.Tracef("service %s/%d maps to %d pods: %v", serviceName, servicePort, len(pods.Items), names)
+		logrus.Tracef("service %s/%d maps to %d pods: %v", serviceName, servicePort, len(pods), names)
 	}
 
-	for _, p := range pods.Items {
+	for _, p := range pods {
 		if targetPort := findTargetPort(svcPort, p); targetPort > 0 {
 			logrus.Debugf("Forwarding service %s/%d to pod %s/%d", serviceName, servicePort, p.Name, targetPort)
 			return p.Name, targetPort, nil
@@ -255,21 +263,9 @@ func findNewestPodForService(ctx context.Context, ns, serviceName string, servic
 	return "", -1, fmt.Errorf("no pods match service %s/%d", serviceName, servicePort)
 }
 
-// newestPodsFirst sorts pods by their running state and then by creation time.
+// newestPodsFirst sorts pods by their creation time
 func newestPodsFirst(pods []corev1.Pod) func(int, int) bool {
-	// prefer Running then Pending
-	phases := map[corev1.PodPhase]int{
-		corev1.PodRunning:   0,
-		corev1.PodPending:   1,
-		corev1.PodUnknown:   2,
-		corev1.PodSucceeded: 3,
-		corev1.PodFailed:    4,
-	}
 	return func(i, j int) bool {
-		if pods[i].Status.Phase != pods[j].Status.Phase {
-			// sort running pods ahead of non-running pods
-			return phases[pods[i].Status.Phase] < phases[pods[j].Status.Phase]
-		}
 		ti := pods[i].CreationTimestamp.Time
 		tj := pods[j].CreationTimestamp.Time
 		return ti.After(tj)

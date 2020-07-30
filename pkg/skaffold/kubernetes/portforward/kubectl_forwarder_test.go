@@ -184,32 +184,38 @@ func TestPortForwardArgs(t *testing.T) {
 	tests := []struct {
 		description string
 		input       *portForwardEntry
-		shouldErr   bool
+		servicePod  string
+		servicePort int
+		serviceErr  error
 		result      []string
 	}{
 		{
 			description: "non-default address",
 			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: 9, Address: "0.0.0.0"}, "", "", "", "", 8080, false),
-			shouldErr:   false,
-			result:      []string{"--pod-running-timeout", "1s", "pod/p", "8080:9", "--namespace", "ns", "--address", "0.0.0.0"},
+			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "pod/p", "8080:9", "--address", "0.0.0.0"},
 		},
 		{
 			description: "localhost is the default",
 			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: 9, Address: "127.0.0.1"}, "", "", "", "", 8080, false),
-			shouldErr:   false,
-			result:      []string{"--pod-running-timeout", "1s", "pod/p", "8080:9", "--namespace", "ns"},
+			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "pod/p", "8080:9"},
 		},
 		{
 			description: "no address",
 			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: 9}, "", "", "", "", 8080, false),
-			shouldErr:   false,
-			result:      []string{"--pod-running-timeout", "1s", "pod/p", "8080:9", "--namespace", "ns"},
+			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "pod/p", "8080:9"},
 		},
 		{
 			description: "service to pod",
 			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "service", Name: "svc", Namespace: "ns", Port: 9}, "", "", "", "", 8080, false),
-			shouldErr:   false,
-			result:      []string{"--pod-running-timeout", "1s", "pod/servicePod", "8080:9999", "--namespace", "ns"},
+			servicePod:  "servicePod",
+			servicePort: 9999,
+			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "pod/servicePod", "8080:9999"},
+		},
+		{
+			description: "service could not be mapped to pod",
+			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "service", Name: "svc", Namespace: "ns", Port: 9}, "", "", "", "", 8080, false),
+			serviceErr:	 errors.New("error"),
+			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "service/svc", "8080:9"},
 		},
 	}
 
@@ -219,27 +225,25 @@ func TestPortForwardArgs(t *testing.T) {
 			defer cancel()
 
 			t.Override(&findNewestPodForSvc, func(ctx context.Context, ns, serviceName string, servicePort int) (string, int, error) {
-				return "servicePod", 9999, nil
+				return test.servicePod, test.servicePort, test.serviceErr
 			})
 
-			args, err := portForwardArgs(ctx, test.input)
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.result, args)
+			args := portForwardArgs(ctx, test.input)
+			t.CheckDeepEqual(test.result, args)
 		})
 	}
 }
 
 func TestNewestPodFirst(t *testing.T) {
+	starting := mockPod("starting", nil, time.Now())
+	starting.Status.Phase = corev1.PodPending
 	new := mockPod("new", nil, time.Now().Add(-time.Minute))
 	old := mockPod("old", nil, time.Now().Add(-time.Hour))
-	starting := mockPod("starting", nil, time.Now().Add(-2*time.Minute))
-	starting.Status.Phase = corev1.PodPending
-	dead := mockPod("dead", nil, time.Now().Add(-time.Hour))
-	dead.Status.Phase = corev1.PodSucceeded
 
-	pods := []corev1.Pod{*dead, *starting, *old, *new}
+	pods := []corev1.Pod{*old, *new, *starting}
 	sort.Slice(pods, newestPodsFirst(pods))
 
-	expected := []corev1.Pod{*new, *old, *starting, *dead}
+	expected := []corev1.Pod{*starting, *new, *old}
 	testutil.CheckDeepEqual(t, expected, pods)
 }
 
