@@ -151,7 +151,7 @@ tag policy features two optional parameters: `format` and `timezone`.
 This policy requires that you specify a tag template,
 using a combination of plaintext and references to other tagging strategies which will be evaluated at runtime.
 We refer to these individual parts as "components", which can be
-a `gitCommit`, `sha256`, `envTemplate`, or `dateTime` tagger.
+any of the other existing supported tagging strategies. Nested `tagTemplate` components are not supported.
 
 The following `build` section, for example, instructs Skaffold to build a Docker image
 `gcr.io/k8s-skaffold/example` with the `tagTemplate` tag policy.
