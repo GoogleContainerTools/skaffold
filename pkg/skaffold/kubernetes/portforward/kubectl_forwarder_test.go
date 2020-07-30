@@ -214,7 +214,7 @@ func TestPortForwardArgs(t *testing.T) {
 		{
 			description: "service could not be mapped to pod",
 			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "service", Name: "svc", Namespace: "ns", Port: 9}, "", "", "", "", 8080, false),
-			serviceErr:	 errors.New("error"),
+			serviceErr:  errors.New("error"),
 			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "service/svc", "8080:9"},
 		},
 	}

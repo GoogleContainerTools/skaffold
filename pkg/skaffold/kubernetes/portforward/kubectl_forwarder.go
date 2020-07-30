@@ -144,7 +144,7 @@ func portForwardArgs(ctx context.Context, pfe *portForwardEntry) []string {
 	switch {
 	case pfe.resource.Type == "service" && !disableServiceForwarding:
 		// Services need special handling: https://github.com/GoogleContainerTools/skaffold/issues/4522
-		podName, remotePort, err := findNewestPodForSvc(ctx, pfe.resource.Namespace, pfe.resource.Name, pfe.resource.Port);
+		podName, remotePort, err := findNewestPodForSvc(ctx, pfe.resource.Namespace, pfe.resource.Name, pfe.resource.Port)
 		if err == nil {
 			args = append(args, fmt.Sprintf("pod/%s", podName), fmt.Sprintf("%d:%d", pfe.localPort, remotePort))
 			break
@@ -155,7 +155,6 @@ func portForwardArgs(ctx context.Context, pfe *portForwardEntry) []string {
 	default:
 		args = append(args, fmt.Sprintf("%s/%s", pfe.resource.Type, pfe.resource.Name), fmt.Sprintf("%d:%d", pfe.localPort, pfe.resource.Port))
 	}
-
 
 	if pfe.resource.Address != "" && pfe.resource.Address != util.Loopback {
 		args = append(args, []string{"--address", pfe.resource.Address}...)
@@ -242,8 +241,8 @@ func findNewestPodForService(ctx context.Context, ns, serviceName string, servic
 	for _, pod := range podsList.Items {
 		if pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodRunning {
 			pods = append(pods, pod)
-		} 
-	} 
+		}
+	}
 	sort.Slice(pods, newestPodsFirst(pods))
 
 	if logrus.IsLevelEnabled((logrus.TraceLevel)) {
