@@ -139,7 +139,7 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 	start := time.Now()
 	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
 
-	err := statusCheck(ctx, r.labeller, r.runCtx, out)
+	err := statusCheck(ctx, r.labeller, r.runCtx, out, r.devIteration)
 	if err != nil {
 		return err
 	}

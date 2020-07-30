@@ -63,14 +63,21 @@ type counter struct {
 	failed  int32
 }
 
-func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
+func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer, iteration int) error {
 	event.StatusCheckEventStarted()
-	errCode, err := statusCheck(ctx, defaultLabeller, runCtx, out)
+	s := &checker{
+		iteration: iteration,
+	}
+	errCode, err := s.statusCheck(ctx, defaultLabeller, runCtx, out)
 	event.StatusCheckEventEnded(errCode, err)
 	return err
 }
 
-func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) (proto.StatusCode, error) {
+type checker struct {
+	iteration int
+}
+
+func (s checker) statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) (proto.StatusCode, error) {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
@@ -101,7 +108,7 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		go func(r *resource.Deployment) {
 			defer wg.Done()
 			// keep updating the resource status until it fails/succeeds/times out
-			pollDeploymentStatus(ctx, runCtx, r)
+			s.pollDeploymentStatus(ctx, runCtx, r)
 			rcCopy := c.markProcessed(r.Status().Error())
 			printStatusCheckSummary(out, r, rcCopy)
 		}(d)
@@ -143,11 +150,10 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 
 		deployments[i] = resource.NewDeployment(d.Name, d.Namespace, deadline).WithValidator(pd)
 	}
-
 	return deployments, nil
 }
 
-func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r *resource.Deployment) {
+func (s checker) pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r *resource.Deployment) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
@@ -163,6 +169,10 @@ func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r 
 		case <-time.After(pollDuration):
 			r.CheckStatus(timeoutContext, runCtx)
 			if r.IsStatusCheckComplete() {
+				return
+			}
+			if s.iteration == 0 && r.AreContainersNotRetryAble() {
+				r.MarkComplete()
 				return
 			}
 		}
@@ -197,6 +207,9 @@ func printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 	event.ResourceStatusCheckEventCompleted(r.String(), r.Status().ActionableError())
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
+		if str := r.ReportSinceLastUpdated(); str != "" {
+			fmt.Fprintln(out, trimNewLine(str))
+		}
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
 			trimNewLine(getPendingMessage(c.pending, c.total)),

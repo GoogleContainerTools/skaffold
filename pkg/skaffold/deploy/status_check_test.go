@@ -343,11 +343,11 @@ func TestPrintSummaryStatus(t *testing.T) {
 			rc := newCounter(10)
 			rc.pending = test.pending
 			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
-			printStatusCheckSummary(
-				out,
-				withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), test.ae),
-				*rc,
-			)
+			r := withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), test.ae)
+			// report status once and set it changed to false.
+			r.ReportSinceLastUpdated()
+			r.UpdateStatus(test.ae)
+			printStatusCheckSummary(out, r, *rc)
 			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
