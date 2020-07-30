@@ -149,7 +149,7 @@ tag policy features two optional parameters: `format` and `timezone`.
 
 `tagTemplate` allows you to combine all existing taggers to create a custom tagging policy.
 This policy requires that you specify a tag template,
-where part of template can be replaced with the result of other tagging strategies during the tagging process.
+using a combination of plaintext and references to other tagging strategies which will be evaluated at runtime.
 These other tagging strategies are called components, which can be
 a `gitCommit`, `sha256`, `envTemplate`, or `dateTime` tagger.
 
