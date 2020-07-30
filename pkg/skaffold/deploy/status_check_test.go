@@ -23,9 +23,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	appsv1 "k8s.io/api/apps/v1"
@@ -35,9 +32,12 @@ import (
 	utilpointer "k8s.io/utils/pointer"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -553,9 +553,12 @@ func TestPollDeployment(t *testing.T) {
 			description: "pollDeploymentStatus waits when a container can recover and eventually succeeds",
 			dep:         resource.NewDeployment("dep", "test", time.Second),
 			command: testutil.CmdRunOutErr(
-				rolloutCmd, "", errors.New("Unable to connect to the server"),
-			).AndRunOut(rolloutCmd, "successfully rolled out"),
+				// pending due to recoverable error
+				rolloutCmd, "", errors.New("Unable to connect to the server")).
+				// successfully rolled out run
+				AndRunOut(rolloutCmd, "successfully rolled out"),
 			runs: [][]validator.Resource{
+				// pod pending due to some k8 infra related recoverable error.
 				{validator.NewResource(
 					"test",
 					"pod",
@@ -563,6 +566,7 @@ func TestPollDeployment(t *testing.T) {
 					"Pending",
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE},
 					[]string{"err"})},
+				// pod recovered
 				{validator.NewResource(
 					"test",
 					"pod",
@@ -597,8 +601,8 @@ type mockValidator struct {
 
 func (m mockValidator) Run(context.Context) ([]validator.Resource, error) {
 	if m.iteration < len(m.runs) {
-		return m.runs[m.iteration], nil
 		m.iteration++
+		return m.runs[m.iteration], nil
 	}
 	// keep replaying the last result.
 	return m.runs[m.iteration-1], nil
