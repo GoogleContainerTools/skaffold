@@ -69,6 +69,7 @@ func TestNewBuilder(t *testing.T) {
 					KubeContext: kubeContext,
 					Namespace:   namespace,
 				},
+				muted: config.Muted{},
 			},
 		},
 		{
@@ -90,6 +91,7 @@ func TestNewBuilder(t *testing.T) {
 					KubeContext: kubeContext,
 					Namespace:   namespace,
 				},
+				muted: config.Muted{},
 			},
 		},
 	}

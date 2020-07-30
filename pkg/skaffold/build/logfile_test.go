@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -31,10 +32,14 @@ import (
 )
 
 func TestWithLogFile(t *testing.T) {
+	logBuildInProgress := "building img with tag img:123"
+	logBuildFailed := "failed to build img with tag img:123"
+	logFilename := " - writing logs to " + filepath.Join(os.TempDir(), "skaffold", "build", "img.log")
+
 	tests := []struct {
 		description    string
 		builder        ArtifactBuilder
-		suppress       []string
+		muted          Muted
 		shouldErr      bool
 		expectedDigest string
 		logsFound      []string
@@ -43,62 +48,44 @@ func TestWithLogFile(t *testing.T) {
 		{
 			description:    "all logs",
 			builder:        fakeBuilder,
-			suppress:       nil,
+			muted:          muted(false),
 			shouldErr:      false,
 			expectedDigest: "digest",
-			logsFound:      []string{"building img with tag img:123"},
-			logsNotFound:   []string{" - writing logs to ", filepath.Join("skaffold", "img.log")},
+			logsFound:      []string{logBuildInProgress},
+			logsNotFound:   []string{logFilename},
 		},
 		{
-			description:    "suppress build logs",
+			description:    "mute build logs",
 			builder:        fakeBuilder,
-			suppress:       []string{"build"},
+			muted:          muted(true),
 			shouldErr:      false,
 			expectedDigest: "digest",
-			logsFound:      []string{" - writing logs to ", filepath.Join("skaffold", "img.log")},
-			logsNotFound:   []string{"building img with tag img:123"},
-		},
-		{
-			description:    "suppress all logs",
-			builder:        fakeBuilder,
-			suppress:       []string{"all"},
-			shouldErr:      false,
-			expectedDigest: "digest",
-			logsFound:      []string{" - writing logs to ", filepath.Join("skaffold", "img.log")},
-			logsNotFound:   []string{"building img with tag img:123"},
-		},
-		{
-			description:    "suppress only deploy logs",
-			builder:        fakeBuilder,
-			suppress:       []string{"deploy"},
-			shouldErr:      false,
-			expectedDigest: "digest",
-			logsFound:      []string{"building img with tag img:123"},
-			logsNotFound:   []string{" - writing logs to ", filepath.Join("skaffold", "img.log")},
+			logsFound:      []string{logFilename},
+			logsNotFound:   []string{logBuildInProgress},
 		},
 		{
 			description:    "failed build - all logs",
 			builder:        fakeFailingBuilder,
-			suppress:       nil,
+			muted:          muted(false),
 			shouldErr:      true,
 			expectedDigest: "",
-			logsFound:      []string{"failed to build img with tag img:123"},
-			logsNotFound:   []string{" - writing logs to ", filepath.Join("skaffold", "img.log")},
+			logsFound:      []string{logBuildFailed},
+			logsNotFound:   []string{logFilename},
 		},
 		{
-			description:    "failed build - suppressed logs",
+			description:    "failed build - muted logs",
 			builder:        fakeFailingBuilder,
-			suppress:       []string{"build"},
+			muted:          muted(true),
 			shouldErr:      true,
 			expectedDigest: "",
-			logsFound:      []string{" - writing logs to ", filepath.Join("skaffold", "img.log"), "failed to build img with tag img:123"},
+			logsFound:      []string{logFilename, logBuildFailed},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var out bytes.Buffer
 
-			builder := WithLogFile(test.builder, test.suppress)
+			builder := WithLogFile(test.builder, test.muted)
 			digest, err := builder(context.Background(), &out, &latest.Artifact{ImageName: "img"}, "img:123")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDigest, digest)
@@ -120,4 +107,10 @@ func fakeBuilder(_ context.Context, out io.Writer, a *latest.Artifact, tag strin
 func fakeFailingBuilder(_ context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
 	fmt.Fprintln(out, "failed to build", a.ImageName, "with tag", tag)
 	return "", errors.New("bug")
+}
+
+type muted bool
+
+func (m muted) MuteBuild() bool {
+	return bool(m)
 }

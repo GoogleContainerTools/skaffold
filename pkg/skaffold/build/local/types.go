@@ -23,6 +23,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -43,7 +44,7 @@ type Builder struct {
 	kubeContext        string
 	builtImages        []string
 	insecureRegistries map[string]bool
-	suppressLogs       []string
+	muted              build.Muted
 }
 
 // external dependencies are wrapped
@@ -86,7 +87,7 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 		prune:              runCtx.Opts.Prune(),
 		pruneChildren:      !runCtx.Opts.NoPruneChildren,
 		insecureRegistries: runCtx.InsecureRegistries,
-		suppressLogs:       runCtx.Opts.SuppressLogs,
+		muted:              runCtx.Opts.Muted,
 	}, nil
 }
 

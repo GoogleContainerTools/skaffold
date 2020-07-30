@@ -24,18 +24,20 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+type Muted interface {
+	MuteBuild() bool
+}
+
 // WithLogFile wraps an `artifactBuilder` so that it optionally outputs its logs to a file.
-func WithLogFile(builder ArtifactBuilder, suppressedLogs []string) ArtifactBuilder {
-	// TODO(dgageot): this should probably be moved somewhere else.
-	if !(util.StrSliceContains(suppressedLogs, "build") || util.StrSliceContains(suppressedLogs, "all")) {
+func WithLogFile(builder ArtifactBuilder, muted Muted) ArtifactBuilder {
+	if !muted.MuteBuild() {
 		return builder
 	}
 
 	return func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-		file, err := logfile.Create(artifact.ImageName + ".log")
+		file, err := logfile.Create("build", artifact.ImageName+".log")
 		if err != nil {
 			return "", fmt.Errorf("unable to create log file for %s: %w", artifact.ImageName, err)
 		}

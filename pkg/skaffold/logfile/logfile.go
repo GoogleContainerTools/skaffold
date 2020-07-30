@@ -24,14 +24,18 @@ import (
 )
 
 // Create creates or truncates a file to be used to output logs.
-func Create(name string) (*os.File, error) {
-	root := filepath.Join(os.TempDir(), "skaffold")
-	if err := os.MkdirAll(root, 0700); err != nil {
-		return nil, fmt.Errorf("unable to create temp directory %q: %w", root, err)
+func Create(path ...string) (*os.File, error) {
+	logfile := filepath.Join(os.TempDir(), "skaffold")
+	for _, p := range path {
+		logfile = filepath.Join(logfile, escape(p))
 	}
 
-	path := filepath.Join(root, escape(name))
-	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	dir := filepath.Dir(logfile)
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return nil, fmt.Errorf("unable to create temp directory %q: %w", dir, err)
+	}
+
+	return os.OpenFile(logfile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 }
 
 var escapeRegexp = regexp.MustCompile(`[^a-zA-Z0-9-_.]`)
