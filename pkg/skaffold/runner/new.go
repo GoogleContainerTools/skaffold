@@ -269,7 +269,7 @@ func CreateComponents(t *latest.TemplateTagger) (map[string]tag.Tagger, error) {
 			components[name] = tag.NewDateTimeTagger(c.DateTimeTagger.Format, c.DateTimeTagger.TimeZone)
 
 		case c.TemplateTagger != nil:
-			return nil, fmt.Errorf("cannot use tagTemplate as a component: %s %+v", name, c)
+			return nil, fmt.Errorf("nested tagTemplate components are not supported in skaffold (%s)", name)
 
 		default:
 			return nil, fmt.Errorf("unknown component for tagTemplate: %s %+v", name, c)
