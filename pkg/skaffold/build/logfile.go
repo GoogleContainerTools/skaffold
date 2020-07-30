@@ -24,13 +24,15 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+type Muted interface {
+	MuteBuild() bool
+}
+
 // WithLogFile wraps an `artifactBuilder` so that it optionally outputs its logs to a file.
-func WithLogFile(builder ArtifactBuilder, muted []string) ArtifactBuilder {
-	// TODO(dgageot): this should probably be moved somewhere else.
-	if !(util.StrSliceContains(muted, "build") || util.StrSliceContains(muted, "all")) {
+func WithLogFile(builder ArtifactBuilder, muted Muted) ArtifactBuilder {
+	if !muted.MuteBuild() {
 		return builder
 	}
 

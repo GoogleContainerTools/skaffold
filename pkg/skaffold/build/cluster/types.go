@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -35,7 +36,7 @@ type Builder struct {
 	kubeContext        string
 	timeout            time.Duration
 	insecureRegistries map[string]bool
-	muted              []string
+	muted              build.Muted
 }
 
 // NewBuilder creates a new Builder that builds artifacts on cluster.

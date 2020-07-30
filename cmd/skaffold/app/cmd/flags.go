@@ -369,7 +369,7 @@ var flagRegistry = []Flag{
 	{
 		Name:          "mute-logs",
 		Usage:         "mute logs for specified stages in pipeline (build, deploy, status-check, none, all)",
-		Value:         &opts.Muted,
+		Value:         &opts.Muted.Phases,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
 		DefinedOn:     []string{"dev", "run", "debug", "build", "deploy"},

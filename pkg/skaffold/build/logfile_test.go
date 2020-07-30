@@ -39,7 +39,7 @@ func TestWithLogFile(t *testing.T) {
 	tests := []struct {
 		description    string
 		builder        ArtifactBuilder
-		muted          []string
+		muted          Muted
 		shouldErr      bool
 		expectedDigest string
 		logsFound      []string
@@ -48,7 +48,7 @@ func TestWithLogFile(t *testing.T) {
 		{
 			description:    "all logs",
 			builder:        fakeBuilder,
-			muted:          nil,
+			muted:          muted(false),
 			shouldErr:      false,
 			expectedDigest: "digest",
 			logsFound:      []string{logBuildInProgress},
@@ -57,34 +57,16 @@ func TestWithLogFile(t *testing.T) {
 		{
 			description:    "mute build logs",
 			builder:        fakeBuilder,
-			muted:          []string{"build"},
+			muted:          muted(true),
 			shouldErr:      false,
 			expectedDigest: "digest",
 			logsFound:      []string{logFilename},
 			logsNotFound:   []string{logBuildInProgress},
-		},
-		{
-			description:    "mute all logs",
-			builder:        fakeBuilder,
-			muted:          []string{"all"},
-			shouldErr:      false,
-			expectedDigest: "digest",
-			logsFound:      []string{logFilename},
-			logsNotFound:   []string{logBuildInProgress},
-		},
-		{
-			description:    "mute only deploy logs",
-			builder:        fakeBuilder,
-			muted:          []string{"deploy"},
-			shouldErr:      false,
-			expectedDigest: "digest",
-			logsFound:      []string{logBuildInProgress},
-			logsNotFound:   []string{logFilename},
 		},
 		{
 			description:    "failed build - all logs",
 			builder:        fakeFailingBuilder,
-			muted:          nil,
+			muted:          muted(false),
 			shouldErr:      true,
 			expectedDigest: "",
 			logsFound:      []string{logBuildFailed},
@@ -93,7 +75,7 @@ func TestWithLogFile(t *testing.T) {
 		{
 			description:    "failed build - muted logs",
 			builder:        fakeFailingBuilder,
-			muted:          []string{"build"},
+			muted:          muted(true),
 			shouldErr:      true,
 			expectedDigest: "",
 			logsFound:      []string{logFilename, logBuildFailed},
@@ -125,4 +107,10 @@ func fakeBuilder(_ context.Context, out io.Writer, a *latest.Artifact, tag strin
 func fakeFailingBuilder(_ context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
 	fmt.Fprintln(out, "failed to build", a.ImageName, "with tag", tag)
 	return "", errors.New("bug")
+}
+
+type muted bool
+
+func (m muted) MuteBuild() bool {
+	return bool(m)
 }

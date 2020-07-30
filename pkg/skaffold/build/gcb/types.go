@@ -23,6 +23,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -79,7 +80,7 @@ type Builder struct {
 	*latest.GoogleCloudBuild
 	skipTests          bool
 	insecureRegistries map[string]bool
-	muted              []string
+	muted              build.Muted
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
