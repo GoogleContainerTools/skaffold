@@ -162,7 +162,7 @@ it will evaluate `FOO` and `BAR` and use their values to tag the image.
 {{< alert >}}
 <b>Note</b><br>
 
-`GIT`, `DATE`, and `SHA` are built-in component values that will evaluate to the default gitCommit, dateTime, and sha256 taggers, respectively.
+`GIT`, `DATE`, and `SHA` are special built-in component references that will evaluate to the default gitCommit, dateTime, and sha256 taggers, respectively.
 User can overwrite these values by defining a component with one of these names.
 {{< /alert >}}
 
