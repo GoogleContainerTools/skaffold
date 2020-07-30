@@ -145,7 +145,7 @@ You can learn more about what time format and time zone you can use in
 example, `dateTime`
 tag policy features two optional parameters: `format` and `timezone`.
 
-## `tagTemplate`: uses a combination of the previous taggers as tags
+## `tagTemplate`: uses a combination of the existing taggers as components in a template
 
 `tagTemplate` allows you to combine all previous taggers to create your own tagging policy.
 This policy requires that you specify a tag template,
