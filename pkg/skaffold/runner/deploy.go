@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
@@ -65,9 +66,15 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		}
 	}
 
+	deployOut, postDeployFn, err := deploy.WithLogFile(time.Now().Format(deploy.TimeFormat)+".log", out, r.runCtx.Muted())
+	if err != nil {
+		return err
+	}
+
 	event.DeployInProgress()
-	namespaces, err := r.deployer.Deploy(ctx, out, artifacts)
+	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
 	r.hasDeployed = true
+	postDeployFn(err)
 	if err != nil {
 		event.DeployFailed(err)
 		return err
