@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -31,6 +32,10 @@ import (
 )
 
 func TestWithLogFile(t *testing.T) {
+	logBuildInProgress := "building img with tag img:123"
+	logBuildFailed := "failed to build img with tag img:123"
+	logFilename := " - writing logs to " + filepath.Join(os.TempDir(), "skaffold", "build", "img.log")
+
 	tests := []struct {
 		description    string
 		builder        ArtifactBuilder
@@ -46,8 +51,8 @@ func TestWithLogFile(t *testing.T) {
 			muted:          nil,
 			shouldErr:      false,
 			expectedDigest: "digest",
-			logsFound:      []string{"building img with tag img:123"},
-			logsNotFound:   []string{" - writing logs to ", filepath.Join("skaffold", "img.log")},
+			logsFound:      []string{logBuildInProgress},
+			logsNotFound:   []string{logFilename},
 		},
 		{
 			description:    "mute build logs",
@@ -55,8 +60,8 @@ func TestWithLogFile(t *testing.T) {
 			muted:          []string{"build"},
 			shouldErr:      false,
 			expectedDigest: "digest",
-			logsFound:      []string{" - writing logs to ", filepath.Join("skaffold", "img.log")},
-			logsNotFound:   []string{"building img with tag img:123"},
+			logsFound:      []string{logFilename},
+			logsNotFound:   []string{logBuildInProgress},
 		},
 		{
 			description:    "mute all logs",
@@ -64,8 +69,8 @@ func TestWithLogFile(t *testing.T) {
 			muted:          []string{"all"},
 			shouldErr:      false,
 			expectedDigest: "digest",
-			logsFound:      []string{" - writing logs to ", filepath.Join("skaffold", "img.log")},
-			logsNotFound:   []string{"building img with tag img:123"},
+			logsFound:      []string{logFilename},
+			logsNotFound:   []string{logBuildInProgress},
 		},
 		{
 			description:    "mute only deploy logs",
@@ -73,8 +78,8 @@ func TestWithLogFile(t *testing.T) {
 			muted:          []string{"deploy"},
 			shouldErr:      false,
 			expectedDigest: "digest",
-			logsFound:      []string{"building img with tag img:123"},
-			logsNotFound:   []string{" - writing logs to ", filepath.Join("skaffold", "img.log")},
+			logsFound:      []string{logBuildInProgress},
+			logsNotFound:   []string{logFilename},
 		},
 		{
 			description:    "failed build - all logs",
@@ -82,8 +87,8 @@ func TestWithLogFile(t *testing.T) {
 			muted:          nil,
 			shouldErr:      true,
 			expectedDigest: "",
-			logsFound:      []string{"failed to build img with tag img:123"},
-			logsNotFound:   []string{" - writing logs to ", filepath.Join("skaffold", "img.log")},
+			logsFound:      []string{logBuildFailed},
+			logsNotFound:   []string{logFilename},
 		},
 		{
 			description:    "failed build - muted logs",
@@ -91,7 +96,7 @@ func TestWithLogFile(t *testing.T) {
 			muted:          []string{"build"},
 			shouldErr:      true,
 			expectedDigest: "",
-			logsFound:      []string{" - writing logs to ", filepath.Join("skaffold", "img.log"), "failed to build img with tag img:123"},
+			logsFound:      []string{logFilename, logBuildFailed},
 		},
 	}
 	for _, test := range tests {

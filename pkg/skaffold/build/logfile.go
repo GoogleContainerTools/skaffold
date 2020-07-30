@@ -35,7 +35,7 @@ func WithLogFile(builder ArtifactBuilder, muted []string) ArtifactBuilder {
 	}
 
 	return func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-		file, err := logfile.Create(artifact.ImageName + ".log")
+		file, err := logfile.Create("build", artifact.ImageName+".log")
 		if err != nil {
 			return "", fmt.Errorf("unable to create log file for %s: %w", artifact.ImageName, err)
 		}
