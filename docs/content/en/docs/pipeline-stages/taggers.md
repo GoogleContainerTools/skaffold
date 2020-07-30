@@ -170,7 +170,7 @@ User can overwrite these values by defining a component with one of these names.
 
 {{% readfile file="samples/taggers/tagTemplate.yaml" %}}
 
-Suppose current time is `15:04:09.999 January 2nd, 2006` and the abbreviated commit sha was `25c65e0`, the image built will be `gcr.io/k8s-skaffold/example:2006-01-02_25c65e0`.
+Suppose the current time is `15:04:09.999 January 2nd, 2006` and the abbreviated commit sha is `25c65e0`, the image built will be `gcr.io/k8s-skaffold/example:2006-01-02_25c65e0`.
 
 ### Configuration
 
