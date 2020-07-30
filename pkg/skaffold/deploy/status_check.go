@@ -65,8 +65,8 @@ type counter struct {
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer, iteration int) error {
 	event.StatusCheckEventStarted()
-	s := &checker{
-		iteration: iteration,
+	s := checker{
+		devIteration: iteration,
 	}
 	errCode, err := s.statusCheck(ctx, defaultLabeller, runCtx, out)
 	event.StatusCheckEventEnded(errCode, err)
@@ -74,7 +74,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 }
 
 type checker struct {
-	iteration int
+	devIteration int
 }
 
 func (s checker) statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) (proto.StatusCode, error) {
@@ -171,7 +171,12 @@ func (s checker) pollDeploymentStatus(ctx context.Context, runCtx *runcontext.Ru
 			if r.IsStatusCheckComplete() {
 				return
 			}
-			if s.iteration == 0 && r.AreContainersNotRetryAble() {
+			// If this is the first skaffold dev devIteration, then fail immediately if
+			// any pod container errors cannot be recovered.
+			// Runner starts watching for file changes only after first deploy is successful.
+			// As any changes to build or deploy dependencies are not triggered, exit
+			// immediately rather than waiting for for statusCheckDeadlineSeconds
+			if s.devIteration == 0 && r.AreContainersNotRetryAble() {
 				r.MarkComplete()
 				return
 			}

@@ -446,7 +446,7 @@ enum StatusCode {
     // Pod States
 
     // Pod Initializing
-    STATUSCHECK_POD_INITIALIZING= 451;
+    STATUSCHECK_POD_INITIALIZING = 451;
 
     // Unknown Error Codes
 

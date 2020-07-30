@@ -63,7 +63,7 @@ func TestDeploy(t *testing.T) {
 		},
 	}
 
-	dummyStatusCheck := func(context.Context, *deploy.DefaultLabeller, *runcontext.RunContext, io.Writer) error {
+	dummyStatusCheck := func(context.Context, *deploy.DefaultLabeller, *runcontext.RunContext, io.Writer, int) error {
 		return nil
 	}
 	for _, test := range tests {
@@ -114,7 +114,7 @@ func TestDeployNamespace(t *testing.T) {
 		},
 	}
 
-	dummyStatusCheck := func(context.Context, *deploy.DefaultLabeller, *runcontext.RunContext, io.Writer) error {
+	dummyStatusCheck := func(context.Context, *deploy.DefaultLabeller, *runcontext.RunContext, io.Writer, int) error {
 		return nil
 	}
 	for _, test := range tests {

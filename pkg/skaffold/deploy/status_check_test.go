@@ -18,10 +18,14 @@ package deploy
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	appsv1 "k8s.io/api/apps/v1"
@@ -519,4 +523,125 @@ func TestGetStatusCheckDeadline(t *testing.T) {
 			t.CheckDeepEqual(test.expected, statusCheckMaxDeadline(test.value, test.deps))
 		})
 	}
+}
+
+func TestPollDeployment(t *testing.T) {
+	rolloutCmd := "kubectl --context kubecontext rollout status deployment dep --namespace test --watch=false"
+	tests := []struct {
+		description string
+		iteration   int
+		dep         *resource.Deployment
+		runs        [][]validator.Resource
+		command     util.Command
+		expected    proto.StatusCode
+	}{
+		{
+			description: "0 devIteration errors out immediately when container error can't recover",
+			dep:         resource.NewDeployment("dep", "test", time.Second),
+			command:     testutil.CmdRunOut(rolloutCmd, "Waiting for replicas to be available"),
+			runs: [][]validator.Resource{
+				{validator.NewResource(
+					"test",
+					"pod",
+					"dep-pod",
+					"Pending",
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED},
+					[]string{"err"})},
+			},
+			expected: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
+		},
+		{
+			description: "0 devIteration waits when a container can recover and eventually succeeds",
+			dep:         resource.NewDeployment("dep", "test", time.Second),
+			command: testutil.CmdRunOutErr(
+				rolloutCmd, "", errors.New("Unable to connect to the server"),
+			).AndRunOut(rolloutCmd, "successfully rolled out"),
+			runs: [][]validator.Resource{
+				{validator.NewResource(
+					"test",
+					"pod",
+					"dep-pod",
+					"Pending",
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE},
+					[]string{"err"})},
+				{validator.NewResource(
+					"test",
+					"pod",
+					"dep-pod",
+					"Running",
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					nil)},
+			},
+			expected: proto.StatusCode_STATUSCHECK_SUCCESS,
+		},
+		{
+			description: "1 devIteration waits for container error to recover and eventually succeeds",
+			iteration:   1,
+			dep:         resource.NewDeployment("dep", "test", time.Second),
+			command: testutil.CmdRunOut(rolloutCmd, "Waiting for replicas to be available").
+				AndRunOut(rolloutCmd, "Waiting for replicas to be available").
+				AndRunOut(rolloutCmd, "successfully rolled out"),
+			runs: [][]validator.Resource{
+				{validator.NewResource(
+					"test",
+					"pod",
+					"dep-pod",
+					"Pending",
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED},
+					[]string{"err"})},
+				{validator.NewResource(
+					"test",
+					"pod",
+					"dep-pod",
+					"Pending",
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR},
+					nil)},
+				{validator.NewResource(
+					"test",
+					"pod",
+					"dep-pod",
+					"Running",
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					nil)},
+			},
+			expected: proto.StatusCode_STATUSCHECK_SUCCESS,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.command)
+			t.Override(&defaultPollPeriodInMilliseconds, 100)
+			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
+			mockVal := mockValidator{runs: test.runs}
+			dep := test.dep.WithValidator(mockVal)
+			s := checker{devIteration: test.iteration}
+			runCtx := &runcontext.RunContext{
+				KubeContext: "kubecontext",
+			}
+			s.pollDeploymentStatus(context.Background(), runCtx, dep)
+			t.CheckDeepEqual(test.expected, test.dep.Status().ActionableError().ErrCode)
+		})
+	}
+}
+
+type mockValidator struct {
+	runs      [][]validator.Resource
+	iteration int
+}
+
+func (m mockValidator) Run(context.Context) ([]validator.Resource, error) {
+	if m.iteration < len(m.runs) {
+		return m.runs[m.iteration], nil
+		m.iteration++
+	}
+	// keep replaying the last result.
+	return m.runs[m.iteration-1], nil
+}
+
+func (m mockValidator) WithLabel(string, string) diag.Diagnose {
+	return m
+}
+
+func (m mockValidator) WithValidators([]validator.Validator) diag.Diagnose {
+	return m
 }
