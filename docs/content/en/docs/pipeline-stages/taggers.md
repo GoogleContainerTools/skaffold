@@ -147,7 +147,7 @@ tag policy features two optional parameters: `format` and `timezone`.
 
 ## `tagTemplate`: uses a combination of the existing taggers as components in a template
 
-`tagTemplate` allows you to combine all previous taggers to create your own tagging policy.
+`tagTemplate` allows you to combine all existing taggers to create a custom tagging policy.
 This policy requires that you specify a tag template,
 where part of template can be replaced with the result of other tagging strategies during the tagging process.
 These other tagging strategies are called components, which can be
