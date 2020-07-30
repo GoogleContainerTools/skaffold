@@ -17,6 +17,7 @@ limitations under the License.
 package test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -24,7 +25,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/structure"
@@ -42,6 +45,7 @@ func NewTester(runCtx *runcontext.RunContext, imagesAreLocal bool) Tester {
 
 	return FullTester{
 		testCases:      runCtx.Cfg.Test,
+		muted:          runCtx.Opts.Muted,
 		workingDir:     runCtx.WorkingDir,
 		localDaemon:    localDaemon,
 		imagesAreLocal: imagesAreLocal,
@@ -67,6 +71,39 @@ func (t FullTester) TestDependencies() ([]string, error) {
 // Test is the top level testing execution call. It serves as the
 // entrypoint to all individual tests.
 func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
+	if len(t.testCases) == 0 {
+		return nil
+	}
+
+	color.Default.Fprintln(out, "Testing images...")
+
+	if t.muted.MuteTest() {
+		file, err := logfile.Create("test.log")
+		if err != nil {
+			return fmt.Errorf("unable to create log file for tests: %w", err)
+		}
+		fmt.Fprintln(out, " - writing logs to", file.Name())
+
+		// Print logs to a memory buffer and to a file.
+		var buf bytes.Buffer
+		w := io.MultiWriter(file, &buf)
+
+		// Run the tests.
+		err = t.runTests(ctx, w, bRes)
+
+		// After the test finish, close the log file. If the tests failed, print the full log to the console.
+		file.Close()
+		if err != nil {
+			buf.WriteTo(out)
+		}
+
+		return err
+	}
+
+	return t.runTests(ctx, out, bRes)
+}
+
+func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
 	for _, test := range t.testCases {
 		if err := t.runStructureTests(ctx, out, bRes, test); err != nil {
 			return fmt.Errorf("running structure tests: %w", err)
