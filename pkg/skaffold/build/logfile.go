@@ -28,9 +28,9 @@ import (
 )
 
 // WithLogFile wraps an `artifactBuilder` so that it optionally outputs its logs to a file.
-func WithLogFile(builder ArtifactBuilder, suppressedLogs []string) ArtifactBuilder {
+func WithLogFile(builder ArtifactBuilder, muted []string) ArtifactBuilder {
 	// TODO(dgageot): this should probably be moved somewhere else.
-	if !(util.StrSliceContains(suppressedLogs, "build") || util.StrSliceContains(suppressedLogs, "all")) {
+	if !(util.StrSliceContains(muted, "build") || util.StrSliceContains(muted, "all")) {
 		return builder
 	}
 

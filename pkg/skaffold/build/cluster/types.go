@@ -35,7 +35,7 @@ type Builder struct {
 	kubeContext        string
 	timeout            time.Duration
 	insecureRegistries map[string]bool
-	suppressLogs       []string
+	muted              []string
 }
 
 // NewBuilder creates a new Builder that builds artifacts on cluster.
@@ -51,7 +51,7 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 		timeout:            timeout,
 		kubeContext:        runCtx.KubeContext,
 		insecureRegistries: runCtx.InsecureRegistries,
-		suppressLogs:       runCtx.Opts.SuppressLogs,
+		muted:              runCtx.Opts.Muted,
 	}, nil
 }
 
