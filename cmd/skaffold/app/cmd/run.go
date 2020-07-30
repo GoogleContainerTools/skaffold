@@ -50,6 +50,9 @@ func doRun(ctx context.Context, out io.Writer) error {
 		err = r.DeployAndLog(ctx, out, bRes)
 		if err == nil {
 			tips.PrintForRun(out, opts)
+			if opts.Cleanup {
+				return r.Cleanup(context.Background(), out)
+			}
 		}
 
 		return err
