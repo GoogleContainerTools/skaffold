@@ -12,7 +12,7 @@ Skaffold supports multiple taggers or tag policies for tagging images:
  + the `sha256` tagger uses `latest` to tag images.
  + the `envTemplate` tagger uses environment variables to tag images.
  + the `datetime` tagger uses current date and time, with a configurable pattern.
- + the `tagTemplate` tagger uses a combination of the previous taggers to tag images.
+ + the `tagTemplate` tagger uses a combination of the existing taggers as components in a template.
 
 The default tagger, if none is specified in the `skaffold.yaml`, is the `gitCommit` tagger.
 
