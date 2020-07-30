@@ -17,37 +17,55 @@ limitations under the License.
 package kubernetes
 
 import (
+	"errors"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
+	fakedynclient "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func mockClient(m kubernetes.Interface) func() (kubernetes.Interface, error) {
+func mockClient(resources *metav1.APIResourceList, objects ...runtime.Object) func() (kubernetes.Interface, error) {
+	client := fakekubeclientset.NewSimpleClientset(objects...)
+	client.Resources = append(client.Resources, resources)
 	return func() (kubernetes.Interface, error) {
-		return m, nil
+		return client, nil
+	}
+}
+
+func mockDynamicClient(objects ...runtime.Object) func() (dynamic.Interface, error) {
+	return func() (dynamic.Interface, error) {
+		return fakedynclient.NewSimpleDynamicClient(scheme.Scheme, objects...), nil
 	}
 }
 
 func TestTopLevelOwnerKey(t *testing.T) {
+	apiResources := &metav1.APIResourceList{
+		GroupVersion: "apps/v1",
+		APIResources: []metav1.APIResource{
+			{Kind: "Deployment", Name: "deployments"},
+			{Kind: "ReplicaSet", Name: "replicasets"},
+			{Kind: "Pod", Name: "pods"},
+		},
+	}
+
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pod",
 			Namespace: "ns",
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					Name: "rs",
-					Kind: "ReplicaSet",
-				},
-			},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion: "apps/v1",
+				Kind:       "ReplicaSet",
+				Name:       "rs",
+			}},
 		},
 	}
 
@@ -55,12 +73,11 @@ func TestTopLevelOwnerKey(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rs",
 			Namespace: "ns",
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					Name: "dep",
-					Kind: "Deployment",
-				},
-			},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion: "apps/v1",
+				Kind:       "Deployment",
+				Name:       "dep",
+			}},
 		},
 	}
 
@@ -104,8 +121,8 @@ func TestTopLevelOwnerKey(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			client := fakekubeclientset.NewSimpleClientset(test.objects...)
-			t.Override(&Client, mockClient(client))
+			t.Override(&Client, mockClient(apiResources, test.objects...))
+			t.Override(&DynamicClient, mockDynamicClient(test.objects...))
 
 			actual, err := TopLevelOwnerKey(test.initialObject, test.kind)
 
@@ -114,179 +131,24 @@ func TestTopLevelOwnerKey(t *testing.T) {
 	}
 }
 
-func TestOwnerMetaObject(t *testing.T) {
-	tests := []struct {
-		description string
-		or          metav1.OwnerReference
-		objects     []runtime.Object
-		expected    metav1.Object
-	}{
-		{
-			description: "getting a deployment",
-			or: metav1.OwnerReference{
-				Kind: "Deployment",
-				Name: "dep",
-			},
-			objects: []runtime.Object{
-				&v1.Service{},
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "dep",
-						Namespace: "ns",
-					},
-				},
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "dep",
-						Namespace: "ns2",
-					},
-				},
-			},
-			expected: &appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "dep",
-					Namespace: "ns",
-				},
-			},
-		}, {
-			description: "getting a replica set",
-			or: metav1.OwnerReference{
-				Kind: "ReplicaSet",
-				Name: "rs",
-			},
-			objects: []runtime.Object{
-				&v1.Service{},
-				&appsv1.ReplicaSet{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rs",
-						Namespace: "ns",
-					},
-				},
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "dep",
-						Namespace: "ns2",
-					},
-				},
-			},
-			expected: &appsv1.ReplicaSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rs",
-					Namespace: "ns",
-				},
-			},
-		}, {
-			description: "getting a job",
-			or: metav1.OwnerReference{
-				Kind: "Job",
-				Name: "job",
-			},
-			objects: []runtime.Object{
-				&batchv1.Job{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "job",
-						Namespace: "ns",
-					},
-				},
-			},
-			expected: &batchv1.Job{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "job",
-					Namespace: "ns",
-				},
-			},
-		}, {
-			description: "getting a cronjob",
-			or: metav1.OwnerReference{
-				Kind: "CronJob",
-				Name: "cj",
-			},
-			objects: []runtime.Object{
-				&batchv1beta1.CronJob{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cj",
-						Namespace: "ns",
-					},
-				},
-			},
-			expected: &batchv1beta1.CronJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cj",
-					Namespace: "ns",
-				},
-			},
-		}, {
-			description: "getting a statefulset",
-			or: metav1.OwnerReference{
-				Kind: "StatefulSet",
-				Name: "ss",
-			},
-			objects: []runtime.Object{
-				&appsv1.StatefulSet{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "ss",
-						Namespace: "ns",
-					},
-				},
-			},
-			expected: &appsv1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ss",
-					Namespace: "ns",
-				},
-			},
-		}, {
-			description: "getting a replicationcontroller",
-			or: metav1.OwnerReference{
-				Kind: "ReplicationController",
-				Name: "rc",
-			},
-			objects: []runtime.Object{
-				&v1.ReplicationController{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rc",
-						Namespace: "ns",
-					},
-				},
-			},
-			expected: &v1.ReplicationController{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rc",
-					Namespace: "ns",
-				},
-			},
-		}, {
-			description: "getting a pod",
-			or: metav1.OwnerReference{
-				Kind: "Pod",
-				Name: "po",
-			},
-			objects: []runtime.Object{
-				&v1.Pod{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "po",
-						Namespace: "ns",
-					},
-				},
-			},
-			expected: &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "po",
-					Namespace: "ns",
-				},
-			},
-		},
-	}
+func TestTopLevelOwnerKeyFailToGetClient(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&Client, func() (kubernetes.Interface, error) { return nil, errors.New("BUG") })
+		t.Override(&DynamicClient, mockDynamicClient())
 
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			client := fakekubeclientset.NewSimpleClientset(test.objects...)
-			t.Override(&Client, mockClient(client))
+		actual, err := TopLevelOwnerKey(nil, "")
 
-			actual, err := ownerMetaObject("ns", test.or)
+		t.CheckErrorAndDeepEqual(true, err, "", actual)
+	})
+}
 
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, actual)
-		})
-	}
+func TestTopLevelOwnerKeyFailToGetDynamicClient(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&Client, mockClient(nil))
+		t.Override(&DynamicClient, func() (dynamic.Interface, error) { return nil, errors.New("BUG") })
+
+		actual, err := TopLevelOwnerKey(nil, "")
+
+		t.CheckErrorAndDeepEqual(true, err, "", actual)
+	})
 }

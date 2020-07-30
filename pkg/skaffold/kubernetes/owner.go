@@ -20,47 +20,92 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/dynamic"
 )
 
 // TopLevelOwnerKey returns a key associated with the top level
 // owner of a Kubernetes resource in the form Kind-Name
 func TopLevelOwnerKey(obj metav1.Object, kind string) (string, error) {
-	for {
-		or := obj.GetOwnerReferences()
-		if or == nil {
-			return fmt.Sprintf("%s-%s", kind, obj.GetName()), nil
-		}
-		var err error
-		kind = or[0].Kind
-		obj, err = ownerMetaObject(obj.GetNamespace(), or[0])
-		if err != nil {
-			return "", err
-		}
+	client, err := Client()
+	if err != nil {
+		return "", err
 	}
+	discovery := client.Discovery()
+
+	dynClient, err := DynamicClient()
+	if err != nil {
+		return "", err
+	}
+
+	child := objectWrapper{
+		Object: obj,
+		kind:   kind,
+	}
+
+	topLevel, err := topLevel(child, discovery, dynClient)
+	if err != nil {
+		return "", err
+	}
+
+	id := fmt.Sprintf("%s-%s", topLevel.GetKind(), topLevel.GetName())
+	return id, nil
 }
 
-func ownerMetaObject(ns string, owner metav1.OwnerReference) (metav1.Object, error) {
-	client, err := Client()
+type objectWrapper struct {
+	metav1.Object
+	kind string
+}
+
+func (w objectWrapper) GetKind() string {
+	return w.kind
+}
+
+type HasOwner interface {
+	GetKind() string
+	GetName() string
+	GetNamespace() string
+	GetOwnerReferences() []metav1.OwnerReference
+}
+
+func topLevel(child HasOwner, discovery discovery.DiscoveryInterface, dynClient dynamic.Interface) (HasOwner, error) {
+	owners := child.GetOwnerReferences()
+	if len(owners) == 0 {
+		return child, nil
+	}
+
+	owner := owners[0]
+	gvk := schema.FromAPIVersionAndKind(owner.APIVersion, owner.Kind)
+
+	gvr, err := groupVersionResource(discovery, gvk)
 	if err != nil {
 		return nil, err
 	}
 
-	switch owner.Kind {
-	case "Deployment":
-		return client.AppsV1().Deployments(ns).Get(owner.Name, metav1.GetOptions{})
-	case "ReplicaSet":
-		return client.AppsV1().ReplicaSets(ns).Get(owner.Name, metav1.GetOptions{})
-	case "Job":
-		return client.BatchV1().Jobs(ns).Get(owner.Name, metav1.GetOptions{})
-	case "CronJob":
-		return client.BatchV1beta1().CronJobs(ns).Get(owner.Name, metav1.GetOptions{})
-	case "StatefulSet":
-		return client.AppsV1().StatefulSets(ns).Get(owner.Name, metav1.GetOptions{})
-	case "ReplicationController":
-		return client.CoreV1().ReplicationControllers(ns).Get(owner.Name, metav1.GetOptions{})
-	case "Pod":
-		return client.CoreV1().Pods(ns).Get(owner.Name, metav1.GetOptions{})
-	default:
-		return nil, fmt.Errorf("kind %s is not supported", owner.Kind)
+	d, err := dynClient.Resource(gvr).Namespace(child.GetNamespace()).Get(owner.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
 	}
+
+	return topLevel(d, discovery, dynClient)
+}
+
+func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
+	resources, err := disco.ServerResourcesForGroupVersion(gvk.GroupVersion().String())
+	if err != nil {
+		return schema.GroupVersionResource{}, fmt.Errorf("getting server resources for group version: %w", err)
+	}
+
+	for _, r := range resources.APIResources {
+		if r.Kind == gvk.Kind {
+			return schema.GroupVersionResource{
+				Group:    gvk.Group,
+				Version:  gvk.Version,
+				Resource: r.Name,
+			}, nil
+		}
+	}
+
+	return schema.GroupVersionResource{}, fmt.Errorf("could not find resource for %s", gvk.String())
 }
