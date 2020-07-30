@@ -140,8 +140,9 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 func portForwardArgs(ctx context.Context, pfe *portForwardEntry) []string {
 	args := []string{"--pod-running-timeout", "1s", "--namespace", pfe.resource.Namespace}
 
+	_, disableServiceForwarding := os.LookupEnv("SKAFFOLD_DISABLE_SERVICE_FORWARDING")
 	switch {
-	case pfe.resource.Type == "service" && os.Getenv("SKAFFOLD_DISABLE_SERVICE_FORWARDING") == "":
+	case pfe.resource.Type == "service" && !disableServiceForwarding:
 		// Services need special handling: https://github.com/GoogleContainerTools/skaffold/issues/4522
 		podName, remotePort, err := findNewestPodForSvc(ctx, pfe.resource.Namespace, pfe.resource.Name, pfe.resource.Port);
 		if err == nil {
