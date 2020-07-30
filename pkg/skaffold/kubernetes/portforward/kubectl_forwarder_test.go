@@ -253,19 +253,19 @@ func TestFindServicePort(t *testing.T) {
 	}{
 		{
 			description: "simple case",
-			service:     mockService("svc", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 90, TargetPort: intstr.FromInt(80)}, {Port: 80, TargetPort: intstr.FromInt(8080)}}),
+			service:     mockService("svc1", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 90, TargetPort: intstr.FromInt(80)}, {Port: 80, TargetPort: intstr.FromInt(8080)}}),
 			port:        80,
 			expected:    corev1.ServicePort{Port: 80, TargetPort: intstr.FromInt(8080)},
 		},
 		{
 			description: "no ports",
-			service:     mockService("svc", corev1.ServiceTypeLoadBalancer, nil),
+			service:     mockService("svc2", corev1.ServiceTypeLoadBalancer, nil),
 			port:        80,
 			shouldErr:   true,
 		},
 		{
 			description: "no matching ports",
-			service:     mockService("svc", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 90, TargetPort: intstr.FromInt(80)}, {Port: 80, TargetPort: intstr.FromInt(8080)}}),
+			service:     mockService("svc3", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 90, TargetPort: intstr.FromInt(80)}, {Port: 80, TargetPort: intstr.FromInt(8080)}}),
 			port:        100,
 			shouldErr:   true,
 		},
@@ -350,7 +350,7 @@ func TestFindNewestPodForService(t *testing.T) {
 		{
 			description: "service not found",
 			clientResources: []pkgruntime.Object{
-				mockService("svc", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 80, TargetPort: intstr.FromInt(8080)}}),
+				mockService("svc", corev1.ServiceTypeClusterIP, []corev1.ServicePort{{Port: 80, TargetPort: intstr.FromInt(8080)}}),
 				mockPod("new", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Now().Add(-time.Minute)),
 				mockPod("old", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Now().Add(-time.Hour)),
 			},
@@ -365,6 +365,16 @@ func TestFindNewestPodForService(t *testing.T) {
 				mockService("svc", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 80, TargetPort: intstr.FromInt(8080)}}),
 				mockPod("new", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Now().Add(-time.Minute)),
 				mockPod("old", []corev1.ContainerPort{{Name: "http", ContainerPort: 8080}}, time.Now().Add(-time.Hour)),
+			},
+			serviceName: "svc",
+			servicePort: 90,
+			shouldErr:   true,
+			chosenPort:  -1,
+		},
+		{
+			description: "no matching pods",
+			clientResources: []pkgruntime.Object{
+				mockService("service", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 80, TargetPort: intstr.FromInt(8080)}}),
 			},
 			serviceName: "svc",
 			servicePort: 90,
