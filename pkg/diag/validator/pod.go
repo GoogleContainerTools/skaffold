@@ -136,7 +136,7 @@ func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 				// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
 				return getContainerStatus(pod, cs)
 			case v1.ConditionUnknown:
-				logrus.Debugf("Could not determine scheduling condition for pod %s", pod.Name)
+				logrus.Debugf("Pod %q scheduling condition is unknown", pod.Name)
 				return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf(c.Message)
 			}
 		}
@@ -211,13 +211,13 @@ func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
 	if _, ok := unknownConditionsOrSuccess[ps.ae.ErrCode]; !ok {
 		return
 	}
-	logrus.Debugf("Fetching events for pod %s", pod.Name)
+	logrus.Debugf("Fetching events for pod %q", pod.Name)
 	// Get pod events.
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &pod)
 	events, err := e.Search(scheme, &pod)
 	if err != nil {
-		logrus.Debugf("Could not fetch events for resource %s due to %v", pod.Name, err)
+		logrus.Debugf("Could not fetch events for resource %q due to %v", pod.Name, err)
 		return
 	}
 	// find the latest failed event.
@@ -307,7 +307,7 @@ func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerSta
 			return proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR, nil, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(match[3]))
 		}
 	}
-	logrus.Debugf("Failed to extract error message for waiting container %q: %v", c.Name, c.State)
+	logrus.Debugf("Unknown waiting reason for container %q: %v", c.Name, c.State)
 	return proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN, nil, fmt.Errorf("container %s in error: %v", c.Name, c.State.Waiting)
 }
 
@@ -327,7 +327,7 @@ func trimSpace(msg string) string {
 }
 
 func getPodLogs(po *v1.Pod, c string) []string {
-	logrus.Debugf("Fetching logs for container %v", c)
+	logrus.Debugf("Fetching logs for container %q/%q", po.Name, c)
 	logCommand := []string{"kubectl", "logs", po.Name, "-n", po.Namespace, "-c", c}
 	logs, err := runCli(logCommand[0], logCommand[1:])
 	if err != nil {
