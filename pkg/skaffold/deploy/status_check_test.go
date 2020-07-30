@@ -529,14 +529,13 @@ func TestPollDeployment(t *testing.T) {
 	rolloutCmd := "kubectl --context kubecontext rollout status deployment dep --namespace test --watch=false"
 	tests := []struct {
 		description string
-		iteration   int
 		dep         *resource.Deployment
 		runs        [][]validator.Resource
 		command     util.Command
 		expected    proto.StatusCode
 	}{
 		{
-			description: "0 devIteration errors out immediately when container error can't recover",
+			description: "pollDeploymentStatus errors out immediately when container error can't recover",
 			dep:         resource.NewDeployment("dep", "test", time.Second),
 			command:     testutil.CmdRunOut(rolloutCmd, "Waiting for replicas to be available"),
 			runs: [][]validator.Resource{
@@ -551,7 +550,7 @@ func TestPollDeployment(t *testing.T) {
 			expected: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 		},
 		{
-			description: "0 devIteration waits when a container can recover and eventually succeeds",
+			description: "pollDeploymentStatus waits when a container can recover and eventually succeeds",
 			dep:         resource.NewDeployment("dep", "test", time.Second),
 			command: testutil.CmdRunOutErr(
 				rolloutCmd, "", errors.New("Unable to connect to the server"),
@@ -574,38 +573,6 @@ func TestPollDeployment(t *testing.T) {
 			},
 			expected: proto.StatusCode_STATUSCHECK_SUCCESS,
 		},
-		{
-			description: "1 devIteration waits for container error to recover and eventually succeeds",
-			iteration:   1,
-			dep:         resource.NewDeployment("dep", "test", time.Second),
-			command: testutil.CmdRunOut(rolloutCmd, "Waiting for replicas to be available").
-				AndRunOut(rolloutCmd, "Waiting for replicas to be available").
-				AndRunOut(rolloutCmd, "successfully rolled out"),
-			runs: [][]validator.Resource{
-				{validator.NewResource(
-					"test",
-					"pod",
-					"dep-pod",
-					"Pending",
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED},
-					[]string{"err"})},
-				{validator.NewResource(
-					"test",
-					"pod",
-					"dep-pod",
-					"Pending",
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR},
-					nil)},
-				{validator.NewResource(
-					"test",
-					"pod",
-					"dep-pod",
-					"Running",
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
-					nil)},
-			},
-			expected: proto.StatusCode_STATUSCHECK_SUCCESS,
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -614,11 +581,10 @@ func TestPollDeployment(t *testing.T) {
 			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 			mockVal := mockValidator{runs: test.runs}
 			dep := test.dep.WithValidator(mockVal)
-			s := checker{devIteration: test.iteration}
 			runCtx := &runcontext.RunContext{
 				KubeContext: "kubecontext",
 			}
-			s.pollDeploymentStatus(context.Background(), runCtx, dep)
+			pollDeploymentStatus(context.Background(), runCtx, dep)
 			t.CheckDeepEqual(test.expected, test.dep.Status().ActionableError().ErrCode)
 		})
 	}

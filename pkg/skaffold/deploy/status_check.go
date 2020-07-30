@@ -63,21 +63,14 @@ type counter struct {
 	failed  int32
 }
 
-func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer, iteration int) error {
+func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	event.StatusCheckEventStarted()
-	s := checker{
-		devIteration: iteration,
-	}
-	errCode, err := s.statusCheck(ctx, defaultLabeller, runCtx, out)
+	errCode, err := statusCheck(ctx, defaultLabeller, runCtx, out)
 	event.StatusCheckEventEnded(errCode, err)
 	return err
 }
 
-type checker struct {
-	devIteration int
-}
-
-func (s checker) statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) (proto.StatusCode, error) {
+func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) (proto.StatusCode, error) {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
@@ -108,7 +101,7 @@ func (s checker) statusCheck(ctx context.Context, defaultLabeller *DefaultLabell
 		go func(r *resource.Deployment) {
 			defer wg.Done()
 			// keep updating the resource status until it fails/succeeds/times out
-			s.pollDeploymentStatus(ctx, runCtx, r)
+			pollDeploymentStatus(ctx, runCtx, r)
 			rcCopy := c.markProcessed(r.Status().Error())
 			printStatusCheckSummary(out, r, rcCopy)
 		}(d)
@@ -153,7 +146,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	return deployments, nil
 }
 
-func (s checker) pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r *resource.Deployment) {
+func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r *resource.Deployment) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
@@ -171,12 +164,12 @@ func (s checker) pollDeploymentStatus(ctx context.Context, runCtx *runcontext.Ru
 			if r.IsStatusCheckComplete() {
 				return
 			}
-			// If this is the first skaffold dev devIteration, then fail immediately if
-			// any pod container errors cannot be recovered.
-			// Runner starts watching for file changes only after first deploy is successful.
+			// Fail immediately if any pod container errors cannot be recovered.
+			// StatusCheck is not interruptable.
 			// As any changes to build or deploy dependencies are not triggered, exit
 			// immediately rather than waiting for for statusCheckDeadlineSeconds
-			if s.devIteration == 0 && r.AreContainersNotRetryAble() {
+			// TODO: https://github.com/GoogleContainerTools/skaffold/pull/4591
+			if r.AreContainersNotRetryAble() {
 				r.MarkComplete()
 				return
 			}
