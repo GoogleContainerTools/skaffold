@@ -21,6 +21,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
@@ -193,25 +194,50 @@ func TestIsErrAndNotRetriable(t *testing.T) {
 }
 
 func TestReportSinceLastUpdated(t *testing.T) {
+	pods := map[string]validator.Resource{
+		"foo": validator.NewResource(
+			"test",
+			"pod",
+			"foo",
+			"Pending",
+			proto.ActionableErr{
+				ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR,
+				Message: "image cant be pulled"},
+			[]string{},
+		),
+	}
 	var tests = []struct {
 		description string
 		ae          proto.ActionableErr
+		pods        map[string]validator.Resource
 		expected    string
 	}{
 		{
 			description: "updating an error status",
-			ae:          proto.ActionableErr{Message: "cannot pull image"},
-			expected:    " - test-ns:deployment/test: cannot pull image",
+			ae:          proto.ActionableErr{Message: "cannot pull image\n"},
+			pods:        pods,
+			expected: ` - test-ns:deployment/test: cannot pull image
+    - test:pod/foo: image cant be pulled
+`,
 		},
 		{
 			description: "updating a non error status",
-			ae:          proto.ActionableErr{Message: "waiting for container"},
-			expected:    " - test-ns:deployment/test: waiting for container",
+			ae:          proto.ActionableErr{Message: "waiting for container\n"},
+			pods:        pods,
+			expected: ` - test-ns:deployment/test: waiting for container
+    - test:pod/foo: image cant be pulled
+`,
+		},
+		{
+			description: "updating a non error status",
+			ae:          proto.ActionableErr{Message: "waiting for container\n"},
+			expected:    "",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			dep := NewDeployment("test", "test-ns", 1)
+			dep.pods = test.pods
 			dep.UpdateStatus(test.ae)
 			t.CheckDeepEqual(test.expected, dep.ReportSinceLastUpdated())
 			t.CheckTrue(dep.status.changed)
@@ -220,6 +246,18 @@ func TestReportSinceLastUpdated(t *testing.T) {
 }
 
 func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
+	pods := map[string]validator.Resource{
+		"foo": validator.NewResource(
+			"test",
+			"pod",
+			"foo",
+			"Pending",
+			proto.ActionableErr{
+				ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR,
+				Message: "image cant be pulled"},
+			[]string{},
+		),
+	}
 	var tests = []struct {
 		description     string
 		statuses        []string
@@ -228,26 +266,31 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 	}{
 		{
 			description:     "report first time should return status",
-			statuses:        []string{"cannot pull image"},
+			statuses:        []string{"cannot pull image\n"},
 			reportStatusSeq: []bool{true},
-			expected:        " - test-ns:deployment/test: cannot pull image",
+			expected: ` - test-ns:deployment/test: cannot pull image
+    - test:pod/foo: image cant be pulled
+`,
 		},
 		{
 			description:     "report 2nd time should not return when same status",
-			statuses:        []string{"cannot pull image", "cannot pull image"},
+			statuses:        []string{"cannot pull image\n", "cannot pull image\n"},
 			reportStatusSeq: []bool{true, true},
 			expected:        "",
 		},
 		{
 			description:     "report called after multiple changes but last status was not changed.",
-			statuses:        []string{"cannot pull image", "changed but not reported", "changed but not reported", "changed but not reported"},
+			statuses:        []string{"cannot pull image\n", "changed but not reported\n", "changed but not reported\n", "changed but not reported\n"},
 			reportStatusSeq: []bool{true, false, false, true},
-			expected:        " - test-ns:deployment/test: changed but not reported",
+			expected: ` - test-ns:deployment/test: changed but not reported
+    - test:pod/foo: image cant be pulled
+`,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			dep := NewDeployment("test", "test-ns", 1)
+			dep.pods = pods
 			var actual string
 			for i, status := range test.statuses {
 				// update to same status
