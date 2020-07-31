@@ -17,7 +17,6 @@ limitations under the License.
 package tag
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -103,7 +102,7 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			description: "customTemplate",
 			imageName:   "test",
 			tagger:      customTemplateExample,
-			expected:    fmt.Sprintf("test:%s_%s", dateTimeExpected, "latest"),
+			expected:    "test:" + dateTimeExpected + "_latest",
 		},
 	}
 	for _, test := range tests {
