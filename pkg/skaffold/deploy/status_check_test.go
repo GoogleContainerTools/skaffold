@@ -602,7 +602,6 @@ type mockValidator struct {
 func (m mockValidator) Run(context.Context) ([]validator.Resource, error) {
 	if m.iteration < len(m.runs) {
 		m.iteration++
-		return m.runs[m.iteration], nil
 	}
 	// keep replaying the last result.
 	return m.runs[m.iteration-1], nil
