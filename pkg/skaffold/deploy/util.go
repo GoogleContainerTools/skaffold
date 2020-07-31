@@ -61,7 +61,7 @@ func parseReleaseInfo(namespace string, b *bufio.Reader) []Artifact {
 	var results []Artifact
 
 	r := k8syaml.NewYAMLReader(b)
-	for {
+	for i := 0; ; i++ {
 		doc, err := r.Read()
 		if err == io.EOF {
 			break
@@ -77,7 +77,9 @@ func parseReleaseInfo(namespace string, b *bufio.Reader) []Artifact {
 		}
 		obj, err := parseRuntimeObject(objNamespace, doc)
 		if err != nil {
-			logrus.Infof(err.Error())
+			if i > 0 {
+				logrus.Infof(err.Error())
+			}
 		} else {
 			results = append(results, *obj)
 			logrus.Debugf("found deployed object: %+v", obj.Obj)
