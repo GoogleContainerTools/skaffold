@@ -24,27 +24,27 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CustomTemplateTagger implements Tagger
-type CustomTemplateTagger struct {
+// customTemplateTagger implements Tagger
+type customTemplateTagger struct {
 	Template   *template.Template
 	Components map[string]Tagger
 }
 
-// NewCustomTemplateTagger creates a new CustomTemplateTagger
+// NewCustomTemplateTagger creates a new customTemplateTagger
 func NewCustomTemplateTagger(t string, components map[string]Tagger) (Tagger, error) {
 	tmpl, err := ParseCustomTemplate(t)
 	if err != nil {
 		return nil, fmt.Errorf("parsing template: %w", err)
 	}
 
-	return &CustomTemplateTagger{
+	return &customTemplateTagger{
 		Template:   tmpl,
 		Components: components,
 	}, nil
 }
 
 // GenerateTag generates a tag from a template referencing tagging strategies.
-func (t *CustomTemplateTagger) GenerateTag(workingDir, imageName string) (string, error) {
+func (t *customTemplateTagger) GenerateTag(workingDir, imageName string) (string, error) {
 	customMap, err := t.EvaluateComponents(workingDir, imageName)
 	if err != nil {
 		return "", err
@@ -60,7 +60,7 @@ func (t *CustomTemplateTagger) GenerateTag(workingDir, imageName string) (string
 }
 
 // EvaluateComponents creates a custom mapping of component names to their tagger string representation.
-func (t *CustomTemplateTagger) EvaluateComponents(workingDir, imageName string) (map[string]string, error) {
+func (t *customTemplateTagger) EvaluateComponents(workingDir, imageName string) (map[string]string, error) {
 	customMap := map[string]string{}
 
 	gitTagger, _ := NewGitCommit("", "")
@@ -72,7 +72,7 @@ func (t *CustomTemplateTagger) EvaluateComponents(workingDir, imageName string) 
 	}
 
 	for k, v := range t.Components {
-		if _, ok := v.(*CustomTemplateTagger); ok {
+		if _, ok := v.(*customTemplateTagger); ok {
 			return nil, fmt.Errorf("invalid component specified in custom template: %v", v)
 		}
 		tag, err := v.GenerateTag(workingDir, imageName)
