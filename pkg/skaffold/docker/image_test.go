@@ -26,6 +26,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -103,18 +104,33 @@ func TestBuild(t *testing.T) {
 		workspace     string
 		artifact      *latest.DockerArtifact
 		expected      types.ImageBuildOptions
+		mode          config.SkaffoldMode
 		shouldErr     bool
 		expectedError string
 	}{
 		{
-			description: "build",
+			description: "build for debug",
 			api:         &testutil.FakeAPIClient{},
 			workspace:   ".",
 			artifact:    &latest.DockerArtifact{},
 			expected: types.ImageBuildOptions{
 				Tags:        []string{"finalimage"},
 				AuthConfigs: allAuthConfig,
+				BuildArgs:   AppendDefaultArgs(config.SkaffoldModes.Debug, nil),
 			},
+			mode: config.SkaffoldModes.Debug,
+		},
+		{
+			description: "build for dev",
+			api:         &testutil.FakeAPIClient{},
+			workspace:   ".",
+			artifact:    &latest.DockerArtifact{},
+			expected: types.ImageBuildOptions{
+				Tags:        []string{"finalimage"},
+				AuthConfigs: allAuthConfig,
+				BuildArgs:   AppendDefaultArgs(config.SkaffoldModes.Dev, nil),
+			},
+			mode: config.SkaffoldModes.Dev,
 		},
 		{
 			description: "build with options",
@@ -135,14 +151,15 @@ func TestBuild(t *testing.T) {
 				NetworkMode: "None",
 				NoCache:     true,
 			},
+			mode: config.SkaffoldModes.Dev,
 			expected: types.ImageBuildOptions{
 				Tags:       []string{"finalimage"},
 				Dockerfile: "Dockerfile",
-				BuildArgs: map[string]*string{
+				BuildArgs: AppendDefaultArgs(config.SkaffoldModes.Dev, map[string]*string{
 					"k1": nil,
 					"k2": util.StringPtr("value2"),
 					"k3": util.StringPtr("value3"),
-				},
+				}),
 				CacheFrom:   []string{"from-1"},
 				AuthConfigs: allAuthConfig,
 				Target:      "target",
@@ -155,6 +172,7 @@ func TestBuild(t *testing.T) {
 			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
+			mode:          config.SkaffoldModes.Dev,
 			workspace:     ".",
 			artifact:      &latest.DockerArtifact{},
 			shouldErr:     true,
@@ -166,6 +184,7 @@ func TestBuild(t *testing.T) {
 				ErrStream: true,
 			},
 			workspace:     ".",
+			mode:          config.SkaffoldModes.Dev,
 			artifact:      &latest.DockerArtifact{},
 			shouldErr:     true,
 			expectedError: "unable to stream build output",
@@ -177,6 +196,7 @@ func TestBuild(t *testing.T) {
 					"key": util.StringPtr("{{INVALID"),
 				},
 			},
+			mode:          config.SkaffoldModes.Dev,
 			shouldErr:     true,
 			expectedError: `function "INVALID" not defined`,
 		},
@@ -187,7 +207,7 @@ func TestBuild(t *testing.T) {
 			t.SetEnvs(test.env)
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
-			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage")
+			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage", test.mode)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)

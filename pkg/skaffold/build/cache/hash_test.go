@@ -21,6 +21,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -39,14 +40,11 @@ var mockCacheHasher = func(s string) (string, error) {
 	return s, nil
 }
 
-var fakeArtifactConfig = func(a *latest.Artifact, devMode bool) (string, error) {
+var fakeArtifactConfig = func(a *latest.Artifact, mode config.SkaffoldMode) (string, error) {
 	if a.ArtifactType.DockerArtifact != nil {
 		return "docker/target=" + a.ArtifactType.DockerArtifact.Target, nil
 	}
-	if devMode {
-		return "devmode", nil
-	}
-	return "other", nil
+	return string(mode), nil
 }
 
 func TestGetHashForArtifact(t *testing.T) {
@@ -54,31 +52,31 @@ func TestGetHashForArtifact(t *testing.T) {
 		description  string
 		dependencies []string
 		artifact     *latest.Artifact
-		devMode      bool
+		mode         config.SkaffoldMode
 		expected     string
 	}{
 		{
 			description:  "hash for artifact",
 			dependencies: []string{"a", "b"},
 			artifact:     &latest.Artifact{},
-			expected:     "1caa15f7ce87536bddbac30a39768e8e3b212bf591f9b64926fa50c40b614c66",
+			expected:     "d99ab295a682897269b4db0fe7c136ea1ecd542150fa224ee03155b4e3e995d9",
 		},
 		{
 			description:  "ignore file not found",
 			dependencies: []string{"a", "b", "not-found"},
 			artifact:     &latest.Artifact{},
-			expected:     "1caa15f7ce87536bddbac30a39768e8e3b212bf591f9b64926fa50c40b614c66",
+			expected:     "d99ab295a682897269b4db0fe7c136ea1ecd542150fa224ee03155b4e3e995d9",
 		},
 		{
 			description:  "dependencies in different orders",
 			dependencies: []string{"b", "a"},
 			artifact:     &latest.Artifact{},
-			expected:     "1caa15f7ce87536bddbac30a39768e8e3b212bf591f9b64926fa50c40b614c66",
+			expected:     "d99ab295a682897269b4db0fe7c136ea1ecd542150fa224ee03155b4e3e995d9",
 		},
 		{
 			description: "no dependencies",
 			artifact:    &latest.Artifact{},
-			expected:    "53ebd85adc9b03923a7dacfe6002879af526ef6067d441419d6e62fb9bf608ab",
+			expected:    "7c077ca2308714493d07163e1033c4282bd869ff6d477b3e77408587f95e2930",
 		},
 		{
 			description: "docker target",
@@ -114,7 +112,7 @@ func TestGetHashForArtifact(t *testing.T) {
 					},
 				},
 			},
-			expected: "f3f710a4ec1d1bfb2a9b8ef2b4b7cc5f254102d17095a71872821b396953a4ce",
+			expected: "eb53afc0e8cbe348a0934b75260d154d83d3370e4414c25a9d3a67428211a0ea",
 		},
 		{
 			description:  "env variables",
@@ -126,14 +124,14 @@ func TestGetHashForArtifact(t *testing.T) {
 					},
 				},
 			},
-			expected: "a2e225e66c5932e41b0026164bf204533d59974b42fbb645da2855dc9d432cb9",
+			expected: "948abd8933667600679259dbb38cf2cc55c3098def78baec8dcd4d6851b9e0cd",
 		},
 		{
 			description:  "devmode",
 			dependencies: []string{"a", "b"},
 			artifact:     &latest.Artifact{},
-			devMode:      true,
-			expected:     "f019dda9d0c38fea4aab1685c7da54f7009aba1cb47e3cb4c6c1ce5b10fa5c32",
+			mode:         config.SkaffoldModes.Dev,
+			expected:     "c17f949a0b1e4296dba726284454488ad8d7ef51a1199eafc7cc0b7e43dec6ca",
 		},
 	}
 	for _, test := range tests {
@@ -142,7 +140,7 @@ func TestGetHashForArtifact(t *testing.T) {
 			t.Override(&artifactConfigFunction, fakeArtifactConfig)
 
 			depLister := stubDependencyLister(test.dependencies)
-			actual, err := getHashForArtifact(context.Background(), depLister, test.artifact, test.devMode)
+			actual, err := getHashForArtifact(context.Background(), depLister, test.artifact, test.mode)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
@@ -158,7 +156,7 @@ func TestArtifactConfig(t *testing.T) {
 					Target: "target",
 				},
 			},
-		}, false)
+		}, config.SkaffoldModes.Build)
 		t.CheckNoError(err)
 
 		config2, err := artifactConfig(&latest.Artifact{
@@ -167,7 +165,7 @@ func TestArtifactConfig(t *testing.T) {
 					Target: "other",
 				},
 			},
-		}, false)
+		}, config.SkaffoldModes.Build)
 		t.CheckNoError(err)
 
 		if config1 == config2 {
@@ -187,60 +185,73 @@ func TestArtifactConfigDevMode(t *testing.T) {
 			Auto: &latest.Auto{},
 		}
 
-		config, err := artifactConfig(&latest.Artifact{
+		conf, err := artifactConfig(&latest.Artifact{
 			ArtifactType: artifact,
 			Sync:         sync,
-		}, false)
+		}, config.SkaffoldModes.Build)
 		t.CheckNoError(err)
 
 		configDevMode, err := artifactConfig(&latest.Artifact{
 			ArtifactType: artifact,
 			Sync:         sync,
-		}, true)
+		}, config.SkaffoldModes.Dev)
 		t.CheckNoError(err)
 
-		if config == configDevMode {
-			t.Errorf("configs should be different: [%s] [%s]", config, configDevMode)
+		if conf == configDevMode {
+			t.Errorf("configs should be different: [%s] [%s]", conf, configDevMode)
 		}
 	})
 }
 
 func TestBuildArgs(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		expected := "f5b610f4fea07461411b2ea0e2cddfd2ffc28d1baed49180f5d3acee5a18f9e7"
-
-		artifact := &latest.Artifact{
-			ArtifactType: latest.ArtifactType{
-				DockerArtifact: &latest.DockerArtifact{
-					BuildArgs: map[string]*string{"one": stringPointer("1"), "two": stringPointer("2")},
+	tests := []struct {
+		mode     config.SkaffoldMode
+		expected string
+	}{
+		{
+			mode:     config.SkaffoldModes.Debug,
+			expected: "771e726436816ce229a2838b38aee8c85c7dda4411e7ba68cfd898473ae12ada",
+		},
+		{
+			mode:     config.SkaffoldModes.Dev,
+			expected: "31616940358b3c1535a1b4bcd0ffa8a1b851d0e5b10d7444c19825eb0f2ba69d",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			artifact := &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						BuildArgs: map[string]*string{"one": stringPointer("1"), "two": stringPointer("2")},
+					},
 				},
-			},
-		}
+			}
 
-		t.Override(&hashFunction, mockCacheHasher)
-		t.Override(&artifactConfigFunction, fakeArtifactConfig)
+			t.Override(&hashFunction, mockCacheHasher)
+			t.Override(&artifactConfigFunction, fakeArtifactConfig)
 
-		actual, err := getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact, false)
+			actual, err := getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact, test.mode)
 
-		t.CheckNoError(err)
-		t.CheckDeepEqual(expected, actual)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, actual)
 
-		// Change order of buildargs
-		artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"two": stringPointer("2"), "one": stringPointer("1")}
-		actual, err = getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact, false)
+			// Change order of buildargs
+			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"two": stringPointer("2"), "one": stringPointer("1")}
+			actual, err = getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact, test.mode)
 
-		t.CheckNoError(err)
-		t.CheckDeepEqual(expected, actual)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, actual)
 
-		// Change build args, get different hash
-		artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"one": stringPointer("1")}
-		actual, err = getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact, false)
+			// Change build args, get different hash
+			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"one": stringPointer("1")}
+			actual, err = getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact, test.mode)
 
-		t.CheckNoError(err)
-		if actual == expected {
-			t.Fatal("got same hash as different artifact; expected different hashes.")
-		}
-	})
+			t.CheckNoError(err)
+			if actual == test.expected {
+				t.Fatal("got same hash as different artifact; expected different hashes.")
+			}
+		})
+	}
 }
 
 func TestBuildArgsEnvSubstitution(t *testing.T) {
@@ -263,7 +274,7 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 		t.Override(&artifactConfigFunction, fakeArtifactConfig)
 
 		depLister := stubDependencyLister([]string{"dep"})
-		hash1, err := getHashForArtifact(context.Background(), depLister, artifact, false)
+		hash1, err := getHashForArtifact(context.Background(), depLister, artifact, config.SkaffoldModes.Build)
 
 		t.CheckNoError(err)
 
@@ -273,7 +284,7 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 			return []string{"FOO=baz"}
 		}
 
-		hash2, err := getHashForArtifact(context.Background(), depLister, artifact, false)
+		hash2, err := getHashForArtifact(context.Background(), depLister, artifact, config.SkaffoldModes.Build)
 
 		t.CheckNoError(err)
 		if hash1 == hash2 {
@@ -330,7 +341,7 @@ func TestCacheHasher(t *testing.T) {
 			path := originalFile
 			depLister := stubDependencyLister([]string{tmpDir.Path(originalFile)})
 
-			oldHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{}, false)
+			oldHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{}, config.SkaffoldModes.Build)
 			t.CheckNoError(err)
 
 			test.update(originalFile, tmpDir)
@@ -339,7 +350,7 @@ func TestCacheHasher(t *testing.T) {
 			}
 
 			depLister = stubDependencyLister([]string{tmpDir.Path(path)})
-			newHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{}, false)
+			newHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{}, config.SkaffoldModes.Build)
 
 			t.CheckNoError(err)
 			t.CheckFalse(test.differentHash && oldHash == newHash)

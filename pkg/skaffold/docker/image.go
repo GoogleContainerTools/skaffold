@@ -36,6 +36,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -61,7 +62,7 @@ type LocalDaemon interface {
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
-	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error)
+	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.SkaffoldMode) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
@@ -94,6 +95,8 @@ func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRe
 		imageCache:         make(map[string]*v1.ConfigFile),
 	}
 }
+
+type envUpdater func(map[string]*string) map[string]*string
 
 // ExtraEnv returns the env variables needed to point at this local Docker
 // eg. minikube. This has be set in addition to the current environment.
@@ -155,14 +158,16 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 }
 
 // Build performs a docker build and returns the imageID.
-func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error) {
+func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.SkaffoldMode) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	// Like `docker build`, we ignore the errors
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
 	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
 
-	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
+	buildArgs, err := EvaluateBuildArgs(a.BuildArgs, func(m map[string]*string) map[string]*string {
+		return AppendDefaultArgs(mode, m)
+	})
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
@@ -413,10 +418,10 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 }
 
 // GetBuildArgs gives the build args flags for docker build.
-func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
+func GetBuildArgs(a *latest.DockerArtifact, updater ...envUpdater) ([]string, error) {
 	var args []string
 
-	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
+	buildArgs, err := EvaluateBuildArgs(a.BuildArgs, updater...)
 	if err != nil {
 		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
 	}
@@ -458,7 +463,11 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 }
 
 // EvaluateBuildArgs evaluates templated build args.
-func EvaluateBuildArgs(args map[string]*string) (map[string]*string, error) {
+func EvaluateBuildArgs(args map[string]*string, updater ...envUpdater) (map[string]*string, error) {
+	for _, fn := range updater {
+		args = fn(args)
+	}
+
 	if args == nil {
 		return nil, nil
 	}

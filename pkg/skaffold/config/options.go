@@ -94,6 +94,24 @@ type SkaffoldOptions struct {
 	WaitForDeletions WaitForDeletions
 }
 
+type SkaffoldMode string
+
+var SkaffoldModes = struct {
+	Build  SkaffoldMode
+	Dev    SkaffoldMode
+	Debug  SkaffoldMode
+	Run    SkaffoldMode
+	Deploy SkaffoldMode
+	Render SkaffoldMode
+}{
+	Build:  "build",
+	Dev:    "dev",
+	Debug:  "debug",
+	Run:    "run",
+	Deploy: "deploy",
+	Render: "render",
+}
+
 // Prune returns true iff the user did NOT specify the --no-prune flag,
 // and the user did NOT specify the --cache-artifacts flag.
 func (opts *SkaffoldOptions) Prune() bool {
@@ -106,6 +124,10 @@ func (opts *SkaffoldOptions) IsDevMode() bool {
 
 func (opts *SkaffoldOptions) IsDebugMode() bool {
 	return opts.Command == "debug"
+}
+
+func (opts *SkaffoldOptions) Mode() SkaffoldMode {
+	return SkaffoldMode(opts.Command)
 }
 
 func (opts *SkaffoldOptions) IsTargetImage(artifact *latest.Artifact) bool {

@@ -31,6 +31,7 @@ import (
 	"github.com/buildpacks/pack/project"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -65,13 +66,13 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	}
 	latest := parsed.BaseName + ":latest"
 
-	// Eveluate Env Vars.
+	// Evaluate Env Vars.
 	envVars, err := misc.EvaluateEnv(artifact.Env)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate env variables: %w", err)
 	}
 
-	if b.devMode && a.Sync != nil && a.Sync.Auto != nil {
+	if b.mode == config.SkaffoldModes.Dev && a.Sync != nil && a.Sync.Auto != nil {
 		envVars = append(envVars, "GOOGLE_DEVMODE=1")
 	}
 
@@ -79,6 +80,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	for _, kv := range projectDescriptor.Build.Env {
 		env[kv.Name] = kv.Value
 	}
+	env = AppendDefaultArgs(b.mode, env)
 
 	// List buildpacks to be used for the build.
 	// Those specified in the skaffold.yaml replace those in the project.toml.

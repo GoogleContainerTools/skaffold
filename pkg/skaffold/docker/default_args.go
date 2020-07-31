@@ -1,0 +1,50 @@
+/*
+Copyright 2020 The Skaffold Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package docker
+
+import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+
+var BuildArgsForDebug = map[string]string{
+	"SKAFFOLD_GO_GCFLAGS": "'all=-N -l'", // disable build optimization for Golang
+	// TODO: Add for other languages
+}
+
+var BuildArgsForDev = map[string]string{
+	"SKAFFOLD_GO_LDFLAGS": "-w", // omit debug information in build output for Golang
+	// TODO: Add for other languages
+}
+
+func AppendDefaultArgs(mode config.SkaffoldMode, existing map[string]*string) map[string]*string {
+	var args map[string]string
+	switch mode {
+	case config.SkaffoldModes.Debug:
+		args = BuildArgsForDebug
+	default:
+		args = BuildArgsForDev
+	}
+
+	if existing == nil {
+		existing = make(map[string]*string)
+	}
+
+	for k, v := range args {
+		if existing[k] == nil {
+			existing[k] = &v
+		}
+	}
+	return existing
+}

@@ -30,6 +30,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -40,11 +41,11 @@ var (
 	artifactConfigFunction = artifactConfig
 )
 
-func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, devMode bool) (string, error) {
+func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, mode config.SkaffoldMode) (string, error) {
 	var inputs []string
 
 	// Append the artifact's configuration
-	config, err := artifactConfigFunction(a, devMode)
+	config, err := artifactConfigFunction(a, mode)
 	if err != nil {
 		return "", fmt.Errorf("getting artifact's configuration for %q: %w", a.ImageName, err)
 	}
@@ -72,7 +73,9 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 
 	// add build args for the artifact if specified
 	if buildArgs := retrieveBuildArgs(a); buildArgs != nil {
-		buildArgs, err := docker.EvaluateBuildArgs(buildArgs)
+		buildArgs, err := docker.EvaluateBuildArgs(buildArgs, func(m map[string]*string) map[string]*string {
+			return docker.AppendDefaultArgs(mode, buildArgs)
+		})
 		if err != nil {
 			return "", fmt.Errorf("evaluating build args: %w", err)
 		}
@@ -100,14 +103,18 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 }
 
 // TODO(dgageot): when the buildpacks builder image digest changes, we need to change the hash
-func artifactConfig(a *latest.Artifact, devMode bool) (string, error) {
+func artifactConfig(a *latest.Artifact, mode config.SkaffoldMode) (string, error) {
 	buf, err := json.Marshal(a.ArtifactType)
 	if err != nil {
 		return "", fmt.Errorf("marshalling the artifact's configuration for %q: %w", a.ImageName, err)
 	}
 
-	if devMode && a.BuildpackArtifact != nil && a.Sync != nil && a.Sync.Auto != nil {
+	if mode == config.SkaffoldModes.Dev && a.BuildpackArtifact != nil && a.Sync != nil && a.Sync.Auto != nil {
 		return string(buf) + ".DEV", nil
+	}
+
+	if mode == config.SkaffoldModes.Debug {
+		return string(buf) + ".DEBUG", nil
 	}
 
 	return string(buf), nil

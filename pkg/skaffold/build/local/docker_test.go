@@ -18,10 +18,13 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -29,16 +32,29 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+var (
+	defaultDebugBuildArgs = createBuildArgs(docker.BuildArgsForDebug)
+	defaultDevBuildArgs   = createBuildArgs(docker.BuildArgsForDev)
+)
+
 func TestDockerCLIBuild(t *testing.T) {
 	tests := []struct {
 		description string
 		localBuild  latest.LocalBuild
+		mode        config.SkaffoldMode
 		extraEnv    []string
 		expectedEnv []string
 	}{
 		{
-			description: "docker build",
+			description: "docker build for dev",
 			localBuild:  latest.LocalBuild{},
+			mode:        config.SkaffoldModes.Dev,
+			expectedEnv: []string{"KEY=VALUE"},
+		},
+		{
+			description: "docker build for debug",
+			localBuild:  latest.LocalBuild{},
+			mode:        config.SkaffoldModes.Debug,
 			expectedEnv: []string{"KEY=VALUE"},
 		},
 		{
@@ -72,8 +88,12 @@ func TestDockerCLIBuild(t *testing.T) {
 			t.NewTempDir().Touch("Dockerfile").Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
+			buildArgs := defaultDevBuildArgs
+			if test.mode == config.SkaffoldModes.Debug {
+				buildArgs = defaultDebugBuildArgs
+			}
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunEnv(
-				"docker build . --file "+dockerfilePath+" -t tag --force-rm",
+				"docker build . --file "+dockerfilePath+" -t tag "+buildArgs+" --force-rm",
 				test.expectedEnv,
 			))
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
@@ -93,8 +113,17 @@ func TestDockerCLIBuild(t *testing.T) {
 				},
 			}
 
-			_, err = builder.buildDocker(context.Background(), ioutil.Discard, artifact, "tag")
+			_, err = builder.buildDocker(context.Background(), ioutil.Discard, artifact, "tag", test.mode)
 			t.CheckNoError(err)
 		})
 	}
+}
+
+func createBuildArgs(m map[string]string) string {
+	str := []string{"--build-arg"}
+	for k, v := range m {
+		str = append(str, fmt.Sprintf("%v=%v", k, v))
+	}
+
+	return strings.Join(str, " ")
 }
