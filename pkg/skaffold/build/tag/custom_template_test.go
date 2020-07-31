@@ -37,7 +37,7 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 	invalidEnvTemplate, _ := NewEnvTemplateTagger("{{.BAR}}")
 	env := []string{"FOO=BAR"}
 
-	tagTemplateExample, _ := NewTemplateTagger("", nil)
+	customTemplateExample, _ := NewCustomTemplateTagger("", nil)
 
 	tests := []struct {
 		description string
@@ -67,9 +67,9 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 			expected:    "foo-BAR-latest",
 		},
 		{
-			description: "using tagTemplate as a component",
+			description: "using customTemplate as a component",
 			template:    "{{.FOO}}",
-			customMap:   map[string]Tagger{"FOO": tagTemplateExample},
+			customMap:   map[string]Tagger{"FOO": customTemplateExample},
 			shouldErr:   true,
 		},
 		{
@@ -99,7 +99,7 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return env })
 
-			c, err := NewTemplateTagger(test.template, test.customMap)
+			c, err := NewCustomTemplateTagger(test.template, test.customMap)
 
 			t.CheckNoError(err)
 
@@ -110,7 +110,7 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 	}
 }
 
-func TestTagTemplate_NewTemplateTagger(t *testing.T) {
+func TestCustomTemplate_NewCustomTemplateTagger(t *testing.T) {
 	tests := []struct {
 		description string
 		template    string
@@ -140,13 +140,13 @@ func TestTagTemplate_NewTemplateTagger(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := NewTemplateTagger(test.template, test.customMap)
+			_, err := NewCustomTemplateTagger(test.template, test.customMap)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
 
-func TestTagTemplate_ExecuteTagTemplate(t *testing.T) {
+func TestCustomTemplate_ExecuteCustomTemplate(t *testing.T) {
 	tests := []struct {
 		description string
 		template    string
@@ -189,16 +189,16 @@ func TestTagTemplate_ExecuteTagTemplate(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			testTemplate, err := ParseTagTemplate(test.template)
+			testTemplate, err := ParseCustomTemplate(test.template)
 			t.CheckNoError(err)
 
-			got, err := ExecuteTagTemplate(testTemplate.Option("missingkey=error"), test.customMap)
+			got, err := ExecuteCustomTemplate(testTemplate.Option("missingkey=error"), test.customMap)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 		})
 	}
 }
 
-func TestTagTemplate_ParseTagTemplate(t *testing.T) {
+func TestCustomTemplate_ParseCustomTemplate(t *testing.T) {
 	tests := []struct {
 		description string
 		template    string
@@ -216,7 +216,7 @@ func TestTagTemplate_ParseTagTemplate(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := ParseTagTemplate(test.template)
+			_, err := ParseCustomTemplate(test.template)
 			t.CheckError(test.shouldErr, err)
 		})
 	}

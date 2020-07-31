@@ -399,7 +399,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 	}
 }
 
-func TestGitCommit_TagTemplate(t *testing.T) {
+func TestGitCommit_CustomTemplate(t *testing.T) {
 	gitCommitExample, _ := NewGitCommit("", "CommitSha")
 	tests := []struct {
 		description   string
@@ -440,7 +440,7 @@ func TestGitCommit_TagTemplate(t *testing.T) {
 			test.createGitRepo(tmpDir.Root())
 			workspace := tmpDir.Path(test.subDir)
 
-			c, err := NewTemplateTagger(test.template, test.customMap)
+			c, err := NewCustomTemplateTagger(test.template, test.customMap)
 
 			t.CheckNoError(err)
 
