@@ -230,22 +230,22 @@ func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {
 	case t.DateTimeTagger != nil:
 		return tag.NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil
 
-	case t.TemplateTagger != nil:
-		components, err := CreateComponents(t.TemplateTagger)
+	case t.CustomTemplateTagger != nil:
+		components, err := CreateComponents(t.CustomTemplateTagger)
 
 		if err != nil {
 			return nil, fmt.Errorf("creating components: %w", err)
 		}
 
-		return tag.NewTemplateTagger(t.TemplateTagger.Template, components)
+		return tag.NewCustomTemplateTagger(t.CustomTemplateTagger.Template, components)
 
 	default:
 		return nil, fmt.Errorf("unknown tagger for strategy %+v", t)
 	}
 }
 
-// CreateComponents creates a map of taggers for TemplateTagger
-func CreateComponents(t *latest.TemplateTagger) (map[string]tag.Tagger, error) {
+// CreateComponents creates a map of taggers for CustomTemplateTagger
+func CreateComponents(t *latest.CustomTemplateTagger) (map[string]tag.Tagger, error) {
 	components := map[string]tag.Tagger{}
 
 	for _, taggerComponent := range t.Components {
@@ -268,11 +268,11 @@ func CreateComponents(t *latest.TemplateTagger) (map[string]tag.Tagger, error) {
 		case c.DateTimeTagger != nil:
 			components[name] = tag.NewDateTimeTagger(c.DateTimeTagger.Format, c.DateTimeTagger.TimeZone)
 
-		case c.TemplateTagger != nil:
-			return nil, fmt.Errorf("nested tagTemplate components are not supported in skaffold (%s)", name)
+		case c.CustomTemplateTagger != nil:
+			return nil, fmt.Errorf("nested customTemplate components are not supported in skaffold (%s)", name)
 
 		default:
-			return nil, fmt.Errorf("unknown component for tagTemplate: %s %+v", name, c)
+			return nil, fmt.Errorf("unknown component for custom template: %s %+v", name, c)
 		}
 	}
 

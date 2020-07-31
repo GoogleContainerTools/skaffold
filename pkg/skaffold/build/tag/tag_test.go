@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -40,6 +41,8 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 		timeFn:   func() time.Time { return aLocalTimeStamp },
 	}
 	dateTimeExpected := "2015-03-07"
+
+	customTemplateExample, _ := NewCustomTemplateTagger("{{.DATE}}_{{.SHA}}", map[string]Tagger{"DATE": dateTimeExample})
 
 	tests := []struct {
 		description      string
@@ -95,6 +98,12 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 				timeFn:   func() time.Time { return aLocalTimeStamp },
 			},
 			shouldErr: true,
+		},
+		{
+			description: "customTemplate",
+			imageName:   "test",
+			tagger:      customTemplateExample,
+			expected:    fmt.Sprintf("test:%s_%s", dateTimeExpected, "latest"),
 		},
 	}
 	for _, test := range tests {

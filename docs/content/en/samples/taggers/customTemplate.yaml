@@ -1,6 +1,6 @@
 build:
   tagPolicy:
-    tagTemplate:
+    customTemplate:
       template: "{{.FOO}}_{{.BAR}}"
       components:
       - name: FOO
