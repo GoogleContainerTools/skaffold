@@ -34,7 +34,7 @@ import (
 func TestWithLogFile(t *testing.T) {
 	logDeploySucceeded := " - fake/deployment created"
 	logDeployFailed := " - failed to deploy"
-	logFilename := "Writing deploy logs to " + filepath.Join(os.TempDir(), "skaffold", "deploy", "deploy.log")
+	logFilename := "- writing logs to " + filepath.Join(os.TempDir(), "skaffold", "deploy", "deploy.log")
 
 	tests := []struct {
 		description        string
