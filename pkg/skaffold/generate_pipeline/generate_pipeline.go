@@ -50,14 +50,14 @@ func Yaml(out io.Writer, runCtx *runcontext.RunContext, configFiles []*ConfigFil
 
 	// Generate build task for pipeline
 	var tasks []*tekton.Task
-	buildTasks, err := generateBuildTasks(runCtx.Opts.Namespace, configFiles)
+	buildTasks, err := generateBuildTasks(runCtx.GetKubeNamespace(), configFiles)
 	if err != nil {
 		return nil, fmt.Errorf("generating build task: %w", err)
 	}
 	tasks = append(tasks, buildTasks...)
 
 	// Generate deploy task for pipeline
-	deployTasks, err := generateDeployTasks(runCtx.Opts.Namespace, configFiles)
+	deployTasks, err := generateDeployTasks(runCtx.GetKubeNamespace(), configFiles)
 	if err != nil {
 		return nil, fmt.Errorf("generating deploy task: %w", err)
 	}

@@ -46,8 +46,8 @@ func NewCLI(runCtx *runcontext.RunContext, flags latest.KubectlFlags) CLI {
 	return CLI{
 		CLI:              pkgkubectl.NewFromRunContext(runCtx),
 		Flags:            flags,
-		forceDeploy:      runCtx.Opts.Force,
-		waitForDeletions: runCtx.Opts.WaitForDeletions,
+		forceDeploy:      runCtx.ForceDeploy(),
+		waitForDeletions: runCtx.WaitForDeletions(),
 	}
 }
 

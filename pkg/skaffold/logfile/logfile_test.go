@@ -27,24 +27,29 @@ import (
 func TestCreate(t *testing.T) {
 	var tests = []struct {
 		description  string
-		name         string
+		path         []string
 		expectedName string
 	}{
 		{
 			description:  "create file",
-			name:         "logs.txt",
+			path:         []string{"logs.txt"},
 			expectedName: "logs.txt",
 		},
 		{
+			description:  "create file in folder",
+			path:         []string{"build", "logs.txt"},
+			expectedName: filepath.Join("build", "logs.txt"),
+		},
+		{
 			description:  "escape name",
-			name:         "a/name.txt",
+			path:         []string{"a*name.txt"},
 			expectedName: "a-name.txt",
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			file, err := Create(test.name)
+			file, err := Create(test.path...)
 			defer func() {
 				file.Close()
 				os.Remove(file.Name())

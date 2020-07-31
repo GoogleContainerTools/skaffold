@@ -42,7 +42,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	}
 	defer b.localDocker.Close()
 
-	builder := build.WithLogFile(b.buildArtifact, b.suppressLogs)
+	builder := build.WithLogFile(b.buildArtifact, b.muted)
 	return build.InParallel(ctx, out, tags, artifacts, builder, *b.cfg.Concurrency)
 }
 

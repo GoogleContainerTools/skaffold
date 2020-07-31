@@ -17,12 +17,16 @@ limitations under the License.
 package test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -221,5 +225,36 @@ func TestTestFailure(t *testing.T) {
 			Tag:       "broken-image:tag",
 		}})
 		t.CheckError(true, err)
+	})
+}
+
+func TestTestMuted(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().Touch("test.yaml")
+		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test.yaml")))
+
+		runCtx := &runcontext.RunContext{
+			WorkingDir: tmpDir.Root(),
+			Cfg: latest.Pipeline{
+				Test: []*latest.TestCase{{
+					ImageName:      "image",
+					StructureTests: []string{"test.yaml"},
+				}},
+			},
+			Opts: config.SkaffoldOptions{
+				Muted: config.Muted{
+					Phases: []string{"test"},
+				},
+			},
+		}
+
+		var buf bytes.Buffer
+		err := NewTester(runCtx, true).Test(context.Background(), &buf, []build.Artifact{{
+			ImageName: "image",
+			Tag:       "image:tag",
+		}})
+
+		t.CheckNoError(err)
+		t.CheckContains("- writing logs to "+filepath.Join(os.TempDir(), "skaffold", "test.log"), buf.String())
 	})
 }

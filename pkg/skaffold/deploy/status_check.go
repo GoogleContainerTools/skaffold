@@ -77,20 +77,20 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	}
 
 	deployContext = map[string]string{
-		"clusterName": runCtx.KubeContext,
+		"clusterName": runCtx.GetKubeContext(),
 	}
 
 	deployments := make([]*resource.Deployment, 0)
-	for _, n := range runCtx.Namespaces {
+	for _, n := range runCtx.GetNamespaces() {
 		newDeployments, err := getDeployments(client, n, defaultLabeller,
-			getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds))
+			getDeadline(runCtx.Pipeline().Deploy.StatusCheckDeadlineSeconds))
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
 		}
 		deployments = append(deployments, newDeployments...)
 	}
 
-	deadline := statusCheckMaxDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds, deployments)
+	deadline := statusCheckMaxDeadline(runCtx.Pipeline().Deploy.StatusCheckDeadlineSeconds, deployments)
 
 	var wg sync.WaitGroup
 

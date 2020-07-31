@@ -101,10 +101,10 @@ type KustomizeDeployer struct {
 
 func NewKustomizeDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KustomizeDeployer {
 	return &KustomizeDeployer{
-		KustomizeDeploy:    runCtx.Cfg.Deploy.KustomizeDeploy,
-		kubectl:            deploy.NewCLI(runCtx, runCtx.Cfg.Deploy.KustomizeDeploy.Flags),
-		insecureRegistries: runCtx.InsecureRegistries,
-		globalConfig:       runCtx.Opts.GlobalConfig,
+		KustomizeDeploy:    runCtx.Pipeline().Deploy.KustomizeDeploy,
+		kubectl:            deploy.NewCLI(runCtx, runCtx.Pipeline().Deploy.KustomizeDeploy.Flags),
+		insecureRegistries: runCtx.GetInsecureRegistries(),
+		globalConfig:       runCtx.GlobalConfig(),
 		labels:             labels,
 	}
 }

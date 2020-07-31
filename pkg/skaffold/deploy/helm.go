@@ -82,11 +82,11 @@ type HelmDeployer struct {
 // NewHelmDeployer returns a configured HelmDeployer
 func NewHelmDeployer(runCtx *runcontext.RunContext, labels map[string]string) *HelmDeployer {
 	return &HelmDeployer{
-		HelmDeploy:  runCtx.Cfg.Deploy.HelmDeploy,
-		kubeContext: runCtx.KubeContext,
-		kubeConfig:  runCtx.Opts.KubeConfig,
-		namespace:   runCtx.Opts.Namespace,
-		forceDeploy: runCtx.Opts.Force,
+		HelmDeploy:  runCtx.Pipeline().Deploy.HelmDeploy,
+		kubeContext: runCtx.GetKubeContext(),
+		kubeConfig:  runCtx.GetKubeConfig(),
+		namespace:   runCtx.GetKubeNamespace(),
+		forceDeploy: runCtx.ForceDeploy(),
 		labels:      labels,
 	}
 }

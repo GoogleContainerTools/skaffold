@@ -27,6 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -300,6 +301,7 @@ func TestNewBuilder(t *testing.T) {
 				prune:              true,
 				pruneChildren:      true,
 				insecureRegistries: nil,
+				muted:              config.Muted{},
 			},
 		},
 		{
@@ -328,6 +330,7 @@ func TestNewBuilder(t *testing.T) {
 				prune:              true,
 				pruneChildren:      true,
 				insecureRegistries: nil,
+				muted:              config.Muted{},
 			},
 		},
 	}

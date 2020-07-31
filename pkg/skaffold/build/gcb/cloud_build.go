@@ -46,7 +46,7 @@ import (
 
 // Build builds a list of artifacts with Google Cloud Build.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	builder := build.WithLogFile(b.buildArtifactWithCloudBuild, b.suppressLogs)
+	builder := build.WithLogFile(b.buildArtifactWithCloudBuild, b.muted)
 	return build.InParallel(ctx, out, tags, artifacts, builder, b.GoogleCloudBuild.Concurrency)
 }
 
