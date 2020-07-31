@@ -43,8 +43,8 @@ const (
 )
 
 var (
-	msgKubectlKilled     = "kubectl rollout status command interrupted"
-	MsgKubectlConnection = "kubectl connection error"
+	msgKubectlKilled     = "kubectl rollout status command interrupted\n"
+	MsgKubectlConnection = "kubectl connection error\n"
 
 	nonRetryContainerErrors = map[proto.StatusCode]struct{}{
 		proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR:       {},
