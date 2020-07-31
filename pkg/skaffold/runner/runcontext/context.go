@@ -29,6 +29,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
+const (
+	emptyNamespace = ""
+)
+
 type RunContext struct {
 	Opts config.SkaffoldOptions
 	Cfg  latest.Pipeline
@@ -127,6 +131,9 @@ func (rc *RunContext) UpdateNamespaces(ns []string) {
 
 	nsMap := map[string]bool{}
 	for _, ns := range append(ns, rc.Namespaces...) {
+		if ns == emptyNamespace {
+			continue
+		}
 		nsMap[ns] = true
 	}
 
