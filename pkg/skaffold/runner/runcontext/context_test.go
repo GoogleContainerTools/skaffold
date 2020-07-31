@@ -59,6 +59,24 @@ func TestRunContext_UpdateNamespaces(t *testing.T) {
 			namespaces:  []string{},
 			expected:    []string{},
 		},
+		{
+			description: "update namespace when runcontext namespace has an empty string",
+			runContext:  &RunContext{Namespaces: []string{""}},
+			namespaces:  []string{"another"},
+			expected:    []string{"another"},
+		},
+		{
+			description: "update namespace when namespace is empty string",
+			runContext:  &RunContext{Namespaces: []string{"test"}},
+			namespaces:  []string{""},
+			expected:    []string{"test"},
+		},
+		{
+			description: "update namespace when namespace is empty string and runContext is empty",
+			runContext:  &RunContext{Namespaces: []string{}},
+			namespaces:  []string{""},
+			expected:    []string{},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
