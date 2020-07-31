@@ -40,7 +40,7 @@ var mockCacheHasher = func(s string) (string, error) {
 	return s, nil
 }
 
-var fakeArtifactConfig = func(a *latest.Artifact, mode config.SkaffoldMode) (string, error) {
+var fakeArtifactConfig = func(a *latest.Artifact, mode config.RunMode) (string, error) {
 	if a.ArtifactType.DockerArtifact != nil {
 		return "docker/target=" + a.ArtifactType.DockerArtifact.Target, nil
 	}
@@ -52,7 +52,7 @@ func TestGetHashForArtifact(t *testing.T) {
 		description  string
 		dependencies []string
 		artifact     *latest.Artifact
-		mode         config.SkaffoldMode
+		mode         config.RunMode
 		expected     string
 	}{
 		{
@@ -130,7 +130,7 @@ func TestGetHashForArtifact(t *testing.T) {
 			description:  "devmode",
 			dependencies: []string{"a", "b"},
 			artifact:     &latest.Artifact{},
-			mode:         config.SkaffoldModes.Dev,
+			mode:         config.RunModes.Dev,
 			expected:     "c17f949a0b1e4296dba726284454488ad8d7ef51a1199eafc7cc0b7e43dec6ca",
 		},
 	}
@@ -156,7 +156,7 @@ func TestArtifactConfig(t *testing.T) {
 					Target: "target",
 				},
 			},
-		}, config.SkaffoldModes.Build)
+		}, config.RunModes.Build)
 		t.CheckNoError(err)
 
 		config2, err := artifactConfig(&latest.Artifact{
@@ -165,7 +165,7 @@ func TestArtifactConfig(t *testing.T) {
 					Target: "other",
 				},
 			},
-		}, config.SkaffoldModes.Build)
+		}, config.RunModes.Build)
 		t.CheckNoError(err)
 
 		if config1 == config2 {
@@ -188,13 +188,13 @@ func TestArtifactConfigDevMode(t *testing.T) {
 		conf, err := artifactConfig(&latest.Artifact{
 			ArtifactType: artifact,
 			Sync:         sync,
-		}, config.SkaffoldModes.Build)
+		}, config.RunModes.Build)
 		t.CheckNoError(err)
 
 		configDevMode, err := artifactConfig(&latest.Artifact{
 			ArtifactType: artifact,
 			Sync:         sync,
-		}, config.SkaffoldModes.Dev)
+		}, config.RunModes.Dev)
 		t.CheckNoError(err)
 
 		if conf == configDevMode {
@@ -205,15 +205,15 @@ func TestArtifactConfigDevMode(t *testing.T) {
 
 func TestBuildArgs(t *testing.T) {
 	tests := []struct {
-		mode     config.SkaffoldMode
+		mode     config.RunMode
 		expected string
 	}{
 		{
-			mode:     config.SkaffoldModes.Debug,
+			mode:     config.RunModes.Debug,
 			expected: "771e726436816ce229a2838b38aee8c85c7dda4411e7ba68cfd898473ae12ada",
 		},
 		{
-			mode:     config.SkaffoldModes.Dev,
+			mode:     config.RunModes.Dev,
 			expected: "31616940358b3c1535a1b4bcd0ffa8a1b851d0e5b10d7444c19825eb0f2ba69d",
 		},
 	}
@@ -274,7 +274,7 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 		t.Override(&artifactConfigFunction, fakeArtifactConfig)
 
 		depLister := stubDependencyLister([]string{"dep"})
-		hash1, err := getHashForArtifact(context.Background(), depLister, artifact, config.SkaffoldModes.Build)
+		hash1, err := getHashForArtifact(context.Background(), depLister, artifact, config.RunModes.Build)
 
 		t.CheckNoError(err)
 
@@ -284,7 +284,7 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 			return []string{"FOO=baz"}
 		}
 
-		hash2, err := getHashForArtifact(context.Background(), depLister, artifact, config.SkaffoldModes.Build)
+		hash2, err := getHashForArtifact(context.Background(), depLister, artifact, config.RunModes.Build)
 
 		t.CheckNoError(err)
 		if hash1 == hash2 {
@@ -341,7 +341,7 @@ func TestCacheHasher(t *testing.T) {
 			path := originalFile
 			depLister := stubDependencyLister([]string{tmpDir.Path(originalFile)})
 
-			oldHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{}, config.SkaffoldModes.Build)
+			oldHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{}, config.RunModes.Build)
 			t.CheckNoError(err)
 
 			test.update(originalFile, tmpDir)
@@ -350,7 +350,7 @@ func TestCacheHasher(t *testing.T) {
 			}
 
 			depLister = stubDependencyLister([]string{tmpDir.Path(path)})
-			newHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{}, config.SkaffoldModes.Build)
+			newHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{}, config.RunModes.Build)
 
 			t.CheckNoError(err)
 			t.CheckFalse(test.differentHash && oldHash == newHash)

@@ -41,20 +41,20 @@ func TestDockerCLIBuild(t *testing.T) {
 	tests := []struct {
 		description string
 		localBuild  latest.LocalBuild
-		mode        config.SkaffoldMode
+		mode        config.RunMode
 		extraEnv    []string
 		expectedEnv []string
 	}{
 		{
 			description: "docker build for dev",
 			localBuild:  latest.LocalBuild{},
-			mode:        config.SkaffoldModes.Dev,
+			mode:        config.RunModes.Dev,
 			expectedEnv: []string{"KEY=VALUE"},
 		},
 		{
 			description: "docker build for debug",
 			localBuild:  latest.LocalBuild{},
-			mode:        config.SkaffoldModes.Debug,
+			mode:        config.RunModes.Debug,
 			expectedEnv: []string{"KEY=VALUE"},
 		},
 		{
@@ -89,7 +89,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			buildArgs := defaultDevBuildArgs
-			if test.mode == config.SkaffoldModes.Debug {
+			if test.mode == config.RunModes.Debug {
 				buildArgs = defaultDebugBuildArgs
 			}
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunEnv(

@@ -104,7 +104,7 @@ func TestBuild(t *testing.T) {
 		workspace     string
 		artifact      *latest.DockerArtifact
 		expected      types.ImageBuildOptions
-		mode          config.SkaffoldMode
+		mode          config.RunMode
 		shouldErr     bool
 		expectedError string
 	}{
@@ -116,9 +116,9 @@ func TestBuild(t *testing.T) {
 			expected: types.ImageBuildOptions{
 				Tags:        []string{"finalimage"},
 				AuthConfigs: allAuthConfig,
-				BuildArgs:   AppendDefaultArgs(config.SkaffoldModes.Debug, nil),
+				BuildArgs:   AppendDefaultArgs(config.RunModes.Debug, nil),
 			},
-			mode: config.SkaffoldModes.Debug,
+			mode: config.RunModes.Debug,
 		},
 		{
 			description: "build for dev",
@@ -128,9 +128,9 @@ func TestBuild(t *testing.T) {
 			expected: types.ImageBuildOptions{
 				Tags:        []string{"finalimage"},
 				AuthConfigs: allAuthConfig,
-				BuildArgs:   AppendDefaultArgs(config.SkaffoldModes.Dev, nil),
+				BuildArgs:   AppendDefaultArgs(config.RunModes.Dev, nil),
 			},
-			mode: config.SkaffoldModes.Dev,
+			mode: config.RunModes.Dev,
 		},
 		{
 			description: "build with options",
@@ -151,11 +151,11 @@ func TestBuild(t *testing.T) {
 				NetworkMode: "None",
 				NoCache:     true,
 			},
-			mode: config.SkaffoldModes.Dev,
+			mode: config.RunModes.Dev,
 			expected: types.ImageBuildOptions{
 				Tags:       []string{"finalimage"},
 				Dockerfile: "Dockerfile",
-				BuildArgs: AppendDefaultArgs(config.SkaffoldModes.Dev, map[string]*string{
+				BuildArgs: AppendDefaultArgs(config.RunModes.Dev, map[string]*string{
 					"k1": nil,
 					"k2": util.StringPtr("value2"),
 					"k3": util.StringPtr("value3"),
@@ -172,7 +172,7 @@ func TestBuild(t *testing.T) {
 			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
-			mode:          config.SkaffoldModes.Dev,
+			mode:          config.RunModes.Dev,
 			workspace:     ".",
 			artifact:      &latest.DockerArtifact{},
 			shouldErr:     true,
@@ -184,7 +184,7 @@ func TestBuild(t *testing.T) {
 				ErrStream: true,
 			},
 			workspace:     ".",
-			mode:          config.SkaffoldModes.Dev,
+			mode:          config.RunModes.Dev,
 			artifact:      &latest.DockerArtifact{},
 			shouldErr:     true,
 			expectedError: "unable to stream build output",
@@ -196,7 +196,7 @@ func TestBuild(t *testing.T) {
 					"key": util.StringPtr("{{INVALID"),
 				},
 			},
-			mode:          config.SkaffoldModes.Dev,
+			mode:          config.RunModes.Dev,
 			shouldErr:     true,
 			expectedError: `function "INVALID" not defined`,
 		},

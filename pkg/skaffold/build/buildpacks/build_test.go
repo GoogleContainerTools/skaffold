@@ -48,14 +48,14 @@ func TestBuild(t *testing.T) {
 		files           map[string]string
 		pushImages      bool
 		shouldErr       bool
-		mode            config.SkaffoldMode
+		mode            config.RunMode
 		expectedOptions *pack.BuildOptions
 	}{
 		{
 			description: "success for debug",
 			artifact:    buildpacksArtifact("my/builder", "my/run"),
 			tag:         "img:tag",
-			mode:        config.SkaffoldModes.Debug,
+			mode:        config.RunModes.Debug,
 			api:         &testutil.FakeAPIClient{},
 			expectedOptions: &pack.BuildOptions{
 				AppPath:  ".",
@@ -69,7 +69,7 @@ func TestBuild(t *testing.T) {
 			description: "success for build",
 			artifact:    buildpacksArtifact("my/builder", "my/run"),
 			tag:         "img:tag",
-			mode:        config.SkaffoldModes.Build,
+			mode:        config.RunModes.Build,
 			api:         &testutil.FakeAPIClient{},
 			expectedOptions: &pack.BuildOptions{
 				AppPath:  ".",
@@ -85,7 +85,7 @@ func TestBuild(t *testing.T) {
 			artifact:    withTrustedBuilder(withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun"))),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
-			mode:        config.SkaffoldModes.Debug,
+			mode:        config.RunModes.Debug,
 			expectedOptions: &pack.BuildOptions{
 				AppPath:      ".",
 				Builder:      "my/otherBuilder",
@@ -101,7 +101,7 @@ func TestBuild(t *testing.T) {
 			artifact:    withTrustedBuilder(withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun"))),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
-			mode:        config.SkaffoldModes.Build,
+			mode:        config.RunModes.Build,
 			expectedOptions: &pack.BuildOptions{
 				AppPath:      ".",
 				Builder:      "my/otherBuilder",
@@ -118,7 +118,7 @@ func TestBuild(t *testing.T) {
 			artifact:    buildpacksArtifact("my/builder2", "my/run2"),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
-			mode:        config.SkaffoldModes.Build,
+			mode:        config.RunModes.Build,
 			files: map[string]string{
 				"project.toml": `[[build.env]]
 name = "GOOGLE_RUNTIME_VERSION"
@@ -135,7 +135,7 @@ version = "1.0"
 				Builder:    "my/builder2",
 				RunImage:   "my/run2",
 				Buildpacks: []string{"my/buildpack", "my/otherBuildpack@1.0"},
-				Env: AppendDefaultArgs(config.SkaffoldModes.Build, map[string]string{
+				Env: AppendDefaultArgs(config.RunModes.Build, map[string]string{
 					"GOOGLE_RUNTIME_VERSION": "14.3.0",
 				}),
 				Image: "img:latest",
@@ -164,7 +164,7 @@ id = "my/ignored"
 			description: "Combine env from skaffold.yaml and project.toml",
 			artifact:    withEnv([]string{"KEY1=VALUE1"}, buildpacksArtifact("my/builder4", "my/run4")),
 			tag:         "img:tag",
-			mode:        config.SkaffoldModes.Build,
+			mode:        config.RunModes.Build,
 			api:         &testutil.FakeAPIClient{},
 			files: map[string]string{
 				"project.toml": `[[build.env]]
@@ -176,7 +176,7 @@ value = "VALUE2"
 				AppPath:  ".",
 				Builder:  "my/builder4",
 				RunImage: "my/run4",
-				Env: AppendDefaultArgs(config.SkaffoldModes.Build, map[string]string{
+				Env: AppendDefaultArgs(config.RunModes.Build, map[string]string{
 					"KEY1": "VALUE1",
 					"KEY2": "VALUE2",
 				}),
@@ -188,12 +188,12 @@ value = "VALUE2"
 			artifact:    withSync(&latest.Sync{Auto: &latest.Auto{}}, buildpacksArtifact("another/builder", "another/run")),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
-			mode:        config.SkaffoldModes.Dev,
+			mode:        config.RunModes.Dev,
 			expectedOptions: &pack.BuildOptions{
 				AppPath:  ".",
 				Builder:  "another/builder",
 				RunImage: "another/run",
-				Env: AppendDefaultArgs(config.SkaffoldModes.Build, map[string]string{
+				Env: AppendDefaultArgs(config.RunModes.Build, map[string]string{
 					"GOOGLE_DEVMODE": "1",
 				}),
 				Image: "img:latest",
@@ -204,7 +204,7 @@ value = "VALUE2"
 			artifact:    buildpacksArtifact("my/other-builder", "my/run"),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
-			mode:        config.SkaffoldModes.Dev,
+			mode:        config.RunModes.Dev,
 			expectedOptions: &pack.BuildOptions{
 				AppPath:  ".",
 				Builder:  "my/other-builder",

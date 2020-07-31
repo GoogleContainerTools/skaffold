@@ -72,7 +72,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		return "", fmt.Errorf("unable to evaluate env variables: %w", err)
 	}
 
-	if b.mode == config.SkaffoldModes.Dev && a.Sync != nil && a.Sync.Auto != nil {
+	if b.mode == config.RunModes.Dev && a.Sync != nil && a.Sync.Auto != nil {
 		envVars = append(envVars, "GOOGLE_DEVMODE=1")
 	}
 

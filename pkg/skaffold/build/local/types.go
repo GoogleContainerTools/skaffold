@@ -40,7 +40,7 @@ type Builder struct {
 	prune              bool
 	pruneChildren      bool
 	skipTests          bool
-	mode               config.SkaffoldMode
+	mode               config.RunMode
 	kubeContext        string
 	builtImages        []string
 	insecureRegistries map[string]bool
@@ -83,7 +83,7 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 		localCluster:       localCluster,
 		pushImages:         pushImages,
 		skipTests:          runCtx.Opts.SkipTests,
-		mode:               runCtx.Opts.Mode(),
+		mode:               runCtx.Mode(),
 		prune:              runCtx.Opts.Prune(),
 		pruneChildren:      !runCtx.Opts.NoPruneChildren,
 		insecureRegistries: runCtx.InsecureRegistries,

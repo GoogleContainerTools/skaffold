@@ -41,7 +41,7 @@ var (
 	artifactConfigFunction = artifactConfig
 )
 
-func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, mode config.SkaffoldMode) (string, error) {
+func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, mode config.RunMode) (string, error) {
 	var inputs []string
 
 	// Append the artifact's configuration
@@ -103,17 +103,17 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 }
 
 // TODO(dgageot): when the buildpacks builder image digest changes, we need to change the hash
-func artifactConfig(a *latest.Artifact, mode config.SkaffoldMode) (string, error) {
+func artifactConfig(a *latest.Artifact, mode config.RunMode) (string, error) {
 	buf, err := json.Marshal(a.ArtifactType)
 	if err != nil {
 		return "", fmt.Errorf("marshalling the artifact's configuration for %q: %w", a.ImageName, err)
 	}
 
-	if mode == config.SkaffoldModes.Dev && a.BuildpackArtifact != nil && a.Sync != nil && a.Sync.Auto != nil {
+	if mode == config.RunModes.Dev && a.BuildpackArtifact != nil && a.Sync != nil && a.Sync.Auto != nil {
 		return string(buf) + ".DEV", nil
 	}
 
-	if mode == config.SkaffoldModes.Debug {
+	if mode == config.RunModes.Debug {
 		return string(buf) + ".DEBUG", nil
 	}
 

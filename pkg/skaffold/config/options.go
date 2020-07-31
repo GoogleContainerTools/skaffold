@@ -94,15 +94,15 @@ type SkaffoldOptions struct {
 	WaitForDeletions WaitForDeletions
 }
 
-type SkaffoldMode string
+type RunMode string
 
-var SkaffoldModes = struct {
-	Build  SkaffoldMode
-	Dev    SkaffoldMode
-	Debug  SkaffoldMode
-	Run    SkaffoldMode
-	Deploy SkaffoldMode
-	Render SkaffoldMode
+var RunModes = struct {
+	Build  RunMode
+	Dev    RunMode
+	Debug  RunMode
+	Run    RunMode
+	Deploy RunMode
+	Render RunMode
 }{
 	Build:  "build",
 	Dev:    "dev",
@@ -118,16 +118,8 @@ func (opts *SkaffoldOptions) Prune() bool {
 	return !opts.NoPrune && !opts.CacheArtifacts
 }
 
-func (opts *SkaffoldOptions) IsDevMode() bool {
-	return opts.Command == "dev"
-}
-
-func (opts *SkaffoldOptions) IsDebugMode() bool {
-	return opts.Command == "debug"
-}
-
-func (opts *SkaffoldOptions) Mode() SkaffoldMode {
-	return SkaffoldMode(opts.Command)
+func (opts *SkaffoldOptions) Mode() RunMode {
+	return RunMode(opts.Command)
 }
 
 func (opts *SkaffoldOptions) IsTargetImage(artifact *latest.Artifact) bool {

@@ -28,10 +28,10 @@ var buildArgsForDev = map[string]string{
 	// TODO: Add for other languages
 }
 
-func AppendDefaultArgs(mode config.SkaffoldMode, existing map[string]string) map[string]string {
+func AppendDefaultArgs(mode config.RunMode, existing map[string]string) map[string]string {
 	var args map[string]string
 	switch mode {
-	case config.SkaffoldModes.Debug:
+	case config.RunModes.Debug:
 		args = buildArgsForDebug
 	default:
 		args = buildArgsForDev

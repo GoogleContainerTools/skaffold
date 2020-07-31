@@ -25,11 +25,11 @@ import (
 type Builder struct {
 	localDocker docker.LocalDaemon
 	pushImages  bool
-	mode        config.SkaffoldMode
+	mode        config.RunMode
 }
 
 // NewArtifactBuilder returns a new buildpack artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool, mode config.SkaffoldMode) *Builder {
+func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool, mode config.RunMode) *Builder {
 	return &Builder{
 		localDocker: localDocker,
 		pushImages:  pushImages,
