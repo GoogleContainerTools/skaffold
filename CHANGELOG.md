@@ -1,3 +1,106 @@
+# v1.13.0 Release - 07/30/2020
+ 
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.13.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+ 
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.13.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+ 
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.13.0/skaffold-windows-amd64.exe
+ 
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.13.0`
+ 
+Note: This release comes with a new config version, `v2beta6`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+ 
+ 
+Highlights:
+* Skaffold now supports muting both build, test, and deploy logs through the `--mute-logs` flag for more succinct output.
+* All extraneous labels added to deployed resources are now added as annotations in Kubernetes.
+* Skaffold now supports a new tagging strategy, `customTemplate`, allowing combinations of multiple tagging strategies.
+* Specification of the {{.IMAGE_NAME}} component of the `envTemplate` tagger has been deprecated.
+* Many other usability fixes and updates in this release!
+ 
+ 
+New Features:
+* Add helper to create log files [#4563](https://github.com/GoogleContainerTools/skaffold/pull/4563)
+* Tag template tagger [#4567](https://github.com/GoogleContainerTools/skaffold/pull/4567)
+* Add suppress-logs flag [#4530](https://github.com/GoogleContainerTools/skaffold/pull/4530)
+* Add `deploy.logs` section to skaffold.yaml [#4509](https://github.com/GoogleContainerTools/skaffold/pull/4509)
+* Allow deeply nested property definition for Helm properties [#4511](https://github.com/GoogleContainerTools/skaffold/pull/4511)
+* Add Agones custom kinds to the Allow-List [#4488](https://github.com/GoogleContainerTools/skaffold/pull/4488)
+* Support deprecated extensions/v1beta1 workload resources [#4478](https://github.com/GoogleContainerTools/skaffold/pull/4478)
+ 
+ 
+Fixes:
+* Use alternative service port-forwarding scheme [#4590](https://github.com/GoogleContainerTools/skaffold/pull/4590)
+* Ignore "" namespaces in collectHelmReleasesNamespaces [#4568](https://github.com/GoogleContainerTools/skaffold/pull/4568)
+* Wait for pending deletions to complete before a deploy [#4531](https://github.com/GoogleContainerTools/skaffold/pull/4531)
+* SKAFFOLD_UPDATE_CHECK should also be a global flag [#4510](https://github.com/GoogleContainerTools/skaffold/pull/4510)
+* fix: remove the dev override of the force flag [#4513](https://github.com/GoogleContainerTools/skaffold/pull/4513)
+* Error on invalid artifact workspace [#4492](https://github.com/GoogleContainerTools/skaffold/pull/4492)
+ 
+ 
+Updates:
+* Log when values are taken from global config file [#4566](https://github.com/GoogleContainerTools/skaffold/pull/4566)
+* Muted test logs [#4595](https://github.com/GoogleContainerTools/skaffold/pull/4595)
+* Support short build logs [#4528](https://github.com/GoogleContainerTools/skaffold/pull/4528)
+* Fail when k8s client can’t be obtained [#4584](https://github.com/GoogleContainerTools/skaffold/pull/4584)
+* Deprecating EnvTemplate's use of {{.IMAGE_NAME}} [#4533](https://github.com/GoogleContainerTools/skaffold/pull/4533)
+* Get digest of multi-arch images [#4475](https://github.com/GoogleContainerTools/skaffold/pull/4475)
+* Reduce volume of debug-level logging [#4552](https://github.com/GoogleContainerTools/skaffold/pull/4552)
+* Remove labels from builders and deployers [#4499](https://github.com/GoogleContainerTools/skaffold/pull/4499)
+* Update k3d cli 'load image' to 'image import' (#4498) [#4507](https://github.com/GoogleContainerTools/skaffold/pull/4507)
+* Disable update check and survey prompt in non-interactive mode [#4508](https://github.com/GoogleContainerTools/skaffold/pull/4508)
+* Map container status PodInitializing to STATUSCHECK_SUCCESS [#4471](https://github.com/GoogleContainerTools/skaffold/pull/4471)
+* Use runCtx.Namespaces to get deployments for status checks [#4460](https://github.com/GoogleContainerTools/skaffold/pull/4460)
+ 
+ 
+Dependency Updates:
+* Update pack to v0.12.0 [#4474](https://github.com/GoogleContainerTools/skaffold/pull/4474)
+* Include k3d 3.0.0 in Skaffold image [#4545](https://github.com/GoogleContainerTools/skaffold/pull/4545)
+* Update cross compilation image [#4543](https://github.com/GoogleContainerTools/skaffold/pull/4543)
+* Upgrade go-containerregistry to v0.1.1 [#4476](https://github.com/GoogleContainerTools/skaffold/pull/4476)
+ 
+ 
+Docs Updates:
+* Fix documentation for Helm `artifactOverride` [#4503](https://github.com/GoogleContainerTools/skaffold/pull/4503)
+* Fail fast and point to docs for 'skaffold init' on helm projects [#4396](https://github.com/GoogleContainerTools/skaffold/pull/4396)
+* Fix example for generate-pipeline to use "latest" as image tag [#4458](https://github.com/GoogleContainerTools/skaffold/pull/4458)
+ 
+ 
+Huge thanks goes out to all of our contributors for this release:
+ 
+- Alex Lewis
+- Alexander Shirobokov
+- Andreas Sommer
+- Andrew den Hertog
+- Appu Goundan
+- Balint Pato
+- Brian de Alwis
+- Chanseok Oh
+- Chris Ge
+- Daniel Sel
+- David Gageot
+- Felix Tran
+- Gaurav
+- Gergo Tolnai
+- Keerthan Jaic
+- Kent Hua
+- Lennox Stevenson
+- Marlon Gamez
+- Miklos Kiss
+- Nicholas Hawkes
+- Nick Kubala
+- Nils Breunese
+- Oliver Hughes
+- Paul Vollmer
+- Sarmad Abualkaz
+- Stefan Büringer
+- Tejal Desai
+- Zhou Wenzong
+
 # v1.12.1 Release - 07/14/2020
 
 **Linux**
