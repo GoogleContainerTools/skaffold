@@ -17,6 +17,7 @@ limitations under the License.
 package runner
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -58,7 +59,7 @@ func TestSkipDevLoopOnMonitorError(t *testing.T) {
 	}
 
 	var devLoopWasCalled bool
-	err := listener.do(func() error {
+	err := listener.do(context.Background(), func(context.Context) error {
 		devLoopWasCalled = true
 		return nil
 	})
@@ -72,7 +73,7 @@ func TestContinueOnDevLoopError(t *testing.T) {
 		Trigger: &fakeTriggger{},
 	}
 
-	err := listener.do(func() error {
+	err := listener.do(context.Background(), func(context.Context) error {
 		return errors.New("devloop error")
 	})
 
@@ -85,7 +86,7 @@ func TestReportDevLoopError(t *testing.T) {
 		Trigger: &fakeTriggger{},
 	}
 
-	err := listener.do(func() error {
+	err := listener.do(context.Background(), func(context.Context) error {
 		return ErrorConfigurationChanged
 	})
 

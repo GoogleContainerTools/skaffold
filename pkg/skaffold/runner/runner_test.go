@@ -52,7 +52,7 @@ type TestBench struct {
 	deployErrors []error
 	namespaces   []string
 
-	devLoop        func(context.Context, io.Writer, func() error) error
+	devLoop        func(context.Context, io.Writer, func(context.Context) error) error
 	firstMonitor   func(bool) error
 	cycles         int
 	currentCycle   int
@@ -170,7 +170,7 @@ func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
 
-func (t *TestBench) WatchForChanges(ctx context.Context, out io.Writer, doDev func() error) error {
+func (t *TestBench) WatchForChanges(ctx context.Context, out io.Writer, doDev func(context.Context) error) error {
 	// don't actually call the monitor here, because extra actions would be added
 	if err := t.firstMonitor(true); err != nil {
 		return err
@@ -234,11 +234,11 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 	runner.listener = testBench
 	runner.monitor = monitor
 
-	testBench.devLoop = func(ctx context.Context, out io.Writer, doDev func() error) error {
+	testBench.devLoop = func(ctx context.Context, out io.Writer, doDev func(ctx context.Context) error) error {
 		if err := monitor.Run(true); err != nil {
 			return err
 		}
-		return doDev()
+		return doDev(ctx)
 	}
 
 	testBench.firstMonitor = func(bool) error {

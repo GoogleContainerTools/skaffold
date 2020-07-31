@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/proto"
@@ -49,6 +50,12 @@ var (
 
 func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kubernetes.LogAggregator, forwarderManager portforward.Forwarder) error {
 	if r.changeSet.needsReload {
+		// If the config can't be parsed, do not exit the dev loop.
+		if _, err := schema.ParseConfigAndUpgrade(r.runCtx.Opts.ConfigurationFile, latest.Version); err != nil {
+			return err
+		}
+
+		// Bubble up the error so that a new dev loop is started.
 		return ErrorConfigurationChanged
 	}
 
@@ -96,7 +103,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		}()
 
 		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
-			logrus.Warnln("Skipping deploy due to error:", err)
+			if ctx.Err() != context.Canceled {
+				logrus.Warnln("Skipping deploy due to error:", err)
+			}
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 			return nil
 		}
@@ -111,7 +120,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 
 		forwarderManager.Stop()
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
-			logrus.Warnln("Skipping deploy due to error:", err)
+			if ctx.Err() != context.Canceled {
+				logrus.Warnln("Skipping deploy due to error:", err)
+			}
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
 			return nil
 		}
@@ -242,7 +253,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
 
 	event.DevLoopComplete(0)
-	return r.listener.WatchForChanges(ctx, out, func() error {
-		return r.doDev(ctx, out, logger, forwarderManager)
+	return r.listener.WatchForChanges(ctx, out, func(ctxDev context.Context) error {
+		return r.doDev(ctxDev, out, logger, forwarderManager)
 	})
 }
