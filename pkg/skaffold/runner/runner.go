@@ -54,13 +54,14 @@ type Runner interface {
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
-	builder  build.Builder
-	deployer deploy.Deployer
-	tester   test.Tester
-	tagger   tag.Tagger
-	syncer   sync.Syncer
-	monitor  filemon.Monitor
-	listener Listener
+	builder       build.Builder
+	deployer      deploy.Deployer
+	statusChecker deploy.StatusChecker
+	tester        test.Tester
+	tagger        tag.Tagger
+	syncer        sync.Syncer
+	monitor       filemon.Monitor
+	listener      Listener
 
 	kubectlCLI *kubectl.CLI
 	cache      cache.Cache
@@ -78,11 +79,6 @@ type SkaffoldRunner struct {
 	intents        *intents
 	devIteration   int
 }
-
-// for testing
-var (
-	statusCheck = deploy.StatusCheck
-)
 
 // HasDeployed returns true if this runner has deployed something.
 func (r *SkaffoldRunner) HasDeployed() bool {

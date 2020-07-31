@@ -90,10 +90,11 @@ func (t *TestBench) WithTestErrors(testErrors []error) *TestBench {
 	return t
 }
 
-func (t *TestBench) TestDependencies() ([]string, error)              { return nil, nil }
-func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
-func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
-func (t *TestBench) Prune(ctx context.Context, out io.Writer) error   { return nil }
+func (t *TestBench) TestDependencies() ([]string, error)      { return nil, nil }
+func (t *TestBench) Dependencies() ([]string, error)          { return nil, nil }
+func (t *TestBench) Cleanup(context.Context, io.Writer) error { return nil }
+func (t *TestBench) Prune(context.Context, io.Writer) error   { return nil }
+func (t *TestBench) Check(context.Context, io.Writer) error   { return nil }
 
 func (t *TestBench) enterNewCycle() {
 	t.actions = append(t.actions, t.currentActions)
@@ -231,6 +232,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 	runner.syncer = testBench
 	runner.tester = testBench
 	runner.deployer = testBench
+	runner.statusChecker = testBench
 	runner.listener = testBench
 	runner.monitor = monitor
 

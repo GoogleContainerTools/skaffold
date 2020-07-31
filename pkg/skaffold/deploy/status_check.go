@@ -53,44 +53,61 @@ const (
 	kubernetesMaxDeadline = 600
 )
 
-var (
-	deployContext map[string]string
-)
-
 type counter struct {
 	total   int
 	pending int32
 	failed  int32
 }
 
-func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
+// StatusChecker wait for the application to be totally deployed.
+type StatusChecker interface {
+	Check(context.Context, io.Writer) error
+}
+
+type statusChecker struct {
+	// TODO(dgageot): use an interface instead.
+	runCtx          *runcontext.RunContext
+	labeller        *DefaultLabeller
+	deadlineSeconds int
+	deployContext   map[string]string
+}
+
+// NewStatusChecker creates a new StatusChecker.
+func NewStatusChecker(runCtx *runcontext.RunContext, labeller *DefaultLabeller) StatusChecker {
+	return &statusChecker{
+		runCtx:          runCtx,
+		labeller:        labeller,
+		deadlineSeconds: runCtx.Pipeline().Deploy.StatusCheckDeadlineSeconds,
+	}
+}
+
+func (s *statusChecker) Check(ctx context.Context, out io.Writer) error {
 	event.StatusCheckEventStarted()
-	errCode, err := statusCheck(ctx, defaultLabeller, runCtx, out)
+	errCode, err := s.check(ctx, out)
 	event.StatusCheckEventEnded(errCode, err)
 	return err
 }
 
-func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) (proto.StatusCode, error) {
+func (s *statusChecker) check(ctx context.Context, out io.Writer) (proto.StatusCode, error) {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
-	deployContext = map[string]string{
-		"clusterName": runCtx.GetKubeContext(),
+	s.deployContext = map[string]string{
+		"clusterName": s.runCtx.GetKubeContext(),
 	}
 
 	deployments := make([]*resource.Deployment, 0)
-	for _, n := range runCtx.GetNamespaces() {
-		newDeployments, err := getDeployments(client, n, defaultLabeller,
-			getDeadline(runCtx.Pipeline().Deploy.StatusCheckDeadlineSeconds))
+	for _, n := range s.runCtx.GetNamespaces() {
+		newDeployments, err := s.getDeployments(client, n, getDeadline(s.deadlineSeconds))
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
 		}
 		deployments = append(deployments, newDeployments...)
 	}
 
-	deadline := statusCheckMaxDeadline(runCtx.Pipeline().Deploy.StatusCheckDeadlineSeconds, deployments)
+	deadline := statusCheckMaxDeadline(s.deadlineSeconds, deployments)
 
 	var wg sync.WaitGroup
 
@@ -101,7 +118,7 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		go func(r *resource.Deployment) {
 			defer wg.Done()
 			// keep updating the resource status until it fails/succeeds/times out
-			pollDeploymentStatus(ctx, runCtx, r)
+			s.pollDeploymentStatus(ctx, r)
 			rcCopy := c.markProcessed(r.Status().Error())
 			printStatusCheckSummary(out, r, rcCopy)
 		}(d)
@@ -117,9 +134,9 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	return getSkaffoldDeployStatus(c, deployments)
 }
 
-func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
+func (s *statusChecker) getDeployments(client kubernetes.Interface, ns string, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
 	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
-		LabelSelector: l.RunIDSelector(),
+		LabelSelector: s.labeller.RunIDSelector(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch deployments: %w", err)
@@ -134,8 +151,8 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
 		}
 		pd := diag.New([]string{d.Namespace}).
-			WithLabel(RunIDLabel, l.Labels()[RunIDLabel]).
-			WithValidators([]validator.Validator{validator.NewPodValidator(client, deployContext)})
+			WithLabel(RunIDLabel, s.labeller.Labels()[RunIDLabel]).
+			WithValidators([]validator.Validator{validator.NewPodValidator(client, s.deployContext)})
 
 		for k, v := range d.Spec.Template.Labels {
 			pd = pd.WithLabel(k, v)
@@ -146,7 +163,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	return deployments, nil
 }
 
-func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r *resource.Deployment) {
+func (s *statusChecker) pollDeploymentStatus(ctx context.Context, r *resource.Deployment) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
@@ -160,7 +177,7 @@ func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r 
 				Message: msg})
 			return
 		case <-time.After(pollDuration):
-			r.CheckStatus(timeoutContext, runCtx)
+			r.CheckStatus(timeoutContext, s.runCtx)
 			if r.IsStatusCheckComplete() {
 				return
 			}

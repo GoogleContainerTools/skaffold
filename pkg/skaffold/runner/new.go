@@ -59,6 +59,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	tester := getTester(runCtx, imagesAreLocal)
 	syncer := getSyncer(runCtx)
 	deployer := getDeployer(runCtx, labeller.Labels())
+	statusChecker := deploy.NewStatusChecker(runCtx, labeller)
 
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx.GetInsecureRegistries())
@@ -96,12 +97,13 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	intents, intentChan := setupIntents(runCtx)
 
 	return &SkaffoldRunner{
-		builder:  builder,
-		tester:   tester,
-		deployer: deployer,
-		tagger:   tagger,
-		syncer:   syncer,
-		monitor:  monitor,
+		builder:       builder,
+		tester:        tester,
+		deployer:      deployer,
+		statusChecker: statusChecker,
+		tagger:        tagger,
+		syncer:        syncer,
+		monitor:       monitor,
 		listener: &SkaffoldListener{
 			Monitor:    monitor,
 			Trigger:    trigger,
