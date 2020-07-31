@@ -392,12 +392,15 @@ func TestPrintStatus(t *testing.T) {
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
-					resource.NewDeployment("r2", "test", 1),
+					resource.NewDeployment("r2", "test", 1).
+						WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR}),
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
-						Message: "pending"},
+						Message: "pending\n"},
 				),
 			},
-			expectedOut: " - test:deployment/r2: pending\n",
+			expectedOut: ` - test:deployment/r2: pending
+    - test:pod/foo: pod failed
+`,
 		},
 		{
 			description: "multiple resources 1 not complete and retry-able error",
@@ -407,13 +410,16 @@ func TestPrintStatus(t *testing.T) {
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
-					resource.NewDeployment("r2", "test", 1),
+					resource.NewDeployment("r2", "test", 1).
+						WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR}),
 					proto.ActionableErr{
 						ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
 						Message: resource.MsgKubectlConnection},
 				),
 			},
-			expectedOut: " - test:deployment/r2: kubectl connection error\n",
+			expectedOut: ` - test:deployment/r2: kubectl connection error
+    - test:pod/foo: pod failed
+`,
 		},
 	}
 
