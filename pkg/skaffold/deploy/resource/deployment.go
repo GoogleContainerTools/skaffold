@@ -45,6 +45,13 @@ const (
 var (
 	msgKubectlKilled     = "kubectl rollout status command interrupted"
 	MsgKubectlConnection = "kubectl connection error"
+
+	nonRetryContainerErrors = map[proto.StatusCode]struct{}{
+		proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR:       {},
+		proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR:    {},
+		proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED: {},
+		proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING: {},
+	}
 )
 
 type Deployment struct {
@@ -133,6 +140,10 @@ func (d *Deployment) IsStatusCheckComplete() bool {
 	return d.done
 }
 
+func (d *Deployment) MarkComplete() {
+	d.done = true
+}
+
 // This returns a string representing deployment status along with tab header
 // e.g.
 //  - testNs:deployment/leeroy-app: waiting for rollout to complete. (1/2) pending
@@ -207,6 +218,17 @@ func parseKubectlRolloutError(details string, err error) proto.ActionableErr {
 func isErrAndNotRetryAble(statusCode proto.StatusCode) bool {
 	return statusCode != proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR &&
 		statusCode != proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING
+}
+
+// HasEncounteredUnrecoverableError goes through all pod statuses and return true
+// if any cannot be recovered
+func (d *Deployment) HasEncounteredUnrecoverableError() bool {
+	for _, p := range d.pods {
+		if _, ok := nonRetryContainerErrors[p.ActionableError().ErrCode]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func (d *Deployment) fetchPods(ctx context.Context) error {

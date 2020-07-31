@@ -143,7 +143,6 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 
 		deployments[i] = resource.NewDeployment(d.Name, d.Namespace, deadline).WithValidator(pd)
 	}
-
 	return deployments, nil
 }
 
@@ -163,6 +162,15 @@ func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r 
 		case <-time.After(pollDuration):
 			r.CheckStatus(timeoutContext, runCtx)
 			if r.IsStatusCheckComplete() {
+				return
+			}
+			// Fail immediately if any pod container errors cannot be recovered.
+			// StatusCheck is not interruptable.
+			// As any changes to build or deploy dependencies are not triggered, exit
+			// immediately rather than waiting for for statusCheckDeadlineSeconds
+			// TODO: https://github.com/GoogleContainerTools/skaffold/pull/4591
+			if r.HasEncounteredUnrecoverableError() {
+				r.MarkComplete()
 				return
 			}
 		}
@@ -197,6 +205,9 @@ func printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 	event.ResourceStatusCheckEventCompleted(r.String(), r.Status().ActionableError())
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
+		if str := r.ReportSinceLastUpdated(); str != "" {
+			fmt.Fprintln(out, trimNewLine(str))
+		}
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
 			trimNewLine(getPendingMessage(c.pending, c.total)),
