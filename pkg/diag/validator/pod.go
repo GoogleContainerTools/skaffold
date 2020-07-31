@@ -327,7 +327,7 @@ func trimSpace(msg string) string {
 }
 
 func getPodLogs(po *v1.Pod, c string) []string {
-	logrus.Debugf("Fetching logs for container %q/%q", po.Name, c)
+	logrus.Debugf("Fetching logs for container %s/%s", po.Name, c)
 	logCommand := []string{"kubectl", "logs", po.Name, "-n", po.Namespace, "-c", c}
 	logs, err := runCli(logCommand[0], logCommand[1:])
 	if err != nil {

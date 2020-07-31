@@ -169,7 +169,7 @@ func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r 
 			// As any changes to build or deploy dependencies are not triggered, exit
 			// immediately rather than waiting for for statusCheckDeadlineSeconds
 			// TODO: https://github.com/GoogleContainerTools/skaffold/pull/4591
-			if r.AreContainersNotRetryAble() {
+			if r.HasEncounteredUnrecoverableError() {
 				r.MarkComplete()
 				return
 			}

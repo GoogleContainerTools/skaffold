@@ -220,9 +220,9 @@ func isErrAndNotRetryAble(statusCode proto.StatusCode) bool {
 		statusCode != proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING
 }
 
-// AreContainersNotRetryAble goes through all pod statuses and return true
-// if any cannot be retried
-func (d *Deployment) AreContainersNotRetryAble() bool {
+// HasEncounteredUnrecoverableError goes through all pod statuses and return true
+// if any cannot be recovered
+func (d *Deployment) HasEncounteredUnrecoverableError() bool {
 	for _, p := range d.pods {
 		if _, ok := nonRetryContainerErrors[p.ActionableError().ErrCode]; ok {
 			return true
