@@ -193,9 +193,14 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
 
     // This definition is an array
     if (definition.items && definition.items.$ref) {
-      yield html`
-        ${template(definitions, definition, definition.items.$ref, ident + 1, path)}
-      `;
+      // don't infinitely recurse into nested tagger components
+      if (definition.items.$ref === "#/definitions/TaggerComponent") {
+        yield html ``;
+      } else {
+        yield html`
+          ${template(definitions, definition, definition.items.$ref, ident + 1, path)}
+        `;
+      }
     }
   }
 }
