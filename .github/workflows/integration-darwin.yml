@@ -40,12 +40,12 @@ jobs:
         curl -fLO "https://github.com/bazelbuild/bazel/releases/download/${{ matrix.bazel_version }}/bazel-${{ matrix.bazel_version }}-installer-darwin-x86_64.sh"
         chmod +x "bazel-${{ matrix.bazel_version }}-installer-darwin-x86_64.sh"
         ./bazel-${{ matrix.bazel_version }}-installer-darwin-x86_64.sh --user
+        echo ::add-path::${HOME}/bin
 
     - name: Install Kustomize
       run: |
         wget -O kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${{ matrix.kustomize_version }}/kustomize_v${{ matrix.kustomize_version }}_darwin_amd64.tar.gz
         sudo tar -xvf kustomize.tar.gz -C /usr/local/bin/
-        echo ::add-path::${HOME}/bin
 
     - name: Install Ko
       run: |
