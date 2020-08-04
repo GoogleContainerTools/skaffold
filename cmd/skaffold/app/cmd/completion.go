@@ -58,7 +58,7 @@ func completion(cmd *cobra.Command, args []string) {
 
 // NewCmdCompletion returns the cobra command that outputs shell completion code
 func NewCmdCompletion() *cobra.Command {
-	cmd := &cobra.Command{
+	return &cobra.Command{
 		Use: "completion SHELL",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
@@ -71,8 +71,6 @@ func NewCmdCompletion() *cobra.Command {
 		Long:      longDescription,
 		Run:       completion,
 	}
-	setCommandOutputEvaluated(cmd)
-	return cmd
 }
 
 func runCompletionZsh(cmd *cobra.Command, out io.Writer) {
