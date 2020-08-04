@@ -191,7 +191,7 @@ type TaggerComponent struct {
 	Name string `yaml:"name,omitempty"`
 
 	// Component is a tagging strategy to be used in CustomTemplateTagger.
-	Component TagPolicy `yaml:",inline"`
+	Component TagPolicy `yaml:",inline" yamltags:"skipTrim"`
 }
 
 // BuildType contains the specific implementation and parameters needed

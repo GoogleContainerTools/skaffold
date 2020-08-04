@@ -72,6 +72,10 @@ func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value,
 				Field:  field,
 				Parent: parentStruct,
 			}
+		case "skipTrim":
+			yt = &skipTrimTag{
+				Field: field,
+			}
 		default:
 			logrus.Panicf("unknown yaml tag in %s", yamltags)
 		}
@@ -162,6 +166,24 @@ func (oot *oneOfTag) Process(val reflect.Value) error {
 		if !isZeroValue(field) {
 			return fmt.Errorf("only one element in set %s can be set. got %s and %s", oot.setName, otherField, oot.Field.Name)
 		}
+	}
+	return nil
+}
+
+type skipTrimTag struct {
+	Field reflect.StructField
+}
+
+func (tag *skipTrimTag) Load(s []string) error {
+	return nil
+}
+
+func (tag *skipTrimTag) Process(val reflect.Value) error {
+	if isZeroValue(val) {
+		if tags, ok := tag.Field.Tag.Lookup("yaml"); ok {
+			return fmt.Errorf("skipTrim value not set: %s", strings.Split(tags, ",")[0])
+		}
+		return fmt.Errorf("skipTrim value not set: %s", tag.Field.Name)
 	}
 	return nil
 }

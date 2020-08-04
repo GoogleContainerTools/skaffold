@@ -2117,6 +2117,45 @@
       "description": "specifies which local files to sync to remote folders.",
       "x-intellij-html-description": "specifies which local files to sync to remote folders."
     },
+    "TagPolicy": {
+      "properties": {
+        "customTemplate": {
+          "$ref": "#/definitions/CustomTemplateTagger",
+          "description": "*beta* tags images with a configurable template string *composed of other taggers*.",
+          "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string <em>composed of other taggers</em>."
+        },
+        "dateTime": {
+          "$ref": "#/definitions/DateTimeTagger",
+          "description": "*beta* tags images with the build timestamp.",
+          "x-intellij-html-description": "<em>beta</em> tags images with the build timestamp."
+        },
+        "envTemplate": {
+          "$ref": "#/definitions/EnvTemplateTagger",
+          "description": "*beta* tags images with a configurable template string.",
+          "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string."
+        },
+        "gitCommit": {
+          "$ref": "#/definitions/GitTagger",
+          "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",
+          "x-intellij-html-description": "<em>beta</em> tags images with the git tag or commit of the artifact's workspace."
+        },
+        "sha256": {
+          "$ref": "#/definitions/ShaTagger",
+          "description": "*beta* tags images with their sha256 digest.",
+          "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest."
+        }
+      },
+      "preferredOrder": [
+        "gitCommit",
+        "sha256",
+        "envTemplate",
+        "dateTime",
+        "customTemplate"
+      ],
+      "additionalProperties": false,
+      "description": "contains all the configuration for the tagging step.",
+      "x-intellij-html-description": "contains all the configuration for the tagging step."
+    },
     "TaggerComponent": {
       "anyOf": [
         {
