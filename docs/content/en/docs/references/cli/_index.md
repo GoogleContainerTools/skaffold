@@ -87,7 +87,7 @@ Other Commands:
   credits           Export third party notices to given path (./skaffold-credits by default)
   diagnose          Run a diagnostic on Skaffold
   schema            List and print json schemas used to validate skaffold.yaml configuration
-  survey            Show Skaffold survey url
+  survey            Opens a web browser to fill out the Skaffold survey
   version           Print the version information
 
 Use "skaffold <command> --help" for more information about a given command.
@@ -930,7 +930,7 @@ Env vars:
 
 ### skaffold survey
 
-Show Skaffold survey url
+Opens a web browser to fill out the Skaffold survey
 
 ```
 
