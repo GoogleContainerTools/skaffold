@@ -535,7 +535,11 @@ func TestShouldDisplayPrompt(t *testing.T) {
 				t, _ := time.Parse(time.RFC3339, "2019-01-30T12:04:05Z")
 				return t
 			})
-			t.CheckDeepEqual(test.expected, ShouldDisplayPrompt("dummyconfig"))
+
+			// TODO(nkubala): Remove hard-coded false expectation after a release cycle
+			expected := false
+
+			t.CheckDeepEqual(expected, ShouldDisplayPrompt("dummyconfig"))
 		})
 	}
 }

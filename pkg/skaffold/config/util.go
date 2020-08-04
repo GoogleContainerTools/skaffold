@@ -295,8 +295,10 @@ func IsUpdateCheckEnabled(configfile string) bool {
 }
 
 func ShouldDisplayPrompt(configfile string) bool {
-	cfg, disabled := isSurveyPromptDisabled(configfile)
-	return !disabled && !recentlyPromptedOrTaken(cfg)
+	// TODO(nkubala): Remove after a release cycle
+	return false
+	// cfg, disabled := isSurveyPromptDisabled(configfile)
+	// return !disabled && !recentlyPromptedOrTaken(cfg)
 }
 
 func isSurveyPromptDisabled(configfile string) (*ContextConfig, bool) {
