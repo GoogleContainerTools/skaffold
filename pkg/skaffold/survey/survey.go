@@ -22,10 +22,12 @@ import (
 	"io"
 	"os"
 
+	"github.com/blang/semver"
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 const (
@@ -62,6 +64,14 @@ func New(configFile string) *Runner {
 }
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {
+	// TODO(nkubala): remove after v1.14.0 is released
+	currentVersion, err := version.ParseVersion(version.Get().Version)
+	if err == nil {
+		nextRelease := semver.MustParse("1.14.0")
+		if currentVersion.LT(nextRelease) {
+			return nil
+		}
+	}
 	if isStdOut(out) {
 		fmt.Fprintln(out, Prompt)
 	}
