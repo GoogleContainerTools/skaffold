@@ -89,7 +89,10 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			// Print version
 			version := version.Get()
 			logrus.Infof("Skaffold %+v", version)
-
+			if !isHouseKeepingMessagesAllowed(cmd) {
+				logrus.Debugf("Disable housekeeping messages for command explicitly")
+				return nil
+			}
 			switch {
 			case !interactive:
 				logrus.Debugf("Update check and survey prompt disabled in non-interactive mode")
@@ -108,15 +111,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			if !isHouseKeepingMessagesAllowed(cmd) {
-				logrus.Debugf("Disable housekeeping messages for command explicitly")
-				select {
-				case <-updateMsg:
-				case <-surveyPrompt:
-				default:
-				}
-				return
-			}
 			select {
 			case msg := <-updateMsg:
 				fmt.Fprintf(cmd.OutOrStdout(), "%s\n", msg)
