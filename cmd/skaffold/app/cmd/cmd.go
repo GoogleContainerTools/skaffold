@@ -48,9 +48,14 @@ var (
 	shutdownAPIServer func() error
 )
 
+// Command annotation when output will be evaluated in a shell and shouldn't have housekeeping messages
+const (
+	EvalTypeOutputAnnotation = "skaffold_annotation_output_for_eval"
+)
+
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
-	updateMsg := make(chan string)
-	surveyPrompt := make(chan bool)
+	updateMsg := make(chan string, 1)
+	surveyPrompt := make(chan bool, 1)
 
 	rootCmd := &cobra.Command{
 		Use: "skaffold",
@@ -103,6 +108,15 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			if isCommandOutputEvaluated(cmd) {
+				logrus.Debugf("Disable housekeeping for command with eval type output")
+				select {
+				case <-updateMsg:
+				case <-surveyPrompt:
+				default:
+				}
+				return
+			}
 			select {
 			case msg := <-updateMsg:
 				fmt.Fprintf(cmd.OutOrStdout(), "%s\n", msg)
@@ -252,4 +266,19 @@ func alwaysSucceedWhenCancelled(ctx context.Context, err error) error {
 		return nil
 	}
 	return err
+}
+
+func isCommandOutputEvaluated(cmd *cobra.Command) bool {
+	if cmd.Annotations == nil {
+		return false
+	}
+	_, exists := cmd.Annotations[EvalTypeOutputAnnotation]
+	return exists
+}
+
+func setCommandOutputEvaluated(cmd *cobra.Command) {
+	if cmd.Annotations == nil {
+		cmd.Annotations = make(map[string]string)
+	}
+	cmd.Annotations[EvalTypeOutputAnnotation] = EvalTypeOutputAnnotation
 }
