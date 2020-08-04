@@ -36,7 +36,7 @@ func NewCmdDev() *cobra.Command {
 	return NewCmd("dev").
 		WithDescription("Run a pipeline in development mode").
 		WithCommonFlags().
-		AllowHouseKeepingMessages().
+		WithHouseKeepingMessages().
 		NoArgs(doDev)
 }
 

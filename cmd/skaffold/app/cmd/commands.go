@@ -33,7 +33,7 @@ type Builder interface {
 	WithLongDescription(long string) Builder
 	WithExample(comment, command string) Builder
 	WithFlags(adder func(*pflag.FlagSet)) Builder
-	AllowHouseKeepingMessages() Builder
+	WithHouseKeepingMessages() Builder
 	WithCommonFlags() Builder
 	Hidden() Builder
 	ExactArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command
@@ -76,7 +76,7 @@ func (b *builder) WithCommonFlags() Builder {
 	return b
 }
 
-func (b *builder) AllowHouseKeepingMessages() Builder {
+func (b *builder) WithHouseKeepingMessages() Builder {
 	allowHouseKeepingMessages(&b.cmd)
 	return b
 }
