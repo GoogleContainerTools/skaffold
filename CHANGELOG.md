@@ -1,3 +1,27 @@
+# v1.13.1 Release - 08/04/2020
+ 
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.13.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+ 
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.13.1/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+ 
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.13.1/skaffold-windows-amd64.exe
+ 
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.13.1`
+
+**This is a hotfix release for a breaking issue causing our survey link to automatically open itself in a browser. The survey has been disabled completely as
+we investigate and fix the root cause of the issue. Sincere apologies to anyone who was adversely affected by this.**
+
+Highlights:
+* Fix CustomTagger docs [#4621](https://github.com/GoogleContainerTools/skaffold/pull/4621)
+* Disable survey prompt until the next release [#4629](https://github.com/GoogleContainerTools/skaffol
+d/pull/4629)
+* Clarify 'survey' command text [#4625](https://github.com/GoogleContainerTools/skaffold/pull/4625)
+
+
 # v1.13.0 Release - 07/30/2020
  
 **Linux**
