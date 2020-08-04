@@ -37,9 +37,12 @@ const (
 
 var (
 	Form = fmt.Sprintf(`Thank you for offering your feedback on Skaffold! Understanding your experiences and opinions helps us make Skaffold better for you and other users.
-   Our survey can be found here: %s
 
-To permanently disable the survey prompt, run:
+Skaffold will now attempt to open the survey in your default web browser. You may also manually open it using this link:
+
+%s
+
+Tip: To permanently disable the survey prompt, run:
    skaffold config set --survey --global disable-prompt true`, URL)
 
 	// for testing
