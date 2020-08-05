@@ -48,9 +48,14 @@ var (
 	shutdownAPIServer func() error
 )
 
+// Annotation for commands that should allow post execution housekeeping messages like updates and surveys
+const (
+	HouseKeepingMessagesAllowedAnnotation = "skaffold_annotation_housekeeping_allowed"
+)
+
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
-	updateMsg := make(chan string)
-	surveyPrompt := make(chan bool)
+	updateMsg := make(chan string, 1)
+	surveyPrompt := make(chan bool, 1)
 
 	rootCmd := &cobra.Command{
 		Use: "skaffold",
@@ -84,7 +89,10 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			// Print version
 			version := version.Get()
 			logrus.Infof("Skaffold %+v", version)
-
+			if !isHouseKeepingMessagesAllowed(cmd) {
+				logrus.Debugf("Disable housekeeping messages for command explicitly")
+				return nil
+			}
 			switch {
 			case !interactive:
 				logrus.Debugf("Update check and survey prompt disabled in non-interactive mode")
@@ -252,4 +260,18 @@ func alwaysSucceedWhenCancelled(ctx context.Context, err error) error {
 		return nil
 	}
 	return err
+}
+
+func isHouseKeepingMessagesAllowed(cmd *cobra.Command) bool {
+	if cmd.Annotations == nil {
+		return false
+	}
+	return cmd.Annotations[HouseKeepingMessagesAllowedAnnotation] == "true"
+}
+
+func allowHouseKeepingMessages(cmd *cobra.Command) {
+	if cmd.Annotations == nil {
+		cmd.Annotations = make(map[string]string)
+	}
+	cmd.Annotations[HouseKeepingMessagesAllowedAnnotation] = "true"
 }

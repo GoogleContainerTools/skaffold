@@ -105,6 +105,11 @@ func TestNewCmdWithFlags(t *testing.T) {
 	testutil.CheckDeepEqual(t, "usage", flags["test"].Usage)
 }
 
+func TestNewCmdWithHouseKeepingMessages(t *testing.T) {
+	cmd := NewCmd("run").WithHouseKeepingMessages().NoArgs(nil)
+	testutil.CheckDeepEqual(t, map[string]string{HouseKeepingMessagesAllowedAnnotation: "true"}, cmd.Annotations)
+}
+
 func TestNewCmdWithCommonFlags(t *testing.T) {
 	cmd := NewCmd("run").WithCommonFlags().NoArgs(nil)
 
