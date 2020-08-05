@@ -18,22 +18,21 @@ package integration
 
 import (
 	"testing"
-
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+// TODO(nkubala): reenable these tests when survey is enabled in v1.14.0
+
 func TestHouseKeepingMessagesNotShownForDiagnose(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-	file := testutil.TempFile(t, "config", nil)
-	out := skaffold.Diagnose("-c", file).InDir("examples/getting-started").RunOrFailOutput(t)
-	testutil.CheckNotContains(t, "Help improve Skaffold!", string(out))
+	// MarkIntegrationTest(t, CanRunWithoutGcp)
+	// file := testutil.TempFile(t, "config", nil)
+	// out := skaffold.Diagnose("-c", file).InDir("examples/getting-started").RunOrFailOutput(t)
+	// testutil.CheckNotContains(t, "Help improve Skaffold!", string(out))
 }
 
 func TestHouseKeepingMessagesShownForDev(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-	file := testutil.TempFile(t, "config", nil)
-	out := skaffold.Run("-c", file).InDir("examples/getting-started").RunOrFailOutput(t)
-	testutil.CheckContains(t, "Help improve Skaffold!", string(out))
-	skaffold.Delete().InDir("examples/getting-started")
+	// MarkIntegrationTest(t, CanRunWithoutGcp)
+	// file := testutil.TempFile(t, "config", nil)
+	// out := skaffold.Run("-c", file).InDir("examples/getting-started").RunOrFailOutput(t)
+	// testutil.CheckContains(t, "Help improve Skaffold!", string(out))
+	// skaffold.Delete().InDir("examples/getting-started")
 }
