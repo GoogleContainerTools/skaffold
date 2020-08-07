@@ -377,8 +377,6 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Parallel()
-
 			tmpDir := t.NewTempDir()
 			test.createGitRepo(tmpDir.Root())
 			workspace := tmpDir.Path(test.subDir)
@@ -397,6 +395,59 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 
 				t.CheckErrorAndDeepEqual(test.shouldErr, err, expectedTag, tag)
 			}
+		})
+	}
+}
+
+func TestGitCommit_CustomTemplate(t *testing.T) {
+	gitCommitExample, _ := NewGitCommit("", "CommitSha")
+	tests := []struct {
+		description   string
+		template      string
+		customMap     map[string]Tagger
+		expected      string
+		createGitRepo func(string)
+		subDir        string
+	}{
+		{
+			description: "gitCommit component",
+			template:    "{{.FOO}}",
+			customMap:   map[string]Tagger{"FOO": gitCommitExample},
+			expected:    "eefe1b9c44eb0aa87199c9a079f2d48d8eb8baed",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", "code").
+					add("source.go").
+					commit("initial")
+			},
+		},
+		{
+			description: "gitCommit default component",
+			template:    "{{.GIT}}",
+			expected:    "eefe1b9",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", "code").
+					add("source.go").
+					commit("initial")
+			},
+		},
+	}
+	for _, test := range tests {
+		test := test
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			test.createGitRepo(tmpDir.Root())
+			workspace := tmpDir.Path(test.subDir)
+
+			c, err := NewCustomTemplateTagger(test.template, test.customMap)
+
+			t.CheckNoError(err)
+
+			tag, err := c.GenerateTag(workspace, "test")
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, tag)
 		})
 	}
 }

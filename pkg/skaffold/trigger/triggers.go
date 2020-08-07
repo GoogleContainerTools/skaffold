@@ -42,28 +42,28 @@ type Trigger interface {
 }
 
 // NewTrigger creates a new trigger.
-func NewTrigger(runctx *runcontext.RunContext) (Trigger, error) {
-	switch strings.ToLower(runctx.Opts.Trigger) {
+func NewTrigger(runCtx *runcontext.RunContext) (Trigger, error) {
+	switch strings.ToLower(runCtx.Trigger()) {
 	case "polling":
 		return &pollTrigger{
-			Interval: time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
+			Interval: time.Duration(runCtx.WatchPollInterval()) * time.Millisecond,
 		}, nil
 	case "notify":
-		return newFSNotifyTrigger(runctx), nil
+		return newFSNotifyTrigger(runCtx), nil
 	case "manual":
 		return &manualTrigger{}, nil
 	default:
-		return nil, fmt.Errorf("unsupported trigger: %s", runctx.Opts.Trigger)
+		return nil, fmt.Errorf("unsupported trigger: %s", runCtx.Trigger())
 	}
 }
 
-func newFSNotifyTrigger(runctx *runcontext.RunContext) *fsNotifyTrigger {
+func newFSNotifyTrigger(runCtx *runcontext.RunContext) *fsNotifyTrigger {
 	workspaces := map[string]struct{}{}
-	for _, a := range runctx.Cfg.Build.Artifacts {
+	for _, a := range runCtx.Pipeline().Build.Artifacts {
 		workspaces[a.Workspace] = struct{}{}
 	}
 	return &fsNotifyTrigger{
-		Interval:   time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
+		Interval:   time.Duration(runCtx.WatchPollInterval()) * time.Millisecond,
 		workspaces: workspaces,
 	}
 }

@@ -77,20 +77,20 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	}
 
 	deployContext = map[string]string{
-		"clusterName": runCtx.KubeContext,
+		"clusterName": runCtx.GetKubeContext(),
 	}
 
 	deployments := make([]*resource.Deployment, 0)
-	for _, n := range runCtx.Namespaces {
+	for _, n := range runCtx.GetNamespaces() {
 		newDeployments, err := getDeployments(client, n, defaultLabeller,
-			getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds))
+			getDeadline(runCtx.Pipeline().Deploy.StatusCheckDeadlineSeconds))
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
 		}
 		deployments = append(deployments, newDeployments...)
 	}
 
-	deadline := statusCheckMaxDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds, deployments)
+	deadline := statusCheckMaxDeadline(runCtx.Pipeline().Deploy.StatusCheckDeadlineSeconds, deployments)
 
 	var wg sync.WaitGroup
 
@@ -143,7 +143,6 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 
 		deployments[i] = resource.NewDeployment(d.Name, d.Namespace, deadline).WithValidator(pd)
 	}
-
 	return deployments, nil
 }
 
@@ -163,6 +162,15 @@ func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r 
 		case <-time.After(pollDuration):
 			r.CheckStatus(timeoutContext, runCtx)
 			if r.IsStatusCheckComplete() {
+				return
+			}
+			// Fail immediately if any pod container errors cannot be recovered.
+			// StatusCheck is not interruptable.
+			// As any changes to build or deploy dependencies are not triggered, exit
+			// immediately rather than waiting for for statusCheckDeadlineSeconds
+			// TODO: https://github.com/GoogleContainerTools/skaffold/pull/4591
+			if r.HasEncounteredUnrecoverableError() {
+				r.MarkComplete()
 				return
 			}
 		}
@@ -197,6 +205,9 @@ func printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 	event.ResourceStatusCheckEventCompleted(r.String(), r.Status().ActionableError())
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
+		if str := r.ReportSinceLastUpdated(); str != "" {
+			fmt.Fprintln(out, trimNewLine(str))
+		}
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
 			trimNewLine(getPendingMessage(c.pending, c.total)),

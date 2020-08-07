@@ -58,13 +58,13 @@ type KubectlDeployer struct {
 // with the needed configuration for `kubectl apply`
 func NewKubectlDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KubectlDeployer {
 	return &KubectlDeployer{
-		KubectlDeploy:      runCtx.Cfg.Deploy.KubectlDeploy,
-		workingDir:         runCtx.WorkingDir,
-		globalConfig:       runCtx.Opts.GlobalConfig,
-		defaultRepo:        runCtx.Opts.DefaultRepo.Value(),
-		kubectl:            deploy.NewCLI(runCtx, runCtx.Cfg.Deploy.KubectlDeploy.Flags),
-		insecureRegistries: runCtx.InsecureRegistries,
-		skipRender:         runCtx.Opts.SkipRender,
+		KubectlDeploy:      runCtx.Pipeline().Deploy.KubectlDeploy,
+		workingDir:         runCtx.GetWorkingDir(),
+		globalConfig:       runCtx.GlobalConfig(),
+		defaultRepo:        runCtx.DefaultRepo(),
+		kubectl:            deploy.NewCLI(runCtx, runCtx.Pipeline().Deploy.KubectlDeploy.Flags),
+		insecureRegistries: runCtx.GetInsecureRegistries(),
+		skipRender:         runCtx.SkipRender(),
 		labels:             labels,
 	}
 }

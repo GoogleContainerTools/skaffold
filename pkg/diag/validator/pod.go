@@ -116,24 +116,27 @@ func (p *PodValidator) getPodStatus(pod *v1.Pod) *podStatus {
 	case v1.PodSucceeded:
 		return ps
 	default:
-		return ps.withErrAndLogs(getContainerStatus(pod))
+		return ps.withErrAndLogs(getPodStatus(pod))
 	}
 }
 
-func getContainerStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
+func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
 	for _, c := range pod.Status.Conditions {
 		if c.Type == v1.PodScheduled {
 			switch c.Status {
 			case v1.ConditionFalse:
+				logrus.Debugf("Pod %q not scheduled: checking tolerations", pod.Name)
 				sc, err := getUntoleratedTaints(c.Reason, c.Message)
 				return sc, nil, err
 			case v1.ConditionTrue:
+				logrus.Debugf("Pod %q scheduled: checking container statuses", pod.Name)
 				// TODO(dgageot): Add EphemeralContainerStatuses
 				cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
 				// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
-				return getWaitingContainerStatus(pod, cs)
+				return getContainerStatus(pod, cs)
 			case v1.ConditionUnknown:
+				logrus.Debugf("Pod %q scheduling condition is unknown", pod.Name)
 				return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf(c.Message)
 			}
 		}
@@ -141,16 +144,13 @@ func getContainerStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 	return proto.StatusCode_STATUSCHECK_SUCCESS, nil, nil
 }
 
-func getWaitingContainerStatus(po *v1.Pod, cs []v1.ContainerStatus) (proto.StatusCode, []string, error) {
+func getContainerStatus(po *v1.Pod, cs []v1.ContainerStatus) (proto.StatusCode, []string, error) {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
 	for _, c := range cs {
 		switch {
 		case c.State.Waiting != nil:
 			return extractErrorMessageFromWaitingContainerStatus(po, c)
-		case c.State.Terminated != nil:
-			if c.State.Terminated.ExitCode == 0 {
-				return proto.StatusCode_STATUSCHECK_SUCCESS, nil, nil
-			}
+		case c.State.Terminated != nil && c.State.Terminated.ExitCode != 0:
 			l := getPodLogs(po, c.Name)
 			return proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, l, fmt.Errorf("container %s terminated with exit code %d", c.Name, c.State.Terminated.ExitCode)
 		}
@@ -211,12 +211,13 @@ func processPodEvents(e corev1.EventInterface, pod v1.Pod, ps *podStatus) {
 	if _, ok := unknownConditionsOrSuccess[ps.ae.ErrCode]; !ok {
 		return
 	}
+	logrus.Debugf("Fetching events for pod %q", pod.Name)
 	// Get pod events.
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(v1.SchemeGroupVersion, &pod)
 	events, err := e.Search(scheme, &pod)
 	if err != nil {
-		logrus.Debugf("could not fetch events for resource %s due to %v", pod.Name, err)
+		logrus.Debugf("Could not fetch events for resource %q due to %v", pod.Name, err)
 		return
 	}
 	// find the latest failed event.
@@ -291,7 +292,7 @@ func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerSta
 	switch c.State.Waiting.Reason {
 	case podInitializing:
 		// container is waiting to run
-		return proto.StatusCode_STATUSCHECK_SUCCESS, nil, nil
+		return proto.StatusCode_STATUSCHECK_POD_INITIALIZING, nil, nil
 	case containerCreating:
 		return proto.StatusCode_STATUSCHECK_CONTAINER_CREATING, nil, fmt.Errorf("creating container %s", c.Name)
 	case crashLoopBackOff:
@@ -306,7 +307,7 @@ func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerSta
 			return proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR, nil, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(match[3]))
 		}
 	}
-	logrus.Debugf("Failed to extract error condition for waiting container %q: %v", c.Name, c.State)
+	logrus.Debugf("Unknown waiting reason for container %q: %v", c.Name, c.State)
 	return proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN, nil, fmt.Errorf("container %s in error: %v", c.Name, c.State.Waiting)
 }
 
@@ -326,6 +327,7 @@ func trimSpace(msg string) string {
 }
 
 func getPodLogs(po *v1.Pod, c string) []string {
+	logrus.Debugf("Fetching logs for container %s/%s", po.Name, c)
 	logCommand := []string{"kubectl", "logs", po.Name, "-n", po.Namespace, "-c", c}
 	logs, err := runCli(logCommand[0], logCommand[1:])
 	if err != nil {

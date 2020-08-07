@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -35,21 +36,23 @@ type Builder struct {
 	kubeContext        string
 	timeout            time.Duration
 	insecureRegistries map[string]bool
+	muted              build.Muted
 }
 
 // NewBuilder creates a new Builder that builds artifacts on cluster.
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
-	timeout, err := time.ParseDuration(runCtx.Cfg.Build.Cluster.Timeout)
+	timeout, err := time.ParseDuration(runCtx.Pipeline().Build.Cluster.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("parsing timeout: %w", err)
 	}
 
 	return &Builder{
-		ClusterDetails:     runCtx.Cfg.Build.Cluster,
+		ClusterDetails:     runCtx.Pipeline().Build.Cluster,
 		kubectlcli:         kubectl.NewFromRunContext(runCtx),
 		timeout:            timeout,
-		kubeContext:        runCtx.KubeContext,
-		insecureRegistries: runCtx.InsecureRegistries,
+		kubeContext:        runCtx.GetKubeContext(),
+		insecureRegistries: runCtx.GetInsecureRegistries(),
+		muted:              runCtx.Muted(),
 	}, nil
 }
 

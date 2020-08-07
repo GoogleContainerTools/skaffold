@@ -43,8 +43,15 @@ const (
 )
 
 var (
-	msgKubectlKilled     = "kubectl rollout status command interrupted"
-	MsgKubectlConnection = "kubectl connection error"
+	msgKubectlKilled     = "kubectl rollout status command interrupted\n"
+	MsgKubectlConnection = "kubectl connection error\n"
+
+	nonRetryContainerErrors = map[proto.StatusCode]struct{}{
+		proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR:       {},
+		proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR:    {},
+		proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED: {},
+		proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING: {},
+	}
 )
 
 type Deployment struct {
@@ -133,6 +140,10 @@ func (d *Deployment) IsStatusCheckComplete() bool {
 	return d.done
 }
 
+func (d *Deployment) MarkComplete() {
+	d.done = true
+}
+
 // This returns a string representing deployment status along with tab header
 // e.g.
 //  - testNs:deployment/leeroy-app: waiting for rollout to complete. (1/2) pending
@@ -146,7 +157,11 @@ func (d *Deployment) ReportSinceLastUpdated() string {
 		return ""
 	}
 	var result strings.Builder
-	result.WriteString(fmt.Sprintf("%s %s: %s", tabHeader, d, d.status))
+	// Pod container statuses can be empty.
+	// This can happen when
+	// 1. No pods have been scheduled for the deployment
+	// 2. All containers are in running phase with no errors.
+	// In such case, avoid printing any status update for the deployment.
 	for _, p := range d.pods {
 		if s := p.ActionableError().Message; s != "" {
 			result.WriteString(fmt.Sprintf("%s %s %s: %s\n", tab, tabHeader, p, s))
@@ -155,7 +170,10 @@ func (d *Deployment) ReportSinceLastUpdated() string {
 			}
 		}
 	}
-	return result.String()
+	if result.String() == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s %s: %s%s", tabHeader, d, d.status, result.String())
 }
 
 func (d *Deployment) cleanupStatus(msg string) string {
@@ -207,6 +225,17 @@ func parseKubectlRolloutError(details string, err error) proto.ActionableErr {
 func isErrAndNotRetryAble(statusCode proto.StatusCode) bool {
 	return statusCode != proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR &&
 		statusCode != proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING
+}
+
+// HasEncounteredUnrecoverableError goes through all pod statuses and return true
+// if any cannot be recovered
+func (d *Deployment) HasEncounteredUnrecoverableError() bool {
+	for _, p := range d.pods {
+		if _, ok := nonRetryContainerErrors[p.ActionableError().ErrCode]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func (d *Deployment) fetchPods(ctx context.Context) error {

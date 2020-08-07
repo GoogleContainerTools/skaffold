@@ -22,7 +22,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
 const Version string = "skaffold/v2beta6"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
@@ -128,6 +128,9 @@ type TagPolicy struct {
 
 	// DateTimeTagger *beta* tags images with the build timestamp.
 	DateTimeTagger *DateTimeTagger `yaml:"dateTime,omitempty" yamltags:"oneOf=tag"`
+
+	// CustomTemplateTagger *beta* tags images with a configurable template string *composed of other taggers*.
+	CustomTemplateTagger *CustomTemplateTagger `yaml:"customTemplate,omitempty" yamltags:"oneOf=tag"`
 }
 
 // ShaTagger *beta* tags images with their sha256 digest.
@@ -152,9 +155,8 @@ type EnvTemplateTagger struct {
 	// Template used to produce the image name and tag.
 	// See golang [text/template](https://golang.org/pkg/text/template/).
 	// The template is executed against the current environment,
-	// with those variables injected:
-	//   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.
-	// For example: `{{.RELEASE}}-{{.IMAGE_NAME}}`.
+	// with those variables injected.
+	// For example: `{{.RELEASE}}`.
 	Template string `yaml:"template,omitempty" yamltags:"required"`
 }
 
@@ -169,6 +171,27 @@ type DateTimeTagger struct {
 	// See [Time.LoadLocation](https://golang.org/pkg/time/#Time.LoadLocation).
 	// Defaults to the local timezone.
 	TimeZone string `yaml:"timezone,omitempty"`
+}
+
+// CustomTemplateTagger *beta* tags images with a configurable template string.
+type CustomTemplateTagger struct {
+	// Template used to produce the image name and tag.
+	// See golang [text/template](https://golang.org/pkg/text/template/).
+	// The template is executed against the provided components with those variables injected.
+	// For example: `{{.DATE}}` where DATE references a TaggerComponent.
+	Template string `yaml:"template,omitempty" yamltags:"required"`
+
+	// Components lists TaggerComponents that the template (see field above) can be executed against.
+	Components []TaggerComponent `yaml:"components,omitempty"`
+}
+
+// TaggerComponent *beta* is a component of CustomTemplateTagger.
+type TaggerComponent struct {
+	// Name is an identifier for the component.
+	Name string `yaml:"name,omitempty"`
+
+	// Component is a tagging strategy to be used in CustomTemplateTagger.
+	Component TagPolicy `yaml:",inline" yamltags:"skipTrim"`
 }
 
 // BuildType contains the specific implementation and parameters needed

@@ -28,14 +28,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
 
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
-	if r.runCtx.Opts.RenderOnly {
-		return r.Render(ctx, out, artifacts, false, r.runCtx.Opts.RenderOutput)
+	if r.runCtx.RenderOnly() {
+		return r.Render(ctx, out, artifacts, false, r.runCtx.RenderOutput())
 	}
 
 	color.Default.Fprintln(out, "Tags used in deployment:")
@@ -58,16 +59,22 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
-	if config.IsImageLoadingRequired(r.runCtx.KubeContext) {
+	if config.IsImageLoadingRequired(r.runCtx.GetKubeContext()) {
 		err := r.loadImagesIntoCluster(ctx, out, artifacts)
 		if err != nil {
 			return err
 		}
 	}
 
+	deployOut, postDeployFn, err := deploy.WithLogFile(time.Now().Format(deploy.TimeFormat)+".log", out, r.runCtx.Muted())
+	if err != nil {
+		return err
+	}
+
 	event.DeployInProgress()
-	namespaces, err := r.deployer.Deploy(ctx, out, artifacts)
+	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
 	r.hasDeployed = true
+	postDeployFn(err)
 	if err != nil {
 		event.DeployFailed(err)
 		return err
@@ -84,7 +91,7 @@ func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Write
 		return err
 	}
 
-	if config.IsKindCluster(r.runCtx.KubeContext) {
+	if config.IsKindCluster(r.runCtx.GetKubeContext()) {
 		kindCluster := config.KindClusterName(currentContext.Cluster)
 
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
@@ -93,7 +100,7 @@ func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Write
 		}
 	}
 
-	if config.IsK3dCluster(r.runCtx.KubeContext) {
+	if config.IsK3dCluster(r.runCtx.GetKubeContext()) {
 		k3dCluster := config.K3dClusterName(currentContext.Cluster)
 
 		// With `k3d`, docker images have to be loaded with the `k3d` CLI.
@@ -111,7 +118,7 @@ func (r *SkaffoldRunner) getCurrentContext() (*api.Context, error) {
 		return nil, fmt.Errorf("unable to get kubernetes config: %w", err)
 	}
 
-	currentContext, present := currentCfg.Contexts[r.runCtx.KubeContext]
+	currentContext, present := currentCfg.Contexts[r.runCtx.GetKubeContext()]
 	if !present {
 		return nil, fmt.Errorf("unable to get current kubernetes context: %w", err)
 	}
@@ -132,7 +139,7 @@ func failIfClusterIsNotReachable() error {
 
 func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
-	if !r.runCtx.Opts.StatusCheck {
+	if !r.runCtx.StatusCheck() {
 		return nil
 	}
 

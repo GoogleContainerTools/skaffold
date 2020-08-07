@@ -230,6 +230,14 @@ func CheckContains(t *testing.T, expected, actual string) {
 	}
 }
 
+func CheckNotContains(t *testing.T, excluded, actual string) {
+	t.Helper()
+	if strings.Contains(actual, excluded) {
+		t.Errorf("excluded output %s found in output: %s", excluded, actual)
+		return
+	}
+}
+
 func CheckDeepEqual(t *testing.T, expected, actual interface{}, opts ...cmp.Option) {
 	t.Helper()
 	if diff := cmp.Diff(actual, expected, opts...); diff != "" {

@@ -204,6 +204,9 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 			k.t.Fatalf("Timed out waiting for pods %v ready in namespace %s", podNames, k.ns)
 
 		case event := <-w.ResultChan():
+			if event.Object == nil {
+				return
+			}
 			pod := event.Object.(*v1.Pod)
 			logrus.Infoln("Pod", pod.Name, "is", pod.Status.Phase)
 			if pod.Status.Phase == v1.PodFailed {
@@ -254,7 +257,7 @@ func (k *NSKubernetesClient) GetDeployment(depName string) *appsv1.Deployment {
 // WaitForDeploymentsToStabilize waits for a list of deployments to become stable.
 func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 	k.t.Helper()
-	k.waitForDeploymentsToStabilizeWithTimeout(30*time.Second, depNames...)
+	k.waitForDeploymentsToStabilizeWithTimeout(60*time.Second, depNames...)
 }
 
 func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout time.Duration, depNames ...string) {

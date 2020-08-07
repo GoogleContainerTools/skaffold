@@ -558,6 +558,46 @@ func TestRun(t *testing.T) {
 					},
 				}, nil)},
 		},
+		{
+			description: "One of the pod containers is in Terminated State with non zero exit code followed by Waiting state",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase:      v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-success",
+							Image: "foo-image",
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{ExitCode: 0},
+							},
+						},
+						{
+							Name:  "foo-container",
+							Image: "foo-image",
+							State: v1.ContainerState{
+								Waiting: &v1.ContainerStateWaiting{Reason: "CrashLoopBackOff",
+									Message: "Back off restarting container",
+								},
+							},
+						},
+					},
+				},
+			}},
+			logOutput: mockLogOutput{
+				output: []byte("some panic"),
+			},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Running",
+				proto.ActionableErr{
+					Message: "container foo-container is backing off waiting to restart",
+					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING,
+				}, []string{"[foo foo-container] some panic"})},
+		},
 	}
 
 	for _, test := range tests {

@@ -82,6 +82,7 @@ type SkaffoldOptions struct {
 	TargetImages       []string
 	Profiles           []string
 	InsecureRegistries []string
+	Muted              Muted
 	Command            string
 	RPCPort            int
 	RPCHTTPPort        int
@@ -90,7 +91,6 @@ type SkaffoldOptions struct {
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
 	MinikubeProfile string
-	SuppressLogs    []string
 
 	WaitForDeletions WaitForDeletions
 }
