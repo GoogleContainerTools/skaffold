@@ -88,6 +88,14 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
 	},
 	{
+		Name:          "repo-prefix",
+		Usage:         "Prefix to attach to container image names",
+		Value:         &opts.RepoPrefix,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
+	},
+	{
 		Name:          "cache-artifacts",
 		Usage:         "Set to false to disable default caching of artifacts",
 		Value:         &opts.CacheArtifacts,
@@ -365,14 +373,6 @@ var flagRegistry = []Flag{
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"render"},
-	},
-	{
-		Name:          "repo-prefix",
-		Usage:         "Prefix to attach to container image names",
-		Value:         &opts.RepoPrefix,
-		DefValue:      "",
-		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
 	},
 	{
 		Name:          "suppress-logs",

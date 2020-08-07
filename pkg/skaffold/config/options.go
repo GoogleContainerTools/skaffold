@@ -77,6 +77,7 @@ type SkaffoldOptions struct {
 	DigestSource       string
 	WatchPollInterval  int
 	DefaultRepo        StringOrUndefined
+	RepoPrefix         string
 	CustomLabels       []string
 	TargetImages       []string
 	Profiles           []string
@@ -89,7 +90,6 @@ type SkaffoldOptions struct {
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
 	MinikubeProfile string
-	RepoPrefix      string
 	SuppressLogs    []string
 
 	WaitForDeletions WaitForDeletions
