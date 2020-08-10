@@ -1872,6 +1872,12 @@
           "description": "should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster.",
           "x-intellij-html-description": "should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster."
         },
+        "tryImportMissing": {
+          "type": "boolean",
+          "description": "whether to attempt to import artifacts from Docker (either a local or remote registry) if not in the cache.",
+          "x-intellij-html-description": "whether to attempt to import artifacts from Docker (either a local or remote registry) if not in the cache.",
+          "default": "false"
+        },
         "useBuildkit": {
           "type": "boolean",
           "description": "use BuildKit to build Docker images.",
@@ -1887,6 +1893,7 @@
       },
       "preferredOrder": [
         "push",
+        "tryImportMissing",
         "useDockerCLI",
         "useBuildkit",
         "concurrency"

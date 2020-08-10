@@ -129,7 +129,7 @@ func TestCacheBuildLocal(t *testing.T) {
 		cfg := &mockConfig{
 			cacheFile: tmpDir.Path("cache"),
 		}
-		artifactCache, err := NewCache(cfg, true, deps)
+		artifactCache, err := NewCache(cfg, true, false, deps)
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -224,7 +224,7 @@ func TestCacheBuildRemote(t *testing.T) {
 		cfg := &mockConfig{
 			cacheFile: tmpDir.Path("cache"),
 		}
-		artifactCache, err := NewCache(cfg, false, deps)
+		artifactCache, err := NewCache(cfg, false, false, deps)
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts

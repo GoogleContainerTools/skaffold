@@ -55,6 +55,11 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating builder: %w", err)
 	}
 
+	tryImportMissing := false
+	if localBuilder, ok := builder.(*local.Builder); ok {
+		tryImportMissing = localBuilder.TryImportMissing()
+	}
+
 	labeller := deploy.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels())
 	tester := getTester(runCtx, imagesAreLocal)
 	syncer := getSyncer(runCtx)
@@ -74,7 +79,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return append(buildDependencies, testDependencies...), nil
 	}
 
-	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, depLister)
+	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, tryImportMissing, depLister)
 	if err != nil {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}

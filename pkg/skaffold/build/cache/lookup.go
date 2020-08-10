@@ -116,6 +116,10 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 }
 
 func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, hash string) (ImageDetails, error) {
+	if !c.tryImportMissing {
+		return ImageDetails{}, fmt.Errorf("import of missing images disabled")
+	}
+
 	entry := ImageDetails{}
 
 	if !c.client.ImageExists(ctx, tag) {

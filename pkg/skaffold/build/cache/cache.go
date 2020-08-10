@@ -49,6 +49,7 @@ type cache struct {
 	insecureRegistries map[string]bool
 	cacheFile          string
 	imagesAreLocal     bool
+	tryImportMissing   bool
 	hashForArtifact    func(ctx context.Context, a *latest.Artifact) (string, error)
 }
 
@@ -64,7 +65,7 @@ type Config interface {
 }
 
 // NewCache returns the current state of the cache
-func NewCache(cfg Config, imagesAreLocal bool, dependencies DependencyLister) (Cache, error) {
+func NewCache(cfg Config, imagesAreLocal bool, tryImportMissing bool, dependencies DependencyLister) (Cache, error) {
 	if !cfg.CacheArtifacts() {
 		return &noCache{}, nil
 	}
@@ -92,6 +93,7 @@ func NewCache(cfg Config, imagesAreLocal bool, dependencies DependencyLister) (C
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		cacheFile:          cacheFile,
 		imagesAreLocal:     imagesAreLocal,
+		tryImportMissing:   tryImportMissing,
 		hashForArtifact: func(ctx context.Context, a *latest.Artifact) (string, error) {
 			return getHashForArtifact(ctx, dependencies, a, cfg.Mode())
 		},
