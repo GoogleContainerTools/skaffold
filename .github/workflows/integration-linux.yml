@@ -39,7 +39,7 @@ jobs:
         curl -fLO "https://github.com/bazelbuild/bazel/releases/download/${{ matrix.bazel_version }}/bazel-${{ matrix.bazel_version }}-installer-linux-x86_64.sh"
         chmod +x bazel-${{ matrix.bazel_version }}-installer-linux-x86_64.sh
         ./bazel-${{ matrix.bazel_version }}-installer-linux-x86_64.sh --user
-        echo ::add-path::${HOME}/bin
+        echo ::add-path::/home/$(whoami)/bin
 
     - name: Install Kustomize
       run: |
