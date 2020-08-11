@@ -14,16 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2beta5
+package v2beta6
 
 import (
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta6"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v2beta5 to v2beta6
+// Config changes from v2beta6 to v2beta7
 // 1. Additions:
 //		New structs CustomTemplateTagger and TaggerComponent used by TagPolicy.
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
