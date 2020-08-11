@@ -31,6 +31,9 @@ func TestHouseKeepingMessagesNotShownForDiagnose(t *testing.T) {
 }
 
 func TestHouseKeepingMessagesShownForDev(t *testing.T) {
+	// TODO(marlongamez): remove after v1.14.0 is released
+	t.Skip()
+
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	file := testutil.TempFile(t, "config", nil)
 	out := skaffold.Run("-c", file).InDir("examples/getting-started").RunOrFailOutput(t)
