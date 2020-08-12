@@ -96,8 +96,6 @@ func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRe
 	}
 }
 
-type envUpdater func(map[string]*string) map[string]*string
-
 // ExtraEnv returns the env variables needed to point at this local Docker
 // eg. minikube. This has be set in addition to the current environment.
 func (l *localDaemon) ExtraEnv() []string {
