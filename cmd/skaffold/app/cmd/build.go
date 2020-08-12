@@ -57,6 +57,7 @@ func NewCmdBuild() *cobra.Command {
 			f.StringVar(&buildOutputFlag, "file-output", "", "Filename to write build images to")
 			f.BoolVar(&opts.DryRun, "dry-run", false, "Don't build images, just compute the tag for each artifact.")
 		}).
+		WithHouseKeepingMessages().
 		NoArgs(doBuild)
 }
 

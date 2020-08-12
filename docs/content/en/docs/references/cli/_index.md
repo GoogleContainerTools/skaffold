@@ -87,7 +87,7 @@ Other Commands:
   credits           Export third party notices to given path (./skaffold-credits by default)
   diagnose          Run a diagnostic on Skaffold
   schema            List and print json schemas used to validate skaffold.yaml configuration
-  survey            Show Skaffold survey url
+  survey            Opens a web browser to fill out the Skaffold survey
   version           Print the version information
 
 Use "skaffold <command> --help" for more information about a given command.
@@ -664,7 +664,7 @@ Examples:
 Options:
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --overwrite=false: Overwrite original config with fixed config
-      --version='skaffold/v2beta6': Target schema version to upgrade to
+      --version='skaffold/v2beta7': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -930,7 +930,7 @@ Env vars:
 
 ### skaffold survey
 
-Show Skaffold survey url
+Opens a web browser to fill out the Skaffold survey
 
 ```
 

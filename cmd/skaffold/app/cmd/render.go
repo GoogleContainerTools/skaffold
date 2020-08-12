@@ -51,6 +51,7 @@ func NewCmdRender() *cobra.Command {
 			f.StringVar(&renderOutputPath, "output", "", "file to write rendered manifests to")
 			f.StringVar(&opts.DigestSource, "digest-source", "local", "Set to 'local' to build images locally and use digests from built images; Set to 'remote' to resolve the digest of images by tag from the remote registry; Set to 'none' to use tags directly from the Kubernetes manifests")
 		}).
+		WithHouseKeepingMessages().
 		NoArgs(doRender)
 }
 

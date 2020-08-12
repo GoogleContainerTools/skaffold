@@ -23,6 +23,7 @@ GSC_BUILD_LATEST ?= gs://$(RELEASE_BUCKET)/builds/latest
 GSC_RELEASE_PATH ?= gs://$(RELEASE_BUCKET)/releases/$(VERSION)
 GSC_RELEASE_LATEST ?= gs://$(RELEASE_BUCKET)/releases/latest
 KIND_NODE ?= kindest/node:v1.13.12@sha256:214476f1514e47fe3f6f54d0f9e24cfb1e4cda449529791286c7161b7f9c08e7
+K3D_NODE ?= rancher/k3s:v1.18.6-k3s1@sha256:a835d76608a2503af8b681bb5888499d7c3456902f6853c8c1031f4a884715ca
 
 GCP_ONLY ?= false
 GCP_PROJECT ?= k8s-skaffold
@@ -202,6 +203,25 @@ integration-in-kind: skaffold-builder
 		sh -eu -c ' \
 			kind get clusters | grep -q kind || TERM=dumb kind create cluster --image=$(KIND_NODE); \
 			kind get kubeconfig --internal > /tmp/kind-config; \
+			make integration \
+		'
+
+.PHONY: integration-in-k3d
+integration-in-k3d: skaffold-builder
+	echo '{}' > /tmp/docker-config
+	docker pull $(K3D_NODE)
+	docker run --rm \
+		--network="host" \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.gradle:/root/.gradle \
+		-v $(HOME)/.cache:/root/.cache \
+		-v /tmp/docker-config:/root/.docker/config.json \
+		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
+		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
+		-e IT_PARTITION=$(IT_PARTITION) \
+		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		sh -c ' \
+			k3d cluster list | grep -q k3s-default || TERM=dumb k3d cluster create --image=$(K3D_NODE); \
 			make integration \
 		'
 

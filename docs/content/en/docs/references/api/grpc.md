@@ -774,6 +774,7 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | STATUSCHECK_KUBECTL_PID_KILLED | 410 | Kubectl process killed error |
 | STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR | 411 | Kubectl client fetch err |
 | STATUSCHECK_DEPLOYMENT_FETCH_ERR | 412 |  |
+| STATUSCHECK_POD_INITIALIZING | 451 | Pod Initializing |
 | UNKNOWN_ERROR | 500 | Could not determine error and phase |
 | STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
 | STATUSCHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |

@@ -50,6 +50,7 @@ func NewCmdDeploy() *cobra.Command {
 			f.VarP(&deployFromBuildOutputFile, "build-artifacts", "a", "File containing build result from a previous 'skaffold build --file-output'")
 			f.BoolVar(&opts.SkipRender, "skip-render", false, "Don't render the manifests, just deploy them")
 		}).
+		WithHouseKeepingMessages().
 		NoArgs(doDeploy)
 }
 

@@ -24,34 +24,34 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// templateTagger implements Tagger
-type templateTagger struct {
+// customTemplateTagger implements Tagger
+type customTemplateTagger struct {
 	Template   *template.Template
 	Components map[string]Tagger
 }
 
-// NewTemplateTagger creates a new TemplateTagger
-func NewTemplateTagger(t string, components map[string]Tagger) (Tagger, error) {
-	tmpl, err := ParseTagTemplate(t)
+// NewCustomTemplateTagger creates a new customTemplateTagger
+func NewCustomTemplateTagger(t string, components map[string]Tagger) (Tagger, error) {
+	tmpl, err := ParseCustomTemplate(t)
 	if err != nil {
 		return nil, fmt.Errorf("parsing template: %w", err)
 	}
 
-	return &templateTagger{
+	return &customTemplateTagger{
 		Template:   tmpl,
 		Components: components,
 	}, nil
 }
 
 // GenerateTag generates a tag from a template referencing tagging strategies.
-func (t *templateTagger) GenerateTag(workingDir, imageName string) (string, error) {
+func (t *customTemplateTagger) GenerateTag(workingDir, imageName string) (string, error) {
 	customMap, err := t.EvaluateComponents(workingDir, imageName)
 	if err != nil {
 		return "", err
 	}
 
 	// missingkey=error throws error when map is indexed with an undefined key
-	tag, err := ExecuteTagTemplate(t.Template.Option("missingkey=error"), customMap)
+	tag, err := ExecuteCustomTemplate(t.Template.Option("missingkey=error"), customMap)
 	if err != nil {
 		return "", err
 	}
@@ -60,7 +60,7 @@ func (t *templateTagger) GenerateTag(workingDir, imageName string) (string, erro
 }
 
 // EvaluateComponents creates a custom mapping of component names to their tagger string representation.
-func (t *templateTagger) EvaluateComponents(workingDir, imageName string) (map[string]string, error) {
+func (t *customTemplateTagger) EvaluateComponents(workingDir, imageName string) (map[string]string, error) {
 	customMap := map[string]string{}
 
 	gitTagger, _ := NewGitCommit("", "")
@@ -72,28 +72,28 @@ func (t *templateTagger) EvaluateComponents(workingDir, imageName string) (map[s
 	}
 
 	for k, v := range t.Components {
-		if _, ok := v.(*templateTagger); ok {
-			return nil, fmt.Errorf("invalid component specified in tag template: %v", v)
+		if _, ok := v.(*customTemplateTagger); ok {
+			return nil, fmt.Errorf("invalid component specified in custom template: %v", v)
 		}
 		tag, err := v.GenerateTag(workingDir, imageName)
 		if err != nil {
-			return nil, fmt.Errorf("evaluating tag template component: %w", err)
+			return nil, fmt.Errorf("evaluating custom template component: %w", err)
 		}
 		customMap[k] = tag
 	}
 	return customMap, nil
 }
 
-// ParseTagTemplate is a simple wrapper to parse an tag template.
-func ParseTagTemplate(t string) (*template.Template, error) {
-	return template.New("tagTemplate").Parse(t)
+// ParseCustomTemplate is a simple wrapper to parse an custom template.
+func ParseCustomTemplate(t string) (*template.Template, error) {
+	return template.New("customTemplate").Parse(t)
 }
 
-// ExecuteTagTemplate executes a tagTemplate against a custom map.
-func ExecuteTagTemplate(tagTemplate *template.Template, customMap map[string]string) (string, error) {
+// ExecuteCustomTemplate executes a customTemplate against a custom map.
+func ExecuteCustomTemplate(customTemplate *template.Template, customMap map[string]string) (string, error) {
 	var buf bytes.Buffer
-	logrus.Debugf("Executing tag template %v with custom map %v", tagTemplate, customMap)
-	if err := tagTemplate.Execute(&buf, customMap); err != nil {
+	logrus.Debugf("Executing custom template %v with custom map %v", customTemplate, customMap)
+	if err := customTemplate.Execute(&buf, customMap); err != nil {
 		return "", fmt.Errorf("executing template: %w", err)
 	}
 	return buf.String(), nil
