@@ -40,11 +40,11 @@ var mockCacheHasher = func(s string) (string, error) {
 	return s, nil
 }
 
-var fakeArtifactConfig = func(a *latest.Artifact, mode config.RunMode) (string, error) {
+var fakeArtifactConfig = func(a *latest.Artifact) (string, error) {
 	if a.ArtifactType.DockerArtifact != nil {
 		return "docker/target=" + a.ArtifactType.DockerArtifact.Target, nil
 	}
-	return string(mode), nil
+	return "", nil
 }
 
 func TestGetHashForArtifact(t *testing.T) {
@@ -59,23 +59,27 @@ func TestGetHashForArtifact(t *testing.T) {
 			description:  "hash for artifact",
 			dependencies: []string{"a", "b"},
 			artifact:     &latest.Artifact{},
+			mode:         config.RunModes.Dev,
 			expected:     "d99ab295a682897269b4db0fe7c136ea1ecd542150fa224ee03155b4e3e995d9",
 		},
 		{
 			description:  "ignore file not found",
 			dependencies: []string{"a", "b", "not-found"},
 			artifact:     &latest.Artifact{},
+			mode:         config.RunModes.Dev,
 			expected:     "d99ab295a682897269b4db0fe7c136ea1ecd542150fa224ee03155b4e3e995d9",
 		},
 		{
 			description:  "dependencies in different orders",
 			dependencies: []string{"b", "a"},
 			artifact:     &latest.Artifact{},
+			mode:         config.RunModes.Dev,
 			expected:     "d99ab295a682897269b4db0fe7c136ea1ecd542150fa224ee03155b4e3e995d9",
 		},
 		{
 			description: "no dependencies",
 			artifact:    &latest.Artifact{},
+			mode:        config.RunModes.Dev,
 			expected:    "7c077ca2308714493d07163e1033c4282bd869ff6d477b3e77408587f95e2930",
 		},
 		{
@@ -87,7 +91,8 @@ func TestGetHashForArtifact(t *testing.T) {
 					},
 				},
 			},
-			expected: "f947b5aad32734914aa2dea0ec95bceff257037e6c2a529007183c3f21547eae",
+			mode:     config.RunModes.Dev,
+			expected: "e8ecd3e41bcdeb58b23b237c6c045e75e0b2e5c23a7f39cc5230afddaf49bcf9",
 		},
 		{
 			description: "different docker target",
@@ -98,7 +103,8 @@ func TestGetHashForArtifact(t *testing.T) {
 					},
 				},
 			},
-			expected: "09b366c764d0e39f942283cc081d5522b9dde52e725376661808054e3ed0177f",
+			mode:     config.RunModes.Dev,
+			expected: "9bc1e72592e8f51b33287f51e03d1bb063cb8eeed9e0542fd3e3da3f7f3a73d7",
 		},
 		{
 			description:  "build args",
@@ -112,26 +118,30 @@ func TestGetHashForArtifact(t *testing.T) {
 					},
 				},
 			},
+			mode:     config.RunModes.Dev,
 			expected: "eb53afc0e8cbe348a0934b75260d154d83d3370e4414c25a9d3a67428211a0ea",
 		},
 		{
-			description:  "env variables",
+			description:  "buildpack in dev mode",
 			dependencies: []string{"a", "b"},
 			artifact: &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
-					BuildpackArtifact: &latest.BuildpackArtifact{
-						Env: []string{"key=value"},
-					},
+					BuildpackArtifact: &latest.BuildpackArtifact{},
 				},
 			},
-			expected: "948abd8933667600679259dbb38cf2cc55c3098def78baec8dcd4d6851b9e0cd",
+			mode:     config.RunModes.Dev,
+			expected: "17ca23f987471b9841213d256b1c163504f6d4ccc51613cd10a62c56424a89e6",
 		},
 		{
-			description:  "devmode",
+			description:  "buildpack in debug mode",
 			dependencies: []string{"a", "b"},
-			artifact:     &latest.Artifact{},
-			mode:         config.RunModes.Dev,
-			expected:     "c17f949a0b1e4296dba726284454488ad8d7ef51a1199eafc7cc0b7e43dec6ca",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					BuildpackArtifact: &latest.BuildpackArtifact{},
+				},
+			},
+			mode:     config.RunModes.Debug,
+			expected: "a15f9e22a5c5a244c47a5205d577fdbf80e886a4b36915050113b082850a9c5c",
 		},
 	}
 	for _, test := range tests {
@@ -156,7 +166,7 @@ func TestArtifactConfig(t *testing.T) {
 					Target: "target",
 				},
 			},
-		}, config.RunModes.Build)
+		})
 		t.CheckNoError(err)
 
 		config2, err := artifactConfig(&latest.Artifact{
@@ -165,40 +175,11 @@ func TestArtifactConfig(t *testing.T) {
 					Target: "other",
 				},
 			},
-		}, config.RunModes.Build)
+		})
 		t.CheckNoError(err)
 
 		if config1 == config2 {
 			t.Errorf("configs should be different: [%s] [%s]", config1, config2)
-		}
-	})
-}
-
-func TestArtifactConfigDevMode(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		artifact := latest.ArtifactType{
-			BuildpackArtifact: &latest.BuildpackArtifact{
-				Builder: "any/builder",
-			},
-		}
-		sync := &latest.Sync{
-			Auto: &latest.Auto{},
-		}
-
-		conf, err := artifactConfig(&latest.Artifact{
-			ArtifactType: artifact,
-			Sync:         sync,
-		}, config.RunModes.Build)
-		t.CheckNoError(err)
-
-		configDevMode, err := artifactConfig(&latest.Artifact{
-			ArtifactType: artifact,
-			Sync:         sync,
-		}, config.RunModes.Dev)
-		t.CheckNoError(err)
-
-		if conf == configDevMode {
-			t.Errorf("configs should be different: [%s] [%s]", conf, configDevMode)
 		}
 	})
 }
@@ -359,25 +340,49 @@ func TestCacheHasher(t *testing.T) {
 	}
 }
 
-func TestRetrieveBuildArgs(t *testing.T) {
+func TestHashBuildArgs(t *testing.T) {
 	tests := []struct {
 		description  string
 		artifactType latest.ArtifactType
-		expected     map[string]*string
+		expected     []string
+		mode         config.RunMode
 	}{
 		{
-			description: "docker artifact with build args",
+			description: "docker artifact with build args for dev",
 			artifactType: latest.ArtifactType{
 				DockerArtifact: &latest.DockerArtifact{
-					BuildArgs: map[string]*string{},
+					BuildArgs: map[string]*string{
+						"foo": stringPointer("bar"),
+					},
 				},
 			},
-			expected: map[string]*string{},
+			mode:     config.RunModes.Dev,
+			expected: []string{"SKAFFOLD_GO_LDFLAGS=-w", "foo=bar"},
 		}, {
-			description: "docker artifact without build args",
+			description: "docker artifact with build args for debug",
+			artifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					BuildArgs: map[string]*string{
+						"foo": stringPointer("bar"),
+					},
+				},
+			},
+			mode:     config.RunModes.Debug,
+			expected: []string{"SKAFFOLD_GO_GCFLAGS='all=-N -l'", "foo=bar"},
+		}, {
+			description: "docker artifact without build args for debug",
 			artifactType: latest.ArtifactType{
 				DockerArtifact: &latest.DockerArtifact{},
 			},
+			mode:     config.RunModes.Debug,
+			expected: []string{"SKAFFOLD_GO_GCFLAGS='all=-N -l'"},
+		}, {
+			description: "docker artifact without build args for dev",
+			artifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{},
+			},
+			mode:     config.RunModes.Dev,
+			expected: []string{"SKAFFOLD_GO_LDFLAGS=-w"},
 		}, {
 			description: "kaniko artifact with build args",
 			artifactType: latest.ArtifactType{
@@ -385,12 +390,44 @@ func TestRetrieveBuildArgs(t *testing.T) {
 					BuildArgs: map[string]*string{},
 				},
 			},
-			expected: map[string]*string{},
+			expected: nil,
 		}, {
 			description: "kaniko artifact without build args",
 			artifactType: latest.ArtifactType{
 				KanikoArtifact: &latest.KanikoArtifact{},
 			},
+		}, {
+			description: "buildpacks artifact with env for dev",
+			artifactType: latest.ArtifactType{
+				BuildpackArtifact: &latest.BuildpackArtifact{
+					Env: []string{"foo=bar"},
+				},
+			},
+			mode:     config.RunModes.Dev,
+			expected: []string{"GOOGLE_GOLDFLAGS=-w", "foo=bar"},
+		}, {
+			description: "buildpacks artifact without env for dev",
+			artifactType: latest.ArtifactType{
+				BuildpackArtifact: &latest.BuildpackArtifact{},
+			},
+			mode:     config.RunModes.Dev,
+			expected: []string{"GOOGLE_GOLDFLAGS=-w"},
+		}, {
+			description: "buildpacks artifact with env for debug",
+			artifactType: latest.ArtifactType{
+				BuildpackArtifact: &latest.BuildpackArtifact{
+					Env: []string{"foo=bar"},
+				},
+			},
+			mode:     config.RunModes.Debug,
+			expected: []string{"GOOGLE_GOGCFLAGS='all=-N -l'", "foo=bar"},
+		}, {
+			description: "buildpacks artifact without env for debug",
+			artifactType: latest.ArtifactType{
+				BuildpackArtifact: &latest.BuildpackArtifact{},
+			},
+			mode:     config.RunModes.Debug,
+			expected: []string{"GOOGLE_GOGCFLAGS='all=-N -l'"},
 		}, {
 			description: "custom artifact, dockerfile dependency, with build args",
 			artifactType: latest.ArtifactType{
@@ -402,7 +439,7 @@ func TestRetrieveBuildArgs(t *testing.T) {
 					},
 				},
 			},
-			expected: map[string]*string{},
+			expected: nil,
 		}, {
 			description: "custom artifact, no dockerfile dependency",
 			artifactType: latest.ArtifactType{
@@ -415,49 +452,10 @@ func TestRetrieveBuildArgs(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := retrieveBuildArgs(&latest.Artifact{
+			actual, err := hashBuildArgs(&latest.Artifact{
 				ArtifactType: test.artifactType,
-			})
-
-			t.CheckDeepEqual(test.expected, actual)
-		})
-	}
-}
-
-func TestConvertBuildArgsToStringArray(t *testing.T) {
-	tests := []struct {
-		description string
-		buildArgs   map[string]*string
-		expected    []string
-	}{
-		{
-			description: "regular key:value build args",
-			buildArgs: map[string]*string{
-				"one": stringPointer("1"),
-				"two": stringPointer("2"),
-			},
-			expected: []string{"one=1", "two=2"},
-		}, {
-			description: "empty key:value build args",
-			buildArgs: map[string]*string{
-				"one": stringPointer(""),
-				"two": stringPointer(""),
-			},
-			expected: []string{"one=", "two="},
-		}, {
-			description: "build args with nil value",
-			buildArgs: map[string]*string{
-				"one": nil,
-				"two": nil,
-			},
-			expected: []string{"one", "two"},
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := convertBuildArgsToStringArray(test.buildArgs)
-
+			}, test.mode)
+			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}

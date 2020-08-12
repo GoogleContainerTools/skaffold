@@ -338,8 +338,13 @@ func TestGetBuildArgs(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.env })
+			args, err := util.EvaluateEnvTemplateMap(test.artifact.BuildArgs)
+			t.CheckError(test.shouldErr, err)
+			if test.shouldErr {
+				return
+			}
 
-			result, err := GetBuildArgs(test.artifact)
+			result, err := ToCLIBuildArgs(test.artifact, args)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {

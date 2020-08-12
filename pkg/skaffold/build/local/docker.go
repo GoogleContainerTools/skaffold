@@ -74,13 +74,16 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	}
 
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", tag}
-	ba, err := docker.GetBuildArgs(a, func(m map[string]*string) map[string]*string {
-		return docker.AppendDefaultArgs(b.mode, m)
-	})
+	ba := docker.AppendDefaultArgs(b.mode, a.BuildArgs)
+	ba, err = util.EvaluateEnvTemplateMap(ba)
+	if err != nil {
+		return "", fmt.Errorf("unable to evaluate build args: %w", err)
+	}
+	cliArgs, err := docker.ToCLIBuildArgs(a, ba)
 	if err != nil {
 		return "", fmt.Errorf("getting docker build args: %w", err)
 	}
-	args = append(args, ba...)
+	args = append(args, cliArgs...)
 
 	if b.prune {
 		args = append(args, "--force-rm")

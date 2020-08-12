@@ -164,10 +164,8 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	// Like `docker build`, we ignore the errors
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
 	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
-
-	buildArgs, err := EvaluateBuildArgs(a.BuildArgs, func(m map[string]*string) map[string]*string {
-		return AppendDefaultArgs(mode, m)
-	})
+	buildArgs := AppendDefaultArgs(mode, a.BuildArgs)
+	buildArgs, err := util.EvaluateEnvTemplateMap(buildArgs)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
@@ -417,17 +415,10 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 	return nil, fmt.Errorf("could not remove image after %d retries", retries)
 }
 
-// GetBuildArgs gives the build args flags for docker build.
-func GetBuildArgs(a *latest.DockerArtifact, updater ...envUpdater) ([]string, error) {
+func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) ([]string, error) {
 	var args []string
-
-	buildArgs, err := EvaluateBuildArgs(a.BuildArgs, updater...)
-	if err != nil {
-		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
-	}
-
 	var keys []string
-	for k := range buildArgs {
+	for k := range evaluatedArgs {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
@@ -435,7 +426,7 @@ func GetBuildArgs(a *latest.DockerArtifact, updater ...envUpdater) ([]string, er
 	for _, k := range keys {
 		args = append(args, "--build-arg")
 
-		v := buildArgs[k]
+		v := evaluatedArgs[k]
 		if v == nil {
 			args = append(args, k)
 		} else {
@@ -460,34 +451,6 @@ func GetBuildArgs(a *latest.DockerArtifact, updater ...envUpdater) ([]string, er
 	}
 
 	return args, nil
-}
-
-// EvaluateBuildArgs evaluates templated build args.
-func EvaluateBuildArgs(args map[string]*string, updater ...envUpdater) (map[string]*string, error) {
-	for _, fn := range updater {
-		args = fn(args)
-	}
-
-	if args == nil {
-		return nil, nil
-	}
-
-	evaluated := map[string]*string{}
-	for k, v := range args {
-		if v == nil {
-			evaluated[k] = nil
-			continue
-		}
-
-		value, err := util.ExpandEnvTemplate(*v, nil)
-		if err != nil {
-			return nil, fmt.Errorf("unable to get value for build arg %q: %w", k, err)
-		}
-
-		evaluated[k] = &value
-	}
-
-	return evaluated, nil
 }
 
 func (l *localDaemon) Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error {

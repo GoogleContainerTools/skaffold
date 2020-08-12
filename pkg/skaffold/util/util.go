@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -202,6 +203,30 @@ func Expand(text, key, value string) string {
 	}
 
 	return text
+}
+
+// FormatMapToStringSlice1 converts map of (string,string) to string slice
+func FormatMapToStringSlice1(m map[string]string, separator string) []string {
+	var sl []string
+	for k, v := range m {
+		sl = append(sl, fmt.Sprintf("%s%s%s", k, separator, v))
+	}
+	sort.Strings(sl)
+	return sl
+}
+
+// FormatMapToStringSlice2 converts map of (string,*string) to string slice
+func FormatMapToStringSlice2(m map[string]*string, separator string) []string {
+	var sl []string
+	for k, v := range m {
+		if v == nil {
+			sl = append(sl, k)
+			continue
+		}
+		sl = append(sl, fmt.Sprintf("%s%s%s", k, separator, *v))
+	}
+	sort.Strings(sl)
+	return sl
 }
 
 func isAlphaNum(c uint8) bool {
