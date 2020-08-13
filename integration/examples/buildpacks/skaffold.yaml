@@ -7,8 +7,6 @@ build:
       builder: "gcr.io/buildpacks/builder:v1"
       env:
       - GOPROXY={{.GOPROXY}}
-    sync:
-      auto: {}
 profiles:
 - name: gcb
   build:

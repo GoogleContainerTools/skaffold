@@ -65,6 +65,12 @@ func TestSetDefaults(t *testing.T) {
 						},
 						Sync: &latest.Sync{},
 					},
+					{
+						ImageName: "sixth",
+						ArtifactType: latest.ArtifactType{
+							BuildpackArtifact: &latest.BuildpackArtifact{},
+						},
+					},
 				},
 			},
 		},
@@ -94,6 +100,12 @@ func TestSetDefaults(t *testing.T) {
 
 	testutil.CheckDeepEqual(t, "fifth", cfg.Build.Artifacts[4].ImageName)
 	testutil.CheckDeepEqual(t, &latest.Auto{}, cfg.Build.Artifacts[4].Sync.Auto)
+
+	testutil.CheckDeepEqual(t, "sixth", cfg.Build.Artifacts[5].ImageName)
+	testutil.CheckDeepEqual(t, []string{"."}, cfg.Build.Artifacts[5].BuildpackArtifact.Dependencies.Paths)
+	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[5].BuildpackArtifact.Dependencies.Ignore)
+	testutil.CheckDeepEqual(t, "project.toml", cfg.Build.Artifacts[5].BuildpackArtifact.ProjectDescriptor)
+	testutil.CheckDeepEqual(t, &latest.Auto{}, cfg.Build.Artifacts[5].Sync.Auto)
 }
 
 func TestSetDefaultsOnCluster(t *testing.T) {

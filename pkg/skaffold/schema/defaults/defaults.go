@@ -235,6 +235,8 @@ func setDefaultSync(a *latest.Artifact) {
 				a.Sync.Infer = []string{"**/*"}
 			}
 		}
+	} else if a.BuildpackArtifact != nil {
+		a.Sync = &latest.Sync{Auto: &latest.Auto{}}
 	}
 }
 
