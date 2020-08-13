@@ -20,7 +20,8 @@ Multiple types of sync are supported by Skaffold:
    This is supported by docker and kaniko artifacts and also for custom artifacts that declare a
    dependency on a Dockerfile.
 
- + `auto`: Skaffold automatically configures the sync.  This is only supported by Jib and Buildpacks artifacts.
++ `auto`: Skaffold automatically configures the sync.  This mode is only supported by Jib and Buildpacks artifacts.
+   Auto sync mode is enabled by default for Buildpacks artifacts.
 
 ### Manual sync mode
 
@@ -77,11 +78,14 @@ File deletion will always cause a complete rebuild.
 
 ### Auto sync mode
 
+In auto sync mode, Skaffold automatically generates sync rules for known file types.  Changes to other file types will
+result in a complete rebuild.
+
 #### Buildpacks
 
 Skaffold requires special collaboration from the Buildpacks for the `auto` sync to work.
 The [gcr.io/buildpacks/builder:v1](https://github.com/GoogleCloudPlatform/buildpacks) supports Skaffold
-out of the box, currently for Go and NodeJS.
+out of the box, currently for Go, NodeJS, and Java.
 
 Cloud Native Buildpacks set a `io.buildpacks.build.metadata` label on the images they create.
 This labels points to json description of the [Bill-of-Materials, aka BOM](https://github.com/buildpacks/spec/blob/master/buildpack.md#bill-of-materials-toml) of the build.
