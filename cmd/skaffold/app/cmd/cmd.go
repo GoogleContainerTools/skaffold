@@ -113,7 +113,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			select {
 			case msg := <-updateMsg:
-				fmt.Fprintf(cmd.OutOrStdout(), "%s\n", msg)
+				fmt.Fprintf(cmd.OutOrStderr(), "%s\n", msg)
 			default:
 			}
 			// check if survey prompt needs to be displayed
