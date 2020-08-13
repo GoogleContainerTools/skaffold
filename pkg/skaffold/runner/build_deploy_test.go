@@ -129,7 +129,6 @@ func TestBuildAndTestSkipBuild(t *testing.T) {
 	})
 }
 
-
 func TestCheckWorkspaces(t *testing.T) {
 	tmpDir := testutil.NewTempDir(t).Touch("file")
 	tmpFile := tmpDir.Path("file")
