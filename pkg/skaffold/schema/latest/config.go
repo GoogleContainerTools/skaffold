@@ -930,6 +930,9 @@ type DockerArtifact struct {
 
 	// NoCache used to pass in --no-cache to docker build to prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
+
+	// Secret is passed as an argument to the --secret option.
+	Secret string `yaml:"secret,omitempty"`
 }
 
 // BazelArtifact describes an artifact built with [Bazel](https://bazel.build/).

@@ -145,6 +145,7 @@ type ImageBuildOptions struct {
 	SuppressOutput bool
 	RemoteContext  string
 	NoCache        bool
+	Secret         string
 	Remove         bool
 	ForceRemove    bool
 	PullParent     bool

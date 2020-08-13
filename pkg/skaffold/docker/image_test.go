@@ -134,6 +134,7 @@ func TestBuild(t *testing.T) {
 				Target:      "target",
 				NetworkMode: "None",
 				NoCache:     true,
+				Secret:      "id=mysecret,src=mysecret.txt",
 			},
 			expected: types.ImageBuildOptions{
 				Tags:       []string{"finalimage"},
@@ -148,6 +149,7 @@ func TestBuild(t *testing.T) {
 				Target:      "target",
 				NetworkMode: "none",
 				NoCache:     true,
+				Secret:      "id=mysecret,src=mysecret.txt",
 			},
 		},
 		{
