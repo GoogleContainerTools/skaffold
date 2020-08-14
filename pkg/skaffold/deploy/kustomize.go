@@ -49,6 +49,7 @@ var (
 
 // kustomization is the content of a kustomization.yaml file.
 type kustomization struct {
+	Components            []string              `yaml:"components"`
 	Bases                 []string              `yaml:"bases"`
 	Resources             []string              `yaml:"resources"`
 	Patches               []patchWrapper        `yaml:"patches"`
@@ -257,6 +258,7 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 	deps = append(deps, path)
 
 	candidates := append(content.Bases, content.Resources...)
+	candidates = append(candidates, content.Components...)
 
 	for _, candidate := range candidates {
 		// If the file doesn't exist locally, we can assume it's a remote file and
