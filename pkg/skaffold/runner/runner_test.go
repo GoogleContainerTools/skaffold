@@ -170,11 +170,12 @@ func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
 
-func (t *TestBench) WatchForChanges(ctx context.Context, out io.Writer, doDev func() error) error {
+func (t *TestBench) WatchForChanges(ctx context.Context, out io.Writer, fn func() (bool, func() error)) error {
 	// don't actually call the monitor here, because extra actions would be added
 	if err := t.firstMonitor(true); err != nil {
 		return err
 	}
+	_, doDev := fn()
 	for i := 0; i < t.cycles; i++ {
 		t.enterNewCycle()
 		t.currentCycle = i

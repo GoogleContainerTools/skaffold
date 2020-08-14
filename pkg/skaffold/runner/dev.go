@@ -63,7 +63,10 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 	logger.Mute()
 	// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
 	defer r.monitor.Reset()
-	defer r.listener.LogWatchToUser(out)
+	//notify user that change listener is active only if any one of build, sync or deploy will actually happen automatically
+	if r.intents.IsAnyAutoEnabled() {
+		defer r.listener.LogWatchToUser(out)
+	}
 	event.DevLoopInProgress(r.devIteration)
 	defer func() { r.devIteration++ }()
 	if needsSync {
@@ -242,7 +245,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
 
 	event.DevLoopComplete(0)
-	return r.listener.WatchForChanges(ctx, out, func() error {
-		return r.doDev(ctx, out, logger, forwarderManager)
+	return r.listener.WatchForChanges(ctx, out, func() (bool, func() error) {
+		return r.intents.IsAnyAutoEnabled(), func() error { return r.doDev(ctx, out, logger, forwarderManager) }
 	})
 }

@@ -29,7 +29,7 @@ import (
 )
 
 type Listener interface {
-	WatchForChanges(context.Context, io.Writer, func() error) error
+	WatchForChanges(context.Context, io.Writer, func() (bool, func() error)) error
 	LogWatchToUser(io.Writer)
 }
 
@@ -44,8 +44,8 @@ func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
 }
 
 // WatchForChanges listens to a trigger, and when one is received, computes file changes and
-// conditionally runs the dev loop.
-func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, devLoop func() error) error {
+// conditionally runs the dev loop. It logs to user only when the dev loop is active.
+func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, fn func() (isActive bool, devLoop func() error)) error {
 	ctxTrigger, cancelTrigger := context.WithCancel(ctx)
 	defer cancelTrigger()
 	trigger, err := trigger.StartTrigger(ctxTrigger, l.Trigger)
@@ -58,7 +58,10 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 		return fmt.Errorf("failed to monitor files: %w", err)
 	}
 
-	l.LogWatchToUser(out)
+	isActive, devLoop := fn()
+	if isActive {
+		l.LogWatchToUser(out)
+	}
 
 	for {
 		select {
