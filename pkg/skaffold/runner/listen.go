@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
 )
