@@ -186,7 +186,9 @@ func (t *TestBench) WatchForChanges(ctx context.Context, out io.Writer, fn func(
 	return nil
 }
 
-func (t *TestBench) LogWatchToUser(_ io.Writer) {}
+func (t *TestBench) LogWatchIsActive(_ io.Writer) {}
+
+func (t *TestBench) LogWatchIsInactive(_ io.Writer) {}
 
 func findTags(artifacts []build.Artifact) []string {
 	var tags []string

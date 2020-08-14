@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -30,7 +31,8 @@ import (
 
 type Listener interface {
 	WatchForChanges(context.Context, io.Writer, func() (bool, func() error)) error
-	LogWatchToUser(io.Writer)
+	LogWatchIsActive(io.Writer)
+	LogWatchIsInactive(io.Writer)
 }
 
 type SkaffoldListener struct {
@@ -39,8 +41,12 @@ type SkaffoldListener struct {
 	intentChan <-chan bool
 }
 
-func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
+func (l *SkaffoldListener) LogWatchIsActive(out io.Writer) {
 	l.Trigger.LogWatchToUser(out)
+}
+
+func (l *SkaffoldListener) LogWatchIsInactive(out io.Writer) {
+	color.Yellow.Fprintln(out, "Not watching for changes...")
 }
 
 // WatchForChanges listens to a trigger, and when one is received, computes file changes and
@@ -60,7 +66,9 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, f
 
 	isActive, devLoop := fn()
 	if isActive {
-		l.LogWatchToUser(out)
+		l.LogWatchIsActive(out)
+	} else {
+		l.LogWatchIsInactive(out)
 	}
 
 	for {

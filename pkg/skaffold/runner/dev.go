@@ -65,7 +65,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 	defer r.monitor.Reset()
 	//notify user that change listener is active only if any one of build, sync or deploy will actually happen automatically
 	if r.intents.IsAnyAutoEnabled() {
-		defer r.listener.LogWatchToUser(out)
+		defer r.listener.LogWatchIsActive(out)
+	} else {
+		defer r.listener.LogWatchIsInactive(out)
 	}
 	event.DevLoopInProgress(r.devIteration)
 	defer func() { r.devIteration++ }()
