@@ -60,7 +60,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kustomize build .", deploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --record --force --grace-period=0"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -77,7 +77,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				AndRunOut("kustomize build a", deploymentWebYAML).
 				AndRunOut("kustomize build b", deploymentAppYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1+"\n---\n"+deploymentAppYAMLv1, "").
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --record --force --grace-period=0"),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",

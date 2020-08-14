@@ -115,7 +115,7 @@ func TestKubectlDeploy(t *testing.T) {
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml --validate=false", deploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --validate=false"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --record --validate=false"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -131,7 +131,7 @@ func TestKubectlDeploy(t *testing.T) {
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --record --force --grace-period=0"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -148,7 +148,7 @@ func TestKubectlDeploy(t *testing.T) {
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --record"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -164,7 +164,7 @@ func TestKubectlDeploy(t *testing.T) {
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion118).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run=client -oyaml -f deployment.yaml", deploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --record"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -179,7 +179,7 @@ func TestKubectlDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml -f http://remote.yaml", deploymentWebYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --record"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -193,7 +193,7 @@ func TestKubectlDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
-				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -f -", fmt.Errorf("")),
+				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -f - --record", fmt.Errorf("")),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -214,7 +214,7 @@ func TestKubectlDeploy(t *testing.T) {
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create -v=0 --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -v=0 -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
-				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -v=0 --overwrite=true -f -", fmt.Errorf("")),
+				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -v=0 --overwrite=true -f - --record", fmt.Errorf("")),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -355,7 +355,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 			commands: testutil.
 				CmdRun("kubectl --context kubecontext --namespace testNamespace get pod/leeroy-web -o yaml").
 				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -").
-				AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", deploymentWebYAML),
+				AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f - --record", deploymentWebYAML),
 		},
 		{
 			description: "cleanup error",
@@ -406,10 +406,10 @@ func TestKubectlRedeploy(t *testing.T) {
 			CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 			AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
 			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentAppYAMLv1+"\n---\n"+deploymentWebYAMLv1, "").
-			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", deploymentAppYAMLv1+"\n---\n"+deploymentWebYAMLv1).
+			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f - --record", deploymentAppYAMLv1+"\n---\n"+deploymentWebYAMLv1).
 			AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
 			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentAppYAMLv2+"\n---\n"+deploymentWebYAMLv1, "").
-			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", deploymentAppYAMLv2).
+			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f - --record", deploymentAppYAMLv2).
 			AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
 			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentAppYAMLv2+"\n---\n"+deploymentWebYAMLv1, ""),
 		)
@@ -488,7 +488,7 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 				]
 			}`).
 			AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
-			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", deploymentWebYAMLv1),
+			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f - --record", deploymentWebYAMLv1),
 		)
 
 		cfg := &latest.KubectlDeploy{
@@ -788,7 +788,7 @@ func TestGCSManifests(t *testing.T) {
 				CmdRunOut(fmt.Sprintf("gsutil cp -r %s %s", "gs://dev/deployment.yaml", manifestTmpDir), "log").
 				AndRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+filepath.Join(manifestTmpDir, "deployment.yaml"), deploymentWebYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --record"),
 			skipRender: true,
 		}}
 	for _, test := range tests {

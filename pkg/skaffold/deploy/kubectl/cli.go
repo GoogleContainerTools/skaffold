@@ -72,7 +72,7 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 		return nil
 	}
 
-	args := []string{"-f", "-"}
+	args := []string{"-f", "-", "--record"}
 	if c.forceDeploy {
 		args = append(args, "--force", "--grace-period=0")
 	}
