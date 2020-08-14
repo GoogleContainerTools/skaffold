@@ -17,7 +17,10 @@ limitations under the License.
 package runner
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
+	"io"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -43,18 +46,22 @@ func (f *fakeMonitor) Run(debounce bool) error {
 	return nil
 }
 
-type fakeTriggger struct {
+type fakeTrigger struct {
 	trigger.Trigger
 }
 
-func (f *fakeTriggger) Debounce() bool {
+func (f *fakeTrigger) Debounce() bool {
 	return false
+}
+
+func (f *fakeTrigger) LogWatchToUser(w io.Writer) {
+	fmt.Fprintln(w, "Fake listener started")
 }
 
 func TestSkipDevLoopOnMonitorError(t *testing.T) {
 	listener := &SkaffoldListener{
 		Monitor: &errMonitor{},
-		Trigger: &fakeTriggger{},
+		Trigger: &fakeTrigger{},
 	}
 
 	var devLoopWasCalled bool
@@ -69,7 +76,7 @@ func TestSkipDevLoopOnMonitorError(t *testing.T) {
 func TestContinueOnDevLoopError(t *testing.T) {
 	listener := &SkaffoldListener{
 		Monitor: &fakeMonitor{},
-		Trigger: &fakeTriggger{},
+		Trigger: &fakeTrigger{},
 	}
 
 	err := listener.do(func() error {
@@ -82,7 +89,7 @@ func TestContinueOnDevLoopError(t *testing.T) {
 func TestReportDevLoopError(t *testing.T) {
 	listener := &SkaffoldListener{
 		Monitor: &fakeMonitor{},
-		Trigger: &fakeTriggger{},
+		Trigger: &fakeTrigger{},
 	}
 
 	err := listener.do(func() error {
@@ -92,4 +99,16 @@ func TestReportDevLoopError(t *testing.T) {
 	if err != ErrorConfigurationChanged {
 		t.Fatalf("should have returned a ErrorConfigurationChanged error, returned %v", err)
 	}
+}
+
+func TestSkaffoldListener_LogWatch(t *testing.T) {
+	out := new(bytes.Buffer)
+
+	l := &SkaffoldListener{
+		Trigger: &fakeTrigger{},
+	}
+	l.LogWatchIsActive(out)
+	l.LogWatchIsInactive(out)
+	got, want := out.String(), "Fake listener started\nNot watching for changes...\n"
+	testutil.CheckDeepEqual(t, want, got)
 }
