@@ -84,10 +84,10 @@ func TestNewTrigger(t *testing.T) {
 				},
 			}
 
-			got, err := NewTrigger(runCtx)
+			got, err := NewTrigger(runCtx, nil)
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
-				t.CheckDeepEqual(test.expected, got, cmp.AllowUnexported(fsNotifyTrigger{}))
+				t.CheckDeepEqual(test.expected, got, cmp.AllowUnexported(fsNotifyTrigger{}), cmp.AllowUnexported(manualTrigger{}), cmp.AllowUnexported(pollTrigger{}))
 			}
 		})
 	}
@@ -100,13 +100,36 @@ func TestPollTrigger_Debounce(t *testing.T) {
 }
 
 func TestPollTrigger_LogWatchToUser(t *testing.T) {
-	out := new(bytes.Buffer)
+	tests := []struct {
+		description string
+		isActive    bool
+		expected    string
+	}{
+		{
+			description: "active polling trigger",
+			isActive:    true,
+			expected:    "Watching for changes every 10ns...\n",
+		},
+		{
+			description: "inactive polling trigger",
+			isActive:    false,
+			expected:    "Not watching for changes...\n",
+		},
+	}
+	for _, test := range tests {
+		out := new(bytes.Buffer)
 
-	trigger := &pollTrigger{Interval: 10}
-	trigger.LogWatchToUser(out)
+		trigger := &pollTrigger{
+			Interval: 10,
+			isActive: func() bool {
+				return test.isActive
+			},
+		}
+		trigger.LogWatchToUser(out)
 
-	got, want := out.String(), "Watching for changes every 10ns...\n"
-	testutil.CheckDeepEqual(t, want, got)
+		got, want := out.String(), test.expected
+		testutil.CheckDeepEqual(t, want, got)
+	}
 }
 
 func TestNotifyTrigger_Debounce(t *testing.T) {
@@ -116,13 +139,36 @@ func TestNotifyTrigger_Debounce(t *testing.T) {
 }
 
 func TestNotifyTrigger_LogWatchToUser(t *testing.T) {
-	out := new(bytes.Buffer)
+	tests := []struct {
+		description string
+		isActive    bool
+		expected    string
+	}{
+		{
+			description: "active notify trigger",
+			isActive:    true,
+			expected:    "Watching for changes...\n",
+		},
+		{
+			description: "inactive notify trigger",
+			isActive:    false,
+			expected:    "Not watching for changes...\n",
+		},
+	}
+	for _, test := range tests {
+		out := new(bytes.Buffer)
 
-	trigger := &fsNotifyTrigger{Interval: 10}
-	trigger.LogWatchToUser(out)
+		trigger := &fsNotifyTrigger{
+			Interval: 10,
+			isActive: func() bool {
+				return test.isActive
+			},
+		}
+		trigger.LogWatchToUser(out)
 
-	got, want := out.String(), "Watching for changes...\n"
-	testutil.CheckDeepEqual(t, want, got)
+		got, want := out.String(), test.expected
+		testutil.CheckDeepEqual(t, want, got)
+	}
 }
 
 func TestManualTrigger_Debounce(t *testing.T) {
@@ -132,11 +178,33 @@ func TestManualTrigger_Debounce(t *testing.T) {
 }
 
 func TestManualTrigger_LogWatchToUser(t *testing.T) {
-	out := new(bytes.Buffer)
+	tests := []struct {
+		description string
+		isActive    bool
+		expected    string
+	}{
+		{
+			description: "active manual trigger",
+			isActive:    true,
+			expected:    "Press any key to rebuild/redeploy the changes\n",
+		},
+		{
+			description: "inactive manual trigger",
+			isActive:    false,
+			expected:    "Not watching for changes...\n",
+		},
+	}
+	for _, test := range tests {
+		out := new(bytes.Buffer)
 
-	trigger := &manualTrigger{}
-	trigger.LogWatchToUser(out)
+		trigger := &manualTrigger{
+			isActive: func() bool {
+				return test.isActive
+			},
+		}
+		trigger.LogWatchToUser(out)
 
-	got, want := out.String(), "Press any key to rebuild/redeploy the changes\n"
-	testutil.CheckDeepEqual(t, want, got)
+		got, want := out.String(), test.expected
+		testutil.CheckDeepEqual(t, want, got)
+	}
 }

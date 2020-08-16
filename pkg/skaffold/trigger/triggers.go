@@ -42,22 +42,25 @@ type Trigger interface {
 }
 
 // NewTrigger creates a new trigger.
-func NewTrigger(runCtx *runcontext.RunContext) (Trigger, error) {
+func NewTrigger(runCtx *runcontext.RunContext, isActive func() bool) (Trigger, error) {
 	switch strings.ToLower(runCtx.Trigger()) {
 	case "polling":
 		return &pollTrigger{
 			Interval: time.Duration(runCtx.WatchPollInterval()) * time.Millisecond,
+			isActive: isActive,
 		}, nil
 	case "notify":
-		return newFSNotifyTrigger(runCtx), nil
+		return newFSNotifyTrigger(runCtx, isActive), nil
 	case "manual":
-		return &manualTrigger{}, nil
+		return &manualTrigger{
+			isActive: isActive,
+		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported trigger: %s", runCtx.Trigger())
 	}
 }
 
-func newFSNotifyTrigger(runCtx *runcontext.RunContext) *fsNotifyTrigger {
+func newFSNotifyTrigger(runCtx *runcontext.RunContext, isActive func() bool) *fsNotifyTrigger {
 	workspaces := map[string]struct{}{}
 	for _, a := range runCtx.Pipeline().Build.Artifacts {
 		workspaces[a.Workspace] = struct{}{}
@@ -65,12 +68,14 @@ func newFSNotifyTrigger(runCtx *runcontext.RunContext) *fsNotifyTrigger {
 	return &fsNotifyTrigger{
 		Interval:   time.Duration(runCtx.WatchPollInterval()) * time.Millisecond,
 		workspaces: workspaces,
+		isActive:   isActive,
 	}
 }
 
 // pollTrigger watches for changes on a given interval of time.
 type pollTrigger struct {
 	Interval time.Duration
+	isActive func() bool
 }
 
 // Debounce tells the watcher to debounce rapid sequence of changes.
@@ -79,10 +84,14 @@ func (t *pollTrigger) Debounce() bool {
 }
 
 func (t *pollTrigger) LogWatchToUser(out io.Writer) {
-	color.Yellow.Fprintf(out, "Watching for changes every %v...\n", t.Interval)
+	if t.isActive() {
+		color.Yellow.Fprintf(out, "Watching for changes every %v...\n", t.Interval)
+	} else {
+		color.Yellow.Fprintln(out, "Not watching for changes...")
+	}
 }
 
-// Start starts a timer.
+// Start starts a timer if active.
 func (t *pollTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	trigger := make(chan bool)
 
@@ -91,6 +100,9 @@ func (t *pollTrigger) Start(ctx context.Context) (<-chan bool, error) {
 		for {
 			select {
 			case <-ticker.C:
+				if !t.isActive() {
+					continue
+				}
 				trigger <- true
 			case <-ctx.Done():
 				ticker.Stop()
@@ -103,7 +115,9 @@ func (t *pollTrigger) Start(ctx context.Context) (<-chan bool, error) {
 }
 
 // manualTrigger watches for changes when the user presses a key.
-type manualTrigger struct{}
+type manualTrigger struct {
+	isActive func() bool
+}
 
 // Debounce tells the watcher to not debounce rapid sequence of changes.
 func (t *manualTrigger) Debounce() bool {
@@ -111,7 +125,11 @@ func (t *manualTrigger) Debounce() bool {
 }
 
 func (t *manualTrigger) LogWatchToUser(out io.Writer) {
-	color.Yellow.Fprintln(out, "Press any key to rebuild/redeploy the changes")
+	if t.isActive() {
+		color.Yellow.Fprintln(out, "Press any key to rebuild/redeploy the changes")
+	} else {
+		color.Yellow.Fprintln(out, "Not watching for changes...")
+	}
 }
 
 // Start starts listening to pressed keys.
@@ -136,6 +154,11 @@ func (t *manualTrigger) Start(ctx context.Context) (<-chan bool, error) {
 			if atomic.LoadInt32(&stopped) == 1 {
 				return
 			}
+
+			// Ignore if trigger is inactive
+			if !t.isActive() {
+				continue
+			}
 			trigger <- true
 		}
 	}()
@@ -147,6 +170,7 @@ func (t *manualTrigger) Start(ctx context.Context) (<-chan bool, error) {
 type fsNotifyTrigger struct {
 	Interval   time.Duration
 	workspaces map[string]struct{}
+	isActive   func() bool
 }
 
 // Debounce tells the watcher to not debounce rapid sequence of changes.
@@ -156,7 +180,11 @@ func (t *fsNotifyTrigger) Debounce() bool {
 }
 
 func (t *fsNotifyTrigger) LogWatchToUser(out io.Writer) {
-	color.Yellow.Fprintln(out, "Watching for changes...")
+	if t.isActive() {
+		color.Yellow.Fprintln(out, "Watching for changes...")
+	} else {
+		color.Yellow.Fprintln(out, "Not watching for changes...")
+	}
 }
 
 // Start listening for file system changes
@@ -197,6 +225,11 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 		for {
 			select {
 			case e := <-c:
+
+				// Ignore detected changes if not active
+				if !t.isActive() {
+					continue
+				}
 				logrus.Debugln("Change detected", e)
 
 				// Wait t.interval before triggering.
