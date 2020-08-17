@@ -76,7 +76,9 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.Sk
 		// If the error is NOT that the file doesn't exist, then we warn the user
 		// that maybe they are using an outdated version of Skaffold that's unable to read
 		// the configuration.
-		warnIfUpdateIsAvailable()
+		if err = warnIfUpdateIsAvailable(); err != nil {
+			return nil, nil, err
+		}
 		return nil, nil, fmt.Errorf("parsing skaffold config: %w", err)
 	}
 
@@ -104,9 +106,13 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.Sk
 	return runCtx, config, nil
 }
 
-func warnIfUpdateIsAvailable() {
-	latest, current, versionErr := update.GetLatestAndCurrentVersion()
-	if versionErr == nil && latest.GT(current) {
-		logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) from:\n  %s\n", latest, releaseURL(latest))
+func warnIfUpdateIsAvailable() error {
+	warning, err := update.CheckVersionOnError(opts.GlobalConfig)
+	if err != nil {
+		return fmt.Errorf("update check failed: %s", err)
 	}
+	if warning != "" {
+		logrus.Warn(warning)
+	}
+	return nil
 }
