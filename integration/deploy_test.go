@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -104,4 +105,29 @@ func TestDeployWithInCorrectConfig(t *testing.T) {
 	} else if !strings.Contains(string(output), "no tag provided for image [skaffold-example]") {
 		t.Errorf("failed without saying the reason: %s", output)
 	}
+}
+
+// Verify that we can deploy without artifact details (https://github.com/GoogleContainerTools/skaffold/issues/4616)
+func TestDeployWithoutWorkspaces(t *testing.T) {
+	//MarkIntegrationTest(t, NeedsGcp)
+
+	ns, _ := SetupNamespace(t)
+
+	outputBytes := skaffold.Build("--quiet").InDir("examples/nodejs").InNs(ns.Name).RunOrFailOutput(t)
+	// Parse the Build Output
+	buildArtifacts, err := flags.ParseBuildOutput(outputBytes)
+	failNowIfError(t, err)
+	if len(buildArtifacts.Builds) != 1 {
+		t.Fatalf("expected 1 artifact to be built, but found %d", len(buildArtifacts.Builds))
+	}
+
+	tmpDir := testutil.NewTempDir(t)
+	buildOutputFile := tmpDir.Path("build.out")
+	tmpDir.Write("build.out", string(outputBytes))
+	util.Copy(tmpDir.Root(), "examples/nodejs/skaffold.yaml")
+	util.Copy(tmpDir.Root(), "examples/nodejs/k8s")
+
+	// Run Deploy using the build output
+	// See https://github.com/GoogleContainerTools/skaffold/issues/2372 on why status-check=false
+	skaffold.Deploy("--build-artifacts", buildOutputFile, "--status-check=false").InDir(tmpDir.Root()).InNs(ns.Name).RunOrFail(t)
 }

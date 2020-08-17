@@ -21,7 +21,9 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -306,4 +308,73 @@ func IsHiddenFile(filename string) bool {
 
 func hasHiddenPrefix(s string) bool {
 	return strings.HasPrefix(s, hiddenPrefix)
+}
+
+// Copies a file or directory tree.  There are 2x3 cases:
+//   1. If _src_ is a file,
+//      1. and _dst_ exists and is a file then _src_ is copied into _dst_
+//      2. and _dst_ exists and is a directory, then _src_ is copied as _dst/$(basename src)_
+//      3. and _dst_ does not exist, then _src_ is copied as _dst_.
+//   2. If _src_ is a directory,
+//      1. and _dst_ exists and is a file, then return an error
+//      2. and _dst_ exists and is a directory, then src is copied as _dst/$(basename src)_
+//      3. and _dst_ does not exist, then src is copied as _dst/src[1:]_.
+func Copy(dst, src string) error {
+	if IsFile(src) {
+		switch {
+		case IsFile(dst): // copy _src_ to _dst_
+		case IsDir(dst): // copy _src_ to _dst/src[-1]
+			dst = filepath.Join(dst, filepath.Base(src))
+		default: // copy _src_ to _dst_
+			if err := os.MkdirAll(filepath.Dir(dst), os.ModePerm); err != nil {
+				return err
+			}
+		}
+		in, err := os.Open(src)
+		if err != nil {
+			return err
+		}
+		out, err := os.Create(dst)
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(out, in)
+		return err
+	} else if !IsDir(src) {
+		return errors.New("src does not exist")
+	}
+	// so src is a directory
+	if IsFile(dst) {
+		return errors.New("cannot copy directory into file")
+	}
+	srcPrefix := src
+	if IsDir(dst) { // src is copied to _dst/$(basename src)
+		srcPrefix = filepath.Dir(src)
+	} else if err := os.MkdirAll(filepath.Dir(dst), os.ModePerm); err != nil {
+		return err
+	}
+	return walk.From(src).Unsorted().WhenIsFile().Do(func(path string, _ walk.Dirent) error {
+		rel, err := filepath.Rel(srcPrefix, path)
+		if err != nil {
+			return err
+		}
+		in, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer in.Close()
+
+		destFile := filepath.Join(dst, rel)
+		if err := os.MkdirAll(filepath.Dir(destFile), os.ModePerm); err != nil {
+			return err
+		}
+
+		out, err := os.Create(destFile)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(out, in)
+		return err
+	})
 }
