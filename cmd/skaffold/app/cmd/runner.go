@@ -70,7 +70,7 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.Sk
 	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
 	if err != nil {
 		if os.IsNotExist(errors.Unwrap(err)) {
-			return nil, nil, fmt.Errorf("[%s] not found. You might need to run `skaffold init`", opts.ConfigurationFile)
+			return nil, nil, fmt.Errorf("skaffold config file %s not found - check your current working directory, or try running `skaffold init`", opts.ConfigurationFile)
 		}
 
 		// If the error is NOT that the file doesn't exist, then we warn the user
