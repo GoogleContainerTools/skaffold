@@ -56,6 +56,12 @@ func TestNetcoreTransformer_IsApplicable(t *testing.T) {
 			result:      false,
 		},
 		{
+			description: "launcher entrypoint",
+			source:      imageConfiguration{entrypoint: []string{"launcher"}, arguments: []string{"exec", "dotnet", "myapp.dll"}},
+			launcher:    "launcher",
+			result:      true,
+		},
+		{
 			description: "nothing",
 			source:      imageConfiguration{},
 			result:      false,

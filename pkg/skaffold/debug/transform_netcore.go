@@ -31,7 +31,17 @@ func init() {
 
 // isLaunchingNetcore determines if the arguments seems to be invoking dotnet
 func isLaunchingNetcore(args []string) bool {
-	return len(args) > 0 && (args[0] == "dotnet" || strings.HasSuffix(args[0], "/dotnet"))
+	if len(args) < 2 {
+		return false
+	}
+
+	for _, arg := range args[:2] {
+		if arg == "dotnet" || strings.HasSuffix(arg, "/dotnet") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (t netcoreTransformer) IsApplicable(config imageConfiguration) bool {
@@ -45,6 +55,11 @@ func (t netcoreTransformer) IsApplicable(config imageConfiguration) bool {
 	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return isLaunchingNetcore(config.entrypoint)
 	}
+
+	if len(config.arguments) > 0 {
+		return isLaunchingNetcore(config.arguments)
+	}
+
 	return false
 }
 
