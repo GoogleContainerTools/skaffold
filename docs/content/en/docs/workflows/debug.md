@@ -30,6 +30,7 @@ Debugging is currently supported for:
   - NodeJS (runtime ID: `nodejs`)
   - Java and JVM languages (runtime ID: `jvm`)
   - Python (runtime ID: `python`)
+  - .NET Core (runtime ID: `netcore`)
   
 Note that many debuggers may require additional information for the location of source files.
 We are looking for ways to identify this information and to pass it back if found.
@@ -100,6 +101,46 @@ wrapper around [`pydevd`](https://github.com/fabioz/PyDev.Debugger) that uses th
 The DAP is supported by Visual Studio Code, [Eclipse LSP4e](https://projects.eclipse.org/projects/technology.lsp4e),
 [and other editors and IDEs](https://microsoft.github.io/debug-adapter-protocol/implementors/tools/).
 DAP is not yet supported by JetBrains IDEs like PyCharm.
+
+#### .NET Core
+
+.NET Core applications are configured to be deployed along with `vsdbg`.
+
+In order to configure your application for debugging, your app must be:
+
+- Identified as being dotnet-based by having an entrypoint using [dotnet](https://github.com/dotnet/sdk) cli or one of the following environment variables `ASPNETCORE_URLS`, `DOTNET_RUNNING_IN_CONTAINER`, `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT`.
+- Built with the `--configuration Debug` options to disable optimizations.
+
+Remote launch configuration works in this case:
+```json
+{
+    "name": "Skaffold Debug",
+    "type": "coreclr",
+    "request": "attach",
+    "processId" : "${command:pickRemoteProcess}", // if your docker image doesn't contain `ps`, this command will fail... usually processId is 1
+    "justMyCode": true, //dotnet debug=true,dotner release=false
+    "pipeTransport": {
+        "pipeProgram": "kubectl",
+        "pipeArgs": [
+            "exec",
+            "-i",
+            "<NAME OF YOUR POD>", //name of the pod you debug.
+            "--"
+        ],
+        "pipeCwd": "${workspaceFolder}",
+        "debuggerPath": "/dbg/netcore/vsdbg", //location where vsdbg binary installed.
+        "quoteArgs": false
+    },
+    "sourceFileMap": {
+        // Change this mapping if your app in not deployed in /src or /app in your docker image
+        "/src": "${workspaceFolder}",
+        "/app": "${workspaceFolder}"
+        // May also be like this, depending of your repository layout
+        // "/src": "${workspaceFolder}/src",
+        // "/app": "${workspaceFolder}/src/<YOUR PROJECT TO DEBUG>"
+    }
+}
+```
 
 ## IDE Support via Events and Metadata
 
