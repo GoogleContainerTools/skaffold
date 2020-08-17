@@ -528,7 +528,7 @@ type KustomizeDeploy struct {
 
 // KptDeploy *beta* uses the `kpt` CLI to manage and deploy manifests.
 type KptDeploy struct {
-	// Dir is the path to the directory to run kpt functions against and deploy to the cluster.
+	// Dir is the path to the directory to run kpt functions against.
 	Dir string `yaml:"dir,omitempty"`
 
 	// Fn adds additional configurations for `kpt fn`.
