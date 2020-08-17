@@ -828,6 +828,11 @@
           "description": "*beta* uses the `helm` CLI to apply the charts to the cluster.",
           "x-intellij-html-description": "<em>beta</em> uses the <code>helm</code> CLI to apply the charts to the cluster."
         },
+        "kpt": {
+          "$ref": "#/definitions/KptDeploy",
+          "description": "*beta* uses the `kpt` CLI to manage and deploy manifests.",
+          "x-intellij-html-description": "<em>beta</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
+        },
         "kubeContext": {
           "type": "string",
           "description": "Kubernetes context that Skaffold should deploy to.",
@@ -861,6 +866,7 @@
         "helm",
         "kubectl",
         "kustomize",
+        "kpt",
         "statusCheckDeadlineSeconds",
         "kubeContext",
         "logs"
@@ -1592,6 +1598,73 @@
       "additionalProperties": false,
       "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
       "x-intellij-html-description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds."
+    },
+    "KptDeploy": {
+      "properties": {
+        "dir": {
+          "type": "string",
+          "description": "path to the directory to run kpt functions against and deploy to the cluster.",
+          "x-intellij-html-description": "path to the directory to run kpt functions against and deploy to the cluster."
+        },
+        "fn": {
+          "$ref": "#/definitions/KptFn",
+          "description": "adds additional configurations for `kpt fn`.",
+          "x-intellij-html-description": "adds additional configurations for <code>kpt fn</code>."
+        },
+        "live": {
+          "$ref": "#/definitions/KptLive",
+          "description": "adds additional configurations for `kpt live`.",
+          "x-intellij-html-description": "adds additional configurations for <code>kpt live</code>."
+        }
+      },
+      "preferredOrder": [
+        "dir",
+        "fn",
+        "live"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* uses the `kpt` CLI to manage and deploy manifests.",
+      "x-intellij-html-description": "<em>beta</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
+    },
+    "KptFn": {
+      "properties": {
+        "fnPath": {
+          "type": "string",
+          "description": "path to a kpt function or pipeline.",
+          "x-intellij-html-description": "path to a kpt function or pipeline."
+        },
+        "image": {
+          "type": "string",
+          "description": "specifies an image to be run as a function.",
+          "x-intellij-html-description": "specifies an image to be run as a function."
+        }
+      },
+      "preferredOrder": [
+        "fnPath",
+        "image"
+      ],
+      "additionalProperties": false,
+      "description": "adds additional configurations used when calling `kpt fn`.",
+      "x-intellij-html-description": "adds additional configurations used when calling <code>kpt fn</code>."
+    },
+    "KptLive": {
+      "properties": {
+        "apply": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed on creations (`kpt live apply`).",
+          "x-intellij-html-description": "additional flags passed on creations (<code>kpt live apply</code>).",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "apply"
+      ],
+      "additionalProperties": false,
+      "description": "adds additional configurations used when calling `kpt live` on every command (Global), creations (Apply), or deletions (Destroy).",
+      "x-intellij-html-description": "adds additional configurations used when calling <code>kpt live</code> on every command (Global), creations (Apply), or deletions (Destroy)."
     },
     "KubectlDeploy": {
       "properties": {
