@@ -35,6 +35,13 @@ func isLaunchingNetcore(args []string) bool {
 }
 
 func (t netcoreTransformer) IsApplicable(config imageConfiguration) bool {
+	// Some official base images (eg: dotnet/core/runtime-deps) contain the following env vars
+	for _, v := range []string{"ASPNETCORE_URLS", "DOTNET_RUNNING_IN_CONTAINER", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"} {
+		if _, found := config.env[v]; found {
+			return true
+		}
+	}
+
 	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return isLaunchingNetcore(config.entrypoint)
 	}

@@ -31,6 +31,21 @@ func TestNetcoreTransformer_IsApplicable(t *testing.T) {
 		result      bool
 	}{
 		{
+			description: "ASPNETCORE_URLS",
+			source:      imageConfiguration{env: map[string]string{"ASPNETCORE_URLS": "http://+:80"}},
+			result:      true,
+		},
+		{
+			description: "DOTNET_RUNNING_IN_CONTAINER",
+			source:      imageConfiguration{env: map[string]string{"DOTNET_RUNNING_IN_CONTAINER": "true"}},
+			result:      true,
+		},
+		{
+			description: "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT",
+			source:      imageConfiguration{env: map[string]string{"DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "true"}},
+			result:      true,
+		},
+		{
 			description: "entrypoint with dotnet",
 			source:      imageConfiguration{entrypoint: []string{"dotnet", "myapp.dll"}},
 			result:      true,
@@ -71,18 +86,20 @@ func TestNetcoreTransformerApply(t *testing.T) {
 			description:   "empty",
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{},
-			debugConfig:   ContainerDebugConfiguration{Runtime: "netcore"},
-			image:         "netcore",
-			shouldErr:     false,
+
+			debugConfig: ContainerDebugConfiguration{Runtime: "netcore"},
+			image:       "netcore",
+			shouldErr:   false,
 		},
 		{
 			description:   "basic",
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{entrypoint: []string{"dotnet", "myapp.dll"}},
-			result:        v1.Container{},
-			debugConfig:   ContainerDebugConfiguration{Runtime: "netcore"},
-			image:         "netcore",
-			shouldErr:     false,
+
+			result:      v1.Container{},
+			debugConfig: ContainerDebugConfiguration{Runtime: "netcore"},
+			image:       "netcore",
+			shouldErr:   false,
 		},
 	}
 	var identity portAllocator = func(port int32) int32 {
