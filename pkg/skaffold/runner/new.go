@@ -84,16 +84,15 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		deployer = WithNotification(deployer)
 	}
 
-	trigger, err := trigger.NewTrigger(runCtx)
-	if err != nil {
-		return nil, fmt.Errorf("creating watch trigger: %w", err)
-	}
-
 	event.InitializeState(runCtx.Pipeline(), runCtx.GetKubeContext(), runCtx.AutoBuild(), runCtx.AutoDeploy(), runCtx.AutoSync())
 	event.LogMetaEvent()
 
 	monitor := filemon.NewMonitor()
 	intents, intentChan := setupIntents(runCtx)
+	trigger, err := trigger.NewTrigger(runCtx, intents.IsAnyAutoEnabled)
+	if err != nil {
+		return nil, fmt.Errorf("creating watch trigger: %w", err)
+	}
 
 	return &SkaffoldRunner{
 		builder:  builder,
