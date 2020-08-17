@@ -57,7 +57,7 @@ func checkVersion(config string, onError bool) (string, error) {
 	}
 	latest, current, err := GetLatestAndCurrentVersion()
 	if err != nil {
-		return "", fmt.Errorf("get latest and current Skaffold version: %w", err)
+		return "", fmt.Errorf("getting latest and current skaffold versions: %w", err)
 	}
 	if !latest.GT(current) {
 		return "", nil
