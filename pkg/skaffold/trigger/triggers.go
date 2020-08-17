@@ -91,7 +91,7 @@ func (t *pollTrigger) LogWatchToUser(out io.Writer) {
 	}
 }
 
-// Start starts a timer if active.
+// Start starts a timer.
 func (t *pollTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	trigger := make(chan bool)
 
@@ -100,6 +100,8 @@ func (t *pollTrigger) Start(ctx context.Context) (<-chan bool, error) {
 		for {
 			select {
 			case <-ticker.C:
+
+				// Ignore if trigger is inactive
 				if !t.isActive() {
 					continue
 				}
