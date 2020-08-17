@@ -23,7 +23,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -102,8 +101,11 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				logrus.Debugf("Update check and survey prompt when running `init --analyze`")
 			default:
 				go func() {
-					if err := updateCheck(updateMsg, opts.GlobalConfig); err != nil {
+					msg, err := update.CheckVersion(opts.GlobalConfig)
+					if err != nil {
 						logrus.Infof("update check failed: %s", err)
+					} else if msg != "" {
+						updateMsg <- msg
 					}
 					surveyPrompt <- config.ShouldDisplayPrompt(opts.GlobalConfig)
 				}()
@@ -193,25 +195,6 @@ func NewCmdOptions() *cobra.Command {
 	templates.UseOptionsTemplates(cmd)
 
 	return cmd
-}
-
-func updateCheck(ch chan string, configfile string) error {
-	if !update.IsUpdateCheckEnabled(configfile) {
-		logrus.Debugf("Update check not enabled, skipping.")
-		return nil
-	}
-	latest, current, err := update.GetLatestAndCurrentVersion()
-	if err != nil {
-		return fmt.Errorf("get latest and current Skaffold version: %w", err)
-	}
-	if latest.GT(current) {
-		ch <- fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it from:\n  %s\n", latest, releaseURL(latest))
-	}
-	return nil
-}
-
-func releaseURL(v semver.Version) string {
-	return fmt.Sprintf("https://github.com/GoogleContainerTools/skaffold/releases/tag/v" + v.String())
 }
 
 // Each flag can also be set with an env variable whose name starts with `SKAFFOLD_`.
