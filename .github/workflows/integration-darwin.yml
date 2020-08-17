@@ -12,7 +12,6 @@ jobs:
     strategy:
       matrix:
         kustomize_version: [3.5.4]
-        bazel_version: [3.2.0]
         ko_version: [0.4.0]
         kompose_version: [1.21.0]
         gcloud_sdk_version: [276.0.0]
@@ -34,13 +33,6 @@ jobs:
     - name: Skaffold binary version
       run: |
         echo ::set-env name=SKAFFOLD_VERSION::"$(git log --format="%H" -n 1)"
-
-    - name: Install Bazel
-      run: |
-        curl -fLO "https://github.com/bazelbuild/bazel/releases/download/${{ matrix.bazel_version }}/bazel-${{ matrix.bazel_version }}-installer-darwin-x86_64.sh"
-        chmod +x "bazel-${{ matrix.bazel_version }}-installer-darwin-x86_64.sh"
-        ./bazel-${{ matrix.bazel_version }}-installer-darwin-x86_64.sh --user
-        echo ::add-path::${HOME}/bin
 
     - name: Install Kustomize
       run: |
