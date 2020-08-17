@@ -15,3 +15,82 @@ limitations under the License.
 */
 
 package deploy
+
+import (
+	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/testutil"
+)
+
+func TestKpt_Deploy(t *testing.T) {
+	tests := []struct {
+		description string
+		expected    []string
+		shouldErr   bool
+	}{
+		{
+			description: "nil",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			k := NewKptDeployer(&runcontext.RunContext{}, nil)
+			res, err := k.Deploy(nil, nil, nil)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
+		})
+	}
+}
+
+func TestKpt_Dependencies(t *testing.T) {
+	tests := []struct {
+		description string
+		expected    []string
+		shouldErr   bool
+	}{
+		{
+			description: "nil",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			k := NewKptDeployer(&runcontext.RunContext{}, nil)
+			res, err := k.Dependencies()
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
+		})
+	}
+}
+
+func TestKpt_Cleanup(t *testing.T) {
+	tests := []struct {
+		description string
+		shouldErr   bool
+	}{
+		{
+			description: "nil",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			k := NewKptDeployer(&runcontext.RunContext{}, nil)
+			err := k.Cleanup(nil, nil)
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
+func TestKpt_Render(t *testing.T) {
+	tests := []struct {
+		description string
+		shouldErr   bool
+	}{
+		{},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			k := NewKptDeployer(&runcontext.RunContext{}, nil)
+			err := k.Render(nil, nil, nil, false, "")
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
