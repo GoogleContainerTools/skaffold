@@ -17,6 +17,7 @@ limitations under the License.
 package deploy
 
 import (
+	"context"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -36,7 +37,7 @@ func TestKpt_Deploy(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			k := NewKptDeployer(&runcontext.RunContext{}, nil)
-			res, err := k.Deploy(nil, nil, nil)
+			res, err := k.Deploy(context.Background(), nil, nil)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
 		})
 	}
@@ -73,7 +74,7 @@ func TestKpt_Cleanup(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			k := NewKptDeployer(&runcontext.RunContext{}, nil)
-			err := k.Cleanup(nil, nil)
+			err := k.Cleanup(context.Background(), nil)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -89,7 +90,7 @@ func TestKpt_Render(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			k := NewKptDeployer(&runcontext.RunContext{}, nil)
-			err := k.Render(nil, nil, nil, false, "")
+			err := k.Render(context.Background(), nil, nil, false, "")
 			t.CheckError(test.shouldErr, err)
 		})
 	}
