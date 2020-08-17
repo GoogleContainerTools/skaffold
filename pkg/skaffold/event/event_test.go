@@ -475,7 +475,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
 				handler.logLock.Unlock()
-				return logEntry.Entry == fmt.Sprintf("DevInit Iteration 1 failed with error code %v", proto.StatusCode_BUILD_PUSH_ACCESS_DENIED)
+				return logEntry.Entry == fmt.Sprintf("Update failed with error code %v", proto.StatusCode_BUILD_PUSH_ACCESS_DENIED)
 			},
 		},
 		{
@@ -489,7 +489,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
 				handler.logLock.Unlock()
-				return logEntry.Entry == fmt.Sprintf("DevInit Iteration 1 failed with error code %v", proto.StatusCode_DEPLOY_UNKNOWN)
+				return logEntry.Entry == fmt.Sprintf("Update failed with error code %v", proto.StatusCode_DEPLOY_UNKNOWN)
 			},
 		},
 		{
@@ -504,7 +504,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
 				handler.logLock.Unlock()
-				return logEntry.Entry == fmt.Sprintf("DevInit Iteration 1 failed with error code %v", proto.StatusCode_STATUSCHECK_UNHEALTHY)
+				return logEntry.Entry == fmt.Sprintf("Update failed with error code %v", proto.StatusCode_STATUSCHECK_UNHEALTHY)
 			},
 		},
 	}
