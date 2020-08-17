@@ -275,6 +275,18 @@ func TestGetDeployStatus(t *testing.T) {
 			description: "0 deployments",
 			counter:     &counter{},
 		},
+		{
+			description: "unable to retrieve pods for deployment",
+			counter:     &counter{total: 1, failed: 1},
+			deployments: []*resource.Deployment{
+				withStatus(
+					resource.NewDeployment("deployment", "test", 1),
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
+				),
+			},
+			shouldErr:    true,
+			expectedCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR,
+		},
 	}
 
 	for _, test := range tests {
