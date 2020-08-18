@@ -135,9 +135,11 @@ func getResources(root string) ([]string, error) {
 	}
 
 	err := filepath.Walk(root, func(path string, info os.FileInfo, _ error) error {
+		// Using regex match is not entirely accurate in deciding whether something is a resource or not.
+		// Kpt should provide better functionality for determining whether files are resources.
 		isResource, err := regexp.MatchString(`\.ya?ml$`, filepath.Base(path))
 		if err != nil {
-			return fmt.Errorf("matching regex: %w", err)
+			return fmt.Errorf("matching %s with regex: %w", filepath.Base(path), err)
 		}
 
 		if info.IsDir() {
@@ -148,6 +150,7 @@ func getResources(root string) ([]string, error) {
 
 			files = append(files, depsForKustomization...)
 		} else if isResource {
+			// Windows uses `\` instead of `/` for paths. Replacing these will improve consistency for testing.
 			files = append(files, strings.ReplaceAll(path, "\\", "/"))
 		}
 

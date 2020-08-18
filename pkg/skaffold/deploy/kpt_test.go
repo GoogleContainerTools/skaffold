@@ -81,15 +81,15 @@ func TestKpt_Dependencies(t *testing.T) {
 			expected: []string{"foo.yaml"},
 		},
 		{
-			description: "dir with subdirs",
+			description: "dir with subdirs and file path variants",
 			cfg: &latest.KptDeploy{
 				Dir: ".",
 			},
 			createFiles: map[string]string{
-				"food.yml":          "",
-				"foo/bar.yaml":      "",
-				"foo/bat/bad.yml":   "",
-				"foo/bat/README.md": "",
+				"food.yml":           "",
+				"foo/bar.yaml":       "",
+				"foo/bat//bad.yml":   "",
+				"foo/bat\\README.md": "",
 			},
 			expected: []string{"foo/bar.yaml", "foo/bat/bad.yml", "food.yml"},
 		},
