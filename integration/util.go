@@ -359,7 +359,7 @@ func WaitForLogs(t *testing.T, out io.Reader, firstMessage string, moreMessages 
 	current := 0
 	message := firstMessage
 
-	timer := time.NewTimer(30 * time.Second)
+	timer := time.NewTimer(90 * time.Second)
 	defer timer.Stop()
 	for {
 		select {
