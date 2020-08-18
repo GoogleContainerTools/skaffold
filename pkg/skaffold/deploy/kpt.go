@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -47,7 +48,19 @@ func (k *KptDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.
 }
 
 func (k *KptDeployer) Dependencies() ([]string, error) {
-	return nil, nil
+	deps := newStringSet()
+	if len(k.Fn.FnPath) > 0 {
+		deps.insert(k.Fn.FnPath)
+	}
+
+	configDeps, err := getResources(k.Dir)
+	if err != nil {
+		return nil, fmt.Errorf("finding dependencies in %s: %w", k.Dir, err)
+	}
+
+	deps.insert(configDeps...)
+
+	return deps.toList(), nil
 }
 
 func (k *KptDeployer) Cleanup(ctx context.Context, out io.Writer) error {
@@ -110,4 +123,36 @@ func kptCommandArgs(dir string, commands, flags, globalFlags []string) []string 
 	}
 
 	return args
+}
+
+// getResources returns a list of all file names in `root` that end in .yaml or .yml
+// and all local kustomization dependencies under root.
+func getResources(root string) ([]string, error) {
+	var files []string
+
+	if _, err := os.Stat(root); os.IsNotExist(err) {
+		return nil, err
+	}
+
+	err := filepath.Walk(root, func(path string, info os.FileInfo, _ error) error {
+		isResource, err := regexp.MatchString(`\.ya?ml$`, filepath.Base(path))
+		if err != nil {
+			return fmt.Errorf("matching regex: %w", err)
+		}
+
+		if info.IsDir() {
+			depsForKustomization, err := dependenciesForKustomization(path)
+			if err != nil {
+				return err
+			}
+
+			files = append(files, depsForKustomization...)
+		} else if isResource {
+			files = append(files, strings.ReplaceAll(path, "\\", "/"))
+		}
+
+		return nil
+	})
+
+	return files, err
 }
