@@ -35,6 +35,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 		commands        util.Command
 		expectedErr     string
 		expectedDetails string
+		cancelled       bool
 		complete        bool
 	}{
 		{
@@ -80,6 +81,17 @@ func TestDeploymentCheckStatus(t *testing.T) {
 			),
 			expectedErr: MsgKubectlConnection,
 		},
+		{
+			description: "set status to cancel",
+			commands: testutil.CmdRunOutErr(
+				rolloutCmd,
+				"",
+				errors.New("waiting for replicas to be available"),
+			),
+			cancelled:   true,
+			complete:    true,
+			expectedErr: "context cancelled",
+		},
 	}
 
 	for _, test := range tests {
@@ -91,7 +103,13 @@ func TestDeploymentCheckStatus(t *testing.T) {
 			}
 
 			r.CheckStatus(context.Background(), runCtx)
-			t.CheckDeepEqual(test.complete, r.IsStatusCheckComplete())
+			if test.cancelled {
+				r.UpdateStatus(proto.ActionableErr{
+					ErrCode: proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED,
+					Message: "context cancelled",
+				})
+			}
+			t.CheckDeepEqual(test.complete, r.IsStatusCheckCompleteOrCancelled())
 			if test.expectedErr != "" {
 				t.CheckErrorContains(test.expectedErr, r.Status().Error())
 			} else {

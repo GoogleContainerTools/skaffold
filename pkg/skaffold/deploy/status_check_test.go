@@ -349,7 +349,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			deployment:  "dep",
 			pending:     8,
 			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, Message: "context deadline expired"},
-			expected:    " - test:deployment/dep failed. [8/10 deployment(s) still pending] Error: context deadline expired.\n",
+			expected:    " - test:deployment/dep failed. Error: context deadline expired.\n",
 		},
 	}
 
@@ -507,38 +507,6 @@ func TestResourceMarkProcessed(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.CheckDeepEqual(test.expected, test.c.markProcessed(test.err), cmp.AllowUnexported(counter{}))
-		})
-	}
-}
-
-func TestGetStatusCheckDeadline(t *testing.T) {
-	tests := []struct {
-		description string
-		value       int
-		deps        []*resource.Deployment
-		expected    time.Duration
-	}{
-		{
-			description: "no value specified",
-			deps: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 10*time.Second),
-				resource.NewDeployment("dep2", "test", 20*time.Second),
-			},
-			expected: 20 * time.Second,
-		},
-		{
-			description: "value specified less than all other resources",
-			value:       5,
-			deps: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 10*time.Second),
-				resource.NewDeployment("dep2", "test", 20*time.Second),
-			},
-			expected: 5 * time.Second,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(test.expected, statusCheckMaxDeadline(test.value, test.deps))
 		})
 	}
 }

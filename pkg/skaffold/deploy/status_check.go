@@ -41,11 +41,11 @@ import (
 var (
 	defaultStatusCheckDeadline = 2 * time.Minute
 
-	// Poll period for checking set to 100 milliseconds
-	defaultPollPeriodInMilliseconds = 100
+	// Poll period for checking set to 1 second
+	defaultPollPeriodInMilliseconds = 1000
 
-	// report resource status for pending resources 0.5 second.
-	reportStatusTime = 500 * time.Millisecond
+	// report resource status for pending resources 5 seconds.
+	reportStatusTime = 50 * time.Second
 )
 
 const (
@@ -90,26 +90,31 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		deployments = append(deployments, newDeployments...)
 	}
 
-	deadline := statusCheckMaxDeadline(runCtx.Pipeline().Deploy.StatusCheckDeadlineSeconds, deployments)
-
 	var wg sync.WaitGroup
 
 	c := newCounter(len(deployments))
+
+	sCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	for _, d := range deployments {
 		wg.Add(1)
 		go func(r *resource.Deployment) {
 			defer wg.Done()
 			// keep updating the resource status until it fails/succeeds/times out
-			pollDeploymentStatus(ctx, runCtx, r)
+			pollDeploymentStatus(sCtx, runCtx, r)
 			rcCopy := c.markProcessed(r.Status().Error())
 			printStatusCheckSummary(out, r, rcCopy)
+			// if one deployment is in error, cancel status checks for all deployments.
+			if r.Status().Error() != nil && r.StatusCode() != proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED {
+				cancel()
+			}
 		}(d)
 	}
 
 	// Retrieve pending deployments statuses
 	go func() {
-		printDeploymentStatus(ctx, out, deployments, deadline)
+		printDeploymentStatus(sCtx, out, deployments)
 	}()
 
 	// Wait for all deployment statuses to be fetched
@@ -155,13 +160,22 @@ func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r 
 	for {
 		select {
 		case <-timeoutContext.Done():
-			msg := fmt.Sprintf("could not stabilize within %v: %v", r.Deadline(), timeoutContext.Err())
-			r.UpdateStatus(proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED,
-				Message: msg})
+			switch c := timeoutContext.Err(); c {
+			case context.Canceled:
+				r.UpdateStatus(proto.ActionableErr{
+					ErrCode: proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED,
+					Message: "check cancelled\n",
+				})
+			case context.DeadlineExceeded:
+				r.UpdateStatus(proto.ActionableErr{
+					ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED,
+					Message: fmt.Sprintf("could not stabilize within %v\n", r.Deadline()),
+				})
+			}
 			return
 		case <-time.After(pollDuration):
 			r.CheckStatus(timeoutContext, runCtx)
-			if r.IsStatusCheckComplete() {
+			if r.IsStatusCheckCompleteOrCancelled() {
 				return
 			}
 			// Fail immediately if any pod container errors cannot be recovered.
@@ -181,8 +195,8 @@ func getSkaffoldDeployStatus(c *counter, rs []*resource.Deployment) (proto.Statu
 	if c.failed > 0 {
 		err := fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
 		for _, r := range rs {
-			if r.StatusCode != proto.StatusCode_STATUSCHECK_SUCCESS {
-				return r.FirstPodErrOccurred(), err
+			if r.StatusCode() != proto.StatusCode_STATUSCHECK_SUCCESS {
+				return r.StatusCode(), err
 			}
 		}
 	}
@@ -198,20 +212,22 @@ func getDeadline(d int) time.Duration {
 
 func printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 	ae := r.Status().ActionableError()
-	if ae.ErrCode == proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED {
-		// Don't print the status summary if the user ctrl-C
+	if r.StatusCode() == proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED {
+		// Don't print the status summary if the user ctrl-C or
+		// another deployment failed
 		return
 	}
-	event.ResourceStatusCheckEventCompleted(r.String(), r.Status().ActionableError())
+	event.ResourceStatusCheckEventCompleted(r.String(), ae)
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		if str := r.ReportSinceLastUpdated(); str != "" {
 			fmt.Fprintln(out, trimNewLine(str))
+		} else {
+			return
 		}
-		status = fmt.Sprintf("%s failed.%s Error: %s.",
+		status = fmt.Sprintf("%s failed. Error: %s.",
 			status,
-			trimNewLine(getPendingMessage(c.pending, c.total)),
-			trimNewLine(ae.Message),
+			trimNewLine(r.StatusMessage()),
 		)
 	} else {
 		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(c.pending, c.total))
@@ -221,13 +237,11 @@ func printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 }
 
 // Print resource statuses until all status check are completed or context is cancelled.
-func printDeploymentStatus(ctx context.Context, out io.Writer, deployments []*resource.Deployment, deadline time.Duration) {
-	timeoutContext, cancel := context.WithTimeout(ctx, deadline)
-	defer cancel()
+func printDeploymentStatus(ctx context.Context, out io.Writer, deployments []*resource.Deployment) {
 	for {
 		var allDone bool
 		select {
-		case <-timeoutContext.Done():
+		case <-ctx.Done():
 			return
 		case <-time.After(reportStatusTime):
 			allDone = printStatus(deployments, out)
@@ -241,7 +255,7 @@ func printDeploymentStatus(ctx context.Context, out io.Writer, deployments []*re
 func printStatus(deployments []*resource.Deployment, out io.Writer) bool {
 	allDone := true
 	for _, r := range deployments {
-		if r.IsStatusCheckComplete() {
+		if r.IsStatusCheckCompleteOrCancelled() {
 			continue
 		}
 		allDone = false
@@ -272,7 +286,7 @@ func newCounter(i int) *counter {
 }
 
 func (c *counter) markProcessed(err error) counter {
-	if err != nil {
+	if err != nil && err != context.Canceled {
 		atomic.AddInt32(&c.failed, 1)
 	}
 	atomic.AddInt32(&c.pending, -1)
@@ -285,17 +299,4 @@ func (c *counter) copy() counter {
 		pending: c.pending,
 		failed:  c.failed,
 	}
-}
-
-func statusCheckMaxDeadline(value int, deployments []*resource.Deployment) time.Duration {
-	if value > 0 {
-		return time.Duration(value) * time.Second
-	}
-	d := time.Duration(0)
-	for _, r := range deployments {
-		if r.Deadline() > d {
-			d = r.Deadline()
-		}
-	}
-	return d
 }

@@ -59,7 +59,7 @@ type Deployment struct {
 	namespace    string
 	rType        string
 	status       Status
-	StatusCode   proto.StatusCode
+	statusCode   proto.StatusCode
 	done         bool
 	deadline     time.Duration
 	pods         map[string]validator.Resource
@@ -136,15 +136,24 @@ func (d *Deployment) Status() Status {
 	return d.status
 }
 
-func (d *Deployment) IsStatusCheckComplete() bool {
-	return d.done
+func (d *Deployment) StatusMessage() string {
+	for _, p := range d.pods {
+		if s := p.ActionableError(); s.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
+			return fmt.Sprintf("%s\n", s.Message)
+		}
+	}
+	return d.status.String()
+}
+
+func (d *Deployment) IsStatusCheckCompleteOrCancelled() bool {
+	return d.done || d.statusCode == proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED
 }
 
 func (d *Deployment) MarkComplete() {
 	d.done = true
 }
 
-// This returns a string representing deployment status along with tab header
+// ReportSinceLastUpdated returns a string representing deployment status along with tab header
 // e.g.
 //  - testNs:deployment/leeroy-app: waiting for rollout to complete. (1/2) pending
 //      - testNs:pod/leeroy-app-xvbg : error pulling container image
@@ -173,7 +182,7 @@ func (d *Deployment) ReportSinceLastUpdated() string {
 	if result.String() == "" {
 		return ""
 	}
-	return fmt.Sprintf("%s %s: %s%s", tabHeader, d, d.status, result.String())
+	return fmt.Sprintf("%s %s: %s%s", tabHeader, d, d.StatusMessage(), result.String())
 }
 
 func (d *Deployment) cleanupStatus(msg string) string {
@@ -265,18 +274,21 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 	return nil
 }
 
-// Return first pod status in error.
-// TODO: should we return all distinct error codes in future?
-func (d *Deployment) FirstPodErrOccurred() proto.StatusCode {
-	if len(d.pods) == 0 {
-		return d.Status().ActionableError().ErrCode
+// StatusCode() returns the deployment status code if the status check is cancelled
+// or if no pod data exists for this deployments.
+// If pods are fetched, this function returns the error code a pod container encountered.
+func (d *Deployment) StatusCode() proto.StatusCode {
+	// do not process pod status codes if deployments failed due to
+	// user hit control C or another deployment failed.
+	if d.statusCode == proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED {
+		return d.statusCode
 	}
 	for _, p := range d.pods {
 		if s := p.ActionableError().ErrCode; s != proto.StatusCode_STATUSCHECK_SUCCESS {
 			return s
 		}
 	}
-	return proto.StatusCode_STATUSCHECK_SUCCESS
+	return d.statusCode
 }
 
 func (d *Deployment) WithPodStatuses(scs []proto.StatusCode) *Deployment {
