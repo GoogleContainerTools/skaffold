@@ -1603,8 +1603,8 @@
       "properties": {
         "dir": {
           "type": "string",
-          "description": "path to the directory to run kpt functions against and deploy to the cluster.",
-          "x-intellij-html-description": "path to the directory to run kpt functions against and deploy to the cluster."
+          "description": "path to the directory to run kpt functions against.",
+          "x-intellij-html-description": "path to the directory to run kpt functions against."
         },
         "fn": {
           "$ref": "#/definitions/KptFn",
