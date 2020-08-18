@@ -864,9 +864,9 @@
       },
       "preferredOrder": [
         "helm",
+        "kpt",
         "kubectl",
         "kustomize",
-        "kpt",
         "statusCheckDeadlineSeconds",
         "kubeContext",
         "logs"
@@ -1630,13 +1630,13 @@
       "properties": {
         "fnPath": {
           "type": "string",
-          "description": "path to a kpt function or pipeline.",
-          "x-intellij-html-description": "path to a kpt function or pipeline."
+          "description": "a directory to read functions from instead of the configuration directory.",
+          "x-intellij-html-description": "a directory to read functions from instead of the configuration directory."
         },
         "image": {
           "type": "string",
-          "description": "specifies an image to be run as a function.",
-          "x-intellij-html-description": "specifies an image to be run as a function."
+          "description": "an image to be run as a function in lieu of running functions from a directory.",
+          "x-intellij-html-description": "an image to be run as a function in lieu of running functions from a directory."
         }
       },
       "preferredOrder": [
