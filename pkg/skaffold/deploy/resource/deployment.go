@@ -268,6 +268,9 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 // Return first pod status in error.
 // TODO: should we return all distinct error codes in future?
 func (d *Deployment) FirstPodErrOccurred() proto.StatusCode {
+	if len(d.pods) == 0 {
+		return d.Status().ActionableError().ErrCode
+	}
 	for _, p := range d.pods {
 		if s := p.ActionableError().ErrCode; s != proto.StatusCode_STATUSCHECK_SUCCESS {
 			return s
