@@ -107,7 +107,7 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.Sk
 func warnIfUpdateIsAvailable() {
 	warning, err := update.CheckVersionOnError(opts.GlobalConfig)
 	if err != nil {
-		logrus.Debugf("update check failed: %w", err)
+		logrus.Debugf("update check failed: %v", err)
 		return
 	}
 	if warning != "" {
