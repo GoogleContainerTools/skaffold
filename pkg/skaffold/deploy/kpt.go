@@ -50,7 +50,17 @@ func (k *KptDeployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (k *KptDeployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (k *KptDeployer) Cleanup(ctx context.Context, _ io.Writer) error {
+	applyDir, err := k.getApplyDir(ctx)
+	if err != nil {
+		return fmt.Errorf("getting applyDir: %w", err)
+	}
+
+	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "destroy"}, nil, nil)...)
+	if err = util.RunCmd(cmd); err != nil {
+		return fmt.Errorf("kpt live destroy: %w", err)
+	}
+
 	return nil
 }
 
