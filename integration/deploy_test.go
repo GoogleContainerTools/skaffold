@@ -17,12 +17,17 @@ limitations under the License.
 package integration
 
 import (
+	"errors"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -109,7 +114,7 @@ func TestDeployWithInCorrectConfig(t *testing.T) {
 
 // Verify that we can deploy without artifact details (https://github.com/GoogleContainerTools/skaffold/issues/4616)
 func TestDeployWithoutWorkspaces(t *testing.T) {
-	//MarkIntegrationTest(t, NeedsGcp)
+	MarkIntegrationTest(t, NeedsGcp)
 
 	ns, _ := SetupNamespace(t)
 
@@ -124,10 +129,79 @@ func TestDeployWithoutWorkspaces(t *testing.T) {
 	tmpDir := testutil.NewTempDir(t)
 	buildOutputFile := tmpDir.Path("build.out")
 	tmpDir.Write("build.out", string(outputBytes))
-	util.Copy(tmpDir.Root(), "examples/nodejs/skaffold.yaml")
-	util.Copy(tmpDir.Root(), "examples/nodejs/k8s")
+	copyFiles(tmpDir.Root(), "examples/nodejs/skaffold.yaml")
+	copyFiles(tmpDir.Root(), "examples/nodejs/k8s")
 
 	// Run Deploy using the build output
 	// See https://github.com/GoogleContainerTools/skaffold/issues/2372 on why status-check=false
 	skaffold.Deploy("--build-artifacts", buildOutputFile, "--status-check=false").InDir(tmpDir.Root()).InNs(ns.Name).RunOrFail(t)
+}
+
+// Copies a file or directory tree.  There are 2x3 cases:
+//   1. If _src_ is a file,
+//      1. and _dst_ exists and is a file then _src_ is copied into _dst_
+//      2. and _dst_ exists and is a directory, then _src_ is copied as _dst/$(basename src)_
+//      3. and _dst_ does not exist, then _src_ is copied as _dst_.
+//   2. If _src_ is a directory,
+//      1. and _dst_ exists and is a file, then return an error
+//      2. and _dst_ exists and is a directory, then src is copied as _dst/$(basename src)_
+//      3. and _dst_ does not exist, then src is copied as _dst/src[1:]_.
+func copyFiles(dst, src string) error {
+	if util.IsFile(src) {
+		switch {
+		case util.IsFile(dst): // copy _src_ to _dst_
+		case util.IsDir(dst): // copy _src_ to _dst/src[-1]
+			dst = filepath.Join(dst, filepath.Base(src))
+		default: // copy _src_ to _dst_
+			if err := os.MkdirAll(filepath.Dir(dst), os.ModePerm); err != nil {
+				return err
+			}
+		}
+		in, err := os.Open(src)
+		if err != nil {
+			return err
+		}
+		out, err := os.Create(dst)
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(out, in)
+		return err
+	} else if !util.IsDir(src) {
+		return errors.New("src does not exist")
+	}
+	// so src is a directory
+	if util.IsFile(dst) {
+		return errors.New("cannot copy directory into file")
+	}
+	srcPrefix := src
+	if util.IsDir(dst) { // src is copied to _dst/$(basename src)
+		srcPrefix = filepath.Dir(src)
+	} else if err := os.MkdirAll(filepath.Dir(dst), os.ModePerm); err != nil {
+		return err
+	}
+	return walk.From(src).Unsorted().WhenIsFile().Do(func(path string, _ walk.Dirent) error {
+		rel, err := filepath.Rel(srcPrefix, path)
+		if err != nil {
+			return err
+		}
+		in, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer in.Close()
+
+		destFile := filepath.Join(dst, rel)
+		if err := os.MkdirAll(filepath.Dir(destFile), os.ModePerm); err != nil {
+			return err
+		}
+
+		out, err := os.Create(destFile)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(out, in)
+		return err
+	})
 }
