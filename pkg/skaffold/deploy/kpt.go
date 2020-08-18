@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -75,8 +76,12 @@ func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("applyDir was unspecified. creating applyDir: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "init"}, nil, nil)...)
-	util.RunCmd(cmd)
+	if _, err := os.Stat(filepath.Join(applyDir, "inventory-template.yaml")); os.IsNotExist(err) {
+		cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "init"}, nil, nil)...)
+		if err := util.RunCmd(cmd); err != nil {
+			return "", err
+		}
+	}
 
 	return applyDir, nil
 }

@@ -115,21 +115,30 @@ func TestKpt_GetApplyDir(t *testing.T) {
 		},
 		{
 			description: "specified a valid applyDir",
-			applyDir:    "resources",
-			expected:    "resources",
+			applyDir:    "valid_path",
+			expected:    "valid_path",
 		},
 		{
 			description: "unspecified applyDir",
 			expected:    ".kpt-hydrated",
 			commands:    testutil.CmdRun("kpt live init .kpt-hydrated"),
 		},
+		{
+			description: "existing template resource in .kpt-hydrated",
+			expected:    ".kpt-hydrated",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.NewTempDir().Chdir()
+			tmpDir := t.NewTempDir().Chdir()
+
 			if test.applyDir == test.expected {
 				os.Mkdir(test.applyDir, 0755)
+			}
+
+			if test.description == "existing template resource in .kpt-hydrated" {
+				tmpDir.Touch(".kpt-hydrated/inventory-template.yaml")
 			}
 
 			k := NewKptDeployer(&runcontext.RunContext{
