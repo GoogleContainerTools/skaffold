@@ -214,9 +214,8 @@ func checkWorkspaces(artifacts []*latest.Artifact) error {
 				// err could be permission-related
 				if os.IsNotExist(err) {
 					return fmt.Errorf("image %q context %q does not exist", a.ImageName, a.Workspace)
-				} else {
-					return fmt.Errorf("image %q context %q: %w", a.ImageName, a.Workspace, err)
 				}
+				return fmt.Errorf("image %q context %q: %w", a.ImageName, a.Workspace, err)
 			} else if !info.IsDir() {
 				return fmt.Errorf("image %q context %q is not a directory", a.ImageName, a.Workspace)
 			}
