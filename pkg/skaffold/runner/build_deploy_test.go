@@ -128,3 +128,58 @@ func TestBuildAndTestSkipBuild(t *testing.T) {
 		t.CheckDeepEqual([]Actions{{}}, testBench.Actions())
 	})
 }
+
+func TestCheckWorkspaces(t *testing.T) {
+	tmpDir := testutil.NewTempDir(t).Touch("file")
+	tmpFile := tmpDir.Path("file")
+
+	tests := []struct {
+		description string
+		artifacts   []*latest.Artifact
+		shouldErr   bool
+	}{
+		{
+			description: "no workspace",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image",
+				},
+			},
+		},
+		{
+			description: "directory that exists",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image",
+					Workspace: tmpDir.Root(),
+				},
+			},
+		},
+		{
+			description: "error on non-existent location",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image",
+					Workspace: "doesnotexist",
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "error on file",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image",
+					Workspace: tmpFile,
+				},
+			},
+			shouldErr: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			err := checkWorkspaces(test.artifacts)
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
