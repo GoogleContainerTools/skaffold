@@ -1601,6 +1601,11 @@
     },
     "KptDeploy": {
       "properties": {
+        "applyDir": {
+          "type": "string",
+          "description": "path to the directory to deploy to the cluster.",
+          "x-intellij-html-description": "path to the directory to deploy to the cluster."
+        },
         "dir": {
           "type": "string",
           "description": "path to the directory to run kpt functions against.",
@@ -1619,6 +1624,7 @@
       },
       "preferredOrder": [
         "dir",
+        "applyDir",
         "fn",
         "live"
       ],

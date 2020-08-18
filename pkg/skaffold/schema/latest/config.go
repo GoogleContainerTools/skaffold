@@ -531,6 +531,9 @@ type KptDeploy struct {
 	// Dir is the path to the directory to run kpt functions against.
 	Dir string `yaml:"dir,omitempty"`
 
+	// ApplyDir is the path to the directory to deploy to the cluster.
+	ApplyDir string `yaml:"applyDir,omitempty"`
+
 	// Fn adds additional configurations for `kpt fn`.
 	Fn KptFn `yaml:"fn,omitempty"`
 
