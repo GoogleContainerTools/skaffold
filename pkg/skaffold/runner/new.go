@@ -204,6 +204,10 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) deploy
 		deployers = append(deployers, deploy.NewKustomizeDeployer(runCtx, labels))
 	}
 
+	if d.KptDeploy != nil {
+		deployers = append(deployers, deploy.NewKptDeployer(runCtx, labels))
+	}
+
 	// avoid muxing overhead when only a single deployer is configured
 	if len(deployers) == 1 {
 		return deployers[0]

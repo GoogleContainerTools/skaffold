@@ -453,6 +453,9 @@ type DeployType struct {
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty"`
+
+	// KptDeploy *beta* uses the `kpt` CLI to manage and deploy manifests.
+	KptDeploy *KptDeploy `yaml:"kpt,omitempty"`
 }
 
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
@@ -521,6 +524,34 @@ type KustomizeDeploy struct {
 
 	// BuildArgs are additional args passed to `kustomize build`.
 	BuildArgs []string `yaml:"buildArgs,omitempty"`
+}
+
+// KptDeploy *beta* uses the `kpt` CLI to manage and deploy manifests.
+type KptDeploy struct {
+	// Dir is the path to the directory to run kpt functions against.
+	Dir string `yaml:"dir,omitempty"`
+
+	// Fn adds additional configurations for `kpt fn`.
+	Fn KptFn `yaml:"fn,omitempty"`
+
+	// Live adds additional configurations for `kpt live`.
+	Live KptLive `yaml:"live,omitempty"`
+}
+
+// KptFn adds additional configurations used when calling `kpt fn`.
+type KptFn struct {
+	// FnPath is the path to a kpt function or pipeline.
+	FnPath string `yaml:"fnPath,omitempty"`
+
+	// Image specifies an image to be run as a function.
+	Image string `yaml:"image,omitempty"`
+}
+
+// KptLive adds additional configurations used when calling `kpt live`
+// on every command (Global), creations (Apply), or deletions (Destroy).
+type KptLive struct {
+	// Apply are additional flags passed on creations (`kpt live apply`).
+	Apply []string `yaml:"apply,omitempty"`
 }
 
 // HelmRelease describes a helm release to be deployed.
