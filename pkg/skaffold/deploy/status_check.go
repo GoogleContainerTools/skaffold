@@ -42,10 +42,10 @@ var (
 	defaultStatusCheckDeadline = 2 * time.Minute
 
 	// Poll period for checking set to 1 second
-	defaultPollPeriodInMilliseconds = 1000
+	defaultPollPeriodInMilliseconds = 100
 
 	// report resource status for pending resources 5 seconds.
-	reportStatusTime = 50 * time.Second
+	reportStatusTime = 500 * time.Millisecond
 )
 
 const (
@@ -220,7 +220,7 @@ func printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 	event.ResourceStatusCheckEventCompleted(r.String(), ae)
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
-		if str := r.ReportSinceLastUpdated(); str != "" {
+		if str := r.ReportSinceLastUpdated(true); str != "" {
 			fmt.Fprintln(out, trimNewLine(str))
 		} else {
 			return
@@ -259,7 +259,7 @@ func printStatus(deployments []*resource.Deployment, out io.Writer) bool {
 			continue
 		}
 		allDone = false
-		if str := r.ReportSinceLastUpdated(); str != "" {
+		if str := r.ReportSinceLastUpdated(true); str != "" {
 			event.ResourceStatusCheckEventUpdated(r.String(), r.Status().ActionableError())
 			fmt.Fprintln(out, trimNewLine(str))
 		}

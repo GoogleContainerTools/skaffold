@@ -137,12 +137,12 @@ func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 				// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
 				statusCode, logs, err := getContainerStatus(pod, cs)
 				if statusCode == proto.StatusCode_STATUSCHECK_POD_INITIALIZING {
-					// Determine if an init container is still running and show the init logs.
+					// Determine if an init container is still running and fetch the init logs.
 					for _, c := range pod.Status.InitContainerStatuses {
-						if c.State.Running != nil {
-							trimmedLogs := trimLogs(getPodLogs(pod, c.Name))
-							// trim logs to last 5 lines
-							return statusCode, trimmedLogs, fmt.Errorf("waiting for init container %s", c.Name)
+						if c.State.Waiting != nil {
+							return statusCode, []string{}, fmt.Errorf("waiting for init container %s to start", c.Name)
+						} else if c.State.Running != nil {
+							return statusCode, getPodLogs(pod, c.Name), fmt.Errorf("waiting for init container %s to complete", c.Name)
 						}
 					}
 				}
@@ -356,13 +356,6 @@ func getPodLogs(po *v1.Pod, c string) []string {
 		lines = append(lines, fmt.Sprintf("[%s %s] %s", po.Name, c, s))
 	}
 	return lines
-}
-
-func trimLogs(s []string) []string {
-	if l := len(s); l > 5 {
-		return s[l-5 : l]
-	}
-	return s
 }
 
 func executeCLI(cmdName string, args []string) ([]byte, error) {

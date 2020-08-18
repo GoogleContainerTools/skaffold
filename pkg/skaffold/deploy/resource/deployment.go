@@ -157,7 +157,7 @@ func (d *Deployment) MarkComplete() {
 // e.g.
 //  - testNs:deployment/leeroy-app: waiting for rollout to complete. (1/2) pending
 //      - testNs:pod/leeroy-app-xvbg : error pulling container image
-func (d *Deployment) ReportSinceLastUpdated() string {
+func (d *Deployment) ReportSinceLastUpdated(isMuted bool) string {
 	if d.status.reported && !d.status.changed {
 		return ""
 	}
@@ -174,9 +174,20 @@ func (d *Deployment) ReportSinceLastUpdated() string {
 	for _, p := range d.pods {
 		if s := p.ActionableError().Message; s != "" {
 			result.WriteString(fmt.Sprintf("%s %s %s: %s\n", tab, tabHeader, p, s))
-			for _, l := range p.Logs() {
-				result.WriteString(fmt.Sprintf("%s\n", l))
+			// if, is muted then write container logs to file and last 3 lines to
+			// result.
+			out, writeTrimLines, err := withContainerStatusLogFile("statuscheck", p.Name(), &result, p.Logs(), isMuted)
+			if err != nil {
+				logrus.Debugf("could not create log file %v", err)
 			}
+			trimLines := []string{}
+			for i, l := range p.Logs() {
+				if isMuted && i >= len(p.Logs())-3 {
+					trimLines = append(trimLines, fmt.Sprintf("%s\n", strings.TrimSuffix(l, "\n")))
+				}
+				out.Write([]byte(fmt.Sprintf("%s\n", strings.TrimSuffix(l, "\n"))))
+			}
+			writeTrimLines(trimLines)
 		}
 	}
 	if result.String() == "" {
@@ -263,6 +274,8 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 			d.status.changed = true
 			switch p.ActionableError().ErrCode {
 			case proto.StatusCode_STATUSCHECK_CONTAINER_CREATING:
+				event.ResourceStatusCheckEventUpdated(p.String(), p.ActionableError())
+			case proto.StatusCode_STATUSCHECK_POD_INITIALIZING:
 				event.ResourceStatusCheckEventUpdated(p.String(), p.ActionableError())
 			default:
 				event.ResourceStatusCheckEventCompleted(p.String(), p.ActionableError())
