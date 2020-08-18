@@ -628,11 +628,11 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 		de := e.DevLoopEvent
 		switch de.Status {
 		case InProgress:
-			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d in progress", de.Iteration)
+			logEntry.Entry = "Update initiated due to file change"
 		case Succeeded:
-			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d successful", de.Iteration)
+			logEntry.Entry = "Update successful"
 		case Failed:
-			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d failed with error code %v", de.Iteration, de.Err.ErrCode)
+			logEntry.Entry = fmt.Sprintf("Update failed with error code %v", de.Err.ErrCode)
 		}
 	default:
 		return
