@@ -41,7 +41,7 @@ func withLogFile(container string, out io.Writer, l []string, muted bool) (io.Wr
 	// After the status check updates finishes, close the log file.
 	return w, func(lines []string) {
 		file.Close()
-		// Write last 3 lines to out
+		// Write last few lines to out
 		for _, l := range lines {
 			out.Write([]byte(l))
 		}

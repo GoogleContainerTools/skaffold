@@ -175,7 +175,7 @@ func (d *Deployment) ReportSinceLastUpdated(isMuted bool) string {
 	for _, p := range d.pods {
 		if s := p.ActionableError().Message; s != "" {
 			result.WriteString(fmt.Sprintf("%s %s %s: %s\n", tab, tabHeader, p, s))
-			// if, is muted then write container logs to file and last 3 lines to
+			// if logs are muted, write container logs to file and last 3 lines to
 			// result.
 			out, writeTrimLines, err := withLogFile(p.Name(), &result, p.Logs(), isMuted)
 			if err != nil {
@@ -286,11 +286,11 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 }
 
 // StatusCode() returns the deployment status code if the status check is cancelled
-// or if no pod data exists for this deployments.
+// or if no pod data exists for this deployment.
 // If pods are fetched, this function returns the error code a pod container encountered.
 func (d *Deployment) StatusCode() proto.StatusCode {
-	// do not process pod status codes if deployments failed due to
-	// user hit control C or another deployment failed.
+	// do not process pod status codes if another deployment failed
+	// or the user aborted the run.
 	if d.statusCode == proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED {
 		return d.statusCode
 	}

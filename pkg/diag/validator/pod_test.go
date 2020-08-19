@@ -599,7 +599,7 @@ func TestRun(t *testing.T) {
 				}, []string{"[foo foo-container] some panic"})},
 		},
 		{
-			description: "pod condition with events when pod Initilizing phase",
+			description: "pod condition with events when pod is in Initializing phase",
 			pods: []*v1.Pod{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
