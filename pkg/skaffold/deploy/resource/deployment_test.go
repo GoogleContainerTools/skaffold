@@ -238,8 +238,8 @@ func TestReportSinceLastUpdated(t *testing.T) {
       > [pod container] Retrying 1st attempt ....
       > [pod container] Waiting for connection for 2 sec
       > [pod container] Terminating with exit code 11
-      Full logs at %s/skaffold/statuscheck/foo.log
-`, tmpDir),
+      Full logs at %s
+`, filepath.Join(tmpDir, "skaffold", "statuscheck", "foo.log")),
 			expected: ` - test-ns:deployment/test: container terminated with exit code 11
     - test:pod/foo: container terminated with exit code 11
       > [pod container] Waiting for mongodb to start...
