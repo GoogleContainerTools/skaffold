@@ -18,10 +18,13 @@ package deploy
 
 import (
 	"context"
+	"errors"
+	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -175,16 +178,61 @@ func TestKpt_Dependencies(t *testing.T) {
 func TestKpt_Cleanup(t *testing.T) {
 	tests := []struct {
 		description string
+		applyDir    string
+		commands    util.Command
 		shouldErr   bool
 	}{
 		{
-			description: "nil",
+			description: "invalid user specified applyDir",
+			applyDir:    "invalid_path",
+			shouldErr:   true,
+		},
+		{
+			description: "valid user specified applyDir w/o template resource",
+			applyDir:    "valid_path",
+			commands:    testutil.CmdRunOutErr("kpt live destroy valid_path", "", errors.New("BUG")),
+			shouldErr:   true,
+		},
+		{
+			description: "valid user specified applyDir w/ template resource (emulated)",
+			applyDir:    "valid_path",
+			commands:    testutil.CmdRunOut("kpt live destroy valid_path", ""),
+		},
+		{
+			description: "unspecified applyDir",
+			commands: testutil.
+				CmdRun("kpt live init .kpt-hydrated").
+				AndRunOut("kpt live destroy .kpt-hydrated", ""),
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k := NewKptDeployer(&runcontext.RunContext{}, nil)
-			err := k.Cleanup(context.Background(), nil)
+			t.Override(&util.DefaultExecCommand, test.commands)
+			t.NewTempDir().Chdir()
+
+			if test.applyDir == "valid_path" {
+				os.Mkdir(test.applyDir, 0755)
+			}
+
+			k := NewKptDeployer(&runcontext.RunContext{
+				WorkingDir: ".",
+				Cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KptDeploy: &latest.KptDeploy{
+								ApplyDir: test.applyDir,
+							},
+						},
+					},
+				},
+				KubeContext: testKubeContext,
+				Opts: config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
+			}, nil)
+
+			err := k.Cleanup(context.Background(), ioutil.Discard)
+
 			t.CheckError(test.shouldErr, err)
 		})
 	}
