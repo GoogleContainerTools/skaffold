@@ -50,6 +50,7 @@ func (k *KptDeployer) Dependencies() ([]string, error) {
 	return nil, nil
 }
 
+// Cleanup deletes what was deployed by calling `kpt live destroy`.
 func (k *KptDeployer) Cleanup(ctx context.Context, _ io.Writer) error {
 	applyDir, err := k.getApplyDir(ctx)
 	if err != nil {
@@ -57,8 +58,10 @@ func (k *KptDeployer) Cleanup(ctx context.Context, _ io.Writer) error {
 	}
 
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "destroy"}, nil, nil)...)
-	if err = util.RunCmd(cmd); err != nil {
-		return fmt.Errorf("kpt live destroy: %w", err)
+	out, err := util.RunCmdOut(cmd)
+	if err != nil {
+		// Kpt errors are written in STDOUT and surrounded by `\n`.
+		return fmt.Errorf("kpt live destroy: %s", strings.Trim(string(out), "\n"))
 	}
 
 	return nil

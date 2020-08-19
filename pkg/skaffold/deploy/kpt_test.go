@@ -84,19 +84,19 @@ func TestKpt_Cleanup(t *testing.T) {
 		{
 			description: "valid user specified applyDir w/o template resource",
 			applyDir:    "valid_path",
-			commands:    testutil.CmdRunErr("kpt live destroy valid_path", errors.New("BUG")),
+			commands:    testutil.CmdRunOutErr("kpt live destroy valid_path", "", errors.New("BUG")),
 			shouldErr:   true,
 		},
 		{
 			description: "valid user specified applyDir w/ template resource (emulated)",
 			applyDir:    "valid_path",
-			commands:    testutil.CmdRun("kpt live destroy valid_path"),
+			commands:    testutil.CmdRunOut("kpt live destroy valid_path", ""),
 		},
 		{
 			description: "unspecified applyDir",
 			commands: testutil.
 				CmdRun("kpt live init .kpt-hydrated").
-				AndRun("kpt live destroy .kpt-hydrated"),
+				AndRunOut("kpt live destroy .kpt-hydrated", ""),
 		},
 	}
 	for _, test := range tests {
