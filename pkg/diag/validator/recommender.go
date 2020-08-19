@@ -17,7 +17,6 @@ limitations under the License.
 package validator
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -25,16 +24,4 @@ import (
 type Recommender interface {
 	// Makes one or more recommendations for the ErrorCode in err and updates the err with suggestions
 	Make(errCode proto.StatusCode) proto.Suggestion
-}
-
-
-func NewInfraError(clusterType proto.ClusterType) Recommender {
-		switch clusterType {
-		case proto.ClusterType_MINIKUBE :
-			return &recommender.Minikube{}
-		case proto.ClusterType_GKE  :
-			return &recommender.GKE{}
-		default:
-			return &recommender.Cluster{}
-		}
 }

@@ -53,10 +53,6 @@ const (
 	kubernetesMaxDeadline = 600
 )
 
-var (
-	deployContext map[string]string
-)
-
 type counter struct {
 	total   int
 	pending int32
@@ -74,10 +70,6 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	client, err := pkgkubernetes.Client()
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
-	}
-
-	deployContext = map[string]string{
-		"clusterName": runCtx.GetKubeContext(),
 	}
 
 	deployments := make([]*resource.Deployment, 0)
@@ -135,7 +127,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 		}
 		pd := diag.New([]string{d.Namespace}).
 			WithLabel(RunIDLabel, l.Labels()[RunIDLabel]).
-			WithValidators([]validator.Validator{validator.NewPodValidator(client, event.GetClusterType(runCtx.KubeContext))})
+			WithValidators([]validator.Validator{validator.NewPodValidator(client)})
 
 		for k, v := range d.Spec.Template.Labels {
 			pd = pd.WithLabel(k, v)

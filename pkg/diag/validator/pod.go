@@ -74,8 +74,8 @@ type PodValidator struct {
 }
 
 // NewPodValidator initializes a PodValidator
-func NewPodValidator(k kubernetes.Interface, clusterType proto.ClusterType) *PodValidator {
-	rs := []Recommender{recommender.ContainerError{}, NewInfraError(clusterType)}
+func NewPodValidator(k kubernetes.Interface) *PodValidator {
+	rs := []Recommender{recommender.ContainerError{}}
 	return &PodValidator{k: k, recos: rs}
 }
 
