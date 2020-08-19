@@ -42,10 +42,10 @@ var (
 	defaultStatusCheckDeadline = 2 * time.Minute
 
 	// Poll period for checking set to 1 second
-	defaultPollPeriodInMilliseconds = 100
+	defaultPollPeriodInMilliseconds = 1000
 
 	// report resource status for pending resources 5 seconds.
-	reportStatusTime = 500 * time.Millisecond
+	reportStatusTime = 5 * time.Second
 )
 
 const (

@@ -137,6 +137,10 @@ func (d *Deployment) Status() Status {
 	return d.status
 }
 
+func (d *Deployment) IsStatusCheckCompleteOrCancelled() bool {
+	return d.done || d.statusCode == proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED
+}
+
 func (d *Deployment) StatusMessage() string {
 	for _, p := range d.pods {
 		if s := p.ActionableError(); s.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
@@ -144,10 +148,6 @@ func (d *Deployment) StatusMessage() string {
 		}
 	}
 	return d.status.String()
-}
-
-func (d *Deployment) IsStatusCheckCompleteOrCancelled() bool {
-	return d.done || d.statusCode == proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED
 }
 
 func (d *Deployment) MarkComplete() {
@@ -272,9 +272,8 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 		if !found || originalPod.StatusUpdated(p) {
 			d.status.changed = true
 			switch p.ActionableError().ErrCode {
-			case proto.StatusCode_STATUSCHECK_CONTAINER_CREATING:
-				event.ResourceStatusCheckEventUpdated(p.String(), p.ActionableError())
-			case proto.StatusCode_STATUSCHECK_POD_INITIALIZING:
+			case proto.StatusCode_STATUSCHECK_CONTAINER_CREATING,
+				proto.StatusCode_STATUSCHECK_POD_INITIALIZING:
 				event.ResourceStatusCheckEventUpdated(p.String(), p.ActionableError())
 			default:
 				event.ResourceStatusCheckEventCompleted(p.String(), p.ActionableError())

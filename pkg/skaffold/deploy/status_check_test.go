@@ -422,8 +422,8 @@ func TestPrintStatus(t *testing.T) {
 				),
 			},
 			expectedOut: ` - test:deployment/r2: pod failed
-	- test:pod/foo: pod failed
-		`,
+    - test:pod/foo: pod failed
+`,
 		},
 		{
 			description: "multiple resources 1 not complete and retry-able error",
