@@ -26,7 +26,7 @@ import (
 
 // withLogFile returns a multiwriter that writes both to a file and a buffer, with the buffer being written to the provided output buffer in case of error
 func withLogFile(container string, out io.Writer, l []string, muted bool) (io.Writer, func([]string), error) {
-	if !muted || len(l) < 4 {
+	if !muted || len(l) <= maxLogLines {
 		return out, func([]string) {}, nil
 	}
 	file, err := logfile.Create("statuscheck", container+".log")

@@ -40,6 +40,7 @@ const (
 	defaultPodCheckDeadline = 30 * time.Second
 	tabHeader               = " -"
 	tab                     = "  "
+	maxLogLines             = 3
 )
 
 var (
@@ -184,7 +185,7 @@ func (d *Deployment) ReportSinceLastUpdated(isMuted bool) string {
 			trimLines := []string{}
 			for i, l := range p.Logs() {
 				formattedLine := fmt.Sprintf("%s %s > %s\n", tab, tab, strings.TrimSuffix(l, "\n"))
-				if isMuted && i >= len(p.Logs())-3 {
+				if isMuted && i >= len(p.Logs())-maxLogLines {
 					trimLines = append(trimLines, formattedLine)
 				}
 				out.Write([]byte(formattedLine))
