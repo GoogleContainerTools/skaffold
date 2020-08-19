@@ -49,18 +49,124 @@ func TestKpt_Deploy(t *testing.T) {
 
 func TestKpt_Dependencies(t *testing.T) {
 	tests := []struct {
-		description string
-		expected    []string
-		shouldErr   bool
+		description    string
+		cfg            *latest.KptDeploy
+		createFiles    map[string]string
+		kustomizations map[string]string
+		expected       []string
+		shouldErr      bool
 	}{
 		{
-			description: "nil",
+			description: "bad dir",
+			cfg: &latest.KptDeploy{
+				Dir: "invalid_path",
+			},
+			shouldErr: true,
+		},
+		{
+			description: "empty dir and unspecified fnPath",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+		},
+		{
+			description: "dir",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+			createFiles: map[string]string{
+				"foo.yaml":  "",
+				"README.md": "",
+			},
+			expected: []string{"foo.yaml"},
+		},
+		{
+			description: "dir with subdirs and file path variants",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+			createFiles: map[string]string{
+				"food.yml":           "",
+				"foo/bar.yaml":       "",
+				"foo/bat//bad.yml":   "",
+				"foo/bat\\README.md": "",
+			},
+			expected: []string{"foo/bar.yaml", "foo/bat/bad.yml", "food.yml"},
+		},
+		{
+			description: "fnpath",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
+			},
+			expected: []string{"kpt-func.yaml"},
+		},
+		{
+			description: "fnpath and dir and kustomization",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
+			},
+			createFiles: map[string]string{"foo.yml": ""},
+			kustomizations: map[string]string{"kustomization.yaml": `configMapGenerator:
+- files: [app1.properties]`},
+			expected: []string{"app1.properties", "foo.yml", "kpt-func.yaml", "kustomization.yaml"},
+		},
+		{
+			description: "dependencies that can only be detected as a kustomization",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+			kustomizations: map[string]string{"kustomization.yaml": `configMapGenerator:
+- files: [app1.properties]`},
+			expected: []string{"app1.properties", "kustomization.yaml"},
+		},
+		{
+			description: "kustomization.yml variant",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+			kustomizations: map[string]string{"kustomization.yml": `configMapGenerator:
+- files: [app1.properties]`},
+			expected: []string{"app1.properties", "kustomization.yml"},
+		},
+		{
+			description: "Kustomization variant",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+			kustomizations: map[string]string{"Kustomization": `configMapGenerator:
+- files: [app1.properties]`},
+			expected: []string{"Kustomization", "app1.properties"},
+		},
+		{
+			description: "incorrectly named kustomization",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+			kustomizations: map[string]string{"customization": `configMapGenerator:
+- files: [app1.properties]`},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k := NewKptDeployer(&runcontext.RunContext{}, nil)
+			tmpDir := t.NewTempDir().Chdir()
+
+			tmpDir.WriteFiles(test.createFiles)
+			tmpDir.WriteFiles(test.kustomizations)
+
+			k := NewKptDeployer(&runcontext.RunContext{
+				Cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KptDeploy: test.cfg,
+						},
+					},
+				},
+			}, nil)
+
 			res, err := k.Dependencies()
+
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
 		})
 	}
