@@ -19,6 +19,9 @@ package resource
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
@@ -212,112 +215,151 @@ func TestIsErrAndNotRetriable(t *testing.T) {
 }
 
 func TestReportSinceLastUpdated(t *testing.T) {
-	pods := map[string]validator.Resource{
-		"foo": validator.NewResource(
-			"test",
-			"pod",
-			"foo",
-			"Pending",
-			proto.ActionableErr{
-				ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR,
-				Message: "image cant be pulled"},
-			[]string{},
-		),
-	}
+	tmpDir := filepath.Clean(os.TempDir())
 	var tests = []struct {
-		description string
-		ae          proto.ActionableErr
-		pods        map[string]validator.Resource
-		expected    string
+		description  string
+		ae           proto.ActionableErr
+		logs         []string
+		expected     string
+		expectedMute string
 	}{
 		{
-			description: "updating an error status",
-			ae:          proto.ActionableErr{Message: "cannot pull image\n"},
-			pods:        pods,
-			expected: ` - test-ns:deployment/test: cannot pull image
-    - test:pod/foo: image cant be pulled
+			description: "logs more than 3 lines",
+			ae:          proto.ActionableErr{Message: "waiting for 0/1 deplotment to rollout\n"},
+			logs: []string{
+				"[pod container] Waiting for mongodb to start...",
+				"[pod container] Waiting for connection for 2 sec",
+				"[pod container] Retrying 1st attempt ....",
+				"[pod container] Waiting for connection for 2 sec",
+				"[pod container] Terminating with exit code 11",
+			},
+			expectedMute: fmt.Sprintf(` - test-ns:deployment/test: container terminated with exit code 11
+    - test:pod/foo: container terminated with exit code 11
+      > [pod container] Retrying 1st attempt ....
+      > [pod container] Waiting for connection for 2 sec
+      > [pod container] Terminating with exit code 11
+      Full logs at %s/skaffold/statuscheck/foo.log
+`, tmpDir),
+			expected: ` - test-ns:deployment/test: container terminated with exit code 11
+    - test:pod/foo: container terminated with exit code 11
+      > [pod container] Waiting for mongodb to start...
+      > [pod container] Waiting for connection for 2 sec
+      > [pod container] Retrying 1st attempt ....
+      > [pod container] Waiting for connection for 2 sec
+      > [pod container] Terminating with exit code 11
 `,
 		},
 		{
-			description: "updating a non error status",
-			ae:          proto.ActionableErr{Message: "waiting for container\n"},
-			pods:        pods,
-			expected: ` - test-ns:deployment/test: waiting for container
-    - test:pod/foo: image cant be pulled
+			description: "logs less than 3 lines",
+			ae:          proto.ActionableErr{Message: "waiting for 0/1 deplotment to rollout\n"},
+			logs: []string{
+				"[pod container] Waiting for mongodb to start...",
+				"[pod container] Waiting for connection for 2 sec",
+				"[pod container] Terminating with exit code 11",
+			},
+			expected: ` - test-ns:deployment/test: container terminated with exit code 11
+    - test:pod/foo: container terminated with exit code 11
+      > [pod container] Waiting for mongodb to start...
+      > [pod container] Waiting for connection for 2 sec
+      > [pod container] Terminating with exit code 11
+`,
+			expectedMute: ` - test-ns:deployment/test: container terminated with exit code 11
+    - test:pod/foo: container terminated with exit code 11
+      > [pod container] Waiting for mongodb to start...
+      > [pod container] Waiting for connection for 2 sec
+      > [pod container] Terminating with exit code 11
 `,
 		},
 		{
-			description: "updating a non error status",
-			ae:          proto.ActionableErr{Message: "waiting for container\n"},
-			expected:    "",
+			description: "no logs or empty",
+			ae:          proto.ActionableErr{Message: "waiting for 0/1 deplotment to rollout\n"},
+			expected: ` - test-ns:deployment/test: container terminated with exit code 11
+    - test:pod/foo: container terminated with exit code 11
+`,
+			expectedMute: ` - test-ns:deployment/test: container terminated with exit code 11
+    - test:pod/foo: container terminated with exit code 11
+`,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			dep := NewDeployment("test", "test-ns", 1)
-			dep.pods = test.pods
+			dep.pods = map[string]validator.Resource{
+				"foo": validator.NewResource(
+					"test",
+					"pod",
+					"foo",
+					"Pending",
+					proto.ActionableErr{
+						ErrCode: proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR,
+						Message: "container terminated with exit code 11"},
+					test.logs,
+				),
+			}
 			dep.UpdateStatus(test.ae)
-			t.CheckDeepEqual(test.expected, dep.ReportSinceLastUpdated())
+			t.CheckDeepEqual(test.expectedMute, dep.ReportSinceLastUpdated(true))
 			t.CheckTrue(dep.status.changed)
+			// force report to false and Report again with mute logs false
+			dep.status.reported = false
+			t.CheckDeepEqual(test.expected, dep.ReportSinceLastUpdated(false))
 		})
 	}
 }
 
 func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
-	pods := map[string]validator.Resource{
-		"foo": validator.NewResource(
-			"test",
-			"pod",
-			"foo",
-			"Pending",
-			proto.ActionableErr{
-				ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR,
-				Message: "image cant be pulled"},
-			[]string{},
-		),
-	}
 	var tests = []struct {
 		description     string
-		statuses        []string
+		podStatuses     []string
 		reportStatusSeq []bool
 		expected        string
 	}{
 		{
 			description:     "report first time should return status",
-			statuses:        []string{"cannot pull image\n"},
+			podStatuses:     []string{"cannot pull image"},
 			reportStatusSeq: []bool{true},
 			expected: ` - test-ns:deployment/test: cannot pull image
-    - test:pod/foo: image cant be pulled
+    - test:pod/foo: cannot pull image
 `,
 		},
 		{
 			description:     "report 2nd time should not return when same status",
-			statuses:        []string{"cannot pull image\n", "cannot pull image\n"},
+			podStatuses:     []string{"cannot pull image", "cannot pull image"},
 			reportStatusSeq: []bool{true, true},
 			expected:        "",
 		},
 		{
 			description:     "report called after multiple changes but last status was not changed.",
-			statuses:        []string{"cannot pull image\n", "changed but not reported\n", "changed but not reported\n", "changed but not reported\n"},
+			podStatuses:     []string{"cannot pull image", "changed but not reported", "changed but not reported", "changed but not reported"},
 			reportStatusSeq: []bool{true, false, false, true},
 			expected: ` - test-ns:deployment/test: changed but not reported
-    - test:pod/foo: image cant be pulled
+    - test:pod/foo: changed but not reported
 `,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			dep := NewDeployment("test", "test-ns", 1)
-			dep.pods = pods
 			var actual string
-			for i, status := range test.statuses {
-				// update to same status
+			for i, status := range test.podStatuses {
 				dep.UpdateStatus(proto.ActionableErr{
 					ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 					Message: status,
 				})
+				dep.pods = map[string]validator.Resource{
+					"foo": validator.NewResource(
+						"test",
+						"pod",
+						"foo",
+						"Pending",
+						proto.ActionableErr{
+							ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
+							Message: status,
+						},
+						[]string{},
+					),
+				}
 				if test.reportStatusSeq[i] {
-					actual = dep.ReportSinceLastUpdated()
+					actual = dep.ReportSinceLastUpdated(false)
 				}
 			}
 			t.CheckDeepEqual(test.expected, actual)

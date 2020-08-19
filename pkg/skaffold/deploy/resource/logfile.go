@@ -24,8 +24,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 )
 
-// withContainerStatusLogFile returns a multiwriter that writes both to a file and a buffer, with the buffer being written to the provided output buffer in case of error
-func withContainerStatusLogFile(filename string, container string, out io.Writer, l []string, muted bool) (io.Writer, func([]string), error) {
+// withLogFile returns a multiwriter that writes both to a file and a buffer, with the buffer being written to the provided output buffer in case of error
+func withLogFile(container string, out io.Writer, l []string, muted bool) (io.Writer, func([]string), error) {
 	if !muted || len(l) < 4 {
 		return out, func([]string) {}, nil
 	}
@@ -43,8 +43,8 @@ func withContainerStatusLogFile(filename string, container string, out io.Writer
 		file.Close()
 		// Write last 3 lines to out
 		for _, l := range lines {
-			out.Write([]byte(fmt.Sprintf("%s %s * %s", tab, tab, l)))
+			out.Write([]byte(l))
 		}
-		fmt.Fprintln(out, fmt.Sprintf("%s %s Full logs at %s", tab, tab, file.Name()))
+		fmt.Fprintf(out, "%s %s Full logs at %s\n", tab, tab, file.Name())
 	}, err
 }

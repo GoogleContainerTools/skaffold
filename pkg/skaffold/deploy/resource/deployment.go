@@ -77,6 +77,7 @@ func (d *Deployment) UpdateStatus(ae proto.ActionableErr) {
 		return
 	}
 	d.status = updated
+	d.statusCode = updated.ActionableError().ErrCode
 	d.status.changed = true
 	if ae.ErrCode == proto.StatusCode_STATUSCHECK_SUCCESS || isErrAndNotRetryAble(ae.ErrCode) {
 		d.done = true
@@ -176,22 +177,20 @@ func (d *Deployment) ReportSinceLastUpdated(isMuted bool) string {
 			result.WriteString(fmt.Sprintf("%s %s %s: %s\n", tab, tabHeader, p, s))
 			// if, is muted then write container logs to file and last 3 lines to
 			// result.
-			out, writeTrimLines, err := withContainerStatusLogFile("statuscheck", p.Name(), &result, p.Logs(), isMuted)
+			out, writeTrimLines, err := withLogFile(p.Name(), &result, p.Logs(), isMuted)
 			if err != nil {
 				logrus.Debugf("could not create log file %v", err)
 			}
 			trimLines := []string{}
 			for i, l := range p.Logs() {
+				formattedLine := fmt.Sprintf("%s %s > %s\n", tab, tab, strings.TrimSuffix(l, "\n"))
 				if isMuted && i >= len(p.Logs())-3 {
-					trimLines = append(trimLines, fmt.Sprintf("%s\n", strings.TrimSuffix(l, "\n")))
+					trimLines = append(trimLines, formattedLine)
 				}
-				out.Write([]byte(fmt.Sprintf("%s\n", strings.TrimSuffix(l, "\n"))))
+				out.Write([]byte(formattedLine))
 			}
 			writeTrimLines(trimLines)
 		}
-	}
-	if result.String() == "" {
-		return ""
 	}
 	return fmt.Sprintf("%s %s: %s%s", tabHeader, d, d.StatusMessage(), result.String())
 }

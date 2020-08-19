@@ -303,6 +303,7 @@ func TestGetDeployStatus(t *testing.T) {
 }
 
 func TestPrintSummaryStatus(t *testing.T) {
+	labeller := NewLabeller(true, nil)
 	tests := []struct {
 		description string
 		namespace   string
@@ -351,25 +352,35 @@ func TestPrintSummaryStatus(t *testing.T) {
 			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, Message: "context deadline expired"},
 			expected:    " - test:deployment/dep failed. Error: context deadline expired.\n",
 		},
+		{
+			description: "skip printing if status check is cancelled",
+			namespace:   "test",
+			deployment:  "dep",
+			pending:     4,
+			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED},
+			expected:    "",
+		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			checker := statusChecker{labeller: labeller}
 			out := new(bytes.Buffer)
 			rc := newCounter(10)
 			rc.pending = test.pending
 			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 			r := withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), test.ae)
 			// report status once and set it changed to false.
-			r.ReportSinceLastUpdated()
+			r.ReportSinceLastUpdated(false)
 			r.UpdateStatus(test.ae)
-			printStatusCheckSummary(out, r, *rc)
+			checker.printStatusCheckSummary(out, r, *rc)
 			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
 }
 
 func TestPrintStatus(t *testing.T) {
+	labeller := NewLabeller(true, nil)
 	tests := []struct {
 		description string
 		rs          []*resource.Deployment
@@ -410,9 +421,9 @@ func TestPrintStatus(t *testing.T) {
 						Message: "pending\n"},
 				),
 			},
-			expectedOut: ` - test:deployment/r2: pending
-    - test:pod/foo: pod failed
-`,
+			expectedOut: ` - test:deployment/r2: pod failed
+	- test:pod/foo: pod failed
+		`,
 		},
 		{
 			description: "multiple resources 1 not complete and retry-able error",
@@ -422,16 +433,25 @@ func TestPrintStatus(t *testing.T) {
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
-					resource.NewDeployment("r2", "test", 1).
-						WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR}),
+					resource.NewDeployment("r2", "test", 1),
 					proto.ActionableErr{
 						ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
 						Message: resource.MsgKubectlConnection},
 				),
 			},
 			expectedOut: ` - test:deployment/r2: kubectl connection error
-    - test:pod/foo: pod failed
 `,
+		},
+		{
+			description: "skip printing if status check is cancelled",
+			rs: []*resource.Deployment{
+				withStatus(
+					resource.NewDeployment("r1", "test", 1),
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED},
+				),
+			},
+			expected:    true,
+			expectedOut: "",
 		},
 	}
 
@@ -439,7 +459,8 @@ func TestPrintStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
 			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
-			actual := printStatus(test.rs, out)
+			checker := statusChecker{labeller: labeller}
+			actual := checker.printStatus(test.rs, out)
 			t.CheckDeepEqual(test.expectedOut, out.String())
 			t.CheckDeepEqual(test.expected, actual)
 		})

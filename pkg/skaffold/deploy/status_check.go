@@ -63,27 +63,52 @@ type counter struct {
 	failed  int32
 }
 
-func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
+// StatusChecker wait for the application to be totally deployed.
+type StatusChecker interface {
+	Check(context.Context, io.Writer) error
+}
+
+// StatusChecker runs status checks for pods and deployments
+type statusChecker struct {
+	// TODO use an interface #4605
+	runCtx          *runcontext.RunContext
+	labeller        *DefaultLabeller
+	deadlineSeconds int
+	muteLogs        bool
+}
+
+// NewStatusChecker returns a status checker which runs checks on deployments and pods.
+func NewStatusChecker(runCtx *runcontext.RunContext, labeller *DefaultLabeller) StatusChecker {
+	return statusChecker{
+		muteLogs:        runCtx.Muted().MuteStatusCheck(),
+		runCtx:          runCtx,
+		labeller:        labeller,
+		deadlineSeconds: runCtx.Pipeline().Deploy.StatusCheckDeadlineSeconds,
+	}
+}
+
+// Run runs the status checks on deployments and pods deployed in current skaffold dev iteration.
+func (s statusChecker) Check(ctx context.Context, out io.Writer) error {
 	event.StatusCheckEventStarted()
-	errCode, err := statusCheck(ctx, defaultLabeller, runCtx, out)
+	errCode, err := s.statusCheck(ctx, out)
 	event.StatusCheckEventEnded(errCode, err)
 	return err
 }
 
-func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) (proto.StatusCode, error) {
+func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.StatusCode, error) {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
 	deployContext = map[string]string{
-		"clusterName": runCtx.GetKubeContext(),
+		"clusterName": s.runCtx.GetKubeContext(),
 	}
 
 	deployments := make([]*resource.Deployment, 0)
-	for _, n := range runCtx.GetNamespaces() {
-		newDeployments, err := getDeployments(client, n, defaultLabeller,
-			getDeadline(runCtx.Pipeline().Deploy.StatusCheckDeadlineSeconds))
+	for _, n := range s.runCtx.GetNamespaces() {
+		newDeployments, err := getDeployments(client, n, s.labeller,
+			getDeadline(s.runCtx.Pipeline().Deploy.StatusCheckDeadlineSeconds))
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
 		}
@@ -102,9 +127,9 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		go func(r *resource.Deployment) {
 			defer wg.Done()
 			// keep updating the resource status until it fails/succeeds/times out
-			pollDeploymentStatus(sCtx, runCtx, r)
+			pollDeploymentStatus(sCtx, s.runCtx, r)
 			rcCopy := c.markProcessed(r.Status().Error())
-			printStatusCheckSummary(out, r, rcCopy)
+			s.printStatusCheckSummary(out, r, rcCopy)
 			// if one deployment is in error, cancel status checks for all deployments.
 			if r.Status().Error() != nil && r.StatusCode() != proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED {
 				cancel()
@@ -114,7 +139,7 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Retrieve pending deployments statuses
 	go func() {
-		printDeploymentStatus(sCtx, out, deployments)
+		s.printDeploymentStatus(sCtx, out, deployments)
 	}()
 
 	// Wait for all deployment statuses to be fetched
@@ -210,7 +235,7 @@ func getDeadline(d int) time.Duration {
 	return defaultStatusCheckDeadline
 }
 
-func printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
+func (s statusChecker) printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 	ae := r.Status().ActionableError()
 	if r.StatusCode() == proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED {
 		// Don't print the status summary if the user ctrl-C or
@@ -220,10 +245,8 @@ func printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 	event.ResourceStatusCheckEventCompleted(r.String(), ae)
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
-		if str := r.ReportSinceLastUpdated(true); str != "" {
+		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
 			fmt.Fprintln(out, trimNewLine(str))
-		} else {
-			return
 		}
 		status = fmt.Sprintf("%s failed. Error: %s.",
 			status,
@@ -237,14 +260,14 @@ func printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 }
 
 // Print resource statuses until all status check are completed or context is cancelled.
-func printDeploymentStatus(ctx context.Context, out io.Writer, deployments []*resource.Deployment) {
+func (s statusChecker) printDeploymentStatus(ctx context.Context, out io.Writer, deployments []*resource.Deployment) {
 	for {
 		var allDone bool
 		select {
 		case <-ctx.Done():
 			return
 		case <-time.After(reportStatusTime):
-			allDone = printStatus(deployments, out)
+			allDone = s.printStatus(deployments, out)
 		}
 		if allDone {
 			return
@@ -252,14 +275,14 @@ func printDeploymentStatus(ctx context.Context, out io.Writer, deployments []*re
 	}
 }
 
-func printStatus(deployments []*resource.Deployment, out io.Writer) bool {
+func (s statusChecker) printStatus(deployments []*resource.Deployment, out io.Writer) bool {
 	allDone := true
 	for _, r := range deployments {
 		if r.IsStatusCheckCompleteOrCancelled() {
 			continue
 		}
 		allDone = false
-		if str := r.ReportSinceLastUpdated(true); str != "" {
+		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
 			event.ResourceStatusCheckEventUpdated(r.String(), r.Status().ActionableError())
 			fmt.Fprintln(out, trimNewLine(str))
 		}
