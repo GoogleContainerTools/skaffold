@@ -111,7 +111,7 @@ func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.St
 
 	c := newCounter(len(deployments))
 
-	sCtx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	for _, d := range deployments {
@@ -119,10 +119,10 @@ func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.St
 		go func(r *resource.Deployment) {
 			defer wg.Done()
 			// keep updating the resource status until it fails/succeeds/times out
-			pollDeploymentStatus(sCtx, s.runCtx, r)
+			pollDeploymentStatus(ctx, s.runCtx, r)
 			rcCopy := c.markProcessed(r.Status().Error())
 			s.printStatusCheckSummary(out, r, rcCopy)
-			// if one deployment is in error, cancel status checks for all deployments.
+			// if one deployment fails, cancel status checks for all deployments.
 			if r.Status().Error() != nil && r.StatusCode() != proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED {
 				cancel()
 			}
@@ -131,7 +131,7 @@ func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.St
 
 	// Retrieve pending deployments statuses
 	go func() {
-		s.printDeploymentStatus(sCtx, out, deployments)
+		s.printDeploymentStatus(ctx, out, deployments)
 	}()
 
 	// Wait for all deployment statuses to be fetched
@@ -251,7 +251,7 @@ func (s statusChecker) printStatusCheckSummary(out io.Writer, r *resource.Deploy
 	fmt.Fprintln(out, status)
 }
 
-// Print resource statuses until all status check are completed or context is cancelled.
+// printDeploymentStatus prints resource statuses until all status check are completed or context is cancelled.
 func (s statusChecker) printDeploymentStatus(ctx context.Context, out io.Writer, deployments []*resource.Deployment) {
 	for {
 		var allDone bool
