@@ -74,11 +74,8 @@ type PodValidator struct {
 }
 
 // NewPodValidator initializes a PodValidator
-func NewPodValidator(k kubernetes.Interface, deployContext map[string]string) *PodValidator {
+func NewPodValidator(k kubernetes.Interface) *PodValidator {
 	rs := []Recommender{recommender.ContainerError{}}
-	if r, err := recommender.NewCustom(recommender.DiagDefaultRules, deployContext); err == nil {
-		rs = append(rs, r)
-	}
 	return &PodValidator{k: k, recos: rs}
 }
 
