@@ -170,7 +170,7 @@ func TestKpt_Dependencies(t *testing.T) {
 
 			res, err := k.Dependencies()
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, tmpDir.Paths(test.expected...), tmpDir.Paths(res...))
 		})
 	}
 }

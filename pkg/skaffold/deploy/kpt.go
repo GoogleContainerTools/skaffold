@@ -163,8 +163,7 @@ func getResources(root string) ([]string, error) {
 
 			files = append(files, depsForKustomization...)
 		} else if isResource {
-			// Windows uses `\` instead of `/` for paths. Replacing these will improve consistency for testing.
-			files = append(files, strings.ReplaceAll(path, "\\", "/"))
+			files = append(files, path)
 		}
 
 		return nil
