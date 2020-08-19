@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -36,6 +37,10 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	// Use tags directly from the Kubernetes manifests.
 	if r.runCtx.DigestSource() == noneDigestSource {
 		return []build.Artifact{}, nil
+	}
+
+	if err := checkWorkspaces(artifacts); err != nil {
+		return nil, err
 	}
 
 	tags, err := r.imageTags(ctx, out, artifacts)
@@ -200,4 +205,21 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 	logrus.Infoln("Tags generated in", time.Since(start))
 	return imageTags, nil
+}
+
+func checkWorkspaces(artifacts []*latest.Artifact) error {
+	for _, a := range artifacts {
+		if a.Workspace != "" {
+			if info, err := os.Stat(a.Workspace); err != nil {
+				// err could be permission-related
+				if os.IsNotExist(err) {
+					return fmt.Errorf("image %q context %q does not exist", a.ImageName, a.Workspace)
+				}
+				return fmt.Errorf("image %q context %q: %w", a.ImageName, a.Workspace, err)
+			} else if !info.IsDir() {
+				return fmt.Errorf("image %q context %q is not a directory", a.ImageName, a.Workspace)
+			}
+		}
+	}
+	return nil
 }

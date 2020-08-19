@@ -18,7 +18,6 @@ package validation
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"strings"
 
@@ -37,7 +36,6 @@ var (
 // Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
 func Process(config *latest.SkaffoldConfig) error {
 	errs := visitStructs(config, validateYamltags)
-	errs = append(errs, validateWorkspaces(config.Build.Artifacts)...)
 	errs = append(errs, validateImageNames(config.Build.Artifacts)...)
 	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
 	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
@@ -56,25 +54,6 @@ func Process(config *latest.SkaffoldConfig) error {
 		messages = append(messages, err.Error())
 	}
 	return fmt.Errorf(strings.Join(messages, " | "))
-}
-
-// validateWorkspaces makes sure the artifact workspaces are valid directories.
-func validateWorkspaces(artifacts []*latest.Artifact) (errs []error) {
-	for _, a := range artifacts {
-		if a.Workspace != "" {
-			if info, err := os.Stat(a.Workspace); err != nil {
-				// err could be permission-related
-				if os.IsNotExist(err) {
-					errs = append(errs, fmt.Errorf("image %q context %q does not exist", a.ImageName, a.Workspace))
-				} else {
-					errs = append(errs, fmt.Errorf("image %q context %q: %w", a.ImageName, a.Workspace, err))
-				}
-			} else if !info.IsDir() {
-				errs = append(errs, fmt.Errorf("image %q context %q is not a directory", a.ImageName, a.Workspace))
-			}
-		}
-	}
-	return
 }
 
 // validateImageNames makes sure the artifact image names are valid base names,
