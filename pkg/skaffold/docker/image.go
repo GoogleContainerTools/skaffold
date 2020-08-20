@@ -326,7 +326,7 @@ func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string) error
 	} else {
 		defer os.Unsetenv("CLOUDSDK_CORE_VERBOSITY")
 	}
-	os.Setenv("CLOUDSDK_CORE_VERBOSITY", "none")
+	os.Setenv("CLOUDSDK_CORE_VERBOSITY", "critical")
 
 	// Eargerly create credentials.
 	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
