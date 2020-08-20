@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -312,11 +313,25 @@ func (l *localDaemon) isAlreadyPushed(ctx context.Context, ref, registryAuth str
 
 // Pull pulls an image reference from a registry.
 func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string) error {
+	// We first try pulling the image with credentials.  If that fails then retry
+	// without credentials in case the image is public.
+
+	// Set CLOUDSDK_CORE_VERBOSITY to suppress error messages emitted by docker-credential-gcloud
+	// when the user is not authenticated or lacks credentials to pull the given image.  The errors
+	// are irrelevant when the image is public (e.g., `gcr.io/buildpacks/builder:v1`).`
+	// If the image is private, the error from GCR directs the user to the GCR authentication
+	// page which provides steps to rememdy the situation.
+	if v, found := os.LookupEnv("CLOUDSDK_CORE_VERBOSITY"); found {
+		defer os.Setenv("CLOUDSDK_CORE_VERBOSITY", v)
+	} else {
+		defer os.Unsetenv("CLOUDSDK_CORE_VERBOSITY")
+	}
+	os.Setenv("CLOUDSDK_CORE_VERBOSITY", "critical")
+
 	// Eargerly create credentials.
 	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
 	// Let's ignore the error because maybe the image is public
 	// and can be pulled without credentials.
-
 	rc, err := l.apiClient.ImagePull(ctx, ref, types.ImagePullOptions{
 		RegistryAuth: registryAuth,
 		PrivilegeFunc: func() (string, error) {
