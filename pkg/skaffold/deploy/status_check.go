@@ -123,7 +123,7 @@ func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.St
 			rcCopy := c.markProcessed(r.Status().Error())
 			s.printStatusCheckSummary(out, r, rcCopy)
 			// if one deployment fails, cancel status checks for all deployments.
-			if r.Status().Error() != nil && r.StatusCode() != proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED {
+			if r.Status().Error() != nil && r.StatusCode() != proto.StatusCode_STATUSCHECK_USER_CANCELLED {
 				cancel()
 			}
 		}(d)
@@ -136,6 +136,7 @@ func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.St
 
 	// Wait for all deployment statuses to be fetched
 	wg.Wait()
+	cancel()
 	return getSkaffoldDeployStatus(c, deployments)
 }
 
@@ -180,7 +181,7 @@ func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r 
 			switch c := timeoutContext.Err(); c {
 			case context.Canceled:
 				r.UpdateStatus(proto.ActionableErr{
-					ErrCode: proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED,
+					ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED,
 					Message: "check cancelled\n",
 				})
 			case context.DeadlineExceeded:
@@ -229,7 +230,7 @@ func getDeadline(d int) time.Duration {
 
 func (s statusChecker) printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {
 	ae := r.Status().ActionableError()
-	if r.StatusCode() == proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED {
+	if r.StatusCode() == proto.StatusCode_STATUSCHECK_USER_CANCELLED {
 		// Don't print the status summary if the user ctrl-C or
 		// another deployment failed
 		return

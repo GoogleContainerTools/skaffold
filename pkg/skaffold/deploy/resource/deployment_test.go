@@ -108,7 +108,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 			r.CheckStatus(context.Background(), runCtx)
 			if test.cancelled {
 				r.UpdateStatus(proto.ActionableErr{
-					ErrCode: proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED,
+					ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED,
 					Message: "context cancelled",
 				})
 			}
@@ -192,7 +192,7 @@ func TestIsErrAndNotRetriable(t *testing.T) {
 		},
 		{
 			description: "rollout status parent context canceled",
-			statusCode:  proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED,
+			statusCode:  proto.StatusCode_STATUSCHECK_USER_CANCELLED,
 			expected:    true,
 		},
 		{

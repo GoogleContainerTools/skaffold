@@ -139,7 +139,7 @@ func (d *Deployment) Status() Status {
 }
 
 func (d *Deployment) IsStatusCheckCompleteOrCancelled() bool {
-	return d.done || d.statusCode == proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED
+	return d.done || d.statusCode == proto.StatusCode_STATUSCHECK_USER_CANCELLED
 }
 
 func (d *Deployment) StatusMessage() string {
@@ -292,7 +292,7 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 func (d *Deployment) StatusCode() proto.StatusCode {
 	// do not process pod status codes if another deployment failed
 	// or the user aborted the run.
-	if d.statusCode == proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED {
+	if d.statusCode == proto.StatusCode_STATUSCHECK_USER_CANCELLED {
 		return d.statusCode
 	}
 	for _, p := range d.pods {
