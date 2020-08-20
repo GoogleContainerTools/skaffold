@@ -1,3 +1,31 @@
+# v1.13.2 Release - 08/20/2020
+ 
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.13.2/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+ 
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.13.2/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+ 
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.13.2/skaffold-windows-amd64.exe
+ 
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.13.2`
+
+**This point release contains several usability fixes that should improve user experience, especially when running Skaffold through Cloud Code.**
+
+Highlights:
+* Suppress clutter from docker-credential-gcloud error messages [#4705](https://github.com/GoogleContainerTools/skaffold/pull/4705)
+* Remove remote rules [#4698](https://github.com/GoogleContainerTools/skaffold/pull/4698)
+* Simplify devLoopEvent message text [#4684](https://github.com/GoogleContainerTools/skaffold/pull/4684)
+* Return deployment status code when status check can't retrieve pods from cluster [#4683](https://github.com/GoogleContainerTools/skaffold/pull/4683)
+* Improved error message when skaffold config not found [#4679](https://github.com/GoogleContainerTools/skaffold/pull/4679)
+* Move all update checks to single function; enforce honoring updateCheck flag [#4677](https://github.com/GoogleContainerTools/skaffold/pull/4677)
+* Enable watch trigger only when either one of autoBuild, autoSync or autoDeploy is active [#4676](https://github.com/GoogleContainerTools/skaffold/pull/4676)
+* Move context validation to build phase so as to not interfere with deploy [#4657](https://github.com/GoogleContainerTools/skaffold/pull/4657)
+* Send update-check message to stderr [#4655](https://github.com/GoogleContainerTools/skaffold/pull/4655)
+* Make event handling sequential and set the correct timestamp [#4644](https://github.com/GoogleContainerTools/skaffold/pull/4644)
+
 # v1.13.1 Release - 08/04/2020
  
 **Linux**
