@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -27,19 +28,32 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+var (
+	kpt_hydrated = ".kpt-hydrated"
+)
+
 // KptDeployer deploys workflows with kpt CLI
 type KptDeployer struct {
 	*latest.KptDeploy
+
+	insecureRegistries map[string]bool
+	labels             map[string]string
+	globalConfig       string
 }
 
 func NewKptDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KptDeployer {
 	return &KptDeployer{
-		KptDeploy: runCtx.Pipeline().Deploy.KptDeploy,
+		KptDeploy:          runCtx.Pipeline().Deploy.KptDeploy,
+		insecureRegistries: runCtx.GetInsecureRegistries(),
+		labels:             labels,
+		globalConfig:       runCtx.GlobalConfig(),
 	}
 }
 
@@ -47,6 +61,8 @@ func (k *KptDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.
 	return nil, nil
 }
 
+// Dependencies returns a list of files that the deployer depends on. This does NOT include applyDir.
+// In dev mode, a redeploy will be triggered if one of these files is updated.
 func (k *KptDeployer) Dependencies() ([]string, error) {
 	deps := newStringSet()
 	if len(k.Fn.FnPath) > 0 {
@@ -80,12 +96,80 @@ func (k *KptDeployer) Cleanup(ctx context.Context, _ io.Writer) error {
 	return nil
 }
 
-func (k *KptDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool, filepath string) error {
-	return nil
+func (k *KptDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, _ bool, filepath string) error {
+	manifests, err := k.renderManifests(ctx, out, builds)
+	if err != nil {
+		return err
+	}
+
+	return outputRenderedManifests(manifests.String(), filepath, out)
+}
+
+func (k *KptDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact) (deploy.ManifestList, error) {
+	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
+	}
+
+	manifests, err := k.runKpt(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("running kpt functions: %w", err)
+	}
+
+	if len(manifests) == 0 {
+		return nil, nil
+	}
+
+	manifests, err = manifests.ReplaceImages(builds)
+	if err != nil {
+		return nil, fmt.Errorf("replacing images in manifests: %w", err)
+	}
+
+	for _, transform := range manifestTransforms {
+		manifests, err = transform(manifests, builds, Registries{k.insecureRegistries, debugHelpersRegistry})
+		if err != nil {
+			return nil, fmt.Errorf("unable to transform manifests: %w", err)
+		}
+	}
+
+	return manifests.SetLabels(k.labels)
+}
+
+// runKpt does a dry run with the specified kpt functions (fn-path XOR image) against dir.
+// If neither fn-path or image are specified, functions will attempt to be discovered in dir.
+// An error is returned when both fn-path AND image are specified.
+func (k *KptDeployer) runKpt(ctx context.Context) (deploy.ManifestList, error) {
+	var manifests deploy.ManifestList
+
+	flags := []string{"--dry-run"}
+
+	if len(k.Fn.FnPath) > 0 {
+		flags = append(flags, "--fn-path", k.Fn.FnPath)
+	}
+	if len(k.Fn.Image) > 0 {
+		if len(flags) > 1 {
+			return nil, errors.New("Cannot specify both fn-path and image.")
+		}
+
+		flags = append(flags, "--image", k.Fn.Image)
+	}
+
+	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(k.Dir, []string{"fn", "run"}, flags, nil)...)
+	out, err := util.RunCmdOut(cmd)
+	if err != nil {
+		// Kpt errors are written in STDOUT and surrounded by `\n`.
+		return nil, fmt.Errorf("kpt fn run: %s", strings.Trim(string(out), "\n"))
+	}
+
+	if len(out) > 0 {
+		manifests.Append(out)
+	}
+
+	return manifests, nil
 }
 
 // getApplyDir returns the path to applyDir if specified by the user. Otherwise, getApplyDir
-// creates a hidden directory in place of applyDir.
+// creates a hidden directory named .kpt-hydrated in place of applyDir.
 func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
 	if k.ApplyDir != "" {
 		if _, err := os.Stat(k.ApplyDir); os.IsNotExist(err) {
@@ -94,22 +178,22 @@ func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
 		return k.ApplyDir, nil
 	}
 
-	applyDir := ".kpt-hydrated"
-
 	// 0755 is a permission setting where the owner can read, write, and execute.
 	// Others can read and execute but not modify the file.
-	if err := os.MkdirAll(applyDir, 0755); err != nil {
+	if err := os.MkdirAll(kpt_hydrated, 0755); err != nil {
 		return "", fmt.Errorf("applyDir was unspecified. creating applyDir: %w", err)
 	}
 
-	if _, err := os.Stat(filepath.Join(applyDir, "inventory-template.yaml")); os.IsNotExist(err) {
-		cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "init"}, nil, nil)...)
-		if err := util.RunCmd(cmd); err != nil {
-			return "", err
+	if _, err := os.Stat(filepath.Join(kpt_hydrated, "inventory-template.yaml")); os.IsNotExist(err) {
+		cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(kpt_hydrated, []string{"live", "init"}, nil, nil)...)
+		out, err := util.RunCmdOut(cmd)
+		if err != nil {
+			// Kpt errors are written in STDOUT and surrounded by `\n`.
+			return "", fmt.Errorf("kpt live destroy: %s", strings.Trim(string(out), "\n"))
 		}
 	}
 
-	return applyDir, nil
+	return kpt_hydrated, nil
 }
 
 // kptCommandArgs returns a list of additional arguments for the kpt command.
