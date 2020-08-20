@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	kpt_hydrated = ".kpt-hydrated"
+	kptHydrated = ".kpt-hydrated"
 )
 
 // KptDeployer deploys workflows with kpt CLI
@@ -105,7 +105,7 @@ func (k *KptDeployer) Render(ctx context.Context, out io.Writer, builds []build.
 	return outputRenderedManifests(manifests.String(), filepath, out)
 }
 
-func (k *KptDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact) (deploy.ManifestList, error) {
+func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds []build.Artifact) (deploy.ManifestList, error) {
 	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
@@ -148,7 +148,7 @@ func (k *KptDeployer) runKpt(ctx context.Context) (deploy.ManifestList, error) {
 	}
 	if len(k.Fn.Image) > 0 {
 		if len(flags) > 1 {
-			return nil, errors.New("Cannot specify both fn-path and image.")
+			return nil, errors.New("cannot specify both fn-path and image")
 		}
 
 		flags = append(flags, "--image", k.Fn.Image)
@@ -179,18 +179,18 @@ func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
 
 	// 0755 is a permission setting where the owner can read, write, and execute.
 	// Others can read and execute but not modify the file.
-	if err := os.MkdirAll(kpt_hydrated, 0755); err != nil {
+	if err := os.MkdirAll(kptHydrated, 0755); err != nil {
 		return "", fmt.Errorf("applyDir was unspecified. creating applyDir: %w", err)
 	}
 
-	if _, err := os.Stat(filepath.Join(kpt_hydrated, "inventory-template.yaml")); os.IsNotExist(err) {
-		cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(kpt_hydrated, []string{"live", "init"}, nil, nil)...)
+	if _, err := os.Stat(filepath.Join(kptHydrated, "inventory-template.yaml")); os.IsNotExist(err) {
+		cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(kptHydrated, []string{"live", "init"}, nil, nil)...)
 		if _, err := util.RunCmdOut(cmd); err != nil {
 			return "", err
 		}
 	}
 
-	return kpt_hydrated, nil
+	return kptHydrated, nil
 }
 
 // kptCommandArgs returns a list of additional arguments for the kpt command.
