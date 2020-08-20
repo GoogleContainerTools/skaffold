@@ -36,7 +36,8 @@ import (
 )
 
 var (
-	kptHydrated = ".kpt-hydrated"
+	kptHydrated       = ".kpt-hydrated"
+	inventoryTemplate = "inventory-template.yaml"
 )
 
 // KptDeployer deploys workflows with kpt CLI
@@ -111,7 +112,7 @@ func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds [
 		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
 	}
 
-	manifests, err := k.runKpt(ctx)
+	manifests, err := k.kptFnRun(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("running kpt functions: %w", err)
 	}
@@ -135,19 +136,23 @@ func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds [
 	return manifests.SetLabels(k.labels)
 }
 
-// runKpt does a dry run with the specified kpt functions (fn-path XOR image) against dir.
-// If neither fn-path or image are specified, functions will attempt to be discovered in dir.
-// An error is returned when both fn-path AND image are specified.
-func (k *KptDeployer) runKpt(ctx context.Context) (deploy.ManifestList, error) {
+// kptFnRun does a dry run with the specified kpt functions (fn-path XOR image) against dir.
+// If neither fn-path nor image are specified, functions will attempt to be discovered in dir.
+// An error is returned when both fn-path and image are specified.
+func (k *KptDeployer) kptFnRun(ctx context.Context) (deploy.ManifestList, error) {
 	var manifests deploy.ManifestList
 
+	// --dry-run sets the pipeline's output to STDOUT, otherwise output is set to sinkDir.
+	// For now, k.Dir will be treated as sinkDir (and sourceDir).
 	flags := []string{"--dry-run"}
+	specifiedFnPath := false
 
 	if len(k.Fn.FnPath) > 0 {
 		flags = append(flags, "--fn-path", k.Fn.FnPath)
+		specifiedFnPath = true
 	}
 	if len(k.Fn.Image) > 0 {
-		if len(flags) > 1 {
+		if specifiedFnPath {
 			return nil, errors.New("cannot specify both fn-path and image")
 		}
 
@@ -183,7 +188,7 @@ func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("applyDir was unspecified. creating applyDir: %w", err)
 	}
 
-	if _, err := os.Stat(filepath.Join(kptHydrated, "inventory-template.yaml")); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(kptHydrated, inventoryTemplate)); os.IsNotExist(err) {
 		cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(kptHydrated, []string{"live", "init"}, nil, nil)...)
 		if _, err := util.RunCmdOut(cmd); err != nil {
 			return "", err
