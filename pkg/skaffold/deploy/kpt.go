@@ -157,8 +157,7 @@ func (k *KptDeployer) runKpt(ctx context.Context) (deploy.ManifestList, error) {
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(k.Dir, []string{"fn", "run"}, flags, nil)...)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
-		// Kpt errors are written in STDOUT and surrounded by `\n`.
-		return nil, fmt.Errorf("kpt fn run: %s", strings.Trim(string(out), "\n"))
+		return nil, err
 	}
 
 	if len(out) > 0 {
@@ -186,10 +185,8 @@ func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
 
 	if _, err := os.Stat(filepath.Join(kpt_hydrated, "inventory-template.yaml")); os.IsNotExist(err) {
 		cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(kpt_hydrated, []string{"live", "init"}, nil, nil)...)
-		out, err := util.RunCmdOut(cmd)
-		if err != nil {
-			// Kpt errors are written in STDOUT and surrounded by `\n`.
-			return "", fmt.Errorf("kpt live destroy: %s", strings.Trim(string(out), "\n"))
+		if _, err := util.RunCmdOut(cmd); err != nil {
+			return "", err
 		}
 	}
 
