@@ -92,7 +92,7 @@ func TestGetHashForArtifact(t *testing.T) {
 				},
 			},
 			mode:     config.RunModes.Dev,
-			expected: "e8ecd3e41bcdeb58b23b237c6c045e75e0b2e5c23a7f39cc5230afddaf49bcf9",
+			expected: "f947b5aad32734914aa2dea0ec95bceff257037e6c2a529007183c3f21547eae",
 		},
 		{
 			description: "different docker target",
@@ -104,7 +104,7 @@ func TestGetHashForArtifact(t *testing.T) {
 				},
 			},
 			mode:     config.RunModes.Dev,
-			expected: "9bc1e72592e8f51b33287f51e03d1bb063cb8eeed9e0542fd3e3da3f7f3a73d7",
+			expected: "09b366c764d0e39f942283cc081d5522b9dde52e725376661808054e3ed0177f",
 		},
 		{
 			description:  "build args",
@@ -119,7 +119,7 @@ func TestGetHashForArtifact(t *testing.T) {
 				},
 			},
 			mode:     config.RunModes.Dev,
-			expected: "eb53afc0e8cbe348a0934b75260d154d83d3370e4414c25a9d3a67428211a0ea",
+			expected: "f3f710a4ec1d1bfb2a9b8ef2b4b7cc5f254102d17095a71872821b396953a4ce",
 		},
 		{
 			description:  "buildpack in dev mode",
@@ -130,7 +130,7 @@ func TestGetHashForArtifact(t *testing.T) {
 				},
 			},
 			mode:     config.RunModes.Dev,
-			expected: "17ca23f987471b9841213d256b1c163504f6d4ccc51613cd10a62c56424a89e6",
+			expected: "d99ab295a682897269b4db0fe7c136ea1ecd542150fa224ee03155b4e3e995d9",
 		},
 		{
 			description:  "buildpack in debug mode",
@@ -148,6 +148,12 @@ func TestGetHashForArtifact(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&hashFunction, mockCacheHasher)
 			t.Override(&artifactConfigFunction, fakeArtifactConfig)
+			if test.artifact.DockerArtifact != nil {
+				tmpDir := t.NewTempDir()
+				tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
+				test.artifact.Workspace = tmpDir.Path(".")
+				test.artifact.DockerArtifact.DockerfilePath = "Dockerfile"
+			}
 
 			depLister := stubDependencyLister(test.dependencies)
 			actual, err := getHashForArtifact(context.Background(), depLister, test.artifact, test.mode)
@@ -195,36 +201,39 @@ func TestBuildArgs(t *testing.T) {
 		},
 		{
 			mode:     config.RunModes.Dev,
-			expected: "31616940358b3c1535a1b4bcd0ffa8a1b851d0e5b10d7444c19825eb0f2ba69d",
+			expected: "f5b610f4fea07461411b2ea0e2cddfd2ffc28d1baed49180f5d3acee5a18f9e7",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
 			artifact := &latest.Artifact{
+				Workspace: tmpDir.Path("."),
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
-						BuildArgs: map[string]*string{"one": stringPointer("1"), "two": stringPointer("2")},
+						DockerfilePath: "Dockerfile",
+						BuildArgs:      map[string]*string{"one": util.StringPtr("1"), "two": util.StringPtr("2")},
 					},
 				},
 			}
 
 			t.Override(&hashFunction, mockCacheHasher)
 			t.Override(&artifactConfigFunction, fakeArtifactConfig)
-
 			actual, err := getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact, test.mode)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 
 			// Change order of buildargs
-			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"two": stringPointer("2"), "one": stringPointer("1")}
+			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"two": util.StringPtr("2"), "one": util.StringPtr("1")}
 			actual, err = getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact, test.mode)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 
 			// Change build args, get different hash
-			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"one": stringPointer("1")}
+			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"one": util.StringPtr("1")}
 			actual, err = getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact, test.mode)
 
 			t.CheckNoError(err)
@@ -242,11 +251,14 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 		util.OSEnviron = func() []string {
 			return []string{"FOO=bar"}
 		}
-
+		tmpDir := t.NewTempDir()
+		tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
 		artifact := &latest.Artifact{
+			Workspace: tmpDir.Path("."),
 			ArtifactType: latest.ArtifactType{
 				DockerArtifact: &latest.DockerArtifact{
-					BuildArgs: map[string]*string{"env": stringPointer("${{.FOO}}")},
+					BuildArgs:      map[string]*string{"env": util.StringPtr("${{.FOO}}")},
+					DockerfilePath: "Dockerfile",
 				},
 			},
 		}
@@ -352,18 +364,18 @@ func TestHashBuildArgs(t *testing.T) {
 			artifactType: latest.ArtifactType{
 				DockerArtifact: &latest.DockerArtifact{
 					BuildArgs: map[string]*string{
-						"foo": stringPointer("bar"),
+						"foo": util.StringPtr("bar"),
 					},
 				},
 			},
 			mode:     config.RunModes.Dev,
-			expected: []string{"SKAFFOLD_GO_LDFLAGS=-w", "foo=bar"},
+			expected: []string{"foo=bar"},
 		}, {
 			description: "docker artifact with build args for debug",
 			artifactType: latest.ArtifactType{
 				DockerArtifact: &latest.DockerArtifact{
 					BuildArgs: map[string]*string{
-						"foo": stringPointer("bar"),
+						"foo": util.StringPtr("bar"),
 					},
 				},
 			},
@@ -381,8 +393,7 @@ func TestHashBuildArgs(t *testing.T) {
 			artifactType: latest.ArtifactType{
 				DockerArtifact: &latest.DockerArtifact{},
 			},
-			mode:     config.RunModes.Dev,
-			expected: []string{"SKAFFOLD_GO_LDFLAGS=-w"},
+			mode: config.RunModes.Dev,
 		}, {
 			description: "kaniko artifact with build args",
 			artifactType: latest.ArtifactType{
@@ -404,14 +415,13 @@ func TestHashBuildArgs(t *testing.T) {
 				},
 			},
 			mode:     config.RunModes.Dev,
-			expected: []string{"GOOGLE_GOLDFLAGS=-w", "foo=bar"},
+			expected: []string{"foo=bar"},
 		}, {
 			description: "buildpacks artifact without env for dev",
 			artifactType: latest.ArtifactType{
 				BuildpackArtifact: &latest.BuildpackArtifact{},
 			},
-			mode:     config.RunModes.Dev,
-			expected: []string{"GOOGLE_GOLDFLAGS=-w"},
+			mode: config.RunModes.Dev,
 		}, {
 			description: "buildpacks artifact with env for debug",
 			artifactType: latest.ArtifactType{
@@ -452,15 +462,18 @@ func TestHashBuildArgs(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual, err := hashBuildArgs(&latest.Artifact{
+			a := &latest.Artifact{
 				ArtifactType: test.artifactType,
-			}, test.mode)
+			}
+			if test.artifactType.DockerArtifact != nil {
+				tmpDir := t.NewTempDir()
+				tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
+				a.Workspace = tmpDir.Path(".")
+				a.ArtifactType.DockerArtifact.DockerfilePath = "Dockerfile"
+			}
+			actual, err := hashBuildArgs(a, test.mode)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
-}
-
-func stringPointer(s string) *string {
-	return &s
 }

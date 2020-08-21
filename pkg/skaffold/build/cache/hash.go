@@ -101,13 +101,13 @@ func artifactConfig(a *latest.Artifact) (string, error) {
 }
 
 func hashBuildArgs(artifact *latest.Artifact, mode config.RunMode) ([]string, error) {
+	// only one of args or env is ever populated
 	var args map[string]*string
 	var env map[string]string
 	var err error
 	switch {
 	case artifact.DockerArtifact != nil:
-		args = docker.AppendDefaultArgs(mode, artifact.DockerArtifact.BuildArgs)
-		args, err = util.EvaluateEnvTemplateMap(args)
+		args, err = docker.EvalBuildArgs(mode, artifact.Workspace, artifact.DockerArtifact)
 	case artifact.KanikoArtifact != nil:
 		args, err = util.EvaluateEnvTemplateMap(artifact.KanikoArtifact.BuildArgs)
 	case artifact.BuildpackArtifact != nil:

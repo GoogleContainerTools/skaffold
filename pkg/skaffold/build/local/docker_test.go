@@ -18,10 +18,8 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -30,11 +28,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-)
-
-var (
-	defaultDebugBuildArgs = createBuildArgs(docker.BuildArgsForDebug)
-	defaultDevBuildArgs   = createBuildArgs(docker.BuildArgsForDev)
 )
 
 func TestDockerCLIBuild(t *testing.T) {
@@ -46,15 +39,9 @@ func TestDockerCLIBuild(t *testing.T) {
 		expectedEnv []string
 	}{
 		{
-			description: "docker build for dev",
+			description: "docker build",
 			localBuild:  latest.LocalBuild{},
 			mode:        config.RunModes.Dev,
-			expectedEnv: []string{"KEY=VALUE"},
-		},
-		{
-			description: "docker build for debug",
-			localBuild:  latest.LocalBuild{},
-			mode:        config.RunModes.Debug,
 			expectedEnv: []string{"KEY=VALUE"},
 		},
 		{
@@ -88,12 +75,11 @@ func TestDockerCLIBuild(t *testing.T) {
 			t.NewTempDir().Touch("Dockerfile").Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
-			buildArgs := defaultDevBuildArgs
-			if test.mode == config.RunModes.Debug {
-				buildArgs = defaultDebugBuildArgs
-			}
+			t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+				return a.BuildArgs, nil
+			})
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunEnv(
-				"docker build . --file "+dockerfilePath+" -t tag "+buildArgs+" --force-rm",
+				"docker build . --file "+dockerfilePath+" -t tag --force-rm",
 				test.expectedEnv,
 			))
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
@@ -117,13 +103,4 @@ func TestDockerCLIBuild(t *testing.T) {
 			t.CheckNoError(err)
 		})
 	}
-}
-
-func createBuildArgs(m map[string]string) string {
-	str := []string{"--build-arg"}
-	for k, v := range m {
-		str = append(str, fmt.Sprintf("%v=%v", k, v))
-	}
-
-	return strings.Join(str, " ")
 }

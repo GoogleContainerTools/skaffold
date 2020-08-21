@@ -109,26 +109,13 @@ func TestBuild(t *testing.T) {
 		expectedError string
 	}{
 		{
-			description: "build for debug",
+			description: "build",
 			api:         &testutil.FakeAPIClient{},
 			workspace:   ".",
 			artifact:    &latest.DockerArtifact{},
 			expected: types.ImageBuildOptions{
 				Tags:        []string{"finalimage"},
 				AuthConfigs: allAuthConfig,
-				BuildArgs:   AppendDefaultArgs(config.RunModes.Debug, nil),
-			},
-			mode: config.RunModes.Debug,
-		},
-		{
-			description: "build for dev",
-			api:         &testutil.FakeAPIClient{},
-			workspace:   ".",
-			artifact:    &latest.DockerArtifact{},
-			expected: types.ImageBuildOptions{
-				Tags:        []string{"finalimage"},
-				AuthConfigs: allAuthConfig,
-				BuildArgs:   AppendDefaultArgs(config.RunModes.Dev, nil),
 			},
 			mode: config.RunModes.Dev,
 		},
@@ -155,11 +142,11 @@ func TestBuild(t *testing.T) {
 			expected: types.ImageBuildOptions{
 				Tags:       []string{"finalimage"},
 				Dockerfile: "Dockerfile",
-				BuildArgs: AppendDefaultArgs(config.RunModes.Dev, map[string]*string{
+				BuildArgs: map[string]*string{
 					"k1": nil,
 					"k2": util.StringPtr("value2"),
 					"k3": util.StringPtr("value3"),
-				}),
+				},
 				CacheFrom:   []string{"from-1"},
 				AuthConfigs: allAuthConfig,
 				Target:      "target",
@@ -204,6 +191,9 @@ func TestBuild(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
+			t.Override(&EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+				return util.EvaluateEnvTemplateMap(a.BuildArgs)
+			})
 			t.SetEnvs(test.env)
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)

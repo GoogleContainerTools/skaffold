@@ -19,6 +19,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -92,6 +93,24 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 	}
 
 	return expandSrcGlobPatterns(workspace, cpCmds)
+}
+
+func removeExtraBuildArgs(dockerFile io.Reader, buildArgs map[string]*string) (map[string]*string, error) {
+	res, err := parser.Parse(dockerFile)
+	if err != nil {
+		return nil, fmt.Errorf("parsing dockerfile: %w", err)
+	}
+	m := make(map[string]*string)
+	for _, n := range res.AST.Children {
+		if n.Value != command.Arg {
+			continue
+		}
+		k := strings.Split(n.Next.Value, "=")[0]
+		if v, ok := buildArgs[k]; ok {
+			m[k] = v
+		}
+	}
+	return m, nil
 }
 
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {

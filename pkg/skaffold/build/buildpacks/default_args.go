@@ -18,23 +18,20 @@ package buildpacks
 
 import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 
-var buildArgsForDebug = map[string]string{
+var debugModeArgs = map[string]string{
 	"GOOGLE_GOGCFLAGS": "'all=-N -l'", // disable build optimization for Golang
 	// TODO: Add for other languages
 }
 
-var buildArgsForDev = map[string]string{
-	"GOOGLE_GOLDFLAGS": "-w", // omit debug information in build output for Golang
-	// TODO: Add for other languages
-}
+var nonDebugModeArgs = map[string]string{}
 
 func AppendDefaultArgs(mode config.RunMode, existing map[string]string) map[string]string {
 	var args map[string]string
 	switch mode {
 	case config.RunModes.Debug:
-		args = buildArgsForDebug
+		args = debugModeArgs
 	default:
-		args = buildArgsForDev
+		args = nonDebugModeArgs
 	}
 
 	for k, v := range args {

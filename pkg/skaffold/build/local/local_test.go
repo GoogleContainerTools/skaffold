@@ -235,7 +235,9 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 				return docker.NewLocalDaemon(test.api, nil, false, nil), nil
 			})
-
+			t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+				return a.BuildArgs, nil
+			})
 			event.InitializeState(latest.Pipeline{
 				Deploy: latest.DeployConfig{},
 				Build: latest.BuildConfig{

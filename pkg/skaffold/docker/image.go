@@ -162,8 +162,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	// Like `docker build`, we ignore the errors
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
 	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
-	buildArgs := AppendDefaultArgs(mode, a.BuildArgs)
-	buildArgs, err := util.EvaluateEnvTemplateMap(buildArgs)
+	buildArgs, err := EvalBuildArgs(mode, workspace, a)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}

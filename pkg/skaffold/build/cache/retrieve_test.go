@@ -122,6 +122,11 @@ func TestCacheBuildLocal(t *testing.T) {
 			return dockerDaemon, nil
 		})
 
+		// Mock args builder
+		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+			return a.BuildArgs, nil
+		})
+
 		// Create cache
 		artifactCache, err := NewCache(runCtx, true, deps)
 		t.CheckNoError(err)
@@ -215,6 +220,10 @@ func TestCacheBuildRemote(t *testing.T) {
 			}
 		})
 
+		// Mock args builder
+		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+			return a.BuildArgs, nil
+		})
 		// Create cache
 		artifactCache, err := NewCache(runCtx, false, deps)
 		t.CheckNoError(err)
