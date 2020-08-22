@@ -357,7 +357,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			namespace:   "test",
 			deployment:  "dep",
 			pending:     4,
-			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED},
+			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
 			expected:    "",
 		},
 	}
@@ -447,7 +447,7 @@ func TestPrintStatus(t *testing.T) {
 			rs: []*resource.Deployment{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONTEXT_CANCELLED},
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
 				),
 			},
 			expected:    true,
