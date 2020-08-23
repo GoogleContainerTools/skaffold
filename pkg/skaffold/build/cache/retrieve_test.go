@@ -57,7 +57,7 @@ func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.
 		b.built = append(b.built, artifact)
 		tag := tags[artifact.ImageName]
 
-		_, err := b.dockerDaemon.Build(ctx, out, artifact.Workspace, artifact.DockerArtifact, tag)
+		_, err := b.dockerDaemon.Build(ctx, out, artifact.Workspace, artifact.DockerArtifact, tag, config.RunModes.Dev)
 		if err != nil {
 			return nil, err
 		}
@@ -120,6 +120,11 @@ func TestCacheBuildLocal(t *testing.T) {
 		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
 		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
+		})
+
+		// Mock args builder
+		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+			return a.BuildArgs, nil
 		})
 
 		// Create cache
@@ -215,6 +220,10 @@ func TestCacheBuildRemote(t *testing.T) {
 			}
 		})
 
+		// Mock args builder
+		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+			return a.BuildArgs, nil
+		})
 		// Create cache
 		artifactCache, err := NewCache(runCtx, false, deps)
 		t.CheckNoError(err)

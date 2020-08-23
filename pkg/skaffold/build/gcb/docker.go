@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // dockerBuildSpec lists the build steps required to build a docker image.
@@ -61,7 +62,12 @@ func (b *Builder) cacheFromSteps(artifact *latest.DockerArtifact) []*cloudbuild.
 
 // dockerBuildArgs lists the arguments passed to `docker` to build a given image.
 func (b *Builder) dockerBuildArgs(artifact *latest.DockerArtifact, tag string) ([]string, error) {
-	ba, err := docker.GetBuildArgs(artifact)
+	buildArgs, err := util.EvaluateEnvTemplateMap(artifact.BuildArgs)
+	if err != nil {
+		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
+	}
+
+	ba, err := docker.ToCLIBuildArgs(artifact, buildArgs)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker build args: %w", err)
 	}

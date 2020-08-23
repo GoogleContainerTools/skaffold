@@ -29,9 +29,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // For testing
@@ -40,11 +42,11 @@ var (
 	artifactConfigFunction = artifactConfig
 )
 
-func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, devMode bool) (string, error) {
+func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, mode config.RunMode) (string, error) {
 	var inputs []string
 
 	// Append the artifact's configuration
-	config, err := artifactConfigFunction(a, devMode)
+	config, err := artifactConfigFunction(a)
 	if err != nil {
 		return "", fmt.Errorf("getting artifact's configuration for %q: %w", a.ImageName, err)
 	}
@@ -71,22 +73,12 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 	}
 
 	// add build args for the artifact if specified
-	if buildArgs := retrieveBuildArgs(a); buildArgs != nil {
-		buildArgs, err := docker.EvaluateBuildArgs(buildArgs)
-		if err != nil {
-			return "", fmt.Errorf("evaluating build args: %w", err)
-		}
-		args := convertBuildArgsToStringArray(buildArgs)
-		inputs = append(inputs, args...)
+	args, err := hashBuildArgs(a, mode)
+	if err != nil {
+		return "", fmt.Errorf("hashing build args: %w", err)
 	}
-
-	// add env variables for the artifact if specified
-	if env := retrieveEnv(a); len(env) > 0 {
-		evaluatedEnv, err := misc.EvaluateEnv(env)
-		if err != nil {
-			return "", fmt.Errorf("evaluating build args: %w", err)
-		}
-		inputs = append(inputs, evaluatedEnv...)
+	if args != nil {
+		inputs = append(inputs, args...)
 	}
 
 	// get a key for the hashes
@@ -100,53 +92,42 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 }
 
 // TODO(dgageot): when the buildpacks builder image digest changes, we need to change the hash
-func artifactConfig(a *latest.Artifact, devMode bool) (string, error) {
+func artifactConfig(a *latest.Artifact) (string, error) {
 	buf, err := json.Marshal(a.ArtifactType)
 	if err != nil {
 		return "", fmt.Errorf("marshalling the artifact's configuration for %q: %w", a.ImageName, err)
 	}
-
-	if devMode && a.BuildpackArtifact != nil && a.Sync != nil && a.Sync.Auto != nil {
-		return string(buf) + ".DEV", nil
-	}
-
 	return string(buf), nil
 }
 
-func retrieveBuildArgs(artifact *latest.Artifact) map[string]*string {
+func hashBuildArgs(artifact *latest.Artifact, mode config.RunMode) ([]string, error) {
+	// only one of args or env is ever populated
+	var args map[string]*string
+	var env map[string]string
+	var err error
 	switch {
 	case artifact.DockerArtifact != nil:
-		return artifact.DockerArtifact.BuildArgs
-
+		args, err = docker.EvalBuildArgs(mode, artifact.Workspace, artifact.DockerArtifact)
 	case artifact.KanikoArtifact != nil:
-		return artifact.KanikoArtifact.BuildArgs
-
+		args, err = util.EvaluateEnvTemplateMap(artifact.KanikoArtifact.BuildArgs)
+	case artifact.BuildpackArtifact != nil:
+		env, err = buildpacks.GetEnv(artifact, mode)
 	case artifact.CustomArtifact != nil && artifact.CustomArtifact.Dependencies.Dockerfile != nil:
-		return artifact.CustomArtifact.Dependencies.Dockerfile.BuildArgs
-
+		args, err = util.EvaluateEnvTemplateMap(artifact.CustomArtifact.Dependencies.Dockerfile.BuildArgs)
 	default:
-		return nil
+		return nil, nil
 	}
-}
-
-func retrieveEnv(artifact *latest.Artifact) []string {
-	if artifact.BuildpackArtifact != nil {
-		return artifact.BuildpackArtifact.Env
+	if err != nil {
+		return nil, err
 	}
-	return nil
-}
-
-func convertBuildArgsToStringArray(buildArgs map[string]*string) []string {
-	var args []string
-	for k, v := range buildArgs {
-		if v == nil {
-			args = append(args, k)
-			continue
-		}
-		args = append(args, fmt.Sprintf("%s=%s", k, *v))
+	var sl []string
+	if args != nil {
+		sl = util.EnvPtrMapToSlice(args, "=")
 	}
-	sort.Strings(args)
-	return args
+	if env != nil {
+		sl = util.EnvMapToSlice(env, "=")
+	}
+	return sl, nil
 }
 
 // cacheHasher takes hashes the contents and name of a file

@@ -23,13 +23,14 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
-func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, mode config.RunMode) (string, error) {
 	// Fail fast if the Dockerfile can't be found.
 	dockerfile, err := docker.NormalizeDockerfilePath(a.Workspace, a.DockerArtifact.DockerfilePath)
 	if err != nil {
@@ -48,7 +49,7 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 	if b.cfg.UseDockerCLI || b.cfg.UseBuildkit {
 		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag)
 	} else {
-		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag)
+		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag, mode)
 	}
 
 	if err != nil {
@@ -73,11 +74,15 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	}
 
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", tag}
-	ba, err := docker.GetBuildArgs(a)
+	ba, err := docker.EvalBuildArgs(b.mode, workspace, a)
+	if err != nil {
+		return "", fmt.Errorf("unable to evaluate build args: %w", err)
+	}
+	cliArgs, err := docker.ToCLIBuildArgs(a, ba)
 	if err != nil {
 		return "", fmt.Errorf("getting docker build args: %w", err)
 	}
-	args = append(args, ba...)
+	args = append(args, cliArgs...)
 
 	if b.prune {
 		args = append(args, "--force-rm")
