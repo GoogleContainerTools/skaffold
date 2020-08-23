@@ -135,7 +135,7 @@ version = "1.0"
 				Builder:    "my/builder2",
 				RunImage:   "my/run2",
 				Buildpacks: []string{"my/buildpack", "my/otherBuildpack@1.0"},
-				Env: AppendDefaultArgs(config.RunModes.Build, map[string]string{
+				Env: addDefaultArgs(config.RunModes.Build, map[string]string{
 					"GOOGLE_RUNTIME_VERSION": "14.3.0",
 				}),
 				Image: "img:latest",
@@ -176,7 +176,7 @@ value = "VALUE2"
 				AppPath:  ".",
 				Builder:  "my/builder4",
 				RunImage: "my/run4",
-				Env: AppendDefaultArgs(config.RunModes.Build, map[string]string{
+				Env: addDefaultArgs(config.RunModes.Build, map[string]string{
 					"KEY1": "VALUE1",
 					"KEY2": "VALUE2",
 				}),
@@ -193,7 +193,7 @@ value = "VALUE2"
 				AppPath:  ".",
 				Builder:  "another/builder",
 				RunImage: "another/run",
-				Env: AppendDefaultArgs(config.RunModes.Build, map[string]string{
+				Env: addDefaultArgs(config.RunModes.Build, map[string]string{
 					"GOOGLE_DEVMODE": "1",
 				}),
 				Image: "img:latest",

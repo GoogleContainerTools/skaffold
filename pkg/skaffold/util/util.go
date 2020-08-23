@@ -205,8 +205,8 @@ func Expand(text, key, value string) string {
 	return text
 }
 
-// FormatMapToStringSlice1 converts map of (string,string) to string slice
-func FormatMapToStringSlice1(m map[string]string, separator string) []string {
+// EnvMapToSlice converts map of (string,string) to string slice
+func EnvMapToSlice(m map[string]string, separator string) []string {
 	var sl []string
 	for k, v := range m {
 		sl = append(sl, fmt.Sprintf("%s%s%s", k, separator, v))
@@ -215,8 +215,8 @@ func FormatMapToStringSlice1(m map[string]string, separator string) []string {
 	return sl
 }
 
-// FormatMapToStringSlice2 converts map of (string,*string) to string slice
-func FormatMapToStringSlice2(m map[string]*string, separator string) []string {
+// EnvPtrMapToSlice converts map of (string,*string) to string slice
+func EnvPtrMapToSlice(m map[string]*string, separator string) []string {
 	var sl []string
 	for k, v := range m {
 		if v == nil {

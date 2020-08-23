@@ -102,7 +102,7 @@ ARG bar2`,
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			r := strings.NewReader(test.dockerfile)
-			got, _ := removeExtraBuildArgs(r, test.buildArgs)
+			got, _ := filterUnusedBuildArgs(r, test.buildArgs)
 			t.CheckDeepEqual(test.expected, got)
 		})
 	}

@@ -25,7 +25,7 @@ var debugModeArgs = map[string]string{
 
 var nonDebugModeArgs = map[string]string{}
 
-func AppendDefaultArgs(mode config.RunMode, existing map[string]string) map[string]string {
+func addDefaultArgs(mode config.RunMode, existing map[string]string) map[string]string {
 	var args map[string]string
 	switch mode {
 	case config.RunModes.Debug:

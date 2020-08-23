@@ -323,7 +323,7 @@ func TestFormatMapToStringSlice1(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := FormatMapToStringSlice1(test.args, "=")
+			actual := EnvMapToSlice(test.args, "=")
 
 			t.CheckDeepEqual(test.expected, actual)
 		})
@@ -362,7 +362,7 @@ func TestFormatMapToStringSlice2(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := FormatMapToStringSlice2(test.args, "=")
+			actual := EnvPtrMapToSlice(test.args, "=")
 
 			t.CheckDeepEqual(test.expected, actual)
 		})

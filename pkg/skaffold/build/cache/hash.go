@@ -122,10 +122,10 @@ func hashBuildArgs(artifact *latest.Artifact, mode config.RunMode) ([]string, er
 	}
 	var sl []string
 	if args != nil {
-		sl = util.FormatMapToStringSlice2(args, "=")
+		sl = util.EnvPtrMapToSlice(args, "=")
 	}
 	if env != nil {
-		sl = util.FormatMapToStringSlice1(env, "=")
+		sl = util.EnvMapToSlice(env, "=")
 	}
 	return sl, nil
 }

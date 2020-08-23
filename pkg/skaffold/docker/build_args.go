@@ -60,7 +60,7 @@ func evalBuildArgs(mode config.RunMode, workspace string, a *latest.DockerArtifa
 		return nil, fmt.Errorf("reading dockerfile: %w", err)
 	}
 	defer f.Close()
-	result, err = removeExtraBuildArgs(f, result)
+	result, err = filterUnusedBuildArgs(f, result)
 	if err != nil {
 		return nil, fmt.Errorf("removing unused default args: %w", err)
 	}

@@ -95,7 +95,8 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 	return expandSrcGlobPatterns(workspace, cpCmds)
 }
 
-func removeExtraBuildArgs(dockerFile io.Reader, buildArgs map[string]*string) (map[string]*string, error) {
+// filterUnusedBuildArgs removes entries from the build arguments map that are not found in the dockerfile
+func filterUnusedBuildArgs(dockerFile io.Reader, buildArgs map[string]*string) (map[string]*string, error) {
 	res, err := parser.Parse(dockerFile)
 	if err != nil {
 		return nil, fmt.Errorf("parsing dockerfile: %w", err)
@@ -105,7 +106,7 @@ func removeExtraBuildArgs(dockerFile io.Reader, buildArgs map[string]*string) (m
 		if n.Value != command.Arg {
 			continue
 		}
-		k := strings.Split(n.Next.Value, "=")[0]
+		k := strings.SplitN(n.Next.Value, "=", 2)[0]
 		if v, ok := buildArgs[k]; ok {
 			m[k] = v
 		}

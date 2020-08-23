@@ -37,8 +37,11 @@ func GetEnv(a *latest.Artifact, mode config.RunMode) (map[string]string, error) 
 	if err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("failed to read project descriptor %q: %w", path, err)
 	}
+	return env(a, mode, projectDescriptor)
+}
 
-	envVars, err := misc.EvaluateEnv(artifact.Env)
+func env(a *latest.Artifact, mode config.RunMode, projectDescriptor project.Descriptor) (map[string]string, error) {
+	envVars, err := misc.EvaluateEnv(a.BuildpackArtifact.Env)
 	if err != nil {
 		return nil, fmt.Errorf("unable to evaluate env variables: %w", err)
 	}
@@ -51,6 +54,6 @@ func GetEnv(a *latest.Artifact, mode config.RunMode) (map[string]string, error) 
 	for _, kv := range projectDescriptor.Build.Env {
 		env[kv.Name] = kv.Value
 	}
-	env = AppendDefaultArgs(mode, env)
+	env = addDefaultArgs(mode, env)
 	return env, nil
 }
