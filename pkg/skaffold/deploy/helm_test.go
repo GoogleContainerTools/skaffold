@@ -345,14 +345,40 @@ MANIFEST:
 
 var (
 	// Output strings to emulate different versions of Helm
-	version20rc        = `Client: &version.Version{SemVer:"v2.0.0-rc.1", GitCommit:"92be174acf51e60a33287fb7011f4571eaa5cb98", GitTreeState:"clean"}\nError: cannot connect to Tiller\n`
-	version21          = `Client: &version.Version{SemVer:"v2.15.1", GitCommit:"cf1de4f8ba70eded310918a8af3a96bfe8e7683b", GitTreeState:"clean"}\nServer: &version.Version{SemVer:"v2.16.1", GitCommit:"bbdfe5e7803a12bbdf97e94cd847859890cf4050", GitTreeState:"clean"}\n`
-	version30b         = `version.BuildInfo{Version:"v3.0.0-beta.3", GitCommit:"5cb923eecbe80d1ad76399aee234717c11931d9a", GitTreeState:"clean", GoVersion:"go1.12.9"}`
-	version30          = `version.BuildInfo{Version:"v3.0.0", GitCommit:"e29ce2a54e96cd02ccfce88bee4f58bb6e2a28b6", GitTreeState:"clean", GoVersion:"go1.13.4"}`
-	version31          = `version.BuildInfo{Version:"v3.1.1", GitCommit:"afe70585407b420d0097d07b21c47dc511525ac8", GitTreeState:"clean", GoVersion:"go1.13.8"}`
-	version33          = `version.BuildInfo{Version:"v3.3.0", GitCommit:"8a4aeec08d67a7b84472007529e8097ec3742105", GitTreeState:"dirty", GoVersion:"go1.14.7"}`
-	version33NonSemver = `version.BuildInfo{Version:"v3.3", GitCommit:"", GitTreeState:"", GoVersion:"go1.15"}`
+	version20rc = `Client: &version.Version{SemVer:"v2.0.0-rc.1", GitCommit:"92be174acf51e60a33287fb7011f4571eaa5cb98", GitTreeState:"clean"}\nError: cannot connect to Tiller\n`
+	version21   = `Client: &version.Version{SemVer:"v2.15.1", GitCommit:"cf1de4f8ba70eded310918a8af3a96bfe8e7683b", GitTreeState:"clean"}\nServer: &version.Version{SemVer:"v2.16.1", GitCommit:"bbdfe5e7803a12bbdf97e94cd847859890cf4050", GitTreeState:"clean"}\n`
+	version30b  = `version.BuildInfo{Version:"v3.0.0-beta.3", GitCommit:"5cb923eecbe80d1ad76399aee234717c11931d9a", GitTreeState:"clean", GoVersion:"go1.12.9"}`
+	version30   = `version.BuildInfo{Version:"v3.0.0", GitCommit:"e29ce2a54e96cd02ccfce88bee4f58bb6e2a28b6", GitTreeState:"clean", GoVersion:"go1.13.4"}`
+	version31   = `version.BuildInfo{Version:"v3.1.1", GitCommit:"afe70585407b420d0097d07b21c47dc511525ac8", GitTreeState:"clean", GoVersion:"go1.13.8"}`
 )
+
+func TestBinVer(t *testing.T) {
+	tests := []struct {
+		description string
+		helmVersion string
+		expected    string
+		shouldErr   bool
+	}{
+		{"Helm 2.0RC1", version20rc, "2.0.0-rc.1", false},
+		{"Helm 2.15.1", version21, "2.15.1", false},
+		{"Helm 3.0b3", version30b, "3.0.0-beta.3", false},
+		{"Helm 3.0", version30, "3.0.0", false},
+		{"Helm 3.1.1", version31, "3.1.1", false},
+		{"Custom Helm 3.3 build from Manjaro", "v3.3", "3.3.0", false}, // not semver compliant
+		{"Invalid", "3.1.0", "0.0.0", true},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
+
+			deployer := NewHelmDeployer(makeRunContext(testDeployConfig, false), nil)
+			ver, err := deployer.binVer(context.TODO())
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, ver.String())
+		})
+	}
+}
 
 func TestHelmDeploy(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "TestHelmDeploy")
@@ -495,28 +521,6 @@ func TestHelmDeploy(t *testing.T) {
 			runContext:  makeRunContext(testDeployConfig, false),
 			builds:      testBuilds,
 			shouldErr:   true,
-		},
-		{
-			description: "helm3.3 version deploy success",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version33).
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig"),
-			runContext: makeRunContext(testDeployConfig, false),
-			builds:     testBuilds,
-		},
-		{
-			description: "helm3.3 non semver compliant version deploy success",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version33NonSemver).
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig"),
-			runContext: makeRunContext(testDeployConfig, false),
-			builds:     testBuilds,
 		},
 		{
 			description: "deploy success with recreatePods",
