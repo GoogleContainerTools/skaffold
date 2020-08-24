@@ -11,10 +11,10 @@ RUN dotnet restore "src/HelloWorld/HelloWorld.csproj"
 COPY . .
 WORKDIR "/src/HelloWorld"
 RUN ls -al 
-RUN dotnet build "HelloWorld.csproj" -c Debug -o /app/build
+RUN dotnet build "HelloWorld.csproj" --configuration Debug -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "HelloWorld.csproj" -c Debug -o /app/publish
+RUN dotnet publish "HelloWorld.csproj" --configuration Debug -o /app/publish
 
 FROM base AS final
 WORKDIR /app
