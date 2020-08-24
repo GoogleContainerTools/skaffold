@@ -111,14 +111,16 @@ In order to configure your application for debugging, your app must be:
 - Identified as being dotnet-based by having an entrypoint using [dotnet](https://github.com/dotnet/sdk) cli or one of the following environment variables `ASPNETCORE_URLS`, `DOTNET_RUNNING_IN_CONTAINER`, `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT`.
 - Built with the `--configuration Debug` options to disable optimizations.
 
+Note for users of [VS Code's debug adapter for C#](https://github.com/OmniSharp/omnisharp-vscode) : the following configuration can be used to debug a container. It assumes that your code is deployed in `/app` or `/src` folder in the container. If it is not the case, the `sourceFileMap` property should be changed to match the correct folder. `processId` is usually 1 but might be different if you have non-usual docker entrypoint. You can also use `"${command:pickRemoteProcess}"` instead if your base image supports it.
+
 Remote launch configuration works in this case:
 ```json
 {
     "name": "Skaffold Debug",
     "type": "coreclr",
     "request": "attach",
-    "processId" : "${command:pickRemoteProcess}", // if your docker image doesn't contain `ps`, this command will fail... usually processId is 1
-    "justMyCode": true, //dotnet debug=true,dotner release=false
+    "processId" : 1, 
+    "justMyCode": true, // set to `true` in debug configuration and `false` in release configuration
     "pipeTransport": {
         "pipeProgram": "kubectl",
         "pipeArgs": [
