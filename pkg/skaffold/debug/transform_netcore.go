@@ -35,10 +35,12 @@ func isLaunchingNetcore(args []string) bool {
 		return false
 	}
 
-	for _, arg := range args[:2] {
-		if arg == "dotnet" || strings.HasSuffix(arg, "/dotnet") {
-			return true
-		}
+	if args[0] == "dotnet" || strings.HasSuffix(args[0], "/dotnet") {
+		return true
+	}
+
+	if args[0] == "exec" && (args[1] == "dotnet" || strings.HasSuffix(args[1], "/dotnet")) {
+		return true
 	}
 
 	return false
