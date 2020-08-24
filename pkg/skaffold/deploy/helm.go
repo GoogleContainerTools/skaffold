@@ -447,7 +447,7 @@ func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
 		return semver.Version{}, fmt.Errorf("unable to parse output: %q", raw)
 	}
 
-	v, err := semver.Make(matches[1])
+	v, err := semver.ParseTolerant(matches[1])
 	if err != nil {
 		return semver.Version{}, fmt.Errorf("semver make %q: %w", matches[1], err)
 	}
