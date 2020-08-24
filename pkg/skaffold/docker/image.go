@@ -160,6 +160,10 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.RunMode) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
+	if a.Secret != nil {
+		return "", fmt.Errorf("docker build secrets require BuildKit - set `useBuildkit: true` in your config, or run with `DOCKER_BUILDKIT=1`")
+	}
+
 	buildArgs, err := EvalBuildArgs(mode, workspace, a)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
@@ -461,6 +465,14 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 
 	if a.NoCache {
 		args = append(args, "--no-cache")
+	}
+
+	if a.Secret != nil {
+		secretString := fmt.Sprintf("id=%s", a.Secret.ID)
+		if a.Secret.Source != "" {
+			secretString += ",src=" + a.Secret.Source
+		}
+		args = append(args, "--secret", secretString)
 	}
 
 	return args, nil

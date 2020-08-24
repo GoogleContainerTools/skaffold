@@ -264,8 +264,11 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 	}
 
 	if g.strict && name != "" {
+		if comment == "" {
+			panic(fmt.Sprintf("field %s needs comment (all public fields require comments)", name))
+		}
 		if !strings.HasPrefix(comment, name+" ") {
-			panic(fmt.Sprintf("comment should start with field name on field %s", name))
+			panic(fmt.Sprintf("comment %s should start with field name on field %s", comment, name))
 		}
 	}
 
