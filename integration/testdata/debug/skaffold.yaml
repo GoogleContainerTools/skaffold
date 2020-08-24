@@ -17,9 +17,6 @@ build:
     context: go
   - image: skaffold-debug-netcore
     context: netcore
-    docker:
-      buildArgs:
-        DOTNET_RUNNING_IN_CONTAINER: true
 
 deploy:
   kubectl:
@@ -64,5 +61,3 @@ profiles:
       context: netcore
       buildpacks:
         builder: "gcr.io/buildpacks/builder:v1"
-        env:
-        - DOTNET_RUNNING_IN_CONTAINER=true
