@@ -108,8 +108,8 @@ DAP is not yet supported by JetBrains IDEs like PyCharm.
 
 In order to configure your application for debugging, your app must be:
 
-- Identified as being dotnet-based by having an entrypoint using [dotnet](https://github.com/dotnet/sdk) cli 
-  or one of the following environment variables `ASPNETCORE_URLS`, `DOTNET_RUNNING_IN_CONTAINER`, 
+- Identified as being dotnet-based by having an entrypoint using [dotnet](https://github.com/dotnet/sdk) cli
+  or one of the following environment variables `ASPNETCORE_URLS`, `DOTNET_RUNNING_IN_CONTAINER`,
   `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT`.
 - Built with the `--configuration Debug` options to disable optimizations.
 
