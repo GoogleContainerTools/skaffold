@@ -15,6 +15,8 @@ build:
     context: python3
   - image: skaffold-debug-go
     context: go
+  - image: skaffold-debug-netcore
+    context: netcore
 
 deploy:
   kubectl:
@@ -24,6 +26,7 @@ deploy:
     - npm/k8s/pod.yaml
     - python3/k8s/pod.yaml
     - go/k8s/pod.yaml
+    - netcore/k8s/pod.yaml
 
 profiles:
 - name: kustomize
@@ -52,5 +55,9 @@ profiles:
         builder: "gcr.io/buildpacks/builder:v1"
     - image: skaffold-debug-go
       context: go
+      buildpacks:
+        builder: "gcr.io/buildpacks/builder:v1"
+    - image: skaffold-debug-netcore
+      context: netcore
       buildpacks:
         builder: "gcr.io/buildpacks/builder:v1"
