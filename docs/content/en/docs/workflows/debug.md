@@ -108,12 +108,17 @@ DAP is not yet supported by JetBrains IDEs like PyCharm.
 
 In order to configure your application for debugging, your app must be:
 
-- Identified as being dotnet-based by having an entrypoint using [dotnet](https://github.com/dotnet/sdk) cli or one of the following environment variables `ASPNETCORE_URLS`, `DOTNET_RUNNING_IN_CONTAINER`, `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT`.
+- Identified as being dotnet-based by having an entrypoint using [dotnet](https://github.com/dotnet/sdk) cli 
+  or one of the following environment variables `ASPNETCORE_URLS`, `DOTNET_RUNNING_IN_CONTAINER`, 
+  `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT`.
 - Built with the `--configuration Debug` options to disable optimizations.
 
-Note for users of [VS Code's debug adapter for C#](https://github.com/OmniSharp/omnisharp-vscode) : the following configuration can be used to debug a container. It assumes that your code is deployed in `/app` or `/src` folder in the container. If it is not the case, the `sourceFileMap` property should be changed to match the correct folder. `processId` is usually 1 but might be different if you have non-usual docker entrypoint. You can also use `"${command:pickRemoteProcess}"` instead if your base image supports it.
-
-Remote launch configuration works in this case:
+**Note for users of [VS Code's debug adapter for C#](https://github.com/OmniSharp/omnisharp-vscode):**
+the following configuration can be used to debug a container. It assumes that your code is deployed
+in `/app` or `/src` folder in the container. If that is not the case, the `sourceFileMap` property
+should be changed to match the correct folder. `processId` is usually 1 but might be different if you
+have an unusual entrypoint. You can also use `"${command:pickRemoteProcess}"` instead if supported by
+your base image.  (`//` comments must be stripped.)
 ```json
 {
     "name": "Skaffold Debug",
@@ -126,11 +131,11 @@ Remote launch configuration works in this case:
         "pipeArgs": [
             "exec",
             "-i",
-            "<NAME OF YOUR POD>", //name of the pod you debug.
+            "<NAME OF YOUR POD>", // name of the pod you debug.
             "--"
         ],
         "pipeCwd": "${workspaceFolder}",
-        "debuggerPath": "/dbg/netcore/vsdbg", //location where vsdbg binary installed.
+        "debuggerPath": "/dbg/netcore/vsdbg", // location where vsdbg binary installed.
         "quoteArgs": false
     },
     "sourceFileMap": {

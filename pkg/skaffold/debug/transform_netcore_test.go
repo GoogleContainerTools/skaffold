@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ package debug
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
-
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestNetcoreTransformer_IsApplicable(t *testing.T) {
