@@ -131,6 +131,8 @@ func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds [
 	if err := os.RemoveAll(filepath.Join(pipeline, k.Dir)); err != nil {
 		return nil, fmt.Errorf("deleting temporary directory %s: %w", filepath.Join(pipeline, k.Dir), err)
 	}
+	// 0755 is a permission setting where the owner can read, write, and execute.
+	// Others can read and execute but not modify the directory.
 	if err := os.MkdirAll(filepath.Join(pipeline, k.Dir), 0755); err != nil {
 		return nil, fmt.Errorf("creating temporary directory %s: %w", filepath.Join(pipeline, k.Dir), err)
 	}
@@ -259,7 +261,7 @@ func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
 	}
 
 	// 0755 is a permission setting where the owner can read, write, and execute.
-	// Others can read and execute but not modify the file.
+	// Others can read and execute but not modify the directory.
 	if err := os.MkdirAll(kptHydrated, 0755); err != nil {
 		return "", fmt.Errorf("applyDir was unspecified. creating applyDir: %w", err)
 	}

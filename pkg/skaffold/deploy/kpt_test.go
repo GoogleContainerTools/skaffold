@@ -215,6 +215,8 @@ func TestKpt_Cleanup(t *testing.T) {
 			t.NewTempDir().Chdir()
 
 			if test.applyDir == "valid_path" {
+				// 0755 is a permission setting where the owner can read, write, and execute.
+				// Others can read and execute but not modify the directory.
 				os.Mkdir(test.applyDir, 0755)
 			}
 
@@ -573,6 +575,8 @@ func TestKpt_GetApplyDir(t *testing.T) {
 			tmpDir := t.NewTempDir().Chdir()
 
 			if test.applyDir == test.expected {
+				// 0755 is a permission setting where the owner can read, write, and execute.
+				// Others can read and execute but not modify the directory.
 				os.Mkdir(test.applyDir, 0755)
 			}
 
