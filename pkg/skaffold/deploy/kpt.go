@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -60,8 +61,40 @@ func NewKptDeployer(runCtx *runcontext.RunContext, labels map[string]string) *Kp
 	}
 }
 
+// Deploy hydrates the manifests using kustomizations and kpt functions as described in the render method,
+// outputs them to the applyDir, and runs `kpt live apply` against applyDir to create resources in the cluster.
+// `kpt live apply` supports automated pruning declaratively via resources in the applyDir.
 func (k *KptDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
-	return nil, nil
+	manifests, err := k.renderManifests(ctx, out, builds)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(manifests) == 0 {
+		return nil, nil
+	}
+
+	namespaces, err := manifests.CollectNamespaces()
+	if err != nil {
+		event.DeployInfoEvent(fmt.Errorf("could not fetch deployed resource namespace. "+
+			"This might cause port-forward and deploy health-check to fail: %w", err))
+	}
+
+	applyDir, err := k.getApplyDir(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting applyDir: %w", err)
+	}
+
+	outputRenderedManifests(manifests.String(), filepath.Join(applyDir, "resources.yaml"), out)
+
+	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "apply"}, k.Live.Apply, nil)...)
+	cmd.Stdout = out
+	cmd.Stderr = out
+	if err := util.RunCmd(cmd); err != nil {
+		return nil, err
+	}
+
+	return namespaces, nil
 }
 
 // Dependencies returns a list of files that the deployer depends on. This does NOT include applyDir.
@@ -91,17 +124,18 @@ func (k *KptDeployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes what was deployed by calling `kpt live destroy`.
-func (k *KptDeployer) Cleanup(ctx context.Context, _ io.Writer) error {
+func (k *KptDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	applyDir, err := k.getApplyDir(ctx)
 	if err != nil {
 		return fmt.Errorf("getting applyDir: %w", err)
 	}
 
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "destroy"}, nil, nil)...)
-	out, err := util.RunCmdOut(cmd)
-	if err != nil {
+	cmd.Stdout = out
+	cmd.Stderr = out
+	if err := util.RunCmd(cmd); err != nil {
 		// Kpt errors are written in STDOUT and surrounded by `\n`.
-		return fmt.Errorf("kpt live destroy: %s", strings.Trim(string(out), "\n"))
+		return err
 	}
 
 	return nil
