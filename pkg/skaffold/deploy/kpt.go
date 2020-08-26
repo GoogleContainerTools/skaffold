@@ -17,6 +17,7 @@ limitations under the License.
 package deploy
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -36,8 +37,9 @@ import (
 )
 
 var (
-	kptHydrated       = ".kpt-hydrated"
 	inventoryTemplate = "inventory-template.yaml"
+	kptHydrated       = ".kpt-hydrated"
+	pipeline          = ".pipeline"
 )
 
 // KptDeployer deploys workflows with kpt CLI
@@ -77,6 +79,14 @@ func (k *KptDeployer) Dependencies() ([]string, error) {
 
 	deps.insert(configDeps...)
 
+	// Kpt deployer assumes that the kustomization configuration to build lives directly under k.Dir.
+	kustomizeDeps, err := dependenciesForKustomization(k.Dir)
+	if err != nil {
+		return nil, fmt.Errorf("finding kustomization directly under %s: %w", k.Dir, err)
+	}
+
+	deps.insert(kustomizeDeps...)
+
 	return deps.toList(), nil
 }
 
@@ -97,6 +107,7 @@ func (k *KptDeployer) Cleanup(ctx context.Context, _ io.Writer) error {
 	return nil
 }
 
+// Render hydrates manifests using both kustomization and kpt functions.
 func (k *KptDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, _ bool, filepath string) error {
 	manifests, err := k.renderManifests(ctx, out, builds)
 	if err != nil {
@@ -106,10 +117,32 @@ func (k *KptDeployer) Render(ctx context.Context, out io.Writer, builds []build.
 	return outputRenderedManifests(manifests.String(), filepath, out)
 }
 
+// renderManifests handles a majority of the hydration process for manifests.
+// This involves reading configs from a source directory, running kustomize build, running kpt pipelines,
+// adding image digests, and adding run-id labels.
 func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds []build.Artifact) (deploy.ManifestList, error) {
 	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
+	}
+
+	// .pipeline is a temp dir used to store output between steps of the desired workflow
+	// This can be removed once kpt can fully support the desired workflow independently.
+	if err := os.RemoveAll(filepath.Join(pipeline, k.Dir)); err != nil {
+		return nil, fmt.Errorf("deleting temporary directory %s: %w", filepath.Join(pipeline, k.Dir), err)
+	}
+	// 0755 is a permission setting where the owner can read, write, and execute.
+	// Others can read and execute but not modify the directory.
+	if err := os.MkdirAll(filepath.Join(pipeline, k.Dir), 0755); err != nil {
+		return nil, fmt.Errorf("creating temporary directory %s: %w", filepath.Join(pipeline, k.Dir), err)
+	}
+
+	if err := k.readConfigs(ctx); err != nil {
+		return nil, fmt.Errorf("reading config manifests: %w", err)
+	}
+
+	if err := k.kustomizeBuild(ctx); err != nil {
+		return nil, fmt.Errorf("kustomize build: %w", err)
 	}
 
 	manifests, err := k.kptFnRun(ctx)
@@ -136,30 +169,75 @@ func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds [
 	return manifests.SetLabels(k.labels)
 }
 
-// kptFnRun does a dry run with the specified kpt functions (fn-path XOR image) against dir.
-// If neither fn-path nor image are specified, functions will attempt to be discovered in dir.
-// An error is returned when both fn-path and image are specified.
+// readConfigs uses `kpt fn source` to read config manifests from k.Dir
+// and uses `kpt fn sink` to output those manifests to .pipeline.
+func (k *KptDeployer) readConfigs(ctx context.Context) error {
+	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(k.Dir, []string{"fn", "source"}, nil, nil)...)
+	b, err := util.RunCmdOut(cmd)
+	if err != nil {
+		return err
+	}
+
+	cmd = exec.CommandContext(ctx, "kpt", kptCommandArgs(filepath.Join(pipeline, k.Dir), []string{"fn", "sink"}, nil, nil)...)
+	cmd.Stdin = bytes.NewBuffer(b)
+	if _, err := util.RunCmdOut(cmd); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// kustomizeBuild runs `kustomize build` if a kustomization config exists and outputs to .pipeline.
+func (k *KptDeployer) kustomizeBuild(ctx context.Context) error {
+	if _, err := findKustomizationConfig(k.Dir); err != nil {
+		// No kustomization config was found directly under k.Dir, so there is no need to continue.
+		return nil
+	}
+
+	cmd := exec.CommandContext(ctx, "kustomize", buildCommandArgs([]string{"-o", filepath.Join(pipeline, k.Dir)}, k.Dir)...)
+	if _, err := util.RunCmdOut(cmd); err != nil {
+		return err
+	}
+
+	deps, err := dependenciesForKustomization(k.Dir)
+	if err != nil {
+		return fmt.Errorf("finding kustomization dependencies: %w", err)
+	}
+
+	// Kustomize build outputs hydrated configs to .pipeline, so the dry configs must be removed.
+	for _, v := range deps {
+		if err := os.RemoveAll(filepath.Join(pipeline, v)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// kptFnRun does a dry run with the specified kpt functions (fn-path XOR image) against .pipeline.
+// If neither fn-path nor image are specified, functions will attempt to be discovered in .pipeline.
+// An error occurs if both fn-path and image are specified.
 func (k *KptDeployer) kptFnRun(ctx context.Context) (deploy.ManifestList, error) {
 	var manifests deploy.ManifestList
 
 	// --dry-run sets the pipeline's output to STDOUT, otherwise output is set to sinkDir.
 	// For now, k.Dir will be treated as sinkDir (and sourceDir).
 	flags := []string{"--dry-run"}
-	specifiedFnPath := false
+	count := 0
 
 	if len(k.Fn.FnPath) > 0 {
 		flags = append(flags, "--fn-path", k.Fn.FnPath)
-		specifiedFnPath = true
+		count++
 	}
 	if len(k.Fn.Image) > 0 {
-		if specifiedFnPath {
-			return nil, errors.New("cannot specify both fn-path and image")
-		}
-
 		flags = append(flags, "--image", k.Fn.Image)
+		count++
+	}
+	if count > 1 {
+		return nil, errors.New("only one of `fn-path` or `image` configs can be specified at most")
 	}
 
-	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(k.Dir, []string{"fn", "run"}, flags, nil)...)
+	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(pipeline, []string{"fn", "run"}, flags, nil)...)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, err
@@ -183,7 +261,7 @@ func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
 	}
 
 	// 0755 is a permission setting where the owner can read, write, and execute.
-	// Others can read and execute but not modify the file.
+	// Others can read and execute but not modify the directory.
 	if err := os.MkdirAll(kptHydrated, 0755); err != nil {
 		return "", fmt.Errorf("applyDir was unspecified. creating applyDir: %w", err)
 	}
@@ -224,8 +302,7 @@ func kptCommandArgs(dir string, commands, flags, globalFlags []string) []string 
 	return args
 }
 
-// getResources returns a list of all file names in `root` that end in .yaml or .yml
-// and all local kustomization dependencies under root.
+// getResources returns a list of all file names in root that end in .yaml or .yml
 func getResources(root string) ([]string, error) {
 	var files []string
 
@@ -241,14 +318,7 @@ func getResources(root string) ([]string, error) {
 			return fmt.Errorf("matching %s with regex: %w", filepath.Base(path), err)
 		}
 
-		if info.IsDir() {
-			depsForKustomization, err := dependenciesForKustomization(path)
-			if err != nil {
-				return err
-			}
-
-			files = append(files, depsForKustomization...)
-		} else if isResource {
+		if !info.IsDir() && isResource {
 			files = append(files, path)
 		}
 

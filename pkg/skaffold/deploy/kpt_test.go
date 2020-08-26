@@ -20,8 +20,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -213,6 +215,8 @@ func TestKpt_Cleanup(t *testing.T) {
 			t.NewTempDir().Chdir()
 
 			if test.applyDir == "valid_path" {
+				// 0755 is a permission setting where the owner can read, write, and execute.
+				// Others can read and execute but not modify the directory.
 				os.Mkdir(test.applyDir, 0755)
 			}
 
@@ -241,6 +245,7 @@ func TestKpt_Cleanup(t *testing.T) {
 }
 
 func TestKpt_Render(t *testing.T) {
+	// The follow are outputs to `kpt fn run` commands.
 	output1 := `apiVersion: v1
 kind: Pod
 metadata:
@@ -257,23 +262,13 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: gcr.io/project/image2
-    name: image2
-`
-
-	output3 := `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
   - image: gcr.io/project/image1
     name: image1
   - image: gcr.io/project/image2
     name: image2
 `
 
-	output4 := `apiVersion: v1
+	output3 := `apiVersion: v1
 kind: Pod
 metadata:
   namespace: default
@@ -293,13 +288,14 @@ spec:
 `
 
 	tests := []struct {
-		description string
-		builds      []build.Artifact
-		labels      map[string]string
-		cfg         *latest.KptDeploy
-		commands    util.Command
-		expected    string
-		shouldErr   bool
+		description    string
+		builds         []build.Artifact
+		labels         map[string]string
+		cfg            *latest.KptDeploy
+		commands       util.Command
+		kustomizations map[string]string
+		expected       string
+		shouldErr      bool
 	}{
 		{
 			description: "no fnPath or image specified",
@@ -312,7 +308,10 @@ spec:
 			cfg: &latest.KptDeploy{
 				Dir: ".",
 			},
-			commands: testutil.CmdRunOut("kpt fn run . --dry-run", output1),
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", output1),
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
@@ -324,30 +323,7 @@ spec:
 `,
 		},
 		{
-			description: "fnPath specified",
-			builds: []build.Artifact{
-				{
-					ImageName: "gcr.io/project/image2",
-					Tag:       "gcr.io/project/image2:tag2",
-				},
-			},
-			cfg: &latest.KptDeploy{
-				Dir: "test",
-				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
-			},
-			commands: testutil.CmdRunOut("kpt fn run test --dry-run --fn-path kpt-func.yaml", output2),
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image2:tag2
-    name: image2
-`,
-		},
-		{
-			description: "image specified",
+			description: "fnPath specified, multiple resources, and labels",
 			builds: []build.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
@@ -356,74 +332,17 @@ spec:
 				{
 					ImageName: "gcr.io/project/image2",
 					Tag:       "gcr.io/project/image2:tag2",
-				},
-			},
-			cfg: &latest.KptDeploy{
-				Dir: "test",
-				Fn:  latest.KptFn{Image: "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar"},
-			},
-			commands: testutil.CmdRunOut("kpt fn run test --dry-run --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", output3),
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
-  - image: gcr.io/project/image2:tag2
-    name: image2
-`,
-		},
-		{
-			description: "multiple resources outputted",
-			builds: []build.Artifact{
-				{
-					ImageName: "gcr.io/project/image1",
-					Tag:       "gcr.io/project/image1:tag1",
-				},
-				{
-					ImageName: "gcr.io/project/image2",
-					Tag:       "gcr.io/project/image2:tag2",
-				},
-			},
-			cfg: &latest.KptDeploy{
-				Dir: "test",
-				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
-			},
-			commands: testutil.CmdRunOut("kpt fn run test --dry-run --fn-path kpt-func.yaml", output4),
-			expected: `apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
----
-apiVersion: v1
-kind: Pod
-metadata:
-  namespace: default
-spec:
-  containers:
-  - image: gcr.io/project/image2:tag2
-    name: image2
-`,
-		},
-		{
-			description: "user labels",
-			builds: []build.Artifact{
-				{
-					ImageName: "gcr.io/project/image1",
-					Tag:       "gcr.io/project/image1:tag1",
 				},
 			},
 			labels: map[string]string{"user/label": "test"},
 			cfg: &latest.KptDeploy{
-				Dir: ".",
+				Dir: "test",
+				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
 			},
-			commands: testutil.CmdRunOut("kpt fn run . --dry-run", output1),
+			commands: testutil.
+				CmdRunOut("kpt fn source test", ``).
+				AndRunOut(fmt.Sprintf("kpt fn sink %s", filepath.Join(".pipeline", "test")), ``).
+				AndRunOut("kpt fn run .pipeline --dry-run --fn-path kpt-func.yaml", output3),
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
@@ -434,6 +353,49 @@ spec:
   containers:
   - image: gcr.io/project/image1:tag1
     name: image1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    user/label: test
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image2:tag2
+    name: image2
+`,
+		},
+		{
+			description: "fn image specified, multiple images in resource",
+			builds: []build.Artifact{
+				{
+					ImageName: "gcr.io/project/image1",
+					Tag:       "gcr.io/project/image1:tag1",
+				},
+				{
+					ImageName: "gcr.io/project/image2",
+					Tag:       "gcr.io/project/image2:tag2",
+				},
+			},
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+				Fn:  latest.KptFn{Image: "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar"},
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", output2),
+			expected: `apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1:tag1
+    name: image1
+  - image: gcr.io/project/image2:tag2
+    name: image2
 `,
 		},
 		{
@@ -448,31 +410,113 @@ spec:
 			cfg: &latest.KptDeploy{
 				Dir: ".",
 			},
-			commands: testutil.CmdRunOut("kpt fn run . --dry-run", ``),
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", ``),
 			expected: "\n",
+		},
+		{
+			description: "both fnPath and image specified",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+				Fn: latest.KptFn{
+					FnPath: "kpt-func.yaml",
+					Image:  "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar"},
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``),
+			shouldErr: true,
+		},
+		{
+			description: "kustomization render",
+			builds: []build.Artifact{
+				{
+					ImageName: "gcr.io/project/image1",
+					Tag:       "gcr.io/project/image1:tag1",
+				},
+			},
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kustomize build -o .pipeline .", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", output1),
+			kustomizations: map[string]string{"kustomization.yaml": `resources:
+- foo.yaml`},
+			expected: `apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1:tag1
+    name: image1
+`,
+		},
+		{
+			description: "reading configs from sourceDir fails",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+			commands: testutil.
+				CmdRunOutErr("kpt fn source .", ``, errors.New("BUG")).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", "invalid pipeline"),
+			shouldErr: true,
+		},
+		{
+			description: "outputting configs to sinkDir fails",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOutErr("kpt fn sink .pipeline", ``, errors.New("BUG")).
+				AndRunOut("kpt fn run .pipeline --dry-run", "invalid pipeline"),
+			shouldErr: true,
+		},
+		{
+			description: "kustomize build fails (invalid kustomization config)",
+			builds: []build.Artifact{
+				{
+					ImageName: "gcr.io/project/image1",
+					Tag:       "gcr.io/project/image1:tag1",
+				},
+			},
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOutErr("kustomize build -o .pipeline .", ``, errors.New("BUG")).
+				AndRunOut("kpt fn run .pipeline --dry-run", output1),
+			kustomizations: map[string]string{"kustomization.yaml": `resources:
+- foo.yaml`},
+			shouldErr: true,
 		},
 		{
 			description: "kpt fn run fails",
 			cfg: &latest.KptDeploy{
 				Dir: ".",
 			},
-			commands:  testutil.CmdRunOutErr("kpt fn run . --dry-run", "invalid pipeline", errors.New("BUG")),
-			shouldErr: true,
-		},
-		{
-			description: "both fnPath and image specified",
-			cfg: &latest.KptDeploy{
-				Dir: "test",
-				Fn: latest.KptFn{
-					FnPath: "kpt-func.yaml",
-					Image:  "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar"},
-			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOutErr("kpt fn run .pipeline --dry-run", "invalid pipeline", errors.New("BUG")),
 			shouldErr: true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
+			tmpDir := t.NewTempDir().Chdir()
+
+			tmpDir.WriteFiles(test.kustomizations)
 
 			k := NewKptDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
@@ -531,6 +575,8 @@ func TestKpt_GetApplyDir(t *testing.T) {
 			tmpDir := t.NewTempDir().Chdir()
 
 			if test.applyDir == test.expected {
+				// 0755 is a permission setting where the owner can read, write, and execute.
+				// Others can read and execute but not modify the directory.
 				os.Mkdir(test.applyDir, 0755)
 			}
 
