@@ -29,13 +29,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 const initContainer = "kaniko-init-container"
 
 func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifact *latest.KanikoArtifact, tag string) (string, error) {
-	client, err := kubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return "", fmt.Errorf("getting Kubernetes client: %w", err)
 	}

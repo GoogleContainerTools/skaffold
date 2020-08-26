@@ -28,7 +28,7 @@ import (
 	fakeclient "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
 
-	k8s "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -101,9 +101,9 @@ func TestLabelDeployResults(t *testing.T) {
 					Name: "deployments",
 				}},
 			})
-			t.Override(&k8s.Client, mockClient(client))
+			t.Override(&kubernetesclient.Client, mockClient(client))
 			dynClient := fakedynclient.NewSimpleDynamicClient(scheme.Scheme, dep)
-			t.Override(&k8s.DynamicClient, mockDynamicClient(dynClient))
+			t.Override(&kubernetesclient.DynamicClient, mockDynamicClient(dynClient))
 
 			// Patch labels
 			labelDeployResults(test.appliedLabels, []Artifact{{Obj: dep}})

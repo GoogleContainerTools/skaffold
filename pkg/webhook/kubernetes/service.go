@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/labels"
 )
@@ -33,7 +33,7 @@ import (
 // CreateService creates a service for the deployment to bind to
 // and returns the external IP of the service
 func CreateService(pr *github.PullRequestEvent) (*v1.Service, error) {
-	client, err := kubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
@@ -82,7 +82,7 @@ func serviceName(prNumber int) string {
 }
 
 func getService(svc *v1.Service) (*v1.Service, error) {
-	client, err := kubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}

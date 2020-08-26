@@ -31,7 +31,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
 
@@ -53,12 +53,12 @@ func labelDeployResults(labels map[string]string, results []Artifact) error {
 	}
 
 	// use the kubectl client to update all k8s objects with a skaffold watermark
-	dynClient, err := kubernetes.DynamicClient()
+	dynClient, err := kubernetesclient.DynamicClient()
 	if err != nil {
 		return fmt.Errorf("error getting Kubernetes dynamic client: %w", err)
 	}
 
-	client, err := kubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return fmt.Errorf("error getting Kubernetes client: %w", err)
 	}
