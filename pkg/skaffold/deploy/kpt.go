@@ -134,7 +134,6 @@ func (k *KptDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
-		// Kpt errors are written in STDOUT and surrounded by `\n`.
 		return err
 	}
 
