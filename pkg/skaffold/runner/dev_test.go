@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -135,7 +135,7 @@ func TestDevFailFirstCycle(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&kubernetes.Client, mockK8sClient)
+			t.Override(&client.Client, mockK8sClient)
 
 			// runner := createRunner(t, test.testBench).WithMonitor(test.monitor)
 			runner := createRunner(t, test.testBench, test.monitor)
@@ -266,7 +266,7 @@ func TestDev(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&kubernetes.Client, mockK8sClient)
+			t.Override(&client.Client, mockK8sClient)
 			test.testBench.cycles = len(test.watchEvents)
 
 			runner := createRunner(t, test.testBench, &TestMonitor{
@@ -352,7 +352,7 @@ func TestDevSync(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var actualFileSyncEventCalls fileSyncEventCalls
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&kubernetes.Client, mockK8sClient)
+			t.Override(&client.Client, mockK8sClient)
 			t.Override(&fileSyncInProgress, func(int, string) { actualFileSyncEventCalls.InProgress++ })
 			t.Override(&fileSyncFailed, func(int, string, error) { actualFileSyncEventCalls.Failed++ })
 			t.Override(&fileSyncSucceeded, func(int, string) { actualFileSyncEventCalls.Succeeded++ })

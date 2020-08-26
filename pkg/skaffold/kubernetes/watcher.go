@@ -24,6 +24,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 )
 
 type PodWatcher interface {
@@ -66,7 +68,7 @@ func (w *podWatcher) Start() (func(), error) {
 		}
 	}
 
-	kubeclient, err := Client()
+	kubeclient, err := client.Client()
 	if err != nil {
 		return func() {}, fmt.Errorf("getting k8s client: %w", err)
 	}

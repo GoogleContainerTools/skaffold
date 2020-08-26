@@ -36,7 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -273,7 +273,7 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 
 	errs, ctx := errgroup.WithContext(ctx)
 
-	client, err := kubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}

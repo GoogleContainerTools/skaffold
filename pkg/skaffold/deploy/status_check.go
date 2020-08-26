@@ -33,7 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
@@ -67,7 +67,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 }
 
 func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) (proto.StatusCode, error) {
-	client, err := pkgkubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
 	}

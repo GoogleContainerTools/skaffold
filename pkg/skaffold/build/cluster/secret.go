@@ -28,7 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 )
 
 const (
@@ -41,7 +41,7 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 	}
 
 	color.Default.Fprintf(out, "Checking for kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
-	client, err := kubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
@@ -96,7 +96,7 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 
 	color.Default.Fprintf(out, "Creating docker config secret [%s]...\n", b.DockerConfig.SecretName)
 
-	client, err := kubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}

@@ -35,7 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -344,7 +344,7 @@ func TestRetrieveServices(t *testing.T) {
 				objs[i] = s
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
-			t.Override(&kubernetesutil.Client, mockClient(client))
+			t.Override(&kubernetesclient.Client, mockClient(client))
 
 			actual, err := retrieveServiceResources(fmt.Sprintf("%s=9876-6789", deploy.RunIDLabel), test.namespaces)
 
