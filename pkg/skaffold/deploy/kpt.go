@@ -49,7 +49,6 @@ type KptDeployer struct {
 	insecureRegistries map[string]bool
 	labels             map[string]string
 	globalConfig       string
-	workingDir         string
 }
 
 func NewKptDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KptDeployer {
@@ -58,7 +57,6 @@ func NewKptDeployer(runCtx *runcontext.RunContext, labels map[string]string) *Kp
 		insecureRegistries: runCtx.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       runCtx.GlobalConfig(),
-		workingDir:         runCtx.GetWorkingDir(),
 	}
 }
 
@@ -76,7 +74,7 @@ func (k *KptDeployer) Dependencies() ([]string, error) {
 
 	configDeps, err := getResources(k.Dir)
 	if err != nil {
-		return nil, fmt.Errorf("finding resources in %s: %w", k.Dir, err)
+		return nil, fmt.Errorf("finding dependencies in %s: %w", k.Dir, err)
 	}
 
 	deps.insert(configDeps...)
@@ -120,8 +118,8 @@ func (k *KptDeployer) Render(ctx context.Context, out io.Writer, builds []build.
 }
 
 // renderManifests handles a majority of the hydration process for manifests.
-// This involves running reading configs from a source directory, kustomize build, kpt pipelines,
-// adding image digests, and a run-id label.
+// This involves reading configs from a source directory, running kustomize build, running kpt pipelines,
+// adding image digests, and adding run-id labels.
 func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds []build.Artifact) (deploy.ManifestList, error) {
 	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
 	if err != nil {
@@ -131,10 +129,10 @@ func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds [
 	// .pipeline is a temp dir used to store output between steps of the desired workflow
 	// This can be removed once kpt can fully support the desired workflow independently.
 	if err := os.RemoveAll(filepath.Join(pipeline, k.Dir)); err != nil {
-		return nil, fmt.Errorf("deleting intermediate directory for workflow: %w", err)
+		return nil, fmt.Errorf("deleting temporary directory %s: %w", filepath.Join(pipeline, k.Dir), err)
 	}
 	if err := os.MkdirAll(filepath.Join(pipeline, k.Dir), 0755); err != nil {
-		return nil, fmt.Errorf("creating directory %s: %w", filepath.Join(pipeline, k.Dir), err)
+		return nil, fmt.Errorf("creating temporary directory %s: %w", filepath.Join(pipeline, k.Dir), err)
 	}
 
 	if err := k.readConfigs(ctx); err != nil {
