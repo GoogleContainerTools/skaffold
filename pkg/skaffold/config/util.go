@@ -28,6 +28,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -216,13 +217,11 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 }
 
 func isDefaultLocal(kubeContext string) bool {
-	if kubeContext == constants.DefaultMinikubeContext ||
-		kubeContext == constants.DefaultDockerForDesktopContext ||
-		kubeContext == constants.DefaultDockerDesktopContext {
-		return true
-	}
-
-	return IsKindCluster(kubeContext) || IsK3dCluster(kubeContext)
+	return kubeContext == constants.DefaultDockerForDesktopContext ||
+		kubeContext == constants.DefaultDockerDesktopContext ||
+		cluster.GetClient().IsMinikube(kubeContext) ||
+		IsKindCluster(kubeContext) ||
+		IsK3dCluster(kubeContext)
 }
 
 // IsImageLoadingRequired checks if the cluster requires loading images into it
