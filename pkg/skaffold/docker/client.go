@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -164,22 +163,8 @@ func getUserAgentHeader() map[string]string {
 	}
 }
 
-func detectWsl() (bool, error) {
-	if _, err := os.Stat("/proc/version"); err == nil {
-		b, err := ioutil.ReadFile("/proc/version")
-		if err != nil {
-			return false, fmt.Errorf("read /proc/version: %w", err)
-		}
-		str := strings.ToLower(string(b))
-		if strings.Contains(str, "microsoft") {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 func getMiniKubeFilename() (string, error) {
-	if found, _ := detectWsl(); found {
+	if found, _ := util.DetectWSL(); found {
 		filename, err := exec.LookPath("minikube.exe")
 		if err != nil {
 			return "", errors.New("unable to find minikube.exe. Please add it to PATH environment variable")
@@ -221,7 +206,7 @@ func getMinikubeDockerEnv(minikubeProfile string) (map[string]string, error) {
 		env[kv[0]] = kv[1]
 	}
 
-	if found, _ := detectWsl(); found {
+	if found, _ := util.DetectWSL(); found {
 		cmd := exec.Command("wslpath", env["DOCKER_CERT_PATH"])
 		out, err := util.RunCmdOut(cmd)
 		if err == nil {
