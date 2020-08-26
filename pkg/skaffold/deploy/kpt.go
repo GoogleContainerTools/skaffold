@@ -234,7 +234,7 @@ func (k *KptDeployer) kptFnRun(ctx context.Context) (deploy.ManifestList, error)
 		count++
 	}
 	if count > 1 {
-		return nil, errors.New("cannot specify both fn-path and image")
+		return nil, errors.New("only one of `fn-path` or `image` configs can be specified at most")
 	}
 
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(pipeline, []string{"fn", "run"}, flags, nil)...)
