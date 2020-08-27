@@ -71,7 +71,7 @@ import (
 type ContainerDebugConfiguration struct {
 	// Artifact is the corresponding artifact's image name used in the skaffold.yaml
 	Artifact string `json:"artifact,omitempty"`
-	// Runtime represents the underlying language runtime (`go`, `jvm`, `nodejs`, `python`)
+	// Runtime represents the underlying language runtime (`go`, `jvm`, `nodejs`, `python`, `netcore`)
 	Runtime string `json:"runtime,omitempty"`
 	// WorkingDir is the working directory in the image configuration; may be empty
 	WorkingDir string `json:"workingDir,omitempty"`

@@ -298,6 +298,77 @@ func TestStrSliceInsert(t *testing.T) {
 	testutil.CheckDeepEqual(t, []string{"a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 1, nil))
 }
 
+func TestFormatMapToStringSlice1(t *testing.T) {
+	tests := []struct {
+		description string
+		args        map[string]string
+		expected    []string
+	}{
+		{
+			description: "regular key:value",
+			args: map[string]string{
+				"one": "1",
+				"two": "2",
+			},
+			expected: []string{"one=1", "two=2"},
+		}, {
+			description: "empty key:value",
+			args: map[string]string{
+				"one": "",
+				"two": "",
+			},
+			expected: []string{"one=", "two="},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual := EnvMapToSlice(test.args, "=")
+
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+func TestFormatMapToStringSlice2(t *testing.T) {
+	tests := []struct {
+		description string
+		args        map[string]*string
+		expected    []string
+	}{
+		{
+			description: "regular key:value",
+			args: map[string]*string{
+				"one": stringPointer("1"),
+				"two": stringPointer("2"),
+			},
+			expected: []string{"one=1", "two=2"},
+		}, {
+			description: "empty key:value",
+			args: map[string]*string{
+				"one": stringPointer(""),
+				"two": stringPointer(""),
+			},
+			expected: []string{"one=", "two="},
+		}, {
+			description: "nil value",
+			args: map[string]*string{
+				"one": nil,
+				"two": nil,
+			},
+			expected: []string{"one", "two"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual := EnvPtrMapToSlice(test.args, "=")
+
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
 func TestIsFileIsDir(t *testing.T) {
 	tmpDir := testutil.NewTempDir(t).Touch("file")
 
@@ -309,4 +380,8 @@ func TestIsFileIsDir(t *testing.T) {
 
 	testutil.CheckDeepEqual(t, false, IsFile(filepath.Join(tmpDir.Root(), "nonexistent")))
 	testutil.CheckDeepEqual(t, false, IsDir(filepath.Join(tmpDir.Root(), "nonexistent")))
+}
+
+func stringPointer(s string) *string {
+	return &s
 }

@@ -85,7 +85,7 @@ func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies D
 		cacheFile:          cacheFile,
 		imagesAreLocal:     imagesAreLocal,
 		hashForArtifact: func(ctx context.Context, a *latest.Artifact) (string, error) {
-			return getHashForArtifact(ctx, dependencies, a, runCtx.DevMode())
+			return getHashForArtifact(ctx, dependencies, a, runCtx.Mode())
 		},
 	}, nil
 }

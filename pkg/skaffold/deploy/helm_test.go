@@ -352,6 +352,34 @@ var (
 	version31   = `version.BuildInfo{Version:"v3.1.1", GitCommit:"afe70585407b420d0097d07b21c47dc511525ac8", GitTreeState:"clean", GoVersion:"go1.13.8"}`
 )
 
+func TestBinVer(t *testing.T) {
+	tests := []struct {
+		description string
+		helmVersion string
+		expected    string
+		shouldErr   bool
+	}{
+		{"Helm 2.0RC1", version20rc, "2.0.0-rc.1", false},
+		{"Helm 2.15.1", version21, "2.15.1", false},
+		{"Helm 3.0b3", version30b, "3.0.0-beta.3", false},
+		{"Helm 3.0", version30, "3.0.0", false},
+		{"Helm 3.1.1", version31, "3.1.1", false},
+		{"Custom Helm 3.3 build from Manjaro", "v3.3", "3.3.0", false}, // not semver compliant
+		{"Invalid", "3.1.0", "0.0.0", true},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
+
+			deployer := NewHelmDeployer(makeRunContext(testDeployConfig, false), nil)
+			ver, err := deployer.binVer(context.TODO())
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, ver.String())
+		})
+	}
+}
+
 func TestHelmDeploy(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "TestHelmDeploy")
 	if err != nil {

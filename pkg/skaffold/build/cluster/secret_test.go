@@ -25,7 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
-	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -35,7 +35,7 @@ func TestCreateSecret(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("secret.json")
 		fakeKubernetesclient := fake.NewSimpleClientset()
-		t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
+		t.Override(&client.Client, func() (kubernetes.Interface, error) {
 			return fakeKubernetesclient, nil
 		})
 
@@ -74,7 +74,7 @@ func TestCreateSecret(t *testing.T) {
 
 func TestExistingSecretNotFound(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
+		t.Override(&client.Client, func() (kubernetes.Interface, error) {
 			return fake.NewSimpleClientset(), nil
 		})
 
@@ -101,7 +101,7 @@ func TestExistingSecretNotFound(t *testing.T) {
 
 func TestExistingSecret(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
+		t.Override(&client.Client, func() (kubernetes.Interface, error) {
 			return fake.NewSimpleClientset(&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "kaniko-secret",
@@ -133,7 +133,7 @@ func TestExistingSecret(t *testing.T) {
 
 func TestSkipSecretCreation(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
+		t.Override(&client.Client, func() (kubernetes.Interface, error) {
 			return nil, nil
 		})
 

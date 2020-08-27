@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -36,6 +37,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -61,7 +63,7 @@ type LocalDaemon interface {
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
-	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error)
+	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.RunMode) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
@@ -155,14 +157,13 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 }
 
 // Build performs a docker build and returns the imageID.
-func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error) {
+func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.RunMode) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	// Like `docker build`, we ignore the errors
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
 	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
-
-	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
+	buildArgs, err := EvalBuildArgs(mode, workspace, a)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
@@ -312,11 +313,25 @@ func (l *localDaemon) isAlreadyPushed(ctx context.Context, ref, registryAuth str
 
 // Pull pulls an image reference from a registry.
 func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string) error {
+	// We first try pulling the image with credentials.  If that fails then retry
+	// without credentials in case the image is public.
+
+	// Set CLOUDSDK_CORE_VERBOSITY to suppress error messages emitted by docker-credential-gcloud
+	// when the user is not authenticated or lacks credentials to pull the given image.  The errors
+	// are irrelevant when the image is public (e.g., `gcr.io/buildpacks/builder:v1`).`
+	// If the image is private, the error from GCR directs the user to the GCR authentication
+	// page which provides steps to rememdy the situation.
+	if v, found := os.LookupEnv("CLOUDSDK_CORE_VERBOSITY"); found {
+		defer os.Setenv("CLOUDSDK_CORE_VERBOSITY", v)
+	} else {
+		defer os.Unsetenv("CLOUDSDK_CORE_VERBOSITY")
+	}
+	os.Setenv("CLOUDSDK_CORE_VERBOSITY", "critical")
+
 	// Eargerly create credentials.
 	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
 	// Let's ignore the error because maybe the image is public
 	// and can be pulled without credentials.
-
 	rc, err := l.apiClient.ImagePull(ctx, ref, types.ImagePullOptions{
 		RegistryAuth: registryAuth,
 		PrivilegeFunc: func() (string, error) {
@@ -412,17 +427,10 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 	return nil, fmt.Errorf("could not remove image after %d retries", retries)
 }
 
-// GetBuildArgs gives the build args flags for docker build.
-func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
+func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) ([]string, error) {
 	var args []string
-
-	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
-	if err != nil {
-		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
-	}
-
 	var keys []string
-	for k := range buildArgs {
+	for k := range evaluatedArgs {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
@@ -430,7 +438,7 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	for _, k := range keys {
 		args = append(args, "--build-arg")
 
-		v := buildArgs[k]
+		v := evaluatedArgs[k]
 		if v == nil {
 			args = append(args, k)
 		} else {
@@ -455,30 +463,6 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	}
 
 	return args, nil
-}
-
-// EvaluateBuildArgs evaluates templated build args.
-func EvaluateBuildArgs(args map[string]*string) (map[string]*string, error) {
-	if args == nil {
-		return nil, nil
-	}
-
-	evaluated := map[string]*string{}
-	for k, v := range args {
-		if v == nil {
-			evaluated[k] = nil
-			continue
-		}
-
-		value, err := util.ExpandEnvTemplate(*v, nil)
-		if err != nil {
-			return nil, fmt.Errorf("unable to get value for build arg %q: %w", k, err)
-		}
-
-		evaluated[k] = &value
-	}
-
-	return evaluated, nil
 }
 
 func (l *localDaemon) Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error {

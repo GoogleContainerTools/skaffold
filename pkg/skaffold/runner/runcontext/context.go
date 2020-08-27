@@ -58,9 +58,8 @@ func (rc *RunContext) CacheFile() string                         { return rc.Opt
 func (rc *RunContext) ConfigurationFile() string                 { return rc.Opts.ConfigurationFile }
 func (rc *RunContext) CustomLabels() []string                    { return rc.Opts.CustomLabels }
 func (rc *RunContext) CustomTag() string                         { return rc.Opts.CustomTag }
-func (rc *RunContext) DebugMode() bool                           { return rc.Opts.IsDebugMode() }
 func (rc *RunContext) DefaultRepo() *string                      { return rc.Opts.DefaultRepo.Value() }
-func (rc *RunContext) DevMode() bool                             { return rc.Opts.IsDevMode() }
+func (rc *RunContext) Mode() config.RunMode                      { return rc.Opts.Mode() }
 func (rc *RunContext) DigestSource() string                      { return rc.Opts.DigestSource }
 func (rc *RunContext) DryRun() bool                              { return rc.Opts.DryRun }
 func (rc *RunContext) ForceDeploy() bool                         { return rc.Opts.Force }

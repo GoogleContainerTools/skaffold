@@ -87,7 +87,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 
 	switch {
 	case a.DockerArtifact != nil:
-		return b.buildDocker(ctx, out, a, tag)
+		return b.buildDocker(ctx, out, a, tag, b.mode)
 
 	case a.BazelArtifact != nil:
 		return bazel.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages).Build(ctx, out, a, tag)
@@ -99,7 +99,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
 
 	case a.BuildpackArtifact != nil:
-		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.devMode).Build(ctx, out, a, tag)
+		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.mode).Build(ctx, out, a, tag)
 
 	default:
 		return "", fmt.Errorf("unexpected type %q for local artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))

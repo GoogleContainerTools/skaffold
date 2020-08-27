@@ -22,8 +22,8 @@ import (
 
 	"google.golang.org/api/cloudbuild/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 func (b *Builder) kanikoBuildSpec(artifact *latest.KanikoArtifact, tag string) (cloudbuild.Build, error) {
@@ -63,7 +63,7 @@ func (b *Builder) kanikoBuildSpec(artifact *latest.KanikoArtifact, tag string) (
 }
 
 func (b *Builder) kanikoBuildArgs(artifact *latest.KanikoArtifact) ([]string, error) {
-	buildArgs, err := docker.EvaluateBuildArgs(artifact.BuildArgs)
+	buildArgs, err := util.EvaluateEnvTemplateMap(artifact.BuildArgs)
 	if err != nil {
 		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
 	}

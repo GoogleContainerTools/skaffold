@@ -35,7 +35,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -213,7 +213,7 @@ func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, logs io.Reader, c
 // preference to pods that were most recently created.  This is in contrast to the selection algorithm
 // used by kubectl (see https://github.com/GoogleContainerTools/skaffold/issues/4522 for details).
 func findNewestPodForService(ctx context.Context, ns, serviceName string, servicePort int) (string, int, error) {
-	client, err := kubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return "", -1, fmt.Errorf("getting Kubernetes client: %w", err)
 	}

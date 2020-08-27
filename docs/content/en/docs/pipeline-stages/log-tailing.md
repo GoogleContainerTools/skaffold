@@ -15,7 +15,7 @@ Log Tailing is **disabled by default** for `run` mode; it can be enabled with th
 
 
 ## Log Structure
-To view log structure, run `skaffold run --tail` on [examples microserices](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices)
+To view log structure, run `skaffold run --tail` in [`examples/microservices`](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices)
 
 ```bash
 skaffold run --tail

@@ -26,6 +26,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -103,6 +104,7 @@ func TestBuild(t *testing.T) {
 		workspace     string
 		artifact      *latest.DockerArtifact
 		expected      types.ImageBuildOptions
+		mode          config.RunMode
 		shouldErr     bool
 		expectedError string
 	}{
@@ -115,6 +117,7 @@ func TestBuild(t *testing.T) {
 				Tags:        []string{"finalimage"},
 				AuthConfigs: allAuthConfig,
 			},
+			mode: config.RunModes.Dev,
 		},
 		{
 			description: "build with options",
@@ -135,6 +138,7 @@ func TestBuild(t *testing.T) {
 				NetworkMode: "None",
 				NoCache:     true,
 			},
+			mode: config.RunModes.Dev,
 			expected: types.ImageBuildOptions{
 				Tags:       []string{"finalimage"},
 				Dockerfile: "Dockerfile",
@@ -155,6 +159,7 @@ func TestBuild(t *testing.T) {
 			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
+			mode:          config.RunModes.Dev,
 			workspace:     ".",
 			artifact:      &latest.DockerArtifact{},
 			shouldErr:     true,
@@ -166,6 +171,7 @@ func TestBuild(t *testing.T) {
 				ErrStream: true,
 			},
 			workspace:     ".",
+			mode:          config.RunModes.Dev,
 			artifact:      &latest.DockerArtifact{},
 			shouldErr:     true,
 			expectedError: "unable to stream build output",
@@ -177,6 +183,7 @@ func TestBuild(t *testing.T) {
 					"key": util.StringPtr("{{INVALID"),
 				},
 			},
+			mode:          config.RunModes.Dev,
 			shouldErr:     true,
 			expectedError: `function "INVALID" not defined`,
 		},
@@ -184,10 +191,13 @@ func TestBuild(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
+			t.Override(&EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+				return util.EvaluateEnvTemplateMap(a.BuildArgs)
+			})
 			t.SetEnvs(test.env)
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
-			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage")
+			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage", test.mode)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
@@ -318,8 +328,13 @@ func TestGetBuildArgs(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.env })
+			args, err := util.EvaluateEnvTemplateMap(test.artifact.BuildArgs)
+			t.CheckError(test.shouldErr, err)
+			if test.shouldErr {
+				return
+			}
 
-			result, err := GetBuildArgs(test.artifact)
+			result, err := ToCLIBuildArgs(test.artifact, args)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {

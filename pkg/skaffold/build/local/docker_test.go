@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -33,12 +34,14 @@ func TestDockerCLIBuild(t *testing.T) {
 	tests := []struct {
 		description string
 		localBuild  latest.LocalBuild
+		mode        config.RunMode
 		extraEnv    []string
 		expectedEnv []string
 	}{
 		{
 			description: "docker build",
 			localBuild:  latest.LocalBuild{},
+			mode:        config.RunModes.Dev,
 			expectedEnv: []string{"KEY=VALUE"},
 		},
 		{
@@ -72,6 +75,9 @@ func TestDockerCLIBuild(t *testing.T) {
 			t.NewTempDir().Touch("Dockerfile").Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
+			t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+				return a.BuildArgs, nil
+			})
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunEnv(
 				"docker build . --file "+dockerfilePath+" -t tag --force-rm",
 				test.expectedEnv,
@@ -93,7 +99,7 @@ func TestDockerCLIBuild(t *testing.T) {
 				},
 			}
 
-			_, err = builder.buildDocker(context.Background(), ioutil.Discard, artifact, "tag")
+			_, err = builder.buildDocker(context.Background(), ioutil.Discard, artifact, "tag", test.mode)
 			t.CheckNoError(err)
 		})
 	}
