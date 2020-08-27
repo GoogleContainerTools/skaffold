@@ -22,6 +22,7 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -36,13 +37,16 @@ func NewCmdRun() *cobra.Command {
 		WithExample("Build, test, deploy and tail the logs", "run --tail").
 		WithExample("Run with a given profile", "run -p <profile>").
 		WithCommonFlags().
+		WithFlags(func(f *pflag.FlagSet) {
+			f.StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
+		}).
 		WithHouseKeepingMessages().
 		NoArgs(doRun)
 }
 
 func doRun(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		bRes, err := r.BuildAndTest(ctx, out, config.Build.Artifacts)
+		bRes, err := r.BuildAndTest(ctx, out, targetArtifacts(opts, config))
 		if err != nil {
 			return fmt.Errorf("failed to build: %w", err)
 		}

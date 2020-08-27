@@ -792,6 +792,7 @@ Examples:
   skaffold run -p <profile>
 
 Options:
+  -b, --build-image=[]: Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
@@ -833,6 +834,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
