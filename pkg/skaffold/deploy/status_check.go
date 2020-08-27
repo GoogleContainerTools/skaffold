@@ -92,7 +92,7 @@ func (s statusChecker) Check(ctx context.Context, out io.Writer) error {
 }
 
 func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.StatusCode, error) {
-	client, err := pkgkubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
