@@ -65,24 +65,24 @@ func (clientImpl) IsMinikube(kubeContext string) bool {
 	}
 	_, err := minikubeBinaryFunc()
 	if err != nil {
-		logrus.Debugf("Minikube cluster not detected: %v", err)
+		logrus.Tracef("Minikube cluster not detected: %v", err)
 		return false
 	}
 
 	if ok, err := matchClusterCertPath(kubeContext); err != nil {
-		logrus.Debugf("failed to match cluster certificate path: %v", err)
+		logrus.Tracef("failed to match cluster certificate path: %v", err)
 	} else if ok {
 		logrus.Debugf("Minikube cluster detected: cluster certificate for context %q found inside the minikube directory", kubeContext)
 		return true
 	}
 
 	if ok, err := matchProfileAndServerURL(kubeContext); err != nil {
-		logrus.Debugf("failed to match minikube profile: %v", err)
+		logrus.Tracef("failed to match minikube profile: %v", err)
 	} else if ok {
 		logrus.Debugf("Minikube cluster detected: context %q has matching profile name or server url", kubeContext)
 		return true
 	}
-	logrus.Debugf("Minikube cluster not detected for context %q", kubeContext)
+	logrus.Tracef("Minikube cluster not detected for context %q", kubeContext)
 	return false
 }
 
@@ -138,7 +138,7 @@ func matchProfileAndServerURL(kubeContext string) (bool, error) {
 		return false, fmt.Errorf("getting kubernetes server url: %w", err)
 	}
 
-	logrus.Debugf("kubernetes server url: %s", apiServerURL)
+	logrus.Tracef("kubernetes server url: %s", apiServerURL)
 
 	ok, err := matchServerURLFor(kubeContext, apiServerURL)
 	if err != nil {
