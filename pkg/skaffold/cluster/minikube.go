@@ -24,14 +24,14 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/sirupsen/logrus"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/homedir"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	k8s "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -42,6 +42,7 @@ var GetClient = getClient
 var (
 	minikubeBinaryFunc      = minikubeBinary
 	getRestClientConfigFunc = context.GetRestClientConfig
+	getClusterInfo          = context.GetClusterInfo
 )
 
 type Client interface {
@@ -65,13 +66,13 @@ func (clientImpl) IsMinikube(kubeContext string) bool {
 	_, err := minikubeBinaryFunc()
 	if err != nil {
 		logrus.Debugf("Minikube cluster not detected: %v", err)
-		return false // minikube binary not found
+		return false
 	}
 
-	if ok, err := matchNodeLabel(kubeContext); err != nil {
-		logrus.Debugf("failed to check minikube node labels: %v", err)
+	if ok, err := matchClusterCertPath(kubeContext); err != nil {
+		logrus.Debugf("failed to match cluster certificate path: %v", err)
 	} else if ok {
-		logrus.Debugf("Minikube cluster detected: context %q nodes have minikube labels", kubeContext)
+		logrus.Debugf("Minikube cluster detected: cluster certificate for context %q found inside the minikube directory", kubeContext)
 		return true
 	}
 
@@ -112,20 +113,16 @@ func minikubeBinary() (string, error) {
 	return filename, nil
 }
 
-func matchNodeLabel(kubeContext string) (bool, error) {
-	client, err := k8s.Client()
+// matchClusterCertPath checks if the cluster certificate for this context is from inside the minikube directory
+func matchClusterCertPath(kubeContext string) (bool, error) {
+	c, err := getClusterInfo(kubeContext)
 	if err != nil {
-		return false, fmt.Errorf("getting Kubernetes client: %w", err)
+		return false, fmt.Errorf("getting kubernetes config: %w", err)
 	}
-	opts := v1.ListOptions{
-		LabelSelector: fmt.Sprintf("minikube.k8s.io/name=%s", kubeContext),
-		Limit:         100,
+	if c.CertificateAuthority == "" {
+		return false, nil
 	}
-	l, err := client.CoreV1().Nodes().List(opts)
-	if err != nil {
-		return false, fmt.Errorf("listing nodes with matching label: %w", err)
-	}
-	return l != nil && len(l.Items) > 0, nil
+	return util.IsSubPath(minikubePath(), c.CertificateAuthority), nil
 }
 
 // matchProfileAndServerURL checks if kubecontext matches any valid minikube profile
@@ -183,6 +180,18 @@ func matchServerURLFor(kubeContext string, serverURL *url.URL) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// minikubePath returns the path to the user's minikube dir
+func minikubePath() string {
+	minikubeHomeEnv := os.Getenv("MINIKUBE_HOME")
+	if minikubeHomeEnv == "" {
+		return filepath.Join(homedir.HomeDir(), ".minikube")
+	}
+	if filepath.Base(minikubeHomeEnv) == ".minikube" {
+		return minikubeHomeEnv
+	}
+	return filepath.Join(minikubeHomeEnv, ".minikube")
 }
 
 type data struct {
