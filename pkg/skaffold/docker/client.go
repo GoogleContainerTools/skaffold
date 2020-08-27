@@ -207,6 +207,7 @@ func getMinikubeDockerEnv(minikubeProfile string) (map[string]string, error) {
 	}
 
 	if found, _ := util.DetectWSL(); found {
+		// rewrite Unix path to Windows
 		cmd := exec.Command("wslpath", env["DOCKER_CERT_PATH"])
 		out, err := util.RunCmdOut(cmd)
 		if err == nil {
