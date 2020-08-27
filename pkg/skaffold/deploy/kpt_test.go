@@ -36,20 +36,114 @@ import (
 )
 
 func TestKpt_Deploy(t *testing.T) {
+	output := `apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1
+    name: image1
+`
 	tests := []struct {
-		description string
-		expected    []string
-		shouldErr   bool
+		description    string
+		builds         []build.Artifact
+		cfg            *latest.KptDeploy
+		kustomizations map[string]string
+		commands       util.Command
+		expected       []string
+		shouldErr      bool
 	}{
 		{
-			description: "nil",
+			description: "no manifest",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", ``),
+		},
+		{
+			description: "invalid manifest",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", `foo`),
+			shouldErr: true,
+		},
+		{
+			description: "invalid user specified applyDir",
+			cfg: &latest.KptDeploy{
+				Dir:      ".",
+				ApplyDir: "invalid_path",
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", output),
+			shouldErr: true,
+		},
+		{
+			description: "kustomization and specified kpt fn",
+			cfg: &latest.KptDeploy{
+				Dir:      ".",
+				Fn:       latest.KptFn{FnPath: "kpt-func.yaml"},
+				ApplyDir: "valid_path",
+			},
+			kustomizations: map[string]string{"Kustomization": `resources:
+- foo.yaml`},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kustomize build -o .pipeline .", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run --fn-path kpt-func.yaml", output).
+				AndRun("kpt live apply valid_path"),
+			expected: []string{"default"},
+		},
+		{
+			description: "kpt live apply fails",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", output).
+				AndRunOut("kpt live init .kpt-hydrated", ``).
+				AndRunErr("kpt live apply .kpt-hydrated", errors.New("BUG")),
+			shouldErr: true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k := NewKptDeployer(&runcontext.RunContext{}, nil)
-			res, err := k.Deploy(context.Background(), nil, nil)
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
+			t.Override(&util.DefaultExecCommand, test.commands)
+			tmpDir := t.NewTempDir().Chdir()
+
+			tmpDir.WriteFiles(test.kustomizations)
+
+			k := NewKptDeployer(&runcontext.RunContext{
+				Cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KptDeploy: test.cfg,
+						},
+					},
+				},
+			}, nil)
+
+			if k.ApplyDir == "valid_path" {
+				// 0755 is a permission setting where the owner can read, write, and execute.
+				// Others can read and execute but not modify the directory.
+				os.Mkdir(k.ApplyDir, 0755)
+			}
+
+			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
+
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -194,19 +288,19 @@ func TestKpt_Cleanup(t *testing.T) {
 		{
 			description: "valid user specified applyDir w/o template resource",
 			applyDir:    "valid_path",
-			commands:    testutil.CmdRunOutErr("kpt live destroy valid_path", "", errors.New("BUG")),
+			commands:    testutil.CmdRunErr("kpt live destroy valid_path", errors.New("BUG")),
 			shouldErr:   true,
 		},
 		{
 			description: "valid user specified applyDir w/ template resource (emulated)",
 			applyDir:    "valid_path",
-			commands:    testutil.CmdRunOut("kpt live destroy valid_path", ""),
+			commands:    testutil.CmdRun("kpt live destroy valid_path"),
 		},
 		{
 			description: "unspecified applyDir",
 			commands: testutil.
 				CmdRunOut("kpt live init .kpt-hydrated", "").
-				AndRunOut("kpt live destroy .kpt-hydrated", ""),
+				AndRun("kpt live destroy .kpt-hydrated"),
 		},
 	}
 	for _, test := range tests {
