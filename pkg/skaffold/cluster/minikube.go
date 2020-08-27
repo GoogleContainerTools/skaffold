@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -43,6 +42,11 @@ var (
 	minikubeBinaryFunc      = minikubeBinary
 	getRestClientConfigFunc = context.GetRestClientConfig
 	getClusterInfo          = context.GetClusterInfo
+)
+
+const (
+	VirtualBox = "virtualbox"
+	HyperKit   = "hyperkit"
 )
 
 type Client interface {
@@ -148,11 +152,7 @@ func matchProfileAndServerURL(kubeContext string) (bool, error) {
 }
 
 func matchServerURLFor(kubeContext string, serverURL *url.URL) (bool, error) {
-	cmd, err := minikubeExec("profile", "list", "-o", "json")
-	if err != nil {
-		return false, fmt.Errorf("executing minikube command: %w", err)
-	}
-
+	cmd, _ := minikubeExec("profile", "list", "-o", "json")
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return false, fmt.Errorf("getting minikube profiles: %w", err)
@@ -160,7 +160,7 @@ func matchServerURLFor(kubeContext string, serverURL *url.URL) (bool, error) {
 
 	var data data
 	if err = json.Unmarshal(out, &data); err != nil {
-		log.Fatal(fmt.Errorf("failed to unmarshal data: %w", err))
+		return false, fmt.Errorf("failed to unmarshal data: %w", err)
 	}
 
 	for _, v := range data.Valid {
@@ -168,7 +168,7 @@ func matchServerURLFor(kubeContext string, serverURL *url.URL) (bool, error) {
 			continue
 		}
 
-		if v.Config.Driver != "hyperkit" && v.Config.Driver != "virtualbox" {
+		if v.Config.Driver != HyperKit && v.Config.Driver != VirtualBox {
 			// Since node IPs don't match server API for other drivers we assume profile name match is enough.
 			// TODO: Revisit once https://github.com/kubernetes/minikube/issues/6642 is fixed
 			return true, nil
