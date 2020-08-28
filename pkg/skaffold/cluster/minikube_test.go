@@ -95,6 +95,12 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 			expected:           false,
 		},
 		{
+			description:        "cannot parse minikube profile list",
+			kubeContext:        "test-cluster",
+			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json", `{"foo":"bar"}`),
+			expected:           false,
+		},
+		{
 			description: "minikube with hyperkit driver node ip different from api server url",
 			kubeContext: "test-cluster",
 			config: rest.Config{
