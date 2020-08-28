@@ -117,6 +117,78 @@ spec:
 				AndRunErr("kpt live apply .kpt-hydrated", errors.New("BUG")),
 			shouldErr: true,
 		},
+		{
+			description: "user specifies reconcile timeout and poll period",
+			cfg: &latest.KptDeploy{
+				Dir:      ".",
+				ApplyDir: "valid_path",
+				Live: latest.KptLive{
+					Apply: latest.KptLiveApply{
+						PollPeriod:       "5s",
+						ReconcileTimeout: "2m",
+					},
+				},
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", output).
+				AndRun("kpt live apply valid_path --poll-period 5s --reconcile-timeout 2m"),
+		},
+		{
+			description: "user specifies invalid reconcile timeout and poll period",
+			cfg: &latest.KptDeploy{
+				Dir:      ".",
+				ApplyDir: "valid_path",
+				Live: latest.KptLive{
+					Apply: latest.KptLiveApply{
+						PollPeriod:       "foo",
+						ReconcileTimeout: "bar",
+					},
+				},
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", output).
+				AndRun("kpt live apply valid_path --poll-period foo --reconcile-timeout bar"),
+		},
+		{
+			description: "user specifies prune propagation policy and prune timeout",
+			cfg: &latest.KptDeploy{
+				Dir:      ".",
+				ApplyDir: "valid_path",
+				Live: latest.KptLive{
+					Apply: latest.KptLiveApply{
+						PrunePropagationPolicy: "Orphan",
+						PruneTimeout:           "2m",
+					},
+				},
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", output).
+				AndRun("kpt live apply valid_path --prune-propagation-policy Orphan --prune-timeout 2m"),
+		},
+		{
+			description: "user specifies invalid prune propagation policy and prune timeout",
+			cfg: &latest.KptDeploy{
+				Dir:      ".",
+				ApplyDir: "valid_path",
+				Live: latest.KptLive{
+					Apply: latest.KptLiveApply{
+						PrunePropagationPolicy: "foo",
+						PruneTimeout:           "bar",
+					},
+				},
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", output).
+				AndRun("kpt live apply valid_path --prune-propagation-policy foo --prune-timeout bar"),
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -277,6 +349,7 @@ func TestKpt_Cleanup(t *testing.T) {
 	tests := []struct {
 		description string
 		applyDir    string
+		globalFlags []string
 		commands    util.Command
 		shouldErr   bool
 	}{
@@ -604,6 +677,67 @@ spec:
 				AndRunOutErr("kpt fn run .pipeline --dry-run", "invalid pipeline", errors.New("BUG")),
 			shouldErr: true,
 		},
+		{
+			description: "kpt fn run with --global-scope",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+				Fn: latest.KptFn{
+					Image:       "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar",
+					GlobalScope: true,
+				},
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run --global-scope --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
+			expected: "\n",
+		},
+		{
+			description: "kpt fn run with --mount arguments",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+				Fn: latest.KptFn{
+					Image: "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar",
+					Mount: []string{"type=bind", "src=$(pwd)", "dst=/source"},
+				},
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run --mount type=bind,src=$(pwd),dst=/source --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
+			expected: "\n",
+		},
+		{
+			description: "kpt fn run with invalid --mount arguments",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+				Fn: latest.KptFn{
+					Image: "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar",
+					Mount: []string{"foo", "", "bar"},
+				},
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run --mount foo,,bar --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
+			expected: "\n",
+		},
+		{
+			description: "kpt fn run flag with --network and --network-name arguments",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+				Fn: latest.KptFn{
+					Image:       "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar",
+					Network:     true,
+					NetworkName: "foo",
+				},
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run --network --network-name foo --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
+			expected: "\n",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -639,6 +773,7 @@ func TestKpt_GetApplyDir(t *testing.T) {
 	tests := []struct {
 		description string
 		applyDir    string
+		live        latest.KptLive
 		expected    string
 		commands    util.Command
 		shouldErr   bool
@@ -657,6 +792,15 @@ func TestKpt_GetApplyDir(t *testing.T) {
 			description: "unspecified applyDir",
 			expected:    ".kpt-hydrated",
 			commands:    testutil.CmdRunOut("kpt live init .kpt-hydrated", ""),
+		},
+		{
+			description: "unspecified applyDir with specified inventory-id and namespace",
+			live: latest.KptLive{
+				InventoryID:        "1a23bcde-4f56-7891-a2bc-de34fabcde5f6",
+				InventoryNamespace: "foo",
+			},
+			expected: ".kpt-hydrated",
+			commands: testutil.CmdRunOut("kpt live init .kpt-hydrated --inventory-id 1a23bcde-4f56-7891-a2bc-de34fabcde5f6 --namespace foo", ""),
 		},
 		{
 			description: "existing template resource in .kpt-hydrated",
@@ -685,6 +829,7 @@ func TestKpt_GetApplyDir(t *testing.T) {
 						DeployType: latest.DeployType{
 							KptDeploy: &latest.KptDeploy{
 								ApplyDir: test.applyDir,
+								Live:     test.live,
 							},
 						},
 					},
@@ -722,8 +867,8 @@ func TestKpt_KptCommandArgs(t *testing.T) {
 			description: "empty dir",
 			commands:    []string{"live", "apply"},
 			flags:       []string{"--fn-path", "kpt-func.yaml"},
-			globalFlags: []string{"-h"},
-			expected:    strings.Split("live apply --fn-path kpt-func.yaml -h", " "),
+			globalFlags: []string{"-v", "3"},
+			expected:    strings.Split("live apply --fn-path kpt-func.yaml -v 3", " "),
 		},
 		{
 			description: "empty commands",

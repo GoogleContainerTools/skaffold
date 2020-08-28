@@ -528,11 +528,11 @@ type KustomizeDeploy struct {
 
 // KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
 type KptDeploy struct {
-	// Dir is the path to the directory to run kpt functions against.
-	Dir string `yaml:"dir,omitempty"`
-
 	// ApplyDir is the path to the directory to deploy to the cluster.
 	ApplyDir string `yaml:"applyDir,omitempty"`
+
+	// Dir is the path to the directory to run kpt functions against.
+	Dir string `yaml:"dir,omitempty"`
 
 	// Fn adds additional configurations for `kpt fn`.
 	Fn KptFn `yaml:"fn,omitempty"`
@@ -548,13 +548,49 @@ type KptFn struct {
 
 	// Image is an image to be run as a function in lieu of running functions from a directory.
 	Image string `yaml:"image,omitempty"`
+
+	// NetworkName is the docker network to run the container in (default "bridge").
+	NetworkName string `yaml:"networkName,omitempty"`
+
+	// GlobalScope sets global scope for functions.
+	GlobalScope bool `yaml:"globalScope,omitempty"`
+
+	// Network enables network access for functions that declare it.
+	Network bool `yaml:"network,omitempty"`
+
+	// Mount is a list of storage options to mount to the fn image.
+	Mount []string `yaml:"mount,omitempty"`
 }
 
-// KptLive adds additional configurations used when calling `kpt live`
-// on every command (Global), creations (Apply), or deletions (Destroy).
+// KptLive adds additional configurations used when calling `kpt live`.
 type KptLive struct {
-	// Apply are additional flags passed on creations (`kpt live apply`).
-	Apply []string `yaml:"apply,omitempty"`
+	// Apply adds additional configurations for `kpt live apply` commands.
+	Apply KptLiveApply `yaml:"apply,omitempty"`
+
+	// InventoryID is the identifier for a group of applied resources.
+	// This configuration is used when users do not specify `KptDeploy.ApplyDir`
+	// and `.kpt-hydrated/inventory-template.yaml` does not exist.
+	InventoryID string `yaml:"inventoryID,omitempty"`
+
+	// InventoryNamespace sets the namespace scope for `kpt live init`.
+	InventoryNamespace string `yaml:"inventoryNamespace,omitempty"`
+}
+
+// KptLiveApply adds additional configurations used when calling `kpt live apply`.
+type KptLiveApply struct {
+	// PollPeriod sets for the polling period for resource statuses. Default to 2s.
+	PollPeriod string `yaml:"pollPeriod,omitempty"`
+
+	// PrunePropagationPolicy sets the propagation policy for pruning.
+	// Possible settings are Background, Foreground, Orphan.
+	// Default to "Background".
+	PrunePropagationPolicy string `yaml:"prunePropagationPolicy,omitempty"`
+
+	// PruneTimeout sets the time threshold to wait for all pruned resources to be deleted.
+	PruneTimeout string `yaml:"pruneTimeout,omitempty"`
+
+	// ReconcileTimeout sets the time threshold to wait for all resources to reach the current status.
+	ReconcileTimeout string `yaml:"reconcileTimeout,omitempty"`
 }
 
 // HelmRelease describes a helm release to be deployed.
