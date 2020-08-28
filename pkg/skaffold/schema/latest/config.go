@@ -549,17 +549,17 @@ type KptFn struct {
 	// Image is an image to be run as a function in lieu of running functions from a directory.
 	Image string `yaml:"image,omitempty"`
 
+	// NetworkName is the docker network to run the container in (default "bridge").
+	NetworkName string `yaml:"networkName,omitempty"`
+
+	// Network enables network access for functions that declare it.
+	Network bool `yaml:"network,omitempty"`
+
 	// GlobalScope sets global scope for functions.
 	GlobalScope bool `yaml:"image,omitempty"`
 
 	// Mount is a list of storage options to mount to the fn image.
 	Mount []string `yaml:"mount,omitempty"`
-
-	// Network enables network access for functions that declare it.
-	Network bool `yaml:"network,omitempty"`
-
-	// NetworkName is the docker network to run the container in (default "bridge").
-	NetworkName string `yaml:"networkName,omitempty"`
 }
 
 // KptLive adds additional configurations used when calling `kpt live`.
@@ -576,6 +576,7 @@ type KptLive struct {
 	Apply KptLiveApply `yaml:"flags,omitempty"`
 }
 
+// KptLiveApply adds additional configurations used when calling `kpt live apply`.
 type KptLiveApply struct {
 	// PollPeriod sets for the polling period for resource statuses. Default to 2s.
 	PollPeriod string `yaml:"pollPeriod,omitempty"`
