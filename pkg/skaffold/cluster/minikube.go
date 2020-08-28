@@ -67,7 +67,7 @@ func (clientImpl) IsMinikube(kubeContext string) bool {
 	if kubeContext == constants.DefaultMinikubeContext {
 		return true
 	}
-	if _, err := minikubeBinaryFunc();  err != nil {
+	if _, err := minikubeBinaryFunc(); err != nil {
 		logrus.Tracef("Minikube cluster not detected: %v", err)
 		return false
 	}
