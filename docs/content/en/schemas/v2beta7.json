@@ -830,8 +830,8 @@
         },
         "kpt": {
           "$ref": "#/definitions/KptDeploy",
-          "description": "*beta* uses the `kpt` CLI to manage and deploy manifests.",
-          "x-intellij-html-description": "<em>beta</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
+          "description": "*alpha* uses the `kpt` CLI to manage and deploy manifests.",
+          "x-intellij-html-description": "<em>alpha</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
         },
         "kubeContext": {
           "type": "string",
@@ -1629,8 +1629,8 @@
         "live"
       ],
       "additionalProperties": false,
-      "description": "*beta* uses the `kpt` CLI to manage and deploy manifests.",
-      "x-intellij-html-description": "<em>beta</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
+      "description": "*alpha* uses the `kpt` CLI to manage and deploy manifests.",
+      "x-intellij-html-description": "<em>alpha</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
     },
     "KptFn": {
       "properties": {

@@ -447,7 +447,7 @@ type DeployType struct {
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
 
-	// KptDeploy *beta* uses the `kpt` CLI to manage and deploy manifests.
+	// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
 	KptDeploy *KptDeploy `yaml:"kpt,omitempty"`
 
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
@@ -526,7 +526,7 @@ type KustomizeDeploy struct {
 	BuildArgs []string `yaml:"buildArgs,omitempty"`
 }
 
-// KptDeploy *beta* uses the `kpt` CLI to manage and deploy manifests.
+// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
 type KptDeploy struct {
 	// Dir is the path to the directory to run kpt functions against.
 	Dir string `yaml:"dir,omitempty"`
