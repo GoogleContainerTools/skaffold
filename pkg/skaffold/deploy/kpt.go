@@ -87,7 +87,7 @@ func (k *KptDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.
 
 	outputRenderedManifests(manifests.String(), filepath.Join(applyDir, "resources.yaml"), out)
 
-	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "apply"}, k.Live.Apply, nil)...)
+	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "apply"}, k.getKptLiveApplyArgs(), nil)...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
@@ -253,21 +253,9 @@ func (k *KptDeployer) kustomizeBuild(ctx context.Context) error {
 func (k *KptDeployer) kptFnRun(ctx context.Context) (deploy.ManifestList, error) {
 	var manifests deploy.ManifestList
 
-	// --dry-run sets the pipeline's output to STDOUT, otherwise output is set to sinkDir.
-	// For now, k.Dir will be treated as sinkDir (and sourceDir).
-	flags := []string{"--dry-run"}
-	count := 0
-
-	if len(k.Fn.FnPath) > 0 {
-		flags = append(flags, "--fn-path", k.Fn.FnPath)
-		count++
-	}
-	if len(k.Fn.Image) > 0 {
-		flags = append(flags, "--image", k.Fn.Image)
-		count++
-	}
-	if count > 1 {
-		return nil, errors.New("only one of `fn-path` or `image` configs can be specified at most")
+	flags, err := k.getKptFnRunArgs()
+	if err != nil {
+		return nil, fmt.Errorf("getting kpt fn run args: %w", err)
 	}
 
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(pipeline, []string{"fn", "run"}, flags, nil)...)
@@ -300,7 +288,7 @@ func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
 	}
 
 	if _, err := os.Stat(filepath.Join(kptHydrated, inventoryTemplate)); os.IsNotExist(err) {
-		cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(kptHydrated, []string{"live", "init"}, nil, nil)...)
+		cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(kptHydrated, []string{"live", "init"}, k.getKptLiveInitArgs(), nil)...)
 		if _, err := util.RunCmdOut(cmd); err != nil {
 			return "", err
 		}
@@ -359,4 +347,83 @@ func getResources(root string) ([]string, error) {
 	})
 
 	return files, err
+}
+
+// getFlags returns a list of arguments that the user specified for the `kpt fn run` command.
+func (k *KptDeployer) getKptFnRunArgs() ([]string, error) {
+	// --dry-run sets the pipeline's output to STDOUT, otherwise output is set to sinkDir.
+	// For now, k.Dir will be treated as sinkDir (and sourceDir).
+	flags := []string{"--dry-run"}
+
+	if k.Fn.GlobalScope {
+		flags = append(flags, "--global-scope")
+	}
+
+	if len(k.Fn.Mount) > 0 {
+		flags = append(flags, "--mount", strings.Join(k.Fn.Mount, ","))
+	}
+
+	if k.Fn.Network {
+		flags = append(flags, "--network")
+	}
+
+	if len(k.Fn.NetworkName) > 0 {
+		flags = append(flags, "--network-name", k.Fn.NetworkName)
+	}
+
+	count := 0
+
+	if len(k.Fn.FnPath) > 0 {
+		flags = append(flags, "--fn-path", k.Fn.FnPath)
+		count++
+	}
+
+	if len(k.Fn.Image) > 0 {
+		flags = append(flags, "--image", k.Fn.Image)
+		count++
+	}
+
+	if count > 1 {
+		return nil, errors.New("only one of `fn-path` or `image` configs can be specified at most")
+	}
+
+	return flags, nil
+}
+
+// getKptLiveApplyArgs returns a list of arguments that the user specified for the `kpt live apply` command.
+func (k *KptDeployer) getKptLiveApplyArgs() []string {
+	var flags []string
+
+	if len(k.Live.Apply.PollPeriod) > 0 {
+		flags = append(flags, "--poll-period", k.Live.Apply.PollPeriod)
+	}
+
+	if len(k.Live.Apply.PrunePropagationPolicy) > 0 {
+		flags = append(flags, "--prune-propagation-policy", k.Live.Apply.PrunePropagationPolicy)
+	}
+
+	if len(k.Live.Apply.PruneTimeout) > 0 {
+		flags = append(flags, "--prune-timeout", k.Live.Apply.PruneTimeout)
+	}
+
+	if len(k.Live.Apply.ReconcileTimeout) > 0 {
+		flags = append(flags, "--reconcile-timeout", k.Live.Apply.ReconcileTimeout)
+	}
+
+	return flags
+}
+
+// getKptLiveInitArgs returns a list of arguments that the user specified for the `kpt live init` command.
+func (k *KptDeployer) getKptLiveInitArgs() []string {
+	var flags []string
+
+	if len(k.Live.InventoryID) > 0 {
+		flags = append(flags, "--inventory-id", k.Live.InventoryID)
+	}
+
+	if len(k.Live.InventoryNamespace) > 0 {
+		flags = append(flags, "--namespace", k.Live.InventoryNamespace)
+	}
+
+	return flags
 }
