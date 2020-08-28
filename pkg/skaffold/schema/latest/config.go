@@ -556,7 +556,7 @@ type KptFn struct {
 	Network bool `yaml:"network,omitempty"`
 
 	// GlobalScope sets global scope for functions.
-	GlobalScope bool `yaml:"image,omitempty"`
+	GlobalScope bool `yaml:"globalScope,omitempty"`
 
 	// Mount is a list of storage options to mount to the fn image.
 	Mount []string `yaml:"mount,omitempty"`
@@ -573,7 +573,7 @@ type KptLive struct {
 	InventoryNamespace string `yaml:"inventoryNamespace,omitempty"`
 
 	// Apply adds additional configurations for `kpt live apply` commands.
-	Apply KptLiveApply `yaml:"flags,omitempty"`
+	Apply KptLiveApply `yaml:"apply,omitempty"`
 }
 
 // KptLiveApply adds additional configurations used when calling `kpt live apply`.

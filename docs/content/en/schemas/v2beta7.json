@@ -1639,11 +1639,16 @@
           "description": "a directory to read functions from instead of the configuration directory.",
           "x-intellij-html-description": "a directory to read functions from instead of the configuration directory."
         },
-        "image": {
+        "globalScope": {
           "type": "boolean",
           "description": "sets global scope for functions.",
           "x-intellij-html-description": "sets global scope for functions.",
           "default": "false"
+        },
+        "image": {
+          "type": "string",
+          "description": "an image to be run as a function in lieu of running functions from a directory.",
+          "x-intellij-html-description": "an image to be run as a function in lieu of running functions from a directory."
         },
         "mount": {
           "items": {
@@ -1671,7 +1676,7 @@
         "image",
         "networkName",
         "network",
-        "image",
+        "globalScope",
         "mount"
       ],
       "additionalProperties": false,
@@ -1680,7 +1685,7 @@
     },
     "KptLive": {
       "properties": {
-        "flags": {
+        "apply": {
           "$ref": "#/definitions/KptLiveApply",
           "description": "adds additional configurations for `kpt live apply` commands.",
           "x-intellij-html-description": "adds additional configurations for <code>kpt live apply</code> commands."
@@ -1699,7 +1704,7 @@
       "preferredOrder": [
         "inventoryID",
         "inventoryNamespace",
-        "flags"
+        "apply"
       ],
       "additionalProperties": false,
       "description": "adds additional configurations used when calling `kpt live`.",
