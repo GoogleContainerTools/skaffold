@@ -598,6 +598,45 @@ func TestRun(t *testing.T) {
 					ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING,
 				}, []string{"[foo foo-container] some panic"})},
 		},
+		{
+			description: "pod condition with events when pod is in Initializing phase",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				TypeMeta: metav1.TypeMeta{Kind: "Pod"},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					Conditions: []v1.PodCondition{{
+						Type:   v1.PodScheduled,
+						Status: v1.ConditionTrue,
+					}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							Image: "foo-image",
+							State: v1.ContainerState{
+								Waiting: &v1.ContainerStateWaiting{Reason: "PodInitializing",
+									Message: "waiting to initialize",
+								},
+							},
+						},
+					},
+				},
+			}},
+			events: []v1.Event{
+				{
+					ObjectMeta: metav1.ObjectMeta{Namespace: "test"},
+					Reason:     "eventCode", Type: "Warning", Message: "dummy event",
+				},
+			},
+			expected: []Resource{NewResource("test", "Pod", "foo", "Pending",
+				proto.ActionableErr{
+					Message: "eventCode: dummy event",
+					ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN_EVENT,
+				}, nil)},
+		},
 	}
 
 	for _, test := range tests {
