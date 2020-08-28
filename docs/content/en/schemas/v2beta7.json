@@ -1623,8 +1623,8 @@
         }
       },
       "preferredOrder": [
-        "dir",
         "applyDir",
+        "dir",
         "fn",
         "live"
       ],
@@ -1675,8 +1675,8 @@
         "fnPath",
         "image",
         "networkName",
-        "network",
         "globalScope",
+        "network",
         "mount"
       ],
       "additionalProperties": false,
@@ -1702,9 +1702,9 @@
         }
       },
       "preferredOrder": [
+        "apply",
         "inventoryID",
-        "inventoryNamespace",
-        "apply"
+        "inventoryNamespace"
       ],
       "additionalProperties": false,
       "description": "adds additional configurations used when calling `kpt live`.",

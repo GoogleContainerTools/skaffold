@@ -528,11 +528,11 @@ type KustomizeDeploy struct {
 
 // KptDeploy *beta* uses the `kpt` CLI to manage and deploy manifests.
 type KptDeploy struct {
-	// Dir is the path to the directory to run kpt functions against.
-	Dir string `yaml:"dir,omitempty"`
-
 	// ApplyDir is the path to the directory to deploy to the cluster.
 	ApplyDir string `yaml:"applyDir,omitempty"`
+
+	// Dir is the path to the directory to run kpt functions against.
+	Dir string `yaml:"dir,omitempty"`
 
 	// Fn adds additional configurations for `kpt fn`.
 	Fn KptFn `yaml:"fn,omitempty"`
@@ -552,11 +552,11 @@ type KptFn struct {
 	// NetworkName is the docker network to run the container in (default "bridge").
 	NetworkName string `yaml:"networkName,omitempty"`
 
-	// Network enables network access for functions that declare it.
-	Network bool `yaml:"network,omitempty"`
-
 	// GlobalScope sets global scope for functions.
 	GlobalScope bool `yaml:"globalScope,omitempty"`
+
+	// Network enables network access for functions that declare it.
+	Network bool `yaml:"network,omitempty"`
 
 	// Mount is a list of storage options to mount to the fn image.
 	Mount []string `yaml:"mount,omitempty"`
@@ -564,6 +564,9 @@ type KptFn struct {
 
 // KptLive adds additional configurations used when calling `kpt live`.
 type KptLive struct {
+	// Apply adds additional configurations for `kpt live apply` commands.
+	Apply KptLiveApply `yaml:"apply,omitempty"`
+
 	// InventoryID is the identifier for a group of applied resources.
 	// This configuration is used when users do not specify `KptDeploy.ApplyDir`
 	// and `.kpt-hydrated/inventory-template.yaml` does not exist.
@@ -571,9 +574,6 @@ type KptLive struct {
 
 	// InventoryNamespace sets the namespace scope for `kpt live init`.
 	InventoryNamespace string `yaml:"inventoryNamespace,omitempty"`
-
-	// Apply adds additional configurations for `kpt live apply` commands.
-	Apply KptLiveApply `yaml:"apply,omitempty"`
 }
 
 // KptLiveApply adds additional configurations used when calling `kpt live apply`.

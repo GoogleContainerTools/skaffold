@@ -136,6 +136,24 @@ spec:
 				AndRun("kpt live apply valid_path --poll-period 5s --reconcile-timeout 2m"),
 		},
 		{
+			description: "user specifies invalid reconcile timeout and poll period",
+			cfg: &latest.KptDeploy{
+				Dir:      ".",
+				ApplyDir: "valid_path",
+				Live: latest.KptLive{
+					Apply: latest.KptLiveApply{
+						PollPeriod:       "foo",
+						ReconcileTimeout: "bar",
+					},
+				},
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", output).
+				AndRun("kpt live apply valid_path --poll-period foo --reconcile-timeout bar"),
+		},
+		{
 			description: "user specifies prune propagation policy and prune timeout",
 			cfg: &latest.KptDeploy{
 				Dir:      ".",
@@ -152,6 +170,24 @@ spec:
 				AndRunOut("kpt fn sink .pipeline", ``).
 				AndRunOut("kpt fn run .pipeline --dry-run", output).
 				AndRun("kpt live apply valid_path --prune-propagation-policy Orphan --prune-timeout 2m"),
+		},
+		{
+			description: "user specifies invalid prune propagation policy and prune timeout",
+			cfg: &latest.KptDeploy{
+				Dir:      ".",
+				ApplyDir: "valid_path",
+				Live: latest.KptLive{
+					Apply: latest.KptLiveApply{
+						PrunePropagationPolicy: "foo",
+						PruneTimeout:           "bar",
+					},
+				},
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run", output).
+				AndRun("kpt live apply valid_path --prune-propagation-policy foo --prune-timeout bar"),
 		},
 	}
 	for _, test := range tests {
@@ -669,6 +705,21 @@ spec:
 				CmdRunOut("kpt fn source .", ``).
 				AndRunOut("kpt fn sink .pipeline", ``).
 				AndRunOut("kpt fn run .pipeline --dry-run --mount type=bind,src=$(pwd),dst=/source --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
+			expected: "\n",
+		},
+		{
+			description: "kpt fn run with invalid --mount arguments",
+			cfg: &latest.KptDeploy{
+				Dir: ".",
+				Fn: latest.KptFn{
+					Image: "gcr.io/example.com/my-fn:v1.0.0 -- foo=bar",
+					Mount: []string{"foo", "", "bar"},
+				},
+			},
+			commands: testutil.
+				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn sink .pipeline", ``).
+				AndRunOut("kpt fn run .pipeline --dry-run --mount foo,,bar --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
 			expected: "\n",
 		},
 		{

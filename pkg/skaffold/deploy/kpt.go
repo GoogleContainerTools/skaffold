@@ -349,7 +349,7 @@ func getResources(root string) ([]string, error) {
 	return files, err
 }
 
-// getFlags returns a list of arguments that the user specified for the `kpt fn run` command.
+// getKptFnRunArgs returns a list of arguments that the user specified for the `kpt fn run` command.
 func (k *KptDeployer) getKptFnRunArgs() ([]string, error) {
 	// --dry-run sets the pipeline's output to STDOUT, otherwise output is set to sinkDir.
 	// For now, k.Dir will be treated as sinkDir (and sourceDir).
@@ -384,7 +384,7 @@ func (k *KptDeployer) getKptFnRunArgs() ([]string, error) {
 	}
 
 	if count > 1 {
-		return nil, errors.New("only one of `fn-path` or `image` configs can be specified at most")
+		return nil, errors.New("only one of `fn-path` or `image` may be specified")
 	}
 
 	return flags, nil
