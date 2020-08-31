@@ -41,7 +41,7 @@ type Config interface {
 	GetKubeNamespace() string
 }
 
-func NewFromRunContext(cfg Config) *CLI {
+func NewCLI(cfg Config) *CLI {
 	return &CLI{
 		KubeContext: cfg.GetKubeContext(),
 		KubeConfig:  cfg.GetKubeConfig(),
