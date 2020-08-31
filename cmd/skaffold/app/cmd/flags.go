@@ -398,6 +398,14 @@ var flagRegistry = []Flag{
 		FlagAddMethod: "DurationVar",
 		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
 	},
+	{
+		Name:          "detect-minikube",
+		Usage:         "Use heuristics to detect a minikube cluster",
+		Value:         &opts.DetectMinikube,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+	},
 }
 
 func (fl *Flag) flag() *pflag.Flag {

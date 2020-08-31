@@ -57,6 +57,7 @@ type Config interface {
 	Pipeline() latest.Pipeline
 	GlobalConfig() string
 	GetKubeContext() string
+	DetectMinikube() bool
 	SkipTests() bool
 	Mode() config.RunMode
 	NoPruneChildren() bool
@@ -74,7 +75,7 @@ func NewBuilder(cfg Config) (*Builder, error) {
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
 
-	localCluster, err := getLocalCluster(cfg.GlobalConfig(), cfg.MinikubeProfile())
+	localCluster, err := getLocalCluster(cfg.GlobalConfig(), cfg.MinikubeProfile(), cfg.DetectMinikube())
 	if err != nil {
 		return nil, fmt.Errorf("getting localCluster: %w", err)
 	}
