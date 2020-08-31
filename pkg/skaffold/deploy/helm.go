@@ -71,7 +71,6 @@ type HelmDeployer struct {
 	kubeContext string
 	kubeConfig  string
 	namespace   string
-	enableDebug bool
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
@@ -79,6 +78,7 @@ type HelmDeployer struct {
 	labels map[string]string
 
 	forceDeploy bool
+	enableDebug bool
 
 	// bV is the helm binary version
 	bV semver.Version
@@ -350,11 +350,11 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		} else if hv.LT(helm31Version) {
 			return nil, fmt.Errorf("debug requires at least Helm 3.1 (current: %v)", hv)
 		}
-		if binary, err := os.Executable(); err != nil {
+		var binary string
+		if binary, err = os.Executable(); err != nil {
 			return nil, fmt.Errorf("cannot locate this Skaffold binary: %w", err)
-		} else {
-			opts.postRenderer = binary
 		}
+		opts.postRenderer = binary
 
 		var buildsFile string
 		if len(builds) > 0 {
