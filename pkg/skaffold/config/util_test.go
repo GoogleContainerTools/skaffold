@@ -285,8 +285,9 @@ func TestIsDefaultLocal(t *testing.T) {
 		testutil.Run(t, "", func(t *testutil.T) {
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeClient{} })
 
-			local := isDefaultLocal(test.context)
-
+			local := isDefaultLocal(test.context, true)
+			t.CheckDeepEqual(test.expectedLocal, local)
+			local = isDefaultLocal(test.context, false)
 			t.CheckDeepEqual(test.expectedLocal, local)
 		})
 	}
