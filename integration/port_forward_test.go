@@ -41,7 +41,7 @@ func TestPortForward(t *testing.T) {
 	cfg, err := kubectx.CurrentConfig()
 	failNowIfError(t, err)
 
-	kubectlCLI := kubectl.NewFromRunContext(&runcontext.RunContext{
+	kubectlCLI := kubectl.NewCLI(&runcontext.RunContext{
 		KubeContext: cfg.CurrentContext,
 		Opts: config.SkaffoldOptions{
 			Namespace: ns.Name,

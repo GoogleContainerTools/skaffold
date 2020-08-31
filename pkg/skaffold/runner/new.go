@@ -43,7 +43,7 @@ import (
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
-	kubectlCLI := kubectl.NewFromRunContext(runCtx)
+	kubectlCLI := kubectl.NewCLI(runCtx)
 
 	tagger, err := getTagger(runCtx)
 	if err != nil {

@@ -49,7 +49,7 @@ type Config interface {
 
 func NewCLI(cfg Config, flags latest.KubectlFlags) CLI {
 	return CLI{
-		CLI:              pkgkubectl.NewFromRunContext(cfg),
+		CLI:              pkgkubectl.NewCLI(cfg),
 		Flags:            flags,
 		forceDeploy:      cfg.ForceDeploy(),
 		waitForDeletions: cfg.WaitForDeletions(),
