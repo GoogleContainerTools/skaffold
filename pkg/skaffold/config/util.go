@@ -219,9 +219,9 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 func isDefaultLocal(kubeContext string) bool {
 	return kubeContext == constants.DefaultDockerForDesktopContext ||
 		kubeContext == constants.DefaultDockerDesktopContext ||
-		cluster.GetClient().IsMinikube(kubeContext) ||
 		IsKindCluster(kubeContext) ||
-		IsK3dCluster(kubeContext)
+		IsK3dCluster(kubeContext) ||
+		cluster.GetClient().IsMinikube(kubeContext)
 }
 
 // IsImageLoadingRequired checks if the cluster requires loading images into it
