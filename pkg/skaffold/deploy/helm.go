@@ -41,7 +41,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -80,13 +79,13 @@ type HelmDeployer struct {
 }
 
 // NewHelmDeployer returns a configured HelmDeployer
-func NewHelmDeployer(runCtx *runcontext.RunContext, labels map[string]string) *HelmDeployer {
+func NewHelmDeployer(cfg Config, labels map[string]string) *HelmDeployer {
 	return &HelmDeployer{
-		HelmDeploy:  runCtx.Pipeline().Deploy.HelmDeploy,
-		kubeContext: runCtx.GetKubeContext(),
-		kubeConfig:  runCtx.GetKubeConfig(),
-		namespace:   runCtx.GetKubeNamespace(),
-		forceDeploy: runCtx.ForceDeploy(),
+		HelmDeploy:  cfg.Pipeline().Deploy.HelmDeploy,
+		kubeContext: cfg.GetKubeContext(),
+		kubeConfig:  cfg.GetKubeConfig(),
+		namespace:   cfg.GetKubeNamespace(),
+		forceDeploy: cfg.ForceDeploy(),
 		labels:      labels,
 	}
 }

@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -86,7 +85,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			))
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeMinikubeClient{} })
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
-			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 				return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, test.extraEnv, false, nil), nil
 			})
 

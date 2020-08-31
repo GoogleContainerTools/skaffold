@@ -40,7 +40,7 @@ func TestNewBuilder(t *testing.T) {
 	tests := []struct {
 		description     string
 		shouldErr       bool
-		runCtx          *runcontext.RunContext
+		runCtx          Config
 		expectedBuilder *Builder
 	}{
 		{
