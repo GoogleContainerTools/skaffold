@@ -225,7 +225,7 @@ func isDefaultLocal(kubeContext string, detectMinikubeCluster bool) bool {
 		return true
 	}
 	if detectMinikubeCluster {
-		cluster.GetClient().IsMinikube(kubeContext)
+		return cluster.GetClient().IsMinikube(kubeContext)
 	}
 	return false
 }
