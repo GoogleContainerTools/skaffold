@@ -89,7 +89,9 @@ func TestDockerCLIBuild(t *testing.T) {
 				return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, test.extraEnv, false, nil), nil
 			})
 
-			builder, err := NewBuilder(stubRunContext(test.localBuild))
+			builder, err := NewBuilder(&mockConfig{
+				local: test.localBuild,
+			})
 			t.CheckNoError(err)
 
 			artifact := &latest.Artifact{

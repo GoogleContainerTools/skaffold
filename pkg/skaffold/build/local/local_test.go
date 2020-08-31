@@ -246,10 +246,12 @@ func TestLocalRun(t *testing.T) {
 					},
 				}}, "", true, true, true)
 
-			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
-				Push:        util.BoolPtr(test.pushImages),
-				Concurrency: &constants.DefaultLocalConcurrency,
-			}))
+			builder, err := NewBuilder(&mockConfig{
+				local: latest.LocalBuild{
+					Push:        util.BoolPtr(test.pushImages),
+					Concurrency: &constants.DefaultLocalConcurrency,
+				},
+			})
 			t.CheckNoError(err)
 
 			res, err := builder.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
@@ -345,7 +347,9 @@ func TestNewBuilder(t *testing.T) {
 				t.Override(&getLocalCluster, test.localClusterFn)
 			}
 
-			builder, err := NewBuilder(stubRunContext(test.localBuild))
+			builder, err := NewBuilder(&mockConfig{
+				local: test.localBuild,
+			})
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
@@ -355,11 +359,13 @@ func TestNewBuilder(t *testing.T) {
 	}
 }
 
-func stubRunContext(localBuild latest.LocalBuild) *runcontext.RunContext {
-	pipeline := latest.Pipeline{}
-	pipeline.Build.BuildType.LocalBuild = &localBuild
+type mockConfig struct {
+	runcontext.RunContext // Embedded to provide the default values.
+	local                 latest.LocalBuild
+}
 
-	return &runcontext.RunContext{
-		Cfg: pipeline,
-	}
+func (c *mockConfig) Pipeline() latest.Pipeline {
+	var pipeline latest.Pipeline
+	pipeline.Build.BuildType.LocalBuild = &c.local
+	return pipeline
 }
