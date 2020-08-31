@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/homedir"
 
@@ -34,8 +33,8 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 	tests := []struct {
 		description        string
 		kubeContext        string
-		clusterInfo        clientcmdapi.Cluster
-		config             rest.Config
+		certPath           string
+		serverURL          string
 		minikubeProfileCmd util.Command
 		minikubeNotInPath  bool
 		expected           bool
@@ -54,43 +53,34 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 		{
 			description: "cluster cert inside minikube dir",
 			kubeContext: "test-cluster",
-			clusterInfo: clientcmdapi.Cluster{
-				CertificateAuthority: filepath.Join(home, ".minikube", "ca.crt"),
-			},
-			expected: true,
+			certPath:    filepath.Join(home, ".minikube", "ca.crt"),
+			expected:    true,
 		},
 		{
-			description: "cluster cert outside minikube dir",
-			kubeContext: "test-cluster",
-			clusterInfo: clientcmdapi.Cluster{
-				CertificateAuthority: filepath.Join(home, "foo", "ca.crt"),
-			},
-			expected: false,
+			description:        "cluster cert outside minikube dir",
+			kubeContext:        "test-cluster",
+			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json", fmt.Sprintf(profileStr, "test-cluster", "docker", "172.17.0.3", 8443)),
+			certPath:           filepath.Join(home, "foo", "ca.crt"),
+			expected:           true,
 		},
 		{
-			description: "minikube profile name with docker driver matches kubeContext",
-			kubeContext: "test-cluster",
-			config: rest.Config{
-				Host: "127.0.0.1:32768",
-			},
+			description:        "minikube profile name with docker driver matches kubeContext",
+			kubeContext:        "test-cluster",
+			serverURL:          "https://127.0.0.1:32768",
 			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json", fmt.Sprintf(profileStr, "test-cluster", "docker", "172.17.0.3", 8443)),
 			expected:           true,
 		},
 		{
-			description: "minikube profile name with hyperkit driver node ip matches api server url",
-			kubeContext: "test-cluster",
-			config: rest.Config{
-				Host: "192.168.64.10:8443",
-			},
+			description:        "minikube profile name with hyperkit driver node ip matches api server url",
+			kubeContext:        "test-cluster",
+			serverURL:          "https://192.168.64.10:8443",
 			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json", fmt.Sprintf(profileStr, "test-cluster", "hyperkit", "192.168.64.10", 8443)),
 			expected:           true,
 		},
 		{
-			description: "minikube profile name different from kubeContext",
-			kubeContext: "test-cluster",
-			config: rest.Config{
-				Host: "127.0.0.1:32768",
-			},
+			description:        "minikube profile name different from kubeContext",
+			kubeContext:        "test-cluster",
+			serverURL:          "https://127.0.0.1:32768",
 			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json", fmt.Sprintf(profileStr, "test-cluster2", "docker", "172.17.0.3", 8443)),
 			expected:           false,
 		},
@@ -101,13 +91,18 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 			expected:           false,
 		},
 		{
-			description: "minikube with hyperkit driver node ip different from api server url",
-			kubeContext: "test-cluster",
-			config: rest.Config{
-				Host: "192.168.64.10:8443",
-			},
+			description:        "minikube with hyperkit driver node ip different from api server url",
+			kubeContext:        "test-cluster",
+			serverURL:          "https://192.168.64.10:8443",
 			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json", fmt.Sprintf(profileStr, "test-cluster", "hyperkit", "192.168.64.11", 8443)),
 			expected:           false,
+		},
+		{
+			description:        "minikube with docker driver node ip different from api server url but profile name matches context",
+			kubeContext:        "test-cluster",
+			serverURL:          "https://127.0.0.1:32768",
+			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json", fmt.Sprintf(profileStr, "test-cluster", "docker", "172.17.0.3", 8443)),
+			expected:           true,
 		},
 	}
 
@@ -119,8 +114,12 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 				t.Override(&minikubeBinaryFunc, func() (string, error) { return "minikube", nil })
 			}
 			t.Override(&util.DefaultExecCommand, test.minikubeProfileCmd)
-			t.Override(&getRestClientConfigFunc, func() (*rest.Config, error) { return &test.config, nil })
-			t.Override(&getClusterInfo, func(string) (*clientcmdapi.Cluster, error) { return &test.clusterInfo, nil })
+			t.Override(&getClusterInfo, func(string) (*clientcmdapi.Cluster, error) {
+				return &clientcmdapi.Cluster{
+					Server:               test.serverURL,
+					CertificateAuthority: test.certPath,
+				}, nil
+			})
 
 			ok := GetClient().IsMinikube(test.kubeContext)
 			t.CheckDeepEqual(test.expected, ok)
