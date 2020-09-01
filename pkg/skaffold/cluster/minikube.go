@@ -75,9 +75,9 @@ func (clientImpl) IsMinikube(kubeContext string) bool {
 	}
 
 	if ok, err := matchServerURL(cluster.Server); err != nil {
-		logrus.Tracef("failed to match minikube profile: %v", err)
+		logrus.Tracef("failed to match server url: %v", err)
 	} else if ok {
-		logrus.Debugf("Minikube cluster detected: context %q has matching profile name or server url", kubeContext)
+		logrus.Debugf("Minikube cluster detected: server url for context %q matches minikube node ip", kubeContext)
 		return true
 	}
 	logrus.Tracef("Minikube cluster not detected for context %q", kubeContext)
