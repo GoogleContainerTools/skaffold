@@ -231,7 +231,7 @@ func TestStartTrigger(t *testing.T) {
 		{
 			description: "fsNotify trigger works",
 			trigger: &fsNotifyTrigger{
-				Interval:   2 * time.Second,
+				Interval:   200 * time.Millisecond,
 				workspaces: nil,
 				isActive:   func() bool { return false },
 				watchFunc: func(string, chan<- notify.EventInfo, ...notify.Event) error {
