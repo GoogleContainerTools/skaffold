@@ -197,9 +197,7 @@ func TestDevSyncAPITrigger(t *testing.T) {
 }
 
 func TestDevAutoSyncAPITrigger(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, client := SetupNamespace(t)
 
