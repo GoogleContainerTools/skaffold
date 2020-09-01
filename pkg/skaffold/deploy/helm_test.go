@@ -104,6 +104,20 @@ var testDeployConfigValuesFilesTemplated = latest.HelmDeploy{
 	}},
 }
 
+var testDeployConfigSetFiles = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+		ArtifactOverrides: map[string]string{
+			"image": "skaffold-helm",
+		},
+		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+		SetFiles: map[string]string{
+			"value": "/some/file.yaml",
+		},
+	}},
+}
+
 var testDeployRecreatePodsConfig = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
@@ -389,7 +403,7 @@ func TestHelmDeploy(t *testing.T) {
 	tests := []struct {
 		description      string
 		commands         util.Command
-		runContext       *runcontext.RunContext
+		runContext       Config
 		builds           []build.Artifact
 		shouldErr        bool
 		expectedWarnings []string
@@ -756,6 +770,17 @@ func TestHelmDeploy(t *testing.T) {
 			builds:     testBuilds,
 		},
 		{
+			description: "deploy with setFiles",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version20rc).
+				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set-file value=/some/file.yaml --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig"),
+			runContext: makeRunContext(testDeployConfigSetFiles, false),
+			builds:     testBuilds,
+		},
+		{
 			description: "deploy without actual tags",
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version20rc).
@@ -808,7 +833,7 @@ func TestHelmCleanup(t *testing.T) {
 	tests := []struct {
 		description      string
 		commands         util.Command
-		runContext       *runcontext.RunContext
+		runContext       Config
 		builds           []build.Artifact
 		shouldErr        bool
 		expectedWarnings []string
@@ -1056,7 +1081,7 @@ func TestHelmRender(t *testing.T) {
 		description string
 		shouldErr   bool
 		commands    util.Command
-		runContext  *runcontext.RunContext
+		runContext  Config
 		outputFile  string
 		expected    string
 		builds      []build.Artifact

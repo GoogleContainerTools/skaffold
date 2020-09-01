@@ -67,7 +67,7 @@ func TestCLI(t *testing.T) {
 				test.expectedCommand,
 			))
 
-			cli := NewFromRunContext(&runcontext.RunContext{
+			cli := NewCLI(&runcontext.RunContext{
 				Opts: config.SkaffoldOptions{
 					Namespace:  test.namespace,
 					KubeConfig: test.kubeconfig,
@@ -88,7 +88,7 @@ func TestCLI(t *testing.T) {
 				output,
 			))
 
-			cli := NewFromRunContext(&runcontext.RunContext{
+			cli := NewCLI(&runcontext.RunContext{
 				Opts: config.SkaffoldOptions{
 					Namespace:  test.namespace,
 					KubeConfig: test.kubeconfig,
@@ -110,7 +110,7 @@ func TestCLI(t *testing.T) {
 				output,
 			))
 
-			cli := NewFromRunContext(&runcontext.RunContext{
+			cli := NewCLI(&runcontext.RunContext{
 				Opts: config.SkaffoldOptions{
 					Namespace:  test.namespace,
 					KubeConfig: test.kubeconfig,

@@ -28,7 +28,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -42,12 +41,18 @@ type CLI struct {
 	previousApply    ManifestList
 }
 
-func NewCLI(runCtx *runcontext.RunContext, flags latest.KubectlFlags) CLI {
+type Config interface {
+	pkgkubectl.Config
+	ForceDeploy() bool
+	WaitForDeletions() config.WaitForDeletions
+}
+
+func NewCLI(cfg Config, flags latest.KubectlFlags) CLI {
 	return CLI{
-		CLI:              pkgkubectl.NewFromRunContext(runCtx),
+		CLI:              pkgkubectl.NewCLI(cfg),
 		Flags:            flags,
-		forceDeploy:      runCtx.ForceDeploy(),
-		waitForDeletions: runCtx.WaitForDeletions(),
+		forceDeploy:      cfg.ForceDeploy(),
+		waitForDeletions: cfg.WaitForDeletions(),
 	}
 }
 

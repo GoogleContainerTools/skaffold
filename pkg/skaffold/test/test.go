@@ -26,27 +26,35 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/structure"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+type Config interface {
+	docker.Config
+
+	Pipeline() latest.Pipeline
+	GetWorkingDir() string
+	Muted() config.Muted
+}
+
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
-func NewTester(runCtx *runcontext.RunContext, imagesAreLocal bool) Tester {
-	localDaemon, err := docker.NewAPIClient(runCtx)
+func NewTester(cfg Config, imagesAreLocal bool) Tester {
+	localDaemon, err := docker.NewAPIClient(cfg)
 	if err != nil {
 		return nil
 	}
 
 	return FullTester{
-		testCases:      runCtx.Pipeline().Test,
-		workingDir:     runCtx.GetWorkingDir(),
-		muted:          runCtx.Muted(),
+		testCases:      cfg.Pipeline().Test,
+		workingDir:     cfg.GetWorkingDir(),
+		muted:          cfg.Muted(),
 		localDaemon:    localDaemon,
 		imagesAreLocal: imagesAreLocal,
 	}

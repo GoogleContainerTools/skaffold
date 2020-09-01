@@ -31,10 +31,13 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -59,6 +62,14 @@ type counter struct {
 	failed  int32
 }
 
+type StatusCheckConfig interface {
+	kubectl.Config
+
+	GetNamespaces() []string
+	Pipeline() latest.Pipeline
+	Muted() config.Muted
+}
+
 // StatusChecker wait for the application to be totally deployed.
 type StatusChecker interface {
 	Check(context.Context, io.Writer) error
@@ -66,20 +77,19 @@ type StatusChecker interface {
 
 // StatusChecker runs status checks for pods and deployments
 type statusChecker struct {
-	// TODO use an interface #4605
-	runCtx          *runcontext.RunContext
+	cfg             StatusCheckConfig
 	labeller        *DefaultLabeller
 	deadlineSeconds int
 	muteLogs        bool
 }
 
 // NewStatusChecker returns a status checker which runs checks on deployments and pods.
-func NewStatusChecker(runCtx *runcontext.RunContext, labeller *DefaultLabeller) StatusChecker {
+func NewStatusChecker(cfg StatusCheckConfig, labeller *DefaultLabeller) StatusChecker {
 	return statusChecker{
-		muteLogs:        runCtx.Muted().MuteStatusCheck(),
-		runCtx:          runCtx,
+		muteLogs:        cfg.Muted().MuteStatusCheck(),
+		cfg:             cfg,
 		labeller:        labeller,
-		deadlineSeconds: runCtx.Pipeline().Deploy.StatusCheckDeadlineSeconds,
+		deadlineSeconds: cfg.Pipeline().Deploy.StatusCheckDeadlineSeconds,
 	}
 }
 
@@ -98,9 +108,9 @@ func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.St
 	}
 
 	deployments := make([]*resource.Deployment, 0)
-	for _, n := range s.runCtx.GetNamespaces() {
+	for _, n := range s.cfg.GetNamespaces() {
 		newDeployments, err := getDeployments(client, n, s.labeller,
-			getDeadline(s.runCtx.Pipeline().Deploy.StatusCheckDeadlineSeconds))
+			getDeadline(s.cfg.Pipeline().Deploy.StatusCheckDeadlineSeconds))
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
 		}
@@ -119,7 +129,7 @@ func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.St
 		go func(r *resource.Deployment) {
 			defer wg.Done()
 			// keep updating the resource status until it fails/succeeds/times out
-			pollDeploymentStatus(ctx, s.runCtx, r)
+			pollDeploymentStatus(ctx, s.cfg, r)
 			rcCopy := c.markProcessed(r.Status().Error())
 			s.printStatusCheckSummary(out, r, rcCopy)
 			// if one deployment fails, cancel status checks for all deployments.
@@ -169,7 +179,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	return deployments, nil
 }
 
-func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r *resource.Deployment) {
+func pollDeploymentStatus(ctx context.Context, cfg pkgkubectl.Config, r *resource.Deployment) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
@@ -192,7 +202,7 @@ func pollDeploymentStatus(ctx context.Context, runCtx *runcontext.RunContext, r 
 			}
 			return
 		case <-time.After(pollDuration):
-			r.CheckStatus(timeoutContext, runCtx)
+			r.CheckStatus(timeoutContext, cfg)
 			if r.IsStatusCheckCompleteOrCancelled() {
 				return
 			}

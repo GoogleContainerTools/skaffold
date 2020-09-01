@@ -32,7 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -52,12 +51,12 @@ type KptDeployer struct {
 	globalConfig       string
 }
 
-func NewKptDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KptDeployer {
+func NewKptDeployer(ctx Config, labels map[string]string) *KptDeployer {
 	return &KptDeployer{
-		KptDeploy:          runCtx.Pipeline().Deploy.KptDeploy,
-		insecureRegistries: runCtx.GetInsecureRegistries(),
+		KptDeploy:          ctx.Pipeline().Deploy.KptDeploy,
+		insecureRegistries: ctx.GetInsecureRegistries(),
 		labels:             labels,
-		globalConfig:       runCtx.GlobalConfig(),
+		globalConfig:       ctx.GlobalConfig(),
 	}
 }
 

@@ -19,8 +19,8 @@ package sync
 import (
 	"context"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 )
 
 type syncMap map[string][]string
@@ -36,13 +36,19 @@ type Syncer interface {
 }
 
 type podSyncer struct {
-	kubectl    *kubectl.CLI
+	kubectl    *pkgkubectl.CLI
 	namespaces []string
 }
 
-func NewSyncer(runCtx *runcontext.RunContext) Syncer {
+type Config interface {
+	kubectl.Config
+
+	GetNamespaces() []string
+}
+
+func NewSyncer(cfg Config) Syncer {
 	return &podSyncer{
-		kubectl:    kubectl.NewFromRunContext(runCtx),
-		namespaces: runCtx.GetNamespaces(),
+		kubectl:    pkgkubectl.NewCLI(cfg),
+		namespaces: cfg.GetNamespaces(),
 	}
 }
