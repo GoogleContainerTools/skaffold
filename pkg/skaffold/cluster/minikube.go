@@ -74,7 +74,7 @@ func (clientImpl) IsMinikube(kubeContext string) bool {
 		return true
 	}
 
-	if ok, err := matchProfileAndServerURL(kubeContext, cluster.Server); err != nil {
+	if ok, err := matchServerURL(cluster.Server); err != nil {
 		logrus.Tracef("failed to match minikube profile: %v", err)
 	} else if ok {
 		logrus.Debugf("Minikube cluster detected: context %q has matching profile name or server url", kubeContext)
@@ -116,9 +116,8 @@ func matchClusterCertPath(certPath string) bool {
 	return certPath != "" && util.IsSubPath(minikubePath(), certPath)
 }
 
-// matchProfileAndServerURL checks if kubeContext matches any valid minikube profile
-// and for selected drivers if the k8s server url is same as any of the minikube nodes IPs
-func matchProfileAndServerURL(kubeContext string, server string) (bool, error) {
+// matchServerURL checks if the k8s server url is same as any of the minikube nodes IPs
+func matchServerURL(server string) (bool, error) {
 	cmd, _ := minikubeExec("profile", "list", "-o", "json")
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
@@ -130,11 +129,6 @@ func matchProfileAndServerURL(kubeContext string, server string) (bool, error) {
 		return false, fmt.Errorf("failed to unmarshal data: %w", err)
 	}
 
-	vmTypeDrivers := map[string]bool{
-		"virtualbox": true,
-		"hyperkit":   true,
-	}
-
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		logrus.Tracef("invalid server url: %v", err)
@@ -143,14 +137,9 @@ func matchProfileAndServerURL(kubeContext string, server string) (bool, error) {
 	for _, v := range data.Valid {
 		for _, n := range v.Config.Nodes {
 			if err == nil && serverURL.Host == fmt.Sprintf("%s:%d", n.IP, n.Port) {
+				// TODO: Revisit once https://github.com/kubernetes/minikube/issues/6642 is fixed
 				return true, nil
 			}
-		}
-
-		if !vmTypeDrivers[v.Config.Driver] && v.Config.Name == kubeContext {
-			// Since node IPs don't match server API for other drivers we assume profile name match is enough.
-			// TODO: Revisit once https://github.com/kubernetes/minikube/issues/6642 is fixed
-			return true, nil
 		}
 	}
 	return false, nil
