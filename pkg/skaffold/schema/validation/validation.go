@@ -37,6 +37,7 @@ var (
 func Process(config *latest.SkaffoldConfig) error {
 	errs := visitStructs(config, validateYamltags)
 	errs = append(errs, validateImageNames(config.Build.Artifacts)...)
+	errs = append(errs, validateArtifactDependencies(config.Build.Artifacts)...)
 	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
 	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
 	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
@@ -72,6 +73,81 @@ func validateImageNames(artifacts []*latest.Artifact) (errs []error) {
 
 		if parsed.Digest != "" {
 			errs = append(errs, fmt.Errorf("invalid imageName '%s': no digest should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))
+		}
+	}
+	return
+}
+
+func validateArtifactDependencies(artifacts []*latest.Artifact) (errs []error) {
+	errs = append(errs, validateArtifactDependencyUniqueness(artifacts)...)
+	errs = append(errs, validateArtifactCircularDependencies(artifacts)...)
+	return
+}
+
+// validateArtifactDependencies makes sure all artifact dependencies are found and don't have cyclic references
+func validateArtifactCircularDependencies(artifacts []*latest.Artifact) (errs []error) {
+	m := make(map[string]*latest.Artifact)
+	for _, artifact := range artifacts {
+		m[artifact.ImageName] = artifact
+	}
+	visited := make(map[string]bool)
+	for _, artifact := range artifacts {
+		if err := dfs(artifact, visited, make(map[string]bool), m); err != nil {
+			errs = append(errs, err)
+			return
+		}
+	}
+	return
+}
+
+func dfs(artifact *latest.Artifact, visited, marked map[string]bool, artifacts map[string]*latest.Artifact) error {
+	if marked[artifact.ImageName] {
+		return fmt.Errorf("cycle detected in build dependencies involving '%s'", artifact.ImageName)
+	}
+	marked[artifact.ImageName] = true
+
+	if visited[artifact.ImageName] {
+		return nil
+	}
+	visited[artifact.ImageName] = true
+
+	for _, dep := range artifact.Dependencies {
+		d, found := artifacts[dep.ImageName]
+		if !found {
+			return fmt.Errorf("invalid build dependency '%s' for artifact '%s': not found", dep.ImageName, artifact.ImageName)
+		}
+		if err := dfs(d, visited, marked, artifacts); err != nil {
+			return err
+		}
+	}
+	marked[artifact.ImageName] = false
+	return nil
+}
+
+// validateArtifactDependencyUniqueness makes sure that artifact dependency aliases and image names are unique for each artifact
+func validateArtifactDependencyUniqueness(artifacts []*latest.Artifact) (errs []error) {
+	type State int
+	var (
+		unseen   State = 0
+		seen     State = 1
+		recorded State = 2
+	)
+	for _, a := range artifacts {
+		aliasMap := make(map[string]State)
+		namesMap := make(map[string]State)
+		for _, d := range a.Dependencies {
+			if aliasMap[d.Alias] == seen {
+				errs = append(errs, fmt.Errorf("invalid build dependency for artifact %q: alias %q repeated", a.ImageName, d.Alias))
+				aliasMap[d.Alias] = recorded
+			} else if aliasMap[d.Alias] == unseen {
+				aliasMap[d.Alias] = seen
+			}
+			if namesMap[d.ImageName] == seen {
+				errs = append(errs, fmt.Errorf("invalid build dependency for artifact %q: image name %q repeated", a.ImageName, d.ImageName))
+				namesMap[d.ImageName] = recorded
+			} else if namesMap[d.ImageName] == unseen {
+				namesMap[d.ImageName] = seen
+			}
 		}
 	}
 	return

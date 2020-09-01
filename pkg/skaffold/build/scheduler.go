@@ -35,18 +35,24 @@ type ArtifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.A
 
 // For testing
 var (
-	buffSize      = bufferedLinesPerArtifact
-	runInSequence = InSequence
+	buffSize = bufferedLinesPerArtifact
 )
 
-// InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
-	if len(artifacts) == 0 {
-		return nil, nil
+// Create builds a list of artifacts in dependency order within the specified max concurrency
+func Create(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
+	m := new(sync.Map)
+	for _, a := range artifacts {
+		m.Store(a.ImageName, make(chan interface{}))
 	}
 
-	if len(artifacts) == 1 || concurrency == 1 {
-		return runInSequence(ctx, out, tags, artifacts, buildArtifact)
+	var awdSlice []artifactWithDeps
+	for _, a := range artifacts {
+		awd := artifactWithDeps{Artifact: a}
+		for _, d := range a.Dependencies {
+			ch, _ := m.Load(d.ImageName)
+			awd.Deps = append(awd.Deps, ch.(chan interface{}))
+		}
+		awdSlice = append(awdSlice, awd)
 	}
 
 	var wg sync.WaitGroup
@@ -56,24 +62,30 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	defer cancel()
 
 	results := new(sync.Map)
-	outputs := make([]chan string, len(artifacts))
+	outputs := make([]chan string, len(awdSlice))
 
 	if concurrency == 0 {
-		concurrency = len(artifacts)
+		concurrency = len(awdSlice)
 	}
 	sem := make(chan bool, concurrency)
 
-	// Run builds in //
 	wg.Add(len(artifacts))
-	for i := range artifacts {
+	for i := range awdSlice {
 		outputs[i] = make(chan string, buffSize)
 		r, w := io.Pipe()
 
 		// Run build and write output/logs to piped writer and store build result in
 		// sync.Map
 		go func(i int) {
+			for _, dep := range awdSlice[i].Deps {
+				// wait for dependency to complete build
+				<-dep
+			}
 			sem <- true
-			runBuild(ctx, w, tags, artifacts[i], results, buildArtifact)
+			runBuild(ctx, w, tags, awdSlice[i].Artifact, results, buildArtifact)
+			ch, _ := m.Load(awdSlice[i].Artifact.ImageName)
+			// closing channel notifies all listeners waiting for this build to complete
+			close(ch.(chan interface{}))
 			<-sem
 
 			wg.Done()
@@ -85,6 +97,11 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 
 	// Print logs and collect results in order.
 	return collectResults(out, artifacts, results, outputs)
+}
+
+type artifactWithDeps struct {
+	Artifact *latest.Artifact
+	Deps     []chan interface{}
 }
 
 func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build ArtifactBuilder) {

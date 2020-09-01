@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -194,7 +195,7 @@ func TestCollectResults(t *testing.T) {
 	}
 }
 
-func TestInParallel(t *testing.T) {
+func TestCreate(t *testing.T) {
 	tests := []struct {
 		description string
 		buildFunc   ArtifactBuilder
@@ -236,14 +237,14 @@ And new lines
 			}
 			initializeEvents()
 
-			InParallel(context.Background(), out, tags, artifacts, test.buildFunc, 0)
+			Create(context.Background(), out, tags, artifacts, test.buildFunc, 0)
 
 			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
 }
 
-func TestInParallelConcurrency(t *testing.T) {
+func TestCreateConcurrency(t *testing.T) {
 	tests := []struct {
 		artifacts      int
 		limit          int
@@ -291,7 +292,7 @@ func TestInParallelConcurrency(t *testing.T) {
 			}
 
 			initializeEvents()
-			results, err := InParallel(context.Background(), ioutil.Discard, tags, artifacts, builder, test.limit)
+			results, err := Create(context.Background(), ioutil.Discard, tags, artifacts, builder, test.limit)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.artifacts, len(results))
@@ -299,24 +300,17 @@ func TestInParallelConcurrency(t *testing.T) {
 	}
 }
 
-func TestInParallelForArgs(t *testing.T) {
+func TestCreateForArgs(t *testing.T) {
 	tests := []struct {
 		description   string
-		inSeqFunc     func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, ArtifactBuilder) ([]Artifact, error)
 		buildArtifact ArtifactBuilder
 		artifactLen   int
+		concurrency   int
+		dependency    [][]int
 		expected      []Artifact
 	}{
 		{
-			description: "runs in sequence for 1 artifact",
-			inSeqFunc: func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, ArtifactBuilder) ([]Artifact, error) {
-				return []Artifact{{ImageName: "singleArtifact", Tag: "one"}}, nil
-			},
-			artifactLen: 1,
-			expected:    []Artifact{{ImageName: "singleArtifact", Tag: "one"}},
-		},
-		{
-			description: "runs in parallel for 2 artifacts",
+			description: "runs in parallel for 2 artifacts with no dependency",
 			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
 				return tag, nil
 			},
@@ -324,6 +318,47 @@ func TestInParallelForArgs(t *testing.T) {
 			expected: []Artifact{
 				{ImageName: "artifact1", Tag: "artifact1@tag1"},
 				{ImageName: "artifact2", Tag: "artifact2@tag2"},
+			},
+		},
+		{
+			description: "runs in parallel for 5 artifacts with dependencies",
+			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
+				return tag, nil
+			},
+			dependency: [][]int{
+				{1, 3, 4},
+				{3, 2},
+				{2, 4},
+				{4, 5},
+			},
+			artifactLen: 5,
+			expected: []Artifact{
+				{ImageName: "artifact1", Tag: "artifact1@tag1"},
+				{ImageName: "artifact2", Tag: "artifact2@tag2"},
+				{ImageName: "artifact3", Tag: "artifact3@tag3"},
+				{ImageName: "artifact4", Tag: "artifact4@tag4"},
+				{ImageName: "artifact5", Tag: "artifact5@tag5"},
+			},
+		},
+		{
+			description: "runs with max concurrency of 2 for 5 artifacts with dependencies",
+			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
+				return tag, nil
+			},
+			dependency: [][]int{
+				{1, 3, 4},
+				{3, 2},
+				{2, 4},
+				{4, 5},
+			},
+			artifactLen: 5,
+			concurrency: 2,
+			expected: []Artifact{
+				{ImageName: "artifact1", Tag: "artifact1@tag1"},
+				{ImageName: "artifact2", Tag: "artifact2@tag2"},
+				{ImageName: "artifact3", Tag: "artifact3@tag3"},
+				{ImageName: "artifact4", Tag: "artifact4@tag4"},
+				{ImageName: "artifact5", Tag: "artifact5@tag5"},
 			},
 		},
 		{
@@ -341,14 +376,26 @@ func TestInParallelForArgs(t *testing.T) {
 				artifacts[i] = &latest.Artifact{ImageName: a}
 				tags[a] = fmt.Sprintf("%s@tag%d", a, i+1)
 			}
-			if test.inSeqFunc != nil {
-				t.Override(&runInSequence, test.inSeqFunc)
-			}
+
+			setDependencies(artifacts, test.dependency)
 			initializeEvents()
-			actual, _ := InParallel(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, 0)
+			actual, _ := Create(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, test.concurrency)
 
 			t.CheckDeepEqual(test.expected, actual)
 		})
+	}
+}
+
+func setDependencies(a []*latest.Artifact, d [][]int) {
+	for _, dep := range d {
+		for i := range dep {
+			if i == 0 {
+				continue
+			}
+			a[dep[0]-1].Dependencies = append(a[dep[0]-1].Dependencies, &latest.ArtifactDependency{
+				ImageName: a[dep[i]-1].ImageName,
+			})
+		}
 	}
 }
 
@@ -359,4 +406,19 @@ func setUpChannels(n int) []chan string {
 		close(outputs[i])
 	}
 	return outputs
+}
+
+func initializeEvents() {
+	event.InitializeState(latest.Pipeline{
+		Deploy: latest.DeployConfig{},
+		Build: latest.BuildConfig{
+			BuildType: latest.BuildType{
+				LocalBuild: &latest.LocalBuild{},
+			},
+		},
+	},
+		"temp",
+		true,
+		true,
+		true)
 }

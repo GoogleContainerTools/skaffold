@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -749,4 +751,124 @@ func TestValidateLogsConfig(t *testing.T) {
 			t.CheckError(test.shouldErr, err)
 		})
 	}
+}
+
+func TestValidateArtifactCircularDependencies(t *testing.T) {
+	tests := []struct {
+		description string
+		artifactLen int
+		dependency  [][]int
+		shouldErr   bool
+	}{
+		{
+			description: "artifacts with no dependency",
+			artifactLen: 5,
+		},
+		{
+			description: "artifacts with dependencies",
+			dependency: [][]int{
+				{1, 3, 4},
+				{3, 2},
+				{2, 4},
+				{4, 5},
+			},
+			artifactLen: 5,
+		},
+		{
+			description: "artifacts with circular dependencies",
+			dependency: [][]int{
+				{1, 3, 4},
+				{3, 2},
+				{2, 1},
+				{4, 5},
+			},
+			artifactLen: 5,
+			shouldErr:   true,
+		},
+		{
+			description: "0 artifacts",
+			artifactLen: 0,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			artifacts := make([]*latest.Artifact, test.artifactLen)
+			for i := 0; i < test.artifactLen; i++ {
+				a := fmt.Sprintf("artifact%d", i+1)
+				artifacts[i] = &latest.Artifact{ImageName: a}
+			}
+
+			setDependencies(artifacts, test.dependency)
+			errs := validateArtifactCircularDependencies(artifacts)
+			expected := []error{
+				fmt.Errorf("cycle detected in build dependencies involving 'artifact1'"),
+			}
+			if test.shouldErr {
+				t.CheckDeepEqual(expected, errs, cmp.Comparer(errorsComparer))
+			} else {
+				t.CheckDeepEqual(0, len(errs))
+			}
+		})
+	}
+}
+
+func setDependencies(a []*latest.Artifact, d [][]int) {
+	for _, dep := range d {
+		for i := range dep {
+			if i == 0 {
+				continue
+			}
+			a[dep[0]-1].Dependencies = append(a[dep[0]-1].Dependencies, &latest.ArtifactDependency{
+				ImageName: a[dep[i]-1].ImageName,
+			})
+		}
+	}
+}
+
+func TestValidateArtifactDependencyUniqueness(t *testing.T) {
+	artifacts := []*latest.Artifact{
+		{
+			ImageName: "artifact1",
+			Dependencies: []*latest.ArtifactDependency{
+				{
+					Alias:     "alias2",
+					ImageName: "artifact2a",
+				},
+				{
+					Alias:     "alias2",
+					ImageName: "artifact2b",
+				},
+			},
+		},
+		{
+			ImageName: "artifact2",
+			Dependencies: []*latest.ArtifactDependency{
+				{
+					Alias:     "alias1",
+					ImageName: "artifact1",
+				},
+				{
+					Alias:     "alias2",
+					ImageName: "artifact1",
+				},
+			},
+		},
+	}
+	expected := []error{
+		fmt.Errorf(`invalid build dependency for artifact "artifact1": alias "alias2" repeated`),
+		fmt.Errorf(`invalid build dependency for artifact "artifact2": image name "artifact1" repeated`),
+		fmt.Errorf(`invalid build dependency 'artifact2a' for artifact 'artifact1': not found`),
+	}
+	errs := validateArtifactDependencies(artifacts)
+	testutil.CheckDeepEqual(t, expected, errs, cmp.Comparer(errorsComparer))
+}
+
+func errorsComparer(a, b error) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return a.Error() == b.Error()
 }
