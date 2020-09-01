@@ -18,10 +18,13 @@ package trigger
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/rjeczalik/notify"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -52,6 +55,7 @@ func TestNewTrigger(t *testing.T) {
 					"../workspace":            {},
 					"../some/other/workspace": {},
 				},
+				watchFunc: notify.Watch,
 			},
 		},
 		{
@@ -87,10 +91,20 @@ func TestNewTrigger(t *testing.T) {
 			got, err := NewTrigger(runCtx, nil)
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
-				t.CheckDeepEqual(test.expected, got, cmp.AllowUnexported(fsNotifyTrigger{}), cmp.AllowUnexported(manualTrigger{}), cmp.AllowUnexported(pollTrigger{}))
+				t.CheckDeepEqual(test.expected, got, cmp.AllowUnexported(fsNotifyTrigger{}), cmp.Comparer(ignoreFuncComparer), cmp.AllowUnexported(manualTrigger{}), cmp.AllowUnexported(pollTrigger{}))
 			}
 		})
 	}
+}
+
+func ignoreFuncComparer(x, y func(path string, c chan<- notify.EventInfo, events ...notify.Event) error) bool {
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return true // cannot assert function equality, so skip
 }
 
 func TestPollTrigger_Debounce(t *testing.T) {
@@ -206,5 +220,43 @@ func TestManualTrigger_LogWatchToUser(t *testing.T) {
 
 		got, want := out.String(), test.expected
 		testutil.CheckDeepEqual(t, want, got)
+	}
+}
+
+func TestStartTrigger(t *testing.T) {
+	tests := []struct {
+		description string
+		trigger     Trigger
+	}{
+		{
+			description: "fsNotify trigger works",
+			trigger: &fsNotifyTrigger{
+				Interval:   200 * time.Millisecond,
+				workspaces: nil,
+				isActive:   func() bool { return false },
+				watchFunc: func(string, chan<- notify.EventInfo, ...notify.Event) error {
+					return nil
+				},
+			},
+		},
+		{
+			description: "fallback on polling trigger",
+			trigger: &fsNotifyTrigger{
+				Interval:   200 * time.Millisecond,
+				workspaces: nil,
+				isActive:   func() bool { return false },
+				watchFunc: func(string, chan<- notify.EventInfo, ...notify.Event) error {
+					return fmt.Errorf("failed to start watch trigger")
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			_, err := StartTrigger(context.Background(), test.trigger)
+			time.Sleep(1 * time.Second)
+			t.CheckNoError(err)
+		})
 	}
 }
