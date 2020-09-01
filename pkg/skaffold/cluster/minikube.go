@@ -124,9 +124,9 @@ func matchServerURL(server string) (bool, error) {
 		return false, fmt.Errorf("getting minikube profiles: %w", err)
 	}
 
-	var data data
+	var data profileList
 	if err = json.Unmarshal(out, &data); err != nil {
-		return false, fmt.Errorf("failed to unmarshal data: %w", err)
+		return false, fmt.Errorf("failed to unmarshal minikube profile list: %w", err)
 	}
 
 	serverURL, err := url.Parse(server)
@@ -157,7 +157,7 @@ func minikubePath() string {
 	return filepath.Join(minikubeHomeEnv, ".minikube")
 }
 
-type data struct {
+type profileList struct {
 	Valid   []profile `json:"valid,omitempty"`
 	Invalid []profile `json:"invalid,omitempty"`
 }
