@@ -93,7 +93,7 @@ func NewHelmDeployer(cfg Config, labels map[string]string) *HelmDeployer {
 		namespace:   cfg.GetKubeNamespace(),
 		forceDeploy: cfg.ForceDeploy(),
 		labels:      labels,
-		enableDebug: runCtx.Mode() == config.RunModes.Debug,
+		enableDebug: cfg.Mode() == config.RunModes.Debug,
 	}
 }
 
