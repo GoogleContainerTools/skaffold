@@ -44,7 +44,7 @@ type artifactWithDeps struct {
 	requiredArtifactChans []chan interface{}
 }
 
-// Create builds a list of artifacts in dependency order within the specified max concurrency
+// InOrder builds a list of artifacts in dependency order within the specified max concurrency
 func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
 	chanMap := make(map[string]chan interface{})
 	for _, a := range artifacts {
