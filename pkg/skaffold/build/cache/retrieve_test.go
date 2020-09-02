@@ -96,12 +96,6 @@ func TestCacheBuildLocal(t *testing.T) {
 			Write("dep3", "content3").
 			Chdir()
 
-		runCtx := &runcontext.RunContext{
-			Opts: config.SkaffoldOptions{
-				CacheArtifacts: true,
-				CacheFile:      tmpDir.Path("cache"),
-			},
-		}
 		tags := map[string]string{
 			"artifact1": "artifact1:tag1",
 			"artifact2": "artifact2:tag2",
@@ -128,7 +122,10 @@ func TestCacheBuildLocal(t *testing.T) {
 		})
 
 		// Create cache
-		artifactCache, err := NewCache(runCtx, true, deps)
+		cfg := &mockConfig{
+			cacheFile: tmpDir.Path("cache"),
+		}
+		artifactCache, err := NewCache(cfg, true, deps)
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -184,12 +181,6 @@ func TestCacheBuildRemote(t *testing.T) {
 			Write("dep3", "content3").
 			Chdir()
 
-		runCtx := &runcontext.RunContext{
-			Opts: config.SkaffoldOptions{
-				CacheArtifacts: true,
-				CacheFile:      tmpDir.Path("cache"),
-			},
-		}
 		tags := map[string]string{
 			"artifact1": "artifact1:tag1",
 			"artifact2": "artifact2:tag2",
@@ -224,8 +215,12 @@ func TestCacheBuildRemote(t *testing.T) {
 		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
 			return a.BuildArgs, nil
 		})
+
 		// Create cache
-		artifactCache, err := NewCache(runCtx, false, deps)
+		cfg := &mockConfig{
+			cacheFile: tmpDir.Path("cache"),
+		}
+		artifactCache, err := NewCache(cfg, false, deps)
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -261,3 +256,11 @@ func TestCacheBuildRemote(t *testing.T) {
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 	})
 }
+
+type mockConfig struct {
+	runcontext.RunContext // Embedded to provide the default values.
+	cacheFile             string
+}
+
+func (c *mockConfig) CacheArtifacts() bool { return true }
+func (c *mockConfig) CacheFile() string    { return c.cacheFile }

@@ -38,8 +38,8 @@ func TestNoTestDependencies(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) { return nil, nil })
 
-		runCtx := &runcontext.RunContext{}
-		deps, err := NewTester(runCtx, true).TestDependencies()
+		cfg := &mockConfig{}
+		deps, err := NewTester(cfg, true).TestDependencies()
 
 		t.CheckNoError(err)
 		t.CheckEmpty(deps)
@@ -50,17 +50,15 @@ func TestTestDependencies(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 
-		runCtx := &runcontext.RunContext{
-			WorkingDir: tmpDir.Root(),
-			Cfg: latest.Pipeline{
-				Test: []*latest.TestCase{
-					{StructureTests: []string{"./tests/*"}},
-					{},
-					{StructureTests: []string{"test3.yaml"}},
-				},
+		cfg := &mockConfig{
+			workingDir: tmpDir.Root(),
+			tests: []*latest.TestCase{
+				{StructureTests: []string{"./tests/*"}},
+				{},
+				{StructureTests: []string{"test3.yaml"}},
 			},
 		}
-		deps, err := NewTester(runCtx, true).TestDependencies()
+		deps, err := NewTester(cfg, true).TestDependencies()
 
 		expectedDeps := tmpDir.Paths("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 		t.CheckNoError(err)
@@ -70,16 +68,14 @@ func TestTestDependencies(t *testing.T) {
 
 func TestWrongPattern(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		runCtx := &runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Test: []*latest.TestCase{{
-					ImageName:      "image",
-					StructureTests: []string{"[]"},
-				}},
-			},
+		cfg := &mockConfig{
+			tests: []*latest.TestCase{{
+				ImageName:      "image",
+				StructureTests: []string{"[]"},
+			}},
 		}
 
-		tester := NewTester(runCtx, true)
+		tester := NewTester(cfg, true)
 
 		_, err := tester.TestDependencies()
 		t.CheckError(true, err)
@@ -94,9 +90,9 @@ func TestWrongPattern(t *testing.T) {
 
 func TestNoTest(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		runCtx := &runcontext.RunContext{}
+		cfg := &mockConfig{}
 
-		tester := NewTester(runCtx, true)
+		tester := NewTester(cfg, true)
 		err := tester.Test(context.Background(), ioutil.Discard, nil)
 
 		t.CheckNoError(err)
@@ -109,7 +105,7 @@ func TestIgnoreDockerNotFound(t *testing.T) {
 			return nil, errors.New("not found")
 		})
 
-		tester := NewTester(&runcontext.RunContext{}, true)
+		tester := NewTester(&mockConfig{}, true)
 
 		t.CheckNil(tester)
 	})
@@ -123,30 +119,28 @@ func TestTestSuccess(t *testing.T) {
 			CmdRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("tests/test1.yaml")+" --config "+tmpDir.Path("tests/test2.yaml")).
 			AndRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test3.yaml")))
 
-		runCtx := &runcontext.RunContext{
-			WorkingDir: tmpDir.Root(),
-			Cfg: latest.Pipeline{
-				Test: []*latest.TestCase{
-					{
-						ImageName:      "image",
-						StructureTests: []string{"./tests/*"},
-					},
-					{},
-					{
-						ImageName:      "image",
-						StructureTests: []string{"test3.yaml"},
-					},
-					{
-						// This is image is not built so it won't be tested.
-						ImageName:      "not-built",
-						StructureTests: []string{"./tests/*"},
-					},
+		cfg := &mockConfig{
+			workingDir: tmpDir.Root(),
+			tests: []*latest.TestCase{
+				{
+					ImageName:      "image",
+					StructureTests: []string{"./tests/*"},
+				},
+				{},
+				{
+					ImageName:      "image",
+					StructureTests: []string{"test3.yaml"},
+				},
+				{
+					// This is image is not built so it won't be tested.
+					ImageName:      "not-built",
+					StructureTests: []string{"./tests/*"},
 				},
 			},
 		}
 
 		imagesAreLocal := true
-		err := NewTester(runCtx, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err := NewTester(cfg, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -163,17 +157,15 @@ func TestTestSuccessRemoteImage(t *testing.T) {
 			return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil), nil
 		})
 
-		runCtx := &runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Test: []*latest.TestCase{{
-					ImageName:      "image",
-					StructureTests: []string{"test.yaml"},
-				}},
-			},
+		cfg := &mockConfig{
+			tests: []*latest.TestCase{{
+				ImageName:      "image",
+				StructureTests: []string{"test.yaml"},
+			}},
 		}
 
 		imagesAreLocal := false
-		err := NewTester(runCtx, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err := NewTester(cfg, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -190,17 +182,15 @@ func TestTestFailureRemoteImage(t *testing.T) {
 			return docker.NewLocalDaemon(&testutil.FakeAPIClient{ErrImagePull: true}, nil, false, nil), nil
 		})
 
-		runCtx := &runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Test: []*latest.TestCase{{
-					ImageName:      "image",
-					StructureTests: []string{"test.yaml"},
-				}},
-			},
+		cfg := &mockConfig{
+			tests: []*latest.TestCase{{
+				ImageName:      "image",
+				StructureTests: []string{"test.yaml"},
+			}},
 		}
 
 		imagesAreLocal := false
-		err := NewTester(runCtx, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err := NewTester(cfg, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -218,18 +208,16 @@ func TestTestFailure(t *testing.T) {
 			errors.New("FAIL"),
 		))
 
-		runCtx := &runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Test: []*latest.TestCase{
-					{
-						ImageName:      "broken-image",
-						StructureTests: []string{"test.yaml"},
-					},
+		cfg := &mockConfig{
+			tests: []*latest.TestCase{
+				{
+					ImageName:      "broken-image",
+					StructureTests: []string{"test.yaml"},
 				},
 			},
 		}
 
-		err := NewTester(runCtx, true).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err := NewTester(cfg, true).Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "broken-image",
 			Tag:       "broken-image:tag",
 		}})
@@ -242,23 +230,19 @@ func TestTestMuted(t *testing.T) {
 		tmpDir := t.NewTempDir().Touch("test.yaml")
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test.yaml")))
 
-		runCtx := &runcontext.RunContext{
-			WorkingDir: tmpDir.Root(),
-			Cfg: latest.Pipeline{
-				Test: []*latest.TestCase{{
-					ImageName:      "image",
-					StructureTests: []string{"test.yaml"},
-				}},
-			},
-			Opts: config.SkaffoldOptions{
-				Muted: config.Muted{
-					Phases: []string{"test"},
-				},
+		cfg := &mockConfig{
+			workingDir: tmpDir.Root(),
+			tests: []*latest.TestCase{{
+				ImageName:      "image",
+				StructureTests: []string{"test.yaml"},
+			}},
+			muted: config.Muted{
+				Phases: []string{"test"},
 			},
 		}
 
 		var buf bytes.Buffer
-		err := NewTester(runCtx, true).Test(context.Background(), &buf, []build.Artifact{{
+		err := NewTester(cfg, true).Test(context.Background(), &buf, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -266,4 +250,19 @@ func TestTestMuted(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckContains("- writing logs to "+filepath.Join(os.TempDir(), "skaffold", "test.log"), buf.String())
 	})
+}
+
+type mockConfig struct {
+	runcontext.RunContext // Embedded to provide the default values.
+	workingDir            string
+	tests                 []*latest.TestCase
+	muted                 config.Muted
+}
+
+func (c *mockConfig) Muted() config.Muted   { return c.muted }
+func (c *mockConfig) GetWorkingDir() string { return c.workingDir }
+func (c *mockConfig) Pipeline() latest.Pipeline {
+	var pipeline latest.Pipeline
+	pipeline.Test = c.tests
+	return pipeline
 }
