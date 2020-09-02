@@ -43,7 +43,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	defer b.localDocker.Close()
 
 	builder := build.WithLogFile(b.buildArtifact, b.muted)
-	return build.Create(ctx, out, tags, artifacts, builder, *b.cfg.Concurrency)
+	return build.InOrder(ctx, out, tags, artifacts, builder, *b.cfg.Concurrency)
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {

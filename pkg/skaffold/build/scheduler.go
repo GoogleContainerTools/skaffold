@@ -38,19 +38,24 @@ var (
 	buffSize = bufferedLinesPerArtifact
 )
 
+type artifactWithDeps struct {
+	artifact              *latest.Artifact
+	artifactChan          chan interface{}
+	requiredArtifactChans []chan interface{}
+}
+
 // Create builds a list of artifacts in dependency order within the specified max concurrency
-func Create(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
-	m := new(sync.Map)
+func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
+	chanMap := make(map[string]chan interface{})
 	for _, a := range artifacts {
-		m.Store(a.ImageName, make(chan interface{}))
+		chanMap[a.ImageName] = make(chan interface{})
 	}
 
 	var awdSlice []artifactWithDeps
 	for _, a := range artifacts {
-		awd := artifactWithDeps{Artifact: a}
+		awd := artifactWithDeps{artifact: a, artifactChan: chanMap[a.ImageName]}
 		for _, d := range a.Dependencies {
-			ch, _ := m.Load(d.ImageName)
-			awd.Deps = append(awd.Deps, ch.(chan interface{}))
+			awd.requiredArtifactChans = append(awd.requiredArtifactChans, chanMap[d.ImageName])
 		}
 		awdSlice = append(awdSlice, awd)
 	}
@@ -77,15 +82,14 @@ func Create(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []
 		// Run build and write output/logs to piped writer and store build result in
 		// sync.Map
 		go func(i int) {
-			for _, dep := range awdSlice[i].Deps {
+			for _, dep := range awdSlice[i].requiredArtifactChans {
 				// wait for dependency to complete build
 				<-dep
 			}
 			sem <- true
-			runBuild(ctx, w, tags, awdSlice[i].Artifact, results, buildArtifact)
-			ch, _ := m.Load(awdSlice[i].Artifact.ImageName)
+			runBuild(ctx, w, tags, awdSlice[i].artifact, results, buildArtifact)
 			// closing channel notifies all listeners waiting for this build to complete
-			close(ch.(chan interface{}))
+			close(awdSlice[i].artifactChan)
 			<-sem
 
 			wg.Done()
@@ -97,11 +101,6 @@ func Create(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []
 
 	// Print logs and collect results in order.
 	return collectResults(out, artifacts, results, outputs)
-}
-
-type artifactWithDeps struct {
-	Artifact *latest.Artifact
-	Deps     []chan interface{}
 }
 
 func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build ArtifactBuilder) {

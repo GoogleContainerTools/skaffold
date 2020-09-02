@@ -195,7 +195,7 @@ func TestCollectResults(t *testing.T) {
 	}
 }
 
-func TestCreate(t *testing.T) {
+func TestInOrder(t *testing.T) {
 	tests := []struct {
 		description string
 		buildFunc   ArtifactBuilder
@@ -237,14 +237,14 @@ And new lines
 			}
 			initializeEvents()
 
-			Create(context.Background(), out, tags, artifacts, test.buildFunc, 0)
+			InOrder(context.Background(), out, tags, artifacts, test.buildFunc, 0)
 
 			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
 }
 
-func TestCreateConcurrency(t *testing.T) {
+func TestInOrderConcurrency(t *testing.T) {
 	tests := []struct {
 		artifacts      int
 		limit          int
@@ -292,7 +292,7 @@ func TestCreateConcurrency(t *testing.T) {
 			}
 
 			initializeEvents()
-			results, err := Create(context.Background(), ioutil.Discard, tags, artifacts, builder, test.limit)
+			results, err := InOrder(context.Background(), ioutil.Discard, tags, artifacts, builder, test.limit)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.artifacts, len(results))
@@ -300,7 +300,7 @@ func TestCreateConcurrency(t *testing.T) {
 	}
 }
 
-func TestCreateForArgs(t *testing.T) {
+func TestInOrderForArgs(t *testing.T) {
 	tests := []struct {
 		description   string
 		buildArtifact ArtifactBuilder
@@ -379,7 +379,7 @@ func TestCreateForArgs(t *testing.T) {
 
 			setDependencies(artifacts, test.dependency)
 			initializeEvents()
-			actual, _ := Create(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, test.concurrency)
+			actual, _ := InOrder(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, test.concurrency)
 
 			t.CheckDeepEqual(test.expected, actual)
 		})
