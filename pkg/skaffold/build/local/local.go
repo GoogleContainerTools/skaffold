@@ -43,7 +43,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	defer b.localDocker.Close()
 
 	builder := build.WithLogFile(b.buildArtifact, b.muted)
-	return build.InParallel(ctx, out, tags, artifacts, builder, *b.cfg.Concurrency)
+	return build.InParallel(ctx, out, tags, artifacts, builder, *b.local.Concurrency)
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
@@ -90,13 +90,13 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 		return b.buildDocker(ctx, out, a, tag, b.mode)
 
 	case a.BazelArtifact != nil:
-		return bazel.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages).Build(ctx, out, a, tag)
+		return bazel.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages).Build(ctx, out, a, tag)
 
 	case a.JibArtifact != nil:
-		return jib.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.skipTests).Build(ctx, out, a, tag)
+		return jib.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.skipTests).Build(ctx, out, a, tag)
 
 	case a.CustomArtifact != nil:
-		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
+		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
 
 	case a.BuildpackArtifact != nil:
 		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.mode).Build(ctx, out, a, tag)

@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types"
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -271,12 +270,12 @@ func TestNewBuilder(t *testing.T) {
 	dummyDaemon := dummyLocalDaemon{}
 
 	tests := []struct {
-		description     string
-		shouldErr       bool
-		localBuild      latest.LocalBuild
-		expectedBuilder *Builder
-		localClusterFn  func(string, string, bool) (bool, error)
-		localDockerFn   func(docker.Config) (docker.LocalDaemon, error)
+		description    string
+		shouldErr      bool
+		expectedPush   bool
+		localBuild     latest.LocalBuild
+		localClusterFn func(string, string, bool) (bool, error)
+		localDockerFn  func(docker.Config) (docker.LocalDaemon, error)
 	}{
 		{
 			description: "failed to get docker client",
@@ -294,19 +293,7 @@ func TestNewBuilder(t *testing.T) {
 				b = false //because this is false and localBuild.push is nil
 				return
 			},
-			shouldErr: false,
-			expectedBuilder: &Builder{
-				cfg:                latest.LocalBuild{},
-				kubeContext:        "",
-				localDocker:        dummyDaemon,
-				localCluster:       false,
-				pushImages:         true, //this will be true
-				skipTests:          false,
-				prune:              true,
-				pruneChildren:      true,
-				insecureRegistries: nil,
-				muted:              config.Muted{},
-			},
+			expectedPush: true,
 		},
 		{
 			description: "pushImages defined in config (local:push)",
@@ -320,22 +307,8 @@ func TestNewBuilder(t *testing.T) {
 			localBuild: latest.LocalBuild{
 				Push: util.BoolPtr(false),
 			},
-			shouldErr: false,
-			expectedBuilder: &Builder{
-				pushImages: false, //this will be false too
-				cfg: latest.LocalBuild{ // and the config is inherited
-					Push: util.BoolPtr(false),
-				},
-				kubeContext:  "",
-				localDocker:  dummyDaemon,
-				localCluster: false,
-
-				skipTests:          false,
-				prune:              true,
-				pruneChildren:      true,
-				insecureRegistries: nil,
-				muted:              config.Muted{},
-			},
+			shouldErr:    false,
+			expectedPush: false,
 		},
 	}
 	for _, test := range tests {
@@ -353,7 +326,7 @@ func TestNewBuilder(t *testing.T) {
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
-				t.CheckDeepEqual(test.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, dummyDaemon))
+				t.CheckDeepEqual(test.expectedPush, builder.pushImages)
 			}
 		})
 	}

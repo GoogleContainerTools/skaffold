@@ -20,16 +20,16 @@ import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 
 // Builder is an artifact builder that uses Bazel
 type Builder struct {
-	localDocker        docker.LocalDaemon
-	insecureRegistries map[string]bool
-	pushImages         bool
+	localDocker docker.LocalDaemon
+	cfg         docker.Config
+	pushImages  bool
 }
 
 // NewArtifactBuilder returns a new bazel artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, insecureRegistries map[string]bool, pushImages bool) *Builder {
+func NewArtifactBuilder(localDocker docker.LocalDaemon, cfg docker.Config, pushImages bool) *Builder {
 	return &Builder{
-		localDocker:        localDocker,
-		insecureRegistries: insecureRegistries,
-		pushImages:         pushImages,
+		localDocker: localDocker,
+		cfg:         cfg,
+		pushImages:  pushImages,
 	}
 }

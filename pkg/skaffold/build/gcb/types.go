@@ -79,9 +79,10 @@ func NewStatusBackoff() *wait.Backoff {
 // Builder builds artifacts with Google Cloud Build.
 type Builder struct {
 	*latest.GoogleCloudBuild
-	skipTests          bool
-	insecureRegistries map[string]bool
-	muted              build.Muted
+
+	cfg       Config
+	skipTests bool
+	muted     build.Muted
 }
 
 type Config interface {
@@ -95,10 +96,10 @@ type Config interface {
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
 func NewBuilder(cfg Config) *Builder {
 	return &Builder{
-		GoogleCloudBuild:   cfg.Pipeline().Build.GoogleCloudBuild,
-		skipTests:          cfg.SkipTests(),
-		insecureRegistries: cfg.GetInsecureRegistries(),
-		muted:              cfg.Muted(),
+		GoogleCloudBuild: cfg.Pipeline().Build.GoogleCloudBuild,
+		cfg:              cfg,
+		skipTests:        cfg.SkipTests(),
+		muted:            cfg.Muted(),
 	}
 }
 

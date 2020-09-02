@@ -18,14 +18,8 @@ package cluster
 
 import (
 	"context"
-	"sync"
 	"testing"
-	"time"
 
-	"github.com/google/go-cmp/cmp"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -38,10 +32,9 @@ const (
 
 func TestNewBuilder(t *testing.T) {
 	tests := []struct {
-		description     string
-		shouldErr       bool
-		cfg             Config
-		expectedBuilder *Builder
+		description string
+		shouldErr   bool
+		cfg         Config
 	}{
 		{
 			description: "failed to parse cluster build timeout",
@@ -62,21 +55,6 @@ func TestNewBuilder(t *testing.T) {
 					Namespace: "test-ns",
 				},
 			},
-			shouldErr: false,
-			expectedBuilder: &Builder{
-				ClusterDetails: &latest.ClusterDetails{
-					Timeout:   "100s",
-					Namespace: "test-ns",
-				},
-				timeout:            100 * time.Second,
-				insecureRegistries: nil,
-				kubeContext:        kubeContext,
-				kubectlcli: &kubectl.CLI{
-					KubeContext: kubeContext,
-					Namespace:   namespace,
-				},
-				muted: config.Muted{},
-			},
 		},
 		{
 			description: "insecure registries are taken from the run context",
@@ -89,31 +67,13 @@ func TestNewBuilder(t *testing.T) {
 					Namespace: "test-ns",
 				},
 			},
-			shouldErr: false,
-			expectedBuilder: &Builder{
-				ClusterDetails: &latest.ClusterDetails{
-					Timeout:   "100s",
-					Namespace: "test-ns",
-				},
-				timeout:            100 * time.Second,
-				insecureRegistries: map[string]bool{"insecure-reg1": true},
-				kubeContext:        kubeContext,
-				kubectlcli: &kubectl.CLI{
-					KubeContext: kubeContext,
-					Namespace:   namespace,
-				},
-				muted: config.Muted{},
-			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			builder, err := NewBuilder(test.cfg)
+			_, err := NewBuilder(test.cfg)
 
 			t.CheckError(test.shouldErr, err)
-			if !test.shouldErr {
-				t.CheckDeepEqual(test.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, kubectl.CLI{}, sync.Once{}, sync.Mutex{}))
-			}
 		})
 	}
 }

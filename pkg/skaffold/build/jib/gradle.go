@@ -43,7 +43,7 @@ const MinimumJibGradleVersionForSync = "2.0.0"
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
 
 func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, b.skipTests, b.cfg.GetInsecureRegistries())
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -52,12 +52,12 @@ func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, wor
 }
 
 func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateGradleBuildArgs("jib", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateGradleBuildArgs("jib", tag, artifact, b.skipTests, b.cfg.GetInsecureRegistries())
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
 
-	return docker.RemoteDigest(tag, b.insecureRegistries)
+	return docker.RemoteDigest(tag, b.cfg)
 }
 
 func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {

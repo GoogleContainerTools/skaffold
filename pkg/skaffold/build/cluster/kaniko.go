@@ -73,7 +73,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 
 	waitForLogs()
 
-	return docker.RemoteDigest(tag, b.insecureRegistries)
+	return docker.RemoteDigest(tag, b.cfg)
 }
 
 // first copy over the buildcontext tarball into the init container tmp dir via kubectl cp
@@ -89,7 +89,7 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, workspace, &latest.DockerArtifact{
 			BuildArgs:      artifact.BuildArgs,
 			DockerfilePath: artifact.DockerfilePath,
-		}, b.insecureRegistries)
+		}, b.cfg)
 		if err != nil {
 			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return

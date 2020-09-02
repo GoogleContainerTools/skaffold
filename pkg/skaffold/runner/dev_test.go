@@ -26,6 +26,7 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -356,7 +357,7 @@ func TestDevSync(t *testing.T) {
 			t.Override(&fileSyncInProgress, func(int, string) { actualFileSyncEventCalls.InProgress++ })
 			t.Override(&fileSyncFailed, func(int, string, error) { actualFileSyncEventCalls.Failed++ })
 			t.Override(&fileSyncSucceeded, func(int, string) { actualFileSyncEventCalls.Succeeded++ })
-			t.Override(&sync.WorkingDir, func(string, map[string]bool) (string, error) { return "/", nil })
+			t.Override(&sync.WorkingDir, func(string, docker.Config) (string, error) { return "/", nil })
 			test.testBench.cycles = len(test.watchEvents)
 
 			runner := createRunner(t, test.testBench, &TestMonitor{

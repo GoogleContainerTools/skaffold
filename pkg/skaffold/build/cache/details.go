@@ -86,7 +86,7 @@ func (d needsRemoteTagging) Hash() string {
 
 func (d needsRemoteTagging) Tag(ctx context.Context, c *cache) error {
 	fqn := d.tag + "@" + d.digest // Tag is not important. We just need the registry and the digest to locate the image.
-	return docker.AddRemoteTag(fqn, d.tag, c.insecureRegistries)
+	return docker.AddRemoteTag(fqn, d.tag, c.cfg)
 }
 
 // Found locally. Needs pushing

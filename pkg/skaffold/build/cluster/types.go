@@ -33,11 +33,11 @@ import (
 type Builder struct {
 	*latest.ClusterDetails
 
-	kubectlcli         *kubectl.CLI
-	kubeContext        string
-	timeout            time.Duration
-	insecureRegistries map[string]bool
-	muted              build.Muted
+	cfg         docker.Config
+	kubectlcli  *kubectl.CLI
+	kubeContext string
+	timeout     time.Duration
+	muted       build.Muted
 }
 
 type Config interface {
@@ -57,12 +57,12 @@ func NewBuilder(cfg Config) (*Builder, error) {
 	}
 
 	return &Builder{
-		ClusterDetails:     cfg.Pipeline().Build.Cluster,
-		kubectlcli:         kubectl.NewCLI(cfg),
-		timeout:            timeout,
-		kubeContext:        cfg.GetKubeContext(),
-		insecureRegistries: cfg.GetInsecureRegistries(),
-		muted:              cfg.Muted(),
+		ClusterDetails: cfg.Pipeline().Build.Cluster,
+		cfg:            cfg,
+		kubectlcli:     kubectl.NewCLI(cfg),
+		timeout:        timeout,
+		kubeContext:    cfg.GetKubeContext(),
+		muted:          cfg.Muted(),
 	}, nil
 }
 

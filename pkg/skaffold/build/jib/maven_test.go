@@ -75,7 +75,7 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 			api := (&testutil.FakeAPIClient{}).Add("img:tag", "imageID")
 			localDocker := fakeLocalDaemon(api)
 
-			builder := NewArtifactBuilder(localDocker, nil, false, false)
+			builder := NewArtifactBuilder(localDocker, &mockConfig{}, false, false)
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
@@ -127,7 +127,7 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 			t.Override(&mavenBuildArgsFunc, getMavenBuildArgsFuncFake(t, MinimumJibMavenVersion))
 			t.NewTempDir().Touch("pom.xml").Chdir()
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(&docker.RemoteDigest, func(identifier string, _ map[string]bool) (string, error) {
+			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config) (string, error) {
 				if identifier == "img:tag" {
 					return "digest", nil
 				}
@@ -135,7 +135,7 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 			})
 			localDocker := fakeLocalDaemon(&testutil.FakeAPIClient{})
 
-			builder := NewArtifactBuilder(localDocker, nil, true, false)
+			builder := NewArtifactBuilder(localDocker, &mockConfig{}, true, false)
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,

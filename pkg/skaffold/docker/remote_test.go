@@ -87,7 +87,9 @@ func TestRemoteImage(t *testing.T) {
 				}, nil
 			})
 
-			img, err := getRemoteImage(test.image, test.insecureRegistries)
+			img, err := getRemoteImage(test.image, &mockConfig{
+				insecureRegistries: test.insecureRegistries,
+			})
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
@@ -142,7 +144,7 @@ func TestRemoteDigest(t *testing.T) {
 				}, nil
 			})
 
-			digest, err := RemoteDigest(test.image, nil)
+			digest, err := RemoteDigest(test.image, &mockConfig{})
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDigest, digest)
 		})
@@ -173,3 +175,10 @@ func (i *fakeImageIndex) IndexManifest() (*v1.IndexManifest, error) { return nil
 func (i *fakeImageIndex) RawManifest() ([]byte, error)              { return nil, nil }
 func (i *fakeImageIndex) Image(v1.Hash) (v1.Image, error)           { return nil, nil }
 func (i *fakeImageIndex) ImageIndex(v1.Hash) (v1.ImageIndex, error) { return nil, nil }
+
+type mockConfig struct {
+	Config
+	insecureRegistries map[string]bool
+}
+
+func (c *mockConfig) GetInsecureRegistries() map[string]bool { return c.insecureRegistries }
