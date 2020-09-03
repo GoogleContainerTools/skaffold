@@ -38,10 +38,20 @@ elif ! [ -x "$(command -v ${LICENSES})" ]; then
     popd
 fi
 
+# hack for github.com/vbauerster/mpb begin
+if [ -f vendor/github.com/vbauerster/mpb/v5/UNLICENSE ]; then
+   mv vendor/github.com/vbauerster/mpb/v5/UNLICENSE vendor/github.com/vbauerster/mpb/v5/LICENSE
+fi
+
 echo "Collecting licenses"
 cd ${DIR}/..
 ${LICENSES} save github.com/GoogleContainerTools/skaffold/cmd/skaffold --save_path="${TMP_DIR}/skaffold-credits"
 chmod -R u+w "${TMP_DIR}/skaffold-credits"
+
+# hack for github.com/vbauerster/mpb end
+if [ -f vendor/github.com/vbauerster/mpb/v5/LICENSE ]; then
+   mv vendor/github.com/vbauerster/mpb/v5/LICENSE vendor/github.com/vbauerster/mpb/v5/UNLICENSE
+fi
 
 echo "Collecting schemas"
 cp -R docs/content/en/schemas "${TMP_DIR}/schemas"
