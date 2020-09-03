@@ -25,6 +25,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/docker/docker/client"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -154,7 +156,7 @@ func TestTestSuccessRemoteImage(t *testing.T) {
 		t.NewTempDir().Touch("test.yaml").Chdir()
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config test.yaml"))
 		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
-			return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil), nil
+			return fakeLocalDaemon(&testutil.FakeAPIClient{}), nil
 		})
 
 		cfg := &mockConfig{
@@ -179,7 +181,7 @@ func TestTestFailureRemoteImage(t *testing.T) {
 		t.NewTempDir().Touch("test.yaml").Chdir()
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config test.yaml"))
 		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
-			return docker.NewLocalDaemon(&testutil.FakeAPIClient{ErrImagePull: true}, nil, false, nil), nil
+			return fakeLocalDaemon(&testutil.FakeAPIClient{ErrImagePull: true}), nil
 		})
 
 		cfg := &mockConfig{
@@ -250,6 +252,10 @@ func TestTestMuted(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckContains("- writing logs to "+filepath.Join(os.TempDir(), "skaffold", "test.log"), buf.String())
 	})
+}
+
+func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
+	return docker.NewLocalDaemon(api, nil, false, nil)
 }
 
 type mockConfig struct {
