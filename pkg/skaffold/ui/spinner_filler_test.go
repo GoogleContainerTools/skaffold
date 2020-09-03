@@ -20,8 +20,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/vbauerster/mpb/v5/decor"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestFill(t *testing.T) {

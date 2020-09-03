@@ -22,14 +22,21 @@ import (
 )
 
 var (
-	current *mpb.Progress
+	current ProgressGroup
 )
+
+// ProgressGroup is a wrapper around mpb.Progress
+type ProgressGroup struct {
+	*mpb.Progress
+}
 
 // NewProgressGroup creates a new current progress group
 func NewProgressGroup() {
-	current = mpb.New(
-		mpb.WithOutput(out),
-	)
+	current = ProgressGroup{
+		mpb.New(
+			mpb.WithOutput(out),
+		),
+	}
 }
 
 // AddNewSpinner adds a progress spinner to the current ProgressGroup

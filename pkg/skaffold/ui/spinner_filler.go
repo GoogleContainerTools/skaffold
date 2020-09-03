@@ -23,12 +23,13 @@ import (
 	"github.com/vbauerster/mpb/v5/decor"
 )
 
+// spinnerFiller implements the mpb.BarFiller interface, and is in charge of generating the current frame of the spinner portion of the progress indicator
 type spinnerFiller struct {
 	frames []string
 	count  uint
 }
 
-// NewSpinnerFiller constructs a mpb.BarFiller, to be used with *Progress.Add(...) method.
+// NewSpinnerFiller creates a mpb.BarFiller, to be used with *Progress.Add(...) method.
 func NewSpinnerFiller(style []string) mpb.BarFiller {
 	if len(style) == 0 {
 		style = mpb.DefaultSpinnerStyle
@@ -40,6 +41,7 @@ func NewSpinnerFiller(style []string) mpb.BarFiller {
 }
 
 // To fulfill the implementation of mpb.BarFiller interface
+// Fill writes the current frame of the SpinnerFiller to given io.Writer
 func (s *spinnerFiller) Fill(w io.Writer, _ int, _ decor.Statistics) {
 	frame := s.frames[s.count%uint(len(s.frames))]
 
