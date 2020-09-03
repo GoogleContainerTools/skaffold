@@ -45,6 +45,10 @@ github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
 # github.com/Microsoft/hcsshim v0.8.7
 github.com/Microsoft/hcsshim/osversion
+# github.com/VividCortex/ewma v1.1.1
+github.com/VividCortex/ewma
+# github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
+github.com/acarl005/stripansi
 # github.com/apex/log v1.3.0
 github.com/apex/log
 # github.com/beorn7/perks v1.0.0
@@ -362,6 +366,8 @@ github.com/krishicks/yaml-patch
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.12
 github.com/mattn/go-isatty
+# github.com/mattn/go-runewidth v0.0.9
+github.com/mattn/go-runewidth
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
@@ -460,6 +466,12 @@ github.com/tektoncd/pipeline/pkg/list
 github.com/tektoncd/pipeline/pkg/merge
 github.com/tektoncd/pipeline/pkg/names
 github.com/tektoncd/pipeline/pkg/templating
+# github.com/vbauerster/mpb/v5 v5.3.0
+## explicit
+github.com/vbauerster/mpb/v5
+github.com/vbauerster/mpb/v5/cwriter
+github.com/vbauerster/mpb/v5/decor
+github.com/vbauerster/mpb/v5/internal
 # github.com/xanzy/ssh-agent v0.2.1
 github.com/xanzy/ssh-agent
 # github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f
@@ -538,7 +550,7 @@ golang.org/x/oauth2/jwt
 # golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 ## explicit
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.0.0-20200523222454-059865788121
+# golang.org/x/sys v0.0.0-20200810151505-1b9f1253b3ed
 ## explicit
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
