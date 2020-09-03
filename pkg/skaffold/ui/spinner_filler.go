@@ -14,7 +14,7 @@ type spinnerFiller struct {
 
 // NewSpinnerFiller constructs a mpb.BarFiller, to be used with *Progress.Add(...) method.
 func NewSpinnerFiller(style []string) mpb.BarFiller {
-	if len(style) == 0 {
+	if style == nil || len(style) == 0 {
 		style = mpb.DefaultSpinnerStyle
 	}
 	filler := &spinnerFiller{
@@ -24,9 +24,9 @@ func NewSpinnerFiller(style []string) mpb.BarFiller {
 }
 
 // To fulfill the implementation of mpb.BarFiller interface
-func (s *spinnerFiller) Fill(w io.Writer, reqWidth int, stat decor.Statistics) {
+func (s *spinnerFiller) Fill(w io.Writer, _ int, _ decor.Statistics) {
 	frame := s.frames[s.count%uint(len(s.frames))]
 
-	io.WriteString(w, frame+" ")
+	io.WriteString(w, frame)
 	s.count++
 }

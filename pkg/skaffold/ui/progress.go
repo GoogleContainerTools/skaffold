@@ -17,8 +17,8 @@ func NewProgressGroup() {
 }
 
 // AddNewSpinner adds a progress spinner to the current ProgressGroup
-func AddNewSpinner(prefix, name string) *mpb.Bar {
-	return current.Add(1, NewSpinnerFiller(mpb.DefaultSpinnerStyle),
+func AddNewSpinner(prefix, name string, style []string) *mpb.Bar {
+	return current.Add(1, NewSpinnerFiller(style),
 		mpb.PrependDecorators(
 			decor.Name(prefix),
 		),
