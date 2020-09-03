@@ -44,8 +44,7 @@ var allAuthConfig = map[string]types.AuthConfig{
 func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 	return gcrAuthConfig, t.getAuthConfigErr
 }
-
-func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
+func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
 	return allAuthConfig, t.getAllAuthConfigsErr
 }
 
