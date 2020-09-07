@@ -107,3 +107,47 @@ ARG bar2`,
 		})
 	}
 }
+
+func TestFromImages(t *testing.T) {
+	tests := []struct {
+		description string
+		dockerfile  string
+		buildArgs   map[string]*string
+		expected    []string
+	}{
+		{
+			description: "busybox",
+			dockerfile:  "FROM busybox",
+			expected:    []string{"busybox"},
+		},
+		{
+			description: "stages",
+			dockerfile:  "FROM busybox as stage1\nFROM ubuntu:14.04 as stage2\n",
+			expected:    []string{"busybox", "ubuntu:14.04"},
+		},
+		{
+			description: "keep duplicates",
+			dockerfile:  "FROM busybox as stage1\nFROM busybox as stage2\n",
+			expected:    []string{"busybox", "busybox"},
+		},
+		{
+			description: "build args",
+			dockerfile:  "ARG IMG\nFROM $IMG",
+			buildArgs:   map[string]*string{"IMG": util.StringPtr("busybox")},
+			expected:    []string{"busybox"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			imageFetcher := fakeImageFetcher{}
+			t.Override(&RetrieveImage, imageFetcher.fetch)
+			tmpDir := t.NewTempDir().Write("Dockerfile", test.dockerfile)
+
+			images, err := fromImages(tmpDir.Path("Dockerfile"), test.buildArgs)
+
+			t.CheckDeepEqual(test.expected, images)
+			t.CheckNoError(err)
+		})
+	}
+}

@@ -64,7 +64,7 @@ var (
 	RetrieveImage = retrieveImage
 )
 
-func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]fromTo, error) {
+func parseDockerfile(absDockerfilePath string, buildArgs map[string]*string) ([]*parser.Node, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,30 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 		return nil, fmt.Errorf("putting build arguments: %w", err)
 	}
 
-	dockerfileLinesWithOnbuild, err := expandOnbuildInstructions(dockerfileLines, insecureRegistries)
+	return expandOnbuildInstructions(dockerfileLines, nil)
+}
+
+// fromImages lists the images used in `FROM` instructions.
+func fromImages(absDockerfilePath string, buildArgs map[string]*string) ([]string, error) {
+	dockerfileLinesWithOnbuild, err := parseDockerfile(absDockerfilePath, buildArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	var images []string
+
+	for _, node := range dockerfileLinesWithOnbuild {
+		if node.Value == command.From {
+			from := fromInstruction(node)
+			images = append(images, from.image)
+		}
+	}
+
+	return images, nil
+}
+
+func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]fromTo, error) {
+	dockerfileLinesWithOnbuild, err := parseDockerfile(absDockerfilePath, buildArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -300,33 +323,32 @@ func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[stri
 	onbuildNodesCache := map[string][]*parser.Node{
 		"scratch": nil,
 	}
+
 	var expandedNodes []*parser.Node
-	n := 0
-	for m, node := range nodes {
-		if node.Value == command.From {
-			from := fromInstruction(node)
+	for _, node := range nodes {
+		expandedNodes = append(expandedNodes, node)
 
-			// onbuild should immediately follow the from command
-			expandedNodes = append(expandedNodes, nodes[n:m+1]...)
-			n = m + 1
-
-			var onbuildNodes []*parser.Node
-			if ons, found := onbuildNodesCache[strings.ToLower(from.image)]; found {
-				onbuildNodes = ons
-			} else if ons, err := parseOnbuild(from.image, insecureRegistries); err == nil {
-				onbuildNodes = ons
-			} else {
-				return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
-			}
-
-			// Stage names are case insensitive
-			onbuildNodesCache[strings.ToLower(from.as)] = nodes
-			onbuildNodesCache[strings.ToLower(from.image)] = nodes
-
-			expandedNodes = append(expandedNodes, onbuildNodes...)
+		if node.Value != command.From {
+			continue
 		}
+		from := fromInstruction(node)
+
+		// If the image referenced in FROM has ONBUILD instructions, we
+		// inline them here.
+		var onbuildNodes []*parser.Node
+		if ons, found := onbuildNodesCache[strings.ToLower(from.image)]; found {
+			onbuildNodes = ons
+		} else if ons, err := parseOnbuild(from.image, insecureRegistries); err == nil {
+			onbuildNodes = ons
+			onbuildNodesCache[strings.ToLower(from.image)] = ons
+		} else {
+			return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
+		}
+		expandedNodes = append(expandedNodes, onbuildNodes...)
+
+		// Stage names are case insensitive
+		onbuildNodesCache[strings.ToLower(from.as)] = nodes
 	}
-	expandedNodes = append(expandedNodes, nodes[n:]...)
 
 	return expandedNodes, nil
 }

@@ -158,16 +158,30 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 
 // Build performs a docker build and returns the imageID.
 func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.RunMode) (string, error) {
-	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
+	absDockerfilePath, err := NormalizeDockerfilePath(workspace, a.DockerfilePath)
+	if err != nil {
+		return "", fmt.Errorf("normalizing dockerfile path: %w", err)
+	}
+
+	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, absDockerfilePath)
 
 	buildArgs, err := EvalBuildArgs(mode, workspace, a)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
 
+	// Collect the images that the build will have to pull in order to minimize the number
+	// of authConfigs we have to compute and pass to the engine.
+	fromImages, err := fromImages(absDockerfilePath, buildArgs)
+
+	var authConfigs map[string]types.AuthConfig
 	// Like `docker build`, we ignore the errors
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
-	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs(ctx)
+	if err != nil {
+		authConfigs, _ = DefaultAuthHelper.GetAllAuthConfigs(ctx)
+	} else {
+		authConfigs, _ = DefaultAuthHelper.GetSelectAuthConfigs(ctx, fromImages)
+	}
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {

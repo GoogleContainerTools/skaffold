@@ -91,6 +91,9 @@ func (t stubAuth) GetAuthConfig(string) (types.AuthConfig, error) {
 func (t stubAuth) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
 	return nil, nil
 }
+func (t stubAuth) GetSelectAuthConfigs(context.Context, []string) (map[string]types.AuthConfig, error) {
+	return nil, nil
+}
 
 func TestCacheBuildLocal(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {

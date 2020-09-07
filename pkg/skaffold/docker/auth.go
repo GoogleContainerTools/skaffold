@@ -30,6 +30,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/docker/docker/registry"
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
@@ -58,6 +59,7 @@ func init() {
 type AuthConfigHelper interface {
 	GetAuthConfig(registry string) (types.AuthConfig, error)
 	GetAllAuthConfigs(ctx context.Context) (map[string]types.AuthConfig, error)
+	GetSelectAuthConfigs(ctx context.Context, images []string) (map[string]types.AuthConfig, error)
 }
 
 type credsHelper struct{}
@@ -108,6 +110,41 @@ func (h credsHelper) GetAllAuthConfigs(ctx context.Context) (map[string]types.Au
 	case r := <-auth:
 		return r.configs, r.err
 	}
+}
+
+// GetSelectAuthConfigs retrieves the auth configs for a list of images.
+// Because this can take a long time, we make sure it can be interrupted by the user.
+func (h credsHelper) GetSelectAuthConfigs(ctx context.Context, images []string) (map[string]types.AuthConfig, error) {
+	cf, err := loadDockerConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	authConfigs := map[string]types.AuthConfig{}
+	for _, image := range images {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+			ref, err := name.ParseReference(image)
+			if err != nil {
+				return nil, err
+			}
+
+			reg := ref.Context().RegistryStr()
+
+			if _, present := authConfigs[reg]; !present {
+				auth, err := cf.GetAuthConfig(reg)
+				if err != nil {
+					return nil, err
+				}
+
+				authConfigs[reg] = types.AuthConfig(auth)
+			}
+		}
+	}
+
+	return authConfigs, nil
 }
 
 func (h credsHelper) doGetAllAuthConfigs() (map[string]types.AuthConfig, error) {

@@ -48,6 +48,9 @@ func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
 	return allAuthConfig, t.getAllAuthConfigsErr
 }
+func (t testAuthHelper) GetSelectAuthConfigs(context.Context, []string) (map[string]types.AuthConfig, error) {
+	return nil, nil
+}
 
 func TestGetAllAuthConfigs(t *testing.T) {
 	testutil.Run(t, "auto-configure gcr.io", func(t *testutil.T) {
