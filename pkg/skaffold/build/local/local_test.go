@@ -43,7 +43,9 @@ type testAuthHelper struct{}
 func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 	return types.AuthConfig{}, nil
 }
-func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
+func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
+	return nil, nil
+}
 
 func TestLocalRun(t *testing.T) {
 	tests := []struct {

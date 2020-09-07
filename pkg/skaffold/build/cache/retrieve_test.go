@@ -85,8 +85,12 @@ func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.
 
 type stubAuth struct{}
 
-func (t stubAuth) GetAuthConfig(string) (types.AuthConfig, error)          { return types.AuthConfig{}, nil }
-func (t stubAuth) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
+func (t stubAuth) GetAuthConfig(string) (types.AuthConfig, error) {
+	return types.AuthConfig{}, nil
+}
+func (t stubAuth) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
+	return nil, nil
+}
 
 func TestCacheBuildLocal(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
