@@ -233,7 +233,7 @@ func TestLocalRun(t *testing.T) {
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
-				return docker.NewLocalDaemon(test.api, nil, false, nil), nil
+				return fakeLocalDaemon(test.api), nil
 			})
 			t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
 				return a.BuildArgs, nil
