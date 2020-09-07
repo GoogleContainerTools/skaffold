@@ -101,7 +101,7 @@ func (d *Deployment) WithValidator(pd diag.Diagnose) *Deployment {
 }
 
 func (d *Deployment) CheckStatus(ctx context.Context, cfg kubectl.Config) {
-	kubeCtl := kubectl.NewCLI(cfg)
+	kubeCtl := kubectl.NewCLI(cfg, "")
 
 	b, err := kubeCtl.RunOut(ctx, "rollout", "status", "deployment", d.name, "--namespace", d.namespace, "--watch=false")
 	if ctx.Err() != nil {

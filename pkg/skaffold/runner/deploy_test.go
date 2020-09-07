@@ -144,14 +144,16 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 			KubeContext: "does-not-exist",
 		}
 
+		deployer, err := getDeployer(runCtx, nil)
+		t.RequireNoError(err)
 		r := SkaffoldRunner{
 			runCtx:     runCtx,
-			kubectlCLI: kubectl.NewCLI(runCtx),
-			deployer:   getDeployer(runCtx, nil),
+			kubectlCLI: kubectl.NewCLI(runCtx, ""),
+			deployer:   deployer,
 		}
 		var builds []build.Artifact
 
-		err := r.Deploy(context.Background(), ioutil.Discard, builds)
+		err = r.Deploy(context.Background(), ioutil.Discard, builds)
 
 		t.CheckNoError(err)
 	})

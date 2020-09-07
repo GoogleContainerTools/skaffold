@@ -43,7 +43,7 @@ import (
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
-	kubectlCLI := kubectl.NewCLI(runCtx)
+	kubectlCLI := kubectl.NewCLI(runCtx, "")
 
 	tagger, err := getTagger(runCtx)
 	if err != nil {
@@ -63,7 +63,11 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	labeller := deploy.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels())
 	tester := getTester(runCtx, imagesAreLocal)
 	syncer := getSyncer(runCtx)
-	deployer := getDeployer(runCtx, labeller.Labels())
+	var deployer deploy.Deployer
+	deployer, err = getDeployer(runCtx, labeller.Labels())
+	if err != nil {
+		return nil, fmt.Errorf("creating deployer: %w", err)
+	}
 
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx.GetInsecureRegistries())
@@ -192,7 +196,7 @@ func getSyncer(cfg sync.Config) sync.Syncer {
 	return sync.NewSyncer(cfg)
 }
 
-func getDeployer(cfg deploy.Config, labels map[string]string) deploy.Deployer {
+func getDeployer(cfg deploy.Config, labels map[string]string) (deploy.Deployer, error) {
 	d := cfg.Pipeline().Deploy
 
 	var deployers deploy.DeployerMux
@@ -206,19 +210,27 @@ func getDeployer(cfg deploy.Config, labels map[string]string) deploy.Deployer {
 	}
 
 	if d.KubectlDeploy != nil {
-		deployers = append(deployers, deploy.NewKubectlDeployer(cfg, labels))
+		deployer, err := deploy.NewKubectlDeployer(cfg, labels)
+		if err != nil {
+			return nil, err
+		}
+		deployers = append(deployers, deployer)
 	}
 
 	if d.KustomizeDeploy != nil {
-		deployers = append(deployers, deploy.NewKustomizeDeployer(cfg, labels))
+		deployer, err := deploy.NewKustomizeDeployer(cfg, labels)
+		if err != nil {
+			return nil, err
+		}
+		deployers = append(deployers, deployer)
 	}
 
 	// avoid muxing overhead when only a single deployer is configured
 	if len(deployers) == 1 {
-		return deployers[0]
+		return deployers[0], nil
 	}
 
-	return deployers
+	return deployers, nil
 }
 
 func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {

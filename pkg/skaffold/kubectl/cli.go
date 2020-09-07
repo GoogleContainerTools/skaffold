@@ -41,11 +41,18 @@ type Config interface {
 	GetKubeNamespace() string
 }
 
-func NewCLI(cfg Config) *CLI {
+// NewCLI creates a new kubectl CLI whereby the namespace from command
+// line / environment variable takes precedence over "default namespace"
+// defined in deployer configuration
+func NewCLI(cfg Config, defaultNamespace string) *CLI {
+	ns := defaultNamespace
+	if nsFromOpts := cfg.GetKubeNamespace(); nsFromOpts != "" {
+		ns = nsFromOpts
+	}
 	return &CLI{
 		KubeContext: cfg.GetKubeContext(),
 		KubeConfig:  cfg.GetKubeConfig(),
-		Namespace:   cfg.GetKubeNamespace(),
+		Namespace:   ns,
 	}
 }
 

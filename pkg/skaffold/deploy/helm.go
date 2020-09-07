@@ -115,7 +115,13 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 
 		// collect namespaces
 		for _, r := range results {
-			if trimmed := strings.TrimSpace(r.Namespace); trimmed != "" {
+			var namespace string
+			namespace, err = util.ExpandEnvTemplate(r.Namespace, nil)
+			if err != nil {
+				return nil, fmt.Errorf("cannot parse the release namespace template: %w", err)
+			}
+
+			if trimmed := strings.TrimSpace(namespace); trimmed != "" {
 				nsMap[trimmed] = struct{}{}
 			}
 		}
@@ -223,7 +229,10 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		if h.namespace != "" {
 			namespace = h.namespace
 		} else if r.Namespace != "" {
-			namespace = r.Namespace
+			namespace, err = util.ExpandEnvTemplate(r.Namespace, nil)
+			if err != nil {
+				return fmt.Errorf("cannot parse the release namespace template: %w", err)
+			}
 		}
 
 		args := []string{"delete", releaseName}
@@ -286,7 +295,13 @@ func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build
 		}
 
 		if r.Namespace != "" {
-			args = append(args, "--namespace", r.Namespace)
+			var namespace string
+			namespace, err = util.ExpandEnvTemplate(r.Namespace, nil)
+			if err != nil {
+				return fmt.Errorf("cannot parse the release namespace template: %w", err)
+			}
+
+			args = append(args, "--namespace", namespace)
 		}
 
 		outBuffer := new(bytes.Buffer)
@@ -340,7 +355,10 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	if h.namespace != "" {
 		opts.namespace = h.namespace
 	} else if r.Namespace != "" {
-		opts.namespace = r.Namespace
+		opts.namespace, err = util.ExpandEnvTemplate(r.Namespace, nil)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse the release namespace template: %w", err)
+		}
 	}
 
 	if err := h.exec(ctx, ioutil.Discard, false, getArgs(helmVersion, releaseName, opts.namespace)...); err != nil {

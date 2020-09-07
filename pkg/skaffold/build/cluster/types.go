@@ -58,7 +58,7 @@ func NewBuilder(cfg Config) (*Builder, error) {
 
 	return &Builder{
 		ClusterDetails:     cfg.Pipeline().Build.Cluster,
-		kubectlcli:         kubectl.NewCLI(cfg),
+		kubectlcli:         kubectl.NewCLI(cfg, ""),
 		timeout:            timeout,
 		kubeContext:        cfg.GetKubeContext(),
 		insecureRegistries: cfg.GetInsecureRegistries(),

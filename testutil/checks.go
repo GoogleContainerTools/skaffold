@@ -48,3 +48,17 @@ func (t *T) RequireNoError(err error) {
 		t.FailNow()
 	}
 }
+
+func (t *T) RequireNonNilResult(x interface{}, err error) interface{} {
+	t.Helper()
+
+	if err != nil {
+		t.Errorf("unexpected error (failing test now): %s", err)
+		t.FailNow()
+	}
+	if x == nil {
+		t.Errorf("unexpected nil value (failing test now)")
+		t.FailNow()
+	}
+	return x
+}
