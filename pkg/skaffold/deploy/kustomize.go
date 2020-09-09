@@ -96,7 +96,6 @@ type KustomizeDeployer struct {
 	kubectl             deploy.CLI
 	insecureRegistries  map[string]bool
 	labels              map[string]string
-	BuildArgs           []string
 	globalConfig        string
 	useKubectlKustomize bool
 }
@@ -108,11 +107,10 @@ func NewKustomizeDeployer(cfg Config, labels map[string]string) *KustomizeDeploy
 	useKubectlKustomize := !kustomizeBinaryCheck() && kubectlVersionCheck(kubectl)
 
 	return &KustomizeDeployer{
-		KustomizeDeploy:     runCtx.Cfg.Deploy.KustomizeDeploy,
+		KustomizeDeploy:     cfg.Pipeline().Deploy.KustomizeDeploy,
 		kubectl:             kubectl,
-		insecureRegistries:  runCtx.InsecureRegistries,
-		BuildArgs:           runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
-		globalConfig:        runCtx.Opts.GlobalConfig,
+		insecureRegistries:  cfg.GetInsecureRegistries(),
+		globalConfig:        cfg.GlobalConfig(),
 		labels:              labels,
 		useKubectlKustomize: useKubectlKustomize,
 	}
