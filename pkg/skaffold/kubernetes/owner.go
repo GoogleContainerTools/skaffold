@@ -21,6 +21,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 )
 
 // TopLevelOwnerKey returns a key associated with the top level
@@ -42,7 +44,7 @@ func TopLevelOwnerKey(obj metav1.Object, kind string) string {
 }
 
 func ownerMetaObject(ns string, owner metav1.OwnerReference) (metav1.Object, error) {
-	client, err := Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return nil, err
 	}

@@ -18,6 +18,7 @@ package kubectl
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"unsafe"
 
@@ -31,28 +32,17 @@ type Cmd struct {
 	ctx    context.Context
 }
 
-type process struct {
-	Pid    int
-	Handle uintptr
-}
-
 // CommandContext creates a new Cmd
 func CommandContext(ctx context.Context, name string, arg ...string) *Cmd {
 	return &Cmd{Cmd: exec.CommandContext(ctx, name, arg...), ctx: ctx}
 }
 
 // Start starts the specified command in a job object but does not wait for it to complete
-func (c *Cmd) Start() (err error) {
-	var handle windows.Handle
-	handle, err = windows.CreateJobObject(nil, nil)
+func (c *Cmd) Start() error {
+	handle, err := windows.CreateJobObject(nil, nil)
 	if err != nil {
-		return
+		return fmt.Errorf("could not create job object: %w", err)
 	}
-
-	go func() {
-		<-c.ctx.Done()
-		c.Terminate()
-	}()
 
 	// https://gist.github.com/hallazzang/76f3970bfc949831808bbebc8ca15209
 	info := windows.JOBOBJECT_EXTENDED_LIMIT_INFORMATION{
@@ -60,25 +50,35 @@ func (c *Cmd) Start() (err error) {
 			LimitFlags: windows.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
 		},
 	}
-	if _, err = windows.SetInformationJobObject(
+	if _, err := windows.SetInformationJobObject(
 		handle,
 		windows.JobObjectExtendedLimitInformation,
 		uintptr(unsafe.Pointer(&info)),
 		uint32(unsafe.Sizeof(info))); err != nil {
-		return
+		return fmt.Errorf("could not set information job object: %w", err)
 	}
 
-	if err = c.Cmd.Start(); err != nil {
-		return
+	if err := c.Cmd.Start(); err != nil {
+		return fmt.Errorf("could not start the command: %w", err)
 	}
 
-	if err = windows.AssignProcessToJobObject(
-		handle,
-		windows.Handle((*process)(unsafe.Pointer(c.Process)).Handle)); err != nil {
-		return
+	// Use `unsafe` to extract the process handle.
+	processHandle := (*struct {
+		Pid    int
+		handle windows.Handle
+	})(unsafe.Pointer(c.Process)).handle
+
+	if err := windows.AssignProcessToJobObject(handle, processHandle); err != nil {
+		return fmt.Errorf("could not assign job object: %w", err)
 	}
+
 	c.handle = handle
-	return
+	go func() {
+		<-c.ctx.Done()
+		c.Terminate()
+	}()
+
+	return nil
 }
 
 // Run starts the specified command in a job object and waits for it to complete

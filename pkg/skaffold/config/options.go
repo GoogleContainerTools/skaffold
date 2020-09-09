@@ -18,6 +18,7 @@ package config
 
 import (
 	"strings"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -27,6 +28,13 @@ import (
 type PortForwardOptions struct {
 	Enabled     bool
 	ForwardPods bool
+}
+
+// WaitForDeletions configures the wait for pending deletions.
+type WaitForDeletions struct {
+	Max     time.Duration
+	Delay   time.Duration
+	Enabled bool
 }
 
 // SkaffoldOptions are options that are set by command line arguments not included
@@ -58,6 +66,7 @@ type SkaffoldOptions struct {
 	// commands which don't deploy (e.g. `skaffold render`) since the runID
 	// label isn't available.
 	AddSkaffoldLabels bool
+	DetectMinikube    bool
 
 	PortForward        PortForwardOptions
 	CustomTag          string
@@ -73,6 +82,7 @@ type SkaffoldOptions struct {
 	TargetImages       []string
 	Profiles           []string
 	InsecureRegistries []string
+	Muted              Muted
 	Command            string
 	RPCPort            int
 	RPCHTTPPort        int
@@ -81,6 +91,26 @@ type SkaffoldOptions struct {
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
 	MinikubeProfile string
+
+	WaitForDeletions WaitForDeletions
+}
+
+type RunMode string
+
+var RunModes = struct {
+	Build  RunMode
+	Dev    RunMode
+	Debug  RunMode
+	Run    RunMode
+	Deploy RunMode
+	Render RunMode
+}{
+	Build:  "build",
+	Dev:    "dev",
+	Debug:  "debug",
+	Run:    "run",
+	Deploy: "deploy",
+	Render: "render",
 }
 
 // Prune returns true iff the user did NOT specify the --no-prune flag,
@@ -89,12 +119,8 @@ func (opts *SkaffoldOptions) Prune() bool {
 	return !opts.NoPrune && !opts.CacheArtifacts
 }
 
-func (opts *SkaffoldOptions) IsDevMode() bool {
-	return opts.Command == "dev"
-}
-
-func (opts *SkaffoldOptions) IsDebugMode() bool {
-	return opts.Command == "debug"
+func (opts *SkaffoldOptions) Mode() RunMode {
+	return RunMode(opts.Command)
 }
 
 func (opts *SkaffoldOptions) IsTargetImage(artifact *latest.Artifact) bool {

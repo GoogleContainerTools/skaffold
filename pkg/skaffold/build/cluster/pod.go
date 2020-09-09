@@ -28,8 +28,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
@@ -250,7 +250,7 @@ func kanikoArgs(artifact *latest.KanikoArtifact, tag string, insecureRegistries 
 		args = append(args, artifact.AdditionalFlags...)
 	}
 
-	buildArgs, err := docker.EvaluateBuildArgs(artifact.BuildArgs)
+	buildArgs, err := util.EvaluateEnvTemplateMap(artifact.BuildArgs)
 	if err != nil {
 		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
 	}

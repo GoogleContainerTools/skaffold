@@ -17,7 +17,7 @@ jobs:
         gcloud_sdk_version: [276.0.0]
         kubectl_version: [1.18.0]
         container_structure_tests_version: [1.8.0]
-        minikube_version: [1.11.0]
+        minikube_version: [1.12.1]
         integration_test_partitions: [0, 1, 2, 3]
     steps:
 
@@ -29,6 +29,10 @@ jobs:
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
+
+    - name: Skaffold binary version
+      run: |
+        echo ::set-env name=SKAFFOLD_VERSION::"$(git log --format="%H" -n 1)"
 
     - name: Install Kustomize
       run: |
@@ -72,6 +76,10 @@ jobs:
         gcloud auth configure-docker
         echo '{}' > ${HOME}/.docker/config.json
 
+    - name: Check VBoxManage installed
+      run: |
+        /usr/local/bin/VBoxManage list hostinfo
+
     - name: Install Minikube and start cluster
       run: |
         curl -Lo minikube https://storage.googleapis.com/minikube/releases/v${{ matrix.minikube_version }}/minikube-darwin-amd64
@@ -85,7 +93,7 @@ jobs:
 
     - name: Install Skaffold release binary
       run: |
-        curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64
+        curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/${{ env.SKAFFOLD_VERSION }}/skaffold-darwin-amd64
         sudo install skaffold /usr/local/bin/skaffold
 
     - name: Run integration tests

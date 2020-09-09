@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -42,14 +43,14 @@ type Flag struct {
 	pflag *pflag.Flag
 }
 
-// FlagRegistry is a list of all Skaffold CLI flags.
+// flagRegistry is a list of all Skaffold CLI flags.
 // When adding a new flag to the registry, please specify the
 // command/commands to which the flag belongs in `DefinedOn` field.
 // If the flag is a global flag, or belongs to all the subcommands,
 /// specify "all"
 // FlagAddMethod is method which defines a flag value with specified
 // name, default value, and usage string. e.g. `StringVar`, `BoolVar`
-var FlagRegistry = []Flag{
+var flagRegistry = []Flag{
 	{
 		Name:          "filename",
 		Shorthand:     "f",
@@ -365,6 +366,46 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"render"},
 	},
+	{
+		Name:          "mute-logs",
+		Usage:         "mute logs for specified stages in pipeline (build, deploy, status-check, none, all)",
+		Value:         &opts.Muted.Phases,
+		DefValue:      []string{},
+		FlagAddMethod: "StringSliceVar",
+		DefinedOn:     []string{"dev", "run", "debug", "build", "deploy"},
+	},
+	{
+		Name:          "wait-for-deletions",
+		Usage:         "Wait for pending deletions to complete before a deployment",
+		Value:         &opts.WaitForDeletions.Enabled,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+	},
+	{
+		Name:          "wait-for-deletions-max",
+		Usage:         "Max duration to wait for pending deletions",
+		Value:         &opts.WaitForDeletions.Max,
+		DefValue:      60 * time.Second,
+		FlagAddMethod: "DurationVar",
+		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+	},
+	{
+		Name:          "wait-for-deletions-delay",
+		Usage:         "Delay between two checks for pending deletions",
+		Value:         &opts.WaitForDeletions.Delay,
+		DefValue:      2 * time.Second,
+		FlagAddMethod: "DurationVar",
+		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+	},
+	{
+		Name:          "detect-minikube",
+		Usage:         "Use heuristics to detect a minikube cluster",
+		Value:         &opts.DetectMinikube,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+	},
 }
 
 func (fl *Flag) flag() *pflag.Flag {
@@ -379,6 +420,7 @@ func (fl *Flag) flag() *pflag.Flag {
 	inputs = append(inputs, fl.Usage)
 
 	fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
+
 	reflect.ValueOf(fs).MethodByName(fl.FlagAddMethod).Call(reflectValueOf(inputs))
 	f := fs.Lookup(fl.Name)
 	f.Shorthand = fl.Shorthand
@@ -400,8 +442,8 @@ func reflectValueOf(values []interface{}) []reflect.Value {
 func AddFlags(cmd *cobra.Command) {
 	var flagsForCommand []*Flag
 
-	for i := range FlagRegistry {
-		fl := &FlagRegistry[i]
+	for i := range flagRegistry {
+		fl := &flagRegistry[i]
 		if !hasCmdAnnotation(cmd.Use, fl.DefinedOn) {
 			continue
 		}

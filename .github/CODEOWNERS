@@ -2,13 +2,12 @@
 
 * @GoogleContainerTools/skaffold-team
 
-# Buildpacks owners
-
-**/**buildpacks** @GoogleContainerTools/skaffold-team
-
 # JIB owners
 
 **/**jib** @GoogleContainerTools/skaffold-team @loosebazooka @TadCordle @chanseokoh
+
+# kpt owners
+pkg/skaffold/deploy/**kpt** @GoogleContainerTools/skaffold-team @yuwenma
 
 # Debug owners
 

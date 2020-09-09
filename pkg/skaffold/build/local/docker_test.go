@@ -19,11 +19,15 @@ package local
 import (
 	"context"
 	"io/ioutil"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
+	"github.com/docker/docker/client"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -33,12 +37,14 @@ func TestDockerCLIBuild(t *testing.T) {
 	tests := []struct {
 		description string
 		localBuild  latest.LocalBuild
+		mode        config.RunMode
 		extraEnv    []string
 		expectedEnv []string
 	}{
 		{
 			description: "docker build",
 			localBuild:  latest.LocalBuild{},
+			mode:        config.RunModes.Dev,
 			expectedEnv: []string{"KEY=VALUE"},
 		},
 		{
@@ -72,16 +78,22 @@ func TestDockerCLIBuild(t *testing.T) {
 			t.NewTempDir().Touch("Dockerfile").Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
+			t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+				return a.BuildArgs, nil
+			})
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunEnv(
 				"docker build . --file "+dockerfilePath+" -t tag --force-rm",
 				test.expectedEnv,
 			))
+			t.Override(&cluster.GetClient, func() cluster.Client { return fakeMinikubeClient{} })
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
-			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
-				return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, test.extraEnv, false, nil), nil
+			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+				return fakeLocalDaemonWithExtraEnv(test.extraEnv), nil
 			})
 
-			builder, err := NewBuilder(stubRunContext(test.localBuild))
+			builder, err := NewBuilder(&mockConfig{
+				local: test.localBuild,
+			})
 			t.CheckNoError(err)
 
 			artifact := &latest.Artifact{
@@ -93,8 +105,23 @@ func TestDockerCLIBuild(t *testing.T) {
 				},
 			}
 
-			_, err = builder.buildDocker(context.Background(), ioutil.Discard, artifact, "tag")
+			_, err = builder.buildDocker(context.Background(), ioutil.Discard, artifact, "tag", test.mode)
 			t.CheckNoError(err)
 		})
 	}
+}
+
+func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
+	return docker.NewLocalDaemon(api, nil, false, nil)
+}
+
+func fakeLocalDaemonWithExtraEnv(extraEnv []string) docker.LocalDaemon {
+	return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, extraEnv, false, nil)
+}
+
+type fakeMinikubeClient struct{}
+
+func (fakeMinikubeClient) IsMinikube(kubeContext string) bool { return false }
+func (fakeMinikubeClient) MinikubeExec(arg ...string) (*exec.Cmd, error) {
+	return exec.Command("minikube", arg...), nil
 }

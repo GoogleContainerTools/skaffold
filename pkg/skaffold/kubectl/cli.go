@@ -22,7 +22,6 @@ import (
 	"os/exec"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -36,11 +35,17 @@ type CLI struct {
 	versionOnce sync.Once
 }
 
-func NewFromRunContext(runCtx *runcontext.RunContext) *CLI {
+type Config interface {
+	GetKubeContext() string
+	GetKubeConfig() string
+	GetKubeNamespace() string
+}
+
+func NewCLI(cfg Config) *CLI {
 	return &CLI{
-		KubeContext: runCtx.KubeContext,
-		KubeConfig:  runCtx.Opts.KubeConfig,
-		Namespace:   runCtx.Opts.Namespace,
+		KubeContext: cfg.GetKubeContext(),
+		KubeConfig:  cfg.GetKubeConfig(),
+		Namespace:   cfg.GetKubeNamespace(),
 	}
 }
 
@@ -77,6 +82,13 @@ func (c *CLI) RunInNamespace(ctx context.Context, in io.Reader, out io.Writer, c
 // RunOut shells out kubectl CLI.
 func (c *CLI) RunOut(ctx context.Context, command string, arg ...string) ([]byte, error) {
 	cmd := c.Command(ctx, command, arg...)
+	return util.RunCmdOut(cmd)
+}
+
+// RunOutInput shells out kubectl CLI with a given input stream.
+func (c *CLI) RunOutInput(ctx context.Context, in io.Reader, command string, arg ...string) ([]byte, error) {
+	cmd := c.Command(ctx, command, arg...)
+	cmd.Stdin = in
 	return util.RunCmdOut(cmd)
 }
 

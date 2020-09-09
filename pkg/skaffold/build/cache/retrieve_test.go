@@ -57,7 +57,7 @@ func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.
 		b.built = append(b.built, artifact)
 		tag := tags[artifact.ImageName]
 
-		_, err := b.dockerDaemon.Build(ctx, out, artifact.Workspace, artifact.DockerArtifact, tag)
+		_, err := b.dockerDaemon.Build(ctx, out, artifact.Workspace, artifact.DockerArtifact, tag, config.RunModes.Dev)
 		if err != nil {
 			return nil, err
 		}
@@ -85,8 +85,12 @@ func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.
 
 type stubAuth struct{}
 
-func (t stubAuth) GetAuthConfig(string) (types.AuthConfig, error)          { return types.AuthConfig{}, nil }
-func (t stubAuth) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
+func (t stubAuth) GetAuthConfig(string) (types.AuthConfig, error) {
+	return types.AuthConfig{}, nil
+}
+func (t stubAuth) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
+	return nil, nil
+}
 
 func TestCacheBuildLocal(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
@@ -96,12 +100,6 @@ func TestCacheBuildLocal(t *testing.T) {
 			Write("dep3", "content3").
 			Chdir()
 
-		runCtx := &runcontext.RunContext{
-			Opts: config.SkaffoldOptions{
-				CacheArtifacts: true,
-				CacheFile:      tmpDir.Path("cache"),
-			},
-		}
 		tags := map[string]string{
 			"artifact1": "artifact1:tag1",
 			"artifact2": "artifact2:tag2",
@@ -117,13 +115,21 @@ func TestCacheBuildLocal(t *testing.T) {
 
 		// Mock Docker
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
-		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
 
+		// Mock args builder
+		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+			return a.BuildArgs, nil
+		})
+
 		// Create cache
-		artifactCache, err := NewCache(runCtx, true, deps)
+		cfg := &mockConfig{
+			cacheFile: tmpDir.Path("cache"),
+		}
+		artifactCache, err := NewCache(cfg, true, deps)
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -179,12 +185,6 @@ func TestCacheBuildRemote(t *testing.T) {
 			Write("dep3", "content3").
 			Chdir()
 
-		runCtx := &runcontext.RunContext{
-			Opts: config.SkaffoldOptions{
-				CacheArtifacts: true,
-				CacheFile:      tmpDir.Path("cache"),
-			},
-		}
 		tags := map[string]string{
 			"artifact1": "artifact1:tag1",
 			"artifact2": "artifact2:tag2",
@@ -199,8 +199,8 @@ func TestCacheBuildRemote(t *testing.T) {
 		})
 
 		// Mock Docker
-		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
@@ -215,8 +215,16 @@ func TestCacheBuildRemote(t *testing.T) {
 			}
 		})
 
+		// Mock args builder
+		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+			return a.BuildArgs, nil
+		})
+
 		// Create cache
-		artifactCache, err := NewCache(runCtx, false, deps)
+		cfg := &mockConfig{
+			cacheFile: tmpDir.Path("cache"),
+		}
+		artifactCache, err := NewCache(cfg, false, deps)
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -252,3 +260,11 @@ func TestCacheBuildRemote(t *testing.T) {
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 	})
 }
+
+type mockConfig struct {
+	runcontext.RunContext // Embedded to provide the default values.
+	cacheFile             string
+}
+
+func (c *mockConfig) CacheArtifacts() bool { return true }
+func (c *mockConfig) CacheFile() string    { return c.cacheFile }

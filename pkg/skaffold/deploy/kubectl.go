@@ -33,10 +33,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -55,45 +54,50 @@ type KubectlDeployer struct {
 	skipRender         bool
 }
 
+type Config interface {
+	deploy.Config
+	docker.Config
+
+	Pipeline() latest.Pipeline
+	GetWorkingDir() string
+	GlobalConfig() string
+	DefaultRepo() *string
+	SkipRender() bool
+}
+
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KubectlDeployer {
+func NewKubectlDeployer(cfg Config, labels map[string]string) *KubectlDeployer {
 	return &KubectlDeployer{
-		KubectlDeploy: runCtx.Cfg.Deploy.KubectlDeploy,
-		workingDir:    runCtx.WorkingDir,
-		globalConfig:  runCtx.Opts.GlobalConfig,
-		defaultRepo:   runCtx.Opts.DefaultRepo.Value(),
-		kubectl: deploy.CLI{
-			CLI:         kubectl.NewFromRunContext(runCtx),
-			Flags:       runCtx.Cfg.Deploy.KubectlDeploy.Flags,
-			ForceDeploy: runCtx.Opts.Force,
-		},
-		insecureRegistries: runCtx.InsecureRegistries,
-		skipRender:         runCtx.Opts.SkipRender,
+		KubectlDeploy:      cfg.Pipeline().Deploy.KubectlDeploy,
+		workingDir:         cfg.GetWorkingDir(),
+		globalConfig:       cfg.GlobalConfig(),
+		defaultRepo:        cfg.DefaultRepo(),
+		kubectl:            deploy.NewCLI(cfg, cfg.Pipeline().Deploy.KubectlDeploy.Flags),
+		insecureRegistries: cfg.GetInsecureRegistries(),
+		skipRender:         cfg.SkipRender(),
 		labels:             labels,
 	}
 }
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) *Result {
-	event.DeployInProgress()
-
-	var manifests deploy.ManifestList
-	var err error
+func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+	var (
+		manifests deploy.ManifestList
+		err       error
+	)
 	if k.skipRender {
 		manifests, err = k.readManifests(ctx, false)
 	} else {
 		manifests, err = k.renderManifests(ctx, out, builds, false)
 	}
 	if err != nil {
-		event.DeployFailed(err)
-		return NewDeployErrorResult(err)
+		return nil, err
 	}
 
 	if len(manifests) == 0 {
-		event.DeployComplete()
-		return NewDeploySuccessResult(nil)
+		return nil, nil
 	}
 
 	namespaces, err := manifests.CollectNamespaces()
@@ -102,13 +106,15 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 			"This might cause port-forward and deploy health-check to fail: %w", err))
 	}
 
-	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
-		event.DeployFailed(err)
-		return NewDeployErrorResult(err)
+	if err := k.kubectl.WaitForDeletions(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
+		return nil, err
 	}
 
-	event.DeployComplete()
-	return NewDeploySuccessResult(namespaces)
+	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
+		return nil, err
+	}
+
+	return namespaces, nil
 }
 
 func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {

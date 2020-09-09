@@ -70,7 +70,7 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.Sk
 	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
 	if err != nil {
 		if os.IsNotExist(errors.Unwrap(err)) {
-			return nil, nil, fmt.Errorf("[%s] not found. You might need to run `skaffold init`", opts.ConfigurationFile)
+			return nil, nil, fmt.Errorf("skaffold config file %s not found - check your current working directory, or try running `skaffold init`", opts.ConfigurationFile)
 		}
 
 		// If the error is NOT that the file doesn't exist, then we warn the user
@@ -105,8 +105,12 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.Sk
 }
 
 func warnIfUpdateIsAvailable() {
-	latest, current, versionErr := update.GetLatestAndCurrentVersion()
-	if versionErr == nil && latest.GT(current) {
-		logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) from:\n  %s\n", latest, releaseURL(latest))
+	warning, err := update.CheckVersionOnError(opts.GlobalConfig)
+	if err != nil {
+		logrus.Infof("update check failed: %s", err)
+		return
+	}
+	if warning != "" {
+		logrus.Warn(warning)
 	}
 }

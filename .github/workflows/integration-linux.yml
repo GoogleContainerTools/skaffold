@@ -29,6 +29,10 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
+    - name: Skaffold binary version
+      run: |
+        echo ::set-env name=SKAFFOLD_VERSION::"$(git log --format="%H" -n 1)"
+
     - name: Install Kustomize
       run: |
         wget -O kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${{ matrix.kustomize_version }}/kustomize_v${{ matrix.kustomize_version }}_linux_amd64.tar.gz
@@ -76,7 +80,7 @@ jobs:
 
     - name: Install Skaffold release binary
       run: |
-        curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64
+        curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/${{ env.SKAFFOLD_VERSION }}/skaffold-linux-amd64
         sudo install skaffold /usr/local/bin/skaffold
 
     - name: Run integration tests

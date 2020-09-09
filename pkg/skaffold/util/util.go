@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -204,6 +205,30 @@ func Expand(text, key, value string) string {
 	return text
 }
 
+// EnvMapToSlice converts map of (string,string) to string slice
+func EnvMapToSlice(m map[string]string, separator string) []string {
+	var sl []string
+	for k, v := range m {
+		sl = append(sl, fmt.Sprintf("%s%s%s", k, separator, v))
+	}
+	sort.Strings(sl)
+	return sl
+}
+
+// EnvPtrMapToSlice converts map of (string,*string) to string slice
+func EnvPtrMapToSlice(m map[string]*string, separator string) []string {
+	var sl []string
+	for k, v := range m {
+		if v == nil {
+			sl = append(sl, k)
+			continue
+		}
+		sl = append(sl, fmt.Sprintf("%s%s%s", k, separator, *v))
+	}
+	sort.Strings(sl)
+	return sl
+}
+
 func isAlphaNum(c uint8) bool {
 	return c == '_' || '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'
 }
@@ -302,6 +327,15 @@ func IsHiddenDir(filename string) bool {
 // File is hidden if it starts with prefix "."
 func IsHiddenFile(filename string) bool {
 	return hasHiddenPrefix(filename)
+}
+
+// IsSubPath return true if targetpath is sub-path of basepath; doesn't check for symlinks
+func IsSubPath(basepath string, targetpath string) bool {
+	rel, err := filepath.Rel(basepath, targetpath)
+	if err != nil {
+		return false
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator))
 }
 
 func hasHiddenPrefix(s string) bool {

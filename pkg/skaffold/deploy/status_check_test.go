@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -31,9 +32,12 @@ import (
 	utilpointer "k8s.io/utils/pointer"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -271,6 +275,18 @@ func TestGetDeployStatus(t *testing.T) {
 			description: "0 deployments",
 			counter:     &counter{},
 		},
+		{
+			description: "unable to retrieve pods for deployment",
+			counter:     &counter{total: 1, failed: 1},
+			deployments: []*resource.Deployment{
+				withStatus(
+					resource.NewDeployment("deployment", "test", 1),
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
+				),
+			},
+			shouldErr:    true,
+			expectedCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR,
+		},
 	}
 
 	for _, test := range tests {
@@ -287,6 +303,7 @@ func TestGetDeployStatus(t *testing.T) {
 }
 
 func TestPrintSummaryStatus(t *testing.T) {
+	labeller := NewLabeller(true, nil)
 	tests := []struct {
 		description string
 		namespace   string
@@ -333,27 +350,37 @@ func TestPrintSummaryStatus(t *testing.T) {
 			deployment:  "dep",
 			pending:     8,
 			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEADLINE_EXCEEDED, Message: "context deadline expired"},
-			expected:    " - test:deployment/dep failed. [8/10 deployment(s) still pending] Error: context deadline expired.\n",
+			expected:    " - test:deployment/dep failed. Error: context deadline expired.\n",
+		},
+		{
+			description: "skip printing if status check is cancelled",
+			namespace:   "test",
+			deployment:  "dep",
+			pending:     4,
+			ae:          proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
+			expected:    "",
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			checker := statusChecker{labeller: labeller}
 			out := new(bytes.Buffer)
 			rc := newCounter(10)
 			rc.pending = test.pending
 			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
-			printStatusCheckSummary(
-				out,
-				withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), test.ae),
-				*rc,
-			)
+			r := withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), test.ae)
+			// report status once and set it changed to false.
+			r.ReportSinceLastUpdated(false)
+			r.UpdateStatus(test.ae)
+			checker.printStatusCheckSummary(out, r, *rc)
 			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
 }
 
 func TestPrintStatus(t *testing.T) {
+	labeller := NewLabeller(true, nil)
 	tests := []struct {
 		description string
 		rs          []*resource.Deployment
@@ -388,12 +415,15 @@ func TestPrintStatus(t *testing.T) {
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
-					resource.NewDeployment("r2", "test", 1),
+					resource.NewDeployment("r2", "test", 1).
+						WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR}),
 					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
-						Message: "pending"},
+						Message: "pending\n"},
 				),
 			},
-			expectedOut: " - test:deployment/r2: pending\n",
+			expectedOut: ` - test:deployment/r2: pod failed
+    - test:pod/foo: pod failed
+`,
 		},
 		{
 			description: "multiple resources 1 not complete and retry-able error",
@@ -409,7 +439,19 @@ func TestPrintStatus(t *testing.T) {
 						Message: resource.MsgKubectlConnection},
 				),
 			},
-			expectedOut: " - test:deployment/r2: kubectl connection error\n",
+			expectedOut: ` - test:deployment/r2: kubectl connection error
+`,
+		},
+		{
+			description: "skip printing if status check is cancelled",
+			rs: []*resource.Deployment{
+				withStatus(
+					resource.NewDeployment("r1", "test", 1),
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
+				),
+			},
+			expected:    true,
+			expectedOut: "",
 		},
 	}
 
@@ -417,7 +459,8 @@ func TestPrintStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
 			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
-			actual := printStatus(test.rs, out)
+			checker := statusChecker{labeller: labeller}
+			actual := checker.printStatus(test.rs, out)
 			t.CheckDeepEqual(test.expectedOut, out.String())
 			t.CheckDeepEqual(test.expected, actual)
 		})
@@ -489,34 +532,97 @@ func TestResourceMarkProcessed(t *testing.T) {
 	}
 }
 
-func TestGetStatusCheckDeadline(t *testing.T) {
+func TestPollDeployment(t *testing.T) {
+	rolloutCmd := "kubectl --context kubecontext rollout status deployment dep --namespace test --watch=false"
 	tests := []struct {
 		description string
-		value       int
-		deps        []*resource.Deployment
-		expected    time.Duration
+		dep         *resource.Deployment
+		runs        [][]validator.Resource
+		command     util.Command
+		expected    proto.StatusCode
 	}{
 		{
-			description: "no value specified",
-			deps: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 10*time.Second),
-				resource.NewDeployment("dep2", "test", 20*time.Second),
+			description: "pollDeploymentStatus errors out immediately when container error can't recover",
+			dep:         resource.NewDeployment("dep", "test", time.Second),
+			command:     testutil.CmdRunOut(rolloutCmd, "Waiting for replicas to be available"),
+			runs: [][]validator.Resource{
+				{validator.NewResource(
+					"test",
+					"pod",
+					"dep-pod",
+					"Pending",
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED},
+					[]string{"err"})},
 			},
-			expected: 20 * time.Second,
+			expected: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 		},
 		{
-			description: "value specified less than all other resources",
-			value:       5,
-			deps: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", 10*time.Second),
-				resource.NewDeployment("dep2", "test", 20*time.Second),
+			description: "pollDeploymentStatus waits when a container can recover and eventually succeeds",
+			dep:         resource.NewDeployment("dep", "test", time.Second),
+			command: testutil.CmdRunOutErr(
+				// pending due to recoverable error
+				rolloutCmd, "", errors.New("Unable to connect to the server")).
+				// successfully rolled out run
+				AndRunOut(rolloutCmd, "successfully rolled out"),
+			runs: [][]validator.Resource{
+				// pod pending due to some k8 infra related recoverable error.
+				{validator.NewResource(
+					"test",
+					"pod",
+					"dep-pod",
+					"Pending",
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE},
+					[]string{"err"})},
+				// pod recovered
+				{validator.NewResource(
+					"test",
+					"pod",
+					"dep-pod",
+					"Running",
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+					nil)},
 			},
-			expected: 5 * time.Second,
+			expected: proto.StatusCode_STATUSCHECK_SUCCESS,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(test.expected, statusCheckMaxDeadline(test.value, test.deps))
+			t.Override(&util.DefaultExecCommand, test.command)
+			t.Override(&defaultPollPeriodInMilliseconds, 100)
+			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
+			mockVal := mockValidator{runs: test.runs}
+			dep := test.dep.WithValidator(mockVal)
+
+			pollDeploymentStatus(context.Background(), &statusConfig{}, dep)
+
+			t.CheckDeepEqual(test.expected, test.dep.Status().ActionableError().ErrCode)
 		})
 	}
 }
+
+type mockValidator struct {
+	runs      [][]validator.Resource
+	iteration int
+}
+
+func (m mockValidator) Run(context.Context) ([]validator.Resource, error) {
+	if m.iteration < len(m.runs) {
+		m.iteration++
+	}
+	// keep replaying the last result.
+	return m.runs[m.iteration-1], nil
+}
+
+func (m mockValidator) WithLabel(string, string) diag.Diagnose {
+	return m
+}
+
+func (m mockValidator) WithValidators([]validator.Validator) diag.Diagnose {
+	return m
+}
+
+type statusConfig struct {
+	runcontext.RunContext // Embedded to provide the default values.
+}
+
+func (c *statusConfig) GetKubeContext() string { return testKubeContext }

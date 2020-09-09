@@ -24,6 +24,7 @@ import (
 
 	"github.com/buildpacks/pack"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -46,35 +47,69 @@ func TestBuild(t *testing.T) {
 		api             *testutil.FakeAPIClient
 		files           map[string]string
 		pushImages      bool
-		devMode         bool
 		shouldErr       bool
+		mode            config.RunMode
 		expectedOptions *pack.BuildOptions
 	}{
 		{
-			description: "success",
+			description: "success for debug",
 			artifact:    buildpacksArtifact("my/builder", "my/run"),
 			tag:         "img:tag",
+			mode:        config.RunModes.Debug,
 			api:         &testutil.FakeAPIClient{},
 			expectedOptions: &pack.BuildOptions{
 				AppPath:  ".",
 				Builder:  "my/builder",
 				RunImage: "my/run",
-				Env:      map[string]string{},
+				Env:      debugModeArgs,
 				Image:    "img:latest",
 			},
 		},
 		{
-			description: "success with buildpacks",
+			description: "success for build",
+			artifact:    buildpacksArtifact("my/builder", "my/run"),
+			tag:         "img:tag",
+			mode:        config.RunModes.Build,
+			api:         &testutil.FakeAPIClient{},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:  ".",
+				Builder:  "my/builder",
+				RunImage: "my/run",
+				NoPull:   true,
+				Env:      nonDebugModeArgs,
+				Image:    "img:latest",
+			},
+		},
+		{
+			description: "success with buildpacks for debug",
 			artifact:    withTrustedBuilder(withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun"))),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
+			mode:        config.RunModes.Debug,
 			expectedOptions: &pack.BuildOptions{
 				AppPath:      ".",
 				Builder:      "my/otherBuilder",
 				RunImage:     "my/otherRun",
 				Buildpacks:   []string{"my/buildpack", "my/otherBuildpack"},
 				TrustBuilder: true,
-				Env:          map[string]string{},
+				Env:          debugModeArgs,
+				Image:        "img:latest",
+			},
+		},
+		{
+			description: "success with buildpacks for build",
+			artifact:    withTrustedBuilder(withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun"))),
+			tag:         "img:tag",
+			api:         &testutil.FakeAPIClient{},
+			mode:        config.RunModes.Build,
+			expectedOptions: &pack.BuildOptions{
+				AppPath:      ".",
+				Builder:      "my/otherBuilder",
+				RunImage:     "my/otherRun",
+				Buildpacks:   []string{"my/buildpack", "my/otherBuildpack"},
+				TrustBuilder: true,
+				NoPull:       true,
+				Env:          nonDebugModeArgs,
 				Image:        "img:latest",
 			},
 		},
@@ -83,6 +118,7 @@ func TestBuild(t *testing.T) {
 			artifact:    buildpacksArtifact("my/builder2", "my/run2"),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
+			mode:        config.RunModes.Build,
 			files: map[string]string{
 				"project.toml": `[[build.env]]
 name = "GOOGLE_RUNTIME_VERSION"
@@ -99,9 +135,9 @@ version = "1.0"
 				Builder:    "my/builder2",
 				RunImage:   "my/run2",
 				Buildpacks: []string{"my/buildpack", "my/otherBuildpack@1.0"},
-				Env: map[string]string{
+				Env: addDefaultArgs(config.RunModes.Build, map[string]string{
 					"GOOGLE_RUNTIME_VERSION": "14.3.0",
-				},
+				}),
 				Image: "img:latest",
 			},
 		},
@@ -120,7 +156,7 @@ id = "my/ignored"
 				Builder:    "my/builder3",
 				RunImage:   "my/run3",
 				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
-				Env:        map[string]string{},
+				Env:        nonDebugModeArgs,
 				Image:      "img:latest",
 			},
 		},
@@ -128,6 +164,7 @@ id = "my/ignored"
 			description: "Combine env from skaffold.yaml and project.toml",
 			artifact:    withEnv([]string{"KEY1=VALUE1"}, buildpacksArtifact("my/builder4", "my/run4")),
 			tag:         "img:tag",
+			mode:        config.RunModes.Build,
 			api:         &testutil.FakeAPIClient{},
 			files: map[string]string{
 				"project.toml": `[[build.env]]
@@ -139,10 +176,10 @@ value = "VALUE2"
 				AppPath:  ".",
 				Builder:  "my/builder4",
 				RunImage: "my/run4",
-				Env: map[string]string{
+				Env: addDefaultArgs(config.RunModes.Build, map[string]string{
 					"KEY1": "VALUE1",
 					"KEY2": "VALUE2",
-				},
+				}),
 				Image: "img:latest",
 			},
 		},
@@ -151,14 +188,14 @@ value = "VALUE2"
 			artifact:    withSync(&latest.Sync{Auto: &latest.Auto{}}, buildpacksArtifact("another/builder", "another/run")),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
-			devMode:     true,
+			mode:        config.RunModes.Dev,
 			expectedOptions: &pack.BuildOptions{
 				AppPath:  ".",
 				Builder:  "another/builder",
 				RunImage: "another/run",
-				Env: map[string]string{
+				Env: addDefaultArgs(config.RunModes.Build, map[string]string{
 					"GOOGLE_DEVMODE": "1",
-				},
+				}),
 				Image: "img:latest",
 			},
 		},
@@ -167,12 +204,12 @@ value = "VALUE2"
 			artifact:    buildpacksArtifact("my/other-builder", "my/run"),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
-			devMode:     true,
+			mode:        config.RunModes.Dev,
 			expectedOptions: &pack.BuildOptions{
 				AppPath:  ".",
 				Builder:  "my/other-builder",
 				RunImage: "my/run",
-				Env:      map[string]string{},
+				Env:      nonDebugModeArgs,
 				Image:    "img:latest",
 			},
 		},
@@ -221,9 +258,9 @@ value = "VALUE2"
 				Add(test.artifact.BuildpackArtifact.Builder, "builderImageID").
 				Add(test.artifact.BuildpackArtifact.RunImage, "runImageID").
 				Add("img:latest", "builtImageID")
-			localDocker := docker.NewLocalDaemon(test.api, nil, false, nil)
+			localDocker := fakeLocalDaemon(test.api)
 
-			builder := NewArtifactBuilder(localDocker, test.pushImages, test.devMode)
+			builder := NewArtifactBuilder(localDocker, test.pushImages, test.mode)
 			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag)
 
 			t.CheckError(test.shouldErr, err)

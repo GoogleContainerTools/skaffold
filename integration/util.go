@@ -37,7 +37,7 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/integration/binpack"
-	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	k8s "github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 )
 
@@ -54,11 +54,13 @@ func MarkIntegrationTest(t *testing.T, testType TestType) {
 		t.Skip("skipping integration test")
 	}
 
-	if testType == NeedsGcp && !RunOnGCP() {
+	runOnGCP := os.Getenv("GCP_ONLY") == "true"
+
+	if testType == NeedsGcp && !runOnGCP {
 		t.Skip("skipping GCP integration test")
 	}
 
-	if testType == CanRunWithoutGcp && RunOnGCP() {
+	if testType == CanRunWithoutGcp && runOnGCP {
 		t.Skip("skipping non-GCP integration test")
 	}
 
@@ -86,10 +88,6 @@ func matchesPartition(testName string) bool {
 	return strconv.Itoa(partition) == getPartition()
 }
 
-func RunOnGCP() bool {
-	return os.Getenv("GCP_ONLY") == "true"
-}
-
 func Run(t *testing.T, dir, command string, args ...string) {
 	cmd := exec.Command(command, args...)
 	cmd.Dir = dir
@@ -100,7 +98,7 @@ func Run(t *testing.T, dir, command string, args ...string) {
 
 // SetupNamespace creates a Kubernetes namespace to run a test.
 func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient) {
-	client, err := pkgkubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		t.Fatalf("Test setup error: getting Kubernetes client: %s", err)
 	}
@@ -204,6 +202,9 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 			k.t.Fatalf("Timed out waiting for pods %v ready in namespace %s", podNames, k.ns)
 
 		case event := <-w.ResultChan():
+			if event.Object == nil {
+				return
+			}
 			pod := event.Object.(*v1.Pod)
 			logrus.Infoln("Pod", pod.Name, "is", pod.Status.Phase)
 			if pod.Status.Phase == v1.PodFailed {
@@ -254,7 +255,7 @@ func (k *NSKubernetesClient) GetDeployment(depName string) *appsv1.Deployment {
 // WaitForDeploymentsToStabilize waits for a list of deployments to become stable.
 func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 	k.t.Helper()
-	k.waitForDeploymentsToStabilizeWithTimeout(30*time.Second, depNames...)
+	k.waitForDeploymentsToStabilizeWithTimeout(60*time.Second, depNames...)
 }
 
 func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout time.Duration, depNames ...string) {
@@ -356,7 +357,7 @@ func WaitForLogs(t *testing.T, out io.Reader, firstMessage string, moreMessages 
 	current := 0
 	message := firstMessage
 
-	timer := time.NewTimer(30 * time.Second)
+	timer := time.NewTimer(90 * time.Second)
 	defer timer.Stop()
 	for {
 		select {

@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -101,7 +102,7 @@ func TestTopLevelOwnerKey(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			client := fakekubeclientset.NewSimpleClientset(test.objects...)
-			t.Override(&Client, mockClient(client))
+			t.Override(&kubernetesclient.Client, mockClient(client))
 
 			actual := TopLevelOwnerKey(test.initialObject, test.kind)
 
@@ -277,7 +278,7 @@ func TestOwnerMetaObject(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			client := fakekubeclientset.NewSimpleClientset(test.objects...)
-			t.Override(&Client, mockClient(client))
+			t.Override(&kubernetesclient.Client, mockClient(client))
 
 			actual, err := ownerMetaObject("ns", test.or)
 

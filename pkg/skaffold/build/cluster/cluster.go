@@ -45,7 +45,8 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		defer teardownDockerConfigSecret()
 	}
 
-	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifact, b.ClusterDetails.Concurrency)
+	builder := build.WithLogFile(b.buildArtifact, b.muted)
+	return build.InParallel(ctx, out, tags, artifacts, builder, b.ClusterDetails.Concurrency)
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {

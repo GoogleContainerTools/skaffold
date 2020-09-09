@@ -148,10 +148,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		default:
 			if err := r.monitor.Register(
 				func() ([]string, error) {
-					return build.DependenciesForArtifact(ctx, artifact, r.runCtx.InsecureRegistries)
+					return build.DependenciesForArtifact(ctx, artifact, r.runCtx.GetInsecureRegistries())
 				},
 				func(e filemon.Events) {
-					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx.InsecureRegistries)
+					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx.GetInsecureRegistries())
 					switch {
 					case err != nil:
 						logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
@@ -188,11 +188,11 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Watch Skaffold configuration
 	if err := r.monitor.Register(
-		func() ([]string, error) { return []string{r.runCtx.Opts.ConfigurationFile}, nil },
+		func() ([]string, error) { return []string{r.runCtx.ConfigurationFile()}, nil },
 		func(filemon.Events) { r.changeSet.needsReload = true },
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_CONFIG_DEP, err)
-		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.Opts.ConfigurationFile, err)
+		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.ConfigurationFile(), err)
 	}
 
 	logrus.Infoln("List generated in", time.Since(start))

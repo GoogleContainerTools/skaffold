@@ -27,8 +27,9 @@ import (
 
 func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 	// This is for testing envTemplate
-	envTemplateExample, _ := NewEnvTemplateTagger("{{.IMAGE_NAME}}:{{.FOO}}")
-	invalidEnvTemplate, _ := NewEnvTemplateTagger("{{.IMAGE_NAME}}:{{.BAR}}")
+	envTemplateExample, _ := NewEnvTemplateTagger("{{.FOO}}")
+	envTemplateDeprecatedExample, _ := NewEnvTemplateTagger("{{.IMAGE_NAME}}:{{.FOO}}")
+	invalidEnvTemplate, _ := NewEnvTemplateTagger("{{.BAR}}")
 	env := []string{"FOO=BAR"}
 
 	// This is for testing dateTime
@@ -39,6 +40,8 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 		timeFn:   func() time.Time { return aLocalTimeStamp },
 	}
 	dateTimeExpected := "2015-03-07"
+
+	customTemplateExample, _ := NewCustomTemplateTagger("{{.DATE}}_{{.SHA}}", map[string]Tagger{"DATE": dateTimeExample})
 
 	tests := []struct {
 		description      string
@@ -61,13 +64,20 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			expected:    "test:tag",
 		},
 		{
-			description: "envTemplate w/ image",
+			description: "envTemplate",
 			imageName:   "test",
 			tagger:      envTemplateExample,
 			expected:    "test:BAR",
 		},
 		{
-			description: "error from GenerateTag",
+			description:      "deprecated envTemplate",
+			imageName:        "test",
+			tagger:           envTemplateDeprecatedExample,
+			expected:         "test:BAR",
+			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, envTemplate's template should only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
+		},
+		{
+			description: "undefined env variable",
 			imageName:   "test",
 			tagger:      invalidEnvTemplate,
 			shouldErr:   true,
@@ -77,6 +87,22 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			imageName:   "test",
 			tagger:      dateTimeExample,
 			expected:    "test:" + dateTimeExpected,
+		},
+		{
+			description: "dateTime",
+			imageName:   "test",
+			tagger: &dateTimeTagger{
+				Format:   "2006-01-02",
+				TimeZone: "FOO",
+				timeFn:   func() time.Time { return aLocalTimeStamp },
+			},
+			shouldErr: true,
+		},
+		{
+			description: "customTemplate",
+			imageName:   "test",
+			tagger:      customTemplateExample,
+			expected:    "test:" + dateTimeExpected + "_latest",
 		},
 	}
 	for _, test := range tests {

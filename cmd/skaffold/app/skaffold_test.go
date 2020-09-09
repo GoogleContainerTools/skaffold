@@ -53,3 +53,33 @@ func TestMainUnknownCommand(t *testing.T) {
 		t.CheckError(true, err)
 	})
 }
+
+func TestSkaffoldCmdline_MainHelp(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		var (
+			output    bytes.Buffer
+			errOutput bytes.Buffer
+		)
+
+		t.SetEnvs(map[string]string{"SKAFFOLD_CMDLINE": "help"})
+		t.Override(&os.Args, []string{"skaffold"})
+
+		err := Run(&output, &errOutput)
+
+		t.CheckNoError(err)
+		t.CheckContains("End-to-end pipelines", output.String())
+		t.CheckContains("Getting started with a new project", output.String())
+		t.CheckEmpty(errOutput.String())
+	})
+}
+
+func TestSkaffoldCmdline_MainUnknownCommand(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&os.Args, []string{"skaffold"})
+		t.SetEnvs(map[string]string{"SKAFFOLD_CMDLINE": "unknown"})
+
+		err := Run(ioutil.Discard, ioutil.Discard)
+
+		t.CheckError(true, err)
+	})
+}

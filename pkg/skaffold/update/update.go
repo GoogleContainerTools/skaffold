@@ -40,9 +40,37 @@ var (
 
 const LatestVersionURL = "https://storage.googleapis.com/skaffold/releases/latest/VERSION"
 
-// IsUpdateCheckEnabled returns whether or not the update check is enabled
+// CheckVersion returns an update message when update check is enabled and skaffold binary in not latest
+func CheckVersion(config string) (string, error) {
+	return checkVersion(config, false)
+}
+
+// CheckVersionOnError returns an error message when update check is enabled and skaffold binary in not latest
+func CheckVersionOnError(config string) (string, error) {
+	return checkVersion(config, true)
+}
+
+func checkVersion(config string, onError bool) (string, error) {
+	if !isUpdateCheckEnabled(config) {
+		logrus.Debugf("Update check not enabled, skipping.")
+		return "", nil
+	}
+	latest, current, err := GetLatestAndCurrentVersion()
+	if err != nil {
+		return "", fmt.Errorf("getting latest and current skaffold versions: %w", err)
+	}
+	if !latest.GT(current) {
+		return "", nil
+	}
+	if onError {
+		return fmt.Sprintf("Your Skaffold version might be too old. Download the latest version (%s) from:\n  %s\n", latest, releaseURL(latest)), nil
+	}
+	return fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it from:\n  %s\n", latest, releaseURL(latest)), nil
+}
+
+// isUpdateCheckEnabled returns whether or not the update check is enabled
 // It is true by default, but setting it to any other value than true will disable the check
-func IsUpdateCheckEnabled(configfile string) bool {
+func isUpdateCheckEnabled(configfile string) bool {
 	// Don't perform a version check on dirty trees
 	if version.Get().GitTreeState == "dirty" {
 		return false
@@ -85,4 +113,8 @@ func DownloadLatestVersion() (string, error) {
 		return "", fmt.Errorf("reading version file from GCS: %w", err)
 	}
 	return strings.TrimSuffix(string(versionBytes), "\n"), nil
+}
+
+func releaseURL(v semver.Version) string {
+	return fmt.Sprintf("https://github.com/GoogleContainerTools/skaffold/releases/tag/v" + v.String())
 }

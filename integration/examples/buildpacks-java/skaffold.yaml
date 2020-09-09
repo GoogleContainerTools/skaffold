@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta6
+apiVersion: skaffold/v2beta8
 kind: Config
 build:
   artifacts:
@@ -7,8 +7,6 @@ build:
       builder: "gcr.io/buildpacks/builder:v1"
       env:
       - GOOGLE_RUNTIME_VERSION=8
-    sync:
-      auto: {}
 profiles:
 - name: gcb
   build:

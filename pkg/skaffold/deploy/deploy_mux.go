@@ -57,16 +57,18 @@ func (s stringSet) toList() []string {
 	return res
 }
 
-func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []build.Artifact) *Result {
+func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []build.Artifact) ([]string, error) {
 	seenNamespaces := newStringSet()
+
 	for _, deployer := range m {
-		result := deployer.Deploy(ctx, w, as)
-		if result.err != nil {
-			return result
+		namespaces, err := deployer.Deploy(ctx, w, as)
+		if err != nil {
+			return nil, err
 		}
-		seenNamespaces.insert(result.Namespaces()...)
+		seenNamespaces.insert(namespaces...)
 	}
-	return NewDeploySuccessResult(seenNamespaces.toList())
+
+	return seenNamespaces.toList(), nil
 }
 
 func (m DeployerMux) Dependencies() ([]string, error) {

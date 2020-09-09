@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -41,8 +42,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -81,25 +80,24 @@ type HelmDeployer struct {
 }
 
 // NewHelmDeployer returns a configured HelmDeployer
-func NewHelmDeployer(runCtx *runcontext.RunContext, labels map[string]string) *HelmDeployer {
+func NewHelmDeployer(cfg Config, labels map[string]string) *HelmDeployer {
 	return &HelmDeployer{
-		HelmDeploy:  runCtx.Cfg.Deploy.HelmDeploy,
-		kubeContext: runCtx.KubeContext,
-		kubeConfig:  runCtx.Opts.KubeConfig,
-		namespace:   runCtx.Opts.Namespace,
-		forceDeploy: runCtx.Opts.Force,
+		HelmDeploy:  cfg.Pipeline().Deploy.HelmDeploy,
+		kubeContext: cfg.GetKubeContext(),
+		kubeConfig:  cfg.GetKubeConfig(),
+		namespace:   cfg.GetKubeNamespace(),
+		forceDeploy: cfg.ForceDeploy(),
 		labels:      labels,
 	}
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) *Result {
-	event.DeployInProgress()
-
+func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
 	hv, err := h.binVer(ctx)
 	if err != nil {
-		return NewDeployErrorResult(fmt.Errorf(versionErrorString, err))
+		return nil, fmt.Errorf(versionErrorString, err)
 	}
+
 	logrus.Infof("Deploying with helm v%s ...", hv)
 
 	var dRes []Artifact
@@ -111,9 +109,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		results, err := h.deployRelease(ctx, out, r, builds, valuesSet, hv)
 		if err != nil {
 			releaseName, _ := util.ExpandEnvTemplate(r.Name, nil)
-
-			event.DeployFailed(err)
-			return NewDeployErrorResult(fmt.Errorf("deploying %q: %w", releaseName, err))
+			return nil, fmt.Errorf("deploying %q: %w", releaseName, err)
 		}
 
 		// collect namespaces
@@ -136,9 +132,9 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		}
 	}
 
-	event.DeployComplete()
-
-	labelDeployResults(h.labels, dRes)
+	if err := labelDeployResults(h.labels, dRes); err != nil {
+		return nil, fmt.Errorf("adding labels: %w", err)
+	}
 
 	// Collect namespaces in a string
 	namespaces := make([]string, 0, len(nsMap))
@@ -146,7 +142,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		namespaces = append(namespaces, ns)
 	}
 
-	return NewDeploySuccessResult(namespaces)
+	return namespaces, nil
 }
 
 // Dependencies returns a list of files that the deployer depends on.
@@ -292,9 +288,11 @@ func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build
 			args = append(args, "--namespace", r.Namespace)
 		}
 
-		if err := h.exec(ctx, renderedManifests, false, args...); err != nil {
-			return err
+		outBuffer := new(bytes.Buffer)
+		if err := h.exec(ctx, outBuffer, false, args...); err != nil {
+			return errors.New(outBuffer.String())
 		}
+		renderedManifests.Write(outBuffer.Bytes())
 	}
 
 	return outputRenderedManifests(renderedManifests.String(), filepath, out)
@@ -428,6 +426,8 @@ func (h *HelmDeployer) getRelease(ctx context.Context, helmVersion semver.Versio
 			return nil
 		}, opts)
 
+	logrus.Debug(b.String())
+
 	return b, err
 }
 
@@ -449,7 +449,7 @@ func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
 		return semver.Version{}, fmt.Errorf("unable to parse output: %q", raw)
 	}
 
-	v, err := semver.Make(matches[1])
+	v, err := semver.ParseTolerant(matches[1])
 	if err != nil {
 		return semver.Version{}, fmt.Errorf("semver make %q: %w", matches[1], err)
 	}

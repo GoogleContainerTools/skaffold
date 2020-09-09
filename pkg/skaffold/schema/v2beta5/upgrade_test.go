@@ -21,7 +21,7 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta6"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 

@@ -28,6 +28,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -73,6 +74,9 @@ func readConfigFileCached(filename string) (*GlobalConfig, error) {
 			return
 		}
 		configFile, configFileErr = ReadConfigFileNoCache(filenameOrDefault)
+		if configFileErr == nil {
+			logrus.Infof("Loaded Skaffold defaults from %q", filenameOrDefault)
+		}
 	})
 	return configFile, configFileErr
 }
@@ -161,11 +165,13 @@ func GetDefaultRepo(configFile string, cliValue *string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
+	if cfg.DefaultRepo != "" {
+		logrus.Infof("Using default-repo=%s from config", cfg.DefaultRepo)
+	}
 	return cfg.DefaultRepo, nil
 }
 
-func GetLocalCluster(configFile string, minikubeProfile string) (bool, error) {
+func GetLocalCluster(configFile string, minikubeProfile string, detectMinikubeCluster bool) (bool, error) {
 	if minikubeProfile != "" {
 		return true, nil
 	}
@@ -175,6 +181,7 @@ func GetLocalCluster(configFile string, minikubeProfile string) (bool, error) {
 	}
 	// when set, the local-cluster config takes precedence
 	if cfg.LocalCluster != nil {
+		logrus.Infof("Using local-cluster=%v from config", *cfg.LocalCluster)
 		return *cfg.LocalCluster, nil
 	}
 
@@ -182,7 +189,7 @@ func GetLocalCluster(configFile string, minikubeProfile string) (bool, error) {
 	if err != nil {
 		return true, err
 	}
-	return isDefaultLocal(config.CurrentContext), nil
+	return isDefaultLocal(config.CurrentContext, detectMinikubeCluster), nil
 }
 
 func GetInsecureRegistries(configFile string) ([]string, error) {
@@ -190,7 +197,9 @@ func GetInsecureRegistries(configFile string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	if len(cfg.InsecureRegistries) > 0 {
+		logrus.Infof("Using insecure-registries=%v from config", cfg.InsecureRegistries)
+	}
 	return cfg.InsecureRegistries, nil
 }
 
@@ -200,21 +209,25 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 		return "", err
 	}
 
-	if cfg.DebugHelpersRegistry == "" {
-		return constants.DefaultDebugHelpersRegistry, nil
+	if cfg.DebugHelpersRegistry != "" {
+		logrus.Infof("Using debug-helpers-registry=%s from config", cfg.DebugHelpersRegistry)
+		return cfg.DebugHelpersRegistry, nil
 	}
-
-	return cfg.DebugHelpersRegistry, nil
+	return constants.DefaultDebugHelpersRegistry, nil
 }
 
-func isDefaultLocal(kubeContext string) bool {
+func isDefaultLocal(kubeContext string, detectMinikubeCluster bool) bool {
 	if kubeContext == constants.DefaultMinikubeContext ||
 		kubeContext == constants.DefaultDockerForDesktopContext ||
-		kubeContext == constants.DefaultDockerDesktopContext {
+		kubeContext == constants.DefaultDockerDesktopContext ||
+		IsKindCluster(kubeContext) ||
+		IsK3dCluster(kubeContext) {
 		return true
 	}
-
-	return IsKindCluster(kubeContext) || IsK3dCluster(kubeContext)
+	if detectMinikubeCluster {
+		return cluster.GetClient().IsMinikube(kubeContext)
+	}
+	return false
 }
 
 // IsImageLoadingRequired checks if the cluster requires loading images into it
@@ -309,7 +322,7 @@ func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
 func lessThan(date string, duration time.Duration) bool {
 	t, err := time.Parse(time.RFC3339, date)
 	if err != nil {
-		logrus.Debugf("could not parse data %s", date)
+		logrus.Debugf("could not parse date %q", date)
 		return false
 	}
 	return current().Sub(t) < duration

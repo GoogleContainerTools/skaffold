@@ -133,9 +133,7 @@ func TestDevAPITriggers(t *testing.T) {
 }
 
 func TestDevAPIAutoTriggers(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 	defer Run(t, "testdata/dev", "rm", "foo")
@@ -355,6 +353,9 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 	contextName := "modified-context"
 	if config.IsKindCluster(kubeConfig.CurrentContext) {
 		contextName = "kind-" + contextName
+	}
+	if config.IsK3dCluster(kubeConfig.CurrentContext) {
+		contextName = "k3d-" + contextName
 	}
 
 	if kubeConfig.CurrentContext == constants.DefaultMinikubeContext {

@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/timestamp"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -40,7 +41,20 @@ const (
 	Terminated = "Terminated"
 )
 
-var handler = &eventHandler{}
+var handler = newHandler()
+
+func newHandler() *eventHandler {
+	h := &eventHandler{
+		eventChan: make(chan firedEvent),
+	}
+	go func() {
+		for {
+			ev := <-h.eventChan
+			h.handleExec(ev)
+		}
+	}()
+	return h
+}
 
 type eventHandler struct {
 	eventLog []proto.LogEntry
@@ -48,8 +62,13 @@ type eventHandler struct {
 
 	state     proto.State
 	stateLock sync.Mutex
-
+	eventChan chan firedEvent
 	listeners []*listener
+}
+
+type firedEvent struct {
+	event *proto.Event
+	ts    *timestamp.Timestamp
 }
 
 type listener struct {
@@ -361,7 +380,7 @@ func FileSyncSucceeded(fileCount int, image string) {
 
 // PortForwarded notifies that a remote port has been forwarded locally.
 func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string, portName string, resourceType, resourceName, address string) {
-	go handler.handle(&proto.Event{
+	handler.handle(&proto.Event{
 		EventType: &proto.Event_PortEvent{
 			PortEvent: &proto.PortEvent{
 				LocalPort:     localPort,
@@ -380,7 +399,7 @@ func PortForwarded(localPort, remotePort int32, podName, containerName, namespac
 
 // DebuggingContainerStarted notifies that a debuggable container has appeared.
 func DebuggingContainerStarted(podName, containerName, namespace, artifact, runtime, workingDir string, debugPorts map[string]uint32) {
-	go handler.handle(&proto.Event{
+	handler.handle(&proto.Event{
 		EventType: &proto.Event_DebuggingContainerEvent{
 			DebuggingContainerEvent: &proto.DebuggingContainerEvent{
 				Status:        Started,
@@ -398,7 +417,7 @@ func DebuggingContainerStarted(podName, containerName, namespace, artifact, runt
 
 // DebuggingContainerTerminated notifies that a debuggable container has disappeared.
 func DebuggingContainerTerminated(podName, containerName, namespace, artifact, runtime, workingDir string, debugPorts map[string]uint32) {
-	go handler.handle(&proto.Event{
+	handler.handle(&proto.Event{
 		EventType: &proto.Event_DebuggingContainerEvent{
 			DebuggingContainerEvent: &proto.DebuggingContainerEvent{
 				Status:        Terminated,
@@ -421,7 +440,7 @@ func (ev *eventHandler) setState(state proto.State) {
 }
 
 func (ev *eventHandler) handleDeployEvent(e *proto.DeployEvent) {
-	go ev.handle(&proto.Event{
+	ev.handle(&proto.Event{
 		EventType: &proto.Event_DeployEvent{
 			DeployEvent: e,
 		},
@@ -429,7 +448,7 @@ func (ev *eventHandler) handleDeployEvent(e *proto.DeployEvent) {
 }
 
 func (ev *eventHandler) handleStatusCheckEvent(e *proto.StatusCheckEvent) {
-	go ev.handle(&proto.Event{
+	ev.handle(&proto.Event{
 		EventType: &proto.Event_StatusCheckEvent{
 			StatusCheckEvent: e,
 		},
@@ -437,7 +456,7 @@ func (ev *eventHandler) handleStatusCheckEvent(e *proto.StatusCheckEvent) {
 }
 
 func (ev *eventHandler) handleResourceStatusCheckEvent(e *proto.ResourceStatusCheckEvent) {
-	go ev.handle(&proto.Event{
+	ev.handle(&proto.Event{
 		EventType: &proto.Event_ResourceStatusCheckEvent{
 			ResourceStatusCheckEvent: e,
 		},
@@ -445,7 +464,7 @@ func (ev *eventHandler) handleResourceStatusCheckEvent(e *proto.ResourceStatusCh
 }
 
 func (ev *eventHandler) handleBuildEvent(e *proto.BuildEvent) {
-	go ev.handle(&proto.Event{
+	ev.handle(&proto.Event{
 		EventType: &proto.Event_BuildEvent{
 			BuildEvent: e,
 		},
@@ -453,7 +472,7 @@ func (ev *eventHandler) handleBuildEvent(e *proto.BuildEvent) {
 }
 
 func (ev *eventHandler) handleDevLoopEvent(e *proto.DevLoopEvent) {
-	go ev.handle(&proto.Event{
+	ev.handle(&proto.Event{
 		EventType: &proto.Event_DevLoopEvent{
 			DevLoopEvent: e,
 		},
@@ -461,7 +480,7 @@ func (ev *eventHandler) handleDevLoopEvent(e *proto.DevLoopEvent) {
 }
 
 func (ev *eventHandler) handleFileSyncEvent(e *proto.FileSyncEvent) {
-	go ev.handle(&proto.Event{
+	ev.handle(&proto.Event{
 		EventType: &proto.Event_FileSyncEvent{
 			FileSyncEvent: e,
 		},
@@ -484,12 +503,21 @@ func LogMetaEvent() {
 }
 
 func (ev *eventHandler) handle(event *proto.Event) {
+	go func(t *timestamp.Timestamp) {
+		ev.eventChan <- firedEvent{
+			event: event,
+			ts:    t,
+		}
+	}(ptypes.TimestampNow())
+}
+
+func (ev *eventHandler) handleExec(f firedEvent) {
 	logEntry := &proto.LogEntry{
-		Timestamp: ptypes.TimestampNow(),
-		Event:     event,
+		Timestamp: f.ts,
+		Event:     f.event,
 	}
 
-	switch e := event.GetEventType().(type) {
+	switch e := f.event.GetEventType().(type) {
 	case *proto.Event_BuildEvent:
 		be := e.BuildEvent
 		ev.stateLock.Lock()
@@ -600,11 +628,11 @@ func (ev *eventHandler) handle(event *proto.Event) {
 		de := e.DevLoopEvent
 		switch de.Status {
 		case InProgress:
-			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d in progress", de.Iteration)
+			logEntry.Entry = "Update initiated due to file change"
 		case Succeeded:
-			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d successful", de.Iteration)
+			logEntry.Entry = "Update successful"
 		case Failed:
-			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d failed with error code %v", de.Iteration, de.Err.ErrCode)
+			logEntry.Entry = fmt.Sprintf("Update failed with error code %v", de.Err.ErrCode)
 		}
 	default:
 		return

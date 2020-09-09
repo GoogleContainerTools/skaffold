@@ -25,9 +25,8 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/google/go-containerregistry/pkg/name"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -105,6 +104,7 @@ func TestBuild(t *testing.T) {
 		workspace     string
 		artifact      *latest.DockerArtifact
 		expected      types.ImageBuildOptions
+		mode          config.RunMode
 		shouldErr     bool
 		expectedError string
 	}{
@@ -117,6 +117,7 @@ func TestBuild(t *testing.T) {
 				Tags:        []string{"finalimage"},
 				AuthConfigs: allAuthConfig,
 			},
+			mode: config.RunModes.Dev,
 		},
 		{
 			description: "build with options",
@@ -137,6 +138,7 @@ func TestBuild(t *testing.T) {
 				NetworkMode: "None",
 				NoCache:     true,
 			},
+			mode: config.RunModes.Dev,
 			expected: types.ImageBuildOptions{
 				Tags:       []string{"finalimage"},
 				Dockerfile: "Dockerfile",
@@ -157,6 +159,7 @@ func TestBuild(t *testing.T) {
 			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
+			mode:          config.RunModes.Dev,
 			workspace:     ".",
 			artifact:      &latest.DockerArtifact{},
 			shouldErr:     true,
@@ -168,6 +171,7 @@ func TestBuild(t *testing.T) {
 				ErrStream: true,
 			},
 			workspace:     ".",
+			mode:          config.RunModes.Dev,
 			artifact:      &latest.DockerArtifact{},
 			shouldErr:     true,
 			expectedError: "unable to stream build output",
@@ -179,6 +183,7 @@ func TestBuild(t *testing.T) {
 					"key": util.StringPtr("{{INVALID"),
 				},
 			},
+			mode:          config.RunModes.Dev,
 			shouldErr:     true,
 			expectedError: `function "INVALID" not defined`,
 		},
@@ -186,10 +191,13 @@ func TestBuild(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
+			t.Override(&EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+				return util.EvaluateEnvTemplateMap(a.BuildArgs)
+			})
 			t.SetEnvs(test.env)
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
-			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage")
+			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage", test.mode)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
@@ -320,8 +328,13 @@ func TestGetBuildArgs(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.env })
+			args, err := util.EvaluateEnvTemplateMap(test.artifact.BuildArgs)
+			t.CheckError(test.shouldErr, err)
+			if test.shouldErr {
+				return
+			}
 
-			result, err := GetBuildArgs(test.artifact)
+			result, err := ToCLIBuildArgs(test.artifact, args)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
@@ -365,63 +378,6 @@ func TestImageExists(t *testing.T) {
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
-}
-
-func TestInsecureRegistry(t *testing.T) {
-	tests := []struct {
-		description        string
-		image              string
-		insecureRegistries map[string]bool
-		scheme             string
-		shouldErr          bool
-	}{
-		{
-			description:        "secure image",
-			image:              "gcr.io/secure/image",
-			insecureRegistries: map[string]bool{},
-			scheme:             "https",
-		},
-		{
-			description: "insecure image",
-			image:       "my.insecure.registry/image",
-			insecureRegistries: map[string]bool{
-				"my.insecure.registry": true,
-			},
-			scheme: "http",
-		},
-		{
-			description: "insecure image not provided by user",
-			image:       "my.insecure.registry/image",
-			shouldErr:   true,
-		},
-		{
-			description: "secure image provided in insecure registries list",
-			image:       "gcr.io/secure/image",
-			insecureRegistries: map[string]bool{
-				"gcr.io": true,
-			},
-			shouldErr: true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&getRemoteImageImpl, func(ref name.Reference) (v1.Image, error) {
-				return &fakeImage{Reference: ref}, nil
-			})
-
-			img, err := remoteImage(test.image, test.insecureRegistries)
-
-			t.CheckNoError(err)
-			if !test.shouldErr {
-				t.CheckDeepEqual(test.scheme, img.(*fakeImage).Reference.Context().Registry.Scheme())
-			}
-		})
-	}
-}
-
-type fakeImage struct {
-	v1.Image
-	Reference name.Reference
 }
 
 func TestConfigFile(t *testing.T) {

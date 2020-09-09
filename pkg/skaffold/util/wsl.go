@@ -14,16 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package download
+package util
 
 import (
-	"testing"
-
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
 )
 
-func TestHTTPDownload(t *testing.T) {
-	v, err := HTTPDownload("https://storage.googleapis.com/skaffold/releases/v1.0.0/VERSION")
-	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, "v1.0.0\n", string(v))
+// DetectWSL checks for Windows Subsystem for Linux
+func DetectWSL() (bool, error) {
+	if _, err := os.Stat("/proc/version"); err == nil {
+		b, err := ioutil.ReadFile("/proc/version")
+		if err != nil {
+			return false, fmt.Errorf("read /proc/version: %w", err)
+		}
+
+		// Microsoft changed the case between WSL1 and WSL2
+		str := strings.ToLower(string(b))
+		if strings.Contains(str, "microsoft") {
+			return true, nil
+		}
+	}
+	return false, nil
 }

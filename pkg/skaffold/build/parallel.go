@@ -31,7 +31,7 @@ import (
 
 const bufferedLinesPerArtifact = 10000
 
-type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
+type ArtifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
 
 // For testing
 var (
@@ -40,7 +40,7 @@ var (
 )
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder, concurrency int) ([]Artifact, error) {
+func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
 	if len(artifacts) == 0 {
 		return nil, nil
 	}
@@ -87,7 +87,7 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	return collectResults(out, artifacts, results, outputs)
 }
 
-func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build artifactBuilder) {
+func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build ArtifactBuilder) {
 	event.BuildInProgress(artifact.ImageName)
 
 	finalTag, err := getBuildResult(ctx, cw, tags, artifact, build)
@@ -110,7 +110,7 @@ func readOutputAndWriteToChannel(r io.Reader, lines chan string) {
 	close(lines)
 }
 
-func getBuildResult(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latest.Artifact, build artifactBuilder) (string, error) {
+func getBuildResult(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latest.Artifact, build ArtifactBuilder) (string, error) {
 	color.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
 	tag, present := tags[artifact.ImageName]
 	if !present {

@@ -22,6 +22,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/docker/docker/client"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -106,7 +108,7 @@ func TestLookupLocal(t *testing.T) {
 			cache := &cache{
 				imagesAreLocal:  true,
 				artifactCache:   test.cache,
-				client:          docker.NewLocalDaemon(test.api, nil, false, nil),
+				client:          fakeLocalDaemon(test.api),
 				hashForArtifact: test.hasher,
 			}
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
@@ -190,7 +192,7 @@ func TestLookupRemote(t *testing.T) {
 			cache := &cache{
 				imagesAreLocal:  false,
 				artifactCache:   test.cache,
-				client:          docker.NewLocalDaemon(test.api, nil, false, nil),
+				client:          fakeLocalDaemon(test.api),
 				hashForArtifact: test.hasher,
 			}
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
@@ -215,4 +217,8 @@ func failingHasher(errMessage string) func(context.Context, *latest.Artifact) (s
 	return func(context.Context, *latest.Artifact) (string, error) {
 		return "", errors.New(errMessage)
 	}
+}
+
+func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
+	return docker.NewLocalDaemon(api, nil, false, nil)
 }

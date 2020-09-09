@@ -23,7 +23,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2beta6"
+const Version string = "skaffold/v2beta8"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -128,6 +128,9 @@ type TagPolicy struct {
 
 	// DateTimeTagger *beta* tags images with the build timestamp.
 	DateTimeTagger *DateTimeTagger `yaml:"dateTime,omitempty" yamltags:"oneOf=tag"`
+
+	// CustomTemplateTagger *beta* tags images with a configurable template string *composed of other taggers*.
+	CustomTemplateTagger *CustomTemplateTagger `yaml:"customTemplate,omitempty" yamltags:"oneOf=tag"`
 }
 
 // ShaTagger *beta* tags images with their sha256 digest.
@@ -152,9 +155,8 @@ type EnvTemplateTagger struct {
 	// Template used to produce the image name and tag.
 	// See golang [text/template](https://golang.org/pkg/text/template/).
 	// The template is executed against the current environment,
-	// with those variables injected:
-	//   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.
-	// For example: `{{.RELEASE}}-{{.IMAGE_NAME}}`.
+	// with those variables injected.
+	// For example: `{{.RELEASE}}`.
 	Template string `yaml:"template,omitempty" yamltags:"required"`
 }
 
@@ -169,6 +171,27 @@ type DateTimeTagger struct {
 	// See [Time.LoadLocation](https://golang.org/pkg/time/#Time.LoadLocation).
 	// Defaults to the local timezone.
 	TimeZone string `yaml:"timezone,omitempty"`
+}
+
+// CustomTemplateTagger *beta* tags images with a configurable template string.
+type CustomTemplateTagger struct {
+	// Template used to produce the image name and tag.
+	// See golang [text/template](https://golang.org/pkg/text/template/).
+	// The template is executed against the provided components with those variables injected.
+	// For example: `{{.DATE}}` where DATE references a TaggerComponent.
+	Template string `yaml:"template,omitempty" yamltags:"required"`
+
+	// Components lists TaggerComponents that the template (see field above) can be executed against.
+	Components []TaggerComponent `yaml:"components,omitempty"`
+}
+
+// TaggerComponent *beta* is a component of CustomTemplateTagger.
+type TaggerComponent struct {
+	// Name is an identifier for the component.
+	Name string `yaml:"name,omitempty"`
+
+	// Component is a tagging strategy to be used in CustomTemplateTagger.
+	Component TagPolicy `yaml:",inline" yamltags:"skipTrim"`
 }
 
 // BuildType contains the specific implementation and parameters needed
@@ -424,6 +447,9 @@ type DeployType struct {
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
 
+	// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
+	KptDeploy *KptDeploy `yaml:"kpt,omitempty"`
+
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
 	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty"`
@@ -498,6 +524,73 @@ type KustomizeDeploy struct {
 
 	// BuildArgs are additional args passed to `kustomize build`.
 	BuildArgs []string `yaml:"buildArgs,omitempty"`
+}
+
+// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
+type KptDeploy struct {
+	// ApplyDir is the path to the directory to deploy to the cluster.
+	ApplyDir string `yaml:"applyDir,omitempty"`
+
+	// Dir is the path to the directory to run kpt functions against.
+	Dir string `yaml:"dir,omitempty"`
+
+	// Fn adds additional configurations for `kpt fn`.
+	Fn KptFn `yaml:"fn,omitempty"`
+
+	// Live adds additional configurations for `kpt live`.
+	Live KptLive `yaml:"live,omitempty"`
+}
+
+// KptFn adds additional configurations used when calling `kpt fn`.
+type KptFn struct {
+	// FnPath is a directory to read functions from instead of the configuration directory.
+	FnPath string `yaml:"fnPath,omitempty"`
+
+	// Image is an image to be run as a function in lieu of running functions from a directory.
+	Image string `yaml:"image,omitempty"`
+
+	// NetworkName is the docker network to run the container in (default "bridge").
+	NetworkName string `yaml:"networkName,omitempty"`
+
+	// GlobalScope sets global scope for functions.
+	GlobalScope bool `yaml:"globalScope,omitempty"`
+
+	// Network enables network access for functions that declare it.
+	Network bool `yaml:"network,omitempty"`
+
+	// Mount is a list of storage options to mount to the fn image.
+	Mount []string `yaml:"mount,omitempty"`
+}
+
+// KptLive adds additional configurations used when calling `kpt live`.
+type KptLive struct {
+	// Apply adds additional configurations for `kpt live apply` commands.
+	Apply KptLiveApply `yaml:"apply,omitempty"`
+
+	// InventoryID is the identifier for a group of applied resources.
+	// This configuration is used when users do not specify `KptDeploy.ApplyDir`
+	// and `.kpt-hydrated/inventory-template.yaml` does not exist.
+	InventoryID string `yaml:"inventoryID,omitempty"`
+
+	// InventoryNamespace sets the namespace scope for `kpt live init`.
+	InventoryNamespace string `yaml:"inventoryNamespace,omitempty"`
+}
+
+// KptLiveApply adds additional configurations used when calling `kpt live apply`.
+type KptLiveApply struct {
+	// PollPeriod sets for the polling period for resource statuses. Default to 2s.
+	PollPeriod string `yaml:"pollPeriod,omitempty"`
+
+	// PrunePropagationPolicy sets the propagation policy for pruning.
+	// Possible settings are Background, Foreground, Orphan.
+	// Default to "Background".
+	PrunePropagationPolicy string `yaml:"prunePropagationPolicy,omitempty"`
+
+	// PruneTimeout sets the time threshold to wait for all pruned resources to be deleted.
+	PruneTimeout string `yaml:"pruneTimeout,omitempty"`
+
+	// ReconcileTimeout sets the time threshold to wait for all resources to reach the current status.
+	ReconcileTimeout string `yaml:"reconcileTimeout,omitempty"`
 }
 
 // HelmRelease describes a helm release to be deployed.

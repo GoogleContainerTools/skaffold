@@ -19,31 +19,21 @@ package cluster
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestRetrieveEnv(t *testing.T) {
-	builder, err := NewBuilder(&runcontext.RunContext{
-		KubeContext: "kubecontext",
-		Opts: config.SkaffoldOptions{
-			Namespace: "test-namespace",
-		},
-		Cfg: latest.Pipeline{
-			Build: latest.BuildConfig{
-				BuildType: latest.BuildType{
-					Cluster: &latest.ClusterDetails{
-						Namespace:      "namespace",
-						PullSecretName: "pullSecret",
-						DockerConfig: &latest.DockerConfig{
-							SecretName: "dockerconfig",
-						},
-						Timeout: "2m",
-					},
-				},
+	builder, err := NewBuilder(&mockConfig{
+		kubeContext: "kubecontext",
+		namespace:   "test-namespace",
+		cluster: latest.ClusterDetails{
+			Namespace:      "namespace",
+			PullSecretName: "pullSecret",
+			DockerConfig: &latest.DockerConfig{
+				SecretName: "dockerconfig",
 			},
+			Timeout: "2m",
 		},
 	})
 	testutil.CheckError(t, false, err)
@@ -54,15 +44,9 @@ func TestRetrieveEnv(t *testing.T) {
 }
 
 func TestRetrieveEnvMinimal(t *testing.T) {
-	builder, err := NewBuilder(&runcontext.RunContext{
-		Cfg: latest.Pipeline{
-			Build: latest.BuildConfig{
-				BuildType: latest.BuildType{
-					Cluster: &latest.ClusterDetails{
-						Timeout: "20m",
-					},
-				},
-			},
+	builder, err := NewBuilder(&mockConfig{
+		cluster: latest.ClusterDetails{
+			Timeout: "20m",
 		},
 	})
 	testutil.CheckError(t, false, err)

@@ -25,8 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
-	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -35,22 +34,16 @@ func TestCreateSecret(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("secret.json")
 		fakeKubernetesclient := fake.NewSimpleClientset()
-		t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
+		t.Override(&client.Client, func() (kubernetes.Interface, error) {
 			return fakeKubernetesclient, nil
 		})
 
-		builder, err := NewBuilder(&runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Build: latest.BuildConfig{
-					BuildType: latest.BuildType{
-						Cluster: &latest.ClusterDetails{
-							Timeout:        "20m",
-							PullSecretName: "kaniko-secret",
-							PullSecretPath: tmpDir.Path("secret.json"),
-							Namespace:      "ns",
-						},
-					},
-				},
+		builder, err := NewBuilder(&mockConfig{
+			cluster: latest.ClusterDetails{
+				Timeout:        "20m",
+				PullSecretName: "kaniko-secret",
+				PullSecretPath: tmpDir.Path("secret.json"),
+				Namespace:      "ns",
 			},
 		})
 		t.CheckNoError(err)
@@ -74,20 +67,14 @@ func TestCreateSecret(t *testing.T) {
 
 func TestExistingSecretNotFound(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
+		t.Override(&client.Client, func() (kubernetes.Interface, error) {
 			return fake.NewSimpleClientset(), nil
 		})
 
-		builder, err := NewBuilder(&runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Build: latest.BuildConfig{
-					BuildType: latest.BuildType{
-						Cluster: &latest.ClusterDetails{
-							Timeout:        "20m",
-							PullSecretName: "kaniko-secret",
-						},
-					},
-				},
+		builder, err := NewBuilder(&mockConfig{
+			cluster: latest.ClusterDetails{
+				Timeout:        "20m",
+				PullSecretName: "kaniko-secret",
 			},
 		})
 		t.CheckNoError(err)
@@ -101,7 +88,7 @@ func TestExistingSecretNotFound(t *testing.T) {
 
 func TestExistingSecret(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
+		t.Override(&client.Client, func() (kubernetes.Interface, error) {
 			return fake.NewSimpleClientset(&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "kaniko-secret",
@@ -109,16 +96,10 @@ func TestExistingSecret(t *testing.T) {
 			}), nil
 		})
 
-		builder, err := NewBuilder(&runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Build: latest.BuildConfig{
-					BuildType: latest.BuildType{
-						Cluster: &latest.ClusterDetails{
-							Timeout:        "20m",
-							PullSecretName: "kaniko-secret",
-						},
-					},
-				},
+		builder, err := NewBuilder(&mockConfig{
+			cluster: latest.ClusterDetails{
+				Timeout:        "20m",
+				PullSecretName: "kaniko-secret",
 			},
 		})
 		t.CheckNoError(err)
@@ -133,19 +114,13 @@ func TestExistingSecret(t *testing.T) {
 
 func TestSkipSecretCreation(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
+		t.Override(&client.Client, func() (kubernetes.Interface, error) {
 			return nil, nil
 		})
 
-		builder, err := NewBuilder(&runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Build: latest.BuildConfig{
-					BuildType: latest.BuildType{
-						Cluster: &latest.ClusterDetails{
-							Timeout: "20m",
-						},
-					},
-				},
+		builder, err := NewBuilder(&mockConfig{
+			cluster: latest.ClusterDetails{
+				Timeout: "20m",
 			},
 		})
 		t.CheckNoError(err)

@@ -19,9 +19,8 @@ package v1beta5
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta6"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 

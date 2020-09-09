@@ -22,10 +22,12 @@ import (
 	"io"
 	"os"
 
+	"github.com/blang/semver"
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 const (
@@ -37,9 +39,12 @@ const (
 
 var (
 	Form = fmt.Sprintf(`Thank you for offering your feedback on Skaffold! Understanding your experiences and opinions helps us make Skaffold better for you and other users.
-   Our survey can be found here: %s
 
-To permanently disable the survey prompt, run:
+Skaffold will now attempt to open the survey in your default web browser. You may also manually open it using this link:
+
+%s
+
+Tip: To permanently disable the survey prompt, run:
    skaffold config set --survey --global disable-prompt true`, URL)
 
 	// for testing
@@ -59,6 +64,14 @@ func New(configFile string) *Runner {
 }
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {
+	// TODO(nkubala): remove after v1.14.0 is released
+	currentVersion, err := version.ParseVersion(version.Get().Version)
+	if err == nil {
+		nextRelease := semver.MustParse("1.14.0")
+		if currentVersion.LT(nextRelease) {
+			return nil
+		}
+	}
 	if isStdOut(out) {
 		fmt.Fprintln(out, Prompt)
 	}

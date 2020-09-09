@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -63,14 +63,13 @@ func TestDeploy(t *testing.T) {
 		},
 	}
 
-	dummyStatusCheck := func(context.Context, *deploy.DefaultLabeller, *runcontext.RunContext, io.Writer) error {
-		return nil
-	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&kubernetes.Client, mockK8sClient)
-			t.Override(&statusCheck, dummyStatusCheck)
+			t.Override(&client.Client, mockK8sClient)
+			t.Override(&newStatusCheck, func(deploy.StatusCheckConfig, *deploy.DefaultLabeller) deploy.StatusChecker {
+				return dummyStatusChecker{}
+			})
 
 			runner := createRunner(t, test.testBench, nil)
 			runner.runCtx.Opts.StatusCheck = test.statusCheck
@@ -114,14 +113,13 @@ func TestDeployNamespace(t *testing.T) {
 		},
 	}
 
-	dummyStatusCheck := func(context.Context, *deploy.DefaultLabeller, *runcontext.RunContext, io.Writer) error {
-		return nil
-	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&kubernetes.Client, mockK8sClient)
-			t.Override(&statusCheck, dummyStatusCheck)
+			t.Override(&client.Client, mockK8sClient)
+			t.Override(&newStatusCheck, func(deploy.StatusCheckConfig, *deploy.DefaultLabeller) deploy.StatusChecker {
+				return dummyStatusChecker{}
+			})
 
 			runner := createRunner(t, test.testBench, nil)
 			runner.runCtx.Namespaces = test.Namespaces
@@ -131,7 +129,7 @@ func TestDeployNamespace(t *testing.T) {
 				{ImageName: "img2", Tag: "img2:tag2"},
 			})
 
-			t.CheckDeepEqual(test.expected, runner.runCtx.Namespaces)
+			t.CheckDeepEqual(test.expected, runner.runCtx.GetNamespaces())
 		})
 	}
 }
@@ -148,7 +146,7 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 
 		r := SkaffoldRunner{
 			runCtx:     runCtx,
-			kubectlCLI: kubectl.NewFromRunContext(runCtx),
+			kubectlCLI: kubectl.NewCLI(runCtx),
 			deployer:   getDeployer(runCtx, nil),
 		}
 		var builds []build.Artifact
@@ -157,4 +155,10 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 
 		t.CheckNoError(err)
 	})
+}
+
+type dummyStatusChecker struct{}
+
+func (d dummyStatusChecker) Check(_ context.Context, _ io.Writer) error {
+	return nil
 }

@@ -17,13 +17,14 @@ limitations under the License.
 package runner
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
 )
 
 func (r *SkaffoldRunner) createContainerManager() *debugging.ContainerManager {
-	if !r.runCtx.Opts.IsDebugMode() {
+	if r.runCtx.Mode() != config.RunModes.Debug {
 		return nil
 	}
 
-	return debugging.NewContainerManager(r.podSelector, r.runCtx.Namespaces)
+	return debugging.NewContainerManager(r.podSelector, r.runCtx.GetNamespaces())
 }

@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta6
+apiVersion: skaffold/v2beta8
 kind: Config
 build:
   artifacts:
@@ -15,9 +15,8 @@ build:
     context: python3
   - image: skaffold-debug-go
     context: go
-    docker:
-      buildArgs:
-        GOGCFLAGS: "-gcflags='all=-N -l'"
+  - image: skaffold-debug-netcore
+    context: netcore
 
 deploy:
   kubectl:
@@ -27,6 +26,7 @@ deploy:
     - npm/k8s/pod.yaml
     - python3/k8s/pod.yaml
     - go/k8s/pod.yaml
+    - netcore/k8s/pod.yaml
 
 profiles:
 - name: kustomize
@@ -57,5 +57,7 @@ profiles:
       context: go
       buildpacks:
         builder: "gcr.io/buildpacks/builder:v1"
-        env:
-        - GOOGLE_GCFLAGS="-gcflags='all=-N -l'"
+    - image: skaffold-debug-netcore
+      context: netcore
+      buildpacks:
+        builder: "gcr.io/buildpacks/builder:v1"

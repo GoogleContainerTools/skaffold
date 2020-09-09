@@ -14,14 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubernetes
+package client
 
 import (
 	"fmt"
 
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	_ "k8s.io/client-go/plugin/pkg/client/auth" // Initialize all known client auth plugins
+
+	// Initialize all known client auth plugins
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )

@@ -25,7 +25,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -73,7 +73,7 @@ func TestBuildTestDeploy(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&kubernetes.Client, mockK8sClient)
+			t.Override(&client.Client, mockK8sClient)
 
 			ctx := context.Background()
 			artifacts := []*latest.Artifact{{
@@ -127,4 +127,59 @@ func TestBuildAndTestSkipBuild(t *testing.T) {
 		// Nothing was built, tested or deployed
 		t.CheckDeepEqual([]Actions{{}}, testBench.Actions())
 	})
+}
+
+func TestCheckWorkspaces(t *testing.T) {
+	tmpDir := testutil.NewTempDir(t).Touch("file")
+	tmpFile := tmpDir.Path("file")
+
+	tests := []struct {
+		description string
+		artifacts   []*latest.Artifact
+		shouldErr   bool
+	}{
+		{
+			description: "no workspace",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image",
+				},
+			},
+		},
+		{
+			description: "directory that exists",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image",
+					Workspace: tmpDir.Root(),
+				},
+			},
+		},
+		{
+			description: "error on non-existent location",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image",
+					Workspace: "doesnotexist",
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "error on file",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image",
+					Workspace: tmpFile,
+				},
+			},
+			shouldErr: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			err := checkWorkspaces(test.artifacts)
+			t.CheckError(test.shouldErr, err)
+		})
+	}
 }

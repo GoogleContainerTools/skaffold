@@ -18,79 +18,88 @@ package trigger
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/rjeczalik/notify"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestNewTrigger(t *testing.T) {
 	tests := []struct {
-		description string
-		opts        config.SkaffoldOptions
-		expected    Trigger
-		shouldErr   bool
+		description       string
+		trigger           string
+		watchPollInterval int
+		expected          Trigger
+		shouldErr         bool
 	}{
 		{
-			description: "polling trigger",
-			opts:        config.SkaffoldOptions{Trigger: "polling", WatchPollInterval: 1},
+			description:       "polling trigger",
+			trigger:           "polling",
+			watchPollInterval: 1,
 			expected: &pollTrigger{
 				Interval: 1 * time.Millisecond,
 			},
 		},
 		{
-			description: "notify trigger",
-			opts:        config.SkaffoldOptions{Trigger: "notify", WatchPollInterval: 1},
+			description:       "notify trigger",
+			trigger:           "notify",
+			watchPollInterval: 1,
 			expected: &fsNotifyTrigger{
 				Interval: 1 * time.Millisecond,
 				workspaces: map[string]struct{}{
 					"../workspace":            {},
 					"../some/other/workspace": {},
 				},
+				watchFunc: notify.Watch,
 			},
 		},
 		{
 			description: "manual trigger",
-			opts:        config.SkaffoldOptions{Trigger: "manual"},
+			trigger:     "manual",
 			expected:    &manualTrigger{},
 		},
 		{
 			description: "unknown trigger",
-			opts:        config.SkaffoldOptions{Trigger: "unknown"},
+			trigger:     "unknown",
 			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			runCtx := &runcontext.RunContext{
-				Opts: test.opts,
-				Cfg: latest.Pipeline{
-					Build: latest.BuildConfig{
-						Artifacts: []*latest.Artifact{
-							{
-								Workspace: "../workspace",
-							}, {
-								Workspace: "../workspace",
-							}, {
-								Workspace: "../some/other/workspace",
-							},
-						},
-					},
+			cfg := &mockConfig{
+				trigger:           test.trigger,
+				watchPollInterval: test.watchPollInterval,
+				artifacts: []*latest.Artifact{
+					{Workspace: "../workspace"},
+					{Workspace: "../workspace"},
+					{Workspace: "../some/other/workspace"},
 				},
 			}
 
-			got, err := NewTrigger(runCtx)
+			got, err := NewTrigger(cfg, nil)
+
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
-				t.CheckDeepEqual(test.expected, got, cmp.AllowUnexported(fsNotifyTrigger{}))
+				t.CheckDeepEqual(test.expected, got, cmp.AllowUnexported(fsNotifyTrigger{}), cmp.Comparer(ignoreFuncComparer), cmp.AllowUnexported(manualTrigger{}), cmp.AllowUnexported(pollTrigger{}))
 			}
 		})
 	}
+}
+
+func ignoreFuncComparer(x, y func(path string, c chan<- notify.EventInfo, events ...notify.Event) error) bool {
+	if x == nil && y == nil {
+		return true
+	}
+	if x == nil || y == nil {
+		return false
+	}
+	return true // cannot assert function equality, so skip
 }
 
 func TestPollTrigger_Debounce(t *testing.T) {
@@ -100,13 +109,36 @@ func TestPollTrigger_Debounce(t *testing.T) {
 }
 
 func TestPollTrigger_LogWatchToUser(t *testing.T) {
-	out := new(bytes.Buffer)
+	tests := []struct {
+		description string
+		isActive    bool
+		expected    string
+	}{
+		{
+			description: "active polling trigger",
+			isActive:    true,
+			expected:    "Watching for changes every 10ns...\n",
+		},
+		{
+			description: "inactive polling trigger",
+			isActive:    false,
+			expected:    "Not watching for changes...\n",
+		},
+	}
+	for _, test := range tests {
+		out := new(bytes.Buffer)
 
-	trigger := &pollTrigger{Interval: 10}
-	trigger.LogWatchToUser(out)
+		trigger := &pollTrigger{
+			Interval: 10,
+			isActive: func() bool {
+				return test.isActive
+			},
+		}
+		trigger.LogWatchToUser(out)
 
-	got, want := out.String(), "Watching for changes every 10ns...\n"
-	testutil.CheckDeepEqual(t, want, got)
+		got, want := out.String(), test.expected
+		testutil.CheckDeepEqual(t, want, got)
+	}
 }
 
 func TestNotifyTrigger_Debounce(t *testing.T) {
@@ -116,13 +148,36 @@ func TestNotifyTrigger_Debounce(t *testing.T) {
 }
 
 func TestNotifyTrigger_LogWatchToUser(t *testing.T) {
-	out := new(bytes.Buffer)
+	tests := []struct {
+		description string
+		isActive    bool
+		expected    string
+	}{
+		{
+			description: "active notify trigger",
+			isActive:    true,
+			expected:    "Watching for changes...\n",
+		},
+		{
+			description: "inactive notify trigger",
+			isActive:    false,
+			expected:    "Not watching for changes...\n",
+		},
+	}
+	for _, test := range tests {
+		out := new(bytes.Buffer)
 
-	trigger := &fsNotifyTrigger{Interval: 10}
-	trigger.LogWatchToUser(out)
+		trigger := &fsNotifyTrigger{
+			Interval: 10,
+			isActive: func() bool {
+				return test.isActive
+			},
+		}
+		trigger.LogWatchToUser(out)
 
-	got, want := out.String(), "Watching for changes...\n"
-	testutil.CheckDeepEqual(t, want, got)
+		got, want := out.String(), test.expected
+		testutil.CheckDeepEqual(t, want, got)
+	}
 }
 
 func TestManualTrigger_Debounce(t *testing.T) {
@@ -132,11 +187,85 @@ func TestManualTrigger_Debounce(t *testing.T) {
 }
 
 func TestManualTrigger_LogWatchToUser(t *testing.T) {
-	out := new(bytes.Buffer)
+	tests := []struct {
+		description string
+		isActive    bool
+		expected    string
+	}{
+		{
+			description: "active manual trigger",
+			isActive:    true,
+			expected:    "Press any key to rebuild/redeploy the changes\n",
+		},
+		{
+			description: "inactive manual trigger",
+			isActive:    false,
+			expected:    "Not watching for changes...\n",
+		},
+	}
+	for _, test := range tests {
+		out := new(bytes.Buffer)
 
-	trigger := &manualTrigger{}
-	trigger.LogWatchToUser(out)
+		trigger := &manualTrigger{
+			isActive: func() bool {
+				return test.isActive
+			},
+		}
+		trigger.LogWatchToUser(out)
 
-	got, want := out.String(), "Press any key to rebuild/redeploy the changes\n"
-	testutil.CheckDeepEqual(t, want, got)
+		got, want := out.String(), test.expected
+		testutil.CheckDeepEqual(t, want, got)
+	}
+}
+
+func TestStartTrigger(t *testing.T) {
+	tests := []struct {
+		description string
+		trigger     Trigger
+	}{
+		{
+			description: "fsNotify trigger works",
+			trigger: &fsNotifyTrigger{
+				Interval:   200 * time.Millisecond,
+				workspaces: nil,
+				isActive:   func() bool { return false },
+				watchFunc: func(string, chan<- notify.EventInfo, ...notify.Event) error {
+					return nil
+				},
+			},
+		},
+		{
+			description: "fallback on polling trigger",
+			trigger: &fsNotifyTrigger{
+				Interval:   200 * time.Millisecond,
+				workspaces: nil,
+				isActive:   func() bool { return false },
+				watchFunc: func(string, chan<- notify.EventInfo, ...notify.Event) error {
+					return fmt.Errorf("failed to start watch trigger")
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			_, err := StartTrigger(context.Background(), test.trigger)
+			time.Sleep(1 * time.Second)
+			t.CheckNoError(err)
+		})
+	}
+}
+
+type mockConfig struct {
+	trigger           string
+	watchPollInterval int
+	artifacts         []*latest.Artifact
+}
+
+func (c *mockConfig) Trigger() string        { return c.trigger }
+func (c *mockConfig) WatchPollInterval() int { return c.watchPollInterval }
+func (c *mockConfig) Pipeline() latest.Pipeline {
+	var pipeline latest.Pipeline
+	pipeline.Build.Artifacts = c.artifacts
+	return pipeline
 }
