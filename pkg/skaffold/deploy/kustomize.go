@@ -95,30 +95,31 @@ type secretGenerator struct {
 type KustomizeDeployer struct {
 	*latest.KustomizeDeploy
 
-	kubectl            deploy.CLI
-	insecureRegistries map[string]bool
-	labels             map[string]string
-	BuildArgs          []string
-	globalConfig       string
-	useKubectl         bool
+	kubectl             deploy.CLI
+	insecureRegistries  map[string]bool
+	labels              map[string]string
+	BuildArgs           []string
+	globalConfig        string
+	useKubectlKustomize bool
 }
 
 func NewKustomizeDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KustomizeDeployer {
+	kubectl := deploy.CLI{
+		CLI:         kubectl.NewFromRunContext(runCtx),
+		Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
+		ForceDeploy: runCtx.Opts.Force,
+	}
 	// if user has kustomize binary, prioritize that over kubectl kustomize
-	useKubectl := !kustomizeBinaryCheck() && kubectlVersionCheck(runCtx)
+	useKubectlKustomize := !kustomizeBinaryCheck() && kubectlVersionCheck(kubectl)
 
 	return &KustomizeDeployer{
-		KustomizeDeploy: runCtx.Cfg.Deploy.KustomizeDeploy,
-		kubectl: deploy.CLI{
-			CLI:         kubectl.NewFromRunContext(runCtx),
-			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
-			ForceDeploy: runCtx.Opts.Force,
-		},
-		insecureRegistries: runCtx.InsecureRegistries,
-		BuildArgs:          runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
-		globalConfig:       runCtx.Opts.GlobalConfig,
-		labels:             labels,
-		useKubectl:         useKubectl,
+		KustomizeDeploy:     runCtx.Cfg.Deploy.KustomizeDeploy,
+		kubectl:             kubectl,
+		insecureRegistries:  runCtx.InsecureRegistries,
+		BuildArgs:           runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
+		globalConfig:        runCtx.Opts.GlobalConfig,
+		labels:              labels,
+		useKubectlKustomize: useKubectlKustomize,
 	}
 }
 
@@ -132,13 +133,7 @@ func kustomizeBinaryExists() bool {
 }
 
 // Check that kubectl version is valid to use kubectl kustomize
-func kubectlVersionCheck(runCtx *runcontext.RunContext) bool {
-	kubectl := deploy.CLI{
-		CLI:         kubectl.NewFromRunContext(runCtx),
-		Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
-		ForceDeploy: runCtx.Opts.Force,
-	}
-
+func kubectlVersionCheck(kubectl deploy.CLI) bool {
 	gt, err := kubectl.CompareVersionTo(context.Background(), 1, 14)
 	if err != nil {
 		return false
@@ -390,7 +385,7 @@ func (k *KustomizeDeployer) readManifests(ctx context.Context) (deploy.ManifestL
 		var out []byte
 		var err error
 
-		if k.useKubectl {
+		if k.useKubectlKustomize {
 			out, err = k.kubectl.Kustomize(ctx, buildCommandArgs(k.BuildArgs, kustomizePath))
 		} else {
 			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, buildCommandArgs(k.BuildArgs, kustomizePath)...)...)

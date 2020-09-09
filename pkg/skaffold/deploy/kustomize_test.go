@@ -34,13 +34,13 @@ import (
 
 func TestKustomizeDeploy(t *testing.T) {
 	tests := []struct {
-		description           string
-		cfg                   *latest.KustomizeDeploy
-		builds                []build.Artifact
-		commands              util.Command
-		shouldErr             bool
-		forceDeploy           bool
-		useMockKustomizeCheck bool
+		description        string
+		cfg                *latest.KustomizeDeploy
+		builds             []build.Artifact
+		commands           util.Command
+		shouldErr          bool
+		forceDeploy        bool
+		kustomizeCmdAbsent bool
 	}{
 		{
 			description: "no manifest",
@@ -95,7 +95,6 @@ func TestKustomizeDeploy(t *testing.T) {
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion118).
-				AndRunOut("kubectl version --client -ojson", kubectlVersion118).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace kustomize a", deploymentWebYAML).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace kustomize b", deploymentAppYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
@@ -109,8 +108,8 @@ func TestKustomizeDeploy(t *testing.T) {
 					Tag:       "leeroy-app:123",
 				},
 			},
-			forceDeploy:           true,
-			useMockKustomizeCheck: true,
+			forceDeploy:        true,
+			kustomizeCmdAbsent: true,
 		},
 	}
 
@@ -121,7 +120,7 @@ func TestKustomizeDeploy(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			if test.useMockKustomizeCheck {
+			if test.kustomizeCmdAbsent {
 				t.Override(&kustomizeBinaryCheck, mockKustomizeCheck)
 			}
 			t.NewTempDir().
