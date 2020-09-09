@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -287,9 +288,11 @@ func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build
 			args = append(args, "--namespace", r.Namespace)
 		}
 
-		if err := h.exec(ctx, renderedManifests, false, args...); err != nil {
-			return err
+		outBuffer := new(bytes.Buffer)
+		if err := h.exec(ctx, outBuffer, false, args...); err != nil {
+			return errors.New(outBuffer.String())
 		}
+		renderedManifests.Write(outBuffer.Bytes())
 	}
 
 	return outputRenderedManifests(renderedManifests.String(), filepath, out)
