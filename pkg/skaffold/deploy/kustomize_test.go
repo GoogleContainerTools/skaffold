@@ -93,22 +93,23 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "built-in kubectl kustomize",
-			cfg: &latest.KustomizeDeploy{
+			kustomize: latest.KustomizeDeploy{
 				KustomizePaths: []string{"a", "b"},
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion118).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace kustomize a", deploymentWebYAML).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace kustomize b", deploymentAppYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1+"\n---\n"+deploymentAppYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
 			builds: []build.Artifact{
 				{
 					ImageName: "leeroy-web",
-					Tag:       "leeroy-web:123",
+					Tag:       "leeroy-web:v1",
 				},
 				{
 					ImageName: "leeroy-app",
-					Tag:       "leeroy-app:123",
+					Tag:       "leeroy-app:v1",
 				},
 			},
 			forceDeploy:        true,
