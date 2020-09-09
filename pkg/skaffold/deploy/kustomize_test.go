@@ -33,6 +33,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func kustomizeAbsent() bool {
+	return false
+}
+
+func kustomizePresent() bool {
+	return true
+}
+
 func TestKustomizeDeploy(t *testing.T) {
 	tests := []struct {
 		description        string
@@ -117,15 +125,11 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 	}
 
-	mockKustomizeCheck := func() bool {
-		return false
-	}
-
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			if test.kustomizeCmdAbsent {
-				t.Override(&kustomizeBinaryCheck, mockKustomizeCheck)
+				t.Override(&kustomizeBinaryCheck, kustomizeAbsent)
 			}
 			t.NewTempDir().
 				Chdir()
@@ -198,6 +202,7 @@ func TestKustomizeCleanup(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&kustomizeBinaryCheck, kustomizePresent)
 
 			k := NewKustomizeDeployer(&kustomizeConfig{
 				workingDir: tmpDir.Root(),
