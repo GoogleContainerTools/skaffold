@@ -44,22 +44,23 @@ type artifactWithDeps struct {
 	requiredArtifactChans []chan interface{}
 }
 
+func (a artifactWithDeps) markComplete() {
+	// closing channel notifies all listeners waiting for this build to complete
+	close(a.artifactChan)
+}
+func (a artifactWithDeps) waitForDependencies(ctx context.Context) {
+	for _, dep := range a.requiredArtifactChans {
+		// wait for dependency to complete build
+		select {
+		case <-ctx.Done():
+		case <-dep:
+		}
+	}
+}
+
 // InOrder builds a list of artifacts in dependency order within the specified max concurrency
 func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
-	chanMap := make(map[string]chan interface{})
-	for _, a := range artifacts {
-		chanMap[a.ImageName] = make(chan interface{})
-	}
-
-	var awdSlice []artifactWithDeps
-	for _, a := range artifacts {
-		awd := artifactWithDeps{artifact: a, artifactChan: chanMap[a.ImageName]}
-		for _, d := range a.Dependencies {
-			awd.requiredArtifactChans = append(awd.requiredArtifactChans, chanMap[d.ImageName])
-		}
-		awdSlice = append(awdSlice, awd)
-	}
-
+	awdSlice := artifactWithDepsFor(artifacts)
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
@@ -82,14 +83,10 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 		// Run build and write output/logs to piped writer and store build result in
 		// sync.Map
 		go func(i int) {
-			for _, dep := range awdSlice[i].requiredArtifactChans {
-				// wait for dependency to complete build
-				<-dep
-			}
+			awdSlice[i].waitForDependencies(ctx)
 			sem <- true
 			runBuild(ctx, w, tags, awdSlice[i].artifact, results, buildArtifact)
-			// closing channel notifies all listeners waiting for this build to complete
-			close(awdSlice[i].artifactChan)
+			awdSlice[i].markComplete()
 			<-sem
 
 			wg.Done()
@@ -101,6 +98,23 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 
 	// Print logs and collect results in order.
 	return collectResults(out, artifacts, results, outputs)
+}
+
+func artifactWithDepsFor(artifacts []*latest.Artifact) []artifactWithDeps {
+	chanMap := make(map[string]chan interface{})
+	for _, a := range artifacts {
+		chanMap[a.ImageName] = make(chan interface{})
+	}
+
+	var awdSlice []artifactWithDeps
+	for _, a := range artifacts {
+		awd := artifactWithDeps{artifact: a, artifactChan: chanMap[a.ImageName]}
+		for _, d := range a.Dependencies {
+			awd.requiredArtifactChans = append(awd.requiredArtifactChans, chanMap[d.ImageName])
+		}
+		awdSlice = append(awdSlice, awd)
+	}
+	return awdSlice
 }
 
 func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build ArtifactBuilder) {
