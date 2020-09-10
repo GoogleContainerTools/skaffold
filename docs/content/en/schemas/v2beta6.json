@@ -1279,8 +1279,8 @@
       ],
       "properties": {
         "artifactOverrides": {
-          "description": "key value pairs. If present, Skaffold will send `--set-string` flag to Helm CLI and append all pairs after the flag.",
-          "x-intellij-html-description": "key value pairs. If present, Skaffold will send <code>--set-string</code> flag to Helm CLI and append all pairs after the flag."
+          "description": "key value pairs where the key represents the parameter used in the `--set-string` Helm CLI flag to define a container image and the value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section. The resulting command-line is controlled by `ImageStrategy`.",
+          "x-intellij-html-description": "key value pairs where the key represents the parameter used in the <code>--set-string</code> Helm CLI flag to define a container image and the value corresponds to artifact i.e. <code>ImageName</code> defined in <code>Build.Artifacts</code> section. The resulting command-line is controlled by <code>ImageStrategy</code>."
         },
         "chartPath": {
           "type": "string",
@@ -1289,8 +1289,8 @@
         },
         "imageStrategy": {
           "$ref": "#/definitions/HelmImageStrategy",
-          "description": "adds image configurations to the Helm `values` file.",
-          "x-intellij-html-description": "adds image configurations to the Helm <code>values</code> file."
+          "description": "controls how an `ArtifactOverrides` entry is turned into `--set-string` Helm CLI flag or flags.",
+          "x-intellij-html-description": "controls how an <code>ArtifactOverrides</code> entry is turned into <code>--set-string</code> Helm CLI flag or flags."
         },
         "name": {
           "type": "string",
