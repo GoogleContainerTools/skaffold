@@ -309,8 +309,12 @@ files.
 
 ### Supported Deployers
 
-`skaffold debug` is only supported with the `kubectl`, `kustomize`, and `helm` deployers.  Helm support requires
-using Helm v3.1.0 or greater.
+`skaffold debug` is only supported with the `kubectl`, `kustomize`, and `helm` deployers.
+
+{{< alert title="Note" >}}
+Helm support requires using Helm v3.1.0 or greater.
+{{< /alert >}}
+
 
 ### Deprecated Workload API Objects
 
