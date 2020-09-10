@@ -89,7 +89,9 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		}
 
 		// Image is already built
+		c.cacheMutex.RLock()
 		entry := c.artifactCache[result.Hash()]
+		c.cacheMutex.RUnlock()
 		tag := tags[artifact.ImageName]
 
 		var uniqueTag string
@@ -166,7 +168,9 @@ func (c *cache) addArtifacts(ctx context.Context, bRes []build.Artifact, hashByN
 			entry.ID = imageID
 		}
 
+		c.cacheMutex.Lock()
 		c.artifactCache[hashByName[a.ImageName]] = entry
+		c.cacheMutex.Unlock()
 	}
 
 	return nil

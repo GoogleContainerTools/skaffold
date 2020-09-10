@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"sync"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
@@ -45,6 +46,7 @@ type ArtifactCache map[string]ImageDetails
 // cache holds any data necessary for accessing the cache
 type cache struct {
 	artifactCache      ArtifactCache
+	cacheMutex         sync.RWMutex
 	client             docker.LocalDaemon
 	insecureRegistries map[string]bool
 	cacheFile          string

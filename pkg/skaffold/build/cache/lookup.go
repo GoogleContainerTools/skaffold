@@ -53,7 +53,9 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string) cach
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}
 
+	c.cacheMutex.RLock()
 	entry, cacheHit := c.artifactCache[hash]
+	c.cacheMutex.RUnlock()
 	if !cacheHit {
 		if entry, err = c.tryImport(ctx, a, tag, hash); err != nil {
 			logrus.Debugf("Could not import artifact from Docker, building instead (%s)", err)
@@ -146,6 +148,8 @@ func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, h
 		entry.Digest = digest
 	}
 
+	c.cacheMutex.Lock()
 	c.artifactCache[hash] = entry
+	c.cacheMutex.Unlock()
 	return entry, nil
 }
