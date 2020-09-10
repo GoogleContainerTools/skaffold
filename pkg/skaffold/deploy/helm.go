@@ -559,8 +559,12 @@ func constructOverrideArgs(r *latest.HelmRelease, builds []build.Artifact, args 
 	}
 
 	for k, v := range r.SetFiles {
-		record(v)
-		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, v))
+		exp, err := homedir.Expand(v)
+		if err != nil {
+			return nil, fmt.Errorf("unable to expand %q: %w", v, err)
+		}
+		record(exp)
+		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, exp))
 	}
 
 	envMap := map[string]string{}
