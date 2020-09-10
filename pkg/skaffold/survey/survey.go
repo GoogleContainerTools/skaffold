@@ -30,8 +30,7 @@ import (
 )
 
 const (
-	Prompt = `Help us make Skaffold better! Take our quick and anonymous survey by running
-   'skaffold survey'
+	Prompt = `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey'
 `
 
 	URL = "https://forms.gle/BMTbGQXLWSdn7vEs6"
