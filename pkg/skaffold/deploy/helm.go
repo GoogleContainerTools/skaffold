@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -294,9 +295,11 @@ func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build
 			args = append(args, "--namespace", r.Namespace)
 		}
 
-		if err := h.exec(ctx, renderedManifests, false, nil, args...); err != nil {
-			return err
+		outBuffer := new(bytes.Buffer)
+		if err := h.exec(ctx, outBuffer, false, nil, args...); err != nil {
+			return errors.New(outBuffer.String())
 		}
+		renderedManifests.Write(outBuffer.Bytes())
 	}
 
 	return outputRenderedManifests(renderedManifests.String(), filepath, out)

@@ -75,6 +75,7 @@ func newFSNotifyTrigger(cfg Config, isActive func() bool) *fsNotifyTrigger {
 		Interval:   time.Duration(cfg.WatchPollInterval()) * time.Millisecond,
 		workspaces: workspaces,
 		isActive:   isActive,
+		watchFunc:  notify.Watch,
 	}
 }
 
@@ -179,6 +180,7 @@ type fsNotifyTrigger struct {
 	Interval   time.Duration
 	workspaces map[string]struct{}
 	isActive   func() bool
+	watchFunc  func(path string, c chan<- notify.EventInfo, events ...notify.Event) error
 }
 
 // Debounce tells the watcher to not debounce rapid sequence of changes.
@@ -206,7 +208,7 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	}
 
 	// Watch current directory recursively
-	if err := notify.Watch(filepath.Join(wd, "..."), c, notify.All); err != nil {
+	if err := t.watchFunc(filepath.Join(wd, "..."), c, notify.All); err != nil {
 		return nil, err
 	}
 
@@ -216,7 +218,7 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 			continue
 		}
 
-		if err := notify.Watch(filepath.Join(wd, w, "..."), c, notify.All); err != nil {
+		if err := t.watchFunc(filepath.Join(wd, w, "..."), c, notify.All); err != nil {
 			return nil, err
 		}
 	}
@@ -267,6 +269,7 @@ func StartTrigger(ctx context.Context, t Trigger) (<-chan bool, error) {
 
 		t = &pollTrigger{
 			Interval: notifyTrigger.Interval,
+			isActive: notifyTrigger.isActive,
 		}
 		ret, err = t.Start(ctx)
 	}

@@ -26,7 +26,6 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -39,18 +38,12 @@ func TestCreateSecret(t *testing.T) {
 			return fakeKubernetesclient, nil
 		})
 
-		builder, err := NewBuilder(&runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Build: latest.BuildConfig{
-					BuildType: latest.BuildType{
-						Cluster: &latest.ClusterDetails{
-							Timeout:        "20m",
-							PullSecretName: "kaniko-secret",
-							PullSecretPath: tmpDir.Path("secret.json"),
-							Namespace:      "ns",
-						},
-					},
-				},
+		builder, err := NewBuilder(&mockConfig{
+			cluster: latest.ClusterDetails{
+				Timeout:        "20m",
+				PullSecretName: "kaniko-secret",
+				PullSecretPath: tmpDir.Path("secret.json"),
+				Namespace:      "ns",
 			},
 		})
 		t.CheckNoError(err)
@@ -78,16 +71,10 @@ func TestExistingSecretNotFound(t *testing.T) {
 			return fake.NewSimpleClientset(), nil
 		})
 
-		builder, err := NewBuilder(&runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Build: latest.BuildConfig{
-					BuildType: latest.BuildType{
-						Cluster: &latest.ClusterDetails{
-							Timeout:        "20m",
-							PullSecretName: "kaniko-secret",
-						},
-					},
-				},
+		builder, err := NewBuilder(&mockConfig{
+			cluster: latest.ClusterDetails{
+				Timeout:        "20m",
+				PullSecretName: "kaniko-secret",
 			},
 		})
 		t.CheckNoError(err)
@@ -109,16 +96,10 @@ func TestExistingSecret(t *testing.T) {
 			}), nil
 		})
 
-		builder, err := NewBuilder(&runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Build: latest.BuildConfig{
-					BuildType: latest.BuildType{
-						Cluster: &latest.ClusterDetails{
-							Timeout:        "20m",
-							PullSecretName: "kaniko-secret",
-						},
-					},
-				},
+		builder, err := NewBuilder(&mockConfig{
+			cluster: latest.ClusterDetails{
+				Timeout:        "20m",
+				PullSecretName: "kaniko-secret",
 			},
 		})
 		t.CheckNoError(err)
@@ -137,15 +118,9 @@ func TestSkipSecretCreation(t *testing.T) {
 			return nil, nil
 		})
 
-		builder, err := NewBuilder(&runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Build: latest.BuildConfig{
-					BuildType: latest.BuildType{
-						Cluster: &latest.ClusterDetails{
-							Timeout: "20m",
-						},
-					},
-				},
+		builder, err := NewBuilder(&mockConfig{
+			cluster: latest.ClusterDetails{
+				Timeout: "20m",
 			},
 		})
 		t.CheckNoError(err)

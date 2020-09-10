@@ -19,6 +19,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -44,9 +45,50 @@ var allAuthConfig = map[string]types.AuthConfig{
 func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 	return gcrAuthConfig, t.getAuthConfigErr
 }
-
-func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
+func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
 	return allAuthConfig, t.getAllAuthConfigsErr
+}
+
+func TestGetAllAuthConfigs(t *testing.T) {
+	testutil.Run(t, "auto-configure gcr.io", func(t *testutil.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("test doesn't work on windows")
+		}
+
+		tmpDir := t.NewTempDir().
+			Write("config.json", `{"credHelpers":{"my.registry":"helper"}}`).
+			Write("docker-credential-gcloud", `#!/bin/sh
+read server
+echo "{\"Username\":\"<token>\",\"Secret\":\"TOKEN_$server\"}"`).
+			Write("docker-credential-helper", `#!/bin/sh
+read server
+echo "{\"Username\":\"<token>\",\"Secret\":\"TOKEN_$server\"}"`)
+		t.Override(&configDir, tmpDir.Root())
+		t.SetEnvs(map[string]string{"PATH": tmpDir.Root()})
+
+		auth, err := DefaultAuthHelper.GetAllAuthConfigs(context.Background())
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(map[string]types.AuthConfig{
+			"asia.gcr.io":        {IdentityToken: "TOKEN_asia.gcr.io"},
+			"eu.gcr.io":          {IdentityToken: "TOKEN_eu.gcr.io"},
+			"gcr.io":             {IdentityToken: "TOKEN_gcr.io"},
+			"my.registry":        {IdentityToken: "TOKEN_my.registry"},
+			"marketplace.gcr.io": {IdentityToken: "TOKEN_marketplace.gcr.io"},
+			"staging-k8s.gcr.io": {IdentityToken: "TOKEN_staging-k8s.gcr.io"},
+			"us.gcr.io":          {IdentityToken: "TOKEN_us.gcr.io"},
+		}, auth)
+	})
+
+	testutil.Run(t, "invalid config.json", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().Write("config.json", "invalid json")
+		t.Override(&configDir, tmpDir.Root())
+
+		auth, err := DefaultAuthHelper.GetAllAuthConfigs(context.Background())
+
+		t.CheckError(true, err)
+		t.CheckEmpty(auth)
+	})
 }
 
 func TestGetEncodedRegistryAuth(t *testing.T) {

@@ -592,10 +592,9 @@ func TestPollDeployment(t *testing.T) {
 			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 			mockVal := mockValidator{runs: test.runs}
 			dep := test.dep.WithValidator(mockVal)
-			runCtx := &runcontext.RunContext{
-				KubeContext: "kubecontext",
-			}
-			pollDeploymentStatus(context.Background(), runCtx, dep)
+
+			pollDeploymentStatus(context.Background(), &statusConfig{}, dep)
+
 			t.CheckDeepEqual(test.expected, test.dep.Status().ActionableError().ErrCode)
 		})
 	}
@@ -621,3 +620,9 @@ func (m mockValidator) WithLabel(string, string) diag.Diagnose {
 func (m mockValidator) WithValidators([]validator.Validator) diag.Diagnose {
 	return m
 }
+
+type statusConfig struct {
+	runcontext.RunContext // Embedded to provide the default values.
+}
+
+func (c *statusConfig) GetKubeContext() string { return testKubeContext }

@@ -81,22 +81,28 @@ func TestCheckArtifacts(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Write("Dockerfile", "FROM busybox")
 
-		runCtx := &runcontext.RunContext{
-			Cfg: latest.Pipeline{
-				Build: latest.BuildConfig{
-					Artifacts: []*latest.Artifact{{
-						Workspace: tmpDir.Root(),
-						ArtifactType: latest.ArtifactType{
-							DockerArtifact: &latest.DockerArtifact{
-								DockerfilePath: "Dockerfile",
-							},
-						},
-					}},
+		err := CheckArtifacts(context.Background(), &mockConfig{
+			artifacts: []*latest.Artifact{{
+				Workspace: tmpDir.Root(),
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						DockerfilePath: "Dockerfile",
+					},
 				},
-			},
-		}
-		err := CheckArtifacts(context.Background(), runCtx, ioutil.Discard)
+			}},
+		}, ioutil.Discard)
 
 		t.CheckNoError(err)
 	})
+}
+
+type mockConfig struct {
+	runcontext.RunContext // Embedded to provide the default values.
+	artifacts             []*latest.Artifact
+}
+
+func (c *mockConfig) Pipeline() latest.Pipeline {
+	var pipeline latest.Pipeline
+	pipeline.Build.Artifacts = c.artifacts
+	return pipeline
 }
