@@ -21,12 +21,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
-
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/spf13/cobra"
 )
 
 // NewCmdRun describes the CLI command to run a pipeline.
@@ -37,9 +35,6 @@ func NewCmdRun() *cobra.Command {
 		WithExample("Build, test, deploy and tail the logs", "run --tail").
 		WithExample("Run with a given profile", "run -p <profile>").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
-		}).
 		WithHouseKeepingMessages().
 		NoArgs(doRun)
 }

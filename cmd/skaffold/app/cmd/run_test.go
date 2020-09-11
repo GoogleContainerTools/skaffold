@@ -74,18 +74,10 @@ func TestBuildImageFlag(t *testing.T) {
 				Pipeline: latest.Pipeline{
 					Build: latest.BuildConfig{
 						Artifacts: []*latest.Artifact{
-							{
-								ImageName: "first",
-							},
-							{
-								ImageName: "second-test",
-							},
-							{
-								ImageName: "test",
-							},
-							{
-								ImageName: "aaabbbccc",
-							},
+							{ImageName: "first"},
+							{ImageName: "second-test"},
+							{ImageName: "test"},
+							{ImageName: "aaabbbccc"},
 						},
 					},
 				},

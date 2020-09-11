@@ -398,6 +398,15 @@ var flagRegistry = []Flag{
 		FlagAddMethod: "DurationVar",
 		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
 	},
+	{
+		Name:          "build-image",
+		Shorthand:     "b",
+		Usage:         "Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts",
+		Value:         &opts.TargetImages,
+		DefValue:      []string{},
+		FlagAddMethod: "StringSliceVar",
+		DefinedOn:     []string{"build", "run"},
+	},
 }
 
 func (fl *Flag) flag() *pflag.Flag {
