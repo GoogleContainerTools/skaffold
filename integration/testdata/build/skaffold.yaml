@@ -39,12 +39,3 @@ build:
     # Would have caught #2315
   - image: multi-stage
     context: multi-stage
-
-
-  # TODO(nkubala): add back once buildkit is enabled in travis (https://github.com/GoogleContainerTools/skaffold/issues/4746)   
-  # - image: secret
-  #   context: secret
-  #   docker:
-  #     secret:
-  #       id: mysecret
-  #       src: secret/mysecret.txt
