@@ -743,7 +743,7 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 }
 
 func (h *HelmDeployer) generateSkaffoldDebugFilter(buildsFile string) []string {
-	args := []string{"debug", "--filter", "--kube-context", h.kubeContext}
+	args := []string{"filter", "--debugging", "--kube-context", h.kubeContext}
 	if len(buildsFile) > 0 {
 		args = append(args, "--build-artifacts", buildsFile)
 	}

@@ -112,6 +112,11 @@ func Render(args ...string) *RunBuilder {
 	return withDefaults("render", args)
 }
 
+// Filter runs `skaffold filter` with the given arguments.
+func Filter(args ...string) *RunBuilder {
+	return withDefaults("filter", args)
+}
+
 func GeneratePipeline(args ...string) *RunBuilder {
 	return withDefaults("generate-pipeline", args)
 }

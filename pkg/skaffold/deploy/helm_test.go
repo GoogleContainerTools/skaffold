@@ -1249,12 +1249,12 @@ func TestGenerateSkaffoldDebugFilter(t *testing.T) {
 		{
 			description: "empty buildfile is skipped",
 			buildFile:   "",
-			result:      []string{"debug", "--filter", "--kube-context", "kubecontext", "--kubeconfig", "kubeconfig"},
+			result:      []string{"filter", "--debugging", "--kube-context", "kubecontext", "--kubeconfig", "kubeconfig"},
 		},
 		{
 			description: "buildfile is added",
 			buildFile:   "buildfile",
-			result:      []string{"debug", "--filter", "--kube-context", "kubecontext", "--build-artifacts", "buildfile", "--kubeconfig", "kubeconfig"},
+			result:      []string{"filter", "--debugging", "--kube-context", "kubecontext", "--build-artifacts", "buildfile", "--kubeconfig", "kubeconfig"},
 		},
 	}
 	for _, test := range tests {

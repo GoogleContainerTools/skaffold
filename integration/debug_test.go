@@ -111,13 +111,13 @@ func TestDebug(t *testing.T) {
 	}
 }
 
-func TestDebugFiltering(t *testing.T) {
+func TestFilterWithDebugging(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	// --filter expects to receive a digested yaml
+	// `filter` currently expects to receive a digested yaml
 	renderedOutput := skaffold.Render().InDir("examples/getting-started").RunOrFailOutput(t)
 
 	testutil.Run(t, "no --build-artifacts should transform all images", func(t *testutil.T) {
-		transformedOutput := skaffold.Debug("--filter").InDir("examples/getting-started").WithStdin(renderedOutput).RunOrFailOutput(t.T)
+		transformedOutput := skaffold.Filter("--debugging").InDir("examples/getting-started").WithStdin(renderedOutput).RunOrFailOutput(t.T)
 		transformedYaml := string(transformedOutput)
 		if !strings.Contains(transformedYaml, "/dbg/go/bin/dlv") {
 			t.Error("transformed yaml seems to be missing debugging details", transformedYaml)
@@ -126,7 +126,7 @@ func TestDebugFiltering(t *testing.T) {
 
 	testutil.Run(t, "--build-artifacts=file should result in specific transforms", func(t *testutil.T) {
 		buildFile := t.TempFile("build.txt", []byte(`{"builds":[{"imageName":"doesnotexist","tag":"doesnotexist:notag"}]}`))
-		transformedOutput := skaffold.Debug("--filter", "--build-artifacts="+buildFile).InDir("examples/getting-started").WithStdin(renderedOutput).RunOrFailOutput(t.T)
+		transformedOutput := skaffold.Filter("--debugging", "--build-artifacts="+buildFile).InDir("examples/getting-started").WithStdin(renderedOutput).RunOrFailOutput(t.T)
 		transformedYaml := string(transformedOutput)
 		if strings.Contains(transformedYaml, "/dbg/go/bin/dlv") {
 			t.Error("transformed yaml should not include debugging details", transformedYaml)
