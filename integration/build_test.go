@@ -36,24 +36,6 @@ import (
 
 const imageName = "gcr.io/k8s-skaffold/simple-build:"
 
-func TestBuildKit(t *testing.T) {
-	MarkIntegrationTest(t, NeedsGcp)
-
-	dir := "testdata/build/secret"
-
-	// Run without artifact caching
-	skaffold.Build("--cache-artifacts=false").InDir(dir).RunOrFail(t)
-
-	// Run with artifact caching
-	skaffold.Build("--cache-artifacts=true").InDir(dir).RunOrFail(t)
-
-	// Run a second time with artifact caching
-	out := skaffold.Build("--cache-artifacts=true").InDir(dir).RunOrFailOutput(t)
-	if strings.Contains(string(out), "Not found. Building") {
-		t.Errorf("images were expected to be found in cache: %s", out)
-	}
-}
-
 func TestBuild(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 

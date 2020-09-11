@@ -923,11 +923,6 @@
           "x-intellij-html-description": "used to pass in --no-cache to docker build to prevent caching.",
           "default": "false"
         },
-        "secret": {
-          "$ref": "#/definitions/DockerSecret",
-          "description": "contains information about a local secret passed to `docker build`, along with optional destination information.",
-          "x-intellij-html-description": "contains information about a local secret passed to <code>docker build</code>, along with optional destination information."
-        },
         "target": {
           "type": "string",
           "description": "Dockerfile target name to build.",
@@ -940,8 +935,7 @@
         "buildArgs",
         "network",
         "cacheFrom",
-        "noCache",
-        "secret"
+        "noCache"
       ],
       "additionalProperties": false,
       "description": "describes an artifact built from a Dockerfile, usually using `docker build`.",
@@ -967,36 +961,6 @@
       "additionalProperties": false,
       "description": "contains information about the docker `config.json` to mount.",
       "x-intellij-html-description": "contains information about the docker <code>config.json</code> to mount."
-    },
-    "DockerSecret": {
-      "required": [
-        "id"
-      ],
-      "properties": {
-        "dst": {
-          "type": "string",
-          "description": "path in the container to mount the secret.",
-          "x-intellij-html-description": "path in the container to mount the secret."
-        },
-        "id": {
-          "type": "string",
-          "description": "id of the secret.",
-          "x-intellij-html-description": "id of the secret."
-        },
-        "src": {
-          "type": "string",
-          "description": "path to the secret on the host machine.",
-          "x-intellij-html-description": "path to the secret on the host machine."
-        }
-      },
-      "preferredOrder": [
-        "id",
-        "src",
-        "dst"
-      ],
-      "additionalProperties": false,
-      "description": "contains information about a local secret passed to `docker build`, along with optional destination information.",
-      "x-intellij-html-description": "contains information about a local secret passed to <code>docker build</code>, along with optional destination information."
     },
     "DockerfileDependency": {
       "properties": {

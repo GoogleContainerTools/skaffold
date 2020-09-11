@@ -2,7 +2,6 @@ apiVersion: skaffold/v2beta8
 kind: Config
 build:
   local:
-    # useBuildkit: true
     push: false
   artifacts:
     # A simple Docker build
