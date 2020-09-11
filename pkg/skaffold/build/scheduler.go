@@ -38,6 +38,11 @@ var (
 	buffSize = bufferedLinesPerArtifact
 )
 
+// artifactWithDeps models the artifact dependency graph using a set of channels.
+// Each artifact has a channel that it closes once it completes building (either success or failure) by calling `markComplete`
+// Additionally it has a list of channels for each of its dependencies.
+// Calling `waitForDependencies` ensures that all required artifacts' channels have already been closed and as such have finished building.
+// This model allows for composing any arbitrary function with dependency ordering.
 type artifactWithDeps struct {
 	artifact              *latest.Artifact
 	artifactChan          chan interface{}
