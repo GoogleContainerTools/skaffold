@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -52,9 +51,22 @@ type Builder struct {
 
 var getLocalCluster = config.GetLocalCluster
 
+type Config interface {
+	docker.Config
+
+	Pipeline() latest.Pipeline
+	GlobalConfig() string
+	GetKubeContext() string
+	DetectMinikube() bool
+	SkipTests() bool
+	Mode() config.RunMode
+	NoPruneChildren() bool
+	Muted() config.Muted
+}
+
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(runCtx)
+func NewBuilder(cfg Config) (*Builder, error) {
+	localDocker, err := docker.NewAPIClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker client: %w", err)
 	}
@@ -63,31 +75,31 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
 
-	localCluster, err := getLocalCluster(runCtx.GlobalConfig(), runCtx.MinikubeProfile())
+	localCluster, err := getLocalCluster(cfg.GlobalConfig(), cfg.MinikubeProfile(), cfg.DetectMinikube())
 	if err != nil {
 		return nil, fmt.Errorf("getting localCluster: %w", err)
 	}
 
 	var pushImages bool
-	if runCtx.Pipeline().Build.LocalBuild.Push == nil {
+	if cfg.Pipeline().Build.LocalBuild.Push == nil {
 		pushImages = !localCluster
 		logrus.Debugf("push value not present, defaulting to %t because localCluster is %t", pushImages, localCluster)
 	} else {
-		pushImages = *runCtx.Pipeline().Build.LocalBuild.Push
+		pushImages = *cfg.Pipeline().Build.LocalBuild.Push
 	}
 
 	return &Builder{
-		cfg:                *runCtx.Pipeline().Build.LocalBuild,
-		kubeContext:        runCtx.GetKubeContext(),
+		cfg:                *cfg.Pipeline().Build.LocalBuild,
+		kubeContext:        cfg.GetKubeContext(),
 		localDocker:        localDocker,
 		localCluster:       localCluster,
 		pushImages:         pushImages,
-		skipTests:          runCtx.Opts.SkipTests,
-		mode:               runCtx.Mode(),
-		prune:              runCtx.Opts.Prune(),
-		pruneChildren:      !runCtx.Opts.NoPruneChildren,
-		insecureRegistries: runCtx.InsecureRegistries,
-		muted:              runCtx.Muted(),
+		skipTests:          cfg.SkipTests(),
+		mode:               cfg.Mode(),
+		prune:              cfg.Prune(),
+		pruneChildren:      !cfg.NoPruneChildren(),
+		insecureRegistries: cfg.GetInsecureRegistries(),
+		muted:              cfg.Muted(),
 	}, nil
 }
 

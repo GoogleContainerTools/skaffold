@@ -66,9 +66,8 @@ func TestDeploy(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-
 			t.Override(&client.Client, mockK8sClient)
-			t.Override(&newStatusCheck, func(*runcontext.RunContext, *deploy.DefaultLabeller) deploy.StatusChecker {
+			t.Override(&newStatusCheck, func(deploy.StatusCheckConfig, *deploy.DefaultLabeller) deploy.StatusChecker {
 				return dummyStatusChecker{}
 			})
 
@@ -118,7 +117,7 @@ func TestDeployNamespace(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
-			t.Override(&newStatusCheck, func(*runcontext.RunContext, *deploy.DefaultLabeller) deploy.StatusChecker {
+			t.Override(&newStatusCheck, func(deploy.StatusCheckConfig, *deploy.DefaultLabeller) deploy.StatusChecker {
 				return dummyStatusChecker{}
 			})
 
@@ -147,7 +146,7 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 
 		r := SkaffoldRunner{
 			runCtx:     runCtx,
-			kubectlCLI: kubectl.NewFromRunContext(runCtx),
+			kubectlCLI: kubectl.NewCLI(runCtx),
 			deployer:   getDeployer(runCtx, nil),
 		}
 		var builds []build.Artifact

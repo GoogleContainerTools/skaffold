@@ -23,8 +23,9 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -39,20 +40,29 @@ type Builder struct {
 	muted              build.Muted
 }
 
+type Config interface {
+	kubectl.Config
+	docker.Config
+
+	Pipeline() latest.Pipeline
+	GetKubeContext() string
+	Muted() config.Muted
+}
+
 // NewBuilder creates a new Builder that builds artifacts on cluster.
-func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
-	timeout, err := time.ParseDuration(runCtx.Pipeline().Build.Cluster.Timeout)
+func NewBuilder(cfg Config) (*Builder, error) {
+	timeout, err := time.ParseDuration(cfg.Pipeline().Build.Cluster.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("parsing timeout: %w", err)
 	}
 
 	return &Builder{
-		ClusterDetails:     runCtx.Pipeline().Build.Cluster,
-		kubectlcli:         kubectl.NewFromRunContext(runCtx),
+		ClusterDetails:     cfg.Pipeline().Build.Cluster,
+		kubectlcli:         kubectl.NewCLI(cfg),
 		timeout:            timeout,
-		kubeContext:        runCtx.GetKubeContext(),
-		insecureRegistries: runCtx.GetInsecureRegistries(),
-		muted:              runCtx.Muted(),
+		kubeContext:        cfg.GetKubeContext(),
+		insecureRegistries: cfg.GetInsecureRegistries(),
+		muted:              cfg.Muted(),
 	}, nil
 }
 

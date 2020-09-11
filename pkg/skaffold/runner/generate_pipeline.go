@@ -48,13 +48,13 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 	// Will run the profile setup multiple times and require user input for each specified config
 	color.Default.Fprintln(out, "Running profile setup...")
 	for _, configFile := range configFiles {
-		if err := pipeline.CreateSkaffoldProfile(out, r.runCtx, configFile); err != nil {
+		if err := pipeline.CreateSkaffoldProfile(out, r.runCtx.GetKubeNamespace(), configFile); err != nil {
 			return fmt.Errorf("setting up profile: %w", err)
 		}
 	}
 
 	color.Default.Fprintln(out, "Generating Pipeline...")
-	pipelineYaml, err := pipeline.Yaml(out, r.runCtx, configFiles)
+	pipelineYaml, err := pipeline.Yaml(out, r.runCtx.GetKubeNamespace(), configFiles)
 	if err != nil {
 		return fmt.Errorf("generating pipeline yaml contents: %w", err)
 	}

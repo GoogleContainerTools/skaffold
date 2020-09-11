@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v2beta7
 
 import (
 	v1 "k8s.io/api/core/v1"
@@ -22,8 +22,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2beta8"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v2beta7"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -604,11 +604,9 @@ type HelmRelease struct {
 	// ValuesFiles are the paths to the Helm `values` files.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty"`
 
-	// ArtifactOverrides are key value pairs where the
-	// key represents the parameter used in the `--set-string` Helm CLI flag to define a container
-	// image and the value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section.
-	// The resulting command-line is controlled by `ImageStrategy`.
-	ArtifactOverrides util.FlatMap `yaml:"artifactOverrides,omitempty"`
+	// ArtifactOverrides are key value pairs.
+	// If present, Skaffold will send `--set-string` flag to Helm CLI and append all pairs after the flag.
+	ArtifactOverrides util.FlatMap `yaml:"artifactOverrides,omitempty,omitempty"`
 
 	// Namespace is the Kubernetes namespace.
 	Namespace string `yaml:"namespace,omitempty"`
@@ -662,8 +660,7 @@ type HelmRelease struct {
 	// Packaged parameters for packaging helm chart (`helm package`).
 	Packaged *HelmPackaged `yaml:"packaged,omitempty"`
 
-	// ImageStrategy controls how an `ArtifactOverrides` entry is
-	// turned into `--set-string` Helm CLI flag or flags.
+	// ImageStrategy adds image configurations to the Helm `values` file.
 	ImageStrategy HelmImageStrategy `yaml:"imageStrategy,omitempty"`
 }
 
@@ -732,9 +729,6 @@ type Artifact struct {
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
-
-	// Dependencies describes build artifacts that this artifact depends on.
-	Dependencies []*ArtifactDependency `yaml:"requires,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.
@@ -855,14 +849,6 @@ type ArtifactType struct {
 
 	// CustomArtifact *beta* builds images using a custom build script written by the user.
 	CustomArtifact *CustomArtifact `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
-}
-
-// ArtifactDependency describes a specific build dependency for an artifact.
-type ArtifactDependency struct {
-	// Alias is the alias for this image that can be referenced in the builder.
-	Alias string `yaml:"alias" yamltags:"required"`
-	// ImageName is the artifact image name.
-	ImageName string `yaml:"image" yamltags:"required"`
 }
 
 // BuildpackArtifact *alpha* describes an artifact built using [Cloud Native Buildpacks](https://buildpacks.io/).

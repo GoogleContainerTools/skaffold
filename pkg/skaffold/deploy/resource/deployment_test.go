@@ -100,12 +100,10 @@ func TestDeploymentCheckStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			r := NewDeployment("dep", "test", 0)
-			runCtx := &runcontext.RunContext{
-				KubeContext: "kubecontext",
-			}
 
-			r.CheckStatus(context.Background(), runCtx)
+			r := NewDeployment("dep", "test", 0)
+			r.CheckStatus(context.Background(), &statusConfig{})
+
 			if test.cancelled {
 				r.UpdateStatus(proto.ActionableErr{
 					ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED,
@@ -366,3 +364,9 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 		})
 	}
 }
+
+type statusConfig struct {
+	runcontext.RunContext // Embedded to provide the default values.
+}
+
+func (c *statusConfig) GetKubeContext() string { return "kubecontext" }

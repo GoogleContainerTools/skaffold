@@ -23,10 +23,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/docker/docker/client"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -86,11 +87,13 @@ func TestDockerCLIBuild(t *testing.T) {
 			))
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeMinikubeClient{} })
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
-			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
-				return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, test.extraEnv, false, nil), nil
+			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+				return fakeLocalDaemonWithExtraEnv(test.extraEnv), nil
 			})
 
-			builder, err := NewBuilder(stubRunContext(test.localBuild))
+			builder, err := NewBuilder(&mockConfig{
+				local: test.localBuild,
+			})
 			t.CheckNoError(err)
 
 			artifact := &latest.Artifact{
@@ -106,6 +109,14 @@ func TestDockerCLIBuild(t *testing.T) {
 			t.CheckNoError(err)
 		})
 	}
+}
+
+func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
+	return docker.NewLocalDaemon(api, nil, false, nil)
+}
+
+func fakeLocalDaemonWithExtraEnv(extraEnv []string) docker.LocalDaemon {
+	return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, extraEnv, false, nil)
 }
 
 type fakeMinikubeClient struct{}

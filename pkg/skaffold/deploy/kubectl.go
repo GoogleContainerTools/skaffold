@@ -33,9 +33,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -54,17 +54,28 @@ type KubectlDeployer struct {
 	skipRender         bool
 }
 
+type Config interface {
+	deploy.Config
+	docker.Config
+
+	Pipeline() latest.Pipeline
+	GetWorkingDir() string
+	GlobalConfig() string
+	DefaultRepo() *string
+	SkipRender() bool
+}
+
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KubectlDeployer {
+func NewKubectlDeployer(cfg Config, labels map[string]string) *KubectlDeployer {
 	return &KubectlDeployer{
-		KubectlDeploy:      runCtx.Pipeline().Deploy.KubectlDeploy,
-		workingDir:         runCtx.GetWorkingDir(),
-		globalConfig:       runCtx.GlobalConfig(),
-		defaultRepo:        runCtx.DefaultRepo(),
-		kubectl:            deploy.NewCLI(runCtx, runCtx.Pipeline().Deploy.KubectlDeploy.Flags),
-		insecureRegistries: runCtx.GetInsecureRegistries(),
-		skipRender:         runCtx.SkipRender(),
+		KubectlDeploy:      cfg.Pipeline().Deploy.KubectlDeploy,
+		workingDir:         cfg.GetWorkingDir(),
+		globalConfig:       cfg.GlobalConfig(),
+		defaultRepo:        cfg.DefaultRepo(),
+		kubectl:            deploy.NewCLI(cfg, cfg.Pipeline().Deploy.KubectlDeploy.Flags),
+		insecureRegistries: cfg.GetInsecureRegistries(),
+		skipRender:         cfg.SkipRender(),
 		labels:             labels,
 	}
 }

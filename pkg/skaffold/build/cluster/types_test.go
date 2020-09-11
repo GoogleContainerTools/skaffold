@@ -40,22 +40,28 @@ func TestNewBuilder(t *testing.T) {
 	tests := []struct {
 		description     string
 		shouldErr       bool
-		runCtx          *runcontext.RunContext
+		cfg             Config
 		expectedBuilder *Builder
 	}{
 		{
 			description: "failed to parse cluster build timeout",
-			runCtx: stubRunContext(&latest.ClusterDetails{
-				Timeout: "illegal",
-			}, nil),
+			cfg: &mockConfig{
+				cluster: latest.ClusterDetails{
+					Timeout: "illegal",
+				},
+			},
 			shouldErr: true,
 		},
 		{
 			description: "cluster builder inherits the config",
-			runCtx: stubRunContext(&latest.ClusterDetails{
-				Timeout:   "100s",
-				Namespace: "test-ns",
-			}, nil),
+			cfg: &mockConfig{
+				kubeContext: kubeContext,
+				namespace:   namespace,
+				cluster: latest.ClusterDetails{
+					Timeout:   "100s",
+					Namespace: "test-ns",
+				},
+			},
 			shouldErr: false,
 			expectedBuilder: &Builder{
 				ClusterDetails: &latest.ClusterDetails{
@@ -74,10 +80,15 @@ func TestNewBuilder(t *testing.T) {
 		},
 		{
 			description: "insecure registries are taken from the run context",
-			runCtx: stubRunContext(&latest.ClusterDetails{
-				Timeout:   "100s",
-				Namespace: "test-ns",
-			}, map[string]bool{"insecure-reg1": true}),
+			cfg: &mockConfig{
+				kubeContext:        kubeContext,
+				namespace:          namespace,
+				insecureRegistries: map[string]bool{"insecure-reg1": true},
+				cluster: latest.ClusterDetails{
+					Timeout:   "100s",
+					Namespace: "test-ns",
+				},
+			},
 			shouldErr: false,
 			expectedBuilder: &Builder{
 				ClusterDetails: &latest.ClusterDetails{
@@ -97,7 +108,7 @@ func TestNewBuilder(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			builder, err := NewBuilder(test.runCtx)
+			builder, err := NewBuilder(test.cfg)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
@@ -112,16 +123,19 @@ func TestPruneIsNoop(t *testing.T) {
 	testutil.CheckDeepEqual(t, nil, pruneError)
 }
 
-func stubRunContext(clusterDetails *latest.ClusterDetails, insecureRegistries map[string]bool) *runcontext.RunContext {
-	pipeline := latest.Pipeline{}
-	pipeline.Build.BuildType.Cluster = clusterDetails
+type mockConfig struct {
+	runcontext.RunContext // Embedded to provide the default values.
+	kubeContext           string
+	namespace             string
+	insecureRegistries    map[string]bool
+	cluster               latest.ClusterDetails
+}
 
-	return &runcontext.RunContext{
-		Cfg:                pipeline,
-		InsecureRegistries: insecureRegistries,
-		KubeContext:        kubeContext,
-		Opts: config.SkaffoldOptions{
-			Namespace: namespace,
-		},
-	}
+func (c *mockConfig) GetKubeContext() string                 { return c.kubeContext }
+func (c *mockConfig) GetKubeNamespace() string               { return c.namespace }
+func (c *mockConfig) GetInsecureRegistries() map[string]bool { return c.insecureRegistries }
+func (c *mockConfig) Pipeline() latest.Pipeline {
+	var pipeline latest.Pipeline
+	pipeline.Build.BuildType.Cluster = &c.cluster
+	return pipeline
 }
