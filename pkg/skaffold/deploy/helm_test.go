@@ -272,6 +272,7 @@ var testTwoReleases = latest.HelmDeploy{
 	}},
 }
 
+var crateNamespaceFlag = true
 var testDeployCreateNamespaceConfig = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
@@ -284,7 +285,7 @@ var testDeployCreateNamespaceConfig = latest.HelmDeploy{
 			"some.key": "somevalue",
 		},
 		Namespace:       "testReleaseNamespace",
-		CreateNamespace: true,
+		CreateNamespace: &crateNamespaceFlag,
 	}},
 }
 
@@ -838,15 +839,14 @@ func TestHelmDeploy(t *testing.T) {
 			builds: testBuilds,
 		},
 		{
-			description: "helm3.1 get failure should install without createNamespace not upgrade",
+			description: "helm3.1 should fail to deploy with createNamespace option",
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig", fmt.Errorf("not found")).
-				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext install skaffold-helm examples/test --namespace testReleaseNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig"),
-			helm:   testDeployCreateNamespaceConfig,
-			builds: testBuilds,
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig"),
+			helm:      testDeployCreateNamespaceConfig,
+			builds:    testBuilds,
+			shouldErr: true,
 		},
 		{
 			description: "helm3.2 get failure should install with createNamespace not upgrade",

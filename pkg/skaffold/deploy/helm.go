@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -507,7 +508,10 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		args = append(args, "--namespace", o.namespace)
 	}
 
-	if r.CreateNamespace && o.helmVersion.GE(helm32Version) && !o.upgrade {
+	if r.CreateNamespace != nil && *r.CreateNamespace && !o.upgrade {
+		if o.helmVersion.LT(helm32Version) {
+			return nil, errors.New("the createNamespace option is not available in the current Helm version. Update Helm to version 3.2 or higher")
+		}
 		args = append(args, "--create-namespace")
 	}
 
