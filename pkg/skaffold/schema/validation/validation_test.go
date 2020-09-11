@@ -757,7 +757,7 @@ func TestValidateArtifactCircularDependencies(t *testing.T) {
 	tests := []struct {
 		description string
 		artifactLen int
-		dependency  [][]int
+		dependency  map[int][]int
 		shouldErr   bool
 	}{
 		{
@@ -766,21 +766,21 @@ func TestValidateArtifactCircularDependencies(t *testing.T) {
 		},
 		{
 			description: "artifacts with dependencies",
-			dependency: [][]int{
-				{1, 3, 4},
-				{3, 2},
-				{2, 4},
-				{4, 5},
+			dependency: map[int][]int{
+				0: {2, 3},
+				1: {3},
+				2: {1},
+				3: {4},
 			},
 			artifactLen: 5,
 		},
 		{
 			description: "artifacts with circular dependencies",
-			dependency: [][]int{
-				{1, 3, 4},
-				{3, 2},
-				{2, 1},
-				{4, 5},
+			dependency: map[int][]int{
+				0: {2, 3},
+				1: {0},
+				2: {1},
+				3: {4},
 			},
 			artifactLen: 5,
 			shouldErr:   true,
@@ -812,14 +812,18 @@ func TestValidateArtifactCircularDependencies(t *testing.T) {
 	}
 }
 
-func setDependencies(a []*latest.Artifact, d [][]int) {
-	for _, dep := range d {
+// setDependencies constructs a graph of artifact dependencies using the map as an adjacency list representation of indices in the artifacts array.
+// For example:
+// m = {
+// 	0 : {1, 2},
+//  2 : {3},
+//}
+// implies that a[0] artifact depends on a[1] and a[2]; and a[2] depends on a[3].
+func setDependencies(a []*latest.Artifact, d map[int][]int) {
+	for k, dep := range d {
 		for i := range dep {
-			if i == 0 {
-				continue
-			}
-			a[dep[0]-1].Dependencies = append(a[dep[0]-1].Dependencies, &latest.ArtifactDependency{
-				ImageName: a[dep[i]-1].ImageName,
+			a[k].Dependencies = append(a[k].Dependencies, &latest.ArtifactDependency{
+				ImageName: a[dep[i]].ImageName,
 			})
 		}
 	}
@@ -830,34 +834,22 @@ func TestValidateArtifactDependencyUniqueness(t *testing.T) {
 		{
 			ImageName: "artifact1",
 			Dependencies: []*latest.ArtifactDependency{
-				{
-					Alias:     "alias2",
-					ImageName: "artifact2a",
-				},
-				{
-					Alias:     "alias2",
-					ImageName: "artifact2b",
-				},
+				{Alias: "alias2", ImageName: "artifact2a"},
+				{Alias: "alias2", ImageName: "artifact2b"},
 			},
 		},
 		{
 			ImageName: "artifact2",
 			Dependencies: []*latest.ArtifactDependency{
-				{
-					Alias:     "alias1",
-					ImageName: "artifact1",
-				},
-				{
-					Alias:     "alias2",
-					ImageName: "artifact1",
-				},
+				{Alias: "alias1", ImageName: "artifact1"},
+				{Alias: "alias2", ImageName: "artifact1"},
 			},
 		},
 	}
 	expected := []error{
 		fmt.Errorf(`invalid build dependency for artifact "artifact1": alias "alias2" repeated`),
 		fmt.Errorf(`invalid build dependency for artifact "artifact2": image name "artifact1" repeated`),
-		fmt.Errorf(`invalid build dependency 'artifact2a' for artifact 'artifact1': not found`),
+		fmt.Errorf(`unknown build dependency "artifact2a" for artifact "artifact1"`),
 	}
 	errs := validateArtifactDependencies(artifacts)
 	testutil.CheckDeepEqual(t, expected, errs, cmp.Comparer(errorsComparer))

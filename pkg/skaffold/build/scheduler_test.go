@@ -306,7 +306,7 @@ func TestInOrderForArgs(t *testing.T) {
 		buildArtifact ArtifactBuilder
 		artifactLen   int
 		concurrency   int
-		dependency    [][]int
+		dependency    map[int][]int
 		expected      []Artifact
 	}{
 		{
@@ -325,11 +325,11 @@ func TestInOrderForArgs(t *testing.T) {
 			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
 				return tag, nil
 			},
-			dependency: [][]int{
-				{1, 3, 4},
-				{3, 2},
-				{2, 4},
-				{4, 5},
+			dependency: map[int][]int{
+				0: {2, 3},
+				1: {3},
+				2: {1},
+				3: {4},
 			},
 			artifactLen: 5,
 			expected: []Artifact{
@@ -345,11 +345,11 @@ func TestInOrderForArgs(t *testing.T) {
 			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
 				return tag, nil
 			},
-			dependency: [][]int{
-				{1, 3, 4},
-				{3, 2},
-				{2, 4},
-				{4, 5},
+			dependency: map[int][]int{
+				0: {2, 3},
+				1: {3},
+				2: {1},
+				3: {4},
 			},
 			artifactLen: 5,
 			concurrency: 2,
@@ -386,14 +386,18 @@ func TestInOrderForArgs(t *testing.T) {
 	}
 }
 
-func setDependencies(a []*latest.Artifact, d [][]int) {
-	for _, dep := range d {
+// setDependencies constructs a graph of artifact dependencies using the map as an adjacency list representation of indices in the artifacts array.
+// For example:
+// m = {
+// 	0 : {1, 2},
+//  2 : {3},
+//}
+// implies that a[0] artifact depends on a[1] and a[2]; and a[2] depends on a[3].
+func setDependencies(a []*latest.Artifact, d map[int][]int) {
+	for k, dep := range d {
 		for i := range dep {
-			if i == 0 {
-				continue
-			}
-			a[dep[0]-1].Dependencies = append(a[dep[0]-1].Dependencies, &latest.ArtifactDependency{
-				ImageName: a[dep[i]-1].ImageName,
+			a[k].Dependencies = append(a[k].Dependencies, &latest.ArtifactDependency{
+				ImageName: a[dep[i]].ImageName,
 			})
 		}
 	}
@@ -409,16 +413,13 @@ func setUpChannels(n int) []chan string {
 }
 
 func initializeEvents() {
-	event.InitializeState(latest.Pipeline{
+	pipe := latest.Pipeline{
 		Deploy: latest.DeployConfig{},
 		Build: latest.BuildConfig{
 			BuildType: latest.BuildType{
 				LocalBuild: &latest.LocalBuild{},
 			},
 		},
-	},
-		"temp",
-		true,
-		true,
-		true)
+	}
+	event.InitializeState(pipe, "temp", true, true, true)
 }
