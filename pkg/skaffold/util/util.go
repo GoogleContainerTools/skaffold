@@ -229,6 +229,18 @@ func EnvPtrMapToSlice(m map[string]*string, separator string) []string {
 	return sl
 }
 
+// EnvSliceToMap converts a string slice into a map of (string,string) using the given separator
+func EnvSliceToMap(slice []string, separator string) map[string]string {
+	m := make(map[string]string, len(slice))
+	for _, e := range slice {
+		// Toss any keys without a value
+		if v := strings.SplitN(e, separator, 2); len(v) == 2 {
+			m[v[0]] = v[1]
+		}
+	}
+	return m
+}
+
 func isAlphaNum(c uint8) bool {
 	return c == '_' || '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'
 }

@@ -372,9 +372,12 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 			defer cleanup()
 		}
 
-		// need to include current environment, specifically for HOME to lookup ~/.kube/config
 		cmdLine := h.generateSkaffoldDebugFilter(buildsFile)
-		installEnv = append(util.OSEnviron(), "SKAFFOLD_CMDLINE="+strings.Join(cmdLine, " "))
+
+		// need to include current environment, specifically for HOME to lookup ~/.kube/config
+		env := util.EnvSliceToMap(util.OSEnviron(), "=")
+		env["SKAFFOLD_CMDLINE"] = strings.Join(cmdLine, " ")
+		installEnv = util.EnvMapToSlice(env, "=")
 	}
 
 	if h.namespace != "" {
