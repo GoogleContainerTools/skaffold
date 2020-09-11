@@ -98,7 +98,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			case quietFlag:
 				logrus.Debugf("Update check and survey prompt disabled in quiet mode")
 			case analyze:
-				logrus.Debugf("Update check and survey prompt when running `init --analyze`")
+				logrus.Debugf("Update check and survey prompt disabled when running `init --analyze`")
 			default:
 				go func() {
 					msg, err := update.CheckVersion(opts.GlobalConfig)

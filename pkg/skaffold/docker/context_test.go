@@ -46,7 +46,7 @@ func TestDockerContext(t *testing.T) {
 
 			reader, writer := io.Pipe()
 			go func() {
-				err := CreateDockerTarContext(context.Background(), writer, dir, artifact, nil)
+				err := CreateDockerTarContext(context.Background(), writer, dir, artifact.DockerfilePath, artifact.BuildArgs, nil)
 				if err != nil {
 					writer.CloseWithError(err)
 				} else {

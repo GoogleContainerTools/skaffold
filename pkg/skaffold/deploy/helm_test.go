@@ -23,6 +23,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/mitchellh/go-homedir"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -112,7 +114,8 @@ var testDeployConfigSetFiles = latest.HelmDeploy{
 		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 		SetFiles: map[string]string{
-			"value": "/some/file.yaml",
+			"expanded": "~/file.yaml",
+			"value":    "/some/file.yaml",
 		},
 	}},
 }
@@ -399,6 +402,10 @@ func TestHelmDeploy(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "TestHelmDeploy")
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
+	}
+	home, err := homedir.Dir()
+	if err != nil {
+		t.Fatalf("Cannot get homedir: %v", err)
 	}
 
 	tests := []struct {
@@ -785,7 +792,7 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version20rc).
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set-file value=/some/file.yaml --kubeconfig kubeconfig").
+				AndRun(fmt.Sprintf("helm --kube-context kubecontext upgrade skaffold-helm examples/test -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set-file expanded=%s --set-file value=/some/file.yaml --kubeconfig kubeconfig", filepath.Join(home, "file.yaml"))).
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig"),
 			helm:   testDeployConfigSetFiles,
 			builds: testBuilds,

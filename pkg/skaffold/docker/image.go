@@ -171,7 +171,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a, l.insecureRegistries)
+		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a.DockerfilePath, buildArgs, l.insecureRegistries)
 		if err != nil {
 			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return
