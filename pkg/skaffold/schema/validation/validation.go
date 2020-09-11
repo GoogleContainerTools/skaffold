@@ -114,7 +114,7 @@ func dfs(artifact *latest.Artifact, visited, marked map[string]bool, artifacts m
 	for _, dep := range artifact.Dependencies {
 		d, found := artifacts[dep.ImageName]
 		if !found {
-			return fmt.Errorf("invalid build dependency '%s' for artifact '%s': not found", dep.ImageName, artifact.ImageName)
+			return fmt.Errorf("unknown build dependency %q for artifact %q", dep.ImageName, artifact.ImageName)
 		}
 		if err := dfs(d, visited, marked, artifacts); err != nil {
 			return err
