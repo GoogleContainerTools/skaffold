@@ -63,6 +63,9 @@ var (
 
 	// error to throw when helm version can't be determined
 	versionErrorString = "failed to determine binary version: %w"
+
+	// osExecutable allows for replacing the skaffold binary for testing purposes
+	osExecutable = os.Executable
 )
 
 // HelmDeployer deploys workflows using the helm CLI
@@ -354,7 +357,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 			return nil, fmt.Errorf("debug requires at least Helm 3.1 (current: %v)", hv)
 		}
 		var binary string
-		if binary, err = os.Executable(); err != nil {
+		if binary, err = osExecutable(); err != nil {
 			return nil, fmt.Errorf("cannot locate this Skaffold binary: %w", err)
 		}
 		opts.postRenderer = binary
@@ -472,7 +475,7 @@ func (h *HelmDeployer) getRelease(ctx context.Context, helmVersion semver.Versio
 // binVer returns the version of the helm binary found in PATH. May be cached.
 func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
 	// Return the cached version value if non-zero
-	if h.bV.Major != 0 && h.bV.Minor != 0 {
+	if h.bV.Major != 0 || h.bV.Minor != 0 {
 		return h.bV, nil
 	}
 

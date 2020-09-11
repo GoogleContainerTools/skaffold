@@ -406,6 +406,7 @@ func TestHelmDeploy(t *testing.T) {
 		commands         util.Command
 		helm             latest.HelmDeploy
 		namespace        string
+		configure        func(*HelmDeployer)
 		builds           []build.Artifact
 		force            bool
 		shouldErr        bool
@@ -820,6 +821,26 @@ func TestHelmDeploy(t *testing.T) {
 			helm:   testTwoReleases,
 			builds: testBuilds,
 		},
+		{
+			description: "debug for helm3.0 failure",
+			commands:    testutil.CmdRunWithOutput("helm version --client", version30),
+			shouldErr:   true,
+			helm:        testDeployConfig,
+			builds:      testBuilds,
+			configure:   func(deployer *HelmDeployer) { deployer.enableDebug = true },
+		},
+		{
+			description: "debug for helm3.1 success",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm --post-renderer SKAFFOLD-BINARY examples/test -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig"),
+			helm:      testDeployConfig,
+			builds:    testBuilds,
+			configure: func(deployer *HelmDeployer) { deployer.enableDebug = true },
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -827,12 +848,16 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&osExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 
 			deployer := NewHelmDeployer(&helmConfig{
 				helm:      test.helm,
 				namespace: test.namespace,
 				force:     test.force,
 			}, nil)
+			if test.configure != nil {
+				test.configure(deployer)
+			}
 			deployer.pkgTmpDir = tmpDir
 			_, err := deployer.Deploy(context.Background(), ioutil.Discard, test.builds)
 
