@@ -79,13 +79,13 @@ func validateImageNames(artifacts []*latest.Artifact) (errs []error) {
 }
 
 func validateArtifactDependencies(artifacts []*latest.Artifact) (errs []error) {
-	errs = append(errs, validateArtifactDependencyUniqueness(artifacts)...)
-	errs = append(errs, validateArtifactCircularDependencies(artifacts)...)
+	errs = append(errs, validateUniqueArtifactDependencies(artifacts)...)
+	errs = append(errs, validateAcyclicArtifactDependencies(artifacts)...)
 	return
 }
 
-// validateArtifactDependencies makes sure all artifact dependencies are found and don't have cyclic references
-func validateArtifactCircularDependencies(artifacts []*latest.Artifact) (errs []error) {
+// validateAcyclicArtifactDependencies makes sure all artifact dependencies are found and don't have cyclic references
+func validateAcyclicArtifactDependencies(artifacts []*latest.Artifact) (errs []error) {
 	m := make(map[string]*latest.Artifact)
 	for _, artifact := range artifacts {
 		m[artifact.ImageName] = artifact
@@ -124,8 +124,8 @@ func dfs(artifact *latest.Artifact, visited, marked map[string]bool, artifacts m
 	return nil
 }
 
-// validateArtifactDependencyUniqueness makes sure that artifact dependency aliases and image names are unique for each artifact
-func validateArtifactDependencyUniqueness(artifacts []*latest.Artifact) (errs []error) {
+// validateUniqueArtifactDependencies makes sure that artifact dependency aliases and image names are unique for each artifact
+func validateUniqueArtifactDependencies(artifacts []*latest.Artifact) (errs []error) {
 	type State int
 	var (
 		unseen   State = 0

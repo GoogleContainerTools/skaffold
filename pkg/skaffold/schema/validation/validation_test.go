@@ -799,7 +799,7 @@ func TestValidateArtifactCircularDependencies(t *testing.T) {
 			}
 
 			setDependencies(artifacts, test.dependency)
-			errs := validateArtifactCircularDependencies(artifacts)
+			errs := validateAcyclicArtifactDependencies(artifacts)
 			expected := []error{
 				fmt.Errorf("cycle detected in build dependencies involving 'artifact1'"),
 			}
