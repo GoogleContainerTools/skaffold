@@ -32,6 +32,7 @@ func TestGetDeployedArtifacts(t *testing.T) {
 		fromFile    []build.Artifact
 		fromCLI     []build.Artifact
 		expected    []build.Artifact
+		customTag   string
 		shouldErr   bool
 	}{
 		{
@@ -82,9 +83,29 @@ func TestGetDeployedArtifacts(t *testing.T) {
 			fromCLI:     nil,
 			shouldErr:   true,
 		},
+		{
+			description: "override tag",
+			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
+			fromFile:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}},
+			fromCLI:     []build.Artifact{{ImageName: "image2", Tag: "image2:tag"}},
+			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
+			customTag:   "test",
+		},
+		{
+			description: "override missing tag",
+			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
+			fromFile:    nil,
+			fromCLI:     nil,
+			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
+			customTag:   "test",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			if test.customTag != "" {
+				t.Override(&opts.CustomTag, test.customTag)
+			}
+
 			deployed, err := getArtifactsToDeploy(ioutil.Discard, test.fromFile, test.fromCLI, test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deployed)

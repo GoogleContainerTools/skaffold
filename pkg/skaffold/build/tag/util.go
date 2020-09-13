@@ -40,3 +40,18 @@ func StripTags(taggedImages []string) []string {
 	}
 	return images
 }
+
+func SetImageTag(image, tag string) (string, error) {
+	parsed, err := docker.ParseReference(image)
+	if err != nil {
+		return "", err
+	}
+	image = parsed.BaseName
+	if tag != "" {
+		image = image + ":" + tag
+	}
+	if parsed.Digest != "" {
+		image = image + "@" + parsed.Digest
+	}
+	return image, nil
+}

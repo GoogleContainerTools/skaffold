@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -87,6 +88,21 @@ func getArtifactsToDeploy(out io.Writer, fromFile, fromCLI []build.Artifact, art
 	// Tags provided by file take precedence over those provided on the command line
 	deployed = build.MergeWithPreviousBuilds(fromCLI, deployed)
 	deployed = build.MergeWithPreviousBuilds(fromFile, deployed)
+
+	if opts.CustomTag != "" {
+		for i := range deployed {
+			artifact := &deployed[i]
+			if artifact.Tag == "" {
+				artifact.Tag = artifact.ImageName + ":" + opts.CustomTag
+			} else {
+				newTag, err := tag.SetImageTag(artifact.Tag, opts.CustomTag)
+				if err != nil {
+					return nil, err
+				}
+				artifact.Tag = newTag
+			}
+		}
+	}
 
 	// Check that every image has a non empty tag
 	for _, d := range deployed {
