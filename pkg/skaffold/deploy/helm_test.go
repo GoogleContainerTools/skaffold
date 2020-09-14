@@ -272,7 +272,7 @@ var testTwoReleases = latest.HelmDeploy{
 	}},
 }
 
-var crateNamespaceFlag = true
+var createNamespaceFlag = true
 var testDeployCreateNamespaceConfig = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
@@ -285,7 +285,7 @@ var testDeployCreateNamespaceConfig = latest.HelmDeploy{
 			"some.key": "somevalue",
 		},
 		Namespace:       "testReleaseNamespace",
-		CreateNamespace: &crateNamespaceFlag,
+		CreateNamespace: &createNamespaceFlag,
 	}},
 }
 
