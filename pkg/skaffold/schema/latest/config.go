@@ -630,6 +630,11 @@ type HelmRelease struct {
 	// If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.
 	SetFiles map[string]string `yaml:"setFiles,omitempty"`
 
+	// CreateNamespace if `true`, Skaffold will send `--create-namespace` flag to Helm CLI.
+	// `--create-namespace` flag is available in Helm since version 3.2.
+	// Defaults is `false`.
+	CreateNamespace *bool `yaml:"createNamespace,omitempty"`
+
 	// Wait if `true`, Skaffold will send `--wait` flag to Helm CLI.
 	// Defaults to `false`.
 	Wait bool `yaml:"wait,omitempty"`

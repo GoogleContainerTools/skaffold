@@ -54,7 +54,8 @@ var (
 	versionRegex = regexp.MustCompile(`v(\d[\w.\-]+)`)
 
 	// helm3Version represents the version cut-off for helm3 behavior
-	helm3Version = semver.MustParse("3.0.0-beta.0")
+	helm3Version  = semver.MustParse("3.0.0-beta.0")
+	helm32Version = semver.MustParse("3.2.0")
 
 	// error to throw when helm version can't be determined
 	versionErrorString = "failed to determine binary version: %w"
@@ -507,6 +508,13 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 
 	if o.namespace != "" {
 		args = append(args, "--namespace", o.namespace)
+	}
+
+	if r.CreateNamespace != nil && *r.CreateNamespace && !o.upgrade {
+		if o.helmVersion.LT(helm32Version) {
+			return nil, errors.New("the createNamespace option is not available in the current Helm version. Update Helm to version 3.2 or higher")
+		}
+		args = append(args, "--create-namespace")
 	}
 
 	params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
