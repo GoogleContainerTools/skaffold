@@ -502,7 +502,7 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			cfg: &ContextConfig{
 				Survey: &SurveyConfig{
 					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  "2019-09-10T00:00:00Z",
+					LastPrompted:  "2018-09-10T00:00:00Z",
 				},
 			},
 			expected: true,
