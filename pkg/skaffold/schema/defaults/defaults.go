@@ -68,6 +68,10 @@ func Set(c *latest.SkaffoldConfig) error {
 		case a.BuildpackArtifact != nil:
 			setBuildpackArtifactDefaults(a.BuildpackArtifact)
 		}
+
+		for _, d := range a.Dependencies {
+			setDefaultArtifactDependencyAlias(d)
+		}
 	}
 
 	withLocalBuild(c,
@@ -369,5 +373,11 @@ func setDefaultPortForwardNamespace(pf *latest.PortForwardResource) {
 func setDefaultAddress(pf *latest.PortForwardResource) {
 	if pf.Address == "" {
 		pf.Address = constants.DefaultPortForwardAddress
+	}
+}
+
+func setDefaultArtifactDependencyAlias(d *latest.ArtifactDependency) {
+	if d.Alias == "" {
+		d.Alias = d.ImageName
 	}
 }

@@ -35,6 +35,10 @@ func TestSetDefaults(t *testing.T) {
 				Artifacts: []*latest.Artifact{
 					{
 						ImageName: "first",
+						Dependencies: []*latest.ArtifactDependency{
+							{ImageName: "second", Alias: "secondAlias"},
+							{ImageName: "third"},
+						},
 					},
 					{
 						ImageName: "second",
@@ -83,6 +87,8 @@ func TestSetDefaults(t *testing.T) {
 	testutil.CheckDeepEqual(t, "first", cfg.Build.Artifacts[0].ImageName)
 	testutil.CheckDeepEqual(t, ".", cfg.Build.Artifacts[0].Workspace)
 	testutil.CheckDeepEqual(t, "Dockerfile", cfg.Build.Artifacts[0].DockerArtifact.DockerfilePath)
+	testutil.CheckDeepEqual(t, "secondAlias", cfg.Build.Artifacts[0].Dependencies[0].Alias)
+	testutil.CheckDeepEqual(t, "third", cfg.Build.Artifacts[0].Dependencies[1].Alias)
 
 	testutil.CheckDeepEqual(t, "second", cfg.Build.Artifacts[1].ImageName)
 	testutil.CheckDeepEqual(t, "folder", cfg.Build.Artifacts[1].Workspace)

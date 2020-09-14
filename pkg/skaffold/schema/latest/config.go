@@ -859,11 +859,12 @@ type ArtifactType struct {
 
 // ArtifactDependency describes a specific build dependency for an artifact.
 type ArtifactDependency struct {
-	// Alias is a token that will be replaced with the image reference in the builder definition files.
-	// For example, the `docker` builder will use the alias as a build-time variable.
-	Alias string `yaml:"alias" yamltags:"required"`
 	// ImageName is the artifact image name.
 	ImageName string `yaml:"image" yamltags:"required"`
+	// Alias is a token that will be replaced with the image reference in the builder definition files.
+	// For example, the `docker` builder will use the alias as a build-time variable.
+	// Defaults to the value of `image`.
+	Alias string `yaml:"alias,omitempty"`
 }
 
 // BuildpackArtifact *alpha* describes an artifact built using [Cloud Native Buildpacks](https://buildpacks.io/).

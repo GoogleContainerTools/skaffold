@@ -363,14 +363,13 @@
     },
     "ArtifactDependency": {
       "required": [
-        "alias",
         "image"
       ],
       "properties": {
         "alias": {
           "type": "string",
-          "description": "a token that will be replaced with the image reference in the builder definition files. For example, the `docker` builder will use the alias as a build-time variable.",
-          "x-intellij-html-description": "a token that will be replaced with the image reference in the builder definition files. For example, the <code>docker</code> builder will use the alias as a build-time variable."
+          "description": "a token that will be replaced with the image reference in the builder definition files. For example, the `docker` builder will use the alias as a build-time variable. Defaults to the value of `image`.",
+          "x-intellij-html-description": "a token that will be replaced with the image reference in the builder definition files. For example, the <code>docker</code> builder will use the alias as a build-time variable. Defaults to the value of <code>image</code>."
         },
         "image": {
           "type": "string",
@@ -379,8 +378,8 @@
         }
       },
       "preferredOrder": [
-        "alias",
-        "image"
+        "image",
+        "alias"
       ],
       "additionalProperties": false,
       "description": "describes a specific build dependency for an artifact.",
