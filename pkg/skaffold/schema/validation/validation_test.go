@@ -815,8 +815,8 @@ func TestValidateArtifactCircularDependencies(t *testing.T) {
 // setDependencies constructs a graph of artifact dependencies using the map as an adjacency list representation of indices in the artifacts array.
 // For example:
 // m = {
-// 	0 : {1, 2},
-//  2 : {3},
+//    0 : {1, 2},
+//    2 : {3},
 //}
 // implies that a[0] artifact depends on a[1] and a[2]; and a[2] depends on a[3].
 func setDependencies(a []*latest.Artifact, d map[int][]int) {

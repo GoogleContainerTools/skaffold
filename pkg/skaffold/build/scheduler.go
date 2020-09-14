@@ -38,22 +38,22 @@ var (
 	buffSize = bufferedLinesPerArtifact
 )
 
-// artifactWithDeps models the artifact dependency graph using a set of channels.
-// Each artifact has a channel that it closes once it completes building (either success or failure) by calling `markComplete`
+// artifactChanModel models the artifact dependency graph using a set of channels.
+// Each artifact has a channel that it closes once it completes building (either success or failure) by calling `markComplete`. This notifies *all* listeners waiting for this artifact.
 // Additionally it has a list of channels for each of its dependencies.
 // Calling `waitForDependencies` ensures that all required artifacts' channels have already been closed and as such have finished building.
 // This model allows for composing any arbitrary function with dependency ordering.
-type artifactWithDeps struct {
+type artifactChanModel struct {
 	artifact              *latest.Artifact
 	artifactChan          chan interface{}
 	requiredArtifactChans []chan interface{}
 }
 
-func (a artifactWithDeps) markComplete() {
+func (a artifactChanModel) markComplete() {
 	// closing channel notifies all listeners waiting for this build to complete
 	close(a.artifactChan)
 }
-func (a artifactWithDeps) waitForDependencies(ctx context.Context) {
+func (a artifactChanModel) waitForDependencies(ctx context.Context) {
 	for _, dep := range a.requiredArtifactChans {
 		// wait for dependency to complete build
 		select {
@@ -63,9 +63,10 @@ func (a artifactWithDeps) waitForDependencies(ctx context.Context) {
 	}
 }
 
-// InOrder builds a list of artifacts in dependency order within the specified max concurrency
+// InOrder builds a list of artifacts in dependency order.
+// `concurrency` specifies the max number of builds that can run at any one time. If concurrency is 0, then it's set to the length of the `artifacts` slice.
 func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
-	awdSlice := artifactWithDepsFor(artifacts)
+	acmSlice := makeArtifactChanModel(artifacts)
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
@@ -73,25 +74,25 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 	defer cancel()
 
 	results := new(sync.Map)
-	outputs := make([]chan string, len(awdSlice))
+	outputs := make([]chan string, len(acmSlice))
 
 	if concurrency == 0 {
-		concurrency = len(awdSlice)
+		concurrency = len(acmSlice)
 	}
 	sem := make(chan bool, concurrency)
 
 	wg.Add(len(artifacts))
-	for i := range awdSlice {
+	for i := range acmSlice {
 		outputs[i] = make(chan string, buffSize)
 		r, w := io.Pipe()
 
 		// Run build and write output/logs to piped writer and store build result in
 		// sync.Map
 		go func(i int) {
-			awdSlice[i].waitForDependencies(ctx)
+			acmSlice[i].waitForDependencies(ctx)
 			sem <- true
-			runBuild(ctx, w, tags, awdSlice[i].artifact, results, buildArtifact)
-			awdSlice[i].markComplete()
+			runBuild(ctx, w, tags, acmSlice[i].artifact, results, buildArtifact)
+			acmSlice[i].markComplete()
 			<-sem
 
 			wg.Done()
@@ -105,21 +106,21 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 	return collectResults(out, artifacts, results, outputs)
 }
 
-func artifactWithDepsFor(artifacts []*latest.Artifact) []artifactWithDeps {
+func makeArtifactChanModel(artifacts []*latest.Artifact) []artifactChanModel {
 	chanMap := make(map[string]chan interface{})
 	for _, a := range artifacts {
 		chanMap[a.ImageName] = make(chan interface{})
 	}
 
-	var awdSlice []artifactWithDeps
+	var acmSlice []artifactChanModel
 	for _, a := range artifacts {
-		awd := artifactWithDeps{artifact: a, artifactChan: chanMap[a.ImageName]}
+		acm := artifactChanModel{artifact: a, artifactChan: chanMap[a.ImageName]}
 		for _, d := range a.Dependencies {
-			awd.requiredArtifactChans = append(awd.requiredArtifactChans, chanMap[d.ImageName])
+			acm.requiredArtifactChans = append(acm.requiredArtifactChans, chanMap[d.ImageName])
 		}
-		awdSlice = append(awdSlice, awd)
+		acmSlice = append(acmSlice, acm)
 	}
-	return awdSlice
+	return acmSlice
 }
 
 func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build ArtifactBuilder) {
