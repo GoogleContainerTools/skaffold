@@ -217,6 +217,10 @@ type LocalBuild struct {
 	// connects to a remote cluster.
 	Push *bool `yaml:"push,omitempty"`
 
+	// TryImportMissing whether to attempt to import artifacts from
+	// Docker (either a local or remote registry) if not in the cache.
+	TryImportMissing bool `yaml:"tryImportMissing,omitempty"`
+
 	// UseDockerCLI use `docker` command-line interface instead of Docker Engine APIs.
 	UseDockerCLI bool `yaml:"useDockerCLI,omitempty"`
 
