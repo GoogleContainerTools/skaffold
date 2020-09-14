@@ -369,8 +369,8 @@
       "properties": {
         "alias": {
           "type": "string",
-          "description": "alias for this image that can be referenced in the builder.",
-          "x-intellij-html-description": "alias for this image that can be referenced in the builder."
+          "description": "a token that will be replaced with the image reference in the builder definition files. For example, the `docker` builder will use the alias as a build-time variable.",
+          "x-intellij-html-description": "a token that will be replaced with the image reference in the builder definition files. For example, the <code>docker</code> builder will use the alias as a build-time variable."
         },
         "image": {
           "type": "string",
