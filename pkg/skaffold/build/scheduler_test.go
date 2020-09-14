@@ -27,6 +27,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -308,6 +310,7 @@ func TestInOrderForArgs(t *testing.T) {
 		concurrency   int
 		dependency    map[int][]int
 		expected      []Artifact
+		err           error
 	}{
 		{
 			description: "runs in parallel for 2 artifacts with no dependency",
@@ -366,6 +369,24 @@ func TestInOrderForArgs(t *testing.T) {
 			artifactLen: 0,
 			expected:    nil,
 		},
+		{
+			description: "build fails for artifacts with dependencies",
+			buildArtifact: func(_ context.Context, _ io.Writer, a *latest.Artifact, tag string) (string, error) {
+				if a.ImageName == "artifact2" {
+					return "", fmt.Errorf(`some error occurred while building "artifact2"`)
+				}
+				return tag, nil
+			},
+			dependency: map[int][]int{
+				0: {1},
+				1: {2},
+				2: {3},
+				3: {4},
+			},
+			artifactLen: 5,
+			expected:    nil,
+			err:         fmt.Errorf("couldn't build %q: %w", "artifact2", fmt.Errorf("some error occurred while building %q", "artifact2")),
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -379,9 +400,10 @@ func TestInOrderForArgs(t *testing.T) {
 
 			setDependencies(artifacts, test.dependency)
 			initializeEvents()
-			actual, _ := InOrder(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, test.concurrency)
+			actual, err := InOrder(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, test.concurrency)
 
 			t.CheckDeepEqual(test.expected, actual)
+			t.CheckDeepEqual(test.err, err, cmp.Comparer(errorsComparer))
 		})
 	}
 }
@@ -422,4 +444,14 @@ func initializeEvents() {
 		},
 	}
 	event.InitializeState(pipe, "temp", true, true, true)
+}
+
+func errorsComparer(a, b error) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return a.Error() == b.Error()
 }
