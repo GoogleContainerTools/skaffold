@@ -322,5 +322,4 @@ the Helm deployer is not yet available ([#2350](https://github.com/GoogleContain
     and [removed in Kubernetes 1.16](https://kubernetes.io/blog/2019/07/18/api-deprecations-in-1-16/).
 
 Applications should transition to the `apps/v1` APIs,
-[introduced in Kubernetes 1.9](https://kubernetes.io/blog/2017/12/kubernetes-19-workloads-expanded-ecosystem/).
-
+[introduced in Kubernetes 1.9](https://kubernetes.io/blog/2017/12/kubernetes-19-workloads-expanded-ecosystem/#workloads-api-ga).
