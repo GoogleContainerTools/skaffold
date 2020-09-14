@@ -86,11 +86,12 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 		outputs[i] = make(chan string, buffSize)
 		r, w := io.Pipe()
 
-		// Run build and write output/logs to piped writer and store build result in
-		// sync.Map
+		// Create a goroutine for each element in acmSlice. Each goroutine waits on its dependencies to finish building.
+		// Because our artifacts form a DAG, at least one of the goroutines should be able to start building.
 		go func(i int) {
 			acmSlice[i].waitForDependencies(ctx)
 			sem <- true
+			// Run build and write output/logs to piped writer and store build result in sync.Map
 			runBuild(ctx, w, tags, acmSlice[i].artifact, results, buildArtifact)
 			acmSlice[i].markComplete()
 			<-sem
