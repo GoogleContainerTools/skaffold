@@ -558,7 +558,13 @@ func constructOverrideArgs(r *latest.HelmRelease, builds []build.Artifact, args 
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
 	}
 
-	for k, v := range r.SetFiles {
+	sortedKeys = make([]string, 0, len(r.SetFiles))
+	for k := range r.SetFiles {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+	for _, k := range sortedKeys {
+		v := r.SetFiles[k]
 		exp, err := homedir.Expand(v)
 		if err != nil {
 			return nil, fmt.Errorf("unable to expand %q: %w", v, err)
