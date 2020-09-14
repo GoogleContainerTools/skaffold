@@ -19,7 +19,9 @@ package local
 import (
 	"context"
 	"fmt"
+	"github.com/docker/docker/api/types"
 	"io"
+	"sort"
 
 	"github.com/sirupsen/logrus"
 
@@ -42,8 +44,73 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	}
 	defer b.localDocker.Close()
 
+	const pruneLimit = 2
+
+	b.cleanupPrevImages(ctx, pruneLimit, out, artifacts)
+
 	builder := build.WithLogFile(b.buildArtifact, b.muted)
 	return build.InParallel(ctx, out, tags, artifacts, builder, *b.cfg.Concurrency)
+}
+
+func (b *Builder) listUniqImages(ctx context.Context, name string, limit int) ([]types.ImageSummary, error) {
+	imgs, err := b.localDocker.ImageList(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	if len(imgs) < 2 {
+		return imgs, nil
+	}
+
+	sort.Slice(imgs, func(i, j int) bool {
+		return imgs[i].Created < imgs[j].Created
+	})
+
+	// keep only uniq images (an image can have more than one tag)
+	uqIdx := 0
+	for i := 1; i < len(imgs) && uqIdx < limit; i++ {
+		if imgs[i].ID != imgs[uqIdx].ID {
+			uqIdx += 1
+			imgs[uqIdx] = imgs[i]
+		}
+	}
+	logrus.Debugf("%d of %d ids for %s are uniq", uqIdx+1, len(imgs), name)
+	return imgs[:uqIdx+1], nil
+}
+
+func (b *Builder) cleanupPrevImages(ctx context.Context, limit int, out io.Writer, artifacts []*latest.Artifact) {
+
+	imgNameCount := make(map[string]int)
+	for _, a := range artifacts {
+		imgNameCount[a.ImageName]++
+	}
+
+	for _, a := range artifacts {
+		name := a.ImageName
+		imgsToKeep := limit * imgNameCount[name]
+		imgs, err := b.listUniqImages(ctx, name, imgsToKeep)
+		if err != nil {
+			logrus.Warnf("failed to list images: %v", err)
+			continue
+		}
+		imgsToPrune := len(imgs) - imgsToKeep
+		if imgsToPrune > 0 {
+			logrus.Debugf("need to prune %v %qs", imgsToPrune, name)
+			go func() {
+				idsToPrune := make([]string, imgsToPrune)
+				for i, img := range imgs[imgsToKeep:] {
+					idsToPrune[i] = img.ID
+				}
+				logrus.Debugf("going to prune: %v", idsToPrune)
+				err := b.localDocker.Prune(ctx, out, idsToPrune, b.pruneChildren)
+				if err != nil {
+					logrus.Warnf("failed to prune: %v", err)
+				}
+			}()
+		} else {
+			//TODO: remove log
+			logrus.Debugf("no need to prune %v", name)
+		}
+	}
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {

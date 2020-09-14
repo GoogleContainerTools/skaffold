@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
@@ -73,6 +74,7 @@ type LocalDaemon interface {
 	ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error)
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
+	ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error)
 	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error
 	RawClient() client.CommonAPIClient
 }
@@ -426,6 +428,12 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 		time.Sleep(sleepTime)
 	}
 	return nil, fmt.Errorf("could not remove image after %d retries", retries)
+}
+
+func (l *localDaemon) ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error) {
+	return l.apiClient.ImageList(ctx, types.ImageListOptions{
+		Filters: filters.NewArgs(filters.Arg("reference", ref)),
+	})
 }
 
 func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) ([]string, error) {
