@@ -799,7 +799,7 @@ func TestValidateArtifactCircularDependencies(t *testing.T) {
 			}
 
 			setDependencies(artifacts, test.dependency)
-			errs := validateAcyclicArtifactDependencies(artifacts)
+			errs := validateAcyclicDependencies(artifacts)
 			expected := []error{
 				fmt.Errorf("cycle detected in build dependencies involving 'artifact1'"),
 			}
@@ -848,7 +848,6 @@ func TestValidateArtifactDependencyUniqueness(t *testing.T) {
 	}
 	expected := []error{
 		fmt.Errorf(`invalid build dependency for artifact "artifact1": alias "alias2" repeated`),
-		fmt.Errorf(`invalid build dependency for artifact "artifact2": image name "artifact1" repeated`),
 		fmt.Errorf(`unknown build dependency "artifact2a" for artifact "artifact1"`),
 	}
 	errs := validateArtifactDependencies(artifacts)

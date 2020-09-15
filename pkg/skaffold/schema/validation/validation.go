@@ -79,13 +79,13 @@ func validateImageNames(artifacts []*latest.Artifact) (errs []error) {
 }
 
 func validateArtifactDependencies(artifacts []*latest.Artifact) (errs []error) {
-	errs = append(errs, validateUniqueArtifactDependencies(artifacts)...)
-	errs = append(errs, validateAcyclicArtifactDependencies(artifacts)...)
+	errs = append(errs, validateUniqueDependencyAliases(artifacts)...)
+	errs = append(errs, validateAcyclicDependencies(artifacts)...)
 	return
 }
 
-// validateAcyclicArtifactDependencies makes sure all artifact dependencies are found and don't have cyclic references
-func validateAcyclicArtifactDependencies(artifacts []*latest.Artifact) (errs []error) {
+// validateAcyclicDependencies makes sure all artifact dependencies are found and don't have cyclic references
+func validateAcyclicDependencies(artifacts []*latest.Artifact) (errs []error) {
 	m := make(map[string]*latest.Artifact)
 	for _, artifact := range artifacts {
 		m[artifact.ImageName] = artifact
@@ -125,8 +125,8 @@ func dfs(artifact *latest.Artifact, visited, marked map[string]bool, artifacts m
 	return nil
 }
 
-// validateUniqueArtifactDependencies makes sure that artifact dependency aliases and image names are unique for each artifact
-func validateUniqueArtifactDependencies(artifacts []*latest.Artifact) (errs []error) {
+// validateUniqueDependencyAliases makes sure that artifact dependency aliases are unique for each artifact
+func validateUniqueDependencyAliases(artifacts []*latest.Artifact) (errs []error) {
 	type State int
 	var (
 		unseen   State = 0
@@ -135,19 +135,12 @@ func validateUniqueArtifactDependencies(artifacts []*latest.Artifact) (errs []er
 	)
 	for _, a := range artifacts {
 		aliasMap := make(map[string]State)
-		namesMap := make(map[string]State)
 		for _, d := range a.Dependencies {
 			if aliasMap[d.Alias] == seen {
 				errs = append(errs, fmt.Errorf("invalid build dependency for artifact %q: alias %q repeated", a.ImageName, d.Alias))
 				aliasMap[d.Alias] = recorded
 			} else if aliasMap[d.Alias] == unseen {
 				aliasMap[d.Alias] = seen
-			}
-			if namesMap[d.ImageName] == seen {
-				errs = append(errs, fmt.Errorf("invalid build dependency for artifact %q: image name %q repeated", a.ImageName, d.ImageName))
-				namesMap[d.ImageName] = recorded
-			} else if namesMap[d.ImageName] == unseen {
-				namesMap[d.ImageName] = seen
 			}
 		}
 	}
