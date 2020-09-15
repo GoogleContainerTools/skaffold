@@ -39,6 +39,8 @@ type ContainerState int
 const (
 	Created ContainerState = 0
 	Started ContainerState = 1
+
+	TestUtilization uint64 = 424242
 )
 
 type FakeAPIClient struct {
@@ -49,8 +51,10 @@ type FakeAPIClient struct {
 	ErrImageInspect bool
 	ErrImagePush    bool
 	ErrImagePull    bool
+	ErrImageList    bool
 	ErrStream       bool
 	ErrVersion      bool
+	DUFails         uint
 
 	nextImageID int
 	Pushed      map[string]string
@@ -213,7 +217,20 @@ func (f *FakeAPIClient) ImageLoad(ctx context.Context, input io.Reader, quiet bo
 }
 
 func (f *FakeAPIClient) ImageList(ctx context.Context, ops types.ImageListOptions) ([]types.ImageSummary, error) {
+	if f.ErrImageList {
+		return []types.ImageSummary{}, fmt.Errorf("test error")
+	}
 	return []types.ImageSummary{}, nil
+}
+
+func (f *FakeAPIClient) DiskUsage(ctx context.Context) (types.DiskUsage, error) {
+	if f.DUFails > 0 {
+		f.DUFails--
+		return types.DiskUsage{}, fmt.Errorf("test error")
+	}
+	return types.DiskUsage{
+		LayersSize: int64(TestUtilization),
+	}, nil
 }
 
 func (f *FakeAPIClient) Close() error { return nil }

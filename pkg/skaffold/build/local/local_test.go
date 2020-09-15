@@ -361,6 +361,71 @@ func TestNewBuilder(t *testing.T) {
 	}
 }
 
+func TestDiskUsage(t *testing.T) {
+	tests := []struct {
+		ctxFunc             func() context.Context
+		description         string
+		fails               uint
+		expectedUtilization uint64
+		shouldErr           bool
+	}{
+		{
+			description:         "happy path",
+			fails:               0,
+			shouldErr:           false,
+			expectedUtilization: testutil.TestUtilization,
+		},
+		{
+			description:         "first attempts failed",
+			fails:               usageRetries - 1,
+			shouldErr:           false,
+			expectedUtilization: testutil.TestUtilization,
+		},
+		{
+			description:         "all attempts failed",
+			fails:               usageRetries,
+			shouldErr:           true,
+			expectedUtilization: 0,
+		},
+		{
+			description:         "context cancelled",
+			fails:               0,
+			shouldErr:           true,
+			expectedUtilization: 0,
+			ctxFunc: func() context.Context {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				return ctx
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+				return fakeLocalDaemon(&testutil.FakeAPIClient{
+					DUFails: test.fails,
+				}), nil
+			})
+			builder, err := NewBuilder(&mockConfig{
+				local: latest.LocalBuild{},
+			})
+			t.CheckNoError(err)
+
+			ctx := context.Background()
+			if test.ctxFunc != nil {
+				ctx = test.ctxFunc()
+			}
+			res, err := builder.diskUsage(ctx)
+
+			t.CheckError(test.shouldErr, err)
+			if res != test.expectedUtilization {
+				t.Errorf("invalid disk usage. got %d expected %d", res, test.expectedUtilization)
+			}
+		})
+	}
+}
+
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	local                 latest.LocalBuild
