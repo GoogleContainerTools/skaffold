@@ -1,6 +1,6 @@
 package dist
 
-import "github.com/buildpacks/pack/internal/api"
+import "github.com/buildpacks/lifecycle/api"
 
 const BuildpackLayersLabel = "io.buildpacks.buildpack.layers"
 
@@ -36,6 +36,21 @@ type BuildpackLayerInfo struct {
 	Order       Order        `json:"order,omitempty"`
 	LayerDiffID string       `json:"layerDiffID"`
 	Homepage    string       `json:"homepage,omitempty"`
+}
+
+func (b BuildpackLayers) Get(id, version string) (BuildpackLayerInfo, bool) {
+	buildpackLayerEntries, ok := b[id]
+	if !ok {
+		return BuildpackLayerInfo{}, false
+	}
+	if len(buildpackLayerEntries) == 1 && version == "" {
+		for key := range buildpackLayerEntries {
+			version = key
+		}
+	}
+
+	result, ok := buildpackLayerEntries[version]
+	return result, ok
 }
 
 func AddBuildpackToLayersMD(layerMD BuildpackLayers, descriptor BuildpackDescriptor, diffID string) {

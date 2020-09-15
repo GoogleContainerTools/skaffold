@@ -28,6 +28,7 @@ import (
 
 	lifecycle "github.com/buildpacks/lifecycle/cmd"
 	"github.com/buildpacks/pack"
+	packcfg "github.com/buildpacks/pack/config"
 	"github.com/buildpacks/pack/project"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -86,9 +87,12 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		}
 	}
 
-	// Does the builder image need to be pulled?
-	alreadyPulled := images.AreAlreadyPulled(artifact.Builder, artifact.RunImage)
-
+	// Does the builder image need to be pulled?  We always pull the images on first build, matching
+	// pack's behaviour, but never pull on subsequent builds.
+	pullPolicy := packcfg.PullAlways
+	if alreadyPulled := images.AreAlreadyPulled(artifact.Builder, artifact.RunImage); alreadyPulled {
+		pullPolicy = packcfg.PullNever
+	}
 	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
 		AppPath:      workspace,
 		Builder:      artifact.Builder,
@@ -96,7 +100,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		Buildpacks:   buildpacks,
 		Env:          env,
 		Image:        latest,
-		NoPull:       alreadyPulled,
+		PullPolicy:   pullPolicy,
 		TrustBuilder: artifact.TrustBuilder,
 		// TODO(dgageot): Support project.toml include/exclude.
 		// FileFilter: func(string) bool { return true },

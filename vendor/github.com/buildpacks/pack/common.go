@@ -28,13 +28,19 @@ func (c *Client) parseTagReference(imageName string) (name.Reference, error) {
 	return ref, nil
 }
 
-func (c *Client) resolveRunImage(runImage, targetRegistry string, stackInfo builder.StackMetadata, additionalMirrors map[string][]string) string {
+func (c *Client) resolveRunImage(runImage, imgRegistry, bldrRegistry string, stackInfo builder.StackMetadata, additionalMirrors map[string][]string, publish bool) string {
 	if runImage != "" {
 		c.logger.Debugf("Using provided run-image %s", style.Symbol(runImage))
 		return runImage
 	}
+
+	preferredRegistry := bldrRegistry
+	if publish || bldrRegistry == "" {
+		preferredRegistry = imgRegistry
+	}
+
 	runImageName := getBestRunMirror(
-		targetRegistry,
+		preferredRegistry,
 		stackInfo.RunImage.Image,
 		stackInfo.RunImage.Mirrors,
 		additionalMirrors[stackInfo.RunImage.Image],

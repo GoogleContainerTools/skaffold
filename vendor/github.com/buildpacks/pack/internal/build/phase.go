@@ -28,14 +28,13 @@ type Phase struct {
 
 func (p *Phase) Run(ctx context.Context) error {
 	var err error
-
 	p.ctr, err = p.docker.ContainerCreate(ctx, p.ctrConf, p.hostConf, nil, "")
 	if err != nil {
 		return errors.Wrapf(err, "failed to create '%s' container", p.name)
 	}
 
 	for _, containerOp := range p.containerOps {
-		if err := containerOp(p.docker, ctx, p.ctr.ID); err != nil {
+		if err := containerOp(p.docker, ctx, p.ctr.ID, p.infoWriter, p.errorWriter); err != nil {
 			return err
 		}
 	}

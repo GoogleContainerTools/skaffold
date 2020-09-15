@@ -27,9 +27,9 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.4
-	github.com/buildpacks/imgutil v0.0.0-20200520132953-ba4f77a60397
+	github.com/buildpacks/imgutil v0.0.0-20200805143852-1844b230530d
 	github.com/buildpacks/lifecycle v0.7.2
-	github.com/buildpacks/pack v0.12.0
+	github.com/buildpacks/pack v0.13.1
 	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/docker/cli v0.0.0-20200312141509-ef2f64abbd37
 	github.com/docker/distribution v2.7.1+incompatible
@@ -39,7 +39,7 @@ require (
 	github.com/go-git/go-git/v5 v5.0.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.4.2
-	github.com/google/go-cmp v0.4.1
+	github.com/google/go-cmp v0.5.1
 	github.com/google/go-containerregistry v0.1.1
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/uuid v1.1.1

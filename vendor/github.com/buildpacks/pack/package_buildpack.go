@@ -3,6 +3,8 @@ package pack
 import (
 	"context"
 
+	"github.com/buildpacks/pack/config"
+
 	"github.com/pkg/errors"
 
 	pubbldpkg "github.com/buildpacks/pack/buildpackage"
@@ -19,11 +21,11 @@ const (
 
 // PackageBuildpackOptions are configuration options and metadata you can pass into PackageBuildpack
 type PackageBuildpackOptions struct {
-	Name    string
-	Format  string
-	Config  pubbldpkg.Config
-	Publish bool
-	NoPull  bool
+	Name       string
+	Format     string
+	Config     pubbldpkg.Config
+	Publish    bool
+	PullPolicy config.PullPolicy
 }
 
 // PackageBuildpack packages buildpack(s) into an image or file
@@ -80,7 +82,7 @@ func (c *Client) PackageBuildpack(ctx context.Context, opts PackageBuildpackOpti
 				depBPs = []dist.Buildpack{depBP}
 			}
 		} else if dep.ImageName != "" {
-			mainBP, deps, err := extractPackagedBuildpacks(ctx, dep.ImageName, c.imageFetcher, opts.Publish, opts.NoPull)
+			mainBP, deps, err := extractPackagedBuildpacks(ctx, dep.ImageName, c.imageFetcher, opts.Publish, opts.PullPolicy)
 			if err != nil {
 				return err
 			}

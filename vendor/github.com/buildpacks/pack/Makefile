@@ -1,13 +1,34 @@
+ifeq ($(OS),Windows_NT)
+SHELL:=cmd.exe
+
+# Need BLANK due to makefile parsing of `\`
+# (see: https://stackoverflow.com/questions/54733231/how-to-escape-a-backslash-in-the-end-to-mean-literal-backslash-in-makefile/54733416#54733416)
+BLANK:=
+
+# Define variable named `/` to represent OS path separator (usable as `$/` in this file)
+/:=\$(BLANK)
+CAT=type
+RMRF=rmdir /q /s
+SRC=$(shell dir /q /s /b *.go | findstr /v $/out$/)
+GOIMPORTS_DIFF_OPTION="-l" # Windows can't do diff-mode because it's missing the "diff" binary
+PACK_BIN?=pack.exe
+else
+/:=/
+CAT=cat
+RMRF=rm -rf
+SRC=$(shell find . -type f -name '*.go' -not -path "*/out/*")
+GOIMPORTS_DIFF_OPTION:="-d"
+PACK_BIN?=pack
+endif
+
 ACCEPTANCE_TIMEOUT?=$(TEST_TIMEOUT)
 ARCHIVE_NAME=pack-$(PACK_VERSION)
 GOCMD?=go
-GOFLAGS?=-mod=vendor
+GOFLAGS?=
 GOTESTFLAGS?=-v -count=1 -parallel=1
 PACKAGE_BASE=github.com/buildpacks/pack
-PACK_BIN?=pack
 PACK_GITSHA1=$(shell git rev-parse --short=7 HEAD)
 PACK_VERSION?=0.0.0
-SRC=$(shell find . -type f -name '*.go' -not -path "*/vendor/*")
 TEST_TIMEOUT?=900s
 UNIT_TIMEOUT?=$(TEST_TIMEOUT)
 
@@ -30,28 +51,24 @@ all: clean verify test build
 
 mod-tidy:
 	$(GOCMD) mod tidy
-	cd tools; $(GOCMD) mod tidy
-	
-mod-vendor:
-	$(GOCMD) mod vendor
-	cd tools; $(GOCMD) mod vendor
-	
-tidy: mod-tidy mod-vendor format
+	cd tools && $(GOCMD) mod tidy
+
+tidy: mod-tidy format
 
 build: out
 	@echo "> Building..."
 	$(GOCMD) build -ldflags "-s -w -X 'github.com/buildpacks/pack.Version=${PACK_VERSION}' -extldflags ${LDFLAGS}" -trimpath -o ./out/$(PACK_BIN) -a ./cmd/pack
 
 package: out
-	tar czf ./out/$(ARCHIVE_NAME).tgz -C out/ pack
+	tar czf .$/out$/$(ARCHIVE_NAME).tgz -C .$/out$/ $(PACK_BIN)
 
 install-mockgen:
 	@echo "> Installing mockgen..."
-	cd tools; $(GOCMD) install github.com/golang/mock/mockgen
+	cd tools && $(GOCMD) install github.com/golang/mock/mockgen
 
 install-goimports:
 	@echo "> Installing goimports..."
-	cd tools; $(GOCMD) install golang.org/x/tools/cmd/goimports
+	cd tools && $(GOCMD) install golang.org/x/tools/cmd/goimports
 
 format: install-goimports
 	@echo "> Formating code..."
@@ -60,7 +77,7 @@ format: install-goimports
 
 install-golangci-lint:
 	@echo "> Installing golangci-lint..."
-	cd tools; $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
+	cd tools && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
 
 lint: install-golangci-lint
 	@echo "> Linting code..."
@@ -80,14 +97,14 @@ acceptance: out
 	@echo "> Running acceptance tests..."
 	$(GOCMD) test $(GOTESTFLAGS) -timeout=$(ACCEPTANCE_TIMEOUT) -tags=acceptance ./acceptance
 
-acceptance-all: export ACCEPTANCE_SUITE_CONFIG:=$(shell cat ./acceptance/testconfig/all.json)
+acceptance-all: export ACCEPTANCE_SUITE_CONFIG:=$(shell $(CAT) .$/acceptance$/testconfig$/all.json)
 acceptance-all:
 	@echo "> Running acceptance tests..."
 	$(GOCMD) test $(GOTESTFLAGS) -timeout=$(ACCEPTANCE_TIMEOUT) -tags=acceptance ./acceptance
 
 clean:
 	@echo "> Cleaning workspace..."
-	rm -rf ./out
+	@$(RMRF) .$/out || (exit 0)
 
 verify: verify-format lint
 
@@ -97,28 +114,22 @@ generate: install-mockgen
 
 verify-format: install-goimports
 	@echo "> Verifying format..."
-	@test -z "$(shell goimports -l -local ${PACKAGE_BASE} ${SRC})"; _err=$$?;\
-	[ $$_err -ne 0 ] &&\
-	echo "ERROR: Format verification failed!\n" &&\
-	goimports -d -local ${PACKAGE_BASE} ${SRC} &&\
-	exit $$_err;\
-	exit 0;
+	$(if $(shell goimports -l -local ${PACKAGE_BASE} ${SRC}), @echo ERROR: Format verification failed! && goimports ${GOIMPORTS_DIFF_OPTION} -local ${PACKAGE_BASE} ${SRC} && exit 1)
 
 prepare-for-pr: tidy verify test
-	@git diff-index --quiet HEAD --; _err=$$?;\
-	[ $$_err -ne 0 ] &&\
-	echo "-----------------" &&\
+	@git diff-index --quiet HEAD -- ||\
+	(echo "-----------------" &&\
 	echo "NOTICE: There are some files that have not been committed." &&\
 	echo "-----------------\n" &&\
 	git status &&\
 	echo "\n-----------------" &&\
 	echo "NOTICE: There are some files that have not been committed." &&\
 	echo "-----------------\n"  &&\
-	exit 0;
+	exit 0)
 
+# NOTE: Windows doesn't support `-p`
 out:
-	# NOTE: Windows doesn't support `-p`
-	mkdir out
-	mkdir out/tests
+	@mkdir out
+	mkdir out$/tests
 
-.PHONY: clean build format imports lint test unit acceptance verify verify-format
+.PHONY: clean build format imports lint test unit acceptance prepare-for-pr verify verify-format

@@ -6,9 +6,9 @@ import (
 	"path"
 
 	"github.com/BurntSushi/toml"
+	"github.com/buildpacks/lifecycle/api"
 	"github.com/pkg/errors"
 
-	"github.com/buildpacks/pack/internal/api"
 	"github.com/buildpacks/pack/internal/archive"
 	"github.com/buildpacks/pack/internal/style"
 )

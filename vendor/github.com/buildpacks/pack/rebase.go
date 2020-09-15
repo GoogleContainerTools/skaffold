@@ -3,6 +3,8 @@ package pack
 import (
 	"context"
 
+	"github.com/buildpacks/pack/config"
+
 	"github.com/buildpacks/lifecycle"
 	"github.com/pkg/errors"
 
@@ -14,7 +16,7 @@ import (
 type RebaseOptions struct {
 	RepoName          string
 	Publish           bool
-	SkipPull          bool
+	PullPolicy        config.PullPolicy
 	RunImage          string
 	AdditionalMirrors map[string][]string
 }
@@ -25,7 +27,7 @@ func (c *Client) Rebase(ctx context.Context, opts RebaseOptions) error {
 		return errors.Wrapf(err, "invalid image name '%s'", opts.RepoName)
 	}
 
-	appImage, err := c.imageFetcher.Fetch(ctx, opts.RepoName, !opts.Publish, !opts.SkipPull)
+	appImage, err := c.imageFetcher.Fetch(ctx, opts.RepoName, !opts.Publish, opts.PullPolicy)
 	if err != nil {
 		return err
 	}
@@ -40,19 +42,21 @@ func (c *Client) Rebase(ctx context.Context, opts RebaseOptions) error {
 	runImageName := c.resolveRunImage(
 		opts.RunImage,
 		imageRef.Context().RegistryStr(),
+		"",
 		builder.StackMetadata{
 			RunImage: builder.RunImageMetadata{
 				Image:   md.Stack.RunImage.Image,
 				Mirrors: md.Stack.RunImage.Mirrors,
 			},
 		},
-		opts.AdditionalMirrors)
+		opts.AdditionalMirrors,
+		opts.Publish)
 
 	if runImageName == "" {
 		return errors.New("run image must be specified")
 	}
 
-	baseImage, err := c.imageFetcher.Fetch(ctx, runImageName, !opts.Publish, !opts.SkipPull)
+	baseImage, err := c.imageFetcher.Fetch(ctx, runImageName, !opts.Publish, opts.PullPolicy)
 	if err != nil {
 		return err
 	}

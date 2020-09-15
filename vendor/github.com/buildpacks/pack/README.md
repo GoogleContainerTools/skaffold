@@ -24,7 +24,7 @@ Get started by running through our tutorial: [An App’s Brief Journey from Sour
 
 - [CONTRIBUTING](CONTRIBUTING.md) - Information on how to contribute, including the pull request process.
 - [DEVELOPMENT](DEVELOPMENT.md) - Further detail to help you during the development process.
-
+- [RELEASE](RELEASE.md) - Further details about our release process.
 
 ## Specifications
 `pack` is a CLI implementation of the [Platform Interface Specification][platform-spec] for [Cloud Native Buildpacks][buildpacks.io].

@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
 
+	pubcfg "github.com/buildpacks/pack/config"
 	"github.com/buildpacks/pack/internal/blob"
 	"github.com/buildpacks/pack/internal/build"
 	"github.com/buildpacks/pack/internal/config"
@@ -17,12 +18,14 @@ import (
 	"github.com/buildpacks/pack/logging"
 )
 
+//go:generate mockgen -package testmocks -destination testmocks/mock_docker_client.go github.com/docker/docker/client CommonAPIClient
+
 //go:generate mockgen -package testmocks -destination testmocks/mock_image_fetcher.go github.com/buildpacks/pack ImageFetcher
 type ImageFetcher interface {
 	// Fetch fetches an image by resolving it both remotely and locally depending on provided parameters.
 	// If daemon is true, it will look return a `local.Image`. Pull, applicable only when daemon is true, will
 	// attempt to pull a remote image first.
-	Fetch(ctx context.Context, name string, daemon, pull bool) (imgutil.Image, error)
+	Fetch(ctx context.Context, name string, daemon bool, pullPolicy pubcfg.PullPolicy) (imgutil.Image, error)
 }
 
 //go:generate mockgen -package testmocks -destination testmocks/mock_downloader.go github.com/buildpacks/pack Downloader
@@ -36,13 +39,13 @@ type ImageFactory interface {
 }
 
 type Client struct {
-	logger       logging.Logger
-	imageFetcher ImageFetcher
-	downloader   Downloader
-	lifecycle    Lifecycle
-	docker       dockerClient.CommonAPIClient
-	imageFactory ImageFactory
-	experimental bool
+	logger            logging.Logger
+	imageFetcher      ImageFetcher
+	downloader        Downloader
+	lifecycleExecutor LifecycleExecutor
+	docker            dockerClient.CommonAPIClient
+	imageFactory      ImageFactory
+	experimental      bool
 }
 
 type ClientOption func(c *Client)
@@ -136,7 +139,7 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 		client.imageFactory = image.NewFactory(client.docker, authn.DefaultKeychain)
 	}
 
-	client.lifecycle = build.NewLifecycle(client.docker, client.logger)
+	client.lifecycleExecutor = build.NewLifecycleExecutor(client.logger, client.docker)
 
 	return &client, nil
 }

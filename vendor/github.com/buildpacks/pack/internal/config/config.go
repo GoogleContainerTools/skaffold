@@ -6,14 +6,24 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
+
+	"github.com/buildpacks/pack/internal/style"
 )
 
 type Config struct {
-	RunImages       []RunImage       `toml:"run-images"`
-	DefaultBuilder  string           `toml:"default-builder-image,omitempty"`
-	DefaultRegistry string           `toml:"default-registry-url,omitempty"`
-	Experimental    bool             `toml:"experimental,omitempty"`
-	TrustedBuilders []TrustedBuilder `toml:"trusted-builders,omitempty"`
+	RunImages           []RunImage       `toml:"run-images"`
+	DefaultBuilder      string           `toml:"default-builder-image,omitempty"`
+	DefaultRegistry     string           `toml:"default-registry-url,omitempty"`
+	DefaultRegistryName string           `toml:"default-registry,omitempty"`
+	Experimental        bool             `toml:"experimental,omitempty"`
+	TrustedBuilders     []TrustedBuilder `toml:"trusted-builders,omitempty"`
+	Registries          []Registry       `toml:"registries,omitempty"`
+}
+
+type Registry struct {
+	Name string `toml:"name"`
+	Type string `toml:"type"`
+	URL  string `toml:"url"`
 }
 
 type RunImage struct {
@@ -81,4 +91,24 @@ func SetRunImageMirrors(cfg Config, image string, mirrors []string) Config {
 	}
 	cfg.RunImages = append(cfg.RunImages, RunImage{Image: image, Mirrors: mirrors})
 	return cfg
+}
+
+func GetRegistry(cfg Config, registryName string) (Registry, error) {
+	if registryName == "" {
+		registryName = cfg.DefaultRegistryName
+	}
+	if registryName != "" {
+		for _, registry := range cfg.Registries {
+			if registry.Name == registryName {
+				return registry, nil
+			}
+		}
+		return Registry{}, errors.Errorf("registry %s is not defined in your config file", style.Symbol(registryName))
+	}
+
+	return Registry{
+		"official",
+		"github",
+		"https://github.com/buildpacks/registry-index",
+	}, nil
 }

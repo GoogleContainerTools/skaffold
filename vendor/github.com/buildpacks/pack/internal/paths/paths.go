@@ -86,3 +86,21 @@ func ToAbsolute(uri, relativeTo string) (string, error) {
 
 	return uri, nil
 }
+
+func FilterReservedNames(path string) string {
+	// The following keys are reserved on Windows
+	// https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file?redirectedfrom=MSDN#win32-file-namespaces
+	reservedNameConversions := map[string]string{
+		"aux": "a_u_x",
+		"com": "c_o_m",
+		"con": "c_o_n",
+		"lpt": "l_p_t",
+		"nul": "n_u_l",
+		"prn": "p_r_n",
+	}
+	for k, v := range reservedNameConversions {
+		path = strings.Replace(path, k, v, -1)
+	}
+
+	return path
+}

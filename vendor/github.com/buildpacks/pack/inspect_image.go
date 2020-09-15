@@ -2,6 +2,9 @@ package pack
 
 import (
 	"context"
+	"strings"
+
+	"github.com/buildpacks/pack/config"
 
 	"github.com/Masterminds/semver"
 	"github.com/buildpacks/lifecycle"
@@ -32,8 +35,20 @@ type layersMetadata struct {
 	Stack    lifecycle.StackMetadata    `json:"stack" toml:"stack"`
 }
 
+const (
+	platformAPIEnv            = "CNB_PLATFORM_API"
+	cnbProcessEnv             = "CNB_PROCESS_TYPE"
+	launcherEntrypoint        = "/cnb/lifecycle/launcher"
+	windowsLauncherEntrypoint = `c:\cnb\lifecycle\launcher.exe`
+	entrypointPrefix          = "/cnb/process/"
+	windowsEntrypointPrefix   = `c:\cnb\process\`
+	defaultProcess            = "web"
+	fallbackPlatformAPI       = "0.3"
+	windowsPrefix             = "c:"
+)
+
 func (c *Client) InspectImage(name string, daemon bool) (*ImageInfo, error) {
-	img, err := c.imageFetcher.Fetch(context.Background(), name, daemon, false)
+	img, err := c.imageFetcher.Fetch(context.Background(), name, daemon, config.PullNever)
 	if err != nil {
 		if errors.Cause(err) == image.ErrNotFound {
 			return nil, nil
@@ -63,9 +78,44 @@ func (c *Client) InspectImage(name string, daemon bool) (*ImageInfo, error) {
 		return nil, err
 	}
 
-	defaultProcessType, err := img.Env("CNB_PROCESS_TYPE")
-	if err != nil || defaultProcessType == "" {
-		defaultProcessType = "web"
+	platformAPI, err := img.Env(platformAPIEnv)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading platform api")
+	}
+
+	if platformAPI == "" {
+		platformAPI = fallbackPlatformAPI
+	}
+
+	platformAPIVersion, err := semver.NewVersion(platformAPI)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing platform api version")
+	}
+
+	var defaultProcessType string
+	if platformAPIVersion.LessThan(semver.MustParse("0.4")) {
+		defaultProcessType, err = img.Env(cnbProcessEnv)
+		if err != nil || defaultProcessType == "" {
+			defaultProcessType = defaultProcess
+		}
+	} else {
+		inspect, _, err := c.docker.ImageInspectWithRaw(context.TODO(), name)
+		if err != nil {
+			return nil, errors.Wrap(err, "reading image")
+		}
+
+		entrypoint := inspect.Config.Entrypoint
+		if len(entrypoint) > 0 && entrypoint[0] != launcherEntrypoint && entrypoint[0] != windowsLauncherEntrypoint {
+			process := entrypoint[0]
+			if strings.HasPrefix(process, windowsPrefix) {
+				process = strings.TrimPrefix(process, windowsEntrypointPrefix)
+				process = strings.TrimSuffix(process, ".exe") // Trim .exe for Windows support
+			} else {
+				process = strings.TrimPrefix(process, entrypointPrefix)
+			}
+
+			defaultProcessType = process
+		}
 	}
 
 	var processDetails ProcessDetails

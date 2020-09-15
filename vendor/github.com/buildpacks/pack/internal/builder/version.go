@@ -10,14 +10,17 @@ type Version struct {
 	semver.Version
 }
 
+// VersionMustParse parses a string into a Version
 func VersionMustParse(v string) *Version {
 	return &Version{Version: *semver.MustParse(v)}
 }
 
+// String returns the string value of the Version
 func (v *Version) String() string {
 	return v.Version.String()
 }
 
+// Equal compares two Versions
 func (v *Version) Equal(other *Version) bool {
 	if other != nil {
 		return v.Version.Equal(&other.Version)

@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/buildpacks/pack"
+	packcfg "github.com/buildpacks/pack/config"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -72,12 +73,12 @@ func TestBuild(t *testing.T) {
 			mode:        config.RunModes.Build,
 			api:         &testutil.FakeAPIClient{},
 			expectedOptions: &pack.BuildOptions{
-				AppPath:  ".",
-				Builder:  "my/builder",
-				RunImage: "my/run",
-				NoPull:   true,
-				Env:      nonDebugModeArgs,
-				Image:    "img:latest",
+				AppPath:    ".",
+				Builder:    "my/builder",
+				RunImage:   "my/run",
+				PullPolicy: packcfg.PullNever,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
 			},
 		},
 		{
@@ -108,7 +109,7 @@ func TestBuild(t *testing.T) {
 				RunImage:     "my/otherRun",
 				Buildpacks:   []string{"my/buildpack", "my/otherBuildpack"},
 				TrustBuilder: true,
-				NoPull:       true,
+				PullPolicy:   packcfg.PullNever,
 				Env:          nonDebugModeArgs,
 				Image:        "img:latest",
 			},

@@ -92,8 +92,8 @@ func newV1Image(keychain authn.Keychain, repoName string) (v1.Image, error) {
 	image, err := remote.Image(ref, remote.WithAuth(auth), remote.WithTransport(http.DefaultTransport))
 	if err != nil {
 		if transportErr, ok := err.(*transport.Error); ok && len(transportErr.Errors) > 0 {
-			switch transportErr.Errors[0].Code {
-			case transport.UnauthorizedErrorCode, transport.ManifestUnknownErrorCode:
+			switch transportErr.StatusCode {
+			case http.StatusNotFound, http.StatusUnauthorized:
 				return emptyImage()
 			}
 		}
@@ -232,6 +232,26 @@ func (i *Image) Rebase(baseTopLayer string, newBase imgutil.Image) error {
 	if err != nil {
 		return errors.Wrap(err, "rebase")
 	}
+
+	newImageConfig, err := newImage.ConfigFile()
+	if err != nil {
+		return err
+	}
+
+	newBaseRemoteConfig, err := newBaseRemote.image.ConfigFile()
+	if err != nil {
+		return err
+	}
+
+	newImageConfig.Architecture = newBaseRemoteConfig.Architecture
+	newImageConfig.OS = newBaseRemoteConfig.OS
+	newImageConfig.OSVersion = newBaseRemoteConfig.OSVersion
+
+	newImage, err = mutate.ConfigFile(newImage, newImageConfig)
+	if err != nil {
+		return err
+	}
+
 	i.image = newImage
 	return nil
 }

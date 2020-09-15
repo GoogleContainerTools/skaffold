@@ -19,8 +19,7 @@ import (
 	"github.com/buildpacks/pack/logging"
 )
 
-const defaultRegistryURL = "https://github.com/buildpacks/registry-index"
-
+const DefaultRegistryURL = "https://github.com/buildpacks/registry-index"
 const defaultRegistryDir = "registry"
 
 // Cache is a RegistryCache
@@ -30,6 +29,13 @@ type Cache struct {
 	Root   string
 }
 
+const GithubIssueTitleTemplate = "{{ if .Yanked }}YANK{{ else }}ADD{{ end }} {{.Namespace}}/{{.Name}}@{{.Version}}"
+const GithubIssueBodyTemplate = `
+id = "{{.Namespace}}/{{.Name}}"
+version = "{{.Version}}"
+{{ if .Yanked }}{{ else if .Address }}addr = "{{.Address}}"{{ end }}
+`
+
 // Entry is a list of buildpacks stored in a registry
 type Entry struct {
 	Buildpacks []Buildpack `json:"buildpacks"`
@@ -37,7 +43,7 @@ type Entry struct {
 
 // NewDefaultRegistryCache creates a new registry cache with default options
 func NewDefaultRegistryCache(logger logging.Logger, home string) (Cache, error) {
-	return NewRegistryCache(logger, home, defaultRegistryURL)
+	return NewRegistryCache(logger, home, DefaultRegistryURL)
 }
 
 // NewRegistryCache creates a new registry cache
@@ -89,12 +95,12 @@ func (r *Cache) LocateBuildpack(bp string) (Buildpack, error) {
 					}
 				}
 			}
-			return highestVersion, highestVersion.Validate()
+			return highestVersion, Validate(highestVersion)
 		}
 
 		for _, bpIndex := range entry.Buildpacks {
 			if bpIndex.Version == version {
-				return bpIndex, bpIndex.Validate()
+				return bpIndex, Validate(bpIndex)
 			}
 		}
 		return Buildpack{}, fmt.Errorf("could not find version for buildpack: %s", bp)

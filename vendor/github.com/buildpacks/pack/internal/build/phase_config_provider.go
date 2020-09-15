@@ -9,34 +9,47 @@ import (
 	"github.com/buildpacks/pack/logging"
 )
 
+const (
+	linuxContainerAdmin   = "root"
+	windowsContainerAdmin = "ContainerAdministrator"
+	platformAPIEnvVar     = "CNB_PLATFORM_API"
+)
+
 type PhaseConfigProviderOperation func(*PhaseConfigProvider)
 
 type PhaseConfigProvider struct {
 	ctrConf      *container.Config
 	hostConf     *container.HostConfig
 	name         string
+	os           string
 	containerOps []ContainerOperation
 	infoWriter   io.Writer
 	errorWriter  io.Writer
 }
 
-func NewPhaseConfigProvider(name string, lifecycle *Lifecycle, ops ...PhaseConfigProviderOperation) *PhaseConfigProvider {
+func NewPhaseConfigProvider(name string, lifecycleExec *LifecycleExecution, ops ...PhaseConfigProviderOperation) *PhaseConfigProvider {
 	provider := &PhaseConfigProvider{
 		ctrConf:     new(container.Config),
 		hostConf:    new(container.HostConfig),
 		name:        name,
-		infoWriter:  logging.GetWriterForLevel(lifecycle.logger, logging.InfoLevel),
-		errorWriter: logging.GetWriterForLevel(lifecycle.logger, logging.ErrorLevel),
+		os:          lifecycleExec.os,
+		infoWriter:  logging.GetWriterForLevel(lifecycleExec.logger, logging.InfoLevel),
+		errorWriter: logging.GetWriterForLevel(lifecycleExec.logger, logging.ErrorLevel),
 	}
 
-	provider.ctrConf.Image = lifecycle.builder.Name()
+	provider.ctrConf.Image = lifecycleExec.opts.Builder.Name()
 	provider.ctrConf.Labels = map[string]string{"author": "pack"}
 
+	if lifecycleExec.os == "windows" {
+		provider.hostConf.Isolation = container.IsolationProcess
+	}
+
 	ops = append(ops,
-		WithLifecycleProxy(lifecycle),
+		WithEnv(fmt.Sprintf("%s=%s", platformAPIEnvVar, lifecycleExec.platformAPI.String())),
+		WithLifecycleProxy(lifecycleExec),
 		WithBinds([]string{
-			fmt.Sprintf("%s:%s", lifecycle.layersVolume, layersDir),
-			fmt.Sprintf("%s:%s", lifecycle.appVolume, appDir),
+			fmt.Sprintf("%s:%s", lifecycleExec.layersVolume, lifecycleExec.mountPaths.layersDir()),
+			fmt.Sprintf("%s:%s", lifecycleExec.appVolume, lifecycleExec.mountPaths.appDir()),
 		}...),
 	)
 
@@ -94,8 +107,12 @@ func WithBinds(binds ...string) PhaseConfigProviderOperation {
 
 func WithDaemonAccess() PhaseConfigProviderOperation {
 	return func(provider *PhaseConfigProvider) {
-		provider.ctrConf.User = "root"
-		provider.hostConf.Binds = append(provider.hostConf.Binds, "/var/run/docker.sock:/var/run/docker.sock")
+		WithRoot()(provider)
+		bind := "/var/run/docker.sock:/var/run/docker.sock"
+		if provider.os == "windows" {
+			bind = `\\.\pipe\docker_engine:\\.\pipe\docker_engine`
+		}
+		provider.hostConf.Binds = append(provider.hostConf.Binds, bind)
 	}
 }
 
@@ -121,21 +138,21 @@ func WithLogPrefix(prefix string) PhaseConfigProviderOperation {
 	}
 }
 
-func WithLifecycleProxy(lifecycle *Lifecycle) PhaseConfigProviderOperation {
+func WithLifecycleProxy(lifecycleExec *LifecycleExecution) PhaseConfigProviderOperation {
 	return func(provider *PhaseConfigProvider) {
-		if lifecycle.httpProxy != "" {
-			provider.ctrConf.Env = append(provider.ctrConf.Env, "HTTP_PROXY="+lifecycle.httpProxy)
-			provider.ctrConf.Env = append(provider.ctrConf.Env, "http_proxy="+lifecycle.httpProxy)
+		if lifecycleExec.opts.HTTPProxy != "" {
+			provider.ctrConf.Env = append(provider.ctrConf.Env, "HTTP_PROXY="+lifecycleExec.opts.HTTPProxy)
+			provider.ctrConf.Env = append(provider.ctrConf.Env, "http_proxy="+lifecycleExec.opts.HTTPProxy)
 		}
 
-		if lifecycle.httpsProxy != "" {
-			provider.ctrConf.Env = append(provider.ctrConf.Env, "HTTPS_PROXY="+lifecycle.httpsProxy)
-			provider.ctrConf.Env = append(provider.ctrConf.Env, "https_proxy="+lifecycle.httpsProxy)
+		if lifecycleExec.opts.HTTPSProxy != "" {
+			provider.ctrConf.Env = append(provider.ctrConf.Env, "HTTPS_PROXY="+lifecycleExec.opts.HTTPSProxy)
+			provider.ctrConf.Env = append(provider.ctrConf.Env, "https_proxy="+lifecycleExec.opts.HTTPSProxy)
 		}
 
-		if lifecycle.noProxy != "" {
-			provider.ctrConf.Env = append(provider.ctrConf.Env, "NO_PROXY="+lifecycle.noProxy)
-			provider.ctrConf.Env = append(provider.ctrConf.Env, "no_proxy="+lifecycle.noProxy)
+		if lifecycleExec.opts.NoProxy != "" {
+			provider.ctrConf.Env = append(provider.ctrConf.Env, "NO_PROXY="+lifecycleExec.opts.NoProxy)
+			provider.ctrConf.Env = append(provider.ctrConf.Env, "no_proxy="+lifecycleExec.opts.NoProxy)
 		}
 	}
 }
@@ -154,7 +171,11 @@ func WithRegistryAccess(authConfig string) PhaseConfigProviderOperation {
 
 func WithRoot() PhaseConfigProviderOperation {
 	return func(provider *PhaseConfigProvider) {
-		provider.ctrConf.User = "root"
+		if provider.os == "windows" {
+			provider.ctrConf.User = windowsContainerAdmin
+		} else {
+			provider.ctrConf.User = linuxContainerAdmin
+		}
 	}
 }
 

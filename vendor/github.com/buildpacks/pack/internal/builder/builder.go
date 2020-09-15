@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -18,7 +19,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/buildpacks/pack/builder"
-	"github.com/buildpacks/pack/internal/api"
 	"github.com/buildpacks/pack/internal/archive"
 	"github.com/buildpacks/pack/internal/dist"
 	"github.com/buildpacks/pack/internal/layer"
@@ -72,7 +72,7 @@ type orderTOML struct {
 func FromImage(img imgutil.Image) (*Builder, error) {
 	var metadata Metadata
 	if ok, err := dist.GetLabel(img, metadataLabel, &metadata); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "getting label %s", metadataLabel)
 	} else if !ok {
 		return nil, fmt.Errorf("builder %s missing label %s -- try recreating builder", style.Symbol(img.Name()), style.Symbol(metadataLabel))
 	}
@@ -83,7 +83,7 @@ func FromImage(img imgutil.Image) (*Builder, error) {
 func New(baseImage imgutil.Image, name string) (*Builder, error) {
 	var metadata Metadata
 	if _, err := dist.GetLabel(baseImage, metadataLabel, &metadata); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "getting label %s", metadataLabel)
 	}
 	return constructBuilder(baseImage, name, metadata)
 }
@@ -94,70 +94,60 @@ func constructBuilder(img imgutil.Image, newName string, metadata Metadata) (*Bu
 		return nil, err
 	}
 
-	uid, gid, err := userAndGroupIDs(img)
-	if err != nil {
-		return nil, err
+	bldr := &Builder{
+		baseImageName:       img.Name(),
+		image:               img,
+		layerWriterFactory:  layerWriterFactory,
+		metadata:            metadata,
+		lifecycleDescriptor: constructLifecycleDescriptor(metadata),
+		env:                 map[string]string{},
 	}
 
-	stackID, err := img.Label(stackLabel)
-	if err != nil {
-		return nil, errors.Wrapf(err, "get label %s from image %s", style.Symbol(stackLabel), style.Symbol(img.Name()))
-	}
-	if stackID == "" {
-		return nil, fmt.Errorf("image %s missing label %s", style.Symbol(img.Name()), style.Symbol(stackLabel))
+	if err := addImgLabelsToBuildr(bldr); err != nil {
+		return nil, errors.Wrap(err, "adding image labels to builder")
 	}
 
-	var mixins []string
-	if _, err := dist.GetLabel(img, stack.MixinsLabel, &mixins); err != nil {
-		return nil, err
-	}
-
-	baseName := img.Name()
-	if newName != "" && baseName != newName {
+	if newName != "" && img.Name() != newName {
 		img.Rename(newName)
 	}
 
-	var lifecycleVersion *Version
-	if metadata.Lifecycle.Version != nil {
-		lifecycleVersion = metadata.Lifecycle.Version
-	}
+	return bldr, nil
+}
 
-	var buildpackAPIVersion *api.Version
-	if metadata.Lifecycle.API.BuildpackVersion != nil {
-		buildpackAPIVersion = metadata.Lifecycle.API.BuildpackVersion
-	}
-
-	var platformAPIVersion *api.Version
-	if metadata.Lifecycle.API.PlatformVersion != nil {
-		platformAPIVersion = metadata.Lifecycle.API.PlatformVersion
-	}
-
-	var order dist.Order
-	if _, err := dist.GetLabel(img, OrderLabel, &order); err != nil {
-		return nil, err
-	}
-
-	return &Builder{
-		baseImageName:      baseName,
-		image:              img,
-		layerWriterFactory: layerWriterFactory,
-		metadata:           metadata,
-		mixins:             mixins,
-		order:              order,
-		uid:                uid,
-		gid:                gid,
-		StackID:            stackID,
-		lifecycleDescriptor: LifecycleDescriptor{
-			Info: LifecycleInfo{
-				Version: lifecycleVersion,
-			},
-			API: LifecycleAPI{
-				PlatformVersion:  platformAPIVersion,
-				BuildpackVersion: buildpackAPIVersion,
-			},
+func constructLifecycleDescriptor(metadata Metadata) LifecycleDescriptor {
+	return CompatDescriptor(LifecycleDescriptor{
+		Info: LifecycleInfo{
+			Version: metadata.Lifecycle.Version,
 		},
-		env: map[string]string{},
-	}, nil
+		API:  metadata.Lifecycle.API,
+		APIs: metadata.Lifecycle.APIs,
+	})
+}
+
+func addImgLabelsToBuildr(bldr *Builder) error {
+	var err error
+	bldr.uid, bldr.gid, err = userAndGroupIDs(bldr.image)
+	if err != nil {
+		return err
+	}
+
+	bldr.StackID, err = bldr.image.Label(stackLabel)
+	if err != nil {
+		return errors.Wrapf(err, "get label %s from image %s", style.Symbol(stackLabel), style.Symbol(bldr.image.Name()))
+	}
+	if bldr.StackID == "" {
+		return fmt.Errorf("image %s missing label %s", style.Symbol(bldr.image.Name()), style.Symbol(stackLabel))
+	}
+
+	if _, err = dist.GetLabel(bldr.image, stack.MixinsLabel, &bldr.mixins); err != nil {
+		return errors.Wrapf(err, "getting label %s", stack.MixinsLabel)
+	}
+
+	if _, err = dist.GetLabel(bldr.image, OrderLabel, &bldr.order); err != nil {
+		return errors.Wrapf(err, "getting label %s", OrderLabel)
+	}
+
+	return nil
 }
 
 // Getters
@@ -284,8 +274,10 @@ func (b *Builder) Save(logger logging.Logger, creatorMetadata CreatorMetadata) e
 	}
 
 	if b.lifecycle != nil {
-		b.metadata.Lifecycle.LifecycleInfo = b.lifecycle.Descriptor().Info
-		b.metadata.Lifecycle.API = b.lifecycle.Descriptor().API
+		lifecycleDescriptor := b.lifecycle.Descriptor()
+		b.metadata.Lifecycle.LifecycleInfo = lifecycleDescriptor.Info
+		b.metadata.Lifecycle.API = lifecycleDescriptor.API
+		b.metadata.Lifecycle.APIs = lifecycleDescriptor.APIs
 		lifecycleTar, err := b.lifecycleLayer(tmpDir)
 		if err != nil {
 			return err
@@ -301,7 +293,7 @@ func (b *Builder) Save(logger logging.Logger, creatorMetadata CreatorMetadata) e
 
 	bpLayers := dist.BuildpackLayers{}
 	if _, err := dist.GetLabel(b.image, dist.BuildpackLayersLabel, &bpLayers); err != nil {
-		return err
+		return errors.Wrapf(err, "getting label %s", dist.BuildpackLayersLabel)
 	}
 
 	for _, bp := range b.additionalBuildpacks {
@@ -449,13 +441,22 @@ func validateBuildpacks(stackID string, mixins []string, lifecycleDescriptor Lif
 	for _, bp := range bpsToValidate {
 		bpd := bp.Descriptor()
 
-		if !bpd.API.SupportsVersion(lifecycleDescriptor.API.BuildpackVersion) {
+		// TODO: Warn when Buildpack API is deprecated - https://github.com/buildpacks/pack/issues/788
+		compatible := false
+		for _, version := range append(lifecycleDescriptor.APIs.Buildpack.Supported, lifecycleDescriptor.APIs.Buildpack.Deprecated...) {
+			compatible = version.Compare(bpd.API) == 0
+			if compatible {
+				break
+			}
+		}
+
+		if !compatible {
 			return fmt.Errorf(
-				"buildpack %s (Buildpack API version %s) is incompatible with lifecycle %s (Buildpack API version %s)",
+				"buildpack %s (Buildpack API %s) is incompatible with lifecycle %s (Buildpack API(s) %s)",
 				style.Symbol(bpd.Info.FullName()),
 				bpd.API.String(),
 				style.Symbol(lifecycleDescriptor.Info.Version.String()),
-				lifecycleDescriptor.API.BuildpackVersion.String(),
+				strings.Join(lifecycleDescriptor.APIs.Buildpack.Supported.AsStrings(), ", "),
 			)
 		}
 
@@ -521,28 +522,17 @@ func (b *Builder) defaultDirsLayer(dest string) (string, error) {
 
 	ts := archive.NormalizedDateTime
 
-	if err := lw.WriteHeader(b.packOwnedDir(workspaceDir, ts)); err != nil {
-		return "", errors.Wrapf(err, "creating %s dir in layer", style.Symbol(workspaceDir))
+	for _, path := range []string{workspaceDir, layersDir} {
+		if err := lw.WriteHeader(b.packOwnedDir(path, ts)); err != nil {
+			return "", errors.Wrapf(err, "creating %s dir in layer", style.Symbol(path))
+		}
 	}
 
-	if err := lw.WriteHeader(b.packOwnedDir(layersDir, ts)); err != nil {
-		return "", errors.Wrapf(err, "creating %s dir in layer", style.Symbol(layersDir))
-	}
-
-	if err := lw.WriteHeader(b.rootOwnedDir(cnbDir, ts)); err != nil {
-		return "", errors.Wrapf(err, "creating %s dir in layer", style.Symbol(cnbDir))
-	}
-
-	if err := lw.WriteHeader(b.rootOwnedDir(dist.BuildpacksDir, ts)); err != nil {
-		return "", errors.Wrapf(err, "creating %s dir in layer", style.Symbol(dist.BuildpacksDir))
-	}
-
-	if err := lw.WriteHeader(b.rootOwnedDir(platformDir, ts)); err != nil {
-		return "", errors.Wrapf(err, "creating %s dir in layer", style.Symbol(platformDir))
-	}
-
-	if err := lw.WriteHeader(b.rootOwnedDir(platformDir+"/env", ts)); err != nil {
-		return "", errors.Wrapf(err, "creating %s dir in layer", style.Symbol(platformDir+"/env"))
+	// can't use filepath.Join(), to ensure Windows doesn't transform it to Windows join
+	for _, path := range []string{cnbDir, dist.BuildpacksDir, platformDir, platformDir + "/env"} {
+		if err := lw.WriteHeader(b.rootOwnedDir(path, ts)); err != nil {
+			return "", errors.Wrapf(err, "creating %s dir in layer", style.Symbol(path))
+		}
 	}
 
 	return fh.Name(), nil
@@ -568,45 +558,41 @@ func (b *Builder) rootOwnedDir(path string, time time.Time) *tar.Header {
 	}
 }
 
-func (b *Builder) orderLayer(order dist.Order, dest string) (string, error) {
-	contents, err := orderFileContents(order)
+func (b *Builder) lifecycleLayer(dest string) (string, error) {
+	fh, err := os.Create(filepath.Join(dest, "lifecycle.tar"))
 	if err != nil {
 		return "", err
 	}
+	defer fh.Close()
 
-	layerTar := filepath.Join(dest, "order.tar")
-	err = layer.CreateSingleFileTar(layerTar, orderPath, contents, b.layerWriterFactory)
+	lw := b.layerWriterFactory.NewWriter(fh)
+	defer lw.Close()
+
+	if err := lw.WriteHeader(&tar.Header{
+		Typeflag: tar.TypeDir,
+		Name:     lifecycleDir,
+		Mode:     0755,
+		ModTime:  archive.NormalizedDateTime,
+	}); err != nil {
+		return "", err
+	}
+
+	err = b.embedLifecycleTar(lw)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to create order.toml layer tar")
+		return "", errors.Wrap(err, "embedding lifecycle tar")
 	}
 
-	return layerTar, nil
-}
-
-func orderFileContents(order dist.Order) (string, error) {
-	buf := &bytes.Buffer{}
-
-	tomlData := orderTOML{Order: order}
-	if err := toml.NewEncoder(buf).Encode(tomlData); err != nil {
-		return "", errors.Wrapf(err, "failed to marshal order.toml")
-	}
-	return buf.String(), nil
-}
-
-func (b *Builder) stackLayer(dest string) (string, error) {
-	buf := &bytes.Buffer{}
-	err := toml.NewEncoder(buf).Encode(b.metadata.Stack)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to marshal stack.toml")
+	if err := lw.WriteHeader(&tar.Header{
+		Name:     compatLifecycleDir,
+		Linkname: lifecycleDir,
+		Typeflag: tar.TypeSymlink,
+		Mode:     0644,
+		ModTime:  archive.NormalizedDateTime,
+	}); err != nil {
+		return "", errors.Wrapf(err, "creating %s symlink", style.Symbol(compatLifecycleDir))
 	}
 
-	layerTar := filepath.Join(dest, "stack.tar")
-	err = layer.CreateSingleFileTar(layerTar, stackPath, buf.String(), b.layerWriterFactory)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to create stack.toml layer tar")
-	}
-
-	return layerTar, nil
+	return fh.Name(), nil
 }
 
 func (b *Builder) embedLifecycleTar(tw archive.TarWriter) error {
@@ -652,6 +638,47 @@ func (b *Builder) embedLifecycleTar(tw archive.TarWriter) error {
 	return nil
 }
 
+func (b *Builder) orderLayer(order dist.Order, dest string) (string, error) {
+	contents, err := orderFileContents(order)
+	if err != nil {
+		return "", err
+	}
+
+	layerTar := filepath.Join(dest, "order.tar")
+	err = layer.CreateSingleFileTar(layerTar, orderPath, contents, b.layerWriterFactory)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to create order.toml layer tar")
+	}
+
+	return layerTar, nil
+}
+
+func orderFileContents(order dist.Order) (string, error) {
+	buf := &bytes.Buffer{}
+
+	tomlData := orderTOML{Order: order}
+	if err := toml.NewEncoder(buf).Encode(tomlData); err != nil {
+		return "", errors.Wrapf(err, "failed to marshal order.toml")
+	}
+	return buf.String(), nil
+}
+
+func (b *Builder) stackLayer(dest string) (string, error) {
+	buf := &bytes.Buffer{}
+	err := toml.NewEncoder(buf).Encode(b.metadata.Stack)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to marshal stack.toml")
+	}
+
+	layerTar := filepath.Join(dest, "stack.tar")
+	err = layer.CreateSingleFileTar(layerTar, stackPath, buf.String(), b.layerWriterFactory)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to create stack.toml layer tar")
+	}
+
+	return layerTar, nil
+}
+
 func (b *Builder) envLayer(dest string, env map[string]string) (string, error) {
 	fh, err := os.Create(filepath.Join(dest, "env.tar"))
 	if err != nil {
@@ -674,43 +701,6 @@ func (b *Builder) envLayer(dest string, env map[string]string) (string, error) {
 		if _, err := lw.Write([]byte(v)); err != nil {
 			return "", err
 		}
-	}
-
-	return fh.Name(), nil
-}
-
-func (b *Builder) lifecycleLayer(dest string) (string, error) {
-	fh, err := os.Create(filepath.Join(dest, "lifecycle.tar"))
-	if err != nil {
-		return "", err
-	}
-	defer fh.Close()
-
-	lw := b.layerWriterFactory.NewWriter(fh)
-	defer lw.Close()
-
-	if err := lw.WriteHeader(&tar.Header{
-		Typeflag: tar.TypeDir,
-		Name:     lifecycleDir,
-		Mode:     0755,
-		ModTime:  archive.NormalizedDateTime,
-	}); err != nil {
-		return "", err
-	}
-
-	err = b.embedLifecycleTar(lw)
-	if err != nil {
-		return "", errors.Wrap(err, "embedding lifecycle tar")
-	}
-
-	if err := lw.WriteHeader(&tar.Header{
-		Name:     compatLifecycleDir,
-		Linkname: lifecycleDir,
-		Typeflag: tar.TypeSymlink,
-		Mode:     0644,
-		ModTime:  archive.NormalizedDateTime,
-	}); err != nil {
-		return "", errors.Wrapf(err, "creating %s symlink", style.Symbol(compatLifecycleDir))
 	}
 
 	return fh.Name(), nil

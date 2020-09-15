@@ -55,7 +55,7 @@ github.com/blang/semver
 # github.com/bmatcuk/doublestar v1.2.4
 ## explicit
 github.com/bmatcuk/doublestar
-# github.com/buildpacks/imgutil v0.0.0-20200520132953-ba4f77a60397
+# github.com/buildpacks/imgutil v0.0.0-20200805143852-1844b230530d
 ## explicit
 github.com/buildpacks/imgutil
 github.com/buildpacks/imgutil/layer
@@ -69,12 +69,12 @@ github.com/buildpacks/lifecycle/archive
 github.com/buildpacks/lifecycle/auth
 github.com/buildpacks/lifecycle/cmd
 github.com/buildpacks/lifecycle/launch
-# github.com/buildpacks/pack v0.12.0
+# github.com/buildpacks/pack v0.13.1
 ## explicit
 github.com/buildpacks/pack
 github.com/buildpacks/pack/builder
 github.com/buildpacks/pack/buildpackage
-github.com/buildpacks/pack/internal/api
+github.com/buildpacks/pack/config
 github.com/buildpacks/pack/internal/archive
 github.com/buildpacks/pack/internal/blob
 github.com/buildpacks/pack/internal/build
@@ -267,7 +267,7 @@ github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/empty
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/wrappers
-# github.com/google/go-cmp v0.4.1
+# github.com/google/go-cmp v0.5.1
 ## explicit
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/cmpopts
