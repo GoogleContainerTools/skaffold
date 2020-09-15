@@ -38,33 +38,10 @@ var (
 	buffSize = bufferedLinesPerArtifact
 )
 
-// artifactChanModel models the artifact dependency graph using a set of channels.
-// Each artifact has a channel that it closes once it completes building (either success or failure) by calling `markComplete`. This notifies *all* listeners waiting for this artifact.
-// Additionally it has a list of channels for each of its dependencies.
-// Calling `waitForDependencies` ensures that all required artifacts' channels have already been closed and as such have finished building.
-// This model allows for composing any arbitrary function with dependency ordering.
-type artifactChanModel struct {
-	artifact              *latest.Artifact
-	artifactChan          chan interface{}
-	requiredArtifactChans []chan interface{}
-}
-
-func (a artifactChanModel) markComplete() {
-	// closing channel notifies all listeners waiting for this build to complete
-	close(a.artifactChan)
-}
-func (a artifactChanModel) waitForDependencies(ctx context.Context) {
-	for _, dep := range a.requiredArtifactChans {
-		// wait for dependency to complete build
-		select {
-		case <-ctx.Done():
-		case <-dep:
-		}
-	}
-}
-
 // InOrder builds a list of artifacts in dependency order.
 // `concurrency` specifies the max number of builds that can run at any one time. If concurrency is 0, then it's set to the length of the `artifacts` slice.
+// Each artifact build runs in its own goroutine. It limits the max concurrency using a buffered channel like a semaphore.
+// At the same time, it uses the `artifactChanModel` to model the artifacts dependency graph and to make each artifact build wait for its required artifacts' builds.
 func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
 	acmSlice := makeArtifactChanModel(artifacts)
 	var wg sync.WaitGroup
@@ -105,6 +82,31 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 
 	// Print logs and collect results in order.
 	return collectResults(out, artifacts, results, outputs)
+}
+
+// artifactChanModel models the artifact dependency graph using a set of channels.
+// Each artifact has a channel that it closes once it completes building (either success or failure) by calling `markComplete`. This notifies *all* listeners waiting for this artifact.
+// Additionally it has a list of channels for each of its dependencies.
+// Calling `waitForDependencies` ensures that all required artifacts' channels have already been closed and as such have finished building.
+// This model allows for composing any arbitrary function with dependency ordering.
+type artifactChanModel struct {
+	artifact              *latest.Artifact
+	artifactChan          chan interface{}
+	requiredArtifactChans []chan interface{}
+}
+
+func (a artifactChanModel) markComplete() {
+	// closing channel notifies all listeners waiting for this build to complete
+	close(a.artifactChan)
+}
+func (a artifactChanModel) waitForDependencies(ctx context.Context) {
+	for _, dep := range a.requiredArtifactChans {
+		// wait for dependency to complete build
+		select {
+		case <-ctx.Done():
+		case <-dep:
+		}
+	}
 }
 
 func makeArtifactChanModel(artifacts []*latest.Artifact) []artifactChanModel {
