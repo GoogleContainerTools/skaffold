@@ -20,8 +20,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/docker/api/types"
+	"github.com/dustin/go-humanize"
 	"io"
 	"sort"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -36,6 +38,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
+const (
+	usageRetries       = 5
+	usageRetryInterval = 500 * time.Millisecond
+	//TODO
+	pruneLimit = 1
+)
+
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
@@ -44,15 +53,13 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	}
 	defer b.localDocker.Close()
 
-	const pruneLimit = 2
-
-	b.cleanupPrevImages(ctx, pruneLimit, out, artifacts)
+	b.cleanupOldImages(ctx, pruneLimit, out, artifacts)
 
 	builder := build.WithLogFile(b.buildArtifact, b.muted)
 	return build.InParallel(ctx, out, tags, artifacts, builder, *b.cfg.Concurrency)
 }
 
-func (b *Builder) listUniqImages(ctx context.Context, name string, limit int) ([]types.ImageSummary, error) {
+func (b *Builder) listUniqImages(ctx context.Context, name string) ([]types.ImageSummary, error) {
 	imgs, err := b.localDocker.ImageList(ctx, name)
 	if err != nil {
 		return nil, err
@@ -67,50 +74,88 @@ func (b *Builder) listUniqImages(ctx context.Context, name string, limit int) ([
 
 	// keep only uniq images (an image can have more than one tag)
 	uqIdx := 0
-	for i := 1; i < len(imgs) && uqIdx < limit; i++ {
+	for i, img := range imgs {
 		if imgs[i].ID != imgs[uqIdx].ID {
 			uqIdx += 1
-			imgs[uqIdx] = imgs[i]
+			imgs[uqIdx] = img
 		}
 	}
-	logrus.Debugf("%d of %d ids for %s are uniq", uqIdx+1, len(imgs), name)
 	return imgs[:uqIdx+1], nil
 }
 
-func (b *Builder) cleanupPrevImages(ctx context.Context, limit int, out io.Writer, artifacts []*latest.Artifact) {
+func (b *Builder) cleanupOldImages(ctx context.Context, limit int, out io.Writer, artifacts []*latest.Artifact) {
 
+	toPrune := b.collectImagesToPrune(ctx, limit, artifacts)
+
+	if len(toPrune) > 0 {
+		go func() {
+			logrus.Debugf("Going to prune: %v", toPrune)
+
+			beforeDu, err := b.diskUsage(ctx)
+			if err != nil {
+				logrus.Warnf("Failed to get docker usage info: %v", err)
+			}
+
+			err = b.localDocker.Prune(ctx, out, toPrune, b.pruneChildren)
+			if err != nil {
+				logrus.Warnf("Failed to prune: %v", err)
+				return
+			}
+			// do not print usage report, if initial 'du' failed
+			if beforeDu > 0 {
+				afterDu, err := b.diskUsage(ctx)
+				if err != nil {
+					logrus.Warnf("Failed to get docker usage info: %v", err)
+					return
+				}
+				logrus.Infof("%d image(s) pruned. Gained disk space: %s %d %d",
+					len(toPrune), humanize.Bytes(uint64(afterDu-beforeDu)), beforeDu, afterDu)
+			}
+		}()
+	}
+}
+
+func (b *Builder) collectImagesToPrune(ctx context.Context, limit int, artifacts []*latest.Artifact) []string {
 	imgNameCount := make(map[string]int)
 	for _, a := range artifacts {
 		imgNameCount[a.ImageName]++
 	}
-
+	rt := make([]string, 0)
 	for _, a := range artifacts {
-		name := a.ImageName
-		imgsToKeep := limit * imgNameCount[name]
-		imgs, err := b.listUniqImages(ctx, name, imgsToKeep)
+		imgs, err := b.listUniqImages(ctx, a.ImageName)
 		if err != nil {
 			logrus.Warnf("failed to list images: %v", err)
 			continue
 		}
-		imgsToPrune := len(imgs) - imgsToKeep
-		if imgsToPrune > 0 {
-			logrus.Debugf("need to prune %v %qs", imgsToPrune, name)
-			go func() {
-				idsToPrune := make([]string, imgsToPrune)
-				for i, img := range imgs[imgsToKeep:] {
-					idsToPrune[i] = img.ID
-				}
-				logrus.Debugf("going to prune: %v", idsToPrune)
-				err := b.localDocker.Prune(ctx, out, idsToPrune, b.pruneChildren)
-				if err != nil {
-					logrus.Warnf("failed to prune: %v", err)
-				}
-			}()
-		} else {
-			//TODO: remove log
-			logrus.Debugf("no need to prune %v", name)
+		limForImage := limit * imgNameCount[a.ImageName]
+		for _, img := range imgs[limForImage:] {
+			rt = append(rt, img.ID)
 		}
 	}
+	return rt
+}
+
+func (b *Builder) diskUsage(ctx context.Context) (int64, error) {
+	for retry := 0; retry < usageRetries-1; retry++ {
+		if ctx.Err() != nil {
+			return 0, ctx.Err()
+		}
+		usage, err := b.localDocker.RawClient().DiskUsage(ctx)
+		if err == nil {
+			return usage.LayersSize, nil
+		}
+		logrus.Debugf("[%d of %d] failed to get disk usage: %v. Will retry in %v",
+			retry, usageRetries, err, usageRetryInterval)
+
+		time.Sleep(usageRetryInterval)
+	}
+
+	usage, err := b.localDocker.RawClient().DiskUsage(ctx)
+	if err == nil {
+		return usage.LayersSize, nil
+	}
+	logrus.Debugf("Failed to get usage after %d retries : %v. giving up", usageRetries, err)
+	return 0, err
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
