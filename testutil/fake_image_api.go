@@ -212,6 +212,10 @@ func (f *FakeAPIClient) ImageLoad(ctx context.Context, input io.Reader, quiet bo
 	}, nil
 }
 
+func (f *FakeAPIClient) ImageList(ctx context.Context, ops types.ImageListOptions) ([]types.ImageSummary, error) {
+	return []types.ImageSummary{}, nil
+}
+
 func (f *FakeAPIClient) Close() error { return nil }
 
 // TODO(dgageot): create something that looks more like an actual tar file.

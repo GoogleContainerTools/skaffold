@@ -128,8 +128,8 @@ func (b *Builder) collectImagesToPrune(ctx context.Context, limit int, artifacts
 			continue
 		}
 		limForImage := limit * imgNameCount[a.ImageName]
-		for _, img := range imgs[limForImage:] {
-			rt = append(rt, img.ID)
+		for i := limForImage; i < len(imgs); i++ {
+			rt = append(rt, imgs[i].ID)
 		}
 	}
 	return rt
