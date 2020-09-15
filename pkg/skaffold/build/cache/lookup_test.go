@@ -40,6 +40,8 @@ func TestLookupLocal(t *testing.T) {
 		{
 			description: "miss",
 			hasher:      mockHasher("thehash"),
+			api:         &testutil.FakeAPIClient{},
+			cache:       map[string]ImageDetails{},
 			expected:    needsBuilding{hash: "thehash"},
 		},
 		{
@@ -134,6 +136,8 @@ func TestLookupRemote(t *testing.T) {
 		{
 			description: "miss",
 			hasher:      mockHasher("hash"),
+			api:         &testutil.FakeAPIClient{ErrImagePull: true},
+			cache:       map[string]ImageDetails{},
 			expected:    needsBuilding{hash: "hash"},
 		},
 		{
