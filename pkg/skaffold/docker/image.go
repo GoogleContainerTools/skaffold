@@ -76,6 +76,7 @@ type LocalDaemon interface {
 	ImageExists(ctx context.Context, ref string) bool
 	ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error)
 	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error
+	DiskUsage(ctx context.Context) (uint64, error)
 	RawClient() client.CommonAPIClient
 }
 
@@ -434,6 +435,13 @@ func (l *localDaemon) ImageList(ctx context.Context, ref string) ([]types.ImageS
 	return l.apiClient.ImageList(ctx, types.ImageListOptions{
 		Filters: filters.NewArgs(filters.Arg("reference", ref)),
 	})
+}
+func (l *localDaemon) DiskUsage(ctx context.Context) (uint64, error) {
+	usage, err := l.apiClient.DiskUsage(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return uint64(usage.LayersSize), nil
 }
 
 func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) ([]string, error) {

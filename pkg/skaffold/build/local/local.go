@@ -107,7 +107,7 @@ func (b *Builder) cleanupOldImages(ctx context.Context, limit int, out io.Writer
 					return
 				}
 				logrus.Infof("%d image(s) pruned. Gained disk space: %s %d %d",
-					len(toPrune), humanize.Bytes(uint64(afterDu-beforeDu)), beforeDu, afterDu)
+					len(toPrune), humanize.Bytes(afterDu-beforeDu), beforeDu, afterDu)
 			}
 		}()
 	}
@@ -133,14 +133,14 @@ func (b *Builder) collectImagesToPrune(ctx context.Context, limit int, artifacts
 	return rt
 }
 
-func (b *Builder) diskUsage(ctx context.Context) (int64, error) {
+func (b *Builder) diskUsage(ctx context.Context) (uint64, error) {
 	for retry := 0; retry < usageRetries-1; retry++ {
 		if ctx.Err() != nil {
 			return 0, ctx.Err()
 		}
-		usage, err := b.localDocker.RawClient().DiskUsage(ctx)
+		usage, err := b.localDocker.DiskUsage(ctx)
 		if err == nil {
-			return usage.LayersSize, nil
+			return usage, nil
 		}
 		logrus.Debugf("[%d of %d] failed to get disk usage: %v. Will retry in %v",
 			retry, usageRetries, err, usageRetryInterval)
@@ -148,9 +148,9 @@ func (b *Builder) diskUsage(ctx context.Context) (int64, error) {
 		time.Sleep(usageRetryInterval)
 	}
 
-	usage, err := b.localDocker.RawClient().DiskUsage(ctx)
+	usage, err := b.localDocker.DiskUsage(ctx)
 	if err == nil {
-		return usage.LayersSize, nil
+		return usage, nil
 	}
 	logrus.Debugf("Failed to get usage after %d retries : %v. giving up", usageRetries, err)
 	return 0, err
