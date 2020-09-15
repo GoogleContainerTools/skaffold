@@ -106,7 +106,9 @@ func dfs(artifact *latest.Artifact, visited, marked map[string]bool, artifacts m
 		return fmt.Errorf("cycle detected in build dependencies involving '%s'", artifact.ImageName)
 	}
 	marked[artifact.ImageName] = true
-
+	defer func() {
+		marked[artifact.ImageName] = false
+	}()
 	if visited[artifact.ImageName] {
 		return nil
 	}
@@ -121,7 +123,6 @@ func dfs(artifact *latest.Artifact, visited, marked map[string]bool, artifacts m
 			return err
 		}
 	}
-	marked[artifact.ImageName] = false
 	return nil
 }
 

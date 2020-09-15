@@ -765,7 +765,7 @@ func TestValidateArtifactCircularDependencies(t *testing.T) {
 			artifactLen: 5,
 		},
 		{
-			description: "artifacts with dependencies",
+			description: "artifacts with no circular dependencies 1",
 			dependency: map[int][]int{
 				0: {2, 3},
 				1: {3},
@@ -773,6 +773,16 @@ func TestValidateArtifactCircularDependencies(t *testing.T) {
 				3: {4},
 			},
 			artifactLen: 5,
+		},
+		{
+			description: "artifacts with no circular dependencies 2",
+			dependency: map[int][]int{
+				0: {4, 5},
+				1: {4, 5},
+				2: {4, 5},
+				3: {4, 5},
+			},
+			artifactLen: 6,
 		},
 		{
 			description: "artifacts with circular dependencies",
@@ -783,6 +793,15 @@ func TestValidateArtifactCircularDependencies(t *testing.T) {
 				3: {4},
 			},
 			artifactLen: 5,
+			shouldErr:   true,
+		},
+		{
+			description: "artifacts with circular dependencies (self)",
+			dependency: map[int][]int{
+				0: {0},
+				1: {},
+			},
+			artifactLen: 2,
 			shouldErr:   true,
 		},
 		{

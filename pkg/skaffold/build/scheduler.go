@@ -65,16 +65,16 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 
 		// Create a goroutine for each element in acmSlice. Each goroutine waits on its dependencies to finish building.
 		// Because our artifacts form a DAG, at least one of the goroutines should be able to start building.
-		go func(i int) {
-			acmSlice[i].waitForDependencies(ctx)
+		go func(a *artifactChanModel) {
+			a.waitForDependencies(ctx)
 			sem <- true
 			// Run build and write output/logs to piped writer and store build result in sync.Map
-			runBuild(ctx, w, tags, acmSlice[i].artifact, results, buildArtifact)
-			acmSlice[i].markComplete()
+			runBuild(ctx, w, tags, a.artifact, results, buildArtifact)
+			a.markComplete()
 			<-sem
 
 			wg.Done()
-		}(i)
+		}(acmSlice[i])
 
 		// Read build output/logs and write to buffered channel
 		go readOutputAndWriteToChannel(r, outputs[i])
@@ -95,11 +95,11 @@ type artifactChanModel struct {
 	requiredArtifactChans []chan interface{}
 }
 
-func (a artifactChanModel) markComplete() {
+func (a *artifactChanModel) markComplete() {
 	// closing channel notifies all listeners waiting for this build to complete
 	close(a.artifactChan)
 }
-func (a artifactChanModel) waitForDependencies(ctx context.Context) {
+func (a *artifactChanModel) waitForDependencies(ctx context.Context) {
 	for _, dep := range a.requiredArtifactChans {
 		// wait for dependency to complete build
 		select {
@@ -109,15 +109,15 @@ func (a artifactChanModel) waitForDependencies(ctx context.Context) {
 	}
 }
 
-func makeArtifactChanModel(artifacts []*latest.Artifact) []artifactChanModel {
+func makeArtifactChanModel(artifacts []*latest.Artifact) []*artifactChanModel {
 	chanMap := make(map[string]chan interface{})
 	for _, a := range artifacts {
 		chanMap[a.ImageName] = make(chan interface{})
 	}
 
-	var acmSlice []artifactChanModel
+	var acmSlice []*artifactChanModel
 	for _, a := range artifacts {
-		acm := artifactChanModel{artifact: a, artifactChan: chanMap[a.ImageName]}
+		acm := &artifactChanModel{artifact: a, artifactChan: chanMap[a.ImageName]}
 		for _, d := range a.Dependencies {
 			acm.requiredArtifactChans = append(acm.requiredArtifactChans, chanMap[d.ImageName])
 		}
