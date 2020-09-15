@@ -94,8 +94,8 @@ Watching for changes...
 ```
 
 {{< alert title="Note">}}
-If you are deploying to a remote cluster, you must run `skaffold dev --default-repo=gcr.io/k8s-skaffold/getting-started`
-where the repository is a location that you have write-access to.  Skaffold then
+If you are deploying to a remote cluster, you must run `skaffold dev --default-repo=<my_registry>`
+where `<my_registry>` is an image registry that you have write-access to. Skaffold then
 builds and pushes the container images to that location, and non-destructively
 updates the Kubernetes manifest files to reference those pushed images.
 {{< /alert >}}
