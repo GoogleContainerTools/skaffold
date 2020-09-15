@@ -1285,18 +1285,23 @@
       ],
       "properties": {
         "artifactOverrides": {
-          "description": "key value pairs. If present, Skaffold will send `--set-string` flag to Helm CLI and append all pairs after the flag.",
-          "x-intellij-html-description": "key value pairs. If present, Skaffold will send <code>--set-string</code> flag to Helm CLI and append all pairs after the flag."
+          "description": "key value pairs where the key represents the parameter used in the `--set-string` Helm CLI flag to define a container image and the value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section. The resulting command-line is controlled by `ImageStrategy`.",
+          "x-intellij-html-description": "key value pairs where the key represents the parameter used in the <code>--set-string</code> Helm CLI flag to define a container image and the value corresponds to artifact i.e. <code>ImageName</code> defined in <code>Build.Artifacts</code> section. The resulting command-line is controlled by <code>ImageStrategy</code>."
         },
         "chartPath": {
           "type": "string",
           "description": "path to the Helm chart.",
           "x-intellij-html-description": "path to the Helm chart."
         },
+        "createNamespace": {
+          "type": "boolean",
+          "description": "if `true`, Skaffold will send `--create-namespace` flag to Helm CLI. `--create-namespace` flag is available in Helm since version 3.2. Defaults is `false`.",
+          "x-intellij-html-description": "if <code>true</code>, Skaffold will send <code>--create-namespace</code> flag to Helm CLI. <code>--create-namespace</code> flag is available in Helm since version 3.2. Defaults is <code>false</code>."
+        },
         "imageStrategy": {
           "$ref": "#/definitions/HelmImageStrategy",
-          "description": "adds image configurations to the Helm `values` file.",
-          "x-intellij-html-description": "adds image configurations to the Helm <code>values</code> file."
+          "description": "controls how an `ArtifactOverrides` entry is turned into `--set-string` Helm CLI flag or flags.",
+          "x-intellij-html-description": "controls how an <code>ArtifactOverrides</code> entry is turned into <code>--set-string</code> Helm CLI flag or flags."
         },
         "name": {
           "type": "string",
@@ -1394,6 +1399,7 @@
         "setValues",
         "setValueTemplates",
         "setFiles",
+        "createNamespace",
         "wait",
         "recreatePods",
         "skipBuildDependencies",
@@ -1872,6 +1878,12 @@
           "description": "should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster.",
           "x-intellij-html-description": "should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster."
         },
+        "tryImportMissing": {
+          "type": "boolean",
+          "description": "whether to attempt to import artifacts from Docker (either a local or remote registry) if not in the cache.",
+          "x-intellij-html-description": "whether to attempt to import artifacts from Docker (either a local or remote registry) if not in the cache.",
+          "default": "false"
+        },
         "useBuildkit": {
           "type": "boolean",
           "description": "use BuildKit to build Docker images.",
@@ -1887,6 +1899,7 @@
       },
       "preferredOrder": [
         "push",
+        "tryImportMissing",
         "useDockerCLI",
         "useBuildkit",
         "concurrency"

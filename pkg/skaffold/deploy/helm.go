@@ -54,7 +54,8 @@ var (
 	versionRegex = regexp.MustCompile(`v(\d[\w.\-]+)`)
 
 	// helm3Version represents the version cut-off for helm3 behavior
-	helm3Version = semver.MustParse("3.0.0-beta.0")
+	helm3Version  = semver.MustParse("3.0.0-beta.0")
+	helm32Version = semver.MustParse("3.2.0")
 
 	// error to throw when helm version can't be determined
 	versionErrorString = "failed to determine binary version: %w"
@@ -509,6 +510,13 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		args = append(args, "--namespace", o.namespace)
 	}
 
+	if r.CreateNamespace != nil && *r.CreateNamespace && !o.upgrade {
+		if o.helmVersion.LT(helm32Version) {
+			return nil, errors.New("the createNamespace option is not available in the current Helm version. Update Helm to version 3.2 or higher")
+		}
+		args = append(args, "--create-namespace")
+	}
+
 	params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
 	if err != nil {
 		return nil, fmt.Errorf("matching build results to chart values: %w", err)
@@ -548,20 +556,15 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 
 // constructOverrideArgs creates the command line arguments for overrides
 func constructOverrideArgs(r *latest.HelmRelease, builds []build.Artifact, args []string, record func(string)) ([]string, error) {
-	sortedKeys := make([]string, 0, len(r.SetValues))
-	for k := range r.SetValues {
-		sortedKeys = append(sortedKeys, k)
-	}
-	sort.Strings(sortedKeys)
-	for _, k := range sortedKeys {
+	for _, k := range sortKeys(r.SetValues) {
 		record(r.SetValues[k])
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
 	}
 
-	for k, v := range r.SetFiles {
-		exp, err := homedir.Expand(v)
+	for _, k := range sortKeys(r.SetFiles) {
+		exp, err := homedir.Expand(r.SetFiles[k])
 		if err != nil {
-			return nil, fmt.Errorf("unable to expand %q: %w", v, err)
+			return nil, fmt.Errorf("unable to expand %q: %w", r.SetFiles[k], err)
 		}
 		record(exp)
 		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, exp))
@@ -580,12 +583,7 @@ func constructOverrideArgs(r *latest.HelmRelease, builds []build.Artifact, args 
 	}
 	logrus.Debugf("EnvVarMap: %+v\n", envMap)
 
-	sortedKeys = make([]string, 0, len(r.SetValueTemplates))
-	for k := range r.SetValueTemplates {
-		sortedKeys = append(sortedKeys, k)
-	}
-	sort.Strings(sortedKeys)
-	for _, k := range sortedKeys {
+	for _, k := range sortKeys(r.SetValueTemplates) {
 		v, err := util.ExpandEnvTemplate(r.SetValueTemplates[k], envMap)
 		if err != nil {
 			return nil, err
@@ -609,6 +607,16 @@ func constructOverrideArgs(r *latest.HelmRelease, builds []build.Artifact, args 
 		args = append(args, "-f", exp)
 	}
 	return args, nil
+}
+
+// sortKeys returns the map keys in sorted order
+func sortKeys(m map[string]string) []string {
+	s := make([]string, 0, len(m))
+	for k := range m {
+		s = append(s, k)
+	}
+	sort.Strings(s)
+	return s
 }
 
 // getArgs calculates the correct arguments to "helm get"
