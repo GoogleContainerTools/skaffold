@@ -177,36 +177,21 @@ func generateEnvFromImage(imageStr string) ([]v1.EnvVar, error) {
 }
 
 func parseImageParts(imageStr string) (string, string, string, error) {
-	var repo, name, tag string
-	var err error
-	parts := strings.Split(imageStr, ":")
-	switch len(parts) {
-	case 1:
-		// default tag: latest
-		parts = append(parts, "latest")
-	case 2:
-	case 3:
-		if strings.ContainsRune(parts[0], '/') {
-			err = fmt.Errorf("invalid image uri string: %q", imageStr)
-			return repo, name, tag, err
-		}
-		parts[0] = parts[0] + ":" + parts[1]
-		parts[1] = parts[2]
-		parts = parts[:2]
-	default:
-		err = fmt.Errorf("invalid image uri string: %q", imageStr)
-		return repo, name, tag, err
+	imgRef, err := docker.ParseReference(imageStr)
+	if err != nil {
+		return "", "", "", err
 	}
-	tag = parts[1]
-	imageParts := strings.Split(parts[0], "/")
-	switch len(imageParts) {
-	case 0:
-		name = parts[1]
-	case 1:
-		name = imageParts[0]
-	default:
-		repo = strings.Join(imageParts[:len(imageParts)-1], "/")
-		name = imageParts[len(imageParts)-1]
+
+	repoParts := strings.Split(imgRef.BaseName, "/")
+	if len(repoParts) < 2 {
+		return "", "", "", fmt.Errorf("unable to detect image repository name: %#v", repoParts)
 	}
-	return repo, name, tag, err
+
+	repo := strings.Join(repoParts[:len(repoParts)-1], "/")
+	name := repoParts[len(repoParts)-1]
+	tag := imgRef.Tag
+	if tag == "" {
+		tag = "latest"
+	}
+	return repo, name, tag, nil
 }

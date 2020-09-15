@@ -72,3 +72,27 @@ func TestEnvInterpolation_IPPort(t *testing.T) {
 	}
 	testutil.CheckElementsMatch(t, expected, actual)
 }
+
+func TestEnvInterpolation_Latest(t *testing.T) {
+	imageStr := "why.com/is/this/such/a/long/repo/name/testimage"
+	artifact := &latest.KanikoArtifact{
+		Env: []v1.EnvVar{{Name: "hui", Value: "buh"}},
+	}
+	generatedEnvs, err := generateEnvFromImage(imageStr)
+	if err != nil {
+		t.Fatalf("error generating env: %s", err)
+	}
+	env, err := evaluateEnv(artifact.Env, generatedEnvs...)
+	if err != nil {
+		t.Fatalf("unable to evaluate env variables: %s", err)
+	}
+
+	actual := env
+	expected := []v1.EnvVar{
+		{Name: "hui", Value: "buh"},
+		{Name: "IMAGE_REPO", Value: "why.com/is/this/such/a/long/repo/name"},
+		{Name: "IMAGE_NAME", Value: "testimage"},
+		{Name: "IMAGE_TAG", Value: "latest"},
+	}
+	testutil.CheckElementsMatch(t, expected, actual)
+}
