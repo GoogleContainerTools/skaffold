@@ -1,6 +1,6 @@
 module github.com/GoogleContainerTools/skaffold
 
-go 1.14
+go 1.15
 
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.1+incompatible
