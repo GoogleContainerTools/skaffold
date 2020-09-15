@@ -19,12 +19,12 @@ package local
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types"
-	"github.com/dustin/go-humanize"
 	"io"
 	"sort"
 	"time"
 
+	"github.com/docker/docker/api/types"
+	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -76,7 +76,7 @@ func (b *Builder) listUniqImages(ctx context.Context, name string) ([]types.Imag
 	uqIdx := 0
 	for i, img := range imgs {
 		if imgs[i].ID != imgs[uqIdx].ID {
-			uqIdx += 1
+			uqIdx++
 			imgs[uqIdx] = img
 		}
 	}
@@ -84,9 +84,7 @@ func (b *Builder) listUniqImages(ctx context.Context, name string) ([]types.Imag
 }
 
 func (b *Builder) cleanupOldImages(ctx context.Context, limit int, out io.Writer, artifacts []*latest.Artifact) {
-
 	toPrune := b.collectImagesToPrune(ctx, limit, artifacts)
-
 	if len(toPrune) > 0 {
 		go func() {
 			logrus.Debugf("Going to prune: %v", toPrune)
