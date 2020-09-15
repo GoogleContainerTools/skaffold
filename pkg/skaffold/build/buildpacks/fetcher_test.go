@@ -54,7 +54,7 @@ func TestFetcher(t *testing.T) {
 			f := newFetcher(&out, docker)
 			f.Fetch(context.Background(), "image", true, test.pull)
 
-			t.CheckDeepEqual(test.expectedPulled, api.Pulled)
+			t.CheckDeepEqual(test.expectedPulled, api.Pulled())
 		})
 	}
 }
