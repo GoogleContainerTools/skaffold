@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 
@@ -45,6 +46,7 @@ type Builder struct {
 	builtImages        []string
 	insecureRegistries map[string]bool
 	muted              build.Muted
+	pruneMutex         sync.Mutex
 }
 
 // external dependencies are wrapped

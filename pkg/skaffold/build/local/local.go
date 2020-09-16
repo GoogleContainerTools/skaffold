@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -53,10 +54,19 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	}
 	defer b.localDocker.Close()
 
-	b.cleanupOldImages(ctx, pruneLimit, out, artifacts)
+	b.startCleanupOldImages(ctx, pruneLimit, out, artifacts)
 
 	builder := build.WithLogFile(b.buildArtifact, b.muted)
-	return build.InParallel(ctx, out, tags, artifacts, builder, *b.cfg.Concurrency)
+
+	rt, err := build.InParallel(ctx, out, tags, artifacts, builder, *b.cfg.Concurrency)
+
+	if b.mode == config.RunModes.Dev {
+		b.startCleanupOldImages(ctx, pruneLimit, out, artifacts)
+	} else {
+		b.cleanupOldImages(ctx, pruneLimit, out, artifacts)
+	}
+
+	return rt, err
 }
 
 func (b *Builder) listUniqImages(ctx context.Context, name string) ([]types.ImageSummary, error) {
@@ -69,7 +79,8 @@ func (b *Builder) listUniqImages(ctx context.Context, name string) ([]types.Imag
 	}
 
 	sort.Slice(imgs, func(i, j int) bool {
-		return imgs[i].Created < imgs[j].Created
+		// reverse sort
+		return imgs[i].Created > imgs[j].Created
 	})
 
 	// keep only uniq images (an image can have more than one tag)
@@ -83,33 +94,49 @@ func (b *Builder) listUniqImages(ctx context.Context, name string) ([]types.Imag
 	return imgs[:uqIdx+1], nil
 }
 
+func (b *Builder) startCleanupOldImages(ctx context.Context, limit int, out io.Writer, artifacts []*latest.Artifact) {
+	toPrune := b.collectImagesToPrune(ctx, limit, artifacts)
+	if len(toPrune) > 0 {
+		go b.runPrune(ctx, out, toPrune)
+	}
+}
+
 func (b *Builder) cleanupOldImages(ctx context.Context, limit int, out io.Writer, artifacts []*latest.Artifact) {
 	toPrune := b.collectImagesToPrune(ctx, limit, artifacts)
 	if len(toPrune) > 0 {
-		go func() {
-			logrus.Debugf("Going to prune: %v", toPrune)
+		b.runPrune(ctx, out, toPrune)
+	}
+}
 
-			beforeDu, err := b.diskUsage(ctx)
-			if err != nil {
-				logrus.Warnf("Failed to get docker usage info: %v", err)
-			}
+func (b *Builder) runPrune(ctx context.Context, out io.Writer, ids []string) {
+	logrus.Debugf("Going to prune: %v", ids)
+	// docker API does not support concurrent prune/utilization info request
+	// so let's serialize the access to it
+	t0 := time.Now()
+	b.pruneMutex.Lock()
+	logrus.Tracef("Prune mutex wait time: %v", time.Since(t0))
+	defer b.pruneMutex.Unlock()
 
-			err = b.localDocker.Prune(ctx, out, toPrune, b.pruneChildren)
-			if err != nil {
-				logrus.Warnf("Failed to prune: %v", err)
-				return
-			}
-			// do not print usage report, if initial 'du' failed
-			if beforeDu > 0 {
-				afterDu, err := b.diskUsage(ctx)
-				if err != nil {
-					logrus.Warnf("Failed to get docker usage info: %v", err)
-					return
-				}
-				logrus.Infof("%d image(s) pruned. Gained disk space: %s %d %d",
-					len(toPrune), humanize.Bytes(afterDu-beforeDu), beforeDu, afterDu)
-			}
-		}()
+	beforeDu, err := b.diskUsage(ctx)
+	if err != nil {
+		logrus.Warnf("Failed to get docker usage info: %v", err)
+	}
+	logrus.Infof("pruneChild: %v", b.pruneChildren)
+
+	err = b.localDocker.Prune(ctx, out, ids, b.pruneChildren)
+	if err != nil {
+		logrus.Warnf("Failed to prune: %v", err)
+		return
+	}
+	// do not print usage report, if initial 'du' failed
+	if beforeDu > 0 {
+		afterDu, err := b.diskUsage(ctx)
+		if err != nil {
+			logrus.Warnf("Failed to get docker usage info: %v", err)
+			return
+		}
+		logrus.Infof("%d image(s) pruned. Gained disk space: %s %d %d",
+			len(ids), humanize.Bytes(afterDu-beforeDu), beforeDu, afterDu)
 	}
 }
 
@@ -142,9 +169,9 @@ func (b *Builder) diskUsage(ctx context.Context) (uint64, error) {
 		if err == nil {
 			return usage, nil
 		}
+		// DiskUsage(..) may return "operation in progress" error.
 		logrus.Debugf("[%d of %d] failed to get disk usage: %v. Will retry in %v",
 			retry, usageRetries, err, usageRetryInterval)
-
 		time.Sleep(usageRetryInterval)
 	}
 
@@ -152,7 +179,7 @@ func (b *Builder) diskUsage(ctx context.Context) (uint64, error) {
 	if err == nil {
 		return usage, nil
 	}
-	logrus.Debugf("Failed to get usage after %d retries : %v. giving up", usageRetries, err)
+	logrus.Debugf("Failed to get usage after: %v. giving up", err)
 	return 0, err
 }
 
