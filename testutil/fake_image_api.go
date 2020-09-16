@@ -59,6 +59,8 @@ type FakeAPIClient struct {
 	nextImageID int
 	Pushed      map[string]string
 	Pulled      []string
+	// ref -> [id]
+	LocalImages map[string][]string
 	Built       []types.ImageBuildOptions
 }
 
@@ -220,7 +222,16 @@ func (f *FakeAPIClient) ImageList(ctx context.Context, ops types.ImageListOption
 	if f.ErrImageList {
 		return []types.ImageSummary{}, fmt.Errorf("test error")
 	}
-	return []types.ImageSummary{}, nil
+	var rt []types.ImageSummary
+	ref := ops.Filters.Get("reference")[0]
+
+	for i, tag := range f.LocalImages[ref] {
+		rt = append(rt, types.ImageSummary{
+			ID:      tag,
+			Created: int64(i),
+		})
+	}
+	return rt, nil
 }
 
 func (f *FakeAPIClient) DiskUsage(ctx context.Context) (types.DiskUsage, error) {

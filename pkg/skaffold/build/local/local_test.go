@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"io/ioutil"
+	"sort"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -423,6 +424,83 @@ func TestDiskUsage(t *testing.T) {
 				t.Errorf("invalid disk usage. got %d expected %d", res, test.expectedUtilization)
 			}
 		})
+	}
+}
+
+/*
+func (b *Builder) collectImagesToPrune(ctx context.Context, limit int, artifacts []*latest.Artifact) []string {
+	imgNameCount := make(map[string]int)
+	for _, a := range artifacts {
+		imgNameCount[a.ImageName]++
+	}
+	rt := make([]string, 0)
+	for _, a := range artifacts {
+		imgs, err := b.listUniqImages(ctx, a.ImageName)
+		if err != nil {
+			logrus.Warnf("failed to list images: %v", err)
+			continue
+		}
+		limForImage := limit * imgNameCount[a.ImageName]
+		for i := limForImage; i < len(imgs); i++ {
+			rt = append(rt, imgs[i].ID)
+		}
+	}
+	return rt
+}
+*/
+func TestCollectPruneImages(t *testing.T) {
+	tests := []struct {
+		description     string
+		localImages     map[string][]string
+		imagesToBuild   []string
+		expectedToPrune []string
+		limit           int
+	}{
+		{
+			description: "todo",
+			localImages: map[string][]string{
+				"foo": {"111", "222", "333", "444"},
+				"bar": {"555", "666", "777"},
+			},
+			imagesToBuild:   []string{"foo", "bar"},
+			expectedToPrune: []string{"222", "333", "444", "666", "777"},
+			limit:           1,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+				return fakeLocalDaemon(&testutil.FakeAPIClient{
+					LocalImages: test.localImages,
+				}), nil
+			})
+			builder, err := NewBuilder(&mockConfig{
+				local: latest.LocalBuild{},
+			})
+			t.CheckNoError(err)
+
+			res := builder.collectImagesToPrune(
+				context.Background(), test.limit, artifacts(test.imagesToBuild...))
+			sort.Strings(test.expectedToPrune)
+			sort.Strings(res)
+			t.CheckDeepEqual(res, test.expectedToPrune)
+		})
+	}
+}
+func artifacts(images ...string) []*latest.Artifact {
+	rt := make([]*latest.Artifact, 0)
+	for _, image := range images {
+		rt = append(rt, a(image))
+	}
+	return rt
+}
+
+func a(name string) *latest.Artifact {
+	return &latest.Artifact{
+		ImageName: name,
+		ArtifactType: latest.ArtifactType{
+			DockerArtifact: &latest.DockerArtifact{},
+		},
 	}
 }
 
