@@ -19,7 +19,6 @@ package local
 import (
 	"context"
 	"errors"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"io/ioutil"
 	"testing"
 
@@ -356,9 +355,7 @@ func TestNewBuilder(t *testing.T) {
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
-				t.CheckDeepEqual(test.expectedBuilder, builder,
-					cmp.AllowUnexported(Builder{}, dummyDaemon),
-					cmpopts.IgnoreUnexported())
+				t.CheckDeepEqual(test.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, dummyDaemon))
 			}
 		})
 	}

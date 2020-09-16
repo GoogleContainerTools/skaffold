@@ -30,6 +30,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	usageRetries       = 5
+	usageRetryInterval = 500 * time.Millisecond
+)
+
 type pruner struct {
 	localDocker   docker.LocalDaemon
 	pruneChildren bool
@@ -95,7 +100,6 @@ func (p *pruner) runPrune(ctx context.Context, out io.Writer, ids []string) {
 	if err != nil {
 		logrus.Warnf("Failed to get docker usage info: %v", err)
 	}
-	logrus.Infof("pruneChild: %v", p.pruneChildren)
 
 	err = p.localDocker.Prune(ctx, out, ids, p.pruneChildren)
 	if err != nil {
@@ -119,11 +123,12 @@ func (p *pruner) runPrune(ctx context.Context, out io.Writer, ids []string) {
 }
 
 func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []*latest.Artifact) []string {
+	// in case we're trying to build multiple images with the same ref in the same pipeline
 	imgNameCount := make(map[string]int)
 	for _, a := range artifacts {
 		imgNameCount[a.ImageName]++
 	}
-	rt := make([]string, 0)
+	var rt []string
 	for _, a := range artifacts {
 		imgs, err := p.listUniqImages(ctx, a.ImageName)
 		if err != nil {

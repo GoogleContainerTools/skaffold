@@ -54,7 +54,8 @@ type FakeAPIClient struct {
 	ErrImageList    bool
 	ErrStream       bool
 	ErrVersion      bool
-	DUFails         uint
+	// will return the "test error" error on first <DUFails> DiskUsage calls
+	DUFails uint
 
 	nextImageID int
 	Pushed      map[string]string

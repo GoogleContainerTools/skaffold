@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -34,11 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-)
-
-const (
-	usageRetries       = 5
-	usageRetryInterval = 500 * time.Millisecond
 )
 
 // Build runs a docker build on the host and tags the resulting image with
