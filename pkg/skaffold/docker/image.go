@@ -428,7 +428,7 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 		}
 		time.Sleep(sleepTime)
 	}
-	return nil, fmt.Errorf("could not remove image after %d retries", retries)
+	return nil, fmt.Errorf("could not remove image %q after %d retries", image, retries)
 }
 
 func (l *localDaemon) ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error) {
