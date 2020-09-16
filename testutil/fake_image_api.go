@@ -209,9 +209,10 @@ func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ types.ImagePu
 		return nil, fmt.Errorf("")
 	}
 
+	// use the digest if previously pushed
 	imageID, found := f.tagToImageID.Load(ref)
 	if !found {
-		return nil, errors.New("ref not found: " + ref)
+		imageID = ""
 	}
 	sha256Digester := sha256.New()
 	if _, err := sha256Digester.Write([]byte(imageID.(string))); err != nil {
