@@ -109,8 +109,12 @@ func (p *pruner) runPrune(ctx context.Context, out io.Writer, ids []string) {
 			logrus.Warnf("Failed to get docker usage info: %v", err)
 			return
 		}
-		logrus.Infof("%d image(s) pruned. Gained disk space: %s %d %d",
-			len(ids), humanize.Bytes(afterDu-beforeDu), beforeDu, afterDu)
+		if beforeDu > afterDu {
+			logrus.Infof("%d image(s) pruned. Reclaimed disk space: %s",
+				len(ids), humanize.Bytes(beforeDu-afterDu))
+		} else {
+			logrus.Infof("%d image(s) pruned", len(ids))
+		}
 	}
 }
 
