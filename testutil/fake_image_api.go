@@ -124,8 +124,8 @@ func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types
 		return types.ImageBuildResponse{}, fmt.Errorf("")
 	}
 
-	f.nextImageID++
-	imageID := fmt.Sprintf("sha256:%d", f.nextImageID)
+	next := atomic.AddInt32(&f.nextImageID, 1)
+	imageID := fmt.Sprintf("sha256:%d", next)
 
 	for _, tag := range options.Tags {
 		f.Add(tag, imageID)
@@ -246,8 +246,8 @@ func (f *FakeAPIClient) ImageLoad(ctx context.Context, input io.Reader, quiet bo
 		return types.ImageLoadResponse{}, fmt.Errorf("reading tar")
 	}
 
-	atomic.AddInt32(&f.nextImageID, 1)
-	imageID := fmt.Sprintf("sha256:%d", f.nextImageID)
+	next := atomic.AddInt32(&f.nextImageID, 1)
+	imageID := fmt.Sprintf("sha256:%d", next)
 	f.Add(ref, imageID)
 
 	return types.ImageLoadResponse{
