@@ -20,14 +20,12 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/sirupsen/logrus"
 )
 
 // Builder uses the host docker daemon to build and tag the image.
@@ -46,7 +44,6 @@ type Builder struct {
 	builtImages        []string
 	insecureRegistries map[string]bool
 	muted              build.Muted
-	pruneMutex         sync.Mutex
 }
 
 // external dependencies are wrapped
