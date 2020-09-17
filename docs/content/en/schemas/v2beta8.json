@@ -1605,118 +1605,34 @@
       "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
       "x-intellij-html-description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds."
     },
-    "KptDeploy": {
+    "KptApplyInventory": {
       "properties": {
-        "applyDir": {
-          "type": "string",
-          "description": "path to the directory to deploy to the cluster.",
-          "x-intellij-html-description": "path to the directory to deploy to the cluster."
-        },
         "dir": {
           "type": "string",
-          "description": "path to the directory to run kpt functions against.",
-          "x-intellij-html-description": "path to the directory to run kpt functions against."
-        },
-        "fn": {
-          "$ref": "#/definitions/KptFn",
-          "description": "adds additional configurations for `kpt fn`.",
-          "x-intellij-html-description": "adds additional configurations for <code>kpt fn</code>."
-        },
-        "live": {
-          "$ref": "#/definitions/KptLive",
-          "description": "adds additional configurations for `kpt live`.",
-          "x-intellij-html-description": "adds additional configurations for <code>kpt live</code>."
-        }
-      },
-      "preferredOrder": [
-        "applyDir",
-        "dir",
-        "fn",
-        "live"
-      ],
-      "additionalProperties": false,
-      "description": "*alpha* uses the `kpt` CLI to manage and deploy manifests.",
-      "x-intellij-html-description": "<em>alpha</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
-    },
-    "KptFn": {
-      "properties": {
-        "fnPath": {
-          "type": "string",
-          "description": "a directory to read functions from instead of the configuration directory.",
-          "x-intellij-html-description": "a directory to read functions from instead of the configuration directory."
-        },
-        "globalScope": {
-          "type": "boolean",
-          "description": "sets global scope for functions.",
-          "x-intellij-html-description": "sets global scope for functions.",
-          "default": "false"
-        },
-        "image": {
-          "type": "string",
-          "description": "an image to be run as a function in lieu of running functions from a directory.",
-          "x-intellij-html-description": "an image to be run as a function in lieu of running functions from a directory."
-        },
-        "mount": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "a list of storage options to mount to the fn image.",
-          "x-intellij-html-description": "a list of storage options to mount to the fn image.",
-          "default": "[]"
-        },
-        "network": {
-          "type": "boolean",
-          "description": "enables network access for functions that declare it.",
-          "x-intellij-html-description": "enables network access for functions that declare it.",
-          "default": "false"
-        },
-        "networkName": {
-          "type": "string",
-          "description": "docker network to run the container in (default \"bridge\").",
-          "x-intellij-html-description": "docker network to run the container in (default &quot;bridge&quot;)."
-        }
-      },
-      "preferredOrder": [
-        "fnPath",
-        "image",
-        "networkName",
-        "globalScope",
-        "network",
-        "mount"
-      ],
-      "additionalProperties": false,
-      "description": "adds additional configurations used when calling `kpt fn`.",
-      "x-intellij-html-description": "adds additional configurations used when calling <code>kpt fn</code>."
-    },
-    "KptLive": {
-      "properties": {
-        "apply": {
-          "$ref": "#/definitions/KptLiveApply",
-          "description": "adds additional configurations for `kpt live apply` commands.",
-          "x-intellij-html-description": "adds additional configurations for <code>kpt live apply</code> commands."
+          "description": "equivalent to the dir in `kpt live apply <dir>`. If not provided, kpt deployer will create a hidden directory `.kpt-hydrated` to store the manipulated resource output and the kpt inventory-template.yaml file.",
+          "x-intellij-html-description": "equivalent to the dir in <code>kpt live apply &lt;dir&gt;</code>. If not provided, kpt deployer will create a hidden directory <code>.kpt-hydrated</code> to store the manipulated resource output and the kpt inventory-template.yaml file."
         },
         "inventoryID": {
           "type": "string",
-          "description": "identifier for a group of applied resources. This configuration is used when users do not specify `KptDeploy.ApplyDir` and `.kpt-hydrated/inventory-template.yaml` does not exist.",
-          "x-intellij-html-description": "identifier for a group of applied resources. This configuration is used when users do not specify <code>KptDeploy.ApplyDir</code> and <code>.kpt-hydrated/inventory-template.yaml</code> does not exist."
+          "description": "*alpha* identifier for a group of applied resources. This value is only needed when the `kpt live` is working on a pre-applied cluster resources.",
+          "x-intellij-html-description": "<em>alpha</em> identifier for a group of applied resources. This value is only needed when the <code>kpt live</code> is working on a pre-applied cluster resources."
         },
         "inventoryNamespace": {
           "type": "string",
-          "description": "sets the namespace scope for `kpt live init`.",
-          "x-intellij-html-description": "sets the namespace scope for <code>kpt live init</code>."
+          "description": "*alpha* sets the inventory namespace.",
+          "x-intellij-html-description": "<em>alpha</em> sets the inventory namespace."
         }
       },
       "preferredOrder": [
-        "apply",
+        "dir",
         "inventoryID",
         "inventoryNamespace"
       ],
       "additionalProperties": false,
-      "description": "adds additional configurations used when calling `kpt live`.",
-      "x-intellij-html-description": "adds additional configurations used when calling <code>kpt live</code>."
+      "description": "sets the kpt inventory directory.",
+      "x-intellij-html-description": "sets the kpt inventory directory."
     },
-    "KptLiveApply": {
+    "KptApplyOptions": {
       "properties": {
         "pollPeriod": {
           "type": "string",
@@ -1748,6 +1664,108 @@
       "additionalProperties": false,
       "description": "adds additional configurations used when calling `kpt live apply`.",
       "x-intellij-html-description": "adds additional configurations used when calling <code>kpt live apply</code>."
+    },
+    "KptDeploy": {
+      "required": [
+        "dir"
+      ],
+      "properties": {
+        "dir": {
+          "type": "string",
+          "description": "path to the config directory (Required). By default, the Dir contains the application configurations, [kustomize config files](https://kubectl.docs.kubernetes.io/pages/examples/kustomize.html) and [declarative kpt functions](https://googlecontainertools.github.io/kpt/guides/consumer/function/#declarative-run).",
+          "x-intellij-html-description": "path to the config directory (Required). By default, the Dir contains the application configurations, <a href=\"https://kubectl.docs.kubernetes.io/pages/examples/kustomize.html\">kustomize config files</a> and <a href=\"https://googlecontainertools.github.io/kpt/guides/consumer/function/#declarative-run\">declarative kpt functions</a>."
+        },
+        "fn": {
+          "$ref": "#/definitions/KptFn",
+          "description": "adds additional configurations for `kpt fn`.",
+          "x-intellij-html-description": "adds additional configurations for <code>kpt fn</code>."
+        },
+        "live": {
+          "$ref": "#/definitions/KptLive",
+          "description": "adds additional configurations for `kpt live`.",
+          "x-intellij-html-description": "adds additional configurations for <code>kpt live</code>."
+        }
+      },
+      "preferredOrder": [
+        "dir",
+        "fn",
+        "live"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* uses the `kpt` CLI to manage and deploy manifests.",
+      "x-intellij-html-description": "<em>alpha</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
+    },
+    "KptFn": {
+      "properties": {
+        "fnPath": {
+          "type": "string",
+          "description": "directory to discover the declarative kpt functions. If not provided, kpt deployer uses `kpt.Dir`.",
+          "x-intellij-html-description": "directory to discover the declarative kpt functions. If not provided, kpt deployer uses <code>kpt.Dir</code>."
+        },
+        "globalScope": {
+          "type": "boolean",
+          "description": "sets the global scope for the kpt functions. see `kpt help fn run`.",
+          "x-intellij-html-description": "sets the global scope for the kpt functions. see <code>kpt help fn run</code>.",
+          "default": "false"
+        },
+        "image": {
+          "type": "string",
+          "description": "a kpt function image to run the configs imperatively. If provided, kpt.fn.fnPath will be ignored.",
+          "x-intellij-html-description": "a kpt function image to run the configs imperatively. If provided, kpt.fn.fnPath will be ignored."
+        },
+        "mount": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "a list of storage options to mount to the fn image.",
+          "x-intellij-html-description": "a list of storage options to mount to the fn image.",
+          "default": "[]"
+        },
+        "network": {
+          "type": "boolean",
+          "description": "enables network access for the kpt function containers.",
+          "x-intellij-html-description": "enables network access for the kpt function containers.",
+          "default": "false"
+        },
+        "networkName": {
+          "type": "string",
+          "description": "docker network name to run the kpt function containers (default \"bridge\").",
+          "x-intellij-html-description": "docker network name to run the kpt function containers (default &quot;bridge&quot;)."
+        }
+      },
+      "preferredOrder": [
+        "fnPath",
+        "image",
+        "networkName",
+        "globalScope",
+        "network",
+        "mount"
+      ],
+      "additionalProperties": false,
+      "description": "adds additional configurations used when calling `kpt fn`.",
+      "x-intellij-html-description": "adds additional configurations used when calling <code>kpt fn</code>."
+    },
+    "KptLive": {
+      "properties": {
+        "apply": {
+          "$ref": "#/definitions/KptApplyInventory",
+          "description": "sets the kpt inventory directory.",
+          "x-intellij-html-description": "sets the kpt inventory directory."
+        },
+        "options": {
+          "$ref": "#/definitions/KptApplyOptions",
+          "description": "adds additional configurations for `kpt live apply` commands.",
+          "x-intellij-html-description": "adds additional configurations for <code>kpt live apply</code> commands."
+        }
+      },
+      "preferredOrder": [
+        "apply",
+        "options"
+      ],
+      "additionalProperties": false,
+      "description": "adds additional configurations used when calling `kpt live`.",
+      "x-intellij-html-description": "adds additional configurations used when calling <code>kpt live</code>."
     },
     "KubectlDeploy": {
       "properties": {

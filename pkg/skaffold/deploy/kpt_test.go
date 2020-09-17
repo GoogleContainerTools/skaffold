@@ -77,8 +77,12 @@ spec:
 		{
 			description: "invalid user specified applyDir",
 			kpt: latest.KptDeploy{
-				Dir:      ".",
-				ApplyDir: "invalid_path",
+				Dir: ".",
+				Live: latest.KptLive{
+					Apply: latest.KptApplyInventory{
+						Dir: "invalid_path",
+					},
+				},
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
@@ -89,9 +93,13 @@ spec:
 		{
 			description: "kustomization and specified kpt fn",
 			kpt: latest.KptDeploy{
-				Dir:      ".",
-				Fn:       latest.KptFn{FnPath: "kpt-func.yaml"},
-				ApplyDir: "valid_path",
+				Dir: ".",
+				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
+				Live: latest.KptLive{
+					Apply: latest.KptApplyInventory{
+						Dir: "valid_path",
+					},
+				},
 			},
 			kustomizations: map[string]string{"Kustomization": `resources:
 - foo.yaml`},
@@ -119,10 +127,12 @@ spec:
 		{
 			description: "user specifies reconcile timeout and poll period",
 			kpt: latest.KptDeploy{
-				Dir:      ".",
-				ApplyDir: "valid_path",
+				Dir: ".",
 				Live: latest.KptLive{
-					Apply: latest.KptLiveApply{
+					Apply: latest.KptApplyInventory{
+						Dir: "valid_path",
+					},
+					Options: latest.KptApplyOptions{
 						PollPeriod:       "5s",
 						ReconcileTimeout: "2m",
 					},
@@ -137,10 +147,12 @@ spec:
 		{
 			description: "user specifies invalid reconcile timeout and poll period",
 			kpt: latest.KptDeploy{
-				Dir:      ".",
-				ApplyDir: "valid_path",
+				Dir: ".",
 				Live: latest.KptLive{
-					Apply: latest.KptLiveApply{
+					Apply: latest.KptApplyInventory{
+						Dir: "valid_path",
+					},
+					Options: latest.KptApplyOptions{
 						PollPeriod:       "foo",
 						ReconcileTimeout: "bar",
 					},
@@ -155,10 +167,12 @@ spec:
 		{
 			description: "user specifies prune propagation policy and prune timeout",
 			kpt: latest.KptDeploy{
-				Dir:      ".",
-				ApplyDir: "valid_path",
+				Dir: ".",
 				Live: latest.KptLive{
-					Apply: latest.KptLiveApply{
+					Apply: latest.KptApplyInventory{
+						Dir: "valid_path",
+					},
+					Options: latest.KptApplyOptions{
 						PrunePropagationPolicy: "Orphan",
 						PruneTimeout:           "2m",
 					},
@@ -173,10 +187,12 @@ spec:
 		{
 			description: "user specifies invalid prune propagation policy and prune timeout",
 			kpt: latest.KptDeploy{
-				Dir:      ".",
-				ApplyDir: "valid_path",
+				Dir: ".",
 				Live: latest.KptLive{
-					Apply: latest.KptLiveApply{
+					Apply: latest.KptApplyInventory{
+						Dir: "valid_path",
+					},
+					Options: latest.KptApplyOptions{
 						PrunePropagationPolicy: "foo",
 						PruneTimeout:           "bar",
 					},
@@ -200,10 +216,10 @@ spec:
 				kpt: test.kpt,
 			}, nil)
 
-			if k.ApplyDir == "valid_path" {
+			if k.Live.Apply.Dir == "valid_path" {
 				// 0755 is a permission setting where the owner can read, write, and execute.
 				// Others can read and execute but not modify the directory.
-				os.Mkdir(k.ApplyDir, 0755)
+				os.Mkdir(k.Live.Apply.Dir, 0755)
 			}
 
 			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
@@ -377,7 +393,11 @@ func TestKpt_Cleanup(t *testing.T) {
 			k := NewKptDeployer(&kptConfig{
 				workingDir: ".",
 				kpt: latest.KptDeploy{
-					ApplyDir: test.applyDir,
+					Live: latest.KptLive{
+						Apply: latest.KptApplyInventory{
+							Dir: test.applyDir,
+						},
+					},
 				},
 			}, nil)
 
@@ -739,7 +759,6 @@ spec:
 func TestKpt_GetApplyDir(t *testing.T) {
 	tests := []struct {
 		description string
-		applyDir    string
 		live        latest.KptLive
 		expected    string
 		commands    util.Command
@@ -747,13 +766,21 @@ func TestKpt_GetApplyDir(t *testing.T) {
 	}{
 		{
 			description: "specified an invalid applyDir",
-			applyDir:    "invalid_path",
-			shouldErr:   true,
+			live: latest.KptLive{
+				Apply: latest.KptApplyInventory{
+					Dir: "invalid_path",
+				},
+			},
+			shouldErr: true,
 		},
 		{
 			description: "specified a valid applyDir",
-			applyDir:    "valid_path",
-			expected:    "valid_path",
+			live: latest.KptLive{
+				Apply: latest.KptApplyInventory{
+					Dir: "valid_path",
+				},
+			},
+			expected: "valid_path",
 		},
 		{
 			description: "unspecified applyDir",
@@ -763,8 +790,10 @@ func TestKpt_GetApplyDir(t *testing.T) {
 		{
 			description: "unspecified applyDir with specified inventory-id and namespace",
 			live: latest.KptLive{
-				InventoryID:        "1a23bcde-4f56-7891-a2bc-de34fabcde5f6",
-				InventoryNamespace: "foo",
+				Apply: latest.KptApplyInventory{
+					InventoryID:        "1a23bcde-4f56-7891-a2bc-de34fabcde5f6",
+					InventoryNamespace: "foo",
+				},
 			},
 			expected: ".kpt-hydrated",
 			commands: testutil.CmdRunOut("kpt live init .kpt-hydrated --inventory-id 1a23bcde-4f56-7891-a2bc-de34fabcde5f6 --namespace foo", ""),
@@ -779,10 +808,10 @@ func TestKpt_GetApplyDir(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			tmpDir := t.NewTempDir().Chdir()
 
-			if test.applyDir == test.expected {
+			if test.live.Apply.Dir == test.expected {
 				// 0755 is a permission setting where the owner can read, write, and execute.
 				// Others can read and execute but not modify the directory.
-				os.Mkdir(test.applyDir, 0755)
+				os.Mkdir(test.live.Apply.Dir, 0755)
 			}
 
 			if test.description == "existing template resource in .kpt-hydrated" {
@@ -792,8 +821,7 @@ func TestKpt_GetApplyDir(t *testing.T) {
 			k := NewKptDeployer(&kptConfig{
 				workingDir: ".",
 				kpt: latest.KptDeploy{
-					ApplyDir: test.applyDir,
-					Live:     test.live,
+					Live: test.live,
 				},
 			}, nil)
 
