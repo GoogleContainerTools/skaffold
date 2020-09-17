@@ -38,8 +38,6 @@ import (
 const (
 	defaultConfigDir  = ".skaffold"
 	defaultConfigFile = "config"
-	tenDays           = time.Hour * 24 * 10
-	threeMonths       = time.Hour * 24 * 90
 )
 
 var (
@@ -316,7 +314,7 @@ func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
 	if cfg == nil || cfg.Survey == nil {
 		return false
 	}
-	return lessThan(cfg.Survey.LastTaken, threeMonths) || lessThan(cfg.Survey.LastPrompted, tenDays)
+	return lessThan(cfg.Survey.LastTaken, 365*24*time.Hour) || lessThan(cfg.Survey.LastPrompted, 60*24*time.Hour)
 }
 
 func lessThan(date string, duration time.Duration) bool {
