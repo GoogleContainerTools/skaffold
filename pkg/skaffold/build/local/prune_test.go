@@ -18,6 +18,7 @@ package local
 
 import (
 	"context"
+	"io/ioutil"
 	"sort"
 	"testing"
 
@@ -29,7 +30,7 @@ func TestDiskUsage(t *testing.T) {
 	tests := []struct {
 		ctxFunc             func() context.Context
 		description         string
-		fails               uint
+		fails               int
 		expectedUtilization uint64
 		shouldErr           bool
 	}{
@@ -84,27 +85,44 @@ func TestDiskUsage(t *testing.T) {
 	}
 }
 
-/*
-func (b *Builder) collectImagesToPrune(ctx context.Context, limit int, artifacts []*latest.Artifact) []string {
-	imgNameCount := make(map[string]int)
-	for _, a := range artifacts {
-		imgNameCount[a.ImageName]++
+func TestRunPruneOk(t *testing.T) {
+	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{}), true)
+	err := pruner.runPrune(context.Background(), ioutil.Discard, []string{"test"})
+	if err != nil {
+		t.Fatalf("Got an error: %v", err)
 	}
-	rt := make([]string, 0)
-	for _, a := range artifacts {
-		imgs, err := b.listUniqImages(ctx, a.ImageName)
-		if err != nil {
-			logrus.Warnf("failed to list images: %v", err)
-			continue
-		}
-		limForImage := limit * imgNameCount[a.ImageName]
-		for i := limForImage; i < len(imgs); i++ {
-			rt = append(rt, imgs[i].ID)
-		}
-	}
-	return rt
 }
-*/
+
+func TestRunPruneDuFailed(t *testing.T) {
+	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
+		DUFails: -1,
+	}), true)
+	err := pruner.runPrune(context.Background(), ioutil.Discard, []string{"test"})
+	if err != nil {
+		t.Fatalf("Got an error: %v", err)
+	}
+}
+
+func TestRunPruneDuFailed2(t *testing.T) {
+	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
+		DUFails: 2,
+	}), true)
+	err := pruner.runPrune(context.Background(), ioutil.Discard, []string{"test"})
+	if err != nil {
+		t.Fatalf("Got an error: %v", err)
+	}
+}
+
+func TestRunPruneImageRemoveFailed(t *testing.T) {
+	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
+		ErrImageRemove: true,
+	}), true)
+	err := pruner.runPrune(context.Background(), ioutil.Discard, []string{"test"})
+	if err == nil {
+		t.Fatal("An error expected here")
+	}
+}
+
 func TestCollectPruneImages(t *testing.T) {
 	tests := []struct {
 		description     string
@@ -113,7 +131,7 @@ func TestCollectPruneImages(t *testing.T) {
 		expectedToPrune []string
 	}{
 		{
-			description: "todo",
+			description: "test images to prune",
 			localImages: map[string][]string{
 				"foo": {"111", "222", "333", "444"},
 				"bar": {"555", "666", "777"},
@@ -121,9 +139,17 @@ func TestCollectPruneImages(t *testing.T) {
 			imagesToBuild:   []string{"foo", "bar"},
 			expectedToPrune: []string{"111", "222", "333", "555", "666"},
 		},
+		{
+			description: "dup image ref",
+			localImages: map[string][]string{
+				"foo": {"111", "222", "333", "444"},
+			},
+			imagesToBuild:   []string{"foo", "foo"},
+			expectedToPrune: []string{"111", "222"},
+		},
 	}
 	for _, test := range tests {
-		testutil.Run(t, "", func(t *testutil.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
 				LocalImages: test.localImages,
 			}), true)

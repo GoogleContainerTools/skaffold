@@ -48,7 +48,7 @@ func newPruner(dockerApi docker.LocalDaemon, pruneChildren bool) *pruner {
 	}
 }
 
-func (p *pruner) listUniqImages(ctx context.Context, name string) ([]types.ImageSummary, error) {
+func (p *pruner) listImages(ctx context.Context, name string) ([]types.ImageSummary, error) {
 	imgs, err := p.localDocker.ImageList(ctx, name)
 	if err != nil {
 		return nil, err
@@ -62,32 +62,37 @@ func (p *pruner) listUniqImages(ctx context.Context, name string) ([]types.Image
 		return imgs[i].Created > imgs[j].Created
 	})
 
-	// keep only uniq images (an image can have more than one tag)
-	uqIdx := 0
-	for i, img := range imgs {
-		if imgs[i].ID != imgs[uqIdx].ID {
-			uqIdx++
-			imgs[uqIdx] = img
+	return imgs, nil
+}
+
+func (p *pruner) cleanup(ctx context.Context, sync bool, out io.Writer, artifacts []*latest.Artifact) {
+	toPrune := p.collectImagesToPrune(ctx, artifacts)
+	if len(toPrune) > 0 {
+		if sync {
+			err := p.runPrune(ctx, out, toPrune)
+			if err != nil {
+				logrus.Debugf("Failed to prune: %v", err)
+			}
+		} else {
+			go func() {
+				err := p.runPrune(ctx, out, toPrune)
+				if err != nil {
+					logrus.Debugf("Failed to prune: %v", err)
+				}
+			}()
 		}
 	}
-	return imgs[:uqIdx+1], nil
 }
 
 func (p *pruner) startCleanupOldImages(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) {
-	toPrune := p.collectImagesToPrune(ctx, artifacts)
-	if len(toPrune) > 0 {
-		go p.runPrune(ctx, out, toPrune)
-	}
+	p.cleanup(ctx, false /*async*/, out, artifacts)
 }
 
 func (p *pruner) cleanupOldImages(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) {
-	toPrune := p.collectImagesToPrune(ctx, artifacts)
-	if len(toPrune) > 0 {
-		p.runPrune(ctx, out, toPrune)
-	}
+	p.cleanup(ctx, true /*sync*/, out, artifacts)
 }
 
-func (p *pruner) runPrune(ctx context.Context, out io.Writer, ids []string) {
+func (p *pruner) runPrune(ctx context.Context, out io.Writer, ids []string) error {
 	logrus.Debugf("Going to prune: %v", ids)
 	// docker API does not support concurrent prune/utilization info request
 	// so let's serialize the access to it
@@ -103,23 +108,23 @@ func (p *pruner) runPrune(ctx context.Context, out io.Writer, ids []string) {
 
 	err = p.localDocker.Prune(ctx, out, ids, p.pruneChildren)
 	if err != nil {
-		logrus.Warnf("Failed to prune: %v", err)
-		return
+		return err
 	}
 	// do not print usage report, if initial 'du' failed
 	if beforeDu > 0 {
 		afterDu, err := p.diskUsage(ctx)
 		if err != nil {
 			logrus.Warnf("Failed to get docker usage info: %v", err)
-			return
+			return nil
 		}
-		if beforeDu > afterDu {
+		if beforeDu >= afterDu {
 			logrus.Infof("%d image(s) pruned. Reclaimed disk space: %s",
 				len(ids), humanize.Bytes(beforeDu-afterDu))
 		} else {
 			logrus.Infof("%d image(s) pruned", len(ids))
 		}
 	}
+	return nil
 }
 
 func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []*latest.Artifact) []string {
@@ -128,9 +133,15 @@ func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []*latest.A
 	for _, a := range artifacts {
 		imgNameCount[a.ImageName]++
 	}
+	imgProcessed := make(map[string]struct{})
 	var rt []string
 	for _, a := range artifacts {
-		imgs, err := p.listUniqImages(ctx, a.ImageName)
+		if _, ok := imgProcessed[a.ImageName]; ok {
+			continue
+		}
+		imgProcessed[a.ImageName] = struct{}{}
+
+		imgs, err := p.listImages(ctx, a.ImageName)
 		if err != nil {
 			logrus.Warnf("failed to list images: %v", err)
 			continue

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"os"
 	"strings"
 
@@ -52,10 +53,12 @@ type FakeAPIClient struct {
 	ErrImagePush    bool
 	ErrImagePull    bool
 	ErrImageList    bool
-	ErrStream       bool
-	ErrVersion      bool
+	ErrImageRemove  bool
+
+	ErrStream  bool
+	ErrVersion bool
 	// will return the "test error" error on first <DUFails> DiskUsage calls
-	DUFails uint
+	DUFails int
 
 	nextImageID int
 	Pushed      map[string]string
@@ -122,6 +125,13 @@ func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types
 	return types.ImageBuildResponse{
 		Body: f.body(imageID),
 	}, nil
+}
+
+func (f *FakeAPIClient) ImageRemove(_ context.Context, _ string, _ types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error) {
+	if f.ErrImageRemove {
+		return []types.ImageDeleteResponseItem{}, fmt.Errorf("test error")
+	}
+	return []types.ImageDeleteResponseItem{}, nil
 }
 
 func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, ref string) (types.ImageInspect, []byte, error) {
@@ -236,9 +246,17 @@ func (f *FakeAPIClient) ImageList(ctx context.Context, ops types.ImageListOption
 }
 
 func (f *FakeAPIClient) DiskUsage(ctx context.Context) (types.DiskUsage, error) {
+	// if DUFails is positive faile first DUFails errors and then return ok
+	// if negative, return ok first DUFails times and then fail the rest
 	if f.DUFails > 0 {
 		f.DUFails--
 		return types.DiskUsage{}, fmt.Errorf("test error")
+	}
+	if f.DUFails < 0 {
+		if f.DUFails == -1 {
+			f.DUFails = math.MaxInt32 - 1
+		}
+		f.DUFails++
 	}
 	return types.DiskUsage{
 		LayersSize: int64(TestUtilization),
