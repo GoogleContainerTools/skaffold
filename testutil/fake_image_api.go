@@ -26,6 +26,8 @@ import (
 	"math"
 	"os"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/registry"
@@ -47,7 +49,6 @@ const (
 type FakeAPIClient struct {
 	client.CommonAPIClient
 
-	tagToImageID    map[string]string
 	ErrImageBuild   bool
 	ErrImageInspect bool
 	ErrImagePush    bool
@@ -60,9 +61,12 @@ type FakeAPIClient struct {
 	// will return the "test error" error on first <DUFails> DiskUsage calls
 	DUFails int
 
-	nextImageID int
-	Pushed      map[string]string
-	Pulled      []string
+	nextImageID  int32
+	tagToImageID sync.Map // map[string]string
+	pushed       sync.Map // map[string]string
+	pulled       sync.Map // map[string]string
+
+	mux sync.Mutex
 	// ref -> [id]
 	LocalImages map[string][]string
 	Built       []types.ImageBuildOptions
@@ -76,16 +80,33 @@ func (f *FakeAPIClient) ServerVersion(ctx context.Context) (types.Version, error
 }
 
 func (f *FakeAPIClient) Add(tag, imageID string) *FakeAPIClient {
-	if f.tagToImageID == nil {
-		f.tagToImageID = make(map[string]string)
-	}
-
-	f.tagToImageID[imageID] = imageID
-	f.tagToImageID[tag] = imageID
+	f.tagToImageID.Store(imageID, imageID)
+	f.tagToImageID.Store(tag, imageID)
 	if !strings.Contains(tag, ":") {
-		f.tagToImageID[tag+":latest"] = imageID
+		f.tagToImageID.Store(tag+":latest", imageID)
 	}
 	return f
+}
+
+func (f *FakeAPIClient) Pulled() []string {
+	var p []string
+	f.pulled.Range(func(ref, _ interface{}) bool {
+		p = append(p, ref.(string))
+		return true
+	})
+	return p
+}
+
+func (f *FakeAPIClient) Pushed() map[string]string {
+	p := make(map[string]string)
+	f.pushed.Range(func(ref, id interface{}) bool {
+		p[ref.(string)] = id.(string)
+		return true
+	})
+	if len(p) == 0 {
+		return nil
+	}
+	return p
 }
 
 type notFoundError struct {
@@ -113,14 +134,16 @@ func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types
 		return types.ImageBuildResponse{}, fmt.Errorf("")
 	}
 
-	f.nextImageID++
-	imageID := fmt.Sprintf("sha256:%d", f.nextImageID)
+	next := atomic.AddInt32(&f.nextImageID, 1)
+	imageID := fmt.Sprintf("sha256:%d", next)
 
 	for _, tag := range options.Tags {
 		f.Add(tag, imageID)
 	}
 
+	f.mux.Lock()
 	f.Built = append(f.Built, options)
+	f.mux.Unlock()
 
 	return types.ImageBuildResponse{
 		Body: f.body(imageID),
@@ -134,35 +157,53 @@ func (f *FakeAPIClient) ImageRemove(_ context.Context, _ string, _ types.ImageRe
 	return []types.ImageDeleteResponseItem{}, nil
 }
 
-func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, ref string) (types.ImageInspect, []byte, error) {
+func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, refOrID string) (types.ImageInspect, []byte, error) {
 	if f.ErrImageInspect {
 		return types.ImageInspect{}, nil, fmt.Errorf("")
 	}
 
-	for tag, imageID := range f.tagToImageID {
-		if tag == ref || imageID == ref {
-			rawConfig := []byte(fmt.Sprintf(`{"Config":{"Image":"%s"}}`, imageID))
-
-			var repoDigests []string
-			if digest, found := f.Pushed[ref]; found {
-				repoDigests = append(repoDigests, ref+"@"+digest)
-			}
-
-			return types.ImageInspect{
-				ID:          imageID,
-				RepoDigests: repoDigests,
-			}, rawConfig, nil
-		}
+	ref, imageID, err := f.findImageID(refOrID)
+	if err != nil {
+		return types.ImageInspect{}, nil, err
 	}
 
-	return types.ImageInspect{}, nil, &notFoundError{}
+	rawConfig := []byte(fmt.Sprintf(`{"Config":{"Image":"%s"}}`, imageID))
+
+	var repoDigests []string
+	if digest, found := f.pushed.Load(ref); found {
+		repoDigests = append(repoDigests, ref+"@"+digest.(string))
+	}
+
+	return types.ImageInspect{
+		ID:          imageID,
+		RepoDigests: repoDigests,
+	}, rawConfig, nil
+}
+
+func (f *FakeAPIClient) findImageID(refOrID string) (string, string, error) {
+	if id, found := f.tagToImageID.Load(refOrID); found {
+		return refOrID, id.(string), nil
+	}
+	var ref, id string
+	f.tagToImageID.Range(func(r, i interface{}) bool {
+		if r == refOrID || i == refOrID {
+			ref = r.(string)
+			id = i.(string)
+			return false
+		}
+		return true
+	})
+	if ref == "" {
+		return "", "", &notFoundError{}
+	}
+	return ref, id, nil
 }
 
 func (f *FakeAPIClient) DistributionInspect(ctx context.Context, ref, encodedRegistryAuth string) (registry.DistributionInspect, error) {
-	if sha, found := f.Pushed[ref]; found {
+	if sha, found := f.pushed.Load(ref); found {
 		return registry.DistributionInspect{
 			Descriptor: v1.Descriptor{
-				Digest: digest.Digest(sha),
+				Digest: digest.Digest(sha.(string)),
 			},
 		}, nil
 	}
@@ -171,12 +212,12 @@ func (f *FakeAPIClient) DistributionInspect(ctx context.Context, ref, encodedReg
 }
 
 func (f *FakeAPIClient) ImageTag(_ context.Context, image, ref string) error {
-	imageID, ok := f.tagToImageID[image]
+	imageID, ok := f.tagToImageID.Load(image)
 	if !ok {
 		return fmt.Errorf("image %s not found", image)
 	}
 
-	f.Add(ref, imageID)
+	f.Add(ref, imageID.(string))
 	return nil
 }
 
@@ -185,22 +226,24 @@ func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ types.ImagePu
 		return nil, fmt.Errorf("")
 	}
 
+	// use the digest if previously pushed
+	imageID, found := f.tagToImageID.Load(ref)
+	if !found {
+		imageID = ""
+	}
 	sha256Digester := sha256.New()
-	if _, err := sha256Digester.Write([]byte(f.tagToImageID[ref])); err != nil {
+	if _, err := sha256Digester.Write([]byte(imageID.(string))); err != nil {
 		return nil, err
 	}
 
 	digest := "sha256:" + fmt.Sprintf("%x", sha256Digester.Sum(nil))[0:64]
-	if f.Pushed == nil {
-		f.Pushed = make(map[string]string)
-	}
-	f.Pushed[ref] = digest
 
+	f.pushed.Store(ref, digest)
 	return f.body(digest), nil
 }
 
 func (f *FakeAPIClient) ImagePull(_ context.Context, ref string, _ types.ImagePullOptions) (io.ReadCloser, error) {
-	f.Pulled = append(f.Pulled, ref)
+	f.pulled.Store(ref, ref)
 	if f.ErrImagePull {
 		return nil, fmt.Errorf("")
 	}
@@ -220,8 +263,8 @@ func (f *FakeAPIClient) ImageLoad(ctx context.Context, input io.Reader, quiet bo
 		return types.ImageLoadResponse{}, fmt.Errorf("reading tar")
 	}
 
-	f.nextImageID++
-	imageID := fmt.Sprintf("sha256:%d", f.nextImageID)
+	next := atomic.AddInt32(&f.nextImageID, 1)
+	imageID := fmt.Sprintf("sha256:%d", next)
 	f.Add(ref, imageID)
 
 	return types.ImageLoadResponse{
