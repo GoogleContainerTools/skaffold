@@ -273,11 +273,11 @@ func (k *KptDeployer) kptFnRun(ctx context.Context) (deploy.ManifestList, error)
 // getApplyDir returns the path to applyDir if specified by the user. Otherwise, getApplyDir
 // creates a hidden directory named .kpt-hydrated in place of applyDir.
 func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
-	if k.ApplyDir != "" {
-		if _, err := os.Stat(k.ApplyDir); os.IsNotExist(err) {
+	if k.Live.Apply.Dir != "" {
+		if _, err := os.Stat(k.Live.Apply.Dir); os.IsNotExist(err) {
 			return "", err
 		}
-		return k.ApplyDir, nil
+		return k.Live.Apply.Dir, nil
 	}
 
 	// 0755 is a permission setting where the owner can read, write, and execute.
@@ -393,20 +393,20 @@ func (k *KptDeployer) getKptFnRunArgs() ([]string, error) {
 func (k *KptDeployer) getKptLiveApplyArgs() []string {
 	var flags []string
 
-	if len(k.Live.Apply.PollPeriod) > 0 {
-		flags = append(flags, "--poll-period", k.Live.Apply.PollPeriod)
+	if len(k.Live.Options.PollPeriod) > 0 {
+		flags = append(flags, "--poll-period", k.Live.Options.PollPeriod)
 	}
 
-	if len(k.Live.Apply.PrunePropagationPolicy) > 0 {
-		flags = append(flags, "--prune-propagation-policy", k.Live.Apply.PrunePropagationPolicy)
+	if len(k.Live.Options.PrunePropagationPolicy) > 0 {
+		flags = append(flags, "--prune-propagation-policy", k.Live.Options.PrunePropagationPolicy)
 	}
 
-	if len(k.Live.Apply.PruneTimeout) > 0 {
-		flags = append(flags, "--prune-timeout", k.Live.Apply.PruneTimeout)
+	if len(k.Live.Options.PruneTimeout) > 0 {
+		flags = append(flags, "--prune-timeout", k.Live.Options.PruneTimeout)
 	}
 
-	if len(k.Live.Apply.ReconcileTimeout) > 0 {
-		flags = append(flags, "--reconcile-timeout", k.Live.Apply.ReconcileTimeout)
+	if len(k.Live.Options.ReconcileTimeout) > 0 {
+		flags = append(flags, "--reconcile-timeout", k.Live.Options.ReconcileTimeout)
 	}
 
 	return flags
@@ -416,12 +416,12 @@ func (k *KptDeployer) getKptLiveApplyArgs() []string {
 func (k *KptDeployer) getKptLiveInitArgs() []string {
 	var flags []string
 
-	if len(k.Live.InventoryID) > 0 {
-		flags = append(flags, "--inventory-id", k.Live.InventoryID)
+	if len(k.Live.Apply.InventoryID) > 0 {
+		flags = append(flags, "--inventory-id", k.Live.Apply.InventoryID)
 	}
 
-	if len(k.Live.InventoryNamespace) > 0 {
-		flags = append(flags, "--namespace", k.Live.InventoryNamespace)
+	if len(k.Live.Apply.InventoryNamespace) > 0 {
+		flags = append(flags, "--namespace", k.Live.Apply.InventoryNamespace)
 	}
 
 	return flags
