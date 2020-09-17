@@ -23,11 +23,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/docker/docker/api/types"
 	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 const (
@@ -41,9 +42,9 @@ type pruner struct {
 	pruneMutex    sync.Mutex
 }
 
-func newPruner(dockerApi docker.LocalDaemon, pruneChildren bool) *pruner {
+func newPruner(dockerAPI docker.LocalDaemon, pruneChildren bool) *pruner {
 	return &pruner{
-		localDocker:   dockerApi,
+		localDocker:   dockerAPI,
 		pruneChildren: pruneChildren,
 	}
 }
