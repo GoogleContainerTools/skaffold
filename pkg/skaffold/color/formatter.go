@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	colors "github.com/heroku/color"
+	"github.com/mattn/go-colorable"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -37,7 +38,13 @@ func init() {
 // SetupColors enables/disables coloured output.
 func SetupColors(out io.Writer, defaultColor int, forceColors bool) {
 	_, isTerm := util.IsTerminal(out)
-	colors.Disable(!isTerm && !forceColors)
+	useColors := isTerm || forceColors
+	if useColors {
+		// Use EnableColorsStdout to enable use of color on Windows
+		useColors = false // value is updated if color-enablement is successful
+		colorable.EnableColorsStdout(&useColors)
+	}
+	colors.Disable(!useColors)
 
 	// Maintain compatibility with the old color coding.
 	Default = map[int]Color{
