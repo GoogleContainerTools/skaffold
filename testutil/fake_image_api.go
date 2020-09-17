@@ -66,10 +66,10 @@ type FakeAPIClient struct {
 	pushed       sync.Map // map[string]string
 	pulled       sync.Map // map[string]string
 
-	mux sync.Mutex
+	mux   sync.Mutex
+	Built []types.ImageBuildOptions
 	// ref -> [id]
 	LocalImages map[string][]string
-	Built       []types.ImageBuildOptions
 }
 
 func (f *FakeAPIClient) ServerVersion(ctx context.Context) (types.Version, error) {
