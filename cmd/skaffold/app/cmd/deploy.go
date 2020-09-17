@@ -89,19 +89,9 @@ func getArtifactsToDeploy(out io.Writer, fromFile, fromCLI []build.Artifact, art
 	deployed = build.MergeWithPreviousBuilds(fromCLI, deployed)
 	deployed = build.MergeWithPreviousBuilds(fromFile, deployed)
 
-	if opts.CustomTag != "" {
-		for i := range deployed {
-			artifact := &deployed[i]
-			if artifact.Tag == "" {
-				artifact.Tag = artifact.ImageName + ":" + opts.CustomTag
-			} else {
-				newTag, err := tag.SetImageTag(artifact.Tag, opts.CustomTag)
-				if err != nil {
-					return nil, err
-				}
-				artifact.Tag = newTag
-			}
-		}
+	deployed, err := applyCustomTag(deployed)
+	if err != nil {
+		return nil, err
 	}
 
 	// Check that every image has a non empty tag
@@ -113,4 +103,24 @@ func getArtifactsToDeploy(out io.Writer, fromFile, fromCLI []build.Artifact, art
 	}
 
 	return deployed, nil
+}
+
+func applyCustomTag(artifacts []build.Artifact) ([]build.Artifact, error) {
+	if opts.CustomTag != "" {
+		var result []build.Artifact
+		for _, artifact := range artifacts {
+			if artifact.Tag == "" {
+				artifact.Tag = artifact.ImageName + ":" + opts.CustomTag
+			} else {
+				newTag, err := tag.SetImageTag(artifact.Tag, opts.CustomTag)
+				if err != nil {
+					return nil, err
+				}
+				artifact.Tag = newTag
+			}
+			result = append(result, artifact)
+		}
+		return result, nil
+	}
+	return artifacts, nil
 }
