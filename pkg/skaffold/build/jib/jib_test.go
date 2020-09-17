@@ -154,9 +154,9 @@ func TestPluginType_IsKnown(t *testing.T) {
 	}{
 		{JibMaven, true},
 		{JibGradle, true},
-		{PluginType(0), false},
-		{PluginType(-1), false},
-		{PluginType(3), false},
+		{PluginType("ant"), false},
+		{PluginType("make"), false},
+		{PluginType(""), false},
 	}
 	for _, test := range tests {
 		testutil.Run(t, string(test.value), func(t *testutil.T) {
