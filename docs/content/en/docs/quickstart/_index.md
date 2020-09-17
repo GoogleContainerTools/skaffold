@@ -27,8 +27,11 @@ In this quickstart, you will:
 * [Install minikube](https://minikube.sigs.k8s.io/docs/start/)
 
 {{< alert title="Note">}}
-Skaffold will build the app using the Docker daemon hosted inside minikube. 
-If you want to deploy against a different Kubernetes cluster, e.g. Kind, GKE clusters, you will have to install Docker to build this app.
+This tutorial assumes use of Minikube as Skaffold will build the app using the Docker daemon hosted inside minikube
+and avoids the need for a registry to host the app's container images.
+If you want to deploy against a different Kubernetes cluster then you will have to install Docker to build this app.
+Furthermore if you want to deploy to a remote cluster, such as GKE, then you need to set up a container
+registry such as [GCR](https://cloud.google.com/container-registry) to host the resulting images.
 {{</alert>}}
 
 ## Downloading the sample app
@@ -89,6 +92,13 @@ Watching for changes...
 [getting-started] Hello world!
 
 ```
+
+{{< alert title="Note">}}
+If you are deploying to a remote cluster, you must run `skaffold dev --default-repo=<my_registry>`
+where `<my_registry>` is an image registry that you have write-access to. Skaffold then
+builds and pushes the container images to that location, and non-destructively
+updates the Kubernetes manifest files to reference those pushed images.
+{{< /alert >}}
 
 `skaffold dev` watches your local source code and executes your Skaffold pipeline
 every time a change is detected. `skaffold.yaml` provides specifications of the
