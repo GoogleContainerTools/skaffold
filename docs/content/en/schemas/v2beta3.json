@@ -941,13 +941,8 @@
       "properties": {
         "prefix": {
           "type": "string",
-<<<<<<< HEAD
           "description": "adds a fixed prefix to the tag.",
           "x-intellij-html-description": "adds a fixed prefix to the tag."
-=======
-          "description": "passes this string to the --exclude flag of the gitTagger name generation function.  If you are using semver naming of your tags, the 'tags' variant works perfectly for naming of each release, however if you also tag a given release as say the `stable`, `latest`, or `prod`, the image names generated can then cause undesired results.  ExcludedTags passes a string value to the `--exclude` flag of the git command to avoid having those special tags added to the algorithm for tagging. ",
-          "x-intellij-html-description": "passes this string to the --exclude flag of the gitTagger name generation function.  If you are using semver naming of your tags, the 'tags' variant works perfectly for naming of each release, however if you also tag a given release as say the `stable`, `latest`, or `prod`, the image names generated can then cause undesired results.  ExcludedTags passes a string value to the `--exclude` flag of the git command to avoid having those special tags added to the algorithm for tagging."
->>>>>>> 43ac77944 (added a bit of detail about this PRs purpose and the problem it solves)
         },
         "variant": {
           "type": "string",

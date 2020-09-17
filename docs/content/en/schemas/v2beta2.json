@@ -927,11 +927,6 @@
     },
     "GitTagger": {
       "properties": {
-        "excludedTags": {
-          "type": "string",
-          "description": "if set will be passed to the --exclude flag for the `tags`.",
-          "x-intellij-html-description": "if set will be passed to the --exclude flag for the <code>tags</code>."
-        },
         "variant": {
           "type": "string",
           "description": "determines the behavior of the git tagger. Valid variants are `Tags` (default): use git tags or fall back to abbreviated commit hash. `CommitSha`: use the full git commit sha. `AbbrevCommitSha`: use the abbreviated git commit sha. `TreeSha`: use the full tree hash of the artifact workingdir. `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.",
@@ -946,8 +941,7 @@
         }
       },
       "preferredOrder": [
-        "variant",
-        "excludedTags"
+        "variant"
       ],
       "additionalProperties": false,
       "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",

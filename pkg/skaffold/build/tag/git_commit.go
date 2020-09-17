@@ -107,7 +107,7 @@ func sanitizeTag(tag string) string {
 }
 
 func gitTags(workingDir string, excludedTags string) (string, error) {
-	args := []string{workingDir, "describe", "--tags", "--always"}
+	args := []string{"describe", "--tags", "--always"}
 	// If excluded tags are provided makes sure to pass that to the `git tags` command
 	if excludedTags != "" {
 		args = append(args, "--exclude", excludedTags)

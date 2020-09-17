@@ -1049,6 +1049,11 @@
     },
     "GitTagger": {
       "properties": {
+        "excludedTags": {
+          "type": "string",
+          "description": "if set will be passed to the --exclude flag for the `tags`.",
+          "x-intellij-html-description": "if set will be passed to the --exclude flag for the <code>tags</code>."
+        },
         "prefix": {
           "type": "string",
           "description": "adds a fixed prefix to the tag.",
@@ -1062,7 +1067,8 @@
       },
       "preferredOrder": [
         "variant",
-        "prefix"
+        "prefix",
+        "excludedTags"
       ],
       "additionalProperties": false,
       "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",
