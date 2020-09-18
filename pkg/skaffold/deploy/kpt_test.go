@@ -27,6 +27,8 @@ import (
 	"strings"
 	"testing"
 
+	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -885,6 +887,104 @@ func TestKpt_KptCommandArgs(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			res := kptCommandArgs(test.dir, test.commands, test.flags, test.globalFlags)
 			t.CheckDeepEqual(test.expected, res)
+		})
+	}
+}
+
+// TestKpt_ExcludeKptFn checks the declarative kpt fn has expected annotations added.
+func TestKpt_ExcludeKptFn(t *testing.T) {
+	// A declarative fn.
+	testFn1 := []byte(`apiVersion: v1
+data:
+  annotation_name: k1
+  annotation_value: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    config.kubernetes.io/function: fake`)
+	// A declarative fn which has `local-config` annotation specified.
+	testFn2 := []byte(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    config.kubernetes.io/function: fake
+    config.kubernetes.io/local-config: "false"
+data:
+  annotation_name: k2
+  annotation_value: v2`)
+	testPod := []byte(`apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1
+    name: image1`)
+	tests := []struct {
+		description string
+		manifests   deploy.ManifestList
+		expected    deploy.ManifestList
+	}{
+		{
+			description: "Add `local-config` annotation to kpt fn",
+			manifests:   deploy.ManifestList{testFn1},
+			expected: deploy.ManifestList{[]byte(`apiVersion: v1
+data:
+  annotation_name: k1
+  annotation_value: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    config.kubernetes.io/function: fake
+    config.kubernetes.io/local-config: "true"`)},
+		},
+		{
+			description: "Skip preset `local-config` annotation",
+			manifests:   deploy.ManifestList{testFn2},
+			expected: deploy.ManifestList{[]byte(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    config.kubernetes.io/function: fake
+    config.kubernetes.io/local-config: "false"
+data:
+  annotation_name: k2
+  annotation_value: v2`)},
+		},
+		{
+			description: "Valid in kpt fn pipeline.",
+			manifests:   deploy.ManifestList{testFn1, testFn2, testPod},
+			expected: deploy.ManifestList{[]byte(`apiVersion: v1
+data:
+  annotation_name: k1
+  annotation_value: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    config.kubernetes.io/function: fake
+    config.kubernetes.io/local-config: "true"`), []byte(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    config.kubernetes.io/function: fake
+    config.kubernetes.io/local-config: "false"
+data:
+  annotation_name: k2
+  annotation_value: v2`), []byte(`apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1
+    name: image1`)},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			k := NewKptDeployer(&kptConfig{}, nil)
+			actualManifest, err := k.ExcludeKptFn(test.manifests)
+			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
 		})
 	}
 }

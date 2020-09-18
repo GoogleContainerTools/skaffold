@@ -34,12 +34,16 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8syaml "sigs.k8s.io/yaml"
 )
 
-var (
+const (
 	inventoryTemplate = "inventory-template.yaml"
 	kptHydrated       = ".kpt-hydrated"
 	pipeline          = ".pipeline"
+	kptFnAnnotation   = "config.kubernetes.io/function"
+	kptFnLocalConfig  = "config.kubernetes.io/local-config"
 )
 
 // KptDeployer deploys workflows with kpt CLI
@@ -186,6 +190,12 @@ func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds [
 		return nil, nil
 	}
 
+	// Remove the kpt function from the manipulated resources.
+	manifests, err = k.ExcludeKptFn(manifests)
+	if err != nil {
+		return nil, fmt.Errorf("exclude kpt fn from manipulated resources: %w", err)
+	}
+
 	manifests, err = manifests.ReplaceImages(builds)
 	if err != nil {
 		return nil, fmt.Errorf("replacing images in manifests: %w", err)
@@ -268,6 +278,45 @@ func (k *KptDeployer) kptFnRun(ctx context.Context) (deploy.ManifestList, error)
 	}
 
 	return manifests, nil
+}
+
+// ExcludeKptFn adds an annotation "config.kubernetes.io/local-config: 'true'" to kpt function.
+// This will exclude kpt functions from deployed to the cluster in kpt live apply.
+func (k *KptDeployer) ExcludeKptFn(manifest deploy.ManifestList) (deploy.ManifestList, error) {
+	var newManifest deploy.ManifestList
+	for _, yByte := range manifest {
+		// Convert yaml byte config to unstructured.Unstructured
+		jByte, _ := k8syaml.YAMLToJSON(yByte)
+		var obj unstructured.Unstructured
+		if err := obj.UnmarshalJSON(jByte); err != nil {
+			return nil, fmt.Errorf("unmarshaling config: %w", err)
+		}
+		// skip if the resource is not kpt fn config.
+		if _, ok := obj.GetAnnotations()[kptFnAnnotation]; !ok {
+			newManifest = append(newManifest, yByte)
+			continue
+		}
+		// skip if the kpt fn has local-config annotation specified.
+		if _, ok := obj.GetAnnotations()[kptFnLocalConfig]; ok {
+			newManifest = append(newManifest, yByte)
+			continue
+		}
+
+		// Add "local-config" annotation to kpt fn config.
+		anns := obj.GetAnnotations()
+		anns[kptFnLocalConfig] = "true"
+		obj.SetAnnotations(anns)
+		jByte, err := obj.MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("marshaling to json: %w", err)
+		}
+		newYByte, err := k8syaml.JSONToYAML(jByte)
+		if err != nil {
+			return nil, fmt.Errorf("converting json to yaml: %w", err)
+		}
+		newManifest.Append(newYByte)
+	}
+	return newManifest, nil
 }
 
 // getApplyDir returns the path to applyDir if specified by the user. Otherwise, getApplyDir
