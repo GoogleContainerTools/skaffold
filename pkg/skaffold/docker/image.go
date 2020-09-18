@@ -156,12 +156,19 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 	return cfg, nil
 }
 
+func (l *localDaemon) CheckCompatible(a *latest.DockerArtifact) error {
+	if a.Secret != nil {
+		return fmt.Errorf("docker build secrets require BuildKit - set `useBuildkit: true` in your config, or run with `DOCKER_BUILDKIT=1`")
+	}
+	return nil
+}
+
 // Build performs a docker build and returns the imageID.
 func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.RunMode) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
-	if a.Secret != nil {
-		return "", fmt.Errorf("docker build secrets require BuildKit - set `useBuildkit: true` in your config, or run with `DOCKER_BUILDKIT=1`")
+	if err := l.CheckCompatible(a); err != nil {
+		return "", err
 	}
 
 	buildArgs, err := EvalBuildArgs(mode, workspace, a)
