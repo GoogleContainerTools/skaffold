@@ -16,13 +16,19 @@ limitations under the License.
 
 package docker
 
-import "github.com/docker/distribution/reference"
+import (
+	"strings"
+
+	"github.com/docker/distribution/reference"
+)
 
 // ImageReference is a parsed image name.
 type ImageReference struct {
 	BaseName       string
 	Domain         string
 	Path           string
+	Repo           string
+	Name           string
 	Tag            string
 	Digest         string
 	FullyQualified bool
@@ -53,6 +59,12 @@ func ParseReference(image string) (*ImageReference, error) {
 	if n, ok := r.(reference.Digested); ok {
 		parsed.Digest = n.Digest().String()
 		parsed.FullyQualified = true
+	}
+
+	repoParts := strings.Split(parsed.BaseName, "/")
+	if len(repoParts) > 1 {
+		parsed.Repo = strings.Join(repoParts[:len(repoParts)-1], "/")
+		parsed.Name = repoParts[len(repoParts)-1]
 	}
 
 	return parsed, nil

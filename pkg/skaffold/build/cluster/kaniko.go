@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -165,33 +164,16 @@ func envMapFromVars(env []v1.EnvVar) map[string]string {
 }
 
 func generateEnvFromImage(imageStr string) ([]v1.EnvVar, error) {
-	repoStr, nameStr, tagStr, err := parseImageParts(imageStr)
+	imgRef, err := docker.ParseReference(imageStr)
 	if err != nil {
 		return nil, err
 	}
+	if imgRef.Tag == "" {
+		imgRef.Tag = "latest"
+	}
 	var generatedEnvs []v1.EnvVar
-	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_REPO", Value: repoStr})
-	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_NAME", Value: nameStr})
-	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_TAG", Value: tagStr})
+	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_REPO", Value: imgRef.Repo})
+	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_NAME", Value: imgRef.Name})
+	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_TAG", Value: imgRef.Tag})
 	return generatedEnvs, nil
-}
-
-func parseImageParts(imageStr string) (string, string, string, error) {
-	imgRef, err := docker.ParseReference(imageStr)
-	if err != nil {
-		return "", "", "", err
-	}
-
-	repoParts := strings.Split(imgRef.BaseName, "/")
-	if len(repoParts) < 2 {
-		return "", "", "", fmt.Errorf("unable to detect image repository name: %#v", repoParts)
-	}
-
-	repo := strings.Join(repoParts[:len(repoParts)-1], "/")
-	name := repoParts[len(repoParts)-1]
-	tag := imgRef.Tag
-	if tag == "" {
-		tag = "latest"
-	}
-	return repo, name, tag, nil
 }
