@@ -254,7 +254,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.KubeContext,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run", "filter"},
 	},
 	{
 		Name:          "kubeconfig",
@@ -262,7 +262,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.KubeConfig,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run", "filter"},
 	},
 	{
 		Name:          "tag",

@@ -45,6 +45,7 @@ type Config interface {
 	pkgkubectl.Config
 	ForceDeploy() bool
 	WaitForDeletions() config.WaitForDeletions
+	Mode() config.RunMode
 }
 
 func NewCLI(cfg Config, flags latest.KubectlFlags, defaultNameSpace string) CLI {

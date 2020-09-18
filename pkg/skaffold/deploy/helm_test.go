@@ -447,6 +447,7 @@ func TestHelmDeploy(t *testing.T) {
 		commands         util.Command
 		helm             latest.HelmDeploy
 		namespace        string
+		configure        func(*HelmDeployer)
 		builds           []build.Artifact
 		force            bool
 		shouldErr        bool
@@ -885,6 +886,26 @@ func TestHelmDeploy(t *testing.T) {
 			builds: testBuilds,
 		},
 		{
+			description: "debug for helm3.0 failure",
+			commands:    testutil.CmdRunWithOutput("helm version --client", version30),
+			shouldErr:   true,
+			helm:        testDeployConfig,
+			builds:      testBuilds,
+			configure:   func(deployer *HelmDeployer) { deployer.enableDebug = true },
+		},
+		{
+			description: "debug for helm3.1 success",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm --post-renderer SKAFFOLD-BINARY examples/test -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig"),
+			helm:      testDeployConfig,
+			builds:    testBuilds,
+			configure: func(deployer *HelmDeployer) { deployer.enableDebug = true },
+		},
+		{
 			description: "helm3.1 should fail to deploy with createNamespace option",
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
@@ -923,12 +944,16 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&osExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 
 			deployer := NewHelmDeployer(&helmConfig{
 				helm:      test.helm,
 				namespace: test.namespace,
 				force:     test.force,
 			}, nil)
+			if test.configure != nil {
+				test.configure(deployer)
+			}
 			deployer.pkgTmpDir = tmpDir
 			_, err := deployer.Deploy(context.Background(), ioutil.Discard, test.builds)
 
@@ -1320,6 +1345,70 @@ func TestHelmRender(t *testing.T) {
 				dat, _ := ioutil.ReadFile(file)
 				t.CheckDeepEqual(string(dat), test.expected)
 			}
+		})
+	}
+}
+
+func TestWriteBuildArtifacts(t *testing.T) {
+	tests := []struct {
+		description string
+		builds      []build.Artifact
+		result      string
+	}{
+		{
+			description: "nil",
+			builds:      nil,
+			result:      `{"builds":null}`,
+		},
+		{
+			description: "empty",
+			builds:      []build.Artifact{},
+			result:      `{"builds":[]}`,
+		},
+		{
+			description: "multiple images with tags",
+			builds:      []build.Artifact{{ImageName: "name", Tag: "name:tag"}, {ImageName: "name2", Tag: "name2:tag"}},
+			result:      `{"builds":[{"imageName":"name","tag":"name:tag"},{"imageName":"name2","tag":"name2:tag"}]}`,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			file, cleanup, err := writeBuildArtifacts(test.builds)
+			t.CheckError(false, err)
+			if content, err := ioutil.ReadFile(file); err != nil {
+				t.Errorf("error reading file %q: %v", file, err)
+			} else {
+				t.CheckDeepEqual(test.result, string(content))
+			}
+			cleanup()
+		})
+	}
+}
+
+func TestGenerateSkaffoldDebugFilter(t *testing.T) {
+	tests := []struct {
+		description string
+		buildFile   string
+		result      []string
+	}{
+		{
+			description: "empty buildfile is skipped",
+			buildFile:   "",
+			result:      []string{"filter", "--debugging", "--kube-context", "kubecontext", "--kubeconfig", "kubeconfig"},
+		},
+		{
+			description: "buildfile is added",
+			buildFile:   "buildfile",
+			result:      []string{"filter", "--debugging", "--kube-context", "kubecontext", "--build-artifacts", "buildfile", "--kubeconfig", "kubeconfig"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			h := NewHelmDeployer(&helmConfig{
+				helm: testDeployConfig,
+			}, nil)
+			result := h.generateSkaffoldDebugFilter(test.buildFile)
+			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }
