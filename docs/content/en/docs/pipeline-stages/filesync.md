@@ -84,8 +84,36 @@ result in a complete rebuild.
 #### Buildpacks
 
 Skaffold requires special collaboration from the Buildpacks for the `auto` sync to work.
-The [gcr.io/buildpacks/builder:v1](https://github.com/GoogleCloudPlatform/buildpacks) supports Skaffold
-out of the box, currently for Go, NodeJS, and Java.
+The GCP Buildpacks builder [gcr.io/buildpacks/builder:v1](https://github.com/GoogleCloudPlatform/buildpacks)
+supports Skaffold syncing out of the box, currently for Go, NodeJS, and Java. 
+Auto sync is now enabled by default.
+
+Skaffold will automatically sync and relaunch applications for the following file types:
+
+- Go: *.go
+- Java: *.java, *.kt, *.scala, *.groovy, *.clj
+- NodeJS: *.js, *.mjs, *.coffee, *.litcoffee, *.json
+
+Changes to other file types trigger an image rebuild.
+
+##### Disable Auto Sync for Buildpacks
+
+To disable auto sync, provide a manual sync rule; this sync rule can reference a file
+that does not exist.  For example:
+
+```
+artifacts:
+- image: xxx
+  buildpacks:
+    builder: gcr.io/buildpacks/builder:v1
+  # disable buildpacks auto-sync
+  sync: 
+    manual: 
+    - src: .
+      dest: .
+```
+
+##### How it works
 
 Cloud Native Buildpacks set a `io.buildpacks.build.metadata` label on the images they create.
 This labels points to json description of the [Bill-of-Materials, aka BOM](https://github.com/buildpacks/spec/blob/master/buildpack.md#bill-of-materials-toml) of the build.
