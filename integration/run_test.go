@@ -136,9 +136,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunRenderOnly(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	testutil.Run(t, "write rendered manifest to provided filepath", func(tu *testutil.T) {
 		tmpDir := tu.NewTempDir()

@@ -133,9 +133,7 @@ func TestDevAPITriggers(t *testing.T) {
 }
 
 func TestDevAPIAutoTriggers(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 	defer Run(t, "testdata/dev", "rm", "foo")

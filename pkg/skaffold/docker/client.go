@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -32,8 +31,7 @@ import (
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
@@ -51,11 +49,18 @@ var (
 	dockerAPIClientErr  error
 )
 
+type Config interface {
+	Prune() bool
+	GetKubeContext() string
+	MinikubeProfile() string
+	GetInsecureRegistries() map[string]bool
+}
+
 // NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.
-func NewAPIClientImpl(runCtx *runcontext.RunContext) (LocalDaemon, error) {
+func NewAPIClientImpl(cfg Config) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
-		env, apiClient, err := newAPIClient(runCtx.GetKubeContext(), runCtx.MinikubeProfile())
-		dockerAPIClient = NewLocalDaemon(apiClient, env, runCtx.Prune(), runCtx.GetInsecureRegistries())
+		env, apiClient, err := newAPIClient(cfg.GetKubeContext(), cfg.MinikubeProfile())
+		dockerAPIClient = NewLocalDaemon(apiClient, env, cfg.Prune(), cfg.GetInsecureRegistries())
 		dockerAPIClientErr = err
 	})
 
@@ -68,8 +73,11 @@ func NewAPIClientImpl(runCtx *runcontext.RunContext) (LocalDaemon, error) {
 
 // newAPIClient guesses the docker client to use based on current Kubernetes context.
 func newAPIClient(kubeContext string, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
-	if kubeContext == constants.DefaultMinikubeContext || minikubeProfile != "" {
+	if minikubeProfile != "" { // skip validation if explicitly specifying minikubeProfile.
 		return newMinikubeAPIClient(minikubeProfile)
+	}
+	if cluster.GetClient().IsMinikube(kubeContext) {
+		return newMinikubeAPIClient(kubeContext)
 	}
 	return newEnvAPIClient()
 }
@@ -163,32 +171,14 @@ func getUserAgentHeader() map[string]string {
 	}
 }
 
-func getMiniKubeFilename() (string, error) {
-	if found, _ := util.DetectWSL(); found {
-		filename, err := exec.LookPath("minikube.exe")
-		if err != nil {
-			return "", errors.New("unable to find minikube.exe. Please add it to PATH environment variable")
-		}
-		if _, err := os.Stat(filename); os.IsNotExist(err) {
-			return "", fmt.Errorf("unable to find minikube.exe. File not found %s", filename)
-		}
-		return filename, nil
-	}
-	return "minikube", nil
-}
-
 func getMinikubeDockerEnv(minikubeProfile string) (map[string]string, error) {
-	miniKubeFilename, err := getMiniKubeFilename()
+	if minikubeProfile == "" {
+		return nil, fmt.Errorf("empty minikube profile")
+	}
+	cmd, err := cluster.GetClient().MinikubeExec("docker-env", "--shell", "none", "-p", minikubeProfile)
 	if err != nil {
-		return nil, fmt.Errorf("getting minikube filename: %w", err)
+		return nil, fmt.Errorf("executing minikube command: %w", err)
 	}
-
-	args := []string{"docker-env", "--shell", "none"}
-	if minikubeProfile != "" {
-		args = append(args, "-p", minikubeProfile)
-	}
-
-	cmd := exec.Command(miniKubeFilename, args...)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, fmt.Errorf("getting minikube env: %w", err)

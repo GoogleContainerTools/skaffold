@@ -54,11 +54,13 @@ func MarkIntegrationTest(t *testing.T, testType TestType) {
 		t.Skip("skipping integration test")
 	}
 
-	if testType == NeedsGcp && !RunOnGCP() {
+	runOnGCP := os.Getenv("GCP_ONLY") == "true"
+
+	if testType == NeedsGcp && !runOnGCP {
 		t.Skip("skipping GCP integration test")
 	}
 
-	if testType == CanRunWithoutGcp && RunOnGCP() {
+	if testType == CanRunWithoutGcp && runOnGCP {
 		t.Skip("skipping non-GCP integration test")
 	}
 
@@ -84,10 +86,6 @@ func matchesPartition(testName string) bool {
 		partition = lastPartition
 	}
 	return strconv.Itoa(partition) == getPartition()
-}
-
-func RunOnGCP() bool {
-	return os.Getenv("GCP_ONLY") == "true"
 }
 
 func Run(t *testing.T, dir, command string, args ...string) {

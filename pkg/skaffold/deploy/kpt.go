@@ -32,7 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -52,12 +51,12 @@ type KptDeployer struct {
 	globalConfig       string
 }
 
-func NewKptDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KptDeployer {
+func NewKptDeployer(ctx Config, labels map[string]string) *KptDeployer {
 	return &KptDeployer{
-		KptDeploy:          runCtx.Pipeline().Deploy.KptDeploy,
-		insecureRegistries: runCtx.GetInsecureRegistries(),
+		KptDeploy:          ctx.Pipeline().Deploy.KptDeploy,
+		insecureRegistries: ctx.GetInsecureRegistries(),
 		labels:             labels,
-		globalConfig:       runCtx.GlobalConfig(),
+		globalConfig:       ctx.GlobalConfig(),
 	}
 }
 
@@ -87,7 +86,7 @@ func (k *KptDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.
 
 	outputRenderedManifests(manifests.String(), filepath.Join(applyDir, "resources.yaml"), out)
 
-	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "apply"}, k.Live.Apply, nil)...)
+	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "apply"}, k.getKptLiveApplyArgs(), nil)...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
@@ -253,21 +252,9 @@ func (k *KptDeployer) kustomizeBuild(ctx context.Context) error {
 func (k *KptDeployer) kptFnRun(ctx context.Context) (deploy.ManifestList, error) {
 	var manifests deploy.ManifestList
 
-	// --dry-run sets the pipeline's output to STDOUT, otherwise output is set to sinkDir.
-	// For now, k.Dir will be treated as sinkDir (and sourceDir).
-	flags := []string{"--dry-run"}
-	count := 0
-
-	if len(k.Fn.FnPath) > 0 {
-		flags = append(flags, "--fn-path", k.Fn.FnPath)
-		count++
-	}
-	if len(k.Fn.Image) > 0 {
-		flags = append(flags, "--image", k.Fn.Image)
-		count++
-	}
-	if count > 1 {
-		return nil, errors.New("only one of `fn-path` or `image` configs can be specified at most")
+	flags, err := k.getKptFnRunArgs()
+	if err != nil {
+		return nil, fmt.Errorf("getting kpt fn run args: %w", err)
 	}
 
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(pipeline, []string{"fn", "run"}, flags, nil)...)
@@ -286,11 +273,11 @@ func (k *KptDeployer) kptFnRun(ctx context.Context) (deploy.ManifestList, error)
 // getApplyDir returns the path to applyDir if specified by the user. Otherwise, getApplyDir
 // creates a hidden directory named .kpt-hydrated in place of applyDir.
 func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
-	if k.ApplyDir != "" {
-		if _, err := os.Stat(k.ApplyDir); os.IsNotExist(err) {
+	if k.Live.Apply.Dir != "" {
+		if _, err := os.Stat(k.Live.Apply.Dir); os.IsNotExist(err) {
 			return "", err
 		}
-		return k.ApplyDir, nil
+		return k.Live.Apply.Dir, nil
 	}
 
 	// 0755 is a permission setting where the owner can read, write, and execute.
@@ -300,7 +287,7 @@ func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
 	}
 
 	if _, err := os.Stat(filepath.Join(kptHydrated, inventoryTemplate)); os.IsNotExist(err) {
-		cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(kptHydrated, []string{"live", "init"}, nil, nil)...)
+		cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(kptHydrated, []string{"live", "init"}, k.getKptLiveInitArgs(), nil)...)
 		if _, err := util.RunCmdOut(cmd); err != nil {
 			return "", err
 		}
@@ -359,4 +346,83 @@ func getResources(root string) ([]string, error) {
 	})
 
 	return files, err
+}
+
+// getKptFnRunArgs returns a list of arguments that the user specified for the `kpt fn run` command.
+func (k *KptDeployer) getKptFnRunArgs() ([]string, error) {
+	// --dry-run sets the pipeline's output to STDOUT, otherwise output is set to sinkDir.
+	// For now, k.Dir will be treated as sinkDir (and sourceDir).
+	flags := []string{"--dry-run"}
+
+	if k.Fn.GlobalScope {
+		flags = append(flags, "--global-scope")
+	}
+
+	if len(k.Fn.Mount) > 0 {
+		flags = append(flags, "--mount", strings.Join(k.Fn.Mount, ","))
+	}
+
+	if k.Fn.Network {
+		flags = append(flags, "--network")
+	}
+
+	if len(k.Fn.NetworkName) > 0 {
+		flags = append(flags, "--network-name", k.Fn.NetworkName)
+	}
+
+	count := 0
+
+	if len(k.Fn.FnPath) > 0 {
+		flags = append(flags, "--fn-path", k.Fn.FnPath)
+		count++
+	}
+
+	if len(k.Fn.Image) > 0 {
+		flags = append(flags, "--image", k.Fn.Image)
+		count++
+	}
+
+	if count > 1 {
+		return nil, errors.New("only one of `fn-path` or `image` may be specified")
+	}
+
+	return flags, nil
+}
+
+// getKptLiveApplyArgs returns a list of arguments that the user specified for the `kpt live apply` command.
+func (k *KptDeployer) getKptLiveApplyArgs() []string {
+	var flags []string
+
+	if len(k.Live.Options.PollPeriod) > 0 {
+		flags = append(flags, "--poll-period", k.Live.Options.PollPeriod)
+	}
+
+	if len(k.Live.Options.PrunePropagationPolicy) > 0 {
+		flags = append(flags, "--prune-propagation-policy", k.Live.Options.PrunePropagationPolicy)
+	}
+
+	if len(k.Live.Options.PruneTimeout) > 0 {
+		flags = append(flags, "--prune-timeout", k.Live.Options.PruneTimeout)
+	}
+
+	if len(k.Live.Options.ReconcileTimeout) > 0 {
+		flags = append(flags, "--reconcile-timeout", k.Live.Options.ReconcileTimeout)
+	}
+
+	return flags
+}
+
+// getKptLiveInitArgs returns a list of arguments that the user specified for the `kpt live init` command.
+func (k *KptDeployer) getKptLiveInitArgs() []string {
+	var flags []string
+
+	if len(k.Live.Apply.InventoryID) > 0 {
+		flags = append(flags, "--inventory-id", k.Live.Apply.InventoryID)
+	}
+
+	if len(k.Live.Apply.InventoryNamespace) > 0 {
+		flags = append(flags, "--namespace", k.Live.Apply.InventoryNamespace)
+	}
+
+	return flags
 }

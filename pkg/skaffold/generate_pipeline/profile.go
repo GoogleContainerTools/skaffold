@@ -28,11 +28,10 @@ import (
 	yamlv2 "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func CreateSkaffoldProfile(out io.Writer, runCtx *runcontext.RunContext, configFile *ConfigFile) error {
+func CreateSkaffoldProfile(out io.Writer, namespace string, configFile *ConfigFile) error {
 	reader := bufio.NewReader(os.Stdin)
 
 	// Check for existing oncluster profile, if none exists then prompt to create one
@@ -63,7 +62,7 @@ confirmLoop:
 	}
 
 	color.Default.Fprintln(out, "Creating skaffold profile \"oncluster\"...")
-	profile, err := generateProfile(out, runCtx.GetKubeNamespace(), configFile.Config)
+	profile, err := generateProfile(out, namespace, configFile.Config)
 	if err != nil {
 		return fmt.Errorf("generating profile \"oncluster\": %w", err)
 	}

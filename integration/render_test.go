@@ -37,9 +37,7 @@ import (
 )
 
 func TestKubectlRenderOutput(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	test := struct {
 		description string
@@ -253,9 +251,7 @@ spec:
 }
 
 func TestHelmRender(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		description  string
@@ -438,9 +434,7 @@ spec:
 }
 
 func TestRenderFromBuildOutput(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		description         string

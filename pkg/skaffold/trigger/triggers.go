@@ -31,7 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // Trigger describes a mechanism that triggers the watch.
@@ -41,34 +41,41 @@ type Trigger interface {
 	Debounce() bool
 }
 
+type Config interface {
+	Pipeline() latest.Pipeline
+	Trigger() string
+	WatchPollInterval() int
+}
+
 // NewTrigger creates a new trigger.
-func NewTrigger(runCtx *runcontext.RunContext, isActive func() bool) (Trigger, error) {
-	switch strings.ToLower(runCtx.Trigger()) {
+func NewTrigger(cfg Config, isActive func() bool) (Trigger, error) {
+	switch strings.ToLower(cfg.Trigger()) {
 	case "polling":
 		return &pollTrigger{
-			Interval: time.Duration(runCtx.WatchPollInterval()) * time.Millisecond,
+			Interval: time.Duration(cfg.WatchPollInterval()) * time.Millisecond,
 			isActive: isActive,
 		}, nil
 	case "notify":
-		return newFSNotifyTrigger(runCtx, isActive), nil
+		return newFSNotifyTrigger(cfg, isActive), nil
 	case "manual":
 		return &manualTrigger{
 			isActive: isActive,
 		}, nil
 	default:
-		return nil, fmt.Errorf("unsupported trigger: %s", runCtx.Trigger())
+		return nil, fmt.Errorf("unsupported trigger: %s", cfg.Trigger())
 	}
 }
 
-func newFSNotifyTrigger(runCtx *runcontext.RunContext, isActive func() bool) *fsNotifyTrigger {
+func newFSNotifyTrigger(cfg Config, isActive func() bool) *fsNotifyTrigger {
 	workspaces := map[string]struct{}{}
-	for _, a := range runCtx.Pipeline().Build.Artifacts {
+	for _, a := range cfg.Pipeline().Build.Artifacts {
 		workspaces[a.Workspace] = struct{}{}
 	}
 	return &fsNotifyTrigger{
-		Interval:   time.Duration(runCtx.WatchPollInterval()) * time.Millisecond,
+		Interval:   time.Duration(cfg.WatchPollInterval()) * time.Millisecond,
 		workspaces: workspaces,
 		isActive:   isActive,
+		watchFunc:  notify.Watch,
 	}
 }
 
@@ -173,6 +180,7 @@ type fsNotifyTrigger struct {
 	Interval   time.Duration
 	workspaces map[string]struct{}
 	isActive   func() bool
+	watchFunc  func(path string, c chan<- notify.EventInfo, events ...notify.Event) error
 }
 
 // Debounce tells the watcher to not debounce rapid sequence of changes.
@@ -200,7 +208,7 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	}
 
 	// Watch current directory recursively
-	if err := notify.Watch(filepath.Join(wd, "..."), c, notify.All); err != nil {
+	if err := t.watchFunc(filepath.Join(wd, "..."), c, notify.All); err != nil {
 		return nil, err
 	}
 
@@ -210,7 +218,7 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 			continue
 		}
 
-		if err := notify.Watch(filepath.Join(wd, w, "..."), c, notify.All); err != nil {
+		if err := t.watchFunc(filepath.Join(wd, w, "..."), c, notify.All); err != nil {
 			return nil, err
 		}
 	}
@@ -261,6 +269,7 @@ func StartTrigger(ctx context.Context, t Trigger) (<-chan bool, error) {
 
 		t = &pollTrigger{
 			Interval: notifyTrigger.Interval,
+			isActive: notifyTrigger.isActive,
 		}
 		ret, err = t.Start(ctx)
 	}

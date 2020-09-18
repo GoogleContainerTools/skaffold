@@ -830,8 +830,8 @@
         },
         "kpt": {
           "$ref": "#/definitions/KptDeploy",
-          "description": "*beta* uses the `kpt` CLI to manage and deploy manifests.",
-          "x-intellij-html-description": "<em>beta</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
+          "description": "*alpha* uses the `kpt` CLI to manage and deploy manifests.",
+          "x-intellij-html-description": "<em>alpha</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
         },
         "kubeContext": {
           "type": "string",
@@ -1623,14 +1623,14 @@
         }
       },
       "preferredOrder": [
-        "dir",
         "applyDir",
+        "dir",
         "fn",
         "live"
       ],
       "additionalProperties": false,
-      "description": "*beta* uses the `kpt` CLI to manage and deploy manifests.",
-      "x-intellij-html-description": "<em>beta</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
+      "description": "*alpha* uses the `kpt` CLI to manage and deploy manifests.",
+      "x-intellij-html-description": "<em>alpha</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
     },
     "KptFn": {
       "properties": {
@@ -1639,15 +1639,45 @@
           "description": "a directory to read functions from instead of the configuration directory.",
           "x-intellij-html-description": "a directory to read functions from instead of the configuration directory."
         },
+        "globalScope": {
+          "type": "boolean",
+          "description": "sets global scope for functions.",
+          "x-intellij-html-description": "sets global scope for functions.",
+          "default": "false"
+        },
         "image": {
           "type": "string",
           "description": "an image to be run as a function in lieu of running functions from a directory.",
           "x-intellij-html-description": "an image to be run as a function in lieu of running functions from a directory."
+        },
+        "mount": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "a list of storage options to mount to the fn image.",
+          "x-intellij-html-description": "a list of storage options to mount to the fn image.",
+          "default": "[]"
+        },
+        "network": {
+          "type": "boolean",
+          "description": "enables network access for functions that declare it.",
+          "x-intellij-html-description": "enables network access for functions that declare it.",
+          "default": "false"
+        },
+        "networkName": {
+          "type": "string",
+          "description": "docker network to run the container in (default \"bridge\").",
+          "x-intellij-html-description": "docker network to run the container in (default &quot;bridge&quot;)."
         }
       },
       "preferredOrder": [
         "fnPath",
-        "image"
+        "image",
+        "networkName",
+        "globalScope",
+        "network",
+        "mount"
       ],
       "additionalProperties": false,
       "description": "adds additional configurations used when calling `kpt fn`.",
@@ -1656,21 +1686,62 @@
     "KptLive": {
       "properties": {
         "apply": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "additional flags passed on creations (`kpt live apply`).",
-          "x-intellij-html-description": "additional flags passed on creations (<code>kpt live apply</code>).",
-          "default": "[]"
+          "$ref": "#/definitions/KptLiveApply",
+          "description": "adds additional configurations for `kpt live apply` commands.",
+          "x-intellij-html-description": "adds additional configurations for <code>kpt live apply</code> commands."
+        },
+        "inventoryID": {
+          "type": "string",
+          "description": "identifier for a group of applied resources. This configuration is used when users do not specify `KptDeploy.ApplyDir` and `.kpt-hydrated/inventory-template.yaml` does not exist.",
+          "x-intellij-html-description": "identifier for a group of applied resources. This configuration is used when users do not specify <code>KptDeploy.ApplyDir</code> and <code>.kpt-hydrated/inventory-template.yaml</code> does not exist."
+        },
+        "inventoryNamespace": {
+          "type": "string",
+          "description": "sets the namespace scope for `kpt live init`.",
+          "x-intellij-html-description": "sets the namespace scope for <code>kpt live init</code>."
         }
       },
       "preferredOrder": [
-        "apply"
+        "apply",
+        "inventoryID",
+        "inventoryNamespace"
       ],
       "additionalProperties": false,
-      "description": "adds additional configurations used when calling `kpt live` on every command (Global), creations (Apply), or deletions (Destroy).",
-      "x-intellij-html-description": "adds additional configurations used when calling <code>kpt live</code> on every command (Global), creations (Apply), or deletions (Destroy)."
+      "description": "adds additional configurations used when calling `kpt live`.",
+      "x-intellij-html-description": "adds additional configurations used when calling <code>kpt live</code>."
+    },
+    "KptLiveApply": {
+      "properties": {
+        "pollPeriod": {
+          "type": "string",
+          "description": "sets for the polling period for resource statuses. Default to 2s.",
+          "x-intellij-html-description": "sets for the polling period for resource statuses. Default to 2s."
+        },
+        "prunePropagationPolicy": {
+          "type": "string",
+          "description": "sets the propagation policy for pruning. Possible settings are Background, Foreground, Orphan. Default to \"Background\".",
+          "x-intellij-html-description": "sets the propagation policy for pruning. Possible settings are Background, Foreground, Orphan. Default to &quot;Background&quot;."
+        },
+        "pruneTimeout": {
+          "type": "string",
+          "description": "sets the time threshold to wait for all pruned resources to be deleted.",
+          "x-intellij-html-description": "sets the time threshold to wait for all pruned resources to be deleted."
+        },
+        "reconcileTimeout": {
+          "type": "string",
+          "description": "sets the time threshold to wait for all resources to reach the current status.",
+          "x-intellij-html-description": "sets the time threshold to wait for all resources to reach the current status."
+        }
+      },
+      "preferredOrder": [
+        "pollPeriod",
+        "prunePropagationPolicy",
+        "pruneTimeout",
+        "reconcileTimeout"
+      ],
+      "additionalProperties": false,
+      "description": "adds additional configurations used when calling `kpt live apply`.",
+      "x-intellij-html-description": "adds additional configurations used when calling <code>kpt live apply</code>."
     },
     "KubectlDeploy": {
       "properties": {

@@ -22,7 +22,6 @@ import (
 	"os/exec"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -36,11 +35,17 @@ type CLI struct {
 	versionOnce sync.Once
 }
 
-func NewFromRunContext(runCtx *runcontext.RunContext) *CLI {
+type Config interface {
+	GetKubeContext() string
+	GetKubeConfig() string
+	GetKubeNamespace() string
+}
+
+func NewCLI(cfg Config) *CLI {
 	return &CLI{
-		KubeContext: runCtx.GetKubeContext(),
-		KubeConfig:  runCtx.GetKubeConfig(),
-		Namespace:   runCtx.GetKubeNamespace(),
+		KubeContext: cfg.GetKubeContext(),
+		KubeConfig:  cfg.GetKubeConfig(),
+		Namespace:   cfg.GetKubeNamespace(),
 	}
 }
 

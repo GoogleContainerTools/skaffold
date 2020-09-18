@@ -160,17 +160,18 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.RunMode) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
-	// Like `docker build`, we ignore the errors
-	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
-	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
 	buildArgs, err := EvalBuildArgs(mode, workspace, a)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
 
+	// Like `docker build`, we ignore the errors
+	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
+	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs(ctx)
+
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a, l.insecureRegistries)
+		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a.DockerfilePath, buildArgs, l.insecureRegistries)
 		if err != nil {
 			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return

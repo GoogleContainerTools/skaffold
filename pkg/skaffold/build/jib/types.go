@@ -26,6 +26,12 @@ type Builder struct {
 	skipTests          bool
 }
 
+type Config interface {
+	docker.Config
+
+	SkipTests() bool
+}
+
 // NewArtifactBuilder returns a new customjib artifact builder
 func NewArtifactBuilder(localDocker docker.LocalDaemon, insecureRegistries map[string]bool, pushImages, skipTests bool) *Builder {
 	return &Builder{

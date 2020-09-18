@@ -33,7 +33,8 @@ func TestBuildBazel(t *testing.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar").AndRunOut("bazel info bazel-bin", "bin"))
 		testutil.CreateFakeImageTar("bazel:app", "bin/app.tar")
 
-		localDocker := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
+		builder := NewArtifactBuilder(fakeLocalDaemon(), nil, false)
+
 		artifact := &latest.Artifact{
 			Workspace: ".",
 			ArtifactType: latest.ArtifactType{
@@ -42,8 +43,6 @@ func TestBuildBazel(t *testing.T) {
 				},
 			},
 		}
-
-		builder := NewArtifactBuilder(localDocker, nil, false)
 		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag")
 
 		t.CheckNoError(err)
@@ -52,6 +51,8 @@ func TestBuildBazel(t *testing.T) {
 
 func TestBuildBazelFailInvalidTarget(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
+		builder := NewArtifactBuilder(nil, nil, false)
+
 		artifact := &latest.Artifact{
 			ArtifactType: latest.ArtifactType{
 				BazelArtifact: &latest.BazelArtifact{
@@ -59,8 +60,6 @@ func TestBuildBazelFailInvalidTarget(t *testing.T) {
 				},
 			},
 		}
-
-		builder := NewArtifactBuilder(nil, nil, false)
 		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag")
 
 		t.CheckErrorContains("the bazel build target should end with .tar", err)
@@ -97,4 +96,8 @@ func TestBuildImageTag(t *testing.T) {
 	imageTag := buildImageTag(buildTarget)
 
 	testutil.CheckDeepEqual(t, "bazel:skaffold_example", imageTag)
+}
+
+func fakeLocalDaemon() docker.LocalDaemon {
+	return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
 }

@@ -66,6 +66,7 @@ type SkaffoldOptions struct {
 	// commands which don't deploy (e.g. `skaffold render`) since the runID
 	// label isn't available.
 	AddSkaffoldLabels bool
+	DetectMinikube    bool
 
 	PortForward        PortForwardOptions
 	CustomTag          string

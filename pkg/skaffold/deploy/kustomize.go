@@ -34,7 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -100,12 +99,12 @@ type KustomizeDeployer struct {
 	globalConfig       string
 }
 
-func NewKustomizeDeployer(runCtx *runcontext.RunContext, labels map[string]string) *KustomizeDeployer {
+func NewKustomizeDeployer(cfg Config, labels map[string]string) *KustomizeDeployer {
 	return &KustomizeDeployer{
-		KustomizeDeploy:    runCtx.Pipeline().Deploy.KustomizeDeploy,
-		kubectl:            deploy.NewCLI(runCtx, runCtx.Pipeline().Deploy.KustomizeDeploy.Flags),
-		insecureRegistries: runCtx.GetInsecureRegistries(),
-		globalConfig:       runCtx.GlobalConfig(),
+		KustomizeDeploy:    cfg.Pipeline().Deploy.KustomizeDeploy,
+		kubectl:            deploy.NewCLI(cfg, cfg.Pipeline().Deploy.KustomizeDeploy.Flags),
+		insecureRegistries: cfg.GetInsecureRegistries(),
+		globalConfig:       cfg.GlobalConfig(),
 		labels:             labels,
 	}
 }

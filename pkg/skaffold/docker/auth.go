@@ -57,7 +57,7 @@ func init() {
 // Ideally this shouldn't be public, but the LocalBuilder needs to use it.
 type AuthConfigHelper interface {
 	GetAuthConfig(registry string) (types.AuthConfig, error)
-	GetAllAuthConfigs() (map[string]types.AuthConfig, error)
+	GetAllAuthConfigs(ctx context.Context) (map[string]types.AuthConfig, error)
 }
 
 type credsHelper struct{}
@@ -73,7 +73,7 @@ func loadDockerConfig() (*configfile.ConfigFile, error) {
 	return cf, nil
 }
 
-func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
+func (h credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
 	cf, err := loadDockerConfig()
 	if err != nil {
 		return types.AuthConfig{}, err
@@ -87,7 +87,30 @@ func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
 	return types.AuthConfig(auth), nil
 }
 
-func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
+// GetAllAuthConfigs retrieves all the auth configs.
+// Because this can take a long time, we make sure it can be interrupted by the user.
+func (h credsHelper) GetAllAuthConfigs(ctx context.Context) (map[string]types.AuthConfig, error) {
+	type result struct {
+		configs map[string]types.AuthConfig
+		err     error
+	}
+
+	auth := make(chan result)
+
+	go func() {
+		configs, err := h.doGetAllAuthConfigs()
+		auth <- result{configs, err}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case r := <-auth:
+		return r.configs, r.err
+	}
+}
+
+func (h credsHelper) doGetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 	cf, err := loadDockerConfig()
 	if err != nil {
 		return nil, err

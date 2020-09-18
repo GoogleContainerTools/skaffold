@@ -492,7 +492,7 @@ enum StatusCode {
     // Timeout or User Cancellation Errors
 
     // User cancelled the skaffold dev run
-    STATUSCHECK_CONTEXT_CANCELLED = 800;
+    STATUSCHECK_USER_CANCELLED = 800;
 
     // Deadline for status check exceeded
     STATUSCHECK_DEADLINE_EXCEEDED = 801;

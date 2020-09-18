@@ -43,7 +43,9 @@ type testAuthHelper struct{}
 func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 	return types.AuthConfig{}, nil
 }
-func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
+func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
+	return nil, nil
+}
 
 func TestLocalRun(t *testing.T) {
 	tests := []struct {
@@ -232,8 +234,8 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
-				return docker.NewLocalDaemon(test.api, nil, false, nil), nil
+			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+				return fakeLocalDaemon(test.api), nil
 			})
 			t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
 				return a.BuildArgs, nil
@@ -246,17 +248,19 @@ func TestLocalRun(t *testing.T) {
 					},
 				}}, "", true, true, true)
 
-			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
-				Push:        util.BoolPtr(test.pushImages),
-				Concurrency: &constants.DefaultLocalConcurrency,
-			}))
+			builder, err := NewBuilder(&mockConfig{
+				local: latest.LocalBuild{
+					Push:        util.BoolPtr(test.pushImages),
+					Concurrency: &constants.DefaultLocalConcurrency,
+				},
+			})
 			t.CheckNoError(err)
 
 			res, err := builder.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
-			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed)
+			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed())
 		})
 	}
 }
@@ -273,22 +277,22 @@ func TestNewBuilder(t *testing.T) {
 		shouldErr       bool
 		localBuild      latest.LocalBuild
 		expectedBuilder *Builder
-		localClusterFn  func(string, string) (bool, error)
-		localDockerFn   func(*runcontext.RunContext) (docker.LocalDaemon, error)
+		localClusterFn  func(string, string, bool) (bool, error)
+		localDockerFn   func(docker.Config) (docker.LocalDaemon, error)
 	}{
 		{
 			description: "failed to get docker client",
-			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
 				return nil, errors.New("dummy docker error")
 			},
 			shouldErr: true,
 		},
 		{
 			description: "pushImages becomes !localCluster when local:push is not defined",
-			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
-			localClusterFn: func(string, string) (b bool, e error) {
+			localClusterFn: func(string, string, bool) (b bool, e error) {
 				b = false //because this is false and localBuild.push is nil
 				return
 			},
@@ -308,10 +312,10 @@ func TestNewBuilder(t *testing.T) {
 		},
 		{
 			description: "pushImages defined in config (local:push)",
-			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
-			localClusterFn: func(string, string) (b bool, e error) {
+			localClusterFn: func(string, string, bool) (b bool, e error) {
 				b = false
 				return
 			},
@@ -345,7 +349,9 @@ func TestNewBuilder(t *testing.T) {
 				t.Override(&getLocalCluster, test.localClusterFn)
 			}
 
-			builder, err := NewBuilder(stubRunContext(test.localBuild))
+			builder, err := NewBuilder(&mockConfig{
+				local: test.localBuild,
+			})
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
@@ -355,11 +361,13 @@ func TestNewBuilder(t *testing.T) {
 	}
 }
 
-func stubRunContext(localBuild latest.LocalBuild) *runcontext.RunContext {
-	pipeline := latest.Pipeline{}
-	pipeline.Build.BuildType.LocalBuild = &localBuild
+type mockConfig struct {
+	runcontext.RunContext // Embedded to provide the default values.
+	local                 latest.LocalBuild
+}
 
-	return &runcontext.RunContext{
-		Cfg: pipeline,
-	}
+func (c *mockConfig) Pipeline() latest.Pipeline {
+	var pipeline latest.Pipeline
+	pipeline.Build.BuildType.LocalBuild = &c.local
+	return pipeline
 }

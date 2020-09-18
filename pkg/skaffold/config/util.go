@@ -28,6 +28,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -37,8 +38,6 @@ import (
 const (
 	defaultConfigDir  = ".skaffold"
 	defaultConfigFile = "config"
-	tenDays           = time.Hour * 24 * 10
-	threeMonths       = time.Hour * 24 * 90
 )
 
 var (
@@ -170,7 +169,7 @@ func GetDefaultRepo(configFile string, cliValue *string) (string, error) {
 	return cfg.DefaultRepo, nil
 }
 
-func GetLocalCluster(configFile string, minikubeProfile string) (bool, error) {
+func GetLocalCluster(configFile string, minikubeProfile string, detectMinikubeCluster bool) (bool, error) {
 	if minikubeProfile != "" {
 		return true, nil
 	}
@@ -188,7 +187,7 @@ func GetLocalCluster(configFile string, minikubeProfile string) (bool, error) {
 	if err != nil {
 		return true, err
 	}
-	return isDefaultLocal(config.CurrentContext), nil
+	return isDefaultLocal(config.CurrentContext, detectMinikubeCluster), nil
 }
 
 func GetInsecureRegistries(configFile string) ([]string, error) {
@@ -215,14 +214,18 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 	return constants.DefaultDebugHelpersRegistry, nil
 }
 
-func isDefaultLocal(kubeContext string) bool {
+func isDefaultLocal(kubeContext string, detectMinikubeCluster bool) bool {
 	if kubeContext == constants.DefaultMinikubeContext ||
 		kubeContext == constants.DefaultDockerForDesktopContext ||
-		kubeContext == constants.DefaultDockerDesktopContext {
+		kubeContext == constants.DefaultDockerDesktopContext ||
+		IsKindCluster(kubeContext) ||
+		IsK3dCluster(kubeContext) {
 		return true
 	}
-
-	return IsKindCluster(kubeContext) || IsK3dCluster(kubeContext)
+	if detectMinikubeCluster {
+		return cluster.GetClient().IsMinikube(kubeContext)
+	}
+	return false
 }
 
 // IsImageLoadingRequired checks if the cluster requires loading images into it
@@ -311,7 +314,7 @@ func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
 	if cfg == nil || cfg.Survey == nil {
 		return false
 	}
-	return lessThan(cfg.Survey.LastTaken, threeMonths) || lessThan(cfg.Survey.LastPrompted, tenDays)
+	return lessThan(cfg.Survey.LastTaken, 365*24*time.Hour) || lessThan(cfg.Survey.LastPrompted, 60*24*time.Hour)
 }
 
 func lessThan(date string, duration time.Duration) bool {

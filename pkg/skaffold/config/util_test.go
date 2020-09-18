@@ -18,11 +18,13 @@ package config
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -281,12 +283,20 @@ func TestIsDefaultLocal(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
-			local := isDefaultLocal(test.context)
+			t.Override(&cluster.GetClient, func() cluster.Client { return fakeClient{} })
 
+			local := isDefaultLocal(test.context, true)
+			t.CheckDeepEqual(test.expectedLocal, local)
+			local = isDefaultLocal(test.context, false)
 			t.CheckDeepEqual(test.expectedLocal, local)
 		})
 	}
 }
+
+type fakeClient struct{}
+
+func (fakeClient) IsMinikube(kubeContext string) bool        { return kubeContext == "minikube" }
+func (fakeClient) MinikubeExec(...string) (*exec.Cmd, error) { return nil, nil }
 
 func TestIsImageLoadingRequired(t *testing.T) {
 	tests := []struct {
@@ -498,11 +508,11 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			},
 		},
 		{
-			description: "should display prompt when last prompted is before 2 weeks",
+			description: "should display prompt when last prompted is older than 3 months",
 			cfg: &ContextConfig{
 				Survey: &SurveyConfig{
 					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  "2019-01-10T00:00:00Z",
+					LastPrompted:  "2018-09-10T00:00:00Z",
 				},
 			},
 			expected: true,

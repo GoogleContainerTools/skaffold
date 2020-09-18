@@ -63,14 +63,13 @@ func TestDeploy(t *testing.T) {
 		},
 	}
 
-	dummyStatusCheck := func(context.Context, *deploy.DefaultLabeller, *runcontext.RunContext, io.Writer) error {
-		return nil
-	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
-			t.Override(&statusCheck, dummyStatusCheck)
+			t.Override(&newStatusCheck, func(deploy.StatusCheckConfig, *deploy.DefaultLabeller) deploy.StatusChecker {
+				return dummyStatusChecker{}
+			})
 
 			runner := createRunner(t, test.testBench, nil)
 			runner.runCtx.Opts.StatusCheck = test.statusCheck
@@ -114,14 +113,13 @@ func TestDeployNamespace(t *testing.T) {
 		},
 	}
 
-	dummyStatusCheck := func(context.Context, *deploy.DefaultLabeller, *runcontext.RunContext, io.Writer) error {
-		return nil
-	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
-			t.Override(&statusCheck, dummyStatusCheck)
+			t.Override(&newStatusCheck, func(deploy.StatusCheckConfig, *deploy.DefaultLabeller) deploy.StatusChecker {
+				return dummyStatusChecker{}
+			})
 
 			runner := createRunner(t, test.testBench, nil)
 			runner.runCtx.Namespaces = test.Namespaces
@@ -148,7 +146,7 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 
 		r := SkaffoldRunner{
 			runCtx:     runCtx,
-			kubectlCLI: kubectl.NewFromRunContext(runCtx),
+			kubectlCLI: kubectl.NewCLI(runCtx),
 			deployer:   getDeployer(runCtx, nil),
 		}
 		var builds []build.Artifact
@@ -157,4 +155,10 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 
 		t.CheckNoError(err)
 	})
+}
+
+type dummyStatusChecker struct{}
+
+func (d dummyStatusChecker) Check(_ context.Context, _ io.Writer) error {
+	return nil
 }

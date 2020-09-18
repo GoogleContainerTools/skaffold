@@ -39,11 +39,13 @@ func TestDockerBuildSpec(t *testing.T) {
 		},
 	}
 
-	builder := newBuilder(latest.GoogleCloudBuild{
-		DockerImage: "docker/docker",
-		DiskSizeGb:  100,
-		MachineType: "n1-standard-1",
-		Timeout:     "10m",
+	builder := NewBuilder(&mockConfig{
+		gcb: latest.GoogleCloudBuild{
+			DockerImage: "docker/docker",
+			DiskSizeGb:  100,
+			MachineType: "n1-standard-1",
+			Timeout:     "10m",
+		},
 	})
 	desc, err := builder.buildSpec(artifact, "nginx", "bucket", "object")
 
@@ -76,8 +78,10 @@ func TestPullCacheFrom(t *testing.T) {
 		CacheFrom:      []string{"from/image1", "from/image2"},
 	}
 
-	builder := newBuilder(latest.GoogleCloudBuild{
-		DockerImage: "docker/docker",
+	builder := NewBuilder(&mockConfig{
+		gcb: latest.GoogleCloudBuild{
+			DockerImage: "docker/docker",
+		},
 	})
 	desc, err := builder.dockerBuildSpec(artifact, "nginx2")
 

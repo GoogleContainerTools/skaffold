@@ -8,6 +8,7 @@ linters:
     - bodyclose
     - deadcode
     - dogsled
+    - gci
     - goconst
     - gocritic
     - goimports

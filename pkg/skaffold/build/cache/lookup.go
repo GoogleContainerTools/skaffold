@@ -19,7 +19,10 @@ package cache
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"sync"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -50,9 +53,14 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string) cach
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}
 
+	c.cacheMutex.RLock()
 	entry, cacheHit := c.artifactCache[hash]
+	c.cacheMutex.RUnlock()
 	if !cacheHit {
-		return needsBuilding{hash: hash}
+		if entry, err = c.tryImport(ctx, a, tag, hash); err != nil {
+			logrus.Debugf("Could not import artifact from Docker, building instead (%s)", err)
+			return needsBuilding{hash: hash}
+		}
 	}
 
 	if c.imagesAreLocal {
@@ -107,4 +115,41 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 	}
 
 	return needsBuilding{hash: hash}
+}
+
+func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, hash string) (ImageDetails, error) {
+	if !c.tryImportMissing {
+		return ImageDetails{}, fmt.Errorf("import of missing images disabled")
+	}
+
+	entry := ImageDetails{}
+
+	if !c.client.ImageExists(ctx, tag) {
+		logrus.Debugf("Importing artifact %s from docker registry", tag)
+		err := c.client.Pull(ctx, ioutil.Discard, tag)
+		if err != nil {
+			return entry, err
+		}
+	} else {
+		logrus.Debugf("Importing artifact %s from local docker", tag)
+	}
+
+	imageID, err := c.client.ImageID(ctx, a.ImageName)
+	if err != nil {
+		return entry, err
+	}
+
+	if imageID != "" {
+		entry.ID = imageID
+	}
+
+	if digest, err := docker.RemoteDigest(tag, c.insecureRegistries); err == nil {
+		logrus.Debugf("Added digest for %s to cache entry", tag)
+		entry.Digest = digest
+	}
+
+	c.cacheMutex.Lock()
+	c.artifactCache[hash] = entry
+	c.cacheMutex.Unlock()
+	return entry, nil
 }

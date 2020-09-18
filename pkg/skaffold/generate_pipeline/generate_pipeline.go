@@ -30,7 +30,6 @@ import (
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/pipeline"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -41,7 +40,7 @@ type ConfigFile struct {
 	Profile *latest.Profile
 }
 
-func Yaml(out io.Writer, runCtx *runcontext.RunContext, configFiles []*ConfigFile) (*bytes.Buffer, error) {
+func Yaml(out io.Writer, namespace string, configFiles []*ConfigFile) (*bytes.Buffer, error) {
 	// Generate git resource for pipeline
 	gitResource, err := generateGitResource()
 	if err != nil {
@@ -50,14 +49,14 @@ func Yaml(out io.Writer, runCtx *runcontext.RunContext, configFiles []*ConfigFil
 
 	// Generate build task for pipeline
 	var tasks []*tekton.Task
-	buildTasks, err := generateBuildTasks(runCtx.GetKubeNamespace(), configFiles)
+	buildTasks, err := generateBuildTasks(namespace, configFiles)
 	if err != nil {
 		return nil, fmt.Errorf("generating build task: %w", err)
 	}
 	tasks = append(tasks, buildTasks...)
 
 	// Generate deploy task for pipeline
-	deployTasks, err := generateDeployTasks(runCtx.GetKubeNamespace(), configFiles)
+	deployTasks, err := generateDeployTasks(namespace, configFiles)
 	if err != nil {
 		return nil, fmt.Errorf("generating deploy task: %w", err)
 	}

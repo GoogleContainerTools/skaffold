@@ -329,6 +329,15 @@ func IsHiddenFile(filename string) bool {
 	return hasHiddenPrefix(filename)
 }
 
+// IsSubPath return true if targetpath is sub-path of basepath; doesn't check for symlinks
+func IsSubPath(basepath string, targetpath string) bool {
+	rel, err := filepath.Rel(basepath, targetpath)
+	if err != nil {
+		return false
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator))
+}
+
 func hasHiddenPrefix(s string) bool {
 	return strings.HasPrefix(s, hiddenPrefix)
 }

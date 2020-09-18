@@ -43,7 +43,7 @@ import (
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
-	kubectlCLI := kubectl.NewFromRunContext(runCtx)
+	kubectlCLI := kubectl.NewCLI(runCtx)
 
 	tagger, err := getTagger(runCtx)
 	if err != nil {
@@ -53,6 +53,11 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	builder, imagesAreLocal, err := getBuilder(runCtx)
 	if err != nil {
 		return nil, fmt.Errorf("creating builder: %w", err)
+	}
+
+	tryImportMissing := false
+	if localBuilder, ok := builder.(*local.Builder); ok {
+		tryImportMissing = localBuilder.TryImportMissing()
 	}
 
 	labeller := deploy.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels())
@@ -74,7 +79,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return append(buildDependencies, testDependencies...), nil
 	}
 
-	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, depLister)
+	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, tryImportMissing, depLister)
 	if err != nil {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
@@ -179,33 +184,33 @@ func getBuilder(runCtx *runcontext.RunContext) (build.Builder, bool, error) {
 	}
 }
 
-func getTester(runCtx *runcontext.RunContext, imagesAreLocal bool) test.Tester {
-	return test.NewTester(runCtx, imagesAreLocal)
+func getTester(cfg test.Config, imagesAreLocal bool) test.Tester {
+	return test.NewTester(cfg, imagesAreLocal)
 }
 
-func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
-	return sync.NewSyncer(runCtx)
+func getSyncer(cfg sync.Config) sync.Syncer {
+	return sync.NewSyncer(cfg)
 }
 
-func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) deploy.Deployer {
-	d := runCtx.Pipeline().Deploy
+func getDeployer(cfg deploy.Config, labels map[string]string) deploy.Deployer {
+	d := cfg.Pipeline().Deploy
 
 	var deployers deploy.DeployerMux
 
 	if d.HelmDeploy != nil {
-		deployers = append(deployers, deploy.NewHelmDeployer(runCtx, labels))
+		deployers = append(deployers, deploy.NewHelmDeployer(cfg, labels))
 	}
 
 	if d.KptDeploy != nil {
-		deployers = append(deployers, deploy.NewKptDeployer(runCtx, labels))
+		deployers = append(deployers, deploy.NewKptDeployer(cfg, labels))
 	}
 
 	if d.KubectlDeploy != nil {
-		deployers = append(deployers, deploy.NewKubectlDeployer(runCtx, labels))
+		deployers = append(deployers, deploy.NewKubectlDeployer(cfg, labels))
 	}
 
 	if d.KustomizeDeploy != nil {
-		deployers = append(deployers, deploy.NewKustomizeDeployer(runCtx, labels))
+		deployers = append(deployers, deploy.NewKustomizeDeployer(cfg, labels))
 	}
 
 	// avoid muxing overhead when only a single deployer is configured

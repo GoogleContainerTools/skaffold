@@ -258,7 +258,7 @@ value = "VALUE2"
 				Add(test.artifact.BuildpackArtifact.Builder, "builderImageID").
 				Add(test.artifact.BuildpackArtifact.RunImage, "runImageID").
 				Add("img:latest", "builtImageID")
-			localDocker := docker.NewLocalDaemon(test.api, nil, false, nil)
+			localDocker := fakeLocalDaemon(test.api)
 
 			builder := NewArtifactBuilder(localDocker, test.pushImages, test.mode)
 			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag)

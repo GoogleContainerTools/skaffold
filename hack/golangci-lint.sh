@@ -18,7 +18,7 @@ set -e -o pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BIN=${DIR}/bin
-VERSION=1.27.0
+VERSION=1.30.0
 
 function install_linter() {
   echo "Installing GolangCI-Lint"
