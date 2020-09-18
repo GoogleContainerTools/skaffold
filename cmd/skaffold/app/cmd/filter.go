@@ -29,8 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -65,7 +64,7 @@ func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildA
 		if err != nil {
 			return err
 		}
-		manifestList := kubectl.ManifestList([][]byte{bytes})
+		manifestList := manifest.ManifestList([][]byte{bytes})
 		if debuggingFilters {
 			// TODO(bdealwis): refactor this code
 			debugHelpersRegistry, err := config.GetDebugHelpersRegistry(opts.GlobalConfig)
@@ -77,7 +76,7 @@ func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildA
 				return err
 			}
 
-			manifestList, err = debugging.ApplyDebuggingTransforms(manifestList, buildArtifacts, deploy.Registries{
+			manifestList, err = debugging.ApplyDebuggingTransforms(manifestList, buildArtifacts, manifest.Registries{
 				DebugHelpersRegistry: debugHelpersRegistry,
 				InsecureRegistries:   insecureRegistries,
 			})

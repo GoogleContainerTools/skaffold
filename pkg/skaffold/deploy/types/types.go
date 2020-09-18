@@ -14,21 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package analyze
+package types
 
 import (
-	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
+	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// helmAnalyzer is a Visitor during the directory analysis that finds helm charts
-type helmAnalyzer struct {
-	directoryAnalyzer
-	chartPaths []string
+type Config interface {
+	docker.Config
+
+	Pipeline() latest.Pipeline
+	GetWorkingDir() string
+	GlobalConfig() string
+	DefaultRepo() *string
+	SkipRender() bool
 }
 
-func (h *helmAnalyzer) analyzeFile(filePath string) error {
-	if deploy.IsHelmChart(filePath) {
-		h.chartPaths = append(h.chartPaths, filePath)
-	}
-	return nil
+// Artifact contains all information about a completed deployment
+type Artifact struct {
+	Obj       runtime.Object
+	Namespace string
 }

@@ -27,22 +27,25 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
+	kubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // CLI holds parameters to run kubectl.
 type CLI struct {
-	*pkgkubectl.CLI
+	*kubectl.CLI
 	Flags latest.KubectlFlags
 
 	forceDeploy      bool
 	waitForDeletions config.WaitForDeletions
-	previousApply    ManifestList
+	previousApply    manifest.ManifestList
 }
 
 type Config interface {
-	pkgkubectl.Config
+	kubectl.Config
+	deploy.Config
 	ForceDeploy() bool
 	WaitForDeletions() config.WaitForDeletions
 	Mode() config.RunMode
@@ -50,7 +53,7 @@ type Config interface {
 
 func NewCLI(cfg Config, flags latest.KubectlFlags, defaultNameSpace string) CLI {
 	return CLI{
-		CLI:              pkgkubectl.NewCLI(cfg, defaultNameSpace),
+		CLI:              kubectl.NewCLI(cfg, defaultNameSpace),
 		Flags:            flags,
 		forceDeploy:      cfg.ForceDeploy(),
 		waitForDeletions: cfg.WaitForDeletions(),
@@ -58,7 +61,7 @@ func NewCLI(cfg Config, flags latest.KubectlFlags, defaultNameSpace string) CLI 
 }
 
 // Delete runs `kubectl delete` on a list of manifests.
-func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests ManifestList) error {
+func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests manifest.ManifestList) error {
 	args := c.args(c.Flags.Delete, "--ignore-not-found=true", "-f", "-")
 	if err := c.Run(ctx, manifests.Reader(), out, "delete", args...); err != nil {
 		return fmt.Errorf("kubectl delete: %w", err)
@@ -68,7 +71,7 @@ func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests ManifestList)
 }
 
 // Apply runs `kubectl apply` on a list of manifests.
-func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) error {
+func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests manifest.ManifestList) error {
 	// Only redeploy modified or new manifests
 	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
 	updated := c.previousApply.Diff(manifests)
@@ -109,7 +112,7 @@ type getResult struct {
 }
 
 // WaitForDeletions waits for resource marked for deletion to complete their deletion.
-func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests ManifestList) error {
+func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests manifest.ManifestList) error {
 	if !c.waitForDeletions.Enabled {
 		return nil
 	}
@@ -174,7 +177,7 @@ func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests Man
 }
 
 // ReadManifests reads a list of manifests in yaml format.
-func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (ManifestList, error) {
+func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (manifest.ManifestList, error) {
 	var list []string
 	for _, manifest := range manifests {
 		list = append(list, "-f", manifest)
@@ -199,7 +202,7 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (ManifestLi
 		return nil, fmt.Errorf("kubectl create: %w", err)
 	}
 
-	var manifestList ManifestList
+	var manifestList manifest.ManifestList
 	manifestList.Append(buf)
 
 	return manifestList, nil

@@ -22,6 +22,10 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -41,12 +45,12 @@ func TestGetDeployer(tOuter *testing.T) {
 			{
 				description: "helm deployer",
 				cfg:         latest.DeployType{HelmDeploy: &latest.HelmDeploy{}},
-				expected:    deploy.NewHelmDeployer(&runcontext.RunContext{}, nil),
+				expected:    helm.NewHelmDeployer(&runcontext.RunContext{}, nil),
 			},
 			{
 				description: "kubectl deployer",
 				cfg:         latest.DeployType{KubectlDeploy: &latest.KubectlDeploy{}},
-				expected: t.RequireNonNilResult(deploy.NewKubectlDeployer(&runcontext.RunContext{
+				expected: t.RequireNonNilResult(kubectl.NewKubectlDeployer(&runcontext.RunContext{
 					Cfg: latest.Pipeline{
 						Deploy: latest.DeployConfig{
 							DeployType: latest.DeployType{
@@ -61,7 +65,7 @@ func TestGetDeployer(tOuter *testing.T) {
 			{
 				description: "kustomize deployer",
 				cfg:         latest.DeployType{KustomizeDeploy: &latest.KustomizeDeploy{}},
-				expected: t.RequireNonNilResult(deploy.NewKustomizeDeployer(&runcontext.RunContext{
+				expected: t.RequireNonNilResult(kustomize.NewKustomizeDeployer(&runcontext.RunContext{
 					Cfg: latest.Pipeline{
 						Deploy: latest.DeployConfig{
 							DeployType: latest.DeployType{
@@ -76,7 +80,7 @@ func TestGetDeployer(tOuter *testing.T) {
 			{
 				description: "kpt deployer",
 				cfg:         latest.DeployType{KptDeploy: &latest.KptDeploy{}},
-				expected:    deploy.NewKptDeployer(&runcontext.RunContext{}, nil),
+				expected:    kpt.NewKptDeployer(&runcontext.RunContext{}, nil),
 			},
 			{
 				description: "multiple deployers",
@@ -85,8 +89,8 @@ func TestGetDeployer(tOuter *testing.T) {
 					KptDeploy:  &latest.KptDeploy{},
 				},
 				expected: deploy.DeployerMux{
-					deploy.NewHelmDeployer(&runcontext.RunContext{}, nil),
-					deploy.NewKptDeployer(&runcontext.RunContext{}, nil),
+					helm.NewHelmDeployer(&runcontext.RunContext{}, nil),
+					kpt.NewKptDeployer(&runcontext.RunContext{}, nil),
 				},
 			},
 		}

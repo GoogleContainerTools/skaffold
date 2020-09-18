@@ -29,9 +29,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
@@ -50,7 +49,7 @@ var (
 )
 
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
-func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, registries deploy.Registries) (kubectl.ManifestList, error) {
+func ApplyDebuggingTransforms(l manifest.ManifestList, builds []build.Artifact, registries manifest.Registries) (manifest.ManifestList, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -63,8 +62,8 @@ func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, r
 	return applyDebuggingTransforms(l, retriever, registries.DebugHelpersRegistry)
 }
 
-func applyDebuggingTransforms(l kubectl.ManifestList, retriever configurationRetriever, debugHelpersRegistry string) (kubectl.ManifestList, error) {
-	var updated kubectl.ManifestList
+func applyDebuggingTransforms(l manifest.ManifestList, retriever configurationRetriever, debugHelpersRegistry string) (manifest.ManifestList, error) {
+	var updated manifest.ManifestList
 	for _, manifest := range l {
 		obj, _, err := decodeFromYaml(manifest, nil, nil)
 		if err != nil {
