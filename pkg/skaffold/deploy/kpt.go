@@ -28,14 +28,15 @@ import (
 	"regexp"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8syaml "sigs.k8s.io/yaml"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	k8syaml "sigs.k8s.io/yaml"
 )
 
 const (
@@ -190,8 +191,8 @@ func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds [
 		return nil, nil
 	}
 
-	// Remove the kpt function from the manipulated resources.
-	manifests, err = k.ExcludeKptFn(manifests)
+	// exclude the kpt function from the manipulated resources.
+	manifests, err = k.excludeKptFn(manifests)
 	if err != nil {
 		return nil, fmt.Errorf("exclude kpt fn from manipulated resources: %w", err)
 	}
@@ -280,9 +281,9 @@ func (k *KptDeployer) kptFnRun(ctx context.Context) (deploy.ManifestList, error)
 	return manifests, nil
 }
 
-// ExcludeKptFn adds an annotation "config.kubernetes.io/local-config: 'true'" to kpt function.
+// excludeKptFn adds an annotation "config.kubernetes.io/local-config: 'true'" to kpt function.
 // This will exclude kpt functions from deployed to the cluster in kpt live apply.
-func (k *KptDeployer) ExcludeKptFn(manifest deploy.ManifestList) (deploy.ManifestList, error) {
+func (k *KptDeployer) excludeKptFn(manifest deploy.ManifestList) (deploy.ManifestList, error) {
 	var newManifest deploy.ManifestList
 	for _, yByte := range manifest {
 		// Convert yaml byte config to unstructured.Unstructured

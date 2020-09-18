@@ -27,9 +27,8 @@ import (
 	"strings"
 	"testing"
 
-	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -983,7 +982,7 @@ spec:
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			k := NewKptDeployer(&kptConfig{}, nil)
-			actualManifest, err := k.ExcludeKptFn(test.manifests)
+			actualManifest, err := k.excludeKptFn(test.manifests)
 			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
 		})
 	}
