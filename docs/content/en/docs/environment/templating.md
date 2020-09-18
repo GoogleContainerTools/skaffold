@@ -19,6 +19,9 @@ List of fields that support templating:
 * `build.tagPolicy.envTemplate.template` (see [envTemplate tagger]({{< relref "/docs/pipeline-stages/taggers#envtemplate-using-values-of-environment-variables-as-tags)" >}}))
 * `deploy.helm.releases.setValueTemplates` (see [Deploying with helm]({{< relref "/docs/pipeline-stages/deployers#deploying-with-helm)" >}}))
 * `deploy.helm.releases.name` (see [Deploying with helm]({{< relref "/docs/pipeline-stages/deployers#deploying-with-helm)" >}}))
+* `deploy.helm.releases.namespace` (see [Deploying with helm]({{< relref "/docs/pipeline-stages/deployers#deploying-with-helm)" >}}))
+* `deploy.kubectl.defaultNamespace`
+* `deploy.kustomize.defaultNamespace`
 
 _Please note, this list is not exhaustive._
 

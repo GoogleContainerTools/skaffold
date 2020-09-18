@@ -27,90 +27,93 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetDeployer(t *testing.T) {
-	tests := []struct {
-		description string
-		cfg         latest.DeployType
-		expected    deploy.Deployer
-	}{
-		{
-			description: "no deployer",
-			expected:    deploy.DeployerMux{},
-		},
-		{
-			description: "helm deployer",
-			cfg:         latest.DeployType{HelmDeploy: &latest.HelmDeploy{}},
-			expected:    deploy.NewHelmDeployer(&runcontext.RunContext{}, nil),
-		},
-		{
-			description: "kubectl deployer",
-			cfg:         latest.DeployType{KubectlDeploy: &latest.KubectlDeploy{}},
-			expected: deploy.NewKubectlDeployer(&runcontext.RunContext{
-				Cfg: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: &latest.KubectlDeploy{
-								Flags: latest.KubectlFlags{},
+func TestGetDeployer(tOuter *testing.T) {
+	testutil.Run(tOuter, "TestGetDeployer", func(t *testutil.T) {
+		tests := []struct {
+			description string
+			cfg         latest.DeployType
+			expected    deploy.Deployer
+		}{
+			{
+				description: "no deployer",
+				expected:    deploy.DeployerMux{},
+			},
+			{
+				description: "helm deployer",
+				cfg:         latest.DeployType{HelmDeploy: &latest.HelmDeploy{}},
+				expected:    deploy.NewHelmDeployer(&runcontext.RunContext{}, nil),
+			},
+			{
+				description: "kubectl deployer",
+				cfg:         latest.DeployType{KubectlDeploy: &latest.KubectlDeploy{}},
+				expected: t.RequireNonNilResult(deploy.NewKubectlDeployer(&runcontext.RunContext{
+					Cfg: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							DeployType: latest.DeployType{
+								KubectlDeploy: &latest.KubectlDeploy{
+									Flags: latest.KubectlFlags{},
+								},
 							},
 						},
 					},
-				},
-			}, nil),
-		},
-		{
-			description: "kustomize deployer",
-			cfg:         latest.DeployType{KustomizeDeploy: &latest.KustomizeDeploy{}},
-			expected: deploy.NewKustomizeDeployer(&runcontext.RunContext{
-				Cfg: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KustomizeDeploy: &latest.KustomizeDeploy{
-								Flags: latest.KubectlFlags{},
+				}, nil)).(deploy.Deployer),
+			},
+			{
+				description: "kustomize deployer",
+				cfg:         latest.DeployType{KustomizeDeploy: &latest.KustomizeDeploy{}},
+				expected: t.RequireNonNilResult(deploy.NewKustomizeDeployer(&runcontext.RunContext{
+					Cfg: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							DeployType: latest.DeployType{
+								KustomizeDeploy: &latest.KustomizeDeploy{
+									Flags: latest.KubectlFlags{},
+								},
 							},
 						},
 					},
+				}, nil)).(deploy.Deployer),
+			},
+			{
+				description: "kpt deployer",
+				cfg:         latest.DeployType{KptDeploy: &latest.KptDeploy{}},
+				expected:    deploy.NewKptDeployer(&runcontext.RunContext{}, nil),
+			},
+			{
+				description: "multiple deployers",
+				cfg: latest.DeployType{
+					HelmDeploy: &latest.HelmDeploy{},
+					KptDeploy:  &latest.KptDeploy{},
 				},
-			}, nil),
-		},
-		{
-			description: "kpt deployer",
-			cfg:         latest.DeployType{KptDeploy: &latest.KptDeploy{}},
-			expected:    deploy.NewKptDeployer(&runcontext.RunContext{}, nil),
-		},
-		{
-			description: "multiple deployers",
-			cfg: latest.DeployType{
-				HelmDeploy: &latest.HelmDeploy{},
-				KptDeploy:  &latest.KptDeploy{},
+				expected: deploy.DeployerMux{
+					deploy.NewHelmDeployer(&runcontext.RunContext{}, nil),
+					deploy.NewKptDeployer(&runcontext.RunContext{}, nil),
+				},
 			},
-			expected: deploy.DeployerMux{
-				deploy.NewHelmDeployer(&runcontext.RunContext{}, nil),
-				deploy.NewKptDeployer(&runcontext.RunContext{}, nil),
-			},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployer := getDeployer(&runcontext.RunContext{
-				Cfg: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: test.cfg,
+		}
+		for _, test := range tests {
+			testutil.Run(tOuter, test.description, func(t *testutil.T) {
+				deployer, err := getDeployer(&runcontext.RunContext{
+					Cfg: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							DeployType: test.cfg,
+						},
 					},
-				},
-			}, nil)
+				}, nil)
 
-			t.CheckTypeEquality(test.expected, deployer)
+				t.RequireNoError(err)
+				t.CheckTypeEquality(test.expected, deployer)
 
-			if reflect.TypeOf(test.expected) == reflect.TypeOf(deploy.DeployerMux{}) {
-				expected := test.expected.(deploy.DeployerMux)
-				deployers := deployer.(deploy.DeployerMux)
-				t.CheckDeepEqual(len(expected), len(deployers))
-				for i, v := range expected {
-					t.CheckTypeEquality(v, deployers[i])
+				if reflect.TypeOf(test.expected) == reflect.TypeOf(deploy.DeployerMux{}) {
+					expected := test.expected.(deploy.DeployerMux)
+					deployers := deployer.(deploy.DeployerMux)
+					t.CheckDeepEqual(len(expected), len(deployers))
+					for i, v := range expected {
+						t.CheckTypeEquality(v, deployers[i])
+					}
 				}
-			}
-		})
-	}
+			})
+		}
+	})
 }
 
 func TestCreateComponents(t *testing.T) {

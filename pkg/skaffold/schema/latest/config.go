@@ -474,6 +474,9 @@ type KubectlDeploy struct {
 
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
+
+	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
+	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
 }
 
 // KubectlFlags are additional flags passed on the command
@@ -528,6 +531,9 @@ type KustomizeDeploy struct {
 
 	// BuildArgs are additional args passed to `kustomize build`.
 	BuildArgs []string `yaml:"buildArgs,omitempty"`
+
+	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
+	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
 }
 
 // KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.

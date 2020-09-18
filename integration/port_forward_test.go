@@ -46,7 +46,7 @@ func TestPortForward(t *testing.T) {
 		Opts: config.SkaffoldOptions{
 			Namespace: ns.Name,
 		},
-	})
+	}, "")
 
 	logrus.SetLevel(logrus.TraceLevel)
 	portforward.SimulateDevCycle(t, kubectlCLI, ns.Name)

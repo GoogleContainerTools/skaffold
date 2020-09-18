@@ -1769,6 +1769,11 @@
     },
     "KubectlDeploy": {
       "properties": {
+        "defaultNamespace": {
+          "type": "string",
+          "description": "default namespace passed to kubectl on deployment if no other override is given.",
+          "x-intellij-html-description": "default namespace passed to kubectl on deployment if no other override is given."
+        },
         "flags": {
           "$ref": "#/definitions/KubectlFlags",
           "description": "additional flags passed to `kubectl`.",
@@ -1796,7 +1801,8 @@
       "preferredOrder": [
         "manifests",
         "remoteManifests",
-        "flags"
+        "flags",
+        "defaultNamespace"
       ],
       "additionalProperties": false,
       "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
@@ -1859,6 +1865,11 @@
           "x-intellij-html-description": "additional args passed to <code>kustomize build</code>.",
           "default": "[]"
         },
+        "defaultNamespace": {
+          "type": "string",
+          "description": "default namespace passed to kubectl on deployment if no other override is given.",
+          "x-intellij-html-description": "default namespace passed to kubectl on deployment if no other override is given."
+        },
         "flags": {
           "$ref": "#/definitions/KubectlFlags",
           "description": "additional flags passed to `kubectl`.",
@@ -1877,7 +1888,8 @@
       "preferredOrder": [
         "paths",
         "flags",
-        "buildArgs"
+        "buildArgs",
+        "defaultNamespace"
       ],
       "additionalProperties": false,
       "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",

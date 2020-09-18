@@ -47,9 +47,9 @@ type Config interface {
 	WaitForDeletions() config.WaitForDeletions
 }
 
-func NewCLI(cfg Config, flags latest.KubectlFlags) CLI {
+func NewCLI(cfg Config, flags latest.KubectlFlags, defaultNameSpace string) CLI {
 	return CLI{
-		CLI:              pkgkubectl.NewCLI(cfg),
+		CLI:              pkgkubectl.NewCLI(cfg, defaultNameSpace),
 		Flags:            flags,
 		forceDeploy:      cfg.ForceDeploy(),
 		waitForDeletions: cfg.WaitForDeletions(),
