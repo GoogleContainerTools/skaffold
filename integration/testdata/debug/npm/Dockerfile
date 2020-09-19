@@ -5,4 +5,4 @@ EXPOSE 3000
 CMD ["npm", "start"]
 
 COPY . .
-RUN npm ci
+RUN npm install
