@@ -54,10 +54,10 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	rt, err := build.InParallel(ctx, out, tags, artifacts, builder, *b.cfg.Concurrency)
 
 	if b.prune {
-		if b.mode == config.RunModes.Dev {
-			pruner.asynchronousCleanupOldImages(ctx, out, artifacts)
-		} else {
+		if b.mode == config.RunModes.Build {
 			pruner.synchronousCleanupOldImages(ctx, out, artifacts)
+		} else {
+			pruner.asynchronousCleanupOldImages(ctx, out, artifacts)
 		}
 	}
 
