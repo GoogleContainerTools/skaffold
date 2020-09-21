@@ -55,6 +55,7 @@ func (p *pruner) listImages(ctx context.Context, name string) ([]types.ImageSumm
 		return nil, err
 	}
 	if len(imgs) < 2 {
+		// no need to sort
 		return imgs, nil
 	}
 
