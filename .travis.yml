@@ -15,7 +15,7 @@ _integration_test: &integration_test
   os: linux
   language: minimal
   before_install:
-    #Skip integration tests if changes are only in the `docs` directory. This only works for a pull-request based development workflow like Skaffold's. 
+    # Skip integration tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
     - git diff --name-only "$TRAVIS_BRANCH"... | grep -v '^docs/' || travis_terminate 0
   cache:
     directories:
