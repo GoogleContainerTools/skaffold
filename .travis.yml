@@ -14,6 +14,9 @@ branches:
 _integration_test: &integration_test
   os: linux
   language: minimal
+  before_install:
+    # Skip integration tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
+    - git diff --name-only "$TRAVIS_BRANCH"... | grep -v '^docs/' || travis_terminate 0
   cache:
     directories:
       - $HOME/.cache/go-build
