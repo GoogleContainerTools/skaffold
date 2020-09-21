@@ -5,4 +5,4 @@ EXPOSE 3000
 CMD ["npm", "start"]
 
 COPY . .
-RUN npm install
+RUN npm install --no-package-lock
