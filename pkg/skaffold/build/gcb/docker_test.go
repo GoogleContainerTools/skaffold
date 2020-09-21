@@ -27,49 +27,75 @@ import (
 )
 
 func TestDockerBuildSpec(t *testing.T) {
-	artifact := &latest.Artifact{
-		ArtifactType: latest.ArtifactType{
-			DockerArtifact: &latest.DockerArtifact{
-				DockerfilePath: "Dockerfile",
-				BuildArgs: map[string]*string{
-					"arg1": util.StringPtr("value1"),
-					"arg2": nil,
+	tests := []struct {
+		description string
+		artifact    *latest.Artifact
+		expected    cloudbuild.Build
+		shouldErr   bool
+	}{
+		{
+			description: "normal docker build",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						DockerfilePath: "Dockerfile",
+						BuildArgs: map[string]*string{
+							"arg1": util.StringPtr("value1"),
+							"arg2": nil,
+						},
+					},
 				},
 			},
-		},
-	}
-
-	builder := NewBuilder(&mockConfig{
-		gcb: latest.GoogleCloudBuild{
-			DockerImage: "docker/docker",
-			DiskSizeGb:  100,
-			MachineType: "n1-standard-1",
-			Timeout:     "10m",
-		},
-	})
-	desc, err := builder.buildSpec(artifact, "nginx", "bucket", "object")
-
-	expected := cloudbuild.Build{
-		LogsBucket: "bucket",
-		Source: &cloudbuild.Source{
-			StorageSource: &cloudbuild.StorageSource{
-				Bucket: "bucket",
-				Object: "object",
+			expected: cloudbuild.Build{
+				LogsBucket: "bucket",
+				Source: &cloudbuild.Source{
+					StorageSource: &cloudbuild.StorageSource{
+						Bucket: "bucket",
+						Object: "object",
+					},
+				},
+				Steps: []*cloudbuild.BuildStep{{
+					Name: "docker/docker",
+					Args: []string{"build", "--tag", "nginx", "-f", "Dockerfile", "--build-arg", "arg1=value1", "--build-arg", "arg2", "."},
+				}},
+				Images: []string{"nginx"},
+				Options: &cloudbuild.BuildOptions{
+					DiskSizeGb:  100,
+					MachineType: "n1-standard-1",
+				},
+				Timeout: "10m",
 			},
 		},
-		Steps: []*cloudbuild.BuildStep{{
-			Name: "docker/docker",
-			Args: []string{"build", "--tag", "nginx", "-f", "Dockerfile", "--build-arg", "arg1=value1", "--build-arg", "arg2", "."},
-		}},
-		Images: []string{"nginx"},
-		Options: &cloudbuild.BuildOptions{
-			DiskSizeGb:  100,
-			MachineType: "n1-standard-1",
+		{
+			description: "buildkit features not supported in GCB",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						DockerfilePath: "Dockerfile",
+						Secret: &latest.DockerSecret{
+							ID: "secret",
+						},
+					},
+				},
+			},
+			shouldErr: true,
 		},
-		Timeout: "10m",
 	}
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected, desc)
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			builder := NewBuilder(&mockConfig{
+				gcb: latest.GoogleCloudBuild{
+					DockerImage: "docker/docker",
+					DiskSizeGb:  100,
+					MachineType: "n1-standard-1",
+					Timeout:     "10m",
+				},
+			})
+			desc, err := builder.buildSpec(test.artifact, "nginx", "bucket", "object")
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, desc)
+		})
+	}
 }
 
 func TestPullCacheFrom(t *testing.T) {

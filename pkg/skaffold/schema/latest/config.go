@@ -1030,6 +1030,23 @@ type DockerArtifact struct {
 
 	// NoCache used to pass in --no-cache to docker build to prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
+
+	// Secret contains information about a local secret passed to `docker build`,
+	// along with optional destination information.
+	Secret *DockerSecret `yaml:"secret,omitempty"`
+}
+
+// DockerSecret contains information about a local secret passed to `docker build`,
+// along with optional destination information.
+type DockerSecret struct {
+	// ID is the id of the secret.
+	ID string `yaml:"id,omitempty" yamltags:"required"`
+
+	// Source is the path to the secret on the host machine.
+	Source string `yaml:"src,omitempty"`
+
+	// Destination is the path in the container to mount the secret.
+	Destination string `yaml:"dst,omitempty"`
 }
 
 // BazelArtifact describes an artifact built with [Bazel](https://bazel.build/).
