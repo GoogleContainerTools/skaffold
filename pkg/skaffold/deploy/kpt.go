@@ -237,7 +237,7 @@ func (k *KptDeployer) kustomizeBuild(ctx context.Context) error {
 		return nil
 	}
 
-	cmd := exec.CommandContext(ctx, "kustomize", buildCommandArgs([]string{"-o", filepath.Join(pipeline, k.Dir)}, k.Dir)...)
+	cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, buildCommandArgs([]string{"-o", filepath.Join(pipeline, k.Dir)}, k.Dir)...)...)
 	if _, err := util.RunCmdOut(cmd); err != nil {
 		return err
 	}

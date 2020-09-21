@@ -94,6 +94,11 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 	return nil
 }
 
+// Kustomize runs `kubectl kustomize` with the provided args
+func (c *CLI) Kustomize(ctx context.Context, args []string) ([]byte, error) {
+	return c.RunOut(ctx, "kustomize", c.args(nil, args...)...)
+}
+
 type getResult struct {
 	Items []struct {
 		Metadata struct {
