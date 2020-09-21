@@ -27,6 +27,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+const (
+	windows = "windows"
+)
+
 type testAuthHelper struct {
 	getAuthConfigErr     error
 	getAllAuthConfigsErr error
@@ -54,7 +58,7 @@ func (t testAuthHelper) GetSelectAuthConfigs(context.Context, []string) (map[str
 
 func TestGetAllAuthConfigs(t *testing.T) {
 	testutil.Run(t, "auto-configure gcr.io", func(t *testutil.T) {
-		if runtime.GOOS == "windows" {
+		if runtime.GOOS == windows {
 			t.Skip("test doesn't work on windows")
 		}
 
@@ -98,7 +102,7 @@ func TestGetSelectAuthConfigs(t *testing.T) {
 	images := []string{"gcr.io/test/image", "my.registry/image"}
 
 	testutil.Run(t, "2 valid images", func(t *testutil.T) {
-		if runtime.GOOS == "windows" {
+		if runtime.GOOS == windows {
 			t.Skip("test doesn't work on windows")
 		}
 
