@@ -33,23 +33,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func kustomizeAbsent() bool {
-	return false
-}
-
-func kustomizePresent() bool {
-	return true
-}
-
 func TestKustomizeDeploy(t *testing.T) {
 	tests := []struct {
-		description        string
-		kustomize          latest.KustomizeDeploy
-		builds             []build.Artifact
-		commands           util.Command
-		shouldErr          bool
-		forceDeploy        bool
-		kustomizeCmdAbsent bool
+		description         string
+		kustomize           latest.KustomizeDeploy
+		builds              []build.Artifact
+		commands            util.Command
+		shouldErr           bool
+		forceDeploy         bool
+		kustomizeCmdPresent bool
 	}{
 		{
 			description: "no manifest",
@@ -57,8 +49,9 @@ func TestKustomizeDeploy(t *testing.T) {
 				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion118).
 				AndRunOut("kustomize build .", ""),
+			kustomizeCmdPresent: true,
 		},
 		{
 			description: "deploy success",
@@ -66,7 +59,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion118).
 				AndRunOut("kustomize build .", deploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
@@ -74,7 +67,8 @@ func TestKustomizeDeploy(t *testing.T) {
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
 			}},
-			forceDeploy: true,
+			forceDeploy:         true,
+			kustomizeCmdPresent: true,
 		},
 		{
 			description: "deploy success with multiple kustomizations",
@@ -82,7 +76,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				KustomizePaths: []string{"a", "b"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion118).
 				AndRunOut("kustomize build a", deploymentWebYAML).
 				AndRunOut("kustomize build b", deploymentAppYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", deploymentWebYAMLv1+"\n---\n"+deploymentAppYAMLv1, "").
@@ -97,7 +91,8 @@ func TestKustomizeDeploy(t *testing.T) {
 					Tag:       "leeroy-app:v1",
 				},
 			},
-			forceDeploy: true,
+			forceDeploy:         true,
+			kustomizeCmdPresent: true,
 		},
 		{
 			description: "built-in kubectl kustomize",
@@ -120,17 +115,14 @@ func TestKustomizeDeploy(t *testing.T) {
 					Tag:       "leeroy-app:v1",
 				},
 			},
-			forceDeploy:        true,
-			kustomizeCmdAbsent: true,
+			forceDeploy: true,
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			if test.kustomizeCmdAbsent {
-				t.Override(&kustomizeBinaryCheck, kustomizeAbsent)
-			}
+			t.Override(&kustomizeBinaryCheck, func() bool { return test.kustomizeCmdPresent })
 			t.NewTempDir().
 				Chdir()
 
@@ -202,7 +194,7 @@ func TestKustomizeCleanup(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(&kustomizeBinaryCheck, kustomizePresent)
+			t.Override(&kustomizeBinaryCheck, func() bool { return true })
 
 			k := NewKustomizeDeployer(&kustomizeConfig{
 				workingDir: tmpDir.Root(),
