@@ -77,7 +77,7 @@ spec:
 		t.NewTempDir().
 			Write("deployment.yaml", test.input).
 			Chdir()
-		deployer, err := kubectl.NewKubectlDeployer(&runcontext.RunContext{
+		deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 			WorkingDir: ".",
 			Cfg: latest.Pipeline{
 				Deploy: latest.DeployConfig{
@@ -232,7 +232,7 @@ spec:
 				Write("deployment.yaml", test.input).
 				Chdir()
 
-			deployer, err := kubectl.NewKubectlDeployer(&runcontext.RunContext{
+			deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
 				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
@@ -420,7 +420,7 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployer := helm.NewHelmDeployer(&runcontext.RunContext{
+			deployer := helm.NewDeployer(&runcontext.RunContext{
 				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{

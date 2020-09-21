@@ -63,7 +63,7 @@ type counter struct {
 	failed  int32
 }
 
-type StatusCheckConfig interface {
+type Config interface {
 	kubectl.Config
 
 	GetNamespaces() []string
@@ -71,21 +71,21 @@ type StatusCheckConfig interface {
 	Muted() config.Muted
 }
 
-// StatusChecker wait for the application to be totally deployed.
-type StatusChecker interface {
+// Checker waits for the application to be totally deployed.
+type Checker interface {
 	Check(context.Context, io.Writer) error
 }
 
-// StatusChecker runs status checks for pods and deployments
+// statusChecker runs status checks for pods and deployments
 type statusChecker struct {
-	cfg             StatusCheckConfig
+	cfg             Config
 	labeller        *label.DefaultLabeller
 	deadlineSeconds int
 	muteLogs        bool
 }
 
 // NewStatusChecker returns a status checker which runs checks on deployments and pods.
-func NewStatusChecker(cfg StatusCheckConfig, labeller *label.DefaultLabeller) StatusChecker {
+func NewStatusChecker(cfg Config, labeller *label.DefaultLabeller) Checker {
 	return statusChecker{
 		muteLogs:        cfg.Muted().MuteStatusCheck(),
 		cfg:             cfg,

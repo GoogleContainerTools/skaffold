@@ -68,7 +68,7 @@ func TestDeploy(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
-			t.Override(&newStatusCheck, func(status.StatusCheckConfig, *label.DefaultLabeller) status.StatusChecker {
+			t.Override(&newStatusCheck, func(status.Config, *label.DefaultLabeller) status.Checker {
 				return dummyStatusChecker{}
 			})
 
@@ -118,7 +118,7 @@ func TestDeployNamespace(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
-			t.Override(&newStatusCheck, func(status.StatusCheckConfig, *label.DefaultLabeller) status.StatusChecker {
+			t.Override(&newStatusCheck, func(status.Config, *label.DefaultLabeller) status.Checker {
 				return dummyStatusChecker{}
 			})
 

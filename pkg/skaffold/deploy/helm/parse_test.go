@@ -21,9 +21,10 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestParseReleaseInfo(t *testing.T) {

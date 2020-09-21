@@ -73,8 +73,8 @@ var (
 	osExecutable = os.Executable
 )
 
-// HelmDeployer deploys workflows using the helm CLI
-type HelmDeployer struct {
+// Deployer deploys workflows using the helm CLI
+type Deployer struct {
 	*latest.HelmDeploy
 
 	kubeContext string
@@ -93,9 +93,9 @@ type HelmDeployer struct {
 	bV semver.Version
 }
 
-// NewHelmDeployer returns a configured HelmDeployer
-func NewHelmDeployer(cfg kubectl.Config, labels map[string]string) *HelmDeployer {
-	return &HelmDeployer{
+// NewDeployer returns a configured Deployer
+func NewDeployer(cfg kubectl.Config, labels map[string]string) *Deployer {
+	return &Deployer{
 		HelmDeploy:  cfg.Pipeline().Deploy.HelmDeploy,
 		kubeContext: cfg.GetKubeContext(),
 		kubeConfig:  cfg.GetKubeConfig(),
@@ -107,7 +107,7 @@ func NewHelmDeployer(cfg kubectl.Config, labels map[string]string) *HelmDeployer
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
 	hv, err := h.binVer(ctx)
 	if err != nil {
 		return nil, fmt.Errorf(versionErrorString, err)
@@ -167,7 +167,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 }
 
 // Dependencies returns a list of files that the deployer depends on.
-func (h *HelmDeployer) Dependencies() ([]string, error) {
+func (h *Deployer) Dependencies() ([]string, error) {
 	var deps []string
 
 	for _, release := range h.Releases {
@@ -227,7 +227,7 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	hv, err := h.binVer(ctx)
 	if err != nil {
 		return fmt.Errorf(versionErrorString, err)
@@ -263,7 +263,7 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 // Render generates the Kubernetes manifests and writes them out
-func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool, filepath string) error {
+func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool, filepath string) error {
 	hv, err := h.binVer(ctx)
 	if err != nil {
 		return fmt.Errorf(versionErrorString, err)
@@ -329,7 +329,7 @@ func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build
 }
 
 // exec executes the helm command, writing combined stdout/stderr to the provided writer
-func (h *HelmDeployer) exec(ctx context.Context, out io.Writer, useSecrets bool, env []string, args ...string) error {
+func (h *Deployer) exec(ctx context.Context, out io.Writer, useSecrets bool, env []string, args ...string) error {
 	if args[0] != "version" {
 		args = append([]string{"--kube-context", h.kubeContext}, args...)
 		args = append(args, h.Flags.Global...)
@@ -354,7 +354,7 @@ func (h *HelmDeployer) exec(ctx context.Context, out io.Writer, useSecrets bool,
 }
 
 // deployRelease deploys a single release
-func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]types.Artifact, error) {
+func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]types.Artifact, error) {
 	releaseName, err := util.ExpandEnvTemplate(r.Name, nil)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse the release name template: %w", err)
@@ -478,7 +478,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 }
 
 // getRelease confirms that a release is visible to helm
-func (h *HelmDeployer) getRelease(ctx context.Context, helmVersion semver.Version, releaseName string, namespace string) (bytes.Buffer, error) {
+func (h *Deployer) getRelease(ctx context.Context, helmVersion semver.Version, releaseName string, namespace string) (bytes.Buffer, error) {
 	// Retry, because under Helm 2, at least, a release may not be immediately visible
 	opts := backoff.NewExponentialBackOff()
 	opts.MaxElapsedTime = 4 * time.Second
@@ -499,7 +499,7 @@ func (h *HelmDeployer) getRelease(ctx context.Context, helmVersion semver.Versio
 }
 
 // binVer returns the version of the helm binary found in PATH. May be cached.
-func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
+func (h *Deployer) binVer(ctx context.Context) (semver.Version, error) {
 	// Return the cached version value if non-zero
 	if h.bV.Major != 0 || h.bV.Minor != 0 {
 		return h.bV, nil
@@ -736,7 +736,7 @@ func envVarForImage(imageName string, digest string) map[string]string {
 }
 
 // packageChart packages the chart and returns the path to the resulting chart archive
-func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (string, error) {
+func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (string, error) {
 	// Allow a test to sneak a predictable path in
 	tmpDir := h.pkgTmpDir
 
@@ -782,7 +782,7 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 	return output[idx:], nil
 }
 
-func (h *HelmDeployer) generateSkaffoldDebugFilter(buildsFile string) []string {
+func (h *Deployer) generateSkaffoldDebugFilter(buildsFile string) []string {
 	args := []string{"filter", "--debugging", "--kube-context", h.kubeContext}
 	if len(buildsFile) > 0 {
 		args = append(args, "--build-artifacts", buildsFile)

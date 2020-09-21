@@ -23,6 +23,7 @@ type unit struct{}
 // StringSet helps to de-duplicate a set of strings.
 type StringSet map[string]unit
 
+// NewStringSet returns a new StringSet object.
 func NewStringSet() StringSet {
 	return make(map[string]unit)
 }

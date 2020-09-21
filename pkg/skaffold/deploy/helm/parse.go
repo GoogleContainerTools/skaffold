@@ -22,12 +22,12 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/sirupsen/logrus"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/sirupsen/logrus"
 )
 
 func parseReleaseInfo(namespace string, b *bufio.Reader) []types.Artifact {

@@ -50,8 +50,8 @@ const (
 	kptFnLocalConfig  = "config.kubernetes.io/local-config"
 )
 
-// KptDeployer deploys workflows with kpt CLI
-type KptDeployer struct {
+// Deployer deploys workflows with kpt CLI
+type Deployer struct {
 	*latest.KptDeploy
 
 	insecureRegistries map[string]bool
@@ -59,8 +59,8 @@ type KptDeployer struct {
 	globalConfig       string
 }
 
-func NewKptDeployer(cfg types.Config, labels map[string]string) *KptDeployer {
-	return &KptDeployer{
+func NewDeployer(cfg types.Config, labels map[string]string) *Deployer {
+	return &Deployer{
 		KptDeploy:          cfg.Pipeline().Deploy.KptDeploy,
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
@@ -71,7 +71,7 @@ func NewKptDeployer(cfg types.Config, labels map[string]string) *KptDeployer {
 // Deploy hydrates the manifests using kustomizations and kpt functions as described in the render method,
 // outputs them to the applyDir, and runs `kpt live apply` against applyDir to create resources in the cluster.
 // `kpt live apply` supports automated pruning declaratively via resources in the applyDir.
-func (k *KptDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
 	manifests, err := k.renderManifests(ctx, out, builds)
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func (k *KptDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.
 
 // Dependencies returns a list of files that the deployer depends on. This does NOT include applyDir.
 // In dev mode, a redeploy will be triggered if one of these files is updated.
-func (k *KptDeployer) Dependencies() ([]string, error) {
+func (k *Deployer) Dependencies() ([]string, error) {
 	deps := deployutil.NewStringSet()
 	if len(k.Fn.FnPath) > 0 {
 		deps.Insert(k.Fn.FnPath)
@@ -131,7 +131,7 @@ func (k *KptDeployer) Dependencies() ([]string, error) {
 }
 
 // Cleanup deletes what was deployed by calling `kpt live destroy`.
-func (k *KptDeployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	applyDir, err := k.getApplyDir(ctx)
 	if err != nil {
 		return fmt.Errorf("getting applyDir: %w", err)
@@ -148,7 +148,7 @@ func (k *KptDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 // Render hydrates manifests using both kustomization and kpt functions.
-func (k *KptDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, _ bool, filepath string) error {
+func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, _ bool, filepath string) error {
 	manifests, err := k.renderManifests(ctx, out, builds)
 	if err != nil {
 		return err
@@ -160,7 +160,7 @@ func (k *KptDeployer) Render(ctx context.Context, out io.Writer, builds []build.
 // renderManifests handles a majority of the hydration process for manifests.
 // This involves reading configs from a source directory, running kustomize build, running kpt pipelines,
 // adding image digests, and adding run-id labels.
-func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds []build.Artifact) (manifest.ManifestList, error) {
+func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []build.Artifact) (manifest.ManifestList, error) {
 	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
@@ -214,7 +214,7 @@ func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds [
 
 // readConfigs uses `kpt fn source` to read config manifests from k.Dir
 // and uses `kpt fn sink` to output those manifests to .pipeline.
-func (k *KptDeployer) readConfigs(ctx context.Context) error {
+func (k *Deployer) readConfigs(ctx context.Context) error {
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(k.Dir, []string{"fn", "source"}, nil, nil)...)
 	b, err := util.RunCmdOut(cmd)
 	if err != nil {
@@ -231,7 +231,7 @@ func (k *KptDeployer) readConfigs(ctx context.Context) error {
 }
 
 // kustomizeBuild runs `kustomize build` if a kustomization config exists and outputs to .pipeline.
-func (k *KptDeployer) kustomizeBuild(ctx context.Context) error {
+func (k *Deployer) kustomizeBuild(ctx context.Context) error {
 	if _, err := kustomize.FindKustomizationConfig(k.Dir); err != nil {
 		// No kustomization config was found directly under k.Dir, so there is no need to continue.
 		return nil
@@ -260,7 +260,7 @@ func (k *KptDeployer) kustomizeBuild(ctx context.Context) error {
 // kptFnRun does a dry run with the specified kpt functions (fn-path XOR image) against .pipeline.
 // If neither fn-path nor image are specified, functions will attempt to be discovered in .pipeline.
 // An error occurs if both fn-path and image are specified.
-func (k *KptDeployer) kptFnRun(ctx context.Context) (manifest.ManifestList, error) {
+func (k *Deployer) kptFnRun(ctx context.Context) (manifest.ManifestList, error) {
 	var manifests manifest.ManifestList
 
 	flags, err := k.getKptFnRunArgs()
@@ -283,7 +283,7 @@ func (k *KptDeployer) kptFnRun(ctx context.Context) (manifest.ManifestList, erro
 
 // excludeKptFn adds an annotation "config.kubernetes.io/local-config: 'true'" to kpt function.
 // This will exclude kpt functions from deployed to the cluster in kpt live apply.
-func (k *KptDeployer) excludeKptFn(originalManifest manifest.ManifestList) (manifest.ManifestList, error) {
+func (k *Deployer) excludeKptFn(originalManifest manifest.ManifestList) (manifest.ManifestList, error) {
 	var newManifest manifest.ManifestList
 	for _, yByte := range originalManifest {
 		// Convert yaml byte config to unstructured.Unstructured
@@ -322,7 +322,7 @@ func (k *KptDeployer) excludeKptFn(originalManifest manifest.ManifestList) (mani
 
 // getApplyDir returns the path to applyDir if specified by the user. Otherwise, getApplyDir
 // creates a hidden directory named .kpt-hydrated in place of applyDir.
-func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
+func (k *Deployer) getApplyDir(ctx context.Context) (string, error) {
 	if k.Live.Apply.Dir != "" {
 		if _, err := os.Stat(k.Live.Apply.Dir); os.IsNotExist(err) {
 			return "", err
@@ -399,7 +399,7 @@ func getResources(root string) ([]string, error) {
 }
 
 // getKptFnRunArgs returns a list of arguments that the user specified for the `kpt fn run` command.
-func (k *KptDeployer) getKptFnRunArgs() ([]string, error) {
+func (k *Deployer) getKptFnRunArgs() ([]string, error) {
 	// --dry-run sets the pipeline's output to STDOUT, otherwise output is set to sinkDir.
 	// For now, k.Dir will be treated as sinkDir (and sourceDir).
 	flags := []string{"--dry-run"}
@@ -440,7 +440,7 @@ func (k *KptDeployer) getKptFnRunArgs() ([]string, error) {
 }
 
 // getKptLiveApplyArgs returns a list of arguments that the user specified for the `kpt live apply` command.
-func (k *KptDeployer) getKptLiveApplyArgs() []string {
+func (k *Deployer) getKptLiveApplyArgs() []string {
 	var flags []string
 
 	if len(k.Live.Options.PollPeriod) > 0 {
@@ -463,7 +463,7 @@ func (k *KptDeployer) getKptLiveApplyArgs() []string {
 }
 
 // getKptLiveInitArgs returns a list of arguments that the user specified for the `kpt live init` command.
-func (k *KptDeployer) getKptLiveInitArgs() []string {
+func (k *Deployer) getKptLiveInitArgs() []string {
 	var flags []string
 
 	if len(k.Live.Apply.InventoryID) > 0 {

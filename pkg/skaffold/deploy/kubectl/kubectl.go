@@ -40,8 +40,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-// KubectlDeployer deploys workflows using kubectl CLI.
-type KubectlDeployer struct {
+// Deployer deploys workflows using kubectl CLI.
+type Deployer struct {
 	*latest.KubectlDeploy
 
 	originalImages     []build.Artifact
@@ -55,9 +55,9 @@ type KubectlDeployer struct {
 	skipRender         bool
 }
 
-// NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
+// NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(cfg Config, labels map[string]string) (*KubectlDeployer, error) {
+func NewDeployer(cfg Config, labels map[string]string) (*Deployer, error) {
 	defaultNamespace := ""
 	if cfg.Pipeline().Deploy.KubectlDeploy.DefaultNamespace != nil {
 		var err error
@@ -67,7 +67,7 @@ func NewKubectlDeployer(cfg Config, labels map[string]string) (*KubectlDeployer,
 		}
 	}
 
-	return &KubectlDeployer{
+	return &Deployer{
 		KubectlDeploy:      cfg.Pipeline().Deploy.KubectlDeploy,
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
@@ -81,7 +81,7 @@ func NewKubectlDeployer(cfg Config, labels map[string]string) (*KubectlDeployer,
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
 	var (
 		manifests manifest.ManifestList
 		err       error
@@ -116,7 +116,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	return namespaces, nil
 }
 
-func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
+func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 	var nonURLManifests, gcsManifests []string
 	for _, manifest := range manifests {
 		switch {
@@ -163,7 +163,7 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 }
 
 // readManifests reads the manifests to deploy/delete.
-func (k *KubectlDeployer) readManifests(ctx context.Context, offline bool) (manifest.ManifestList, error) {
+func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.ManifestList, error) {
 	// Get file manifests
 	manifests, err := k.Dependencies()
 	// Clean the temporary directory that holds the manifests downloaded from GCS
@@ -209,7 +209,7 @@ func (k *KubectlDeployer) readManifests(ctx context.Context, offline bool) (mani
 
 // readRemoteManifests will try to read manifests from the given kubernetes
 // context in the specified namespace and for the specified type
-func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) ([]byte, error) {
+func (k *Deployer) readRemoteManifest(ctx context.Context, name string) ([]byte, error) {
 	var args []string
 	ns := ""
 	if parts := strings.Split(name, ":"); len(parts) > 1 {
@@ -227,7 +227,7 @@ func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) (
 	return manifest.Bytes(), nil
 }
 
-func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool, filepath string) error {
+func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool, filepath string) error {
 	manifests, err := k.renderManifests(ctx, out, builds, offline)
 	if err != nil {
 		return err
@@ -236,7 +236,7 @@ func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []bu
 	return manifest.OutputRenderedManifests(manifests.String(), filepath, out)
 }
 
-func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool) (manifest.ManifestList, error) {
+func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool) (manifest.ManifestList, error) {
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
 		color.Default.Fprintln(out, err)
@@ -298,7 +298,7 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
-func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
+func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	manifests, err := k.readManifests(ctx, false)
 	if err != nil {
 		return fmt.Errorf("reading manifests: %w", err)
@@ -335,6 +335,6 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 // Dependencies lists all the files that describe what needs to be deployed.
-func (k *KubectlDeployer) Dependencies() ([]string, error) {
+func (k *Deployer) Dependencies() ([]string, error) {
 	return k.manifestFiles(k.KubectlDeploy.Manifests)
 }

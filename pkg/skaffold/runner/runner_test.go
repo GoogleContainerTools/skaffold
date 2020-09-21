@@ -279,7 +279,7 @@ func TestNewForConfig(t *testing.T) {
 			},
 			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
-			expectedDeployer: &kubectl.KubectlDeployer{},
+			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
 			description: "bad tagger config",
@@ -304,7 +304,7 @@ func TestNewForConfig(t *testing.T) {
 			shouldErr:        true,
 			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
-			expectedDeployer: &kubectl.KubectlDeployer{},
+			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
 			description: "no artifacts, cache",
@@ -323,7 +323,7 @@ func TestNewForConfig(t *testing.T) {
 			},
 			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
-			expectedDeployer: &kubectl.KubectlDeployer{},
+			expectedDeployer: &kubectl.Deployer{},
 			cacheArtifacts:   true,
 		},
 		{
@@ -346,9 +346,9 @@ func TestNewForConfig(t *testing.T) {
 			expectedBuilder: &local.Builder{},
 			expectedTester:  &test.FullTester{},
 			expectedDeployer: deploy.DeployerMux([]deploy.Deployer{
-				&helm.HelmDeployer{},
-				&kubectl.KubectlDeployer{},
-				&kustomize.KustomizeDeployer{},
+				&helm.Deployer{},
+				&kubectl.Deployer{},
+				&kustomize.Deployer{},
 			}),
 		},
 	}

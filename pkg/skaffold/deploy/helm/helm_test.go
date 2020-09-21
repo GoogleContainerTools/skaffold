@@ -420,7 +420,7 @@ func TestBinVer(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
 
-			deployer := NewHelmDeployer(&helmConfig{
+			deployer := NewDeployer(&helmConfig{
 				helm: testDeployConfig,
 			}, nil)
 			ver, err := deployer.binVer(context.TODO())
@@ -445,7 +445,7 @@ func TestHelmDeploy(t *testing.T) {
 		commands         util.Command
 		helm             latest.HelmDeploy
 		namespace        string
-		configure        func(*HelmDeployer)
+		configure        func(*Deployer)
 		builds           []build.Artifact
 		force            bool
 		shouldErr        bool
@@ -889,7 +889,7 @@ func TestHelmDeploy(t *testing.T) {
 			shouldErr:   true,
 			helm:        testDeployConfig,
 			builds:      testBuilds,
-			configure:   func(deployer *HelmDeployer) { deployer.enableDebug = true },
+			configure:   func(deployer *Deployer) { deployer.enableDebug = true },
 		},
 		{
 			description: "debug for helm3.1 success",
@@ -901,7 +901,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig"),
 			helm:      testDeployConfig,
 			builds:    testBuilds,
-			configure: func(deployer *HelmDeployer) { deployer.enableDebug = true },
+			configure: func(deployer *Deployer) { deployer.enableDebug = true },
 		},
 		{
 			description: "helm3.1 should fail to deploy with createNamespace option",
@@ -944,7 +944,7 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&osExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 
-			deployer := NewHelmDeployer(&helmConfig{
+			deployer := NewDeployer(&helmConfig{
 				helm:      test.helm,
 				namespace: test.namespace,
 				force:     test.force,
@@ -1030,7 +1030,7 @@ func TestHelmCleanup(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			deployer := NewHelmDeployer(&helmConfig{
+			deployer := NewDeployer(&helmConfig{
 				helm:      test.helm,
 				namespace: test.namespace,
 			}, nil)
@@ -1132,7 +1132,7 @@ func TestHelmDependencies(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Touch(test.files...)
 
-			deployer := NewHelmDeployer(&helmConfig{
+			deployer := NewDeployer(&helmConfig{
 				helm: latest.HelmDeploy{
 					Releases: []latest.HelmRelease{{
 						Name:                  "skaffold-helm",
@@ -1331,7 +1331,7 @@ func TestHelmRender(t *testing.T) {
 
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 
-			deployer := NewHelmDeployer(&helmConfig{
+			deployer := NewDeployer(&helmConfig{
 				helm: test.helm,
 			}, nil)
 
@@ -1402,7 +1402,7 @@ func TestGenerateSkaffoldDebugFilter(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			h := NewHelmDeployer(&helmConfig{
+			h := NewDeployer(&helmConfig{
 				helm: testDeployConfig,
 			}, nil)
 			result := h.generateSkaffoldDebugFilter(test.buildFile)

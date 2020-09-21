@@ -26,6 +26,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
+// DependenciesForKustomization finds common kustomize artifacts relative to the
+// provided working dir, and collects them into a list of files to be passed
+// to the file watcher.
 func DependenciesForKustomization(dir string) ([]string, error) {
 	var deps []string
 
@@ -111,6 +114,7 @@ func DependenciesForKustomization(dir string) ([]string, error) {
 	return deps, nil
 }
 
+// FindKustomizationConfig finds the kustomization config relative to the provided dir.
 // A Kustomization config must be at the root of the directory. Kustomize will
 // error if more than one of these files exists so order doesn't matter.
 func FindKustomizationConfig(dir string) (string, error) {
@@ -122,6 +126,7 @@ func FindKustomizationConfig(dir string) (string, error) {
 	return "", fmt.Errorf("no Kustomization configuration found in directory: %s", dir)
 }
 
+// BuildCommandArgs returns a list of build args to be passed to kustomize.
 func BuildCommandArgs(buildArgs []string, kustomizePath string) []string {
 	var args []string
 

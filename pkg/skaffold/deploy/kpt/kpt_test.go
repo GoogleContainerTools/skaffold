@@ -214,7 +214,7 @@ spec:
 
 			tmpDir.WriteFiles(test.kustomizations)
 
-			k := NewKptDeployer(&kptConfig{
+			k := NewDeployer(&kptConfig{
 				kpt: test.kpt,
 			}, nil)
 
@@ -339,7 +339,7 @@ func TestKpt_Dependencies(t *testing.T) {
 			tmpDir.WriteFiles(test.createFiles)
 			tmpDir.WriteFiles(test.kustomizations)
 
-			k := NewKptDeployer(&kptConfig{
+			k := NewDeployer(&kptConfig{
 				kpt: test.kpt,
 			}, nil)
 
@@ -392,7 +392,7 @@ func TestKpt_Cleanup(t *testing.T) {
 				os.Mkdir(test.applyDir, 0755)
 			}
 
-			k := NewKptDeployer(&kptConfig{
+			k := NewDeployer(&kptConfig{
 				workingDir: ".",
 				kpt: latest.KptDeploy{
 					Live: latest.KptLive{
@@ -745,7 +745,7 @@ spec:
 
 			tmpDir.WriteFiles(test.kustomizations)
 
-			k := NewKptDeployer(&kptConfig{
+			k := NewDeployer(&kptConfig{
 				workingDir: ".",
 				kpt:        test.kpt,
 			}, test.labels)
@@ -820,7 +820,7 @@ func TestKpt_GetApplyDir(t *testing.T) {
 				tmpDir.Touch(".kpt-hydrated/inventory-template.yaml")
 			}
 
-			k := NewKptDeployer(&kptConfig{
+			k := NewDeployer(&kptConfig{
 				workingDir: ".",
 				kpt: latest.KptDeploy{
 					Live: test.live,
@@ -982,7 +982,7 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k := NewKptDeployer(&kptConfig{}, nil)
+			k := NewDeployer(&kptConfig{}, nil)
 			actualManifest, err := k.excludeKptFn(test.manifests)
 			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
 		})

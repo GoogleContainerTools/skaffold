@@ -207,15 +207,15 @@ func getDeployer(cfg kubectl.Config, labels map[string]string) (deploy.Deployer,
 	var deployers deploy.DeployerMux
 
 	if d.HelmDeploy != nil {
-		deployers = append(deployers, helm.NewHelmDeployer(cfg, labels))
+		deployers = append(deployers, helm.NewDeployer(cfg, labels))
 	}
 
 	if d.KptDeploy != nil {
-		deployers = append(deployers, kpt.NewKptDeployer(cfg, labels))
+		deployers = append(deployers, kpt.NewDeployer(cfg, labels))
 	}
 
 	if d.KubectlDeploy != nil {
-		deployer, err := kubectl.NewKubectlDeployer(cfg, labels)
+		deployer, err := kubectl.NewDeployer(cfg, labels)
 		if err != nil {
 			return nil, err
 		}
@@ -223,7 +223,7 @@ func getDeployer(cfg kubectl.Config, labels map[string]string) (deploy.Deployer,
 	}
 
 	if d.KustomizeDeploy != nil {
-		deployer, err := kustomize.NewKustomizeDeployer(cfg, labels)
+		deployer, err := kustomize.NewDeployer(cfg, labels)
 		if err != nil {
 			return nil, err
 		}
