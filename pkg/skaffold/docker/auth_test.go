@@ -94,6 +94,45 @@ echo "{\"Username\":\"<token>\",\"Secret\":\"TOKEN_$server\"}"`)
 	})
 }
 
+func TestGetSelectAuthConfigs(t *testing.T) {
+	images := []string{"gcr.io/test/image", "my.registry/image"}
+
+	testutil.Run(t, "2 valid images", func(t *testutil.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("test doesn't work on windows")
+		}
+
+		tmpDir := t.NewTempDir().
+			Write("config.json", `{"credHelpers":{"my.registry":"helper"}}`).
+			Write("docker-credential-gcloud", `#!/bin/sh
+read server
+echo "{\"Username\":\"<token>\",\"Secret\":\"TOKEN_$server\"}"`).
+			Write("docker-credential-helper", `#!/bin/sh
+read server
+echo "{\"Username\":\"<token>\",\"Secret\":\"TOKEN_$server\"}"`)
+		t.Override(&configDir, tmpDir.Root())
+		t.SetEnvs(map[string]string{"PATH": tmpDir.Root()})
+
+		auth, err := DefaultAuthHelper.GetSelectAuthConfigs(context.Background(), images)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(map[string]types.AuthConfig{
+			"gcr.io":      {IdentityToken: "TOKEN_gcr.io"},
+			"my.registry": {IdentityToken: "TOKEN_my.registry"},
+		}, auth)
+	})
+
+	testutil.Run(t, "invalid config.json", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().Write("config.json", "invalid json")
+		t.Override(&configDir, tmpDir.Root())
+
+		auth, err := DefaultAuthHelper.GetSelectAuthConfigs(context.Background(), images)
+
+		t.CheckError(true, err)
+		t.CheckEmpty(auth)
+	})
+}
+
 func TestGetEncodedRegistryAuth(t *testing.T) {
 	tests := []struct {
 		description string
