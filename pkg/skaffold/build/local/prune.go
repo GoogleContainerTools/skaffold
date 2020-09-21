@@ -85,11 +85,11 @@ func (p *pruner) cleanup(ctx context.Context, sync bool, out io.Writer, artifact
 	}
 }
 
-func (p *pruner) startCleanupOldImages(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) {
+func (p *pruner) asynchronousCleanupOldImages(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) {
 	p.cleanup(ctx, false /*async*/, out, artifacts)
 }
 
-func (p *pruner) cleanupOldImages(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) {
+func (p *pruner) synchronousCleanupOldImages(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) {
 	p.cleanup(ctx, true /*sync*/, out, artifacts)
 }
 

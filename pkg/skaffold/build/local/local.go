@@ -46,7 +46,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	pruner := newPruner(b.localDocker, b.pruneChildren)
 
 	if b.prune {
-		pruner.startCleanupOldImages(ctx, out, artifacts)
+		pruner.asynchronousCleanupOldImages(ctx, out, artifacts)
 	}
 
 	builder := build.WithLogFile(b.buildArtifact, b.muted)
@@ -55,9 +55,9 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 
 	if b.prune {
 		if b.mode == config.RunModes.Dev {
-			pruner.startCleanupOldImages(ctx, out, artifacts)
+			pruner.asynchronousCleanupOldImages(ctx, out, artifacts)
 		} else {
-			pruner.cleanupOldImages(ctx, out, artifacts)
+			pruner.synchronousCleanupOldImages(ctx, out, artifacts)
 		}
 	}
 
