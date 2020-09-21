@@ -254,7 +254,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.KubeContext,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run", "filter"},
 	},
 	{
 		Name:          "kubeconfig",
@@ -262,7 +262,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.KubeConfig,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run", "filter"},
 	},
 	{
 		Name:          "tag",
@@ -271,7 +271,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.CustomTag,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "dev", "run"},
+		DefinedOn:     []string{"build", "debug", "dev", "run", "deploy"},
 	},
 	{
 		Name:          "minikube-profile",
@@ -397,6 +397,15 @@ var flagRegistry = []Flag{
 		DefValue:      2 * time.Second,
 		FlagAddMethod: "DurationVar",
 		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+	},
+	{
+		Name:          "build-image",
+		Shorthand:     "b",
+		Usage:         "Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts",
+		Value:         &opts.TargetImages,
+		DefValue:      []string{},
+		FlagAddMethod: "StringSliceVar",
+		DefinedOn:     []string{"build", "run"},
 	},
 	{
 		Name:          "detect-minikube",

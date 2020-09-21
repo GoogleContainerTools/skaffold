@@ -309,17 +309,21 @@ files.
 
 ### Supported Deployers
 
-`skaffold debug` is only supported with the `kubectl` and `kustomize` deployers at the moment: support for
-the Helm deployer is not yet available ([#2350](https://github.com/GoogleContainerTools/skaffold/issues/2350)).
+`skaffold debug` is only supported with the `kubectl`, `kustomize`, and `helm` deployers.
+
+{{< alert title="Note" >}}
+Helm support requires using Helm v3.1.0 or greater.
+{{< /alert >}}
+
 
 ### Deprecated Workload API Objects
 
 `skaffold debug` does not support deprecated versions of Workload API objects:
 
-  - `apps/v1beta1` was [deprecated in Kubernetes 1.8](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.8.md#other-notable-changes-16)
-  - `apps/v1beta2` was [deprecated in Kubernetes 1.9](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.9.md#apps)
+  - `extensions/v1beta1` and `apps/v1beta1` was [deprecated in Kubernetes 1.8](https://github.com/kubernetes/kubernetes/blob/HEAD/CHANGELOG/CHANGELOG-1.8.md#other-notable-changes-16)
+    and [removed in Kubernetes 1.16](https://kubernetes.io/blog/2019/07/18/api-deprecations-in-1-16/).
+  - `apps/v1beta2` was [deprecated in Kubernetes 1.9](https://github.com/kubernetes/kubernetes/blob/HEAD/CHANGELOG/CHANGELOG-1.9.md#apps)
+    and [removed in Kubernetes 1.16](https://kubernetes.io/blog/2019/07/18/api-deprecations-in-1-16/).
 
-Both have been [removed in Kubernetes 1.16](https://kubernetes.io/blog/2019/07/18/api-deprecations-in-1-16/).
 Applications should transition to the `apps/v1` APIs,
-[introduced in Kubernetes 1.9](https://kubernetes.io/blog/2017/12/kubernetes-19-workloads-expanded-ecosystem/).
-
+[introduced in Kubernetes 1.9](https://kubernetes.io/blog/2017/12/kubernetes-19-workloads-expanded-ecosystem/#workloads-api-ga).

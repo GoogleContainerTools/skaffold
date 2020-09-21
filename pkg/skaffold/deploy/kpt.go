@@ -28,6 +28,9 @@ import (
 	"regexp"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8syaml "sigs.k8s.io/yaml"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
@@ -36,10 +39,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-var (
+const (
 	inventoryTemplate = "inventory-template.yaml"
 	kptHydrated       = ".kpt-hydrated"
 	pipeline          = ".pipeline"
+	kptFnAnnotation   = "config.kubernetes.io/function"
+	kptFnLocalConfig  = "config.kubernetes.io/local-config"
 )
 
 // KptDeployer deploys workflows with kpt CLI
@@ -186,6 +191,12 @@ func (k *KptDeployer) renderManifests(ctx context.Context, _ io.Writer, builds [
 		return nil, nil
 	}
 
+	// exclude the kpt function from the manipulated resources.
+	manifests, err = k.excludeKptFn(manifests)
+	if err != nil {
+		return nil, fmt.Errorf("exclude kpt fn from manipulated resources: %w", err)
+	}
+
 	manifests, err = manifests.ReplaceImages(builds)
 	if err != nil {
 		return nil, fmt.Errorf("replacing images in manifests: %w", err)
@@ -270,14 +281,53 @@ func (k *KptDeployer) kptFnRun(ctx context.Context) (deploy.ManifestList, error)
 	return manifests, nil
 }
 
+// excludeKptFn adds an annotation "config.kubernetes.io/local-config: 'true'" to kpt function.
+// This will exclude kpt functions from deployed to the cluster in kpt live apply.
+func (k *KptDeployer) excludeKptFn(manifest deploy.ManifestList) (deploy.ManifestList, error) {
+	var newManifest deploy.ManifestList
+	for _, yByte := range manifest {
+		// Convert yaml byte config to unstructured.Unstructured
+		jByte, _ := k8syaml.YAMLToJSON(yByte)
+		var obj unstructured.Unstructured
+		if err := obj.UnmarshalJSON(jByte); err != nil {
+			return nil, fmt.Errorf("unmarshaling config: %w", err)
+		}
+		// skip if the resource is not kpt fn config.
+		if _, ok := obj.GetAnnotations()[kptFnAnnotation]; !ok {
+			newManifest = append(newManifest, yByte)
+			continue
+		}
+		// skip if the kpt fn has local-config annotation specified.
+		if _, ok := obj.GetAnnotations()[kptFnLocalConfig]; ok {
+			newManifest = append(newManifest, yByte)
+			continue
+		}
+
+		// Add "local-config" annotation to kpt fn config.
+		anns := obj.GetAnnotations()
+		anns[kptFnLocalConfig] = "true"
+		obj.SetAnnotations(anns)
+		jByte, err := obj.MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("marshaling to json: %w", err)
+		}
+		newYByte, err := k8syaml.JSONToYAML(jByte)
+		if err != nil {
+			return nil, fmt.Errorf("converting json to yaml: %w", err)
+		}
+		newManifest.Append(newYByte)
+	}
+	return newManifest, nil
+}
+
 // getApplyDir returns the path to applyDir if specified by the user. Otherwise, getApplyDir
 // creates a hidden directory named .kpt-hydrated in place of applyDir.
 func (k *KptDeployer) getApplyDir(ctx context.Context) (string, error) {
-	if k.ApplyDir != "" {
-		if _, err := os.Stat(k.ApplyDir); os.IsNotExist(err) {
+	if k.Live.Apply.Dir != "" {
+		if _, err := os.Stat(k.Live.Apply.Dir); os.IsNotExist(err) {
 			return "", err
 		}
-		return k.ApplyDir, nil
+		return k.Live.Apply.Dir, nil
 	}
 
 	// 0755 is a permission setting where the owner can read, write, and execute.
@@ -393,20 +443,20 @@ func (k *KptDeployer) getKptFnRunArgs() ([]string, error) {
 func (k *KptDeployer) getKptLiveApplyArgs() []string {
 	var flags []string
 
-	if len(k.Live.Apply.PollPeriod) > 0 {
-		flags = append(flags, "--poll-period", k.Live.Apply.PollPeriod)
+	if len(k.Live.Options.PollPeriod) > 0 {
+		flags = append(flags, "--poll-period", k.Live.Options.PollPeriod)
 	}
 
-	if len(k.Live.Apply.PrunePropagationPolicy) > 0 {
-		flags = append(flags, "--prune-propagation-policy", k.Live.Apply.PrunePropagationPolicy)
+	if len(k.Live.Options.PrunePropagationPolicy) > 0 {
+		flags = append(flags, "--prune-propagation-policy", k.Live.Options.PrunePropagationPolicy)
 	}
 
-	if len(k.Live.Apply.PruneTimeout) > 0 {
-		flags = append(flags, "--prune-timeout", k.Live.Apply.PruneTimeout)
+	if len(k.Live.Options.PruneTimeout) > 0 {
+		flags = append(flags, "--prune-timeout", k.Live.Options.PruneTimeout)
 	}
 
-	if len(k.Live.Apply.ReconcileTimeout) > 0 {
-		flags = append(flags, "--reconcile-timeout", k.Live.Apply.ReconcileTimeout)
+	if len(k.Live.Options.ReconcileTimeout) > 0 {
+		flags = append(flags, "--reconcile-timeout", k.Live.Options.ReconcileTimeout)
 	}
 
 	return flags
@@ -416,12 +466,12 @@ func (k *KptDeployer) getKptLiveApplyArgs() []string {
 func (k *KptDeployer) getKptLiveInitArgs() []string {
 	var flags []string
 
-	if len(k.Live.InventoryID) > 0 {
-		flags = append(flags, "--inventory-id", k.Live.InventoryID)
+	if len(k.Live.Apply.InventoryID) > 0 {
+		flags = append(flags, "--inventory-id", k.Live.Apply.InventoryID)
 	}
 
-	if len(k.Live.InventoryNamespace) > 0 {
-		flags = append(flags, "--namespace", k.Live.InventoryNamespace)
+	if len(k.Live.Apply.InventoryNamespace) > 0 {
+		flags = append(flags, "--namespace", k.Live.Apply.InventoryNamespace)
 	}
 
 	return flags

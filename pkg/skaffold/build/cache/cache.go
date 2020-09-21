@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"sync"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
@@ -45,10 +46,12 @@ type ArtifactCache map[string]ImageDetails
 // cache holds any data necessary for accessing the cache
 type cache struct {
 	artifactCache      ArtifactCache
+	cacheMutex         sync.RWMutex
 	client             docker.LocalDaemon
 	insecureRegistries map[string]bool
 	cacheFile          string
 	imagesAreLocal     bool
+	tryImportMissing   bool
 	hashForArtifact    func(ctx context.Context, a *latest.Artifact) (string, error)
 }
 
@@ -64,7 +67,7 @@ type Config interface {
 }
 
 // NewCache returns the current state of the cache
-func NewCache(cfg Config, imagesAreLocal bool, dependencies DependencyLister) (Cache, error) {
+func NewCache(cfg Config, imagesAreLocal bool, tryImportMissing bool, dependencies DependencyLister) (Cache, error) {
 	if !cfg.CacheArtifacts() {
 		return &noCache{}, nil
 	}
@@ -92,6 +95,7 @@ func NewCache(cfg Config, imagesAreLocal bool, dependencies DependencyLister) (C
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		cacheFile:          cacheFile,
 		imagesAreLocal:     imagesAreLocal,
+		tryImportMissing:   tryImportMissing,
 		hashForArtifact: func(ctx context.Context, a *latest.Artifact) (string, error) {
 			return getHashForArtifact(ctx, dependencies, a, cfg.Mode())
 		},

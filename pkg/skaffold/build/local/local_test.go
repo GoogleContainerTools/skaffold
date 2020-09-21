@@ -260,7 +260,7 @@ func TestLocalRun(t *testing.T) {
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
-			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed)
+			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed())
 		})
 	}
 }

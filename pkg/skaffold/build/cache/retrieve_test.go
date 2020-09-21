@@ -129,7 +129,7 @@ func TestCacheBuildLocal(t *testing.T) {
 		cfg := &mockConfig{
 			cacheFile: tmpDir.Path("cache"),
 		}
-		artifactCache, err := NewCache(cfg, true, deps)
+		artifactCache, err := NewCache(cfg, true, false, deps)
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -224,7 +224,7 @@ func TestCacheBuildRemote(t *testing.T) {
 		cfg := &mockConfig{
 			cacheFile: tmpDir.Path("cache"),
 		}
-		artifactCache, err := NewCache(cfg, false, deps)
+		artifactCache, err := NewCache(cfg, false, false, deps)
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -256,6 +256,69 @@ func TestCacheBuildRemote(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckDeepEqual(1, len(builder.built))
 		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
+	})
+}
+
+func TestCacheFindMissing(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().
+			Write("dep1", "content1").
+			Write("dep2", "content2").
+			Write("dep3", "content3").
+			Chdir()
+
+		tags := map[string]string{
+			"artifact1": "artifact1:tag1",
+			"artifact2": "artifact2:tag2",
+		}
+		artifacts := []*latest.Artifact{
+			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+			{ImageName: "artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+		}
+		deps := depLister(map[string][]string{
+			"artifact1": {"dep1", "dep2"},
+			"artifact2": {"dep3"},
+		})
+
+		// Mock Docker
+		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+			return dockerDaemon, nil
+		})
+		t.Override(&docker.DefaultAuthHelper, stubAuth{})
+		t.Override(&docker.RemoteDigest, func(ref string, _ map[string]bool) (string, error) {
+			switch ref {
+			case "artifact1:tag1":
+				return "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165", nil
+			case "artifact2:tag2":
+				return "sha256:35bdf2619f59e6f2372a92cb5486f4a0bf9b86e0e89ee0672864db6ed9c51539", nil
+			default:
+				return "", errors.New("unknown remote tag")
+			}
+		})
+
+		// Mock args builder
+		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+			return a.BuildArgs, nil
+		})
+
+		// Create cache
+		cfg := &mockConfig{
+			cacheFile: tmpDir.Path("cache"),
+		}
+		artifactCache, err := NewCache(cfg, false, true, deps)
+		t.CheckNoError(err)
+
+		// Because the artifacts are in the docker registry, we expect them to be imported correctly.
+		builder := &mockBuilder{dockerDaemon: dockerDaemon, push: false}
+		bRes, err := artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(0, len(builder.built))
+		t.CheckDeepEqual(2, len(bRes))
+		// Artifacts should always be returned in their original order
 		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 	})

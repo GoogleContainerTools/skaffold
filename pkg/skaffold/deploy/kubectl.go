@@ -67,17 +67,26 @@ type Config interface {
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(cfg Config, labels map[string]string) *KubectlDeployer {
+func NewKubectlDeployer(cfg Config, labels map[string]string) (*KubectlDeployer, error) {
+	defaultNamespace := ""
+	if cfg.Pipeline().Deploy.KubectlDeploy.DefaultNamespace != nil {
+		var err error
+		defaultNamespace, err = util.ExpandEnvTemplate(*cfg.Pipeline().Deploy.KubectlDeploy.DefaultNamespace, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &KubectlDeployer{
 		KubectlDeploy:      cfg.Pipeline().Deploy.KubectlDeploy,
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
 		defaultRepo:        cfg.DefaultRepo(),
-		kubectl:            deploy.NewCLI(cfg, cfg.Pipeline().Deploy.KubectlDeploy.Flags),
+		kubectl:            deploy.NewCLI(cfg, cfg.Pipeline().Deploy.KubectlDeploy.Flags, defaultNamespace),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		skipRender:         cfg.SkipRender(),
 		labels:             labels,
-	}
+	}, nil
 }
 
 // Deploy templates the provided manifests with a simple `find and replace` and

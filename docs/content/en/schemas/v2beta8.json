@@ -923,6 +923,11 @@
           "x-intellij-html-description": "used to pass in --no-cache to docker build to prevent caching.",
           "default": "false"
         },
+        "secret": {
+          "$ref": "#/definitions/DockerSecret",
+          "description": "contains information about a local secret passed to `docker build`, along with optional destination information.",
+          "x-intellij-html-description": "contains information about a local secret passed to <code>docker build</code>, along with optional destination information."
+        },
         "target": {
           "type": "string",
           "description": "Dockerfile target name to build.",
@@ -935,7 +940,8 @@
         "buildArgs",
         "network",
         "cacheFrom",
-        "noCache"
+        "noCache",
+        "secret"
       ],
       "additionalProperties": false,
       "description": "describes an artifact built from a Dockerfile, usually using `docker build`.",
@@ -961,6 +967,36 @@
       "additionalProperties": false,
       "description": "contains information about the docker `config.json` to mount.",
       "x-intellij-html-description": "contains information about the docker <code>config.json</code> to mount."
+    },
+    "DockerSecret": {
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "dst": {
+          "type": "string",
+          "description": "path in the container to mount the secret.",
+          "x-intellij-html-description": "path in the container to mount the secret."
+        },
+        "id": {
+          "type": "string",
+          "description": "id of the secret.",
+          "x-intellij-html-description": "id of the secret."
+        },
+        "src": {
+          "type": "string",
+          "description": "path to the secret on the host machine.",
+          "x-intellij-html-description": "path to the secret on the host machine."
+        }
+      },
+      "preferredOrder": [
+        "id",
+        "src",
+        "dst"
+      ],
+      "additionalProperties": false,
+      "description": "contains information about a local secret passed to `docker build`, along with optional destination information.",
+      "x-intellij-html-description": "contains information about a local secret passed to <code>docker build</code>, along with optional destination information."
     },
     "DockerfileDependency": {
       "properties": {
@@ -1285,18 +1321,23 @@
       ],
       "properties": {
         "artifactOverrides": {
-          "description": "key value pairs. If present, Skaffold will send `--set-string` flag to Helm CLI and append all pairs after the flag.",
-          "x-intellij-html-description": "key value pairs. If present, Skaffold will send <code>--set-string</code> flag to Helm CLI and append all pairs after the flag."
+          "description": "key value pairs where the key represents the parameter used in the `--set-string` Helm CLI flag to define a container image and the value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section. The resulting command-line is controlled by `ImageStrategy`.",
+          "x-intellij-html-description": "key value pairs where the key represents the parameter used in the <code>--set-string</code> Helm CLI flag to define a container image and the value corresponds to artifact i.e. <code>ImageName</code> defined in <code>Build.Artifacts</code> section. The resulting command-line is controlled by <code>ImageStrategy</code>."
         },
         "chartPath": {
           "type": "string",
           "description": "path to the Helm chart.",
           "x-intellij-html-description": "path to the Helm chart."
         },
+        "createNamespace": {
+          "type": "boolean",
+          "description": "if `true`, Skaffold will send `--create-namespace` flag to Helm CLI. `--create-namespace` flag is available in Helm since version 3.2. Defaults is `false`.",
+          "x-intellij-html-description": "if <code>true</code>, Skaffold will send <code>--create-namespace</code> flag to Helm CLI. <code>--create-namespace</code> flag is available in Helm since version 3.2. Defaults is <code>false</code>."
+        },
         "imageStrategy": {
           "$ref": "#/definitions/HelmImageStrategy",
-          "description": "adds image configurations to the Helm `values` file.",
-          "x-intellij-html-description": "adds image configurations to the Helm <code>values</code> file."
+          "description": "controls how an `ArtifactOverrides` entry is turned into `--set-string` Helm CLI flag or flags.",
+          "x-intellij-html-description": "controls how an <code>ArtifactOverrides</code> entry is turned into <code>--set-string</code> Helm CLI flag or flags."
         },
         "name": {
           "type": "string",
@@ -1394,6 +1435,7 @@
         "setValues",
         "setValueTemplates",
         "setFiles",
+        "createNamespace",
         "wait",
         "recreatePods",
         "skipBuildDependencies",
@@ -1599,118 +1641,34 @@
       "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
       "x-intellij-html-description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds."
     },
-    "KptDeploy": {
+    "KptApplyInventory": {
       "properties": {
-        "applyDir": {
-          "type": "string",
-          "description": "path to the directory to deploy to the cluster.",
-          "x-intellij-html-description": "path to the directory to deploy to the cluster."
-        },
         "dir": {
           "type": "string",
-          "description": "path to the directory to run kpt functions against.",
-          "x-intellij-html-description": "path to the directory to run kpt functions against."
-        },
-        "fn": {
-          "$ref": "#/definitions/KptFn",
-          "description": "adds additional configurations for `kpt fn`.",
-          "x-intellij-html-description": "adds additional configurations for <code>kpt fn</code>."
-        },
-        "live": {
-          "$ref": "#/definitions/KptLive",
-          "description": "adds additional configurations for `kpt live`.",
-          "x-intellij-html-description": "adds additional configurations for <code>kpt live</code>."
-        }
-      },
-      "preferredOrder": [
-        "applyDir",
-        "dir",
-        "fn",
-        "live"
-      ],
-      "additionalProperties": false,
-      "description": "*alpha* uses the `kpt` CLI to manage and deploy manifests.",
-      "x-intellij-html-description": "<em>alpha</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
-    },
-    "KptFn": {
-      "properties": {
-        "fnPath": {
-          "type": "string",
-          "description": "a directory to read functions from instead of the configuration directory.",
-          "x-intellij-html-description": "a directory to read functions from instead of the configuration directory."
-        },
-        "globalScope": {
-          "type": "boolean",
-          "description": "sets global scope for functions.",
-          "x-intellij-html-description": "sets global scope for functions.",
-          "default": "false"
-        },
-        "image": {
-          "type": "string",
-          "description": "an image to be run as a function in lieu of running functions from a directory.",
-          "x-intellij-html-description": "an image to be run as a function in lieu of running functions from a directory."
-        },
-        "mount": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "a list of storage options to mount to the fn image.",
-          "x-intellij-html-description": "a list of storage options to mount to the fn image.",
-          "default": "[]"
-        },
-        "network": {
-          "type": "boolean",
-          "description": "enables network access for functions that declare it.",
-          "x-intellij-html-description": "enables network access for functions that declare it.",
-          "default": "false"
-        },
-        "networkName": {
-          "type": "string",
-          "description": "docker network to run the container in (default \"bridge\").",
-          "x-intellij-html-description": "docker network to run the container in (default &quot;bridge&quot;)."
-        }
-      },
-      "preferredOrder": [
-        "fnPath",
-        "image",
-        "networkName",
-        "globalScope",
-        "network",
-        "mount"
-      ],
-      "additionalProperties": false,
-      "description": "adds additional configurations used when calling `kpt fn`.",
-      "x-intellij-html-description": "adds additional configurations used when calling <code>kpt fn</code>."
-    },
-    "KptLive": {
-      "properties": {
-        "apply": {
-          "$ref": "#/definitions/KptLiveApply",
-          "description": "adds additional configurations for `kpt live apply` commands.",
-          "x-intellij-html-description": "adds additional configurations for <code>kpt live apply</code> commands."
+          "description": "equivalent to the dir in `kpt live apply <dir>`. If not provided, kpt deployer will create a hidden directory `.kpt-hydrated` to store the manipulated resource output and the kpt inventory-template.yaml file.",
+          "x-intellij-html-description": "equivalent to the dir in <code>kpt live apply &lt;dir&gt;</code>. If not provided, kpt deployer will create a hidden directory <code>.kpt-hydrated</code> to store the manipulated resource output and the kpt inventory-template.yaml file."
         },
         "inventoryID": {
           "type": "string",
-          "description": "identifier for a group of applied resources. This configuration is used when users do not specify `KptDeploy.ApplyDir` and `.kpt-hydrated/inventory-template.yaml` does not exist.",
-          "x-intellij-html-description": "identifier for a group of applied resources. This configuration is used when users do not specify <code>KptDeploy.ApplyDir</code> and <code>.kpt-hydrated/inventory-template.yaml</code> does not exist."
+          "description": "*alpha* identifier for a group of applied resources. This value is only needed when the `kpt live` is working on a pre-applied cluster resources.",
+          "x-intellij-html-description": "<em>alpha</em> identifier for a group of applied resources. This value is only needed when the <code>kpt live</code> is working on a pre-applied cluster resources."
         },
         "inventoryNamespace": {
           "type": "string",
-          "description": "sets the namespace scope for `kpt live init`.",
-          "x-intellij-html-description": "sets the namespace scope for <code>kpt live init</code>."
+          "description": "*alpha* sets the inventory namespace.",
+          "x-intellij-html-description": "<em>alpha</em> sets the inventory namespace."
         }
       },
       "preferredOrder": [
-        "apply",
+        "dir",
         "inventoryID",
         "inventoryNamespace"
       ],
       "additionalProperties": false,
-      "description": "adds additional configurations used when calling `kpt live`.",
-      "x-intellij-html-description": "adds additional configurations used when calling <code>kpt live</code>."
+      "description": "sets the kpt inventory directory.",
+      "x-intellij-html-description": "sets the kpt inventory directory."
     },
-    "KptLiveApply": {
+    "KptApplyOptions": {
       "properties": {
         "pollPeriod": {
           "type": "string",
@@ -1743,8 +1701,115 @@
       "description": "adds additional configurations used when calling `kpt live apply`.",
       "x-intellij-html-description": "adds additional configurations used when calling <code>kpt live apply</code>."
     },
+    "KptDeploy": {
+      "required": [
+        "dir"
+      ],
+      "properties": {
+        "dir": {
+          "type": "string",
+          "description": "path to the config directory (Required). By default, the Dir contains the application configurations, [kustomize config files](https://kubectl.docs.kubernetes.io/pages/examples/kustomize.html) and [declarative kpt functions](https://googlecontainertools.github.io/kpt/guides/consumer/function/#declarative-run).",
+          "x-intellij-html-description": "path to the config directory (Required). By default, the Dir contains the application configurations, <a href=\"https://kubectl.docs.kubernetes.io/pages/examples/kustomize.html\">kustomize config files</a> and <a href=\"https://googlecontainertools.github.io/kpt/guides/consumer/function/#declarative-run\">declarative kpt functions</a>."
+        },
+        "fn": {
+          "$ref": "#/definitions/KptFn",
+          "description": "adds additional configurations for `kpt fn`.",
+          "x-intellij-html-description": "adds additional configurations for <code>kpt fn</code>."
+        },
+        "live": {
+          "$ref": "#/definitions/KptLive",
+          "description": "adds additional configurations for `kpt live`.",
+          "x-intellij-html-description": "adds additional configurations for <code>kpt live</code>."
+        }
+      },
+      "preferredOrder": [
+        "dir",
+        "fn",
+        "live"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* uses the `kpt` CLI to manage and deploy manifests.",
+      "x-intellij-html-description": "<em>alpha</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
+    },
+    "KptFn": {
+      "properties": {
+        "fnPath": {
+          "type": "string",
+          "description": "directory to discover the declarative kpt functions. If not provided, kpt deployer uses `kpt.Dir`.",
+          "x-intellij-html-description": "directory to discover the declarative kpt functions. If not provided, kpt deployer uses <code>kpt.Dir</code>."
+        },
+        "globalScope": {
+          "type": "boolean",
+          "description": "sets the global scope for the kpt functions. see `kpt help fn run`.",
+          "x-intellij-html-description": "sets the global scope for the kpt functions. see <code>kpt help fn run</code>.",
+          "default": "false"
+        },
+        "image": {
+          "type": "string",
+          "description": "a kpt function image to run the configs imperatively. If provided, kpt.fn.fnPath will be ignored.",
+          "x-intellij-html-description": "a kpt function image to run the configs imperatively. If provided, kpt.fn.fnPath will be ignored."
+        },
+        "mount": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "a list of storage options to mount to the fn image.",
+          "x-intellij-html-description": "a list of storage options to mount to the fn image.",
+          "default": "[]"
+        },
+        "network": {
+          "type": "boolean",
+          "description": "enables network access for the kpt function containers.",
+          "x-intellij-html-description": "enables network access for the kpt function containers.",
+          "default": "false"
+        },
+        "networkName": {
+          "type": "string",
+          "description": "docker network name to run the kpt function containers (default \"bridge\").",
+          "x-intellij-html-description": "docker network name to run the kpt function containers (default &quot;bridge&quot;)."
+        }
+      },
+      "preferredOrder": [
+        "fnPath",
+        "image",
+        "networkName",
+        "globalScope",
+        "network",
+        "mount"
+      ],
+      "additionalProperties": false,
+      "description": "adds additional configurations used when calling `kpt fn`.",
+      "x-intellij-html-description": "adds additional configurations used when calling <code>kpt fn</code>."
+    },
+    "KptLive": {
+      "properties": {
+        "apply": {
+          "$ref": "#/definitions/KptApplyInventory",
+          "description": "sets the kpt inventory directory.",
+          "x-intellij-html-description": "sets the kpt inventory directory."
+        },
+        "options": {
+          "$ref": "#/definitions/KptApplyOptions",
+          "description": "adds additional configurations for `kpt live apply` commands.",
+          "x-intellij-html-description": "adds additional configurations for <code>kpt live apply</code> commands."
+        }
+      },
+      "preferredOrder": [
+        "apply",
+        "options"
+      ],
+      "additionalProperties": false,
+      "description": "adds additional configurations used when calling `kpt live`.",
+      "x-intellij-html-description": "adds additional configurations used when calling <code>kpt live</code>."
+    },
     "KubectlDeploy": {
       "properties": {
+        "defaultNamespace": {
+          "type": "string",
+          "description": "default namespace passed to kubectl on deployment if no other override is given.",
+          "x-intellij-html-description": "default namespace passed to kubectl on deployment if no other override is given."
+        },
         "flags": {
           "$ref": "#/definitions/KubectlFlags",
           "description": "additional flags passed to `kubectl`.",
@@ -1772,7 +1837,8 @@
       "preferredOrder": [
         "manifests",
         "remoteManifests",
-        "flags"
+        "flags",
+        "defaultNamespace"
       ],
       "additionalProperties": false,
       "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
@@ -1835,6 +1901,11 @@
           "x-intellij-html-description": "additional args passed to <code>kustomize build</code>.",
           "default": "[]"
         },
+        "defaultNamespace": {
+          "type": "string",
+          "description": "default namespace passed to kubectl on deployment if no other override is given.",
+          "x-intellij-html-description": "default namespace passed to kubectl on deployment if no other override is given."
+        },
         "flags": {
           "$ref": "#/definitions/KubectlFlags",
           "description": "additional flags passed to `kubectl`.",
@@ -1853,7 +1924,8 @@
       "preferredOrder": [
         "paths",
         "flags",
-        "buildArgs"
+        "buildArgs",
+        "defaultNamespace"
       ],
       "additionalProperties": false,
       "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
@@ -1872,6 +1944,12 @@
           "description": "should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster.",
           "x-intellij-html-description": "should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster."
         },
+        "tryImportMissing": {
+          "type": "boolean",
+          "description": "whether to attempt to import artifacts from Docker (either a local or remote registry) if not in the cache.",
+          "x-intellij-html-description": "whether to attempt to import artifacts from Docker (either a local or remote registry) if not in the cache.",
+          "default": "false"
+        },
         "useBuildkit": {
           "type": "boolean",
           "description": "use BuildKit to build Docker images.",
@@ -1887,6 +1965,7 @@
       },
       "preferredOrder": [
         "push",
+        "tryImportMissing",
         "useDockerCLI",
         "useBuildkit",
         "concurrency"

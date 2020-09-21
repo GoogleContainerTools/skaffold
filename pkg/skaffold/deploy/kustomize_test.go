@@ -35,13 +35,15 @@ import (
 
 func TestKustomizeDeploy(t *testing.T) {
 	tests := []struct {
-		description         string
-		kustomize           latest.KustomizeDeploy
-		builds              []build.Artifact
-		commands            util.Command
-		shouldErr           bool
-		forceDeploy         bool
-		kustomizeCmdPresent bool
+		description                 string
+		kustomize                   latest.KustomizeDeploy
+		builds                      []build.Artifact
+		commands                    util.Command
+		shouldErr                   bool
+		forceDeploy                 bool
+		skipSkaffoldNamespaceOption bool
+		kustomizeCmdPresent         bool
+		envs                        map[string]string
 	}{
 		{
 			description: "no manifest",
@@ -68,6 +70,47 @@ func TestKustomizeDeploy(t *testing.T) {
 				Tag:       "leeroy-web:v1",
 			}},
 			forceDeploy:         true,
+			kustomizeCmdPresent: true,
+		},
+		{
+			description: "deploy success (default namespace)",
+			kustomize: latest.KustomizeDeploy{
+				KustomizePaths:   []string{"."},
+				DefaultNamespace: &testNamespace2,
+			},
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+				AndRunOut("kustomize build .", deploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace2 get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
+				AndRun("kubectl --context kubecontext --namespace testNamespace2 apply -f - --force --grace-period=0"),
+			builds: []build.Artifact{{
+				ImageName: "leeroy-web",
+				Tag:       "leeroy-web:v1",
+			}},
+			forceDeploy:                 true,
+			skipSkaffoldNamespaceOption: true,
+			kustomizeCmdPresent:         true,
+		},
+		{
+			description: "deploy success (default namespace with env template)",
+			kustomize: latest.KustomizeDeploy{
+				KustomizePaths:   []string{"."},
+				DefaultNamespace: &testNamespace2FromEnvTemplate,
+			},
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+				AndRunOut("kustomize build .", deploymentWebYAML).
+				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace2 get -f - --ignore-not-found -ojson", deploymentWebYAMLv1, "").
+				AndRun("kubectl --context kubecontext --namespace testNamespace2 apply -f - --force --grace-period=0"),
+			builds: []build.Artifact{{
+				ImageName: "leeroy-web",
+				Tag:       "leeroy-web:v1",
+			}},
+			forceDeploy:                 true,
+			skipSkaffoldNamespaceOption: true,
+			envs: map[string]string{
+				"MYENV": "Namesp",
+			},
 			kustomizeCmdPresent: true,
 		},
 		{
@@ -121,12 +164,18 @@ func TestKustomizeDeploy(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetEnvs(test.envs)
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&kustomizeBinaryCheck, func() bool { return test.kustomizeCmdPresent })
 			t.NewTempDir().
 				Chdir()
 
-			k := NewKustomizeDeployer(&kustomizeConfig{
+			skaffoldNamespaceOption := ""
+			if !test.skipSkaffoldNamespaceOption {
+				skaffoldNamespaceOption = testNamespace
+			}
+
+			k, err := NewKustomizeDeployer(&kustomizeConfig{
 				workingDir: ".",
 				force:      test.forceDeploy,
 				waitForDeletions: config.WaitForDeletions{
@@ -135,8 +184,11 @@ func TestKustomizeDeploy(t *testing.T) {
 					Max:     10 * time.Second,
 				},
 				kustomize: test.kustomize,
-			}, nil)
-			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
+				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
+					Namespace: skaffoldNamespaceOption,
+				}}}, nil)
+			t.RequireNoError(err)
+			_, err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -196,11 +248,14 @@ func TestKustomizeCleanup(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&kustomizeBinaryCheck, func() bool { return true })
 
-			k := NewKustomizeDeployer(&kustomizeConfig{
+			k, err := NewKustomizeDeployer(&kustomizeConfig{
 				workingDir: tmpDir.Root(),
 				kustomize:  test.kustomize,
+				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
+					Namespace: testNamespace}},
 			}, nil)
-			err := k.Cleanup(context.Background(), ioutil.Discard)
+			t.RequireNoError(err)
+			err = k.Cleanup(context.Background(), ioutil.Discard)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -400,11 +455,13 @@ func TestDependenciesForKustomization(t *testing.T) {
 				tmpDir.Write(path, contents)
 			}
 
-			k := NewKustomizeDeployer(&kustomizeConfig{
+			k, err := NewKustomizeDeployer(&kustomizeConfig{
 				kustomize: latest.KustomizeDeploy{
 					KustomizePaths: kustomizePaths,
 				},
 			}, nil)
+			t.RequireNoError(err)
+
 			deps, err := k.Dependencies()
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, tmpDir.Paths(test.expected...), deps)
@@ -643,15 +700,17 @@ spec:
 			t.Override(&util.DefaultExecCommand, fakeCmd)
 			t.NewTempDir().Chdir()
 
-			k := NewKustomizeDeployer(&kustomizeConfig{
+			k, err := NewKustomizeDeployer(&kustomizeConfig{
 				workingDir: ".",
 				kustomize: latest.KustomizeDeploy{
 					KustomizePaths: kustomizationPaths,
 				},
+				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: testNamespace}},
 			}, test.labels)
-			var b bytes.Buffer
-			err := k.Render(context.Background(), &b, test.builds, true, "")
+			t.RequireNoError(err)
 
+			var b bytes.Buffer
+			err = k.Render(context.Background(), &b, test.builds, true, "")
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})
@@ -670,7 +729,7 @@ func (c *kustomizeConfig) ForceDeploy() bool                         { return c.
 func (c *kustomizeConfig) WaitForDeletions() config.WaitForDeletions { return c.waitForDeletions }
 func (c *kustomizeConfig) WorkingDir() string                        { return c.workingDir }
 func (c *kustomizeConfig) GetKubeContext() string                    { return testKubeContext }
-func (c *kustomizeConfig) GetKubeNamespace() string                  { return testNamespace }
+func (c *kustomizeConfig) GetKubeNamespace() string                  { return c.Opts.Namespace }
 func (c *kustomizeConfig) Pipeline() latest.Pipeline {
 	var pipeline latest.Pipeline
 	pipeline.Deploy.DeployType.KustomizeDeploy = &c.kustomize

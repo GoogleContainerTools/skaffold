@@ -69,7 +69,7 @@ func TestCLI(t *testing.T) {
 				kubeContext: kubeContext,
 				kubeConfig:  test.kubeconfig,
 				namespace:   test.namespace,
-			})
+			}, "")
 			err := cli.Run(context.Background(), nil, nil, "exec", "arg1", "arg2")
 
 			t.CheckNoError(err)
@@ -88,7 +88,7 @@ func TestCLI(t *testing.T) {
 				kubeContext: kubeContext,
 				kubeConfig:  test.kubeconfig,
 				namespace:   test.namespace,
-			})
+			}, "")
 			out, err := cli.RunOut(context.Background(), "exec", "arg1", "arg2")
 
 			t.CheckNoError(err)
@@ -108,7 +108,7 @@ func TestCLI(t *testing.T) {
 				kubeContext: kubeContext,
 				kubeConfig:  test.kubeconfig,
 				namespace:   test.namespace,
-			})
+			}, "")
 			cmd := cli.CommandWithStrictCancellation(context.Background(), "exec", "arg1", "arg2")
 			out, err := util.RunCmdOut(cmd.Cmd)
 

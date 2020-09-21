@@ -300,7 +300,7 @@ func TestStrSliceInsert(t *testing.T) {
 	testutil.CheckDeepEqual(t, []string{"a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 1, nil))
 }
 
-func TestFormatMapToStringSlice1(t *testing.T) {
+func TestEnvMapToSlice(t *testing.T) {
 	tests := []struct {
 		description string
 		args        map[string]string
@@ -332,7 +332,7 @@ func TestFormatMapToStringSlice1(t *testing.T) {
 	}
 }
 
-func TestFormatMapToStringSlice2(t *testing.T) {
+func TestMapPtrToSlice(t *testing.T) {
 	tests := []struct {
 		description string
 		args        map[string]*string
@@ -365,6 +365,43 @@ func TestFormatMapToStringSlice2(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual := EnvPtrMapToSlice(test.args, "=")
+
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+func TestEnvSliceToMap(t *testing.T) {
+	tests := []struct {
+		description string
+		args        []string
+		expected    map[string]string
+	}{
+		{
+			description: "regular key=value",
+			args:        []string{"one=1", "two=2"},
+			expected:    map[string]string{"one": "1", "two": "2"},
+		},
+		{
+			description: "empty key=",
+			args:        []string{"one=", "two="},
+			expected:    map[string]string{"one": "", "two": ""},
+		},
+		{
+			description: "last repeated key wins",
+			args:        []string{"one=a", "one=b"},
+			expected:    map[string]string{"one": "b"},
+		},
+		{
+			description: "elements missing separator is dropped",
+			args:        []string{"one", "two=2"},
+			expected:    map[string]string{"two": "2"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual := EnvSliceToMap(test.args, "=")
 
 			t.CheckDeepEqual(test.expected, actual)
 		})

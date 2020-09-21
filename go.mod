@@ -80,9 +80,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c
 	k8s.io/api v0.18.1
 	k8s.io/apiextensions-apiserver v0.18.1 // indirect
-	k8s.io/apimachinery v0.18.1
+	k8s.io/apimachinery v0.19.2
 	k8s.io/client-go v0.18.1
 	k8s.io/kubectl v0.0.0-20190831163037-3b58a944563f
 	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
 	knative.dev/pkg v0.0.0-20200416021448-f68639f04b39 // indirect
+	sigs.k8s.io/yaml v1.2.0
 )

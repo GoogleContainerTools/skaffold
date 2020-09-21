@@ -217,6 +217,10 @@ type LocalBuild struct {
 	// connects to a remote cluster.
 	Push *bool `yaml:"push,omitempty"`
 
+	// TryImportMissing whether to attempt to import artifacts from
+	// Docker (either a local or remote registry) if not in the cache.
+	TryImportMissing bool `yaml:"tryImportMissing,omitempty"`
+
 	// UseDockerCLI use `docker` command-line interface instead of Docker Engine APIs.
 	UseDockerCLI bool `yaml:"useDockerCLI,omitempty"`
 
@@ -470,6 +474,9 @@ type KubectlDeploy struct {
 
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
+
+	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
+	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
 }
 
 // KubectlFlags are additional flags passed on the command
@@ -524,15 +531,18 @@ type KustomizeDeploy struct {
 
 	// BuildArgs are additional args passed to `kustomize build`.
 	BuildArgs []string `yaml:"buildArgs,omitempty"`
+
+	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
+	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
 }
 
 // KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
 type KptDeploy struct {
-	// ApplyDir is the path to the directory to deploy to the cluster.
-	ApplyDir string `yaml:"applyDir,omitempty"`
-
-	// Dir is the path to the directory to run kpt functions against.
-	Dir string `yaml:"dir,omitempty"`
+	// Dir is the path to the config directory (Required).
+	// By default, the Dir contains the application configurations,
+	// [kustomize config files](https://kubectl.docs.kubernetes.io/pages/examples/kustomize.html)
+	// and [declarative kpt functions](https://googlecontainertools.github.io/kpt/guides/consumer/function/#declarative-run).
+	Dir string `yaml:"dir" yamltags:"required"`
 
 	// Fn adds additional configurations for `kpt fn`.
 	Fn KptFn `yaml:"fn,omitempty"`
@@ -543,19 +553,21 @@ type KptDeploy struct {
 
 // KptFn adds additional configurations used when calling `kpt fn`.
 type KptFn struct {
-	// FnPath is a directory to read functions from instead of the configuration directory.
+	// FnPath is the directory to discover the declarative kpt functions.
+	// If not provided, kpt deployer uses `kpt.Dir`.
 	FnPath string `yaml:"fnPath,omitempty"`
 
-	// Image is an image to be run as a function in lieu of running functions from a directory.
+	// Image is a kpt function image to run the configs imperatively. If provided, kpt.fn.fnPath
+	// will be ignored.
 	Image string `yaml:"image,omitempty"`
 
-	// NetworkName is the docker network to run the container in (default "bridge").
+	// NetworkName is the docker network name to run the kpt function containers (default "bridge").
 	NetworkName string `yaml:"networkName,omitempty"`
 
-	// GlobalScope sets global scope for functions.
+	// GlobalScope sets the global scope for the kpt functions. see `kpt help fn run`.
 	GlobalScope bool `yaml:"globalScope,omitempty"`
 
-	// Network enables network access for functions that declare it.
+	// Network enables network access for the kpt function containers.
 	Network bool `yaml:"network,omitempty"`
 
 	// Mount is a list of storage options to mount to the fn image.
@@ -564,20 +576,30 @@ type KptFn struct {
 
 // KptLive adds additional configurations used when calling `kpt live`.
 type KptLive struct {
-	// Apply adds additional configurations for `kpt live apply` commands.
-	Apply KptLiveApply `yaml:"apply,omitempty"`
+	// Apply sets the kpt inventory directory.
+	Apply KptApplyInventory `yaml:"apply,omitempty"`
 
-	// InventoryID is the identifier for a group of applied resources.
-	// This configuration is used when users do not specify `KptDeploy.ApplyDir`
-	// and `.kpt-hydrated/inventory-template.yaml` does not exist.
+	// Options adds additional configurations for `kpt live apply` commands.
+	Options KptApplyOptions `yaml:"options,omitempty"`
+}
+
+// KptApplyInventory sets the kpt inventory directory.
+type KptApplyInventory struct {
+	// Dir is equivalent to the dir in `kpt live apply <dir>`. If not provided,
+	// kpt deployer will create a hidden directory `.kpt-hydrated` to store the manipulated
+	// resource output and the kpt inventory-template.yaml file.
+	Dir string `yaml:"dir,omitempty"`
+
+	// InventoryID *alpha* is the identifier for a group of applied resources.
+	// This value is only needed when the `kpt live` is working on a pre-applied cluster resources.
 	InventoryID string `yaml:"inventoryID,omitempty"`
 
-	// InventoryNamespace sets the namespace scope for `kpt live init`.
+	// InventoryNamespace *alpha* sets the inventory namespace.
 	InventoryNamespace string `yaml:"inventoryNamespace,omitempty"`
 }
 
-// KptLiveApply adds additional configurations used when calling `kpt live apply`.
-type KptLiveApply struct {
+// KptApplyOptions adds additional configurations used when calling `kpt live apply`.
+type KptApplyOptions struct {
 	// PollPeriod sets for the polling period for resource statuses. Default to 2s.
 	PollPeriod string `yaml:"pollPeriod,omitempty"`
 
@@ -604,9 +626,11 @@ type HelmRelease struct {
 	// ValuesFiles are the paths to the Helm `values` files.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty"`
 
-	// ArtifactOverrides are key value pairs.
-	// If present, Skaffold will send `--set-string` flag to Helm CLI and append all pairs after the flag.
-	ArtifactOverrides util.FlatMap `yaml:"artifactOverrides,omitempty,omitempty"`
+	// ArtifactOverrides are key value pairs where the
+	// key represents the parameter used in the `--set-string` Helm CLI flag to define a container
+	// image and the value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section.
+	// The resulting command-line is controlled by `ImageStrategy`.
+	ArtifactOverrides util.FlatMap `yaml:"artifactOverrides,omitempty"`
 
 	// Namespace is the Kubernetes namespace.
 	Namespace string `yaml:"namespace,omitempty"`
@@ -627,6 +651,11 @@ type HelmRelease struct {
 	// SetFiles are key-value pairs.
 	// If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.
 	SetFiles map[string]string `yaml:"setFiles,omitempty"`
+
+	// CreateNamespace if `true`, Skaffold will send `--create-namespace` flag to Helm CLI.
+	// `--create-namespace` flag is available in Helm since version 3.2.
+	// Defaults is `false`.
+	CreateNamespace *bool `yaml:"createNamespace,omitempty"`
 
 	// Wait if `true`, Skaffold will send `--wait` flag to Helm CLI.
 	// Defaults to `false`.
@@ -660,7 +689,8 @@ type HelmRelease struct {
 	// Packaged parameters for packaging helm chart (`helm package`).
 	Packaged *HelmPackaged `yaml:"packaged,omitempty"`
 
-	// ImageStrategy adds image configurations to the Helm `values` file.
+	// ImageStrategy controls how an `ArtifactOverrides` entry is
+	// turned into `--set-string` Helm CLI flag or flags.
 	ImageStrategy HelmImageStrategy `yaml:"imageStrategy,omitempty"`
 }
 
@@ -1000,6 +1030,23 @@ type DockerArtifact struct {
 
 	// NoCache used to pass in --no-cache to docker build to prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
+
+	// Secret contains information about a local secret passed to `docker build`,
+	// along with optional destination information.
+	Secret *DockerSecret `yaml:"secret,omitempty"`
+}
+
+// DockerSecret contains information about a local secret passed to `docker build`,
+// along with optional destination information.
+type DockerSecret struct {
+	// ID is the id of the secret.
+	ID string `yaml:"id,omitempty" yamltags:"required"`
+
+	// Source is the path to the secret on the host machine.
+	Source string `yaml:"src,omitempty"`
+
+	// Destination is the path in the container to mount the secret.
+	Destination string `yaml:"dst,omitempty"`
 }
 
 // BazelArtifact describes an artifact built with [Bazel](https://bazel.build/).

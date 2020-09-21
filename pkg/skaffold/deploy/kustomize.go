@@ -100,9 +100,17 @@ type KustomizeDeployer struct {
 	useKubectlKustomize bool
 }
 
-func NewKustomizeDeployer(cfg Config, labels map[string]string) *KustomizeDeployer {
-	kubectl := deploy.NewCLI(cfg, cfg.Pipeline().Deploy.KustomizeDeploy.Flags)
+func NewKustomizeDeployer(cfg Config, labels map[string]string) (*KustomizeDeployer, error) {
+	defaultNamespace := ""
+	if cfg.Pipeline().Deploy.KustomizeDeploy.DefaultNamespace != nil {
+		var err error
+		defaultNamespace, err = util.ExpandEnvTemplate(*cfg.Pipeline().Deploy.KustomizeDeploy.DefaultNamespace, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
 
+	kubectl := deploy.NewCLI(cfg, cfg.Pipeline().Deploy.KustomizeDeploy.Flags, defaultNamespace)
 	// if user has kustomize binary, prioritize that over kubectl kustomize
 	useKubectlKustomize := !kustomizeBinaryCheck() && kubectlVersionCheck(kubectl)
 
@@ -113,7 +121,7 @@ func NewKustomizeDeployer(cfg Config, labels map[string]string) *KustomizeDeploy
 		globalConfig:        cfg.GlobalConfig(),
 		labels:              labels,
 		useKubectlKustomize: useKubectlKustomize,
-	}
+	}, nil
 }
 
 // Check for existence of kustomize binary in user's PATH
