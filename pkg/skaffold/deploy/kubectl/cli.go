@@ -45,11 +45,12 @@ type Config interface {
 	pkgkubectl.Config
 	ForceDeploy() bool
 	WaitForDeletions() config.WaitForDeletions
+	Mode() config.RunMode
 }
 
-func NewCLI(cfg Config, flags latest.KubectlFlags) CLI {
+func NewCLI(cfg Config, flags latest.KubectlFlags, defaultNameSpace string) CLI {
 	return CLI{
-		CLI:              pkgkubectl.NewCLI(cfg),
+		CLI:              pkgkubectl.NewCLI(cfg, defaultNameSpace),
 		Flags:            flags,
 		forceDeploy:      cfg.ForceDeploy(),
 		waitForDeletions: cfg.WaitForDeletions(),

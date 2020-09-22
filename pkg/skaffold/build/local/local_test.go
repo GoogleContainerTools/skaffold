@@ -42,7 +42,9 @@ type testAuthHelper struct{}
 func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 	return types.AuthConfig{}, nil
 }
-func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
+func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
+	return nil, nil
+}
 
 func TestLocalRun(t *testing.T) {
 	tests := []struct {
@@ -257,7 +259,7 @@ func TestLocalRun(t *testing.T) {
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
-			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed)
+			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed())
 		})
 	}
 }

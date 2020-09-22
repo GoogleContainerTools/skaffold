@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -77,8 +78,12 @@ spec:
 		{
 			description: "invalid user specified applyDir",
 			kpt: latest.KptDeploy{
-				Dir:      ".",
-				ApplyDir: "invalid_path",
+				Dir: ".",
+				Live: latest.KptLive{
+					Apply: latest.KptApplyInventory{
+						Dir: "invalid_path",
+					},
+				},
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
@@ -89,9 +94,13 @@ spec:
 		{
 			description: "kustomization and specified kpt fn",
 			kpt: latest.KptDeploy{
-				Dir:      ".",
-				Fn:       latest.KptFn{FnPath: "kpt-func.yaml"},
-				ApplyDir: "valid_path",
+				Dir: ".",
+				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
+				Live: latest.KptLive{
+					Apply: latest.KptApplyInventory{
+						Dir: "valid_path",
+					},
+				},
 			},
 			kustomizations: map[string]string{"Kustomization": `resources:
 - foo.yaml`},
@@ -119,10 +128,12 @@ spec:
 		{
 			description: "user specifies reconcile timeout and poll period",
 			kpt: latest.KptDeploy{
-				Dir:      ".",
-				ApplyDir: "valid_path",
+				Dir: ".",
 				Live: latest.KptLive{
-					Apply: latest.KptLiveApply{
+					Apply: latest.KptApplyInventory{
+						Dir: "valid_path",
+					},
+					Options: latest.KptApplyOptions{
 						PollPeriod:       "5s",
 						ReconcileTimeout: "2m",
 					},
@@ -137,10 +148,12 @@ spec:
 		{
 			description: "user specifies invalid reconcile timeout and poll period",
 			kpt: latest.KptDeploy{
-				Dir:      ".",
-				ApplyDir: "valid_path",
+				Dir: ".",
 				Live: latest.KptLive{
-					Apply: latest.KptLiveApply{
+					Apply: latest.KptApplyInventory{
+						Dir: "valid_path",
+					},
+					Options: latest.KptApplyOptions{
 						PollPeriod:       "foo",
 						ReconcileTimeout: "bar",
 					},
@@ -155,10 +168,12 @@ spec:
 		{
 			description: "user specifies prune propagation policy and prune timeout",
 			kpt: latest.KptDeploy{
-				Dir:      ".",
-				ApplyDir: "valid_path",
+				Dir: ".",
 				Live: latest.KptLive{
-					Apply: latest.KptLiveApply{
+					Apply: latest.KptApplyInventory{
+						Dir: "valid_path",
+					},
+					Options: latest.KptApplyOptions{
 						PrunePropagationPolicy: "Orphan",
 						PruneTimeout:           "2m",
 					},
@@ -173,10 +188,12 @@ spec:
 		{
 			description: "user specifies invalid prune propagation policy and prune timeout",
 			kpt: latest.KptDeploy{
-				Dir:      ".",
-				ApplyDir: "valid_path",
+				Dir: ".",
 				Live: latest.KptLive{
-					Apply: latest.KptLiveApply{
+					Apply: latest.KptApplyInventory{
+						Dir: "valid_path",
+					},
+					Options: latest.KptApplyOptions{
 						PrunePropagationPolicy: "foo",
 						PruneTimeout:           "bar",
 					},
@@ -200,10 +217,10 @@ spec:
 				kpt: test.kpt,
 			}, nil)
 
-			if k.ApplyDir == "valid_path" {
+			if k.Live.Apply.Dir == "valid_path" {
 				// 0755 is a permission setting where the owner can read, write, and execute.
 				// Others can read and execute but not modify the directory.
-				os.Mkdir(k.ApplyDir, 0755)
+				os.Mkdir(k.Live.Apply.Dir, 0755)
 			}
 
 			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
@@ -377,7 +394,11 @@ func TestKpt_Cleanup(t *testing.T) {
 			k := NewKptDeployer(&kptConfig{
 				workingDir: ".",
 				kpt: latest.KptDeploy{
-					ApplyDir: test.applyDir,
+					Live: latest.KptLive{
+						Apply: latest.KptApplyInventory{
+							Dir: test.applyDir,
+						},
+					},
 				},
 			}, nil)
 
@@ -739,7 +760,6 @@ spec:
 func TestKpt_GetApplyDir(t *testing.T) {
 	tests := []struct {
 		description string
-		applyDir    string
 		live        latest.KptLive
 		expected    string
 		commands    util.Command
@@ -747,13 +767,21 @@ func TestKpt_GetApplyDir(t *testing.T) {
 	}{
 		{
 			description: "specified an invalid applyDir",
-			applyDir:    "invalid_path",
-			shouldErr:   true,
+			live: latest.KptLive{
+				Apply: latest.KptApplyInventory{
+					Dir: "invalid_path",
+				},
+			},
+			shouldErr: true,
 		},
 		{
 			description: "specified a valid applyDir",
-			applyDir:    "valid_path",
-			expected:    "valid_path",
+			live: latest.KptLive{
+				Apply: latest.KptApplyInventory{
+					Dir: "valid_path",
+				},
+			},
+			expected: "valid_path",
 		},
 		{
 			description: "unspecified applyDir",
@@ -763,8 +791,10 @@ func TestKpt_GetApplyDir(t *testing.T) {
 		{
 			description: "unspecified applyDir with specified inventory-id and namespace",
 			live: latest.KptLive{
-				InventoryID:        "1a23bcde-4f56-7891-a2bc-de34fabcde5f6",
-				InventoryNamespace: "foo",
+				Apply: latest.KptApplyInventory{
+					InventoryID:        "1a23bcde-4f56-7891-a2bc-de34fabcde5f6",
+					InventoryNamespace: "foo",
+				},
 			},
 			expected: ".kpt-hydrated",
 			commands: testutil.CmdRunOut("kpt live init .kpt-hydrated --inventory-id 1a23bcde-4f56-7891-a2bc-de34fabcde5f6 --namespace foo", ""),
@@ -779,10 +809,10 @@ func TestKpt_GetApplyDir(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			tmpDir := t.NewTempDir().Chdir()
 
-			if test.applyDir == test.expected {
+			if test.live.Apply.Dir == test.expected {
 				// 0755 is a permission setting where the owner can read, write, and execute.
 				// Others can read and execute but not modify the directory.
-				os.Mkdir(test.applyDir, 0755)
+				os.Mkdir(test.live.Apply.Dir, 0755)
 			}
 
 			if test.description == "existing template resource in .kpt-hydrated" {
@@ -792,8 +822,7 @@ func TestKpt_GetApplyDir(t *testing.T) {
 			k := NewKptDeployer(&kptConfig{
 				workingDir: ".",
 				kpt: latest.KptDeploy{
-					ApplyDir: test.applyDir,
-					Live:     test.live,
+					Live: test.live,
 				},
 			}, nil)
 
@@ -857,6 +886,104 @@ func TestKpt_KptCommandArgs(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			res := kptCommandArgs(test.dir, test.commands, test.flags, test.globalFlags)
 			t.CheckDeepEqual(test.expected, res)
+		})
+	}
+}
+
+// TestKpt_ExcludeKptFn checks the declarative kpt fn has expected annotations added.
+func TestKpt_ExcludeKptFn(t *testing.T) {
+	// A declarative fn.
+	testFn1 := []byte(`apiVersion: v1
+data:
+  annotation_name: k1
+  annotation_value: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    config.kubernetes.io/function: fake`)
+	// A declarative fn which has `local-config` annotation specified.
+	testFn2 := []byte(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    config.kubernetes.io/function: fake
+    config.kubernetes.io/local-config: "false"
+data:
+  annotation_name: k2
+  annotation_value: v2`)
+	testPod := []byte(`apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1
+    name: image1`)
+	tests := []struct {
+		description string
+		manifests   deploy.ManifestList
+		expected    deploy.ManifestList
+	}{
+		{
+			description: "Add `local-config` annotation to kpt fn",
+			manifests:   deploy.ManifestList{testFn1},
+			expected: deploy.ManifestList{[]byte(`apiVersion: v1
+data:
+  annotation_name: k1
+  annotation_value: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    config.kubernetes.io/function: fake
+    config.kubernetes.io/local-config: "true"`)},
+		},
+		{
+			description: "Skip preset `local-config` annotation",
+			manifests:   deploy.ManifestList{testFn2},
+			expected: deploy.ManifestList{[]byte(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    config.kubernetes.io/function: fake
+    config.kubernetes.io/local-config: "false"
+data:
+  annotation_name: k2
+  annotation_value: v2`)},
+		},
+		{
+			description: "Valid in kpt fn pipeline.",
+			manifests:   deploy.ManifestList{testFn1, testFn2, testPod},
+			expected: deploy.ManifestList{[]byte(`apiVersion: v1
+data:
+  annotation_name: k1
+  annotation_value: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    config.kubernetes.io/function: fake
+    config.kubernetes.io/local-config: "true"`), []byte(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    config.kubernetes.io/function: fake
+    config.kubernetes.io/local-config: "false"
+data:
+  annotation_name: k2
+  annotation_value: v2`), []byte(`apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1
+    name: image1`)},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			k := NewKptDeployer(&kptConfig{}, nil)
+			actualManifest, err := k.excludeKptFn(test.manifests)
+			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
 		})
 	}
 }

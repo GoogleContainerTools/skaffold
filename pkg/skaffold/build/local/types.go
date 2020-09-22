@@ -37,6 +37,7 @@ type Builder struct {
 	localDocker        docker.LocalDaemon
 	localCluster       bool
 	pushImages         bool
+	tryImportMissing   bool
 	prune              bool
 	pruneChildren      bool
 	skipTests          bool
@@ -89,6 +90,8 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		pushImages = *cfg.Pipeline().Build.LocalBuild.Push
 	}
 
+	tryImportMissing := cfg.Pipeline().Build.LocalBuild.TryImportMissing
+
 	return &Builder{
 		local:              *cfg.Pipeline().Build.LocalBuild,
 		cfg:                cfg,
@@ -96,6 +99,7 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		localDocker:        localDocker,
 		localCluster:       localCluster,
 		pushImages:         pushImages,
+		tryImportMissing:   tryImportMissing,
 		skipTests:          cfg.SkipTests(),
 		mode:               cfg.Mode(),
 		prune:              cfg.Prune(),
@@ -107,6 +111,10 @@ func NewBuilder(cfg Config) (*Builder, error) {
 
 func (b *Builder) PushImages() bool {
 	return b.pushImages
+}
+
+func (b *Builder) TryImportMissing() bool {
+	return b.tryImportMissing
 }
 
 // Prune uses the docker API client to remove all images built with Skaffold

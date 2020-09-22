@@ -493,6 +493,7 @@ Options:
       --rpc-port=50051: tcp port to expose event API
       --skip-render=false: Don't render the manifests, just deploy them
       --status-check=true: Wait for deployed resources to stabilize
+  -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
@@ -528,6 +529,7 @@ Env vars:
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_RENDER` (same as `--skip-render`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
+* `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
@@ -674,7 +676,7 @@ Examples:
 Options:
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --overwrite=false: Overwrite original config with fixed config
-      --version='skaffold/v2beta7': Target schema version to upgrade to
+      --version='skaffold/v2beta8': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]

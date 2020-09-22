@@ -22,7 +22,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -33,11 +32,9 @@ import (
 type Builder struct {
 	*latest.ClusterDetails
 
-	cfg         docker.Config
+	cfg         Config
 	kubectlcli  *kubectl.CLI
-	kubeContext string
 	timeout     time.Duration
-	muted       build.Muted
 }
 
 type Config interface {
@@ -57,12 +54,10 @@ func NewBuilder(cfg Config) (*Builder, error) {
 	}
 
 	return &Builder{
-		ClusterDetails: cfg.Pipeline().Build.Cluster,
-		cfg:            cfg,
-		kubectlcli:     kubectl.NewCLI(cfg),
-		timeout:        timeout,
-		kubeContext:    cfg.GetKubeContext(),
-		muted:          cfg.Muted(),
+		ClusterDetails:     cfg.Pipeline().Build.Cluster,
+		cfg:                cfg,
+		kubectlcli:         kubectl.NewCLI(cfg, ""),
+		timeout:            timeout,
 	}, nil
 }
 

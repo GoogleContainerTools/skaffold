@@ -271,6 +271,9 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 
 		paths = append(paths, path)
 	}
+	if len(paths) == 0 {
+		return nil, fmt.Errorf("invalid dockerfile instruction: %q", value.Original)
+	}
 
 	// All paths are sources except the last one
 	var srcs []string

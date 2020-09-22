@@ -34,7 +34,7 @@ func TestDisplaySurveyForm(t *testing.T) {
 		{
 			description: "std out",
 			mockStdOut:  true,
-			expected:    Prompt + "\n",
+			expected:    Prompt,
 		},
 		{
 			description: "not std out",

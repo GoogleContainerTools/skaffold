@@ -156,25 +156,6 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 	return cfg, nil
 }
 
-func authConfig(ctx context.Context) map[string]types.AuthConfig {
-	auth := make(chan map[string]types.AuthConfig)
-
-	go func() {
-		// Like `docker build`, we ignore the errors
-		// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
-		authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
-		auth <- authConfigs
-	}()
-
-	// Because this can take a long time, we make sure it can be interrupted by the user.
-	select {
-	case <-ctx.Done():
-		return nil
-	case r := <-auth:
-		return r
-	}
-}
-
 // Build performs a docker build and returns the imageID.
 func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.RunMode) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
@@ -184,11 +165,16 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
 
-	authConfigs := authConfig(ctx)
+	// Like `docker build`, we ignore the errors
+	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
+	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs(ctx)
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a, l.cfg)
+		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, &latest.DockerArtifact{
+		        DockerfilePath: a.DockerfilePath,
+			BuildArgs: buildArgs,
+		}, l.cfg)
 		if err != nil {
 			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return

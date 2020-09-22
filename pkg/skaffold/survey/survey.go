@@ -22,17 +22,16 @@ import (
 	"io"
 	"os"
 
-	"github.com/blang/semver"
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 const (
-	Prompt = `Help improve Skaffold! Take a 10-second anonymous survey by running
-   skaffold survey`
+	Prompt = `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey'
+`
 
 	URL = "https://forms.gle/BMTbGQXLWSdn7vEs6"
 )
@@ -64,16 +63,8 @@ func New(configFile string) *Runner {
 }
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {
-	// TODO(nkubala): remove after v1.14.0 is released
-	currentVersion, err := version.ParseVersion(version.Get().Version)
-	if err == nil {
-		nextRelease := semver.MustParse("1.14.0")
-		if currentVersion.LT(nextRelease) {
-			return nil
-		}
-	}
 	if isStdOut(out) {
-		fmt.Fprintln(out, Prompt)
+		color.Green.Fprintf(out, Prompt)
 	}
 	return updateConfig(s.configFile)
 }

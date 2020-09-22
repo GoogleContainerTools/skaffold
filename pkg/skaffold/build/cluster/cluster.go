@@ -45,7 +45,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		defer teardownDockerConfigSecret()
 	}
 
-	builder := build.WithLogFile(b.buildArtifact, b.muted)
+	builder := build.WithLogFile(b.buildArtifact, b.cfg.Muted())
 	return build.InParallel(ctx, out, tags, artifacts, builder, b.ClusterDetails.Concurrency)
 }
 
@@ -73,7 +73,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 
 func (b *Builder) retrieveExtraEnv() []string {
 	env := []string{
-		fmt.Sprintf("%s=%s", constants.KubeContext, b.kubeContext),
+		fmt.Sprintf("%s=%s", constants.KubeContext, b.cfg.GetKubeContext()),
 		fmt.Sprintf("%s=%s", constants.Namespace, b.ClusterDetails.Namespace),
 		fmt.Sprintf("%s=%s", constants.PullSecretName, b.ClusterDetails.PullSecretName),
 		fmt.Sprintf("%s=%s", constants.Timeout, b.ClusterDetails.Timeout),
