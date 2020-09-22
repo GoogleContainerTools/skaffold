@@ -32,9 +32,9 @@ import (
 type Builder struct {
 	*latest.ClusterDetails
 
-	cfg         Config
-	kubectlcli  *kubectl.CLI
-	timeout     time.Duration
+	cfg        Config
+	kubectlcli *kubectl.CLI
+	timeout    time.Duration
 }
 
 type Config interface {
@@ -54,10 +54,10 @@ func NewBuilder(cfg Config) (*Builder, error) {
 	}
 
 	return &Builder{
-		ClusterDetails:     cfg.Pipeline().Build.Cluster,
-		cfg:                cfg,
-		kubectlcli:         kubectl.NewCLI(cfg, ""),
-		timeout:            timeout,
+		ClusterDetails: cfg.Pipeline().Build.Cluster,
+		cfg:            cfg,
+		kubectlcli:     kubectl.NewCLI(cfg, ""),
+		timeout:        timeout,
 	}, nil
 }
 
