@@ -33,7 +33,7 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -275,7 +275,7 @@ func TestRetrieveServices(t *testing.T) {
 						Name:      "svc1",
 						Namespace: "test",
 						Labels: map[string]string{
-							deploy.RunIDLabel: "9876-6789",
+							label.RunIDLabel: "9876-6789",
 						},
 					},
 					Spec: v1.ServiceSpec{Ports: []v1.ServicePort{{Port: 8080}}},
@@ -284,7 +284,7 @@ func TestRetrieveServices(t *testing.T) {
 						Name:      "svc2",
 						Namespace: "test1",
 						Labels: map[string]string{
-							deploy.RunIDLabel: "9876-6789",
+							label.RunIDLabel: "9876-6789",
 						},
 					},
 					Spec: v1.ServiceSpec{Ports: []v1.ServicePort{{Port: 8081}}},
@@ -314,7 +314,7 @@ func TestRetrieveServices(t *testing.T) {
 						Name:      "svc1",
 						Namespace: "test",
 						Labels: map[string]string{
-							deploy.RunIDLabel: "9876-6789",
+							label.RunIDLabel: "9876-6789",
 						},
 					},
 					Spec: v1.ServiceSpec{Ports: []v1.ServicePort{{Port: 8080}}},
@@ -329,7 +329,7 @@ func TestRetrieveServices(t *testing.T) {
 						Name:      "svc1",
 						Namespace: "test",
 						Labels: map[string]string{
-							deploy.RunIDLabel: "9876-6789",
+							label.RunIDLabel: "9876-6789",
 						},
 					},
 				},
@@ -346,7 +346,7 @@ func TestRetrieveServices(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(objs...)
 			t.Override(&kubernetesclient.Client, mockClient(client))
 
-			actual, err := retrieveServiceResources(fmt.Sprintf("%s=9876-6789", deploy.RunIDLabel), test.namespaces)
+			actual, err := retrieveServiceResources(fmt.Sprintf("%s=9876-6789", label.RunIDLabel), test.namespaces)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)

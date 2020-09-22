@@ -14,21 +14,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package analyze
+package util
 
-import (
-	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
-)
+import "sort"
 
-// helmAnalyzer is a Visitor during the directory analysis that finds helm charts
-type helmAnalyzer struct {
-	directoryAnalyzer
-	chartPaths []string
+type unit struct{}
+
+// StringSet helps to de-duplicate a set of strings.
+type StringSet map[string]unit
+
+// NewStringSet returns a new StringSet object.
+func NewStringSet() StringSet {
+	return make(map[string]unit)
 }
 
-func (h *helmAnalyzer) analyzeFile(filePath string) error {
-	if deploy.IsHelmChart(filePath) {
-		h.chartPaths = append(h.chartPaths, filePath)
+// Insert adds strings to the set.
+func (s StringSet) Insert(strings ...string) {
+	for _, item := range strings {
+		s[item] = unit{}
 	}
-	return nil
+}
+
+// ToList returns the sorted list of inserted strings.
+func (s StringSet) ToList() []string {
+	var res []string
+	for item := range s {
+		res = append(res, item)
+	}
+	sort.Strings(res)
+	return res
 }
