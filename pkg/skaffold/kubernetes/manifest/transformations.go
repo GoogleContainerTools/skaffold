@@ -30,22 +30,22 @@ type Registries struct {
 type Transform func(l ManifestList, builds []build.Artifact, registries Registries) (ManifestList, error)
 
 // Transforms are applied to manifests
-var manifestTransforms []Transform
+var transforms []Transform
 
-// AddManifestTransform adds a transform to be applied when deploying.
-func AddManifestTransform(newTransform Transform) {
-	manifestTransforms = append(manifestTransforms, newTransform)
+// AddTransform adds a transform to be applied when deploying.
+func AddTransform(newTransform Transform) {
+	transforms = append(transforms, newTransform)
 }
 
-// GetManifestTransforms returns all manifest transforms.
-func GetManifestTransforms() []Transform {
-	return manifestTransforms
+// GetTransforms returns all manifest transforms.
+func GetTransforms() []Transform {
+	return transforms
 }
 
 // ApplyTransforms applies all manifests transforms to the provided manifests.
 func ApplyTransforms(manifests ManifestList, builds []build.Artifact, insecureRegistries map[string]bool, debugHelpersRegistry string) (ManifestList, error) {
 	var err error
-	for _, transform := range manifestTransforms {
+	for _, transform := range transforms {
 		manifests, err = transform(manifests, builds, Registries{insecureRegistries, debugHelpersRegistry})
 		if err != nil {
 			return nil, fmt.Errorf("unable to transform manifests: %w", err)

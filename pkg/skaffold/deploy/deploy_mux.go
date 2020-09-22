@@ -78,5 +78,5 @@ func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []build.Artifac
 	}
 
 	allResources := strings.Join(resources, "\n---\n")
-	return manifest.OutputRenderedManifests(allResources, filepath, w)
+	return manifest.Write(allResources, filepath, w)
 }

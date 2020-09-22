@@ -135,7 +135,7 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 
 	if len(gcsManifests) != 0 {
 		// return tmp dir of the downloaded manifests
-		tmpDir, err := manifest.DownloadManifestsFromGCS(gcsManifests)
+		tmpDir, err := manifest.DownloadFromGCS(gcsManifests)
 		if err != nil {
 			return nil, fmt.Errorf("downloading from GCS: %w", err)
 		}
@@ -233,7 +233,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 		return err
 	}
 
-	return manifest.OutputRenderedManifests(manifests.String(), filepath, out)
+	return manifest.Write(manifests.String(), filepath, out)
 }
 
 func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool) (manifest.ManifestList, error) {

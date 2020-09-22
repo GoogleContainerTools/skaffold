@@ -153,7 +153,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 		}
 	}
 
-	if err := label.LabelDeployResults(h.labels, dRes); err != nil {
+	if err := label.Apply(h.labels, dRes); err != nil {
 		return nil, fmt.Errorf("adding labels: %w", err)
 	}
 
@@ -325,7 +325,7 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 		renderedManifests.Write(outBuffer.Bytes())
 	}
 
-	return manifest.OutputRenderedManifests(renderedManifests.String(), filepath, out)
+	return manifest.Write(renderedManifests.String(), filepath, out)
 }
 
 // exec executes the helm command, writing combined stdout/stderr to the provided writer

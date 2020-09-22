@@ -233,7 +233,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 	if err != nil {
 		return err
 	}
-	return manifest.OutputRenderedManifests(manifests.String(), filepath, out)
+	return manifest.Write(manifests.String(), filepath, out)
 }
 
 // Values of `patchesStrategicMerge` can be either:

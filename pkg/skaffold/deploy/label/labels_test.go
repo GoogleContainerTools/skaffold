@@ -45,7 +45,7 @@ func mockDynamicClient(m dynamic.Interface) func() (dynamic.Interface, error) {
 	}
 }
 
-func TestLabelDeployResults(t *testing.T) {
+func TestApplyLabels(t *testing.T) {
 	tests := []struct {
 		description    string
 		existingLabels map[string]string
@@ -107,7 +107,7 @@ func TestLabelDeployResults(t *testing.T) {
 			t.Override(&kubernetesclient.DynamicClient, mockDynamicClient(dynClient))
 
 			// Patch labels
-			LabelDeployResults(test.appliedLabels, []types.Artifact{{Obj: dep}})
+			Apply(test.appliedLabels, []types.Artifact{{Obj: dep}})
 
 			// Check modified value
 			modified, err := dynClient.Resource(schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}).Get("foo", metav1.GetOptions{})

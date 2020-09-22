@@ -41,9 +41,8 @@ const (
 	sleeptime = 300 * time.Millisecond
 )
 
-// LabelDeployResults applies all provided labels to the created Kubernetes resources
-//nolint:golint
-func LabelDeployResults(labels map[string]string, results []deploy.Artifact) error {
+// Apply applies all provided labels to the created Kubernetes resources
+func Apply(labels map[string]string, results []deploy.Artifact) error {
 	if len(labels) == 0 {
 		return nil
 	}

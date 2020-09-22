@@ -92,7 +92,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 		return nil, fmt.Errorf("getting applyDir: %w", err)
 	}
 
-	manifest.OutputRenderedManifests(manifests.String(), filepath.Join(applyDir, "resources.yaml"), out)
+	manifest.Write(manifests.String(), filepath.Join(applyDir, "resources.yaml"), out)
 
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "apply"}, k.getKptLiveApplyArgs(), nil)...)
 	cmd.Stdout = out
@@ -154,7 +154,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 		return err
 	}
 
-	return manifest.OutputRenderedManifests(manifests.String(), filepath, out)
+	return manifest.Write(manifests.String(), filepath, out)
 }
 
 // renderManifests handles a majority of the hydration process for manifests.

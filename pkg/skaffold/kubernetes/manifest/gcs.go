@@ -25,9 +25,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-// DownloadManifestsFromGCS downloads all provided manifests from a remote GCS bucket,
+// DownloadFromGCS downloads all provided manifests from a remote GCS bucket,
 // and returns a relative path pointing to the GCS temp dir.
-func DownloadManifestsFromGCS(manifests []string) (string, error) {
+func DownloadFromGCS(manifests []string) (string, error) {
 	if err := os.MkdirAll(ManifestTmpDir, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to create the tmp directory: %w", err)
 	}

@@ -36,11 +36,11 @@ const (
 
 var ManifestTmpDir = filepath.Join(os.TempDir(), manifestsStagingFolder)
 
-// Outputs rendered manifests to a file, a writer or a GCS bucket.
-func OutputRenderedManifests(renderedManifests string, output string, manifestOut io.Writer) error {
+// Write writes manifests to a file, a writer or a GCS bucket.
+func Write(manifests string, output string, manifestOut io.Writer) error {
 	switch {
 	case output == "":
-		_, err := fmt.Fprintln(manifestOut, renderedManifests)
+		_, err := fmt.Fprintln(manifestOut, manifests)
 		return err
 	case strings.HasPrefix(output, gcsPrefix):
 		tempDir, err := ioutil.TempDir("", manifestsStagingFolder)
@@ -49,7 +49,7 @@ func OutputRenderedManifests(renderedManifests string, output string, manifestOu
 		}
 		defer os.RemoveAll(tempDir)
 		tempFile := filepath.Join(tempDir, renderedManifestsStagingFile)
-		if err := dumpToFile(renderedManifests, tempFile); err != nil {
+		if err := dumpToFile(manifests, tempFile); err != nil {
 			return err
 		}
 		gcs := util.Gsutil{}
@@ -58,16 +58,16 @@ func OutputRenderedManifests(renderedManifests string, output string, manifestOu
 		}
 		return nil
 	default:
-		return dumpToFile(renderedManifests, output)
+		return dumpToFile(manifests, output)
 	}
 }
 
-func dumpToFile(renderedManifests string, filepath string) error {
+func dumpToFile(manifests string, filepath string) error {
 	f, err := os.Create(filepath)
 	if err != nil {
 		return fmt.Errorf("opening file for writing manifests: %w", err)
 	}
 	defer f.Close()
-	_, err = f.WriteString(renderedManifests + "\n")
+	_, err = f.WriteString(manifests + "\n")
 	return err
 }
