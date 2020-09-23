@@ -184,13 +184,8 @@ func ParseConfig(filename string) (util.VersionedConfig, error) {
 	return cfg, nil
 }
 
-// ParseConfigAndUpgrade reads a configuration file and upgrades it to a given version.
-func ParseConfigAndUpgrade(filename, toVersion string) (util.VersionedConfig, error) {
-	cfg, err := ParseConfig(filename)
-	if err != nil {
-		return nil, err
-	}
-
+// UpgradeConfig upgrades the config to a given version.
+func UpgradeConfig(cfg util.VersionedConfig, toVersion string) (util.VersionedConfig, error) {
 	// Check that the target version exists
 	if _, present := SchemaVersions.Find(toVersion); !present {
 		return nil, fmt.Errorf("unknown api version: %q", toVersion)
@@ -223,4 +218,13 @@ func ParseConfigAndUpgrade(filename, toVersion string) (util.VersionedConfig, er
 	}
 
 	return cfg, nil
+}
+
+// ParseConfigAndUpgrade reads a configuration file and upgrades it to a given version.
+func ParseConfigAndUpgrade(filename, toVersion string) (util.VersionedConfig, error) {
+	cfg, err := ParseConfig(filename)
+	if err != nil {
+		return nil, err
+	}
+	return UpgradeConfig(cfg, toVersion)
 }

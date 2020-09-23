@@ -22,13 +22,16 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/blang/semver"
 	yamlpatch "github.com/krishicks/yaml-patch"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta4"
 	skutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
@@ -36,10 +39,18 @@ import (
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
-func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
-	byName := profilesByName(c.Profiles)
+func ApplyProfiles(c interface{}, opts cfg.SkaffoldOptions) error {
+	ver, err := apiversion.Parse(c.(util.VersionedConfig).GetVersion())
+	if err != nil {
+		return err
+	}
+	pVal := reflect.ValueOf(c).Elem().FieldByName("Profiles")
+	if !pVal.IsValid() {
+		return nil
+	}
+	byName := profilesByName(pVal)
 
-	profiles, contextSpecificProfiles, err := activatedProfiles(c.Profiles, opts)
+	profiles, contextSpecificProfiles, err := activatedProfiles(pVal, ver, opts)
 	if err != nil {
 		return fmt.Errorf("finding auto-activated profiles: %w", err)
 	}
@@ -55,7 +66,7 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 		}
 	}
 
-	return checkKubeContextConsistency(contextSpecificProfiles, opts.KubeContext, c.Deploy.KubeContext)
+	return checkKubeContextConsistency(contextSpecificProfiles, opts.KubeContext, reflect.ValueOf(c).Elem().FieldByName("Deploy").FieldByName("KubeContext").String())
 }
 
 func checkKubeContextConsistency(contextSpecificProfiles []string, cliContext, effectiveContext string) error {
@@ -80,34 +91,10 @@ func checkKubeContextConsistency(contextSpecificProfiles []string, cliContext, e
 
 // activatedProfiles returns the activated profiles and activated profiles which are kube-context specific.
 // The latter matters for error reporting when the effective kube-context changes.
-func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, []string, error) {
-	var activated []string
-	var contextSpecificProfiles []string
-
-	if opts.ProfileAutoActivation {
-		// Auto-activated profiles
-		for _, profile := range profiles {
-			for _, cond := range profile.Activation {
-				command := isCommand(cond.Command, opts)
-
-				env, err := isEnv(cond.Env)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				kubeContext, err := isKubeContext(cond.KubeContext, opts)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				if command && env && kubeContext {
-					if cond.KubeContext != "" {
-						contextSpecificProfiles = append(contextSpecificProfiles, profile.Name)
-					}
-					activated = append(activated, profile.Name)
-				}
-			}
-		}
+func activatedProfiles(profiles reflect.Value, version semver.Version, opts cfg.SkaffoldOptions) ([]string, []string, error) {
+	activated, contextSpecificProfiles, err := checkActivations(profiles, version, opts)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	for _, profile := range opts.Profiles {
@@ -119,6 +106,63 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]s
 	}
 
 	return activated, contextSpecificProfiles, nil
+}
+
+// checkActivations converts each profile `Activation` to a known version and applies the corresponding `checkActivation` function.
+func checkActivations(profiles reflect.Value, version semver.Version, opts cfg.SkaffoldOptions) ([]string, []string, error) {
+	if !opts.ProfileAutoActivation {
+		return nil, nil, nil
+	}
+
+	var activatedProfiles []string
+	var contextSpecificProfiles []string
+	v1b4, _ := apiversion.Parse(v1beta4.Version)
+	for i := 0; i < profiles.Len(); i++ {
+		activations := profiles.Index(i).FieldByName("Activation")
+		profileName := profiles.Index(i).FieldByName("Name").String()
+		if activations.IsValid() {
+			for j := 0; j < activations.Len(); j++ {
+				activation := activations.Index(j).Addr().Interface()
+				var isActive, isContextActivated bool
+				var err error
+				switch {
+				// Custom activation not supported before v1beta4
+				case version.LT(v1b4):
+					isActive, isContextActivated = true, false
+				// when modifying the `Activation` struct add a case condition here corresponding to the new version and a corresponding `checkActivation` function.
+				default:
+					var versionedActivation *v1beta4.Activation
+					skutil.CloneThroughJSON(activation, &versionedActivation)
+					isActive, isContextActivated, err = checkActivation(versionedActivation, opts)
+				}
+				if err != nil {
+					return nil, nil, fmt.Errorf("checking profile activation: %w", err)
+				}
+				if isActive {
+					activatedProfiles = append(activatedProfiles, profileName)
+				}
+				if isContextActivated {
+					contextSpecificProfiles = append(contextSpecificProfiles, profileName)
+				}
+			}
+		}
+	}
+	return activatedProfiles, contextSpecificProfiles, nil
+}
+
+// checkActivation validates profile activation for the `v1beta4` version of `Activation` struct.
+func checkActivation(a *v1beta4.Activation, opts cfg.SkaffoldOptions) (bool, bool, error) {
+	command := isCommand(a.Command, opts)
+	env, err := isEnv(a.Env)
+	if err != nil {
+		return false, false, err
+	}
+
+	kubeContext, err := isKubeContext(a.KubeContext, opts)
+	if err != nil {
+		return false, false, err
+	}
+	return command && env && kubeContext, command && env && kubeContext && a.KubeContext != "", nil
 }
 
 func removeValue(values []string, value string) []string {
@@ -182,14 +226,14 @@ func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
 
 	return skutil.RegexEqual(kubeContext, currentKubeConfig.CurrentContext), nil
 }
-
-func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
-	logrus.Infof("applying profile: %s", profile.Name)
-
+func applyProfile(config interface{}, profile interface{}) error {
+	c := reflect.Indirect(reflect.ValueOf(config))
+	p := reflect.Indirect(reflect.ValueOf(profile))
 	// Apply profile, field by field
-	mergedV := reflect.Indirect(reflect.ValueOf(&config.Pipeline))
-	configV := reflect.ValueOf(config.Pipeline)
-	profileV := reflect.ValueOf(profile.Pipeline)
+	mergedV := c.FieldByName("Pipeline")
+	configV := c.FieldByName("Pipeline")
+	profileV := p.FieldByName("Pipeline")
+	logrus.Infof("applying profile: %s", p.FieldByName("Name").Interface())
 
 	profileT := profileV.Type()
 	for i := 0; i < profileT.NumField(); i++ {
@@ -199,20 +243,21 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 	}
 
 	// Remove the Profiles field from the returned config
-	config.Profiles = nil
+	defer c.FieldByName("Profiles").Set(reflect.Zero(c.FieldByName("Profiles").Type()))
 
-	if len(profile.Patches) == 0 {
+	if !p.FieldByName("Patches").IsValid() {
 		return nil
 	}
+	profilePatches := p.FieldByName("Patches").Interface().([]latest.JSONPatch)
 
 	// Apply profile patches
-	buf, err := yaml.Marshal(*config)
+	buf, err := yaml.Marshal(c.Interface())
 	if err != nil {
 		return err
 	}
 
 	var patches []yamlpatch.Operation
-	for _, patch := range profile.Patches {
+	for _, patch := range profilePatches {
 		// Default patch operation to `replace`
 		op := patch.Op
 		if op == "" {
@@ -243,8 +288,12 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 		return err
 	}
 
-	*config = latest.SkaffoldConfig{}
-	return yaml.Unmarshal(buf, config)
+	res := reflect.New(c.Type())
+	if err = yaml.Unmarshal(buf, res.Interface()); err != nil {
+		return err
+	}
+	c.Set(res.Elem())
+	return nil
 }
 
 // tryPatch is here to verify patches one by one before we
@@ -261,10 +310,12 @@ func tryPatch(patch yamlpatch.Operation, buf []byte) (valid bool) {
 	return err == nil
 }
 
-func profilesByName(profiles []latest.Profile) map[string]latest.Profile {
-	byName := make(map[string]latest.Profile)
-	for _, profile := range profiles {
-		byName[profile.Name] = profile
+func profilesByName(profiles reflect.Value) map[string]interface{} {
+	byName := make(map[string]interface{})
+	for i := 0; i < profiles.Len(); i++ {
+		profileName := profiles.Index(i).FieldByName("Name").String()
+		profileVal := profiles.Index(i).Addr().Interface()
+		byName[profileName] = profileVal
 	}
 	return byName
 }

@@ -22,7 +22,6 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -178,14 +177,16 @@ func TestCloneThroughJSON(t *testing.T) {
 		expected    interface{}
 	}{
 		{
-			description: "google cloud build",
+			description: "simple object clone",
 			old: map[string]string{
 				"projectId": "unit-test",
 			},
-			new: &latest.GoogleCloudBuild{},
-			expected: &latest.GoogleCloudBuild{
-				ProjectID: "unit-test",
-			},
+			new: &struct {
+				ProjectID string `yaml:"projectId,omitempty"`
+			}{},
+			expected: &struct {
+				ProjectID string `yaml:"projectId,omitempty"`
+			}{ProjectID: "unit-test"},
 		},
 	}
 	for _, test := range tests {
@@ -209,10 +210,12 @@ func TestCloneThroughYAML(t *testing.T) {
 			old: map[string]string{
 				"projectId": "unit-test",
 			},
-			new: &latest.GoogleCloudBuild{},
-			expected: &latest.GoogleCloudBuild{
-				ProjectID: "unit-test",
-			},
+			new: &struct {
+				ProjectID string `yaml:"projectId,omitempty"`
+			}{},
+			expected: &struct {
+				ProjectID string `yaml:"projectId,omitempty"`
+			}{ProjectID: "unit-test"},
 		},
 	}
 	for _, test := range tests {

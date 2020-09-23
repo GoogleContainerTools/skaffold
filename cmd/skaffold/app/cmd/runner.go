@@ -67,7 +67,7 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 }
 
 func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.SkaffoldConfig, error) {
-	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
+	parsed, err := schema.ParseConfig(opts.ConfigurationFile)
 	if err != nil {
 		if os.IsNotExist(errors.Unwrap(err)) {
 			return nil, nil, fmt.Errorf("skaffold config file %s not found - check your current working directory, or try running `skaffold init`", opts.ConfigurationFile)
@@ -80,12 +80,15 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.Sk
 		return nil, nil, fmt.Errorf("parsing skaffold config: %w", err)
 	}
 
-	config := parsed.(*latest.SkaffoldConfig)
-
-	if err = schema.ApplyProfiles(config, opts); err != nil {
+	if err = schema.ApplyProfiles(parsed, opts); err != nil {
 		return nil, nil, fmt.Errorf("applying profiles: %w", err)
 	}
 
+	if parsed, err = schema.UpgradeConfig(parsed, latest.Version); err != nil {
+		return nil, nil, fmt.Errorf("upgrading config: %w", err)
+	}
+
+	config := parsed.(*latest.SkaffoldConfig)
 	kubectx.ConfigureKubeConfig(opts.KubeConfig, opts.KubeContext, config.Deploy.KubeContext)
 
 	if err := defaults.Set(config); err != nil {

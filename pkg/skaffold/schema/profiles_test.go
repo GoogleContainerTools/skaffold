@@ -18,11 +18,13 @@ package schema
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	yamlpatch "github.com/krishicks/yaml-patch"
 	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
@@ -750,8 +752,8 @@ func TestActivatedProfiles(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetEnvs(test.envs)
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "prod-context"})
-
-			activated, _, err := activatedProfiles(test.profiles, test.opts)
+			ver, _ := apiversion.Parse(latest.Version)
+			activated, _, err := activatedProfiles(reflect.ValueOf(test.profiles), ver, test.opts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, activated)
 		})
