@@ -572,6 +572,9 @@ type KptFn struct {
 
 	// Mount is a list of storage options to mount to the fn image.
 	Mount []string `yaml:"mount,omitempty"`
+
+	// SinkDir is the directory to where the manipulated resource output is stored.
+	SinkDir string `yaml:"sinkDir,omitempty"`
 }
 
 // KptLive adds additional configurations used when calling `kpt live`.
