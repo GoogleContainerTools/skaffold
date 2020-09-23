@@ -69,20 +69,22 @@ func (p *pruner) listImages(ctx context.Context, name string) ([]types.ImageSumm
 
 func (p *pruner) cleanup(ctx context.Context, sync bool, out io.Writer, artifacts []*latest.Artifact) {
 	toPrune := p.collectImagesToPrune(ctx, artifacts)
-	if len(toPrune) > 0 {
-		if sync {
+	if len(toPrune) == 0 {
+		return
+	}
+
+	if sync {
+		err := p.runPrune(ctx, out, toPrune)
+		if err != nil {
+			logrus.Debugf("Failed to prune: %v", err)
+		}
+	} else {
+		go func() {
 			err := p.runPrune(ctx, out, toPrune)
 			if err != nil {
 				logrus.Debugf("Failed to prune: %v", err)
 			}
-		} else {
-			go func() {
-				err := p.runPrune(ctx, out, toPrune)
-				if err != nil {
-					logrus.Debugf("Failed to prune: %v", err)
-				}
-			}()
-		}
+		}()
 	}
 }
 
