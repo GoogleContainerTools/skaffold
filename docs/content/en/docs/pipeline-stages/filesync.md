@@ -78,14 +78,45 @@ File deletion will always cause a complete rebuild.
 
 ### Auto sync mode
 
-In auto sync mode, Skaffold automatically generates sync rules for known file types.  Changes to other file types will
-result in a complete rebuild.
+In auto sync mode, Skaffold automatically generates sync rules for known file types. 
+Changes to other file types will result in a complete rebuild.
 
 #### Buildpacks
 
-Skaffold requires special collaboration from the Buildpacks for the `auto` sync to work.
-The [gcr.io/buildpacks/builder:v1](https://github.com/GoogleCloudPlatform/buildpacks) supports Skaffold
-out of the box, currently for Go, NodeJS, and Java.
+Skaffold works with Cloud Native Buildpacks builders to automatically sync and relaunch
+applications on changes to certain types of files.
+The GCP Buildpacks builder ([gcr.io/buildpacks/builder:v1](https://github.com/GoogleCloudPlatform/buildpacks))
+supports syncing the following types of source files:
+
+- Go: *.go
+- Java: *.java, *.kt, *.scala, *.groovy, *.clj
+- NodeJS: *.js, *.mjs, *.coffee, *.litcoffee, *.json
+
+The GCP Buildpacks builder will detect the changed files and
+automatically rebuild and relaunch the application. 
+Changes to other file types trigger an image rebuild.
+
+##### Disable Auto Sync for Buildpacks
+
+To disable auto sync, simply provide a manual sync rule.  It does
+not matter if the sync rule does not match any actual files.
+For example:
+
+```
+artifacts:
+- image: xxx
+  buildpacks:
+    builder: gcr.io/buildpacks/builder:v1
+  # disable buildpacks auto-sync
+  sync: 
+    manual: 
+    - src: .
+      dest: .
+```
+
+##### How it works
+
+Skaffold requires special collaboration from buildpacks for the `auto` sync to work.
 
 Cloud Native Buildpacks set a `io.buildpacks.build.metadata` label on the images they create.
 This labels points to json description of the [Bill-of-Materials, aka BOM](https://github.com/buildpacks/spec/blob/master/buildpack.md#bill-of-materials-toml) of the build.
