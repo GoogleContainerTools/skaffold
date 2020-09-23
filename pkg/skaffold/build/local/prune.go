@@ -159,12 +159,12 @@ func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []*latest.A
 
 func (p *pruner) diskUsage(ctx context.Context) (uint64, error) {
 	for retry := 0; retry < usageRetries-1; retry++ {
-		if ctx.Err() != nil {
-			return 0, ctx.Err()
-		}
 		usage, err := p.localDocker.DiskUsage(ctx)
 		if err == nil {
 			return usage, nil
+		}
+		if ctx.Err() != nil {
+			return 0, ctx.Err()
 		}
 		// DiskUsage(..) may return "operation in progress" error.
 		logrus.Debugf("[%d of %d] failed to get disk usage: %v. Will retry in %v",
