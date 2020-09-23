@@ -218,7 +218,7 @@ ADD ./file /etc/file
 
 type fakeImageFetcher struct{}
 
-func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*v1.ConfigFile, error) {
+func (f *fakeImageFetcher) fetch(image string, _ Config) (*v1.ConfigFile, error) {
 	switch image {
 	case "ubuntu:14.04", "busybox", "nginx", "golang:1.9.2", "jboss/wildfly:14.0.1.Final", "gcr.io/distroless/base":
 		return &v1.ConfigFile{}, nil

@@ -45,14 +45,14 @@ type ArtifactCache map[string]ImageDetails
 
 // cache holds any data necessary for accessing the cache
 type cache struct {
-	artifactCache      ArtifactCache
-	cacheMutex         sync.RWMutex
-	client             docker.LocalDaemon
-	insecureRegistries map[string]bool
-	cacheFile          string
-	imagesAreLocal     bool
-	tryImportMissing   bool
-	hashForArtifact    func(ctx context.Context, a *latest.Artifact) (string, error)
+	artifactCache    ArtifactCache
+	cacheMutex       sync.RWMutex
+	client           docker.LocalDaemon
+	cfg              docker.Config
+	cacheFile        string
+	imagesAreLocal   bool
+	tryImportMissing bool
+	hashForArtifact  func(ctx context.Context, a *latest.Artifact) (string, error)
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
@@ -90,12 +90,12 @@ func NewCache(cfg Config, imagesAreLocal bool, tryImportMissing bool, dependenci
 	}
 
 	return &cache{
-		artifactCache:      artifactCache,
-		client:             client,
-		insecureRegistries: cfg.GetInsecureRegistries(),
-		cacheFile:          cacheFile,
-		imagesAreLocal:     imagesAreLocal,
-		tryImportMissing:   tryImportMissing,
+		artifactCache:    artifactCache,
+		client:           client,
+		cfg:              cfg,
+		cacheFile:        cacheFile,
+		imagesAreLocal:   imagesAreLocal,
+		tryImportMissing: tryImportMissing,
 		hashForArtifact: func(ctx context.Context, a *latest.Artifact) (string, error) {
 			return getHashForArtifact(ctx, dependencies, a, cfg.Mode())
 		},

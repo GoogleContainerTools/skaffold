@@ -82,7 +82,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", fmt.Errorf("checking bucket is in correct project: %w", err)
 	}
 
-	dependencies, err := build.DependenciesForArtifact(ctx, artifact, b.insecureRegistries)
+	dependencies, err := build.DependenciesForArtifact(ctx, artifact, b.cfg)
 	if err != nil {
 		return "", fmt.Errorf("getting dependencies for %q: %w", artifact.ImageName, err)
 	}
@@ -166,7 +166,7 @@ watch:
 		switch cb.Status {
 		case StatusQueued, StatusWorking, StatusUnknown:
 		case StatusSuccess:
-			digest, err = getDigest(cb, tag)
+			digest, err = b.getDigest(cb, tag)
 			if err != nil {
 				return "", fmt.Errorf("getting image id from finished build: %w", err)
 			}
@@ -202,15 +202,15 @@ func getBuildID(op *cloudbuild.Operation) (string, error) {
 	return buildMeta.Build.Id, nil
 }
 
-func getDigest(b *cloudbuild.Build, defaultToTag string) (string, error) {
-	if b.Results != nil && len(b.Results.Images) == 1 {
-		return b.Results.Images[0].Digest, nil
+func (b *Builder) getDigest(cb *cloudbuild.Build, defaultToTag string) (string, error) {
+	if cb.Results != nil && len(cb.Results.Images) == 1 {
+		return cb.Results.Images[0].Digest, nil
 	}
 
 	// The build steps pushed the image directly like when we use Jib.
 	// Retrieve the digest for that tag.
 	// TODO(dgageot): I don't think GCB can push to an insecure registry.
-	return docker.RemoteDigest(defaultToTag, nil)
+	return docker.RemoteDigest(defaultToTag, b.cfg)
 }
 
 func (b *Builder) getLogs(ctx context.Context, c *cstorage.Client, offset int64, bucket, objectName string) (io.ReadCloser, error) {

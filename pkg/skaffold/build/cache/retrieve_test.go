@@ -204,7 +204,7 @@ func TestCacheBuildRemote(t *testing.T) {
 			return dockerDaemon, nil
 		})
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
-		t.Override(&docker.RemoteDigest, func(ref string, _ map[string]bool) (string, error) {
+		t.Override(&docker.RemoteDigest, func(ref string, _ docker.Config) (string, error) {
 			switch ref {
 			case "artifact1:tag1":
 				return "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165", nil
@@ -288,7 +288,7 @@ func TestCacheFindMissing(t *testing.T) {
 			return dockerDaemon, nil
 		})
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
-		t.Override(&docker.RemoteDigest, func(ref string, _ map[string]bool) (string, error) {
+		t.Override(&docker.RemoteDigest, func(ref string, _ docker.Config) (string, error) {
 			switch ref {
 			case "artifact1:tag1":
 				return "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165", nil

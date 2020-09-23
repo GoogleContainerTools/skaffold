@@ -34,7 +34,7 @@ import (
 )
 
 func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v1.Pod, error) {
-	args, err := kanikoArgs(artifact, tag, b.insecureRegistries)
+	args, err := kanikoArgs(artifact, tag, b.cfg.GetInsecureRegistries())
 	if err != nil {
 		return nil, fmt.Errorf("building args list: %w", err)
 	}

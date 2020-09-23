@@ -20,10 +20,10 @@ import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 
 // Builder is a builder for jib artifacts
 type Builder struct {
-	localDocker        docker.LocalDaemon
-	insecureRegistries map[string]bool
-	pushImages         bool
-	skipTests          bool
+	localDocker docker.LocalDaemon
+	cfg         docker.Config
+	pushImages  bool
+	skipTests   bool
 }
 
 type Config interface {
@@ -33,11 +33,11 @@ type Config interface {
 }
 
 // NewArtifactBuilder returns a new customjib artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, insecureRegistries map[string]bool, pushImages, skipTests bool) *Builder {
+func NewArtifactBuilder(localDocker docker.LocalDaemon, cfg docker.Config, pushImages, skipTests bool) *Builder {
 	return &Builder{
-		localDocker:        localDocker,
-		insecureRegistries: insecureRegistries,
-		pushImages:         pushImages,
-		skipTests:          skipTests,
+		localDocker: localDocker,
+		cfg:         cfg,
+		pushImages:  pushImages,
+		skipTests:   skipTests,
 	}
 }

@@ -181,7 +181,9 @@ func TestKanikoPodSpec(t *testing.T) {
 	}
 
 	var runAsUser int64 = 0
+
 	builder := &Builder{
+		cfg: &mockConfig{},
 		ClusterDetails: &latest.ClusterDetails{
 			Namespace:           "ns",
 			PullSecretName:      "secret",

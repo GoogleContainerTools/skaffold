@@ -75,7 +75,7 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 			api := (&testutil.FakeAPIClient{}).Add("img:tag", "imageID")
 			localDocker := fakeLocalDaemon(api)
 
-			builder := NewArtifactBuilder(localDocker, nil, false, false)
+			builder := NewArtifactBuilder(localDocker, &mockConfig{}, false, false)
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
@@ -131,7 +131,7 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 			t.NewTempDir().Touch("build.gradle").Chdir()
 			t.Override(&gradleBuildArgsFunc, getGradleBuildArgsFuncFake(t, MinimumJibGradleVersion))
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(&docker.RemoteDigest, func(identifier string, _ map[string]bool) (string, error) {
+			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config) (string, error) {
 				if identifier == "img:tag" {
 					return "digest", nil
 				}
@@ -139,7 +139,7 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 			})
 			localDocker := fakeLocalDaemon(&testutil.FakeAPIClient{})
 
-			builder := NewArtifactBuilder(localDocker, nil, true, false)
+			builder := NewArtifactBuilder(localDocker, &mockConfig{}, true, false)
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
@@ -463,3 +463,9 @@ func getGradleBuildArgsFuncFake(t *testutil.T, expectedMinimumVersion string) fu
 		return []string{"fake-gradleBuildArgs-for-" + a.Project + "-for-" + task + testString}
 	}
 }
+
+type mockConfig struct {
+	Config
+}
+
+func (c *mockConfig) GetInsecureRegistries() map[string]bool { return nil }

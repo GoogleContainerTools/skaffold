@@ -31,8 +31,9 @@ import (
 
 // Builder uses the host docker daemon to build and tag the image.
 type Builder struct {
-	cfg latest.LocalBuild
+	local latest.LocalBuild
 
+	cfg                docker.Config
 	localDocker        docker.LocalDaemon
 	localCluster       bool
 	pushImages         bool
@@ -92,7 +93,8 @@ func NewBuilder(cfg Config) (*Builder, error) {
 	tryImportMissing := cfg.Pipeline().Build.LocalBuild.TryImportMissing
 
 	return &Builder{
-		cfg:                *cfg.Pipeline().Build.LocalBuild,
+		local:              *cfg.Pipeline().Build.LocalBuild,
+		cfg:                cfg,
 		kubeContext:        cfg.GetKubeContext(),
 		localDocker:        localDocker,
 		localCluster:       localCluster,
