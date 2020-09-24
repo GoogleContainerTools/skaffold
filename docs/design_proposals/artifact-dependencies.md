@@ -32,12 +32,14 @@ Alias is a token that will be replaced with the image reference in the builder d
 
 ## Config validation
 
-We add two new validations to the [validation](https://github.com/GoogleContainerTools/skaffold/blob/10275c66a142719897894308b9e566953712a0fe/pkg/skaffold/schema/validation/validation.go#L37) package after the introduction of artifact dependencies:
+We add three new validations to the [validation](https://github.com/GoogleContainerTools/skaffold/blob/10275c66a142719897894308b9e566953712a0fe/pkg/skaffold/schema/validation/validation.go#L37) package after the introduction of artifact dependencies:
 - Cyclic references among artifacts.
   - We cannot have image `A` depend on image `B` depend on image `C` depend on image `A`.
   - We run a simple depth first search cycle detection algorithm treating our `Artifact` slice like a directed graph- image `A` depending on image `B` implies a directed edge from `A` to `B`.
 - Unique artifact aliases.
   - We ensure that within *each* artifact dependency slice the aliases are unique. 
+- Valid aliases
+  - Since aliases are used as environment variable keys or template keys we validate that they match the regex `[a-zA-Z_][a-zA-Z0-9_]*`
 
 ## Referencing dependencies
 
