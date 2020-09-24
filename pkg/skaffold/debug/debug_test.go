@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -509,7 +509,7 @@ spec:
 				return imageConfiguration{}, nil
 			}
 
-			result, err := applyDebuggingTransforms(kubectl.ManifestList{[]byte(test.in)}, retriever, "HELPERS")
+			result, err := applyDebuggingTransforms(manifest.ManifestList{[]byte(test.in)}, retriever, "HELPERS")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, result.String())
 		})

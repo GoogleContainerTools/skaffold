@@ -29,9 +29,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -43,7 +48,7 @@ import (
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
-	kubectlCLI := kubectl.NewCLI(runCtx)
+	kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
 
 	tagger, err := getTagger(runCtx)
 	if err != nil {
@@ -60,13 +65,17 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		tryImportMissing = localBuilder.TryImportMissing()
 	}
 
-	labeller := deploy.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels())
+	labeller := label.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels())
 	tester := getTester(runCtx, imagesAreLocal)
 	syncer := getSyncer(runCtx)
-	deployer := getDeployer(runCtx, labeller.Labels())
+	var deployer deploy.Deployer
+	deployer, err = getDeployer(runCtx, labeller.Labels())
+	if err != nil {
+		return nil, fmt.Errorf("creating deployer: %w", err)
+	}
 
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx.GetInsecureRegistries())
+		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -192,33 +201,41 @@ func getSyncer(cfg sync.Config) sync.Syncer {
 	return sync.NewSyncer(cfg)
 }
 
-func getDeployer(cfg deploy.Config, labels map[string]string) deploy.Deployer {
+func getDeployer(cfg kubectl.Config, labels map[string]string) (deploy.Deployer, error) {
 	d := cfg.Pipeline().Deploy
 
 	var deployers deploy.DeployerMux
 
 	if d.HelmDeploy != nil {
-		deployers = append(deployers, deploy.NewHelmDeployer(cfg, labels))
+		deployers = append(deployers, helm.NewDeployer(cfg, labels))
 	}
 
 	if d.KptDeploy != nil {
-		deployers = append(deployers, deploy.NewKptDeployer(cfg, labels))
+		deployers = append(deployers, kpt.NewDeployer(cfg, labels))
 	}
 
 	if d.KubectlDeploy != nil {
-		deployers = append(deployers, deploy.NewKubectlDeployer(cfg, labels))
+		deployer, err := kubectl.NewDeployer(cfg, labels)
+		if err != nil {
+			return nil, err
+		}
+		deployers = append(deployers, deployer)
 	}
 
 	if d.KustomizeDeploy != nil {
-		deployers = append(deployers, deploy.NewKustomizeDeployer(cfg, labels))
+		deployer, err := kustomize.NewDeployer(cfg, labels)
+		if err != nil {
+			return nil, err
+		}
+		deployers = append(deployers, deployer)
 	}
 
 	// avoid muxing overhead when only a single deployer is configured
 	if len(deployers) == 1 {
-		return deployers[0]
+		return deployers[0], nil
 	}
 
-	return deployers
+	return deployers, nil
 }
 
 func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {

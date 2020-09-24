@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
@@ -66,7 +66,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		}
 	}
 
-	deployOut, postDeployFn, err := deploy.WithLogFile(time.Now().Format(deploy.TimeFormat)+".log", out, r.runCtx.Muted())
+	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	if err != nil {
 		return err
 	}

@@ -29,7 +29,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -67,7 +68,7 @@ func TestDeploy(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
-			t.Override(&newStatusCheck, func(deploy.StatusCheckConfig, *deploy.DefaultLabeller) deploy.StatusChecker {
+			t.Override(&newStatusCheck, func(status.Config, *label.DefaultLabeller) status.Checker {
 				return dummyStatusChecker{}
 			})
 
@@ -117,7 +118,7 @@ func TestDeployNamespace(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
-			t.Override(&newStatusCheck, func(deploy.StatusCheckConfig, *deploy.DefaultLabeller) deploy.StatusChecker {
+			t.Override(&newStatusCheck, func(status.Config, *label.DefaultLabeller) status.Checker {
 				return dummyStatusChecker{}
 			})
 
@@ -144,14 +145,16 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 			KubeContext: "does-not-exist",
 		}
 
+		deployer, err := getDeployer(runCtx, nil)
+		t.RequireNoError(err)
 		r := SkaffoldRunner{
 			runCtx:     runCtx,
-			kubectlCLI: kubectl.NewCLI(runCtx),
-			deployer:   getDeployer(runCtx, nil),
+			kubectlCLI: kubectl.NewCLI(runCtx, ""),
+			deployer:   deployer,
 		}
 		var builds []build.Artifact
 
-		err := r.Deploy(context.Background(), ioutil.Discard, builds)
+		err = r.Deploy(context.Background(), ioutil.Discard, builds)
 
 		t.CheckNoError(err)
 	})

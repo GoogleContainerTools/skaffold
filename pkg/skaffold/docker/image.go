@@ -81,22 +81,22 @@ type LocalDaemon interface {
 }
 
 type localDaemon struct {
-	forceRemove        bool
-	insecureRegistries map[string]bool
-	apiClient          client.CommonAPIClient
-	extraEnv           []string
-	imageCache         map[string]*v1.ConfigFile
-	imageCacheLock     sync.Mutex
+	cfg            Config
+	forceRemove    bool
+	apiClient      client.CommonAPIClient
+	extraEnv       []string
+	imageCache     map[string]*v1.ConfigFile
+	imageCacheLock sync.Mutex
 }
 
 // NewLocalDaemon creates a new LocalDaemon.
-func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool, insecureRegistries map[string]bool) LocalDaemon {
+func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool, cfg Config) LocalDaemon {
 	return &localDaemon{
-		apiClient:          apiClient,
-		extraEnv:           extraEnv,
-		forceRemove:        forceRemove,
-		insecureRegistries: insecureRegistries,
-		imageCache:         make(map[string]*v1.ConfigFile),
+		cfg:         cfg,
+		apiClient:   apiClient,
+		extraEnv:    extraEnv,
+		forceRemove: forceRemove,
+		imageCache:  make(map[string]*v1.ConfigFile),
 	}
 }
 
@@ -148,7 +148,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 			return nil, err
 		}
 	} else {
-		cfg, err = RetrieveRemoteConfig(image, l.insecureRegistries)
+		cfg, err = RetrieveRemoteConfig(image, l.cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -159,9 +159,20 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 	return cfg, nil
 }
 
+func (l *localDaemon) CheckCompatible(a *latest.DockerArtifact) error {
+	if a.Secret != nil {
+		return fmt.Errorf("docker build secrets require BuildKit - set `useBuildkit: true` in your config, or run with `DOCKER_BUILDKIT=1`")
+	}
+	return nil
+}
+
 // Build performs a docker build and returns the imageID.
 func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.RunMode) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
+
+	if err := l.CheckCompatible(a); err != nil {
+		return "", err
+	}
 
 	buildArgs, err := EvalBuildArgs(mode, workspace, a)
 	if err != nil {
@@ -174,7 +185,10 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a.DockerfilePath, buildArgs, l.insecureRegistries)
+		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, &latest.DockerArtifact{
+			DockerfilePath: a.DockerfilePath,
+			BuildArgs:      buildArgs,
+		}, l.cfg)
 		if err != nil {
 			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return
@@ -278,7 +292,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	if digest == "" {
 		// Maybe this version of Docker doesn't return the digest of the image
 		// that has been pushed.
-		digest, err = RemoteDigest(ref, l.insecureRegistries)
+		digest, err = RemoteDigest(ref, l.cfg)
 		if err != nil {
 			return "", fmt.Errorf("getting digest: %w", err)
 		}
@@ -477,6 +491,17 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 
 	if a.NoCache {
 		args = append(args, "--no-cache")
+	}
+
+	if a.Secret != nil {
+		secretString := fmt.Sprintf("id=%s", a.Secret.ID)
+		if a.Secret.Source != "" {
+			secretString += ",src=" + a.Secret.Source
+		}
+		if a.Secret.Destination != "" {
+			secretString += ",dst=" + a.Secret.Destination
+		}
+		args = append(args, "--secret", secretString)
 	}
 
 	return args, nil

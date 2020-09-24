@@ -48,7 +48,7 @@ type Config interface {
 
 func NewSyncer(cfg Config) Syncer {
 	return &podSyncer{
-		kubectl:    pkgkubectl.NewCLI(cfg),
+		kubectl:    pkgkubectl.NewCLI(cfg, ""),
 		namespaces: cfg.GetNamespaces(),
 	}
 }

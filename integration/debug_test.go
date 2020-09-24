@@ -18,50 +18,63 @@ package integration
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestDebug(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
-		description string
-		config      string
-		args        []string
-		deployments []string
-		pods        []string
+		description   string
+		dir           string
+		config        string
+		args          []string
+		deployments   []string
+		pods          []string
+		ignoreWorkdir bool
 	}{
 		{
 			description: "kubectl",
+			dir:         "testdata/debug",
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm", "python3", "go", "netcore"},
 		},
 		{
 			description: "kustomize",
+			dir:         "testdata/debug",
 			args:        []string{"--profile", "kustomize"},
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm", "python3", "go", "netcore"},
 		},
 		{
 			description: "buildpacks",
+			dir:         "testdata/debug",
 			args:        []string{"--profile", "buildpacks"},
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm", "python3", "go", "netcore"},
+		},
+		{
+			description:   "helm",
+			dir:           "examples/helm-deployment",
+			deployments:   []string{"skaffold-helm"},
+			ignoreWorkdir: true, // dockerfile doesn't have a workdir
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build(test.args...).InDir("testdata/debug").RunOrFail(t)
+			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
 
 			ns, client := SetupNamespace(t)
 
-			skaffold.Debug(test.args...).InDir("testdata/debug").InNs(ns.Name).RunBackground(t)
+			skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 
 			verifyDebugAnnotations := func(annotations map[string]string) {
 				var configs map[string]debug.ContainerDebugConfiguration
@@ -71,7 +84,7 @@ func TestDebug(t *testing.T) {
 					t.Errorf("error unmarshalling debug annotation: %v: %v", anno, err)
 				} else {
 					for k, config := range configs {
-						if config.WorkingDir == "" {
+						if !test.ignoreWorkdir && config.WorkingDir == "" {
 							t.Errorf("debug config for %q missing WorkingDir: %v: %v", k, anno, config)
 						}
 						if config.Runtime == "" {
@@ -96,6 +109,29 @@ func TestDebug(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFilterWithDebugging(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	// `filter` currently expects to receive a digested yaml
+	renderedOutput := skaffold.Render().InDir("examples/getting-started").RunOrFailOutput(t)
+
+	testutil.Run(t, "no --build-artifacts should transform all images", func(t *testutil.T) {
+		transformedOutput := skaffold.Filter("--debugging").InDir("examples/getting-started").WithStdin(renderedOutput).RunOrFailOutput(t.T)
+		transformedYaml := string(transformedOutput)
+		if !strings.Contains(transformedYaml, "/dbg/go/bin/dlv") {
+			t.Error("transformed yaml seems to be missing debugging details", transformedYaml)
+		}
+	})
+
+	testutil.Run(t, "--build-artifacts=file should result in specific transforms", func(t *testutil.T) {
+		buildFile := t.TempFile("build.txt", []byte(`{"builds":[{"imageName":"doesnotexist","tag":"doesnotexist:notag"}]}`))
+		transformedOutput := skaffold.Filter("--debugging", "--build-artifacts="+buildFile).InDir("examples/getting-started").WithStdin(renderedOutput).RunOrFailOutput(t.T)
+		transformedYaml := string(transformedOutput)
+		if strings.Contains(transformedYaml, "/dbg/go/bin/dlv") {
+			t.Error("transformed yaml should not include debugging details", transformedYaml)
+		}
+	})
 }
 
 func TestDebugEventsRPC_StatusCheck(t *testing.T) {

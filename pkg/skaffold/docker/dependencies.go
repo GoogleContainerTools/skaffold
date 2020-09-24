@@ -44,7 +44,7 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 
 // GetDependencies finds the sources dependencies for the given docker artifact.
 // All paths are relative to the workspace.
-func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]string, error) {
+func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
 		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
@@ -58,7 +58,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return []string{dockerfilePath}, nil
 	}
 
-	fts, err := readCopyCmdsFromDockerfile(false, absDockerfilePath, workspace, buildArgs, insecureRegistries)
+	fts, err := readCopyCmdsFromDockerfile(false, absDockerfilePath, workspace, buildArgs, cfg)
 	if err != nil {
 		return nil, err
 	}

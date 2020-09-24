@@ -309,8 +309,12 @@ files.
 
 ### Supported Deployers
 
-`skaffold debug` is only supported with the `kubectl` and `kustomize` deployers at the moment: support for
-the Helm deployer is not yet available ([#2350](https://github.com/GoogleContainerTools/skaffold/issues/2350)).
+`skaffold debug` is only supported with the `kubectl`, `kustomize`, and `helm` deployers.
+
+{{< alert title="Note" >}}
+Helm support requires using Helm v3.1.0 or greater.
+{{< /alert >}}
+
 
 ### Deprecated Workload API Objects
 

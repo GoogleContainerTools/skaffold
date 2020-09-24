@@ -35,14 +35,14 @@ var (
 	remoteIndex  = remote.Index
 )
 
-func AddRemoteTag(src, target string, insecureRegistries map[string]bool) error {
+func AddRemoteTag(src, target string, cfg Config) error {
 	logrus.Debugf("attempting to add tag %s to src %s", target, src)
-	img, err := getRemoteImage(src, insecureRegistries)
+	img, err := getRemoteImage(src, cfg)
 	if err != nil {
 		return fmt.Errorf("getting image: %w", err)
 	}
 
-	targetRef, err := parseReference(target, insecureRegistries, name.WeakValidation)
+	targetRef, err := parseReference(target, cfg, name.WeakValidation)
 	if err != nil {
 		return err
 	}
@@ -50,13 +50,13 @@ func AddRemoteTag(src, target string, insecureRegistries map[string]bool) error 
 	return remote.Write(targetRef, img, remote.WithAuthFromKeychain(primaryKeychain))
 }
 
-func getRemoteDigest(identifier string, insecureRegistries map[string]bool) (string, error) {
-	idx, err := getRemoteIndex(identifier, insecureRegistries)
+func getRemoteDigest(identifier string, cfg Config) (string, error) {
+	idx, err := getRemoteIndex(identifier, cfg)
 	if err == nil {
 		return digest(idx)
 	}
 
-	img, err := getRemoteImage(identifier, insecureRegistries)
+	img, err := getRemoteImage(identifier, cfg)
 	if err != nil {
 		return "", fmt.Errorf("getting image: %w", err)
 	}
@@ -65,8 +65,8 @@ func getRemoteDigest(identifier string, insecureRegistries map[string]bool) (str
 }
 
 // RetrieveRemoteConfig retrieves the remote config file for an image
-func RetrieveRemoteConfig(identifier string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {
-	img, err := getRemoteImage(identifier, insecureRegistries)
+func RetrieveRemoteConfig(identifier string, cfg Config) (*v1.ConfigFile, error) {
+	img, err := getRemoteImage(identifier, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func RetrieveRemoteConfig(identifier string, insecureRegistries map[string]bool)
 }
 
 // Push pushes the tarball image
-func Push(tarPath, tag string, insecureRegistries map[string]bool) (string, error) {
+func Push(tarPath, tag string, cfg Config) (string, error) {
 	t, err := name.NewTag(tag, name.WeakValidation)
 	if err != nil {
 		return "", fmt.Errorf("parsing tag %q: %w", tag, err)
@@ -90,11 +90,11 @@ func Push(tarPath, tag string, insecureRegistries map[string]bool) (string, erro
 		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErrPrefix, t, err)
 	}
 
-	return getRemoteDigest(tag, insecureRegistries)
+	return getRemoteDigest(tag, cfg)
 }
 
-func getRemoteImage(identifier string, insecureRegistries map[string]bool) (v1.Image, error) {
-	ref, err := parseReference(identifier, insecureRegistries)
+func getRemoteImage(identifier string, cfg Config) (v1.Image, error) {
+	ref, err := parseReference(identifier, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +102,8 @@ func getRemoteImage(identifier string, insecureRegistries map[string]bool) (v1.I
 	return remoteImage(ref, remote.WithAuthFromKeychain(primaryKeychain))
 }
 
-func getRemoteIndex(identifier string, insecureRegistries map[string]bool) (v1.ImageIndex, error) {
-	ref, err := parseReference(identifier, insecureRegistries)
+func getRemoteIndex(identifier string, cfg Config) (v1.ImageIndex, error) {
+	ref, err := parseReference(identifier, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -116,13 +116,13 @@ func IsInsecure(ref name.Reference, insecureRegistries map[string]bool) bool {
 	return insecureRegistries[ref.Context().Registry.Name()]
 }
 
-func parseReference(s string, insecureRegistries map[string]bool, opts ...name.Option) (name.Reference, error) {
+func parseReference(s string, cfg Config, opts ...name.Option) (name.Reference, error) {
 	ref, err := name.ParseReference(s, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("parsing reference %q: %w", s, err)
 	}
 
-	if IsInsecure(ref, insecureRegistries) {
+	if IsInsecure(ref, cfg.GetInsecureRegistries()) {
 		ref, err = name.ParseReference(s, name.Insecure)
 		if err != nil {
 			logrus.Warnf("error getting insecure registry: %s\nremote references may not be retrieved", err.Error())

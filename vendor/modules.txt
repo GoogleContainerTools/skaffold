@@ -840,7 +840,7 @@ k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
 # k8s.io/apiextensions-apiserver v0.18.1
 ## explicit
-# k8s.io/apimachinery v0.18.1 => k8s.io/apimachinery v0.17.4
+# k8s.io/apimachinery v0.19.2 => k8s.io/apimachinery v0.17.4
 ## explicit
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
@@ -1134,6 +1134,7 @@ knative.dev/pkg/kmeta
 knative.dev/pkg/kmp
 knative.dev/pkg/tracker
 # sigs.k8s.io/yaml v1.2.0
+## explicit
 sigs.k8s.io/yaml
 # github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.1+incompatible
 # github.com/containerd/containerd => github.com/containerd/containerd v1.3.4

@@ -312,6 +312,47 @@ func TestGetBuildArgs(t *testing.T) {
 			},
 			want: []string{"--no-cache"},
 		},
+
+		{
+			description: "secret with no source",
+			artifact: &latest.DockerArtifact{
+				Secret: &latest.DockerSecret{
+					ID: "mysecret",
+				},
+			},
+			want: []string{"--secret", "id=mysecret"},
+		},
+		{
+			description: "secret with source",
+			artifact: &latest.DockerArtifact{
+				Secret: &latest.DockerSecret{
+					ID:     "mysecret",
+					Source: "foo.src",
+				},
+			},
+			want: []string{"--secret", "id=mysecret,src=foo.src"},
+		},
+		{
+			description: "secret with destination",
+			artifact: &latest.DockerArtifact{
+				Secret: &latest.DockerSecret{
+					ID:          "mysecret",
+					Destination: "foo.dst",
+				},
+			},
+			want: []string{"--secret", "id=mysecret,dst=foo.dst"},
+		},
+		{
+			description: "secret with source and destination",
+			artifact: &latest.DockerArtifact{
+				Secret: &latest.DockerSecret{
+					ID:          "mysecret",
+					Source:      "foo.src",
+					Destination: "foo.dst",
+				},
+			},
+			want: []string{"--secret", "id=mysecret,src=foo.src,dst=foo.dst"},
+		},
 		{
 			description: "all",
 			artifact: &latest.DockerArtifact{

@@ -29,6 +29,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
@@ -276,7 +279,7 @@ func TestNewForConfig(t *testing.T) {
 			},
 			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
-			expectedDeployer: &deploy.KubectlDeployer{},
+			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
 			description: "bad tagger config",
@@ -301,7 +304,7 @@ func TestNewForConfig(t *testing.T) {
 			shouldErr:        true,
 			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
-			expectedDeployer: &deploy.KubectlDeployer{},
+			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
 			description: "no artifacts, cache",
@@ -320,7 +323,7 @@ func TestNewForConfig(t *testing.T) {
 			},
 			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
-			expectedDeployer: &deploy.KubectlDeployer{},
+			expectedDeployer: &kubectl.Deployer{},
 			cacheArtifacts:   true,
 		},
 		{
@@ -343,9 +346,9 @@ func TestNewForConfig(t *testing.T) {
 			expectedBuilder: &local.Builder{},
 			expectedTester:  &test.FullTester{},
 			expectedDeployer: deploy.DeployerMux([]deploy.Deployer{
-				&deploy.HelmDeployer{},
-				&deploy.KubectlDeployer{},
-				&deploy.KustomizeDeployer{},
+				&helm.Deployer{},
+				&kubectl.Deployer{},
+				&kustomize.Deployer{},
 			}),
 		},
 	}

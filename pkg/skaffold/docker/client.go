@@ -60,7 +60,7 @@ type Config interface {
 func NewAPIClientImpl(cfg Config) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
 		env, apiClient, err := newAPIClient(cfg.GetKubeContext(), cfg.MinikubeProfile())
-		dockerAPIClient = NewLocalDaemon(apiClient, env, cfg.Prune(), cfg.GetInsecureRegistries())
+		dockerAPIClient = NewLocalDaemon(apiClient, env, cfg.Prune(), cfg)
 		dockerAPIClientErr = err
 	})
 

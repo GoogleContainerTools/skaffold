@@ -17,7 +17,7 @@ limitations under the License.
 package analyze
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 )
 
 // helmAnalyzer is a Visitor during the directory analysis that finds helm charts
