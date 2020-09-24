@@ -57,7 +57,7 @@ The `docker` builder will use the `alias` of an `ArtifactDependency` as a build 
           alias: BASE
  ```
 
-Here `BASE=gcr.io/X/simple-go-app:<tag>@sha:<sha>` is passed as a `--build-arg` (or a buildKit parameter) when building `leeroy-app`.
+Here the alias is used to populate a build arg `BASE=gcr.io/X/simple-go-app:<tag>@sha:<sha>` passed along with a `--build-arg` flag (or a buildKit parameter) when building `leeroy-app`.
 
 ### Custom builder
 
@@ -65,7 +65,7 @@ The `custom` builder will be supplied each `ArtifactDependency`'s `alias` and im
 
 ### Buildpacks builder
 
-Buildpacks supports overriding the run-image and the builder-image in its current schema. We extend this to allow specifying `ArtifactDependency` aliases as the value for the `runImage` and `builder` fields.
+Buildpacks supports overriding the run-image and the builder-image in its current schema. We extend this to allow specifying `ArtifactDependency`'s `image` name as the value for the `runImage` and `builder` fields.
 
 ```yaml
 build:
@@ -74,21 +74,18 @@ build:
   - image: run-image
   - image: skaffold-buildpacks
     buildpacks:
-      builder: "{{ .BUILDER_IMAGE }}"
-      runImage: "{{ .RUN_IMAGE }}"
+      builder: builder-image
+      runImage: run-image
     requires:
       - image: builder-image
-        alias: BUILDER_IMAGE
       - image: run-image
-        alias: RUN_IMAGE
 ```
 
 If there are any additional images in the `required` section it only enforces that they get built prior to the current image. However, the buildpacks builder cannot really reference them in any other way.
 
 ### Jib builder
 
-The Jib builder supports [changing the base image](https://cloud.google.com/java/getting-started/jib#base-image). We allow substituting the `required` image aliases with the image references in the specific builder `args` section.
-This will allow overriding the `jib.from.image` property that sets the base image.
+The Jib builder supports [changing the base image](https://cloud.google.com/java/getting-started/jib#base-image). We add a new field `baseImage` to the builder definition that can be set to an `ArtifactDependency`'s `image` field.
 
 For Maven:
 
@@ -99,14 +96,10 @@ build:
   - image: test-jib-maven
     jib:
       type: maven
-      args: 
-      - -Djib.from.image=docker://{{ .BASE_IMAGE }}
+      baseImage: base-image
     requires:
       - image: base-image
-        alias: BASE_IMAGE
 ```
-
-where `jib.from.image` is added appropriately the `pom.xml`
 
 Similarly, for Gradle:
 
@@ -117,14 +110,12 @@ build:
   - image: test-jib-gradle
     jib:
       type: gradle
-      args: 
-      - -Djib.from.image=registry://{{ .BASE_IMAGE }}
+      baseImage: base-image
     requires:
       - image: base-image
-        alias: BASE_IMAGE
 ```
 
-where `jib.from.image` is added to the Gradle configuration.
+This will allow Skaffold to override the `jib.from.image` property that sets the base image with a flag like `-Djib.from.image=registry://gcr.io/X/base-image:<tag>@sha:<sha>`
 
 ### Bazel builder
 
@@ -162,14 +153,15 @@ type ArtifactResolver interface {
 }
 ```
 
-This necessitates all multi-artifact builder implementations to also accept a slice of already built artifacts' information. All single artifact builders require an `ArtifactResolver` that can provide the required artifacts.
+This necessitates all multi-artifact builder implementations to also accept a slice of already built artifacts' information. This simplifies handling the scenario when some artifacts are either retrievable from cache or do not require a rebuild but are required dependencies for another artifact that needs to be rebuilt (due to cache miss or file changes during a dev loop).
+All single artifact builders require an `ArtifactResolver` that can provide the required artifacts. This is an optimization over just using `[]Artifact` since we need to retrieve by image name several times during multiple builds.
 
 ## Build controller
 
 [InSequence](https://github.com/GoogleContainerTools/skaffold/blob/10275c66a142719897894308b9e566953712a0fe/pkg/skaffold/build/sequence.go) and [InParallel](https://github.com/GoogleContainerTools/skaffold/blob/10275c66a142719897894308b9e566953712a0fe/pkg/skaffold/build/parallel.go) are two build controllers for deciding how to schedule the run of multiple builds together. `InSequence` runs all builds sequentially whereas `InParallel` runs them parallely with a max concurrency defined by a `concurrency` field.
 
 After introducing inter-artifact dependencies we'll need to run the builds in a topologically sorted order.
-We introduce a new controller `scheduler.go` and deprecate `sequence.go` and `parallel.go`. Here we model the `Artifact` slice graph using a set of `go channels` to achieve the topologically sorted build order.
+We introduce a new controller `scheduler.go` and remove `sequence.go` and `parallel.go`. Here we model the `Artifact` slice graph using a set of `go channels` to achieve the topologically sorted build order.
 
 ```go
 type status struct {
@@ -227,7 +219,7 @@ type buildStatusRecorder interface {
 Finally we have the only exported function in `scheduler.go` that orchestrates all the builds:
 
 ```go
-func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, existing []Artifact,  buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
+func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, existing []Artifact,  buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error)
 ```
 
 This function maintains an instance of `buildStatusRecorder` implementation and can pass it as an `ArtifactResolver` to the various `ArtifactBuilder`s while recording the status after each build completion.
@@ -237,6 +229,19 @@ This function maintains an instance of `buildStatusRecorder` implementation and 
 Skaffold currently allows specifying the `concurrency` property in `build` which affects how many builds can be running at the same time. However it doesn't address the issue of certain builders (`jib` and `bazel`) not being safe for multiple concurrent runs against the same workspace or context. We can fix this also since we are reworking the build controller anyways. 
 
 We define a concept of lease on workspaces by preprocessing the list of artifacts. Each builder tries to acquire a lease on the context/workspace prior to starting the build. Only workspaces associated with concurrency-safe builders allot multiple leases, otherwise it assigns one lease at a time.
+
+```go
+type Lease interface {
+  Acquire() error
+  Release() error
+}
+
+type LeaseProvider interface {
+  Get(a *latest.Artifact) Lease
+}
+
+func NewLeaseProvider(artifacts []latest.Artifact) LeaseProvider
+```
 
 This integrates with the `InOrder` build controller above.
 
