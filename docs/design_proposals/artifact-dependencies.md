@@ -68,6 +68,8 @@ Buildpacks supports overriding the run-image and the builder-image in its curren
 ```yaml
 build:
   artifacts:
+  - image: builder-image
+  - image: run-image
   - image: skaffold-buildpacks
     buildpacks:
       builder: "{{ .BUILDER_IMAGE }}"
@@ -91,37 +93,33 @@ For Maven:
 ```yaml
 build:
   artifacts:
+  - image: base-image
   - image: test-jib-maven
     jib:
       type: maven
       args: 
-      - -DbaseImage=docker://{{ .BASE_IMAGE }}
+      - -Djib.from.image=docker://{{ .BASE_IMAGE }}
+    requires:
+      - image: base-image
+        alias: BASE_IMAGE
 ```
 
-where `baseImage` is added as a property to the `pom.xml`
-
-```xml
-<properties>
-  <baseImage>image</baseImage>
-</properties>
-...
-<configuration>
-  <from>
-    <image>${baseImage}</image>
-  </from>
-</configuration>
-```
+where `jib.from.image` is added appropriately the `pom.xml`
 
 Similarly, for Gradle:
 
 ```yaml
 build:
   artifacts:
+  - image: base-image
   - image: test-jib-gradle
     jib:
       type: gradle
       args: 
       - -Djib.from.image=registry://{{ .BASE_IMAGE }}
+    requires:
+      - image: base-image
+        alias: BASE_IMAGE
 ```
 
 where `jib.from.image` is added to the Gradle configuration.
