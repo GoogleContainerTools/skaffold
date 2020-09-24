@@ -39,7 +39,7 @@ We add three new validations to the [validation](https://github.com/GoogleContai
 - Unique artifact aliases.
   - We ensure that within *each* artifact dependency slice the aliases are unique. 
 - Valid aliases
-  - Since aliases are used as environment variable keys or template keys we validate that they match the regex `[a-zA-Z_][a-zA-Z0-9_]*`
+  - We validate that `alias`es match the regex `[a-zA-Z_][a-zA-Z0-9_]*` for `ArtifactDependency` defined in `docker` and `custom` builders since these are used as build args and environment variables respectively.
 
 ## Referencing dependencies
 
