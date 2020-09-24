@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"reflect"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -28,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -84,10 +86,25 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		if err := ioutil.WriteFile(configFile, newCfg, 0644); err != nil {
 			return fmt.Errorf("writing config file: %w", err)
 		}
-		color.Default.Fprintf(out, "New config at version %s generated and written to %s\n", cfg.GetVersion(), opts.ConfigurationFile)
+		color.Default.Fprintf(out, "New config at version %s generated and written to %s\n", cfg.GetVersion(), configFile)
+		warnForProfilePatchUpgrade(cfg, out)
 	} else {
 		out.Write(newCfg)
 	}
 
 	return nil
+}
+
+func warnForProfilePatchUpgrade(config util.VersionedConfig, out io.Writer) {
+	profiles := reflect.ValueOf(config).Elem().FieldByName("Profiles")
+	if !profiles.IsValid() {
+		return
+	}
+
+	for i := 0; i < profiles.Len(); i++ {
+		if !profiles.Index(i).FieldByName("Patches").IsNil() {
+			color.Red.Fprintln(out, "Patch definitions in profiles cannot be upgraded automatically. Please fix them manually.")
+			return
+		}
+	}
 }

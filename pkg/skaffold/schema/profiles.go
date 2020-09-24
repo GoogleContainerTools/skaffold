@@ -38,8 +38,8 @@ import (
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
-func ApplyProfiles(c interface{}, opts cfg.SkaffoldOptions) error {
-	ver, err := apiversion.Parse(c.(util.VersionedConfig).GetVersion())
+func ApplyProfiles(c util.VersionedConfig, opts cfg.SkaffoldOptions) error {
+	ver, err := apiversion.Parse(c.GetVersion())
 	if err != nil {
 		return err
 	}

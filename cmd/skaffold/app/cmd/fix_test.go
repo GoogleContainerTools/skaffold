@@ -166,7 +166,16 @@ build:
 }
 
 func TestFixOverwrite(t *testing.T) {
-	inputYaml := `apiVersion: skaffold/v1alpha4
+	tests := []struct {
+		description  string
+		inputYAML    string
+		outputYAML   string
+		patchWarning bool
+	}{
+
+		{
+			description: "without profile patch definition",
+			inputYAML: `apiVersion: skaffold/v1alpha4
 kind: Config
 build:
   artifacts:
@@ -181,8 +190,8 @@ deploy:
   kubectl:
     manifests:
     - k8s/deployment.yaml
-`
-	expectedOutput := fmt.Sprintf(`apiVersion: %s
+`,
+			outputYAML: fmt.Sprintf(`apiVersion: %s
 kind: Config
 build:
   artifacts:
@@ -197,17 +206,72 @@ deploy:
   kubectl:
     manifests:
     - k8s/deployment.yaml
-`, latest.Version)
+`, latest.Version),
+		},
+		{
+			description: "with profile patch definition",
+			inputYAML: `apiVersion: skaffold/v2beta4
+kind: Config
+build:
+  artifacts:
+  - image: docker/image
+    docker:
+      dockerfile: dockerfile.test
+test:
+- image: docker/image
+  structureTests:
+  - ./test/*
+deploy:
+  kubectl:
+    manifests:
+    - k8s/deployment.yaml
+profiles:
+- name: dev
+  patches:
+    - op: replace
+      path: /build/artifacts/0/docker/dockerfile
+      value: Dockerfile_dev
+`,
+			outputYAML: fmt.Sprintf(`apiVersion: %s
+kind: Config
+build:
+  artifacts:
+  - image: docker/image
+    docker:
+      dockerfile: dockerfile.test
+test:
+- image: docker/image
+  structureTests:
+  - ./test/*
+deploy:
+  kubectl:
+    manifests:
+    - k8s/deployment.yaml
+profiles:
+- name: dev
+  patches:
+  - op: replace
+    path: /build/artifacts/0/docker/dockerfile
+    value: Dockerfile_dev
+`, latest.Version),
+			patchWarning: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfgFile := t.TempFile("config", []byte(test.inputYAML))
 
-	testutil.Run(t, "", func(t *testutil.T) {
-		cfgFile := t.TempFile("config", []byte(inputYaml))
+			var b bytes.Buffer
+			err := fix(&b, cfgFile, latest.Version, true)
 
-		var b bytes.Buffer
-		err := fix(&b, cfgFile, latest.Version, true)
-
-		output, _ := ioutil.ReadFile(cfgFile)
-
-		t.CheckNoError(err)
-		t.CheckDeepEqual(expectedOutput, string(output))
-	})
+			output, _ := ioutil.ReadFile(cfgFile)
+			outputMessage := fmt.Sprintf("New config at version %s generated and written to %s\n", latest.Version, cfgFile)
+			if test.patchWarning {
+				outputMessage = fmt.Sprintf("%sPatch definitions in profiles cannot be upgraded automatically. Please fix them manually.\n", outputMessage)
+			}
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.outputYAML, string(output))
+			t.CheckDeepEqual(outputMessage, b.String())
+		})
+	}
 }
