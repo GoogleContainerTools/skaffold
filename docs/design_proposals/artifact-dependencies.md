@@ -198,9 +198,12 @@ func (a *artifactChanModel) waitForDependencies(ctx context.Context) error {
 		// wait for required builds to complete
 		select {
 		case <-ctx.Done():
+			if ctx.Err() == context.Canceled {
+				return ctx.Err()
+			}
 		case <-depStatus.failure:
 			return fmt.Errorf("failed to build required artifact: %q", depStatus.imageName)
-		case <-dep:
+		case <-depStatus.success:
 		}
 	}
     return nil
