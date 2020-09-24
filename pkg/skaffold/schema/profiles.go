@@ -29,7 +29,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta4"
 	skutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -61,7 +60,7 @@ func ApplyProfiles(c interface{}, opts cfg.SkaffoldOptions) error {
 			return fmt.Errorf("couldn't find profile %s", name)
 		}
 
-		if err := applyProfile(c, profile); err != nil {
+		if err := applyProfile(c, ver, profile); err != nil {
 			return fmt.Errorf("applying profile %q: %w", name, err)
 		}
 	}
@@ -226,7 +225,7 @@ func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
 
 	return skutil.RegexEqual(kubeContext, currentKubeConfig.CurrentContext), nil
 }
-func applyProfile(config interface{}, profile interface{}) error {
+func applyProfile(config interface{}, version semver.Version, profile interface{}) error {
 	c := reflect.Indirect(reflect.ValueOf(config))
 	p := reflect.Indirect(reflect.ValueOf(profile))
 	// Apply profile, field by field
@@ -248,7 +247,7 @@ func applyProfile(config interface{}, profile interface{}) error {
 	if !p.FieldByName("Patches").IsValid() {
 		return nil
 	}
-	profilePatches := p.FieldByName("Patches").Interface().([]latest.JSONPatch)
+	profilePatches := p.FieldByName("Patches")
 
 	// Apply profile patches
 	buf, err := yaml.Marshal(c.Interface())
@@ -257,30 +256,23 @@ func applyProfile(config interface{}, profile interface{}) error {
 	}
 
 	var patches []yamlpatch.Operation
-	for _, patch := range profilePatches {
-		// Default patch operation to `replace`
-		op := patch.Op
-		if op == "" {
-			op = "replace"
+	v1b4, _ := apiversion.Parse(v1beta4.Version)
+
+	for i := 0; i < profilePatches.Len(); i++ {
+		var patch *yamlpatch.Operation
+		switch {
+		// Profile patches not supported before v1beta4
+		case version.LT(v1b4):
+			return fmt.Errorf("profile patches not supported in v%v", v1b4)
+		// when modifying the `JSONPatch` struct add a case condition here corresponding to the new version and a corresponding `createPatchOperation` function.
+		default:
+			patch, err = createPatchOperation(profilePatches.Index(i), buf)
 		}
 
-		var value *yamlpatch.Node
-		if v := patch.Value; v != nil {
-			value = &v.Node
+		if err != nil {
+			return err
 		}
-
-		patch := yamlpatch.Operation{
-			Op:    yamlpatch.Op(op),
-			Path:  yamlpatch.OpPath(patch.Path),
-			From:  yamlpatch.OpPath(patch.From),
-			Value: value,
-		}
-
-		if !tryPatch(patch, buf) {
-			return fmt.Errorf("invalid path: %s", patch.Path)
-		}
-
-		patches = append(patches, patch)
+		patches = append(patches, *patch)
 	}
 
 	buf, err = yamlpatch.Patch(patches).Apply(buf)
@@ -308,6 +300,34 @@ func tryPatch(patch yamlpatch.Operation, buf []byte) (valid bool) {
 
 	_, err := yamlpatch.Patch([]yamlpatch.Operation{patch}).Apply(buf)
 	return err == nil
+}
+
+func createPatchOperation(patchProfile reflect.Value, data []byte) (*yamlpatch.Operation, error) {
+	op := patchProfile.FieldByName("Op").String()
+	path := patchProfile.FieldByName("Path").String()
+	from := patchProfile.FieldByName("From").String()
+	val := patchProfile.FieldByName("Value").Interface().(*util.YamlpatchNode)
+	// Default patch operation to `replace`
+	if op == "" {
+		op = "replace"
+	}
+
+	var value *yamlpatch.Node
+	if val != nil {
+		value = &val.Node
+	}
+
+	patch := yamlpatch.Operation{
+		Op:    yamlpatch.Op(op),
+		Path:  yamlpatch.OpPath(path),
+		From:  yamlpatch.OpPath(from),
+		Value: value,
+	}
+
+	if !tryPatch(patch, data) {
+		return nil, fmt.Errorf("invalid path: %s", patch.Path)
+	}
+	return &patch, nil
 }
 
 func profilesByName(profiles reflect.Value) map[string]interface{} {
