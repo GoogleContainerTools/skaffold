@@ -21,11 +21,12 @@ This allows us to define a build stanza like below where image `leeroy-app` requ
 ```yaml
 build:
  artifacts:
-   - image: simple-go-app
    - image: leeroy-app
      requires:
        - image: simple-go-app
          alias: BASE
+   - image: simple-go-app
+
 ```
 
 Alias is a token that will be replaced with the image reference in the builder definition files. If no value is provided for `alias` then it defaults to the value of `image`.
@@ -35,7 +36,7 @@ Alias is a token that will be replaced with the image reference in the builder d
 We add three new validations to the [validation](https://github.com/GoogleContainerTools/skaffold/blob/10275c66a142719897894308b9e566953712a0fe/pkg/skaffold/schema/validation/validation.go#L37) package after the introduction of artifact dependencies:
 - Cyclic references among artifacts.
   - We cannot have image `A` depend on image `B` depend on image `C` depend on image `A`.
-  - We run a simple depth first search cycle detection algorithm treating our `Artifact` slice like a directed graph- image `A` depending on image `B` implies a directed edge from `A` to `B`.
+  - We run a simple depth-first-search cycle detection algorithm treating our `Artifact` slice like a directed graph- image `A` depending on image `B` implies a directed edge from `A` to `B`.
 - Unique artifact aliases.
   - We ensure that within *each* artifact dependency slice the aliases are unique. 
 - Valid aliases
@@ -231,13 +232,8 @@ Skaffold currently allows specifying the `concurrency` property in `build` which
 We define a concept of lease on workspaces by preprocessing the list of artifacts. Each builder tries to acquire a lease on the context/workspace prior to starting the build. Only workspaces associated with concurrency-safe builders allot multiple leases, otherwise it assigns one lease at a time.
 
 ```go
-type Lease interface {
-  Acquire() error
-  Release() error
-}
-
 type LeaseProvider interface {
-  Get(a *latest.Artifact) Lease
+  Acquire(a *latest.Artifact) (release func(), err error)
 }
 
 func NewLeaseProvider(artifacts []latest.Artifact) LeaseProvider
@@ -321,7 +317,7 @@ func getArtifactDAG(artifacts []*latest.Artifact) *artifactDAG {
 	return dag
 }
 
-func (dag *artifactDAG) allDependents(artifact *latest.Artifact) []*latest.Artifact {
+func (dag *artifactDAG) dependents(artifact *latest.Artifact) []*latest.Artifact {
 	slice, ok := dag.m.Load(artifact.ImageName)
 	if !ok {
 		return nil
@@ -330,20 +326,20 @@ func (dag *artifactDAG) allDependents(artifact *latest.Artifact) []*latest.Artif
 }
 ```
 
-This lets us query for _all artifacts that require a given artifact_.
+In `addRebuild` we run a depth-first-search from the target artifact to get its transitive closure in the `artifactDAG` and queue a rebuild for all matching artifacts.
 
 ```go
 func addRebuild(dag *artifactDAG, artifact *latest.Artifact, rebuild func(*latest.Artifact), isTarget func(*latest.Artifact) bool) {
 	if isTarget(artifact) {
 		rebuild(artifact)
 	}
-	for _, a := range dag.allDependents(artifact) {
+	for _, a := range dag.dependents(artifact) {
 		addRebuild(dag, a, rebuild, isTarget)
 	}
 }
 ```
 
- Now we can request rebuild for all affected artifacts as a callback to the file monitoring event by setting it  in the `Dev` [function](https://github.com/GoogleContainerTools/skaffold/blob/10275c66a142719897894308b9e566953712a0fe/pkg/skaffold/runner/dev.go#L161)
+ Now we can request rebuild for all required artifacts as a callback to the file monitoring event by setting it  in the `Dev` [function](https://github.com/GoogleContainerTools/skaffold/blob/10275c66a142719897894308b9e566953712a0fe/pkg/skaffold/runner/dev.go#L161)
 
 ```diff
 -    r.changeSet.AddRebuild(artifact)
