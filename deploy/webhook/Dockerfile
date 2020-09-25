@@ -38,7 +38,7 @@ RUN chmod +x kubectl
 
 FROM node:10.15.3-stretch as runtime_deps
 ENV FIREBASE_TOOLS_VERSION 7.13.1
-RUN npm install -g firebase-tools@${FIREBASE_TOOLS_VERSION} postcss-cli
+RUN npm install -g firebase-tools@${FIREBASE_TOOLS_VERSION} postcss postcss-cli
 WORKDIR /app/docs
 ENV AUTOPREFIXER_VERSION 9.8.6
 RUN npm install autoprefixer@${AUTOPREFIXER_VERSION}
