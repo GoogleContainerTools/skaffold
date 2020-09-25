@@ -62,8 +62,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run", ``),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", ``),
 		},
 		{
 			description: "invalid manifest",
@@ -72,8 +72,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run", `foo`),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", `foo`),
 			shouldErr: true,
 		},
 		{
@@ -88,8 +88,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run", output),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output),
 			shouldErr: true,
 		},
 		{
@@ -107,9 +107,9 @@ spec:
 - foo.yaml`},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kustomize build -o .pipeline .", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run --fn-path kpt-func.yaml", output).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kustomize build -o .tmp-sink-dir .", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --fn-path kpt-func.yaml", output).
 				AndRun("kpt live apply valid_path"),
 			expected: []string{"default"},
 		},
@@ -120,8 +120,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run", output).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output).
 				AndRunOut("kpt live init .kpt-hydrated", ``).
 				AndRunErr("kpt live apply .kpt-hydrated", errors.New("BUG")),
 			shouldErr: true,
@@ -142,8 +142,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run", output).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output).
 				AndRun("kpt live apply valid_path --poll-period 5s --reconcile-timeout 2m"),
 		},
 		{
@@ -162,8 +162,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run", output).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output).
 				AndRun("kpt live apply valid_path --poll-period foo --reconcile-timeout bar"),
 		},
 		{
@@ -182,8 +182,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run", output).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output).
 				AndRun("kpt live apply valid_path --prune-propagation-policy Orphan --prune-timeout 2m"),
 		},
 		{
@@ -202,8 +202,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run", output).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output).
 				AndRun("kpt live apply valid_path --prune-propagation-policy foo --prune-timeout bar"),
 		},
 	}
@@ -476,8 +476,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run", output1),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output1),
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
@@ -507,8 +507,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source test", ``).
-				AndRunOut(fmt.Sprintf("kpt fn sink %s", filepath.Join(".pipeline", "test")), ``).
-				AndRunOut("kpt fn run .pipeline --dry-run --fn-path kpt-func.yaml", output3),
+				AndRunOut(fmt.Sprintf("kpt fn sink %s", filepath.Join(".tmp-sink-dir", "test")), ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --fn-path kpt-func.yaml", output3),
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
@@ -550,8 +550,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", output2),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", output2),
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
@@ -578,8 +578,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run", ``),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", ``),
 			expected: "\n",
 		},
 		{
@@ -592,7 +592,7 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			shouldErr: true,
 		},
 		{
@@ -608,9 +608,9 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kustomize build -o .pipeline .", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run", output1),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kustomize build -o .tmp-sink-dir .", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output1),
 			kustomizations: map[string]string{"kustomization.yaml": `resources:
 - foo.yaml`},
 			expected: `apiVersion: v1
@@ -630,8 +630,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOutErr("kpt fn source .", ``, errors.New("BUG")).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run", "invalid pipeline"),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", "invalid pipeline"),
 			shouldErr: true,
 		},
 		{
@@ -641,8 +641,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOutErr("kpt fn sink .pipeline", ``, errors.New("BUG")).
-				AndRunOut("kpt fn run .pipeline --dry-run", "invalid pipeline"),
+				AndRunOutErr("kpt fn sink .tmp-sink-dir", ``, errors.New("BUG")).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", "invalid pipeline"),
 			shouldErr: true,
 		},
 		{
@@ -658,9 +658,9 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOutErr("kustomize build -o .pipeline .", ``, errors.New("BUG")).
-				AndRunOut("kpt fn run .pipeline --dry-run", output1),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOutErr("kustomize build -o .tmp-sink-dir .", ``, errors.New("BUG")).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output1),
 			kustomizations: map[string]string{"kustomization.yaml": `resources:
 - foo.yaml`},
 			shouldErr: true,
@@ -672,8 +672,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOutErr("kpt fn run .pipeline --dry-run", "invalid pipeline", errors.New("BUG")),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOutErr("kpt fn run .tmp-sink-dir --dry-run", "invalid pipeline", errors.New("BUG")),
 			shouldErr: true,
 		},
 		{
@@ -687,8 +687,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run --global-scope --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --global-scope --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
 			expected: "\n",
 		},
 		{
@@ -702,8 +702,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run --mount type=bind,src=$(pwd),dst=/source --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --mount type=bind,src=$(pwd),dst=/source --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
 			expected: "\n",
 		},
 		{
@@ -717,8 +717,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run --mount foo,,bar --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --mount foo,,bar --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
 			expected: "\n",
 		},
 		{
@@ -733,8 +733,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .pipeline", ``).
-				AndRunOut("kpt fn run .pipeline --dry-run --network --network-name foo --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
+				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --network --network-name foo --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
 			expected: "\n",
 		},
 	}

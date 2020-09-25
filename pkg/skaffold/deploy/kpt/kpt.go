@@ -45,7 +45,7 @@ import (
 const (
 	inventoryTemplate = "inventory-template.yaml"
 	kptHydrated       = ".kpt-hydrated"
-	pipeline          = ".pipeline"
+	tmpSinkDir        = ".tmp-sink-dir"
 	kptFnAnnotation   = "config.kubernetes.io/function"
 	kptFnLocalConfig  = "config.kubernetes.io/local-config"
 )
@@ -72,7 +72,12 @@ func NewDeployer(cfg types.Config, labels map[string]string) *Deployer {
 // outputs them to the applyDir, and runs `kpt live apply` against applyDir to create resources in the cluster.
 // `kpt live apply` supports automated pruning declaratively via resources in the applyDir.
 func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
-	manifests, err := k.renderManifests(ctx, out, builds)
+	flags, err := k.getKptFnRunArgs()
+	if err != nil {
+		return []string{}, err
+	}
+
+	manifests, err := k.renderManifests(ctx, out, builds, flags)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +98,12 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 	}
 
 	manifest.Write(manifests.String(), filepath.Join(applyDir, "resources.yaml"), out)
+	// Hydrated config is stored in applyDir, no need to dup the config in temporary sink dir.
+	if k.Fn.SinkDir == tmpSinkDir {
+		if err := os.RemoveAll(tmpSinkDir); err != nil {
+			return nil, fmt.Errorf("deleting temporary directory %s: %w", k.Fn.SinkDir, err)
+		}
+	}
 
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "apply"}, k.getKptLiveApplyArgs(), nil)...)
 	cmd.Stdout = out
@@ -149,7 +160,12 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 // Render hydrates manifests using both kustomization and kpt functions.
 func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, _ bool, filepath string) error {
-	manifests, err := k.renderManifests(ctx, out, builds)
+	flags, err := k.getKptFnRunArgs()
+	if err != nil {
+		return err
+	}
+
+	manifests, err := k.renderManifests(ctx, out, builds, flags)
 	if err != nil {
 		return err
 	}
@@ -160,21 +176,21 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 // renderManifests handles a majority of the hydration process for manifests.
 // This involves reading configs from a source directory, running kustomize build, running kpt pipelines,
 // adding image digests, and adding run-id labels.
-func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []build.Artifact) (manifest.ManifestList, error) {
+func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []build.Artifact,
+	flags []string) (manifest.ManifestList, error) {
 	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
 	}
-
-	// .pipeline is a temp dir used to store output between steps of the desired workflow
-	// This can be removed once kpt can fully support the desired workflow independently.
-	if err := os.RemoveAll(filepath.Join(pipeline, k.Dir)); err != nil {
-		return nil, fmt.Errorf("deleting temporary directory %s: %w", filepath.Join(pipeline, k.Dir), err)
+	if k.Fn.SinkDir == "" {
+		k.Fn.SinkDir = tmpSinkDir
 	}
-	// 0755 is a permission setting where the owner can read, write, and execute.
-	// Others can read and execute but not modify the directory.
-	if err := os.MkdirAll(filepath.Join(pipeline, k.Dir), 0755); err != nil {
-		return nil, fmt.Errorf("creating temporary directory %s: %w", filepath.Join(pipeline, k.Dir), err)
+
+	if err := os.RemoveAll(filepath.Join(k.Fn.SinkDir, k.Dir)); err != nil {
+		return nil, fmt.Errorf("deleting temporary directory %s: %w", filepath.Join(k.Fn.SinkDir, k.Dir), err)
+	}
+	if err := os.MkdirAll(filepath.Join(k.Fn.SinkDir, k.Dir), os.ModePerm); err != nil {
+		return nil, fmt.Errorf("creating temporary directory %s: %w", filepath.Join(k.Fn.SinkDir, k.Dir), err)
 	}
 
 	if err := k.readConfigs(ctx); err != nil {
@@ -185,7 +201,7 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []bu
 		return nil, fmt.Errorf("kustomize build: %w", err)
 	}
 
-	manifests, err := k.kptFnRun(ctx)
+	manifests, err := k.kptFnRun(ctx, flags)
 	if err != nil {
 		return nil, fmt.Errorf("running kpt functions: %w", err)
 	}
@@ -213,7 +229,7 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []bu
 }
 
 // readConfigs uses `kpt fn source` to read config manifests from k.Dir
-// and uses `kpt fn sink` to output those manifests to .pipeline.
+// and uses `kpt fn sink` to output those manifests to sinkDir.
 func (k *Deployer) readConfigs(ctx context.Context) error {
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(k.Dir, []string{"fn", "source"}, nil, nil)...)
 	b, err := util.RunCmdOut(cmd)
@@ -221,7 +237,7 @@ func (k *Deployer) readConfigs(ctx context.Context) error {
 		return err
 	}
 
-	cmd = exec.CommandContext(ctx, "kpt", kptCommandArgs(filepath.Join(pipeline, k.Dir), []string{"fn", "sink"}, nil, nil)...)
+	cmd = exec.CommandContext(ctx, "kpt", kptCommandArgs(filepath.Join(k.Fn.SinkDir, k.Dir), []string{"fn", "sink"}, nil, nil)...)
 	cmd.Stdin = bytes.NewBuffer(b)
 	if _, err := util.RunCmdOut(cmd); err != nil {
 		return err
@@ -237,7 +253,8 @@ func (k *Deployer) kustomizeBuild(ctx context.Context) error {
 		return nil
 	}
 
-	cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomize.BuildCommandArgs([]string{"-o", filepath.Join(pipeline, k.Dir)}, k.Dir)...)...)
+	cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"},
+		kustomize.BuildCommandArgs([]string{"-o", filepath.Join(k.Fn.SinkDir, k.Dir)}, k.Dir)...)...)
 	if _, err := util.RunCmdOut(cmd); err != nil {
 		return err
 	}
@@ -247,9 +264,9 @@ func (k *Deployer) kustomizeBuild(ctx context.Context) error {
 		return fmt.Errorf("finding kustomization dependencies: %w", err)
 	}
 
-	// Kustomize build outputs hydrated configs to .pipeline, so the dry configs must be removed.
+	// Kustomize build outputs hydrated configs to sinkDir, so the dry configs must be removed.
 	for _, v := range deps {
-		if err := os.RemoveAll(filepath.Join(pipeline, v)); err != nil {
+		if err := os.RemoveAll(filepath.Join(k.Fn.SinkDir, v)); err != nil {
 			return err
 		}
 	}
@@ -257,18 +274,12 @@ func (k *Deployer) kustomizeBuild(ctx context.Context) error {
 	return nil
 }
 
-// kptFnRun does a dry run with the specified kpt functions (fn-path XOR image) against .pipeline.
-// If neither fn-path nor image are specified, functions will attempt to be discovered in .pipeline.
+// kptFnRun does a dry run with the specified kpt functions (fn-path XOR image) against sinkDir.
+// If neither fn-path nor image are specified, functions will attempt to be discovered in sinkDir.
 // An error occurs if both fn-path and image are specified.
-func (k *Deployer) kptFnRun(ctx context.Context) (manifest.ManifestList, error) {
+func (k *Deployer) kptFnRun(ctx context.Context, flags []string) (manifest.ManifestList, error) {
 	var manifests manifest.ManifestList
-
-	flags, err := k.getKptFnRunArgs()
-	if err != nil {
-		return nil, fmt.Errorf("getting kpt fn run args: %w", err)
-	}
-
-	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(pipeline, []string{"fn", "run"}, flags, nil)...)
+	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(k.Fn.SinkDir, []string{"fn", "run"}, flags, nil)...)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, err
@@ -282,7 +293,7 @@ func (k *Deployer) kptFnRun(ctx context.Context) (manifest.ManifestList, error) 
 }
 
 // excludeKptFn adds an annotation "config.kubernetes.io/local-config: 'true'" to kpt function.
-// This will exclude kpt functions from deployed to the cluster in kpt live apply.
+// This will exclude kpt functions from deployed to the cluster in `kpt live apply`.
 func (k *Deployer) excludeKptFn(originalManifest manifest.ManifestList) (manifest.ManifestList, error) {
 	var newManifest manifest.ManifestList
 	for _, yByte := range originalManifest {
@@ -332,7 +343,7 @@ func (k *Deployer) getApplyDir(ctx context.Context) (string, error) {
 
 	// 0755 is a permission setting where the owner can read, write, and execute.
 	// Others can read and execute but not modify the directory.
-	if err := os.MkdirAll(kptHydrated, 0755); err != nil {
+	if err := os.MkdirAll(kptHydrated, os.ModePerm); err != nil {
 		return "", fmt.Errorf("applyDir was unspecified. creating applyDir: %w", err)
 	}
 
