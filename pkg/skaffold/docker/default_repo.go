@@ -50,15 +50,15 @@ func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, e
 }
 
 func replace(defaultRepo string, baseImage string) string {
+	if strings.HasPrefix(baseImage, defaultRepo) {
+		return baseImage
+	}
 	originalPrefix := prefixRegex.FindString(baseImage)
 	defaultRepoPrefix := prefixRegex.FindString(defaultRepo)
 	if originalPrefix != "" && defaultRepoPrefix != "" {
 		// prefixes match
 		if originalPrefix == defaultRepoPrefix {
 			return defaultRepo + "/" + baseImage[len(originalPrefix):]
-		}
-		if strings.HasPrefix(baseImage, defaultRepo) {
-			return baseImage
 		}
 		// prefixes don't match, concatenate and truncate
 		return truncate(defaultRepo + "/" + baseImage)

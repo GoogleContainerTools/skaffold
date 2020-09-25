@@ -78,6 +78,12 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			expectedImage: "gcr.io/k8s-skaffold/skaffold-example",
 		},
 		{
+			description:   "image has shared prefix with defaultRepo, but not gcr",
+			image:         "myrepo/skaffold-example",
+			defaultRepo:   "myrepo",
+			expectedImage: "myrepo/skaffold-example",
+		},
+		{
 			description:   "keep tag",
 			image:         "img:tag",
 			defaultRepo:   "gcr.io/default",
