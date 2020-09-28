@@ -7,39 +7,53 @@ weight: 20
 Follow this tutorial to learn about Skaffold on a small Kubernetes app built with [Docker](https://www.docker.com/) inside [minikube](https://minikube.sigs.k8s.io)
 and deployed with [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)! 
 
+This tutorial uses minikube as Skaffold knows to build the app using the Docker daemon hosted
+inside minikube and thus avoiding any need for a registry to host the app's container images.
+
+
 {{< alert title="Note">}}
 Aside from `Docker` and `kubectl`, Skaffold also supports a variety of other tools
 and workflows; see [Tutorials]({{<relref "/docs/tutorials">}}) for
 more information.
 {{</alert>}}
 
+
 In this quickstart, you will:
 
-* Install Skaffold,
-* Download a sample go app,
+* Install Skaffold, and download a sample go app,
 * Use `skaffold dev` to build and deploy your app every time your code changes,
 * Use `skaffold run` to build and deploy your app once, similar to a CI/CD pipeline
 
-## Before you begin
+## Set up
+
+{{< alert title="New!" >}}
+
+Skip this setup step by using Google Cloud Platform's [_Cloud Shell_](http://cloud.google.com/shell),
+which provides a [browser-based terminal/CLI and editor](https://cloud.google.com/shell#product-demo).
+Cloud Shell comes with Skaffold, Minikube, and Docker pre-installed, and is free for GCP customers.
+
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?shellonly=true&cloudshell_git_repo=https%3A%2F%2Fgithub.com%2FGoogleContainerTools%2Fskaffold&cloudshell_working_dir=examples%2Fgetting-started)
+
+{{< /alert >}}
+
+This tutorial requires Skaffold, Minikube, and Kubectl.
 
 * [Install Skaffold]({{< relref "/docs/install" >}})
 * [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 * [Install minikube](https://minikube.sigs.k8s.io/docs/start/)
 
 {{< alert title="Note">}}
-This tutorial assumes use of Minikube as Skaffold will build the app using the Docker daemon hosted inside minikube
-and avoids the need for a registry to host the app's container images.
 If you want to deploy against a different Kubernetes cluster then you will have to install Docker to build this app.
 Furthermore if you want to deploy to a remote cluster, such as GKE, then you need to set up a container
 registry such as [GCR](https://cloud.google.com/container-registry) to host the resulting images.
 {{</alert>}}
 
-## Downloading the sample app
+### Downloading the sample app
 
 1. Clone the Skaffold repository:
 
     ```bash
-    git clone https://github.com/GoogleContainerTools/skaffold
+    git clone --depth 1 https://github.com/GoogleContainerTools/skaffold
     ```
 
 1. Change to the `examples/getting-started` in skaffold directory.
