@@ -130,7 +130,6 @@ func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 			seen[img] = true
 		}
 	}
-	logrus.Warnf("prune: %v %v", b.builtImages, toPrune)
 	_, err := b.localDocker.Prune(ctx, out, toPrune, b.pruneChildren)
 	return err
 }
