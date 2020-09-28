@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -64,7 +65,12 @@ func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildA
 		if err != nil {
 			return err
 		}
-		manifestList := manifest.ManifestList([][]byte{bytes})
+
+		var manifestList manifest.ManifestList
+		for _, manifestStr := range strings.Split(string(bytes), "---") {
+			manifestList = append(manifestList, []byte(manifestStr))
+		}
+
 		if debuggingFilters {
 			// TODO(bdealwis): refactor this code
 			debugHelpersRegistry, err := config.GetDebugHelpersRegistry(opts.GlobalConfig)
