@@ -54,7 +54,7 @@ func TestDiskUsage(t *testing.T) {
 		},
 		{
 			description:         "context cancelled",
-			fails:               0,
+			fails:               1,
 			shouldErr:           true,
 			expectedUtilization: 0,
 			ctxFunc: func() context.Context {
@@ -120,6 +120,35 @@ func TestRunPruneImageRemoveFailed(t *testing.T) {
 	err := pruner.runPrune(context.Background(), ioutil.Discard, []string{"test"})
 	if err == nil {
 		t.Fatal("An error expected here")
+	}
+}
+
+func TestIsPruned(t *testing.T) {
+	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{}), true)
+	err := pruner.runPrune(context.Background(), ioutil.Discard,
+		[]string{"test1", "test2", "test1"})
+	if err != nil {
+		t.Fatalf("Got an error: %v", err)
+	}
+	if !pruner.isPruned("test1") {
+		t.Error("Image test1 is expected to be pruned")
+	}
+	if pruner.isPruned("test3") {
+		t.Error("Image test3 is not expected to be pruned")
+	}
+}
+
+func TestIsPrunedFail(t *testing.T) {
+	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
+		ErrImageRemove: true,
+	}), true)
+
+	err := pruner.runPrune(context.Background(), ioutil.Discard, []string{"test1"})
+	if err == nil {
+		t.Fatal("An error expected here")
+	}
+	if pruner.isPruned("test1") {
+		t.Error("Image test1 is not expected to be pruned")
 	}
 }
 

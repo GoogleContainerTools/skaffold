@@ -75,7 +75,7 @@ type LocalDaemon interface {
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
 	ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error)
-	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error
+	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) ([]string, error)
 	DiskUsage(ctx context.Context) (uint64, error)
 	RawClient() client.CommonAPIClient
 }
@@ -507,14 +507,19 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 	return args, nil
 }
 
-func (l *localDaemon) Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error {
+func (l *localDaemon) Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) ([]string, error) {
+	var pruned []string
+	var errRt error
 	for _, id := range images {
 		resp, err := l.ImageRemove(ctx, id, types.ImageRemoveOptions{
 			Force:         true,
 			PruneChildren: pruneChildren,
 		})
-		if err != nil {
-			return fmt.Errorf("pruning images: %w", err)
+		if err != nil && errRt == nil {
+			// save the first error
+			errRt = err
+		} else {
+			pruned = append(pruned, id)
 		}
 		for _, r := range resp {
 			if r.Deleted != "" {
@@ -525,6 +530,5 @@ func (l *localDaemon) Prune(ctx context.Context, out io.Writer, images []string,
 			}
 		}
 	}
-
-	return nil
+	return pruned, errRt
 }

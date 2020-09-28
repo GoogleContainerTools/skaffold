@@ -46,6 +46,7 @@ type Builder struct {
 	builtImages        []string
 	insecureRegistries map[string]bool
 	muted              build.Muted
+	localPruner        *pruner
 }
 
 // external dependencies are wrapped
@@ -104,6 +105,7 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		mode:               cfg.Mode(),
 		prune:              cfg.Prune(),
 		pruneChildren:      !cfg.NoPruneChildren(),
+		localPruner:        newPruner(localDocker, !cfg.NoPruneChildren()),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		muted:              cfg.Muted(),
 	}, nil
@@ -119,5 +121,16 @@ func (b *Builder) TryImportMissing() bool {
 
 // Prune uses the docker API client to remove all images built with Skaffold
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
-	return b.localDocker.Prune(ctx, out, b.builtImages, b.pruneChildren)
+	var toPrune []string
+	seen := make(map[string]bool)
+
+	for _, img := range b.builtImages {
+		if !seen[img] && !b.localPruner.isPruned(img) {
+			toPrune = append(toPrune, img)
+			seen[img] = true
+		}
+	}
+	logrus.Warnf("prune: %v %v", b.builtImages, toPrune)
+	_, err := b.localDocker.Prune(ctx, out, toPrune, b.pruneChildren)
+	return err
 }

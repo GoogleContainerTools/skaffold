@@ -40,12 +40,14 @@ type pruner struct {
 	localDocker   docker.LocalDaemon
 	pruneChildren bool
 	pruneMutex    sync.Mutex
+	prunedImgIDs  map[string]struct{}
 }
 
 func newPruner(dockerAPI docker.LocalDaemon, pruneChildren bool) *pruner {
 	return &pruner{
 		localDocker:   dockerAPI,
 		pruneChildren: pruneChildren,
+		prunedImgIDs:  make(map[string]struct{}),
 	}
 }
 
@@ -96,6 +98,13 @@ func (p *pruner) synchronousCleanupOldImages(ctx context.Context, out io.Writer,
 	p.cleanup(ctx, true /*sync*/, out, artifacts)
 }
 
+func (p *pruner) isPruned(id string) bool {
+	p.pruneMutex.Lock()
+	defer p.pruneMutex.Unlock()
+	_, pruned := p.prunedImgIDs[id]
+	return pruned
+}
+
 func (p *pruner) runPrune(ctx context.Context, out io.Writer, ids []string) error {
 	logrus.Debugf("Going to prune: %v", ids)
 	// docker API does not support concurrent prune/utilization info request
@@ -110,7 +119,10 @@ func (p *pruner) runPrune(ctx context.Context, out io.Writer, ids []string) erro
 		logrus.Warnf("Failed to get docker usage info: %v", err)
 	}
 
-	err = p.localDocker.Prune(ctx, out, ids, p.pruneChildren)
+	pruned, err := p.localDocker.Prune(ctx, out, ids, p.pruneChildren)
+	for _, pi := range pruned {
+		p.prunedImgIDs[pi] = struct{}{}
+	}
 	if err != nil {
 		return err
 	}
