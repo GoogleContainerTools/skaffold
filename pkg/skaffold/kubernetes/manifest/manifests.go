@@ -36,14 +36,15 @@ func Load(in io.Reader) (ManifestList, error) {
 	var docs [][]byte
 	for {
 		doc, err := r.Read()
-		if err == io.EOF {
-			break
-		} else {
+		switch {
+		case err == io.EOF:
+			return ManifestList(docs), nil
+		case err != nil:
 			return nil, err
+		default:
+			docs = append(docs, doc)
 		}
-		docs = append(docs, doc)
 	}
-	return ManifestList(docs), nil
 }
 
 func (l *ManifestList) String() string {

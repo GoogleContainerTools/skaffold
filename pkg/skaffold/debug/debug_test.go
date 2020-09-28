@@ -592,7 +592,9 @@ status: {}`,
 				return imageConfiguration{}, nil
 			}
 
-			result, err := applyDebuggingTransforms(manifest.Load(bytes.NewReader([]byte(test.in))), retriever, "HELPERS")
+			l, err := manifest.Load(bytes.NewReader([]byte(test.in)))
+			t.CheckError(false, err)
+			result, err := applyDebuggingTransforms(l, retriever, "HELPERS")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, result.String())
 		})
