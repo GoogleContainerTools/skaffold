@@ -27,7 +27,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -194,7 +197,7 @@ func TestCollectResults(t *testing.T) {
 	}
 }
 
-func TestInParallel(t *testing.T) {
+func TestInOrder(t *testing.T) {
 	tests := []struct {
 		description string
 		buildFunc   ArtifactBuilder
@@ -236,14 +239,14 @@ And new lines
 			}
 			initializeEvents()
 
-			InParallel(context.Background(), out, tags, artifacts, test.buildFunc, 0)
+			InOrder(context.Background(), out, tags, artifacts, test.buildFunc, 0)
 
 			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
 }
 
-func TestInParallelConcurrency(t *testing.T) {
+func TestInOrderConcurrency(t *testing.T) {
 	tests := []struct {
 		artifacts      int
 		limit          int
@@ -291,7 +294,7 @@ func TestInParallelConcurrency(t *testing.T) {
 			}
 
 			initializeEvents()
-			results, err := InParallel(context.Background(), ioutil.Discard, tags, artifacts, builder, test.limit)
+			results, err := InOrder(context.Background(), ioutil.Discard, tags, artifacts, builder, test.limit)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.artifacts, len(results))
@@ -299,24 +302,18 @@ func TestInParallelConcurrency(t *testing.T) {
 	}
 }
 
-func TestInParallelForArgs(t *testing.T) {
+func TestInOrderForArgs(t *testing.T) {
 	tests := []struct {
 		description   string
-		inSeqFunc     func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, ArtifactBuilder) ([]Artifact, error)
 		buildArtifact ArtifactBuilder
 		artifactLen   int
+		concurrency   int
+		dependency    map[int][]int
 		expected      []Artifact
+		err           error
 	}{
 		{
-			description: "runs in sequence for 1 artifact",
-			inSeqFunc: func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, ArtifactBuilder) ([]Artifact, error) {
-				return []Artifact{{ImageName: "singleArtifact", Tag: "one"}}, nil
-			},
-			artifactLen: 1,
-			expected:    []Artifact{{ImageName: "singleArtifact", Tag: "one"}},
-		},
-		{
-			description: "runs in parallel for 2 artifacts",
+			description: "runs in parallel for 2 artifacts with no dependency",
 			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
 				return tag, nil
 			},
@@ -327,9 +324,68 @@ func TestInParallelForArgs(t *testing.T) {
 			},
 		},
 		{
+			description: "runs in parallel for 5 artifacts with dependencies",
+			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
+				return tag, nil
+			},
+			dependency: map[int][]int{
+				0: {2, 3},
+				1: {3},
+				2: {1},
+				3: {4},
+			},
+			artifactLen: 5,
+			expected: []Artifact{
+				{ImageName: "artifact1", Tag: "artifact1@tag1"},
+				{ImageName: "artifact2", Tag: "artifact2@tag2"},
+				{ImageName: "artifact3", Tag: "artifact3@tag3"},
+				{ImageName: "artifact4", Tag: "artifact4@tag4"},
+				{ImageName: "artifact5", Tag: "artifact5@tag5"},
+			},
+		},
+		{
+			description: "runs with max concurrency of 2 for 5 artifacts with dependencies",
+			buildArtifact: func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
+				return tag, nil
+			},
+			dependency: map[int][]int{
+				0: {2, 3},
+				1: {3},
+				2: {1},
+				3: {4},
+			},
+			artifactLen: 5,
+			concurrency: 2,
+			expected: []Artifact{
+				{ImageName: "artifact1", Tag: "artifact1@tag1"},
+				{ImageName: "artifact2", Tag: "artifact2@tag2"},
+				{ImageName: "artifact3", Tag: "artifact3@tag3"},
+				{ImageName: "artifact4", Tag: "artifact4@tag4"},
+				{ImageName: "artifact5", Tag: "artifact5@tag5"},
+			},
+		},
+		{
 			description: "runs in parallel should return for 0 artifacts",
 			artifactLen: 0,
 			expected:    nil,
+		},
+		{
+			description: "build fails for artifacts with dependencies",
+			buildArtifact: func(_ context.Context, _ io.Writer, a *latest.Artifact, tag string) (string, error) {
+				if a.ImageName == "artifact2" {
+					return "", fmt.Errorf(`some error occurred while building "artifact2"`)
+				}
+				return tag, nil
+			},
+			dependency: map[int][]int{
+				0: {1},
+				1: {2},
+				2: {3},
+				3: {4},
+			},
+			artifactLen: 5,
+			expected:    nil,
+			err:         fmt.Errorf("couldn't build %q: %w", "artifact1", fmt.Errorf("failed to build required artifact: %q", "artifact2")),
 		},
 	}
 	for _, test := range tests {
@@ -341,14 +397,31 @@ func TestInParallelForArgs(t *testing.T) {
 				artifacts[i] = &latest.Artifact{ImageName: a}
 				tags[a] = fmt.Sprintf("%s@tag%d", a, i+1)
 			}
-			if test.inSeqFunc != nil {
-				t.Override(&runInSequence, test.inSeqFunc)
-			}
+
+			setDependencies(artifacts, test.dependency)
 			initializeEvents()
-			actual, _ := InParallel(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, 0)
+			actual, err := InOrder(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, test.concurrency)
 
 			t.CheckDeepEqual(test.expected, actual)
+			t.CheckDeepEqual(test.err, err, cmp.Comparer(errorsComparer))
 		})
+	}
+}
+
+// setDependencies constructs a graph of artifact dependencies using the map as an adjacency list representation of indices in the artifacts array.
+// For example:
+// m = {
+//    0 : {1, 2},
+//    2 : {3},
+//}
+// implies that a[0] artifact depends on a[1] and a[2]; and a[2] depends on a[3].
+func setDependencies(a []*latest.Artifact, d map[int][]int) {
+	for k, dep := range d {
+		for i := range dep {
+			a[k].Dependencies = append(a[k].Dependencies, &latest.ArtifactDependency{
+				ImageName: a[dep[i]].ImageName,
+			})
+		}
 	}
 }
 
@@ -359,4 +432,26 @@ func setUpChannels(n int) []chan string {
 		close(outputs[i])
 	}
 	return outputs
+}
+
+func initializeEvents() {
+	pipe := latest.Pipeline{
+		Deploy: latest.DeployConfig{},
+		Build: latest.BuildConfig{
+			BuildType: latest.BuildType{
+				LocalBuild: &latest.LocalBuild{},
+			},
+		},
+	}
+	event.InitializeState(pipe, "temp", true, true, true)
+}
+
+func errorsComparer(a, b error) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return a.Error() == b.Error()
 }

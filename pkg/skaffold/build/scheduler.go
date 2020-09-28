@@ -35,20 +35,15 @@ type ArtifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.A
 
 // For testing
 var (
-	buffSize      = bufferedLinesPerArtifact
-	runInSequence = InSequence
+	buffSize = bufferedLinesPerArtifact
 )
 
-// InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
-	if len(artifacts) == 0 {
-		return nil, nil
-	}
-
-	if len(artifacts) == 1 || concurrency == 1 {
-		return runInSequence(ctx, out, tags, artifacts, buildArtifact)
-	}
-
+// InOrder builds a list of artifacts in dependency order.
+// `concurrency` specifies the max number of builds that can run at any one time. If concurrency is 0, then it's set to the length of the `artifacts` slice.
+// Each artifact build runs in its own goroutine. It limits the max concurrency using a buffered channel like a semaphore.
+// At the same time, it uses the `artifactChanModel` to model the artifacts dependency graph and to make each artifact build wait for its required artifacts' builds.
+func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
+	acmSlice := makeArtifactChanModel(artifacts, concurrency)
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
@@ -56,28 +51,20 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	defer cancel()
 
 	results := new(sync.Map)
-	outputs := make([]chan string, len(artifacts))
+	outputs := make([]chan string, len(acmSlice))
 
-	if concurrency == 0 {
-		concurrency = len(artifacts)
-	}
-	sem := make(chan bool, concurrency)
-
-	// Run builds in //
 	wg.Add(len(artifacts))
-	for i := range artifacts {
+	for i := range acmSlice {
 		outputs[i] = make(chan string, buffSize)
 		r, w := io.Pipe()
 
-		// Run build and write output/logs to piped writer and store build result in
-		// sync.Map
-		go func(i int) {
-			sem <- true
-			runBuild(ctx, w, tags, artifacts[i], results, buildArtifact)
-			<-sem
-
+		// Create a goroutine for each element in acmSlice. Each goroutine waits on its dependencies to finish building.
+		// Because our artifacts form a DAG, at least one of the goroutines should be able to start building.
+		go func(a *artifactChanModel) {
+			// Run build and write output/logs to piped writer and store build result in sync.Map
+			runBuild(ctx, w, tags, a, results, buildArtifact)
 			wg.Done()
-		}(i)
+		}(acmSlice[i])
 
 		// Read build output/logs and write to buffered channel
 		go readOutputAndWriteToChannel(r, outputs[i])
@@ -87,19 +74,29 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	return collectResults(out, artifacts, results, outputs)
 }
 
-func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build ArtifactBuilder) {
-	event.BuildInProgress(artifact.ImageName)
-
-	finalTag, err := getBuildResult(ctx, cw, tags, artifact, build)
+func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, a *artifactChanModel, results *sync.Map, build ArtifactBuilder) {
+	defer cw.Close()
+	err := a.waitForDependencies(ctx)
+	event.BuildInProgress(a.artifact.ImageName)
 	if err != nil {
-		event.BuildFailed(artifact.ImageName, err)
-		results.Store(artifact.ImageName, err)
-	} else {
-		event.BuildComplete(artifact.ImageName)
-		artifact := Artifact{ImageName: artifact.ImageName, Tag: finalTag}
-		results.Store(artifact.ImageName, artifact)
+		event.BuildFailed(a.artifact.ImageName, err)
+		results.Store(a.artifact.ImageName, err)
+		a.markFailure()
+		return
 	}
-	cw.Close()
+
+	finalTag, err := getBuildResult(ctx, cw, tags, a.artifact, build)
+	if err != nil {
+		event.BuildFailed(a.artifact.ImageName, err)
+		results.Store(a.artifact.ImageName, err)
+		a.markFailure()
+		return
+	}
+
+	event.BuildComplete(a.artifact.ImageName)
+	ar := Artifact{ImageName: a.artifact.ImageName, Tag: finalTag}
+	results.Store(ar.ImageName, ar)
+	a.markSuccess()
 }
 
 func readOutputAndWriteToChannel(r io.Reader, lines chan string) {

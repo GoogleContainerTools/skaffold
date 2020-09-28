@@ -64,6 +64,14 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
+            "requires": {
+              "items": {
+                "$ref": "#/definitions/ArtifactDependency"
+              },
+              "type": "array",
+              "description": "describes build artifacts that this artifact depends on.",
+              "x-intellij-html-description": "describes build artifacts that this artifact depends on."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -74,7 +82,8 @@
           "preferredOrder": [
             "image",
             "context",
-            "sync"
+            "sync",
+            "requires"
           ],
           "additionalProperties": false
         },
@@ -99,6 +108,14 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
+            "requires": {
+              "items": {
+                "$ref": "#/definitions/ArtifactDependency"
+              },
+              "type": "array",
+              "description": "describes build artifacts that this artifact depends on.",
+              "x-intellij-html-description": "describes build artifacts that this artifact depends on."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -110,6 +127,7 @@
             "image",
             "context",
             "sync",
+            "requires",
             "docker"
           ],
           "additionalProperties": false
@@ -135,6 +153,14 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
+            "requires": {
+              "items": {
+                "$ref": "#/definitions/ArtifactDependency"
+              },
+              "type": "array",
+              "description": "describes build artifacts that this artifact depends on.",
+              "x-intellij-html-description": "describes build artifacts that this artifact depends on."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -146,6 +172,7 @@
             "image",
             "context",
             "sync",
+            "requires",
             "bazel"
           ],
           "additionalProperties": false
@@ -171,6 +198,14 @@
               "description": "builds images using the [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).",
               "x-intellij-html-description": "builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/\">Jib plugins for Maven or Gradle</a>."
             },
+            "requires": {
+              "items": {
+                "$ref": "#/definitions/ArtifactDependency"
+              },
+              "type": "array",
+              "description": "describes build artifacts that this artifact depends on.",
+              "x-intellij-html-description": "describes build artifacts that this artifact depends on."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -182,6 +217,7 @@
             "image",
             "context",
             "sync",
+            "requires",
             "jib"
           ],
           "additionalProperties": false
@@ -207,6 +243,14 @@
               "description": "builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).",
               "x-intellij-html-description": "builds images using <a href=\"https://github.com/GoogleContainerTools/kaniko\">kaniko</a>."
             },
+            "requires": {
+              "items": {
+                "$ref": "#/definitions/ArtifactDependency"
+              },
+              "type": "array",
+              "description": "describes build artifacts that this artifact depends on.",
+              "x-intellij-html-description": "describes build artifacts that this artifact depends on."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -218,6 +262,7 @@
             "image",
             "context",
             "sync",
+            "requires",
             "kaniko"
           ],
           "additionalProperties": false
@@ -243,6 +288,14 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
+            "requires": {
+              "items": {
+                "$ref": "#/definitions/ArtifactDependency"
+              },
+              "type": "array",
+              "description": "describes build artifacts that this artifact depends on.",
+              "x-intellij-html-description": "describes build artifacts that this artifact depends on."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -254,6 +307,7 @@
             "image",
             "context",
             "sync",
+            "requires",
             "buildpacks"
           ],
           "additionalProperties": false
@@ -279,6 +333,14 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
+            "requires": {
+              "items": {
+                "$ref": "#/definitions/ArtifactDependency"
+              },
+              "type": "array",
+              "description": "describes build artifacts that this artifact depends on.",
+              "x-intellij-html-description": "describes build artifacts that this artifact depends on."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -290,6 +352,7 @@
             "image",
             "context",
             "sync",
+            "requires",
             "custom"
           ],
           "additionalProperties": false
@@ -297,6 +360,30 @@
       ],
       "description": "items that need to be built, along with the context in which they should be built.",
       "x-intellij-html-description": "items that need to be built, along with the context in which they should be built."
+    },
+    "ArtifactDependency": {
+      "required": [
+        "image"
+      ],
+      "properties": {
+        "alias": {
+          "type": "string",
+          "description": "a token that will be replaced with the image reference in the builder definition files. For example, the `docker` builder will use the alias as a build-time variable. Defaults to the value of `image`.",
+          "x-intellij-html-description": "a token that will be replaced with the image reference in the builder definition files. For example, the <code>docker</code> builder will use the alias as a build-time variable. Defaults to the value of <code>image</code>."
+        },
+        "image": {
+          "type": "string",
+          "description": "artifact image name.",
+          "x-intellij-html-description": "artifact image name."
+        }
+      },
+      "preferredOrder": [
+        "image",
+        "alias"
+      ],
+      "additionalProperties": false,
+      "description": "describes a specific build dependency for an artifact.",
+      "x-intellij-html-description": "describes a specific build dependency for an artifact."
     },
     "Auto": {
       "description": "cannot be customized.",
