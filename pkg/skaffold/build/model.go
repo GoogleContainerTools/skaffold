@@ -53,6 +53,9 @@ func (a *artifactChanModel) markFailure() {
 	<-a.concurrencySem
 }
 func (a *artifactChanModel) waitForDependencies(ctx context.Context) error {
+	defer func() {
+		a.concurrencySem <- true
+	}()
 	for _, depStatus := range a.requiredArtifactStatuses {
 		// wait for required builds to complete
 		select {
@@ -63,7 +66,6 @@ func (a *artifactChanModel) waitForDependencies(ctx context.Context) error {
 		case <-depStatus.success:
 		}
 	}
-	a.concurrencySem <- true
 	return nil
 }
 
