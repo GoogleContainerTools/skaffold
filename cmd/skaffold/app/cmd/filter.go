@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 
@@ -59,16 +60,19 @@ func NewCmdFilter() *cobra.Command {
 // Unlike `skaffold debug`, this filtering affects all images and not just the built artifacts.
 func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildArtifacts []build.Artifact) error {
 	return withRunner(ctx, func(r runner.Runner, cfg *latest.SkaffoldConfig) error {
-		manifestList := manifest.Load(os.Stdin)
+		manifestList, err := manifest.Load(os.Stdin)
+		if err != nil {
+			return fmt.Errorf("loading manifests: %w", err)
+		}
 		if debuggingFilters {
 			// TODO(bdealwis): refactor this code
 			debugHelpersRegistry, err := config.GetDebugHelpersRegistry(opts.GlobalConfig)
 			if err != nil {
-				return err
+				return fmt.Errorf("resolving debug helpers: %w", err)
 			}
 			insecureRegistries, err := getInsecureRegistries(opts, cfg)
 			if err != nil {
-				return err
+				return fmt.Errorf("retrieving insecure registries: %w", err)
 			}
 
 			manifestList, err = debugging.ApplyDebuggingTransforms(manifestList, buildArtifacts, manifest.Registries{
@@ -76,7 +80,7 @@ func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildA
 				InsecureRegistries:   insecureRegistries,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("transforming manifests: %w", err)
 			}
 		}
 		out.Write([]byte(manifestList.String()))

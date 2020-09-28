@@ -35,8 +35,9 @@ func TestLoad(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			result := Load(bytes.NewReader([]byte(test.input)))
+			result, err := Load(bytes.NewReader([]byte(test.input)))
 
+			t.CheckError(false, err)
 			t.CheckDeepEqual(len(test.expected), len(result))
 			for i := range test.expected {
 				t.CheckDeepEqual(test.expected[i], string(result[i]))

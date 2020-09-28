@@ -31,17 +31,19 @@ import (
 type ManifestList [][]byte
 
 // Load uses the Kubernetes `apimachinery` to split YAML content into a set of YAML documents.
-func Load(in io.Reader) ManifestList {
+func Load(in io.Reader) (ManifestList, error) {
 	r := k8syaml.NewYAMLReader(bufio.NewReader(in))
 	var docs [][]byte
-	for i := 0; ; i++ {
+	for {
 		doc, err := r.Read()
 		if err == io.EOF {
 			break
+		} else {
+			return nil, err
 		}
 		docs = append(docs, doc)
 	}
-	return ManifestList(docs)
+	return ManifestList(docs), nil
 }
 
 func (l *ManifestList) String() string {
