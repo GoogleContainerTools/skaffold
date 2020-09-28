@@ -515,12 +515,13 @@ func (l *localDaemon) Prune(ctx context.Context, out io.Writer, images []string,
 			Force:         true,
 			PruneChildren: pruneChildren,
 		})
-		if err != nil && errRt == nil {
+		if err == nil {
+			pruned = append(pruned, id)
+		} else if errRt == nil {
 			// save the first error
 			errRt = err
-		} else {
-			pruned = append(pruned, id)
 		}
+
 		for _, r := range resp {
 			if r.Deleted != "" {
 				fmt.Fprintf(out, "deleted image %s\n", r.Deleted)
