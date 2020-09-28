@@ -17,6 +17,7 @@ limitations under the License.
 package debug
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
@@ -502,6 +503,88 @@ spec:
   name: myfunction
   image: myfunction`,
 		},
+		{
+			"multiple objects", false,
+			`apiVersion: v1
+kind: Pod
+metadata:
+  name: pod
+spec:
+  containers:
+  - image: gcr.io/k8s-debug/debug-example:latest
+    name: example
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: debug-app
+  template:
+    metadata:
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+`,
+			`apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
+  creationTimestamp: null
+  name: pod
+spec:
+  containers:
+  - env:
+    - name: KEY
+      value: value
+    image: gcr.io/k8s-debug/debug-example:latest
+    name: example
+    ports:
+    - containerPort: 9999
+      name: test
+    resources: {}
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  name: my-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: debug-app
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
+      creationTimestamp: null
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - env:
+        - name: KEY
+          value: value
+        image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+        ports:
+        - containerPort: 9999
+          name: test
+        resources: {}
+status: {}`,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -509,7 +592,7 @@ spec:
 				return imageConfiguration{}, nil
 			}
 
-			result, err := applyDebuggingTransforms(manifest.ManifestList{[]byte(test.in)}, retriever, "HELPERS")
+			result, err := applyDebuggingTransforms(manifest.Load(bytes.NewReader([]byte(test.in))), retriever, "HELPERS")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, result.String())
 		})

@@ -17,15 +17,32 @@ limitations under the License.
 package manifest
 
 import (
+	"bufio"
 	"bytes"
 	"io"
 	"regexp"
 	"strings"
+
+	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 // ManifestList is a list of yaml manifests.
 //nolint:golint
 type ManifestList [][]byte
+
+// Load uses the Kubernetes `apimachinery` to split YAML content into a set of YAML documents.
+func Load(in io.Reader) ManifestList {
+	r := k8syaml.NewYAMLReader(bufio.NewReader(in))
+	var docs [][]byte
+	for i := 0; ; i++ {
+		doc, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+		docs = append(docs, doc)
+	}
+	return ManifestList(docs)
+}
 
 func (l *ManifestList) String() string {
 	var str string

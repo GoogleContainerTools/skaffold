@@ -19,7 +19,6 @@ package cmd
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -60,11 +59,7 @@ func NewCmdFilter() *cobra.Command {
 // Unlike `skaffold debug`, this filtering affects all images and not just the built artifacts.
 func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildArtifacts []build.Artifact) error {
 	return withRunner(ctx, func(r runner.Runner, cfg *latest.SkaffoldConfig) error {
-		bytes, err := ioutil.ReadAll(os.Stdin)
-		if err != nil {
-			return err
-		}
-		manifestList := manifest.ManifestList([][]byte{bytes})
+		manifestList := manifest.Load(os.Stdin)
 		if debuggingFilters {
 			// TODO(bdealwis): refactor this code
 			debugHelpersRegistry, err := config.GetDebugHelpersRegistry(opts.GlobalConfig)

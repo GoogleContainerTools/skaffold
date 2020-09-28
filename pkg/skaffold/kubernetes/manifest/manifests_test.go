@@ -17,10 +17,33 @@ limitations under the License.
 package manifest
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+func TestLoad(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{name: "empty", input: "", expected: []string{}},
+		{name: "single doc", input: "a: b", expected: []string{"a: b\n"}}, // note lf introduced
+		{name: "multiple docs", input: "a: b\n---\nc: d", expected: []string{"a: b\n", "c: d\n"}},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			result := Load(bytes.NewReader([]byte(test.input)))
+
+			t.CheckDeepEqual(len(test.expected), len(result))
+			for i := range test.expected {
+				t.CheckDeepEqual(test.expected[i], string(result[i]))
+			}
+		})
+	}
+}
 
 const pod1 = `apiVersion: v1
 kind: Pod
