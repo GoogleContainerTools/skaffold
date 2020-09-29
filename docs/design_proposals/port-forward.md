@@ -40,7 +40,8 @@ and a [deployment/pod on port 8080](https://github.com/GoogleContainerTools/skaf
 
 ## Design
 
-This document proposes to change Skaffold port-forwarding's defaults.
+This document proposes to change Skaffold port-forwarding's defaults in a similar fashion as proposed
+by @corneliusweig in https://github.com/GoogleContainerTools/skaffold/issues/1564#issuecomment-473528574.
 These changes are intended to be backwards-compatible with the previous version
 of Skaffold except where noted.
 
