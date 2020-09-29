@@ -39,10 +39,8 @@ var (
 )
 
 // InOrder builds a list of artifacts in dependency order.
-// `concurrency` specifies the max number of builds that can run at any one time. If concurrency is 0, then it's set to the length of the `artifacts` slice.
-// Each artifact build runs in its own goroutine. It limits the max concurrency using a buffered channel like a semaphore.
-// At the same time, it uses the `artifactDAG` to model the artifacts dependency graph and to make each artifact build wait for its required artifacts' builds.
 func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
+	// `artifactDAG` models the artifacts dependency graph.
 	dag := makeArtifactDAG(artifacts)
 	var wg sync.WaitGroup
 	defer wg.Wait()
@@ -53,6 +51,7 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 	results := new(sync.Map)
 	outputs := make([]chan string, len(dag))
 
+	// `concurrency` specifies the max number of builds that can run at any one time. If concurrency is 0, then all builds can run in parallel.
 	if concurrency == 0 {
 		concurrency = len(artifacts)
 	}
