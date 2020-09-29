@@ -40,15 +40,19 @@ type status struct {
 	failure   chan interface{}
 }
 
+// markSuccess broadcasts a successful build
 func (a *artifactDAG) markSuccess() {
 	// closing channel notifies all listeners waiting for this build that it succeeded
 	close(a.status.success)
 }
 
+// markFailure broadcasts a failed build
 func (a *artifactDAG) markFailure() {
 	// closing channel notifies all listeners waiting for this build that it failed
 	close(a.status.failure)
 }
+
+// waitForDependencies returns an error if any dependency build fails
 func (a *artifactDAG) waitForDependencies(ctx context.Context) error {
 	for _, depStatus := range a.dependencyStatuses {
 		// wait for required builds to complete
