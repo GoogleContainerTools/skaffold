@@ -63,7 +63,7 @@ func (a *artifactDAG) waitForDependencies(ctx context.Context) error {
 	return nil
 }
 
-func makeArtifactChanModel(artifacts []*latest.Artifact) []*artifactDAG {
+func makeArtifactDAG(artifacts []*latest.Artifact) []*artifactDAG {
 	statusMap := make(map[string]status)
 	for _, a := range artifacts {
 		statusMap[a.ImageName] = status{
@@ -73,15 +73,15 @@ func makeArtifactChanModel(artifacts []*latest.Artifact) []*artifactDAG {
 		}
 	}
 
-	var dags []*artifactDAG
+	var dag []*artifactDAG
 	for _, a := range artifacts {
-		dag := &artifactDAG{Artifact: a, status: statusMap[a.ImageName]}
+		ar := &artifactDAG{Artifact: a, status: statusMap[a.ImageName]}
 		for _, d := range a.Dependencies {
-			dag.dependencyStatuses = append(dag.dependencyStatuses, statusMap[d.ImageName])
+			ar.dependencyStatuses = append(ar.dependencyStatuses, statusMap[d.ImageName])
 		}
-		dags = append(dags, dag)
+		dag = append(dag, ar)
 	}
-	return dags
+	return dag
 }
 
 // countingSemaphore uses a buffered channel of size `n` that acts like a counting semaphore, allowing up to `n` concurrent operations

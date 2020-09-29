@@ -43,7 +43,7 @@ var (
 // Each artifact build runs in its own goroutine. It limits the max concurrency using a buffered channel like a semaphore.
 // At the same time, it uses the `artifactDAG` to model the artifacts dependency graph and to make each artifact build wait for its required artifacts' builds.
 func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
-	acmSlice := makeArtifactChanModel(artifacts)
+	dag := makeArtifactDAG(artifacts)
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
@@ -51,7 +51,7 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 	defer cancel()
 
 	results := new(sync.Map)
-	outputs := make([]chan string, len(acmSlice))
+	outputs := make([]chan string, len(dag))
 
 	if concurrency == 0 {
 		concurrency = len(artifacts)
@@ -59,17 +59,17 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 	sem := newCountingSemaphore(concurrency)
 
 	wg.Add(len(artifacts))
-	for i := range acmSlice {
+	for i := range dag {
 		outputs[i] = make(chan string, buffSize)
 		r, w := io.Pipe()
 
-		// Create a goroutine for each element in acmSlice. Each goroutine waits on its dependencies to finish building.
+		// Create a goroutine for each element in dag. Each goroutine waits on its dependencies to finish building.
 		// Because our artifacts form a DAG, at least one of the goroutines should be able to start building.
 		go func(a *artifactDAG) {
 			// Run build and write output/logs to piped writer and store build result in sync.Map
 			runBuild(ctx, w, tags, a, results, buildArtifact, sem)
 			wg.Done()
-		}(acmSlice[i])
+		}(dag[i])
 
 		// Read build output/logs and write to buffered channel
 		go readOutputAndWriteToChannel(r, outputs[i])
