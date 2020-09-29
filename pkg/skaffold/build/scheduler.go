@@ -41,9 +41,9 @@ var (
 // InOrder builds a list of artifacts in dependency order.
 // `concurrency` specifies the max number of builds that can run at any one time. If concurrency is 0, then it's set to the length of the `artifacts` slice.
 // Each artifact build runs in its own goroutine. It limits the max concurrency using a buffered channel like a semaphore.
-// At the same time, it uses the `artifactChanModel` to model the artifacts dependency graph and to make each artifact build wait for its required artifacts' builds.
+// At the same time, it uses the `artifactDAG` to model the artifacts dependency graph and to make each artifact build wait for its required artifacts' builds.
 func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact ArtifactBuilder, concurrency int) ([]Artifact, error) {
-	acmSlice := makeArtifactChanModel(artifacts, concurrency)
+	acmSlice := makeArtifactChanModel(artifacts)
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
@@ -53,6 +53,11 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 	results := new(sync.Map)
 	outputs := make([]chan string, len(acmSlice))
 
+	if concurrency == 0 {
+		concurrency = len(artifacts)
+	}
+	sem := newCountingSemaphore(concurrency)
+
 	wg.Add(len(artifacts))
 	for i := range acmSlice {
 		outputs[i] = make(chan string, buffSize)
@@ -60,9 +65,9 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 
 		// Create a goroutine for each element in acmSlice. Each goroutine waits on its dependencies to finish building.
 		// Because our artifacts form a DAG, at least one of the goroutines should be able to start building.
-		go func(a *artifactChanModel) {
+		go func(a *artifactDAG) {
 			// Run build and write output/logs to piped writer and store build result in sync.Map
-			runBuild(ctx, w, tags, a, results, buildArtifact)
+			runBuild(ctx, w, tags, a, results, buildArtifact, sem)
 			wg.Done()
 		}(acmSlice[i])
 
@@ -74,27 +79,29 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 	return collectResults(out, artifacts, results, outputs)
 }
 
-func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, a *artifactChanModel, results *sync.Map, build ArtifactBuilder) {
+func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, a *artifactDAG, results *sync.Map, build ArtifactBuilder, sem countingSemaphore) {
 	defer cw.Close()
 	err := a.waitForDependencies(ctx)
-	event.BuildInProgress(a.artifact.ImageName)
+	release := sem.acquire()
+	defer release()
+	event.BuildInProgress(a.ImageName)
 	if err != nil {
-		event.BuildFailed(a.artifact.ImageName, err)
-		results.Store(a.artifact.ImageName, err)
+		event.BuildFailed(a.ImageName, err)
+		results.Store(a.ImageName, err)
 		a.markFailure()
 		return
 	}
 
-	finalTag, err := getBuildResult(ctx, cw, tags, a.artifact, build)
+	finalTag, err := getBuildResult(ctx, cw, tags, a.Artifact, build)
 	if err != nil {
-		event.BuildFailed(a.artifact.ImageName, err)
-		results.Store(a.artifact.ImageName, err)
+		event.BuildFailed(a.ImageName, err)
+		results.Store(a.ImageName, err)
 		a.markFailure()
 		return
 	}
 
-	event.BuildComplete(a.artifact.ImageName)
-	ar := Artifact{ImageName: a.artifact.ImageName, Tag: finalTag}
+	event.BuildComplete(a.ImageName)
+	ar := Artifact{ImageName: a.ImageName, Tag: finalTag}
 	results.Store(ar.ImageName, ar)
 	a.markSuccess()
 }
