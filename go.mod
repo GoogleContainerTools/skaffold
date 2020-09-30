@@ -35,6 +35,7 @@ require (
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
 	github.com/docker/go-connections v0.4.0
+	github.com/dustin/go-humanize v1.0.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.0.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b

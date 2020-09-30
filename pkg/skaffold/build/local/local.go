@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -42,8 +43,22 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	}
 	defer b.localDocker.Close()
 
+	if b.prune {
+		b.localPruner.asynchronousCleanupOldImages(ctx, artifacts)
+	}
+
 	builder := build.WithLogFile(b.buildArtifact, b.muted)
-	return build.InParallel(ctx, out, tags, artifacts, builder, *b.local.Concurrency)
+	rt, err := build.InParallel(ctx, out, tags, artifacts, builder, *b.local.Concurrency)
+
+	if b.prune {
+		if b.mode == config.RunModes.Build {
+			b.localPruner.synchronousCleanupOldImages(ctx, artifacts)
+		} else {
+			b.localPruner.asynchronousCleanupOldImages(ctx, artifacts)
+		}
+	}
+
+	return rt, err
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
