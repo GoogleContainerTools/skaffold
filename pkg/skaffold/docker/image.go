@@ -75,7 +75,7 @@ type LocalDaemon interface {
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
 	ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error)
-	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) ([]string, error)
+	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
 	DiskUsage(ctx context.Context) (uint64, error)
 	RawClient() client.CommonAPIClient
 }
@@ -507,7 +507,7 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 	return args, nil
 }
 
-func (l *localDaemon) Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) ([]string, error) {
+func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error) {
 	var pruned []string
 	var errRt error
 	for _, id := range images {
@@ -524,10 +524,10 @@ func (l *localDaemon) Prune(ctx context.Context, out io.Writer, images []string,
 
 		for _, r := range resp {
 			if r.Deleted != "" {
-				fmt.Fprintf(out, "deleted image %s\n", r.Deleted)
+				logrus.Debugf("deleted image %s\n", r.Deleted)
 			}
 			if r.Untagged != "" {
-				fmt.Fprintf(out, "untagged image %s\n", r.Untagged)
+				logrus.Debugf("untagged image %s\n", r.Untagged)
 			}
 		}
 	}

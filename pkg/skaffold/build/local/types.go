@@ -130,6 +130,6 @@ func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 			seen[img] = true
 		}
 	}
-	_, err := b.localDocker.Prune(ctx, out, toPrune, b.pruneChildren)
+	_, err := b.localDocker.Prune(ctx, toPrune, b.pruneChildren)
 	return err
 }

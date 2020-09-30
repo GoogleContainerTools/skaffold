@@ -18,7 +18,6 @@ package local
 
 import (
 	"context"
-	"io"
 	"sort"
 	"sync"
 	"time"
@@ -69,20 +68,20 @@ func (p *pruner) listImages(ctx context.Context, name string) ([]types.ImageSumm
 	return imgs, nil
 }
 
-func (p *pruner) cleanup(ctx context.Context, sync bool, out io.Writer, artifacts []*latest.Artifact) {
+func (p *pruner) cleanup(ctx context.Context, sync bool, artifacts []*latest.Artifact) {
 	toPrune := p.collectImagesToPrune(ctx, artifacts)
 	if len(toPrune) == 0 {
 		return
 	}
 
 	if sync {
-		err := p.runPrune(ctx, out, toPrune)
+		err := p.runPrune(ctx, toPrune)
 		if err != nil {
 			logrus.Debugf("Failed to prune: %v", err)
 		}
 	} else {
 		go func() {
-			err := p.runPrune(ctx, out, toPrune)
+			err := p.runPrune(ctx, toPrune)
 			if err != nil {
 				logrus.Debugf("Failed to prune: %v", err)
 			}
@@ -90,12 +89,12 @@ func (p *pruner) cleanup(ctx context.Context, sync bool, out io.Writer, artifact
 	}
 }
 
-func (p *pruner) asynchronousCleanupOldImages(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) {
-	p.cleanup(ctx, false /*async*/, out, artifacts)
+func (p *pruner) asynchronousCleanupOldImages(ctx context.Context, artifacts []*latest.Artifact) {
+	p.cleanup(ctx, false /*async*/, artifacts)
 }
 
-func (p *pruner) synchronousCleanupOldImages(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) {
-	p.cleanup(ctx, true /*sync*/, out, artifacts)
+func (p *pruner) synchronousCleanupOldImages(ctx context.Context, artifacts []*latest.Artifact) {
+	p.cleanup(ctx, true /*sync*/, artifacts)
 }
 
 func (p *pruner) isPruned(id string) bool {
@@ -105,7 +104,7 @@ func (p *pruner) isPruned(id string) bool {
 	return pruned
 }
 
-func (p *pruner) runPrune(ctx context.Context, out io.Writer, ids []string) error {
+func (p *pruner) runPrune(ctx context.Context, ids []string) error {
 	logrus.Debugf("Going to prune: %v", ids)
 	// docker API does not support concurrent prune/utilization info request
 	// so let's serialize the access to it
@@ -119,7 +118,7 @@ func (p *pruner) runPrune(ctx context.Context, out io.Writer, ids []string) erro
 		logrus.Warnf("Failed to get docker usage info: %v", err)
 	}
 
-	pruned, err := p.localDocker.Prune(ctx, out, ids, p.pruneChildren)
+	pruned, err := p.localDocker.Prune(ctx, ids, p.pruneChildren)
 	for _, pi := range pruned {
 		p.prunedImgIDs[pi] = struct{}{}
 	}

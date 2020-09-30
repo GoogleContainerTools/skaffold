@@ -18,7 +18,6 @@ package local
 
 import (
 	"context"
-	"io/ioutil"
 	"sort"
 	"testing"
 
@@ -87,7 +86,7 @@ func TestDiskUsage(t *testing.T) {
 
 func TestRunPruneOk(t *testing.T) {
 	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{}), true)
-	err := pruner.runPrune(context.Background(), ioutil.Discard, []string{"test"})
+	err := pruner.runPrune(context.Background(), []string{"test"})
 	if err != nil {
 		t.Fatalf("Got an error: %v", err)
 	}
@@ -97,7 +96,7 @@ func TestRunPruneDuFailed(t *testing.T) {
 	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
 		DUFails: -1,
 	}), true)
-	err := pruner.runPrune(context.Background(), ioutil.Discard, []string{"test"})
+	err := pruner.runPrune(context.Background(), []string{"test"})
 	if err != nil {
 		t.Fatalf("Got an error: %v", err)
 	}
@@ -107,7 +106,7 @@ func TestRunPruneDuFailed2(t *testing.T) {
 	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
 		DUFails: 2,
 	}), true)
-	err := pruner.runPrune(context.Background(), ioutil.Discard, []string{"test"})
+	err := pruner.runPrune(context.Background(), []string{"test"})
 	if err != nil {
 		t.Fatalf("Got an error: %v", err)
 	}
@@ -117,7 +116,7 @@ func TestRunPruneImageRemoveFailed(t *testing.T) {
 	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{
 		ErrImageRemove: true,
 	}), true)
-	err := pruner.runPrune(context.Background(), ioutil.Discard, []string{"test"})
+	err := pruner.runPrune(context.Background(), []string{"test"})
 	if err == nil {
 		t.Fatal("An error expected here")
 	}
@@ -125,7 +124,7 @@ func TestRunPruneImageRemoveFailed(t *testing.T) {
 
 func TestIsPruned(t *testing.T) {
 	pruner := newPruner(fakeLocalDaemon(&testutil.FakeAPIClient{}), true)
-	err := pruner.runPrune(context.Background(), ioutil.Discard,
+	err := pruner.runPrune(context.Background(),
 		[]string{"test1", "test2", "test1"})
 	if err != nil {
 		t.Fatalf("Got an error: %v", err)
@@ -143,7 +142,7 @@ func TestIsPrunedFail(t *testing.T) {
 		ErrImageRemove: true,
 	}), true)
 
-	err := pruner.runPrune(context.Background(), ioutil.Discard, []string{"test1"})
+	err := pruner.runPrune(context.Background(), []string{"test1"})
 	if err == nil {
 		t.Fatal("An error expected here")
 	}
