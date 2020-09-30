@@ -1768,6 +1768,11 @@
           "type": "string",
           "description": "docker network name to run the kpt function containers (default \"bridge\").",
           "x-intellij-html-description": "docker network name to run the kpt function containers (default &quot;bridge&quot;)."
+        },
+        "sinkDir": {
+          "type": "string",
+          "description": "directory to where the manipulated resource output is stored.",
+          "x-intellij-html-description": "directory to where the manipulated resource output is stored."
         }
       },
       "preferredOrder": [
@@ -1776,7 +1781,8 @@
         "networkName",
         "globalScope",
         "network",
-        "mount"
+        "mount",
+        "sinkDir"
       ],
       "additionalProperties": false,
       "description": "adds additional configurations used when calling `kpt fn`.",
