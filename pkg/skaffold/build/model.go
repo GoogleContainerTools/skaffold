@@ -23,69 +23,64 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// artifactDAG models the artifact dependency graph using a set of channels.
+// buildNode models the artifact dependency graph using a set of channels.
 // Each artifact has a status struct that has success and a failure channel which it closes once it completes building by calling either markSuccess or markFailure respectively.
 // This notifies all listeners waiting for this artifact of a successful or failed build.
 // Additionally it has a reference to the channels for each of its dependencies.
 // Calling `waitForDependencies` ensures that all required artifacts' channels have already been closed and as such have finished building before the current artifact build starts.
-type artifactDAG struct {
-	*latest.Artifact
-	status             status
-	dependencyStatuses []status
-}
-
-type status struct {
-	imageName string
-	success   chan interface{}
-	failure   chan interface{}
+type buildNode struct {
+	imageName    string
+	success      chan interface{}
+	failure      chan interface{}
+	dependencies []buildNode
 }
 
 // markSuccess broadcasts a successful build
-func (a *artifactDAG) markSuccess() {
+func (a *buildNode) markSuccess() {
 	// closing channel notifies all listeners waiting for this build that it succeeded
-	close(a.status.success)
+	close(a.success)
 }
 
 // markFailure broadcasts a failed build
-func (a *artifactDAG) markFailure() {
+func (a *buildNode) markFailure() {
 	// closing channel notifies all listeners waiting for this build that it failed
-	close(a.status.failure)
+	close(a.failure)
 }
 
 // waitForDependencies returns an error if any dependency build fails
-func (a *artifactDAG) waitForDependencies(ctx context.Context) error {
-	for _, depStatus := range a.dependencyStatuses {
+func (a *buildNode) waitForDependencies(ctx context.Context) error {
+	for _, dep := range a.dependencies {
 		// wait for required builds to complete
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-depStatus.failure:
-			return fmt.Errorf("failed to build required artifact: %q", depStatus.imageName)
-		case <-depStatus.success:
+		case <-dep.failure:
+			return fmt.Errorf("failed to build required artifact: %q", dep.imageName)
+		case <-dep.success:
 		}
 	}
 	return nil
 }
 
-func makeArtifactDAG(artifacts []*latest.Artifact) []*artifactDAG {
-	statusMap := make(map[string]status)
+func createNodes(artifacts []*latest.Artifact) []buildNode {
+	nodeMap := make(map[string]buildNode)
 	for _, a := range artifacts {
-		statusMap[a.ImageName] = status{
+		nodeMap[a.ImageName] = buildNode{
 			imageName: a.ImageName,
 			success:   make(chan interface{}),
 			failure:   make(chan interface{}),
 		}
 	}
 
-	var dag []*artifactDAG
+	var nodes []buildNode
 	for _, a := range artifacts {
-		ar := &artifactDAG{Artifact: a, status: statusMap[a.ImageName]}
+		ar := nodeMap[a.ImageName]
 		for _, d := range a.Dependencies {
-			ar.dependencyStatuses = append(ar.dependencyStatuses, statusMap[d.ImageName])
+			ar.dependencies = append(ar.dependencies, nodeMap[d.ImageName])
 		}
-		dag = append(dag, ar)
+		nodes = append(nodes, ar)
 	}
-	return dag
+	return nodes
 }
 
 // countingSemaphore uses a buffered channel of size `n` that acts like a counting semaphore, allowing up to `n` concurrent operations
