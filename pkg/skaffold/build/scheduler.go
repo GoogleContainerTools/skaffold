@@ -81,7 +81,6 @@ func (s *scheduler) run(ctx context.Context, out io.Writer, tags tag.ImageTags) 
 
 	// Print logs and collect results in order.
 	return collectResults(out, s.artifacts, &s.results, s.outputs)
-
 }
 
 func (s *scheduler) build(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, i int) {
