@@ -74,9 +74,9 @@ a set of comma-separated values with the following defined modes:
 Skaffold will default to enabling port-forwarding for establishing user-defined port-forwards
 as defined in the `skaffold.yaml`.  Skaffold's `dev` and `debug` will be changed to the following defaults.
 
-Command-line                       | v1.15.0      | New default modes
-------------------------------------|---------------------------------------
-`skaffold dev`                        | off          | user
+Command-line                        | v1.15.0          | New default modes
+----------------------------------- | ---------------- | -------------------
+`skaffold dev`                        | off            | user
 `skaffold dev --port-forward`         | user, services | user, services (no change)
 `skaffold dev --port-forward=false`   | off            | off (no change)
 `skaffold debug`                      | off            | user, debug
