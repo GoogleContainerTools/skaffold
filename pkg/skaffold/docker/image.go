@@ -519,7 +519,7 @@ func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren 
 			pruned = append(pruned, id)
 		} else if errRt == nil {
 			// save the first error
-			errRt = err
+			errRt = fmt.Errorf("pruning images: %w", err)
 		}
 
 		for _, r := range resp {
