@@ -45,7 +45,7 @@ func WithLogFile(builder ArtifactBuilder, muted Muted) ArtifactBuilder {
 		// Run the build.
 		digest, err := builder(ctx, file, artifact, tag)
 
-		// After the build finishes, close the log file. If the build failed, print the full log to the console.
+		// After the build finishes, close the log file.
 		file.Close()
 
 		return digest, err

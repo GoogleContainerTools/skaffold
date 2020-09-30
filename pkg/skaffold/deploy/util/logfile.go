@@ -31,7 +31,7 @@ type Muted interface {
 	MuteDeploy() bool
 }
 
-// WithLogFile returns a multiwriter that writes both to a file and a buffer, with the buffer being written to the provided output buffer in case of error
+// WithLogFile returns a file to write the deploy output to, and a function to be executed after the deploy step is complete.
 func WithLogFile(filename string, out io.Writer, muted Muted) (io.Writer, func(), error) {
 	if !muted.MuteDeploy() {
 		return out, func() {}, nil
@@ -45,7 +45,7 @@ func WithLogFile(filename string, out io.Writer, muted Muted) (io.Writer, func()
 	color.Default.Fprintln(out, "Starting deploy...")
 	fmt.Fprintln(out, "- writing logs to", file.Name())
 
-	// After the deploy finishes, close the log file. If the deploy failed, print the full log to output buffer.
+	// After the deploy finishes, close the log file.
 	return file, func() {
 		file.Close()
 	}, err
