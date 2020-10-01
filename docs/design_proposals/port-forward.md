@@ -17,10 +17,10 @@ several mechanisms:
 - A user can configure one or more [port forwards in their `skaffold.yaml`](https://skaffold.dev/docs/references/yaml/#portForward)
   to connect a local port to a remote port on a pod, a service, or some workload resource that
   has a pod-spec (e.g., Deployment, ReplicaSet, Job).
-- Skaffold automatically configures port forwards for services.
+- Skaffold automatically configures port-forwards for services.
 - When in _debug_ mode (`skaffold debug`), Skaffold automatically configures port-forwards to pods too.
 
-Port forwards are only established when a user runs Skaffold with `--port-forward`.  This was a conscious
+Port-forwards are only established when a user runs Skaffold with `--port-forward`.  This was a conscious
 choice in [#969](https://github.com/GoogleContainerTools/skaffold/issues/969) as Skaffold had been
 forwarding all containerPorts defined on pods, and doing so led to conflicts
 in ports chosen.  Users with many services encountered confusion when dealing with many services
@@ -74,7 +74,7 @@ a set of comma-separated values with the following defined modes:
 Skaffold will default to enabling port-forwarding for establishing user-defined port-forwards
 as defined in the `skaffold.yaml`.  Skaffold's `dev` and `debug` will be changed to the following defaults.
 
-Command-line                        | v1.15.0          | New default modes
+Command-line                        | v1.15.0 default modes          | New default modes
 ----------------------------------- | ---------------- | -------------------
 `skaffold dev`                        | off            | user
 `skaffold dev --port-forward`         | user, services | user, services (no change)
@@ -137,9 +137,9 @@ Please describe what new test cases you are going to consider.
 
 1. `skaffold dev` should forward user-defined ports (no services, not container ports).
 2. `skaffold dev --port-forward` should forward services (no container ports).
-3. `skaffod dev --port-forward-modes=off` should forward nothing.
+3. `skaffold dev --port-forward-modes=off` should forward nothing.
 4. `skaffold dev --port-forward-modes=X` for X={user,debug,pods,services}` should only forward those items.
 5. `skaffold debug` should forward user-defined ports and debug ports (no services, no other container ports).
 6. `skaffold debug --port-forward` should forward user-defined ports, debug ports, and services (no container ports).
-7. `skaffod debug --port-forward-modes=off` should forward nothing.
+7. `skaffold debug --port-forward-modes=off` should forward nothing.
 8. `skaffold debug --port-forward-modes=X` for X={user,debug,pods,services}` should only forward those items.
