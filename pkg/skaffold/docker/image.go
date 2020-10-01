@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
@@ -73,7 +74,9 @@ type LocalDaemon interface {
 	ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error)
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
-	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error
+	ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error)
+	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
+	DiskUsage(ctx context.Context) (uint64, error)
 	RawClient() client.CommonAPIClient
 }
 
@@ -439,7 +442,20 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 		}
 		time.Sleep(sleepTime)
 	}
-	return nil, fmt.Errorf("could not remove image after %d retries", retries)
+	return nil, fmt.Errorf("could not remove image %q after %d retries", image, retries)
+}
+
+func (l *localDaemon) ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error) {
+	return l.apiClient.ImageList(ctx, types.ImageListOptions{
+		Filters: filters.NewArgs(filters.Arg("reference", ref)),
+	})
+}
+func (l *localDaemon) DiskUsage(ctx context.Context) (uint64, error) {
+	usage, err := l.apiClient.DiskUsage(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return uint64(usage.LayersSize), nil
 }
 
 func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) ([]string, error) {
@@ -491,24 +507,29 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 	return args, nil
 }
 
-func (l *localDaemon) Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error {
+func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error) {
+	var pruned []string
+	var errRt error
 	for _, id := range images {
 		resp, err := l.ImageRemove(ctx, id, types.ImageRemoveOptions{
 			Force:         true,
 			PruneChildren: pruneChildren,
 		})
-		if err != nil {
-			return fmt.Errorf("pruning images: %w", err)
+		if err == nil {
+			pruned = append(pruned, id)
+		} else if errRt == nil {
+			// save the first error
+			errRt = fmt.Errorf("pruning images: %w", err)
 		}
+
 		for _, r := range resp {
 			if r.Deleted != "" {
-				fmt.Fprintf(out, "deleted image %s\n", r.Deleted)
+				logrus.Debugf("deleted image %s\n", r.Deleted)
 			}
 			if r.Untagged != "" {
-				fmt.Fprintf(out, "untagged image %s\n", r.Untagged)
+				logrus.Debugf("untagged image %s\n", r.Untagged)
 			}
 		}
 	}
-
-	return nil
+	return pruned, errRt
 }

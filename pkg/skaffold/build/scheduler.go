@@ -84,8 +84,8 @@ func (s *scheduler) run(ctx context.Context, out io.Writer, tags tag.ImageTags) 
 }
 
 func (s *scheduler) build(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, i int) {
-	defer cw.Close()
 	defer s.wg.Done()
+	defer cw.Close()
 
 	n := s.nodes[i]
 	imageName := n.imageName

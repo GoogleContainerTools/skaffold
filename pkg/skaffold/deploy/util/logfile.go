@@ -17,7 +17,6 @@ limitations under the License.
 package util
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 
@@ -32,29 +31,22 @@ type Muted interface {
 	MuteDeploy() bool
 }
 
-// WithLogFile returns a multiwriter that writes both to a file and a buffer, with the buffer being written to the provided output buffer in case of error
-func WithLogFile(filename string, out io.Writer, muted Muted) (io.Writer, func(error), error) {
+// WithLogFile returns a file to write the deploy output to, and a function to be executed after the deploy step is complete.
+func WithLogFile(filename string, out io.Writer, muted Muted) (io.Writer, func(), error) {
 	if !muted.MuteDeploy() {
-		return out, func(error) {}, nil
+		return out, func() {}, nil
 	}
 
 	file, err := logfile.Create("deploy", filename)
 	if err != nil {
-		return out, func(error) {}, fmt.Errorf("unable to create log file for deploy step: %w", err)
+		return out, func() {}, fmt.Errorf("unable to create log file for deploy step: %w", err)
 	}
 
 	color.Default.Fprintln(out, "Starting deploy...")
 	fmt.Fprintln(out, "- writing logs to", file.Name())
 
-	// Print logs to a memory buffer and to a file.
-	var buf bytes.Buffer
-	w := io.MultiWriter(file, &buf)
-
-	// After the deploy finishes, close the log file. If the deploy failed, print the full log to output buffer.
-	return w, func(deployErr error) {
+	// After the deploy finishes, close the log file.
+	return file, func() {
 		file.Close()
-		if deployErr != nil {
-			buf.WriteTo(out)
-		}
 	}, err
 }

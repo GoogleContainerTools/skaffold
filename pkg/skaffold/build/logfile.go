@@ -17,7 +17,6 @@ limitations under the License.
 package build
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -43,18 +42,11 @@ func WithLogFile(builder ArtifactBuilder, muted Muted) ArtifactBuilder {
 		}
 		fmt.Fprintln(out, " - writing logs to", file.Name())
 
-		// Print logs to a memory buffer and to a file.
-		var buf bytes.Buffer
-		w := io.MultiWriter(file, &buf)
-
 		// Run the build.
-		digest, err := builder(ctx, w, artifact, tag)
+		digest, err := builder(ctx, file, artifact, tag)
 
-		// After the build finishes, close the log file. If the build failed, print the full log to the console.
+		// After the build finishes, close the log file.
 		file.Close()
-		if err != nil {
-			buf.WriteTo(out)
-		}
 
 		return digest, err
 	}

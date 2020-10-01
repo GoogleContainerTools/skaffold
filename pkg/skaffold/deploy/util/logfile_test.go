@@ -73,7 +73,8 @@ func TestWithLogFile(t *testing.T) {
 			muted:              muted(true),
 			shouldErr:          true,
 			expectedNamespaces: nil,
-			logsFound:          []string{logFilename, logDeployFailed},
+			logsFound:          []string{logFilename},
+			logsNotFound:       []string{logDeployFailed},
 		},
 	}
 	for _, test := range tests {
@@ -87,7 +88,7 @@ func TestWithLogFile(t *testing.T) {
 
 			deployOut, postDeployFn, _ := WithLogFile("deploy.log", &mockOut, test.muted)
 			namespaces, err := deployer.Deploy(context.Background(), deployOut, nil)
-			postDeployFn(err)
+			postDeployFn()
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedNamespaces, namespaces)
 			for _, found := range test.logsFound {
