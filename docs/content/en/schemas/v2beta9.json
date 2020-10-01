@@ -368,13 +368,13 @@
       "properties": {
         "alias": {
           "type": "string",
-          "description": "a token that will be replaced with the image reference in the builder definition files. For example, the `docker` builder will use the alias as a build-time variable. Defaults to the value of `image`.",
-          "x-intellij-html-description": "a token that will be replaced with the image reference in the builder definition files. For example, the <code>docker</code> builder will use the alias as a build-time variable. Defaults to the value of <code>image</code>."
+          "description": "a token that is replaced with the image reference in the builder definition files. For example, the `docker` builder will use the alias as a build-arg key. Defaults to the value of `image`.",
+          "x-intellij-html-description": "a token that is replaced with the image reference in the builder definition files. For example, the <code>docker</code> builder will use the alias as a build-arg key. Defaults to the value of <code>image</code>."
         },
         "image": {
           "type": "string",
-          "description": "artifact image name.",
-          "x-intellij-html-description": "artifact image name."
+          "description": "a reference to an artifact's image name.",
+          "x-intellij-html-description": "a reference to an artifact's image name."
         }
       },
       "preferredOrder": [
