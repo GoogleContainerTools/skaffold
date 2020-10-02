@@ -147,33 +147,27 @@ func maintainArtifactOrder(built []build.Artifact, artifacts []*latest.Artifact)
 }
 
 func (c *cache) addArtifacts(ctx context.Context, bRes []build.Artifact, hashByName map[string]string) error {
-	var err error
-
 	for _, a := range bRes {
 		entry := ImageDetails{}
-		imageID := ""
+		if c.imagesAreLocal {
+			imageID, err := c.client.ImageID(ctx, a.Tag)
+			if err != nil {
+				return err
+			}
 
-		if !c.imagesAreLocal {
+			if imageID != "" {
+				entry.ID = imageID
+			}
+		} else {
 			ref, err := docker.ParseReference(a.Tag)
 			if err != nil {
 				return fmt.Errorf("parsing reference %q: %w", a.Tag, err)
 			}
-
 			entry.Digest = ref.Digest
-		} else {
-			imageID, err = c.client.ImageID(ctx, a.Tag)
-			if err != nil {
-				return err
-			}
-			if imageID != "" {
-				entry.ID = imageID
-			}
 		}
-
 		c.cacheMutex.Lock()
 		c.artifactCache[hashByName[a.ImageName]] = entry
 		c.cacheMutex.Unlock()
 	}
-
 	return nil
 }
