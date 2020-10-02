@@ -147,7 +147,6 @@ func maintainArtifactOrder(built []build.Artifact, artifacts []*latest.Artifact)
 }
 
 func (c *cache) addArtifacts(ctx context.Context, bRes []build.Artifact, hashByName map[string]string) error {
-
 	var err error
 
 	for _, a := range bRes {
