@@ -244,9 +244,8 @@ func kanikoArgs(artifact *latest.KanikoArtifact, tag string, insecureRegistries 
 		"--destination", tag,
 		"-v", logLevel().String()}
 
-	// TODO: remove since AdditionalFlags will be deprecated (priyawadhwa@)
 	if artifact.AdditionalFlags != nil {
-		logrus.Warn("The additionalFlags field in kaniko is deprecated, please consult the current schema at skaffold.dev to update your skaffold.yaml.")
+		logrus.Trace("kaniko additionalFlags are ", strings.Join(artifact.AdditionalFlags, " "))
 		args = append(args, artifact.AdditionalFlags...)
 	}
 
