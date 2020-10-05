@@ -181,6 +181,24 @@ func TestCollectResults(t *testing.T) {
 			},
 			shouldErr: true,
 		},
+		{
+			description: "build cancelled",
+			artifacts: []*latest.Artifact{
+				{ImageName: "skaffold/image1"},
+				{ImageName: "skaffold/image2"},
+				{ImageName: "skaffold/image3"},
+			},
+			expected: nil,
+			results: map[string]interface{}{
+				"skaffold/image1": Artifact{
+					ImageName: "skaffold/image1",
+					Tag:       "skaffold/image1:v0.0.1@sha256:abac",
+				},
+				"skaffold/image2": context.Canceled,
+				"skaffold/image3": context.Canceled,
+			},
+			shouldErr: true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -190,7 +208,7 @@ func TestCollectResults(t *testing.T) {
 				resultMap.Store(k, v)
 			}
 
-			got, err := collectResults(ioutil.Discard, test.artifacts, resultMap, outputs)
+			got, err := collectResults(ioutil.Discard, test.artifacts, resultMap, outputs, nil)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 		})
@@ -370,6 +388,23 @@ func TestInOrderForArgs(t *testing.T) {
 			expected:    nil,
 		},
 		{
+			description: "build fails for artifacts without dependencies",
+			buildArtifact: func(c context.Context, _ io.Writer, a *latest.Artifact, tag string) (string, error) {
+				if a.ImageName == "artifact2" {
+					return "", fmt.Errorf(`some error occurred while building "artifact2"`)
+				}
+				select {
+				case <-c.Done():
+					return "", c.Err()
+				case <-time.After(5 * time.Second):
+					return tag, nil
+				}
+			},
+			artifactLen: 5,
+			expected:    nil,
+			err:         fmt.Errorf("build cancelled for %q due to another build failure: %w", "artifact1", fmt.Errorf("some error occurred while building %q", "artifact2")),
+		},
+		{
 			description: "build fails for artifacts with dependencies",
 			buildArtifact: func(_ context.Context, _ io.Writer, a *latest.Artifact, tag string) (string, error) {
 				if a.ImageName == "artifact2" {
@@ -385,7 +420,7 @@ func TestInOrderForArgs(t *testing.T) {
 			},
 			artifactLen: 5,
 			expected:    nil,
-			err:         fmt.Errorf("couldn't build %q: %w", "artifact1", fmt.Errorf("failed to build required artifact: %q", "artifact2")),
+			err:         fmt.Errorf("build cancelled for %q due to another build failure: %w", "artifact1", fmt.Errorf("some error occurred while building %q", "artifact2")),
 		},
 	}
 	for _, test := range tests {

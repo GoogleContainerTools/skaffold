@@ -23,6 +23,8 @@ import (
 	"io"
 	"sync"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -48,7 +50,6 @@ type scheduler struct {
 	results sync.Map      // map[artifact.name]error
 
 	sem countingSemaphore
-	wg  sync.WaitGroup
 }
 
 func newScheduler(artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder, concurrency int) *scheduler {
@@ -59,7 +60,6 @@ func newScheduler(artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder,
 		outputs:         make([]chan string, len(artifacts)),
 		sem:             newCountingSemaphore(concurrency),
 	}
-	s.wg.Add(len(artifacts))
 	for i := range artifacts {
 		s.outputs[i] = make(chan string, buffSize)
 	}
@@ -67,24 +67,29 @@ func newScheduler(artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder,
 }
 
 func (s *scheduler) run(ctx context.Context, out io.Writer, tags tag.ImageTags) ([]Artifact, error) {
+	g, gCtx := errgroup.WithContext(ctx)
+
 	for i := range s.artifacts {
+		i := i
 		r, w := io.Pipe()
 
 		// Create a goroutine for each element in dag. Each goroutine waits on its dependencies to finish building.
 		// Because our artifacts form a DAG, at least one of the goroutines should be able to start building.
-		go s.build(ctx, w, tags, i)
+		// wrap in an error group so that all other builds are cancelled as soon as any one fails.
+		g.Go(func() error {
+			return s.build(gCtx, w, tags, i)
+		})
 
 		// Read build output/logs and write to buffered channel
 		go readOutputAndWriteToChannel(r, s.outputs[i])
 	}
-	s.wg.Wait()
+	err := g.Wait()
 
 	// Print logs and collect results in order.
-	return collectResults(out, s.artifacts, &s.results, s.outputs)
+	return collectResults(out, s.artifacts, &s.results, s.outputs, err)
 }
 
-func (s *scheduler) build(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, i int) {
-	defer s.wg.Done()
+func (s *scheduler) build(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, i int) error {
 	defer cw.Close()
 
 	n := s.nodes[i]
@@ -98,25 +103,24 @@ func (s *scheduler) build(ctx context.Context, cw io.WriteCloser, tags tag.Image
 	if err != nil {
 		event.BuildFailed(imageName, err)
 		s.results.Store(imageName, err)
-		n.markFailure()
-		return
+		return err
 	}
 
 	finalTag, err := getBuildResult(ctx, cw, tags, s.artifacts[i], s.artifactBuilder)
 	if err != nil {
 		event.BuildFailed(imageName, err)
 		s.results.Store(imageName, err)
-		n.markFailure()
-		return
+		return err
 	}
 
 	event.BuildComplete(imageName)
 	ar := Artifact{ImageName: imageName, Tag: finalTag}
 	s.results.Store(ar.ImageName, ar)
-	n.markSuccess()
+	n.markComplete()
+	return nil
 }
 
-func collectResults(out io.Writer, artifacts []*latest.Artifact, results *sync.Map, outputs []chan string) ([]Artifact, error) {
+func collectResults(out io.Writer, artifacts []*latest.Artifact, results *sync.Map, outputs []chan string, cancelError error) ([]Artifact, error) {
 	var built []Artifact
 	for i, artifact := range artifacts {
 		// Wait for build to complete.
@@ -127,6 +131,9 @@ func collectResults(out io.Writer, artifacts []*latest.Artifact, results *sync.M
 		}
 		switch t := v.(type) {
 		case error:
+			if t == context.Canceled {
+				return nil, fmt.Errorf("build cancelled for %q due to another build failure: %w", artifact.ImageName, cancelError)
+			}
 			return nil, fmt.Errorf("couldn't build %q: %w", artifact.ImageName, t)
 		case Artifact:
 			built = append(built, t)

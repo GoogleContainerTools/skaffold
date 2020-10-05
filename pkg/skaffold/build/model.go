@@ -18,33 +18,25 @@ package build
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // buildNode models the artifact dependency graph using a set of channels.
-// Each artifact has a status struct that has success and a failure channel which it closes once it completes building by calling either markSuccess or markFailure respectively.
-// This notifies all listeners waiting for this artifact of a successful or failed build.
+// Each build node has a wait  channel which it closes once it completes building by calling markComplete.
+// This notifies all listeners waiting for this node of a successful build.
 // Additionally it has a reference to the channels for each of its dependencies.
-// Calling `waitForDependencies` ensures that all required artifacts' channels have already been closed and as such have finished building before the current artifact build starts.
+// Calling `waitForDependencies` ensures that all required nodes' channels have already been closed and as such have finished building before the current artifact build starts.
 type buildNode struct {
 	imageName    string
-	success      chan interface{}
-	failure      chan interface{}
+	wait         chan interface{}
 	dependencies []buildNode
 }
 
-// markSuccess broadcasts a successful build
-func (a *buildNode) markSuccess() {
+// markComplete broadcasts a successful build
+func (a *buildNode) markComplete() {
 	// closing channel notifies all listeners waiting for this build that it succeeded
-	close(a.success)
-}
-
-// markFailure broadcasts a failed build
-func (a *buildNode) markFailure() {
-	// closing channel notifies all listeners waiting for this build that it failed
-	close(a.failure)
+	close(a.wait)
 }
 
 // waitForDependencies returns an error if any dependency build fails
@@ -54,9 +46,7 @@ func (a *buildNode) waitForDependencies(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-dep.failure:
-			return fmt.Errorf("failed to build required artifact: %q", dep.imageName)
-		case <-dep.success:
+		case <-dep.wait:
 		}
 	}
 	return nil
@@ -67,8 +57,7 @@ func createNodes(artifacts []*latest.Artifact) []buildNode {
 	for _, a := range artifacts {
 		nodeMap[a.ImageName] = buildNode{
 			imageName: a.ImageName,
-			success:   make(chan interface{}),
-			failure:   make(chan interface{}),
+			wait:      make(chan interface{}),
 		}
 	}
 
