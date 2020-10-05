@@ -88,7 +88,7 @@ func TestGetBuild(t *testing.T) {
 	}
 }
 
-func TestCollectResults(t *testing.T) {
+func TestFormatResults(t *testing.T) {
 	tests := []struct {
 		description string
 		artifacts   []*latest.Artifact
@@ -107,52 +107,9 @@ func TestCollectResults(t *testing.T) {
 				{ImageName: "skaffold/image2", Tag: "skaffold/image2:v0.0.2@sha256:abac"},
 			},
 			results: map[string]interface{}{
-				"skaffold/image1": Artifact{
-					ImageName: "skaffold/image1",
-					Tag:       "skaffold/image1:v0.0.1@sha256:abac",
-				},
-				"skaffold/image2": Artifact{
-					ImageName: "skaffold/image2",
-					Tag:       "skaffold/image2:v0.0.2@sha256:abac",
-				},
+				"skaffold/image1": "skaffold/image1:v0.0.1@sha256:abac",
+				"skaffold/image2": "skaffold/image2:v0.0.2@sha256:abac",
 			},
-		},
-		{
-			description: "first build errors",
-			artifacts: []*latest.Artifact{
-				{ImageName: "skaffold/image1"},
-				{ImageName: "skaffold/image2"},
-			},
-			expected: nil,
-			results: map[string]interface{}{
-				"skaffold/image1": fmt.Errorf("Could not build image skaffold/image1"),
-				"skaffold/image2": Artifact{
-					ImageName: "skaffold/image2",
-					Tag:       "skaffold/image2:v0.0.2@sha256:abac",
-				},
-			},
-			shouldErr: true,
-		},
-		{
-			description: "arbitrary image build failure",
-			artifacts: []*latest.Artifact{
-				{ImageName: "skaffold/image1"},
-				{ImageName: "skaffold/image2"},
-				{ImageName: "skaffold/image3"},
-			},
-			expected: nil,
-			results: map[string]interface{}{
-				"skaffold/image1": Artifact{
-					ImageName: "skaffold/image1",
-					Tag:       "skaffold/image1:v0.0.1@sha256:abac",
-				},
-				"skaffold/image2": fmt.Errorf("Could not build image skaffold/image1"),
-				"skaffold/image3": Artifact{
-					ImageName: "skaffold/image3",
-					Tag:       "skaffold/image3:v0.0.1@sha256:abac",
-				},
-			},
-			shouldErr: true,
 		},
 		{
 			description: "no build result produced for a build",
@@ -162,10 +119,7 @@ func TestCollectResults(t *testing.T) {
 			},
 			expected: nil,
 			results: map[string]interface{}{
-				"skaffold/image1": Artifact{
-					ImageName: "skaffold/image1:v0.0.1@sha256:abac",
-					Tag:       "skaffold/image1:v0.0.1@sha256:abac",
-				},
+				"skaffold/image1": "skaffold/image1:v0.0.1@sha256:abac",
 			},
 			shouldErr: true,
 		},
@@ -181,34 +135,15 @@ func TestCollectResults(t *testing.T) {
 			},
 			shouldErr: true,
 		},
-		{
-			description: "build cancelled",
-			artifacts: []*latest.Artifact{
-				{ImageName: "skaffold/image1"},
-				{ImageName: "skaffold/image2"},
-				{ImageName: "skaffold/image3"},
-			},
-			expected: nil,
-			results: map[string]interface{}{
-				"skaffold/image1": Artifact{
-					ImageName: "skaffold/image1",
-					Tag:       "skaffold/image1:v0.0.1@sha256:abac",
-				},
-				"skaffold/image2": context.Canceled,
-				"skaffold/image3": context.Canceled,
-			},
-			shouldErr: true,
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			outputs := setUpChannels(len(test.artifacts))
-			resultMap := new(sync.Map)
+			m := new(sync.Map)
 			for k, v := range test.results {
-				resultMap.Store(k, v)
+				m.Store(k, v)
 			}
-
-			got, err := collectResults(ioutil.Discard, test.artifacts, resultMap, outputs, nil)
+			results := &resultStoreImpl{m: m}
+			got, err := formatResults(test.artifacts, results)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 		})
@@ -249,7 +184,7 @@ And new lines
 			out := new(bytes.Buffer)
 			artifacts := []*latest.Artifact{
 				{ImageName: "skaffold/image1"},
-				{ImageName: "skaffold/image2"},
+				{ImageName: "skaffold/image2", Dependencies: []*latest.ArtifactDependency{{ImageName: "skaffold/image1"}}},
 			}
 			tags := tag.ImageTags{
 				"skaffold/image1": "skaffold/image1:v0.0.1",
@@ -402,7 +337,7 @@ func TestInOrderForArgs(t *testing.T) {
 			},
 			artifactLen: 5,
 			expected:    nil,
-			err:         fmt.Errorf("build cancelled for %q due to another build failure: %w", "artifact1", fmt.Errorf("some error occurred while building %q", "artifact2")),
+			err:         fmt.Errorf(`some error occurred while building "artifact2"`),
 		},
 		{
 			description: "build fails for artifacts with dependencies",
@@ -420,7 +355,7 @@ func TestInOrderForArgs(t *testing.T) {
 			},
 			artifactLen: 5,
 			expected:    nil,
-			err:         fmt.Errorf("build cancelled for %q due to another build failure: %w", "artifact1", fmt.Errorf("some error occurred while building %q", "artifact2")),
+			err:         fmt.Errorf(`some error occurred while building "artifact2"`),
 		},
 	}
 	for _, test := range tests {
@@ -458,15 +393,6 @@ func setDependencies(a []*latest.Artifact, d map[int][]int) {
 			})
 		}
 	}
-}
-
-func setUpChannels(n int) []chan string {
-	outputs := make([]chan string, n)
-	for i := 0; i < n; i++ {
-		outputs[i] = make(chan string, 10)
-		close(outputs[i])
-	}
-	return outputs
 }
 
 func initializeEvents() {

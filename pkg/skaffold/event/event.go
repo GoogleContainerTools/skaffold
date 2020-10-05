@@ -39,6 +39,7 @@ const (
 	Started    = "Started"
 	Succeeded  = "Succeeded"
 	Terminated = "Terminated"
+	Canceled   = "Canceled"
 )
 
 var handler = newHandler()
@@ -298,6 +299,11 @@ func DeployComplete() {
 // BuildInProgress notifies that a build has been started.
 func BuildInProgress(imageName string) {
 	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: InProgress})
+}
+
+// BuildCanceled notifies that a build has been canceled.
+func BuildCanceled(imageName string) {
+	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Canceled})
 }
 
 // BuildFailed notifies that a build has failed.
