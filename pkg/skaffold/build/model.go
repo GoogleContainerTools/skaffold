@@ -24,7 +24,7 @@ import (
 
 // buildNode models the artifact dependency graph using a set of channels.
 // Each build node has a wait  channel which it closes once it completes building by calling markComplete.
-// This notifies all listeners waiting for this node of a successful build.
+// This notifies all listeners waiting for this node's build to complete.
 // Additionally it has a reference to the channels for each of its dependencies.
 // Calling `waitForDependencies` ensures that all required nodes' channels have already been closed and as such have finished building before the current artifact build starts.
 type buildNode struct {
