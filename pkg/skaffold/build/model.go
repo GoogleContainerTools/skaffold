@@ -35,7 +35,7 @@ type buildNode struct {
 
 // markComplete broadcasts a successful build
 func (a *buildNode) markComplete() {
-	// closing channel notifies all listeners waiting for this build that it succeeded
+	// closing channel notifies all listeners
 	close(a.wait)
 }
 
