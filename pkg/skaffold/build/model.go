@@ -65,7 +65,11 @@ func createNodes(artifacts []*latest.Artifact) []buildNode {
 	for _, a := range artifacts {
 		ar := nodeMap[a.ImageName]
 		for _, d := range a.Dependencies {
-			ar.dependencies = append(ar.dependencies, nodeMap[d.ImageName])
+			ch, found := nodeMap[d.ImageName]
+			if !found {
+				continue
+			}
+			ar.dependencies = append(ar.dependencies, ch)
 		}
 		nodes = append(nodes, ar)
 	}
