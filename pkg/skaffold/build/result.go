@@ -48,14 +48,12 @@ type logAggregatorImpl struct {
 	size       int
 	capacity   int
 	countMutex sync.Mutex
-	wg         sync.WaitGroup
 }
 
 func (l *logAggregatorImpl) GetWriter() (io.WriteCloser, error) {
 	if err := l.checkCapacity(); err != nil {
 		return nil, err
 	}
-	l.wg.Add(1)
 	r, w := io.Pipe()
 	ch := make(chan string, buffSize)
 	l.messages <- ch
@@ -67,11 +65,13 @@ func (l *logAggregatorImpl) GetWriter() (io.WriteCloser, error) {
 func (l *logAggregatorImpl) PrintInOrder(ctx context.Context, out io.Writer) {
 	go func() {
 		<-ctx.Done()
-		close(l.messages)
+		// we handle cancellation by passing a nil struct instead of closing the channel.
+		// This makes it easier to flush all pending messages on the buffered channel before returning and avoid any race with pending requests for new writers.
+		l.messages <- nil
 	}()
 	for i := 0; i < l.capacity; i++ {
-		ch, ok := <-l.messages
-		if !ok {
+		ch := <-l.messages
+		if ch == nil {
 			return
 		}
 		// read from each build's message channel and write to the given output.
