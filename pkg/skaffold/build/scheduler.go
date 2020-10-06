@@ -60,7 +60,7 @@ func (s *scheduler) run(ctx context.Context, out io.Writer, tags tag.ImageTags) 
 
 		// Create a goroutine for each element in dag. Each goroutine waits on its dependencies to finish building.
 		// Because our artifacts form a DAG, at least one of the goroutines should be able to start building.
-		// wrap in an error group so that all other builds are cancelled as soon as any one fails.
+		// Wrap in an error group so that all other builds are cancelled as soon as any one fails.
 		g.Go(func() error {
 			return s.build(gCtx, tags, i)
 		})
