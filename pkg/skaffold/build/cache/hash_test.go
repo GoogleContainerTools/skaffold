@@ -197,7 +197,7 @@ func TestBuildArgs(t *testing.T) {
 	}{
 		{
 			mode:     config.RunModes.Debug,
-			expected: "771e726436816ce229a2838b38aee8c85c7dda4411e7ba68cfd898473ae12ada",
+			expected: "a8544410acafce64325abfffcb21e75efdcd575bd9f8d3be2a516125ec547651",
 		},
 		{
 			mode:     config.RunModes.Dev,
@@ -380,14 +380,14 @@ func TestHashBuildArgs(t *testing.T) {
 				},
 			},
 			mode:     config.RunModes.Debug,
-			expected: []string{"SKAFFOLD_GO_GCFLAGS='all=-N -l'", "foo=bar"},
+			expected: []string{"SKAFFOLD_GO_GCFLAGS=all=-N -l", "foo=bar"},
 		}, {
 			description: "docker artifact without build args for debug",
 			artifactType: latest.ArtifactType{
 				DockerArtifact: &latest.DockerArtifact{},
 			},
 			mode:     config.RunModes.Debug,
-			expected: []string{"SKAFFOLD_GO_GCFLAGS='all=-N -l'"},
+			expected: []string{"SKAFFOLD_GO_GCFLAGS=all=-N -l"},
 		}, {
 			description: "docker artifact without build args for dev",
 			artifactType: latest.ArtifactType{
