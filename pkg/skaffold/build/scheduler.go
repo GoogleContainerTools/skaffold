@@ -35,7 +35,7 @@ type scheduler struct {
 	artifacts       []*latest.Artifact
 	artifactBuilder ArtifactBuilder
 	nodes           []buildNode // size len(artifacts)
-	logger          logWriter
+	logger          logAggregator
 	results         resultStore
 	sem             countingSemaphore
 }
@@ -47,7 +47,7 @@ func newScheduler(artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder,
 		nodes:           createNodes(artifacts),
 		sem:             newCountingSemaphore(concurrency),
 		results:         newResultStore(),
-		logger:          newLogWriter(len(artifacts)),
+		logger:          newLogAggregator(len(artifacts)),
 	}
 	return &s
 }
@@ -66,7 +66,7 @@ func (s *scheduler) run(ctx context.Context, out io.Writer, tags tag.ImageTags) 
 		})
 	}
 	// print output for all artifact builds in order
-	s.logger.PrintInOrder(out)
+	s.logger.PrintInOrder(gCtx, out)
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
@@ -89,25 +89,25 @@ func formatResults(artifacts []*latest.Artifact, results resultStore) ([]Artifac
 func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error {
 	n := s.nodes[i]
 	a := s.artifacts[i]
-
 	err := n.waitForDependencies(ctx)
-	release := s.sem.acquire()
-	defer release()
-	w, _ := s.logger.GetWriter()
-	defer w.Close()
-
-	if err == context.Canceled {
+	if err != nil {
+		// `waitForDependencies` only returns `context.Canceled` error
 		event.BuildCanceled(a.ImageName)
 		return err
 	}
+	release := s.sem.acquire()
+	defer release()
 
 	event.BuildInProgress(a.ImageName)
+
+	w, err := s.logger.GetWriter()
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
 		return err
 	}
+	defer w.Close()
 
-	finalTag, err := getBuildResult(ctx, w, tags, s.artifacts[i], s.artifactBuilder)
+	finalTag, err := performBuild(ctx, w, tags, s.artifacts[i], s.artifactBuilder)
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
 		return err
@@ -134,7 +134,7 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 	return s.run(ctx, out, tags)
 }
 
-func getBuildResult(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latest.Artifact, build ArtifactBuilder) (string, error) {
+func performBuild(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latest.Artifact, build ArtifactBuilder) (string, error) {
 	color.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
 	tag, present := tags[artifact.ImageName]
 	if !present {

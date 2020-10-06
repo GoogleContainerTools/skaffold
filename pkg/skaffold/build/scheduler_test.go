@@ -80,7 +80,7 @@ func TestGetBuild(t *testing.T) {
 			out := new(bytes.Buffer)
 
 			artifact := &latest.Artifact{ImageName: "skaffold/image1"}
-			got, err := getBuildResult(context.Background(), out, test.tags, artifact, test.buildArtifact)
+			got, err := performBuild(context.Background(), out, test.tags, artifact, test.buildArtifact)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedTag, got)
 			t.CheckDeepEqual(test.expectedOut, out.String())

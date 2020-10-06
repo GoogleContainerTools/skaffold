@@ -18,6 +18,7 @@ package build
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"sync"
@@ -32,27 +33,29 @@ var (
 	buffSize = bufferedLinesPerArtifact
 )
 
-// logWriter provides an interface to create an output writer for each artifact build and later aggregate the logs in build order.
+// logAggregator provides an interface to create an output writer for each artifact build and later aggregate the logs in build order.
 // The order of output is not guaranteed between multiple builds running concurrently.
-type logWriter interface {
-	// GetWriter returns an output writer tracked by the logWriter
+type logAggregator interface {
+	// GetWriter returns an output writer tracked by the logAggregator
 	GetWriter() (io.WriteCloser, error)
 	// PrintInOrder prints the output from each allotted writer in build order.
-	// It blocks until the instantiated capacity of io writers have been all allotted and closed.
-	PrintInOrder(out io.Writer)
+	// It blocks until the instantiated capacity of io writers have been all allotted and closed, or the context is cancelled.
+	PrintInOrder(ctx context.Context, out io.Writer)
 }
 
-type logWriterImpl struct {
+type logAggregatorImpl struct {
 	messages   chan chan string
 	size       int
 	capacity   int
 	countMutex sync.Mutex
+	wg         sync.WaitGroup
 }
 
-func (l *logWriterImpl) GetWriter() (io.WriteCloser, error) {
+func (l *logAggregatorImpl) GetWriter() (io.WriteCloser, error) {
 	if err := l.checkCapacity(); err != nil {
 		return nil, err
 	}
+	l.wg.Add(1)
 	r, w := io.Pipe()
 	ch := make(chan string, buffSize)
 	l.messages <- ch
@@ -61,15 +64,22 @@ func (l *logWriterImpl) GetWriter() (io.WriteCloser, error) {
 	return w, nil
 }
 
-func (l *logWriterImpl) PrintInOrder(out io.Writer) {
-	defer close(l.messages)
+func (l *logAggregatorImpl) PrintInOrder(ctx context.Context, out io.Writer) {
+	go func() {
+		<-ctx.Done()
+		close(l.messages)
+	}()
 	for i := 0; i < l.capacity; i++ {
+		ch, ok := <-l.messages
+		if !ok {
+			return
+		}
 		// read from each build's message channel and write to the given output.
-		printResult(out, <-l.messages)
+		printResult(out, ch)
 	}
 }
 
-func (l *logWriterImpl) checkCapacity() error {
+func (l *logAggregatorImpl) checkCapacity() error {
 	l.countMutex.Lock()
 	defer l.countMutex.Unlock()
 	if l.size == l.capacity {
@@ -78,13 +88,14 @@ func (l *logWriterImpl) checkCapacity() error {
 	l.size++
 	return nil
 }
+
 func printResult(out io.Writer, output chan string) {
 	for line := range output {
 		fmt.Fprintln(out, line)
 	}
 }
 
-func (l *logWriterImpl) writeToChannel(r io.Reader, lines chan string) {
+func (l *logAggregatorImpl) writeToChannel(r io.Reader, lines chan string) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		lines <- scanner.Text()
@@ -92,8 +103,8 @@ func (l *logWriterImpl) writeToChannel(r io.Reader, lines chan string) {
 	close(lines)
 }
 
-func newLogWriter(capacity int) logWriter {
-	return &logWriterImpl{capacity: capacity, messages: make(chan chan string, capacity)}
+func newLogAggregator(capacity int) logAggregator {
+	return &logAggregatorImpl{capacity: capacity, messages: make(chan chan string, capacity)}
 }
 
 // resultStore stores the results of each artifact build.
