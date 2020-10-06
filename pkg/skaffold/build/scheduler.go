@@ -100,9 +100,9 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 		return err
 	}
 
-	event.BuildComplete(a.ImageName)
 	s.results.Record(a, finalTag)
 	n.markComplete()
+	event.BuildComplete(a.ImageName)
 	return nil
 }
 
