@@ -23,7 +23,7 @@ import (
 )
 
 // buildNode models the artifact dependency graph using a set of channels.
-// Each build node has a wait  channel which it closes once it completes building by calling markComplete.
+// Each build node has a wait channel which it closes once it completes building by calling markComplete.
 // This notifies all listeners waiting for this node's build to complete.
 // Additionally it has a reference to the channels for each of its dependencies.
 // Calling `waitForDependencies` ensures that all required nodes' channels have already been closed and as such have finished building before the current artifact build starts.
@@ -39,7 +39,7 @@ func (a *buildNode) markComplete() {
 	close(a.wait)
 }
 
-// waitForDependencies returns an error if any dependency build fails
+// waitForDependencies waits for all required builds to complete or returns an error if any build fails
 func (a *buildNode) waitForDependencies(ctx context.Context) error {
 	for _, dep := range a.dependencies {
 		// wait for required builds to complete
@@ -67,6 +67,7 @@ func createNodes(artifacts []*latest.Artifact) []buildNode {
 		for _, d := range a.Dependencies {
 			ch, found := nodeMap[d.ImageName]
 			if !found {
+				// if a dependency is not present in `artifacts` slice then we ignore it.
 				continue
 			}
 			ar.dependencies = append(ar.dependencies, ch)

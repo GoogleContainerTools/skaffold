@@ -33,21 +33,21 @@ type ArtifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.A
 
 type scheduler struct {
 	artifacts       []*latest.Artifact
-	artifactBuilder ArtifactBuilder
 	nodes           []buildNode // size len(artifacts)
+	artifactBuilder ArtifactBuilder
 	logger          logAggregator
-	results         resultStore
+	results         builtArtifacts
 	sem             countingSemaphore
 }
 
 func newScheduler(artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder, concurrency int) *scheduler {
 	s := scheduler{
 		artifacts:       artifacts,
-		artifactBuilder: artifactBuilder,
 		nodes:           createNodes(artifacts),
-		sem:             newCountingSemaphore(concurrency),
-		results:         newResultStore(),
+		artifactBuilder: artifactBuilder,
 		logger:          newLogAggregator(len(artifacts)),
+		results:         newArtifactsStore(),
+		sem:             newCountingSemaphore(concurrency),
 	}
 	return &s
 }
@@ -70,20 +70,7 @@ func (s *scheduler) run(ctx context.Context, out io.Writer, tags tag.ImageTags) 
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
-	return formatResults(s.artifacts, s.results)
-}
-
-// formatResults returns the build results in the order of `latest.Artifacts` in the input slice.
-func formatResults(artifacts []*latest.Artifact, results resultStore) ([]Artifact, error) {
-	var builds []Artifact
-	for _, a := range artifacts {
-		t, err := results.GetTag(a)
-		if err != nil {
-			return nil, err
-		}
-		builds = append(builds, Artifact{ImageName: a.ImageName, Tag: t})
-	}
-	return builds, nil
+	return s.results.GetArtifacts(s.artifacts)
 }
 
 func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error {

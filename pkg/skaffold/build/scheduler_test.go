@@ -142,8 +142,8 @@ func TestFormatResults(t *testing.T) {
 			for k, v := range test.results {
 				m.Store(k, v)
 			}
-			results := &resultStoreImpl{m: m}
-			got, err := formatResults(test.artifacts, results)
+			results := &builtArtifactsImpl{m: m}
+			got, err := results.GetArtifacts(test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 		})
