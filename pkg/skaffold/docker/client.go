@@ -153,6 +153,10 @@ func newMinikubeAPIClient(minikubeProfile string) ([]string, client.CommonAPICli
 		api.NegotiateAPIVersion(context.Background())
 	}
 
+	if host != client.DefaultDockerHost {
+		logrus.Infof("Using minikube docker daemon at %s", host)
+	}
+
 	// Keep the minikube environment variables
 	var environment []string
 	for k, v := range env {
