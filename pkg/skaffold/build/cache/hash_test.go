@@ -141,7 +141,7 @@ func TestGetHashForArtifact(t *testing.T) {
 				},
 			},
 			mode:     config.RunModes.Debug,
-			expected: "a15f9e22a5c5a244c47a5205d577fdbf80e886a4b36915050113b082850a9c5c",
+			expected: "c3a878f799b2a6532db71683a09771af4f9d20ef5884c57642a272934e5c93ea",
 		},
 	}
 	for _, test := range tests {
@@ -430,14 +430,14 @@ func TestHashBuildArgs(t *testing.T) {
 				},
 			},
 			mode:     config.RunModes.Debug,
-			expected: []string{"GOOGLE_GOGCFLAGS='all=-N -l'", "foo=bar"},
+			expected: []string{"GOOGLE_GOGCFLAGS=all=-N -l", "foo=bar"},
 		}, {
 			description: "buildpacks artifact without env for debug",
 			artifactType: latest.ArtifactType{
 				BuildpackArtifact: &latest.BuildpackArtifact{},
 			},
 			mode:     config.RunModes.Debug,
-			expected: []string{"GOOGLE_GOGCFLAGS='all=-N -l'"},
+			expected: []string{"GOOGLE_GOGCFLAGS=all=-N -l"},
 		}, {
 			description: "custom artifact, dockerfile dependency, with build args",
 			artifactType: latest.ArtifactType{
