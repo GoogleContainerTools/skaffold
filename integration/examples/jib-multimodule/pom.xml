@@ -18,7 +18,7 @@
 
   <properties>
     <java.version>1.8</java.version>
-    <jib.maven-plugin-version>2.5.2</jib.maven-plugin-version>
+    <jib.maven-plugin-version>2.6.0</jib.maven-plugin-version>
   </properties>
 
   <dependencies>
