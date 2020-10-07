@@ -106,7 +106,7 @@ func validateAcyclicDependencies(artifacts []*latest.Artifact) (errs []error) {
 // dfs runs a Depth First Search algorithm for cycle detection in a directed graph
 func dfs(artifact *latest.Artifact, visited, marked map[string]bool, artifacts map[string]*latest.Artifact) error {
 	if marked[artifact.ImageName] {
-		return fmt.Errorf("cycle detected in build dependencies involving '%s'", artifact.ImageName)
+		return fmt.Errorf("cycle detected in build dependencies involving %q", artifact.ImageName)
 	}
 	marked[artifact.ImageName] = true
 	defer func() {

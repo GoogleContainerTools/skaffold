@@ -820,7 +820,7 @@ func TestValidateAcyclicDependencies(t *testing.T) {
 			setDependencies(artifacts, test.dependency)
 			errs := validateAcyclicDependencies(artifacts)
 			expected := []error{
-				fmt.Errorf("cycle detected in build dependencies involving 'artifact1'"),
+				fmt.Errorf(`cycle detected in build dependencies involving "artifact1"`),
 			}
 			if test.shouldErr {
 				t.CheckDeepEqual(expected, errs, cmp.Comparer(errorsComparer))
