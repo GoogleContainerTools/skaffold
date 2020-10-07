@@ -3,7 +3,7 @@ plugins {
     id 'groovy'
     id 'io.spring.dependency-management' version '1.0.6.RELEASE'
     id 'net.ltgt.apt-idea' version '0.18'
-    id 'com.google.cloud.tools.jib' version '2.5.0'
+    id 'com.google.cloud.tools.jib' version '2.6.0'
 }
 
 version '0.1'
