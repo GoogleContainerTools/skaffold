@@ -22,25 +22,25 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// buildNode models the artifact dependency graph using a set of channels.
+// node models the artifact dependency graph using a set of channels.
 // Each build node has a wait channel which it closes once it completes building by calling markComplete.
 // This notifies all listeners waiting for this node's build to complete.
 // Additionally it has a reference to the channels for each of its dependencies.
 // Calling `waitForDependencies` ensures that all required nodes' channels have already been closed and as such have finished building before the current artifact build starts.
-type buildNode struct {
+type node struct {
 	imageName    string
 	wait         chan interface{}
-	dependencies []buildNode
+	dependencies []node
 }
 
 // markComplete broadcasts that this node's build is complete.
-func (a *buildNode) markComplete() {
+func (a *node) markComplete() {
 	// closing channel notifies all listeners
 	close(a.wait)
 }
 
 // waitForDependencies waits for all required builds to complete or returns an error if any build fails
-func (a *buildNode) waitForDependencies(ctx context.Context) error {
+func (a *node) waitForDependencies(ctx context.Context) error {
 	for _, dep := range a.dependencies {
 		// wait for required builds to complete
 		select {
@@ -52,16 +52,16 @@ func (a *buildNode) waitForDependencies(ctx context.Context) error {
 	return nil
 }
 
-func createNodes(artifacts []*latest.Artifact) []buildNode {
-	nodeMap := make(map[string]buildNode)
+func createNodes(artifacts []*latest.Artifact) []node {
+	nodeMap := make(map[string]node)
 	for _, a := range artifacts {
-		nodeMap[a.ImageName] = buildNode{
+		nodeMap[a.ImageName] = node{
 			imageName: a.ImageName,
 			wait:      make(chan interface{}),
 		}
 	}
 
-	var nodes []buildNode
+	var nodes []node
 	for _, a := range artifacts {
 		ar := nodeMap[a.ImageName]
 		for _, d := range a.Dependencies {

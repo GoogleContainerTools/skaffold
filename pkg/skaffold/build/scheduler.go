@@ -33,11 +33,11 @@ type ArtifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.A
 
 type scheduler struct {
 	artifacts       []*latest.Artifact
-	nodes           []buildNode // size len(artifacts)
+	nodes           []node // size len(artifacts)
 	artifactBuilder ArtifactBuilder
 	logger          logAggregator
 	results         builtArtifacts
-	sem             countingSemaphore
+	concurrencySem  countingSemaphore
 }
 
 func newScheduler(artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder, concurrency int) *scheduler {
@@ -47,7 +47,7 @@ func newScheduler(artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder,
 		artifactBuilder: artifactBuilder,
 		logger:          newLogAggregator(len(artifacts)),
 		results:         newArtifactsStore(),
-		sem:             newCountingSemaphore(concurrency),
+		concurrencySem:  newCountingSemaphore(concurrency),
 	}
 	return &s
 }
@@ -82,7 +82,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 		event.BuildCanceled(a.ImageName)
 		return err
 	}
-	release := s.sem.acquire()
+	release := s.concurrencySem.acquire()
 	defer release()
 
 	event.BuildInProgress(a.ImageName)
@@ -94,7 +94,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	}
 	defer w.Close()
 
-	finalTag, err := performBuild(ctx, w, tags, s.artifacts[i], s.artifactBuilder)
+	finalTag, err := performBuild(ctx, w, tags, a, s.artifactBuilder)
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
 		return err
