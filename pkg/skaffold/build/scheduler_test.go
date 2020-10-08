@@ -158,7 +158,7 @@ func TestInOrder(t *testing.T) {
 	}{
 		{
 			description: "short and nice build log",
-			expected:    "Building [skaffold/image1]...\nshort\nBuilding [skaffold/image2]...\nshort\n",
+			expected:    "Building 2 artifacts in parallel\nBuilding [skaffold/image1]...\nshort\nBuilding [skaffold/image2]...\nshort\n",
 			buildFunc: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 				out.Write([]byte("short"))
 				return fmt.Sprintf("%s:tag", artifact.ImageName), nil
@@ -166,7 +166,8 @@ func TestInOrder(t *testing.T) {
 		},
 		{
 			description: "long build log gets printed correctly",
-			expected: `Building [skaffold/image1]...
+			expected: `Building 2 artifacts in parallel
+Building [skaffold/image1]...
 This is a long string more than 10 bytes.
 And new lines
 Building [skaffold/image2]...

@@ -158,6 +158,10 @@ func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []*latest.A
 
 		imgs, err := p.listImages(ctx, a.ImageName)
 		if err != nil {
+			switch err {
+			case context.Canceled, context.DeadlineExceeded:
+				return nil
+			}
 			logrus.Warnf("failed to list images: %v", err)
 			continue
 		}

@@ -112,12 +112,12 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 	if concurrency == 0 {
 		concurrency = len(artifacts)
 	}
-
+	if concurrency > 1 {
+		color.Default.Fprintf(out, "Building %d artifacts in parallel\n", concurrency)
+	}
 	s := newScheduler(artifacts, artifactBuilder, concurrency)
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
 	return s.run(ctx, out, tags)
 }
 
