@@ -93,25 +93,9 @@ func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
 		builderType = JibMaven
 		executable = "mvn"
 		wrapper = "mvnw"
-		searchString = "<artifactId>jib-maven-plugin</artifactId>"
+		searchString = "jib-maven-plugin"
 		taskName = "jib:_skaffold-init"
 		consoleFlag = "--batch-mode"
-
-		// Polyglot maven support: support pom files of different extension types
-		switch filepath.Ext(path) {
-		case ".atom", ".java", ".rb", ".kt", ".kts", ".ktm": // all define the plugin with similar syntax
-			searchString = ":jib-maven-plugin"
-		case ".clj":
-			searchString = "/jib-maven-plugin"
-		case ".groovy":
-			searchString = "artifactId 'jib-maven-plugin'"
-		case ".scala":
-			searchString = `% "jib-maven-plugin"`
-		case ".xml":
-			searchString = "<artifactId>jib-maven-plugin</artifactId>"
-		case ".yaml", ".yml":
-			searchString = "artifactId: jib-maven-plugin"
-		}
 
 	case enableGradleAnalysis && (strings.HasSuffix(path, "build.gradle") || strings.HasSuffix(path, "build.gradle.kts")):
 		builderType = JibGradle
