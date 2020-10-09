@@ -23,6 +23,8 @@ import (
 	"io"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -131,12 +133,11 @@ func (ba *builtArtifactsImpl) GetTag(a *latest.Artifact) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("could not find build result for image %s", a.ImageName)
 	}
-	switch t := v.(type) {
-	case string:
-		return t, nil
-	default:
-		return "", fmt.Errorf("could not find build result for image %s", a.ImageName)
+	t, ok := v.(string)
+	if !ok {
+		logrus.Fatalf("invalid build output recorded for image %s", a.ImageName)
 	}
+	return t, nil
 }
 
 func (ba *builtArtifactsImpl) GetArtifacts(s []*latest.Artifact) ([]Artifact, error) {

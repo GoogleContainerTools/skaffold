@@ -123,18 +123,6 @@ func TestFormatResults(t *testing.T) {
 			},
 			shouldErr: true,
 		},
-		{
-			description: "build produced an incorrect value type",
-			artifacts: []*latest.Artifact{
-				{ImageName: "skaffold/image1"},
-				{ImageName: "skaffold/image2"},
-			},
-			expected: nil,
-			results: map[string]interface{}{
-				"skaffold/image1": 1,
-			},
-			shouldErr: true,
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

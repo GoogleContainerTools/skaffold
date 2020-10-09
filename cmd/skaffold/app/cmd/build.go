@@ -19,6 +19,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -67,7 +68,13 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	}
 
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		bRes, err := r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
+		ar := targetArtifacts(opts, config)
+
+		// TODO: Remove this block after fixing artifact cache logic for artifacts with dependencies
+		if err := failForArtifactDependenciesWithCacheEnabled(ar, opts.CacheArtifacts); err != nil {
+			return err
+		}
+		bRes, err := r.BuildAndTest(ctx, buildOut, ar)
 
 		if quietFlag || buildOutputFlag != "" {
 			cmdOut := flags.BuildOutput{Builds: bRes}
@@ -103,4 +110,16 @@ func targetArtifacts(opts config.SkaffoldOptions, cfg *latest.SkaffoldConfig) []
 	}
 
 	return targetArtifacts
+}
+
+func failForArtifactDependenciesWithCacheEnabled(artifacts []*latest.Artifact, cacheEnabled bool) error {
+	if !cacheEnabled {
+		return nil
+	}
+	for _, a := range artifacts {
+		if len(a.Dependencies) > 0 {
+			return errors.New("defining dependencies between artifacts is not yet supported for `skaffold build` with cache enabled. Run with `--cache-artifacts=false` flag")
+		}
+	}
+	return nil
 }

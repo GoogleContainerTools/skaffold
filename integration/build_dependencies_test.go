@@ -29,13 +29,13 @@ func TestBuild_WithDependencies(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
-		description string
-		args        []string
-		failure     string
+		description  string
+		args         []string
+		cacheEnabled bool
+		failure      string
 	}{
 		{
 			description: "default concurrency=1",
-			args:        nil,
 		},
 		{
 			description: "concurrency=0",
@@ -65,26 +65,25 @@ func TestBuild_WithDependencies(t *testing.T) {
 			args:        []string{"-p", "failed-dependency", "-p", "concurrency-0"},
 			failure:     `unable to stream build output: The command '/bin/sh -c [ "${FAIL}" == "0" ] || false' returned a non-zero code: 1`,
 		},
+		{
+			description:  "build failure with cache-artifacts=true",
+			cacheEnabled: true,
+			failure:      "defining dependencies between artifacts is not yet supported for `skaffold build` with cache enabled. Run with `--cache-artifacts=false` flag",
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			if test.cacheEnabled {
+				test.args = append(test.args, "--cache-artifacts=true")
+			} else {
+				test.args = append(test.args, "--cache-artifacts=false")
+			}
+
 			if test.failure == "" {
 				// Run without artifact caching
-				skaffold.Build(append(test.args, "--cache-artifacts=false")...).InDir("testdata/build-dependencies").RunOrFail(t)
-
-				// Run with artifact caching
-				skaffold.Build(append(test.args, "--cache-artifacts=true")...).InDir("testdata/build-dependencies").RunOrFail(t)
-
-				// Run a second time with artifact caching
-				out := skaffold.Build(append(test.args, "--cache-artifacts=true")...).InDir("testdata/build-dependencies").RunOrFailOutput(t)
-				if strings.Contains(string(out), "Not found. Building") {
-					t.Errorf("images were expected to be found in cache: %s", out)
-				}
-				checkImageExists(t, "gcr.io/k8s-skaffold/image1:latest")
-				checkImageExists(t, "gcr.io/k8s-skaffold/image2:latest")
-				checkImageExists(t, "gcr.io/k8s-skaffold/image3:latest")
-				checkImageExists(t, "gcr.io/k8s-skaffold/image4:latest")
+				skaffold.Build(test.args...).InDir("testdata/build-dependencies").RunOrFail(t)
+				checkImagesExist(t)
 			} else {
 				if out, err := skaffold.Build(test.args...).InDir("testdata/build-dependencies").RunWithCombinedOutput(t); err == nil {
 					t.Fatal("expected build to fail")
@@ -95,4 +94,21 @@ func TestBuild_WithDependencies(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDev_WithDependencies(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	if out, err := skaffold.Dev().InDir("testdata/build-dependencies").RunWithCombinedOutput(t); err == nil {
+		t.Fatal("expected build to fail")
+	} else if !strings.Contains(string(out), "defining dependencies between artifacts is not yet supported for `skaffold dev` and `skaffold debug`") {
+		logrus.Info("dev output: ", string(out))
+		t.Fatalf("dev failed but for wrong reason")
+	}
+}
+
+func checkImagesExist(t *testing.T) {
+	checkImageExists(t, "gcr.io/k8s-skaffold/image1:latest")
+	checkImageExists(t, "gcr.io/k8s-skaffold/image2:latest")
+	checkImageExists(t, "gcr.io/k8s-skaffold/image3:latest")
+	checkImageExists(t, "gcr.io/k8s-skaffold/image4:latest")
 }
