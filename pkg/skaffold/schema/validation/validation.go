@@ -44,6 +44,7 @@ func Process(config *latest.SkaffoldConfig) error {
 	errs = append(errs, validateJibPluginTypes(config.Build.Artifacts)...)
 	errs = append(errs, validateLogPrefix(config.Deploy.Logs)...)
 	errs = append(errs, validateArtifactTypes(config.Build)...)
+	errs = append(errs, validateTaggingPolicy(config.Build)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -54,6 +55,17 @@ func Process(config *latest.SkaffoldConfig) error {
 		messages = append(messages, err.Error())
 	}
 	return fmt.Errorf(strings.Join(messages, " | "))
+}
+
+// validateTaggingPolicy checks that the tagging policy is valid in combination with other options.
+func validateTaggingPolicy(bc latest.BuildConfig) (errs []error) {
+	switch {
+	case bc.LocalBuild != nil:
+		if bc.LocalBuild.TryImportMissing && bc.TagPolicy.ShaTagger != nil {
+			errs = append(errs, fmt.Errorf("tagging policy 'sha256' can not be used when 'tryImportMissing' is enabled"))
+		}
+	}
+	return
 }
 
 // validateImageNames makes sure the artifact image names are valid base names,
