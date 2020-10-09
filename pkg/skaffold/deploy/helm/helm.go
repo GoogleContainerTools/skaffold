@@ -36,6 +36,7 @@ import (
 
 	"github.com/blang/semver"
 	backoff "github.com/cenkalti/backoff/v4"
+	shell "github.com/kballard/go-shellquote"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 
@@ -396,7 +397,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, r latest.He
 
 		// need to include current environment, specifically for HOME to lookup ~/.kube/config
 		env := util.EnvSliceToMap(util.OSEnviron(), "=")
-		env["SKAFFOLD_CMDLINE"] = strings.Join(cmdLine, " ")
+		env["SKAFFOLD_CMDLINE"] = shell.Join(cmdLine...)
 		installEnv = util.EnvMapToSlice(env, "=")
 	}
 
