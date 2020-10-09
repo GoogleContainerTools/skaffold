@@ -59,8 +59,7 @@ func Process(config *latest.SkaffoldConfig) error {
 
 // validateTaggingPolicy checks that the tagging policy is valid in combination with other options.
 func validateTaggingPolicy(bc latest.BuildConfig) (errs []error) {
-	switch {
-	case bc.LocalBuild != nil:
+	if bc.LocalBuild != nil {
 		if bc.LocalBuild.TryImportMissing && bc.TagPolicy.ShaTagger != nil {
 			errs = append(errs, fmt.Errorf("tagging policy 'sha256' can not be used when 'tryImportMissing' is enabled"))
 		}
