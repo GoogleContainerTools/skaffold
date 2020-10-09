@@ -61,7 +61,7 @@ func runDev(ctx context.Context, out io.Writer) error {
 			return nil
 		default:
 			err := withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-				// TODO: Remove this block after fixing devloop rebuild logic for artifacts with dependencies
+				// TODO: [#4892] Remove this block after fixing devloop rebuild and redeploy logic for artifacts with dependencies
 				if err := checkForArtifactDependencies(config.Build.Artifacts); err != nil {
 					return err
 				}

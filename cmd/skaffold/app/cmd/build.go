@@ -70,7 +70,7 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
 		ar := targetArtifacts(opts, config)
 
-		// TODO: Remove this block after fixing artifact cache logic for artifacts with dependencies
+		// TODO: [#4891] Remove this block after implementing proper image cache invalidation for artifacts with dependencies
 		if err := failForArtifactDependenciesWithCacheEnabled(ar, opts.CacheArtifacts); err != nil {
 			return err
 		}
