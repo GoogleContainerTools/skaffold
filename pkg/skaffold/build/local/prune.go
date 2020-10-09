@@ -22,6 +22,8 @@ import (
 	"sync"
 	"time"
 
+	"errors"
+
 	"github.com/docker/docker/api/types"
 	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
@@ -115,7 +117,7 @@ func (p *pruner) runPrune(ctx context.Context, ids []string) error {
 
 	beforeDu, err := p.diskUsage(ctx)
 	if err != nil {
-		logrus.Warnf("Failed to get docker usage info: %v", err)
+		logrus.Debugf("Failed to get docker usage info: %v", err)
 	}
 
 	pruned, err := p.localDocker.Prune(ctx, ids, p.pruneChildren)
@@ -129,7 +131,7 @@ func (p *pruner) runPrune(ctx context.Context, ids []string) error {
 	if beforeDu > 0 {
 		afterDu, err := p.diskUsage(ctx)
 		if err != nil {
-			logrus.Warnf("Failed to get docker usage info: %v", err)
+			logrus.Debugf("Failed to get docker usage info: %v", err)
 			return nil
 		}
 		if beforeDu >= afterDu {
@@ -158,6 +160,12 @@ func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []*latest.A
 
 		imgs, err := p.listImages(ctx, a.ImageName)
 		if err != nil {
+			if errors.Is(ctx.Err(), context.Canceled) {
+				// Usually means the process is interrupted
+				// Skip logging the error and return immediately
+				// https://github.com/GoogleContainerTools/skaffold/issues/4888
+				return []string{}
+			}
 			logrus.Warnf("failed to list images: %v", err)
 			continue
 		}
