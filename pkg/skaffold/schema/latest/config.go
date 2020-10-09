@@ -762,6 +762,9 @@ type Artifact struct {
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
+
+	// Dependencies describes build artifacts that this artifact depends on.
+	Dependencies []*ArtifactDependency `yaml:"requires,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.
@@ -882,6 +885,16 @@ type ArtifactType struct {
 
 	// CustomArtifact *beta* builds images using a custom build script written by the user.
 	CustomArtifact *CustomArtifact `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
+}
+
+// ArtifactDependency describes a specific build dependency for an artifact.
+type ArtifactDependency struct {
+	// ImageName is a reference to an artifact's image name.
+	ImageName string `yaml:"image" yamltags:"required"`
+	// Alias is a token that is replaced with the image reference in the builder definition files.
+	// For example, the `docker` builder will use the alias as a build-arg key.
+	// Defaults to the value of `image`.
+	Alias string `yaml:"alias,omitempty"`
 }
 
 // BuildpackArtifact *alpha* describes an artifact built using [Cloud Native Buildpacks](https://buildpacks.io/).

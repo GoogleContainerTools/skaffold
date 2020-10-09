@@ -46,7 +46,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	}
 
 	builder := build.WithLogFile(b.buildArtifact, b.cfg.Muted())
-	return build.InParallel(ctx, out, tags, artifacts, builder, b.ClusterDetails.Concurrency)
+	return build.InOrder(ctx, out, tags, artifacts, builder, b.ClusterDetails.Concurrency)
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
