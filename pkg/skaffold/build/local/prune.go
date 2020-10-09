@@ -22,8 +22,6 @@ import (
 	"sync"
 	"time"
 
-	"errors"
-
 	"github.com/docker/docker/api/types"
 	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
@@ -160,9 +158,10 @@ func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []*latest.A
 
 		imgs, err := p.listImages(ctx, a.ImageName)
 		if err != nil {
-			if errors.Is(ctx.Err(), context.Canceled) {
+			if ctx.Err() != nil {
+				// ctx is done or cancelled or timed out
 				// Usually means the process is interrupted
-				// Skip logging the error and return immediately
+				// Skip logging and return immediately
 				// https://github.com/GoogleContainerTools/skaffold/issues/4888
 				return []string{}
 			}
