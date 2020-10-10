@@ -18,6 +18,7 @@ package docker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -63,6 +64,7 @@ type fromTo struct {
 var (
 	// RetrieveImage is overridden for unit testing
 	RetrieveImage = retrieveImage
+	onBuildRetrieveErr   = errors.New("error retrieving ONBUILD image")
 )
 
 func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, cfg Config) ([]fromTo, error) {
@@ -337,6 +339,11 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 			} else if warnMsg, ok := sErrors.IsOldImageManifestProblem(err); ok && warnMsg != "" {
 				logrus.Warn(warnMsg)
 			} else if !ok {
+				if errors.Is(err, onBuildRetrieveErr) {
+					// TODO: [4895] collect warning codes for warnings seen during a dev iteration.
+					logrus.Warnf("could not retrieve ONBUILD image %s. Will ignore files dependencies for all ONBUILD triggers", from.image)
+					return []*parser.Node{}, nil
+				}
 				return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
 			}
 
@@ -358,7 +365,7 @@ func parseOnbuild(image string, cfg Config) ([]*parser.Node, error) {
 	// Image names are case SENSITIVE
 	img, err := RetrieveImage(image, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving image %q: %w", image, err)
+		return nil, onBuildRetrieveErr
 	}
 
 	if len(img.Config.OnBuild) == 0 {
