@@ -661,9 +661,13 @@ func constructOverrideArgs(r *latest.HelmRelease, builds []build.Artifact, args 
 		if err != nil {
 			return nil, err
 		}
+		expandedKey, err := util.ExpandEnvTemplate(k, envMap)
+		if err != nil {
+			return nil, err
+		}
 
 		record(v)
-		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
+		args = append(args, "--set", fmt.Sprintf("%s=%s", expandedKey, v))
 	}
 
 	for _, v := range r.ValuesFiles {

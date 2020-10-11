@@ -103,6 +103,7 @@ var testDeployConfigTemplated = latest.HelmDeploy{
 			"missing.key": "{{.MISSING}}",
 			"image.name":  "{{.IMAGE_NAME}}",
 			"image.tag":   "{{.DIGEST}}",
+			"{{.FOO}}":    "somevalue",
 		},
 	}},
 }
@@ -825,7 +826,7 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version21).
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set image.name=skaffold-helm --set image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set missing.key=<no value> --set other.key=FOOBAR --set some.key=somevalue --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set image.name=skaffold-helm --set image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set missing.key=<no value> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig"),
 			helm:   testDeployConfigTemplated,
 			builds: testBuilds,
@@ -1289,7 +1290,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<no value> --set other.key=FOOBAR --set some.key=somevalue --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<no value> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue --kubeconfig kubeconfig"),
 			helm: testDeployConfigTemplated,
 			builds: []build.Artifact{
 				{
