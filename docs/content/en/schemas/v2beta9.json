@@ -1657,15 +1657,6 @@
           "x-intellij-html-description": "environment variables passed to the kaniko pod.",
           "default": "[]"
         },
-        "flags": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "additional flags to be passed to Kaniko command line. See [Kaniko Additional Flags](https://github.com/GoogleContainerTools/kaniko#additional-flags). Deprecated - instead the named, unique fields should be used, e.g. `buildArgs`, `cache`, `target`.",
-          "x-intellij-html-description": "additional flags to be passed to Kaniko command line. See <a href=\"https://github.com/GoogleContainerTools/kaniko#additional-flags\">Kaniko Additional Flags</a>. Deprecated - instead the named, unique fields should be used, e.g. <code>buildArgs</code>, <code>cache</code>, <code>target</code>.",
-          "default": "[]"
-        },
         "force": {
           "type": "boolean",
           "description": "building outside of a container.",
@@ -1858,7 +1849,6 @@
         "snapshotMode",
         "tarPath",
         "verbosity",
-        "flags",
         "insecureRegistry",
         "skipTLSVerifyRegistry",
         "env",

@@ -418,9 +418,6 @@ func TestArgs(t *testing.T) {
 }
 
 func Test_artifactRegistry(t *testing.T) {
-	type args struct {
-		i string
-	}
 	tests := []struct {
 		name    string
 		i       string

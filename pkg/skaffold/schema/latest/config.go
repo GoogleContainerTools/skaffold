@@ -1063,11 +1063,6 @@ type KanikoArtifact struct {
 	// Verbosity <panic|fatal|error|warn|info|debug|trace> to set the logging level.
 	Verbosity string `yaml:"verbosity,omitempty"`
 
-	// AdditionalFlags are additional flags to be passed to Kaniko command line.
-	// See [Kaniko Additional Flags](https://github.com/GoogleContainerTools/kaniko#additional-flags).
-	// Deprecated - instead the named, unique fields should be used, e.g. `buildArgs`, `cache`, `target`.
-	AdditionalFlags []string `yaml:"flags,omitempty"`
-
 	// InsecureRegistry is to use plain HTTP requests when accessing a registry.
 	InsecureRegistry []string `yaml:"insecureRegistry,omitempty"`
 
