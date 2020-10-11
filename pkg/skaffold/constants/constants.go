@@ -39,18 +39,6 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.20.0@sha256:f9a4a760166682c7c7aeda3cc263570682e00848ab47737ed8ffcc3abd2da6c3"
-	DefaultKanikoSecretName             = "kaniko-secret"
-	DefaultKanikoTimeout                = "20m"
-	DefaultKanikoContainerName          = "kaniko"
-	DefaultKanikoEmptyDirName           = "kaniko-emptydir"
-	DefaultKanikoEmptyDirMountPath      = "/kaniko/buildcontext"
-	DefaultKanikoCacheDirName           = "kaniko-cache"
-	DefaultKanikoCacheDirMountPath      = "/cache"
-	DefaultKanikoDockerConfigSecretName = "docker-cfg"
-	DefaultKanikoDockerConfigPath       = "/kaniko/.docker"
-	DefaultKanikoSecretMountPath        = "/secret"
-
 	DefaultBusyboxImage = "busybox"
 
 	// DefaultDebugHelpersRegistry is the default location used for the helper images for `debug`.
