@@ -1633,6 +1633,17 @@
           "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
           "x-intellij-html-description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds."
         },
+        "cleanup": {
+          "type": "boolean",
+          "description": "to clean the filesystem at the end of the build.",
+          "x-intellij-html-description": "to clean the filesystem at the end of the build.",
+          "default": "false"
+        },
+        "digestFile": {
+          "type": "string",
+          "description": "to to specify a file in the container. This file will receive the digest of a built image. This can be used to automatically track the exact image built by kaniko.",
+          "x-intellij-html-description": "to to specify a file in the container. This file will receive the digest of a built image. This can be used to automatically track the exact image built by kaniko."
+        },
         "dockerfile": {
           "type": "string",
           "description": "locates the Dockerfile relative to workspace.",
@@ -1655,15 +1666,92 @@
           "x-intellij-html-description": "additional flags to be passed to Kaniko command line. See <a href=\"https://github.com/GoogleContainerTools/kaniko#additional-flags\">Kaniko Additional Flags</a>. Deprecated - instead the named, unique fields should be used, e.g. <code>buildArgs</code>, <code>cache</code>, <code>target</code>.",
           "default": "[]"
         },
+        "force": {
+          "type": "boolean",
+          "description": "building outside of a container.",
+          "x-intellij-html-description": "building outside of a container.",
+          "default": "false"
+        },
         "image": {
           "type": "string",
           "description": "Docker image used by the Kaniko pod. Defaults to the latest released version of `gcr.io/kaniko-project/executor`.",
           "x-intellij-html-description": "Docker image used by the Kaniko pod. Defaults to the latest released version of <code>gcr.io/kaniko-project/executor</code>."
         },
+        "imageNameWithDigestFile": {
+          "type": "string",
+          "description": "to a file to save the image name with digest of the built image to.",
+          "x-intellij-html-description": "to a file to save the image name with digest of the built image to."
+        },
         "initImage": {
           "type": "string",
           "description": "image used to run init container which mounts kaniko context.",
           "x-intellij-html-description": "image used to run init container which mounts kaniko context."
+        },
+        "insecure": {
+          "type": "boolean",
+          "description": "if you want to push images to a plain HTTP registry.",
+          "x-intellij-html-description": "if you want to push images to a plain HTTP registry.",
+          "default": "false"
+        },
+        "insecurePull": {
+          "type": "boolean",
+          "description": "if you want to pull images from a plain HTTP registry.",
+          "x-intellij-html-description": "if you want to pull images from a plain HTTP registry.",
+          "default": "false"
+        },
+        "insecureRegistry": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "to use plain HTTP requests when accessing a registry.",
+          "x-intellij-html-description": "to use plain HTTP requests when accessing a registry.",
+          "default": "[]"
+        },
+        "label": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "key: value to set some metadata to the final image. This is equivalent as using the LABEL within the Dockerfile.",
+          "x-intellij-html-description": "key: value to set some metadata to the final image. This is equivalent as using the LABEL within the Dockerfile.",
+          "default": "{}"
+        },
+        "logFormat": {
+          "type": "string",
+          "description": "<text|color|json> to set the log format.",
+          "x-intellij-html-description": "<text|color|json> to set the log format."
+        },
+        "logTimestamp": {
+          "type": "boolean",
+          "description": "to add timestamps to log format.",
+          "x-intellij-html-description": "to add timestamps to log format.",
+          "default": "false"
+        },
+        "noPush": {
+          "type": "boolean",
+          "description": "if you only want to build the image, without pushing to a registry.",
+          "x-intellij-html-description": "if you only want to build the image, without pushing to a registry.",
+          "default": "false"
+        },
+        "ociLayoutPath": {
+          "type": "string",
+          "description": "to specify a directory in the container where the OCI image layout of a built image will be placed. This can be used to automatically track the exact image built by kaniko.",
+          "x-intellij-html-description": "to specify a directory in the container where the OCI image layout of a built image will be placed. This can be used to automatically track the exact image built by kaniko."
+        },
+        "registryCertificate": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "to to provide a certificate for TLS communication with a given registry. my.registry.url: /path/to/the/certificate.cert is the expected format.",
+          "x-intellij-html-description": "to to provide a certificate for TLS communication with a given registry. my.registry.url: /path/to/the/certificate.cert is the expected format.",
+          "default": "{}"
+        },
+        "registryMirror": {
+          "type": "string",
+          "description": "if you want to use a registry mirror instead of default `index.docker.io`.",
+          "x-intellij-html-description": "if you want to use a registry mirror instead of default <code>index.docker.io</code>."
         },
         "reproducible": {
           "type": "boolean",
@@ -1671,16 +1759,64 @@
           "x-intellij-html-description": "used to strip timestamps out of the built image.",
           "default": "false"
         },
+        "singleSnapshot": {
+          "type": "boolean",
+          "description": "takes a single snapshot of the filesystem at the end of the build. So only one layer will be appended to the base image.",
+          "x-intellij-html-description": "takes a single snapshot of the filesystem at the end of the build. So only one layer will be appended to the base image.",
+          "default": "false"
+        },
         "skipTLS": {
           "type": "boolean",
-          "description": "skips TLS verification when pulling and pushing the image.",
-          "x-intellij-html-description": "skips TLS verification when pulling and pushing the image.",
+          "description": "skips TLS certificate validation when pushing to a registry.",
+          "x-intellij-html-description": "skips TLS certificate validation when pushing to a registry.",
           "default": "false"
+        },
+        "skipTLSVerifyPull": {
+          "type": "boolean",
+          "description": "skips TLS certificate validation when pulling from a registry.",
+          "x-intellij-html-description": "skips TLS certificate validation when pulling from a registry.",
+          "default": "false"
+        },
+        "skipTLSVerifyRegistry": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "skips TLS certificate validation when accessing a registry.",
+          "x-intellij-html-description": "skips TLS certificate validation when accessing a registry.",
+          "default": "[]"
+        },
+        "skipUnusedStages": {
+          "type": "boolean",
+          "description": "builds only used stages if defined to true. Otherwise it builds by default all stages, even the unnecessaries ones until it reaches the target stage / end of Dockerfile.",
+          "x-intellij-html-description": "builds only used stages if defined to true. Otherwise it builds by default all stages, even the unnecessaries ones until it reaches the target stage / end of Dockerfile.",
+          "default": "false"
+        },
+        "snapshotMode": {
+          "type": "string",
+          "description": "how Kaniko will snapshot the filesystem.",
+          "x-intellij-html-description": "how Kaniko will snapshot the filesystem."
+        },
+        "tarPath": {
+          "type": "string",
+          "description": "path to save the image as a tarball at path instead of pushing the image.",
+          "x-intellij-html-description": "path to save the image as a tarball at path instead of pushing the image."
         },
         "target": {
           "type": "string",
-          "description": "Dockerfile target name to build.",
-          "x-intellij-html-description": "Dockerfile target name to build."
+          "description": "to indicate which build stage is the target build stage.",
+          "x-intellij-html-description": "to indicate which build stage is the target build stage."
+        },
+        "useNewRun": {
+          "type": "boolean",
+          "description": "to Use the experimental run implementation for detecting changes without requiring file system snapshots. In some cases, this may improve build performance by 75%.",
+          "x-intellij-html-description": "to Use the experimental run implementation for detecting changes without requiring file system snapshots. In some cases, this may improve build performance by 75%.",
+          "default": "false"
+        },
+        "verbosity": {
+          "type": "string",
+          "description": "<panic|fatal|error|warn|info|debug|trace> to set the logging level.",
+          "x-intellij-html-description": "<panic|fatal|error|warn|info|debug|trace> to set the logging level."
         },
         "volumeMounts": {
           "items": {},
@@ -1688,19 +1824,48 @@
           "description": "volume mounts passed to kaniko pod.",
           "x-intellij-html-description": "volume mounts passed to kaniko pod.",
           "default": "[]"
+        },
+        "whitelistVarRun": {
+          "type": "boolean",
+          "description": "used to ignore `/var/run` when taking image snapshot. Set it to false to preserve /var/run/* in destination image.",
+          "x-intellij-html-description": "used to ignore <code>/var/run</code> when taking image snapshot. Set it to false to preserve /var/run/* in destination image.",
+          "default": "false"
         }
       },
       "preferredOrder": [
-        "flags",
+        "cleanup",
+        "insecure",
+        "insecurePull",
+        "noPush",
+        "force",
+        "logTimestamp",
+        "reproducible",
+        "singleSnapshot",
+        "skipTLS",
+        "skipTLSVerifyPull",
+        "skipUnusedStages",
+        "useNewRun",
+        "whitelistVarRun",
         "dockerfile",
         "target",
-        "buildArgs",
-        "env",
         "initImage",
         "image",
+        "digestFile",
+        "imageNameWithDigestFile",
+        "logFormat",
+        "ociLayoutPath",
+        "registryMirror",
+        "snapshotMode",
+        "tarPath",
+        "verbosity",
+        "flags",
+        "insecureRegistry",
+        "skipTLSVerifyRegistry",
+        "env",
         "cache",
-        "reproducible",
-        "skipTLS",
+        "registryCertificate",
+        "label",
+        "buildArgs",
         "volumeMounts"
       ],
       "additionalProperties": false,
@@ -1718,11 +1883,17 @@
           "type": "string",
           "description": "a remote repository to store cached layers. If none is specified, one will be inferred from the image name. See [Kaniko Caching](https://github.com/GoogleContainerTools/kaniko#caching).",
           "x-intellij-html-description": "a remote repository to store cached layers. If none is specified, one will be inferred from the image name. See <a href=\"https://github.com/GoogleContainerTools/kaniko#caching\">Kaniko Caching</a>."
+        },
+        "ttl": {
+          "type": "string",
+          "description": "Cache timeout in hours.",
+          "x-intellij-html-description": "Cache timeout in hours."
         }
       },
       "preferredOrder": [
         "repo",
-        "hostPath"
+        "hostPath",
+        "ttl"
       ],
       "additionalProperties": false,
       "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
