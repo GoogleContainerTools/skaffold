@@ -80,9 +80,15 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return err
 	}
 
+	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
+	if err != nil {
+		return err
+	}
 	event.DeployComplete()
 	r.runCtx.UpdateNamespaces(namespaces)
-	return r.performStatusCheck(ctx, out)
+	sErr := r.performStatusCheck(ctx, statusCheckOut)
+	postStatusCheckFn()
+	return sErr
 }
 
 func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
