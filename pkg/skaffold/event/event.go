@@ -193,7 +193,7 @@ func DeployInProgress() {
 func DeployFailed(err error) {
 	aiErr := sErrors.ActionableErr(sErrors.Deploy, err)
 	handler.stateLock.Lock()
-	handler.state.DeployState.StatusCode = aiErr.ErrCode
+	handler.state.DeployState.StatusCode = ignoreCancelled(handler.state.DeployState.StatusCode, aiErr.ErrCode)
 	handler.stateLock.Unlock()
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed,
 		Err:           err.Error(),
@@ -310,7 +310,7 @@ func BuildCanceled(imageName string) {
 func BuildFailed(imageName string, err error) {
 	aiErr := sErrors.ActionableErr(sErrors.Build, err)
 	handler.stateLock.Lock()
-	handler.state.BuildState.StatusCode = aiErr.ErrCode
+	handler.state.BuildState.StatusCode = ignoreCancelled(handler.state.BuildState.StatusCode, aiErr.ErrCode)
 	handler.stateLock.Unlock()
 	handler.handleBuildEvent(&proto.BuildEvent{
 		Artifact:      imageName,
@@ -706,4 +706,21 @@ func AutoTriggerDiff(name string, val bool) (bool, error) {
 	default:
 		return false, fmt.Errorf("unknown phase %v not found in handler state", name)
 	}
+}
+
+// ignoreCancelled ignores Cancelled proto.StatusCode to retain meaningful prev error codes.
+// A build failure in one artifacts, cancels the build for remaining artifacts. By ignoring
+// any future builds cancelled, we retain the original build error code.
+func ignoreCancelled(prev proto.StatusCode, new proto.StatusCode) proto.StatusCode {
+	// Override with cancelled codes if prev is unset or is SUCCESS.
+	// All success codes for all phases are in range 200 to 250.
+	if prev == 0 || prev >= 200 && prev <= 250 {
+		return new
+	}
+	// all cancelled error codes for all phase are in range 800 to 850.
+	if new >= 800 && new <= 850 {
+		// ignore new
+		return prev
+	}
+	return new
 }

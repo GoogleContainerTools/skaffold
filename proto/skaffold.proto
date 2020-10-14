@@ -376,12 +376,15 @@ enum ClusterType {
 // Enum for Status codes
 // These error codes are prepended by Phase Name e.g.
 // BUILD, DEPLOY, STATUSCHECK, DEVINIT
+// For Success Error codes, use range 200 to 250.
+// For Unknown error codes, use range 500 to 600.
+// For Cancelled Error code, use range 800 to 850.
 enum StatusCode {
     // A default status code for events that do not have an associated phase.
     // Typically seen with the DevEndEvent event on success.
     OK = 0;
 
-    // No Error codes
+    // Success Error codes
 
     // Status Check Success
     STATUSCHECK_SUCCESS = 200;
@@ -396,6 +399,7 @@ enum StatusCode {
     BUILD_PUSH_ACCESS_DENIED = 101;
     // Build error due to GCP project not found.
     BUILD_PROJECT_NOT_FOUND = 102;
+    BUILD_DOCKER_DAEMON_NOT_RUNNING = 103;
 
     // Container errors
 
@@ -496,6 +500,12 @@ enum StatusCode {
 
     // Deadline for status check exceeded
     STATUSCHECK_DEADLINE_EXCEEDED = 801;
+
+    // Build cancelled due to user cancellation or one or more build failed.
+    BUILD_CANCELLED = 802;
+
+    // Deploy cancelled due to user cancellation or one or more deployers failed.
+    DEPLOY_CANCELLED = 803;
 }
 
 // Enum for Suggestion codes
@@ -511,6 +521,7 @@ enum SuggestionCode {
     GCLOUD_DOCKER_AUTH_CONFIGURE = 103;
     DOCKER_AUTH_CONFIGURE = 104;
     CHECK_GCLOUD_PROJECT = 105;
+    CHECK_DOCKER_RUNNING = 106;
 
 
     // Container Run time error

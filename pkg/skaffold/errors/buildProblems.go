@@ -23,6 +23,11 @@ import (
 
 const (
 	PushImageErrPrefix = "could not push image"
+	// Error Prefix matches error thrown by Docker
+	// See https://github.com/moby/moby/blob/master/client/errors.go#L18
+	DockerConnectionFailedPrefix = ".*Cannot connect to the Docker daemon.* "
+	// Build cancelled due to other build failures
+	BuildCancelledPrefix = ".*context canceled.*"
 )
 
 var (

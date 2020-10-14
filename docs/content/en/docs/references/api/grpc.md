@@ -746,6 +746,9 @@ Enum indicating deploy tools used
 Enum for Status codes
 These error codes are prepended by Phase Name e.g.
 BUILD, DEPLOY, STATUSCHECK, DEVINIT
+For Success Error codes, use range 200 to 250.
+For Unknown error codes, use range 500 to 600.
+For Cancelled Error code, use range 800 to 850.
 
 | Name | Number | Description |
 | ---- |:------:| ----------- |
@@ -755,6 +758,7 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | DEPLOY_SUCCESS | 202 | Deploy Success |
 | BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
 | BUILD_PROJECT_NOT_FOUND | 102 | Build error due to GCP project not found. |
+| BUILD_DOCKER_DAEMON_NOT_RUNNING | 103 |  |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
@@ -792,6 +796,8 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | DEVINIT_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
 | STATUSCHECK_USER_CANCELLED | 800 | User cancelled the skaffold dev run |
 | STATUSCHECK_DEADLINE_EXCEEDED | 801 | Deadline for status check exceeded |
+| BUILD_CANCELLED | 802 | Build cancelled due to user cancellation or one or more build failed. |
+| DEPLOY_CANCELLED | 803 | Deploy cancelled due to user cancellation or one or more deployers failed. |
 
 
 
@@ -809,6 +815,7 @@ Enum for Suggestion codes
 | GCLOUD_DOCKER_AUTH_CONFIGURE | 103 |  |
 | DOCKER_AUTH_CONFIGURE | 104 |  |
 | CHECK_GCLOUD_PROJECT | 105 |  |
+| CHECK_DOCKER_RUNNING | 106 |  |
 | CHECK_CONTAINER_LOGS | 301 | Container run error |
 | CHECK_READINESS_PROBE | 302 | Pod Health check error |
 | CHECK_CONTAINER_IMAGE | 303 | Check Container image |
