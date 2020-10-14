@@ -28,7 +28,7 @@ RUN tar -xvf helm.tar.gz --strip-components 1
 
 # Download kustomize
 FROM alpine:3.10 as download-kustomize
-ENV KUSTOMIZE_VERSION 3.8.4
+ENV KUSTOMIZE_VERSION 3.8.5
 ENV KUSTOMIZE_URL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
 RUN wget -O kustomize.tar.gz "${KUSTOMIZE_URL}"
 RUN tar -xvf kustomize.tar.gz
@@ -42,7 +42,7 @@ RUN chmod +x kompose
 
 # Download container-structure-test
 FROM alpine:3.10 as download-container-structure-test
-ENV CONTAINER_STRUCTURE_TEST_VERSION v1.8.0
+ENV CONTAINER_STRUCTURE_TEST_VERSION v1.9.1
 ENV CONTAINER_STRUCTURE_TEST_URL https://storage.googleapis.com/container-structure-test/${CONTAINER_STRUCTURE_TEST_VERSION}/container-structure-test-linux-amd64
 RUN wget -O container-structure-test "${CONTAINER_STRUCTURE_TEST_URL}"
 RUN chmod +x container-structure-test
@@ -56,21 +56,21 @@ RUN chmod +x kind
 
 # Download k3d
 FROM alpine:3.10 as download-k3d
-ENV K3D_VERSION v3.0.2
+ENV K3D_VERSION v3.1.3
 ENV K3D_URL https://github.com/rancher/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
 RUN wget -O k3d "${K3D_URL}"
 RUN chmod +x k3d
 
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
-ENV GCLOUD_VERSION 311.0.0
+ENV GCLOUD_VERSION 313.0.1
 ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz
 RUN wget -O gcloud.tar.gz "${GCLOUD_URL}"
 RUN tar -zxf gcloud.tar.gz
 
 # Download bazel
 FROM alpine:3.10 as download-bazel
-ENV BAZEL_VERSION 3.5.0
+ENV BAZEL_VERSION 3.6.0
 ENV BAZEL_URL https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-x86_64
 RUN wget -O bazel "${BAZEL_URL}"
 RUN chmod +x bazel
@@ -82,7 +82,7 @@ RUN apt-get update && \
     git python unzip && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=docker:18.09.6 /usr/local/bin/docker /usr/local/bin/
+COPY --from=docker:19.03.13 /usr/local/bin/docker /usr/local/bin/
 COPY --from=download-kubectl kubectl /usr/local/bin/
 COPY --from=download-helm helm /usr/local/bin/
 COPY --from=download-kustomize kustomize /usr/local/bin/
@@ -114,5 +114,5 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
     jq \
     apt-transport-https && \
     rm -rf /var/lib/apt/lists/*
-COPY --from=golang:1.14 /usr/local/go /usr/local/go
+COPY --from=golang:1.15 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/root/go/bin:$PATH
