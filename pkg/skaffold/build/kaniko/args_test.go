@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,25 +13,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-package gcb
+package kaniko
 
 import (
+	"fmt"
 	"testing"
 
-	"google.golang.org/api/cloudbuild/v1"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestKanikoBuildSpec(t *testing.T) {
+func TestArgs(t *testing.T) {
 	tests := []struct {
 		description  string
 		artifact     *latest.KanikoArtifact
 		expectedArgs []string
+		wantErr      bool
 	}{
 		{
 			description: "simple build",
@@ -39,6 +37,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 				DockerfilePath: "Dockerfile",
 			},
 			expectedArgs: []string{},
+			wantErr:      false,
 		},
 		{
 			description: "with BuildArgs",
@@ -50,9 +49,10 @@ func TestKanikoBuildSpec(t *testing.T) {
 				},
 			},
 			expectedArgs: []string{
-				kaniko.BuildArgsFlag, "arg1=value1",
-				kaniko.BuildArgsFlag, "arg2",
+				BuildArgsFlag, "arg1=value1",
+				BuildArgsFlag, "arg2",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with Cache",
@@ -61,8 +61,27 @@ func TestKanikoBuildSpec(t *testing.T) {
 				Cache:          &latest.KanikoCache{},
 			},
 			expectedArgs: []string{
-				kaniko.CacheFlag,
+				CacheFlag,
 			},
+			wantErr: false,
+		},
+		{
+			description: "with Cache Options",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Cache: &latest.KanikoCache{
+					Repo:     "gcr.io/ngnix",
+					HostPath: "/cache",
+					TTL:      "2",
+				},
+			},
+			expectedArgs: []string{
+				CacheFlag,
+				CacheRepoFlag, "gcr.io/ngnix",
+				CacheDirFlag, "/cache",
+				CacheTTLFlag, "2",
+			},
+			wantErr: false,
 		},
 		{
 			description: "with Cleanup",
@@ -71,8 +90,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				Cleanup:        true,
 			},
 			expectedArgs: []string{
-				kaniko.CleanupFlag,
+				CleanupFlag,
 			},
+			wantErr: false,
 		},
 		{
 			description: "with DigestFile",
@@ -81,8 +101,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				DigestFile:     "/tmp/digest",
 			},
 			expectedArgs: []string{
-				kaniko.DigestFileFlag, "/tmp/digest",
+				DigestFileFlag, "/tmp/digest",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with Force",
@@ -91,8 +112,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				Force:          true,
 			},
 			expectedArgs: []string{
-				kaniko.ForceFlag,
+				ForceFlag,
 			},
+			wantErr: false,
 		},
 		{
 			description: "with ImageNameWithDigestFile",
@@ -101,8 +123,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				ImageNameWithDigestFile: "/tmp/imageName",
 			},
 			expectedArgs: []string{
-				kaniko.ImageNameWithDigestFileFlag, "/tmp/imageName",
+				ImageNameWithDigestFileFlag, "/tmp/imageName",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with Insecure",
@@ -111,8 +134,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				Insecure:       true,
 			},
 			expectedArgs: []string{
-				kaniko.InsecureFlag,
+				InsecureFlag,
 			},
+			wantErr: false,
 		},
 		{
 			description: "with InsecurePull",
@@ -121,8 +145,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				InsecurePull:   true,
 			},
 			expectedArgs: []string{
-				kaniko.InsecurePullFlag,
+				InsecurePullFlag,
 			},
+			wantErr: false,
 		},
 		{
 			description: "with InsecureRegistry",
@@ -134,9 +159,10 @@ func TestKanikoBuildSpec(t *testing.T) {
 				},
 			},
 			expectedArgs: []string{
-				kaniko.InsecureRegistryFlag, "s1.registry.url:5000",
-				kaniko.InsecureRegistryFlag, "s2.registry.url:5000",
+				InsecureRegistryFlag, "s1.registry.url:5000",
+				InsecureRegistryFlag, "s2.registry.url:5000",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with LogFormat",
@@ -145,8 +171,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				LogFormat:      "json",
 			},
 			expectedArgs: []string{
-				kaniko.LogFormatFlag, "json",
+				LogFormatFlag, "json",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with LogTimestamp",
@@ -155,8 +182,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				LogTimestamp:   true,
 			},
 			expectedArgs: []string{
-				kaniko.LogTimestampFlag,
+				LogTimestampFlag,
 			},
+			wantErr: false,
 		},
 		{
 			description: "with NoPush",
@@ -165,8 +193,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				NoPush:         true,
 			},
 			expectedArgs: []string{
-				kaniko.NoPushFlag,
+				NoPushFlag,
 			},
+			wantErr: false,
 		},
 		{
 			description: "with OCILayoutPath",
@@ -175,8 +204,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				OCILayoutPath:  "/tmp/builtImage",
 			},
 			expectedArgs: []string{
-				kaniko.OCILayoutFlag, "/tmp/builtImage",
+				OCILayoutFlag, "/tmp/builtImage",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with RegistryCertificate",
@@ -188,9 +218,10 @@ func TestKanikoBuildSpec(t *testing.T) {
 				},
 			},
 			expectedArgs: []string{
-				kaniko.RegistryCertificateFlag, "s1.registry.url=/etc/certs/certificate1.cert",
-				kaniko.RegistryCertificateFlag, "s2.registry.url=/etc/certs/certificate2.cert",
+				RegistryCertificateFlag, "s1.registry.url=/etc/certs/certificate1.cert",
+				RegistryCertificateFlag, "s2.registry.url=/etc/certs/certificate2.cert",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with RegistryMirror",
@@ -199,8 +230,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				RegistryMirror: "mirror.gcr.io",
 			},
 			expectedArgs: []string{
-				kaniko.RegistryMirrorFlag, "mirror.gcr.io",
+				RegistryMirrorFlag, "mirror.gcr.io",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with Reproducible",
@@ -209,8 +241,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				Reproducible:   true,
 			},
 			expectedArgs: []string{
-				kaniko.ReproducibleFlag,
+				ReproducibleFlag,
 			},
+			wantErr: false,
 		},
 		{
 			description: "with SingleSnapshot",
@@ -219,8 +252,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				SingleSnapshot: true,
 			},
 			expectedArgs: []string{
-				kaniko.SingleSnapshotFlag,
+				SingleSnapshotFlag,
 			},
+			wantErr: false,
 		},
 		{
 			description: "with SkipTLS",
@@ -229,9 +263,10 @@ func TestKanikoBuildSpec(t *testing.T) {
 				SkipTLS:        true,
 			},
 			expectedArgs: []string{
-				kaniko.SkipTLSFlag,
-				kaniko.SkipTLSVerifyRegistryFlag, "gcr.io",
+				SkipTLSFlag,
+				SkipTLSVerifyRegistryFlag, "gcr.io",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with SkipTLSVerifyPull",
@@ -240,22 +275,24 @@ func TestKanikoBuildSpec(t *testing.T) {
 				SkipTLSVerifyPull: true,
 			},
 			expectedArgs: []string{
-				kaniko.SkipTLSVerifyPullFlag,
+				SkipTLSVerifyPullFlag,
 			},
+			wantErr: false,
 		},
 		{
 			description: "with SkipTLSVerifyRegistry",
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				SkipTLSVerifyRegistry: []string{
-					"s1.registry.url:5000",
-					"s2.registry.url:5000",
+					"s1.registry.url:443",
+					"s2.registry.url:443",
 				},
 			},
 			expectedArgs: []string{
-				kaniko.SkipTLSVerifyRegistryFlag, "s1.registry.url:5000",
-				kaniko.SkipTLSVerifyRegistryFlag, "s2.registry.url:5000",
+				SkipTLSVerifyRegistryFlag, "s1.registry.url:443",
+				SkipTLSVerifyRegistryFlag, "s2.registry.url:443",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with SkipUnusedStages",
@@ -264,8 +301,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				SkipUnusedStages: true,
 			},
 			expectedArgs: []string{
-				kaniko.SkipUnusedStagesFlag,
+				SkipUnusedStagesFlag,
 			},
+			wantErr: false,
 		},
 		{
 			description: "with Target",
@@ -274,8 +312,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				Target:         "builder",
 			},
 			expectedArgs: []string{
-				kaniko.TargetFlag, "builder",
+				TargetFlag, "builder",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with SnapshotMode",
@@ -286,6 +325,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 			expectedArgs: []string{
 				"--snapshotMode", "redo",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with TarPath",
@@ -294,8 +334,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				TarPath:        "/workspace/tars",
 			},
 			expectedArgs: []string{
-				kaniko.TarPathFlag, "/workspace/tars",
+				TarPathFlag, "/workspace/tars",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with UseNewRun",
@@ -304,8 +345,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				UseNewRun:      true,
 			},
 			expectedArgs: []string{
-				kaniko.UseNewRunFlag,
+				UseNewRunFlag,
 			},
+			wantErr: false,
 		},
 		{
 			description: "with Verbosity",
@@ -314,8 +356,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				Verbosity:      "trace",
 			},
 			expectedArgs: []string{
-				kaniko.VerbosityFlag, "trace",
+				VerbosityFlag, "trace",
 			},
+			wantErr: false,
 		},
 		{
 			description: "with WhitelistVarRun",
@@ -324,8 +367,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				WhitelistVarRun: true,
 			},
 			expectedArgs: []string{
-				kaniko.WhitelistVarRunFlag,
+				WhitelistVarRunFlag,
 			},
+			wantErr: false,
 		},
 		{
 			description: "with WhitelistVarRun",
@@ -334,8 +378,9 @@ func TestKanikoBuildSpec(t *testing.T) {
 				WhitelistVarRun: true,
 			},
 			expectedArgs: []string{
-				kaniko.WhitelistVarRunFlag,
+				WhitelistVarRunFlag,
 			},
+			wantErr: false,
 		},
 		{
 			description: "with Labels",
@@ -347,57 +392,59 @@ func TestKanikoBuildSpec(t *testing.T) {
 				},
 			},
 			expectedArgs: []string{
-				kaniko.LabelFlag, "label1=value1",
-				kaniko.LabelFlag, "label2",
+				LabelFlag, "label1=value1",
+				LabelFlag, "label2",
 			},
+			wantErr: false,
 		},
 	}
-
-	builder := NewBuilder(&mockConfig{
-		gcb: latest.GoogleCloudBuild{
-			KanikoImage: "gcr.io/kaniko-project/executor",
-			DiskSizeGb:  100,
-			MachineType: "n1-standard-1",
-			Timeout:     "10m",
-		},
-	})
 
 	defaultExpectedArgs := []string{
 		"--destination", "gcr.io/nginx",
 		"--dockerfile", "Dockerfile",
+		"--context", fmt.Sprintf("dir://%s", DefaultEmptyDirMountPath),
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := &latest.Artifact{
-				ArtifactType: latest.ArtifactType{
-					KanikoArtifact: test.artifact,
-				},
+			got, err := Args(test.artifact, "gcr.io/nginx", fmt.Sprintf("dir://%s", DefaultEmptyDirMountPath))
+			if (err != nil) != test.wantErr {
+				t.Errorf("Args() error = %v, wantErr %v", err, test.wantErr)
+				return
 			}
+			t.CheckDeepEqual(got, append(defaultExpectedArgs, test.expectedArgs...))
+		})
+	}
+}
 
-			desc, err := builder.buildSpec(artifact, "gcr.io/nginx", "bucket", "object")
-
-			expected := cloudbuild.Build{
-				LogsBucket: "bucket",
-				Source: &cloudbuild.Source{
-					StorageSource: &cloudbuild.StorageSource{
-						Bucket: "bucket",
-						Object: "object",
-					},
-				},
-				Steps: []*cloudbuild.BuildStep{{
-					Name: "gcr.io/kaniko-project/executor",
-					Args: append(defaultExpectedArgs, test.expectedArgs...),
-				}},
-				Options: &cloudbuild.BuildOptions{
-					DiskSizeGb:  100,
-					MachineType: "n1-standard-1",
-				},
-				Timeout: "10m",
+func Test_artifactRegistry(t *testing.T) {
+	tests := []struct {
+		name    string
+		i       string
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "Regular",
+			i:       "gcr.io/nginx",
+			want:    "gcr.io",
+			wantErr: false,
+		},
+		{
+			name:    "with Project",
+			i:       "gcr.io/google_containers/nginx",
+			want:    "gcr.io",
+			wantErr: false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			got, err := artifactRegistry(test.i)
+			if (err != nil) != test.wantErr {
+				t.Errorf("artifactRegistry() error = %v, wantErr %v", err, test.wantErr)
+				return
 			}
-
-			t.CheckNoError(err)
-			t.CheckDeepEqual(expected, desc)
+			t.CheckDeepEqual(got, test.want)
 		})
 	}
 }

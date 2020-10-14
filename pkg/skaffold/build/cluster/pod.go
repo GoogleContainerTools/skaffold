@@ -18,18 +18,15 @@ package cluster
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
-	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
@@ -40,8 +37,8 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 	}
 
 	vm := v1.VolumeMount{
-		Name:      constants.DefaultKanikoEmptyDirName,
-		MountPath: constants.DefaultKanikoEmptyDirMountPath,
+		Name:      kaniko.DefaultEmptyDirName,
+		MountPath: kaniko.DefaultEmptyDirMountPath,
 	}
 
 	pod := &v1.Pod{
@@ -61,7 +58,7 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 				Resources:       resourceRequirements(b.ClusterDetails.Resources),
 			}},
 			Containers: []v1.Container{{
-				Name:            constants.DefaultKanikoContainerName,
+				Name:            kaniko.DefaultContainerName,
 				Image:           artifact.Image,
 				ImagePullPolicy: v1.PullIfNotPresent,
 				Args:            args,
@@ -81,17 +78,17 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 
 	// Add secret for pull secret
 	if b.ClusterDetails.PullSecretName != "" {
-		addSecretVolume(pod, constants.DefaultKanikoSecretName, b.ClusterDetails.PullSecretMountPath, b.ClusterDetails.PullSecretName)
+		addSecretVolume(pod, kaniko.DefaultSecretName, b.ClusterDetails.PullSecretMountPath, b.ClusterDetails.PullSecretName)
 	}
 
 	// Add host path volume for cache
 	if artifact.Cache != nil && artifact.Cache.HostPath != "" {
-		addHostPathVolume(pod, constants.DefaultKanikoCacheDirName, constants.DefaultKanikoCacheDirMountPath, artifact.Cache.HostPath)
+		addHostPathVolume(pod, kaniko.DefaultCacheDirName, kaniko.DefaultCacheDirMountPath, artifact.Cache.HostPath)
 	}
 
 	if b.ClusterDetails.DockerConfig != nil {
 		// Add secret for docker config if specified
-		addSecretVolume(pod, constants.DefaultKanikoDockerConfigSecretName, constants.DefaultKanikoDockerConfigPath, b.ClusterDetails.DockerConfig.SecretName)
+		addSecretVolume(pod, kaniko.DefaultDockerConfigSecretName, kaniko.DefaultDockerConfigPath, b.ClusterDetails.DockerConfig.SecretName)
 	}
 
 	// Add Service Account
@@ -237,78 +234,17 @@ func resourceRequirements(rr *latest.ResourceRequirements) v1.ResourceRequiremen
 }
 
 func kanikoArgs(artifact *latest.KanikoArtifact, tag string, insecureRegistries map[string]bool) ([]string, error) {
-	// Create pod spec
-	args := []string{
-		"--dockerfile", artifact.DockerfilePath,
-		"--context", fmt.Sprintf("dir://%s", constants.DefaultKanikoEmptyDirMountPath),
-		"--destination", tag,
-		"-v", logLevel().String()}
-
-	// TODO: remove since AdditionalFlags will be deprecated (priyawadhwa@)
-	if artifact.AdditionalFlags != nil {
-		logrus.Warn("The additionalFlags field in kaniko is deprecated, please consult the current schema at skaffold.dev to update your skaffold.yaml.")
-		args = append(args, artifact.AdditionalFlags...)
-	}
-
-	buildArgs, err := util.EvaluateEnvTemplateMap(artifact.BuildArgs)
-	if err != nil {
-		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
-	}
-
-	if buildArgs != nil {
-		var keys []string
-		for k := range buildArgs {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-
-		for _, k := range keys {
-			v := buildArgs[k]
-			if v == nil {
-				args = append(args, "--build-arg", k)
-			} else {
-				args = append(args, "--build-arg", fmt.Sprintf("%s=%s", k, *v))
-			}
-		}
-	}
-
-	if artifact.Target != "" {
-		args = append(args, "--target", artifact.Target)
-	}
-
-	if artifact.Cache != nil {
-		args = append(args, "--cache=true")
-		if artifact.Cache.Repo != "" {
-			args = append(args, "--cache-repo", artifact.Cache.Repo)
-		}
-		if artifact.Cache.HostPath != "" {
-			args = append(args, "--cache-dir", constants.DefaultKanikoCacheDirMountPath)
-		}
-	}
-
-	if artifact.Reproducible {
-		args = append(args, "--reproducible")
-	}
-
 	for reg := range insecureRegistries {
-		args = append(args, "--insecure-registry", reg)
+		artifact.InsecureRegistry = append(artifact.InsecureRegistry, reg)
 	}
 
-	if artifact.SkipTLS {
-		reg, err := artifactRegistry(tag)
-		if err != nil {
-			return nil, err
-		}
-		args = append(args, "--skip-tls-verify-registry", reg)
+	// Create pod spec
+	args, err := kaniko.Args(artifact, tag, fmt.Sprintf("dir://%s", kaniko.DefaultEmptyDirMountPath))
+	if err != nil {
+		return nil, fmt.Errorf("unable build kaniko args: %w", err)
 	}
+
+	logrus.Trace("kaniko arguments are ", strings.Join(args, " "))
 
 	return args, nil
-}
-
-func artifactRegistry(i string) (string, error) {
-	ref, err := name.ParseReference(i)
-	if err != nil {
-		return "", err
-	}
-	return ref.Context().RegistryStr(), nil
 }
