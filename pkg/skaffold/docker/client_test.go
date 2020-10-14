@@ -136,8 +136,12 @@ DOCKER_HOST`),
 			shouldErr:   true,
 		},
 		{
-			description: "minikube exit code 64 - fallback to host docker",
-			command:     testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &badUsageErr{})),
+			description: "minikube exit code 64 (minikube < 1.13.0) - fallback to host docker",
+			command:     testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &oldBadUsageErr{})),
+		},
+		{
+			description: "minikube exit code 51 (minikube >= 1.13.0) - fallback to host docker",
+			command:     testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &driverConflictErr{})),
 		},
 	}
 	for _, test := range tests {
@@ -152,10 +156,17 @@ DOCKER_HOST`),
 	}
 }
 
-type badUsageErr struct{}
+// minikube < 1.13.0 returns exit code 64 (BadUsage) on `minikube docker-env` with driver `none`
+type oldBadUsageErr struct{}
 
-func (e *badUsageErr) Error() string { return "bad usage" }
-func (e *badUsageErr) ExitCode() int { return 64 }
+func (e *oldBadUsageErr) Error() string { return "bad usage" }
+func (e *oldBadUsageErr) ExitCode() int { return 64 }
+
+// minikube >= 1.13.0 returns exit code 51 (ExDriverConfict) on `minikube docker-env` with driver `none`
+type driverConflictErr struct{}
+
+func (e *driverConflictErr) Error() string { return "driver conflict" }
+func (e *driverConflictErr) ExitCode() int { return 51 }
 
 type fakeMinikubeClient struct{}
 
