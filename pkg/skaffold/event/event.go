@@ -712,3 +712,17 @@ func BuildSequenceFailed(err error) {
 	handler.state.BuildState.StatusCode = aiErr.ErrCode
 	handler.stateLock.Unlock()
 }
+
+func SkaffoldInitFailed(err error) {
+	handler.logEvent(proto.LogEntry{
+		Timestamp: ptypes.TimestampNow(),
+		Event: &proto.Event{
+			EventType: &proto.Event_SessionEndEvent{
+				SessionEndEvent: &proto.SessionEndEvent{
+					Status: Failed,
+					Err:    sErrors.ActionableErr(sErrors.Init, err),
+				},
+			},
+		},
+	})
+}

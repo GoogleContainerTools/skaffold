@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -28,44 +29,80 @@ func TestShowAIError(t *testing.T) {
 	tests := []struct {
 		description string
 		opts        config.SkaffoldOptions
+		phase       Phase
 		context     *config.ContextConfig
 		err         error
 		expected    string
+		expectedAE  *proto.ActionableErr
 	}{
 		{
 			description: "Push access denied when neither default repo or global config is defined",
-			opts:        config.SkaffoldOptions{},
 			context:     &config.ContextConfig{},
+			phase:       Build,
 			err:         fmt.Errorf("skaffold build failed: could not push image: denied: push access to resource"),
 			expected:    "Build Failed. No push access to specified image repository. Trying running with `--default-repo` flag.",
+			expectedAE: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
+				Message: "skaffold build failed: could not push image: denied: push access to resource",
+				Suggestions: []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_ADD_DEFAULT_REPO,
+					Action:         "Trying running with `--default-repo` flag",
+				},
+				}},
 		},
 		{
 			description: "Push access denied when default repo is defined",
 			opts:        config.SkaffoldOptions{DefaultRepo: stringOrUndefined("gcr.io/test")},
-			context:     &config.ContextConfig{},
+			phase:       Build,
 			err:         fmt.Errorf("skaffold build failed: could not push image image1 : denied: push access to resource"),
 			expected:    "Build Failed. No push access to specified image repository. Check your `--default-repo` value or try `gcloud auth configure-docker`.",
+			expectedAE: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
+				Message: "skaffold build failed: could not push image image1 : denied: push access to resource",
+				Suggestions: []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_CHECK_DEFAULT_REPO,
+					Action:         "Check your `--default-repo` value",
+				}, {
+					SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
+					Action:         "try `gcloud auth configure-docker`",
+				},
+				},
+			},
 		},
 		{
 			description: "Push access denied when global repo is defined",
-			opts:        config.SkaffoldOptions{},
 			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
+			phase:       Build,
 			err:         fmt.Errorf("skaffold build failed: could not push image: denied: push access to resource"),
 			expected:    "Build Failed. No push access to specified image repository. Check your default-repo setting in skaffold config or try `docker login`.",
+			expectedAE: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
+				Message: "skaffold build failed: could not push image: denied: push access to resource",
+				Suggestions: []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_CHECK_DEFAULT_REPO_GLOBAL_CONFIG,
+					Action:         "Check your default-repo setting in skaffold config",
+				}, {
+					SuggestionCode: proto.SuggestionCode_DOCKER_AUTH_CONFIGURE,
+					Action:         "try `docker login`",
+				},
+				},
+			},
 		},
 		{
 			description: "unknown project error",
-			opts:        config.SkaffoldOptions{},
 			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
+			phase:       Build,
 			err:         fmt.Errorf("build failed: could not push image: unknown: Project"),
 			expected:    "Build Failed. Check your GCR project.",
-		},
-		{
-			description: "unknown error",
-			opts:        config.SkaffoldOptions{},
-			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
-			err:         fmt.Errorf("build failed: something went wrong"),
-			expected:    "build failed: something went wrong",
+			expectedAE: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_PROJECT_NOT_FOUND,
+				Message: "build failed: could not push image: unknown: Project",
+				Suggestions: []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_CHECK_GCLOUD_PROJECT,
+					Action:         "Check your GCR project",
+				},
+				},
+			},
 		},
 		{
 			description: "build error when docker is not running with minikube local cluster",
@@ -98,11 +135,84 @@ func TestShowAIError(t *testing.T) {
 			opts:        config.SkaffoldOptions{},
 			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
 			// See https://github.com/moby/moby/blob/master/client/errors.go#L20
-			err:      fmt.Errorf(`docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  context canceled`),
-			expected: "Build Cancelled.",
+			err: fmt.Errorf(`docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  context canceled`),
+		},
+		// unknown errors case
+		{
+			description: "build unknown error",
+			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
+			phase:       Build,
+			err:         fmt.Errorf("build failed: something went wrong"),
+			expected:    "build failed: something went wrong",
+		},
+		{
+			description: "deploy unknown error",
+			phase:       Deploy,
+			err:         fmt.Errorf("deploy failed: something went wrong"),
+			expected:    "no suggestions found",
+			expectedAE: &proto.ActionableErr{
+				ErrCode:     proto.StatusCode_DEPLOY_UNKNOWN,
+				Message:     "deploy failed: something went wrong",
+				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+			},
+		},
+		{
+			description: "file sync unknown error",
+			phase:       FileSync,
+			err:         fmt.Errorf("sync failed: something went wrong"),
+			expected:    "no suggestions found",
+			expectedAE: &proto.ActionableErr{
+				ErrCode:     proto.StatusCode_SYNC_UNKNOWN,
+				Message:     "sync failed: something went wrong",
+				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+			},
+		},
+		{
+			description: "init unknown error",
+			phase:       Init,
+			err:         fmt.Errorf("init failed: something went wrong"),
+			expected:    "no suggestions found",
+			expectedAE: &proto.ActionableErr{
+				ErrCode:     proto.StatusCode_INIT_UNKNOWN,
+				Message:     "init failed: something went wrong",
+				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+			},
+		},
+		{
+			description: "cleanup unknown error",
+			phase:       Cleanup,
+			err:         fmt.Errorf("failed: something went wrong"),
+			expected:    "no suggestions found",
+			expectedAE: &proto.ActionableErr{
+				ErrCode:     proto.StatusCode_CLEANUP_UNKNOWN,
+				Message:     "failed: something went wrong",
+				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+			},
+		},
+		{
+			description: "status check unknown error",
+			phase:       StatusCheck,
+			err:         fmt.Errorf("failed: something went wrong"),
+			expected:    "no suggestions found",
+			expectedAE: &proto.ActionableErr{
+				ErrCode:     proto.StatusCode_STATUSCHECK_UNKNOWN,
+				Message:     "failed: something went wrong",
+				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+			},
+		},
+		{
+			description: "dev init unknown error",
+			phase:       DevInit,
+			err:         fmt.Errorf("failed: something went wrong"),
+			expected:    "no suggestions found",
+			expectedAE: &proto.ActionableErr{
+				ErrCode:     proto.StatusCode_DEVINIT_UNKNOWN,
+				Message:     "failed: something went wrong",
+				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+			},
 		},
 	}
-	for _, test := range tests {
+	for _, test := range append(tests, initTestCases...) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&getConfigForCurrentContext, func(string) (*config.ContextConfig, error) {
 				return test.context, nil
@@ -110,6 +220,8 @@ func TestShowAIError(t *testing.T) {
 			skaffoldOpts = test.opts
 			actual := ShowAIError(test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
+			actualAE := ActionableErr(test.phase, test.err)
+			t.CheckDeepEqual(test.expectedAE, actualAE)
 		})
 	}
 }

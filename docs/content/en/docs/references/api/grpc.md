@@ -312,6 +312,7 @@ It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, Re
 | fileSyncEvent | [FileSyncEvent](#proto.FileSyncEvent) |  | describes the sync status. |
 | debuggingContainerEvent | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) |  | describes the appearance or disappearance of a debugging container |
 | devLoopEvent | [DevLoopEvent](#proto.DevLoopEvent) |  | describes a start and end of a dev loop. |
+| sessionEndEvent | [SessionEndEvent](#proto.SessionEndEvent) |  | describes a skaffold session complete event |
 
 
 
@@ -508,6 +509,22 @@ will be sent with the new status.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | msg | [string](#string) |  |  |
+
+
+
+
+
+
+
+<a name="proto.SessionEndEvent"></a>
+#### SessionEndEvent
+`SessionEndEvent` marks the end of the skaffold session
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [string](#string) |  | status oneof: Completed or Failed |
+| err | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
@@ -789,6 +806,7 @@ For Cancelled Error code, use range 800 to 850.
 | BUILD_UNKNOWN | 506 | Build failed due to unknown reason |
 | DEVINIT_UNKNOWN | 507 | Dev Init failed due to unknown reason |
 | CLEANUP_UNKNOWN | 508 | Cleanup failed due to unknown reason |
+| INIT_UNKNOWN | 510 | Skaffold Session Init failed due to unknown reason |
 | SYNC_INIT_ERROR | 601 | File Sync Initialize failure |
 | DEVINIT_REGISTER_BUILD_DEPS | 701 | Failed to configure watcher for build dependencies in dev loop |
 | DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
@@ -798,6 +816,15 @@ For Cancelled Error code, use range 800 to 850.
 | STATUSCHECK_DEADLINE_EXCEEDED | 801 | Deadline for status check exceeded |
 | BUILD_CANCELLED | 802 | Build cancelled due to user cancellation or one or more build failed. |
 | DEPLOY_CANCELLED | 803 | Deploy cancelled due to user cancellation or one or more deployers failed. |
+| INIT_CREATE_TAGGER_ERROR | 901 |  |
+| INIT_MINIKUBE_PAUSED_ERROR | 902 |  |
+| INIT_MINIKUBE_NOT_RUNNING_ERROR | 903 |  |
+| INIT_CREATE_BUILDER_ERROR | 904 |  |
+| INIT_CREATE_DEPLOYER_ERROR | 905 |  |
+| INIT_CREATE_TEST_DEP_ERROR | 906 |  |
+| INIT_CACHE_ERROR | 907 |  |
+| INIT_CREATE_WATCH_TRIGGER_ERROR | 908 |  |
+| INIT_CREATE_ARTIFACT_DEP_ERROR | 909 |  |
 
 
 
@@ -828,6 +855,9 @@ Enum for Suggestion codes
 | ADDRESS_NODE_NOT_READY | 406 | Node not ready error |
 | ADDRESS_FAILED_SCHEDULING | 407 | Scheduler failure error |
 | CHECK_HOST_CONNECTION | 408 | Cluster Connectivity error |
+| START_MINIKUBE | 501 | Minikube Suggestions |
+| UNPAUSE_MINIKUBE | 502 |  |
+| OPEN_ISSUE | 900 | Open Issue Suggestion |
 
 
  <!-- end enums -->

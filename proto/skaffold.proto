@@ -112,7 +112,14 @@ message Event {
         FileSyncEvent fileSyncEvent = 7; // describes the sync status.
         DebuggingContainerEvent debuggingContainerEvent = 8; // describes the appearance or disappearance of a debugging container
         DevLoopEvent devLoopEvent = 9; // describes a start and end of a dev loop.
+        SessionEndEvent sessionEndEvent = 10; // describes a skaffold session complete event
     }
+}
+
+// `SessionEndEvent` marks the end of the skaffold session
+message SessionEndEvent {
+    string status = 1; // status oneof: Completed or Failed
+    ActionableErr err = 2; // actionable error message
 }
 
 // `DevLoopEvent` marks the start and end of a dev loop.
@@ -120,7 +127,6 @@ message DevLoopEvent {
     int32 iteration = 1; // dev loop iteration. 0 represents initialization loop.
     string status = 2; // dev loop status oneof: In Progress, Completed, Failed
     ActionableErr err = 3; // actionable error message
-
 }
 
 // `ActionableErr` defines an error that occurred along with an optional list of suggestions
@@ -475,6 +481,8 @@ enum StatusCode {
     DEVINIT_UNKNOWN = 507;
     // Cleanup failed due to unknown reason
     CLEANUP_UNKNOWN = 508;
+    // Skaffold Session Init failed due to unknown reason
+    INIT_UNKNOWN = 510 ;
 
     // FILE_SYNC Failures
 
@@ -506,6 +514,20 @@ enum StatusCode {
 
     // Deploy cancelled due to user cancellation or one or more deployers failed.
     DEPLOY_CANCELLED = 803;
+
+
+    // Skaffold Init Phase session errors
+
+    INIT_CREATE_TAGGER_ERROR = 901;
+    INIT_MINIKUBE_PAUSED_ERROR = 902;
+    INIT_MINIKUBE_NOT_RUNNING_ERROR = 903;
+    INIT_CREATE_BUILDER_ERROR = 904;
+    INIT_CREATE_DEPLOYER_ERROR = 905;
+    INIT_CREATE_TEST_DEP_ERROR = 906;
+    INIT_CACHE_ERROR = 907;
+    INIT_CREATE_WATCH_TRIGGER_ERROR = 908;
+    INIT_CREATE_ARTIFACT_DEP_ERROR = 909;
+    
 }
 
 // Enum for Suggestion codes
@@ -554,5 +576,12 @@ enum SuggestionCode {
     ADDRESS_FAILED_SCHEDULING = 407;
     // Cluster Connectivity error
     CHECK_HOST_CONNECTION = 408;
+
+    // Minikube Suggestions
+    START_MINIKUBE = 501;
+    UNPAUSE_MINIKUBE = 502;
+
+    // Open Issue Suggestion
+    OPEN_ISSUE = 900;
 }
 
