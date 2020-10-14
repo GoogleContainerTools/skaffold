@@ -104,6 +104,9 @@ func GenerateMavenBuildArgs(goal string, imageName string, a *latest.JibArtifact
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
 	}
+	if a.BaseImage != "" {
+		args = append(args, fmt.Sprintf("-Djib.from.image=%s", a.BaseImage))
+	}
 	args = append(args, "-Dimage="+imageName)
 
 	return args

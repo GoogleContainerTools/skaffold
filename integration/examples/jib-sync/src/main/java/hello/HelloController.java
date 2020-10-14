@@ -13,6 +13,6 @@ public class HelloController {
 
     @RequestMapping("/")
     public String index() throws Exception {
-        return "text-to-replace\n";
+        return "text-to-change\n";
     }
 }

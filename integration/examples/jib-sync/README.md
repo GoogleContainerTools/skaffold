@@ -63,33 +63,22 @@ build:
 
 This example is designed around the functionality available in [Spring Boot Developer Tools](https://docs.spring.io/spring-boot/docs/current/reference/html/using-spring-boot.html#using-boot-devtools) for developing against running applications.
 
-Some additional steps in your java build are required for this to work:
-- Sync requires `tar` on the running container to copy files over. The default base image that Jib uses `gcr.io/distroless/java` does not include `tar` or any utilities. During development you must use a base image that includes `tar`, in this example we use the `debug` flavor of distroless: `gcr.io/distroless/java:debug` 
+Some additional steps are required for this to work:
+- Sync requires `tar` on the running container to copy files over. The default base image that Jib uses `gcr.io/distroless/java` does not include `tar` or any utilities. During development, you must use a base image that includes `tar`, in this example we use the `debug` flavor of distroless: `gcr.io/distroless/java:debug` 
 
-`maven`
-```xml
-<plugin>
-  <groupId>com.google.cloud.tools</groupId>
-  <artifactId>jib-maven-plugin</artifactId>
-  <version>${jib.maven-plugin-version}</version>
-  <configuration>
-    ...
-    <from>
-      <image>gcr.io/distroless/java:debug</image>
-    </from>
-  </configuration>
-</plugin>
+This can be done directly in the artifact configuration by overriding the `fromImage` property.
+
+```yaml
+build:
+  artifacts:
+  - image: skaffold-example
+    context: .
+    jib: 
+      fromImage: gcr.io/distroless/java:debug
+    sync: 
+      auto: {}
 ```
 
-`gradle`
-```groovy
-jib {
-  ...
-  from {
-    image = "gcr.io/distroless/java:debug"
-  }
-}
-```
 
 - You must include the `spring-boot-devtools` dependency at the `compile/implementation` scope, which is contrary to the configuration outlined in the [official docs](https://docs.spring.io/spring-boot/docs/current/reference/html/using-spring-boot.html#using-boot-devtools). Because jib is unaware of any special spring only configuration in your builds, we recommend using profiles to turn on or off devtools support in your jib container builds.
 
@@ -97,7 +86,7 @@ jib {
 ```xml
 <profiles>
   <profile>
-    <id>sync<id>
+    <id>sync</id>
     <dependencies>
       <dependency>
         <groupId>org.springframework.boot</groupId>

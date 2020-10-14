@@ -1077,4 +1077,7 @@ type JibArtifact struct {
 	// `maven`: for Maven.
 	// `gradle`: for Gradle.
 	Type string `yaml:"type,omitempty"`
+
+	// BaseImage overrides the default jib base image.
+	BaseImage string `yaml:"fromImage,omitempty"`
 }

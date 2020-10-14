@@ -8,6 +8,7 @@ build:
       args: 
       - --no-transfer-progress
       - -Psync
+      fromImage: gcr.io/distroless/java:debug
     sync:
       auto: {}
 
