@@ -1505,8 +1505,8 @@
         },
         "fromImage": {
           "type": "string",
-          "description": "overrides the default jib base image.",
-          "x-intellij-html-description": "overrides the default jib base image."
+          "description": "overrides the configured jib base image.",
+          "x-intellij-html-description": "overrides the configured jib base image."
         },
         "project": {
           "type": "string",
