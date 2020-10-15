@@ -61,6 +61,10 @@ func runDev(ctx context.Context, out io.Writer) error {
 			return nil
 		default:
 			err := withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
+				// TODO: [#4892] Remove this block after fixing devloop rebuild and redeploy logic for artifacts with dependencies
+				if err := checkForArtifactDependencies(config.Build.Artifacts); err != nil {
+					return err
+				}
 				err := r.Dev(ctx, out, config.Build.Artifacts)
 
 				if r.HasDeployed() {
@@ -90,4 +94,13 @@ func runDev(ctx context.Context, out io.Writer) error {
 			}
 		}
 	}
+}
+
+func checkForArtifactDependencies(artifacts []*latest.Artifact) error {
+	for _, a := range artifacts {
+		if len(a.Dependencies) > 0 {
+			return errors.New("defining dependencies between artifacts is not yet supported for `skaffold dev` and `skaffold debug`")
+		}
+	}
+	return nil
 }

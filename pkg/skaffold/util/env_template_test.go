@@ -78,3 +78,62 @@ func TestEnvTemplate_ExecuteEnvTemplate(t *testing.T) {
 		})
 	}
 }
+
+func TestMapToFlag(t *testing.T) {
+	foo := "foo"
+	bar := "bar"
+	type args struct {
+		m    map[string]*string
+		flag string
+	}
+	tests := []struct {
+		description string
+		args        args
+		want        []string
+		wantErr     bool
+	}{
+		{
+			description: "All keys have value",
+			args: args{
+				m: map[string]*string{
+					"FOO": &foo,
+					"BAR": &bar,
+				},
+				flag: "--flag",
+			},
+			want:    []string{"--flag", "BAR=bar", "--flag", "FOO=foo"},
+			wantErr: false,
+		},
+		{
+			description: "Only keys",
+			args: args{
+				m: map[string]*string{
+					"FOO": nil,
+					"BAR": nil,
+				},
+				flag: "--flag",
+			},
+			want:    []string{"--flag", "BAR", "--flag", "FOO"},
+			wantErr: false,
+		},
+		{
+			description: "Mixed",
+			args: args{
+				m: map[string]*string{
+					"FOO": &foo,
+					"BAR": nil,
+				},
+				flag: "--flag",
+			},
+			want:    []string{"--flag", "BAR", "--flag", "FOO=foo"},
+			wantErr: false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			got, err := MapToFlag(test.args.m, test.args.flag)
+			t.CheckNoError(err)
+			t.CheckErrorAndDeepEqual(test.wantErr, err, test.want, got)
+		})
+	}
+}

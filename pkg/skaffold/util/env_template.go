@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -88,4 +89,31 @@ func EvaluateEnvTemplateMap(args map[string]*string) (map[string]*string, error)
 	}
 
 	return evaluated, nil
+}
+
+// MapToFlag parses all map values and returns them as `key=value` with the given flag
+// Example: --my-flag key0=value0 --my-flag key1=value1  --my-flag key2=value2
+func MapToFlag(m map[string]*string, flag string) ([]string, error) {
+	kv, err := EvaluateEnvTemplateMap(m)
+	if err != nil {
+		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
+	}
+
+	var keys []string
+	for k := range kv {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var kvFlags []string
+	for _, k := range keys {
+		v := kv[k]
+		if v == nil {
+			kvFlags = append(kvFlags, flag, k)
+		} else {
+			kvFlags = append(kvFlags, flag, fmt.Sprintf("%s=%s", k, *v))
+		}
+	}
+
+	return kvFlags, nil
 }
