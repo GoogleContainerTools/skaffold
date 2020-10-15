@@ -65,7 +65,7 @@ func TestShowAIError(t *testing.T) {
 			opts:        config.SkaffoldOptions{},
 			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
 			err:         fmt.Errorf("build failed: something went wrong"),
-			expected:    "no suggestions found",
+			expected:    "build failed: something went wrong",
 		},
 		{
 			description: "build error when docker is not running with minikube local cluster",
