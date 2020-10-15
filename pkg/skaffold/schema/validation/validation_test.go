@@ -937,3 +937,55 @@ func errorsComparer(a, b error) bool {
 	}
 	return a.Error() == b.Error()
 }
+
+func TestValidateTaggingPolicy(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         latest.BuildConfig
+		shouldErr   bool
+	}{
+		{
+			description: "ShaTagger can be used when tryImportMissing is disabled",
+			shouldErr:   false,
+			cfg: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					LocalBuild: &latest.LocalBuild{
+						TryImportMissing: false,
+					},
+				},
+				TagPolicy: latest.TagPolicy{
+					ShaTagger: &latest.ShaTagger{},
+				},
+			},
+		},
+		{
+			description: "ShaTagger can not be used when tryImportMissing is enabled",
+			shouldErr:   true,
+			cfg: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					LocalBuild: &latest.LocalBuild{
+						TryImportMissing: true,
+					},
+				},
+				TagPolicy: latest.TagPolicy{
+					ShaTagger: &latest.ShaTagger{},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// disable yamltags validation
+			t.Override(&validateYamltags, func(interface{}) error { return nil })
+
+			err := Process(
+				&latest.SkaffoldConfig{
+					Pipeline: latest.Pipeline{
+						Build: test.cfg,
+					},
+				})
+
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
