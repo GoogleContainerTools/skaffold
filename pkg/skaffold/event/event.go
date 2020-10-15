@@ -548,7 +548,7 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 		case InProgress:
 			logEntry.Entry = "Deploy started"
 		case Complete:
-			logEntry.Entry = "Deploy complete"
+			logEntry.Entry = "Deploy completed"
 		case Failed:
 			logEntry.Entry = "Deploy failed"
 			// logEntry.Err = de.Err
@@ -634,9 +634,9 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 		de := e.DevLoopEvent
 		switch de.Status {
 		case InProgress:
-			logEntry.Entry = "Update initiated due to file change"
+			logEntry.Entry = "Update initiated"
 		case Succeeded:
-			logEntry.Entry = "Update successful"
+			logEntry.Entry = "Update succeeded"
 		case Failed:
 			logEntry.Entry = fmt.Sprintf("Update failed with error code %v", de.Err.ErrCode)
 		}
