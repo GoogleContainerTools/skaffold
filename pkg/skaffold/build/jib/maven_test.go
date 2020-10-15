@@ -56,6 +56,13 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 			),
 		},
 		{
+			description: "build with custom base image",
+			artifact:    &latest.JibArtifact{BaseImage: "docker://busybox"},
+			commands: testutil.CmdRun(
+				"mvn fake-mavenBuildArgs-for-dockerBuild -Djib.from.image=docker://busybox -Dimage=img:tag",
+			),
+		},
+		{
 			description: "fail build",
 			artifact:    &latest.JibArtifact{},
 			commands: testutil.CmdRunErr(
@@ -109,6 +116,11 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 			description: "build with module",
 			artifact:    &latest.JibArtifact{Project: "module"},
 			commands:    testutil.CmdRun("mvn fake-mavenBuildArgs-for-module-for-build -Dimage=img:tag"),
+		},
+		{
+			description: "build with custom base image",
+			artifact:    &latest.JibArtifact{BaseImage: "docker://busybox"},
+			commands:    testutil.CmdRun("mvn fake-mavenBuildArgs-for-build -Djib.from.image=docker://busybox -Dimage=img:tag"),
 		},
 		{
 			description: "fail build",
@@ -325,6 +337,8 @@ func TestGenerateMavenBuildArgs(t *testing.T) {
 		{"multi module", latest.JibArtifact{Project: "module"}, "image", false, nil, []string{"fake-mavenBuildArgs-for-module-for-test-goal", "-Dimage=image"}},
 		{"multi module without tests", latest.JibArtifact{Project: "module"}, "image", true, nil, []string{"fake-mavenBuildArgs-for-module-for-test-goal-skipTests", "-Dimage=image"}},
 		{"multi module without tests with insecure-registry", latest.JibArtifact{Project: "module"}, "registry.tld/image", true, map[string]bool{"registry.tld": true}, []string{"fake-mavenBuildArgs-for-module-for-test-goal-skipTests", "-Djib.allowInsecureRegistries=true", "-Dimage=registry.tld/image"}},
+		{"single module with custom base image", latest.JibArtifact{BaseImage: "docker://busybox"}, "image", false, nil, []string{"fake-mavenBuildArgs-for-test-goal", "-Djib.from.image=docker://busybox", "-Dimage=image"}},
+		{"multi module with custom base image", latest.JibArtifact{Project: "module", BaseImage: "docker://busybox"}, "image", false, nil, []string{"fake-mavenBuildArgs-for-module-for-test-goal", "-Djib.from.image=docker://busybox", "-Dimage=image"}},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

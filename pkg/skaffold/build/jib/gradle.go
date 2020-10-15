@@ -103,7 +103,9 @@ func GenerateGradleBuildArgs(task string, imageName string, a *latest.JibArtifac
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
 	}
-
+	if a.BaseImage != "" {
+		args = append(args, fmt.Sprintf("-Djib.from.image=%s", a.BaseImage))
+	}
 	args = append(args, "--image="+imageName)
 	return args
 }

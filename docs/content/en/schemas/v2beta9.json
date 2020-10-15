@@ -1590,6 +1590,11 @@
             "[\"--no-build-cache\"]"
           ]
         },
+        "fromImage": {
+          "type": "string",
+          "description": "overrides the configured jib base image.",
+          "x-intellij-html-description": "overrides the configured jib base image."
+        },
         "project": {
           "type": "string",
           "description": "selects which sub-project to build for multi-module builds.",
@@ -1608,7 +1613,8 @@
       "preferredOrder": [
         "project",
         "args",
-        "type"
+        "type",
+        "fromImage"
       ],
       "additionalProperties": false,
       "description": "builds images using the [Jib plugins for Maven and Gradle](https://github.com/GoogleContainerTools/jib/).",

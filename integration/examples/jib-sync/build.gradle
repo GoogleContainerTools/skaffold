@@ -21,9 +21,3 @@ dependencies {
 
   testImplementation "org.springframework.boot:spring-boot-starter-test"
 }
-
-jib {
-  from {
-    image = "gcr.io/distroless/java:debug"
-  }
-}
