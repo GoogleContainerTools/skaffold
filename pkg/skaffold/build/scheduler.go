@@ -68,6 +68,7 @@ func (s *scheduler) run(ctx context.Context, out io.Writer, tags tag.ImageTags) 
 	// print output for all artifact builds in order
 	s.logger.PrintInOrder(gCtx, out)
 	if err := g.Wait(); err != nil {
+		event.BuildSequenceFailed(err)
 		return nil, err
 	}
 	return s.results.GetArtifacts(s.artifacts)

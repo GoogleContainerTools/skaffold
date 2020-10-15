@@ -39,7 +39,7 @@ type problem struct {
 // Build Problems are Errors in build phase
 var knownBuildProblems = []problem{
 	{
-		regexp:  re(fmt.Sprintf(".*%s.* denied: .*", PushImageErrPrefix)),
+		regexp:  re(fmt.Sprintf(".*%s.* denied: .*", PushImageErr)),
 		errCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
 		description: func(error) string {
 			return "Build Failed. No push access to specified image repository"
@@ -47,7 +47,7 @@ var knownBuildProblems = []problem{
 		suggestion: suggestBuildPushAccessDeniedAction,
 	},
 	{
-		regexp:  re(BuildCancelledPrefix),
+		regexp:  re(BuildCancelled),
 		errCode: proto.StatusCode_BUILD_CANCELLED,
 		description: func(error) string {
 			return "Build Cancelled."
@@ -57,7 +57,7 @@ var knownBuildProblems = []problem{
 		},
 	},
 	{
-		regexp: re(fmt.Sprintf(".*%s.* unknown: Project", PushImageErrPrefix)),
+		regexp: re(fmt.Sprintf(".*%s.* unknown: Project", PushImageErr)),
 		description: func(error) string {
 			return "Build Failed"
 		},
@@ -70,10 +70,10 @@ var knownBuildProblems = []problem{
 		},
 	},
 	{
-		regexp:  re(DockerConnectionFailedPrefix),
+		regexp:  re(DockerConnectionFailed),
 		errCode: proto.StatusCode_BUILD_DOCKER_DAEMON_NOT_RUNNING,
 		description: func(err error) string {
-			matchExp := re(".*(Cannot connect to the Docker daemon.*) Is")
+			matchExp := re(DockerConnectionFailed)
 			if match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err)); len(match) >= 2 {
 				return fmt.Sprintf("Build Failed. %s", match[1])
 			}

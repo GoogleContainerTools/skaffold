@@ -384,7 +384,7 @@ enum StatusCode {
     // Typically seen with the DevEndEvent event on success.
     OK = 0;
 
-    // Success Error codes
+    // Success codes
 
     // Status Check Success
     STATUSCHECK_SUCCESS = 200;
