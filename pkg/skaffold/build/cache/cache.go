@@ -48,11 +48,11 @@ type cache struct {
 	artifactCache    ArtifactCache
 	cacheMutex       sync.RWMutex
 	client           docker.LocalDaemon
-	cfg              docker.Config
+	cfg              Config
 	cacheFile        string
 	imagesAreLocal   bool
 	tryImportMissing bool
-	hashForArtifact  func(ctx context.Context, a *latest.Artifact) (string, error)
+	lister           DependencyLister
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
@@ -96,9 +96,7 @@ func NewCache(cfg Config, imagesAreLocal bool, tryImportMissing bool, dependenci
 		cacheFile:        cacheFile,
 		imagesAreLocal:   imagesAreLocal,
 		tryImportMissing: tryImportMissing,
-		hashForArtifact: func(ctx context.Context, a *latest.Artifact) (string, error) {
-			return getHashForArtifact(ctx, dependencies, a, cfg.Mode())
-		},
+		lister:           dependencies,
 	}, nil
 }
 

@@ -31,14 +31,18 @@ import (
 
 func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifacts []*latest.Artifact) []cacheDetails {
 	details := make([]cacheDetails, len(artifacts))
-
+	artifactsByName := make(map[string]*latest.Artifact)
+	for _, a := range artifacts {
+		artifactsByName[a.ImageName] = a
+	}
+	h := newArtifactHasherFunc(artifactsByName, c.lister, c.cfg.Mode())
 	var wg sync.WaitGroup
 	for i := range artifacts {
 		wg.Add(1)
 
 		i := i
 		go func() {
-			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName])
+			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName], h)
 			wg.Done()
 		}()
 	}
@@ -47,8 +51,8 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 	return details
 }
 
-func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string) cacheDetails {
-	hash, err := c.hashForArtifact(ctx, a)
+func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, h artifactHasher) cacheDetails {
+	hash, err := h.hash(ctx, a)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}

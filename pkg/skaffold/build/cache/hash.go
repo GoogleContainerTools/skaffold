@@ -38,15 +38,72 @@ import (
 
 // For testing
 var (
-	hashFunction           = cacheHasher
-	artifactConfigFunction = artifactConfig
+	newArtifactHasherFunc = newArtifactHasher
+	fileHasherFunc        = fileHasher
+	artifactConfigFunc    = artifactConfig
 )
 
-func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, mode config.RunMode) (string, error) {
+type artifactHasher interface {
+	hash(ctx context.Context, a *latest.Artifact) (string, error)
+}
+
+type Artifacts map[string]*latest.Artifact
+
+type artifactHasherImpl struct {
+	artifacts Artifacts
+	lister    DependencyLister
+	mode      config.RunMode
+	once      *util.Once
+}
+
+// newArtifactHasher returns a new instance of an artifactHasher. Use newArtifactHasherFunc instead of calling this function directly.
+func newArtifactHasher(artifacts Artifacts, lister DependencyLister, mode config.RunMode) artifactHasher {
+	return &artifactHasherImpl{
+		artifacts: artifacts,
+		lister:    lister,
+		mode:      mode,
+		once:      util.NewOnce(),
+	}
+}
+
+func (h *artifactHasherImpl) hash(ctx context.Context, a *latest.Artifact) (string, error) {
+	val := h.once.Do(func() interface{} {
+		return a.ImageName
+	},
+		func() interface{} {
+			hash, err := singleArtifactHash(ctx, h.lister, a, h.mode)
+			if err != nil {
+				return err
+			}
+			return hash
+		})
+
+	if err, ok := val.(error); ok {
+		return "", err
+	}
+	hash := val.(string)
+
+	hashes := []string{hash}
+	for _, dep := range sortedDependencies(a.Dependencies, h.artifacts) {
+		depHash, err := h.hash(ctx, dep)
+		if err != nil {
+			return "", err
+		}
+		hashes = append(hashes, depHash)
+	}
+
+	if len(hashes) == 1 {
+		return hashes[0], nil
+	}
+	return encode(hashes)
+}
+
+// singleArtifactHash calculates the hash for a single artifact ignoring it's required artifacts. Use `singleArtifactHashFunc` instead of calling directly.
+func singleArtifactHash(ctx context.Context, depLister DependencyLister, a *latest.Artifact, mode config.RunMode) (string, error) {
 	var inputs []string
 
 	// Append the artifact's configuration
-	config, err := artifactConfigFunction(a)
+	config, err := artifactConfigFunc(a)
 	if err != nil {
 		return "", fmt.Errorf("getting artifact's configuration for %q: %w", a.ImageName, err)
 	}
@@ -60,7 +117,7 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 	sort.Strings(deps)
 
 	for _, d := range deps {
-		h, err := hashFunction(d)
+		h, err := fileHasherFunc(d)
 		if err != nil {
 			if os.IsNotExist(err) {
 				logrus.Tracef("skipping dependency for artifact cache calculation, file not found %s: %s", d, err)
@@ -80,14 +137,16 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 	if args != nil {
 		inputs = append(inputs, args...)
 	}
+	return encode(inputs)
+}
 
+func encode(inputs []string) (string, error) {
 	// get a key for the hashes
 	hasher := sha256.New()
 	enc := json.NewEncoder(hasher)
 	if err := enc.Encode(inputs); err != nil {
 		return "", err
 	}
-
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
@@ -130,8 +189,8 @@ func hashBuildArgs(artifact *latest.Artifact, mode config.RunMode) ([]string, er
 	return sl, nil
 }
 
-// cacheHasher takes hashes the contents and name of a file
-func cacheHasher(p string) (string, error) {
+// fileHasher takes hashes the contents and name of a file
+func fileHasher(p string) (string, error) {
 	h := md5.New()
 	fi, err := os.Lstat(p)
 	if err != nil {
@@ -150,4 +209,17 @@ func cacheHasher(p string) (string, error) {
 		}
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func sortedDependencies(deps []*latest.ArtifactDependency, artifacts Artifacts) []*latest.Artifact {
+	var keys []string
+	for _, d := range deps {
+		keys = append(keys, d.ImageName)
+	}
+	sort.Strings(keys)
+	var sortedDeps []*latest.Artifact
+	for _, k := range keys {
+		sortedDeps = append(sortedDeps, artifacts[k])
+	}
+	return sortedDeps
 }

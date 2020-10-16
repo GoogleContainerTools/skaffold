@@ -47,6 +47,8 @@ var fakeArtifactConfig = func(a *latest.Artifact) (string, error) {
 	return "", nil
 }
 
+const Dockerfile = "Dockerfile"
+
 func TestGetHashForArtifact(t *testing.T) {
 	tests := []struct {
 		description  string
@@ -146,17 +148,102 @@ func TestGetHashForArtifact(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&hashFunction, mockCacheHasher)
-			t.Override(&artifactConfigFunction, fakeArtifactConfig)
+			t.Override(&fileHasherFunc, mockCacheHasher)
+			t.Override(&artifactConfigFunc, fakeArtifactConfig)
 			if test.artifact.DockerArtifact != nil {
 				tmpDir := t.NewTempDir()
 				tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
 				test.artifact.Workspace = tmpDir.Path(".")
-				test.artifact.DockerArtifact.DockerfilePath = "Dockerfile"
+				test.artifact.DockerArtifact.DockerfilePath = Dockerfile
 			}
 
 			depLister := stubDependencyLister(test.dependencies)
-			actual, err := getHashForArtifact(context.Background(), depLister, test.artifact, test.mode)
+			actual, err := newArtifactHasher(nil, depLister, test.mode).hash(context.Background(), test.artifact)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+func TestGetHashForArtifactWithDependencies(t *testing.T) {
+	tests := []struct {
+		description  string
+		dependencies map[string][]string
+		artifacts    []*latest.Artifact
+		mode         config.RunMode
+		expected     string
+	}{
+		{
+			description:  "hash for artifact with two dependencies",
+			dependencies: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"d"}},
+			artifacts: []*latest.Artifact{
+				{ImageName: "img1", Dependencies: []*latest.ArtifactDependency{{ImageName: "img2"}, {ImageName: "img3"}}},
+				{ImageName: "img2", Dependencies: []*latest.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target2"}}},
+				{ImageName: "img3", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target3"}}},
+				{ImageName: "img4", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target4"}}},
+			},
+			mode:     config.RunModes.Dev,
+			expected: "ccd159a9a50853f89ab6784530b58d658a0b349c92828eba335f1074f9a63bb3",
+		},
+		{
+			description:  "hash for artifact with two dependencies in different order",
+			dependencies: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"d"}},
+			artifacts: []*latest.Artifact{
+				{ImageName: "img1", Dependencies: []*latest.ArtifactDependency{{ImageName: "img3"}, {ImageName: "img2"}}},
+				{ImageName: "img2", Dependencies: []*latest.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target2"}}},
+				{ImageName: "img3", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target3"}}},
+				{ImageName: "img4", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target4"}}},
+			},
+			mode:     config.RunModes.Dev,
+			expected: "ccd159a9a50853f89ab6784530b58d658a0b349c92828eba335f1074f9a63bb3",
+		},
+		{
+			description:  "hash for artifact with different dependencies (img4 builder changed)",
+			dependencies: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"d"}},
+			artifacts: []*latest.Artifact{
+				{ImageName: "img1", Dependencies: []*latest.ArtifactDependency{{ImageName: "img2"}, {ImageName: "img3"}}},
+				{ImageName: "img2", Dependencies: []*latest.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target2"}}},
+				{ImageName: "img3", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target3"}}},
+				{ImageName: "img4", ArtifactType: latest.ArtifactType{BuildpackArtifact: &latest.BuildpackArtifact{Builder: "builder"}}},
+			},
+			mode:     config.RunModes.Dev,
+			expected: "26defaa1291289f40b756b83824f0549a3a9c03cca5471bd268f0ac6e499aba6",
+		},
+		{
+			description:  "hash for artifact with different dependencies (img4 files changed)",
+			dependencies: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"e"}},
+			artifacts: []*latest.Artifact{
+				{ImageName: "img1", Dependencies: []*latest.ArtifactDependency{{ImageName: "img2"}, {ImageName: "img3"}}},
+				{ImageName: "img2", Dependencies: []*latest.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target2"}}},
+				{ImageName: "img3", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target3"}}},
+				{ImageName: "img4", ArtifactType: latest.ArtifactType{BuildpackArtifact: &latest.BuildpackArtifact{}}},
+			},
+			mode:     config.RunModes.Dev,
+			expected: "bab56a88d483fa97ae072b027a46681177628156839b7e390842e6243b1ac6aa",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&fileHasherFunc, mockCacheHasher)
+			t.Override(&artifactConfigFunc, fakeArtifactConfig)
+			m := make(map[string]*latest.Artifact)
+
+			for _, a := range test.artifacts {
+				m[a.ImageName] = a
+				if a.DockerArtifact != nil {
+					tmpDir := t.NewTempDir()
+					tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
+					a.Workspace = tmpDir.Path(".")
+					a.DockerArtifact.DockerfilePath = Dockerfile
+				}
+			}
+
+			depLister := func(_ context.Context, a *latest.Artifact) ([]string, error) {
+				return test.dependencies[a.ImageName], nil
+			}
+
+			actual, err := newArtifactHasher(m, depLister, test.mode).hash(context.Background(), test.artifacts[0])
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
@@ -212,29 +299,28 @@ func TestBuildArgs(t *testing.T) {
 				Workspace: tmpDir.Path("."),
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
-						DockerfilePath: "Dockerfile",
+						DockerfilePath: Dockerfile,
 						BuildArgs:      map[string]*string{"one": util.StringPtr("1"), "two": util.StringPtr("2")},
 					},
 				},
 			}
-
-			t.Override(&hashFunction, mockCacheHasher)
-			t.Override(&artifactConfigFunction, fakeArtifactConfig)
-			actual, err := getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact, test.mode)
+			t.Override(&fileHasherFunc, mockCacheHasher)
+			t.Override(&artifactConfigFunc, fakeArtifactConfig)
+			actual, err := newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 
 			// Change order of buildargs
 			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"two": util.StringPtr("2"), "one": util.StringPtr("1")}
-			actual, err = getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact, test.mode)
+			actual, err = newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 
 			// Change build args, get different hash
 			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"one": util.StringPtr("1")}
-			actual, err = getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact, test.mode)
+			actual, err = newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact)
 
 			t.CheckNoError(err)
 			if actual == test.expected {
@@ -258,16 +344,16 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 			ArtifactType: latest.ArtifactType{
 				DockerArtifact: &latest.DockerArtifact{
 					BuildArgs:      map[string]*string{"env": util.StringPtr("${{.FOO}}")},
-					DockerfilePath: "Dockerfile",
+					DockerfilePath: Dockerfile,
 				},
 			},
 		}
 
-		t.Override(&hashFunction, mockCacheHasher)
-		t.Override(&artifactConfigFunction, fakeArtifactConfig)
+		t.Override(&fileHasherFunc, mockCacheHasher)
+		t.Override(&artifactConfigFunc, fakeArtifactConfig)
 
 		depLister := stubDependencyLister([]string{"dep"})
-		hash1, err := getHashForArtifact(context.Background(), depLister, artifact, config.RunModes.Build)
+		hash1, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), artifact)
 
 		t.CheckNoError(err)
 
@@ -277,7 +363,7 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 			return []string{"FOO=baz"}
 		}
 
-		hash2, err := getHashForArtifact(context.Background(), depLister, artifact, config.RunModes.Build)
+		hash2, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), artifact)
 
 		t.CheckNoError(err)
 		if hash1 == hash2 {
@@ -334,7 +420,7 @@ func TestCacheHasher(t *testing.T) {
 			path := originalFile
 			depLister := stubDependencyLister([]string{tmpDir.Path(originalFile)})
 
-			oldHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{}, config.RunModes.Build)
+			oldHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), &latest.Artifact{})
 			t.CheckNoError(err)
 
 			test.update(originalFile, tmpDir)
@@ -343,7 +429,7 @@ func TestCacheHasher(t *testing.T) {
 			}
 
 			depLister = stubDependencyLister([]string{tmpDir.Path(path)})
-			newHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{}, config.RunModes.Build)
+			newHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), &latest.Artifact{})
 
 			t.CheckNoError(err)
 			t.CheckFalse(test.differentHash && oldHash == newHash)
@@ -469,7 +555,7 @@ func TestHashBuildArgs(t *testing.T) {
 				tmpDir := t.NewTempDir()
 				tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
 				a.Workspace = tmpDir.Path(".")
-				a.ArtifactType.DockerArtifact.DockerfilePath = "Dockerfile"
+				a.ArtifactType.DockerArtifact.DockerfilePath = Dockerfile
 			}
 			actual, err := hashBuildArgs(a, test.mode)
 			t.CheckNoError(err)
