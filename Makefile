@@ -201,9 +201,11 @@ integration-in-kind: skaffold-builder
 		--network kind \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -eu -c ' \
-			kind get clusters | grep -q kind || TERM=dumb kind create cluster --image=$(KIND_NODE); \
+			NEED_STOP_KIND=1; \
+			kind get clusters | grep -q kind && NEED_STOP_KIND=0 || TERM=dumb kind create cluster --image=$(KIND_NODE); \
 			kind get kubeconfig --internal > /tmp/kind-config; \
-			make integration \
+			make integration; \
+			[ "$$NEED_STOP_KIND" = 0 ] || kind delete cluster; \
 		'
 
 .PHONY: integration-in-k3d
