@@ -98,7 +98,7 @@ func (h *artifactHasherImpl) hash(ctx context.Context, a *latest.Artifact) (stri
 	return encode(hashes)
 }
 
-// singleArtifactHash calculates the hash for a single artifact ignoring it's required artifacts. Use `singleArtifactHashFunc` instead of calling directly.
+// singleArtifactHash calculates the hash for a single artifact ignoring it's required artifacts.
 func singleArtifactHash(ctx context.Context, depLister DependencyLister, a *latest.Artifact, mode config.RunMode) (string, error) {
 	var inputs []string
 
