@@ -132,6 +132,9 @@ func (p *pruner) runPrune(ctx context.Context, ids []string) error {
 	if beforeDu > 0 {
 		afterDu, err := p.diskUsage(ctx)
 		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			logrus.Debugf("Failed to get docker usage info: %v", err)
 			return nil
 		}
