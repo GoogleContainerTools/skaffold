@@ -39,32 +39,33 @@ var (
 // The order of output is not guaranteed between multiple builds running concurrently.
 type logAggregator interface {
 	// GetWriter returns an output writer tracked by the logAggregator
-	GetWriter() (io.WriteCloser, error)
+	GetWriter() (w io.Writer, close func(), err error)
 	// PrintInOrder prints the output from each allotted writer in build order.
 	// It blocks until the instantiated capacity of io writers have been all allotted and closed, or the context is cancelled.
-	PrintInOrder(ctx context.Context, out io.Writer)
+	PrintInOrder(ctx context.Context)
 }
 
 type logAggregatorImpl struct {
+	out        io.Writer
 	messages   chan chan string
 	size       int
 	capacity   int
 	countMutex sync.Mutex
 }
 
-func (l *logAggregatorImpl) GetWriter() (io.WriteCloser, error) {
+func (l *logAggregatorImpl) GetWriter() (io.Writer, func(), error) {
 	if err := l.checkCapacity(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	r, w := io.Pipe()
 	ch := make(chan string, buffSize)
 	l.messages <- ch
 	// write the build output to a buffered channel.
 	go l.writeToChannel(r, ch)
-	return w, nil
+	return w, func() { w.Close() }, nil
 }
 
-func (l *logAggregatorImpl) PrintInOrder(ctx context.Context, out io.Writer) {
+func (l *logAggregatorImpl) PrintInOrder(ctx context.Context) {
 	go func() {
 		<-ctx.Done()
 		// we handle cancellation by passing a nil struct instead of closing the channel.
@@ -77,7 +78,7 @@ func (l *logAggregatorImpl) PrintInOrder(ctx context.Context, out io.Writer) {
 			return
 		}
 		// read from each build's message channel and write to the given output.
-		printResult(out, ch)
+		printResult(l.out, ch)
 	}
 }
 
@@ -105,8 +106,23 @@ func (l *logAggregatorImpl) writeToChannel(r io.Reader, lines chan string) {
 	close(lines)
 }
 
-func newLogAggregator(capacity int) logAggregator {
-	return &logAggregatorImpl{capacity: capacity, messages: make(chan chan string, capacity)}
+// noopLogAggregatorImpl simply returns a single stored io.Writer, usually `os.Stdout` for every request.
+// This is useful when builds are sequential and logs can be outputted to standard output with color formatting.
+type noopLogAggregatorImpl struct {
+	out io.Writer
+}
+
+func (n *noopLogAggregatorImpl) GetWriter() (io.Writer, func(), error) {
+	return n.out, func() {}, nil
+}
+
+func (n *noopLogAggregatorImpl) PrintInOrder(context.Context) {}
+
+func newLogAggregator(out io.Writer, capacity int, concurrency int) logAggregator {
+	if concurrency == 1 {
+		return &noopLogAggregatorImpl{out: out}
+	}
+	return &logAggregatorImpl{out: out, capacity: capacity, messages: make(chan chan string, capacity)}
 }
 
 // builtArtifacts stores the results of each artifact build.
