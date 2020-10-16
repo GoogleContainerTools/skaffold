@@ -36,9 +36,6 @@ const (
 )
 
 var (
-	// ErrNoSuggestionFound error not found
-	ErrNoSuggestionFound = fmt.Errorf("no suggestions found")
-
 	setOptionsOnce sync.Once
 	skaffoldOpts   config.SkaffoldOptions
 )
@@ -67,11 +64,12 @@ func ShowAIError(err error) error {
 	for _, v := range knownBuildProblems {
 		if v.regexp.MatchString(err.Error()) {
 			if suggestions := v.suggestion(skaffoldOpts); suggestions != nil {
-				return fmt.Errorf("%s. %s", v.description, concatSuggestions(suggestions))
+				return fmt.Errorf("%s. %s", strings.Trim(v.description(err), "."), concatSuggestions(suggestions))
 			}
+			return fmt.Errorf(v.description(err))
 		}
 	}
-	return ErrNoSuggestionFound
+	return err
 }
 
 func getErrorCodeFromError(phase Phase, err error) (proto.StatusCode, []*proto.Suggestion) {

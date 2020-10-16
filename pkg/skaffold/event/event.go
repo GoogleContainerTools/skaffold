@@ -309,9 +309,6 @@ func BuildCanceled(imageName string) {
 // BuildFailed notifies that a build has failed.
 func BuildFailed(imageName string, err error) {
 	aiErr := sErrors.ActionableErr(sErrors.Build, err)
-	handler.stateLock.Lock()
-	handler.state.BuildState.StatusCode = aiErr.ErrCode
-	handler.stateLock.Unlock()
 	handler.handleBuildEvent(&proto.BuildEvent{
 		Artifact:      imageName,
 		Status:        Failed,
@@ -706,4 +703,12 @@ func AutoTriggerDiff(name string, val bool) (bool, error) {
 	default:
 		return false, fmt.Errorf("unknown phase %v not found in handler state", name)
 	}
+}
+
+// BuildSequenceFailed notifies that the build sequence has failed.
+func BuildSequenceFailed(err error) {
+	aiErr := sErrors.ActionableErr(sErrors.Build, err)
+	handler.stateLock.Lock()
+	handler.state.BuildState.StatusCode = aiErr.ErrCode
+	handler.stateLock.Unlock()
 }

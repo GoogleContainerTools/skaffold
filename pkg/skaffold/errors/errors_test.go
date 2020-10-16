@@ -65,7 +65,41 @@ func TestShowAIError(t *testing.T) {
 			opts:        config.SkaffoldOptions{},
 			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
 			err:         fmt.Errorf("build failed: something went wrong"),
-			expected:    "no suggestions found",
+			expected:    "build failed: something went wrong",
+		},
+		{
+			description: "build error when docker is not running with minikube local cluster",
+			opts:        config.SkaffoldOptions{},
+			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
+			err: fmt.Errorf(`creating runner: creating builder: getting docker client: getting minikube env: running [/Users/tejaldesai/Downloads/google-cloud-sdk2/bin/minikube docker-env --shell none -p minikube]
+ - stdout: "\n\n"
+ - stderr: "! Executing \"docker container inspect minikube --format={{.State.Status}}\" took an unusually long time: 7.36540945s\n* Restarting the docker service may improve performance.\nX Exiting due to GUEST_STATUS: state: unknown state \"minikube\": docker container inspect minikube --format=: exit status 1\nstdout:\n\n\nstderr:\nCannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?\n\n* \n* If the above advice does not help, please let us know: \n  - https://github.com/kubernetes/minikube/issues/new/choose\n"
+ - cause: exit status 80`),
+			expected: "Build Failed. Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Please check if docker is running.",
+		},
+		{
+			description: "build error when docker is not running and deploying to GKE",
+			opts:        config.SkaffoldOptions{},
+			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
+			err:         fmt.Errorf(`exiting dev mode because first build failed: docker build: Cannot connect to the Docker daemon at tcp://127.0.0.1:32770. Is the docker daemon running?`),
+			expected:    "Build Failed. Cannot connect to the Docker daemon at tcp://127.0.0.1:32770. Please check if docker is running.",
+		},
+
+		{
+			description: "build error when docker is not and no host information",
+			opts:        config.SkaffoldOptions{},
+			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
+			// See https://github.com/moby/moby/blob/master/client/errors.go#L20
+			err:      fmt.Errorf(`exiting dev mode because first build failed: docker build: Cannot connect to the Docker daemon. Is the docker daemon running on this host?`),
+			expected: "Build Failed. Cannot connect to the Docker daemon. Please check if docker is running.",
+		},
+		{
+			description: "build cancelled",
+			opts:        config.SkaffoldOptions{},
+			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
+			// See https://github.com/moby/moby/blob/master/client/errors.go#L20
+			err:      fmt.Errorf(`docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  context canceled`),
+			expected: "Build Cancelled.",
 		},
 	}
 	for _, test := range tests {
