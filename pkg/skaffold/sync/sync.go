@@ -48,8 +48,13 @@ var (
 	SyncMap    = syncMapForArtifact
 )
 
-func NewItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds []build.Artifact, cfg docker.Config) (*Item, error) {
+func NewItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds []build.Artifact, cfg docker.Config, dependentArtifactsCount int) (*Item, error) {
 	if !e.HasChanged() || a.Sync == nil {
+		return nil, nil
+	}
+
+	if dependentArtifactsCount > 0 {
+		logrus.Warnf("Ignoring sync rules for image %q as it is being used as a required artifact for other images.", a.ImageName)
 		return nil, nil
 	}
 

@@ -10,7 +10,7 @@ build:
     docker:
       noCache: true
       buildArgs:
-        SLEEP: "1"
+        SLEEP: "0"
         FAIL: "0"
     requires:
     - image: image2
@@ -20,7 +20,7 @@ build:
     docker:
       noCache: true
       buildArgs:
-        SLEEP: "3"
+        SLEEP: "1"
         FAIL: "0"
     requires:
     - image: image3
@@ -30,7 +30,7 @@ build:
     docker:
       noCache: true
       buildArgs:
-        SLEEP: "6"
+        SLEEP: "2"
         FAIL: "0"
 
   - image: image4
@@ -38,8 +38,14 @@ build:
     docker:
       noCache: true
       buildArgs:
-        SLEEP: "9"
+        SLEEP: "3"
         FAIL: "0"
+
+deploy:
+  kubectl:
+    manifests:
+    - 'kubernetes/*.yaml'
+
 profiles:
 - name: concurrency-0
   build:

@@ -757,7 +757,7 @@ func TestNewSyncItem(t *testing.T) {
 				return map[string][]string{"file.class": {"/some/file.class"}}, nil, nil
 			})
 
-			actual, err := NewItem(ctx, test.artifact, test.evt, test.builds, &mockConfig{})
+			actual, err := NewItem(ctx, test.artifact, test.evt, test.builds, &mockConfig{}, 0)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})

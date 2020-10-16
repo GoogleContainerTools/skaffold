@@ -96,16 +96,6 @@ func TestBuild_WithDependencies(t *testing.T) {
 	}
 }
 
-func TestDev_WithDependencies(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-	if out, err := skaffold.Dev().InDir("testdata/build-dependencies").RunWithCombinedOutput(t); err == nil {
-		t.Fatal("expected build to fail")
-	} else if !strings.Contains(string(out), "defining dependencies between artifacts is not yet supported for `skaffold dev` and `skaffold debug`") {
-		logrus.Info("dev output: ", string(out))
-		t.Fatalf("dev failed but for wrong reason")
-	}
-}
-
 func checkImagesExist(t *testing.T) {
 	checkImageExists(t, "gcr.io/k8s-skaffold/image1:latest")
 	checkImageExists(t, "gcr.io/k8s-skaffold/image2:latest")
