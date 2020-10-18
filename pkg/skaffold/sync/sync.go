@@ -67,7 +67,7 @@ func NewItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds [
 	case len(a.Sync.Manual) > 0:
 		return syncItem(a, tag, e, a.Sync.Manual, cfg)
 
-	case a.Sync.Auto != nil:
+	case a.Sync.Autos != nil:
 		return autoSyncItem(ctx, a, tag, e, cfg)
 
 	case len(a.Sync.Infer) > 0:
@@ -326,7 +326,7 @@ func Init(ctx context.Context, artifacts []*latest.Artifact) error {
 			continue
 		}
 
-		if a.Sync.Auto != nil && a.JibArtifact != nil {
+		if a.Sync.Autos != nil && a.JibArtifact != nil {
 			err := jib.InitSync(ctx, a.Workspace, a.JibArtifact)
 			if err != nil {
 				return fmt.Errorf("failed to initialize sync state for %q: %w", a.ImageName, err)

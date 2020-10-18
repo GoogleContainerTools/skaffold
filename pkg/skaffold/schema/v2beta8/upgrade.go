@@ -24,6 +24,10 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v2beta8 to v2beta9
+// 1. No additions:
+// 2. No removals
+// 3. Updates:
+//    - sync.auto becomes boolean
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
@@ -33,6 +37,17 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	return &newConfig, err
 }
 
-func upgradeOnePipeline(_, _ interface{}) error {
+func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldBuild := &oldPipeline.(*Pipeline).Build
+	newBuild := &newPipeline.(*next.Pipeline).Build
+
+	// set Sync.Auto in newBuild
+	for i, a := range newBuild.Artifacts {
+		oldArtifact := oldBuild.Artifacts[i]
+		if oldArtifact.Sync != nil && oldArtifact.Sync.Auto != nil {
+			b := true
+			a.Sync.Autos = &b
+		}
+	}
 	return nil
 }

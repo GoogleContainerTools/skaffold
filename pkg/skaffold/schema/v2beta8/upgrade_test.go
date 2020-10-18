@@ -46,6 +46,8 @@ build:
   - image: gcr.io/k8s-skaffold/buildpacks
     buildpacks:
       builder: gcr.io/buildpacks/builder:v1
+    sync:
+      auto: {}
   googleCloudBuild:
     projectId: test-project
 test:
@@ -115,6 +117,8 @@ build:
   - image: gcr.io/k8s-skaffold/buildpacks
     buildpacks:
       builder: gcr.io/buildpacks/builder:v1
+    sync:
+      auto: true
   googleCloudBuild:
     projectId: test-project
 test:
