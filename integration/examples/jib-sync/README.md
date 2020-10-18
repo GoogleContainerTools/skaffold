@@ -58,7 +58,7 @@ build:
     context: .
     jib: {}
     sync: 
-      auto: {}
+      auto: true
 ```
 
 This example is designed around the functionality available in [Spring Boot Developer Tools](https://docs.spring.io/spring-boot/docs/current/reference/html/using-spring-boot.html#using-boot-devtools) for developing against running applications.
@@ -76,7 +76,7 @@ build:
     jib: 
       fromImage: gcr.io/distroless/java:debug
     sync: 
-      auto: {}
+      auto: true
 ```
 
 
@@ -121,7 +121,7 @@ build:
       args: 
       - -Psync
     sync: 
-      auto: {}
+      auto: true
 ```
 
 You can also take advantage of [skaffold profiles](https://skaffold.dev/docs/environment/profiles/) to control when to activate sync on your project.
@@ -141,7 +141,7 @@ profiles:
     # we want to activate sync on our skaffold artifact
     path: /build/artifacts/0/sync
     value:
-      - auto: {}
+      - auto: true
   - op: add
     # we activate the sync profile in our java builds
     path: /build/artifacts/0/jib/args

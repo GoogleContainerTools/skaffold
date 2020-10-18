@@ -125,7 +125,7 @@ have to output the sync rules based on their exploration of the source and the b
 Those sync rules will then be used by Skaffold without the user having to configure them manually.
 
 Another thing the Buildpacks have to do is support the `GOOGLE_DEVMODE` environment variable. Skaffold will
-set it to `1` when running `skaffold dev` with sync configured to `auto: {}`. The Buildpacks can then use that
+set it to `1` when running `skaffold dev` with sync configured to `auto: true`. The Buildpacks can then use that
 signal to change the way the application is built so that it reloads the changes or rebuilds the app on each change.
 
 #### Jib

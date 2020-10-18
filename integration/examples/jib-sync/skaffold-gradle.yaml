@@ -9,7 +9,7 @@ build:
       - -Psync
       fromImage: gcr.io/distroless/java:debug
     sync:
-      auto: {}
+      auto: true
 
 portForward:
 - resourceType: pod
