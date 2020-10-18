@@ -14,8 +14,8 @@
 
 # Download kubectl
 FROM alpine:3.10 as download-kubectl
-# Track default version installed by Google Cloud SDK
-ENV KUBECTL_VERSION v1.17.0
+# Track default version installed by Google Cloud SDK: 305.0.0 moved to 1.16
+ENV KUBECTL_VERSION v1.16.15
 ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl
 RUN wget -O kubectl "${KUBECTL_URL}"
 RUN chmod +x kubectl
