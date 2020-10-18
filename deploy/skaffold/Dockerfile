@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # This base image has to be updated manually after running `make build_deps`
-FROM gcr.io/k8s-skaffold/build_deps:c76e574042a537b7620135f9563d9bea052723bc as builder
+FROM gcr.io/k8s-skaffold/build_deps:f6315480079f9c0b355db413eef9322cf0410b18 as builder
 WORKDIR /skaffold
 COPY . .
 
