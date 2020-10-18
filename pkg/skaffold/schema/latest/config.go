@@ -786,7 +786,7 @@ type Sync struct {
 
 	// Auto delegates discovery of sync rules to the build system.
 	// Only available for jib and buildpacks.
-	Autos *bool `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
+	Auto *bool `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.

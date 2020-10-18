@@ -37,17 +37,26 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	return &newConfig, err
 }
 
-func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
-	oldBuild := &oldPipeline.(*Pipeline).Build
-	newBuild := &newPipeline.(*next.Pipeline).Build
-
-	// set Sync.Auto in newBuild
-	for i, a := range newBuild.Artifacts {
-		oldArtifact := oldBuild.Artifacts[i]
-		if oldArtifact.Sync != nil && oldArtifact.Sync.Auto != nil {
-			b := true
-			a.Sync.Autos = &b
-		}
+func (a *Auto) MarshalJSON() ([]byte, error) {
+	if a != nil {
+		return []byte(`true`), nil
 	}
-	return nil
+	return nil, nil
 }
+
+func upgradeOnePipeline(_, _ interface{}) error {
+	return nil 
+}            
+//func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+//	oldBuild := &oldPipeline.(*Pipeline).Build
+//	newBuild := &newPipeline.(*next.Pipeline).Build
+//
+//	// set Sync.Auto in newBuild
+//	for i, a := range newBuild.Artifacts {
+//		oldArtifact := oldBuild.Artifacts[i]
+//		if oldArtifact.Sync != nil && oldArtifact.Sync.Auto != nil {
+//			a.Sync.Auto = pkgutil.BoolPtr(true)
+//		}
+//	}
+//	return nil
+//}

@@ -232,18 +232,18 @@ func setDefaultWorkspace(a *latest.Artifact) {
 
 func setDefaultSync(a *latest.Artifact) {
 	if a.Sync != nil {
-		if len(a.Sync.Manual) == 0 && len(a.Sync.Infer) == 0 && a.Sync.Autos == nil {
+		if len(a.Sync.Manual) == 0 && len(a.Sync.Infer) == 0 && a.Sync.Auto == nil {
 			switch {
 			case a.JibArtifact != nil || a.BuildpackArtifact != nil:
 				b := true
-				a.Sync.Autos = &b
+				a.Sync.Auto = &b
 			default:
 				a.Sync.Infer = []string{"**/*"}
 			}
 		}
 	} else if a.BuildpackArtifact != nil {
 		b := true
-		a.Sync = &latest.Sync{Autos: &b}
+		a.Sync = &latest.Sync{Auto: &b}
 	}
 }
 
