@@ -98,20 +98,15 @@ Changes to other file types trigger an image rebuild.
 
 ##### Disable Auto Sync for Buildpacks
 
-To disable auto sync, simply provide a manual sync rule.  It does
-not matter if the sync rule does not match any actual files.
-For example:
+To disable auto sync, set `sync.auto = false`:
 
 ```
 artifacts:
 - image: xxx
   buildpacks:
     builder: gcr.io/buildpacks/builder:v1
-  # disable buildpacks auto-sync
   sync: 
-    manual: 
-    - src: .
-      dest: .
+    auto: false   # disable buildpacks auto-sync
 ```
 
 ##### How it works
