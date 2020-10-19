@@ -796,8 +796,7 @@ For Cancelled Error code, use range 800 to 850.
 | DEVINIT_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
 | STATUSCHECK_USER_CANCELLED | 800 | User cancelled the skaffold dev run |
 | STATUSCHECK_DEADLINE_EXCEEDED | 801 | Deadline for status check exceeded |
-| BUILD_CANCELLED | 802 | Build cancelled due to user cancellation or one or more build failed. |
-| DEPLOY_CANCELLED | 803 | Deploy cancelled due to user cancellation or one or more deployers failed. |
+| DEPLOY_CLUSTER_CONNECTION_ERR | 901 | Deploy errors |
 
 
 

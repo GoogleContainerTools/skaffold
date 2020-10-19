@@ -87,3 +87,13 @@ var knownBuildProblems = []problem{
 		},
 	},
 }
+
+// Build Problems are Errors in build phase
+var knownDeployProblems = []problem{
+	{
+		regexp:      re(fmt.Sprintf(".*%s.* Uanable to connect: .*", PushImageErrPrefix)),
+		errCode:     proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
+		description: "Deploy Failed.",
+		suggestion:  suggestBuildPushAccessDeniedAction,
+	},
+}

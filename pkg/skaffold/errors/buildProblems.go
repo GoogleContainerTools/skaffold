@@ -31,11 +31,6 @@ const (
 	BuildCancelled = ".*context canceled.*"
 )
 
-var (
-	// for testing
-	getConfigForCurrentContext = config.GetConfigForCurrentKubectx
-)
-
 func suggestBuildPushAccessDeniedAction(opts config.SkaffoldOptions) []*proto.Suggestion {
 	if defaultRepo := opts.DefaultRepo.Value(); defaultRepo != nil {
 		suggestions := []*proto.Suggestion{{
