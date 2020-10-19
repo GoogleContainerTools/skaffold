@@ -527,7 +527,7 @@ enum StatusCode {
     INIT_CACHE_ERROR = 907;
     INIT_CREATE_WATCH_TRIGGER_ERROR = 908;
     INIT_CREATE_ARTIFACT_DEP_ERROR = 909;
-    
+
 }
 
 // Enum for Suggestion codes

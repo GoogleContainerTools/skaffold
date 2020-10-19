@@ -21,26 +21,29 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
+const (
+	reportIssueText = "If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error"
+)
+
 var (
 	reportIssueSuggestion = func(config.SkaffoldOptions) []*proto.Suggestion {
 		return []*proto.Suggestion{{
 			SuggestionCode: proto.SuggestionCode_OPEN_ISSUE,
-			Action:         "If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error",
+			Action:         reportIssueText,
 		}}
 	}
 )
 
 var knownInitProblems = []problem{
 	{
-		regexp:      re(".*creating tagger.*"),
-		errCode:     proto.StatusCode_INIT_CREATE_TAGGER_ERROR,
-		description: "",
-		suggestion:  reportIssueSuggestion,
+		regexp:     re(".*creating tagger.*"),
+		errCode:    proto.StatusCode_INIT_CREATE_TAGGER_ERROR,
+		suggestion: reportIssueSuggestion,
 	},
 	{
 		regexp:      re(".*The control plane node must be running for this command.*"),
 		errCode:     proto.StatusCode_INIT_MINIKUBE_NOT_RUNNING_ERROR,
-		description: "minikube is probably not running",
+		description: func(error) string { return "minikube is probably not running" },
 		suggestion: func(config.SkaffoldOptions) []*proto.Suggestion {
 			return []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_START_MINIKUBE,
@@ -49,39 +52,33 @@ var knownInitProblems = []problem{
 		},
 	},
 	{
-		regexp:      re(".*creating builder.*"),
-		errCode:     proto.StatusCode_INIT_CREATE_BUILDER_ERROR,
-		description: "",
-		suggestion:  reportIssueSuggestion,
+		regexp:     re(".*creating builder.*"),
+		errCode:    proto.StatusCode_INIT_CREATE_BUILDER_ERROR,
+		suggestion: reportIssueSuggestion,
 	},
 	{
-		regexp:      re(".*unexpected artifact type.*"),
-		errCode:     proto.StatusCode_INIT_CREATE_ARTIFACT_DEP_ERROR,
-		description: "",
-		suggestion:  reportIssueSuggestion,
+		regexp:     re(".*unexpected artifact type.*"),
+		errCode:    proto.StatusCode_INIT_CREATE_ARTIFACT_DEP_ERROR,
+		suggestion: reportIssueSuggestion,
 	},
 	{
-		regexp:      re(".*expanding test file paths.*"),
-		errCode:     proto.StatusCode_INIT_CREATE_TEST_DEP_ERROR,
-		description: "",
-		suggestion:  reportIssueSuggestion,
+		regexp:     re(".*expanding test file paths.*"),
+		errCode:    proto.StatusCode_INIT_CREATE_TEST_DEP_ERROR,
+		suggestion: reportIssueSuggestion,
 	},
 	{
-		regexp:      re(".*creating deployer: something went wrong"),
-		errCode:     proto.StatusCode_INIT_CREATE_DEPLOYER_ERROR,
-		description: "",
-		suggestion:  reportIssueSuggestion,
+		regexp:     re(".*creating deployer: something went wrong"),
+		errCode:    proto.StatusCode_INIT_CREATE_DEPLOYER_ERROR,
+		suggestion: reportIssueSuggestion,
 	},
 	{
-		regexp:      re(".*creating watch trigger.*"),
-		errCode:     proto.StatusCode_INIT_CREATE_WATCH_TRIGGER_ERROR,
-		description: "",
-		suggestion:  reportIssueSuggestion,
+		regexp:     re(".*creating watch trigger.*"),
+		errCode:    proto.StatusCode_INIT_CREATE_WATCH_TRIGGER_ERROR,
+		suggestion: reportIssueSuggestion,
 	},
 	{
-		regexp:      re(".* initializing cache.*"),
-		errCode:     proto.StatusCode_INIT_CACHE_ERROR,
-		description: "",
-		suggestion:  reportIssueSuggestion,
+		regexp:     re(".* initializing cache.*"),
+		errCode:    proto.StatusCode_INIT_CACHE_ERROR,
+		suggestion: reportIssueSuggestion,
 	},
 }

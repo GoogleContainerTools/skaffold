@@ -66,8 +66,8 @@ func ShowAIError(err error) error {
 		if v.regexp.MatchString(err.Error()) {
 			if suggestions := v.suggestion(skaffoldOpts); suggestions != nil {
 				description := fmt.Sprintf("%s\n", err)
-				if v.description == nil {
-					description = v.description(err)
+				if v.description != nil {
+					description = strings.Trim(v.description(err), ".")
 				}
 				return fmt.Errorf("%s. %s", description, concatSuggestions(suggestions))
 			}

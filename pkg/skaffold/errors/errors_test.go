@@ -90,7 +90,6 @@ func TestShowAIError(t *testing.T) {
 		},
 		{
 			description: "unknown project error",
-			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
 			phase:       Build,
 			err:         fmt.Errorf("build failed: could not push image: unknown: Project"),
 			expected:    "Build Failed. Check your GCR project.",
@@ -106,36 +105,64 @@ func TestShowAIError(t *testing.T) {
 		},
 		{
 			description: "build error when docker is not running with minikube local cluster",
-			opts:        config.SkaffoldOptions{},
-			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
 			err: fmt.Errorf(`creating runner: creating builder: getting docker client: getting minikube env: running [/Users/tejaldesai/Downloads/google-cloud-sdk2/bin/minikube docker-env --shell none -p minikube]
  - stdout: "\n\n"
  - stderr: "! Executing \"docker container inspect minikube --format={{.State.Status}}\" took an unusually long time: 7.36540945s\n* Restarting the docker service may improve performance.\nX Exiting due to GUEST_STATUS: state: unknown state \"minikube\": docker container inspect minikube --format=: exit status 1\nstdout:\n\n\nstderr:\nCannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?\n\n* \n* If the above advice does not help, please let us know: \n  - https://github.com/kubernetes/minikube/issues/new/choose\n"
  - cause: exit status 80`),
-			expected: "Build Failed. Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Please check if docker is running.",
+			phase:    Build,
+			expected: "Build Failed. Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Check if docker is running.",
+			expectedAE: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_DOCKER_DAEMON_NOT_RUNNING,
+				Message: "creating runner: creating builder: getting docker client: getting minikube env: running [/Users/tejaldesai/Downloads/google-cloud-sdk2/bin/minikube docker-env --shell none -p minikube]\n - stdout: \"\\n\\n\"\n - stderr: \"! Executing \\\"docker container inspect minikube --format={{.State.Status}}\\\" took an unusually long time: 7.36540945s\\n* Restarting the docker service may improve performance.\\nX Exiting due to GUEST_STATUS: state: unknown state \\\"minikube\\\": docker container inspect minikube --format=: exit status 1\\nstdout:\\n\\n\\nstderr:\\nCannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?\\n\\n* \\n* If the above advice does not help, please let us know: \\n  - https://github.com/kubernetes/minikube/issues/new/choose\\n\"\n - cause: exit status 80",
+				Suggestions: []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_CHECK_DOCKER_RUNNING,
+					Action:         "Check if docker is running",
+				},
+				},
+			},
 		},
 		{
 			description: "build error when docker is not running and deploying to GKE",
-			opts:        config.SkaffoldOptions{},
-			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
 			err:         fmt.Errorf(`exiting dev mode because first build failed: docker build: Cannot connect to the Docker daemon at tcp://127.0.0.1:32770. Is the docker daemon running?`),
-			expected:    "Build Failed. Cannot connect to the Docker daemon at tcp://127.0.0.1:32770. Please check if docker is running.",
+			expected:    "Build Failed. Cannot connect to the Docker daemon at tcp://127.0.0.1:32770. Check if docker is running.",
+			phase:       Build,
+			expectedAE: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_DOCKER_DAEMON_NOT_RUNNING,
+				Message: "exiting dev mode because first build failed: docker build: Cannot connect to the Docker daemon at tcp://127.0.0.1:32770. Is the docker daemon running?",
+				Suggestions: []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_CHECK_DOCKER_RUNNING,
+					Action:         "Check if docker is running",
+				},
+				},
+			},
 		},
 
 		{
 			description: "build error when docker is not and no host information",
-			opts:        config.SkaffoldOptions{},
-			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
 			// See https://github.com/moby/moby/blob/master/client/errors.go#L20
 			err:      fmt.Errorf(`exiting dev mode because first build failed: docker build: Cannot connect to the Docker daemon. Is the docker daemon running on this host?`),
-			expected: "Build Failed. Cannot connect to the Docker daemon. Please check if docker is running.",
+			expected: "Build Failed. Cannot connect to the Docker daemon. Check if docker is running.",
+			phase:    Build,
+			expectedAE: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_DOCKER_DAEMON_NOT_RUNNING,
+				Message: "exiting dev mode because first build failed: docker build: Cannot connect to the Docker daemon. Is the docker daemon running on this host?",
+				Suggestions: []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_CHECK_DOCKER_RUNNING,
+					Action:         "Check if docker is running",
+				},
+				},
+			},
 		},
 		{
 			description: "build cancelled",
-			opts:        config.SkaffoldOptions{},
-			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
 			// See https://github.com/moby/moby/blob/master/client/errors.go#L20
-			err: fmt.Errorf(`docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  context canceled`),
+			err:      fmt.Errorf(`docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  context canceled`),
+			phase:    Build,
+			expected: "Build Cancelled.",
+			expectedAE: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_CANCELLED,
+				Message: `docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  context canceled`,
+			},
 		},
 		// unknown errors case
 		{
@@ -144,12 +171,17 @@ func TestShowAIError(t *testing.T) {
 			phase:       Build,
 			err:         fmt.Errorf("build failed: something went wrong"),
 			expected:    "build failed: something went wrong",
+			expectedAE: &proto.ActionableErr{
+				ErrCode:     proto.StatusCode_BUILD_UNKNOWN,
+				Message:     "build failed: something went wrong",
+				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+			},
 		},
 		{
 			description: "deploy unknown error",
 			phase:       Deploy,
 			err:         fmt.Errorf("deploy failed: something went wrong"),
-			expected:    "no suggestions found",
+			expected:    "deploy failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_DEPLOY_UNKNOWN,
 				Message:     "deploy failed: something went wrong",
@@ -160,7 +192,7 @@ func TestShowAIError(t *testing.T) {
 			description: "file sync unknown error",
 			phase:       FileSync,
 			err:         fmt.Errorf("sync failed: something went wrong"),
-			expected:    "no suggestions found",
+			expected:    "sync failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_SYNC_UNKNOWN,
 				Message:     "sync failed: something went wrong",
@@ -171,7 +203,7 @@ func TestShowAIError(t *testing.T) {
 			description: "init unknown error",
 			phase:       Init,
 			err:         fmt.Errorf("init failed: something went wrong"),
-			expected:    "no suggestions found",
+			expected:    "init failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_UNKNOWN,
 				Message:     "init failed: something went wrong",
@@ -182,7 +214,7 @@ func TestShowAIError(t *testing.T) {
 			description: "cleanup unknown error",
 			phase:       Cleanup,
 			err:         fmt.Errorf("failed: something went wrong"),
-			expected:    "no suggestions found",
+			expected:    "failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_CLEANUP_UNKNOWN,
 				Message:     "failed: something went wrong",
@@ -193,7 +225,7 @@ func TestShowAIError(t *testing.T) {
 			description: "status check unknown error",
 			phase:       StatusCheck,
 			err:         fmt.Errorf("failed: something went wrong"),
-			expected:    "no suggestions found",
+			expected:    "failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_STATUSCHECK_UNKNOWN,
 				Message:     "failed: something went wrong",
@@ -204,7 +236,7 @@ func TestShowAIError(t *testing.T) {
 			description: "dev init unknown error",
 			phase:       DevInit,
 			err:         fmt.Errorf("failed: something went wrong"),
-			expected:    "no suggestions found",
+			expected:    "failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_DEVINIT_UNKNOWN,
 				Message:     "failed: something went wrong",
