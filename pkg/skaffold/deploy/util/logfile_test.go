@@ -46,7 +46,7 @@ func TestWithLogFile(t *testing.T) {
 	}{
 		{
 			description:        "all logs",
-			muted:              muted(false),
+			muted:              mutedDeploy(false),
 			shouldErr:          false,
 			expectedNamespaces: []string{"ns"},
 			logsFound:          []string{logDeploySucceeded},
@@ -54,7 +54,7 @@ func TestWithLogFile(t *testing.T) {
 		},
 		{
 			description:        "mute deploy logs",
-			muted:              muted(true),
+			muted:              mutedDeploy(true),
 			shouldErr:          false,
 			expectedNamespaces: []string{"ns"},
 			logsFound:          []string{logFilename},
@@ -62,15 +62,15 @@ func TestWithLogFile(t *testing.T) {
 		},
 		{
 			description:        "failed deploy - all logs",
-			muted:              muted(false),
+			muted:              mutedDeploy(false),
 			shouldErr:          true,
 			expectedNamespaces: nil,
 			logsFound:          []string{logDeployFailed},
 			logsNotFound:       []string{logFilename},
 		},
 		{
-			description:        "failed deploy - muted logs",
-			muted:              muted(true),
+			description:        "failed deploy - mutedDeploy logs",
+			muted:              mutedDeploy(true),
 			shouldErr:          true,
 			expectedNamespaces: nil,
 			logsFound:          []string{logFilename},
@@ -139,7 +139,7 @@ func TestWithStatusCheckLogFile(t *testing.T) {
 			logsNotFound:       []string{logFilename},
 		},
 		{
-			description:        "failed status-check - muted logs",
+			description:        "failed status-check - mutedDeploy logs",
 			muted:              mutedStatusCheck(true),
 			shouldErr:          true,
 			expectedNamespaces: nil,
@@ -203,13 +203,13 @@ func (fd *mockStatusChecker) Deploy(ctx context.Context, out io.Writer, _ []buil
 	return []string{"ns"}, nil
 }
 
-type muted bool
+type mutedDeploy bool
 
-func (m muted) MuteDeploy() bool {
+func (m mutedDeploy) MuteDeploy() bool {
 	return bool(m)
 }
 
-func (m muted) MuteStatusCheck() bool {
+func (m mutedDeploy) MuteStatusCheck() bool {
 	return false
 }
 

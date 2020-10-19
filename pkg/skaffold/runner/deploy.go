@@ -81,13 +81,13 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
+	postStatusCheckFn()
 	if err != nil {
 		return err
 	}
 	event.DeployComplete()
 	r.runCtx.UpdateNamespaces(namespaces)
 	sErr := r.performStatusCheck(ctx, statusCheckOut)
-	postStatusCheckFn()
 	return sErr
 }
 
