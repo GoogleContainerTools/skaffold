@@ -78,8 +78,7 @@ func ShowAIError(err error) error {
 }
 
 func getErrorCodeFromError(phase Phase, err error) (proto.StatusCode, []*proto.Suggestion) {
-	problems, ok := allErrors[phase]
-	if ok {
+	if problems, ok := allErrors[phase]; ok {
 		for _, v := range problems {
 			if v.regexp.MatchString(err.Error()) {
 				return v.errCode, v.suggestion(skaffoldOpts)
