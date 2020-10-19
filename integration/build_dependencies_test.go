@@ -99,6 +99,7 @@ func TestBuildDependenciesCache(t *testing.T) {
 	// These tests build 4 images and then make a file change to the images in `change`.
 	// The test then triggers another build and verifies that the images in `rebuilt` were built
 	// (e.g., the changed images and their dependents), and that the other images were found in the artifact cache.
+	// It runs the profile `concurrency-0` which builds with maximum concurrency.
 	tests := []struct {
 		description string
 		change      []int
@@ -136,14 +137,14 @@ func TestBuildDependenciesCache(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			skaffold.Build("--cache-artifacts=true").InDir("testdata/build-dependencies").RunOrFail(t)
+			skaffold.Build("--cache-artifacts=true", "-p", "concurrency-0").InDir("testdata/build-dependencies").RunOrFail(t)
 			checkImagesExist(t)
 
 			// modify file `foo` to invalidate cache for target artifacts
 			for _, i := range test.change {
 				Run(t, fmt.Sprintf("testdata/build-dependencies/app%d", i), "sh", "-c", fmt.Sprintf("echo %s > foo", uuid.New().String()))
 			}
-			out, err := skaffold.Build("--cache-artifacts=true").InDir("testdata/build-dependencies").RunWithCombinedOutput(t)
+			out, err := skaffold.Build("--cache-artifacts=true", "-p", "concurrency-0").InDir("testdata/build-dependencies").RunWithCombinedOutput(t)
 			if err != nil {
 				t.Fatal("expected build to succeed")
 			}
