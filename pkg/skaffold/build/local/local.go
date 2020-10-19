@@ -37,7 +37,7 @@ import (
 
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, store build.BuiltArtifacts) ([]build.Artifact, error) {
 	if b.localCluster {
 		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
 	}
@@ -48,7 +48,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	}
 
 	builder := build.WithLogFile(b.buildArtifact, b.muted)
-	rt, err := build.InOrder(ctx, out, tags, artifacts, builder, *b.local.Concurrency)
+	rt, err := build.InOrder(ctx, out, tags, artifacts, builder, *b.local.Concurrency, store)
 
 	if b.prune {
 		if b.mode == config.RunModes.Build {
@@ -61,8 +61,8 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	return rt, err
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
-	digestOrImageID, err := b.runBuildForArtifact(ctx, out, a, tag)
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, r build.ArtifactResolver) (string, error) {
+	digestOrImageID, err := b.runBuildForArtifact(ctx, out, a, tag, r)
 	if err != nil {
 		return "", err
 	}
@@ -89,7 +89,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 	return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
 }
 
-func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, r build.ArtifactResolver) (string, error) {
 	if !b.pushImages {
 		// All of the builders will rely on a local Docker:
 		// + Either to build the image,
@@ -102,7 +102,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 
 	switch {
 	case a.DockerArtifact != nil:
-		return b.buildDocker(ctx, out, a, tag, b.mode)
+		return b.buildDocker(ctx, out, a, tag, b.mode, r)
 
 	case a.BazelArtifact != nil:
 		return bazel.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages).Build(ctx, out, a, tag)
@@ -114,7 +114,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
 
 	case a.BuildpackArtifact != nil:
-		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.mode).Build(ctx, out, a, tag)
+		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.mode).Build(ctx, out, a, tag, r)
 
 	default:
 		return "", fmt.Errorf("unexpected type %q for local artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))

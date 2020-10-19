@@ -29,6 +29,7 @@ import (
 	lifecycle "github.com/buildpacks/lifecycle/cmd"
 	"github.com/buildpacks/pack"
 	"github.com/buildpacks/pack/project"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -44,7 +45,7 @@ var (
 // to pull the images that are already pulled.
 var images pulledImages
 
-func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, r ArtifactResolver) (string, error) {
 	artifact := a.BuildpackArtifact
 	workspace := a.Workspace
 
@@ -86,17 +87,23 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		}
 	}
 
+	builderImage, runImage, noPull, err := resolveArtifactDependencies(artifact, r, a.Dependencies)
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve required artifacts: %w", err)
+	}
 	// Does the builder image need to be pulled?
-	alreadyPulled := images.AreAlreadyPulled(artifact.Builder, artifact.RunImage)
+	if !noPull {
+		noPull = images.AreAlreadyPulled(builderImage, runImage)
+	}
 
 	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
 		AppPath:      workspace,
-		Builder:      artifact.Builder,
-		RunImage:     artifact.RunImage,
+		Builder:      builderImage,
+		RunImage:     runImage,
 		Buildpacks:   buildpacks,
 		Env:          env,
 		Image:        latest,
-		NoPull:       alreadyPulled,
+		NoPull:       noPull,
 		TrustBuilder: artifact.TrustBuilder,
 		// TODO(dgageot): Support project.toml include/exclude.
 		// FileFilter: func(string) bool { return true },
@@ -104,9 +111,34 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		return "", err
 	}
 
-	images.MarkAsPulled(artifact.Builder, artifact.RunImage)
+	images.MarkAsPulled(builderImage, runImage)
 
 	return latest, nil
+}
+
+func resolveArtifactDependencies(artifact *latest.BuildpackArtifact, r ArtifactResolver, deps []*latest.ArtifactDependency) (builderImage string, runImage string, noPull bool, err error) {
+	builderImage, runImage = artifact.Builder, artifact.RunImage
+	for _, d := range deps {
+		if builderImage == d.Alias {
+			builderImage, err = r.GetImageTag(d.ImageName)
+			if err != nil {
+				return
+			}
+			noPull = true
+		}
+		if runImage == d.Alias {
+			runImage, err = r.GetImageTag(d.ImageName)
+			if err != nil {
+				return
+			}
+			noPull = true
+		}
+	}
+
+	if noPull {
+		logrus.Warnln("Disabled remote image pull for buildpacks since one of builder or run image is local.")
+	}
+	return
 }
 
 func runPackBuild(ctx context.Context, out io.Writer, localDocker docker.LocalDaemon, opts pack.BuildOptions) error {

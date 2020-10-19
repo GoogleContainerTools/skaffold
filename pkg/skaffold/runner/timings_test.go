@@ -39,7 +39,7 @@ type mockBuilder struct {
 	err bool
 }
 
-func (m *mockBuilder) Build(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact) ([]build.Artifact, error) {
+func (m *mockBuilder) Build(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, build.BuiltArtifacts) ([]build.Artifact, error) {
 	if m.err {
 		return nil, errors.New("Unable to build")
 	}
@@ -111,7 +111,7 @@ func TestTimingsBuild(t *testing.T) {
 			builder, _, _ := WithTimings(b, nil, nil, false)
 
 			var out bytes.Buffer
-			_, err := builder.Build(context.Background(), &out, nil, nil)
+			_, err := builder.Build(context.Background(), &out, nil, nil, nil)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())

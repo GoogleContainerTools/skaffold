@@ -103,7 +103,7 @@ func (t *TestBench) enterNewCycle() {
 	t.currentActions = Actions{}
 }
 
-func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artifacts []*latest.Artifact, _ build.BuiltArtifacts) ([]build.Artifact, error) {
 	if len(t.buildErrors) > 0 {
 		err := t.buildErrors[0]
 		t.buildErrors = t.buildErrors[1:]

@@ -26,8 +26,8 @@ import (
 
 // Build builds an artifact with Cloud Native Buildpacks:
 // https://buildpacks.io/
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	built, err := b.build(ctx, out, artifact, tag)
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string, r ArtifactResolver) (string, error) {
+	built, err := b.build(ctx, out, artifact, tag, r)
 	if err != nil {
 		return "", err
 	}
@@ -40,4 +40,8 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 		return b.localDocker.Push(ctx, out, tag)
 	}
 	return b.localDocker.ImageID(ctx, tag)
+}
+
+type ArtifactResolver interface {
+	GetImageTag(imageName string) (string, error)
 }

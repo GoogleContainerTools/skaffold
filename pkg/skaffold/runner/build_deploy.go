@@ -61,14 +61,14 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return bRes, nil
 	}
 
-	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	bRes, err := r.cache.Build(ctx, out, tags, artifacts, r.artifactStore, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, store build.BuiltArtifacts) ([]build.Artifact, error) {
 		if len(artifacts) == 0 {
 			return nil, nil
 		}
 
 		r.hasBuilt = true
 
-		bRes, err := r.builder.Build(ctx, out, tags, artifacts)
+		bRes, err := r.builder.Build(ctx, out, tags, artifacts, store)
 		if err != nil {
 			return nil, err
 		}

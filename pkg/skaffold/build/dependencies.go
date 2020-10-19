@@ -31,7 +31,7 @@ import (
 )
 
 // DependenciesForArtifact returns the dependencies for a given artifact.
-func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker.Config) ([]string, error) {
+func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker.Config, r ArtifactResolver) ([]string, error) {
 	var (
 		paths []string
 		err   error
@@ -39,7 +39,16 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker
 
 	switch {
 	case a.DockerArtifact != nil:
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, cfg)
+		var deps map[string]string
+		var args map[string]*string
+
+		// ignore error on required artifact resolution since this function is also called prior to the build.
+		deps, _ = docker.ResolveArtifactDependencies(a.Dependencies, r)
+		args, err = docker.EvalBuildArgs(cfg.Mode(), a.Workspace, a.DockerArtifact, deps)
+		if err != nil {
+			return nil, fmt.Errorf("unable to evaluate build args: %w", err)
+		}
+		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, args, cfg)
 
 	case a.KanikoArtifact != nil:
 		paths, err = docker.GetDependencies(ctx, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, cfg)

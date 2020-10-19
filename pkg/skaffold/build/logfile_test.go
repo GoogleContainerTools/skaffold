@@ -87,7 +87,7 @@ func TestWithLogFile(t *testing.T) {
 			var out bytes.Buffer
 
 			builder := WithLogFile(test.builder, test.muted)
-			digest, err := builder(context.Background(), &out, &latest.Artifact{ImageName: "img"}, "img:123")
+			digest, err := builder(context.Background(), &out, &latest.Artifact{ImageName: "img"}, "img:123", nil)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDigest, digest)
 			for _, found := range test.logsFound {
@@ -100,12 +100,12 @@ func TestWithLogFile(t *testing.T) {
 	}
 }
 
-func fakeBuilder(_ context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+func fakeBuilder(_ context.Context, out io.Writer, a *latest.Artifact, tag string, _ ArtifactResolver) (string, error) {
 	fmt.Fprintln(out, "building", a.ImageName, "with tag", tag)
 	return "digest", nil
 }
 
-func fakeFailingBuilder(_ context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+func fakeFailingBuilder(_ context.Context, out io.Writer, a *latest.Artifact, tag string, _ ArtifactResolver) (string, error) {
 	fmt.Fprintln(out, "failed to build", a.ImageName, "with tag", tag)
 	return "", errors.New("bug")
 }

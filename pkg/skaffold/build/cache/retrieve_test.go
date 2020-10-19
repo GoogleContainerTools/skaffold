@@ -44,20 +44,28 @@ func depLister(files map[string][]string) DependencyLister {
 	}
 }
 
+type mockBuiltArtifacts map[string]string
+
+func (m mockBuiltArtifacts) GetImageTag(imageName string) (string, error) { return m[imageName], nil }
+func (m mockBuiltArtifacts) Record(a *latest.Artifact, tag string)        { m[a.ImageName] = tag }
+func (m mockBuiltArtifacts) GetArtifacts([]*latest.Artifact) ([]build.Artifact, error) {
+	return nil, nil
+}
+
 type mockBuilder struct {
 	built        []*latest.Artifact
 	push         bool
 	dockerDaemon docker.LocalDaemon
 }
 
-func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, store build.BuiltArtifacts) ([]build.Artifact, error) {
 	var built []build.Artifact
 
 	for _, artifact := range artifacts {
 		b.built = append(b.built, artifact)
 		tag := tags[artifact.ImageName]
 
-		_, err := b.dockerDaemon.Build(ctx, out, artifact.Workspace, artifact.DockerArtifact, tag, config.RunModes.Dev)
+		_, err := b.dockerDaemon.Build(ctx, out, artifact.Workspace, artifact.DockerArtifact, artifact.Dependencies, tag, config.RunModes.Dev, store)
 		if err != nil {
 			return nil, err
 		}
@@ -77,6 +85,7 @@ func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.
 				ImageName: artifact.ImageName,
 				Tag:       tag,
 			})
+			store.Record(artifact, tag)
 		}
 	}
 
@@ -121,7 +130,7 @@ func TestCacheBuildLocal(t *testing.T) {
 		})
 
 		// Mock args builder
-		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact, additionalArgs map[string]string) (map[string]*string, error) {
 			return a.BuildArgs, nil
 		})
 
@@ -134,7 +143,7 @@ func TestCacheBuildLocal(t *testing.T) {
 
 		// First build: Need to build both artifacts
 		builder := &mockBuilder{dockerDaemon: dockerDaemon, push: false}
-		bRes, err := artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+		bRes, err := artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, make(mockBuiltArtifacts), builder.BuildAndTest)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(2, len(builder.built))
@@ -143,7 +152,7 @@ func TestCacheBuildLocal(t *testing.T) {
 		// Second build: both artifacts are read from cache
 		// Artifacts should always be returned in their original order
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false}
-		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, make(mockBuiltArtifacts), builder.BuildAndTest)
 
 		t.CheckNoError(err)
 		t.CheckEmpty(builder.built)
@@ -155,7 +164,7 @@ func TestCacheBuildLocal(t *testing.T) {
 		// Artifacts should always be returned in their original order
 		tmpDir.Write("dep1", "new content")
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false}
-		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, make(mockBuiltArtifacts), builder.BuildAndTest)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(1, len(builder.built))
@@ -167,7 +176,7 @@ func TestCacheBuildLocal(t *testing.T) {
 		// Artifacts should always be returned in their original order
 		tmpDir.Write("dep3", "new content")
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false}
-		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, make(mockBuiltArtifacts), builder.BuildAndTest)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(1, len(builder.built))
@@ -216,7 +225,7 @@ func TestCacheBuildRemote(t *testing.T) {
 		})
 
 		// Mock args builder
-		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact, additionalArgs map[string]string) (map[string]*string, error) {
 			return a.BuildArgs, nil
 		})
 
@@ -229,7 +238,7 @@ func TestCacheBuildRemote(t *testing.T) {
 
 		// First build: Need to build both artifacts
 		builder := &mockBuilder{dockerDaemon: dockerDaemon, push: true}
-		bRes, err := artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+		bRes, err := artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, make(mockBuiltArtifacts), builder.BuildAndTest)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(2, len(builder.built))
@@ -240,7 +249,7 @@ func TestCacheBuildRemote(t *testing.T) {
 
 		// Second build: both artifacts are read from cache
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: true}
-		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, make(mockBuiltArtifacts), builder.BuildAndTest)
 
 		t.CheckNoError(err)
 		t.CheckEmpty(builder.built)
@@ -251,7 +260,7 @@ func TestCacheBuildRemote(t *testing.T) {
 		// Third build: change one artifact's dependencies
 		tmpDir.Write("dep1", "new content")
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: true}
-		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, make(mockBuiltArtifacts), builder.BuildAndTest)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(1, len(builder.built))
@@ -300,7 +309,7 @@ func TestCacheFindMissing(t *testing.T) {
 		})
 
 		// Mock args builder
-		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact, additionalArgs map[string]string) (map[string]*string, error) {
 			return a.BuildArgs, nil
 		})
 
@@ -313,7 +322,7 @@ func TestCacheFindMissing(t *testing.T) {
 
 		// Because the artifacts are in the docker registry, we expect them to be imported correctly.
 		builder := &mockBuilder{dockerDaemon: dockerDaemon, push: false}
-		bRes, err := artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+		bRes, err := artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, make(mockBuiltArtifacts), builder.BuildAndTest)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(0, len(builder.built))

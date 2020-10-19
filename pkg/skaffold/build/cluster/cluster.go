@@ -30,7 +30,7 @@ import (
 )
 
 // Build builds a list of artifacts with Kaniko.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, store build.BuiltArtifacts) ([]build.Artifact, error) {
 	teardownPullSecret, err := b.setupPullSecret(out)
 	if err != nil {
 		return nil, fmt.Errorf("setting up pull secret: %w", err)
@@ -46,10 +46,11 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	}
 
 	builder := build.WithLogFile(b.buildArtifact, b.cfg.Muted())
-	return build.InOrder(ctx, out, tags, artifacts, builder, b.ClusterDetails.Concurrency)
+	return build.InOrder(ctx, out, tags, artifacts, builder, b.ClusterDetails.Concurrency, store)
 }
 
-func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string, _ build.ArtifactResolver) (string, error) {
+	// TODO: [#4922] Implement required artifact resolution from the `ArtifactResolver`
 	digest, err := b.runBuildForArtifact(ctx, out, artifact, tag)
 	if err != nil {
 		return "", err

@@ -58,13 +58,17 @@ type ContainerRun struct {
 	BeforeStart func(context.Context, string) error
 }
 
+type ArtifactResolver interface {
+	GetImageTag(imageName string) (string, error)
+}
+
 // LocalDaemon talks to a local Docker API.
 type LocalDaemon interface {
 	Close() error
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
-	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.RunMode) (string, error)
+	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, dependencies []*latest.ArtifactDependency, ref string, mode config.RunMode, r ArtifactResolver) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
@@ -167,14 +171,17 @@ func (l *localDaemon) CheckCompatible(a *latest.DockerArtifact) error {
 }
 
 // Build performs a docker build and returns the imageID.
-func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.RunMode) (string, error) {
+func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, dependencies []*latest.ArtifactDependency, ref string, mode config.RunMode, r ArtifactResolver) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	if err := l.CheckCompatible(a); err != nil {
 		return "", err
 	}
-
-	buildArgs, err := EvalBuildArgs(mode, workspace, a)
+	deps, err := ResolveArtifactDependencies(dependencies, r)
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve required artifacts: %w", err)
+	}
+	buildArgs, err := EvalBuildArgs(mode, workspace, a, deps)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}

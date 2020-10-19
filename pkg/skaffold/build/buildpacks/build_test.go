@@ -261,7 +261,7 @@ value = "VALUE2"
 			localDocker := fakeLocalDaemon(test.api)
 
 			builder := NewArtifactBuilder(localDocker, test.pushImages, test.mode)
-			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag)
+			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag, nil)
 
 			t.CheckError(test.shouldErr, err)
 			if test.expectedOptions != nil {

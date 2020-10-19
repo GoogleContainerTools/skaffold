@@ -184,7 +184,7 @@ FROM bar1`,
 			tmpDir.Write("./Dockerfile", test.dockerfile)
 			workspace := tmpDir.Path(".")
 
-			actual, err := EvalBuildArgs(test.mode, workspace, artifact)
+			actual, err := EvalBuildArgs(test.mode, workspace, artifact, nil)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 		})

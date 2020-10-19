@@ -107,7 +107,7 @@ func hashBuildArgs(artifact *latest.Artifact, mode config.RunMode) ([]string, er
 	var err error
 	switch {
 	case artifact.DockerArtifact != nil:
-		args, err = docker.EvalBuildArgs(mode, artifact.Workspace, artifact.DockerArtifact)
+		args, err = docker.EvalBuildArgs(mode, artifact.Workspace, artifact.DockerArtifact, nil)
 	case artifact.KanikoArtifact != nil:
 		args, err = util.EvaluateEnvTemplateMap(artifact.KanikoArtifact.BuildArgs)
 	case artifact.BuildpackArtifact != nil:

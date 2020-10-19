@@ -45,12 +45,13 @@ import (
 )
 
 // Build builds a list of artifacts with Google Cloud Build.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, store build.BuiltArtifacts) ([]build.Artifact, error) {
 	builder := build.WithLogFile(b.buildArtifactWithCloudBuild, b.muted)
-	return build.InOrder(ctx, out, tags, artifacts, builder, b.GoogleCloudBuild.Concurrency)
+	return build.InOrder(ctx, out, tags, artifacts, builder, b.GoogleCloudBuild.Concurrency, store)
 }
 
-func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string, r build.ArtifactResolver) (string, error) {
+	// TODO: [#4922] Implement required artifact resolution from the `ArtifactResolver`
 	cbclient, err := cloudbuild.NewService(ctx, gcp.ClientOptions()...)
 	if err != nil {
 		return "", fmt.Errorf("getting cloudbuild client: %w", err)
@@ -82,7 +83,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", fmt.Errorf("checking bucket is in correct project: %w", err)
 	}
 
-	dependencies, err := build.DependenciesForArtifact(ctx, artifact, b.cfg)
+	dependencies, err := build.DependenciesForArtifact(ctx, artifact, b.cfg, r)
 	if err != nil {
 		return "", fmt.Errorf("getting dependencies for %q: %w", artifact.ImageName, err)
 	}

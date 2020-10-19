@@ -73,9 +73,9 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
-
+	store := build.NewBuiltArtifacts()
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx)
+		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx, store)
 		if err != nil {
 			return nil, err
 		}
@@ -127,6 +127,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		runCtx:         runCtx,
 		intents:        intents,
 		imagesAreLocal: imagesAreLocal,
+		artifactStore:  store,
 	}, nil
 }
 
