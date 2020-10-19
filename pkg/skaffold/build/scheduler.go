@@ -40,19 +40,19 @@ type scheduler struct {
 	concurrencySem  countingSemaphore
 }
 
-func newScheduler(artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder, concurrency int) *scheduler {
+func newScheduler(artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder, concurrency int, out io.Writer) *scheduler {
 	s := scheduler{
 		artifacts:       artifacts,
 		nodes:           createNodes(artifacts),
 		artifactBuilder: artifactBuilder,
-		logger:          newLogAggregator(len(artifacts)),
+		logger:          newLogAggregator(out, len(artifacts), concurrency),
 		results:         newArtifactsStore(),
 		concurrencySem:  newCountingSemaphore(concurrency),
 	}
 	return &s
 }
 
-func (s *scheduler) run(ctx context.Context, out io.Writer, tags tag.ImageTags) ([]Artifact, error) {
+func (s *scheduler) run(ctx context.Context, tags tag.ImageTags) ([]Artifact, error) {
 	g, gCtx := errgroup.WithContext(ctx)
 
 	for i := range s.artifacts {
@@ -66,7 +66,7 @@ func (s *scheduler) run(ctx context.Context, out io.Writer, tags tag.ImageTags) 
 		})
 	}
 	// print output for all artifact builds in order
-	s.logger.PrintInOrder(gCtx, out)
+	s.logger.PrintInOrder(gCtx)
 	if err := g.Wait(); err != nil {
 		event.BuildSequenceFailed(err)
 		return nil, err
@@ -88,12 +88,12 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 
 	event.BuildInProgress(a.ImageName)
 
-	w, err := s.logger.GetWriter()
+	w, closeFn, err := s.logger.GetWriter()
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
 		return err
 	}
-	defer w.Close()
+	defer closeFn()
 
 	finalTag, err := performBuild(ctx, w, tags, a, s.artifactBuilder)
 	if err != nil {
@@ -116,10 +116,10 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 	if concurrency > 1 {
 		color.Default.Fprintf(out, "Building %d artifacts in parallel\n", concurrency)
 	}
-	s := newScheduler(artifacts, artifactBuilder, concurrency)
+	s := newScheduler(artifacts, artifactBuilder, concurrency, out)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	return s.run(ctx, out, tags)
+	return s.run(ctx, tags)
 }
 
 func performBuild(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latest.Artifact, build ArtifactBuilder) (string, error) {
