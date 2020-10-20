@@ -34,11 +34,21 @@ const (
 	FileSync    = Phase("FileSync")
 	DevInit     = Phase("DevInit")
 	Cleanup     = Phase("Cleanup")
+
+	// Report issue text
+	reportIssueText = "If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error"
 )
 
 var (
 	setOptionsOnce sync.Once
 	skaffoldOpts   config.SkaffoldOptions
+
+	reportIssueSuggestion = func(config.SkaffoldOptions) []*proto.Suggestion {
+		return []*proto.Suggestion{{
+			SuggestionCode: proto.SuggestionCode_OPEN_ISSUE,
+			Action:         reportIssueText,
+		}}
+	}
 )
 
 type Phase string

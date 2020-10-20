@@ -714,14 +714,11 @@ func BuildSequenceFailed(err error) {
 }
 
 func SkaffoldInitFailed(err error) {
-	handler.logEvent(proto.LogEntry{
-		Timestamp: ptypes.TimestampNow(),
-		Event: &proto.Event{
-			EventType: &proto.Event_SessionEndEvent{
-				SessionEndEvent: &proto.SessionEndEvent{
-					Status: Failed,
-					Err:    sErrors.ActionableErr(sErrors.Init, err),
-				},
+	handler.handle(&proto.Event{
+		EventType: &proto.Event_SessionEndEvent{
+			SessionEndEvent: &proto.SessionEndEvent{
+				Status: Failed,
+				Err:    sErrors.ActionableErr(sErrors.Init, err),
 			},
 		},
 	})

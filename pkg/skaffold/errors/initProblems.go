@@ -21,19 +21,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
-const (
-	reportIssueText = "If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error"
-)
-
-var (
-	reportIssueSuggestion = func(config.SkaffoldOptions) []*proto.Suggestion {
-		return []*proto.Suggestion{{
-			SuggestionCode: proto.SuggestionCode_OPEN_ISSUE,
-			Action:         reportIssueText,
-		}}
-	}
-)
-
 var knownInitProblems = []problem{
 	{
 		regexp:     re(".*creating tagger.*"),
@@ -47,7 +34,7 @@ var knownInitProblems = []problem{
 		suggestion: func(config.SkaffoldOptions) []*proto.Suggestion {
 			return []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_START_MINIKUBE,
-				Action:         "Try running \"minikube start\"",
+				Action:         `Try running "minikube start"`,
 			}}
 		},
 	},
