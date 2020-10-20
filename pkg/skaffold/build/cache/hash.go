@@ -47,6 +47,7 @@ type artifactHasher interface {
 	hash(ctx context.Context, a *latest.Artifact) (string, error)
 }
 
+// Artifacts is a map of [artifact image : artifact definition]
 type Artifacts map[string]*latest.Artifact
 
 type artifactHasherImpl struct {
