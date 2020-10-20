@@ -22,9 +22,11 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -35,6 +37,10 @@ func TestSetDefaults(t *testing.T) {
 				Artifacts: []*latest.Artifact{
 					{
 						ImageName: "first",
+						Dependencies: []*latest.ArtifactDependency{
+							{ImageName: "second", Alias: "secondAlias"},
+							{ImageName: "third"},
+						},
 					},
 					{
 						ImageName: "second",
@@ -71,6 +77,13 @@ func TestSetDefaults(t *testing.T) {
 							BuildpackArtifact: &latest.BuildpackArtifact{},
 						},
 					},
+					{
+						ImageName: "seventh",
+						ArtifactType: latest.ArtifactType{
+							BuildpackArtifact: &latest.BuildpackArtifact{},
+						},
+						Sync: &latest.Sync{Auto: util.BoolPtr(false)},
+					},
 				},
 			},
 		},
@@ -83,6 +96,8 @@ func TestSetDefaults(t *testing.T) {
 	testutil.CheckDeepEqual(t, "first", cfg.Build.Artifacts[0].ImageName)
 	testutil.CheckDeepEqual(t, ".", cfg.Build.Artifacts[0].Workspace)
 	testutil.CheckDeepEqual(t, "Dockerfile", cfg.Build.Artifacts[0].DockerArtifact.DockerfilePath)
+	testutil.CheckDeepEqual(t, "secondAlias", cfg.Build.Artifacts[0].Dependencies[0].Alias)
+	testutil.CheckDeepEqual(t, "third", cfg.Build.Artifacts[0].Dependencies[1].Alias)
 
 	testutil.CheckDeepEqual(t, "second", cfg.Build.Artifacts[1].ImageName)
 	testutil.CheckDeepEqual(t, "folder", cfg.Build.Artifacts[1].Workspace)
@@ -96,16 +111,22 @@ func TestSetDefaults(t *testing.T) {
 	testutil.CheckDeepEqual(t, []string{"."}, cfg.Build.Artifacts[3].BuildpackArtifact.Dependencies.Paths)
 	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[3].BuildpackArtifact.Dependencies.Ignore)
 	testutil.CheckDeepEqual(t, "project.toml", cfg.Build.Artifacts[3].BuildpackArtifact.ProjectDescriptor)
-	testutil.CheckDeepEqual(t, &latest.Auto{}, cfg.Build.Artifacts[3].Sync.Auto)
+	testutil.CheckDeepEqual(t, util.BoolPtr(true), cfg.Build.Artifacts[3].Sync.Auto)
 
 	testutil.CheckDeepEqual(t, "fifth", cfg.Build.Artifacts[4].ImageName)
-	testutil.CheckDeepEqual(t, &latest.Auto{}, cfg.Build.Artifacts[4].Sync.Auto)
+	testutil.CheckDeepEqual(t, util.BoolPtr(true), cfg.Build.Artifacts[4].Sync.Auto)
 
 	testutil.CheckDeepEqual(t, "sixth", cfg.Build.Artifacts[5].ImageName)
 	testutil.CheckDeepEqual(t, []string{"."}, cfg.Build.Artifacts[5].BuildpackArtifact.Dependencies.Paths)
 	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[5].BuildpackArtifact.Dependencies.Ignore)
 	testutil.CheckDeepEqual(t, "project.toml", cfg.Build.Artifacts[5].BuildpackArtifact.ProjectDescriptor)
-	testutil.CheckDeepEqual(t, &latest.Auto{}, cfg.Build.Artifacts[5].Sync.Auto)
+	testutil.CheckDeepEqual(t, util.BoolPtr(true), cfg.Build.Artifacts[5].Sync.Auto)
+
+	testutil.CheckDeepEqual(t, "seventh", cfg.Build.Artifacts[6].ImageName)
+	testutil.CheckDeepEqual(t, []string{"."}, cfg.Build.Artifacts[6].BuildpackArtifact.Dependencies.Paths)
+	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[6].BuildpackArtifact.Dependencies.Ignore)
+	testutil.CheckDeepEqual(t, "project.toml", cfg.Build.Artifacts[6].BuildpackArtifact.ProjectDescriptor)
+	testutil.CheckDeepEqual(t, util.BoolPtr(false), cfg.Build.Artifacts[6].Sync.Auto)
 }
 
 func TestSetDefaultsOnCluster(t *testing.T) {
@@ -157,7 +178,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("ns", cfg.Build.Cluster.Namespace)
-		t.CheckDeepEqual(constants.DefaultKanikoTimeout, cfg.Build.Cluster.Timeout)
+		t.CheckDeepEqual(kaniko.DefaultTimeout, cfg.Build.Cluster.Timeout)
 
 		// artifact types
 		t.CheckNotNil(cfg.Pipeline.Build.Artifacts[0].KanikoArtifact)
@@ -181,7 +202,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 
 		t.CheckNoError(err)
 
-		t.CheckDeepEqual(constants.DefaultKanikoSecretMountPath, cfg.Build.Cluster.PullSecretMountPath)
+		t.CheckDeepEqual(kaniko.DefaultSecretMountPath, cfg.Build.Cluster.PullSecretMountPath)
 
 		// pull secret mount path set
 		path := "/path"

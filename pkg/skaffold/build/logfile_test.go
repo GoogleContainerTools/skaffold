@@ -78,7 +78,8 @@ func TestWithLogFile(t *testing.T) {
 			muted:          muted(true),
 			shouldErr:      true,
 			expectedDigest: "",
-			logsFound:      []string{logFilename, logBuildFailed},
+			logsFound:      []string{logFilename},
+			logsNotFound:   []string{logBuildFailed},
 		},
 	}
 	for _, test := range tests {

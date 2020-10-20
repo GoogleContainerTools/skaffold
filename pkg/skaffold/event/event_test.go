@@ -138,7 +138,7 @@ func TestBuildFailed(t *testing.T) {
 	BuildFailed("img", errors.New("BUG"))
 	wait(t, func() bool {
 		bState := handler.getState().BuildState
-		return bState.Artifacts["img"] == Failed && bState.StatusCode == proto.StatusCode_BUILD_UNKNOWN
+		return bState.Artifacts["img"] == Failed
 	})
 }
 

@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -336,7 +337,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 			DockerImage: "gcr.io/cloud-builders/docker",
 			MavenImage:  "gcr.io/cloud-builders/mvn",
 			GradleImage: "gcr.io/cloud-builders/gradle",
-			KanikoImage: constants.DefaultKanikoImage,
+			KanikoImage: kaniko.DefaultImage,
 			PackImage:   "gcr.io/k8s-skaffold/pack",
 		}}}
 		for _, op := range ops {
@@ -430,7 +431,7 @@ func withKanikoArtifact(image, workspace, dockerfile string) func(*latest.BuildC
 				KanikoArtifact: &latest.KanikoArtifact{
 					DockerfilePath: dockerfile,
 					InitImage:      constants.DefaultBusyboxImage,
-					Image:          constants.DefaultKanikoImage,
+					Image:          kaniko.DefaultImage,
 				},
 			},
 		})

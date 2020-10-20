@@ -89,13 +89,14 @@ func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
 	var builderType PluginType
 	var executable, wrapper, taskName, searchString, consoleFlag string
 	switch {
-	case strings.HasSuffix(path, "pom.xml"):
+	case isPomFile(path):
 		builderType = JibMaven
 		executable = "mvn"
 		wrapper = "mvnw"
-		searchString = "<artifactId>jib-maven-plugin</artifactId>"
+		searchString = "jib-maven-plugin"
 		taskName = "jib:_skaffold-init"
 		consoleFlag = "--batch-mode"
+
 	case enableGradleAnalysis && (strings.HasSuffix(path, "build.gradle") || strings.HasSuffix(path, "build.gradle.kts")):
 		builderType = JibGradle
 		executable = "gradle"
@@ -147,4 +148,10 @@ func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
 		})
 	}
 	return results
+}
+
+// checks that the file is a maven pom file, and returns the file extension
+func isPomFile(path string) bool {
+	filename := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+	return filename == "pom"
 }

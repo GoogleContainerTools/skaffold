@@ -43,7 +43,7 @@ const MinimumJibMavenVersionForSync = "2.0.0"
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
 func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, b.skipTests, b.cfg.GetInsecureRegistries())
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -52,12 +52,12 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 }
 
 func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateMavenBuildArgs("build", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateMavenBuildArgs("build", tag, artifact, b.skipTests, b.cfg.GetInsecureRegistries())
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
 
-	return docker.RemoteDigest(tag, b.insecureRegistries)
+	return docker.RemoteDigest(tag, b.cfg)
 }
 
 func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
@@ -103,6 +103,9 @@ func GenerateMavenBuildArgs(goal string, imageName string, a *latest.JibArtifact
 	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
+	}
+	if a.BaseImage != "" {
+		args = append(args, fmt.Sprintf("-Djib.from.image=%s", a.BaseImage))
 	}
 	args = append(args, "-Dimage="+imageName)
 

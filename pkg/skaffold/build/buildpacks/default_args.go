@@ -19,7 +19,7 @@ package buildpacks
 import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 
 var debugModeArgs = map[string]string{
-	"GOOGLE_GOGCFLAGS": "'all=-N -l'", // disable build optimization for Golang
+	"GOOGLE_GOGCFLAGS": "all=-N -l", // disable build optimization for Golang
 	// TODO: Add for other languages
 }
 

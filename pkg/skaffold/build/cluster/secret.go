@@ -26,8 +26,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedV1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 )
 
@@ -74,10 +74,10 @@ func (b *Builder) createSecretFromFile(secrets typedV1.SecretInterface) (func(),
 			Labels: map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 		},
 		Data: map[string][]byte{
-			constants.DefaultKanikoSecretName: secretData,
+			kaniko.DefaultSecretName: secretData,
 		},
 	}
-	b.PullSecretPath = constants.DefaultKanikoSecretName
+	b.PullSecretPath = kaniko.DefaultSecretName
 	if _, err := secrets.Create(secret); err != nil {
 		return nil, fmt.Errorf("creating pull secret %q: %w", b.PullSecretName, err)
 	}

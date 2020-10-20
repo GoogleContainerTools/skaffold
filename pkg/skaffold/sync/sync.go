@@ -48,8 +48,13 @@ var (
 	SyncMap    = syncMapForArtifact
 )
 
-func NewItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
+func NewItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds []build.Artifact, cfg docker.Config, dependentArtifactsCount int) (*Item, error) {
 	if !e.HasChanged() || a.Sync == nil {
+		return nil, nil
+	}
+
+	if dependentArtifactsCount > 0 {
+		logrus.Warnf("Ignoring sync rules for image %q as it is being used as a required artifact for other images.", a.ImageName)
 		return nil, nil
 	}
 
@@ -60,21 +65,21 @@ func NewItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds [
 
 	switch {
 	case len(a.Sync.Manual) > 0:
-		return syncItem(a, tag, e, a.Sync.Manual, insecureRegistries)
+		return syncItem(a, tag, e, a.Sync.Manual, cfg)
 
 	case a.Sync.Auto != nil:
-		return autoSyncItem(ctx, a, tag, e, insecureRegistries)
+		return autoSyncItem(ctx, a, tag, e, cfg)
 
 	case len(a.Sync.Infer) > 0:
-		return inferredSyncItem(a, tag, e, insecureRegistries)
+		return inferredSyncItem(a, tag, e, cfg)
 
 	default:
 		return nil, nil
 	}
 }
 
-func syncItem(a *latest.Artifact, tag string, e filemon.Events, syncRules []*latest.SyncRule, insecureRegistries map[string]bool) (*Item, error) {
-	containerWd, err := WorkingDir(tag, insecureRegistries)
+func syncItem(a *latest.Artifact, tag string, e filemon.Events, syncRules []*latest.SyncRule, cfg docker.Config) (*Item, error) {
+	containerWd, err := WorkingDir(tag, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving working dir for %q: %w", tag, err)
 	}
@@ -97,13 +102,13 @@ func syncItem(a *latest.Artifact, tag string, e filemon.Events, syncRules []*lat
 	return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
 }
 
-func inferredSyncItem(a *latest.Artifact, tag string, e filemon.Events, insecureRegistries map[string]bool) (*Item, error) {
+func inferredSyncItem(a *latest.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
 	// deleted files are no longer contained in the syncMap, so we need to rebuild
 	if len(e.Deleted) > 0 {
 		return nil, nil
 	}
 
-	syncMap, err := SyncMap(a, insecureRegistries)
+	syncMap, err := SyncMap(a, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("inferring syncmap for image %q: %w", a.ImageName, err)
 	}
@@ -141,26 +146,26 @@ func inferredSyncItem(a *latest.Artifact, tag string, e filemon.Events, insecure
 	return &Item{Image: tag, Copy: toCopy}, nil
 }
 
-func syncMapForArtifact(a *latest.Artifact, insecureRegistries map[string]bool) (map[string][]string, error) {
+func syncMapForArtifact(a *latest.Artifact, cfg docker.Config) (map[string][]string, error) {
 	switch {
 	case a.DockerArtifact != nil:
-		return docker.SyncMap(a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, insecureRegistries)
+		return docker.SyncMap(a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, cfg)
 
 	case a.CustomArtifact != nil && a.CustomArtifact.Dependencies != nil && a.CustomArtifact.Dependencies.Dockerfile != nil:
-		return docker.SyncMap(a.Workspace, a.CustomArtifact.Dependencies.Dockerfile.Path, a.CustomArtifact.Dependencies.Dockerfile.BuildArgs, insecureRegistries)
+		return docker.SyncMap(a.Workspace, a.CustomArtifact.Dependencies.Dockerfile.Path, a.CustomArtifact.Dependencies.Dockerfile.BuildArgs, cfg)
 
 	case a.KanikoArtifact != nil:
-		return docker.SyncMap(a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, insecureRegistries)
+		return docker.SyncMap(a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, cfg)
 
 	default:
 		return nil, build.ErrSyncMapNotSupported{}
 	}
 }
 
-func autoSyncItem(ctx context.Context, a *latest.Artifact, tag string, e filemon.Events, insecureRegistries map[string]bool) (*Item, error) {
+func autoSyncItem(ctx context.Context, a *latest.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
 	switch {
 	case a.BuildpackArtifact != nil:
-		labels, err := Labels(tag, insecureRegistries)
+		labels, err := Labels(tag, cfg)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving labels for %q: %w", tag, err)
 		}
@@ -170,7 +175,7 @@ func autoSyncItem(ctx context.Context, a *latest.Artifact, tag string, e filemon
 			return nil, fmt.Errorf("extracting sync rules from labels for %q: %w", tag, err)
 		}
 
-		return syncItem(a, tag, e, rules, insecureRegistries)
+		return syncItem(a, tag, e, rules, cfg)
 
 	case a.JibArtifact != nil:
 		toCopy, toDelete, err := jib.GetSyncDiff(ctx, a.Workspace, a.JibArtifact, e)

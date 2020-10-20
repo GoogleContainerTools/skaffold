@@ -20,10 +20,11 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"sort"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 )
 
 // DeployerMux forwards all method calls to the deployers it contains.
@@ -31,56 +32,30 @@ import (
 // it collects the results and returns it in bulk.
 type DeployerMux []Deployer
 
-type unit struct{}
-
-// stringSet helps to de-duplicate a set of strings.
-type stringSet map[string]unit
-
-func newStringSet() stringSet {
-	return make(map[string]unit)
-}
-
-// insert adds strings to the set.
-func (s stringSet) insert(strings ...string) {
-	for _, item := range strings {
-		s[item] = unit{}
-	}
-}
-
-// toList returns the sorted list of inserted strings.
-func (s stringSet) toList() []string {
-	var res []string
-	for item := range s {
-		res = append(res, item)
-	}
-	sort.Strings(res)
-	return res
-}
-
 func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []build.Artifact) ([]string, error) {
-	seenNamespaces := newStringSet()
+	seenNamespaces := util.NewStringSet()
 
 	for _, deployer := range m {
 		namespaces, err := deployer.Deploy(ctx, w, as)
 		if err != nil {
 			return nil, err
 		}
-		seenNamespaces.insert(namespaces...)
+		seenNamespaces.Insert(namespaces...)
 	}
 
-	return seenNamespaces.toList(), nil
+	return seenNamespaces.ToList(), nil
 }
 
 func (m DeployerMux) Dependencies() ([]string, error) {
-	deps := newStringSet()
+	deps := util.NewStringSet()
 	for _, deployer := range m {
 		result, err := deployer.Dependencies()
 		if err != nil {
 			return nil, err
 		}
-		deps.insert(result...)
+		deps.Insert(result...)
 	}
-	return deps.toList(), nil
+	return deps.ToList(), nil
 }
 
 func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer) error {
@@ -103,5 +78,5 @@ func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []build.Artifac
 	}
 
 	allResources := strings.Join(resources, "\n---\n")
-	return outputRenderedManifests(allResources, filepath, w)
+	return manifest.Write(allResources, filepath, w)
 }

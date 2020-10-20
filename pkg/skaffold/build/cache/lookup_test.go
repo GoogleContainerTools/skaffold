@@ -40,6 +40,8 @@ func TestLookupLocal(t *testing.T) {
 		{
 			description: "miss",
 			hasher:      mockHasher("thehash"),
+			api:         &testutil.FakeAPIClient{},
+			cache:       map[string]ImageDetails{},
 			expected:    needsBuilding{hash: "thehash"},
 		},
 		{
@@ -134,6 +136,8 @@ func TestLookupRemote(t *testing.T) {
 		{
 			description: "miss",
 			hasher:      mockHasher("hash"),
+			api:         &testutil.FakeAPIClient{ErrImagePull: true},
+			cache:       map[string]ImageDetails{},
 			expected:    needsBuilding{hash: "hash"},
 		},
 		{
@@ -178,7 +182,7 @@ func TestLookupRemote(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&docker.RemoteDigest, func(identifier string, _ map[string]bool) (string, error) {
+			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config) (string, error) {
 				switch {
 				case identifier == "tag":
 					return "digest", nil

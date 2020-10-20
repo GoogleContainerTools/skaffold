@@ -19,6 +19,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -51,7 +52,6 @@ func NewCmdBuild() *cobra.Command {
 		WithExample("Print the final image names", "build -q --dry-run").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
-			f.StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
 			f.BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
 			f.VarP(buildFormatFlag, "output", "o", "Used in conjunction with --quiet flag. "+buildFormatFlag.Usage())
 			f.StringVar(&buildOutputFlag, "file-output", "", "Filename to write build images to")
@@ -68,7 +68,13 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	}
 
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		bRes, err := r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
+		ar := targetArtifacts(opts, config)
+
+		// TODO: [#4891] Remove this block after implementing proper image cache invalidation for artifacts with dependencies
+		if err := failForArtifactDependenciesWithCacheEnabled(ar, opts.CacheArtifacts); err != nil {
+			return err
+		}
+		bRes, err := r.BuildAndTest(ctx, buildOut, ar)
 
 		if quietFlag || buildOutputFlag != "" {
 			cmdOut := flags.BuildOutput{Builds: bRes}
@@ -104,4 +110,16 @@ func targetArtifacts(opts config.SkaffoldOptions, cfg *latest.SkaffoldConfig) []
 	}
 
 	return targetArtifacts
+}
+
+func failForArtifactDependenciesWithCacheEnabled(artifacts []*latest.Artifact, cacheEnabled bool) error {
+	if !cacheEnabled {
+		return nil
+	}
+	for _, a := range artifacts {
+		if len(a.Dependencies) > 0 {
+			return errors.New("defining dependencies between artifacts is not yet supported for `skaffold build` with cache enabled. Run with `--cache-artifacts=false` flag")
+		}
+	}
+	return nil
 }

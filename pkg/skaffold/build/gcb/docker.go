@@ -17,6 +17,7 @@ limitations under the License.
 package gcb
 
 import (
+	"errors"
 	"fmt"
 
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
@@ -62,6 +63,10 @@ func (b *Builder) cacheFromSteps(artifact *latest.DockerArtifact) []*cloudbuild.
 
 // dockerBuildArgs lists the arguments passed to `docker` to build a given image.
 func (b *Builder) dockerBuildArgs(artifact *latest.DockerArtifact, tag string) ([]string, error) {
+	// TODO(nkubala): remove when buildkit is supported in GCB (#4773)
+	if artifact.Secret != nil {
+		return nil, errors.New("docker build secrets not currently supported in GCB builds")
+	}
 	buildArgs, err := util.EvaluateEnvTemplateMap(artifact.BuildArgs)
 	if err != nil {
 		return nil, fmt.Errorf("unable to evaluate build args: %w", err)

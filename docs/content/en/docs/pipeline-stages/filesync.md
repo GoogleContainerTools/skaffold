@@ -78,14 +78,40 @@ File deletion will always cause a complete rebuild.
 
 ### Auto sync mode
 
-In auto sync mode, Skaffold automatically generates sync rules for known file types.  Changes to other file types will
-result in a complete rebuild.
+In auto sync mode, Skaffold automatically generates sync rules for known file types. 
+Changes to other file types will result in a complete rebuild.
 
 #### Buildpacks
 
-Skaffold requires special collaboration from the Buildpacks for the `auto` sync to work.
-The [gcr.io/buildpacks/builder:v1](https://github.com/GoogleCloudPlatform/buildpacks) supports Skaffold
-out of the box, currently for Go, NodeJS, and Java.
+Skaffold works with Cloud Native Buildpacks builders to automatically sync and relaunch
+applications on changes to certain types of files.
+The GCP Buildpacks builder ([gcr.io/buildpacks/builder:v1](https://github.com/GoogleCloudPlatform/buildpacks))
+supports syncing the following types of source files:
+
+- Go: *.go
+- Java: *.java, *.kt, *.scala, *.groovy, *.clj
+- NodeJS: *.js, *.mjs, *.coffee, *.litcoffee, *.json
+
+The GCP Buildpacks builder will detect the changed files and
+automatically rebuild and relaunch the application. 
+Changes to other file types trigger an image rebuild.
+
+##### Disable Auto Sync for Buildpacks
+
+To disable auto sync, set `sync.auto = false`:
+
+```
+artifacts:
+- image: xxx
+  buildpacks:
+    builder: gcr.io/buildpacks/builder:v1
+  sync: 
+    auto: false   # disable buildpacks auto-sync
+```
+
+##### How it works
+
+Skaffold requires special collaboration from buildpacks for the `auto` sync to work.
 
 Cloud Native Buildpacks set a `io.buildpacks.build.metadata` label on the images they create.
 This labels points to json description of the [Bill-of-Materials, aka BOM](https://github.com/buildpacks/spec/blob/master/buildpack.md#bill-of-materials-toml) of the build.
@@ -94,7 +120,7 @@ have to output the sync rules based on their exploration of the source and the b
 Those sync rules will then be used by Skaffold without the user having to configure them manually.
 
 Another thing the Buildpacks have to do is support the `GOOGLE_DEVMODE` environment variable. Skaffold will
-set it to `1` when running `skaffold dev` with sync configured to `auto: {}`. The Buildpacks can then use that
+set it to `1` when running `skaffold dev` with sync configured to `auto: true`. The Buildpacks can then use that
 signal to change the way the application is built so that it reloads the changes or rebuilds the app on each change.
 
 #### Jib

@@ -1,3 +1,79 @@
+# v1.15.0 Release - 09/29/2020
+
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.15.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+ 
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.15.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+ 
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.15.0/skaffold-windows-amd64.exe
+ 
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.15.0`
+ 
+Note: This release comes with a new config version, `v2beta8`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+
+Highlights:
+* `skaffold debug` now supports Helm applications!
+* Quickstart docs now open directly in Cloud Shell
+* Skaffold now falls back to Kubectl's built-in Kustomize if standalone binary not present
+* Helm deployments can now optionally create a namespace before deploying
+* Kubectl and Kustomize deployments can now configure a default namespace
+
+New Features:
+* skaffold deploy -t flag [#4778](https://github.com/GoogleContainerTools/skaffold/pull/4778)
+* Add fallback to kubectl kustomize if kustomize binary isn't present [#4484](https://github.com/GoogleContainerTools/skaffold/pull/4484)
+* Support docker build --secret flag [#4731](https://github.com/GoogleContainerTools/skaffold/pull/4731)
+* Adds support for `debug` for Helm [#4732](https://github.com/GoogleContainerTools/skaffold/pull/4732)
+* Support configuring default namespace for kubectl/kustomize deployers [#4374](https://github.com/GoogleContainerTools/skaffold/pull/4374)
+* Add option for helm deployments to create namespace [#4765](https://github.com/GoogleContainerTools/skaffold/pull/4765)
+
+Fixes:
+* Fix `skaffold filter` to handle multiple yaml documents [#4829](https://github.com/GoogleContainerTools/skaffold/pull/4829)
+* Fix `skaffold build | skaffold deploy` with `SKAFFOLD_DEFAULT_REPO` rewrites image name twice [#4817](https://github.com/GoogleContainerTools/skaffold/pull/4817)
+* Ensure Windows console color enablement [#4798](https://github.com/GoogleContainerTools/skaffold/pull/4798)
+* Add option to skaffold run similar to "skaffold build -b" [#4734](https://github.com/GoogleContainerTools/skaffold/pull/4734)
+* Return error for invalid dockerfile instruction "COPY" with no arguments [#4795](https://github.com/GoogleContainerTools/skaffold/pull/4795)
+* Make FakeAPIClient threadsafe [#4790](https://github.com/GoogleContainerTools/skaffold/pull/4790)
+* Pass correct build args to `CreateDockerTarContext` [#4768](https://github.com/GoogleContainerTools/skaffold/pull/4768)
+* Surface error for render [#4758](https://github.com/GoogleContainerTools/skaffold/pull/4758)
+
+Updates:
+* [kpt deployer] Customize the manipulated resource directory. [#4819](https://github.com/GoogleContainerTools/skaffold/pull/4819)
+* Pass docker.Config instead of InsecureRegistries [#4755](https://github.com/GoogleContainerTools/skaffold/pull/4755)
+* Move deployers into separate packages [#4812](https://github.com/GoogleContainerTools/skaffold/pull/4812)
+* [kpt deployer] Add "local-config" annotation to kpt fn configs. [#4803](https://github.com/GoogleContainerTools/skaffold/pull/4803)
+* [kpt deployer] Improve skaffold.yaml docs. [#4799](https://github.com/GoogleContainerTools/skaffold/pull/4799)
+* Try to import docker images before falling back to building [#3891](https://github.com/GoogleContainerTools/skaffold/pull/3891)
+* Make flag order deterministic for helm's `--setFiles` [#4779](https://github.com/GoogleContainerTools/skaffold/pull/4779)
+* Expand home directory for setFiles in helm deployment [#4619](https://github.com/GoogleContainerTools/skaffold/pull/4619)
+* Pass a context to DefaultAuthHelper.GetAllConfigs() [#4760](https://github.com/GoogleContainerTools/skaffold/pull/4760)
+
+Docs Updates:
+* Add Cloud Shell for simpler Quickstart [#4830](https://github.com/GoogleContainerTools/skaffold/pull/4830)
+* Add design proposal for supporting dependencies between build artifacts [#4794](https://github.com/GoogleContainerTools/skaffold/pull/4794)
+* Document how to disable autosync for buildpacks [#4805](https://github.com/GoogleContainerTools/skaffold/pull/4805)
+* Clarify usage of ArtifactOverrides, ImageStrategy [#4487](https://github.com/GoogleContainerTools/skaffold/pull/4487)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Alexander Lyon
+- Andreas Sommer
+- Andrey Shlykov
+- Brian de Alwis
+- David Gageot
+- Gaurav
+- Kri5
+- Marlon Gamez
+- Nick Kubala
+- Paul "TBBle" Hampson
+- Thomas Strömberg
+- Yuwen Ma
+- ilya-zuyev
+
 # v1.14.0 Release - 09/02/2020
 
 **Linux**

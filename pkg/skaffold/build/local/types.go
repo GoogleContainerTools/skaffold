@@ -31,11 +31,13 @@ import (
 
 // Builder uses the host docker daemon to build and tag the image.
 type Builder struct {
-	cfg latest.LocalBuild
+	local latest.LocalBuild
 
+	cfg                docker.Config
 	localDocker        docker.LocalDaemon
 	localCluster       bool
 	pushImages         bool
+	tryImportMissing   bool
 	prune              bool
 	pruneChildren      bool
 	skipTests          bool
@@ -44,6 +46,7 @@ type Builder struct {
 	builtImages        []string
 	insecureRegistries map[string]bool
 	muted              build.Muted
+	localPruner        *pruner
 }
 
 // external dependencies are wrapped
@@ -88,16 +91,21 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		pushImages = *cfg.Pipeline().Build.LocalBuild.Push
 	}
 
+	tryImportMissing := cfg.Pipeline().Build.LocalBuild.TryImportMissing
+
 	return &Builder{
-		cfg:                *cfg.Pipeline().Build.LocalBuild,
+		local:              *cfg.Pipeline().Build.LocalBuild,
+		cfg:                cfg,
 		kubeContext:        cfg.GetKubeContext(),
 		localDocker:        localDocker,
 		localCluster:       localCluster,
 		pushImages:         pushImages,
+		tryImportMissing:   tryImportMissing,
 		skipTests:          cfg.SkipTests(),
 		mode:               cfg.Mode(),
 		prune:              cfg.Prune(),
 		pruneChildren:      !cfg.NoPruneChildren(),
+		localPruner:        newPruner(localDocker, !cfg.NoPruneChildren()),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		muted:              cfg.Muted(),
 	}, nil
@@ -107,7 +115,21 @@ func (b *Builder) PushImages() bool {
 	return b.pushImages
 }
 
+func (b *Builder) TryImportMissing() bool {
+	return b.tryImportMissing
+}
+
 // Prune uses the docker API client to remove all images built with Skaffold
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
-	return b.localDocker.Prune(ctx, out, b.builtImages, b.pruneChildren)
+	var toPrune []string
+	seen := make(map[string]bool)
+
+	for _, img := range b.builtImages {
+		if !seen[img] && !b.localPruner.isPruned(img) {
+			toPrune = append(toPrune, img)
+			seen[img] = true
+		}
+	}
+	_, err := b.localDocker.Prune(ctx, toPrune, b.pruneChildren)
+	return err
 }

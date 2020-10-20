@@ -32,7 +32,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 	}
 
 	if b.pushImages {
-		return docker.RemoteDigest(tag, b.insecureRegistries)
+		return docker.RemoteDigest(tag, b.cfg)
 	}
 
 	imageID, err := b.localDocker.ImageID(ctx, tag)

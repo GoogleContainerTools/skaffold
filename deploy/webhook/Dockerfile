@@ -38,9 +38,10 @@ RUN chmod +x kubectl
 
 FROM node:10.15.3-stretch as runtime_deps
 ENV FIREBASE_TOOLS_VERSION 7.13.1
-RUN npm install -g firebase-tools@${FIREBASE_TOOLS_VERSION} postcss-cli
+RUN npm install -g firebase-tools@${FIREBASE_TOOLS_VERSION} postcss postcss-cli
 WORKDIR /app/docs
-RUN npm install autoprefixer
+ENV AUTOPREFIXER_VERSION 9.8.6
+RUN npm install autoprefixer@${AUTOPREFIXER_VERSION}
 COPY --from=download-docsy /docsy ./themes/docsy
 COPY --from=download-hugo /hugo /usr/local/bin/
 COPY --from=download-kubectl /kubectl /usr/local/bin/

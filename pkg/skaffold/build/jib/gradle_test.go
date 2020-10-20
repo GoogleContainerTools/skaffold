@@ -56,6 +56,13 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 			),
 		},
 		{
+			description: "build with custom base image",
+			artifact:    &latest.JibArtifact{BaseImage: "docker://busybox"},
+			commands: testutil.CmdRun(
+				"gradle fake-gradleBuildArgs-for-jibDockerBuild -Djib.from.image=docker://busybox --image=img:tag",
+			),
+		},
+		{
 			description: "fail build",
 			artifact:    &latest.JibArtifact{},
 			commands: testutil.CmdRunErr(
@@ -75,7 +82,7 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 			api := (&testutil.FakeAPIClient{}).Add("img:tag", "imageID")
 			localDocker := fakeLocalDaemon(api)
 
-			builder := NewArtifactBuilder(localDocker, nil, false, false)
+			builder := NewArtifactBuilder(localDocker, &mockConfig{}, false, false)
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
@@ -115,6 +122,13 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 			),
 		},
 		{
+			description: "build with custom base image",
+			artifact:    &latest.JibArtifact{BaseImage: "docker://busybox"},
+			commands: testutil.CmdRun(
+				"gradle fake-gradleBuildArgs-for-jib -Djib.from.image=docker://busybox --image=img:tag",
+			),
+		},
+		{
 			description: "fail build",
 			artifact:    &latest.JibArtifact{},
 			commands: testutil.CmdRunErr(
@@ -131,7 +145,7 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 			t.NewTempDir().Touch("build.gradle").Chdir()
 			t.Override(&gradleBuildArgsFunc, getGradleBuildArgsFuncFake(t, MinimumJibGradleVersion))
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(&docker.RemoteDigest, func(identifier string, _ map[string]bool) (string, error) {
+			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config) (string, error) {
 				if identifier == "img:tag" {
 					return "digest", nil
 				}
@@ -139,7 +153,7 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 			})
 			localDocker := fakeLocalDaemon(&testutil.FakeAPIClient{})
 
-			builder := NewArtifactBuilder(localDocker, nil, true, false)
+			builder := NewArtifactBuilder(localDocker, &mockConfig{}, true, false)
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
@@ -337,6 +351,8 @@ func TestGenerateGradleBuildArgs(t *testing.T) {
 		{"multi module", latest.JibArtifact{Project: "project"}, "image", false, nil, []string{"fake-gradleBuildArgs-for-project-for-testTask", "--image=image"}},
 		{"multi module without tests", latest.JibArtifact{Project: "project"}, "image", true, nil, []string{"fake-gradleBuildArgs-for-project-for-testTask-skipTests", "--image=image"}},
 		{"multi module without tests with insecure registries", latest.JibArtifact{Project: "project"}, "registry.tld/image", true, map[string]bool{"registry.tld": true}, []string{"fake-gradleBuildArgs-for-project-for-testTask-skipTests", "-Djib.allowInsecureRegistries=true", "--image=registry.tld/image"}},
+		{"single module with custom base image", latest.JibArtifact{BaseImage: "docker://busybox"}, "image", false, nil, []string{"fake-gradleBuildArgs-for-testTask", "-Djib.from.image=docker://busybox", "--image=image"}},
+		{"multi module with custom base image", latest.JibArtifact{Project: "project", BaseImage: "docker://busybox"}, "image", false, nil, []string{"fake-gradleBuildArgs-for-project-for-testTask", "-Djib.from.image=docker://busybox", "--image=image"}},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -463,3 +479,9 @@ func getGradleBuildArgsFuncFake(t *testutil.T, expectedMinimumVersion string) fu
 		return []string{"fake-gradleBuildArgs-for-" + a.Project + "-for-" + task + testString}
 	}
 }
+
+type mockConfig struct {
+	Config
+}
+
+func (c *mockConfig) GetInsecureRegistries() map[string]bool { return nil }

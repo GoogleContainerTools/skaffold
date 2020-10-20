@@ -129,7 +129,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	event.DevLoopInProgress(r.devIteration)
 	defer func() { r.devIteration++ }()
-
+	g := getTransposeGraph(artifacts)
 	// Watch artifacts
 	start := time.Now()
 	color.Default.Fprintln(out, "Listing files to watch...")
@@ -148,17 +148,17 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		default:
 			if err := r.monitor.Register(
 				func() ([]string, error) {
-					return build.DependenciesForArtifact(ctx, artifact, r.runCtx.GetInsecureRegistries())
+					return build.DependenciesForArtifact(ctx, artifact, r.runCtx)
 				},
 				func(e filemon.Events) {
-					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx.GetInsecureRegistries())
+					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx, len(g[artifact.ImageName]))
 					switch {
 					case err != nil:
 						logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
 					case s != nil:
 						r.changeSet.AddResync(s)
 					default:
-						r.changeSet.AddRebuild(artifact)
+						addRebuild(g, artifact, r.changeSet.AddRebuild, r.runCtx.Opts.IsTargetImage)
 					}
 				},
 			); err != nil {
@@ -245,4 +245,28 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	return r.listener.WatchForChanges(ctx, out, func() error {
 		return r.doDev(ctx, out, logger, forwarderManager)
 	})
+}
+
+// graph represents the artifact graph
+type graph map[string][]*latest.Artifact
+
+// getTransposeGraph builds the transpose of the graph represented by the artifacts slice, with edges directed from required artifact to the dependent artifact.
+func getTransposeGraph(artifacts []*latest.Artifact) graph {
+	g := make(map[string][]*latest.Artifact)
+	for _, a := range artifacts {
+		for _, d := range a.Dependencies {
+			g[d.ImageName] = append(g[d.ImageName], a)
+		}
+	}
+	return g
+}
+
+// addRebuild runs the `rebuild` function for all target artifacts in the transitive closure on the source `artifact` in graph `g`.
+func addRebuild(g graph, artifact *latest.Artifact, rebuild func(*latest.Artifact), isTarget func(*latest.Artifact) bool) {
+	if isTarget(artifact) {
+		rebuild(artifact)
+	}
+	for _, a := range g[artifact.ImageName] {
+		addRebuild(g, a, rebuild, isTarget)
+	}
 }

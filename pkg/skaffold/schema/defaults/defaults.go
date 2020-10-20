@@ -23,16 +23,18 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 const (
 	defaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
 	defaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
 	defaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
-	defaultCloudBuildKanikoImage = constants.DefaultKanikoImage
+	defaultCloudBuildKanikoImage = kaniko.DefaultImage
 	defaultCloudBuildPackImage   = "gcr.io/k8s-skaffold/pack"
 )
 
@@ -67,6 +69,10 @@ func Set(c *latest.SkaffoldConfig) error {
 
 		case a.BuildpackArtifact != nil:
 			setBuildpackArtifactDefaults(a.BuildpackArtifact)
+		}
+
+		for _, d := range a.Dependencies {
+			setDefaultArtifactDependencyAlias(d)
 		}
 	}
 
@@ -230,13 +236,13 @@ func setDefaultSync(a *latest.Artifact) {
 		if len(a.Sync.Manual) == 0 && len(a.Sync.Infer) == 0 && a.Sync.Auto == nil {
 			switch {
 			case a.JibArtifact != nil || a.BuildpackArtifact != nil:
-				a.Sync.Auto = &latest.Auto{}
+				a.Sync.Auto = util.BoolPtr(true)
 			default:
 				a.Sync.Infer = []string{"**/*"}
 			}
 		}
 	} else if a.BuildpackArtifact != nil {
-		a.Sync = &latest.Sync{Auto: &latest.Auto{}}
+		a.Sync = &latest.Sync{Auto: util.BoolPtr(true)}
 	}
 }
 
@@ -265,12 +271,12 @@ func setDefaultClusterNamespace(cluster *latest.ClusterDetails) error {
 }
 
 func setDefaultClusterTimeout(cluster *latest.ClusterDetails) error {
-	cluster.Timeout = valueOrDefault(cluster.Timeout, constants.DefaultKanikoTimeout)
+	cluster.Timeout = valueOrDefault(cluster.Timeout, kaniko.DefaultTimeout)
 	return nil
 }
 
 func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
-	cluster.PullSecretMountPath = valueOrDefault(cluster.PullSecretMountPath, constants.DefaultKanikoSecretMountPath)
+	cluster.PullSecretMountPath = valueOrDefault(cluster.PullSecretMountPath, kaniko.DefaultSecretMountPath)
 	if cluster.PullSecretPath != "" {
 		absPath, err := homedir.Expand(cluster.PullSecretPath)
 		if err != nil {
@@ -282,7 +288,7 @@ func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
 			uid, _ := uuid.NewUUID()
 			random = uid.String()
 		}
-		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName+random)
+		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, kaniko.DefaultSecretName+random)
 		return nil
 	}
 	return nil
@@ -299,7 +305,7 @@ func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
 		random = uid.String()
 	}
 
-	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName+random)
+	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, kaniko.DefaultDockerConfigSecretName+random)
 
 	if cluster.DockerConfig.Path == "" {
 		return nil
@@ -321,7 +327,7 @@ func defaultToKanikoArtifact(artifact *latest.Artifact) {
 }
 
 func setKanikoArtifactDefaults(a *latest.KanikoArtifact) {
-	a.Image = valueOrDefault(a.Image, constants.DefaultKanikoImage)
+	a.Image = valueOrDefault(a.Image, kaniko.DefaultImage)
 	a.DockerfilePath = valueOrDefault(a.DockerfilePath, constants.DefaultDockerfilePath)
 	a.InitImage = valueOrDefault(a.InitImage, constants.DefaultBusyboxImage)
 }
@@ -369,5 +375,11 @@ func setDefaultPortForwardNamespace(pf *latest.PortForwardResource) {
 func setDefaultAddress(pf *latest.PortForwardResource) {
 	if pf.Address == "" {
 		pf.Address = constants.DefaultPortForwardAddress
+	}
+}
+
+func setDefaultArtifactDependencyAlias(d *latest.ArtifactDependency) {
+	if d.Alias == "" {
+		d.Alias = d.ImageName
 	}
 }

@@ -30,7 +30,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -75,7 +77,7 @@ spec:
 		t.NewTempDir().
 			Write("deployment.yaml", test.input).
 			Chdir()
-		deployer := deploy.NewKubectlDeployer(&runcontext.RunContext{
+		deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 			WorkingDir: ".",
 			Cfg: latest.Pipeline{
 				Deploy: latest.DeployConfig{
@@ -87,8 +89,9 @@ spec:
 				},
 			},
 		}, nil)
+		t.RequireNoError(err)
 		var b bytes.Buffer
-		err := deployer.Render(context.Background(), &b, test.builds, false, test.renderPath)
+		err = deployer.Render(context.Background(), &b, test.builds, false, test.renderPath)
 
 		t.CheckNoError(err)
 		dat, err := ioutil.ReadFile(test.renderPath)
@@ -229,7 +232,7 @@ spec:
 				Write("deployment.yaml", test.input).
 				Chdir()
 
-			deployer := deploy.NewKubectlDeployer(&runcontext.RunContext{
+			deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
 				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
@@ -240,9 +243,13 @@ spec:
 						},
 					},
 				},
+				Opts: config.SkaffoldOptions{
+					AddSkaffoldLabels: true,
+				},
 			}, nil)
+			t.RequireNoError(err)
 			var b bytes.Buffer
-			err := deployer.Render(context.Background(), &b, test.builds, false, "")
+			err = deployer.Render(context.Background(), &b, test.builds, false, "")
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedOut, b.String())
@@ -413,7 +420,7 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployer := deploy.NewHelmDeployer(&runcontext.RunContext{
+			deployer := helm.NewDeployer(&runcontext.RunContext{
 				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{

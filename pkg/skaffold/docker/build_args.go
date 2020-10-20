@@ -32,7 +32,7 @@ var (
 	nonDebugModeArgs = map[string]string{}
 	// default build args for skaffold debug mode
 	debugModeArgs = map[string]string{
-		"SKAFFOLD_GO_GCFLAGS": "'all=-N -l'", // disable build optimization for Golang
+		"SKAFFOLD_GO_GCFLAGS": "all=-N -l", // disable build optimization for Golang
 		// TODO: Add for other languages
 	}
 )

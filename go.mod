@@ -1,6 +1,6 @@
 module github.com/GoogleContainerTools/skaffold
 
-go 1.14
+go 1.15
 
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.1+incompatible
@@ -35,6 +35,7 @@ require (
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
 	github.com/docker/go-connections v0.4.0
+	github.com/dustin/go-humanize v1.0.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.0.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
@@ -80,9 +81,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c
 	k8s.io/api v0.18.1
 	k8s.io/apiextensions-apiserver v0.18.1 // indirect
-	k8s.io/apimachinery v0.18.1
+	k8s.io/apimachinery v0.19.2
 	k8s.io/client-go v0.18.1
 	k8s.io/kubectl v0.0.0-20190831163037-3b58a944563f
 	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
 	knative.dev/pkg v0.0.0-20200416021448-f68639f04b39 // indirect
+	sigs.k8s.io/yaml v1.2.0
 )

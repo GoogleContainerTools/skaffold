@@ -24,6 +24,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -66,7 +68,7 @@ type SkaffoldRunner struct {
 	cache      cache.Cache
 	changeSet  changeSet
 	runCtx     *runcontext.RunContext
-	labeller   *deploy.DefaultLabeller
+	labeller   *label.DefaultLabeller
 	builds     []build.Artifact
 
 	// podSelector is used to determine relevant pods for logging and portForwarding
@@ -81,7 +83,7 @@ type SkaffoldRunner struct {
 
 // for testing
 var (
-	newStatusCheck = deploy.NewStatusChecker
+	newStatusCheck = status.NewStatusChecker
 )
 
 // HasDeployed returns true if this runner has deployed something.

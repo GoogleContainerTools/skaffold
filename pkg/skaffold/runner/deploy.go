@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
@@ -59,14 +59,14 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
-	if config.IsImageLoadingRequired(r.runCtx.GetKubeContext()) {
+	if r.imagesAreLocal && config.IsImageLoadingRequired(r.runCtx.GetKubeContext()) {
 		err := r.loadImagesIntoCluster(ctx, out, artifacts)
 		if err != nil {
 			return err
 		}
 	}
 
-	deployOut, postDeployFn, err := deploy.WithLogFile(time.Now().Format(deploy.TimeFormat)+".log", out, r.runCtx.Muted())
+	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	if err != nil {
 		return err
 	}
@@ -74,15 +74,21 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	event.DeployInProgress()
 	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
 	r.hasDeployed = true
-	postDeployFn(err)
+	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
 		return err
 	}
 
+	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
+	postStatusCheckFn()
+	if err != nil {
+		return err
+	}
 	event.DeployComplete()
 	r.runCtx.UpdateNamespaces(namespaces)
-	return r.performStatusCheck(ctx, out)
+	sErr := r.performStatusCheck(ctx, statusCheckOut)
+	return sErr
 }
 
 func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {

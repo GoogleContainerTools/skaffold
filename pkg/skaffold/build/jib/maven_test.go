@@ -56,6 +56,13 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 			),
 		},
 		{
+			description: "build with custom base image",
+			artifact:    &latest.JibArtifact{BaseImage: "docker://busybox"},
+			commands: testutil.CmdRun(
+				"mvn fake-mavenBuildArgs-for-dockerBuild -Djib.from.image=docker://busybox -Dimage=img:tag",
+			),
+		},
+		{
 			description: "fail build",
 			artifact:    &latest.JibArtifact{},
 			commands: testutil.CmdRunErr(
@@ -75,7 +82,7 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 			api := (&testutil.FakeAPIClient{}).Add("img:tag", "imageID")
 			localDocker := fakeLocalDaemon(api)
 
-			builder := NewArtifactBuilder(localDocker, nil, false, false)
+			builder := NewArtifactBuilder(localDocker, &mockConfig{}, false, false)
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
@@ -111,6 +118,11 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 			commands:    testutil.CmdRun("mvn fake-mavenBuildArgs-for-module-for-build -Dimage=img:tag"),
 		},
 		{
+			description: "build with custom base image",
+			artifact:    &latest.JibArtifact{BaseImage: "docker://busybox"},
+			commands:    testutil.CmdRun("mvn fake-mavenBuildArgs-for-build -Djib.from.image=docker://busybox -Dimage=img:tag"),
+		},
+		{
 			description: "fail build",
 			artifact:    &latest.JibArtifact{},
 			commands: testutil.CmdRunErr(
@@ -127,7 +139,7 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 			t.Override(&mavenBuildArgsFunc, getMavenBuildArgsFuncFake(t, MinimumJibMavenVersion))
 			t.NewTempDir().Touch("pom.xml").Chdir()
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(&docker.RemoteDigest, func(identifier string, _ map[string]bool) (string, error) {
+			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config) (string, error) {
 				if identifier == "img:tag" {
 					return "digest", nil
 				}
@@ -135,7 +147,7 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 			})
 			localDocker := fakeLocalDaemon(&testutil.FakeAPIClient{})
 
-			builder := NewArtifactBuilder(localDocker, nil, true, false)
+			builder := NewArtifactBuilder(localDocker, &mockConfig{}, true, false)
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
@@ -325,6 +337,8 @@ func TestGenerateMavenBuildArgs(t *testing.T) {
 		{"multi module", latest.JibArtifact{Project: "module"}, "image", false, nil, []string{"fake-mavenBuildArgs-for-module-for-test-goal", "-Dimage=image"}},
 		{"multi module without tests", latest.JibArtifact{Project: "module"}, "image", true, nil, []string{"fake-mavenBuildArgs-for-module-for-test-goal-skipTests", "-Dimage=image"}},
 		{"multi module without tests with insecure-registry", latest.JibArtifact{Project: "module"}, "registry.tld/image", true, map[string]bool{"registry.tld": true}, []string{"fake-mavenBuildArgs-for-module-for-test-goal-skipTests", "-Djib.allowInsecureRegistries=true", "-Dimage=registry.tld/image"}},
+		{"single module with custom base image", latest.JibArtifact{BaseImage: "docker://busybox"}, "image", false, nil, []string{"fake-mavenBuildArgs-for-test-goal", "-Djib.from.image=docker://busybox", "-Dimage=image"}},
+		{"multi module with custom base image", latest.JibArtifact{Project: "module", BaseImage: "docker://busybox"}, "image", false, nil, []string{"fake-mavenBuildArgs-for-module-for-test-goal", "-Djib.from.image=docker://busybox", "-Dimage=image"}},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
