@@ -135,11 +135,11 @@ func TestBuildDependenciesCache(t *testing.T) {
 		},
 	}
 
+	skaffold.Build("--cache-artifacts=true", "-p", "concurrency-0").InDir("testdata/build-dependencies").RunOrFail(t)
+	checkImagesExist(t)
+
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			skaffold.Build("--cache-artifacts=true", "-p", "concurrency-0").InDir("testdata/build-dependencies").RunOrFail(t)
-			checkImagesExist(t)
-
 			// modify file `foo` to invalidate cache for target artifacts
 			for _, i := range test.change {
 				Run(t, fmt.Sprintf("testdata/build-dependencies/app%d", i), "sh", "-c", fmt.Sprintf("echo %s > foo", uuid.New().String()))
@@ -163,11 +163,11 @@ func TestBuildDependenciesCache(t *testing.T) {
 			}
 			checkImagesExist(t)
 		})
+	}
 
-		// revert file changes
-		for _, i := range test.change {
-			Run(t, fmt.Sprintf("testdata/build-dependencies/app%d", i), "sh", "-c", "> foo")
-		}
+	// revert file changes
+	for i := 1; i <= 4; i++ {
+		Run(t, fmt.Sprintf("testdata/build-dependencies/app%d", i), "sh", "-c", "> foo")
 	}
 }
 
