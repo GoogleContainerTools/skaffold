@@ -120,7 +120,7 @@ profiles:
 **Please refer to the yaml reference for all that you can specify in skaffold.yaml file**
 
 
-## **Step 6: Development & Testing locally**
+**Step 6: Development & Testing locally**
 
 Before we move on to setting up the CI pipeline, we should test it out locally. Use **skaffold run** if you are deploying it to the cluster, **skaffold build **to just build and push the artifacts, **skaffold dev **if you are developing (this will enable auto reload on changes) or debug using **skaffold debug**
 
@@ -129,7 +129,7 @@ You can find docs about all these workflows here: [https://skaffold.dev/docs/wor
 Also, note that you can also set up file synchronization to enable faster development workflows. You can read more about that here: [https://skaffold.dev/docs/pipeline-stages/filesync/](https://skaffold.dev/docs/pipeline-stages/filesync/)
 
 
-# **Step 7: Getting the CI pipeline setup**
+**Step 7: Getting the CI pipeline setup**
 
 Now that we have skaffold ready and working locally, the CI pipeline requires little to no effort since it will just call skaffold to do all the builds and deployments.
 
@@ -184,7 +184,7 @@ This works equally well irrespective of whether you choose the Docker Executor (
 **NOTE:** If you are running Skaffold using Docker, make sure that you are running the runner with appropriate permissions or pod security policies since running DIND requires access to the Docker socket and being in privileged mode which might actually tend to be insecure. An alternative can be to use kaniko or custom builders like Buildah for building the image.
 
 
-## **Step 9: Using DIND Service (Optional)**
+**Step 8: Using DIND Service (Optional)**
 
 Docker images are not cached if running using DIND and this can be very slow since it has to download the images again and again for every build even if some layers are already available.
 
@@ -281,6 +281,6 @@ spec:
 And we would need to pass the URL to the DIND service when we do builds in the pipeline and all the caching will happen in the DIND storage speeding up the pipeline a lot. Make sure that you clean up the DIND storage periodically or setup cleanup scripts for the same else it might fill up soon.
 
 
-## **Step 8: That’s all folks**
+**Step 9: That’s all folks**
 
 Hope this post was informative. Good luck with your journey with Skaffold.
