@@ -211,6 +211,7 @@ func fileHasher(p string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
+// sortedDependencies returns the dependencies' corresponding Artifacts as sorted by their image name.
 func sortedDependencies(deps []*latest.ArtifactDependency, artifacts Artifacts) []*latest.Artifact {
 	var keys []string
 	for _, d := range deps {
