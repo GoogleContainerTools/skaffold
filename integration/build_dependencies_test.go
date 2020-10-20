@@ -150,6 +150,7 @@ func TestBuildDependenciesCache(t *testing.T) {
 			}
 			log := string(out)
 
+			// TODO: [#4927] Instead of using the log messages we should use the event api to validate cache hits and misses.
 			for i := 1; i <= 4; i++ {
 				if !contains(test.rebuilt, i) && !strings.Contains(log, fmt.Sprintf("image%d: Found Locally", i)) {
 					logrus.Info("build output: ", string(out))
