@@ -796,7 +796,9 @@ For Cancelled Error code, use range 800 to 850.
 | DEVINIT_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
 | STATUSCHECK_USER_CANCELLED | 800 | User cancelled the skaffold dev run |
 | STATUSCHECK_DEADLINE_EXCEEDED | 801 | Deadline for status check exceeded |
-| DEPLOY_CLUSTER_CONNECTION_ERR | 901 | Deploy errors |
+| BUILD_CANCELLED | 802 | Build cancelled due to user cancellation or one or more build failed. |
+| DEPLOY_CANCELLED | 803 | Deploy cancelled due to user cancellation or one or more deployers failed. |
+| DEPLOY_CLUSTER_CONNECTION_ERR | 901 | Cluster connection errors |
 
 
 
@@ -815,6 +817,7 @@ Enum for Suggestion codes
 | DOCKER_AUTH_CONFIGURE | 104 |  |
 | CHECK_GCLOUD_PROJECT | 105 |  |
 | CHECK_DOCKER_RUNNING | 106 |  |
+| CHECK_KUBE_CONFIG | 201 | Kube config error |
 | CHECK_CONTAINER_LOGS | 301 | Container run error |
 | CHECK_READINESS_PROBE | 302 | Pod Health check error |
 | CHECK_CONTAINER_IMAGE | 303 | Check Container image |

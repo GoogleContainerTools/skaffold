@@ -31,7 +31,7 @@ func re(s string) *regexp.Regexp {
 
 type problem struct {
 	regexp      *regexp.Regexp
-	description string
+	description func(error) string
 	errCode     proto.StatusCode
 	suggestion  func(opts config.SkaffoldOptions) []*proto.Suggestion
 }
@@ -39,15 +39,29 @@ type problem struct {
 // Build Problems are Errors in build phase
 var knownBuildProblems = []problem{
 	{
-		regexp:      re(fmt.Sprintf(".*%s.* denied: .*", PushImageErrPrefix)),
-		errCode:     proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
-		description: "Build Failed. No push access to specified image repository",
-		suggestion:  suggestBuildPushAccessDeniedAction,
+		regexp:  re(fmt.Sprintf(".*%s.* denied: .*", PushImageErr)),
+		errCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
+		description: func(error) string {
+			return "Build Failed. No push access to specified image repository"
+		},
+		suggestion: suggestBuildPushAccessDeniedAction,
 	},
 	{
-		regexp:      re(fmt.Sprintf(".*%s.* unknown: Project", PushImageErrPrefix)),
-		description: "Build Failed",
-		errCode:     proto.StatusCode_BUILD_PROJECT_NOT_FOUND,
+		regexp:  re(BuildCancelled),
+		errCode: proto.StatusCode_BUILD_CANCELLED,
+		description: func(error) string {
+			return "Build Cancelled."
+		},
+		suggestion: func(config.SkaffoldOptions) []*proto.Suggestion {
+			return nil
+		},
+	},
+	{
+		regexp: re(fmt.Sprintf(".*%s.* unknown: Project", PushImageErr)),
+		description: func(error) string {
+			return "Build Failed"
+		},
+		errCode: proto.StatusCode_BUILD_PROJECT_NOT_FOUND,
 		suggestion: func(config.SkaffoldOptions) []*proto.Suggestion {
 			return []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_GCLOUD_PROJECT,
@@ -55,12 +69,29 @@ var knownBuildProblems = []problem{
 			}}
 		},
 	},
+	{
+		regexp:  re(DockerConnectionFailed),
+		errCode: proto.StatusCode_BUILD_DOCKER_DAEMON_NOT_RUNNING,
+		description: func(err error) string {
+			matchExp := re(DockerConnectionFailed)
+			if match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err)); len(match) >= 2 {
+				return fmt.Sprintf("Build Failed. %s", match[1])
+			}
+			return "Build Failed. Could not connect to Docker daemon"
+		},
+		suggestion: func(config.SkaffoldOptions) []*proto.Suggestion {
+			return []*proto.Suggestion{{
+				SuggestionCode: proto.SuggestionCode_CHECK_DOCKER_RUNNING,
+				Action:         "Please check if docker is running",
+			}}
+		},
+	},
 }
 
-// Deploy errors in deployment phase
+// Deploy Problems in deployment phase
 var knownDeployProblems = []problem{
 	{
-		regexp:      re(fmt.Sprintf(".*%s.* Uanable to connect: .*", ClusterConnectErrPrefix)),
+		regexp:      re(fmt.Sprintf(".*%s.* Uanable to connect: .*", PushImageErrPrefix)),
 		errCode:     proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
 		description: "Deploy Failed.",
 		suggestion:  suggestDeployClusterConnectonErrorAction,

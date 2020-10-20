@@ -501,12 +501,6 @@ enum StatusCode {
     // Deadline for status check exceeded
     STATUSCHECK_DEADLINE_EXCEEDED = 801;
 
-    // Build cancelled due to user cancellation or one or more build failed.
-    BUILD_CANCELLED = 802;
-
-    // Deploy cancelled due to user cancellation or one or more deployers failed.
-    DEPLOY_CANCELLED = 803;
-
     // Deploy errors
 
     // Cluster connection errors
@@ -530,8 +524,8 @@ enum SuggestionCode {
 
     // Deploy error suggestion codes
 
-    // Kube config error
-    CHECK_KUBE_CONFIG = 201;
+    //
+    CHECK_CUBE_CONFIG = 201;
 
     // Container Run time error
 

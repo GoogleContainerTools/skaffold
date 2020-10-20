@@ -22,13 +22,12 @@ import (
 )
 
 const (
-	PushImageErr = "could not push image"
-	// Error Prefix matches error thrown by Docker
-	// See https://github.com/moby/moby/blob/master/client/errors.go#L18
-	DockerConnectionFailed = ".*(Cannot connect to the Docker daemon.*) Is"
+	PushImageErrPrefix = "could not push image"
+)
 
-	// Build cancelled due to other build failures
-	BuildCancelled = ".*context canceled.*"
+var (
+	// for testing
+	getConfigForCurrentContext = config.GetConfigForCurrentKubectx
 )
 
 func suggestBuildPushAccessDeniedAction(opts config.SkaffoldOptions) []*proto.Suggestion {

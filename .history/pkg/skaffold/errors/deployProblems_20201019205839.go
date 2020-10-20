@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	// Unable to connect to cluster
-	ClusterConnectErrPrefix = "Could not connect to the cluster."
+	//
+	PushImageErr = "could not push image"
 )
 
 func suggestDeployClusterConnectonErrorAction(opts config.SkaffoldOptions) []*proto.Suggestion {

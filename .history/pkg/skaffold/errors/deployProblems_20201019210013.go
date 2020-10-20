@@ -23,7 +23,7 @@ import (
 
 const (
 	// Unable to connect to cluster
-	ClusterConnectErrPrefix = "Could not connect to the cluster."
+	ClusterConnec tErr = "Could not connect to the cluster."
 )
 
 func suggestDeployClusterConnectonErrorAction(opts config.SkaffoldOptions) []*proto.Suggestion {

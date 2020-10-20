@@ -22,8 +22,13 @@ import (
 )
 
 const (
-	// Unable to connect to cluster
-	ClusterConnectErrPrefix = "Could not connect to the cluster."
+	PushImageErr = "could not push image"
+	// Error Prefix matches error thrown by Docker
+	// See https://github.com/moby/moby/blob/master/client/errors.go#L18
+	DockerConnectionFailed = ".*(Cannot connect to the Docker daemon.*) Is"
+
+	// Build cancelled due to other build failures
+	BuildCancelled = ".*context canceled.*"
 )
 
 func suggestDeployClusterConnectonErrorAction(opts config.SkaffoldOptions) []*proto.Suggestion {

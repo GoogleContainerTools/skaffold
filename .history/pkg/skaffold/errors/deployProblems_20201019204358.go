@@ -21,16 +21,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
-const (
-	// Unable to connect to cluster
-	ClusterConnectErrPrefix = "Could not connect to the cluster."
-)
-
 func suggestDeployClusterConnectonErrorAction(opts config.SkaffoldOptions) []*proto.Suggestion {
 	if defaultRepo := opts.KubeConfig; defaultRepo != "" {
 		suggestions := []*proto.Suggestion{{
-			SuggestionCode: proto.SuggestionCode_CHECK_KUBE_CONFIG,
-			Action:         "Check your KubeConfig.",
+			SuggestionCode: proto.SuggestionCode_CHECK_CUBE_CONFIG,
+			Action:         "Check your KubeConfig connection.",
 		}}
 		return suggestions
 	}
