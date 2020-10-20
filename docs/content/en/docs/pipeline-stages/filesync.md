@@ -98,20 +98,15 @@ Changes to other file types trigger an image rebuild.
 
 ##### Disable Auto Sync for Buildpacks
 
-To disable auto sync, simply provide a manual sync rule.  It does
-not matter if the sync rule does not match any actual files.
-For example:
+To disable auto sync, set `sync.auto = false`:
 
 ```
 artifacts:
 - image: xxx
   buildpacks:
     builder: gcr.io/buildpacks/builder:v1
-  # disable buildpacks auto-sync
   sync: 
-    manual: 
-    - src: .
-      dest: .
+    auto: false   # disable buildpacks auto-sync
 ```
 
 ##### How it works
@@ -125,7 +120,7 @@ have to output the sync rules based on their exploration of the source and the b
 Those sync rules will then be used by Skaffold without the user having to configure them manually.
 
 Another thing the Buildpacks have to do is support the `GOOGLE_DEVMODE` environment variable. Skaffold will
-set it to `1` when running `skaffold dev` with sync configured to `auto: {}`. The Buildpacks can then use that
+set it to `1` when running `skaffold dev` with sync configured to `auto: true`. The Buildpacks can then use that
 signal to change the way the application is built so that it reloads the changes or rebuilds the app on each change.
 
 #### Jib

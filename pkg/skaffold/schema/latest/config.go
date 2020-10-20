@@ -786,7 +786,7 @@ type Sync struct {
 
 	// Auto delegates discovery of sync rules to the build system.
 	// Only available for jib and buildpacks.
-	Auto *Auto `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
+	Auto *bool `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.
@@ -805,9 +805,6 @@ type SyncRule struct {
 	// For example: `"css/"`
 	Strip string `yaml:"strip,omitempty"`
 }
-
-// Auto cannot be customized.
-type Auto struct{}
 
 // Profile is used to override any `build`, `test` or `deploy` configuration.
 type Profile struct {

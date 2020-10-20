@@ -385,10 +385,6 @@
       "description": "describes a specific build dependency for an artifact.",
       "x-intellij-html-description": "describes a specific build dependency for an artifact."
     },
-    "Auto": {
-      "description": "cannot be customized.",
-      "x-intellij-html-description": "cannot be customized."
-    },
     "BazelArtifact": {
       "required": [
         "target"
@@ -2534,7 +2530,7 @@
     "Sync": {
       "properties": {
         "auto": {
-          "$ref": "#/definitions/Auto",
+          "type": "boolean",
           "description": "delegates discovery of sync rules to the build system. Only available for jib and buildpacks.",
           "x-intellij-html-description": "delegates discovery of sync rules to the build system. Only available for jib and buildpacks."
         },

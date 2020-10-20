@@ -46,7 +46,7 @@ func env(a *latest.Artifact, mode config.RunMode, projectDescriptor project.Desc
 		return nil, fmt.Errorf("unable to evaluate env variables: %w", err)
 	}
 
-	if mode == config.RunModes.Dev && a.Sync != nil && a.Sync.Auto != nil {
+	if mode == config.RunModes.Dev && a.Sync != nil && a.Sync.Auto != nil && *a.Sync.Auto {
 		envVars = append(envVars, "GOOGLE_DEVMODE=1")
 	}
 

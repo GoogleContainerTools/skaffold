@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 const (
@@ -235,13 +236,13 @@ func setDefaultSync(a *latest.Artifact) {
 		if len(a.Sync.Manual) == 0 && len(a.Sync.Infer) == 0 && a.Sync.Auto == nil {
 			switch {
 			case a.JibArtifact != nil || a.BuildpackArtifact != nil:
-				a.Sync.Auto = &latest.Auto{}
+				a.Sync.Auto = util.BoolPtr(true)
 			default:
 				a.Sync.Infer = []string{"**/*"}
 			}
 		}
 	} else if a.BuildpackArtifact != nil {
-		a.Sync = &latest.Sync{Auto: &latest.Auto{}}
+		a.Sync = &latest.Sync{Auto: util.BoolPtr(true)}
 	}
 }
 
