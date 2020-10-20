@@ -2,7 +2,7 @@
 
 Skaffold is non-opinionated about the CI tool you should use and acts as a platform agnostic solution for both development and deploying to production.
 
-To facilitate building and deploying images in CI/CD skaffold does offer docker images which you can build on top of or if that doesn’t work, you can make your own Dockerfile and pull in skaffold and its dependencies using curl.
+To facilitate building and deploying images in CI/CD, skaffold offers docker images which you can build on top of. If that doesn’t work, you can make your own Dockerfile and pull in skaffold and its dependencies using curl.
 
 Let us have a look at how we can use Skaffold with Gitlab CI.
 
@@ -31,21 +31,21 @@ Skaffold can use your dockerfile to automatically build, tag and push images to 
 
 Skaffold supports deployment through kubectl, helm and a lot of other mechanisms. You can have a look at the yaml reference for complete list here: [https://skaffold.dev/docs/references/yaml/](https://skaffold.dev/docs/references/yaml/)
 
-So, if you choose to deploy through kubectl you must have all your yaml files ready and if you would like to deploy through helm charts, you must have all your charts ready.
+If you choose to deploy through kubectl, you must have all your yaml files ready, and if you would like to deploy through helm charts, you must have all your charts ready.
 
 **Step 3: Choosing the image and tag strategy**
 
-Skaffold automatically tags images based on different strategies as documented here: [https://skaffold.dev/docs/pipeline-stages/taggers/](https://skaffold.dev/docs/pipeline-stages/taggers/) and you might want to choose the mechanism which is right for you. By default, it uses the git sha if unspecified.
+Skaffold automatically tags images based on different strategies as documented here: [https://skaffold.dev/docs/pipeline-stages/taggers/](https://skaffold.dev/docs/pipeline-stages/taggers/). The tagging strategy used is configurable, so choose the mechanism which is right for you. By default, skaffold uses the git sha tagger.
 
-Also, if you are using helm chart as your deployment method, you might want to use the helm image strategy if you would like to follow helm specific conventions and skaffold will pass in all the details for you.
+If you are using helm as your deployer, you might want to use the helm image strategy if you would like to follow helm specific conventions, as skaffold will pass in all the details for you.
 
 **Step 4: Plugins (optional)**
 
-Another interesting thing is that skaffold also supports plugins like Helm Secrets ([https://github.com/zendesk/helm-secrets/](https://github.com/zendesk/helm-secrets/)). So, if you would like to deploy secrets that have been encrypted using KMS or any other mechanism supported by SOPS ([https://github.com/mozilla/sops](https://github.com/mozilla/sops)) you can actually set **useHelmSecrets** option to true and skaffold will handle everything automatically for you.
+Skaffold also supports plugins like Helm Secrets ([https://github.com/zendesk/helm-secrets/](https://github.com/zendesk/helm-secrets/)). So, if you would like to deploy secrets that have been encrypted using KMS or any other mechanism supported by SOPS ([https://github.com/mozilla/sops](https://github.com/mozilla/sops)) you can actually set **useHelmSecrets** option to true and skaffold will handle everything automatically for you.
 
 **Step 5: The skaffold.yaml file**
 
-Depending on the way you would like to build, deploy, your skaffold yaml file will actually change and it's quite easy to set up one. It is recommended that you set up skaffold before you setup your CI pipeline since the CI pipeline can just call skaffold to do all the builds and deployments and you can do the same locally as well.
+Your skaffold.yaml file will change depending on the way you would like to build and deploy your project. It is recommended that you set up skaffold before you setup your CI pipeline since the CI pipeline can just call skaffold to do all the builds and deployments, and you can do the same locally as well.
 
 A sample skaffold file can look something like this:
 
@@ -117,7 +117,7 @@ profiles:
 ```
 
 
-**Please refer the yaml reference for all that you can specify in skaffold.yaml file**
+**Please refer to the yaml reference for all that you can specify in skaffold.yaml file**
 
 
 ## **Step 6: Development & Testing locally**
