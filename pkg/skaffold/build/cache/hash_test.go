@@ -227,10 +227,9 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&fileHasherFunc, mockCacheHasher)
 			t.Override(&artifactConfigFunc, fakeArtifactConfig)
-			m := make(map[string]*latest.Artifact)
+			m := ToArtifacts(test.artifacts)
 
 			for _, a := range test.artifacts {
-				m[a.ImageName] = a
 				if a.DockerArtifact != nil {
 					tmpDir := t.NewTempDir()
 					tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")

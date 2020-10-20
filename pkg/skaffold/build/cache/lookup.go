@@ -31,11 +31,7 @@ import (
 
 func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifacts []*latest.Artifact) []cacheDetails {
 	details := make([]cacheDetails, len(artifacts))
-	artifactsByName := make(map[string]*latest.Artifact)
-	for _, a := range artifacts {
-		artifactsByName[a.ImageName] = a
-	}
-	h := newArtifactHasherFunc(artifactsByName, c.lister, c.cfg.Mode())
+	h := newArtifactHasherFunc(ToArtifacts(artifacts), c.lister, c.cfg.Mode())
 	var wg sync.WaitGroup
 	for i := range artifacts {
 		wg.Add(1)

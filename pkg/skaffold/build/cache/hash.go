@@ -50,6 +50,15 @@ type artifactHasher interface {
 // Artifacts is a map of [artifact image : artifact definition]
 type Artifacts map[string]*latest.Artifact
 
+// ToArtifacts creates an instance of `Artifacts` from `[]*latest.Artifact`
+func ToArtifacts(artifacts []*latest.Artifact) Artifacts {
+	m := make(map[string]*latest.Artifact)
+	for _, a := range artifacts {
+		m[a.ImageName] = a
+	}
+	return m
+}
+
 type artifactHasherImpl struct {
 	artifacts Artifacts
 	lister    DependencyLister
