@@ -267,7 +267,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 		RegistryAuth: registryAuth,
 	})
 	if err != nil {
-		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErr, ref, err)
+		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErrPrefix, ref, err)
 	}
 	defer rc.Close()
 
@@ -286,7 +286,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	}
 
 	if err := streamDockerMessages(out, rc, auxCallback); err != nil {
-		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErr, ref, err)
+		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErrPrefix, ref, err)
 	}
 
 	if digest == "" {
