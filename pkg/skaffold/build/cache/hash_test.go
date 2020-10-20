@@ -168,57 +168,57 @@ func TestGetHashForArtifact(t *testing.T) {
 
 func TestGetHashForArtifactWithDependencies(t *testing.T) {
 	tests := []struct {
-		description  string
-		dependencies map[string][]string
-		artifacts    []*latest.Artifact
-		mode         config.RunMode
-		expected     string
+		description string
+		artifacts   []*latest.Artifact
+		fileDeps    map[string][]string // keyed on artifact ImageName, returns a list of mock file dependencies.
+		mode        config.RunMode
+		expected    string
 	}{
 		{
-			description:  "hash for artifact with two dependencies",
-			dependencies: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"d"}},
+			description: "hash for artifact with two dependencies",
 			artifacts: []*latest.Artifact{
 				{ImageName: "img1", Dependencies: []*latest.ArtifactDependency{{ImageName: "img2"}, {ImageName: "img3"}}},
 				{ImageName: "img2", Dependencies: []*latest.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target2"}}},
 				{ImageName: "img3", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target3"}}},
 				{ImageName: "img4", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target4"}}},
 			},
+			fileDeps: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"d"}},
 			mode:     config.RunModes.Dev,
 			expected: "ccd159a9a50853f89ab6784530b58d658a0b349c92828eba335f1074f9a63bb3",
 		},
 		{
-			description:  "hash for artifact with two dependencies in different order",
-			dependencies: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"d"}},
+			description: "hash for artifact with two dependencies in different order",
 			artifacts: []*latest.Artifact{
 				{ImageName: "img1", Dependencies: []*latest.ArtifactDependency{{ImageName: "img3"}, {ImageName: "img2"}}},
 				{ImageName: "img2", Dependencies: []*latest.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target2"}}},
 				{ImageName: "img3", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target3"}}},
 				{ImageName: "img4", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target4"}}},
 			},
+			fileDeps: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"d"}},
 			mode:     config.RunModes.Dev,
 			expected: "ccd159a9a50853f89ab6784530b58d658a0b349c92828eba335f1074f9a63bb3",
 		},
 		{
-			description:  "hash for artifact with different dependencies (img4 builder changed)",
-			dependencies: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"d"}},
+			description: "hash for artifact with different dependencies (img4 builder changed)",
 			artifacts: []*latest.Artifact{
 				{ImageName: "img1", Dependencies: []*latest.ArtifactDependency{{ImageName: "img2"}, {ImageName: "img3"}}},
 				{ImageName: "img2", Dependencies: []*latest.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target2"}}},
 				{ImageName: "img3", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target3"}}},
 				{ImageName: "img4", ArtifactType: latest.ArtifactType{BuildpackArtifact: &latest.BuildpackArtifact{Builder: "builder"}}},
 			},
+			fileDeps: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"d"}},
 			mode:     config.RunModes.Dev,
 			expected: "26defaa1291289f40b756b83824f0549a3a9c03cca5471bd268f0ac6e499aba6",
 		},
 		{
-			description:  "hash for artifact with different dependencies (img4 files changed)",
-			dependencies: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"e"}},
+			description: "hash for artifact with different dependencies (img4 files changed)",
 			artifacts: []*latest.Artifact{
 				{ImageName: "img1", Dependencies: []*latest.ArtifactDependency{{ImageName: "img2"}, {ImageName: "img3"}}},
 				{ImageName: "img2", Dependencies: []*latest.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target2"}}},
 				{ImageName: "img3", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{Target: "target3"}}},
 				{ImageName: "img4", ArtifactType: latest.ArtifactType{BuildpackArtifact: &latest.BuildpackArtifact{}}},
 			},
+			fileDeps: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"e"}},
 			mode:     config.RunModes.Dev,
 			expected: "bab56a88d483fa97ae072b027a46681177628156839b7e390842e6243b1ac6aa",
 		},
@@ -240,7 +240,7 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 			}
 
 			depLister := func(_ context.Context, a *latest.Artifact) ([]string, error) {
-				return test.dependencies[a.ImageName], nil
+				return test.fileDeps[a.ImageName], nil
 			}
 
 			actual, err := newArtifactHasher(m, depLister, test.mode).hash(context.Background(), test.artifacts[0])
