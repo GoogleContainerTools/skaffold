@@ -312,6 +312,7 @@ It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, Re
 | fileSyncEvent | [FileSyncEvent](#proto.FileSyncEvent) |  | describes the sync status. |
 | debuggingContainerEvent | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) |  | describes the appearance or disappearance of a debugging container |
 | devLoopEvent | [DevLoopEvent](#proto.DevLoopEvent) |  | describes a start and end of a dev loop. |
+| terminationEvent | [TerminationEvent](#proto.TerminationEvent) |  | describes a skaffold termination event |
 
 
 
@@ -635,6 +636,22 @@ Suggestion defines the action a user needs to recover from an error.
 
 
 
+<a name="proto.TerminationEvent"></a>
+#### TerminationEvent
+`TerminationEvent` marks the end of the skaffold session
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [string](#string) |  | status oneof: Completed or Failed |
+| err | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
+
+
+
+
+
+
+
 <a name="proto.TriggerRequest"></a>
 #### TriggerRequest
 
@@ -789,6 +806,7 @@ For Cancelled Error code, use range 800 to 850.
 | BUILD_UNKNOWN | 506 | Build failed due to unknown reason |
 | DEVINIT_UNKNOWN | 507 | Dev Init failed due to unknown reason |
 | CLEANUP_UNKNOWN | 508 | Cleanup failed due to unknown reason |
+| INIT_UNKNOWN | 510 | Initialization of the Skaffold session failed due to unknown reason(s) |
 | SYNC_INIT_ERROR | 601 | File Sync Initialize failure |
 | DEVINIT_REGISTER_BUILD_DEPS | 701 | Failed to configure watcher for build dependencies in dev loop |
 | DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
@@ -796,8 +814,17 @@ For Cancelled Error code, use range 800 to 850.
 | DEVINIT_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
 | STATUSCHECK_USER_CANCELLED | 800 | User cancelled the skaffold dev run |
 | STATUSCHECK_DEADLINE_EXCEEDED | 801 | Deadline for status check exceeded |
-| BUILD_CANCELLED | 802 | Build cancelled due to user cancellation or one or more build failed. |
+| BUILD_CANCELLED | 802 | Build Cancelled |
 | DEPLOY_CANCELLED | 803 | Deploy cancelled due to user cancellation or one or more deployers failed. |
+| INIT_CREATE_TAGGER_ERROR | 901 | Skaffold was unable to create the configured tagger |
+| INIT_MINIKUBE_PAUSED_ERROR | 902 | Skaffold was unable to start as Minikube appears to be paused |
+| INIT_MINIKUBE_NOT_RUNNING_ERROR | 903 | Skaffold was unable to start as Minikube appears to be stopped |
+| INIT_CREATE_BUILDER_ERROR | 904 | Skaffold was unable to create a configured image builder |
+| INIT_CREATE_DEPLOYER_ERROR | 905 | Skaffold was unable to create a configured deployer |
+| INIT_CREATE_TEST_DEP_ERROR | 906 | Skaffold was unable to create a configured test |
+| INIT_CACHE_ERROR | 907 | Skaffold encountered an error validating the artifact cache |
+| INIT_CREATE_WATCH_TRIGGER_ERROR | 908 | Skaffold encountered an error when configuring file watching |
+| INIT_CREATE_ARTIFACT_DEP_ERROR | 909 | Skaffold encountered an error when evaluating artifact dependencies |
 
 
 
@@ -809,13 +836,13 @@ Enum for Suggestion codes
 | Name | Number | Description |
 | ---- |:------:| ----------- |
 | NIL | 0 | default nil suggestion. This is usually set when no error happens. |
-| ADD_DEFAULT_REPO | 100 | Build error suggestion codes |
-| CHECK_DEFAULT_REPO | 101 |  |
-| CHECK_DEFAULT_REPO_GLOBAL_CONFIG | 102 |  |
-| GCLOUD_DOCKER_AUTH_CONFIGURE | 103 |  |
-| DOCKER_AUTH_CONFIGURE | 104 |  |
-| CHECK_GCLOUD_PROJECT | 105 |  |
-| CHECK_DOCKER_RUNNING | 106 |  |
+| ADD_DEFAULT_REPO | 100 | Add Default Repo |
+| CHECK_DEFAULT_REPO | 101 | Verify Default Repo |
+| CHECK_DEFAULT_REPO_GLOBAL_CONFIG | 102 | Verify default repo in the global config |
+| GCLOUD_DOCKER_AUTH_CONFIGURE | 103 | run gcloud docker auth configure |
+| DOCKER_AUTH_CONFIGURE | 104 | Run docker auth configure |
+| CHECK_GCLOUD_PROJECT | 105 | Verify Gcloud Project |
+| CHECK_DOCKER_RUNNING | 106 | Check if docker is running |
 | CHECK_CONTAINER_LOGS | 301 | Container run error |
 | CHECK_READINESS_PROBE | 302 | Pod Health check error |
 | CHECK_CONTAINER_IMAGE | 303 | Check Container image |
@@ -828,6 +855,9 @@ Enum for Suggestion codes
 | ADDRESS_NODE_NOT_READY | 406 | Node not ready error |
 | ADDRESS_FAILED_SCHEDULING | 407 | Scheduler failure error |
 | CHECK_HOST_CONNECTION | 408 | Cluster Connectivity error |
+| START_MINIKUBE | 501 | Minikube is stopped: use `minikube start` |
+| UNPAUSE_MINIKUBE | 502 | Minikube is paused: use `minikube unpause` |
+| OPEN_ISSUE | 900 | Open an issue so this situation can be diagnosed |
 
 
  <!-- end enums -->
