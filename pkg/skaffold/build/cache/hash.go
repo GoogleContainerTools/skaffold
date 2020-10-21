@@ -52,7 +52,7 @@ type artifactHasherImpl struct {
 	artifacts build.ArtifactGraph
 	lister    DependencyLister
 	mode      config.RunMode
-	once      *util.Once
+	syncStore *util.SyncStore
 }
 
 // newArtifactHasher returns a new instance of an artifactHasher. Use newArtifactHasherFunc instead of calling this function directly.
@@ -61,12 +61,12 @@ func newArtifactHasher(artifacts build.ArtifactGraph, lister DependencyLister, m
 		artifacts: artifacts,
 		lister:    lister,
 		mode:      mode,
-		once:      util.NewOnce(),
+		syncStore: util.NewSyncStore(),
 	}
 }
 
 func (h *artifactHasherImpl) hash(ctx context.Context, a *latest.Artifact) (string, error) {
-	val := h.once.Do(a.ImageName,
+	val := h.syncStore.Exec(a.ImageName,
 		func() interface{} {
 			hash, err := singleArtifactHash(ctx, h.lister, a, h.mode)
 			if err != nil {

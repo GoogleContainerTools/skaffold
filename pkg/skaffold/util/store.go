@@ -20,15 +20,16 @@ import (
 	"sync"
 )
 
-type Once struct {
+// SyncStore exports a single method `Exec` to ensure single execution of a function and share the result between all callers of the function.
+type SyncStore struct {
 	oncePerKey *sync.Map
 	results    *sync.Map
 }
 
-// Do calls the function f if and only if it's being called the first time for a specific key.
+// Exec executes the function f if and only if it's being called the first time for a specific key.
 // If it's called multiple times for the same key only the first call will execute and store the result of f.
 // All other calls will be blocked until the running instance of f returns and all of them receive the same result.
-func (o *Once) Do(key interface{}, f func() interface{}) interface{} {
+func (o *SyncStore) Exec(key interface{}, f func() interface{}) interface{} {
 	once, _ := o.oncePerKey.LoadOrStore(key, new(sync.Once))
 	once.(*sync.Once).Do(func() {
 		res := f()
@@ -39,9 +40,9 @@ func (o *Once) Do(key interface{}, f func() interface{}) interface{} {
 	return val
 }
 
-// NewOnce returns a new instance of `Once`
-func NewOnce() *Once {
-	return &Once{
+// NewSyncStore returns a new instance of `SyncStore`
+func NewSyncStore() *SyncStore {
+	return &SyncStore{
 		oncePerKey: new(sync.Map),
 		results:    new(sync.Map),
 	}

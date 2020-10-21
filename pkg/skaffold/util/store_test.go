@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestOnce(t *testing.T) {
+func TestSyncStore(t *testing.T) {
 	testutil.Run(t, "test util.once", func(t *testutil.T) {
 		// This test runs a counter function twice for each key from [0, 5) and tests that the function only executes once for each key when called inside `once.Do` method.
 		counts := make([]int32, 5)
@@ -35,11 +35,11 @@ func TestOnce(t *testing.T) {
 		var wg sync.WaitGroup
 		wg.Add(10)
 
-		h := NewOnce()
+		s := NewSyncStore()
 		for i := 0; i < 5; i++ {
 			for j := 0; j < 2; j++ {
 				go func(i int) {
-					val := h.Do(i, func() interface{} {
+					val := s.Exec(i, func() interface{} {
 						return f(i)
 					})
 					t.CheckDeepEqual(i, val)
