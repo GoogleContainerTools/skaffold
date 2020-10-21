@@ -6,7 +6,7 @@ To facilitate building and deploying images in CI/CD, skaffold offers docker ima
 
 Let us have a look at how we can use Skaffold with Gitlab CI.
 
-**Step 1: Getting the project and Dockerfile ready**
+## Step 1: Getting the project and Dockerfile ready
 
 The first step is to obviously have your project which you want to deploy ready with a Dockerfile setup for the same. Skaffold supports multiple builders like Docker, Kaniko, Bazel and more (including custom builders). We will use Docker in this demonstration.
 
@@ -27,23 +27,23 @@ CMD [ "/bin/bash", "-c", "nginx -g 'daemon off;'" ]
 
 Skaffold can use your dockerfile to automatically build, tag and push images to the registry when needed.
 
-**Step 2: Choosing the deployment method**
+## Step 2: Choosing the deployment method
 
 Skaffold supports deployment through kubectl, helm and a lot of other mechanisms. You can have a look at the yaml reference for complete list here: [https://skaffold.dev/docs/references/yaml/](https://skaffold.dev/docs/references/yaml/)
 
 If you choose to deploy through kubectl, you must have all your yaml files ready, and if you would like to deploy through helm charts, you must have all your charts ready.
 
-**Step 3: Choosing the image and tag strategy**
+## Step 3: Choosing the image and tag strategy
 
 Skaffold automatically tags images based on different strategies as documented here: [https://skaffold.dev/docs/pipeline-stages/taggers/](https://skaffold.dev/docs/pipeline-stages/taggers/). The tagging strategy used is configurable, so choose the mechanism which is right for you. By default, skaffold uses the git sha tagger.
 
 If you are using helm as your deployer, you might want to use the helm image strategy if you would like to follow helm specific conventions, as skaffold will pass in all the details for you.
 
-**Step 4: Plugins (optional)**
+## Step 4: Plugins (optional)
 
 Skaffold also supports plugins like Helm Secrets ([https://github.com/zendesk/helm-secrets/](https://github.com/zendesk/helm-secrets/)). So, if you would like to deploy secrets that have been encrypted using KMS or any other mechanism supported by SOPS ([https://github.com/mozilla/sops](https://github.com/mozilla/sops)) you can actually set **useHelmSecrets** option to true and skaffold will handle everything automatically for you.
 
-**Step 5: The skaffold.yaml file**
+## Step 5: The skaffold.yaml file
 
 Your skaffold.yaml file will change depending on the way you would like to build and deploy your project. It is recommended that you set up skaffold before you setup your CI pipeline since the CI pipeline can just call skaffold to do all the builds and deployments, and you can do the same locally as well.
 
@@ -120,7 +120,7 @@ profiles:
 **Please refer to the yaml reference for all that you can specify in skaffold.yaml file**
 
 
-**Step 6: Development & Testing locally**
+## Step 6: Development & Testing locally
 
 Before we move on to setting up the CI pipeline, we should test it out locally. Use **skaffold run** if you are deploying it to the cluster, **skaffold build **to just build and push the artifacts, **skaffold dev **if you are developing (this will enable auto reload on changes) or debug using **skaffold debug**
 
@@ -129,7 +129,7 @@ You can find docs about all these workflows here: [https://skaffold.dev/docs/wor
 Also, note that you can also set up file synchronization to enable faster development workflows. You can read more about that here: [https://skaffold.dev/docs/pipeline-stages/filesync/](https://skaffold.dev/docs/pipeline-stages/filesync/)
 
 
-**Step 7: Getting the CI pipeline setup**
+## Step 7: Getting the CI pipeline setup
 
 Now that we have skaffold ready and working locally, the CI pipeline requires little to no effort since it will just call skaffold to do all the builds and deployments.
 
@@ -184,7 +184,7 @@ This works equally well irrespective of whether you choose the Docker Executor (
 **NOTE:** If you are running Skaffold using Docker, make sure that you are running the runner with appropriate permissions or pod security policies since running DIND requires access to the Docker socket and being in privileged mode which might actually tend to be insecure. An alternative can be to use kaniko or custom builders like Buildah for building the image.
 
 
-**Step 8: Using DIND Service (Optional)**
+## Step 8: Using DIND Service (Optional)
 
 Docker images are not cached if running using DIND and this can be very slow since it has to download the images again and again for every build even if some layers are already available.
 
@@ -281,6 +281,6 @@ spec:
 And we would need to pass the URL to the DIND service when we do builds in the pipeline and all the caching will happen in the DIND storage speeding up the pipeline a lot. Make sure that you clean up the DIND storage periodically or setup cleanup scripts for the same else it might fill up soon.
 
 
-**Step 9: That’s all folks**
+## Step 9: That’s all folks
 
 Hope this post was informative. Good luck with your journey with Skaffold.
