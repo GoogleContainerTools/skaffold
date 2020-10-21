@@ -61,7 +61,7 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 
 	runner, err := runner.NewForConfig(runCtx)
 	if err != nil {
-		event.SkaffoldInitFailed(err)
+		event.InititializationFailed(err)
 		return nil, nil, fmt.Errorf("creating runner: %w", err)
 	}
 

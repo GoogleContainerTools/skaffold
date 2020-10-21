@@ -713,10 +713,10 @@ func BuildSequenceFailed(err error) {
 	handler.stateLock.Unlock()
 }
 
-func SkaffoldInitFailed(err error) {
+func InititializationFailed(err error) {
 	handler.handle(&proto.Event{
-		EventType: &proto.Event_SessionEndEvent{
-			SessionEndEvent: &proto.SessionEndEvent{
+		EventType: &proto.Event_TerminationEvent{
+			TerminationEvent: &proto.TerminationEvent{
 				Status: Failed,
 				Err:    sErrors.ActionableErr(sErrors.Init, err),
 			},
