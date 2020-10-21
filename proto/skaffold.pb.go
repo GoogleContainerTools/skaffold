@@ -1442,7 +1442,7 @@ func (*Event) XXX_OneofWrappers() []interface{} {
 	}
 }
 
-// `SessionEndEvent` marks the end of the skaffold session
+// `TerminationEvent` marks the end of the skaffold session
 type TerminationEvent struct {
 	Status               string         `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	Err                  *ActionableErr `protobuf:"bytes,2,opt,name=err,proto3" json:"err,omitempty"`

@@ -1949,7 +1949,7 @@
           "$ref": "#/definitions/protoActionableErr"
         }
       },
-      "description": "`SessionEndEvent` marks the end of the skaffold session"
+      "description": "`TerminationEvent` marks the end of the skaffold session"
     },
     "protoTriggerState": {
       "type": "object",

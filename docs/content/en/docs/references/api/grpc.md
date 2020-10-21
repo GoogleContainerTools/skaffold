@@ -638,7 +638,7 @@ Suggestion defines the action a user needs to recover from an error.
 
 <a name="proto.TerminationEvent"></a>
 #### TerminationEvent
-`SessionEndEvent` marks the end of the skaffold session
+`TerminationEvent` marks the end of the skaffold session
 
 
 | Field | Type | Label | Description |

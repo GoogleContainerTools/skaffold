@@ -116,7 +116,7 @@ message Event {
     }
 }
 
-// `SessionEndEvent` marks the end of the skaffold session
+// `TerminationEvent` marks the end of the skaffold session
 message TerminationEvent {
     string status = 1; // status oneof: Completed or Failed
     ActionableErr err = 2; // actionable error message
