@@ -1,4 +1,4 @@
-**Skaffold End to End**
+# Skaffold End to End
 
 Skaffold is non-opinionated about the CI tool you should use and acts as a platform agnostic solution for both development and deploying to production.
 
