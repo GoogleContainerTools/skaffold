@@ -63,8 +63,9 @@ type fromTo struct {
 var (
 	// RetrieveImage is overridden for unit testing
 	RetrieveImage = retrieveImage
-	onBuildRetrieveErr   = errors.New("error retrieving ONBUILD image")
+	unsupportedMediaTypeError   = errors.New("unsupported MediaType error")
 )
+
 
 func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, cfg Config) ([]fromTo, error) {
 	f, err := os.Open(absDockerfilePath)
@@ -229,6 +230,7 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, cfg Config) (
 			if !stages[strings.ToLower(from.image)] {
 				img, err := RetrieveImage(from.image, cfg)
 				if err != nil {
+					if
 					return nil, err
 				}
 
@@ -337,7 +339,7 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 			} else if ons, err := parseOnbuild(from.image, cfg); err == nil {
 				onbuildNodes = ons
 			} else {
-				if errors.Is(err, onBuildRetrieveErr) {
+				if errors.Is(err, notSupportedManifestError) {
 					// TODO: [4895] collect warning codes for warnings seen during a dev iteration.
 					logrus.Warnf("could not retrieve ONBUILD image %s. Will ignore files dependencies for all ONBUILD triggers", from.image)
 					return []*parser.Node{}, nil
@@ -363,7 +365,7 @@ func parseOnbuild(image string, cfg Config) ([]*parser.Node, error) {
 	// Image names are case SENSITIVE
 	img, err := RetrieveImage(image, cfg)
 	if err != nil {
-		return nil, onBuildRetrieveErr
+		return nil,
 	}
 
 	if len(img.Config.OnBuild) == 0 {

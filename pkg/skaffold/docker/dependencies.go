@@ -28,6 +28,18 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
+
+// dockerDependencies describes
+type dockerfileDependencies struct {
+	 files []string
+	 err error
+}
+
+// dependencyCache is a cache for dependencies for each dockerfile.
+var (
+	dependencyCache = map[string]dockerfileDependencies{}
+)
+
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.
 func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 	// Expected case: should be found relative to the context directory.
@@ -50,6 +62,17 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
+	if _, ok := dependencyCache[absDockerfilePath]; !ok {
+		paths, err := getDependencies(workspace, dockerfilePath, absDockerfilePath, buildArgs, cfg)
+		dependencyCache[absDockerfilePath] = dockerfileDependencies{
+			files: paths,
+			err: err,
+		}
+	}
+	return dependencyCache[absDockerfilePath].files, dependencyCache[absDockerfilePath].err
+}
+
+func getDependencies(workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error){
 	// If the Dockerfile doesn't exist, we can't compute the dependencies.
 	// But since we know the Dockerfile is a dependency, let's return a list
 	// with only that file. It makes errors down the line more actionable
@@ -93,7 +116,6 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		dependencies = append(dependencies, file)
 	}
 	sort.Strings(dependencies)
-
 	return dependencies, nil
 }
 
