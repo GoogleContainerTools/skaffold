@@ -63,7 +63,7 @@ var (
 	RetrieveImage = retrieveImage
 )
 
-func parseDockerfile(absDockerfilePath string, buildArgs map[string]*string) ([]*parser.Node, error) {
+func parseDockerfile(absDockerfilePath string, buildArgs map[string]*string, cfg Config) ([]*parser.Node, error) {
 
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
@@ -82,12 +82,12 @@ func parseDockerfile(absDockerfilePath string, buildArgs map[string]*string) ([]
 		return nil, fmt.Errorf("putting build arguments: %w", err)
 	}
 
-	return expandOnbuildInstructions(dockerfileLines, nil)
+	return expandOnbuildInstructions(dockerfileLines, cfg)
 }
 
 // fromImages lists the images used in `FROM` instructions.
 func fromImages(absDockerfilePath string, buildArgs map[string]*string) ([]string, error) {
-	dockerfileLinesWithOnbuild, err := parseDockerfile(absDockerfilePath, buildArgs)
+	dockerfileLinesWithOnbuild, err := parseDockerfile(absDockerfilePath, buildArgs, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func fromImages(absDockerfilePath string, buildArgs map[string]*string) ([]strin
 }
 
 func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, cfg Config) ([]fromTo, error) {
-	dockerfileLinesWithOnbuild, err := parseDockerfile(absDockerfilePath, buildArgs)
+	dockerfileLinesWithOnbuild, err := parseDockerfile(absDockerfilePath, buildArgs, cfg)
 	if err != nil {
 		return nil, err
 	}
