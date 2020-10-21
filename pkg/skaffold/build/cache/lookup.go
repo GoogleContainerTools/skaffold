@@ -33,7 +33,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 	details := make([]cacheDetails, len(artifacts))
 	// create a new `artifactHasher` on every new dev loop.
 	// This way every artifact hash is calculated at most once in a single dev loop, and recalculated on every dev loop.
-	h := newArtifactHasherFunc(ToArtifacts(artifacts), c.lister, c.cfg.Mode())
+	h := newArtifactHasherFunc(c.artifactGraph, c.lister, c.cfg.Mode())
 	var wg sync.WaitGroup
 	for i := range artifacts {
 		wg.Add(1)

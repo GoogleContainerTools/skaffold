@@ -39,9 +39,7 @@ func TestOnce(t *testing.T) {
 		for i := 0; i < 5; i++ {
 			for j := 0; j < 2; j++ {
 				go func(i int) {
-					val := h.Do(func() interface{} {
-						return i
-					}, func() interface{} {
+					val := h.Do(i, func() interface{} {
 						return f(i)
 					})
 					t.CheckDeepEqual(i, val)

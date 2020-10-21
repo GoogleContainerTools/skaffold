@@ -88,7 +88,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return append(buildDependencies, testDependencies...), nil
 	}
 
-	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, tryImportMissing, depLister)
+	graph := build.ToArtifactGraph(runCtx.Pipeline().Build.Artifacts)
+	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, tryImportMissing, depLister, graph)
 	if err != nil {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}

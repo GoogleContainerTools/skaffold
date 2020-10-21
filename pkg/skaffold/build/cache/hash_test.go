@@ -21,6 +21,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -227,7 +228,7 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&fileHasherFunc, mockCacheHasher)
 			t.Override(&artifactConfigFunc, fakeArtifactConfig)
-			m := ToArtifacts(test.artifacts)
+			g := build.ToArtifactGraph(test.artifacts)
 
 			for _, a := range test.artifacts {
 				if a.DockerArtifact != nil {
@@ -242,7 +243,7 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 				return test.fileDeps[a.ImageName], nil
 			}
 
-			actual, err := newArtifactHasher(m, depLister, test.mode).hash(context.Background(), test.artifacts[0])
+			actual, err := newArtifactHasher(g, depLister, test.mode).hash(context.Background(), test.artifacts[0])
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)

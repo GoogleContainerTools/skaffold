@@ -29,6 +29,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -47,27 +48,15 @@ type artifactHasher interface {
 	hash(ctx context.Context, a *latest.Artifact) (string, error)
 }
 
-// Artifacts is a map of [artifact image : artifact definition]
-type Artifacts map[string]*latest.Artifact
-
-// ToArtifacts creates an instance of `Artifacts` from `[]*latest.Artifact`
-func ToArtifacts(artifacts []*latest.Artifact) Artifacts {
-	m := make(map[string]*latest.Artifact)
-	for _, a := range artifacts {
-		m[a.ImageName] = a
-	}
-	return m
-}
-
 type artifactHasherImpl struct {
-	artifacts Artifacts
+	artifacts build.ArtifactGraph
 	lister    DependencyLister
 	mode      config.RunMode
 	once      *util.Once
 }
 
 // newArtifactHasher returns a new instance of an artifactHasher. Use newArtifactHasherFunc instead of calling this function directly.
-func newArtifactHasher(artifacts Artifacts, lister DependencyLister, mode config.RunMode) artifactHasher {
+func newArtifactHasher(artifacts build.ArtifactGraph, lister DependencyLister, mode config.RunMode) artifactHasher {
 	return &artifactHasherImpl{
 		artifacts: artifacts,
 		lister:    lister,
@@ -77,9 +66,7 @@ func newArtifactHasher(artifacts Artifacts, lister DependencyLister, mode config
 }
 
 func (h *artifactHasherImpl) hash(ctx context.Context, a *latest.Artifact) (string, error) {
-	val := h.once.Do(func() interface{} {
-		return a.ImageName
-	},
+	val := h.once.Do(a.ImageName,
 		func() interface{} {
 			hash, err := singleArtifactHash(ctx, h.lister, a, h.mode)
 			if err != nil {
@@ -94,7 +81,7 @@ func (h *artifactHasherImpl) hash(ctx context.Context, a *latest.Artifact) (stri
 	hash := val.(string)
 
 	hashes := []string{hash}
-	for _, dep := range sortedDependencies(a.Dependencies, h.artifacts) {
+	for _, dep := range sortedDependencies(a, h.artifacts) {
 		depHash, err := h.hash(ctx, dep)
 		if err != nil {
 			return "", err
@@ -108,7 +95,7 @@ func (h *artifactHasherImpl) hash(ctx context.Context, a *latest.Artifact) (stri
 	return encode(hashes)
 }
 
-// singleArtifactHash calculates the hash for a single artifact ignoring it's required artifacts.
+// singleArtifactHash calculates the hash for a single artifact, and ignores its required artifacts.
 func singleArtifactHash(ctx context.Context, depLister DependencyLister, a *latest.Artifact, mode config.RunMode) (string, error) {
 	var inputs []string
 
@@ -199,7 +186,7 @@ func hashBuildArgs(artifact *latest.Artifact, mode config.RunMode) ([]string, er
 	return sl, nil
 }
 
-// fileHasher takes hashes the contents and name of a file
+// fileHasher hashes the contents and name of a file
 func fileHasher(p string) (string, error) {
 	h := md5.New()
 	fi, err := os.Lstat(p)
@@ -222,15 +209,11 @@ func fileHasher(p string) (string, error) {
 }
 
 // sortedDependencies returns the dependencies' corresponding Artifacts as sorted by their image name.
-func sortedDependencies(deps []*latest.ArtifactDependency, artifacts Artifacts) []*latest.Artifact {
-	var keys []string
-	for _, d := range deps {
-		keys = append(keys, d.ImageName)
-	}
-	sort.Strings(keys)
-	var sortedDeps []*latest.Artifact
-	for _, k := range keys {
-		sortedDeps = append(sortedDeps, artifacts[k])
-	}
-	return sortedDeps
+func sortedDependencies(a *latest.Artifact, artifacts build.ArtifactGraph) []*latest.Artifact {
+	sl := artifacts.Dependencies(a)
+	sort.Slice(sl, func(i, j int) bool {
+		ia, ja := sl[i], sl[j]
+		return ia.ImageName < ja.ImageName
+	})
+	return sl
 }

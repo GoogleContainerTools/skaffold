@@ -25,18 +25,17 @@ type Once struct {
 	results    *sync.Map
 }
 
-// Do calls the function f if and only if it's being called the first time for a specific key (evaluated from the key function).
+// Do calls the function f if and only if it's being called the first time for a specific key.
 // If it's called multiple times for the same key only the first call will execute and store the result of f.
 // All other calls will be blocked until the running instance of f returns and all of them receive the same result.
-func (o *Once) Do(key func() interface{}, f func() interface{}) interface{} {
-	k := key()
-	once, _ := o.oncePerKey.LoadOrStore(k, new(sync.Once))
+func (o *Once) Do(key interface{}, f func() interface{}) interface{} {
+	once, _ := o.oncePerKey.LoadOrStore(key, new(sync.Once))
 	once.(*sync.Once).Do(func() {
 		res := f()
-		o.results.Store(k, res)
+		o.results.Store(key, res)
 	})
 
-	val, _ := o.results.Load(k)
+	val, _ := o.results.Load(key)
 	return val
 }
 
