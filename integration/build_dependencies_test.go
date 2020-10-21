@@ -17,15 +17,17 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
-func TestBuild_WithDependencies(t *testing.T) {
+func TestBuildDependenciesOrder(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
@@ -65,11 +67,6 @@ func TestBuild_WithDependencies(t *testing.T) {
 			args:        []string{"-p", "failed-dependency", "-p", "concurrency-0"},
 			failure:     `unable to stream build output: The command '/bin/sh -c [ "${FAIL}" == "0" ] || false' returned a non-zero code: 1`,
 		},
-		{
-			description:  "build failure with cache-artifacts=true",
-			cacheEnabled: true,
-			failure:      "defining dependencies between artifacts is not yet supported for `skaffold build` with cache enabled. Run with `--cache-artifacts=false` flag",
-		},
 	}
 
 	for _, test := range tests {
@@ -96,9 +93,96 @@ func TestBuild_WithDependencies(t *testing.T) {
 	}
 }
 
+func TestBuildDependenciesCache(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	// These tests build 4 images and then make a file change to the images in `change`.
+	// The test then triggers another build and verifies that the images in `rebuilt` were built
+	// (e.g., the changed images and their dependents), and that the other images were found in the artifact cache.
+	// It runs the profile `concurrency-0` which builds with maximum concurrency.
+	tests := []struct {
+		description string
+		change      []int
+		rebuilt     []int
+	}{
+		{
+			description: "no change",
+		},
+		{
+			description: "change 1",
+			change:      []int{1},
+			rebuilt:     []int{1},
+		},
+		{
+			description: "change 2",
+			change:      []int{2},
+			rebuilt:     []int{1, 2},
+		},
+		{
+			description: "change 3",
+			change:      []int{3},
+			rebuilt:     []int{1, 2, 3},
+		},
+		{
+			description: "change 4",
+			change:      []int{4},
+			rebuilt:     []int{4},
+		},
+		{
+			description: "change all",
+			change:      []int{1, 2, 3, 4},
+			rebuilt:     []int{1, 2, 3, 4},
+		},
+	}
+
+	skaffold.Build("--cache-artifacts=true", "-p", "concurrency-0").InDir("testdata/build-dependencies").RunOrFail(t)
+	checkImagesExist(t)
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			// modify file `foo` to invalidate cache for target artifacts
+			for _, i := range test.change {
+				Run(t, fmt.Sprintf("testdata/build-dependencies/app%d", i), "sh", "-c", fmt.Sprintf("echo %s > foo", uuid.New().String()))
+			}
+			out, err := skaffold.Build("--cache-artifacts=true", "-p", "concurrency-0").InDir("testdata/build-dependencies").RunWithCombinedOutput(t)
+			if err != nil {
+				t.Fatal("expected build to succeed")
+			}
+			log := string(out)
+
+			for i := 1; i <= 4; i++ {
+				if !contains(test.rebuilt, i) && !strings.Contains(log, fmt.Sprintf("image%d: Found Locally", i)) {
+					logrus.Info("build output: ", string(out))
+					t.Fatalf("expected image%d to be cached", i)
+				}
+
+				if contains(test.rebuilt, i) && !strings.Contains(log, fmt.Sprintf("image%d: Not found. Building", i)) {
+					logrus.Info("build output: ", string(out))
+					t.Fatalf("expected image%d to be rebuilt", i)
+				}
+			}
+			checkImagesExist(t)
+		})
+	}
+
+	// revert file changes
+	for i := 1; i <= 4; i++ {
+		Run(t, fmt.Sprintf("testdata/build-dependencies/app%d", i), "sh", "-c", "> foo")
+	}
+}
+
 func checkImagesExist(t *testing.T) {
 	checkImageExists(t, "gcr.io/k8s-skaffold/image1:latest")
 	checkImageExists(t, "gcr.io/k8s-skaffold/image2:latest")
 	checkImageExists(t, "gcr.io/k8s-skaffold/image3:latest")
 	checkImageExists(t, "gcr.io/k8s-skaffold/image4:latest")
+}
+
+func contains(sl []int, t int) bool {
+	for _, i := range sl {
+		if i == t {
+			return true
+		}
+	}
+	return false
 }

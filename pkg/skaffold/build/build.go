@@ -30,6 +30,27 @@ type Artifact struct {
 	Tag       string `json:"tag"`
 }
 
+// ArtifactGraph is a map of [artifact image : artifact definition]
+type ArtifactGraph map[string]*latest.Artifact
+
+// ToArtifactGraph creates an instance of `ArtifactGraph` from `[]*latest.Artifact`
+func ToArtifactGraph(artifacts []*latest.Artifact) ArtifactGraph {
+	m := make(map[string]*latest.Artifact)
+	for _, a := range artifacts {
+		m[a.ImageName] = a
+	}
+	return m
+}
+
+// Dependencies returns the de-referenced slice of required artifacts for a given artifact
+func (g ArtifactGraph) Dependencies(a *latest.Artifact) []*latest.Artifact {
+	var sl []*latest.Artifact
+	for _, d := range a.Dependencies {
+		sl = append(sl, g[d.ImageName])
+	}
+	return sl
+}
+
 // Builder is an interface to the Build API of Skaffold.
 // It must build and make the resulting image accessible to the cluster.
 // This could include pushing to a authorized repository or loading the nodes with the image.
