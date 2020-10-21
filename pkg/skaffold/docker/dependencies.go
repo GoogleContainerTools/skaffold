@@ -30,6 +30,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
+
+// dockerDependencies describes
+type dockerfileDependencies struct {
+	 files []string
+	 err error
+}
+
 var (
 	// sfGetDependencies ensures `GetDependencies` is called only once at any time
 	// for a given dockerfile.
@@ -62,6 +69,18 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
+	if _, ok := dependencyCache[absDockerfilePath]; !ok {
+		paths, err := getDependencies(workspace, dockerfilePath, absDockerfilePath, buildArgs, cfg)
+		dependencyCache[absDockerfilePath] = dockerfileDependencies{
+			files: paths,
+			err: err,
+		}
+	}
+	return dependencyCache[absDockerfilePath].files, dependencyCache[absDockerfilePath].err
+}
+
+func getDependencies(workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error){
+	// If the Dockerfile doesn't exist, we can't compute the dependencies.
 	deps, _ := sfGetDependencies.Do(absDockerfilePath, func() (interface{}, error) {
 		if dep, ok := dependencyCache.Load(absDockerfilePath); ok {
 			return dep, nil
