@@ -64,7 +64,6 @@ var (
 )
 
 func parseDockerfile(absDockerfilePath string, buildArgs map[string]*string, cfg Config) ([]*parser.Node, error) {
-
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
 		return nil, err
