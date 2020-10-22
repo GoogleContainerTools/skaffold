@@ -18,7 +18,6 @@ package docker
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -230,17 +229,15 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, cfg Config) (
 			// was already changed.
 			if !stages[strings.ToLower(from.image)] {
 				img, err := RetrieveImage(from.image, cfg)
-				if err != nil {
-					if
+				if err == nil {
+					workdir = img.Config.WorkingDir
+				} else if _, ok := sErrors.IsOldImageManifestProblem(err); !ok {
 					return nil, err
 				}
-
-				workdir = img.Config.WorkingDir
 				if workdir == "" {
 					workdir = "/"
 				}
 			}
-
 			if onlyLastImage {
 				copied = nil
 			}
@@ -342,13 +339,6 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 			} else if warnMsg, ok := sErrors.IsOldImageManifestProblem(err); ok && warnMsg != "" {
 				logrus.Warn(warnMsg)
 			} else if !ok {
-				if errors.Is(err, onBuildRetrieveErr) {
-			} else {
-				if errors.Is(err, notSupportedManifestError) {
-					// TODO: [4895] collect warning codes for warnings seen during a dev iteration.
-					logrus.Warnf("could not retrieve ONBUILD image %s. Will ignore files dependencies for all ONBUILD triggers", from.image)
-					return []*parser.Node{}, nil
-				}
 				return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
 			}
 
@@ -370,7 +360,7 @@ func parseOnbuild(image string, cfg Config) ([]*parser.Node, error) {
 	// Image names are case SENSITIVE
 	img, err := RetrieveImage(image, cfg)
 	if err != nil {
-		return nil,
+		return nil, fmt.Errorf("retrieving image %q: %w", image, err)
 	}
 
 	if len(img.Config.OnBuild) == 0 {
