@@ -28,16 +28,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
-
-// dockerDependencies describes
-type dockerfileDependencies struct {
-	 files []string
-	 err error
+// dependency represents computed dependency for a dockerfile.
+type dependency struct {
+	files []string
+	err   error
 }
 
-// dependencyCache is a cache for dependencies for each dockerfile.
+// dependencyCache caches the results for `GetDependencies` for individual dockerfile.
 var (
-	dependencyCache = map[string]dockerfileDependencies{}
+	dependencyCache = map[string]dependency{}
 )
 
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.
@@ -54,7 +53,7 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 	return filepath.Abs(rel)
 }
 
-// GetDependencies finds the sources dependencies for the given docker artifact.
+// GetDependencies finds the sources dependency for the given docker artifact.
 // All paths are relative to the workspace.
 func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
@@ -64,16 +63,16 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 
 	if _, ok := dependencyCache[absDockerfilePath]; !ok {
 		paths, err := getDependencies(workspace, dockerfilePath, absDockerfilePath, buildArgs, cfg)
-		dependencyCache[absDockerfilePath] = dockerfileDependencies{
+		dependencyCache[absDockerfilePath] = dependency{
 			files: paths,
-			err: err,
+			err:   err,
 		}
 	}
 	return dependencyCache[absDockerfilePath].files, dependencyCache[absDockerfilePath].err
 }
 
-func getDependencies(workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error){
-	// If the Dockerfile doesn't exist, we can't compute the dependencies.
+func getDependencies(workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error) {
+	// If the Dockerfile doesn't exist, we can't compute the dependency.
 	// But since we know the Dockerfile is a dependency, let's return a list
 	// with only that file. It makes errors down the line more actionable
 	// than returning an error now.
@@ -116,6 +115,7 @@ func getDependencies(workspace string, dockerfilePath string, absDockerfilePath 
 		dependencies = append(dependencies, file)
 	}
 	sort.Strings(dependencies)
+
 	return dependencies, nil
 }
 

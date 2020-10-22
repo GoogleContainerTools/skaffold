@@ -221,6 +221,11 @@ FROM
 COPY . /
 `
 
+const fromV1Manifest = `
+FROM library/ruby:2.3.0
+ADD ./file /etc/file
+`
+
 type fakeImageFetcher struct{}
 
 func (f *fakeImageFetcher) fetch(image string, _ Config) (*v1.ConfigFile, error) {
@@ -235,6 +240,8 @@ func (f *fakeImageFetcher) fetch(image string, _ Config) (*v1.ConfigFile, error)
 				},
 			},
 		}, nil
+	case "library/ruby:2.3.0":
+		return nil, fmt.Errorf("retrieving image \"library/ruby:2.3.0\": unsupported MediaType: \"application/vnd.docker.distribution.manifest.v1+prettyjws\", see https://github.com/google/go-containerregistry/issues/377")
 	}
 
 	return nil, fmt.Errorf("no image found for %s", image)
@@ -541,6 +548,12 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			shouldErr:   true,
 		},
+		{
+			description: "old manifest version - watch local file dependency.",
+			dockerfile:  fromV1Manifest,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file"},
+		},
 	}
 
 	for _, test := range tests {
@@ -638,5 +651,59 @@ func checkSameFile(t *testutil.T, expected, result string) {
 
 	if !os.SameFile(i1, i2) {
 		t.Errorf("returned wrong file\n   got: %s\nwanted: %s", result, expected)
+	}
+}
+
+func TestGetDependenciesCached(t *testing.T) {
+	imageFetcher := fakeImageFetcher{}
+	tests := []struct {
+		description     string
+		retrieveImgMock func(_ string, _ Config) (*v1.ConfigFile, error)
+		dependencyCache map[string]dependency
+		expected        []string
+		shouldErr       bool
+	}{
+		{
+			description:     "with no cached results, getDependencies will retrieve image",
+			retrieveImgMock: imageFetcher.fetch,
+			dependencyCache: map[string]dependency{},
+			expected:        []string{"Dockerfile", "server.go"},
+		},
+		{
+			description: "with cached results, getDependencies should read from cache",
+			retrieveImgMock: func(_ string, _ Config) (*v1.ConfigFile, error) {
+				return nil, fmt.Errorf("unexpected call")
+			},
+			dependencyCache: map[string]dependency{"Dockerfile": {[]string{"random.go"}, nil}},
+			expected:        []string{"random.go"},
+		},
+		{
+			description:     "with cached results for dockerfile in another app",
+			retrieveImgMock: imageFetcher.fetch,
+			dependencyCache: map[string]dependency{
+				filepath.Join("app", "Dockerfile"): {[]string{"random.go"}, nil}},
+			expected: []string{"Dockerfile", "server.go"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&RetrieveImage, test.retrieveImgMock)
+			t.Override(&util.OSEnviron, func() []string { return []string{} })
+
+			tmpDir := t.NewTempDir().Touch("server.go", "random.go")
+			tmpDir.Write("Dockerfile", copyServerGo)
+			// construct cache for abs dockerfile paths.
+			cache := map[string]dependency{}
+			for k, v := range test.dependencyCache {
+				cache[tmpDir.Path(k)] = v
+			}
+			t.Override(&dependencyCache, cache)
+			deps, err := GetDependencies(context.Background(), tmpDir.Root(), "Dockerfile", map[string]*string{}, nil)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
+			if _, ok := dependencyCache[tmpDir.Path("Dockerfile")]; !ok {
+				t.Fatal("expected a cache entry for Dockerfile, did not found")
+			}
+		})
 	}
 }
