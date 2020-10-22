@@ -107,11 +107,12 @@ var (
 		regexp: re(retrieveFailedOldManifest),
 		description: func(err error) string {
 			matchExp := re(retrieveFailedOldManifest)
-			imageName := "specified image"
-			if match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err)); len(match) >= 2 {
-				imageName = fmt.Sprintf("image %s", match[1])
+			match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err))
+			pre := "Could not retrieve image pushed with the deprecated manifest v1"
+			if len(match) >= 3 && match[2] != "" {
+				pre = fmt.Sprintf("Could not retrieve image %s pushed with the deprecated manifest v1", match[2])
 			}
-			return fmt.Sprintf("Could not retrieve %s pushed with the deprecated manifest v1. Ignoring files dependencies for all ONBUILD triggers", imageName)
+			return fmt.Sprintf("%s. Ignoring files dependencies for all ONBUILD triggers", pre)
 		},
 		errCode: proto.StatusCode_DEVINIT_UNSUPPORTED_V1_MANIFEST,
 		suggestion: func(opts config.SkaffoldOptions) []*proto.Suggestion {

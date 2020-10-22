@@ -38,13 +38,7 @@ type dependency struct {
 
 // dependencyCache caches the results for `GetDependencies` for individual dockerfile.
 var (
-	dependencyCache = map[string]dependency{}
-	// sfGetDependencies ensures `GetDependencies` is called only once at any time
-	// for a given dockerfile.
-	// sfGetDependencies along with sync.Map will ensure no two concurrent processes read or
-	// write dependencies for a given dockerfile.
-	sfGetDependencies = singleflight.Group{}
-
+	dependencyCache = sync.Map{}
 )
 
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.
@@ -69,36 +63,21 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
-	if _, ok := dependencyCache[absDockerfilePath]; !ok {
+	if v, ok := dependencyCache.Load(absDockerfilePath); !ok {
 		paths, err := getDependencies(workspace, dockerfilePath, absDockerfilePath, buildArgs, cfg)
-		dependencyCache[absDockerfilePath] = dependency{
+		dependencyCache.Store(absDockerfilePath, dependency{
 			files: paths,
 			err:   err,
-		}
+		})
+		return paths, err
+	} else if cv, ok := v.(dependency); ok {
+		return cv.files, cv.err
 	}
-	return dependencyCache[absDockerfilePath].files, dependencyCache[absDockerfilePath].err
+	// TODO: tejaldesai
+	return nil, fmt.Errorf("unexpected skaffold internal error encountered")
 }
 
 func getDependencies(workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error) {
-	// If the Dockerfile doesn't exist, we can't compute the dependency.
-	deps, _ := sfGetDependencies.Do(absDockerfilePath, func() (interface{}, error) {
-		if dep, ok := dependencyCache.Load(absDockerfilePath); ok {
-			return dep, nil
-		}
-		dep := getDependencies(workspace, dockerfilePath, absDockerfilePath, buildArgs, cfg)
-		dependencyCache.Store(absDockerfilePath, dep)
-		return dep, nil
-	})
-
-	if paths, ok := deps.([]string); ok {
-		return paths, nil
-	} else if err, ok := deps.(error); ok {
-		return nil, err
-	}
-	return nil, fmt.Errorf("unexpected skaffold internal error encountered converting dependencies to []string")
-}
-
-func getDependencies(workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) interface{} {
 	// If the Dockerfile doesn't exist, we can't compute the dependency.
 	// But since we know the Dockerfile is a dependency, let's return a list
 	// with only that file. It makes errors down the line more actionable
@@ -143,7 +122,7 @@ func getDependencies(workspace string, dockerfilePath string, absDockerfilePath 
 	}
 	sort.Strings(dependencies)
 
-	return dependencies
+	return dependencies, nil
 }
 
 // readDockerignore reads patterns to ignore
