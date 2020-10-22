@@ -25,7 +25,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/instructions"
@@ -33,6 +32,7 @@ import (
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/sirupsen/logrus"
 
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 

@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 
 	"github.com/docker/docker/builder/dockerignore"
 
@@ -36,7 +37,7 @@ type dependency struct {
 
 // dependencyCache caches the results for `GetDependencies` for individual dockerfile.
 var (
-	dependencyCache = map[string]dependency{}
+	dependencyCache = sync.Map{}
 )
 
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.
@@ -61,14 +62,18 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
-	if _, ok := dependencyCache[absDockerfilePath]; !ok {
+	if v, ok := dependencyCache.Load(absDockerfilePath); !ok {
 		paths, err := getDependencies(workspace, dockerfilePath, absDockerfilePath, buildArgs, cfg)
-		dependencyCache[absDockerfilePath] = dependency{
+		dependencyCache.Store(absDockerfilePath, dependency{
 			files: paths,
 			err:   err,
-		}
+		})
+		return paths, err
+	} else if cv, ok := v.(dependency); ok {
+		return cv.files, cv.err
 	}
-	return dependencyCache[absDockerfilePath].files, dependencyCache[absDockerfilePath].err
+	// TODO: tejaldesai
+	return nil, fmt.Errorf("unexpected skaffold internal error encountered")
 }
 
 func getDependencies(workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error) {

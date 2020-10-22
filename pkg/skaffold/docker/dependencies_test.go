@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -694,14 +695,13 @@ func TestGetDependenciesCached(t *testing.T) {
 			tmpDir := t.NewTempDir().Touch("server.go", "random.go")
 			tmpDir.Write("Dockerfile", copyServerGo)
 			// construct cache for abs dockerfile paths.
-			cache := map[string]dependency{}
+			defer func() { dependencyCache = sync.Map{} }()
 			for k, v := range test.dependencyCache {
-				cache[tmpDir.Path(k)] = v
+				dependencyCache.Store(tmpDir.Path(k), v)
 			}
-			t.Override(&dependencyCache, cache)
 			deps, err := GetDependencies(context.Background(), tmpDir.Root(), "Dockerfile", map[string]*string{}, nil)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
-			if _, ok := dependencyCache[tmpDir.Path("Dockerfile")]; !ok {
+			if _, ok := dependencyCache.Load(tmpDir.Path("Dockerfile")); !ok {
 				t.Fatal("expected a cache entry for Dockerfile, did not found")
 			}
 		})
