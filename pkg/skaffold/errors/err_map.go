@@ -87,3 +87,15 @@ var knownBuildProblems = []problem{
 		},
 	},
 }
+
+// Deploy errors in deployment phase
+var knownDeployProblems = []problem{
+	{
+		regexp:  re(fmt.Sprintf(".*%s.* Uanable to connect: .*", ClusterConnectErrPrefix)),
+		errCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
+		description: func(error) string {
+			return "Deploy Failed."
+		},
+		suggestion: suggestDeployClusterConnectonErrorAction,
+	},
+}

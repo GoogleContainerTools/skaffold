@@ -506,6 +506,11 @@ enum StatusCode {
 
     // Deploy cancelled due to user cancellation or one or more deployers failed.
     DEPLOY_CANCELLED = 803;
+
+        // Deploy errors
+
+    // Cluster connection errors
+    DEPLOY_CLUSTER_CONNECTION_ERR = 901;
 }
 
 // Enum for Suggestion codes
@@ -523,6 +528,10 @@ enum SuggestionCode {
     CHECK_GCLOUD_PROJECT = 105;
     CHECK_DOCKER_RUNNING = 106;
 
+    // Deploy error suggestion codes
+
+    // Kube config error
+    CHECK_KUBE_CONFIG = 201;
 
     // Container Run time error
 
