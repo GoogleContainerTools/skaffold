@@ -79,17 +79,19 @@ func getBuilders(b latest.BuildConfig) []*proto.BuildMetadata_ImageBuilder {
 func getDeploy(d latest.DeployConfig, c string) *proto.DeployMetadata {
 	var deployers []*proto.DeployMetadata_Deployer
 
-	if d.HelmDeploy != nil {
-		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_HELM, Count: int32(len(d.HelmDeploy.Releases))})
-	}
-	if d.KubectlDeploy != nil {
-		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUBECTL, Count: 1})
-	}
-	if d.KustomizeDeploy != nil {
-		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUSTOMIZE, Count: 1})
-	}
-	if len(deployers) == 0 {
-		return &proto.DeployMetadata{}
+	for _, step := range d.Steps {
+		if step.HelmDeploy != nil {
+			deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_HELM, Count: int32(len(step.HelmDeploy.Releases))})
+		}
+		if step.KubectlDeploy != nil {
+			deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUBECTL, Count: 1})
+		}
+		if step.KustomizeDeploy != nil {
+			deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUSTOMIZE, Count: 1})
+		}
+		if len(deployers) == 0 {
+			return &proto.DeployMetadata{}
+		}
 	}
 
 	return &proto.DeployMetadata{

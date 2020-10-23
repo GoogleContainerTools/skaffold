@@ -135,8 +135,11 @@ func generateDeployTasks(namespace string, configFiles []*ConfigFile) ([]*tekton
 
 func generateDeployTask(configFile *ConfigFile) (*tekton.Task, error) {
 	deployConfig := configFile.Config.Deploy
-	if deployConfig.HelmDeploy == nil && deployConfig.KubectlDeploy == nil && deployConfig.KustomizeDeploy == nil {
-		return nil, errors.New("no Helm/Kubectl/Kustomize deploy config")
+
+	for _, step := range deployConfig.Steps {
+		if step.HelmDeploy == nil && step.KubectlDeploy == nil && step.KustomizeDeploy == nil {
+			return nil, errors.New("no Helm/Kubectl/Kustomize deploy config")
+		}
 	}
 
 	skaffoldVersion := os.Getenv("PIPELINE_SKAFFOLD_VERSION")

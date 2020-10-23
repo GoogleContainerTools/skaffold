@@ -116,12 +116,12 @@ func defaultToLocalBuild(c *latest.SkaffoldConfig) {
 }
 
 func defaultToKubectlDeploy(c *latest.SkaffoldConfig) {
-	if c.Deploy.DeployType != (latest.DeployType{}) {
+	if len(c.Deploy.Steps) != 0 {
 		return
 	}
 
 	logrus.Debugf("Defaulting deploy type to kubectl")
-	c.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{}
+	c.Deploy.Steps[0].KubectlDeploy = &latest.KubectlDeploy{}
 }
 
 func withLocalBuild(c *latest.SkaffoldConfig, operations ...func(*latest.LocalBuild)) {
@@ -175,18 +175,22 @@ func setDefaultTagger(c *latest.SkaffoldConfig) {
 }
 
 func setDefaultKustomizePath(c *latest.SkaffoldConfig) {
-	kustomize := c.Deploy.KustomizeDeploy
-	if kustomize == nil {
-		return
-	}
-	if len(kustomize.KustomizePaths) == 0 {
-		kustomize.KustomizePaths = []string{constants.DefaultKustomizationPath}
+	for _, step := range c.Deploy.Steps {
+		kustomize := step.KustomizeDeploy
+		if kustomize == nil {
+			return
+		}
+		if len(kustomize.KustomizePaths) == 0 {
+			kustomize.KustomizePaths = []string{constants.DefaultKustomizationPath}
+		}
 	}
 }
 
 func setDefaultKubectlManifests(c *latest.SkaffoldConfig) {
-	if c.Deploy.KubectlDeploy != nil && len(c.Deploy.KubectlDeploy.Manifests) == 0 {
-		c.Deploy.KubectlDeploy.Manifests = constants.DefaultKubectlManifests
+	for _, step := range c.Deploy.Steps {
+		if step.KubectlDeploy != nil && len(step.KubectlDeploy.Manifests) == 0 {
+			step.KubectlDeploy.Manifests = constants.DefaultKubectlManifests
+		}
 	}
 }
 

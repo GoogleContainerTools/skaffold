@@ -59,9 +59,9 @@ type Deployer struct {
 	globalConfig       string
 }
 
-func NewDeployer(cfg types.Config, labels map[string]string) *Deployer {
+func NewDeployer(cfg types.Config, step latest.DeployType, labels map[string]string) *Deployer {
 	return &Deployer{
-		KptDeploy:          cfg.Pipeline().Deploy.KptDeploy,
+		KptDeploy:          step.KptDeploy,
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       cfg.GlobalConfig(),

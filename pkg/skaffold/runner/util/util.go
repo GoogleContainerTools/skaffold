@@ -66,10 +66,12 @@ func GetAllPodNamespaces(configNamespace string, cfg latest.Pipeline) ([]string,
 func collectHelmReleasesNamespaces(cfg latest.Pipeline) []string {
 	var namespaces []string
 
-	if cfg.Deploy.HelmDeploy != nil {
-		for _, release := range cfg.Deploy.HelmDeploy.Releases {
-			if release.Namespace != "" {
-				namespaces = append(namespaces, release.Namespace)
+	for _, step := range cfg.Deploy.Steps {
+		if step.HelmDeploy != nil {
+			for _, release := range step.HelmDeploy.Releases {
+				if release.Namespace != "" {
+					namespaces = append(namespaces, release.Namespace)
+				}
 			}
 		}
 	}

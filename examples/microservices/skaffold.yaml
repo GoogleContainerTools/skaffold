@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta8
+apiVersion: skaffold/v2beta9
 kind: Config
 build:
   artifacts:
@@ -7,10 +7,13 @@ build:
     - image: leeroy-app
       context: leeroy-app
 deploy:
-  kubectl:
-    manifests:
-      - leeroy-web/kubernetes/*
-      - leeroy-app/kubernetes/*
+  steps:
+    - kubectl:
+        manifests:
+        - leeroy-app/kubernetes/*
+    - kubectl:
+        manifests:
+        - leeroy-web/kubernetes/*
 portForward:
   - resourceType: deployment
     resourceName: leeroy-web

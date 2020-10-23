@@ -202,32 +202,32 @@ func getSyncer(cfg sync.Config) sync.Syncer {
 }
 
 func getDeployer(cfg kubectl.Config, labels map[string]string) (deploy.Deployer, error) {
-	d := cfg.Pipeline().Deploy
-
 	var deployers deploy.DeployerMux
 
-	if d.HelmDeploy != nil {
-		deployers = append(deployers, helm.NewDeployer(cfg, labels))
-	}
-
-	if d.KptDeploy != nil {
-		deployers = append(deployers, kpt.NewDeployer(cfg, labels))
-	}
-
-	if d.KubectlDeploy != nil {
-		deployer, err := kubectl.NewDeployer(cfg, labels)
-		if err != nil {
-			return nil, err
+	for _, step := range cfg.Pipeline().Deploy.Steps {
+		if step.HelmDeploy != nil {
+			deployers = append(deployers, helm.NewDeployer(cfg, step, labels))
 		}
-		deployers = append(deployers, deployer)
-	}
 
-	if d.KustomizeDeploy != nil {
-		deployer, err := kustomize.NewDeployer(cfg, labels)
-		if err != nil {
-			return nil, err
+		if step.KptDeploy != nil {
+			deployers = append(deployers, kpt.NewDeployer(cfg, step, labels))
 		}
-		deployers = append(deployers, deployer)
+
+		if step.KubectlDeploy != nil {
+			deployer, err := kubectl.NewDeployer(cfg, step, labels)
+			if err != nil {
+				return nil, err
+			}
+			deployers = append(deployers, deployer)
+		}
+
+		if step.KustomizeDeploy != nil {
+			deployer, err := kustomize.NewDeployer(cfg, step, labels)
+			if err != nil {
+				return nil, err
+			}
+			deployers = append(deployers, deployer)
+		}
 	}
 
 	// avoid muxing overhead when only a single deployer is configured

@@ -69,8 +69,10 @@ func (k *kustomize) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 			}
 		}
 		return latest.DeployConfig{
-			DeployType: latest.DeployType{
-				KustomizeDeploy: kustomizeConfig,
+			Steps: []latest.DeployType{
+				{
+					KustomizeDeploy: kustomizeConfig,
+				},
 			},
 		}, nil
 	}
@@ -113,9 +115,11 @@ func (k *kustomize) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 				Name: filepath.Base(kustomization),
 				Pipeline: latest.Pipeline{
 					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KustomizeDeploy: &latest.KustomizeDeploy{
-								KustomizePaths: []string{kustomization},
+						Steps: []latest.DeployType{
+							{
+								KustomizeDeploy: &latest.KustomizeDeploy{
+									KustomizePaths: []string{kustomization},
+								},
 							},
 						},
 					},
@@ -125,8 +129,10 @@ func (k *kustomize) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 	}
 
 	return latest.DeployConfig{
-		DeployType: latest.DeployType{
-			KustomizeDeploy: kustomizeConfig,
+		Steps: []latest.DeployType{
+			{
+				KustomizeDeploy: kustomizeConfig,
+			},
 		},
 	}, profiles
 }

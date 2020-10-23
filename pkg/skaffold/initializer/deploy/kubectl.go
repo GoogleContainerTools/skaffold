@@ -51,9 +51,11 @@ func newKubectlInitializer(potentialConfigs []string) *kubectl {
 // skaffold kubectl deployment config.
 func (k *kubectl) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 	return latest.DeployConfig{
-		DeployType: latest.DeployType{
-			KubectlDeploy: &latest.KubectlDeploy{
-				Manifests: k.configs,
+		Steps: []latest.DeployType{
+			{
+				KubectlDeploy: &latest.KubectlDeploy{
+					Manifests: k.configs,
+				},
 			},
 		},
 	}, nil

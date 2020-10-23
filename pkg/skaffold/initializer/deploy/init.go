@@ -40,9 +40,11 @@ type cliDeployInit struct {
 
 func (c *cliDeployInit) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 	return latest.DeployConfig{
-		DeployType: latest.DeployType{
-			KubectlDeploy: &latest.KubectlDeploy{
-				Manifests: c.cliKubernetesManifests,
+		Steps: []latest.DeployType{
+			{
+				KubectlDeploy: &latest.KubectlDeploy{
+					Manifests: c.cliKubernetesManifests,
+				},
 			},
 		},
 	}, nil

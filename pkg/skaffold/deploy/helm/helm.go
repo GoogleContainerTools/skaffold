@@ -95,9 +95,9 @@ type Deployer struct {
 }
 
 // NewDeployer returns a configured Deployer
-func NewDeployer(cfg kubectl.Config, labels map[string]string) *Deployer {
+func NewDeployer(cfg kubectl.Config, step latest.DeployType, labels map[string]string) *Deployer {
 	return &Deployer{
-		HelmDeploy:  cfg.Pipeline().Deploy.HelmDeploy,
+		HelmDeploy:  step.HelmDeploy,
 		kubeContext: cfg.GetKubeContext(),
 		kubeConfig:  cfg.GetKubeConfig(),
 		namespace:   cfg.GetKubeNamespace(),
