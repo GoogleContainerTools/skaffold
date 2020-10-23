@@ -101,6 +101,13 @@ func TestShowAIError(t *testing.T) {
 			err:      fmt.Errorf(`docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  context canceled`),
 			expected: "Build Cancelled.",
 		},
+		{
+			description: "deploy failed.",
+			opts:        config.SkaffoldOptions{},
+			context:     &config.ContextConfig{},
+			err:         fmt.Errorf(`exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get "https://192.168.64.3:8443/version?timeout=32s": net/http: TLS handshake timeout`),
+			expected:    "Deploy Failed. Check your cluster connection.",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
