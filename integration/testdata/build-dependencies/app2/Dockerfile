@@ -1,4 +1,5 @@
-FROM busybox
+ARG IMAGE3
+FROM busybox as builder
 
 # SLEEP is to simulate build time
 ARG SLEEP=0
@@ -11,5 +12,8 @@ ENV FAIL=${FAIL}
 RUN echo "sleep ${SLEEP_TIMEOUT}"
 RUN sleep ${SLEEP_TIMEOUT}
 RUN [ "${FAIL}" == "0" ] || false
+
+FROM $IMAGE3
+COPY --from=builder . .
 
 CMD while true; do cat /foo; sleep 1; done

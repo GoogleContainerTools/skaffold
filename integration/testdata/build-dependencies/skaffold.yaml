@@ -24,6 +24,7 @@ build:
         FAIL: "0"
     requires:
     - image: image3
+      alias: IMAGE3
 
   - image: image3
     context: app3
