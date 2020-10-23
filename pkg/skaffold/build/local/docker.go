@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -47,9 +48,15 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 	var imageID string
 
 	if b.local.UseDockerCLI || b.local.UseBuildkit {
-		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag)
+		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, a.Dependencies, tag)
 	} else {
-		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag, mode)
+		var deps map[string]*string
+		deps, err = build.CreateBuildArgsFromArtifacts(a.Dependencies, b.artifactStore)
+		if err != nil {
+			return "", fmt.Errorf("unable to resolve required artifacts: %w", err)
+		}
+		opts := docker.BuildOptions{Tag: tag, Mode: mode, ExtraBuildArgs: deps}
+		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, opts)
 	}
 
 	if err != nil {
@@ -67,14 +74,18 @@ func (b *Builder) retrieveExtraEnv() []string {
 	return b.localDocker.ExtraEnv()
 }
 
-func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, tag string) (string, error) {
+func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, dependencies []*latest.ArtifactDependency, tag string) (string, error) {
 	dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.DockerfilePath)
 	if err != nil {
 		return "", fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", tag}
-	ba, err := docker.EvalBuildArgs(b.mode, workspace, a)
+	deps, err := build.CreateBuildArgsFromArtifacts(dependencies, b.artifactStore)
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve required artifacts: %w", err)
+	}
+	ba, err := docker.EvalBuildArgs(b.mode, workspace, a, deps)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}

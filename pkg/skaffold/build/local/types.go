@@ -47,6 +47,7 @@ type Builder struct {
 	insecureRegistries map[string]bool
 	muted              build.Muted
 	localPruner        *pruner
+	artifactStore      build.ArtifactStore
 }
 
 // external dependencies are wrapped
@@ -109,6 +110,11 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		muted:              cfg.Muted(),
 	}, nil
+}
+
+func (b *Builder) WithArtifactStore(store build.ArtifactStore) *Builder {
+	b.artifactStore = store
+	return b
 }
 
 func (b *Builder) PushImages() bool {

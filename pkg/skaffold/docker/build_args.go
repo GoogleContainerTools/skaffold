@@ -37,7 +37,7 @@ var (
 	}
 )
 
-func evalBuildArgs(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+func evalBuildArgs(mode config.RunMode, workspace string, a *latest.DockerArtifact, extra map[string]*string) (map[string]*string, error) {
 	var defaults map[string]string
 	switch mode {
 	case config.RunModes.Debug:
@@ -51,6 +51,11 @@ func evalBuildArgs(mode config.RunMode, workspace string, a *latest.DockerArtifa
 	for k, v := range defaults {
 		result[k] = &v
 	}
+
+	for k, v := range extra {
+		result[k] = v
+	}
+
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, a.DockerfilePath)
 	if err != nil {
 		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)

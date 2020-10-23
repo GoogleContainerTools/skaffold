@@ -206,6 +206,11 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, cfg Config) (
 		switch node.Value {
 		case command.From:
 			from := fromInstruction(node)
+			if from.image == "" {
+				// some build args like artifact dependencies are not available until the first build sequence has completed.
+				// skip check if there are unavailable images
+				continue
+			}
 			if from.as != "" {
 				// Stage names are case insensitive
 				stages[strings.ToLower(from.as)] = true
@@ -311,6 +316,12 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 			// onbuild should immediately follow the from command
 			expandedNodes = append(expandedNodes, nodes[n:m+1]...)
 			n = m + 1
+
+			if from.image == "" {
+				// some build args like artifact dependencies are not available until the first build sequence has completed.
+				// skip check if there are unavailable images
+				continue
+			}
 
 			var onbuildNodes []*parser.Node
 			if ons, found := onbuildNodesCache[strings.ToLower(from.image)]; found {

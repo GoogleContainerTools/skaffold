@@ -64,7 +64,7 @@ type LocalDaemon interface {
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
-	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.RunMode) (string, error)
+	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, opts BuildOptions) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
@@ -78,6 +78,12 @@ type LocalDaemon interface {
 	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
 	DiskUsage(ctx context.Context) (uint64, error)
 	RawClient() client.CommonAPIClient
+}
+
+type BuildOptions struct {
+	Tag            string
+	Mode           config.RunMode
+	ExtraBuildArgs map[string]*string
 }
 
 type localDaemon struct {
@@ -167,14 +173,13 @@ func (l *localDaemon) CheckCompatible(a *latest.DockerArtifact) error {
 }
 
 // Build performs a docker build and returns the imageID.
-func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string, mode config.RunMode) (string, error) {
+func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, opts BuildOptions) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	if err := l.CheckCompatible(a); err != nil {
 		return "", err
 	}
-
-	buildArgs, err := EvalBuildArgs(mode, workspace, a)
+	buildArgs, err := EvalBuildArgs(opts.Mode, workspace, a, opts.ExtraBuildArgs)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
@@ -200,7 +205,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
 
 	resp, err := l.apiClient.ImageBuild(ctx, body, types.ImageBuildOptions{
-		Tags:        []string{ref},
+		Tags:        []string{opts.Tag},
 		Dockerfile:  a.DockerfilePath,
 		BuildArgs:   buildArgs,
 		CacheFrom:   a.CacheFrom,
@@ -236,7 +241,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	if imageID == "" {
 		// Maybe this version of Docker doesn't return the digest of the image
 		// that has been built.
-		imageID, err = l.ImageID(ctx, ref)
+		imageID, err = l.ImageID(ctx, opts.Tag)
 		if err != nil {
 			return "", fmt.Errorf("getting digest: %w", err)
 		}
