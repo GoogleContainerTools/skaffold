@@ -82,7 +82,7 @@ var knownBuildProblems = []problem{
 		suggestion: func(config.SkaffoldOptions) []*proto.Suggestion {
 			return []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_DOCKER_RUNNING,
-				Action:         "Please check if docker is running",
+				Action:         "Check if docker is running",
 			}}
 		},
 	},
