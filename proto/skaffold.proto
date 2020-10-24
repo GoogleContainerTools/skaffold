@@ -533,6 +533,10 @@ enum StatusCode {
     // Skaffold encountered an error when evaluating artifact dependencies
     INIT_CREATE_ARTIFACT_DEP_ERROR = 909;
 
+    // Deploy errors
+
+    // Cluster connection errors
+    DEPLOY_CLUSTER_CONNECTION_ERR = 1001;
 }
 
 // Enum for Suggestion codes

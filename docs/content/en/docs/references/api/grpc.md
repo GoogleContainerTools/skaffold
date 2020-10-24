@@ -825,6 +825,7 @@ For Cancelled Error code, use range 800 to 850.
 | INIT_CACHE_ERROR | 907 | Skaffold encountered an error validating the artifact cache |
 | INIT_CREATE_WATCH_TRIGGER_ERROR | 908 | Skaffold encountered an error when configuring file watching |
 | INIT_CREATE_ARTIFACT_DEP_ERROR | 909 | Skaffold encountered an error when evaluating artifact dependencies |
+| DEPLOY_CLUSTER_CONNECTION_ERR | 1001 | Cluster connection errors |
 
 
 

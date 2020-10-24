@@ -244,11 +244,17 @@ func TestShowAIError(t *testing.T) {
 			},
 		},
 		{
-			description: "deploy failed.",
+			description: "deploy failed",
 			opts:        config.SkaffoldOptions{},
 			context:     &config.ContextConfig{},
+			phase:       Deploy,
 			err:         fmt.Errorf(`exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get "https://192.168.64.3:8443/version?timeout=32s": net/http: TLS handshake timeout`),
-			expected:    "Deploy Failed. Check your cluster connection.",
+			expected:    `exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get "https://192.168.64.3:8443/version?timeout=32s": net/http: TLS handshake timeout`,
+			expectedAE: &proto.ActionableErr{
+				ErrCode:     proto.StatusCode_DEPLOY_UNKNOWN,
+				Message:     `exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get "https://192.168.64.3:8443/version?timeout=32s": net/http: TLS handshake timeout`,
+				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+			},
 		},
 	}
 	for _, test := range append(tests, initTestCases...) {
