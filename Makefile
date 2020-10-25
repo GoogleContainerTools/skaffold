@@ -40,7 +40,7 @@ VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
 
 ifeq "$(strip $(VERSION))" ""
- override VERSION = $(shell git describe --always --tags --dirty)
+	override VERSION = $(shell git describe --always --tags --dirty)
 endif
 
 LDFLAGS_linux = -static
