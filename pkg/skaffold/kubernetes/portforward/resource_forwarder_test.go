@@ -37,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -86,14 +87,14 @@ func TestStart(t *testing.T) {
 		Type:      constants.Service,
 		Name:      "svc1",
 		Namespace: "default",
-		Port:      8080,
+		Port:      schemautil.FromInt(8080),
 	}
 
 	svc2 := &latest.PortForwardResource{
 		Type:      constants.Service,
 		Name:      "svc2",
 		Namespace: "default",
-		Port:      9000,
+		Port:      schemautil.FromInt(9000),
 	}
 
 	tests := []struct {
@@ -158,7 +159,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			resource: latest.PortForwardResource{
 				Type: "service",
 				Name: "serviceName",
-				Port: 8080,
+				Port: schemautil.FromInt(8080),
 			},
 			availablePorts: []int{8080},
 			expected:       newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false),
@@ -168,7 +169,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 				Type:      "deployment",
 				Namespace: "default",
 				Name:      "depName",
-				Port:      8080,
+				Port:      schemautil.FromInt(8080),
 			},
 			forwardedResources: map[string]*portForwardEntry{
 				"deployment-depName-default-8080": {
@@ -176,7 +177,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 						Type:      "deployment",
 						Namespace: "default",
 						Name:      "depName",
-						Port:      8080,
+						Port:      schemautil.FromInt(8080),
 					},
 					localPort: 9000,
 				},
@@ -208,7 +209,7 @@ func TestUserDefinedResources(t *testing.T) {
 		Type:      constants.Service,
 		Name:      "svc1",
 		Namespace: "test",
-		Port:      8080,
+		Port:      schemautil.FromInt(8080),
 	}
 
 	tests := []struct {
@@ -220,7 +221,7 @@ func TestUserDefinedResources(t *testing.T) {
 		{
 			description: "one service and one user defined pod",
 			userResources: []*latest.PortForwardResource{
-				{Type: constants.Pod, Name: "pod", Namespace: "some", Port: 9000},
+				{Type: constants.Pod, Name: "pod", Namespace: "some", Port: schemautil.FromInt(9000)},
 			},
 			namespaces: []string{"test"},
 			expectedResources: []string{
@@ -230,7 +231,7 @@ func TestUserDefinedResources(t *testing.T) {
 		},
 		{
 			userResources: []*latest.PortForwardResource{
-				{Type: constants.Pod, Name: "pod", Port: 9000},
+				{Type: constants.Pod, Name: "pod", Port: schemautil.FromInt(9000)},
 			},
 			namespaces: []string{"test"},
 			expectedResources: []string{
@@ -240,7 +241,7 @@ func TestUserDefinedResources(t *testing.T) {
 		},
 		{
 			userResources: []*latest.PortForwardResource{
-				{Type: constants.Pod, Name: "pod", Port: 9000},
+				{Type: constants.Pod, Name: "pod", Port: schemautil.FromInt(9000)},
 			},
 			namespaces: []string{"test", "some"},
 			expectedResources: []string{
@@ -249,8 +250,8 @@ func TestUserDefinedResources(t *testing.T) {
 		},
 		{
 			userResources: []*latest.PortForwardResource{
-				{Type: constants.Pod, Name: "pod", Port: 9000},
-				{Type: constants.Pod, Name: "pod", Namespace: "some", Port: 9001},
+				{Type: constants.Pod, Name: "pod", Port: schemautil.FromInt(9000)},
+				{Type: constants.Pod, Name: "pod", Namespace: "some", Port: schemautil.FromInt(9001)},
 			},
 			namespaces: []string{"test", "some"},
 			expectedResources: []string{
@@ -331,14 +332,14 @@ func TestRetrieveServices(t *testing.T) {
 				Type:      constants.Service,
 				Name:      "svc1",
 				Namespace: "test",
-				Port:      8080,
+				Port:      schemautil.FromInt(8080),
 				Address:   "127.0.0.1",
 				LocalPort: 8080,
 			}, {
 				Type:      constants.Service,
 				Name:      "svc2",
 				Namespace: "test1",
-				Port:      8081,
+				Port:      schemautil.FromInt(8081),
 				Address:   "127.0.0.1",
 				LocalPort: 8081,
 			}},

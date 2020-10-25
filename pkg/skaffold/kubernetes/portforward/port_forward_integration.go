@@ -27,6 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 // SimulateDevCycle is used for testing a port forward + stop + restart in a simulated dev cycle
@@ -41,7 +42,7 @@ func SimulateDevCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
 		Type:      "deployment",
 		Name:      "leeroy-web",
 		Namespace: namespace,
-		Port:      8080,
+		Port:      schemautil.FromInt(8080),
 	}, "", "dummy container", "", "", localPort, false)
 	defer em.Stop()
 	em.forwardPortForwardEntry(ctx, pfe)

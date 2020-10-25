@@ -453,11 +453,24 @@
             "format": "int32"
           },
           {
-            "name": "event.portEvent.remotePort",
+            "name": "event.portEvent.remotePort.type",
             "in": "query",
             "required": false,
             "type": "integer",
             "format": "int32"
+          },
+          {
+            "name": "event.portEvent.remotePort.intVal",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.portEvent.remotePort.strVal",
+            "in": "query",
+            "required": false,
+            "type": "string"
           },
           {
             "name": "event.portEvent.podName",
@@ -1659,6 +1672,23 @@
       },
       "description": "`FileSyncState` contains the status of the current file sync"
     },
+    "protoIntOrString": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "intVal": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "strVal": {
+          "type": "string"
+        }
+      },
+      "description": "IntOrString is a type that can hold an int32 or a string."
+    },
     "protoIntent": {
       "type": "object",
       "properties": {
@@ -1733,8 +1763,7 @@
           "format": "int32"
         },
         "remotePort": {
-          "type": "integer",
-          "format": "int32"
+          "$ref": "#/definitions/protoIntOrString"
         },
         "podName": {
           "type": "string"

@@ -27,9 +27,12 @@ import (
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+var remotePort = proto.IntOrString{Type: 0, IntVal: 2001}
 
 func TestGetLogEvents(t *testing.T) {
 	for step := 0; step < 1000; step++ {
@@ -164,7 +167,7 @@ func TestPortForwarded(t *testing.T) {
 	handler.state = emptyState(latest.Pipeline{}, "test", true, true, true)
 
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] == nil })
-	PortForwarded(8080, 8888, "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
+	PortForwarded(8080, schemautil.FromInt(8888), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] != nil })
 }
 
@@ -342,7 +345,7 @@ func TestResetStateOnBuild(t *testing.T) {
 		ForwardedPorts: map[int32]*proto.PortEvent{
 			2001: {
 				LocalPort:  2000,
-				RemotePort: 2001,
+				RemotePort: &remotePort,
 				PodName:    "test/pod",
 			},
 		},
@@ -377,7 +380,7 @@ func TestResetStateOnDeploy(t *testing.T) {
 		ForwardedPorts: map[int32]*proto.PortEvent{
 			2001: {
 				LocalPort:  2000,
-				RemotePort: 2001,
+				RemotePort: &remotePort,
 				PodName:    "test/pod",
 			},
 		},
@@ -420,7 +423,7 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 		ForwardedPorts: map[int32]*proto.PortEvent{
 			2001: {
 				LocalPort:  2000,
-				RemotePort: 2001,
+				RemotePort: &remotePort,
 				PodName:    "test/pod",
 			},
 		},
@@ -445,7 +448,7 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 		ForwardedPorts: map[int32]*proto.PortEvent{
 			2001: {
 				LocalPort:  2000,
-				RemotePort: 2001,
+				RemotePort: &remotePort,
 				PodName:    "test/pod",
 			},
 		},

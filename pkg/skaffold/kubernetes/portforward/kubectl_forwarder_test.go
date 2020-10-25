@@ -37,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -199,29 +200,29 @@ func TestPortForwardArgs(t *testing.T) {
 	}{
 		{
 			description: "non-default address",
-			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: 9, Address: "0.0.0.0"}, "", "", "", "", 8080, false),
+			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: schemautil.FromInt(9), Address: "0.0.0.0"}, "", "", "", "", 8080, false),
 			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "pod/p", "8080:9", "--address", "0.0.0.0"},
 		},
 		{
 			description: "localhost is the default",
-			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: 9, Address: "127.0.0.1"}, "", "", "", "", 8080, false),
+			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: schemautil.FromInt(9), Address: "127.0.0.1"}, "", "", "", "", 8080, false),
 			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "pod/p", "8080:9"},
 		},
 		{
 			description: "no address",
-			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: 9}, "", "", "", "", 8080, false),
+			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "pod", Name: "p", Namespace: "ns", Port: schemautil.FromInt(9)}, "", "", "", "", 8080, false),
 			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "pod/p", "8080:9"},
 		},
 		{
 			description: "service to pod",
-			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "service", Name: "svc", Namespace: "ns", Port: 9}, "", "", "", "", 8080, false),
+			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "service", Name: "svc", Namespace: "ns", Port: schemautil.FromInt(9)}, "", "", "", "", 8080, false),
 			servicePod:  "servicePod",
 			servicePort: 9999,
 			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "pod/servicePod", "8080:9999"},
 		},
 		{
 			description: "service could not be mapped to pod",
-			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "service", Name: "svc", Namespace: "ns", Port: 9}, "", "", "", "", 8080, false),
+			input:       newPortForwardEntry(0, latest.PortForwardResource{Type: "service", Name: "svc", Namespace: "ns", Port: schemautil.FromInt(9)}, "", "", "", "", 8080, false),
 			serviceErr:  errors.New("error"),
 			result:      []string{"--pod-running-timeout", "1s", "--namespace", "ns", "service/svc", "8080:9"},
 		},
@@ -232,7 +233,7 @@ func TestPortForwardArgs(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
 
-			t.Override(&findNewestPodForSvc, func(ctx context.Context, ns, serviceName string, servicePort int) (string, int, error) {
+			t.Override(&findNewestPodForSvc, func(ctx context.Context, ns, serviceName string, servicePort schemautil.IntOrString) (string, int, error) {
 				return test.servicePod, test.servicePort, test.serviceErr
 			})
 
@@ -259,27 +260,33 @@ func TestFindServicePort(t *testing.T) {
 	tests := []struct {
 		description string
 		service     *corev1.Service
-		port        int
+		port        schemautil.IntOrString
 		shouldErr   bool
 		expected    corev1.ServicePort
 	}{
 		{
 			description: "simple case",
 			service:     mockService("svc1", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 90, TargetPort: intstr.FromInt(80)}, {Port: 80, TargetPort: intstr.FromInt(8080)}}),
-			port:        80,
+			port:        schemautil.FromInt(80),
 			expected:    corev1.ServicePort{Port: 80, TargetPort: intstr.FromInt(8080)},
 		},
 		{
 			description: "no ports",
 			service:     mockService("svc2", corev1.ServiceTypeLoadBalancer, nil),
-			port:        80,
+			port:        schemautil.FromInt(80),
 			shouldErr:   true,
 		},
 		{
 			description: "no matching ports",
 			service:     mockService("svc3", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Port: 90, TargetPort: intstr.FromInt(80)}, {Port: 80, TargetPort: intstr.FromInt(8080)}}),
-			port:        100,
+			port:        schemautil.FromInt(100),
 			shouldErr:   true,
+		},
+		{
+			description: "simple case with service port names",
+			service:     mockService("svc1", corev1.ServiceTypeLoadBalancer, []corev1.ServicePort{{Name: "aaa", Port: 90, TargetPort: intstr.FromInt(80)}, {Name: "bbb", Port: 80, TargetPort: intstr.FromInt(8080)}}),
+			port:        schemautil.FromString("bbb"),
+			expected:    corev1.ServicePort{Name: "bbb", Port: 80, TargetPort: intstr.FromInt(8080)},
 		},
 	}
 	for _, test := range tests {
@@ -411,7 +418,7 @@ func TestFindNewestPodForService(t *testing.T) {
 				return fake.NewSimpleClientset(test.clientResources...), test.clientErr
 			})
 
-			pod, port, err := findNewestPodForService(ctx, "", test.serviceName, test.servicePort)
+			pod, port, err := findNewestPodForService(ctx, "", test.serviceName, schemautil.FromInt(test.servicePort))
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.chosenPod, pod)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.chosenPort, port)
 		})

@@ -190,7 +190,7 @@ message ResourceStatusCheckEvent {
 // PortEvent Event describes each port forwarding event.
 message PortEvent {
     int32 localPort = 1; // local port for forwarded resource
-    int32 remotePort = 2; // remote port is the resource port that will be forwarded.
+    IntOrString remotePort = 2; // remote port is the resource port that will be forwarded.
     string podName = 3; // pod name if port forwarded resourceType is Pod
     string containerName = 4; // container name if specified in the kubernetes spec
     string namespace = 5; // the namespace of the resource to port forward.
@@ -256,6 +256,13 @@ message Intent {
 message Suggestion {
     SuggestionCode suggestionCode = 1; // code representing a suggestion
     string action = 2; // action represents the suggestion action
+}
+
+// IntOrString is a type that can hold an int32 or a string.
+message IntOrString {
+    int32 type = 1; // type of stored value
+    int32 intVal = 2; // int value
+    string strVal = 3; // string value
 }
 
 // Describes all the methods for the Skaffold API

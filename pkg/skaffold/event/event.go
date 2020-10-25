@@ -26,6 +26,7 @@ import (
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
@@ -382,12 +383,16 @@ func FileSyncSucceeded(fileCount int, image string) {
 }
 
 // PortForwarded notifies that a remote port has been forwarded locally.
-func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string, portName string, resourceType, resourceName, address string) {
+func PortForwarded(localPort int32, remotePort util.IntOrString, podName, containerName, namespace string, portName string, resourceType, resourceName, address string) {
 	handler.handle(&proto.Event{
 		EventType: &proto.Event_PortEvent{
 			PortEvent: &proto.PortEvent{
+				RemotePort: &proto.IntOrString{
+					Type:   int32(remotePort.Type),
+					IntVal: int32(remotePort.IntVal),
+					StrVal: remotePort.StrVal,
+				},
 				LocalPort:     localPort,
-				RemotePort:    remotePort,
 				PodName:       podName,
 				ContainerName: containerName,
 				Namespace:     namespace,

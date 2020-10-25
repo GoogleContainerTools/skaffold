@@ -89,7 +89,7 @@ type PortForwardResource struct {
 	Namespace string `yaml:"namespace,omitempty"`
 
 	// Port is the resource port that will be forwarded.
-	Port int `yaml:"port,omitempty"`
+	Port util.IntOrString `yaml:"port,omitempty"`
 
 	// Address is the local address to bind to. Defaults to the loopback address 127.0.0.1.
 	Address string `yaml:"address,omitempty"`

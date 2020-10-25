@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -314,10 +315,10 @@ func TestSetPortForwardLocalPort(t *testing.T) {
 			PortForward: []*latest.PortForwardResource{
 				{
 					Type: constants.Service,
-					Port: 8080,
+					Port: schemautil.FromInt(8080),
 				}, {
 					Type:      constants.Service,
-					Port:      8080,
+					Port:      schemautil.FromInt(8080),
 					LocalPort: 9000,
 				},
 			},

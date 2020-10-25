@@ -1968,18 +1968,18 @@ func (m *ResourceStatusCheckEvent) GetActionableErr() *ActionableErr {
 
 // PortEvent Event describes each port forwarding event.
 type PortEvent struct {
-	LocalPort            int32    `protobuf:"varint,1,opt,name=localPort,proto3" json:"localPort,omitempty"`
-	RemotePort           int32    `protobuf:"varint,2,opt,name=remotePort,proto3" json:"remotePort,omitempty"`
-	PodName              string   `protobuf:"bytes,3,opt,name=podName,proto3" json:"podName,omitempty"`
-	ContainerName        string   `protobuf:"bytes,4,opt,name=containerName,proto3" json:"containerName,omitempty"`
-	Namespace            string   `protobuf:"bytes,5,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	PortName             string   `protobuf:"bytes,6,opt,name=portName,proto3" json:"portName,omitempty"`
-	ResourceType         string   `protobuf:"bytes,7,opt,name=resourceType,proto3" json:"resourceType,omitempty"`
-	ResourceName         string   `protobuf:"bytes,8,opt,name=resourceName,proto3" json:"resourceName,omitempty"`
-	Address              string   `protobuf:"bytes,9,opt,name=address,proto3" json:"address,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	LocalPort            int32        `protobuf:"varint,1,opt,name=localPort,proto3" json:"localPort,omitempty"`
+	RemotePort           *IntOrString `protobuf:"bytes,2,opt,name=remotePort,proto3" json:"remotePort,omitempty"`
+	PodName              string       `protobuf:"bytes,3,opt,name=podName,proto3" json:"podName,omitempty"`
+	ContainerName        string       `protobuf:"bytes,4,opt,name=containerName,proto3" json:"containerName,omitempty"`
+	Namespace            string       `protobuf:"bytes,5,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	PortName             string       `protobuf:"bytes,6,opt,name=portName,proto3" json:"portName,omitempty"`
+	ResourceType         string       `protobuf:"bytes,7,opt,name=resourceType,proto3" json:"resourceType,omitempty"`
+	ResourceName         string       `protobuf:"bytes,8,opt,name=resourceName,proto3" json:"resourceName,omitempty"`
+	Address              string       `protobuf:"bytes,9,opt,name=address,proto3" json:"address,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
 }
 
 func (m *PortEvent) Reset()         { *m = PortEvent{} }
@@ -2014,11 +2014,11 @@ func (m *PortEvent) GetLocalPort() int32 {
 	return 0
 }
 
-func (m *PortEvent) GetRemotePort() int32 {
+func (m *PortEvent) GetRemotePort() *IntOrString {
 	if m != nil {
 		return m.RemotePort
 	}
-	return 0
+	return nil
 }
 
 func (m *PortEvent) GetPodName() string {
@@ -2550,6 +2550,62 @@ func (m *Suggestion) GetAction() string {
 	return ""
 }
 
+// IntOrString is a type that can hold an int32 or a string.
+type IntOrString struct {
+	Type                 int32    `protobuf:"varint,1,opt,name=type,proto3" json:"type,omitempty"`
+	IntVal               int32    `protobuf:"varint,2,opt,name=intVal,proto3" json:"intVal,omitempty"`
+	StrVal               string   `protobuf:"bytes,3,opt,name=strVal,proto3" json:"strVal,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *IntOrString) Reset()         { *m = IntOrString{} }
+func (m *IntOrString) String() string { return proto.CompactTextString(m) }
+func (*IntOrString) ProtoMessage()    {}
+func (*IntOrString) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{29}
+}
+
+func (m *IntOrString) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_IntOrString.Unmarshal(m, b)
+}
+func (m *IntOrString) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_IntOrString.Marshal(b, m, deterministic)
+}
+func (m *IntOrString) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IntOrString.Merge(m, src)
+}
+func (m *IntOrString) XXX_Size() int {
+	return xxx_messageInfo_IntOrString.Size(m)
+}
+func (m *IntOrString) XXX_DiscardUnknown() {
+	xxx_messageInfo_IntOrString.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_IntOrString proto.InternalMessageInfo
+
+func (m *IntOrString) GetType() int32 {
+	if m != nil {
+		return m.Type
+	}
+	return 0
+}
+
+func (m *IntOrString) GetIntVal() int32 {
+	if m != nil {
+		return m.IntVal
+	}
+	return 0
+}
+
+func (m *IntOrString) GetStrVal() string {
+	if m != nil {
+		return m.StrVal
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterEnum("proto.BuilderType", BuilderType_name, BuilderType_value)
 	proto.RegisterEnum("proto.BuildType", BuildType_name, BuildType_value)
@@ -2594,6 +2650,7 @@ func init() {
 	proto.RegisterType((*TriggerState)(nil), "proto.TriggerState")
 	proto.RegisterType((*Intent)(nil), "proto.Intent")
 	proto.RegisterType((*Suggestion)(nil), "proto.Suggestion")
+	proto.RegisterType((*IntOrString)(nil), "proto.IntOrString")
 }
 
 func init() { proto.RegisterFile("skaffold.proto", fileDescriptor_4f2d38e344f9dbf5) }

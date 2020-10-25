@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -57,7 +58,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Type:      "pod",
 						Name:      "podname",
 						Namespace: "namespace",
-						Port:      8080,
+						Port:      schemautil.FromInt(8080),
 						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
@@ -102,7 +103,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Type:      "pod",
 						Name:      "podname",
 						Namespace: "namespace",
-						Port:      8080,
+						Port:      schemautil.FromInt(8080),
 						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
@@ -178,7 +179,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Type:      "pod",
 						Name:      "podname",
 						Namespace: "namespace",
-						Port:      8080,
+						Port:      schemautil.FromInt(8080),
 						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
@@ -195,7 +196,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Type:      "pod",
 						Name:      "podname2",
 						Namespace: "namespace2",
-						Port:      50051,
+						Port:      schemautil.FromInt(50051),
 						Address:   "127.0.0.1",
 						LocalPort: 50051,
 					},
@@ -262,7 +263,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Type:      "pod",
 						Name:      "podname",
 						Namespace: "namespace",
-						Port:      8080,
+						Port:      schemautil.FromInt(8080),
 						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
@@ -279,7 +280,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Type:      "pod",
 						Name:      "podname2",
 						Namespace: "namespace2",
-						Port:      8080,
+						Port:      schemautil.FromInt(8080),
 						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
@@ -345,7 +346,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Type:      "pod",
 						Name:      "podname",
 						Namespace: "namespace",
-						Port:      8080,
+						Port:      schemautil.FromInt(8080),
 						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
