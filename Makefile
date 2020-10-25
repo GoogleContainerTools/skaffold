@@ -70,6 +70,7 @@ $(BUILD_DIR)/$(PROJECT): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
 
 .PHONY: install
 install: $(BUILD_DIR)/$(PROJECT)
+	mkdir -p $(GOPATH)/bin
 	cp $(BUILD_DIR)/$(PROJECT) $(GOPATH)/bin/$(PROJECT)
 
 .PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
