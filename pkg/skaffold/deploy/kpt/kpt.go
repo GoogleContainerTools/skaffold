@@ -28,6 +28,8 @@ import (
 	"regexp"
 	"strings"
 
+	"sigs.k8s.io/kustomize/kyaml/fn/framework"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8syaml "sigs.k8s.io/yaml"
 
@@ -188,6 +190,23 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []bu
 		return nil, fmt.Errorf("reading config manifests: %w", err)
 	}
 
+	// A workaround for issue https://github.com/GoogleContainerTools/kpt/issues/1149
+	// fn-path cannot be recognized in kpt pipeline mode, and it results in that the kpt functions
+	// in are ignored.
+	var kptFnBuf []byte
+	if len(k.Fn.FnPath) > 0 {
+		cmd = exec.CommandContext(
+			ctx, "kpt", kptCommandArgs(k.Fn.FnPath, []string{"fn", "source"},
+				nil, nil)...)
+		kptFnBuf, err = util.RunCmdOut(cmd)
+	} else {
+		kptFnBuf = buf
+	}
+	kptFn, err := k.getKptFunc(kptFnBuf)
+	if err != nil {
+		return nil, err
+	}
+
 	// Hydrate the manifests source.
 	_, err = kustomize.FindKustomizationConfig(k.Dir)
 	// Only run kustomize if kustomization.yaml is found.
@@ -204,6 +223,7 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []bu
 		defer func() {
 			os.RemoveAll(tmpKustomizeDir)
 		}()
+
 		err = k.sink(ctx, buf, tmpKustomizeDir)
 		if err != nil {
 			return nil, err
@@ -215,9 +235,10 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []bu
 			return nil, fmt.Errorf("kustomize build: %w", err)
 		}
 	}
-
 	// Run kpt functions against the hydrated manifests.
 	cmd = exec.CommandContext(ctx, "kpt", kptCommandArgs("", []string{"fn", "run"}, flags, nil)...)
+	buf = append(buf, []byte("---\n")...)
+	buf = append(buf, kptFn...)
 	cmd.Stdin = bytes.NewBuffer(buf)
 	buf, err = util.RunCmdOut(cmd)
 	if err != nil {
@@ -246,12 +267,10 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []bu
 	if len(buf) > 0 {
 		manifests.Append(buf)
 	}
-	// exclude the kpt function from the manipulated resources.
 	manifests, err = k.excludeKptFn(manifests)
 	if err != nil {
-		return nil, fmt.Errorf("exclude kpt fn from manipulated resources: %w", err)
+		return nil, fmt.Errorf("excluding kpt functions from manifests: %w", err)
 	}
-
 	manifests, err = manifests.ReplaceImages(builds)
 	if err != nil {
 		return nil, fmt.Errorf("replacing images in manifests: %w", err)
@@ -262,6 +281,36 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []bu
 	}
 
 	return manifests.SetLabels(k.labels)
+}
+
+func (k *Deployer) getKptFunc(buf []byte) ([]byte, error) {
+	input := bytes.NewBufferString(string(buf))
+	rl := framework.ResourceList{
+		Reader: input, // for testing only
+	}
+	if err := rl.Read(); err != nil {
+		return nil, fmt.Errorf("reading ResourceList %w", err)
+	}
+	var kptFn []byte
+	for i := range rl.Items {
+		item, err := rl.Items[i].String()
+		if err != nil {
+			return nil, fmt.Errorf("reading Item %w", err)
+		}
+		var obj unstructured.Unstructured
+		jByte, err := k8syaml.YAMLToJSON([]byte(item))
+		if err != nil {
+			continue
+		}
+		if err := obj.UnmarshalJSON(jByte); err != nil {
+			continue
+		}
+		// Found kpt fn.
+		if _, ok := obj.GetAnnotations()[kptFnAnnotation]; ok {
+			kptFn = append(kptFn, []byte(item)...)
+		}
+	}
+	return kptFn, nil
 }
 
 func (k *Deployer) sink(ctx context.Context, buf []byte, sinkDir string) error {
@@ -414,9 +463,8 @@ func (k *Deployer) getKptFnRunArgs() ([]string, error) {
 	}
 
 	count := 0
-
+	// fn-path is not supported due to kpt issue https://github.com/GoogleContainerTools/kpt/issues/1149
 	if len(k.Fn.FnPath) > 0 {
-		flags = append(flags, "--fn-path", k.Fn.FnPath)
 		count++
 	}
 

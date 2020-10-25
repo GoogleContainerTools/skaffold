@@ -115,9 +115,10 @@ func TestKpt_Deploy(t *testing.T) {
 				- foo.yaml`},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn source kpt-func.yaml", ``).
 				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
 				AndRunOut(fmt.Sprintf("kustomize build %v", tmpKustomizeDir), ``).
-				AndRunOut("kpt fn run --dry-run --fn-path kpt-func.yaml", testPod).
+				AndRunOut("kpt fn run --dry-run", testPod).
 				AndRun("kpt live apply valid_path"),
 			expected: []string{"default"},
 		},
@@ -510,8 +511,9 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source test", ``).
-				AndRunOut("kpt fn run --dry-run --fn-path kpt-func.yaml", output3).
-				AndRunOut("kpt fn sink .tmp-sink-dir/test", ``),
+				AndRunOut("kpt fn source kpt-func.yaml", ``).
+				AndRunOut("kpt fn run --dry-run", output3).
+				AndRunOut(fmt.Sprintf("kpt fn sink .tmp-sink-dir/test"), ``),
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
@@ -595,6 +597,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn source kpt-func.yaml", ``).
+				AndRunOut("kpt fn run --dry-run --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``).
 				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			shouldErr: true,
 		},
