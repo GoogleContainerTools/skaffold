@@ -78,6 +78,7 @@ func Set(c *latest.SkaffoldConfig) error {
 
 	withLocalBuild(c,
 		setDefaultConcurrency,
+		setDefaultToBuildkit,
 	)
 
 	withCloudBuildConfig(c,
@@ -134,6 +135,12 @@ func withLocalBuild(c *latest.SkaffoldConfig, operations ...func(*latest.LocalBu
 func setDefaultConcurrency(local *latest.LocalBuild) {
 	if local.Concurrency == nil {
 		local.Concurrency = &constants.DefaultLocalConcurrency
+	}
+}
+
+func setDefaultToBuildkit(local *latest.LocalBuild) {
+	if local.UseBuildkit == false {
+		local.UseBuildkit = true
 	}
 }
 
