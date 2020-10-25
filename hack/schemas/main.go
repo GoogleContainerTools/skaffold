@@ -171,12 +171,20 @@ func generateSchema(root string, dryRun bool, version schema.Version) (bool, err
 	return same, nil
 }
 
-func yamlFieldName(field *ast.Field) string {
+func yamlTagValue(field *ast.Field) string {
 	tag := strings.Replace(field.Tag.Value, "`", "", -1)
 	tags := reflect.StructTag(tag)
 	yamlTag := tags.Get("yaml")
 
 	return strings.Split(yamlTag, ",")[0]
+}
+
+func defaultTagValue(field *ast.Field) string {
+	tag := strings.Replace(field.Tag.Value, "`", "", -1)
+	tags := reflect.StructTag(tag)
+	dTag := tags.Get("default")
+
+	return strings.Split(dTag, ",")[0]
 }
 
 //nolint:golint,goconst
@@ -234,7 +242,8 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 
 	case *ast.StructType:
 		for _, field := range tt.Fields.List {
-			yamlName := yamlFieldName(field)
+			ytv := yamlTagValue(field)
+			dtv := defaultTagValue(field)
 
 			if strings.Contains(field.Tag.Value, "inline") {
 				def.PreferredOrder = append(def.PreferredOrder, "<inline>")
@@ -245,20 +254,24 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 				continue
 			}
 
-			if yamlName == "" || yamlName == "-" {
+			if ytv == "" || ytv == "-" {
 				continue
 			}
 
 			if strings.Contains(field.Tag.Value, "required") {
-				def.Required = append(def.Required, yamlName)
+				def.Required = append(def.Required, ytv)
 			}
 
 			if def.Properties == nil {
 				def.Properties = make(map[string]*Definition)
 			}
 
-			def.PreferredOrder = append(def.PreferredOrder, yamlName)
-			def.Properties[yamlName] = g.newDefinition(field.Names[0].Name, field.Type, field.Doc.Text(), field.Tag.Value)
+			if dtv != "" {
+				def.Default = dtv
+			}
+
+			def.PreferredOrder = append(def.PreferredOrder, ytv)
+			def.Properties[ytv] = g.newDefinition(field.Names[0].Name, field.Type, field.Doc.Text(), field.Tag.Value)
 			def.AdditionalProperties = false
 		}
 	}

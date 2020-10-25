@@ -2231,7 +2231,8 @@
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",
-      "x-intellij-html-description": "<em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository."
+      "x-intellij-html-description": "<em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository.",
+      "default": "true"
     },
     "LogsConfig": {
       "properties": {
