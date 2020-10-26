@@ -268,7 +268,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
 					InitContainers: []v1.Container{{
-						Name:         "install-go-support",
+						Name:         "install-go-debug-support",
 						Image:        "HELPERS/go",
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
@@ -311,7 +311,7 @@ func TestTransformManifestDelve(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-go-support",
+								Name:         "install-go-debug-support",
 								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -354,7 +354,7 @@ func TestTransformManifestDelve(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-go-support",
+								Name:         "install-go-debug-support",
 								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -397,7 +397,7 @@ func TestTransformManifestDelve(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-go-support",
+								Name:         "install-go-debug-support",
 								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -438,7 +438,7 @@ func TestTransformManifestDelve(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-go-support",
+								Name:         "install-go-debug-support",
 								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -479,7 +479,7 @@ func TestTransformManifestDelve(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-go-support",
+								Name:         "install-go-debug-support",
 								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -522,7 +522,7 @@ func TestTransformManifestDelve(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-go-support",
+								Name:         "install-go-debug-support",
 								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -575,7 +575,7 @@ func TestTransformManifestDelve(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-go-support",
+								Name:         "install-go-debug-support",
 								Image:        "HELPERS/go",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
