@@ -91,11 +91,16 @@ var knownBuildProblems = []problem{
 // Deploy errors in deployment phase
 var knownDeployProblems = []problem{
 	{
-		regexp:  re(fmt.Sprintf("(?i).*%s.* Unable to connect.*", "")),
+		regexp:  re("(?i).*Unable to connect.*"),
 		errCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
 		description: func(error) string {
 			return "Deploy Failed."
 		},
-		suggestion: suggestDeployClusterConnectonErrorAction,
+		suggestion: func(_ config.SkaffoldOptions) []*proto.Suggestion {
+			return []*proto.Suggestion{{
+				SuggestionCode: proto.SuggestionCode_CHECK_HOST_CONNECTION,
+				Action:         "Check your cluster connection",
+			}}
+		},
 	},
 }

@@ -535,7 +535,7 @@ enum StatusCode {
 
     // Deploy errors
 
-    // Cluster connection errors
+    // Unable to connect to cluster
     DEPLOY_CLUSTER_CONNECTION_ERR = 1001;
 }
 
@@ -564,8 +564,8 @@ enum SuggestionCode {
 
     // Deploy error suggestion codes
 
-    // Kube config error
-    CHECK_KUBE_CONFIG = 201;
+    // Check cluster connection
+    CHECK_CLUSTER_CONNECTION = 201;
 
     // Container Run time error
 

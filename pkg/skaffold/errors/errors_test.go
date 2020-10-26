@@ -251,9 +251,12 @@ func TestShowAIError(t *testing.T) {
 			err:         fmt.Errorf(`exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get "https://192.168.64.3:8443/version?timeout=32s": net/http: TLS handshake timeout`),
 			expected:    `exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get "https://192.168.64.3:8443/version?timeout=32s": net/http: TLS handshake timeout`,
 			expectedAE: &proto.ActionableErr{
-				ErrCode:     proto.StatusCode_DEPLOY_UNKNOWN,
-				Message:     `exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get "https://192.168.64.3:8443/version?timeout=32s": net/http: TLS handshake timeout`,
-				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+				ErrCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
+				Message: "exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get \"https://192.168.64.3:8443/version?timeout=32s\": net/http: TLS handshake timeout",
+				Suggestions: []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_CHECK_HOST_CONNECTION,
+					Action:         "Check your cluster connection",
+				}},
 			},
 		},
 	}
