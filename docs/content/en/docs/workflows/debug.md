@@ -302,10 +302,7 @@ The API's _state_ ([gRPC](../references/api/grpc/#skaffoldservice), [REST](../re
 `skaffold debug` requires being able to examine and alter the
 command-line used in the container entrypoint.  This transformation
 will not work with images that use intermediate launch scripts or
-binaries.  For example, `debug` currently does not work with an image produced
-by the Cloud Native Buildpacks builder as it uses a `launcher`
-binary to run commands that are specified in a set of configuration
-files.
+binaries.
 
 ### Supported Deployers
 
