@@ -91,7 +91,7 @@ var knownBuildProblems = []problem{
 // Deploy errors in deployment phase
 var knownDeployProblems = []problem{
 	{
-		regexp:  re("(?i).*Unable to connect.*"),
+		regexp:  re("(?i).*unable to connect.*: Get (.*)"),
 		errCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
 		description: func(error) string {
 			return "Deploy Failed."
