@@ -61,10 +61,12 @@ GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
 GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
 GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
-STATIK_FILES = cmd/skaffold/app/cmd/statik/statik.go
+ifneq "$(strip $(LOCAL))" "true"
+	override STATIK_FILES =  cmd/skaffold/app/cmd/statik/statik.go
+endif
 
-# Build for local development.
-$(BUILD_DIR)/$(PROJECT): $(GO_FILES) $(BUILD_DIR)
+# Build for local development (LOCAL=true make install, skip license check)
+$(BUILD_DIR)/$(PROJECT):  $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -gcflags="all=-N -l" -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -o $@ $(BUILD_PACKAGE)
 
 .PHONY: install
