@@ -45,7 +45,6 @@ import (
 const (
 	inventoryTemplate = "inventory-template.yaml"
 	kptHydrated       = ".kpt-hydrated"
-	tmpSinkDir        = ".tmp-sink-dir"
 	tmpKustomizeDir   = ".kustomize"
 	kptFnAnnotation   = "config.kubernetes.io/function"
 	kptFnLocalConfig  = "config.kubernetes.io/local-config"
@@ -100,10 +99,6 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 	}
 
 	manifest.Write(manifests.String(), filepath.Join(applyDir, "resources.yaml"), out)
-	if err := os.RemoveAll(tmpSinkDir); err != nil {
-		return nil, fmt.Errorf("deleting temporary directory %s: %w", tmpSinkDir, err)
-	}
-
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "apply"}, k.getKptLiveApplyArgs(), nil)...)
 	cmd.Stdout = out
 	cmd.Stderr = out
@@ -200,9 +195,10 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []bu
 		// Note: A tmp dir is used to provide kustomize the manifest directory.
 		// Once the unified kpt/kustomize is done, kustomize can be run as a kpt fn step and
 		// this additional directory creation/deletion will no longer be needed.
-
-		err := os.MkdirAll(tmpKustomizeDir, os.ModePerm)
-		if err != nil {
+		if err := os.RemoveAll(tmpKustomizeDir); err != nil {
+			return nil, fmt.Errorf("removing %v:%w", tmpKustomizeDir, err)
+		}
+		if err := os.MkdirAll(tmpKustomizeDir, os.ModePerm); err != nil {
 			return nil, err
 		}
 		defer func() {

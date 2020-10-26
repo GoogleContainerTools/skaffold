@@ -47,11 +47,11 @@ spec:
 `
 )
 
-// Test that kpt deployer manipulate manfiests in the given order and no intermediate data is
+// Test that kpt deployer manipulate manifests in the given order and no intermediate data is
 // stored after each step:
 //	Step 1. `kp fn source` (read in the manifest as stdin),
 //  Step 2. `kustomize build` (hydrate the manifest),
-//  Step 3. `kpt fn run` (validate, transform or generate the manfiest via kpt functions),
+//  Step 3. `kpt fn run` (validate, transform or generate the manifests via kpt functions),
 //  Step 4. `kpt fn sink` (store the stdout in a given dir).
 func TestKpt_Deploy(t *testing.T) {
 	tests := []struct {
@@ -511,7 +511,7 @@ spec:
 			commands: testutil.
 				CmdRunOut("kpt fn source test", ``).
 				AndRunOut("kpt fn run --dry-run --fn-path kpt-func.yaml", output3).
-				AndRunOut(fmt.Sprintf("kpt fn sink .tmp-sink-dir/test"), ``),
+				AndRunOut("kpt fn sink .tmp-sink-dir/test", ``),
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
