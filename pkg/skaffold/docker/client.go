@@ -36,7 +36,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
-const minikubeBadUsageExitCode = 64
+// minikube 1.13.0 renumbered exit codes
+const minikubeDriverConfictExitCode = 51
+const oldMinikubeBadUsageExitCode = 64
 
 // For testing
 var (
@@ -104,9 +106,11 @@ type ExitCoder interface {
 func newMinikubeAPIClient(minikubeProfile string) ([]string, client.CommonAPIClient, error) {
 	env, err := getMinikubeDockerEnv(minikubeProfile)
 	if err != nil {
-		// When minikube uses the infamous `none` driver, it'll exit `minikube docker-env` with code 64.
+		// When minikube uses the infamous `none` driver, `minikube docker-env` will exit with
+		// code 51 (>= 1.13.0) or 64 (< 1.13.0).  Note that exit code 51 was unused prior to 1.13.0
+		// so it is safe to check here without knowing the minikube version.
 		var exitError ExitCoder
-		if errors.As(err, &exitError) && exitError.ExitCode() == minikubeBadUsageExitCode {
+		if errors.As(err, &exitError) && (exitError.ExitCode() == minikubeDriverConfictExitCode || exitError.ExitCode() == oldMinikubeBadUsageExitCode) {
 			// Let's ignore the error and fall back to local docker daemon.
 			logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
 			return newEnvAPIClient()

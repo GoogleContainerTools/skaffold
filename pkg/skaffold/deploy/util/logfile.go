@@ -28,6 +28,7 @@ import (
 const TimeFormat = "2006-01-02_15-04-05"
 
 type Muted interface {
+	MuteStatusCheck() bool
 	MuteDeploy() bool
 }
 
@@ -46,6 +47,26 @@ func WithLogFile(filename string, out io.Writer, muted Muted) (io.Writer, func()
 	fmt.Fprintln(out, "- writing logs to", file.Name())
 
 	// After the deploy finishes, close the log file.
+	return file, func() {
+		file.Close()
+	}, err
+}
+
+// WithStatusCheckLogFile returns a file to write the status-check output to, and a function to be executed after the status-check step is complete.
+func WithStatusCheckLogFile(filename string, out io.Writer, muted Muted) (io.Writer, func(), error) {
+	if !muted.MuteStatusCheck() {
+		return out, func() {}, nil
+	}
+
+	file, err := logfile.Create("status-check", filename)
+	if err != nil {
+		return out, func() {}, fmt.Errorf("unable to create log file for deploy step: %w", err)
+	}
+
+	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
+	fmt.Fprintln(out, "- writing logs to", file.Name())
+
+	// After the status-check finishes, close the log file.
 	return file, func() {
 		file.Close()
 	}, err

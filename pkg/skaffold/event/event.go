@@ -39,6 +39,7 @@ const (
 	Started    = "Started"
 	Succeeded  = "Succeeded"
 	Terminated = "Terminated"
+	Canceled   = "Canceled"
 )
 
 var handler = newHandler()
@@ -300,12 +301,14 @@ func BuildInProgress(imageName string) {
 	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: InProgress})
 }
 
+// BuildCanceled notifies that a build has been canceled.
+func BuildCanceled(imageName string) {
+	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Canceled})
+}
+
 // BuildFailed notifies that a build has failed.
 func BuildFailed(imageName string, err error) {
 	aiErr := sErrors.ActionableErr(sErrors.Build, err)
-	handler.stateLock.Lock()
-	handler.state.BuildState.StatusCode = aiErr.ErrCode
-	handler.stateLock.Unlock()
 	handler.handleBuildEvent(&proto.BuildEvent{
 		Artifact:      imageName,
 		Status:        Failed,
@@ -542,7 +545,7 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 		case InProgress:
 			logEntry.Entry = "Deploy started"
 		case Complete:
-			logEntry.Entry = "Deploy complete"
+			logEntry.Entry = "Deploy completed"
 		case Failed:
 			logEntry.Entry = "Deploy failed"
 			// logEntry.Err = de.Err
@@ -628,9 +631,9 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 		de := e.DevLoopEvent
 		switch de.Status {
 		case InProgress:
-			logEntry.Entry = "Update initiated due to file change"
+			logEntry.Entry = "Update initiated"
 		case Succeeded:
-			logEntry.Entry = "Update successful"
+			logEntry.Entry = "Update succeeded"
 		case Failed:
 			logEntry.Entry = fmt.Sprintf("Update failed with error code %v", de.Err.ErrCode)
 		}
@@ -700,4 +703,23 @@ func AutoTriggerDiff(name string, val bool) (bool, error) {
 	default:
 		return false, fmt.Errorf("unknown phase %v not found in handler state", name)
 	}
+}
+
+// BuildSequenceFailed notifies that the build sequence has failed.
+func BuildSequenceFailed(err error) {
+	aiErr := sErrors.ActionableErr(sErrors.Build, err)
+	handler.stateLock.Lock()
+	handler.state.BuildState.StatusCode = aiErr.ErrCode
+	handler.stateLock.Unlock()
+}
+
+func InititializationFailed(err error) {
+	handler.handle(&proto.Event{
+		EventType: &proto.Event_TerminationEvent{
+			TerminationEvent: &proto.TerminationEvent{
+				Status: Failed,
+				Err:    sErrors.ActionableErr(sErrors.Init, err),
+			},
+		},
+	})
 }

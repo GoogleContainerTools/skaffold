@@ -267,7 +267,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 		RegistryAuth: registryAuth,
 	})
 	if err != nil {
-		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErrPrefix, ref, err)
+		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErr, ref, err)
 	}
 	defer rc.Close()
 
@@ -286,7 +286,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	}
 
 	if err := streamDockerMessages(out, rc, auxCallback); err != nil {
-		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErrPrefix, ref, err)
+		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErr, ref, err)
 	}
 
 	if digest == "" {
@@ -505,6 +505,37 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 	}
 
 	return args, nil
+}
+
+// EvaluateBuildArgs evaluates templated build args.
+// An additional envMap can optionally be specified.
+// If multiple additional envMaps are specified, all but the first one will be ignored
+func EvaluateBuildArgs(args map[string]*string, envMap ...map[string]string) (map[string]*string, error) {
+	if args == nil {
+		return nil, nil
+	}
+
+	var env map[string]string
+	if len(envMap) > 0 {
+		env = envMap[0]
+	}
+
+	evaluated := map[string]*string{}
+	for k, v := range args {
+		if v == nil {
+			evaluated[k] = nil
+			continue
+		}
+
+		value, err := util.ExpandEnvTemplate(*v, env)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get value for build arg %q: %w", k, err)
+		}
+
+		evaluated[k] = &value
+	}
+
+	return evaluated, nil
 }
 
 func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error) {

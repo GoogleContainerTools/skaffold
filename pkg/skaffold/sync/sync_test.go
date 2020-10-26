@@ -650,7 +650,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				ImageName: "test",
 				Sync: &latest.Sync{
-					Auto: &latest.Auto{},
+					Auto: util.BoolPtr(true),
 				},
 				Workspace: ".",
 			},
@@ -690,7 +690,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				ImageName: "test",
 				Sync: &latest.Sync{
-					Auto: &latest.Auto{},
+					Auto: util.BoolPtr(true),
 				},
 				Workspace: ".",
 			},
@@ -724,7 +724,7 @@ func TestNewSyncItem(t *testing.T) {
 				ImageName: "test",
 				Workspace: ".",
 				Sync: &latest.Sync{
-					Auto: &latest.Auto{},
+					Auto: util.BoolPtr(true),
 				},
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: &latest.JibArtifact{},
@@ -757,7 +757,7 @@ func TestNewSyncItem(t *testing.T) {
 				return map[string][]string{"file.class": {"/some/file.class"}}, nil, nil
 			})
 
-			actual, err := NewItem(ctx, test.artifact, test.evt, test.builds, &mockConfig{})
+			actual, err := NewItem(ctx, test.artifact, test.evt, test.builds, &mockConfig{}, 0)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
@@ -1073,18 +1073,18 @@ func TestInit(t *testing.T) {
 		},
 		{
 			description: "sync on, auto on, non-jib",
-			artifact:    &latest.Artifact{Sync: &latest.Sync{Auto: &latest.Auto{}}},
+			artifact:    &latest.Artifact{Sync: &latest.Sync{Auto: util.BoolPtr(true)}},
 			shouldInit:  false,
 		},
 		{
 			description: "sync on, auto on, jib",
-			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: &latest.Auto{}}},
+			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: util.BoolPtr(true)}},
 			shouldInit:  true,
 			initErrors:  false,
 		},
 		{
 			description: "sync on, auto on, jib, init fails",
-			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: &latest.Auto{}}},
+			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: util.BoolPtr(true)}},
 			shouldInit:  true,
 			initErrors:  true,
 		},

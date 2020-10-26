@@ -26,6 +26,7 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -46,13 +47,14 @@ type ArtifactCache map[string]ImageDetails
 // cache holds any data necessary for accessing the cache
 type cache struct {
 	artifactCache    ArtifactCache
+	artifactGraph    build.ArtifactGraph
 	cacheMutex       sync.RWMutex
 	client           docker.LocalDaemon
-	cfg              docker.Config
+	cfg              Config
 	cacheFile        string
 	imagesAreLocal   bool
 	tryImportMissing bool
-	hashForArtifact  func(ctx context.Context, a *latest.Artifact) (string, error)
+	lister           DependencyLister
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
@@ -67,7 +69,7 @@ type Config interface {
 }
 
 // NewCache returns the current state of the cache
-func NewCache(cfg Config, imagesAreLocal bool, tryImportMissing bool, dependencies DependencyLister) (Cache, error) {
+func NewCache(cfg Config, imagesAreLocal bool, tryImportMissing bool, dependencies DependencyLister, graph build.ArtifactGraph) (Cache, error) {
 	if !cfg.CacheArtifacts() {
 		return &noCache{}, nil
 	}
@@ -91,14 +93,13 @@ func NewCache(cfg Config, imagesAreLocal bool, tryImportMissing bool, dependenci
 
 	return &cache{
 		artifactCache:    artifactCache,
+		artifactGraph:    graph,
 		client:           client,
 		cfg:              cfg,
 		cacheFile:        cacheFile,
 		imagesAreLocal:   imagesAreLocal,
 		tryImportMissing: tryImportMissing,
-		hashForArtifact: func(ctx context.Context, a *latest.Artifact) (string, error) {
-			return getHashForArtifact(ctx, dependencies, a, cfg.Mode())
-		},
+		lister:           dependencies,
 	}, nil
 }
 

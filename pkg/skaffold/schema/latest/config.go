@@ -314,6 +314,8 @@ type KanikoCache struct {
 	// HostPath specifies a path on the host that is mounted to each pod as read only cache volume containing base images.
 	// If set, must exist on each node and prepopulated with kaniko-warmer.
 	HostPath string `yaml:"hostPath,omitempty"`
+	//TTL Cache timeout in hours.
+	TTL string `yaml:"ttl,omitempty"`
 }
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
@@ -762,6 +764,9 @@ type Artifact struct {
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
+
+	// Dependencies describes build artifacts that this artifact depends on.
+	Dependencies []*ArtifactDependency `yaml:"requires,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.
@@ -781,7 +786,7 @@ type Sync struct {
 
 	// Auto delegates discovery of sync rules to the build system.
 	// Only available for jib and buildpacks.
-	Auto *Auto `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
+	Auto *bool `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.
@@ -800,9 +805,6 @@ type SyncRule struct {
 	// For example: `"css/"`
 	Strip string `yaml:"strip,omitempty"`
 }
-
-// Auto cannot be customized.
-type Auto struct{}
 
 // Profile is used to override any `build`, `test` or `deploy` configuration.
 type Profile struct {
@@ -882,6 +884,16 @@ type ArtifactType struct {
 
 	// CustomArtifact *beta* builds images using a custom build script written by the user.
 	CustomArtifact *CustomArtifact `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
+}
+
+// ArtifactDependency describes a specific build dependency for an artifact.
+type ArtifactDependency struct {
+	// ImageName is a reference to an artifact's image name.
+	ImageName string `yaml:"image" yamltags:"required"`
+	// Alias is a token that is replaced with the image reference in the builder definition files.
+	// For example, the `docker` builder will use the alias as a build-arg key.
+	// Defaults to the value of `image`.
+	Alias string `yaml:"alias,omitempty"`
 }
 
 // BuildpackArtifact *alpha* describes an artifact built using [Cloud Native Buildpacks](https://buildpacks.io/).
@@ -964,25 +976,56 @@ type DockerfileDependency struct {
 // KanikoArtifact describes an artifact built from a Dockerfile,
 // with kaniko.
 type KanikoArtifact struct {
-	// AdditionalFlags are additional flags to be passed to Kaniko command line.
-	// See [Kaniko Additional Flags](https://github.com/GoogleContainerTools/kaniko#additional-flags).
-	// Deprecated - instead the named, unique fields should be used, e.g. `buildArgs`, `cache`, `target`.
-	AdditionalFlags []string `yaml:"flags,omitempty"`
+
+	// Cleanup to clean the filesystem at the end of the build.
+	Cleanup bool `yaml:"cleanup,omitempty"`
+
+	// Insecure if you want to push images to a plain HTTP registry.
+	Insecure bool `yaml:"insecure,omitempty"`
+
+	// InsecurePull if you want to pull images from a plain HTTP registry.
+	InsecurePull bool `yaml:"insecurePull,omitempty"`
+
+	// NoPush if you only want to build the image, without pushing to a registry.
+	NoPush bool `yaml:"noPush,omitempty"`
+
+	// Force building outside of a container.
+	Force bool `yaml:"force,omitempty"`
+
+	// LogTimestamp to add timestamps to log format.
+	LogTimestamp bool `yaml:"logTimestamp,omitempty"`
+
+	// Reproducible is used to strip timestamps out of the built image.
+	Reproducible bool `yaml:"reproducible,omitempty"`
+
+	// SingleSnapshot is takes a single snapshot of the filesystem at the end of the build.
+	// So only one layer will be appended to the base image.
+	SingleSnapshot bool `yaml:"singleSnapshot,omitempty"`
+
+	// SkipTLS skips TLS certificate validation when pushing to a registry.
+	SkipTLS bool `yaml:"skipTLS,omitempty"`
+
+	// SkipTLSVerifyPull skips TLS certificate validation when pulling from a registry.
+	SkipTLSVerifyPull bool `yaml:"skipTLSVerifyPull,omitempty"`
+
+	// SkipUnusedStages builds only used stages if defined to true.
+	// Otherwise it builds by default all stages, even the unnecessaries ones until it reaches the target stage / end of Dockerfile.
+	SkipUnusedStages bool `yaml:"skipUnusedStages,omitempty"`
+
+	// UseNewRun to Use the experimental run implementation for detecting changes without requiring file system snapshots.
+	// In some cases, this may improve build performance by 75%.
+	UseNewRun bool `yaml:"useNewRun,omitempty"`
+
+	// WhitelistVarRun is used to ignore `/var/run` when taking image snapshot.
+	// Set it to false to preserve /var/run/* in destination image.
+	WhitelistVarRun bool `yaml:"whitelistVarRun,omitempty"`
 
 	// DockerfilePath locates the Dockerfile relative to workspace.
 	// Defaults to `Dockerfile`.
 	DockerfilePath string `yaml:"dockerfile,omitempty"`
 
-	// Target is the Dockerfile target name to build.
+	// Target is to indicate which build stage is the target build stage.
 	Target string `yaml:"target,omitempty"`
-
-	// BuildArgs are arguments passed to the docker build.
-	// It also accepts environment variables via the go template syntax.
-	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
-	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
-
-	// Env are environment variables passed to the kaniko pod.
-	Env []v1.EnvVar `yaml:"env,omitempty"`
 
 	// InitImage is the image used to run init container which mounts kaniko context.
 	InitImage string `yaml:"initImage,omitempty"`
@@ -991,15 +1034,60 @@ type KanikoArtifact struct {
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
 	Image string `yaml:"image,omitempty"`
 
+	// DigestFile to to specify a file in the container. This file will receive the digest of a built image.
+	// This can be used to automatically track the exact image built by kaniko.
+	DigestFile string `yaml:"digestFile,omitempty"`
+
+	// ImageNameWithDigestFile to a file to save the image name with digest of the built image to.
+	ImageNameWithDigestFile string `yaml:"imageNameWithDigestFile,omitempty"`
+
+	// LogFormat <text|color|json> to set the log format.
+	LogFormat string `yaml:"logFormat,omitempty"`
+
+	// OCILayoutPath is to specify a directory in the container where the OCI image layout of a built image will be placed.
+	// This can be used to automatically track the exact image built by kaniko.
+	OCILayoutPath string `yaml:"ociLayoutPath,omitempty"`
+
+	// RegistryMirror if you want to use a registry mirror instead of default `index.docker.io`.
+	RegistryMirror string `yaml:"registryMirror,omitempty"`
+
+	// SnapshotMode is how Kaniko will snapshot the filesystem.
+	SnapshotMode string `yaml:"snapshotMode,omitempty"`
+
+	// TarPath is path to save the image as a tarball at path instead of pushing the image.
+	TarPath string `yaml:"tarPath,omitempty"`
+
+	// Verbosity <panic|fatal|error|warn|info|debug|trace> to set the logging level.
+	Verbosity string `yaml:"verbosity,omitempty"`
+
+	// InsecureRegistry is to use plain HTTP requests when accessing a registry.
+	InsecureRegistry []string `yaml:"insecureRegistry,omitempty"`
+
+	// SkipTLSVerifyRegistry skips TLS certificate validation when accessing a registry.
+	SkipTLSVerifyRegistry []string `yaml:"skipTLSVerifyRegistry,omitempty"`
+
+	// Env are environment variables passed to the kaniko pod.
+	// It also accepts environment variables via the go template syntax.
+	// For example: `{{name: "key1", value: "value1"}, {name: "key2", value: "value2"}, {name: "key3", value: "'{{.ENV_VARIABLE}}'"}"}`.
+	Env []v1.EnvVar `yaml:"env,omitempty"`
+
 	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
 	// use a remote cache which will speed up builds.
 	Cache *KanikoCache `yaml:"cache,omitempty"`
 
-	// Reproducible is used to strip timestamps out of the built image.
-	Reproducible bool `yaml:"reproducible,omitempty"`
+	// RegistryCertificate is to to provide a certificate for TLS communication with a given registry.
+	// my.registry.url: /path/to/the/certificate.cert is the expected format.
+	RegistryCertificate map[string]*string `yaml:"registryCertificate,omitempty"`
 
-	// SkipTLS skips TLS verification when pulling and pushing the image.
-	SkipTLS bool `yaml:"skipTLS,omitempty"`
+	// Label key: value to set some metadata to the final image.
+	// This is equivalent as using the LABEL within the Dockerfile.
+	Label map[string]*string `yaml:"label,omitempty"`
+
+	// BuildArgs are arguments passed to the docker build.
+	// It also accepts environment variables and generated values via the go template syntax.
+	// Exposed generated values: IMAGE_REPO, IMAGE_NAME, IMAGE_TAG.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
+	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 
 	// VolumeMounts are volume mounts passed to kaniko pod.
 	VolumeMounts []v1.VolumeMount `yaml:"volumeMounts,omitempty"`
@@ -1077,4 +1165,7 @@ type JibArtifact struct {
 	// `maven`: for Maven.
 	// `gradle`: for Gradle.
 	Type string `yaml:"type,omitempty"`
+
+	// BaseImage overrides the configured jib base image.
+	BaseImage string `yaml:"fromImage,omitempty"`
 }

@@ -164,7 +164,8 @@ func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []*latest.A
 
 		imgs, err := p.listImages(ctx, a.ImageName)
 		if err != nil {
-			if ctx.Err() != nil {
+			switch err {
+			case context.Canceled, context.DeadlineExceeded:
 				// ctx is done or cancelled or timed out
 				// Usually means the process is interrupted
 				// Skip logging and return immediately

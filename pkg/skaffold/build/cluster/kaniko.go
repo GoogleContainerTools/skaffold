@@ -23,19 +23,31 @@ import (
 	"io"
 
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 const initContainer = "kaniko-init-container"
 
 func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifact *latest.KanikoArtifact, tag string) (string, error) {
+	generatedEnvs, err := generateEnvFromImage(tag)
+	if err != nil {
+		return "", fmt.Errorf("error processing generated env variables from image uri: %w", err)
+	}
+	env, err := evaluateEnv(artifact.Env, generatedEnvs...)
+	if err != nil {
+		return "", fmt.Errorf("unable to evaluate env variables: %w", err)
+	}
+	artifact.Env = env
+
 	client, err := kubernetesclient.Client()
 	if err != nil {
 		return "", fmt.Errorf("getting Kubernetes client: %w", err)
@@ -100,7 +112,7 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 	// Send context by piping into `tar`.
 	// In case of an error, print the command's output. (The `err` itself is useless: exit status 1).
 	var out bytes.Buffer
-	if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", constants.DefaultKanikoEmptyDirMountPath); err != nil {
+	if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", kaniko.DefaultEmptyDirMountPath); err != nil {
 		return fmt.Errorf("uploading build context: %s", out.String())
 	}
 
@@ -110,4 +122,58 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 	}
 
 	return nil
+}
+
+func evaluateEnv(env []v1.EnvVar, additional ...v1.EnvVar) ([]v1.EnvVar, error) {
+	// Prepare additional envs
+	addEnv := make(map[string]string)
+	for _, addEnvVar := range additional {
+		addEnv[addEnvVar.Name] = addEnvVar.Value
+	}
+
+	// Evaluate provided env variables
+	var evaluated []v1.EnvVar
+	for _, envVar := range env {
+		val, err := util.ExpandEnvTemplate(envVar.Value, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get value for env variable %q: %w", envVar.Name, err)
+		}
+
+		evaluated = append(evaluated, v1.EnvVar{Name: envVar.Name, Value: val})
+
+		// Provided env variables have higher priority than additional (generated) ones
+		delete(addEnv, envVar.Name)
+	}
+
+	// Append additional (generated) env variables
+	for name, value := range addEnv {
+		if value != "" {
+			evaluated = append(evaluated, v1.EnvVar{Name: name, Value: value})
+		}
+	}
+
+	return evaluated, nil
+}
+
+func envMapFromVars(env []v1.EnvVar) map[string]string {
+	envMap := make(map[string]string)
+	for _, envVar := range env {
+		envMap[envVar.Name] = envVar.Value
+	}
+	return envMap
+}
+
+func generateEnvFromImage(imageStr string) ([]v1.EnvVar, error) {
+	imgRef, err := docker.ParseReference(imageStr)
+	if err != nil {
+		return nil, err
+	}
+	if imgRef.Tag == "" {
+		imgRef.Tag = "latest"
+	}
+	var generatedEnvs []v1.EnvVar
+	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_REPO", Value: imgRef.Repo})
+	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_NAME", Value: imgRef.Name})
+	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_TAG", Value: imgRef.Tag})
+	return generatedEnvs, nil
 }

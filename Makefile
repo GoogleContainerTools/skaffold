@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+GOPATH ?= $(shell go env GOPATH)
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= amd64
 BUILD_DIR ?= ./out
@@ -69,6 +70,7 @@ $(BUILD_DIR)/$(PROJECT): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
 
 .PHONY: install
 install: $(BUILD_DIR)/$(PROJECT)
+	mkdir -p $(GOPATH)/bin
 	cp $(BUILD_DIR)/$(PROJECT) $(GOPATH)/bin/$(PROJECT)
 
 .PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
@@ -201,7 +203,10 @@ integration-in-kind: skaffold-builder
 		--network kind \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -eu -c ' \
-			kind get clusters | grep -q kind || TERM=dumb kind create cluster --image=$(KIND_NODE); \
+			if ! kind get clusters | grep -q kind; then \
+			  trap "kind delete cluster" 0 1 2 15; \
+			  TERM=dumb kind create cluster --image=$(KIND_NODE); \
+			fi; \
 			kind get kubeconfig --internal > /tmp/kind-config; \
 			make integration \
 		'

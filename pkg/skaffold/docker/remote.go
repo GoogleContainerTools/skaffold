@@ -87,7 +87,7 @@ func Push(tarPath, tag string, cfg Config) (string, error) {
 	}
 
 	if err := remote.Write(t, i, remote.WithAuthFromKeychain(primaryKeychain)); err != nil {
-		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErrPrefix, t, err)
+		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErr, t, err)
 	}
 
 	return getRemoteDigest(tag, cfg)

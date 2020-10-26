@@ -251,7 +251,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		// the initContainers are responsible for populating the contents of `/dbg`
 		for imageID := range requiredSupportImages {
 			supportFilesInitContainer := v1.Container{
-				Name:         fmt.Sprintf("install-%s-support", imageID),
+				Name:         fmt.Sprintf("install-%s-debug-support", imageID),
 				Image:        fmt.Sprintf("%s/%s", debugHelpersRegistry, imageID),
 				VolumeMounts: []v1.VolumeMount{supportVolumeMount},
 			}
