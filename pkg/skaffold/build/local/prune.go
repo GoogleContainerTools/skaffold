@@ -166,10 +166,6 @@ func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []*latest.A
 		if err != nil {
 			switch err {
 			case context.Canceled, context.DeadlineExceeded:
-				// ctx is done or cancelled or timed out
-				// Usually means the process is interrupted
-				// Skip logging and return immediately
-				// https://github.com/GoogleContainerTools/skaffold/issues/4888
 				return []string{}
 			}
 			logrus.Warnf("failed to list images: %v", err)
