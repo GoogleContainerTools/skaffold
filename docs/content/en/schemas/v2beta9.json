@@ -2212,14 +2212,12 @@
         "useBuildkit": {
           "type": "boolean",
           "description": "use BuildKit to build Docker images.",
-          "x-intellij-html-description": "use BuildKit to build Docker images.",
-          "default": "false"
+          "x-intellij-html-description": "use BuildKit to build Docker images."
         },
         "useDockerCLI": {
           "type": "boolean",
           "description": "use `docker` command-line interface instead of Docker Engine APIs.",
-          "x-intellij-html-description": "use <code>docker</code> command-line interface instead of Docker Engine APIs.",
-          "default": "false"
+          "x-intellij-html-description": "use <code>docker</code> command-line interface instead of Docker Engine APIs."
         }
       },
       "preferredOrder": [
