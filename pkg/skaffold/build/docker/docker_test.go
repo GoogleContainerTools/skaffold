@@ -30,6 +30,7 @@ import (
 )
 
 func TestDockerCLIBuild(t *testing.T) {
+	b := true
 	tests := []struct {
 		description string
 		localBuild  latest.LocalBuild
@@ -51,18 +52,18 @@ func TestDockerCLIBuild(t *testing.T) {
 		},
 		{
 			description: "buildkit",
-			localBuild:  latest.LocalBuild{UseBuildkit: true},
+			localBuild:  latest.LocalBuild{UseBuildkit: &b},
 			expectedEnv: []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description: "buildkit and extra env",
-			localBuild:  latest.LocalBuild{UseBuildkit: true},
+			localBuild:  latest.LocalBuild{UseBuildkit: &b},
 			extraEnv:    []string{"OTHER=VALUE"},
 			expectedEnv: []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description: "env var collisions",
-			localBuild:  latest.LocalBuild{UseBuildkit: true},
+			localBuild:  latest.LocalBuild{UseBuildkit: &b},
 			extraEnv:    []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
 			// env var collisions are handled by cmd.Run(). Last one wins.
 			expectedEnv: []string{"KEY=VALUE", "KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0", "DOCKER_BUILDKIT=1"},
@@ -100,7 +101,9 @@ func TestDockerCLIBuild(t *testing.T) {
 }
 
 func fakeLocalDaemonWithExtraEnv(extraEnv []string) docker.LocalDaemon {
-	return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, extraEnv, false, nil)
+	return docker.NewLocalDaemon(&testutil.FakeAPIClient{
+		FakeServerVersion: "18.09",
+	}, extraEnv, false, nil)
 }
 
 type mockArtifactResolver struct {

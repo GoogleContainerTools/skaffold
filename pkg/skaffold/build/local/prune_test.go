@@ -190,6 +190,7 @@ func TestCollectPruneImages(t *testing.T) {
 		})
 	}
 }
+
 func artifacts(images ...string) []*latest.Artifact {
 	rt := make([]*latest.Artifact, 0)
 	for _, image := range images {

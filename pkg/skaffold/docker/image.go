@@ -145,11 +145,11 @@ func (l *localDaemon) HasBuildkitSupport(ctx context.Context) bool {
 		return false
 	}
 
-	// buildkit integrated into docker since 18.09
 	bv, err := semanticVersion.NewVersion("18.09")
 	cv, err := semanticVersion.NewVersion(version.Version)
-	if cv.LessThanOrEqual(bv) {
-		fmt.Printf("server version is %s, buildkit not supported", cv)
+
+	if cv.LessThan(bv) {
+		logrus.Debugf("server version is %s, buildkit not supported", cv.String())
 		return false
 	}
 

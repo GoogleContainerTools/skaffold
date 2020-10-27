@@ -322,11 +322,12 @@ func config(ops ...func(*latest.SkaffoldConfig)) *latest.SkaffoldConfig {
 
 func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
+		t := true
 		b := latest.BuildConfig{
 			BuildType: latest.BuildType{
 				LocalBuild: &latest.LocalBuild{
 					Concurrency: &constants.DefaultLocalConcurrency,
-					UseBuildkit: true,
+					UseBuildkit: &t,
 				},
 			},
 		}

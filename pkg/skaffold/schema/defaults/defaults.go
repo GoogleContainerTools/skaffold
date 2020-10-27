@@ -111,8 +111,11 @@ func defaultToLocalBuild(c *latest.SkaffoldConfig) {
 		return
 	}
 
-	logrus.Debugf("Defaulting build type to local build")
-	c.Build.BuildType.LocalBuild = &latest.LocalBuild{}
+	logrus.Debugf("Defaulting build type to local build with buildkit enabled")
+	t := true
+	c.Build.BuildType.LocalBuild = &latest.LocalBuild{
+		UseBuildkit: &t,
+	}
 }
 
 func defaultToKubectlDeploy(c *latest.SkaffoldConfig) {

@@ -56,6 +56,10 @@ type FakeAPIClient struct {
 	ErrImageList    bool
 	ErrImageRemove  bool
 
+	// used to test buildkit fallback feature
+	// buildkit merged to docker since docker engine 18.09
+	FakeServerVersion string
+
 	ErrStream  bool
 	ErrVersion bool
 	// will return the "test error" error on first <DUFails> DiskUsage calls
@@ -76,7 +80,9 @@ func (f *FakeAPIClient) ServerVersion(ctx context.Context) (types.Version, error
 	if f.ErrVersion {
 		return types.Version{}, errors.New("docker not found")
 	}
-	return types.Version{}, nil
+	return types.Version{
+		Version: f.FakeServerVersion,
+	}, nil
 }
 
 func (f *FakeAPIClient) Add(tag, imageID string) *FakeAPIClient {
