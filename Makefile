@@ -41,7 +41,7 @@ VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
 
 ifeq "$(strip $(VERSION))" ""
- override VERSION = $(shell git describe --always --tags --dirty)
+	override VERSION = $(shell git describe --always --tags --dirty)
 endif
 
 LDFLAGS_linux = -static
@@ -62,11 +62,13 @@ GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
 GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
 GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
-STATIK_FILES = cmd/skaffold/app/cmd/statik/statik.go
+ifneq "$(strip $(LOCAL))" "true"
+	override STATIK_FILES =  cmd/skaffold/app/cmd/statik/statik.go
+endif
 
-# Build for local development.
+# when build for local development (`LOCAL=true make install` can skip license check)
 $(BUILD_DIR)/$(PROJECT): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -o $@ $(BUILD_PACKAGE)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -gcflags="all=-N -l" -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -o $@ $(BUILD_PACKAGE)
 
 .PHONY: install
 install: $(BUILD_DIR)/$(PROJECT)
