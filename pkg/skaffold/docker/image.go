@@ -31,6 +31,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/blang/semver"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
@@ -40,7 +41,6 @@ import (
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/streamformatter"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	semver "github.com/hashicorp/go-version"
 	"github.com/sirupsen/logrus"
 )
 
@@ -144,13 +144,13 @@ func (l *localDaemon) HasBuildkitSupport(ctx context.Context) bool {
 		return false
 	}
 
-	bv, _ := semver.NewVersion("18.09")
-	cv, err := semver.NewVersion(version.Version)
+	bv, _ := semver.New("18.09")
+	cv, err := semver.New(version.Version)
 	if err != nil {
 		return false
 	}
 
-	if cv.LessThan(bv) {
+	if cv.LT(*bv) {
 		logrus.Debugf("server version is %s, buildkit not supported", cv.String())
 		return false
 	}

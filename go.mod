@@ -45,7 +45,6 @@ require (
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/grpc-gateway v1.14.3
-	github.com/hashicorp/go-version v1.2.1
 	github.com/heroku/color v0.0.6
 	github.com/imdario/mergo v0.3.9
 	github.com/karrick/godirwalk v1.15.6
