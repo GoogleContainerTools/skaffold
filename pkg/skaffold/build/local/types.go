@@ -112,9 +112,8 @@ func NewBuilder(cfg Config) (*Builder, error) {
 	}, nil
 }
 
-func (b *Builder) WithArtifactStore(store build.ArtifactStore) *Builder {
+func (b *Builder) ArtifactStore(store build.ArtifactStore) {
 	b.artifactStore = store
-	return b
 }
 
 func (b *Builder) PushImages() bool {

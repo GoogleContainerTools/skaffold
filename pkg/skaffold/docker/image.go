@@ -80,6 +80,7 @@ type LocalDaemon interface {
 	RawClient() client.CommonAPIClient
 }
 
+// BuildOptions provides parameters related to the LocalDaemon build.
 type BuildOptions struct {
 	Tag            string
 	Mode           config.RunMode

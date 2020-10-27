@@ -128,7 +128,7 @@ func newLogAggregator(out io.Writer, capacity int, concurrency int) logAggregato
 // ArtifactStore stores the results of each artifact build.
 type ArtifactStore interface {
 	Record(a *latest.Artifact, tag string)
-	GetImageTag(imageName string) (string, error)
+	GetImageTag(imageName string) (tag string, found bool)
 	GetArtifacts(s []*latest.Artifact) ([]Artifact, error)
 }
 
@@ -144,24 +144,24 @@ func (ba *artifactStoreImpl) Record(a *latest.Artifact, tag string) {
 	ba.m.Store(a.ImageName, tag)
 }
 
-func (ba *artifactStoreImpl) GetImageTag(imageName string) (string, error) {
+func (ba *artifactStoreImpl) GetImageTag(imageName string) (string, bool) {
 	v, ok := ba.m.Load(imageName)
 	if !ok {
-		return "", fmt.Errorf("could not find build result for image %s", imageName)
+		return "", false
 	}
 	t, ok := v.(string)
 	if !ok {
 		logrus.Fatalf("invalid build output recorded for image %s", imageName)
 	}
-	return t, nil
+	return t, true
 }
 
 func (ba *artifactStoreImpl) GetArtifacts(s []*latest.Artifact) ([]Artifact, error) {
 	var builds []Artifact
 	for _, a := range s {
-		t, err := ba.GetImageTag(a.ImageName)
-		if err != nil {
-			return nil, err
+		t, found := ba.GetImageTag(a.ImageName)
+		if !found {
+			return nil, fmt.Errorf("failed to retrieve build result for image %s", a.ImageName)
 		}
 		builds = append(builds, Artifact{ImageName: a.ImageName, Tag: t})
 	}

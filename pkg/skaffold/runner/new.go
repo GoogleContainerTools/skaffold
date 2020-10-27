@@ -178,17 +178,23 @@ func getBuilder(runCtx *runcontext.RunContext, store build.ArtifactStore) (build
 		if err != nil {
 			return nil, false, err
 		}
-		builder.WithArtifactStore(store)
+		builder.ArtifactStore(store)
 		return builder, !builder.PushImages(), nil
 
 	case b.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
-		return gcb.NewBuilder(runCtx).WithArtifactStore(store), false, nil
+		builder := gcb.NewBuilder(runCtx)
+		builder.ArtifactStore(store)
+		return builder, false, nil
 
 	case b.Cluster != nil:
 		logrus.Debugln("Using builder: cluster")
 		builder, err := cluster.NewBuilder(runCtx)
-		return builder.WithArtifactStore(store), false, err
+		if err != nil {
+			return nil, false, err
+		}
+		builder.ArtifactStore(store)
+		return builder, false, err
 
 	default:
 		return nil, false, fmt.Errorf("unknown builder for config %+v", b)

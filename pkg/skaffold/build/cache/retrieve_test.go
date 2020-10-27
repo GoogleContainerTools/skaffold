@@ -46,8 +46,8 @@ func depLister(files map[string][]string) DependencyLister {
 
 type mockArtifactStore map[string]string
 
-func (m mockArtifactStore) GetImageTag(imageName string) (string, error) { return m[imageName], nil }
-func (m mockArtifactStore) Record(a *latest.Artifact, tag string)        { m[a.ImageName] = tag }
+func (m mockArtifactStore) GetImageTag(imageName string) (string, bool) { return m[imageName], true }
+func (m mockArtifactStore) Record(a *latest.Artifact, tag string)       { m[a.ImageName] = tag }
 func (m mockArtifactStore) GetArtifacts([]*latest.Artifact) ([]build.Artifact, error) {
 	return nil, nil
 }

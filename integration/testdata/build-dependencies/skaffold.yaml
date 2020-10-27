@@ -13,7 +13,7 @@ build:
         SLEEP: "0"
         FAIL: "0"
     requires:
-    - image: image2
+    - image: image2 #test build-arg set to image field, when alias field is missing (`ARG image2`)
 
   - image: image2
     context: app2
@@ -24,7 +24,7 @@ build:
         FAIL: "0"
     requires:
     - image: image3
-      alias: IMAGE3
+      alias: IMAGE3 #test build-arg set to alias field, when present (`ARG IMAGE3`).
 
   - image: image3
     context: app3
