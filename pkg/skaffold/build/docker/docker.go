@@ -46,10 +46,11 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 
 	var imageID string
 
-	if *b.local.UseDockerCLI || *b.local.UseBuildkit {
-		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, opts)
+	// TODO: Update DOC
+	if (b.local.UseBuildkit != nil && *b.local.UseBuildkit) || (b.local.UseDockerCLI != nil && *b.local.UseDockerCLI) {
+		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag)
 	} else {
-		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, opts)
+		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag, mode)
 	}
 
 	if err != nil {
@@ -85,10 +86,18 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
-	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
-	if *b.local.UseBuildkit {
+	cmd.Env = append(util.OSEnviron(), b.retrieveExtraEnv()...)
+
+	// localDaemon has no buildkit support
+	if !b.localDocker.HasBuildkitSupport(ctx) {
+		fmt.Println("no buildkit supports")
+		*b.local.UseBuildkit = false
+	}
+
+	if b.local.UseBuildkit == nil || *b.local.UseBuildkit {
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
+
 	cmd.Stdout = out
 	cmd.Stderr = out
 
