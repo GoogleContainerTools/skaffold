@@ -513,7 +513,7 @@ spec:
 				CmdRunOut("kpt fn source test", ``).
 				AndRunOut("kpt fn source kpt-func.yaml", ``).
 				AndRunOut("kpt fn run --dry-run", output3).
-				AndRunOut(fmt.Sprintf("kpt fn sink .tmp-sink-dir/test"), ``),
+				AndRunOut("kpt fn sink .tmp-sink-dir/test", ``),
 			expected: `apiVersion: v1
 kind: Pod
 metadata:

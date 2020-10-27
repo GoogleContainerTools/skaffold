@@ -28,9 +28,8 @@ import (
 	"regexp"
 	"strings"
 
-	"sigs.k8s.io/kustomize/kyaml/fn/framework"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/kustomize/kyaml/fn/framework"
 	k8syaml "sigs.k8s.io/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -191,14 +190,18 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []bu
 	}
 
 	// A workaround for issue https://github.com/GoogleContainerTools/kpt/issues/1149
-	// fn-path cannot be recognized in kpt pipeline mode, and it results in that the kpt functions
-	// in are ignored.
+	// Problem: fn-path cannot be recognized in kpt pipeline mode, and it results in that
+	// the kpt functions in are ignored.
+	// Solution: pull kpt functions specifically from the kpt source inputs (getKptFunc) and
+	// adds it back to the pipeline after kustomize build finishes (append kptFn).
 	var kptFnBuf []byte
 	if len(k.Fn.FnPath) > 0 {
 		cmd = exec.CommandContext(
 			ctx, "kpt", kptCommandArgs(k.Fn.FnPath, []string{"fn", "source"},
 				nil, nil)...)
-		kptFnBuf, err = util.RunCmdOut(cmd)
+		if kptFnBuf, err = util.RunCmdOut(cmd); err != nil {
+			return nil, fmt.Errorf("kpt source the fn-path config %v", err)
+		}
 	} else {
 		kptFnBuf = buf
 	}
@@ -286,8 +289,10 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []bu
 func (k *Deployer) getKptFunc(buf []byte) ([]byte, error) {
 	input := bytes.NewBufferString(string(buf))
 	rl := framework.ResourceList{
-		Reader: input, // for testing only
+		Reader: input,
 	}
+	// Manipulate the kustomize "Rnode"(Kustomize term) and pulls out the "Items"
+	// from ResourceLists.
 	if err := rl.Read(); err != nil {
 		return nil, fmt.Errorf("reading ResourceList %w", err)
 	}
