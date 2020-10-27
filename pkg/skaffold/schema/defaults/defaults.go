@@ -112,9 +112,8 @@ func defaultToLocalBuild(c *latest.SkaffoldConfig) {
 	}
 
 	logrus.Debugf("Defaulting build type to local build with buildkit enabled")
-	t := true
 	c.Build.BuildType.LocalBuild = &latest.LocalBuild{
-		UseBuildkit: &t,
+		UseBuildkit: &constants.UseBuildkit,
 	}
 }
 

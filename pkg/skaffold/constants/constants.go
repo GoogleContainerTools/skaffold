@@ -63,6 +63,10 @@ var (
 	Service latest.ResourceType = "service"
 
 	DefaultLocalConcurrency = 1
+
+	// UseBuildkit by default for local build
+	// Fallback to UseDockerCLI or Docker API Client when needed
+	UseBuildkit = true
 )
 
 var (

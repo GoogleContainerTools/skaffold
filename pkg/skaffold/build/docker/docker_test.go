@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -30,7 +31,6 @@ import (
 )
 
 func TestDockerCLIBuild(t *testing.T) {
-	b := true
 	tests := []struct {
 		description string
 		localBuild  latest.LocalBuild
@@ -52,18 +52,18 @@ func TestDockerCLIBuild(t *testing.T) {
 		},
 		{
 			description: "buildkit",
-			localBuild:  latest.LocalBuild{UseBuildkit: &b},
+			localBuild:  latest.LocalBuild{UseBuildkit: &constants.UseBuildkit},
 			expectedEnv: []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description: "buildkit and extra env",
-			localBuild:  latest.LocalBuild{UseBuildkit: &b},
+			localBuild:  latest.LocalBuild{UseBuildkit: &constants.UseBuildkit},
 			extraEnv:    []string{"OTHER=VALUE"},
 			expectedEnv: []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description: "env var collisions",
-			localBuild:  latest.LocalBuild{UseBuildkit: &b},
+			localBuild:  latest.LocalBuild{UseBuildkit: &constants.UseBuildkit},
 			extraEnv:    []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
 			// env var collisions are handled by cmd.Run(). Last one wins.
 			expectedEnv: []string{"KEY=VALUE", "KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0", "DOCKER_BUILDKIT=1"},
