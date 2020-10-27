@@ -91,12 +91,16 @@ var knownBuildProblems = []problem{
 // Deploy errors in deployment phase
 var knownDeployProblems = []problem{
 	{
-		regexp:  re("(?i).*Unable to connect.*"),
+		regexp:  re("(?i).*unable to connect.*: Get (.*)"),
 		errCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
-		description: func(error) string {
-			return "Deploy Failed."
+		description: func(err error) string {
+			matchExp := re("(?i).*unable to connect.*Get (.*)")
+			if match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err)); len(match) >= 2 {
+				return fmt.Sprintf("Deploy Failed. Could not connect to cluster %s due to %s", skaffoldOpts.KubeContext, match[1])
+			}
+			return fmt.Sprintf("Deploy Failed. Could not connect to Kubernetes cluster.")
 		},
-		suggestion: func(_ config.SkaffoldOptions) []*proto.Suggestion {
+		suggestion: func(opts config.SkaffoldOptions) []*proto.Suggestion {
 			return []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_HOST_CONNECTION,
 				Action:         "Check your cluster connection",
