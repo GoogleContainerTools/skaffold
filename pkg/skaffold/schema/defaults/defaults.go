@@ -139,7 +139,7 @@ func setDefaultConcurrency(local *latest.LocalBuild) {
 }
 
 func setDefaultToBuildkit(local *latest.LocalBuild) {
-	if local.UseBuildkit == false {
+	if !local.UseBuildkit {
 		local.UseBuildkit = true
 	}
 }
