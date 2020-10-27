@@ -55,7 +55,7 @@ func replace(defaultRepo string, baseImage string) string {
 	}
 	originalPrefix := prefixRegex.FindString(baseImage)
 	defaultRepoPrefix := prefixRegex.FindString(defaultRepo)
-	if originalPrefix != "" && defaultRepoPrefix != "" {
+	if registrySupportsMultiLevelRepos(defaultRepoPrefix) {
 		// prefixes match
 		if originalPrefix == defaultRepoPrefix {
 			return defaultRepo + "/" + baseImage[len(originalPrefix):]
@@ -65,6 +65,10 @@ func replace(defaultRepo string, baseImage string) string {
 	}
 
 	return truncate(defaultRepo + "/" + escapeRegex.ReplaceAllString(baseImage, "_"))
+}
+
+func registrySupportsMultiLevelRepos(repo string) bool {
+	return strings.Contains(repo, "gcr.io")
 }
 
 func truncate(image string) string {

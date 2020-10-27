@@ -82,7 +82,8 @@ type imageReplacer struct {
 func newImageReplacer(builds []build.Artifact) *imageReplacer {
 	tagsByImageName := make(map[string]string)
 	for _, build := range builds {
-		tagsByImageName[build.ImageName] = build.Tag
+		imageName := docker.SanitizeImageName(build.ImageName)
+		tagsByImageName[imageName] = build.Tag
 	}
 
 	return &imageReplacer{
@@ -105,12 +106,10 @@ func (r *imageReplacer) Visit(o map[string]interface{}, k string, v interface{})
 		warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
 		return false
 	}
-
 	// Leave images referenced by digest as they are
 	if parsed.Digest != "" {
 		return false
 	}
-
 	if tag, present := r.tagsByImageName[parsed.BaseName]; present {
 		// Apply new image tag
 		r.found[parsed.BaseName] = true
