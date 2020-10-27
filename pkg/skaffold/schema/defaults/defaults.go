@@ -139,8 +139,9 @@ func setDefaultConcurrency(local *latest.LocalBuild) {
 }
 
 func setDefaultToBuildkit(local *latest.LocalBuild) {
-	if local.UseBuildkit == nil {
-		*local.UseBuildkit = true
+	if local.UseBuildkit == nil && (local.UseDockerCLI != nil && !*local.UseDockerCLI) {
+		b := true
+		local.UseBuildkit = &b
 	}
 }
 

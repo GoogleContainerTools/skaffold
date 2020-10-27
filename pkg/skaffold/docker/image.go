@@ -42,6 +42,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	semanticVersion "github.com/hashicorp/go-version"
 )
 
 const (
@@ -63,6 +64,7 @@ type LocalDaemon interface {
 	Close() error
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
+	HasBuildkitSupport(ctx context.Context) bool
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
 	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, opts BuildOptions) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
@@ -135,6 +137,23 @@ func (l *localDaemon) Close() error {
 // ServerVersion retrieves the version information from the server.
 func (l *localDaemon) ServerVersion(ctx context.Context) (types.Version, error) {
 	return l.apiClient.ServerVersion(ctx)
+}
+
+func (l *localDaemon) HasBuildkitSupport(ctx context.Context) bool {
+	version, err := l.apiClient.ServerVersion(ctx)
+	if err != nil {
+		return false
+	}
+
+	// buildkit integrated into docker since 18.09
+	bv, err := semanticVersion.NewVersion("18.09")
+	cv, err := semanticVersion.NewVersion(version.Version)
+	if cv.LessThanOrEqual(bv) {
+		fmt.Printf("server version is %s, buildkit not supported", cv)
+		return false
+	}
+
+	return true
 }
 
 // ConfigFile retrieves and caches image configurations.
