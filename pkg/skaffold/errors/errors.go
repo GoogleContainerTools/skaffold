@@ -72,7 +72,8 @@ func ActionableErr(phase Phase, err error) *proto.ActionableErr {
 }
 
 func ShowAIError(err error) error {
-	for _, v := range append(knownBuildProblems, knownInitProblems...) {
+	var knownProblems = append(knownBuildProblems, knownDeployProblems...)
+	for _, v := range append(knownProblems, knownInitProblems...) {
 		if v.regexp.MatchString(err.Error()) {
 			if suggestions := v.suggestion(skaffoldOpts); suggestions != nil {
 				description := fmt.Sprintf("%s\n", err)
