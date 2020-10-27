@@ -41,11 +41,11 @@ spec:
 	k := newKubectlInitializer([]string{filename})
 
 	expectedConfig := latest.DeployConfig{
-		DeployType: latest.DeployType{
+		Steps: []latest.DeployType{{
 			KubectlDeploy: &latest.KubectlDeploy{
 				Manifests: []string{filename},
 			},
-		},
+		}},
 	}
 	deployConfig, profiles := k.DeployConfig()
 	testutil.CheckDeepEqual(t, expectedConfig, deployConfig)

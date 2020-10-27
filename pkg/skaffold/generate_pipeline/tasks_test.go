@@ -223,9 +223,9 @@ func TestGenerateDeployTasks(t *testing.T) {
 					Config: &latest.SkaffoldConfig{
 						Pipeline: latest.Pipeline{
 							Deploy: latest.DeployConfig{
-								DeployType: latest.DeployType{
+								Steps: []latest.DeployType{{
 									HelmDeploy: &latest.HelmDeploy{},
-								},
+								}},
 							},
 						},
 					},
@@ -235,9 +235,9 @@ func TestGenerateDeployTasks(t *testing.T) {
 					Config: &latest.SkaffoldConfig{
 						Pipeline: latest.Pipeline{
 							Deploy: latest.DeployConfig{
-								DeployType: latest.DeployType{
+								Steps: []latest.DeployType{{
 									HelmDeploy: &latest.HelmDeploy{},
-								},
+								}},
 							},
 						},
 					},
@@ -288,9 +288,9 @@ func TestGenerateDeployTasks(t *testing.T) {
 					Config: &latest.SkaffoldConfig{
 						Pipeline: latest.Pipeline{
 							Deploy: latest.DeployConfig{
-								DeployType: latest.DeployType{
+								Steps: []latest.DeployType{{
 									HelmDeploy: &latest.HelmDeploy{},
-								},
+								}},
 							},
 						},
 					},
@@ -343,20 +343,20 @@ func TestGenerateDeployTask(t *testing.T) {
 		{
 			description: "successfully generate deploy task",
 			deployConfig: latest.DeployConfig{
-				DeployType: latest.DeployType{
+				Steps: []latest.DeployType{{
 					HelmDeploy: &latest.HelmDeploy{},
-				},
+				}},
 			},
 			shouldErr: false,
 		},
 		{
 			description: "fail generating deploy task",
 			deployConfig: latest.DeployConfig{
-				DeployType: latest.DeployType{
+				Steps: []latest.DeployType{{
 					HelmDeploy:      nil,
 					KubectlDeploy:   nil,
 					KustomizeDeploy: nil,
-				},
+				}},
 			},
 			shouldErr: true,
 		},

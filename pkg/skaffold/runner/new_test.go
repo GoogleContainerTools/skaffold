@@ -45,7 +45,7 @@ func TestGetDeployer(tOuter *testing.T) {
 			{
 				description: "helm deployer",
 				cfg:         latest.DeployType{HelmDeploy: &latest.HelmDeploy{}},
-				expected:    helm.NewDeployer(&runcontext.RunContext{}, nil),
+				expected:    helm.NewDeployer(&runcontext.RunContext{}, latest.DeployType{HelmDeploy: &latest.HelmDeploy{}}, nil),
 			},
 			{
 				description: "kubectl deployer",
@@ -53,12 +53,16 @@ func TestGetDeployer(tOuter *testing.T) {
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 					Cfg: latest.Pipeline{
 						Deploy: latest.DeployConfig{
-							DeployType: latest.DeployType{
+							Steps: []latest.DeployType{{
 								KubectlDeploy: &latest.KubectlDeploy{
 									Flags: latest.KubectlFlags{},
 								},
-							},
+							}},
 						},
+					},
+				}, latest.DeployType{
+					KubectlDeploy: &latest.KubectlDeploy{
+						Flags: latest.KubectlFlags{},
 					},
 				}, nil)).(deploy.Deployer),
 			},
@@ -68,19 +72,23 @@ func TestGetDeployer(tOuter *testing.T) {
 				expected: t.RequireNonNilResult(kustomize.NewDeployer(&runcontext.RunContext{
 					Cfg: latest.Pipeline{
 						Deploy: latest.DeployConfig{
-							DeployType: latest.DeployType{
+							Steps: []latest.DeployType{{
 								KustomizeDeploy: &latest.KustomizeDeploy{
 									Flags: latest.KubectlFlags{},
 								},
-							},
+							}},
 						},
+					},
+				}, latest.DeployType{
+					KustomizeDeploy: &latest.KustomizeDeploy{
+						Flags: latest.KubectlFlags{},
 					},
 				}, nil)).(deploy.Deployer),
 			},
 			{
 				description: "kpt deployer",
 				cfg:         latest.DeployType{KptDeploy: &latest.KptDeploy{}},
-				expected:    kpt.NewDeployer(&runcontext.RunContext{}, nil),
+				expected:    kpt.NewDeployer(&runcontext.RunContext{}, latest.DeployType{}, nil),
 			},
 			{
 				description: "multiple deployers",
@@ -89,8 +97,8 @@ func TestGetDeployer(tOuter *testing.T) {
 					KptDeploy:  &latest.KptDeploy{},
 				},
 				expected: deploy.DeployerMux{
-					helm.NewDeployer(&runcontext.RunContext{}, nil),
-					kpt.NewDeployer(&runcontext.RunContext{}, nil),
+					helm.NewDeployer(&runcontext.RunContext{}, latest.DeployType{}, nil),
+					kpt.NewDeployer(&runcontext.RunContext{}, latest.DeployType{}, nil),
 				},
 			},
 		}
@@ -99,7 +107,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				deployer, err := getDeployer(&runcontext.RunContext{
 					Cfg: latest.Pipeline{
 						Deploy: latest.DeployConfig{
-							DeployType: test.cfg,
+							Steps: []latest.DeployType{test.cfg},
 						},
 					},
 				}, nil)

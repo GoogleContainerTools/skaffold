@@ -374,7 +374,7 @@ func withDockerConfig(secretName string, path string) func(*latest.BuildConfig) 
 
 func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
-		cfg.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{
+		cfg.Deploy.Steps[0].KubectlDeploy = &latest.KubectlDeploy{
 			Manifests: manifests,
 		}
 	}
@@ -390,7 +390,7 @@ func withKubeContext(kubeContext string) func(*latest.SkaffoldConfig) {
 
 func withHelmDeploy() func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
-		cfg.Deploy.DeployType.HelmDeploy = &latest.HelmDeploy{}
+		cfg.Deploy.Steps[0].HelmDeploy = &latest.HelmDeploy{}
 	}
 }
 

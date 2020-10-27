@@ -216,6 +216,8 @@ spec:
 
 			k := NewDeployer(&kptConfig{
 				kpt: test.kpt,
+			}, latest.DeployType{
+				KptDeploy: &test.kpt,
 			}, nil)
 
 			if k.Live.Apply.Dir == "valid_path" {
@@ -341,6 +343,8 @@ func TestKpt_Dependencies(t *testing.T) {
 
 			k := NewDeployer(&kptConfig{
 				kpt: test.kpt,
+			}, latest.DeployType{
+				KptDeploy: &test.kpt,
 			}, nil)
 
 			res, err := k.Dependencies()
@@ -392,15 +396,18 @@ func TestKpt_Cleanup(t *testing.T) {
 				os.Mkdir(test.applyDir, 0755)
 			}
 
-			k := NewDeployer(&kptConfig{
-				workingDir: ".",
-				kpt: latest.KptDeploy{
-					Live: latest.KptLive{
-						Apply: latest.KptApplyInventory{
-							Dir: test.applyDir,
-						},
+			kptDeploy := latest.KptDeploy{
+				Live: latest.KptLive{
+					Apply: latest.KptApplyInventory{
+						Dir: test.applyDir,
 					},
 				},
+			}
+			k := NewDeployer(&kptConfig{
+				workingDir: ".",
+				kpt:        kptDeploy,
+			}, latest.DeployType{
+				KptDeploy: &kptDeploy,
 			}, nil)
 
 			err := k.Cleanup(context.Background(), ioutil.Discard)
@@ -748,6 +755,8 @@ spec:
 			k := NewDeployer(&kptConfig{
 				workingDir: ".",
 				kpt:        test.kpt,
+			}, latest.DeployType{
+				KptDeploy: &test.kpt,
 			}, test.labels)
 
 			var b bytes.Buffer
@@ -820,11 +829,14 @@ func TestKpt_GetApplyDir(t *testing.T) {
 				tmpDir.Touch(".kpt-hydrated/inventory-template.yaml")
 			}
 
+			kptDeploy := latest.KptDeploy{
+				Live: test.live,
+			}
 			k := NewDeployer(&kptConfig{
 				workingDir: ".",
-				kpt: latest.KptDeploy{
-					Live: test.live,
-				},
+				kpt:        kptDeploy,
+			}, latest.DeployType{
+				KptDeploy: &kptDeploy,
 			}, nil)
 
 			applyDir, err := k.getApplyDir(context.Background())
@@ -982,7 +994,7 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k := NewDeployer(&kptConfig{}, nil)
+			k := NewDeployer(&kptConfig{}, latest.DeployType{}, nil)
 			actualManifest, err := k.excludeKptFn(test.manifests)
 			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
 		})
@@ -1000,6 +1012,6 @@ func (c *kptConfig) GetKubeContext() string   { return kubectl.TestKubeContext }
 func (c *kptConfig) GetKubeNamespace() string { return kubectl.TestNamespace }
 func (c *kptConfig) Pipeline() latest.Pipeline {
 	var pipeline latest.Pipeline
-	pipeline.Deploy.DeployType.KptDeploy = &c.kpt
+	pipeline.Deploy.Steps[0].KptDeploy = &c.kpt
 	return pipeline
 }

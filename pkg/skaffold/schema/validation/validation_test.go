@@ -46,10 +46,10 @@ var (
 				},
 			},
 			Deploy: latest.DeployConfig{
-				DeployType: latest.DeployType{
+				Steps: []latest.DeployType{{
 					HelmDeploy:    &latest.HelmDeploy{},
 					KubectlDeploy: &latest.KubectlDeploy{},
-				},
+				}},
 			},
 		},
 	}

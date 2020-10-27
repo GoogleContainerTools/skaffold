@@ -272,9 +272,9 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
+					Steps: []latest.DeployType{{
 						KubectlDeploy: &latest.KubectlDeploy{},
-					},
+					}},
 				},
 			},
 			expectedBuilder:  &local.Builder{},
@@ -291,9 +291,9 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
+					Steps: []latest.DeployType{{
 						KubectlDeploy: &latest.KubectlDeploy{},
-					},
+					}},
 				},
 			},
 			shouldErr: true,
@@ -316,9 +316,9 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
+					Steps: []latest.DeployType{{
 						KubectlDeploy: &latest.KubectlDeploy{},
-					},
+					}},
 				},
 			},
 			expectedBuilder:  &local.Builder{},
@@ -336,11 +336,11 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
+					Steps: []latest.DeployType{{
 						KubectlDeploy:   &latest.KubectlDeploy{},
 						KustomizeDeploy: &latest.KustomizeDeploy{},
 						HelmDeploy:      &latest.HelmDeploy{},
-					},
+					}},
 				},
 			},
 			expectedBuilder: &local.Builder{},
@@ -447,9 +447,9 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 					},
 				},
 				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
+					Steps: []latest.DeployType{{
 						KubectlDeploy: &latest.KubectlDeploy{},
-					},
+					}},
 				},
 			}
 			r, _ := NewForConfig(&runcontext.RunContext{

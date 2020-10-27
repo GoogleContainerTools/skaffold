@@ -40,10 +40,10 @@ func TestEmptyState(t *testing.T) {
 					Artifacts: []*latest.Artifact{{ImageName: "img", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}}},
 				},
 				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
+					Steps: []latest.DeployType{{
 						KubectlDeploy: &latest.KubectlDeploy{},
 						HelmDeploy:    &latest.HelmDeploy{Releases: []latest.HelmRelease{{Name: "first"}, {Name: "second"}}},
-					},
+					}},
 				},
 			},
 			cluster: "minikube",
@@ -73,9 +73,9 @@ func TestEmptyState(t *testing.T) {
 					},
 				},
 				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
+					Steps: []latest.DeployType{{
 						KustomizeDeploy: &latest.KustomizeDeploy{},
-					},
+					}},
 				},
 			},
 			cluster: "gke-tejal-test",
@@ -117,9 +117,9 @@ func TestEmptyState(t *testing.T) {
 			description: "no build, kustomize deployer other cluster",
 			cfg: latest.Pipeline{
 				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
+					Steps: []latest.DeployType{{
 						KustomizeDeploy: &latest.KustomizeDeploy{},
-					},
+					}},
 				},
 			},
 			cluster: "some-private",

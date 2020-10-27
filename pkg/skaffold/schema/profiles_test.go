@@ -237,9 +237,9 @@ func TestApplyProfiles(t *testing.T) {
 					Name: "profile",
 					Pipeline: latest.Pipeline{
 						Deploy: latest.DeployConfig{
-							DeployType: latest.DeployType{
+							Steps: []latest.DeployType{{
 								HelmDeploy: &latest.HelmDeploy{},
-							},
+							}},
 						},
 					},
 				}),

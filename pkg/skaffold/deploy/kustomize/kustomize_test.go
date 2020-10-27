@@ -187,7 +187,9 @@ func TestKustomizeDeploy(t *testing.T) {
 				kustomize: test.kustomize,
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption,
-				}}}, nil)
+				}}}, latest.DeployType{
+				KustomizeDeploy: &test.kustomize,
+			}, nil)
 			t.RequireNoError(err)
 			_, err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
@@ -254,6 +256,8 @@ func TestKustomizeCleanup(t *testing.T) {
 				kustomize:  test.kustomize,
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
+			}, latest.DeployType{
+				KustomizeDeploy: &test.kustomize,
 			}, nil)
 			t.RequireNoError(err)
 			err = k.Cleanup(context.Background(), ioutil.Discard)
@@ -456,10 +460,13 @@ func TestDependenciesForKustomization(t *testing.T) {
 				tmpDir.Write(path, contents)
 			}
 
+			kustomizeDeploy := latest.KustomizeDeploy{
+				KustomizePaths: kustomizePaths,
+			}
 			k, err := NewDeployer(&kustomizeConfig{
-				kustomize: latest.KustomizeDeploy{
-					KustomizePaths: kustomizePaths,
-				},
+				kustomize: kustomizeDeploy,
+			}, latest.DeployType{
+				KustomizeDeploy: &kustomizeDeploy,
 			}, nil)
 			t.RequireNoError(err)
 
@@ -701,12 +708,15 @@ spec:
 			t.Override(&util.DefaultExecCommand, fakeCmd)
 			t.NewTempDir().Chdir()
 
+			kustomizeDeploy := latest.KustomizeDeploy{
+				KustomizePaths: kustomizationPaths,
+			}
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
-				kustomize: latest.KustomizeDeploy{
-					KustomizePaths: kustomizationPaths,
-				},
+				kustomize:  kustomizeDeploy,
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: kubectl.TestNamespace}},
+			}, latest.DeployType{
+				KustomizeDeploy: &kustomizeDeploy,
 			}, test.labels)
 			t.RequireNoError(err)
 
@@ -733,6 +743,6 @@ func (c *kustomizeConfig) GetKubeContext() string                    { return ku
 func (c *kustomizeConfig) GetKubeNamespace() string                  { return c.Opts.Namespace }
 func (c *kustomizeConfig) Pipeline() latest.Pipeline {
 	var pipeline latest.Pipeline
-	pipeline.Deploy.DeployType.KustomizeDeploy = &c.kustomize
+	pipeline.Deploy.Steps[0].KustomizeDeploy = &c.kustomize
 	return pipeline
 }

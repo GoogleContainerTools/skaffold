@@ -77,18 +77,19 @@ spec:
 		t.NewTempDir().
 			Write("deployment.yaml", test.input).
 			Chdir()
+		kubectlDeploy := &latest.KubectlDeploy{
+			Manifests: []string{"deployment.yaml"},
+		}
 		deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 			WorkingDir: ".",
 			Cfg: latest.Pipeline{
 				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
-						KubectlDeploy: &latest.KubectlDeploy{
-							Manifests: []string{"deployment.yaml"},
-						},
-					},
+					Steps: []latest.DeployType{{
+						KubectlDeploy: kubectlDeploy,
+					}},
 				},
 			},
-		}, nil)
+		}, latest.DeployType{KubectlDeploy: kubectlDeploy}, nil)
 		t.RequireNoError(err)
 		var b bytes.Buffer
 		err = deployer.Render(context.Background(), &b, test.builds, false, test.renderPath)
@@ -232,21 +233,22 @@ spec:
 				Write("deployment.yaml", test.input).
 				Chdir()
 
+			kubectlDeploy := &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
+			}
 			deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
 				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: &latest.KubectlDeploy{
-								Manifests: []string{"deployment.yaml"},
-							},
-						},
+						Steps: []latest.DeployType{{
+							KubectlDeploy: kubectlDeploy,
+						}},
 					},
 				},
 				Opts: config.SkaffoldOptions{
 					AddSkaffoldLabels: true,
 				},
-			}, nil)
+			}, latest.DeployType{KubectlDeploy: kubectlDeploy}, nil)
 			t.RequireNoError(err)
 			var b bytes.Buffer
 			err = deployer.Render(context.Background(), &b, test.builds, false, "")
@@ -420,17 +422,18 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			helmDeploy := &latest.HelmDeploy{
+				Releases: test.helmReleases,
+			}
 			deployer := helm.NewDeployer(&runcontext.RunContext{
 				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							HelmDeploy: &latest.HelmDeploy{
-								Releases: test.helmReleases,
-							},
-						},
+						Steps: []latest.DeployType{{
+							HelmDeploy: helmDeploy,
+						}},
 					},
 				},
-			}, nil)
+			}, latest.DeployType{HelmDeploy: helmDeploy}, nil)
 			var b bytes.Buffer
 			err := deployer.Render(context.Background(), &b, test.builds, true, "")
 

@@ -422,6 +422,8 @@ func TestBinVer(t *testing.T) {
 
 			deployer := NewDeployer(&helmConfig{
 				helm: testDeployConfig,
+			}, latest.DeployType{
+				HelmDeploy: &testDeployConfig,
 			}, nil)
 			ver, err := deployer.binVer(context.TODO())
 
@@ -948,6 +950,8 @@ func TestHelmDeploy(t *testing.T) {
 				helm:      test.helm,
 				namespace: test.namespace,
 				force:     test.force,
+			}, latest.DeployType{
+				HelmDeploy: &test.helm,
 			}, nil)
 			if test.configure != nil {
 				test.configure(deployer)
@@ -1033,6 +1037,8 @@ func TestHelmCleanup(t *testing.T) {
 			deployer := NewDeployer(&helmConfig{
 				helm:      test.helm,
 				namespace: test.namespace,
+			}, latest.DeployType{
+				HelmDeploy: &test.helm,
 			}, nil)
 			err := deployer.Cleanup(context.Background(), ioutil.Discard)
 
@@ -1132,19 +1138,24 @@ func TestHelmDependencies(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Touch(test.files...)
 
+			helmDeploy := latest.HelmDeploy{
+				Releases: []latest.HelmRelease{{
+					Name:                  "skaffold-helm",
+					ChartPath:             tmpDir.Root(),
+					ValuesFiles:           test.valuesFiles,
+					ArtifactOverrides:     map[string]string{"image": "skaffold-helm"},
+					Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+					SetValues:             map[string]string{"some.key": "somevalue"},
+					SkipBuildDependencies: test.skipBuildDependencies,
+					Remote:                test.remote,
+				}},
+			}
+
 			deployer := NewDeployer(&helmConfig{
-				helm: latest.HelmDeploy{
-					Releases: []latest.HelmRelease{{
-						Name:                  "skaffold-helm",
-						ChartPath:             tmpDir.Root(),
-						ValuesFiles:           test.valuesFiles,
-						ArtifactOverrides:     map[string]string{"image": "skaffold-helm"},
-						Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-						SetValues:             map[string]string{"some.key": "somevalue"},
-						SkipBuildDependencies: test.skipBuildDependencies,
-						Remote:                test.remote,
-					}},
-				}}, nil)
+				helm: helmDeploy,
+			}, latest.DeployType{
+				HelmDeploy: &helmDeploy,
+			}, nil)
 
 			deps, err := deployer.Dependencies()
 
@@ -1333,6 +1344,8 @@ func TestHelmRender(t *testing.T) {
 
 			deployer := NewDeployer(&helmConfig{
 				helm: test.helm,
+			}, latest.DeployType{
+				HelmDeploy: &test.helm,
 			}, nil)
 
 			t.Override(&util.DefaultExecCommand, test.commands)
@@ -1404,6 +1417,8 @@ func TestGenerateSkaffoldDebugFilter(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			h := NewDeployer(&helmConfig{
 				helm: testDeployConfig,
+			}, latest.DeployType{
+				HelmDeploy: &testDeployConfig,
 			}, nil)
 			result := h.generateSkaffoldDebugFilter(test.buildFile)
 			t.CheckDeepEqual(test.result, result)
@@ -1424,6 +1439,6 @@ func (c *helmConfig) GetKubeContext() string   { return kubectl.TestKubeContext 
 func (c *helmConfig) GetKubeNamespace() string { return c.namespace }
 func (c *helmConfig) Pipeline() latest.Pipeline {
 	var pipeline latest.Pipeline
-	pipeline.Deploy.DeployType.HelmDeploy = &c.helm
+	pipeline.Deploy.Steps[0].HelmDeploy = &c.helm
 	return pipeline
 }

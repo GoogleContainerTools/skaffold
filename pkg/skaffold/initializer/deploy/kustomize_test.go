@@ -81,11 +81,11 @@ func TestGenerateKustomizePipeline(t *testing.T) {
 			expectedConfig: latest.SkaffoldConfig{
 				Pipeline: latest.Pipeline{
 					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
+						Steps: []latest.DeployType{{
 							KustomizeDeploy: &latest.KustomizeDeploy{
 								KustomizePaths: []string{filepath.Join("overlays", "dev")},
 							},
-						},
+						}},
 					},
 				},
 			},
@@ -102,11 +102,11 @@ func TestGenerateKustomizePipeline(t *testing.T) {
 			expectedConfig: latest.SkaffoldConfig{
 				Pipeline: latest.Pipeline{
 					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
+						Steps: []latest.DeployType{{
 							KustomizeDeploy: &latest.KustomizeDeploy{
 								KustomizePaths: []string{filepath.Join("overlays", "foo")},
 							},
-						},
+						}},
 					},
 				},
 				Profiles: []latest.Profile{
@@ -114,11 +114,11 @@ func TestGenerateKustomizePipeline(t *testing.T) {
 						Name: "bar",
 						Pipeline: latest.Pipeline{
 							Deploy: latest.DeployConfig{
-								DeployType: latest.DeployType{
+								Steps: []latest.DeployType{{
 									KustomizeDeploy: &latest.KustomizeDeploy{
 										KustomizePaths: []string{filepath.Join("overlays", "bar")},
 									},
-								},
+								}},
 							},
 						},
 					},
@@ -126,11 +126,11 @@ func TestGenerateKustomizePipeline(t *testing.T) {
 						Name: "baz",
 						Pipeline: latest.Pipeline{
 							Deploy: latest.DeployConfig{
-								DeployType: latest.DeployType{
+								Steps: []latest.DeployType{{
 									KustomizeDeploy: &latest.KustomizeDeploy{
 										KustomizePaths: []string{filepath.Join("overlays", "baz")},
 									},
-								},
+								}},
 							},
 						},
 					},

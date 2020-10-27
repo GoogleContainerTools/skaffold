@@ -54,7 +54,7 @@ func TestGetAllPodNamespaces(t *testing.T) {
 			argNamespace: "ns",
 			cfg: latest.Pipeline{
 				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
+					Steps: []latest.DeployType{{
 						HelmDeploy: &latest.HelmDeploy{
 							Releases: []latest.HelmRelease{
 								{Namespace: "ns3"},
@@ -63,7 +63,7 @@ func TestGetAllPodNamespaces(t *testing.T) {
 								{Namespace: "ns2"},
 							},
 						},
-					},
+					}},
 				},
 			},
 			expected: []string{"ns", "ns2", "ns3"},
