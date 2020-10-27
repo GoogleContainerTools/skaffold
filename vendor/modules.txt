@@ -1133,6 +1133,8 @@ knative.dev/pkg/configmap
 knative.dev/pkg/kmeta
 knative.dev/pkg/kmp
 knative.dev/pkg/tracker
+# sigs.k8s.io/kustomize/kyaml v0.9.2
+## explicit
 # sigs.k8s.io/yaml v1.2.0
 ## explicit
 sigs.k8s.io/yaml
