@@ -66,9 +66,10 @@ test:
   structureTests:
   - ./test/*
 deploy:
-  kubectl:
-    manifests:
-    - k8s/deployment.yaml
+  steps:
+  - kubectl:
+      manifests:
+      - k8s/deployment.yaml
 `, latest.Version),
 		},
 		{
@@ -94,9 +95,10 @@ build:
     docker:
       dockerfile: dockerfile.test
 deploy:
-  kubectl:
-    manifests:
-    - k8s/deployment.yaml
+  steps:
+  - kubectl:
+      manifests:
+      - k8s/deployment.yaml
 `, latest.Version),
 		},
 		{
@@ -194,9 +196,10 @@ test:
   structureTests:
   - ./test/*
 deploy:
-  kubectl:
-    manifests:
-    - k8s/deployment.yaml
+  steps:
+  - kubectl:
+      manifests:
+      - k8s/deployment.yaml
 `, latest.Version)
 
 	testutil.Run(t, "", func(t *testutil.T) {

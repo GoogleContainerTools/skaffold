@@ -1,4 +1,5 @@
 deploy:
-  kubectl:
-    manifests:
-    - k8s-*
+  steps:
+  - kubectl:
+      manifests:
+      - k8s-*

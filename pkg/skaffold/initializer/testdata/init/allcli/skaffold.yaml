@@ -6,7 +6,8 @@ build:
   artifacts:
     - image: passed-in-artifact
 deploy:
-  kubectl:
-    manifests:
-      - manifest-placeholder1.yaml
-      - manifest-placeholder2.yaml
+  steps:
+  - kubectl:
+      manifests:
+        - manifest-placeholder1.yaml
+        - manifest-placeholder2.yaml

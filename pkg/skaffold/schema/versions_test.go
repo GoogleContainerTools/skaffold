@@ -40,7 +40,8 @@ build:
   artifacts:
   - image: example
 deploy:
-  kubectl: {}
+  steps:
+  - kubectl: {}
 `
 	// This config has two tag policies set.
 	invalidConfig = `
@@ -70,10 +71,11 @@ build:
   googleCloudBuild:
     projectId: ID
 deploy:
-  kubectl:
-   manifests:
-   - dep.yaml
-   - svc.yaml
+  steps:
+  - kubectl:
+     manifests:
+     - dep.yaml
+     - svc.yaml
 `
 	minimalClusterConfig = `
 build:
@@ -374,9 +376,11 @@ func withDockerConfig(secretName string, path string) func(*latest.BuildConfig) 
 
 func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
-		cfg.Deploy.Steps[0].KubectlDeploy = &latest.KubectlDeploy{
-			Manifests: manifests,
-		}
+		cfg.Deploy.Steps = append(cfg.Deploy.Steps, latest.DeployType{
+			KubectlDeploy: &latest.KubectlDeploy{
+				Manifests: manifests,
+			},
+		})
 	}
 }
 
@@ -390,7 +394,9 @@ func withKubeContext(kubeContext string) func(*latest.SkaffoldConfig) {
 
 func withHelmDeploy() func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
-		cfg.Deploy.Steps[0].HelmDeploy = &latest.HelmDeploy{}
+		cfg.Deploy.Steps = append(cfg.Deploy.Steps, latest.DeployType{
+			HelmDeploy: &latest.HelmDeploy{},
+		})
 	}
 }
 

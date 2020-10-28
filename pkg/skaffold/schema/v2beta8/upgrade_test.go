@@ -126,12 +126,13 @@ test:
     structureTests:
      - ./test/*
 deploy:
-  kubectl:
-    manifests:
-    - k8s-*
-  kustomize:
-    paths:
-    - kustomization-main
+  steps:
+  - kubectl:
+      manifests:
+      - k8s-*
+    kustomize:
+      paths:
+      - kustomization-main
 profiles:
   - name: test profile
     build:
@@ -148,12 +149,13 @@ profiles:
        structureTests:
          - ./test/*
     deploy:
-      kubectl:
-        manifests:
-        - k8s-*
-      kustomize:
-        paths:
-        - kustomization-test
+      steps:
+      - kubectl:
+          manifests:
+          - k8s-*
+        kustomize:
+          paths:
+          - kustomization-test
   - name: test local
     build:
       artifacts:
@@ -163,10 +165,11 @@ profiles:
       local:
         push: false
     deploy:
-      kubectl:
-        manifests:
-        - k8s-*
-      kustomize: {}
+      steps:
+      - kubectl:
+          manifests:
+          - k8s-*
+        kustomize: {}
 `
 	verifyUpgrade(t, yaml, expected)
 }

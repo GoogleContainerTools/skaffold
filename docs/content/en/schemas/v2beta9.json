@@ -906,16 +906,6 @@
     },
     "DeployConfig": {
       "properties": {
-        "helm": {
-          "$ref": "#/definitions/HelmDeploy",
-          "description": "*beta* uses the `helm` CLI to apply the charts to the cluster.",
-          "x-intellij-html-description": "<em>beta</em> uses the <code>helm</code> CLI to apply the charts to the cluster."
-        },
-        "kpt": {
-          "$ref": "#/definitions/KptDeploy",
-          "description": "*alpha* uses the `kpt` CLI to manage and deploy manifests.",
-          "x-intellij-html-description": "<em>alpha</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
-        },
         "kubeContext": {
           "type": "string",
           "description": "Kubernetes context that Skaffold should deploy to.",
@@ -923,16 +913,6 @@
           "examples": [
             "minikube"
           ]
-        },
-        "kubectl": {
-          "$ref": "#/definitions/KubectlDeploy",
-          "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
-          "x-intellij-html-description": "<em>beta</em> uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster."
-        },
-        "kustomize": {
-          "$ref": "#/definitions/KustomizeDeploy",
-          "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
-          "x-intellij-html-description": "<em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
         },
         "logs": {
           "$ref": "#/definitions/LogsConfig",
@@ -943,13 +923,18 @@
           "type": "integer",
           "description": "*beta* deadline for deployments to stabilize in seconds.",
           "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize in seconds."
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/definitions/DeployType"
+          },
+          "type": "array",
+          "description": "defines the steps of the deploy phase that will run. A user can specify multiple deployers and multiple of the same deployer through multiple steps.",
+          "x-intellij-html-description": "defines the steps of the deploy phase that will run. A user can specify multiple deployers and multiple of the same deployer through multiple steps."
         }
       },
       "preferredOrder": [
-        "helm",
-        "kpt",
-        "kubectl",
-        "kustomize",
+        "steps",
         "statusCheckDeadlineSeconds",
         "kubeContext",
         "logs"
@@ -957,6 +942,39 @@
       "additionalProperties": false,
       "description": "contains all the configuration needed by the deploy steps.",
       "x-intellij-html-description": "contains all the configuration needed by the deploy steps."
+    },
+    "DeployType": {
+      "properties": {
+        "helm": {
+          "$ref": "#/definitions/HelmDeploy",
+          "description": "*beta* uses the `helm` CLI to apply the charts to the cluster.",
+          "x-intellij-html-description": "<em>beta</em> uses the <code>helm</code> CLI to apply the charts to the cluster."
+        },
+        "kpt": {
+          "$ref": "#/definitions/KptDeploy",
+          "description": "*alpha* uses the `kpt` CLI to manage and deploy manifests.",
+          "x-intellij-html-description": "<em>alpha</em> uses the <code>kpt</code> CLI to manage and deploy manifests."
+        },
+        "kubectl": {
+          "$ref": "#/definitions/KubectlDeploy",
+          "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
+          "x-intellij-html-description": "<em>beta</em> uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster."
+        },
+        "kustomize": {
+          "$ref": "#/definitions/KustomizeDeploy",
+          "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
+          "x-intellij-html-description": "<em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
+        }
+      },
+      "preferredOrder": [
+        "helm",
+        "kpt",
+        "kubectl",
+        "kustomize"
+      ],
+      "additionalProperties": false,
+      "description": "contains the specific implementation and parameters needed for the deploy step. All three deployer types can be used at the same time for hybrid workflows.",
+      "x-intellij-html-description": "contains the specific implementation and parameters needed for the deploy step. All three deployer types can be used at the same time for hybrid workflows."
     },
     "DockerArtifact": {
       "properties": {

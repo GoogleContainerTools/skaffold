@@ -36,9 +36,10 @@ func TestApplyPatch(t *testing.T) {
   artifacts:
   - image: example
 deploy:
-  kubectl:
-    manifests:
-    - k8s-*
+  steps:
+  - kubectl:
+      manifests:
+      - k8s-*
 profiles:
 - name: patches
   patches:
@@ -249,7 +250,6 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 				),
 				withHelmDeploy(),
-				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{

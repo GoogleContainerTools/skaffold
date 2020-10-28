@@ -1,5 +1,6 @@
 deploy:
   statusCheckDeadlineSeconds: 300
-  kubectl:
-    manifests:
-    - k8s-*
+  steps:
+  - kubectl:
+      manifests:
+      - k8s-*

@@ -121,7 +121,7 @@ func defaultToKubectlDeploy(c *latest.SkaffoldConfig) {
 	}
 
 	logrus.Debugf("Defaulting deploy type to kubectl")
-	c.Deploy.Steps[0].KubectlDeploy = &latest.KubectlDeploy{}
+	c.Deploy.Steps = []latest.DeployType{{KubectlDeploy: &latest.KubectlDeploy{}}}
 }
 
 func withLocalBuild(c *latest.SkaffoldConfig, operations ...func(*latest.LocalBuild)) {

@@ -1,5 +1,6 @@
 deploy:
-  kustomize: {}
+  steps:
+  - kustomize: {}
 # The deploy section above is equal to
 # deploy:
 #   kustomize:

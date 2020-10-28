@@ -6,4 +6,5 @@ build:
   artifacts:
   - image: hello-world
 deploy:
-  kustomize: {}
+  steps:
+  - kustomize: {}

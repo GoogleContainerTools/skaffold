@@ -89,9 +89,9 @@ func getDeploy(d latest.DeployConfig, c string) *proto.DeployMetadata {
 		if step.KustomizeDeploy != nil {
 			deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUSTOMIZE, Count: 1})
 		}
-		if len(deployers) == 0 {
-			return &proto.DeployMetadata{}
-		}
+	}
+	if len(deployers) == 0 {
+		return &proto.DeployMetadata{}
 	}
 
 	return &proto.DeployMetadata{

@@ -9,7 +9,8 @@ build:
   - image: gcr.io/k8s-skaffold/leeroy-web
     context: leeroy-web
 deploy:
-  kubectl:
-    manifests:
-    - leeroy-app/kubernetes/deployment.yaml
-    - leeroy-web/kubernetes/deployment.yaml
+  steps:
+  - kubectl:
+      manifests:
+      - leeroy-app/kubernetes/deployment.yaml
+      - leeroy-web/kubernetes/deployment.yaml

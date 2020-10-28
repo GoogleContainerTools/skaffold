@@ -433,6 +433,7 @@ type TestCase struct {
 
 // DeployConfig contains all the configuration needed by the deploy steps.
 type DeployConfig struct {
+	// Steps defines the steps of the deploy phase that will run. A user can specify multiple deployers and multiple of the same deployer through multiple steps.
 	Steps []DeployType `yaml:"steps,omitempty"`
 
 	// StatusCheckDeadlineSeconds *beta* is the deadline for deployments to stabilize in seconds.
