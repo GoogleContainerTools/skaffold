@@ -49,7 +49,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 
 	// TODO: Update DOC
 	if (b.local.UseBuildkit != nil && *b.local.UseBuildkit) || (b.local.UseDockerCLI != nil && *b.local.UseDockerCLI) {
-		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag)
+		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, opts)
 	} else {
 		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag, mode)
 	}
