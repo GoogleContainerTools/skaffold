@@ -40,8 +40,8 @@ func TestBuildDeploy(t *testing.T) {
 	// Parse the Build Output
 	buildArtifacts, err := flags.ParseBuildOutput(outputBytes)
 	failNowIfError(t, err)
-	if len(buildArtifacts.Builds) != 2 {
-		t.Fatalf("expected 2 artifacts to be built, but found %d", len(buildArtifacts.Builds))
+	if len(buildArtifacts.Builds) != 3 {
+		t.Fatalf("expected 3 artifacts to be built, but found %d", len(buildArtifacts.Builds))
 	}
 
 	var webTag, appTag string

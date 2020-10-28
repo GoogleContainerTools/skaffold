@@ -191,13 +191,14 @@ func TestBuild(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
-			t.Override(&EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
+			t.Override(&EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact, extra map[string]*string) (map[string]*string, error) {
 				return util.EvaluateEnvTemplateMap(a.BuildArgs)
 			})
 			t.SetEnvs(test.env)
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
-			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage", test.mode)
+			opts := BuildOptions{Tag: "finalimage", Mode: test.mode}
+			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, opts)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)

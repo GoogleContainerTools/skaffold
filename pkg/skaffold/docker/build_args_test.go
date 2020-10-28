@@ -31,6 +31,7 @@ func TestEvalBuildArgs(t *testing.T) {
 		dockerfile  string
 		mode        config.RunMode
 		buildArgs   map[string]*string
+		extra       map[string]*string
 		expected    map[string]*string
 	}{
 		{
@@ -70,6 +71,31 @@ FROM bar1`,
 				"foo1":                util.StringPtr("one"),
 				"foo2":                util.StringPtr("two"),
 				"foo3":                util.StringPtr("three"),
+			},
+		},
+		{
+			description: "debug with additional build args",
+			dockerfile: `ARG foo1
+ARG foo3
+ARG foo4
+ARG SKAFFOLD_GO_GCFLAGS
+FROM bar1`,
+			mode: config.RunModes.Debug,
+			buildArgs: map[string]*string{
+				"foo1": util.StringPtr("one"),
+				"foo2": util.StringPtr("two"),
+				"foo3": util.StringPtr("three"),
+			},
+			extra: map[string]*string{
+				"foo4": util.StringPtr("four"),
+				"foo5": util.StringPtr("five"),
+			},
+			expected: map[string]*string{
+				"SKAFFOLD_GO_GCFLAGS": util.StringPtr("all=-N -l"),
+				"foo1":                util.StringPtr("one"),
+				"foo2":                util.StringPtr("two"),
+				"foo3":                util.StringPtr("three"),
+				"foo4":                util.StringPtr("four"),
 			},
 		},
 		{
@@ -184,7 +210,7 @@ FROM bar1`,
 			tmpDir.Write("./Dockerfile", test.dockerfile)
 			workspace := tmpDir.Path(".")
 
-			actual, err := EvalBuildArgs(test.mode, workspace, artifact)
+			actual, err := EvalBuildArgs(test.mode, workspace, artifact, test.extra)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 		})
