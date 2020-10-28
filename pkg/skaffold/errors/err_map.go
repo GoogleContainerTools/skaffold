@@ -21,6 +21,7 @@ import (
 	"regexp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -96,7 +97,8 @@ var knownDeployProblems = []problem{
 		description: func(err error) string {
 			matchExp := re("(?i).*unable to connect.*Get (.*)")
 			if match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err)); len(match) >= 2 {
-				return fmt.Sprintf("Deploy Failed. Could not connect to cluster %s due to %s", skaffoldOpts.KubeContext, match[1])
+				kubeconfig, _ := kubectx.CurrentConfig()
+				return fmt.Sprintf("Deploy Failed. Could not connect to cluster %s due to %s", kubeconfig.CurrentContext, match[1])
 			}
 			return fmt.Sprintf("Deploy Failed. Could not connect to Kubernetes cluster.")
 		},
