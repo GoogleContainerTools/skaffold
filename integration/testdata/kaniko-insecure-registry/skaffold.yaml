@@ -17,6 +17,7 @@ profiles:
           context: insecure-registry
           docker: {}
     deploy:
-      kubectl:
-        manifests:
-          - insecure-registry/reg.yaml
+      steps:
+      - kubectl:
+          manifests:
+            - insecure-registry/reg.yaml

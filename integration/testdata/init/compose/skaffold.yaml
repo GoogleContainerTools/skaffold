@@ -6,7 +6,8 @@ build:
   artifacts:
   - image: gcr.io/k8s-skaffold/compose
 deploy:
-  kubectl:
-    manifests:
-    - compose-deployment.yaml
-    - compose-service.yaml
+  steps:
+  - kubectl:
+      manifests:
+      - compose-deployment.yaml
+      - compose-service.yaml

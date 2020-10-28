@@ -14,7 +14,8 @@ build:
   cluster:
     pullSecretName: e2esecret
 deploy:
-  kubectl:
-    manifests:
-      - ./leeroy-web/kubernetes/*
-      - ./leeroy-app/kubernetes/*
+  steps:
+  - kubectl:
+      manifests:
+        - ./leeroy-web/kubernetes/*
+        - ./leeroy-app/kubernetes/*

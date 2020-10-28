@@ -1,4 +1,5 @@
 apiVersion: skaffold/v2beta9
 kind: Config
 deploy:
-  kustomize: {}
+  steps:
+  - kustomize: {}

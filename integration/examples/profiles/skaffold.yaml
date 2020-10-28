@@ -6,9 +6,10 @@ build:
   - image: skaffold-world
     context: world-service
 deploy:
-  kubectl:
-    manifests:
-      - 'world-service/*.yaml'
+  steps:
+  - kubectl:
+      manifests:
+        - 'world-service/*.yaml'
 
 profiles:
   - name: minikube-profile
@@ -21,9 +22,10 @@ profiles:
         - image: skaffold-hello
           context: hello-service
     deploy:
-      kubectl:
-        manifests:
-          - 'hello-service/*.yaml'
+      steps:
+      - kubectl:
+          manifests:
+            - 'hello-service/*.yaml'
 
   - name: staging-profile
     build:
@@ -36,6 +38,7 @@ profiles:
     deploy:
       # use context "staging" for staging-profile
       kubeContext: staging
-      kubectl:
-        manifests:
-          - '**/*.yaml'
+      steps:
+      - kubectl:
+          manifests:
+            - '**/*.yaml'

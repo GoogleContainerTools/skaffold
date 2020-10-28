@@ -6,9 +6,10 @@ build:
   - image: skaffold-base
     context: base-service
 deploy:
-  kubectl:
-    manifests:
-      - 'base-service/*.yaml'
+  steps:
+  - kubectl:
+      manifests:
+        - 'base-service/*.yaml'
 
 profiles:
   - name: hello
@@ -19,7 +20,7 @@ profiles:
           image: skaffold-hello
           context: hello-service
       - op: add
-        path: /deploy/kubectl/manifests/1
+        path: /deploy/steps/0/kubectl/manifests/1
         value: 'hello-service/*.yaml'
 
   - name: world
@@ -30,5 +31,5 @@ profiles:
           image: skaffold-world
           context: world-service
       - op: add
-        path: /deploy/kubectl/manifests/1
+        path: /deploy/steps/0/kubectl/manifests/1
         value: 'world-service/*.yaml'

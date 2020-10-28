@@ -13,12 +13,13 @@ build:
           - "go.mod"
           - "**.go"
 deploy:
-  helm:
-    releases:
-      - name: skaffold-templated
-        chartPath: charts
-        artifactOverrides:
-          image: skaffold-templated
-        setValueTemplates:
-          imageRepo: "{{.IMAGE_REPO}}"
-          imageTag: "{{.IMAGE_TAG}}"
+  steps:
+  - helm:
+      releases:
+        - name: skaffold-templated
+          chartPath: charts
+          artifactOverrides:
+            image: skaffold-templated
+          setValueTemplates:
+            imageRepo: "{{.IMAGE_REPO}}"
+            imageTag: "{{.IMAGE_TAG}}"

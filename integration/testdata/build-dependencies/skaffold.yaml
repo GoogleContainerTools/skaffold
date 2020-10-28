@@ -42,9 +42,10 @@ build:
         FAIL: "0"
 
 deploy:
-  kubectl:
-    manifests:
-    - 'kubernetes/*.yaml'
+  steps:
+  - kubectl:
+      manifests:
+      - 'kubernetes/*.yaml'
 
 profiles:
 - name: concurrency-0

@@ -8,15 +8,16 @@ The image can be passed to the subchart using the standard Helm format of `subch
 
 ```yaml
 deploy:
-  helm:
-    releases:
-    - name: skaffold-helm
-      chartPath: skaffold-helm
-      namespace: skaffold
-      skipBuildDependencies: true # Skip helm dep build
-      artifactOverrides :
-        image: skaffold-helm
-        "subchart.image": skaffold-helm # Set image for subchart
-      valuesFiles:
-        - helm-values-file.yaml
+  steps:
+  - helm:
+      releases:
+      - name: skaffold-helm
+        chartPath: skaffold-helm
+        namespace: skaffold
+        skipBuildDependencies: true # Skip helm dep build
+        artifactOverrides :
+          image: skaffold-helm
+          "subchart.image": skaffold-helm # Set image for subchart
+        valuesFiles:
+          - helm-values-file.yaml
 ```

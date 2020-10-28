@@ -7,10 +7,11 @@ build:
     - image: leeroy-app
       context: leeroy-app
 deploy:
-  kubectl:
-    manifests:
-      - leeroy-web/kubernetes/*
-      - leeroy-app/kubernetes/*
+  steps:
+  - kubectl:
+      manifests:
+        - leeroy-web/kubernetes/*
+        - leeroy-app/kubernetes/*
 portForward:
   - resourceType: deployment
     resourceName: leeroy-web

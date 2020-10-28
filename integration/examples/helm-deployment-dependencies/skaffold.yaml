@@ -6,25 +6,26 @@ build:
   artifacts:
   - image: skaffold-helm
 deploy:
-  helm:
-    releases:
-    - name: skaffold-helm
-      chartPath: skaffold-helm
-      #wait: true
-      #valuesFiles:
-      #- helm-skaffold-values.yaml
-      skipBuildDependencies: true # Skip helm dep build
-      artifactOverrides:
-        image: skaffold-helm
-        skaffold-helm-subchart:
+  steps:
+  - helm:
+      releases:
+      - name: skaffold-helm
+        chartPath: skaffold-helm
+        #wait: true
+        #valuesFiles:
+        #- helm-skaffold-values.yaml
+        skipBuildDependencies: true # Skip helm dep build
+        artifactOverrides:
           image: skaffold-helm
-      #recreatePods will pass --recreate-pods to helm upgrade
-      #recreatePods: true
-      #overrides builds an override values.yaml file to run with the helm deploy
-      #overrides:
-      # some:
-      #   key: someValue
-      #setValues get appended to the helm deploy with --set.
-      #setValues:
-      # some:
-      #   key: someValue
+          skaffold-helm-subchart:
+            image: skaffold-helm
+        #recreatePods will pass --recreate-pods to helm upgrade
+        #recreatePods: true
+        #overrides builds an override values.yaml file to run with the helm deploy
+        #overrides:
+        # some:
+        #   key: someValue
+        #setValues get appended to the helm deploy with --set.
+        #setValues:
+        # some:
+        #   key: someValue

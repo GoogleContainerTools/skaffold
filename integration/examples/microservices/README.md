@@ -71,9 +71,10 @@ In the deploy stanza, we use the glob matching pattern to deploy all YAML and JS
 
 ```yaml
 deploy:
-  kubectl:
-    manifests:
-    - ./leeroy-web/kubernetes/*
-    - ./leeroy-app/kubernetes/*
+  steps:
+  - kubectl:
+      manifests:
+      - ./leeroy-web/kubernetes/*
+      - ./leeroy-app/kubernetes/*
 ```
 

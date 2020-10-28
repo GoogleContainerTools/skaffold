@@ -4,9 +4,10 @@ build:
   artifacts:
   - image: skaffold-helm
 deploy:
-  helm:
-    releases:
-    - name: skaffold-helm
-      chartPath: charts
-      artifactOverrides:
-        image: skaffold-helm
+  steps:
+  - helm:
+      releases:
+      - name: skaffold-helm
+        chartPath: charts
+        artifactOverrides:
+          image: skaffold-helm

@@ -7,11 +7,13 @@ build:
 profiles:
   - name: pod
     deploy:
-      kubectl:
-        manifests:
-          - k8s/pod.yaml
+      steps:
+      - kubectl:
+          manifests:
+            - k8s/pod.yaml
   - name: deployment
     deploy:
-      kubectl:
-        manifests:
-          - k8s/deployment.yaml
+      steps:
+      - kubectl:
+          manifests:
+            - k8s/deployment.yaml

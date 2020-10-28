@@ -10,6 +10,7 @@ build:
     pullSecretName: e2esecret
     namespace: default
 deploy:
-  kubectl:
-    manifests:
-      - k8s-*
+  steps:
+  - kubectl:
+      manifests:
+        - k8s-*

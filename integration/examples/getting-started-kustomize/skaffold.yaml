@@ -7,17 +7,20 @@ build:
   - image: skaffold-kustomize
     context: app
 deploy:
-  kustomize:
-    paths:
-    - overlays/dev
+  steps:
+  - kustomize:
+      paths:
+      - overlays/dev
 profiles:
 - name: prod
   deploy:
-    kustomize:
-      paths:
-      - overlays/prod
+    steps:
+    - kustomize:
+        paths:
+        - overlays/prod
 - name: staging
   deploy:
-    kustomize:
-      paths:
-      - overlays/staging
+    steps:
+    - kustomize:
+        paths:
+        - overlays/staging

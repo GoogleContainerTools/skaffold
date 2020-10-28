@@ -6,6 +6,7 @@ build:
   artifacts:
   - image: skaffold-example
 deploy:
-  kubectl:
-    manifests:
-      - k8s-*
+  steps:
+  - kubectl:
+      manifests:
+        - k8s-*
