@@ -78,7 +78,6 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 	if err != nil {
 		return []string{}, err
 	}
-
 	manifests, err := k.renderManifests(ctx, out, builds, flags)
 	if err != nil {
 		return nil, err
@@ -114,24 +113,36 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 // In dev mode, a redeploy will be triggered if one of these files is updated.
 func (k *Deployer) Dependencies() ([]string, error) {
 	deps := deployutil.NewStringSet()
-	if len(k.Fn.FnPath) > 0 {
-		deps.Insert(k.Fn.FnPath)
-	}
 
+	// Add the app configuration manifests. It may already include kpt functions and kustomize
+	// config files.
 	configDeps, err := getResources(k.Dir)
 	if err != nil {
 		return nil, fmt.Errorf("finding dependencies in %s: %w", k.Dir, err)
 	}
-
 	deps.Insert(configDeps...)
 
-	// Kpt deployer assumes that the kustomization configuration to build lives directly under k.Dir.
+	// Add the kustomize resources which lives directly under k.Dir.
 	kustomizeDeps, err := kustomize.DependenciesForKustomization(k.Dir)
 	if err != nil {
 		return nil, fmt.Errorf("finding kustomization directly under %s: %w", k.Dir, err)
 	}
-
 	deps.Insert(kustomizeDeps...)
+
+	// Add the kpt function resources when they are outside of the k.Dir directory.
+	if len(k.Fn.FnPath) > 0 {
+		if rel, err := filepath.Rel(k.Dir, k.Fn.FnPath); err != nil {
+			return nil, fmt.Errorf("finding relative path from "+
+				".deploy.kpt.fn.fnPath %v to deploy.kpt.Dir %v: %w", k.Fn.FnPath, k.Dir, err)
+		} else if strings.HasPrefix(rel, "..") {
+			// kpt.FnDir is outside the config .Dir.
+			fnDeps, err := getResources(k.Fn.FnPath)
+			if err != nil {
+				return nil, fmt.Errorf("finding kpt function outside %s: %w", k.Dir, err)
+			}
+			deps.Insert(fnDeps...)
+		}
+	}
 
 	return deps.ToList(), nil
 }

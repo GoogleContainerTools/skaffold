@@ -282,23 +282,41 @@ func TestKpt_Dependencies(t *testing.T) {
 			expected: []string{"foo/bar.yaml", "foo/bat/bad.yml", "food.yml"},
 		},
 		{
-			description: "fnpath",
+			description: "fnpath inside directory",
 			kpt: latest.KptDeploy{
 				Dir: ".",
-				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
+				Fn:  latest.KptFn{FnPath: "."},
+			},
+			createFiles: map[string]string{
+				"./kpt-func.yaml": "",
 			},
 			expected: []string{"kpt-func.yaml"},
 		},
 		{
+			description: "fnpath outside directory",
+			kpt: latest.KptDeploy{
+				Dir: "./config",
+				Fn:  latest.KptFn{FnPath: "./kpt-fn"},
+			},
+			createFiles: map[string]string{
+				"./config/deployment.yaml": "",
+				"./kpt-fn/kpt-func.yaml":   "",
+			},
+			expected: []string{"config/deployment.yaml", "kpt-fn/kpt-func.yaml"},
+		},
+
+		{
 			description: "fnpath and dir and kustomization",
 			kpt: latest.KptDeploy{
 				Dir: ".",
-				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
+				Fn:  latest.KptFn{FnPath: "./kpt-fn"},
 			},
-			createFiles: map[string]string{"foo.yml": ""},
+			createFiles: map[string]string{
+				"./kpt-fn/func.yaml": "",
+			},
 			kustomizations: map[string]string{"kustomization.yaml": `configMapGenerator:
-- files: [app1.properties]`},
-			expected: []string{"app1.properties", "foo.yml", "kpt-func.yaml", "kustomization.yaml"},
+   - files: [app1.properties]`},
+			expected: []string{"app1.properties", "kpt-fn/func.yaml", "kustomization.yaml"},
 		},
 		{
 			description: "dependencies that can only be detected as a kustomization",
@@ -306,7 +324,7 @@ func TestKpt_Dependencies(t *testing.T) {
 				Dir: ".",
 			},
 			kustomizations: map[string]string{"kustomization.yaml": `configMapGenerator:
-- files: [app1.properties]`},
+   - files: [app1.properties]`},
 			expected: []string{"app1.properties", "kustomization.yaml"},
 		},
 		{
@@ -315,7 +333,7 @@ func TestKpt_Dependencies(t *testing.T) {
 				Dir: ".",
 			},
 			kustomizations: map[string]string{"kustomization.yml": `configMapGenerator:
-- files: [app1.properties]`},
+   - files: [app1.properties]`},
 			expected: []string{"app1.properties", "kustomization.yml"},
 		},
 		{
@@ -324,7 +342,7 @@ func TestKpt_Dependencies(t *testing.T) {
 				Dir: ".",
 			},
 			kustomizations: map[string]string{"Kustomization": `configMapGenerator:
-- files: [app1.properties]`},
+   - files: [app1.properties]`},
 			expected: []string{"Kustomization", "app1.properties"},
 		},
 		{
@@ -333,7 +351,7 @@ func TestKpt_Dependencies(t *testing.T) {
 				Dir: ".",
 			},
 			kustomizations: map[string]string{"customization": `configMapGenerator:
-- files: [app1.properties]`},
+   - files: [app1.properties]`},
 		},
 	}
 	for _, test := range tests {
