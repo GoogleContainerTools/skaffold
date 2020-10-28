@@ -39,10 +39,10 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 		if newConfig.Profiles[i].Build.LocalBuild == nil {
 			newConfig.Profiles[i].Build.LocalBuild = nil
 		} else {
-			if c.Profiles[i].Build.BuildType.LocalBuild.UseBuildkit == false {
+			if !c.Profiles[i].Build.BuildType.LocalBuild.UseBuildkit {
 				newConfig.Profiles[i].Build.BuildType.LocalBuild.UseBuildkit = nil
 			}
-			if c.Profiles[i].Build.BuildType.LocalBuild.UseDockerCLI == false {
+			if !c.Profiles[i].Build.BuildType.LocalBuild.UseDockerCLI {
 				newConfig.Profiles[i].Build.BuildType.LocalBuild.UseDockerCLI = nil
 			}
 		}
