@@ -212,6 +212,7 @@ func TestKpt_Deploy(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		sanityCheck = func(dir string) error { return nil }
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			tmpDir := t.NewTempDir().Chdir()
@@ -229,7 +230,6 @@ func TestKpt_Deploy(t *testing.T) {
 			}
 
 			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
-
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -1012,6 +1012,108 @@ spec:
 			actualManifest, err := k.excludeKptFn(test.manifests)
 			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
 		})
+	}
+}
+
+func TestVersionCheck(t *testing.T) {
+	tests := []struct {
+		description    string
+		commands       util.Command
+		kustomizations map[string]string
+		shouldErr      bool
+		error          error
+	}{
+		{
+			description: "Both kpt and kustomize versions are good",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`).
+				AndRunOut("kustomize version", `{Version:v3.6.1 GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: false,
+			error:     nil,
+		},
+		{
+			description: "kpt is not installed",
+			commands:    testutil.CmdRunOutErr("kpt version", "", errors.New("BUG")),
+			shouldErr:   true,
+			error: fmt.Errorf("kpt is not installed yet\nSee kpt installation: %v",
+				kptDownloadLink),
+		},
+		{
+			description: "kustomize is not used, kpt version is good",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`),
+			shouldErr: false,
+			error:     nil,
+		},
+		{
+			description: "kustomize is used but not installed",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`).
+				AndRunOutErr("kustomize version", "", errors.New("BUG")),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: true,
+			error: fmt.Errorf("kustomize is not installed yet\nSee kpt installation: %v",
+				kustomizeDownloadLink),
+		},
+		{
+			description: "kpt version is too old (<0.34.0)",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.1.0`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: true,
+			error: fmt.Errorf("you are using kpt \"0.1.0\"\n"+
+				"Please update your kpt version to >= %v\nSee kpt installation: %v",
+				kptMinVersion, kptDownloadLink),
+		},
+		{
+			description: "kpt version is unknown",
+			commands: testutil.
+				CmdRunOut("kpt version", `unknown`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: true,
+			error: fmt.Errorf("unknown kpt version unknown\nPlease upgrade your "+
+				"local kpt CLI to a version >= %v\nSee kpt installation: %v",
+				kptMinVersion, kptDownloadLink),
+		},
+		{
+			description: "kustomize versions is too old (< v3.2.3)",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`).
+				AndRunOut("kustomize version", `{Version:v0.0.1 GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: true,
+			error: fmt.Errorf("you are using kustomize \"v0.0.1\"\n"+
+				"Please update your kustomize version to >= %v\n"+
+				"See kustomize installation: %v", kustomizeMinVersion, kustomizeDownloadLink),
+		},
+		{
+			description: "kustomize versions is unknown",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`).
+				AndRunOut("kustomize version", `{Version:unknown GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: true,
+			error: fmt.Errorf("unknown kustomize version unknown\nPlease upgrade your "+
+				"local kustomize CLI to a version >= %v\nSee kustomize installation: %v",
+				kustomizeMinVersion, kustomizeDownloadLink),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.commands)
+			tmpDir := t.NewTempDir().Chdir()
+			tmpDir.WriteFiles(test.kustomizations)
+			err := versionCheck("")
+			t.CheckError(test.shouldErr, err)
+		})
+		testutil.CheckError(t, test.shouldErr, test.error)
 	}
 }
 
