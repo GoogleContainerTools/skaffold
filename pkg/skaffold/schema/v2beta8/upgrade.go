@@ -28,10 +28,25 @@ import (
 // 2. No removals
 // 3. Updates:
 //    - sync.auto becomes boolean
+//    - localBuild.UseBuildkit bool becomes *bool
+//    - localBuild.UseDockerCLI bool becomes *bool
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
 	newConfig.APIVersion = next.Version
+
+	for i := 0; i < len(newConfig.Profiles); i++ {
+		if newConfig.Profiles[i].Build.LocalBuild == nil {
+			newConfig.Profiles[i].Build.LocalBuild = nil
+		} else {
+			if c.Profiles[i].Build.BuildType.LocalBuild.UseBuildkit == false {
+				newConfig.Profiles[i].Build.BuildType.LocalBuild.UseBuildkit = nil
+			}
+			if c.Profiles[i].Build.BuildType.LocalBuild.UseDockerCLI == false {
+				newConfig.Profiles[i].Build.BuildType.LocalBuild.UseDockerCLI = nil
+			}
+		}
+	}
 
 	err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline)
 	return &newConfig, err
