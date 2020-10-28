@@ -25,6 +25,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -278,6 +280,44 @@ func TestNewForConfig(t *testing.T) {
 				},
 			},
 			expectedBuilder:  &local.Builder{},
+			expectedTester:   &test.FullTester{},
+			expectedDeployer: &kubectl.Deployer{},
+		},
+		{
+			description: "gcb config",
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						GoogleCloudBuild: &latest.GoogleCloudBuild{},
+					},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
+					},
+				},
+			},
+			expectedBuilder:  &gcb.Builder{},
+			expectedTester:   &test.FullTester{},
+			expectedDeployer: &kubectl.Deployer{},
+		},
+		{
+			description: "cluster builder config",
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						Cluster: &latest.ClusterDetails{Timeout: "100s"},
+					},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
+					},
+				},
+			},
+			expectedBuilder:  &cluster.Builder{},
 			expectedTester:   &test.FullTester{},
 			expectedDeployer: &kubectl.Deployer{},
 		},

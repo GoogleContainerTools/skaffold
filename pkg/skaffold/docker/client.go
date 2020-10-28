@@ -32,6 +32,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
@@ -56,6 +57,7 @@ type Config interface {
 	GetKubeContext() string
 	MinikubeProfile() string
 	GetInsecureRegistries() map[string]bool
+	Mode() config.RunMode
 }
 
 // NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.

@@ -130,7 +130,7 @@ func TestFormatResults(t *testing.T) {
 			for k, v := range test.results {
 				m.Store(k, v)
 			}
-			results := &builtArtifactsImpl{m: m}
+			results := &artifactStoreImpl{m: m}
 			got, err := results.GetArtifacts(test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
@@ -181,7 +181,7 @@ And new lines
 			}
 			initializeEvents()
 
-			InOrder(context.Background(), out, tags, artifacts, test.buildFunc, 0)
+			InOrder(context.Background(), out, tags, artifacts, test.buildFunc, 0, NewArtifactStore())
 
 			t.CheckDeepEqual(test.expected, out.String())
 		})
@@ -236,7 +236,7 @@ func TestInOrderConcurrency(t *testing.T) {
 			}
 
 			initializeEvents()
-			results, err := InOrder(context.Background(), ioutil.Discard, tags, artifacts, builder, test.limit)
+			results, err := InOrder(context.Background(), ioutil.Discard, tags, artifacts, builder, test.limit, NewArtifactStore())
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.artifacts, len(results))
@@ -359,7 +359,7 @@ func TestInOrderForArgs(t *testing.T) {
 
 			setDependencies(artifacts, test.dependency)
 			initializeEvents()
-			actual, err := InOrder(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, test.concurrency)
+			actual, err := InOrder(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, test.concurrency, NewArtifactStore())
 
 			t.CheckDeepEqual(test.expected, actual)
 			t.CheckDeepEqual(test.err, err, cmp.Comparer(errorsComparer))

@@ -5,6 +5,7 @@ In this example:
 * Deploy multiple applications with skaffold
 * In development, only rebuild and redeploy the artifacts that have changed
 * Deploy multiple applications outside the working directory
+* Define dependencies between artifacts
 
 In the real world, Kubernetes deployments will consist of multiple applications that work together.
 In this example, we'll walk through using skaffold to develop and deploy two applications, an exposed "web" frontend which calls an unexposed "app" backend.
@@ -56,15 +57,29 @@ leeroooooy app!!!
 Let's walk through the first part of the skaffold.yaml
 
 ```yaml
-  artifacts:
+artifacts:
   - image: leeroy-web
-    context: ./leeroy-web/
+    context: leeroy-web
+    requires:
+     - image: base
+       alias: BASE
   - image: leeroy-app
-    context: ./leeroy-app/
+    context: leeroy-app
+    requires:
+      - image: base
+        alias: BASE
+  - image: base
+    context: base
 ```
 
-We're deploying a `leeroy-web` image, which we build in the context of its subdirectory and a `leeroy-app` image built in a similar manner.
+We're deploying a `leeroy-web` image, which we build in the context of its subdirectory and a `leeroy-app` image built similarly. Both of these artifacts depend on the `base` artifact which their `Dockerfile`s can reference as a build argument keyed on the alias `BASE`.
 
+```dockerfile
+ARG BASE
+...
+FROM $BASE
+COPY --from=builder /app .
+```
 `leeroy-web` will listen for requests, and then make a simple HTTP call to `leeroy-app` using Kubernetes service discovery and return that result.
 
 In the deploy stanza, we use the glob matching pattern to deploy all YAML and JSON files in the respective Kubernetes manifest directories.

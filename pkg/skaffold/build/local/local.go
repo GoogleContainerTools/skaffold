@@ -48,7 +48,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	}
 
 	builder := build.WithLogFile(b.buildArtifact, b.muted)
-	rt, err := build.InOrder(ctx, out, tags, artifacts, builder, *b.local.Concurrency)
+	rt, err := build.InOrder(ctx, out, tags, artifacts, builder, *b.local.Concurrency, b.artifactStore)
 
 	if b.prune {
 		if b.mode == config.RunModes.Build {

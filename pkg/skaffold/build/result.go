@@ -125,43 +125,43 @@ func newLogAggregator(out io.Writer, capacity int, concurrency int) logAggregato
 	return &logAggregatorImpl{out: out, capacity: capacity, messages: make(chan chan string, capacity)}
 }
 
-// builtArtifacts stores the results of each artifact build.
-type builtArtifacts interface {
+// ArtifactStore stores the results of each artifact build.
+type ArtifactStore interface {
 	Record(a *latest.Artifact, tag string)
-	GetTag(a *latest.Artifact) (string, error)
+	GetImageTag(imageName string) (tag string, found bool)
 	GetArtifacts(s []*latest.Artifact) ([]Artifact, error)
 }
 
-func newArtifactsStore() builtArtifacts {
-	return &builtArtifactsImpl{m: new(sync.Map)}
+func NewArtifactStore() ArtifactStore {
+	return &artifactStoreImpl{m: new(sync.Map)}
 }
 
-type builtArtifactsImpl struct {
+type artifactStoreImpl struct {
 	m *sync.Map
 }
 
-func (ba *builtArtifactsImpl) Record(a *latest.Artifact, tag string) {
+func (ba *artifactStoreImpl) Record(a *latest.Artifact, tag string) {
 	ba.m.Store(a.ImageName, tag)
 }
 
-func (ba *builtArtifactsImpl) GetTag(a *latest.Artifact) (string, error) {
-	v, ok := ba.m.Load(a.ImageName)
+func (ba *artifactStoreImpl) GetImageTag(imageName string) (string, bool) {
+	v, ok := ba.m.Load(imageName)
 	if !ok {
-		return "", fmt.Errorf("could not find build result for image %s", a.ImageName)
+		return "", false
 	}
 	t, ok := v.(string)
 	if !ok {
-		logrus.Fatalf("invalid build output recorded for image %s", a.ImageName)
+		logrus.Fatalf("invalid build output recorded for image %s", imageName)
 	}
-	return t, nil
+	return t, true
 }
 
-func (ba *builtArtifactsImpl) GetArtifacts(s []*latest.Artifact) ([]Artifact, error) {
+func (ba *artifactStoreImpl) GetArtifacts(s []*latest.Artifact) ([]Artifact, error) {
 	var builds []Artifact
 	for _, a := range s {
-		t, err := ba.GetTag(a)
-		if err != nil {
-			return nil, err
+		t, found := ba.GetImageTag(a.ImageName)
+		if !found {
+			return nil, fmt.Errorf("failed to retrieve build result for image %s", a.ImageName)
 		}
 		builds = append(builds, Artifact{ImageName: a.ImageName, Tag: t})
 	}

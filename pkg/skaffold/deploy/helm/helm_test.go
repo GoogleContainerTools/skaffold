@@ -1246,6 +1246,7 @@ func TestHelmRender(t *testing.T) {
 		expected    string
 		builds      []build.Artifact
 		envs        map[string]string
+		namespace   string
 	}{
 		{
 			description: "error if version can't be retrieved",
@@ -1332,6 +1333,34 @@ func TestHelmRender(t *testing.T) {
 					Tag:       "skaffold-helm:tag1",
 				}},
 		},
+		{
+			description: "render with cli namespace",
+			shouldErr:   false,
+			namespace:   "clinamespace",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
+			helm: testDeployConfig,
+			builds: []build.Artifact{
+				{
+					ImageName: "skaffold-helm",
+					Tag:       "skaffold-helm:tag1",
+				}},
+		},
+		{
+			description: "render with HelmRelease.Namespace and cli namespace",
+			shouldErr:   false,
+			namespace:   "clinamespace",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
+			helm: testDeployNamespacedConfig,
+			builds: []build.Artifact{
+				{
+					ImageName: "skaffold-helm",
+					Tag:       "skaffold-helm:tag1",
+				}},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -1343,7 +1372,8 @@ func TestHelmRender(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 
 			deployer := NewDeployer(&helmConfig{
-				helm: test.helm,
+				helm:      test.helm,
+				namespace: test.namespace,
 			}, latest.DeployType{
 				HelmDeploy: &test.helm,
 			}, nil)
