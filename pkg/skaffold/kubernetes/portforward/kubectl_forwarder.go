@@ -73,10 +73,7 @@ var (
 func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) error {
 	errChan := make(chan error, 1)
 	go k.forward(parentCtx, pfe, errChan)
-	select {
-	case err := <-errChan:
-		return err
-	}
+	return <-errChan
 }
 
 func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEntry, errChan chan error) {
@@ -88,6 +85,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		if pfe.terminated {
 			logrus.Debugf("port forwarding %v was cancelled...", pfe)
 			pfe.terminationLock.Unlock()
+			errChan <- nil
 			return
 		}
 		pfe.terminationLock.Unlock()
@@ -137,7 +135,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 			//to make sure that the log monitor gets cleared up
 			cancel()
 			logrus.Debugf("port forwarding %v got terminated: %s, output: %s", pfe, err, buf.String())
-			errChan<-fmt.Errorf("port forwarding %v got terminated: output: %s", pfe, buf.String())
+			errChan <- fmt.Errorf("port forwarding %v got terminated: output: %s", pfe, buf.String())
 			time.Sleep(500 * time.Millisecond)
 		}
 	}
@@ -209,6 +207,7 @@ func (*KubectlForwarder) monitorLogs(ctx context.Context, logs io.Reader, cmd *k
 				if err := cmd.Terminate(); err != nil {
 					logrus.Tracef("failed to kill port forwarding %v, err: %s", p, err)
 				}
+				err <- fmt.Errorf("port forwarding %v got terminated: output: %s", p, s)
 				return
 			} else if strings.Contains(s, fmt.Sprintf("Forwarding from %s:%d -> %d",
 				p.resource.Address,

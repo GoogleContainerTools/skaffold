@@ -68,7 +68,7 @@ func TestUnavailablePort(t *testing.T) {
 		}
 		pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false)
 
-		k.Forward(context.Background(), pfe)
+		go k.Forward(context.Background(), pfe)
 
 		// wait for isPortFree to be called
 		portFreeWG.Wait()
@@ -108,6 +108,7 @@ func TestMonitorErrorLogs(t *testing.T) {
 		description string
 		input       string
 		cmdRunning  bool
+		shouldError bool
 	}{
 		{
 			description: "no error logs appear",
@@ -117,14 +118,22 @@ func TestMonitorErrorLogs(t *testing.T) {
 		{
 			description: "match on 'error forwarding port'",
 			input:       "error forwarding port 8080",
+			shouldError: true,
 		},
 		{
 			description: "match on 'unable to forward'",
 			input:       "unable to forward 8080",
+			shouldError: true,
 		},
 		{
 			description: "match on 'error upgrading connection'",
 			input:       "error upgrading connection 8080",
+			shouldError: true,
+		},
+		{
+			description: "match on successful port forwarding message",
+			input:       "Forwarding from 127.0.0.1:8080 -> 8080",
+			cmdRunning:  true,
 		},
 	}
 
@@ -143,19 +152,18 @@ func TestMonitorErrorLogs(t *testing.T) {
 				t.Fatalf("error starting command: %v", err)
 			}
 
-			var wg sync.WaitGroup
-			wg.Add(1)
-
+			errChan := make(chan error, 1)
 			go func() {
 				logs := strings.NewReader(test.input)
 
 				k := KubectlForwarder{}
-				k.monitorErrorLogs(ctx, logs, cmd, &portForwardEntry{})
+				k.monitorLogs(ctx, logs, cmd, &portForwardEntry{}, errChan)
 
-				wg.Done()
+				errChan <- nil
 			}()
 
-			wg.Wait()
+			err := <-errChan
+			t.CheckError(test.shouldError, err)
 
 			// make sure the command is running or killed based on what's expected
 			if test.cmdRunning {
