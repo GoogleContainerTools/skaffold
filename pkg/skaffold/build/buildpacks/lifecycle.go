@@ -29,6 +29,7 @@ import (
 	lifecycle "github.com/buildpacks/lifecycle/cmd"
 	"github.com/buildpacks/pack"
 	"github.com/buildpacks/pack/project"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -85,18 +86,15 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 			}
 		}
 	}
-
-	// Does the builder image need to be pulled?
-	alreadyPulled := images.AreAlreadyPulled(artifact.Builder, artifact.RunImage)
-
+	builderImage, runImage, noPull := fromRequiredArtifacts(artifact, b.artifacts, a.Dependencies, b.pushImages)
 	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
 		AppPath:      workspace,
-		Builder:      artifact.Builder,
-		RunImage:     artifact.RunImage,
+		Builder:      builderImage,
+		RunImage:     runImage,
 		Buildpacks:   buildpacks,
 		Env:          env,
 		Image:        latest,
-		NoPull:       alreadyPulled,
+		NoPull:       noPull,
 		TrustBuilder: artifact.TrustBuilder,
 		// TODO(dgageot): Support project.toml include/exclude.
 		// FileFilter: func(string) bool { return true },
@@ -165,4 +163,50 @@ func envMap(env []string) map[string]string {
 	}
 
 	return kv
+}
+
+// fromRequiredArtifacts replaces the provided builder and run images with built images from the required artifacts if specified.
+func fromRequiredArtifacts(artifact *latest.BuildpackArtifact, r ArtifactResolver, deps []*latest.ArtifactDependency, pushImages bool) (string, string, bool) {
+	builderImage, runImage := artifact.Builder, artifact.RunImage
+	builderImageLocal, runImageLocal, noPull := false, false, false
+	var found bool
+	for _, d := range deps {
+		if builderImage == d.Alias {
+			builderImage, found = r.GetImageTag(d.ImageName)
+			if !found {
+				logrus.Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+			}
+			builderImageLocal = true
+		}
+		if runImage == d.Alias {
+			runImage, found = r.GetImageTag(d.ImageName)
+			if !found {
+				logrus.Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+			}
+			runImageLocal = true
+		}
+	}
+
+	if builderImageLocal && runImageLocal {
+		// if both builder and run image are built locally, there's nothing to pull.
+		noPull = true
+	} else if builderImageLocal || runImageLocal {
+		// if only one of builder image or run image is built locally but pushed to remote, we can safely set buildpacks option to try to pull both images
+		// otherwise we must disable remote pull option.
+		noPull = !pushImages
+
+		// If remote image pull is disabled then the image that is not fetched from the required artifacts might not be latest.
+		if noPull && builderImageLocal {
+			logrus.Warnln("Disabled remote image pull since builder image is built locally. Buildpacks run image may not be latest.")
+		}
+		if noPull && runImageLocal {
+			logrus.Warnln("Disabled remote image pull since run image is built locally. Buildpacks builder image may not be latest.")
+		}
+	}
+
+	if !noPull {
+		// If the images aren't available from the required artifacts then pull them once.
+		noPull = images.AreAlreadyPulled(builderImage, runImage)
+	}
+	return builderImage, runImage, noPull
 }

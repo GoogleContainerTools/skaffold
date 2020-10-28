@@ -114,7 +114,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
 
 	case a.BuildpackArtifact != nil:
-		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.mode).Build(ctx, out, a, tag)
+		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.mode, b.artifactStore).Build(ctx, out, a, tag)
 
 	default:
 		return "", fmt.Errorf("unexpected type %q for local artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
