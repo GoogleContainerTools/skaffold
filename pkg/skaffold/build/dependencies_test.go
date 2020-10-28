@@ -39,13 +39,14 @@ func TestCreateBuildArgsFromArtifacts(t *testing.T) {
 		},
 		{
 			description: "cannot resolve artifacts",
-			r:           failingArtifactResolver{},
+			r:           mockArtifactResolver{m: make(map[string]string)},
+			args:        map[string]*string{"alias3": nil, "alias4": nil},
 			deps:        []*latest.ArtifactDependency{{ImageName: "img3", Alias: "alias3"}, {ImageName: "img4", Alias: "alias4"}},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			args := CreateBuildArgsFromArtifacts(test.deps, test.r)
+			args := CreateBuildArgsFromArtifacts(test.deps, test.r, false)
 			t.CheckDeepEqual(test.args, args)
 		})
 	}
@@ -56,11 +57,6 @@ type mockArtifactResolver struct {
 }
 
 func (r mockArtifactResolver) GetImageTag(imageName string) (string, bool) {
-	return r.m[imageName], true
-}
-
-type failingArtifactResolver struct{}
-
-func (failingArtifactResolver) GetImageTag(string) (string, bool) {
-	return "", false
+	val, found := r.m[imageName]
+	return val, found
 }

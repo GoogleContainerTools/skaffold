@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
@@ -48,7 +50,7 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker
 		// However it only affects the behavior for Dockerfiles with ONBUILD instructions, and there's no functional change even for those scenarios.
 		// For single build scenarios like `build` and `run`, it is called for the cache hash calculations which are already handled in `artifactHasher`.
 		// For `dev` it will succeed on the first dev loop and list any additional dependencies found from the base artifact's ONBUILD instructions as a file added instead of modified (see `filemon.Events`)
-		deps := CreateBuildArgsFromArtifacts(a.Dependencies, r)
+		deps := CreateBuildArgsFromArtifacts(a.Dependencies, r, false)
 
 		args, evalErr := docker.EvalBuildArgs(cfg.Mode(), a.Workspace, a.DockerArtifact, deps)
 		if evalErr != nil {
@@ -83,7 +85,8 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker
 }
 
 // CreateBuildArgsFromArtifacts creates docker build args for an artifact from its required artifacts slice.
-func CreateBuildArgsFromArtifacts(deps []*latest.ArtifactDependency, r ArtifactResolver) map[string]*string {
+// If `missingIsFatal` is false then it is permissive of missing entries in the ArtifactResolver and returns nil for those entries.
+func CreateBuildArgsFromArtifacts(deps []*latest.ArtifactDependency, r ArtifactResolver, missingIsFatal bool) map[string]*string {
 	if r == nil {
 		// `diagnose` is called without an artifact resolver. Return an empty map in this case.
 		return nil
@@ -91,10 +94,14 @@ func CreateBuildArgsFromArtifacts(deps []*latest.ArtifactDependency, r ArtifactR
 	m := make(map[string]*string)
 	for _, d := range deps {
 		t, found := r.GetImageTag(d.ImageName)
-		if !found {
-			return nil
+		switch {
+		case found:
+			m[d.Alias] = &t
+		case missingIsFatal:
+			logrus.Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+		default:
+			m[d.Alias] = nil
 		}
-		m[d.Alias] = &t
 	}
 	return m
 }
