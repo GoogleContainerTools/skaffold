@@ -24,8 +24,10 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v2beta8 to v2beta9
-// 1. No additions:
-// 2. No removals
+// 1. Additions:
+//    - steps field to deploy config, where users can specify a list of DeployTypes to run in sequence
+// 2. Removals
+//    - removed deploy.DeployType in favor of deploy.steps for specifying deployers
 // 3. Updates:
 //    - sync.auto becomes boolean
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
@@ -37,7 +39,16 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	return &newConfig, err
 }
 
-func upgradeOnePipeline(_, _ interface{}) error {
+func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldDeploy := &oldPipeline.(*Pipeline).Deploy
+	newDeploy := &newPipeline.(*next.Pipeline).Deploy
+	if oldDeploy.DeployType != (DeployType{}) {
+		newDeployStep := next.DeployType{}
+		pkgutil.CloneThroughJSON(&oldDeploy.DeployType, &newDeployStep)
+
+		newDeploy.Steps = []next.DeployType{newDeployStep}
+	}
+
 	return nil
 }
 
