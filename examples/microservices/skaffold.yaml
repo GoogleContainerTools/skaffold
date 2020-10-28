@@ -9,8 +9,8 @@ build:
 deploy:
   kubectl:
     manifests:
-    - leeroy-app/kubernetes/*
-    - leeroy-web/kubernetes/*
+      - leeroy-web/kubernetes/*
+      - leeroy-app/kubernetes/*
 portForward:
   - resourceType: deployment
     resourceName: leeroy-web
