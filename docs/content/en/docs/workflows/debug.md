@@ -21,7 +21,8 @@ and entrypoints, and more.
 Some language runtimes require additional support files to enable debugging.
 For these languages, a special set of [runtime-specific images](https://github.com/GoogleContainerTools/container-debug-support)
 are configured as _init-containers_ to populate a shared-volume that is mounted into
-each of the appropriate containers.  These images are hosted at `gcr.io/gcp-dev-tools/duct-tape`.
+each of the appropriate containers.  These images are hosted at
+`gcr.io/k8s-skaffold/skaffold-debug-support`.
 
 ### Supported Language Runtimes
 
