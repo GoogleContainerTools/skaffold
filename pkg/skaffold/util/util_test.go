@@ -456,6 +456,15 @@ func TestIsFileIsDir(t *testing.T) {
 	testutil.CheckDeepEqual(t, false, IsDir(filepath.Join(tmpDir.Root(), "nonexistent")))
 }
 
+func TestIsURL(t *testing.T) {
+	testutil.CheckDeepEqual(t, false, IsURL("foo"))
+	testutil.CheckDeepEqual(t, false, IsURL("http:bar"))
+	testutil.CheckDeepEqual(t, false, IsURL("https:bar"))
+
+	testutil.CheckDeepEqual(t, true, IsURL("http://bar"))
+	testutil.CheckDeepEqual(t, true, IsURL("https://bar"))
+}
+
 func stringPointer(s string) *string {
 	return &s
 }

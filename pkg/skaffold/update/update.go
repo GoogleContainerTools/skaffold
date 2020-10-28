@@ -18,14 +18,13 @@ package update
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strings"
 
 	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
@@ -100,17 +99,9 @@ func getLatestAndCurrentVersion() (semver.Version, semver.Version, error) {
 }
 
 func DownloadLatestVersion() (string, error) {
-	resp, err := http.Get(LatestVersionURL)
+	versionBytes, err := util.Download(LatestVersionURL)
 	if err != nil {
 		return "", fmt.Errorf("getting latest version info from GCS: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("http %d, error %q", resp.StatusCode, resp.Status)
-	}
-	versionBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("reading version file from GCS: %w", err)
 	}
 	return strings.TrimSuffix(string(versionBytes), "\n"), nil
 }
