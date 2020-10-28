@@ -28,6 +28,7 @@ import (
 	"regexp"
 	"strings"
 
+	"golang.org/x/mod/semver"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/kustomize/kyaml/fn/framework"
 	k8syaml "sigs.k8s.io/yaml"
@@ -49,6 +50,13 @@ const (
 	tmpKustomizeDir   = ".kustomize"
 	kptFnAnnotation   = "config.kubernetes.io/function"
 	kptFnLocalConfig  = "config.kubernetes.io/local-config"
+
+	kptDownloadLink = "https://googlecontainertools.github.io/kpt/installation/"
+	kptMinVersion   = "0.34.0"
+
+	kustomizeDownloadLink  = "https://kubernetes-sigs.github.io/kustomize/installation/"
+	kustomizeMinVersion    = "v3.2.3"
+	kustomizeVersionRegexP = `{Version:(\S+) GitCommit:\S+ BuildDate:\d{4}-\d{2}-\d{2}T\d\d:\d\d:\d\dZ GoOs:\S+ GoArch:\S+}`
 )
 
 // Deployer deploys workflows with kpt CLI
@@ -70,10 +78,65 @@ func NewDeployer(cfg types.Config, labels map[string]string) *Deployer {
 	}
 }
 
+var sanityCheck = versionCheck
+
+// sanityCheck guarantees the kpt and kustomize versions are compatible with skaffold.
+func versionCheck(dir string) error {
+	kptCmd := exec.Command("kpt", "version")
+	out, err := util.RunCmdOut(kptCmd)
+	if err != nil {
+		return fmt.Errorf("kpt is not installed yet\nSee kpt installation: %v",
+			kptDownloadLink)
+	}
+	version := strings.TrimSuffix(string(out), "\n")
+	// kpt follows semver but does not have "v" prefix.
+	if !semver.IsValid("v" + version) {
+		return fmt.Errorf("unknown kpt version %v\nPlease upgrade your "+
+			"local kpt CLI to a version >= %v\nSee kpt installation: %v",
+			string(out), kptMinVersion, kptDownloadLink)
+	}
+	if semver.Compare("v"+version, "v"+kptMinVersion) < 0 {
+		return fmt.Errorf("you are using kpt %q\nPlease update your kpt version to"+
+			" >= %v\nSee kpt installation: %v", version[0], kptMinVersion, kptDownloadLink)
+	}
+
+	// Users can choose not to use kustomize in kpt deployer mode. We only check the kustomize
+	// version when kustomization.yaml config is directed under .deploy.kpt.dir path.
+	_, err = kustomize.FindKustomizationConfig(dir)
+	if err == nil {
+		kustomizeCmd := exec.Command("kustomize", "version")
+		out, err := util.RunCmdOut(kustomizeCmd)
+		if err != nil {
+			return fmt.Errorf("kustomize is not installed yet\nSee kpt installation: %v",
+				kustomizeDownloadLink)
+		}
+		versionInfo := strings.TrimSuffix(string(out), "\n")
+		// Kustomize version information is in the form of
+		// {Version:$VERSION GitCommit:$COMMIT BuildDate:1970-01-01T00:00:00Z GoOs:darwin GoArch:amd64}
+		re := regexp.MustCompile(kustomizeVersionRegexP)
+		match := re.FindStringSubmatch(versionInfo)
+		if len(match) != 2 {
+			return fmt.Errorf("unknown kustomize version %v\nPlease upgrade your "+
+				"local kustomize CLI to a version >= %v\nSee kustomize installation: %v",
+				string(out), kustomizeMinVersion, kustomizeDownloadLink)
+		}
+		if !semver.IsValid(match[1]) || semver.Compare(match[1], kustomizeMinVersion) < 0 {
+			return fmt.Errorf("you are using kustomize %q\n"+
+				"Please update your kustomize version to >= %v\n"+
+				"See kustomize installation: %v", match[1], kustomizeMinVersion,
+				kustomizeDownloadLink)
+		}
+	}
+	return nil
+}
+
 // Deploy hydrates the manifests using kustomizations and kpt functions as described in the render method,
 // outputs them to the applyDir, and runs `kpt live apply` against applyDir to create resources in the cluster.
 // `kpt live apply` supports automated pruning declaratively via resources in the applyDir.
 func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+	if err := sanityCheck(k.Dir); err != nil {
+		return nil, err
+	}
 	flags, err := k.getKptFnRunArgs()
 	if err != nil {
 		return []string{}, err
@@ -166,6 +229,9 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 // Render hydrates manifests using both kustomization and kpt functions.
 func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, _ bool, filepath string) error {
+	if err := sanityCheck(k.Dir); err != nil {
+		return err
+	}
 	flags, err := k.getKptFnRunArgs()
 	if err != nil {
 		return err
