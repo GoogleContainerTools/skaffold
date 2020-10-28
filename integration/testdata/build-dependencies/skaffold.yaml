@@ -24,7 +24,7 @@ build:
         FAIL: "0"
     requires:
     - image: image3
-      alias: IMAGE3 #test build-arg set to alias field, when present (`ARG IMAGE3`).
+      alias: IMAGE3 #test that build-arg is set to alias field when present (`ARG IMAGE3`, not `image3`).
 
   - image: image3
     context: app3
