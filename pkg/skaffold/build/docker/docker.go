@@ -92,7 +92,7 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	if *b.local.UseBuildkit {
 		// fail if localDaemon has no buildkit support
 		if !b.localDocker.HasBuildkitSupport(ctx) {
-			return "", errors.New("Docker does not support BuildKit")
+			return "", errors.New("docker does not support buildkit")
 		}
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
