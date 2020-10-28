@@ -293,9 +293,9 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
+					Steps: []latest.DeployType{{
 						KubectlDeploy: &latest.KubectlDeploy{},
-					},
+					}},
 				},
 			},
 			expectedBuilder:  &gcb.Builder{},
@@ -312,9 +312,9 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
+					Steps: []latest.DeployType{{
 						KubectlDeploy: &latest.KubectlDeploy{},
-					},
+					}},
 				},
 			},
 			expectedBuilder:  &cluster.Builder{},
