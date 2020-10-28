@@ -139,12 +139,15 @@ func setDefaultConcurrency(local *latest.LocalBuild) {
 		local.Concurrency = &constants.DefaultLocalConcurrency
 	}
 }
-
 func setDefaultToBuildkit(local *latest.LocalBuild) {
-	if local.UseBuildkit == nil && (local.UseDockerCLI != nil && !*local.UseDockerCLI) {
-		b := true
-		local.UseBuildkit = &b
+	wantBuildkit := true
+
+	// if UseBuildkit set to false OR UseDockerCLI set to true
+	if (local.UseBuildkit != nil && !*local.UseBuildkit) || (local.UseDockerCLI != nil && *local.UseDockerCLI) {
+		wantBuildkit = false
 	}
+
+	local.UseBuildkit = &wantBuildkit
 }
 
 func withCloudBuildConfig(c *latest.SkaffoldConfig, operations ...func(*latest.GoogleCloudBuild)) {

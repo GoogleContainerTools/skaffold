@@ -145,10 +145,7 @@ func (l *localDaemon) HasBuildkitSupport(ctx context.Context) bool {
 	}
 
 	bv, _ := semver.New("18.09")
-	cv, err := semver.New(version.Version)
-	if err != nil {
-		return false
-	}
+	cv, _ := semver.New(version.Version)
 
 	if cv.LT(*bv) {
 		logrus.Debugf("server version is %s, buildkit not supported", cv.String())

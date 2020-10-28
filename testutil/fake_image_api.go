@@ -49,16 +49,16 @@ const (
 type FakeAPIClient struct {
 	client.CommonAPIClient
 
+	// used to test buildkit support feature
+	// buildkit merged to docker since docker engine 18.09
+	FakeServerVersion string
+
 	ErrImageBuild   bool
 	ErrImageInspect bool
 	ErrImagePush    bool
 	ErrImagePull    bool
 	ErrImageList    bool
 	ErrImageRemove  bool
-
-	// used to test buildkit fallback feature
-	// buildkit merged to docker since docker engine 18.09
-	FakeServerVersion string
 
 	ErrStream  bool
 	ErrVersion bool
@@ -80,9 +80,7 @@ func (f *FakeAPIClient) ServerVersion(ctx context.Context) (types.Version, error
 	if f.ErrVersion {
 		return types.Version{}, errors.New("docker not found")
 	}
-	return types.Version{
-		Version: f.FakeServerVersion,
-	}, nil
+	return types.Version{Version: f.FakeServerVersion}, nil
 }
 
 func (f *FakeAPIClient) Add(tag, imageID string) *FakeAPIClient {

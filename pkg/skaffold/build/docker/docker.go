@@ -18,6 +18,7 @@ package docker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -88,13 +89,11 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Env = append(util.OSEnviron(), b.retrieveExtraEnv()...)
 
-	// localDaemon has no buildkit support
-	if !b.localDocker.HasBuildkitSupport(ctx) {
-		fmt.Println("no buildkit supports")
-		*b.local.UseBuildkit = false
-	}
-
-	if b.local.UseBuildkit == nil || *b.local.UseBuildkit {
+	if *b.local.UseBuildkit {
+		// fail if localDaemon has no buildkit support
+		if !b.localDocker.HasBuildkitSupport(ctx) {
+			return "", errors.New("Docker does not support BuildKit")
+		}
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
 

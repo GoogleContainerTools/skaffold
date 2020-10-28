@@ -101,9 +101,11 @@ func TestDockerCLIBuild(t *testing.T) {
 }
 
 func fakeLocalDaemonWithExtraEnv(extraEnv []string) docker.LocalDaemon {
-	return docker.NewLocalDaemon(&testutil.FakeAPIClient{
-		FakeServerVersion: "18.09",
-	}, extraEnv, false, nil)
+	return docker.NewLocalDaemon(
+		&testutil.FakeAPIClient{
+			FakeServerVersion: "18.09",
+		}, extraEnv, false, nil,
+	)
 }
 
 type mockArtifactResolver struct {
