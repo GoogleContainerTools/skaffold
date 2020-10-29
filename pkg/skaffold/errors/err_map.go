@@ -96,11 +96,12 @@ var knownDeployProblems = []problem{
 		errCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
 		description: func(err error) string {
 			matchExp := re("(?i).*unable to connect.*Get (.*)")
+			kubeconfig, _ := kubectx.CurrentConfig()
 			if match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err)); len(match) >= 2 {
-				kubeconfig, _ := kubectx.CurrentConfig()
+				// kubeconfig, _ := kubectx.CurrentConfig()
 				return fmt.Sprintf("Deploy Failed. Could not connect to cluster %s due to %s", kubeconfig.CurrentContext, match[1])
 			}
-			return fmt.Sprintf("Deploy Failed. Could not connect to Kubernetes cluster.")
+			return fmt.Sprintf("Deploy Failed. Could not connect to %s cluster.", kubeconfig.CurrentContext)
 		},
 		suggestion: func(opts config.SkaffoldOptions) []*proto.Suggestion {
 			return []*proto.Suggestion{{
