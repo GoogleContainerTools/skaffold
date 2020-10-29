@@ -1,3 +1,68 @@
+# v1.16.0 Release - 10/27/2020
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.16.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+ 
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.16.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+ 
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.16.0/skaffold-windows-amd64.exe
+ 
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.16.0`
+ 
+Note: This release comes with a new config version, `v2beta9`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+
+Highlights:
+* Artifact Modules Support: Skaffold allow users to specify artifact dependencies for dockerfile artifacts. 
+
+  To use, look at [microservice example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices). *Docs coming soon*
+* Skaffold init support for polyglot-maven projects [#4871](https://github.com/GoogleContainerTools/skaffold/pull/4871)
+* Skaffold `debug` helper images now moved to gcr.io/k8s-skaffold/skaffold-debug-support [#4961](https://github.com/GoogleContainerTools/skaffold/pull/4961)
+
+New Features:
+* Implement env variable expansion for kaniko builds  [#4557](https://github.com/GoogleContainerTools/skaffold/pull/4557)
+* Make it possible to disable auto-sync for buildpacks builder  [#4923](https://github.com/GoogleContainerTools/skaffold/pull/4923)
+* Mute status check logs [#4907](https://github.com/GoogleContainerTools/skaffold/pull/4907)
+* Support minikube 1.13.0 and later with `--vm-driver=none` [#4887](https://github.com/GoogleContainerTools/skaffold/pull/4887)
+* Support kaniko v1.0.0 flags [#4900](https://github.com/GoogleContainerTools/skaffold/pull/4900)
+* Prune prev images on build/run/{dev iteration start} [#4792](https://github.com/GoogleContainerTools/skaffold/pull/4792)
+* [alpha] Support for deploying and hydrating manifests using [`kpt`](https://googlecontainertools.github.io/kpt/)
+* Introduce `fromImage` field in jib builder interface. [#4873](https://github.com/GoogleContainerTools/skaffold/pull/4873)
+
+Fixes:
+* Fix `debug` for Helm on Windows [#4872](https://github.com/GoogleContainerTools/skaffold/pull/4872)
+* validate tag policy constrain [#4890](https://github.com/GoogleContainerTools/skaffold/pull/4890)
+* Don't single-quote SKAFFOLD_GO_GCFLAGS [#4864](https://github.com/GoogleContainerTools/skaffold/pull/4864)
+* Fix return of error adding artifacts to cache when images are built remotely [#4850](https://github.com/GoogleContainerTools/skaffold/pull/4850)
+* Only load images into k3d and kind when images are local [#4869](https://github.com/GoogleContainerTools/skaffold/pull/4869)
+
+Updates:
+* Name debug helper containers more explicitly [#4946](https://github.com/GoogleContainerTools/skaffold/pull/4946)
+* Add an init phase to detect skaffold errors even before skaffold runner is created. [#4926](https://github.com/GoogleContainerTools/skaffold/pull/4926)
+* Update build_deps versions to latest [#4910](https://github.com/GoogleContainerTools/skaffold/pull/4910)
+* [errors] Add distinct error codes for docker not running [#4914](https://github.com/GoogleContainerTools/skaffold/pull/4914)
+* Update mute-logs to not print output upon failure of build/deploy step [#4833](https://github.com/GoogleContainerTools/skaffold/pull/4833)
+
+Docs Updates:
+* Fix up doc: debug works for buildpacks [#4948](https://github.com/GoogleContainerTools/skaffold/pull/4948)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Andrey Shlykov
+- Appu
+- Brian de Alwis
+- Daniel Sel
+- Dustin Deus
+- Gaurav
+- Marlon Gamez
+- Ricardo La Rosa
+- Tejal Desai
+- fang duan
+- ilya-zuyev
+
+
 # v1.15.0 Release - 09/29/2020
 
 **Linux**
