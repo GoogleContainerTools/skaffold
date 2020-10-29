@@ -25,7 +25,7 @@ a _container transformer_ interface. Each transformer implementation should do t
 4. The transform should return metadata to describe the remote connection information.
 
 Certain language runtimes require additional support files to enable remote debugging.
-These support files are provided through a set of support images defined at `gcr.io/gcp-dev-tools/duct-tape/`
+These support files are provided through a set of support images defined at `gcr.io/k8s-skaffold/skaffold-debug-support/`
 and defined at https://github.com/GoogleContainerTools/container-debug-support.
 The appropriate image ID is returned by the language transformer.  These support images
 are configured as initContainers on the pod and are expected to copy the debugging support
@@ -251,7 +251,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		// the initContainers are responsible for populating the contents of `/dbg`
 		for imageID := range requiredSupportImages {
 			supportFilesInitContainer := v1.Container{
-				Name:         fmt.Sprintf("install-%s-support", imageID),
+				Name:         fmt.Sprintf("install-%s-debug-support", imageID),
 				Image:        fmt.Sprintf("%s/%s", debugHelpersRegistry, imageID),
 				VolumeMounts: []v1.VolumeMount{supportVolumeMount},
 			}

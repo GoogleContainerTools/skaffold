@@ -42,7 +42,7 @@ const (
 	DefaultBusyboxImage = "busybox"
 
 	// DefaultDebugHelpersRegistry is the default location used for the helper images for `debug`.
-	DefaultDebugHelpersRegistry = "gcr.io/gcp-dev-tools/duct-tape"
+	DefaultDebugHelpersRegistry = "gcr.io/k8s-skaffold/skaffold-debug-support"
 
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"

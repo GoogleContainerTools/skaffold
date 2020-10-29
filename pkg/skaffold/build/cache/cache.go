@@ -48,6 +48,7 @@ type ArtifactCache map[string]ImageDetails
 type cache struct {
 	artifactCache    ArtifactCache
 	artifactGraph    build.ArtifactGraph
+	artifactStore    build.ArtifactStore
 	cacheMutex       sync.RWMutex
 	client           docker.LocalDaemon
 	cfg              Config
@@ -69,7 +70,7 @@ type Config interface {
 }
 
 // NewCache returns the current state of the cache
-func NewCache(cfg Config, imagesAreLocal bool, tryImportMissing bool, dependencies DependencyLister, graph build.ArtifactGraph) (Cache, error) {
+func NewCache(cfg Config, imagesAreLocal bool, tryImportMissing bool, dependencies DependencyLister, graph build.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
 	if !cfg.CacheArtifacts() {
 		return &noCache{}, nil
 	}
@@ -94,6 +95,7 @@ func NewCache(cfg Config, imagesAreLocal bool, tryImportMissing bool, dependenci
 	return &cache{
 		artifactCache:    artifactCache,
 		artifactGraph:    graph,
+		artifactStore:    store,
 		client:           client,
 		cfg:              cfg,
 		cacheFile:        cacheFile,

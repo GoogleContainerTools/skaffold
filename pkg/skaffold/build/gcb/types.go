@@ -80,9 +80,10 @@ func NewStatusBackoff() *wait.Backoff {
 type Builder struct {
 	*latest.GoogleCloudBuild
 
-	cfg       Config
-	skipTests bool
-	muted     build.Muted
+	cfg           Config
+	skipTests     bool
+	muted         build.Muted
+	artifactStore build.ArtifactStore
 }
 
 type Config interface {
@@ -101,6 +102,10 @@ func NewBuilder(cfg Config) *Builder {
 		skipTests:        cfg.SkipTests(),
 		muted:            cfg.Muted(),
 	}
+}
+
+func (b *Builder) ArtifactStore(store build.ArtifactStore) {
+	b.artifactStore = store
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {

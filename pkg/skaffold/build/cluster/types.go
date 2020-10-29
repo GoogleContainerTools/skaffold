@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -32,9 +33,10 @@ import (
 type Builder struct {
 	*latest.ClusterDetails
 
-	cfg        Config
-	kubectlcli *kubectl.CLI
-	timeout    time.Duration
+	cfg           Config
+	kubectlcli    *kubectl.CLI
+	timeout       time.Duration
+	artifactStore build.ArtifactStore
 }
 
 type Config interface {
@@ -59,6 +61,10 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		kubectlcli:     kubectl.NewCLI(cfg, ""),
 		timeout:        timeout,
 	}, nil
+}
+
+func (b *Builder) ArtifactStore(store build.ArtifactStore) {
+	b.artifactStore = store
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {

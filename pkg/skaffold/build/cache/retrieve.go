@@ -104,7 +104,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		} else {
 			uniqueTag = build.TagWithDigest(tag, entry.Digest)
 		}
-
+		c.artifactStore.Record(artifact, uniqueTag)
 		alreadyBuilt = append(alreadyBuilt, build.Artifact{
 			ImageName: artifact.ImageName,
 			Tag:       uniqueTag,

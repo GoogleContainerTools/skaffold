@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -36,16 +35,25 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestKpt_Deploy(t *testing.T) {
-	output := `apiVersion: v1
+const (
+	testPod = `apiVersion: v1
 kind: Pod
 metadata:
-  namespace: default
+   namespace: default
 spec:
-  containers:
-  - image: gcr.io/project/image1
-    name: image1
+   containers:
+   - image: gcr.io/project/image1
+   name: image1
 `
+)
+
+// Test that kpt deployer manipulate manifests in the given order and no intermediate data is
+// stored after each step:
+//	Step 1. `kp fn source` (read in the manifest as stdin),
+//  Step 2. `kustomize build` (hydrate the manifest),
+//  Step 3. `kpt fn run` (validate, transform or generate the manifests via kpt functions),
+//  Step 4. `kpt fn sink` (store the stdout in a given dir).
+func TestKpt_Deploy(t *testing.T) {
 	tests := []struct {
 		description    string
 		builds         []build.Artifact
@@ -62,8 +70,7 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", ``),
+				AndRunOut("kpt fn run --dry-run", ``),
 		},
 		{
 			description: "invalid manifest",
@@ -72,8 +79,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", `foo`),
+				AndRunOut("kpt fn run --dry-run", `foo`).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			shouldErr: true,
 		},
 		{
@@ -88,10 +95,11 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output),
+				AndRunOut("kpt fn run --dry-run", testPod).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			shouldErr: true,
 		},
+
 		{
 			description: "kustomization and specified kpt fn",
 			kpt: latest.KptDeploy{
@@ -104,12 +112,13 @@ spec:
 				},
 			},
 			kustomizations: map[string]string{"Kustomization": `resources:
-- foo.yaml`},
+				- foo.yaml`},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kustomize build -o .tmp-sink-dir .", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --fn-path kpt-func.yaml", output).
+				AndRunOut("kpt fn source kpt-func.yaml", ``).
+				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
+				AndRunOut(fmt.Sprintf("kustomize build %v", tmpKustomizeDir), ``).
+				AndRunOut("kpt fn run --dry-run", testPod).
 				AndRun("kpt live apply valid_path"),
 			expected: []string{"default"},
 		},
@@ -120,8 +129,7 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output).
+				AndRunOut("kpt fn run --dry-run", testPod).
 				AndRunOut("kpt live init .kpt-hydrated", ``).
 				AndRunErr("kpt live apply .kpt-hydrated", errors.New("BUG")),
 			shouldErr: true,
@@ -142,8 +150,7 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output).
+				AndRunOut("kpt fn run --dry-run", testPod).
 				AndRun("kpt live apply valid_path --poll-period 5s --reconcile-timeout 2m"),
 		},
 		{
@@ -162,8 +169,7 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output).
+				AndRunOut("kpt fn run --dry-run", testPod).
 				AndRun("kpt live apply valid_path --poll-period foo --reconcile-timeout bar"),
 		},
 		{
@@ -182,8 +188,7 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output).
+				AndRunOut("kpt fn run --dry-run", testPod).
 				AndRun("kpt live apply valid_path --prune-propagation-policy Orphan --prune-timeout 2m"),
 		},
 		{
@@ -202,12 +207,12 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output).
+				AndRunOut("kpt fn run --dry-run", testPod).
 				AndRun("kpt live apply valid_path --prune-propagation-policy foo --prune-timeout bar"),
 		},
 	}
 	for _, test := range tests {
+		sanityCheck = func(dir string) error { return nil }
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			tmpDir := t.NewTempDir().Chdir()
@@ -225,7 +230,6 @@ spec:
 			}
 
 			_, err := k.Deploy(context.Background(), ioutil.Discard, test.builds)
-
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -278,23 +282,41 @@ func TestKpt_Dependencies(t *testing.T) {
 			expected: []string{"foo/bar.yaml", "foo/bat/bad.yml", "food.yml"},
 		},
 		{
-			description: "fnpath",
+			description: "fnpath inside directory",
 			kpt: latest.KptDeploy{
 				Dir: ".",
-				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
+				Fn:  latest.KptFn{FnPath: "."},
+			},
+			createFiles: map[string]string{
+				"./kpt-func.yaml": "",
 			},
 			expected: []string{"kpt-func.yaml"},
 		},
 		{
+			description: "fnpath outside directory",
+			kpt: latest.KptDeploy{
+				Dir: "./config",
+				Fn:  latest.KptFn{FnPath: "./kpt-fn"},
+			},
+			createFiles: map[string]string{
+				"./config/deployment.yaml": "",
+				"./kpt-fn/kpt-func.yaml":   "",
+			},
+			expected: []string{"config/deployment.yaml", "kpt-fn/kpt-func.yaml"},
+		},
+
+		{
 			description: "fnpath and dir and kustomization",
 			kpt: latest.KptDeploy{
 				Dir: ".",
-				Fn:  latest.KptFn{FnPath: "kpt-func.yaml"},
+				Fn:  latest.KptFn{FnPath: "./kpt-fn"},
 			},
-			createFiles: map[string]string{"foo.yml": ""},
+			createFiles: map[string]string{
+				"./kpt-fn/func.yaml": "",
+			},
 			kustomizations: map[string]string{"kustomization.yaml": `configMapGenerator:
-- files: [app1.properties]`},
-			expected: []string{"app1.properties", "foo.yml", "kpt-func.yaml", "kustomization.yaml"},
+   - files: [app1.properties]`},
+			expected: []string{"app1.properties", "kpt-fn/func.yaml", "kustomization.yaml"},
 		},
 		{
 			description: "dependencies that can only be detected as a kustomization",
@@ -302,7 +324,7 @@ func TestKpt_Dependencies(t *testing.T) {
 				Dir: ".",
 			},
 			kustomizations: map[string]string{"kustomization.yaml": `configMapGenerator:
-- files: [app1.properties]`},
+   - files: [app1.properties]`},
 			expected: []string{"app1.properties", "kustomization.yaml"},
 		},
 		{
@@ -311,7 +333,7 @@ func TestKpt_Dependencies(t *testing.T) {
 				Dir: ".",
 			},
 			kustomizations: map[string]string{"kustomization.yml": `configMapGenerator:
-- files: [app1.properties]`},
+   - files: [app1.properties]`},
 			expected: []string{"app1.properties", "kustomization.yml"},
 		},
 		{
@@ -320,7 +342,7 @@ func TestKpt_Dependencies(t *testing.T) {
 				Dir: ".",
 			},
 			kustomizations: map[string]string{"Kustomization": `configMapGenerator:
-- files: [app1.properties]`},
+   - files: [app1.properties]`},
 			expected: []string{"Kustomization", "app1.properties"},
 		},
 		{
@@ -329,7 +351,7 @@ func TestKpt_Dependencies(t *testing.T) {
 				Dir: ".",
 			},
 			kustomizations: map[string]string{"customization": `configMapGenerator:
-- files: [app1.properties]`},
+   - files: [app1.properties]`},
 		},
 	}
 	for _, test := range tests {
@@ -476,8 +498,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output1),
+				AndRunOut("kpt fn run --dry-run", output1).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
@@ -507,8 +529,9 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source test", ``).
-				AndRunOut(fmt.Sprintf("kpt fn sink %s", filepath.Join(".tmp-sink-dir", "test")), ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --fn-path kpt-func.yaml", output3),
+				AndRunOut("kpt fn source kpt-func.yaml", ``).
+				AndRunOut("kpt fn run --dry-run", output3).
+				AndRunOut("kpt fn sink .tmp-sink-dir/test", ``),
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
@@ -550,8 +573,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", output2),
+				AndRunOut("kpt fn run --dry-run --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", output2).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			expected: `apiVersion: v1
 kind: Pod
 metadata:
@@ -578,8 +601,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", ``),
+				AndRunOut("kpt fn run --dry-run", ``).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			expected: "\n",
 		},
 		{
@@ -592,6 +615,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
+				AndRunOut("kpt fn source kpt-func.yaml", ``).
+				AndRunOut("kpt fn run --dry-run --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``).
 				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			shouldErr: true,
 		},
@@ -608,9 +633,9 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kustomize build -o .tmp-sink-dir .", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output1),
+				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
+				AndRunOut(fmt.Sprintf("kustomize build %v", tmpKustomizeDir), ``).
+				AndRunOut("kpt fn run --dry-run", output1),
 			kustomizations: map[string]string{"kustomization.yaml": `resources:
 - foo.yaml`},
 			expected: `apiVersion: v1
@@ -630,8 +655,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOutErr("kpt fn source .", ``, errors.New("BUG")).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", "invalid pipeline"),
+				AndRunOut("kpt fn run --dry-run", "invalid pipeline").
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			shouldErr: true,
 		},
 		{
@@ -641,8 +666,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOutErr("kpt fn sink .tmp-sink-dir", ``, errors.New("BUG")).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", "invalid pipeline"),
+				AndRunOut("kpt fn run --dry-run", "invalid pipeline").
+				AndRunOutErr("kpt fn sink .tmp-sink-dir", ``, errors.New("BUG")),
 			shouldErr: true,
 		},
 		{
@@ -658,9 +683,10 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOutErr("kustomize build -o .tmp-sink-dir .", ``, errors.New("BUG")).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run", output1),
+				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
+				AndRunOutErr(fmt.Sprintf("kustomize build %v", tmpKustomizeDir), ``, errors.New("BUG")).
+				AndRunOut("kpt fn run --dry-run", output1).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			kustomizations: map[string]string{"kustomization.yaml": `resources:
 - foo.yaml`},
 			shouldErr: true,
@@ -672,8 +698,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOutErr("kpt fn run .tmp-sink-dir --dry-run", "invalid pipeline", errors.New("BUG")),
+				AndRunOutErr("kpt fn run --dry-run", "invalid pipeline", errors.New("BUG")).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			shouldErr: true,
 		},
 		{
@@ -687,8 +713,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --global-scope --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
+				AndRunOut("kpt fn run --dry-run --global-scope --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			expected: "\n",
 		},
 		{
@@ -702,8 +728,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --mount type=bind,src=$(pwd),dst=/source --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
+				AndRunOut("kpt fn run --dry-run --mount type=bind,src=$(pwd),dst=/source --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			expected: "\n",
 		},
 		{
@@ -717,8 +743,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --mount foo,,bar --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
+				AndRunOut("kpt fn run --dry-run --mount foo,,bar --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			expected: "\n",
 		},
 		{
@@ -733,8 +759,8 @@ spec:
 			},
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
-				AndRunOut("kpt fn sink .tmp-sink-dir", ``).
-				AndRunOut("kpt fn run .tmp-sink-dir --dry-run --network --network-name foo --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``),
+				AndRunOut("kpt fn run --dry-run --network --network-name foo --image gcr.io/example.com/my-fn:v1.0.0 -- foo=bar", ``).
+				AndRunOut("kpt fn sink .tmp-sink-dir", ``),
 			expected: "\n",
 		},
 	}
@@ -986,6 +1012,108 @@ spec:
 			actualManifest, err := k.excludeKptFn(test.manifests)
 			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
 		})
+	}
+}
+
+func TestVersionCheck(t *testing.T) {
+	tests := []struct {
+		description    string
+		commands       util.Command
+		kustomizations map[string]string
+		shouldErr      bool
+		error          error
+	}{
+		{
+			description: "Both kpt and kustomize versions are good",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`).
+				AndRunOut("kustomize version", `{Version:v3.6.1 GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: false,
+			error:     nil,
+		},
+		{
+			description: "kpt is not installed",
+			commands:    testutil.CmdRunOutErr("kpt version", "", errors.New("BUG")),
+			shouldErr:   true,
+			error: fmt.Errorf("kpt is not installed yet\nSee kpt installation: %v",
+				kptDownloadLink),
+		},
+		{
+			description: "kustomize is not used, kpt version is good",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`),
+			shouldErr: false,
+			error:     nil,
+		},
+		{
+			description: "kustomize is used but not installed",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`).
+				AndRunOutErr("kustomize version", "", errors.New("BUG")),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: true,
+			error: fmt.Errorf("kustomize is not installed yet\nSee kpt installation: %v",
+				kustomizeDownloadLink),
+		},
+		{
+			description: "kpt version is too old (<0.34.0)",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.1.0`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: true,
+			error: fmt.Errorf("you are using kpt \"0.1.0\"\n"+
+				"Please update your kpt version to >= %v\nSee kpt installation: %v",
+				kptMinVersion, kptDownloadLink),
+		},
+		{
+			description: "kpt version is unknown",
+			commands: testutil.
+				CmdRunOut("kpt version", `unknown`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: true,
+			error: fmt.Errorf("unknown kpt version unknown\nPlease upgrade your "+
+				"local kpt CLI to a version >= %v\nSee kpt installation: %v",
+				kptMinVersion, kptDownloadLink),
+		},
+		{
+			description: "kustomize versions is too old (< v3.2.3)",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`).
+				AndRunOut("kustomize version", `{Version:v0.0.1 GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: true,
+			error: fmt.Errorf("you are using kustomize \"v0.0.1\"\n"+
+				"Please update your kustomize version to >= %v\n"+
+				"See kustomize installation: %v", kustomizeMinVersion, kustomizeDownloadLink),
+		},
+		{
+			description: "kustomize versions is unknown",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`).
+				AndRunOut("kustomize version", `{Version:unknown GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: true,
+			error: fmt.Errorf("unknown kustomize version unknown\nPlease upgrade your "+
+				"local kustomize CLI to a version >= %v\nSee kustomize installation: %v",
+				kustomizeMinVersion, kustomizeDownloadLink),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.commands)
+			tmpDir := t.NewTempDir().Chdir()
+			tmpDir.WriteFiles(test.kustomizations)
+			err := versionCheck("")
+			t.CheckError(test.shouldErr, err)
+		})
+		testutil.CheckError(t, test.shouldErr, test.error)
 	}
 }
 

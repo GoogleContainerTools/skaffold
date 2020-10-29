@@ -240,14 +240,9 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 			return fmt.Errorf("cannot parse the release name template: %w", err)
 		}
 
-		var namespace string
-		if h.namespace != "" {
-			namespace = h.namespace
-		} else if r.Namespace != "" {
-			namespace, err = util.ExpandEnvTemplate(r.Namespace, nil)
-			if err != nil {
-				return fmt.Errorf("cannot parse the release namespace template: %w", err)
-			}
+		namespace, err := h.releaseNamespace(r)
+		if err != nil {
+			return err
 		}
 
 		args := []string{"delete", releaseName}
@@ -309,13 +304,11 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 			return err
 		}
 
-		if r.Namespace != "" {
-			var namespace string
-			namespace, err = util.ExpandEnvTemplate(r.Namespace, nil)
-			if err != nil {
-				return fmt.Errorf("cannot parse the release namespace template: %w", err)
-			}
-
+		namespace, err := h.releaseNamespace(r)
+		if err != nil {
+			return err
+		}
+		if namespace != "" {
 			args = append(args, "--namespace", namespace)
 		}
 
@@ -401,13 +394,9 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, r latest.He
 		installEnv = util.EnvMapToSlice(env, "=")
 	}
 
-	if h.namespace != "" {
-		opts.namespace = h.namespace
-	} else if r.Namespace != "" {
-		opts.namespace, err = util.ExpandEnvTemplate(r.Namespace, nil)
-		if err != nil {
-			return nil, fmt.Errorf("cannot parse the release namespace template: %w", err)
-		}
+	opts.namespace, err = h.releaseNamespace(r)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := h.exec(ctx, ioutil.Discard, false, nil, getArgs(helmVersion, releaseName, opts.namespace)...); err != nil {
@@ -794,6 +783,19 @@ func (h *Deployer) generateSkaffoldDebugFilter(buildsFile string) []string {
 		args = append(args, "--kubeconfig", h.kubeConfig)
 	}
 	return args
+}
+
+func (h *Deployer) releaseNamespace(r latest.HelmRelease) (string, error) {
+	if h.namespace != "" {
+		return h.namespace, nil
+	} else if r.Namespace != "" {
+		namespace, err := util.ExpandEnvTemplate(r.Namespace, nil)
+		if err != nil {
+			return "", fmt.Errorf("cannot parse the release namespace template: %w", err)
+		}
+		return namespace, nil
+	}
+	return "", nil
 }
 
 // imageSetFromConfig calculates the --set-string value from the helm config
