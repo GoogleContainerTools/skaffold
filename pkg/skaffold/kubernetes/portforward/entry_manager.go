@@ -120,10 +120,10 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 				entry.resource.Port,
 				entry.resource.Address,
 				entry.localPort))
-		portForwardEvent(entry)
 	} else {
 		color.Red.Fprintln(b.output, err)
 	}
+	portForwardEvent(entry)
 }
 
 // Stop terminates all kubectl port-forward commands.
