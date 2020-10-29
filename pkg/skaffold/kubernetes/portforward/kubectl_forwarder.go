@@ -209,10 +209,7 @@ func (*KubectlForwarder) monitorLogs(ctx context.Context, logs io.Reader, cmd *k
 				}
 				err <- fmt.Errorf("port forwarding %v got terminated: output: %s", p, s)
 				return
-			} else if strings.Contains(s, fmt.Sprintf("Forwarding from %s:%d -> %d",
-				p.resource.Address,
-				p.resource.Port,
-				p.localPort)) {
+			} else if strings.Contains(s, "Forwarding from") {
 				err <- nil
 			}
 		}
