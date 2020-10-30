@@ -136,7 +136,10 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 			cancel()
 			logrus.Debugf("port forwarding %v got terminated: %s, output: %s", pfe, err, buf.String())
 			if !strings.Contains(buf.String(), "address already in use") {
-				errChan <- fmt.Errorf("port forwarding %v got terminated: output: %s", pfe, buf.String())
+				select {
+				case errChan <- fmt.Errorf("port forwarding %v got terminated: output: %s", pfe, buf.String()):
+				default:
+				}
 			}
 			time.Sleep(500 * time.Millisecond)
 		}
@@ -209,10 +212,16 @@ func (*KubectlForwarder) monitorLogs(ctx context.Context, logs io.Reader, cmd *k
 				if err := cmd.Terminate(); err != nil {
 					logrus.Tracef("failed to kill port forwarding %v, err: %s", p, err)
 				}
-				err <- fmt.Errorf("port forwarding %v got terminated: output: %s", p, s)
+				select {
+				case err <- fmt.Errorf("port forwarding %v got terminated: output: %s", p, s):
+				default:
+				}
 				return
 			} else if strings.Contains(s, "Forwarding from") {
-				err <- nil
+				select {
+				case err <- nil:
+				default:
+				}
 			}
 		}
 	}
