@@ -379,6 +379,7 @@ github.com/mitchellh/ioprogress
 # github.com/moby/buildkit v0.7.1
 ## explicit
 github.com/moby/buildkit/frontend/dockerfile/command
+github.com/moby/buildkit/frontend/dockerfile/instructions
 github.com/moby/buildkit/frontend/dockerfile/parser
 github.com/moby/buildkit/frontend/dockerfile/shell
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
