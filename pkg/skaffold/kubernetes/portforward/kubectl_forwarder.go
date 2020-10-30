@@ -134,10 +134,12 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 			}
 			//to make sure that the log monitor gets cleared up
 			cancel()
-			logrus.Debugf("port forwarding %v got terminated: %s, output: %s", pfe, err, buf.String())
-			if !strings.Contains(buf.String(), "address already in use") {
+
+			s := buf.String()
+			logrus.Debugf("port forwarding %v got terminated: %s, output: %s", pfe, err, s)
+			if !strings.Contains(s, "address already in use") {
 				select {
-				case errChan <- fmt.Errorf("port forwarding %v got terminated: output: %s", pfe, buf.String()):
+				case errChan <- fmt.Errorf("port forwarding %v got terminated: output: %s", pfe, s):
 				default:
 				}
 			}
