@@ -71,7 +71,7 @@ func (d *defaultBuildInitializer) resolveBuilderImagesForcefully() error {
 		}
 
 		d.builderImagePairs = append(d.builderImagePairs, BuilderImagePair{Builder: choice, ImageName: image})
-		d.unresolvedImages = util.RemoveFromSlice(d.unresolvedImages, image)
+		d.unresolvedImages = []string{}
 		return nil
 	}
 
