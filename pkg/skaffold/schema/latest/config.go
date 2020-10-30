@@ -1068,7 +1068,7 @@ type KanikoArtifact struct {
 
 	// Env are environment variables passed to the kaniko pod.
 	// It also accepts environment variables via the go template syntax.
-	// For example: `{{name: "key1", value: "value1"}, {name: "key2", value: "value2"}, {name: "key3", value: "'{{.ENV_VARIABLE}}'"}"}`.
+	// For example: `[{"name": "key1", "value": "value1"}, {"name": "key2", "value": "value2"}, {"name": "key3", "value": "'{{.ENV_VARIABLE}}'"}]`.
 	Env []v1.EnvVar `yaml:"env,omitempty"`
 
 	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
