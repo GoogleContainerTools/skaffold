@@ -26,4 +26,4 @@ Take a look at our other guides:
 | Detailed Tutorials |
 |--------------------|
 | [Custom Build Script]({{< relref "/docs/tutorials/custom-builder" >}}) |
-| [Inter-Artifact Dependencies]({{< relref "/docs/tutorials/artifact-dependencies" >}}) |
+| [Build Artifact Dependencies]({{< relref "/docs/tutorials/artifact-dependencies" >}}) |

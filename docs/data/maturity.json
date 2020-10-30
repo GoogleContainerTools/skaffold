@@ -30,9 +30,9 @@
     "run": "x",
     "debug": "x",
     "area": "Build",
-    "feature": "Artifact Build Dependencies",
+    "feature": "Build Artifact Dependencies",
     "maturity": "alpha",
-    "description": "Define inter-artifact build dependencies"
+    "description": "Define build artifact dependencies"
   },
   "build": {
     "dev": "x",
