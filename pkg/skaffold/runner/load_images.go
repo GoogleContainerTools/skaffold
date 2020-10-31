@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/distribution/reference"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -66,7 +68,11 @@ func (r *SkaffoldRunner) loadImages(ctx context.Context, out io.Writer, artifact
 				return fmt.Errorf("unable to retrieve node's images: %w", err)
 			}
 		}
-		if util.StrSliceContains(knownImages, artifact.Tag) {
+		normalizedImageRef, err := reference.ParseNormalizedNamed(artifact.Tag)
+		if err != nil {
+			return err
+		}
+		if util.StrSliceContains(knownImages, normalizedImageRef.String()) {
 			color.Green.Fprintln(out, "Found")
 			continue
 		}
