@@ -27,6 +27,7 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
+	"github.com/moby/buildkit/frontend/dockerfile/instructions"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/sirupsen/logrus"
@@ -72,6 +73,11 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 
 	res, err := parser.Parse(f)
 	if err != nil {
+		return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
+	}
+
+	// instructions.Parse will check for malformed Dockerfile
+	if _, _, err := instructions.Parse(res.AST); err != nil {
 		return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
 	}
 

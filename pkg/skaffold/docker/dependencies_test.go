@@ -216,6 +216,11 @@ FROM stage
 ADD ./file /etc/file
 `
 
+const invalidFrom = `
+FROM
+COPY . /
+`
+
 type fakeImageFetcher struct{}
 
 func (f *fakeImageFetcher) fetch(image string, _ Config) (*v1.ConfigFile, error) {
@@ -529,6 +534,12 @@ func TestGetDependencies(t *testing.T) {
 			ignore:         "bar\ndocker/*",
 			ignoreFilename: "Dockerfile.dockerignore",
 			expected:       []string{".dot", "Dockerfile", "Dockerfile.dockerignore", "file", "server.go", "test.conf", "worker.go"},
+		},
+		{
+			description: "invalid dockerfile",
+			dockerfile:  invalidFrom,
+			workspace:   ".",
+			shouldErr:   true,
 		},
 	}
 
