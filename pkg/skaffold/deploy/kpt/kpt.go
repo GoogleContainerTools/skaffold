@@ -56,7 +56,7 @@ const (
 
 	kustomizeDownloadLink  = "https://kubernetes-sigs.github.io/kustomize/installation/"
 	kustomizeMinVersion    = "v3.2.3"
-	kustomizeVersionRegexP = `{Version:(\S+) GitCommit:\S+ BuildDate:\d{4}-\d{2}-\d{2}T\d\d:\d\d:\d\dZ GoOs:\S+ GoArch:\S+}`
+	kustomizeVersionRegexP = `{Version:(\S+) GitCommit:(\S+) BuildDate:\S+ GoOs:\S+ GoArch:\S+}`
 )
 
 // Deployer deploys workflows with kpt CLI
@@ -80,7 +80,7 @@ func NewDeployer(cfg types.Config, labels map[string]string) *Deployer {
 
 var sanityCheck = versionCheck
 
-// sanityCheck guarantees the kpt and kustomize versions are compatible with skaffold.
+// versionCheck guarantees the kpt is compatible with skaffold and warns if the kustomize version is not.
 func versionCheck(dir string) error {
 	kptCmd := exec.Command("kpt", "version")
 	out, err := util.RunCmdOut(kptCmd)
@@ -88,6 +88,7 @@ func versionCheck(dir string) error {
 		return fmt.Errorf("kpt is not installed yet\nSee kpt installation: %v",
 			kptDownloadLink)
 	}
+
 	version := strings.TrimSuffix(string(out), "\n")
 	// kpt follows semver but does not have "v" prefix.
 	if !semver.IsValid("v" + version) {
@@ -103,30 +104,43 @@ func versionCheck(dir string) error {
 	// Users can choose not to use kustomize in kpt deployer mode. We only check the kustomize
 	// version when kustomization.yaml config is directed under .deploy.kpt.dir path.
 	_, err = kustomize.FindKustomizationConfig(dir)
-	if err == nil {
-		kustomizeCmd := exec.Command("kustomize", "version")
-		out, err := util.RunCmdOut(kustomizeCmd)
-		if err != nil {
-			return fmt.Errorf("kustomize is not installed yet\nSee kpt installation: %v",
-				kustomizeDownloadLink)
-		}
-		versionInfo := strings.TrimSuffix(string(out), "\n")
-		// Kustomize version information is in the form of
-		// {Version:$VERSION GitCommit:$COMMIT BuildDate:1970-01-01T00:00:00Z GoOs:darwin GoArch:amd64}
-		re := regexp.MustCompile(kustomizeVersionRegexP)
-		match := re.FindStringSubmatch(versionInfo)
-		if len(match) != 2 {
-			return fmt.Errorf("unknown kustomize version %v\nPlease upgrade your "+
+	if err != nil {
+		return nil
+	}
+
+	kustomizeCmd := exec.Command("kustomize", "version")
+	out, err = util.RunCmdOut(kustomizeCmd)
+	if err != nil {
+		return fmt.Errorf(
+			"kustomize is not installed yet\nSee kpt installation: %v",
+			kustomizeDownloadLink)
+	}
+
+	versionInfo := strings.TrimSuffix(string(out), "\n")
+	// Kustomize version information is in the form of
+	// {Version:$VERSION GitCommit:$COMMIT BuildDate:1970-01-01T00:00:00Z GoOs:darwin GoArch:amd64}
+	re := regexp.MustCompile(kustomizeVersionRegexP)
+	match := re.FindStringSubmatch(versionInfo)
+	if len(match) != 3 {
+		fmt.Printf(
+			"unknown kustomize version. \nPlease upgrade your "+
 				"local kustomize CLI to a version >= %v\nSee kustomize installation: %v",
-				string(out), kustomizeMinVersion, kustomizeDownloadLink)
-		}
-		if !semver.IsValid(match[1]) || semver.Compare(match[1], kustomizeMinVersion) < 0 {
-			return fmt.Errorf("you are using kustomize %q\n"+
+			kustomizeMinVersion, kustomizeDownloadLink)
+	} else {
+		version := strings.TrimPrefix(match[1], "kustomize/")
+		if !semver.IsValid(version) {
+			fmt.Printf(
+				"unknown kustomize version with commit %v\nPlease upgrade your "+
+					"local kustomize CLI to a version >= %v\nSee kustomize installation: %v",
+				match[2], kustomizeMinVersion, kustomizeDownloadLink)
+		} else if semver.Compare(version, kustomizeMinVersion) < 0 {
+			fmt.Printf("you are using kustomize %q\n"+
 				"Please update your kustomize version to >= %v\n"+
-				"See kustomize installation: %v", match[1], kustomizeMinVersion,
-				kustomizeDownloadLink)
+				"See kustomize installation: %v",
+				version, kustomizeMinVersion, kustomizeDownloadLink)
 		}
 	}
+
 	return nil
 }
 

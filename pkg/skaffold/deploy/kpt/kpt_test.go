@@ -1087,22 +1087,58 @@ func TestVersionCheck(t *testing.T) {
 				AndRunOut("kustomize version", `{Version:v0.0.1 GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
 			kustomizations: map[string]string{"Kustomization": `resources:
 				- foo.yaml`},
-			shouldErr: true,
-			error: fmt.Errorf("you are using kustomize \"v0.0.1\"\n"+
-				"Please update your kustomize version to >= %v\n"+
-				"See kustomize installation: %v", kustomizeMinVersion, kustomizeDownloadLink),
+			shouldErr: false,
+			error:     nil,
 		},
 		{
-			description: "kustomize versions is unknown",
+			description: "kustomize version is unknown",
 			commands: testutil.
 				CmdRunOut("kpt version", `0.34.0`).
 				AndRunOut("kustomize version", `{Version:unknown GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
 			kustomizations: map[string]string{"Kustomization": `resources:
 				- foo.yaml`},
-			shouldErr: true,
-			error: fmt.Errorf("unknown kustomize version unknown\nPlease upgrade your "+
-				"local kustomize CLI to a version >= %v\nSee kustomize installation: %v",
-				kustomizeMinVersion, kustomizeDownloadLink),
+			shouldErr: false,
+			error:     nil,
+		},
+		{
+			description: "kustomize version and commit missing",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`).
+				AndRunOut("kustomize version", `{BuildDate:2020-06-15T20:19:07+01:00 GoOs:darwin GoArch:amd64}`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: false,
+			error:     nil,
+		},
+		{
+			description: "kustomize version missing",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`).
+				AndRunOut("kustomize version", `{GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07+01:00 GoOs:darwin GoArch:amd64}`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: false,
+			error:     nil,
+		},
+		{
+			description: "kustomize version has non-Zulu BuildDate",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`).
+				AndRunOut("kustomize version", `{Version:v3.6.1 GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07+01:00 GoOs:darwin GoArch:amd64}`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: false,
+			error:     nil,
+		},
+		{
+			description: "kustomize version has prefix",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`).
+				AndRunOut("kustomize version", `{Version:kustomize/v3.8.5 GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07+01:00 GoOs:darwin GoArch:amd64}`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: false,
+			error:     nil,
 		},
 	}
 	for _, test := range tests {
