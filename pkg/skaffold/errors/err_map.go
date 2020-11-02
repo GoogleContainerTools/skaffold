@@ -21,9 +21,14 @@ import (
 	"regexp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/sirupsen/logrus"
 )
+
+// var (
+// 	// for testing
+// 	currentConfig = kubectx.CurrentConfig
+// )
 
 // re is a shortcut around regexp.MustCompile
 func re(s string) *regexp.Regexp {
@@ -96,18 +101,13 @@ var knownDeployProblems = []problem{
 		errCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
 		description: func(err error) string {
 			matchExp := re("(?i).*unable to connect.*Get (.*)")
-			kubeconfig, _ := kubectx.CurrentConfig()
+			kubeconfig, parsederr := currentConfig()
+			logrus.Debugf("Error retrieving the config: %q", parsederr)
 			if match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err)); len(match) >= 2 {
-				// kubeconfig, _ := kubectx.CurrentConfig()
 				return fmt.Sprintf("Deploy Failed. Could not connect to cluster %s due to %s", kubeconfig.CurrentContext, match[1])
 			}
 			return fmt.Sprintf("Deploy Failed. Could not connect to %s cluster.", kubeconfig.CurrentContext)
 		},
-		suggestion: func(opts config.SkaffoldOptions) []*proto.Suggestion {
-			return []*proto.Suggestion{{
-				SuggestionCode: proto.SuggestionCode_CHECK_HOST_CONNECTION,
-				Action:         "Check your cluster connection",
-			}}
-		},
+		suggestion: suggestDeployFailedAction,
 	},
 }

@@ -845,6 +845,7 @@ Enum for Suggestion codes
 | CHECK_GCLOUD_PROJECT | 105 | Verify Gcloud Project |
 | CHECK_DOCKER_RUNNING | 106 | Check if docker is running |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
+| CHECK_MINIKUBE_STAUTUS | 202 | Check minikube status |
 | CHECK_CONTAINER_LOGS | 301 | Container run error |
 | CHECK_READINESS_PROBE | 302 | Pod Health check error |
 | CHECK_CONTAINER_IMAGE | 303 | Check Container image |
