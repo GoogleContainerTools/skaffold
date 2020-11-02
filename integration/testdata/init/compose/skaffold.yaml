@@ -5,6 +5,8 @@ metadata:
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/compose
+    docker:
+      dockerfile: Dockerfile
 deploy:
   kubectl:
     manifests:

@@ -5,6 +5,8 @@ metadata:
 build:
   artifacts:
     - image: passed-in-artifact
+      docker:
+        dockerfile: Dockerfile
 deploy:
   kubectl:
     manifests:
