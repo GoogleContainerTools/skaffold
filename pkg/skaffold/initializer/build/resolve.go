@@ -53,10 +53,45 @@ func (d *defaultBuildInitializer) resolveBuilderImages() error {
 	}
 
 	if d.force {
-		return errors.BuilderImageAmbiguitiesErr{}
+		return d.resolveBuilderImagesForcefully()
 	}
 
 	return d.resolveBuilderImagesInteractively()
+}
+
+func (d *defaultBuildInitializer) resolveBuilderImagesForcefully() error {
+	// In the case of 1 image and multiple builders, respects the ordering Docker > Jib > Bazel > Buildpacks
+	if len(d.unresolvedImages) == 1 {
+		image := d.unresolvedImages[0]
+		choice := d.builders[0]
+		for _, builder := range d.builders {
+			if builderRank(builder) < builderRank(choice) {
+				choice = builder
+			}
+		}
+
+		d.builderImagePairs = append(d.builderImagePairs, BuilderImagePair{Builder: choice, ImageName: image})
+		d.unresolvedImages = []string{}
+		return nil
+	}
+
+	return errors.BuilderImageAmbiguitiesErr{}
+}
+
+func builderRank(builder InitBuilder) int {
+	a := builder.ArtifactType()
+	switch {
+	case a.DockerArtifact != nil:
+		return 1
+	case a.JibArtifact != nil:
+		return 2
+	case a.BazelArtifact != nil:
+		return 3
+	case a.BuildpackArtifact != nil:
+		return 4
+	}
+
+	return 5
 }
 
 func (d *defaultBuildInitializer) resolveBuilderImagesInteractively() error {
