@@ -35,6 +35,8 @@ func init() {
 	colors.Disable(true)
 }
 
+var colorfulWriter io.Writer
+
 // SetupColors enables/disables coloured output.
 func SetupColors(out io.Writer, defaultColor int, forceColors bool) {
 	_, isTerm := util.IsTerminal(out)
@@ -62,6 +64,7 @@ func SetupColors(out io.Writer, defaultColor int, forceColors bool) {
 		37: White,
 		0:  None,
 	}[defaultColor]
+	colorfulWriter = out
 }
 
 // Color can be used to format text so it can be printed to the terminal in color.
@@ -103,7 +106,7 @@ var (
 
 // Fprintln outputs the result to out, followed by a newline.
 func (c Color) Fprintln(out io.Writer, a ...interface{}) {
-	if c.color == nil {
+	if c.color == nil || out != colorfulWriter {
 		fmt.Fprintln(out, a...)
 		return
 	}
@@ -113,7 +116,7 @@ func (c Color) Fprintln(out io.Writer, a ...interface{}) {
 
 // Fprintf outputs the result to out.
 func (c Color) Fprintf(out io.Writer, format string, a ...interface{}) {
-	if c.color == nil {
+	if c.color == nil || out != colorfulWriter {
 		fmt.Fprintf(out, format, a...)
 		return
 	}

@@ -89,3 +89,21 @@ func TestFprintlnChangeDefaultToUnknown(t *testing.T) {
 	Default.Fprintln(&b, "2", "less", "chars!")
 	compareText(t, "2 less chars!\n", b.String())
 }
+
+func TestFprintfOnlyWritesColorsToSetupWriter(t *testing.T) {
+	var b bytes.Buffer
+	var cb bytes.Buffer
+
+	SetupColors(&cb, DefaultColorCode, true)
+	Blue.Fprintf(&b, "This should %s be %s", "not", "blue")
+	compareText(t, "This should not be blue", b.String())
+}
+
+func TestFprintlnOnlyWritesColorsToSetupWriter(t *testing.T) {
+	var b bytes.Buffer
+	var cb bytes.Buffer
+
+	SetupColors(&cb, DefaultColorCode, true)
+	Blue.Fprintln(&b, "This should", "not", "be", "blue")
+	compareText(t, "This should not be blue\n", b.String())
+}
