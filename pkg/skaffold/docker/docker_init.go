@@ -25,7 +25,6 @@ import (
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -55,9 +54,6 @@ func (c ArtifactConfig) Describe() string {
 // ArtifactType returns the type of the artifact to be built.
 func (c ArtifactConfig) ArtifactType() latest.ArtifactType {
 	dockerfile := filepath.Base(c.File)
-	if dockerfile == constants.DefaultDockerfilePath {
-		return latest.ArtifactType{}
-	}
 
 	return latest.ArtifactType{
 		DockerArtifact: &latest.DockerArtifact{

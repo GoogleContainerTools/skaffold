@@ -5,6 +5,8 @@ metadata:
 build:
   artifacts:
   - image: skaffold-example
+    docker:
+      dockerfile: Dockerfile
 deploy:
   kubectl:
     manifests:
