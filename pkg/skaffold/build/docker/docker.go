@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package local
+package docker
 
 import (
 	"context"
@@ -24,14 +24,13 @@ import (
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
-func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, mode config.RunMode) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
 	// Fail fast if the Dockerfile can't be found.
 	dockerfile, err := docker.NormalizeDockerfilePath(a.Workspace, a.DockerArtifact.DockerfilePath)
 	if err != nil {
@@ -44,11 +43,11 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact); err != nil {
 		return "", fmt.Errorf("pulling cache-from images: %w", err)
 	}
-	opts := docker.BuildOptions{Tag: tag, Mode: mode, ExtraBuildArgs: build.CreateBuildArgsFromArtifacts(a.Dependencies, b.artifactStore, true)}
+	opts := docker.BuildOptions{Tag: tag, Mode: b.mode, ExtraBuildArgs: build.CreateBuildArgsFromArtifacts(a.Dependencies, b.artifacts, true)}
 
 	var imageID string
 
-	if b.local.UseDockerCLI || b.local.UseBuildkit {
+	if b.useCLI {
 		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, opts)
 	} else {
 		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, opts)
@@ -63,10 +62,6 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 	}
 
 	return imageID, nil
-}
-
-func (b *Builder) retrieveExtraEnv() []string {
-	return b.localDocker.ExtraEnv()
 }
 
 func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, opts docker.BuildOptions) (string, error) {
@@ -91,8 +86,8 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
-	cmd.Env = append(util.OSEnviron(), b.retrieveExtraEnv()...)
-	if b.local.UseBuildkit {
+	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
+	if b.useBuildKit {
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
 	cmd.Stdout = out
