@@ -102,7 +102,9 @@ var knownDeployProblems = []problem{
 		description: func(err error) string {
 			matchExp := re("(?i).*unable to connect.*Get (.*)")
 			kubeconfig, parsederr := currentConfig()
-			logrus.Debugf("Error retrieving the config: %q", parsederr)
+			if err != nil {
+				logrus.Debugf("Error retrieving the config: %q", parsederr)
+			}
 			if match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err)); len(match) >= 2 {
 				return fmt.Sprintf("Deploy Failed. Could not connect to cluster %s due to %s", kubeconfig.CurrentContext, match[1])
 			}

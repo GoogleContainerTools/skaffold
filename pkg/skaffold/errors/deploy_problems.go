@@ -35,28 +35,21 @@ func suggestDeployFailedAction(opts config.SkaffoldOptions) []*proto.Suggestion 
 
 	var curctx = kubeconfig.CurrentContext
 	var isminikube = cluster.GetClient().IsMinikube(opts.KubeContext)
-	var kubectx = opts.KubeContext
 
-	if isminikube && curctx == "minkube" {
-		// Check if minikube is running using `minikube status` command and try again
-		return []*proto.Suggestion{{
-			SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
-			Action:         "Check if minikube is running using `minikube status` command and try again",
-		}}
-	}
-	if isminikube && curctx != "minkube" {
-		// Check if minikube is running using `minikube status -p cloud-run-dev-internal` command and try again.
-		return []*proto.Suggestion{{
-			SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
-			Action:         "Check if minikube is running using `minikube status -p <>` command and try again.",
-		}}
-	}
-	if isminikube && kubectx != "minkube" {
-		// Check your cluster connection for your named cluster.
-		return []*proto.Suggestion{{
-			SuggestionCode: proto.SuggestionCode_CHECK_CLUSTER_CONNECTION,
-			Action:         "Check if minikube is running using `minikube status` command and try again",
-		}}
+	if isminikube {
+		if curctx == "minkube" {
+			// Check if minikube is running using `minikube status` command and try again
+			return []*proto.Suggestion{{
+				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
+				Action:         "Check if minikube is running using `minikube status` command and try again",
+			}}
+		} else {
+			// Check if minikube is running using `minikube status -p cloud-run-dev-internal` command and try again.
+			return []*proto.Suggestion{{
+				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
+				Action:         "Check if minikube is running using `minikube status -p <clustername>` command and try again.",
+			}}
+		}
 	}
 
 	return []*proto.Suggestion{{
