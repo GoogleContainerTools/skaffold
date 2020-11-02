@@ -32,23 +32,27 @@ var (
 func suggestDeployFailedAction(opts config.SkaffoldOptions) []*proto.Suggestion {
 	kubeconfig, parsederr := currentConfig()
 	logrus.Debugf("Error retrieving the config: %q", parsederr)
-	// var cxt = kubeconfig.CurrentContext
-	if cluster.GetClient().IsMinikube(opts.KubeContext) && kubeconfig.CurrentContext == "minkube" {
+
+	var curctx = kubeconfig.CurrentContext
+	var isminikube = cluster.GetClient().IsMinikube(opts.KubeContext)
+	var kubectx = opts.KubeContext
+
+	if isminikube && curctx == "minkube" {
 		// Check if minikube is running using `minikube status` command and try again
 		return []*proto.Suggestion{{
 			SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
 			Action:         "Check if minikube is running using `minikube status` command and try again",
 		}}
 	}
-	if cluster.GetClient().IsMinikube(opts.KubeContext) && kubeconfig.CurrentContext != "minkube" {
+	if isminikube && curctx != "minkube" {
 		// Check if minikube is running using `minikube status -p cloud-run-dev-internal` command and try again.
 		return []*proto.Suggestion{{
 			SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
 			Action:         "Check if minikube is running using `minikube status -p <>` command and try again.",
 		}}
 	}
-	if cluster.GetClient().IsMinikube(opts.KubeContext) && kubeconfig.CurrentContext != "minkube" {
-		// Check your cluster connection for cluster gke_tejal-test_us-central1-a_dump.
+	if isminikube && kubectx != "minkube" {
+		// Check your cluster connection for your named cluster.
 		return []*proto.Suggestion{{
 			SuggestionCode: proto.SuggestionCode_CHECK_CLUSTER_CONNECTION,
 			Action:         "Check if minikube is running using `minikube status` command and try again",
