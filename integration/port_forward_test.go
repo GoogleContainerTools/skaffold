@@ -62,10 +62,22 @@ func TestRunPortForward(t *testing.T) {
 
 	_, entries := apiEvents(t, rpcAddr)
 
-	webAddress, webLocalPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-web", "deployment", ns.Name)
-	assertResponseFromPort(t, webAddress, webLocalPort, constants.LeeroyAppResponse)
-	appAddress, appLocalPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)
-	assertResponseFromPort(t, appAddress, appLocalPort, constants.LeeroyAppResponse)
+	address, localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)
+	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
+}
+
+func TestRunUserPortForwardResource(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	ns, _ := SetupNamespace(t)
+
+	rpcAddr := randomPort()
+	skaffold.Run("--port-forward", "--rpc-port", rpcAddr, "--enable-rpc").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
+
+	_, entries := apiEvents(t, rpcAddr)
+
+	address, localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-web", "deployment", ns.Name)
+	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
 }
 
 // TestDevPortForwardDeletePod tests that port forwarding works
