@@ -40,7 +40,7 @@ import (
 )
 
 type EntryForwarder interface {
-	Forward(parentCtx context.Context, pfe *portForwardEntry)
+	Forward(parentCtx context.Context, pfe *portForwardEntry) error
 	Terminate(p *portForwardEntry)
 }
 
@@ -70,11 +70,13 @@ var (
 // It kills the command on errors in the kubectl port-forward log
 // It restarts the command if it was not cancelled by skaffold
 // It retries in case the port is taken
-func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) {
-	go k.forward(parentCtx, pfe)
+func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) error {
+	errChan := make(chan error, 1)
+	go k.forward(parentCtx, pfe, errChan)
+	return <-errChan
 }
 
-func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEntry) {
+func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEntry, errChan chan error) {
 	var notifiedUser bool
 	defer deferFunc()
 
@@ -83,6 +85,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		if pfe.terminated {
 			logrus.Debugf("port forwarding %v was cancelled...", pfe)
 			pfe.terminationLock.Unlock()
+			errChan <- nil
 			return
 		}
 		pfe.terminationLock.Unlock()
@@ -123,7 +126,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		}
 
 		//kill kubectl on port forwarding error logs
-		go k.monitorErrorLogs(ctx, &buf, cmd, pfe)
+		go k.monitorLogs(ctx, &buf, cmd, pfe, errChan)
 		if err := cmd.Wait(); err != nil {
 			if ctx.Err() == context.Canceled {
 				logrus.Debugf("terminated %v due to context cancellation", pfe)
@@ -131,7 +134,15 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 			}
 			//to make sure that the log monitor gets cleared up
 			cancel()
-			logrus.Debugf("port forwarding %v got terminated: %s, output: %s", pfe, err, buf.String())
+
+			s := buf.String()
+			logrus.Debugf("port forwarding %v got terminated: %s, output: %s", pfe, err, s)
+			if !strings.Contains(s, "address already in use") {
+				select {
+				case errChan <- fmt.Errorf("port forwarding %v got terminated: output: %s", pfe, s):
+				default:
+				}
+			}
 			time.Sleep(500 * time.Millisecond)
 		}
 	}
@@ -178,7 +189,7 @@ func (*KubectlForwarder) Terminate(p *portForwardEntry) {
 // Monitor monitors the logs for a kubectl port forward command
 // If it sees an error, it calls back to the EntryManager to
 // retry the entire port forward operation.
-func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, logs io.Reader, cmd *kubectl.Cmd, p *portForwardEntry) {
+func (*KubectlForwarder) monitorLogs(ctx context.Context, logs io.Reader, cmd *kubectl.Cmd, p *portForwardEntry, err chan error) {
 	ticker := time.NewTicker(waitErrorLogs)
 	defer ticker.Stop()
 
@@ -203,7 +214,16 @@ func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, logs io.Reader, c
 				if err := cmd.Terminate(); err != nil {
 					logrus.Tracef("failed to kill port forwarding %v, err: %s", p, err)
 				}
+				select {
+				case err <- fmt.Errorf("port forwarding %v got terminated: output: %s", p, s):
+				default:
+				}
 				return
+			} else if strings.Contains(s, "Forwarding from") {
+				select {
+				case err <- nil:
+				default:
+				}
 			}
 		}
 	}

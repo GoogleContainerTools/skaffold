@@ -46,9 +46,10 @@ type testForwarder struct {
 	forwardedPorts     util.PortSet
 }
 
-func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) {
+func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) error {
 	f.forwardedResources.Store(pfe.key(), pfe)
 	f.forwardedPorts.Set(pfe.localPort)
+	return nil
 }
 
 func (f *testForwarder) Monitor(*portForwardEntry, func()) {}
