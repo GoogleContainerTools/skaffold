@@ -131,8 +131,8 @@ func TestCacheBuildLocal(t *testing.T) {
 		})
 
 		// Mock args builder
-		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact, extra map[string]*string) (map[string]*string, error) {
-			return a.BuildArgs, nil
+		t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+			return args, nil
 		})
 
 		// Create cache
@@ -227,8 +227,8 @@ func TestCacheBuildRemote(t *testing.T) {
 		})
 
 		// Mock args builder
-		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact, extra map[string]*string) (map[string]*string, error) {
-			return a.BuildArgs, nil
+		t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+			return args, nil
 		})
 
 		// Create cache
@@ -311,8 +311,8 @@ func TestCacheFindMissing(t *testing.T) {
 		})
 
 		// Mock args builder
-		t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact, extra map[string]*string) (map[string]*string, error) {
-			return a.BuildArgs, nil
+		t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+			return args, nil
 		})
 
 		// Create cache

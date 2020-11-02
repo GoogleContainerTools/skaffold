@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -43,7 +42,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact); err != nil {
 		return "", fmt.Errorf("pulling cache-from images: %w", err)
 	}
-	opts := docker.BuildOptions{Tag: tag, Mode: b.mode, ExtraBuildArgs: build.CreateBuildArgsFromArtifacts(a.Dependencies, b.artifacts, true)}
+	opts := docker.BuildOptions{Tag: tag, Mode: b.mode, ExtraBuildArgs: docker.CreateBuildArgsFromArtifacts(a.Dependencies, b.artifacts, true)}
 
 	var imageID string
 
@@ -71,7 +70,7 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	}
 
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", opts.Tag}
-	ba, err := docker.EvalBuildArgs(b.mode, workspace, a, opts.ExtraBuildArgs)
+	ba, err := docker.EvalBuildArgs(b.mode, workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}

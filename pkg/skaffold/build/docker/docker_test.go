@@ -73,8 +73,8 @@ func TestDockerCLIBuild(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Touch("Dockerfile").Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
-			t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact, extra map[string]*string) (map[string]*string, error) {
-				return a.BuildArgs, nil
+			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+				return args, nil
 			})
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunEnv(
 				"docker build . --file "+dockerfilePath+" -t tag --force-rm",
