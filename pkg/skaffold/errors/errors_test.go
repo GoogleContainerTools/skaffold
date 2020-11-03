@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -243,12 +245,29 @@ func TestShowAIError(t *testing.T) {
 				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
 			},
 		},
+		{
+			description: "deploy failed",
+			opts:        config.SkaffoldOptions{},
+			context:     &config.ContextConfig{},
+			phase:       Deploy,
+			err:         fmt.Errorf(`exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get "https://192.168.64.3:8443/version?timeout=32s": net/http: TLS handshake timeout`),
+			expected:    "Deploy Failed. Could not connect to cluster test_cluster due to \"https://192.168.64.3:8443/version?timeout=32s\": net/http: TLS handshake timeout. Check your connection for the cluster.",
+			expectedAE: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
+				Message: "exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get \"https://192.168.64.3:8443/version?timeout=32s\": net/http: TLS handshake timeout",
+				Suggestions: []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_CHECK_CLUSTER_CONNECTION,
+					Action:         "Check your connection for the cluster",
+				}},
+			},
+		},
 	}
 	for _, test := range append(tests, initTestCases...) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&getConfigForCurrentContext, func(string) (*config.ContextConfig, error) {
 				return test.context, nil
 			})
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "test_cluster"})
 			skaffoldOpts = test.opts
 			actual := ShowAIError(test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
