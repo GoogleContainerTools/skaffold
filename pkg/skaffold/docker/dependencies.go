@@ -22,7 +22,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"sync"
 
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/golang/groupcache/singleflight"
@@ -36,9 +35,9 @@ type dependency struct {
 	err   error
 }
 
-// dependencyCache caches the results for `GetDependencies` for individual dockerfile.
+// sfDependencyCache ensures  `GetDependencies` is called only once for  individual dockerfile.
 var (
-	dependencyCache = sync.Map{}
+	sfDependencyCache = singleflight.Group{}
 )
 
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.
@@ -63,18 +62,16 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
-	if v, ok := dependencyCache.Load(absDockerfilePath); !ok {
+	if paths, err := sfDependencyCache.Do(absDockerfilePath, func() (interface{}, error) {
 		paths, err := getDependencies(workspace, dockerfilePath, absDockerfilePath, buildArgs, cfg)
-		dependencyCache.Store(absDockerfilePath, dependency{
-			files: paths,
-			err:   err,
-		})
 		return paths, err
-	} else if cv, ok := v.(dependency); ok {
-		return cv.files, cv.err
+	}); err != nil {
+		return nil, err
+	} else if s, ok := paths.([]string); !ok {
+		return nil, fmt.Errorf("unexpected skaffold internal error encountered converting dependencies to []string")
+	} else {
+		return s, nil
 	}
-	// TODO: tejaldesai
-	return nil, fmt.Errorf("unexpected skaffold internal error encountered")
 }
 
 func getDependencies(workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error) {
