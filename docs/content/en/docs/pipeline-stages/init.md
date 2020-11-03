@@ -94,6 +94,13 @@ When overlay directories are found, these will be listed in the generated Skaffo
 
 *Note: order is guaranteed, since Skaffold's directory parsing is always deterministic.*
 
+## `--force` Flag
+`skaffold init` allows for use of a `--force` flag, which removes the prompts from vanilla `skaffold init`, and allows skaffold to make a best effort attempt to automatically generate a config for your project.
+
+In a situation where one image is detected, but multiple possible builders are detected, skaffold will choose a builder as follows: Docker > Jib > Bazel > Buildpacks.
+
+*Note: This feature is still under development, and doesn't currently support use cases such as multiple images in a project.*
+
 ## Init API
 `skaffold init` also exposes an API which tools like IDEs can integrate with via flags.
 

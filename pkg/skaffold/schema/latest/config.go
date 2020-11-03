@@ -1034,11 +1034,11 @@ type KanikoArtifact struct {
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
 	Image string `yaml:"image,omitempty"`
 
-	// DigestFile to to specify a file in the container. This file will receive the digest of a built image.
+	// DigestFile to specify a file in the container. This file will receive the digest of a built image.
 	// This can be used to automatically track the exact image built by kaniko.
 	DigestFile string `yaml:"digestFile,omitempty"`
 
-	// ImageNameWithDigestFile to a file to save the image name with digest of the built image to.
+	// ImageNameWithDigestFile specify a file to save the image name with digest of the built image to.
 	ImageNameWithDigestFile string `yaml:"imageNameWithDigestFile,omitempty"`
 
 	// LogFormat <text|color|json> to set the log format.
@@ -1068,14 +1068,14 @@ type KanikoArtifact struct {
 
 	// Env are environment variables passed to the kaniko pod.
 	// It also accepts environment variables via the go template syntax.
-	// For example: `{{name: "key1", value: "value1"}, {name: "key2", value: "value2"}, {name: "key3", value: "'{{.ENV_VARIABLE}}'"}"}`.
+	// For example: `[{"name": "key1", "value": "value1"}, {"name": "key2", "value": "value2"}, {"name": "key3", "value": "'{{.ENV_VARIABLE}}'"}]`.
 	Env []v1.EnvVar `yaml:"env,omitempty"`
 
 	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
 	// use a remote cache which will speed up builds.
 	Cache *KanikoCache `yaml:"cache,omitempty"`
 
-	// RegistryCertificate is to to provide a certificate for TLS communication with a given registry.
+	// RegistryCertificate is to provide a certificate for TLS communication with a given registry.
 	// my.registry.url: /path/to/the/certificate.cert is the expected format.
 	RegistryCertificate map[string]*string `yaml:"registryCertificate,omitempty"`
 

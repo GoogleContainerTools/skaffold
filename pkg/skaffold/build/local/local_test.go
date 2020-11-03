@@ -23,8 +23,14 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
+	dockerbuilder "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -334,13 +340,116 @@ func TestNewBuilder(t *testing.T) {
 	}
 }
 
+func TestGetArtifactBuilder(t *testing.T) {
+	tests := []struct {
+		description string
+		artifact    *latest.Artifact
+		expected    string
+		shouldErr   bool
+	}{
+		{
+			description: "docker builder",
+			artifact: &latest.Artifact{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{},
+				},
+			},
+			expected: "docker",
+		},
+		{
+			description: "jib builder",
+			artifact: &latest.Artifact{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					JibArtifact: &latest.JibArtifact{},
+				},
+			},
+			expected: "jib",
+		},
+		{
+			description: "buildpacks builder",
+			artifact: &latest.Artifact{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					BuildpackArtifact: &latest.BuildpackArtifact{},
+				},
+			},
+			expected: "buildpacks",
+		},
+		{
+			description: "bazel builder",
+			artifact: &latest.Artifact{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					BazelArtifact: &latest.BazelArtifact{},
+				},
+			},
+			expected: "bazel",
+		},
+		{
+			description: "custom builder",
+			artifact: &latest.Artifact{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					CustomArtifact: &latest.CustomArtifact{},
+				},
+			},
+			expected: "custom",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+				return fakeLocalDaemon(&testutil.FakeAPIClient{}), nil
+			})
+			t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact, extra map[string]*string) (map[string]*string, error) {
+				return a.BuildArgs, nil
+			})
+
+			b, err := NewBuilder(&mockConfig{
+				local: latest.LocalBuild{
+					Concurrency: &constants.DefaultLocalConcurrency,
+				},
+			})
+			t.CheckNoError(err)
+			b.ArtifactStore(build.NewArtifactStore())
+
+			builder, err := newPerArtifactBuilder(b, test.artifact)
+			t.CheckNoError(err)
+
+			switch builder.(type) {
+			case *dockerbuilder.Builder:
+				t.CheckDeepEqual(test.expected, "docker")
+			case *bazel.Builder:
+				t.CheckDeepEqual(test.expected, "bazel")
+			case *buildpacks.Builder:
+				t.CheckDeepEqual(test.expected, "buildpacks")
+			case *custom.Builder:
+				t.CheckDeepEqual(test.expected, "custom")
+			case *jib.Builder:
+				t.CheckDeepEqual(test.expected, "jib")
+			}
+		})
+	}
+}
+
+func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
+	return docker.NewLocalDaemon(api, nil, false, nil)
+}
+
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	local                 latest.LocalBuild
+	mode                  config.RunMode
 }
 
 func (c *mockConfig) Pipeline() latest.Pipeline {
 	var pipeline latest.Pipeline
 	pipeline.Build.BuildType.LocalBuild = &c.local
 	return pipeline
+}
+
+func (c *mockConfig) Mode() config.RunMode {
+	return c.mode
 }

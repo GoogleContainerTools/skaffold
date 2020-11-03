@@ -44,6 +44,14 @@ Which is equivalent to:
 
 {{% readfile file="samples/builders/local-full.yaml" %}}
 
+**Artifact dependency**
+
+You can additionally define dependency on other artifacts using the `requires` expression:
+
+{{% readfile file="samples/builders/artifact-dependencies/docker-local.yaml" %}}
+
+The specified alias `IMAGE2` becomes available as a build-arg in the Dockerfile for `image1` and it's value automatically set to the image built from `image2`.
+
 ## Dockerfile in-cluster with Kaniko
 
 [Kaniko](https://github.com/GoogleContainerTools/kaniko) is a Google-developed

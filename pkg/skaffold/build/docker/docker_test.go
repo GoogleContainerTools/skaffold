@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package local
+package docker
 
 import (
 	"context"
 	"io/ioutil"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
-	"github.com/docker/docker/client"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -77,7 +73,6 @@ func TestDockerCLIBuild(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Touch("Dockerfile").Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
-			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			t.Override(&docker.EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact, extra map[string]*string) (map[string]*string, error) {
 				return a.BuildArgs, nil
 			})
@@ -85,16 +80,9 @@ func TestDockerCLIBuild(t *testing.T) {
 				"docker build . --file "+dockerfilePath+" -t tag --force-rm",
 				test.expectedEnv,
 			))
-			t.Override(&cluster.GetClient, func() cluster.Client { return fakeMinikubeClient{} })
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
-			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
-				return fakeLocalDaemonWithExtraEnv(test.extraEnv), nil
-			})
 
-			builder, err := NewBuilder(&mockConfig{
-				local: test.localBuild,
-			})
-			t.CheckNoError(err)
+			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv(test.extraEnv), test.localBuild.UseDockerCLI, test.localBuild.UseBuildkit, false, false, test.mode, nil, mockArtifactResolver{make(map[string]string)})
 
 			artifact := &latest.Artifact{
 				Workspace: ".",
@@ -105,23 +93,24 @@ func TestDockerCLIBuild(t *testing.T) {
 				},
 			}
 
-			_, err = builder.buildDocker(context.Background(), ioutil.Discard, artifact, "tag", test.mode)
+			_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "tag")
 			t.CheckNoError(err)
 		})
 	}
-}
-
-func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
-	return docker.NewLocalDaemon(api, nil, false, nil)
 }
 
 func fakeLocalDaemonWithExtraEnv(extraEnv []string) docker.LocalDaemon {
 	return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, extraEnv, false, nil)
 }
 
-type fakeMinikubeClient struct{}
+type mockArtifactResolver struct {
+	m map[string]string
+}
 
-func (fakeMinikubeClient) IsMinikube(kubeContext string) bool { return false }
-func (fakeMinikubeClient) MinikubeExec(arg ...string) (*exec.Cmd, error) {
-	return exec.Command("minikube", arg...), nil
+func (r mockArtifactResolver) GetImageTag(imageName string) (string, bool) {
+	if r.m == nil {
+		return "", false
+	}
+	val, found := r.m[imageName]
+	return val, found
 }

@@ -110,17 +110,19 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 	}
 	b.forwardedResources.Store(entry.key(), entry)
 
-	b.entryForwarder.Forward(ctx, entry)
-
-	color.Green.Fprintln(
-		b.output,
-		fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %d -> address %s port %d",
-			entry.resource.Type,
-			entry.resource.Name,
-			entry.resource.Namespace,
-			entry.resource.Port,
-			entry.resource.Address,
-			entry.localPort))
+	if err := b.entryForwarder.Forward(ctx, entry); err == nil {
+		color.Green.Fprintln(
+			b.output,
+			fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %d -> address %s port %d",
+				entry.resource.Type,
+				entry.resource.Name,
+				entry.resource.Namespace,
+				entry.resource.Port,
+				entry.resource.Address,
+				entry.localPort))
+	} else {
+		color.Red.Fprintln(b.output, err)
+	}
 	portForwardEvent(entry)
 }
 

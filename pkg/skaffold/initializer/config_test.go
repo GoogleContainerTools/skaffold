@@ -120,6 +120,9 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 							{
 								ImageName: "image1",
 								Workspace: "testDir",
+								ArtifactType: latest.ArtifactType{
+									DockerArtifact: &latest.DockerArtifact{DockerfilePath: "Dockerfile"},
+								},
 							},
 						},
 					},

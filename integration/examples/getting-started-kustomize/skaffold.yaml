@@ -6,6 +6,8 @@ build:
   artifacts:
   - image: skaffold-kustomize
     context: app
+    docker:
+      dockerfile: Dockerfile
 deploy:
   kustomize:
     paths:

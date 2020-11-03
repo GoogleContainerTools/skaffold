@@ -99,6 +99,19 @@ func TestResolveBuilderImages(t *testing.T) {
 			},
 		},
 		{
+			description:      "successful force - 1 image 2 builders",
+			buildConfigs:     []InitBuilder{docker.ArtifactConfig{File: "Dockerfile1"}, jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"}},
+			images:           []string{"image1"},
+			shouldMakeChoice: true,
+			force:            true,
+			expectedPairs: []BuilderImagePair{
+				{
+					Builder:   docker.ArtifactConfig{File: "Dockerfile1"},
+					ImageName: "image1",
+				},
+			},
+		},
+		{
 			description:      "error with ambiguous force",
 			buildConfigs:     []InitBuilder{docker.ArtifactConfig{File: "Dockerfile1"}, jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"}},
 			images:           []string{"image1", "image2"},
