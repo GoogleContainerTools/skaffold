@@ -37,7 +37,7 @@ func suggestDeployFailedAction(opts config.SkaffoldOptions) []*proto.Suggestion 
 		logrus.Debugf("Error retrieving the config: %q", parsederr)
 		return []*proto.Suggestion{{
 			SuggestionCode: proto.SuggestionCode_CHECK_CLUSTER_CONNECTION,
-			Action:         "Check your cluster connection for the cluster",
+			Action:         "Check your connection for the cluster",
 		}}
 	}
 
@@ -59,6 +59,6 @@ func suggestDeployFailedAction(opts config.SkaffoldOptions) []*proto.Suggestion 
 
 	return []*proto.Suggestion{{
 		SuggestionCode: proto.SuggestionCode_CHECK_CLUSTER_CONNECTION,
-		Action:         "Check your cluster connection for the cluster",
+		Action:         "Check your connection for the cluster",
 	}}
 }

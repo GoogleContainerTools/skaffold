@@ -17,7 +17,6 @@ limitations under the License.
 package errors
 
 import (
-	"os/exec"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -62,13 +61,12 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 			isminikube:  false,
 			expected: []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_CLUSTER_CONNECTION,
-				Action:         "Check your cluster connection for the cluster",
+				Action:         "Check your connection for the cluster",
 			}},
 		},
 	}
 	for _, test := range append(tests) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			// t.Override(&cluster.GetClient, func() cluster.Client { return fakeMinikubeClient{} })
 			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
 				return test.context, nil
 			})
@@ -79,11 +77,4 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
-}
-
-type fakeMinikubeClient struct{}
-
-func (fakeMinikubeClient) IsMinikube(string) bool { return false }
-func (fakeMinikubeClient) MinikubeExec(arg ...string) (*exec.Cmd, error) {
-	return exec.Command("minikube", arg...), nil
 }
