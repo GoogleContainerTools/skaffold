@@ -5,5 +5,7 @@ COPY app.go .
 ARG SKAFFOLD_GO_GCFLAGS
 RUN go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o /app .
 
-FROM $BASE
+FROM $BASE as target_stage
 COPY --from=builder /app .
+
+FROM busybox
