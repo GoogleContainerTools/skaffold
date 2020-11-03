@@ -19,11 +19,12 @@ package errors
 import (
 	"testing"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 func TestSuggestDeployFailedAction(t *testing.T) {
