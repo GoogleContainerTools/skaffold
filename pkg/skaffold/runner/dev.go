@@ -213,9 +213,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	logger := r.createLogger(out, bRes)
 	defer logger.Stop()
 
-	forwarderManager := r.createForwarder(out)
-	defer forwarderManager.Stop()
-
 	debugContainerManager := r.createContainerManager()
 	defer debugContainerManager.Stop()
 
@@ -227,6 +224,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
+
+	forwarderManager := r.createForwarder(out)
+	defer forwarderManager.Stop()
 
 	if err := forwarderManager.Start(ctx); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
