@@ -41,11 +41,8 @@ func suggestDeployFailedAction(opts config.SkaffoldOptions) []*proto.Suggestion 
 		}}
 	}
 
-	var curctx = kubeconfig.CurrentContext
-	var isminikube = isMinikube(curctx)
-
-	if isminikube {
-		if curctx == "minikube" {
+	if isMinikube(kubeconfig.CurrentContext) {
+		if kubeconfig.CurrentContext == "minikube" {
 			return []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
 				Action:         "Check if minikube is running using `minikube status` command and try again",
@@ -53,7 +50,7 @@ func suggestDeployFailedAction(opts config.SkaffoldOptions) []*proto.Suggestion 
 		}
 		return []*proto.Suggestion{{
 			SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
-			Action:         fmt.Sprintf("Check if minikube is running using `minikube status -p %s` command and try again.", curctx),
+			Action:         fmt.Sprintf("Check if minikube is running using `minikube status -p %s` command and try again.", kubeconfig.CurrentContext),
 		}}
 	}
 

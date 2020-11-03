@@ -65,7 +65,7 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 			}},
 		},
 	}
-	for _, test := range append(tests) {
+	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
 				return test.context, nil
