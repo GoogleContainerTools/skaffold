@@ -567,7 +567,7 @@ enum SuggestionCode {
     // Check cluster connection
     CHECK_CLUSTER_CONNECTION = 201;
     // Check minikube status
-    CHECK_MINIKUBE_STAUTUS = 202;
+    CHECK_MINIKUBE_STATUS = 202;
 
     // Container Run time error
 

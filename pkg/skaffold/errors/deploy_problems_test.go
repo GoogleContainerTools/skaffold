@@ -41,7 +41,7 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 			context:     api.Config{CurrentContext: "minikube"},
 			isminikube:  true,
 			expected: []*proto.Suggestion{{
-				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
+				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
 				Action:         "Check if minikube is running using `minikube status` command and try again",
 			}},
 		},
@@ -51,7 +51,7 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 			context:     api.Config{CurrentContext: "test_cluster"},
 			isminikube:  true,
 			expected: []*proto.Suggestion{{
-				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
+				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
 				Action:         "Check if minikube is running using `minikube status -p test_cluster` command and try again.",
 			}},
 		},

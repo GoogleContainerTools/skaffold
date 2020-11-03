@@ -1934,7 +1934,7 @@
         "CHECK_GCLOUD_PROJECT",
         "CHECK_DOCKER_RUNNING",
         "CHECK_CLUSTER_CONNECTION",
-        "CHECK_MINIKUBE_STAUTUS",
+        "CHECK_MINIKUBE_STATUS",
         "CHECK_CONTAINER_LOGS",
         "CHECK_READINESS_PROBE",
         "CHECK_CONTAINER_IMAGE",
@@ -1952,7 +1952,7 @@
         "OPEN_ISSUE"
       ],
       "default": "NIL",
-      "description": "Enum for Suggestion codes\n- NIL: default nil suggestion.\nThis is usually set when no error happens.\n - ADD_DEFAULT_REPO: Add Default Repo\n - CHECK_DEFAULT_REPO: Verify Default Repo\n - CHECK_DEFAULT_REPO_GLOBAL_CONFIG: Verify default repo in the global config\n - GCLOUD_DOCKER_AUTH_CONFIGURE: run gcloud docker auth configure\n - DOCKER_AUTH_CONFIGURE: Run docker auth configure\n - CHECK_GCLOUD_PROJECT: Verify Gcloud Project\n - CHECK_DOCKER_RUNNING: Check if docker is running\n - CHECK_CLUSTER_CONNECTION: Check cluster connection\n - CHECK_MINIKUBE_STAUTUS: Check minikube status\n - CHECK_CONTAINER_LOGS: Container run error\n - CHECK_READINESS_PROBE: Pod Health check error\n - CHECK_CONTAINER_IMAGE: Check Container image\n - ADDRESS_NODE_MEMORY_PRESSURE: Node pressure error\n - ADDRESS_NODE_DISK_PRESSURE: Node disk pressure error\n - ADDRESS_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - ADDRESS_NODE_PID_PRESSURE: Node PID pressure error\n - ADDRESS_NODE_UNSCHEDULABLE: Node unschedulable error\n - ADDRESS_NODE_UNREACHABLE: Node unreachable error\n - ADDRESS_NODE_NOT_READY: Node not ready error\n - ADDRESS_FAILED_SCHEDULING: Scheduler failure error\n - CHECK_HOST_CONNECTION: Cluster Connectivity error\n - START_MINIKUBE: Minikube is stopped: use `minikube start`\n - UNPAUSE_MINIKUBE: Minikube is paused: use `minikube unpause`\n - OPEN_ISSUE: Open an issue so this situation can be diagnosed"
+      "description": "Enum for Suggestion codes\n- NIL: default nil suggestion.\nThis is usually set when no error happens.\n - ADD_DEFAULT_REPO: Add Default Repo\n - CHECK_DEFAULT_REPO: Verify Default Repo\n - CHECK_DEFAULT_REPO_GLOBAL_CONFIG: Verify default repo in the global config\n - GCLOUD_DOCKER_AUTH_CONFIGURE: run gcloud docker auth configure\n - DOCKER_AUTH_CONFIGURE: Run docker auth configure\n - CHECK_GCLOUD_PROJECT: Verify Gcloud Project\n - CHECK_DOCKER_RUNNING: Check if docker is running\n - CHECK_CLUSTER_CONNECTION: Check cluster connection\n - CHECK_MINIKUBE_STATUS: Check minikube status\n - CHECK_CONTAINER_LOGS: Container run error\n - CHECK_READINESS_PROBE: Pod Health check error\n - CHECK_CONTAINER_IMAGE: Check Container image\n - ADDRESS_NODE_MEMORY_PRESSURE: Node pressure error\n - ADDRESS_NODE_DISK_PRESSURE: Node disk pressure error\n - ADDRESS_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - ADDRESS_NODE_PID_PRESSURE: Node PID pressure error\n - ADDRESS_NODE_UNSCHEDULABLE: Node unschedulable error\n - ADDRESS_NODE_UNREACHABLE: Node unreachable error\n - ADDRESS_NODE_NOT_READY: Node not ready error\n - ADDRESS_FAILED_SCHEDULING: Scheduler failure error\n - CHECK_HOST_CONNECTION: Cluster Connectivity error\n - START_MINIKUBE: Minikube is stopped: use `minikube start`\n - UNPAUSE_MINIKUBE: Minikube is paused: use `minikube unpause`\n - OPEN_ISSUE: Open an issue so this situation can be diagnosed"
     },
     "protoTerminationEvent": {
       "type": "object",

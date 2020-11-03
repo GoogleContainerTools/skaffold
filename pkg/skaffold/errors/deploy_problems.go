@@ -45,12 +45,12 @@ func suggestDeployFailedAction(opts config.SkaffoldOptions) []*proto.Suggestion 
 	if isMinikube(kubeconfig.CurrentContext) {
 		if kubeconfig.CurrentContext == "minikube" {
 			return []*proto.Suggestion{{
-				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
+				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
 				Action:         "Check if minikube is running using `minikube status` command and try again",
 			}}
 		}
 		return []*proto.Suggestion{{
-			SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
+			SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
 			Action:         fmt.Sprintf("Check if minikube is running using `minikube status -p %s` command and try again.", kubeconfig.CurrentContext),
 		}}
 	}
