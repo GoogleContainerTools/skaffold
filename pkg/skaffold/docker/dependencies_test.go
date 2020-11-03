@@ -660,29 +660,37 @@ func TestGetDependenciesCached(t *testing.T) {
 	tests := []struct {
 		description     string
 		retrieveImgMock func(_ string, _ Config) (*v1.ConfigFile, error)
-		dependencyCache map[string]dependency
+		dependencyCache map[string]interface{}
 		expected        []string
 		shouldErr       bool
 	}{
 		{
-			description:     "with no cached results, getDependencies will retrieve image",
+			description:     "with no cached results getDependencies will retrieve image",
 			retrieveImgMock: imageFetcher.fetch,
-			dependencyCache: map[string]dependency{},
+			dependencyCache: map[string]interface{}{},
 			expected:        []string{"Dockerfile", "server.go"},
 		},
 		{
-			description: "with cached results, getDependencies should read from cache",
+			description: "with cached results getDependencies should read from cache",
 			retrieveImgMock: func(_ string, _ Config) (*v1.ConfigFile, error) {
 				return nil, fmt.Errorf("unexpected call")
 			},
-			dependencyCache: map[string]dependency{"Dockerfile": {[]string{"random.go"}, nil}},
+			dependencyCache: map[string]interface{}{"Dockerfile": []string{"random.go"}},
 			expected:        []string{"random.go"},
+		},
+		{
+			description: "with cached results is error getDependencies should read from cache",
+			retrieveImgMock: func(_ string, _ Config) (*v1.ConfigFile, error) {
+				return &v1.ConfigFile{}, nil
+			},
+			dependencyCache: map[string]interface{}{"Dockerfile": fmt.Errorf("remote manifest fetch")},
+			shouldErr:       true,
 		},
 		{
 			description:     "with cached results for dockerfile in another app",
 			retrieveImgMock: imageFetcher.fetch,
-			dependencyCache: map[string]dependency{
-				filepath.Join("app", "Dockerfile"): {[]string{"random.go"}, nil}},
+			dependencyCache: map[string]interface{}{
+				filepath.Join("app", "Dockerfile"): []string{"random.go"}},
 			expected: []string{"Dockerfile", "server.go"},
 		},
 	}
@@ -701,9 +709,6 @@ func TestGetDependenciesCached(t *testing.T) {
 			}
 			deps, err := GetDependencies(context.Background(), tmpDir.Root(), "Dockerfile", map[string]*string{}, nil)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
-			if _, ok := dependencyCache.Load(tmpDir.Path("Dockerfile")); !ok {
-				t.Fatal("expected a cache entry for Dockerfile, did not found")
-			}
 		})
 	}
 }
