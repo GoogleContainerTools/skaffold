@@ -17,6 +17,8 @@ limitations under the License.
 package errors
 
 import (
+	"fmt"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
@@ -26,34 +28,37 @@ import (
 
 var (
 	// for testing
-	currentConfig = kubectx.CurrentConfig
+	isMinikube = cluster.GetClient().IsMinikube
 )
 
 func suggestDeployFailedAction(opts config.SkaffoldOptions) []*proto.Suggestion {
-	kubeconfig, parsederr := currentConfig()
-	logrus.Debugf("Error retrieving the config: %q", parsederr)
+	kubeconfig, parsederr := kubectx.CurrentConfig()
+	if parsederr != nil {
+		logrus.Debugf("Error retrieving the config: %q", parsederr)
+		return []*proto.Suggestion{{
+			SuggestionCode: proto.SuggestionCode_CHECK_CLUSTER_CONNECTION,
+			Action:         "Check your cluster connection for the cluster",
+		}}
+	}
 
 	var curctx = kubeconfig.CurrentContext
-	var isminikube = cluster.GetClient().IsMinikube(opts.KubeContext)
+	var isminikube = isMinikube(curctx)
 
 	if isminikube {
-		if curctx == "minkube" {
-			// Check if minikube is running using `minikube status` command and try again
+		if curctx == "minikube" {
 			return []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
 				Action:         "Check if minikube is running using `minikube status` command and try again",
 			}}
-		} else {
-			// Check if minikube is running using `minikube status -p cloud-run-dev-internal` command and try again.
-			return []*proto.Suggestion{{
-				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
-				Action:         "Check if minikube is running using `minikube status -p <clustername>` command and try again.",
-			}}
 		}
+		return []*proto.Suggestion{{
+			SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STAUTUS,
+			Action:         fmt.Sprintf("Check if minikube is running using `minikube status -p %s` command and try again.", curctx),
+		}}
 	}
 
 	return []*proto.Suggestion{{
 		SuggestionCode: proto.SuggestionCode_CHECK_CLUSTER_CONNECTION,
-		Action:         "Check your cluster connection",
+		Action:         "Check your cluster connection for the cluster",
 	}}
 }
