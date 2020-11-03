@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/golang/groupcache/singleflight"
@@ -29,15 +30,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
-// dependency represents computed dependency for a dockerfile.
-type dependency struct {
-	files []string
-	err   error
-}
-
-// sfDependencyCache ensures  `GetDependencies` is called only once for  individual dockerfile.
 var (
-	sfDependencyCache = singleflight.Group{}
+	// sfGetDependencies ensures `GetDependencies` is called only once at any time
+	// for a given dockerfile.
+	// sfGetDependencies along with sync.Map will ensure no two concurrent processes read or
+	// write dependencies for a given dockerfile.
+	sfGetDependencies = singleflight.Group{}
+
+	dependencyCache = sync.Map{}
 )
 
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.
@@ -62,19 +62,24 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
-	if paths, err := sfDependencyCache.Do(absDockerfilePath, func() (interface{}, error) {
-		paths, err := getDependencies(workspace, dockerfilePath, absDockerfilePath, buildArgs, cfg)
-		return paths, err
-	}); err != nil {
+	deps, _ := sfGetDependencies.Do(absDockerfilePath, func() (interface{}, error) {
+		if dep, ok := dependencyCache.Load(absDockerfilePath); ok {
+			return dep, nil
+		}
+		dep := getDependencies(workspace, dockerfilePath, absDockerfilePath, buildArgs, cfg)
+		dependencyCache.Store(absDockerfilePath, dep)
+		return dep, nil
+	})
+
+	if paths, ok := deps.([]string); ok {
+		return paths, nil
+	} else if err, ok := deps.(error); ok {
 		return nil, err
-	} else if s, ok := paths.([]string); !ok {
-		return nil, fmt.Errorf("unexpected skaffold internal error encountered converting dependencies to []string")
-	} else {
-		return s, nil
 	}
+	return nil, fmt.Errorf("unexpected skaffold internal error encountered converting dependencies to []string")
 }
 
-func getDependencies(workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error) {
+func getDependencies(workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) interface{} {
 	// If the Dockerfile doesn't exist, we can't compute the dependency.
 	// But since we know the Dockerfile is a dependency, let's return a list
 	// with only that file. It makes errors down the line more actionable
@@ -119,7 +124,7 @@ func getDependencies(workspace string, dockerfilePath string, absDockerfilePath 
 	}
 	sort.Strings(dependencies)
 
-	return dependencies, nil
+	return dependencies
 }
 
 // readDockerignore reads patterns to ignore
