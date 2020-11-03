@@ -8,9 +8,9 @@ if ! [ -x "$(command -v ko)" ]; then
 fi
 
 output=$(ko publish --local --preserve-import-paths --tags= . | tee)
-ref=$(echo $output | tail -n1)
+ref=$(echo "$output" | tail -n1)
 
-docker tag $ref $IMAGE
-if $PUSH_IMAGE; then
-    docker push $IMAGE
+docker tag "$ref" "$IMAGE"
+if [[ "${PUSH_IMAGE}" == "true" ]]; then
+    docker push "$IMAGE"
 fi

@@ -7,11 +7,11 @@ build:
   artifacts:
   - image: image1
     context: app1
-    docker:
-      noCache: true
-      buildArgs:
-        SLEEP: "0"
-        FAIL: "0"
+    custom:
+      buildCommand: ./build.sh
+      dependencies:
+        paths:
+        - "foo"
     requires:
     - image: image2 #test that build-arg set to image field when alias field is missing (`ARG image2`)
 
