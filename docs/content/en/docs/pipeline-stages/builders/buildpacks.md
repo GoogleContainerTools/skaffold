@@ -35,6 +35,16 @@ The following options can optionally be configured:
 `builder` is *required* and tells Skaffold which
 [Builder](https://buildpacks.io/docs/app-developer-guide/build-an-app/) to use.
 
+**Run Image**
+
+`runImage` is *optional* and will override the default [Run Image](https://buildpacks.io/docs/concepts/components/stack/).
+
+**Artifact Dependency**
+
+You can define dependency on other artifacts using the `requires` keyword. This can be useful to specify another artifact image as the `builder` or `runImage`.
+
+{{% readfile file="samples/builders/artifact-dependencies/buildpacks-local.yaml" %}}
+
 **User defined environment variables**
 
 `env` makes it possible to configure specific environment variables for buildpacks.
