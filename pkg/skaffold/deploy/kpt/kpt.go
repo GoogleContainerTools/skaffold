@@ -88,7 +88,7 @@ func NewDeployer(cfg types.Config, labels map[string]string) *Deployer {
 
 var sanityCheck = versionCheck
 
-// versionCheck returns an error if the kpt and kustomize versions are not compatible with skaffold.
+// versionCheck guarantees the kpt and kustomize versions are compatible with skaffold.
 func versionCheck(dir string, stdout io.Writer) error {
 	kptCmd := exec.Command("kpt", "version")
 	out, err := util.RunCmdOut(kptCmd)
