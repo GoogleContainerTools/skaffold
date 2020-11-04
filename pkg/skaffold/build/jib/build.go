@@ -34,15 +34,15 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 	switch t {
 	case JibMaven:
 		if b.pushImages {
-			return b.buildJibMavenToRegistry(ctx, out, artifact.Workspace, artifact.JibArtifact, tag)
+			return b.buildJibMavenToRegistry(ctx, out, artifact.Workspace, artifact.JibArtifact, artifact.Dependencies, tag)
 		}
-		return b.buildJibMavenToDocker(ctx, out, artifact.Workspace, artifact.JibArtifact, tag)
+		return b.buildJibMavenToDocker(ctx, out, artifact.Workspace, artifact.JibArtifact, artifact.Dependencies, tag)
 
 	case JibGradle:
 		if b.pushImages {
-			return b.buildJibGradleToRegistry(ctx, out, artifact.Workspace, artifact.JibArtifact, tag)
+			return b.buildJibGradleToRegistry(ctx, out, artifact.Workspace, artifact.JibArtifact, artifact.Dependencies, tag)
 		}
-		return b.buildJibGradleToDocker(ctx, out, artifact.Workspace, artifact.JibArtifact, tag)
+		return b.buildJibGradleToDocker(ctx, out, artifact.Workspace, artifact.JibArtifact, artifact.Dependencies, tag)
 
 	default:
 		return "", fmt.Errorf("unable to determine Jib builder type for %s", artifact.Workspace)

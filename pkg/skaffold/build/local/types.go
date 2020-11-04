@@ -160,7 +160,7 @@ func newPerArtifactBuilder(b *Builder, a *latest.Artifact) (artifactBuilder, err
 		return bazel.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages), nil
 
 	case a.JibArtifact != nil:
-		return jib.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.skipTests), nil
+		return jib.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.skipTests, b.artifactStore), nil
 
 	case a.CustomArtifact != nil:
 		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.retrieveExtraEnv()), nil
