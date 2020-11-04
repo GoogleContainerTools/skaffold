@@ -23,8 +23,12 @@ import (
 	"regexp"
 )
 
+type MutedLogger struct {
+	File *os.File
+}
+
 // Create creates or truncates a file to be used to output logs.
-func Create(path ...string) (*os.File, error) {
+func Create(path ...string) (*MutedLogger, error) {
 	logfile := filepath.Join(os.TempDir(), "skaffold")
 	for _, p := range path {
 		logfile = filepath.Join(logfile, escape(p))
@@ -35,11 +39,24 @@ func Create(path ...string) (*os.File, error) {
 		return nil, fmt.Errorf("unable to create temp directory %q: %w", dir, err)
 	}
 
-	return os.OpenFile(logfile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	f, err := os.OpenFile(logfile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	return &MutedLogger{f}, err
 }
 
 var escapeRegexp = regexp.MustCompile(`[^a-zA-Z0-9-_.]`)
 
 func escape(s string) string {
 	return escapeRegexp.ReplaceAllString(s, "-")
+}
+
+func (m *MutedLogger) Name() string {
+	return m.File.Name()
+}
+
+func (m *MutedLogger) Close() error {
+	return m.File.Close()
+}
+
+func (m *MutedLogger) Write(b []byte) (int, error) {
+	return m.File.Write(b)
 }

@@ -18,6 +18,10 @@ package color
 
 import (
 	"bytes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
+	"io"
+	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -90,20 +94,40 @@ func TestFprintlnChangeDefaultToUnknown(t *testing.T) {
 	compareText(t, "2 less chars!\n", b.String())
 }
 
-func TestFprintfOnlyWritesColorsToSetupWriter(t *testing.T) {
-	var b bytes.Buffer
-	var cb bytes.Buffer
+func TestFprintfDoesNotColorMutedLogger(t *testing.T) {
+	s := "This should not be blue"
+	b := make([]byte, len(s))
+	f, _ := ioutil.TempFile("", "")
+	ml := logfile.MutedLogger{File: f}
 
-	SetupColors(&cb, DefaultColorCode, true)
-	Blue.Fprintf(&b, "This should %s be %s", "not", "blue")
-	compareText(t, "This should not be blue", b.String())
+	defer func() {
+		os.Remove(ml.Name())
+		ml.Close()
+	}()
+
+	SetupColors(&ml, DefaultColorCode, true)
+	Blue.Fprintf(&ml, "This should %s be %s", "not", "blue")
+
+	f.Seek(0, io.SeekStart)
+	f.Read(b)
+	compareText(t, s, string(b))
 }
 
-func TestFprintlnOnlyWritesColorsToSetupWriter(t *testing.T) {
-	var b bytes.Buffer
-	var cb bytes.Buffer
+func TestFprintlnDoesNotColorMutedLogger(t *testing.T) {
+	s := "This should not be blue\n"
+	b := make([]byte, len(s))
+	f, _ := ioutil.TempFile("", "")
+	ml := logfile.MutedLogger{File: f}
 
-	SetupColors(&cb, DefaultColorCode, true)
-	Blue.Fprintln(&b, "This should", "not", "be", "blue")
-	compareText(t, "This should not be blue\n", b.String())
+	defer func() {
+		os.Remove(ml.Name())
+		ml.Close()
+	}()
+
+	SetupColors(&ml, DefaultColorCode, true)
+	Blue.Fprintln(&ml, "This should", "not", "be", "blue")
+
+	f.Seek(0, io.SeekStart)
+	f.Read(b)
+	compareText(t, s, string(b))
 }

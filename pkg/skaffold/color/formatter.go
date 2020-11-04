@@ -18,6 +18,7 @@ package color
 
 import (
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	"io"
 	"strings"
 
@@ -34,8 +35,6 @@ const DefaultColorCode = 34
 func init() {
 	colors.Disable(true)
 }
-
-var colorfulWriter io.Writer
 
 // SetupColors enables/disables coloured output.
 func SetupColors(out io.Writer, defaultColor int, forceColors bool) {
@@ -64,7 +63,6 @@ func SetupColors(out io.Writer, defaultColor int, forceColors bool) {
 		37: White,
 		0:  None,
 	}[defaultColor]
-	colorfulWriter = out
 }
 
 // Color can be used to format text so it can be printed to the terminal in color.
@@ -106,7 +104,7 @@ var (
 
 // Fprintln outputs the result to out, followed by a newline.
 func (c Color) Fprintln(out io.Writer, a ...interface{}) {
-	if c.color == nil || out != colorfulWriter {
+	if c.color == nil || isMuted(out) {
 		fmt.Fprintln(out, a...)
 		return
 	}
@@ -116,10 +114,19 @@ func (c Color) Fprintln(out io.Writer, a ...interface{}) {
 
 // Fprintf outputs the result to out.
 func (c Color) Fprintf(out io.Writer, format string, a ...interface{}) {
-	if c.color == nil || out != colorfulWriter {
+	if c.color == nil || isMuted(out) {
 		fmt.Fprintf(out, format, a...)
 		return
 	}
 
 	fmt.Fprint(out, c.color.Sprintf(format, a...))
+}
+
+func isMuted(out io.Writer) bool {
+	switch out.(type) {
+	case *logfile.MutedLogger:
+		return true
+	default:
+		return false
+	}
 }
