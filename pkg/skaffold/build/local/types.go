@@ -33,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Builder uses the host docker daemon to build and tag the image.
@@ -163,7 +164,9 @@ func newPerArtifactBuilder(b *Builder, a *latest.Artifact) (artifactBuilder, err
 		return jib.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.skipTests), nil
 
 	case a.CustomArtifact != nil:
-		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.retrieveExtraEnv()), nil
+		// required artifacts as environment variables
+		dependencies := util.EnvPtrMapToSlice(build.CreateBuildArgsFromArtifacts(a.Dependencies, b.artifactStore, true), "=")
+		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, append(b.retrieveExtraEnv(), dependencies...)), nil
 
 	case a.BuildpackArtifact != nil:
 		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.mode, b.artifactStore), nil
