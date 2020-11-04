@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -212,7 +213,7 @@ func TestKpt_Deploy(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		sanityCheck = func(dir string) error { return nil }
+		sanityCheck = func(dir string, buf io.Writer) error { return nil }
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			tmpDir := t.NewTempDir().Chdir()
@@ -1022,6 +1023,7 @@ func TestVersionCheck(t *testing.T) {
 		kustomizations map[string]string
 		shouldErr      bool
 		error          error
+		out            string
 	}{
 		{
 			description: "Both kpt and kustomize versions are good",
@@ -1087,33 +1089,45 @@ func TestVersionCheck(t *testing.T) {
 				AndRunOut("kustomize version", `{Version:v0.0.1 GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
 			kustomizations: map[string]string{"Kustomization": `resources:
 				- foo.yaml`},
-			shouldErr: true,
-			error: fmt.Errorf("you are using kustomize \"v0.0.1\"\n"+
-				"Please update your kustomize version to >= %v\n"+
-				"See kustomize installation: %v", kustomizeMinVersion, kustomizeDownloadLink),
+			shouldErr: false,
+			out: fmt.Sprintf("you are using kustomize version \"v0.0.1\"\n%v\n",
+				kustomizeFurtherGuidance),
 		},
 		{
-			description: "kustomize versions is unknown",
+			description: "kustomize version is unknown",
 			commands: testutil.
 				CmdRunOut("kpt version", `0.34.0`).
 				AndRunOut("kustomize version", `{Version:unknown GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
 			kustomizations: map[string]string{"Kustomization": `resources:
 				- foo.yaml`},
-			shouldErr: true,
-			error: fmt.Errorf("unknown kustomize version unknown\nPlease upgrade your "+
-				"local kustomize CLI to a version >= %v\nSee kustomize installation: %v",
-				kustomizeMinVersion, kustomizeDownloadLink),
+			shouldErr: false,
+			out: fmt.Sprintf("you are using kustomize version \"unknown\"\n%v\n",
+				kustomizeFurtherGuidance),
+		},
+		{
+			description: "kustomize version is non-official",
+			commands: testutil.
+				CmdRunOut("kpt version", `0.34.0`).
+				AndRunOut("kustomize version", `UNKNOWN`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+				- foo.yaml`},
+			shouldErr: false,
+			out: fmt.Sprintf("unknown kustomize version \"UNKNOWN\"\n"+
+				"Your kustomize may be not from the official release\n%v\n",
+				kustomizeFurtherGuidance),
 		},
 	}
 	for _, test := range tests {
+		var buf bytes.Buffer
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			tmpDir := t.NewTempDir().Chdir()
 			tmpDir.WriteFiles(test.kustomizations)
-			err := versionCheck("")
+			err := versionCheck("", io.Writer(&buf))
 			t.CheckError(test.shouldErr, err)
 		})
 		testutil.CheckError(t, test.shouldErr, test.error)
+		testutil.CheckDeepEqual(t, test.out, buf.String())
 	}
 }
 
