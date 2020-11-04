@@ -63,7 +63,7 @@ func (s stubBuildInitializer) PrintAnalysis(io.Writer) error {
 
 func (s stubBuildInitializer) BuildConfig() latest.BuildConfig {
 	return latest.BuildConfig{
-		Artifacts: build.Artifacts(s.pairs),
+		Artifacts: build.Artifacts(s.pairs, nil),
 	}
 }
 
