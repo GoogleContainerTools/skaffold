@@ -344,7 +344,7 @@ func baseImageArg(a *latest.JibArtifact, r ArtifactResolver, deps []*latest.Arti
 			// pull image from the registry (prefix `registry://` is optional)
 			return fmt.Sprintf("-Djib.from.image=%s", img), true
 		}
-		// retrieve image from the local docker daemon (prefix `docker://` is required)
+		// must use `docker://` prefix to retrieve image from the local docker daemon
 		return fmt.Sprintf("-Djib.from.image=docker://%s", img), true
 	}
 	return fmt.Sprintf("-Djib.from.image=%s", a.BaseImage), true
