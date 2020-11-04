@@ -39,11 +39,11 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker
 
 	switch {
 	case a.DockerArtifact != nil:
-		// Required artifacts cannot be resolved when `CreateBuildArgsFromArtifacts` runs prior to a completed build sequence (like `skaffold build` or the first iteration of `skaffold dev`).
+		// Required artifacts cannot be resolved when `ResolveDependencyImages` runs prior to a completed build sequence (like `skaffold build` or the first iteration of `skaffold dev`).
 		// However it only affects the behavior for Dockerfiles with ONBUILD instructions, and there's no functional change even for those scenarios.
 		// For single build scenarios like `build` and `run`, it is called for the cache hash calculations which are already handled in `artifactHasher`.
 		// For `dev` it will succeed on the first dev loop and list any additional dependencies found from the base artifact's ONBUILD instructions as a file added instead of modified (see `filemon.Events`)
-		deps := docker.CreateBuildArgsFromArtifacts(a.Dependencies, r, false)
+		deps := docker.ResolveDependencyImages(a.Dependencies, r, false)
 		args, evalErr := docker.EvalBuildArgs(cfg.Mode(), a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, deps)
 		if evalErr != nil {
 			return nil, fmt.Errorf("unable to evaluate build args: %w", evalErr)
@@ -51,7 +51,7 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker
 		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, args, cfg)
 
 	case a.KanikoArtifact != nil:
-		deps := docker.CreateBuildArgsFromArtifacts(a.Dependencies, r, false)
+		deps := docker.ResolveDependencyImages(a.Dependencies, r, false)
 		args, evalErr := docker.EvalBuildArgs(cfg.Mode(), a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, deps)
 		if evalErr != nil {
 			return nil, fmt.Errorf("unable to evaluate build args: %w", evalErr)

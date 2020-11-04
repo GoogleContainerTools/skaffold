@@ -239,7 +239,7 @@ func TestCreateBuildArgsFromArtifacts(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			args := CreateBuildArgsFromArtifacts(test.deps, test.r, false)
+			args := ResolveDependencyImages(test.deps, test.r, false)
 			t.CheckDeepEqual(test.args, args)
 		})
 	}

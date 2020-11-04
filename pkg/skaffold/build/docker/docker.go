@@ -42,7 +42,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact); err != nil {
 		return "", fmt.Errorf("pulling cache-from images: %w", err)
 	}
-	opts := docker.BuildOptions{Tag: tag, Mode: b.mode, ExtraBuildArgs: docker.CreateBuildArgsFromArtifacts(a.Dependencies, b.artifacts, true)}
+	opts := docker.BuildOptions{Tag: tag, Mode: b.mode, ExtraBuildArgs: docker.ResolveDependencyImages(a.Dependencies, b.artifacts, true)}
 
 	var imageID string
 

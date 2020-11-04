@@ -88,9 +88,9 @@ type ArtifactResolver interface {
 	GetImageTag(imageName string) (string, bool)
 }
 
-// CreateBuildArgsFromArtifacts creates docker build args for an artifact from its required artifacts slice.
+// ResolveDependencyImages creates a map of artifact aliases to their built image from a required artifacts slice.
 // If `missingIsFatal` is false then it is permissive of missing entries in the ArtifactResolver and returns nil for those entries.
-func CreateBuildArgsFromArtifacts(deps []*latest.ArtifactDependency, r ArtifactResolver, missingIsFatal bool) map[string]*string {
+func ResolveDependencyImages(deps []*latest.ArtifactDependency, r ArtifactResolver, missingIsFatal bool) map[string]*string {
 	if r == nil {
 		// `diagnose` is called without an artifact resolver. Return an empty map in this case.
 		return nil
