@@ -42,8 +42,8 @@ const MinimumJibGradleVersionForSync = "2.0.0"
 // GradleCommand stores Gradle executable and wrapper name
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
 
-func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, b.skipTests, b.cfg.GetInsecureRegistries())
+func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, deps []*latest.ArtifactDependency, tag string) (string, error) {
+	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries())
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -51,8 +51,8 @@ func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, wor
 	return b.localDocker.ImageID(ctx, tag)
 }
 
-func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateGradleBuildArgs("jib", tag, artifact, b.skipTests, b.cfg.GetInsecureRegistries())
+func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, deps []*latest.ArtifactDependency, tag string) (string, error) {
+	args := GenerateGradleBuildArgs("jib", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries())
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -97,14 +97,14 @@ func getSyncMapCommandGradle(ctx context.Context, workspace string, a *latest.Ji
 }
 
 // GenerateGradleBuildArgs generates the arguments to Gradle for building the project as an image.
-func GenerateGradleBuildArgs(task string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
+func GenerateGradleBuildArgs(task string, imageName string, a *latest.JibArtifact, skipTests, pushImages bool, deps []*latest.ArtifactDependency, r ArtifactResolver, insecureRegistries map[string]bool) []string {
 	args := gradleBuildArgsFunc(task, a, skipTests, true, MinimumJibGradleVersion)
 	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
 	}
-	if a.BaseImage != "" {
-		args = append(args, fmt.Sprintf("-Djib.from.image=%s", a.BaseImage))
+	if baseImg, found := baseImageArg(a, r, deps, pushImages); found {
+		args = append(args, baseImg)
 	}
 	args = append(args, "--image="+imageName)
 	return args
