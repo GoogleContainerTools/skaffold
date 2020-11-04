@@ -18,11 +18,12 @@ package color
 
 import (
 	"bytes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	"io"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 )
 
 func compareText(t *testing.T, expected, actual string) {

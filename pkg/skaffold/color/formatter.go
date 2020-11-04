@@ -18,13 +18,13 @@ package color
 
 import (
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	"io"
 	"strings"
 
 	colors "github.com/heroku/color"
 	"github.com/mattn/go-colorable"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
