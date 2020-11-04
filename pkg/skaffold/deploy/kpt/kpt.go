@@ -60,13 +60,6 @@ const (
 	kustomizeVersionRegexP = `{Version:(\S+) GitCommit:\S+ BuildDate:\S+ GoOs:\S+ GoArch:\S+}`
 )
 
-var (
-	kustomizeFurtherGuidance = fmt.Sprintf("Please make sure your local "+
-		"kustomize version >= the official version %v, otherwise some features may not be "+
-		"well supported. You can download the official version "+
-		"from %v", kustomizeMinVersion, kustomizeDownloadLink)
-)
-
 // Deployer deploys workflows with kpt CLI
 type Deployer struct {
 	*latest.KptDeploy
@@ -125,11 +118,17 @@ func versionCheck(dir string, stdout io.Writer) error {
 		match := re.FindStringSubmatch(versionInfo)
 		if len(match) != 2 {
 			color.Yellow.Fprintf(stdout, "unknown kustomize version %q\n"+
-				"Your kustomize may be not from the official release\n%v\n", string(out),
-				kustomizeFurtherGuidance)
+				"Your kustomize may be not from the official release\n"+
+				"Please make sure your local kustomize version >= the official version %v, "+
+				"otherwise some features may not be well supported. "+
+				"You can download the official version from %v\n", string(out),
+				kustomizeMinVersion, kustomizeDownloadLink)
 		} else if !semver.IsValid(match[1]) || semver.Compare(match[1], kustomizeMinVersion) < 0 {
-			color.Yellow.Fprintf(stdout, "you are using kustomize version %q\n%v\n",
-				match[1], kustomizeFurtherGuidance)
+			color.Yellow.Fprintf(stdout, "you are using kustomize version %q\n"+
+				"Please make sure your local kustomize version >= the official version %v, "+
+				"otherwise some features may not be well supported. "+
+				"You can download the official version from %v\n", match[1],
+				kustomizeMinVersion, kustomizeDownloadLink)
 		}
 	}
 	return nil
