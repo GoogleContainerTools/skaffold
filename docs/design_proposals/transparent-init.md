@@ -18,6 +18,10 @@ skaffold config file skaffold.yaml not found - check your current working direct
 ```
 when trying to run skaffold.
 
+## Scope
+
+This functionality is planned to work with any command that requires parsing a skaffold config.
+
 ## Design
 
 With transparent init, a user's first run of `skaffold dev` could look something like this:
@@ -33,7 +37,9 @@ project-dir
 Running skaffold dev:
 ```
 ❯ skaffold dev
-Skaffold config file not found. Generating temporary config for use this run.
+Skaffold config file not found. Generating config file 'skaffold.yaml'.
+Remove this file and run 'skaffold init' if you'd like to interactively create a config.
+
 Listing files to watch...
  - skaffold-example
 Generating tags...
@@ -70,15 +76,15 @@ Under the hood view:
 
 **Should generation of the config all happen in memory? By refactoring `DoInit()` we could probably generate the config and start using it without having to write/read the `skaffold.yaml` from disk**
 
-*Unresolved*
+I think this would be preferred. We could eliminate an unecessary read from disk by doing so.
 
 **Should we prompt the user to ask if they'd like to save this config for future use?**
 
-*Unresolved*
+I believe that it would be fine to write to disk automatically. The logging will make it clear that this is being done and after the skaffold session is finished they can decide to remove the file or not. 
 
 **Should the config being used be printed to the terminal? Tradeoff of information vs clutter**
 
-*Unresolved*
+I would say that we don't need to. If the user needs to view the config used, they can view the skaffold config that is written to disk.
 
 ## Implementation plan
 
