@@ -300,10 +300,6 @@ func TestProcessCliArtifacts(t *testing.T) {
 					Builder:   buildpacks.ArtifactConfig{File: "/path/to/package.json"},
 					ImageName: "image4",
 				},
-				{
-					Builder:   docker.ArtifactConfig{File: "/path/to/Dockerfile2"},
-					ImageName: "image5",
-				},
 			},
 			expectedWorkspaces: []string{
 				"path/to/docker/workspace",
