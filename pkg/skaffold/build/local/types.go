@@ -165,7 +165,7 @@ func newPerArtifactBuilder(b *Builder, a *latest.Artifact) (artifactBuilder, err
 
 	case a.CustomArtifact != nil:
 		// required artifacts as environment variables
-		dependencies := util.EnvPtrMapToSlice(build.CreateBuildArgsFromArtifacts(a.Dependencies, b.artifactStore, true), "=")
+		dependencies := util.EnvPtrMapToSlice(docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true), "=")
 		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, append(b.retrieveExtraEnv(), dependencies...)), nil
 
 	case a.BuildpackArtifact != nil:
