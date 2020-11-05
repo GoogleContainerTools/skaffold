@@ -58,7 +58,11 @@ func (r *namespaceCollector) Visit(o map[string]interface{}, k string, v interfa
 		return true
 	}
 	if nsValue, present := metadata["namespace"]; present {
-		if ns := strings.TrimSpace(nsValue.(string)); ns != "" {
+		nsString, isOk := nsValue.(string)
+		if !isOk || nsString == "" {
+			return true
+		}
+		if ns := strings.TrimSpace(nsString); ns != "" {
 			r.namespaces[ns] = true
 		}
 	}
