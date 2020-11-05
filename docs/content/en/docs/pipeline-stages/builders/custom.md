@@ -39,6 +39,12 @@ The [Go templates](https://golang.org/pkg/text/template/) syntax can be used to 
 command. For example: `buildCommand: ./build.sh --flag={{ .SOME_FLAG }}` will replace `{{ .SOME_FLAG }}` with the value of
 the `SOME_FLAG` environment variable.
 
+**Artifact Dependency**
+
+You can define dependency on other artifacts using the `requires` keyword. Skaffold will provide each required artifact's built image as an environment variable keyed on the `alias` field that can be referenced directly in the build script.
+
+{{% readfile file="samples/builders/artifact-dependencies/custom-local.yaml" %}}
+
 #### Custom Build Script Locally
 
 In addition to these [environment variables](#contract-between-skaffold-and-custom-build-script)
