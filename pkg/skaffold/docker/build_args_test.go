@@ -210,9 +210,46 @@ FROM bar1`,
 			tmpDir.Write("./Dockerfile", test.dockerfile)
 			workspace := tmpDir.Path(".")
 
-			actual, err := EvalBuildArgs(test.mode, workspace, artifact, test.extra)
+			actual, err := EvalBuildArgs(test.mode, workspace, artifact.DockerfilePath, artifact.BuildArgs, test.extra)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
+}
+
+func TestCreateBuildArgsFromArtifacts(t *testing.T) {
+	tests := []struct {
+		description string
+		r           ArtifactResolver
+		deps        []*latest.ArtifactDependency
+		args        map[string]*string
+	}{
+		{
+			description: "can resolve artifacts",
+			r:           mockArtifactResolver{m: map[string]string{"img1": "tag1", "img2": "tag2", "img3": "tag3", "img4": "tag4"}},
+			deps:        []*latest.ArtifactDependency{{ImageName: "img3", Alias: "alias3"}, {ImageName: "img4", Alias: "alias4"}},
+			args:        map[string]*string{"alias3": util.StringPtr("tag3"), "alias4": util.StringPtr("tag4")},
+		},
+		{
+			description: "cannot resolve artifacts",
+			r:           mockArtifactResolver{m: make(map[string]string)},
+			args:        map[string]*string{"alias3": nil, "alias4": nil},
+			deps:        []*latest.ArtifactDependency{{ImageName: "img3", Alias: "alias3"}, {ImageName: "img4", Alias: "alias4"}},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			args := ResolveDependencyImages(test.deps, test.r, false)
+			t.CheckDeepEqual(test.args, args)
+		})
+	}
+}
+
+type mockArtifactResolver struct {
+	m map[string]string
+}
+
+func (r mockArtifactResolver) GetImageTag(imageName string) (string, bool) {
+	val, found := r.m[imageName]
+	return val, found
 }

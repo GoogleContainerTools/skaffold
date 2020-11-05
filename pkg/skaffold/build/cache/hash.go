@@ -163,9 +163,9 @@ func hashBuildArgs(artifact *latest.Artifact, mode config.RunMode) ([]string, er
 	var err error
 	switch {
 	case artifact.DockerArtifact != nil:
-		args, err = docker.EvalBuildArgs(mode, artifact.Workspace, artifact.DockerArtifact, nil)
+		args, err = docker.EvalBuildArgs(mode, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.BuildArgs, nil)
 	case artifact.KanikoArtifact != nil:
-		args, err = util.EvaluateEnvTemplateMap(artifact.KanikoArtifact.BuildArgs)
+		args, err = docker.EvalBuildArgs(mode, artifact.Workspace, artifact.KanikoArtifact.DockerfilePath, artifact.KanikoArtifact.BuildArgs, nil)
 	case artifact.BuildpackArtifact != nil:
 		env, err = buildpacks.GetEnv(artifact, mode)
 	case artifact.CustomArtifact != nil && artifact.CustomArtifact.Dependencies.Dockerfile != nil:

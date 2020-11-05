@@ -557,6 +557,12 @@ func TestHashBuildArgs(t *testing.T) {
 				a.Workspace = tmpDir.Path(".")
 				a.ArtifactType.DockerArtifact.DockerfilePath = Dockerfile
 			}
+			if test.artifactType.KanikoArtifact != nil {
+				tmpDir := t.NewTempDir()
+				tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
+				a.Workspace = tmpDir.Path(".")
+				a.ArtifactType.KanikoArtifact.DockerfilePath = Dockerfile
+			}
 			actual, err := hashBuildArgs(a, test.mode)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)

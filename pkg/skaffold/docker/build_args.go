@@ -20,13 +20,16 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 var (
-	EvalBuildArgs = evalBuildArgs // To override during testing
+	// EvalBuildArgs evaluates the build args provided in the artifact definition and adds additional runtime defaults and extra arguments.
+	EvalBuildArgs = evalBuildArgs
 
 	// default build args for skaffold non-debug mode
 	nonDebugModeArgs = map[string]string{}
@@ -37,7 +40,8 @@ var (
 	}
 )
 
-func evalBuildArgs(mode config.RunMode, workspace string, a *latest.DockerArtifact, extra map[string]*string) (map[string]*string, error) {
+// evalBuildArgs evaluates the build args provided in the artifact definition and adds other default and extra arguments. Use `EvalBuildArgs` instead of using this directly.
+func evalBuildArgs(mode config.RunMode, workspace string, dockerfilePath string, args map[string]*string, extra map[string]*string) (map[string]*string, error) {
 	var defaults map[string]string
 	switch mode {
 	case config.RunModes.Debug:
@@ -56,7 +60,7 @@ func evalBuildArgs(mode config.RunMode, workspace string, a *latest.DockerArtifa
 		result[k] = v
 	}
 
-	absDockerfilePath, err := NormalizeDockerfilePath(workspace, a.DockerfilePath)
+	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
 		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
@@ -69,7 +73,7 @@ func evalBuildArgs(mode config.RunMode, workspace string, a *latest.DockerArtifa
 	if err != nil {
 		return nil, fmt.Errorf("removing unused default args: %w", err)
 	}
-	for k, v := range a.BuildArgs {
+	for k, v := range args {
 		result[k] = v
 	}
 	result, err = util.EvaluateEnvTemplateMap(result)
@@ -77,4 +81,31 @@ func evalBuildArgs(mode config.RunMode, workspace string, a *latest.DockerArtifa
 		return nil, fmt.Errorf("unable to expand build args: %w", err)
 	}
 	return result, nil
+}
+
+// ArtifactResolver provides an interface to resolve built artifact tags by image name.
+type ArtifactResolver interface {
+	GetImageTag(imageName string) (string, bool)
+}
+
+// ResolveDependencyImages creates a map of artifact aliases to their built image from a required artifacts slice.
+// If `missingIsFatal` is false then it is permissive of missing entries in the ArtifactResolver and returns nil for those entries.
+func ResolveDependencyImages(deps []*latest.ArtifactDependency, r ArtifactResolver, missingIsFatal bool) map[string]*string {
+	if r == nil {
+		// `diagnose` is called without an artifact resolver. Return an empty map in this case.
+		return nil
+	}
+	m := make(map[string]*string)
+	for _, d := range deps {
+		t, found := r.GetImageTag(d.ImageName)
+		switch {
+		case found:
+			m[d.Alias] = &t
+		case missingIsFatal:
+			logrus.Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+		default:
+			m[d.Alias] = nil
+		}
+	}
+	return m
 }

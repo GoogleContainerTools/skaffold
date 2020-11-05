@@ -26,7 +26,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Build builds a list of artifacts with Kaniko.
@@ -60,12 +62,19 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+	// required artifacts as build-args
+	requiredImages := docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true)
 	switch {
 	case a.KanikoArtifact != nil:
+		buildArgs, err := docker.EvalBuildArgs(b.mode, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, requiredImages)
+		if err != nil {
+			return "", fmt.Errorf("unable to evaluate build args: %w", err)
+		}
+		a.KanikoArtifact.BuildArgs = buildArgs
 		return b.buildWithKaniko(ctx, out, a.Workspace, a.KanikoArtifact, tag)
 
 	case a.CustomArtifact != nil:
-		return custom.NewArtifactBuilder(nil, b.cfg, true, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
+		return custom.NewArtifactBuilder(nil, b.cfg, true, append(b.retrieveExtraEnv(), util.EnvPtrMapToSlice(requiredImages, "=")...)).Build(ctx, out, a, tag)
 
 	default:
 		return "", fmt.Errorf("unexpected type %q for in-cluster artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
