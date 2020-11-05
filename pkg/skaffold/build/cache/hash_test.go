@@ -294,7 +294,7 @@ func TestBuildArgs(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
 			tmpDir := t.NewTempDir()
-			tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo\nCMD bar")
+			tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
 			artifact := &latest.Artifact{
 				Workspace: tmpDir.Path("."),
 				ArtifactType: latest.ArtifactType{
@@ -553,13 +553,13 @@ func TestHashBuildArgs(t *testing.T) {
 			}
 			if test.artifactType.DockerArtifact != nil {
 				tmpDir := t.NewTempDir()
-				tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo\nCMD bar")
+				tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
 				a.Workspace = tmpDir.Path(".")
 				a.ArtifactType.DockerArtifact.DockerfilePath = Dockerfile
 			}
 			if test.artifactType.KanikoArtifact != nil {
 				tmpDir := t.NewTempDir()
-				tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo\nCMD bar")
+				tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
 				a.Workspace = tmpDir.Path(".")
 				a.ArtifactType.KanikoArtifact.DockerfilePath = Dockerfile
 			}
