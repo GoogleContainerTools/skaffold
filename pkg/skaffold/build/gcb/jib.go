@@ -41,7 +41,7 @@ func (b *Builder) jibBuildSpec(artifact *latest.Artifact, tag string) (cloudbuil
 			Steps: []*cloudbuild.BuildStep{{
 				Name:       b.MavenImage,
 				Entrypoint: "sh",
-				Args:       fixHome("mvn", jib.GenerateMavenBuildArgs("build", tag, artifact.JibArtifact, b.skipTests, b.cfg.GetInsecureRegistries())),
+				Args:       fixHome("mvn", jib.GenerateMavenBuildArgs(nil, "build", tag, artifact.JibArtifact, b.skipTests, b.cfg.GetInsecureRegistries())),
 			}},
 		}, nil
 	case jib.JibGradle:
@@ -49,7 +49,7 @@ func (b *Builder) jibBuildSpec(artifact *latest.Artifact, tag string) (cloudbuil
 			Steps: []*cloudbuild.BuildStep{{
 				Name:       b.GradleImage,
 				Entrypoint: "sh",
-				Args:       fixHome("gradle", jib.GenerateGradleBuildArgs("jib", tag, artifact.JibArtifact, b.skipTests, b.cfg.GetInsecureRegistries())),
+				Args:       fixHome("gradle", jib.GenerateGradleBuildArgs(nil, "jib", tag, artifact.JibArtifact, b.skipTests, b.cfg.GetInsecureRegistries())),
 			}},
 		}, nil
 	default:

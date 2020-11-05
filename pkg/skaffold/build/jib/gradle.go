@@ -24,6 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -43,7 +44,7 @@ const MinimumJibGradleVersionForSync = "2.0.0"
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
 
 func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, b.skipTests, b.cfg.GetInsecureRegistries())
+	args := GenerateGradleBuildArgs(out, "jibDockerBuild", tag, artifact, b.skipTests, b.cfg.GetInsecureRegistries())
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -52,7 +53,7 @@ func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, wor
 }
 
 func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateGradleBuildArgs("jib", tag, artifact, b.skipTests, b.cfg.GetInsecureRegistries())
+	args := GenerateGradleBuildArgs(out, "jib", tag, artifact, b.skipTests, b.cfg.GetInsecureRegistries())
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -97,8 +98,8 @@ func getSyncMapCommandGradle(ctx context.Context, workspace string, a *latest.Ji
 }
 
 // GenerateGradleBuildArgs generates the arguments to Gradle for building the project as an image.
-func GenerateGradleBuildArgs(task string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
-	args := gradleBuildArgsFunc(task, a, skipTests, true, MinimumJibGradleVersion)
+func GenerateGradleBuildArgs(out io.Writer, task string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
+	args := gradleBuildArgsFunc(task, a, skipTests, color.IsColorable(out), MinimumJibGradleVersion)
 	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
