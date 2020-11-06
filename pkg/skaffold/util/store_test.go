@@ -17,6 +17,8 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -25,7 +27,7 @@ import (
 )
 
 func TestSyncStore(t *testing.T) {
-	testutil.Run(t, "test util.once", func(t *testutil.T) {
+	testutil.Run(t, "test store", func(t *testutil.T) {
 		// This test runs a counter function twice for each key from [0, 5) and tests that the function only executes once for each key when called inside `once.Do` method.
 		counts := make([]int32, 5)
 		f := func(i int) int {
@@ -35,11 +37,12 @@ func TestSyncStore(t *testing.T) {
 		var wg sync.WaitGroup
 		wg.Add(10)
 
-		s := NewSyncStore()
+		s := NewSyncStore("test")
 		for i := 0; i < 5; i++ {
 			for j := 0; j < 2; j++ {
 				go func(i int) {
-					val := s.Exec(i, func() interface{} {
+					k := strconv.Itoa(i)
+					val := s.Exec(k, func() interface{} {
 						return f(i)
 					})
 					t.CheckDeepEqual(i, val)
@@ -52,6 +55,21 @@ func TestSyncStore(t *testing.T) {
 			if counts[i] > 1 {
 				t.Fatalf("hash func called more than once for image%d", i)
 			}
+		}
+	})
+
+	testutil.Run(t, "test panic handled correctly", func(t *testutil.T) {
+		s := NewSyncStore("test-panic")
+		val := s.Exec("panic", func() interface{} {
+			panic(fmt.Errorf("message"))
+			return nil
+		})
+		// make sure val is of type StoreError
+		switch tv := val.(type) {
+		case StoreError:
+			t.CheckDeepEqual("internal error retrieving cached results for key panic: message", tv.Error())
+		default:
+			t.Fatalf("expected to retrieve result of type StoreError but found %T", tv)
 		}
 	})
 }

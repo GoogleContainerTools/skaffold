@@ -66,20 +66,10 @@ func newArtifactHasher(artifacts build.ArtifactGraph, lister DependencyLister, m
 }
 
 func (h *artifactHasherImpl) hash(ctx context.Context, a *latest.Artifact) (string, error) {
-	val := h.syncStore.Exec(a.ImageName,
-		func() interface{} {
-			hash, err := singleArtifactHash(ctx, h.lister, a, h.mode)
-			if err != nil {
-				return err
-			}
-			return hash
-		})
-
-	if err, ok := val.(error); ok {
+	hash, err := h.safeHash(ctx, a)
+	if err != nil {
 		return "", err
 	}
-	hash := val.(string)
-
 	hashes := []string{hash}
 	for _, dep := range sortedDependencies(a, h.artifacts) {
 		depHash, err := h.hash(ctx, dep)
@@ -93,6 +83,25 @@ func (h *artifactHasherImpl) hash(ctx context.Context, a *latest.Artifact) (stri
 		return hashes[0], nil
 	}
 	return encode(hashes)
+}
+
+func (h *artifactHasherImpl) safeHash(ctx context.Context, a *latest.Artifact) (string, error) {
+	val := h.syncStore.Exec(a.ImageName,
+		func() interface{} {
+			hash, err := singleArtifactHash(ctx, h.lister, a, h.mode)
+			if err != nil {
+				return err
+			}
+			return hash
+		})
+	switch t := val.(type) {
+	case error:
+		return "", t
+	case string:
+		return t, nil
+	default:
+		return "", fmt.Errorf("internal error when retrieving cache result of type %T", t)
+	}
 }
 
 // singleArtifactHash calculates the hash for a single artifact, and ignores its required artifacts.
