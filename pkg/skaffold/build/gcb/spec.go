@@ -56,16 +56,16 @@ func (b *Builder) buildSpec(artifact *latest.Artifact, tag, bucket, object strin
 func (b *Builder) buildSpecForArtifact(a *latest.Artifact, tag string) (cloudbuild.Build, error) {
 	switch {
 	case a.KanikoArtifact != nil:
-		return b.kanikoBuildSpec(a.KanikoArtifact, tag)
+		return b.kanikoBuildSpec(a, tag)
 
 	case a.DockerArtifact != nil:
-		return b.dockerBuildSpec(a.DockerArtifact, tag)
+		return b.dockerBuildSpec(a, tag)
 
 	case a.JibArtifact != nil:
 		return b.jibBuildSpec(a, tag)
 
 	case a.BuildpackArtifact != nil:
-		return b.buildpackBuildSpec(a.BuildpackArtifact, tag)
+		return b.buildpackBuildSpec(a.BuildpackArtifact, tag, a.Dependencies)
 
 	default:
 		return cloudbuild.Build{}, fmt.Errorf("unexpected type %q for gcb artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))

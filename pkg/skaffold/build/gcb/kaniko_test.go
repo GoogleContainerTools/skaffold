@@ -21,7 +21,10 @@ import (
 
 	"google.golang.org/api/cloudbuild/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -370,11 +373,32 @@ func TestKanikoBuildSpec(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := &latest.Artifact{
+				ImageName: "img1",
 				ArtifactType: latest.ArtifactType{
 					KanikoArtifact: test.artifact,
 				},
+				Dependencies: []*latest.ArtifactDependency{
+					{ImageName: "img2", Alias: "IMG2"},
+					{ImageName: "img3", Alias: "IMG3"},
+				},
 			}
+			store := mockArtifactStore{
+				"img2": "img2:tag",
+				"img3": "img3:tag",
+			}
+			builder.ArtifactStore(store)
+			imageArgs := []string{kaniko.BuildArgsFlag, "IMG2=img2:tag", kaniko.BuildArgsFlag, "IMG3=img3:tag"}
 
+			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, extra map[string]*string) (map[string]*string, error) {
+				m := make(map[string]*string)
+				for k, v := range args {
+					m[k] = v
+				}
+				for k, v := range extra {
+					m[k] = v
+				}
+				return m, nil
+			})
 			desc, err := builder.buildSpec(artifact, "gcr.io/nginx", "bucket", "object")
 
 			expected := cloudbuild.Build{
@@ -387,7 +411,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 				},
 				Steps: []*cloudbuild.BuildStep{{
 					Name: "gcr.io/kaniko-project/executor",
-					Args: append(defaultExpectedArgs, test.expectedArgs...),
+					Args: append(append(defaultExpectedArgs, imageArgs...), test.expectedArgs...),
 				}},
 				Options: &cloudbuild.BuildOptions{
 					DiskSizeGb:  100,
@@ -400,4 +424,12 @@ func TestKanikoBuildSpec(t *testing.T) {
 			t.CheckDeepEqual(expected, desc)
 		})
 	}
+}
+
+type mockArtifactStore map[string]string
+
+func (m mockArtifactStore) GetImageTag(imageName string) (string, bool) { return m[imageName], true }
+func (m mockArtifactStore) Record(a *latest.Artifact, tag string)       { m[a.ImageName] = tag }
+func (m mockArtifactStore) GetArtifacts([]*latest.Artifact) ([]build.Artifact, error) {
+	return nil, nil
 }
