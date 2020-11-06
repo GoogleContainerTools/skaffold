@@ -66,12 +66,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 	requiredImages := docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true)
 	switch {
 	case a.KanikoArtifact != nil:
-		buildArgs, err := docker.EvalBuildArgs(b.mode, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, requiredImages)
-		if err != nil {
-			return "", fmt.Errorf("unable to evaluate build args: %w", err)
-		}
-		a.KanikoArtifact.BuildArgs = buildArgs
-		return b.buildWithKaniko(ctx, out, a.Workspace, a.KanikoArtifact, tag)
+		return b.buildWithKaniko(ctx, out, a.Workspace, a.KanikoArtifact, tag, requiredImages)
 
 	case a.CustomArtifact != nil:
 		return custom.NewArtifactBuilder(nil, b.cfg, true, append(b.retrieveExtraEnv(), util.EnvPtrMapToSlice(requiredImages, "=")...)).Build(ctx, out, a, tag)
