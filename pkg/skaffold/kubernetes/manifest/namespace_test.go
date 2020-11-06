@@ -128,6 +128,34 @@ spec:
 `)},
 			expected: []string{},
 		}, {
+			description: "single Pod manifest with nil namespace",
+			manifests: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace:
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+			expected: []string{},
+		}, {
+			description: "single Pod manifest with empty namespace",
+			manifests: ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: ""
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)},
+			expected: []string{},
+		}, {
 			description: "empty manifest",
 			manifests:   ManifestList{[]byte(``)},
 			expected:    []string{},
