@@ -47,11 +47,10 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 
 	var imageID string
 
-	// TODO: Update DOC
-	if (b.local.UseBuildkit != nil && *b.local.UseBuildkit) || (b.local.UseDockerCLI != nil && *b.local.UseDockerCLI) {
+	if b.useCLI || b.useBuildKit {
 		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, opts)
 	} else {
-		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag, mode)
+		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, opts)
 	}
 
 	if err != nil {
@@ -87,9 +86,9 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
-	cmd.Env = append(util.OSEnviron(), b.retrieveExtraEnv()...)
+	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
 
-	if *b.local.UseBuildkit {
+	if b.useBuildKit {
 		// fail if localDaemon has no buildkit support
 		if !b.localDocker.HasBuildkitSupport(ctx) {
 			return "", errors.New("docker does not support buildkit")

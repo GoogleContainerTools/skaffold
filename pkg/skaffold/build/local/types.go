@@ -155,7 +155,7 @@ type artifactBuilder interface {
 func newPerArtifactBuilder(b *Builder, a *latest.Artifact) (artifactBuilder, error) {
 	switch {
 	case a.DockerArtifact != nil:
-		return dockerbuilder.NewArtifactBuilder(b.localDocker, b.local.UseDockerCLI, b.local.UseBuildkit, b.pushImages, b.prune, b.cfg.Mode(), b.cfg.GetInsecureRegistries(), b.artifactStore), nil
+		return dockerbuilder.NewArtifactBuilder(b.localDocker, *b.local.UseDockerCLI, *b.local.UseBuildkit, b.pushImages, b.prune, b.cfg.Mode(), b.cfg.GetInsecureRegistries(), b.artifactStore), nil
 
 	case a.BazelArtifact != nil:
 		return bazel.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages), nil
