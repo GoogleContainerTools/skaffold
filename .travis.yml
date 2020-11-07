@@ -69,39 +69,39 @@ jobs:
     - name: "kind integration partition 0"
       <<: *integration_test
       script:
-        - env IT_PARTITION=0 make integration-in-kind
+        - env IT_PARTITION=0 DOCKER_BUILDKIT=0 make integration-in-kind
     - name: "kind integration partition 1"
       <<: *integration_test
       script:
-        - env IT_PARTITION=1 make integration-in-kind
+        - env IT_PARTITION=1 DOCKER_BUILDKIT=0 make integration-in-kind
     - name: "kind integration partition 2"
       <<: *integration_test
       script:
-        - env IT_PARTITION=2 make integration-in-kind
+        - env IT_PARTITION=2 DOCKER_BUILDKIT=0 make integration-in-kind
     - name: "kind integration partition 3"
       <<: *integration_test
       script:
-        - env IT_PARTITION=3 make integration-in-kind
+        - env IT_PARTITION=3 DOCKER_BUILDKIT=0 make integration-in-kind
     - name: "k3d integration partition 0"
       <<: *integration_test
       <<: *upgrade_docker
       script:
-        - env IT_PARTITION=0 make integration-in-k3d
+        - env IT_PARTITION=0 DOCKER_BUILDKIT=1 make integration-in-k3d
     - name: "k3d integration partition 1"
       <<: *integration_test
       <<: *upgrade_docker
       script:
-        - env IT_PARTITION=1 make integration-in-k3d
+        - env IT_PARTITION=1 DOCKER_BUILDKIT=1 make integration-in-k3d
     - name: "k3d integration partition 2"
       <<: *integration_test
       <<: *upgrade_docker
       script:
-        - env IT_PARTITION=2 make integration-in-k3d
+        - env IT_PARTITION=2 DOCKER_BUILDKIT=1 make integration-in-k3d
     - name: "k3d integration partition 3"
       <<: *integration_test
       <<: *upgrade_docker
       script:
-        - env IT_PARTITION=3 make integration-in-k3d
+        - env IT_PARTITION=3 DOCKER_BUILDKIT=1 make integration-in-k3d
     - os: linux
       name: "diag/Linux unit"
       script:

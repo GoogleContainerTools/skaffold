@@ -202,6 +202,7 @@ integration-in-kind: skaffold-builder
 		-e KUBECONFIG=/tmp/kind-config \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
+		-e DOCKER_BUILDKIT=$(DOCKER_BUILDKIT) \
 		--network kind \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -eu -c ' \
@@ -226,6 +227,7 @@ integration-in-k3d: skaffold-builder
 		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
+		-e DOCKER_BUILDKIT=$(DOCKER_BUILDKIT) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -c ' \
 			k3d cluster list | grep -q k3s-default || TERM=dumb k3d cluster create --image=$(K3D_NODE); \
