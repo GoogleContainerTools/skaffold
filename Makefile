@@ -207,8 +207,8 @@ integration-in-kind: skaffold-builder
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -eu -c ' \
 			if ! kind get clusters | grep -q kind; then \
-			  trap "kind delete cluster" 0 1 2 15; \
-			  TERM=dumb kind create cluster --image=$(KIND_NODE); \
+				trap "kind delete cluster" 0 1 2 15; \
+				TERM=dumb kind create cluster --image=$(KIND_NODE); \
 			fi; \
 			kind get kubeconfig --internal > /tmp/kind-config; \
 			make integration \
