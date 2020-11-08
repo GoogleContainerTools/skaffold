@@ -14,19 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2beta8
+package v2beta9
 
 import (
 	"testing"
 
 	yaml "gopkg.in/yaml.v2"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta9"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v2beta8
+	yaml := `apiVersion: skaffold/v2beta9
 kind: Config
 build:
   artifacts:
@@ -47,7 +47,7 @@ build:
     buildpacks:
       builder: gcr.io/buildpacks/builder:v1
     sync:
-      auto: {}
+      auto: true
   googleCloudBuild:
     projectId: test-project
 test:
@@ -97,7 +97,7 @@ profiles:
         - k8s-*
       kustomize: {}
 `
-	expected := `apiVersion: skaffold/v2beta9
+	expected := `apiVersion: skaffold/v2beta10
 kind: Config
 build:
   artifacts:
