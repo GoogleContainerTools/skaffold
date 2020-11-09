@@ -227,6 +227,80 @@ func TestSetAndUnsetConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "set kind disable load",
+			key:         "kind-disable-load",
+			value:       "true",
+			kubecontext: "this_is_a_context",
+			expectedSetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
+					{
+						Kubecontext:     "this_is_a_context",
+						KindDisableLoad: util.BoolPtr(true),
+					},
+				},
+			},
+			expectedUnsetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
+					{
+						Kubecontext: "this_is_a_context",
+					},
+				},
+			},
+		},
+		{
+			description: "set global kind disable load",
+			key:         "kind-disable-load",
+			value:       "true",
+			global:      true,
+			expectedSetCfg: &config.GlobalConfig{
+				Global: &config.ContextConfig{
+					KindDisableLoad: util.BoolPtr(true),
+				},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+			expectedUnsetCfg: &config.GlobalConfig{
+				Global:         &config.ContextConfig{},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+		},
+		{
+			description: "set k3d disable load",
+			key:         "k3d-disable-load",
+			value:       "true",
+			kubecontext: "this_is_a_context",
+			expectedSetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
+					{
+						Kubecontext:    "this_is_a_context",
+						K3dDisableLoad: util.BoolPtr(true),
+					},
+				},
+			},
+			expectedUnsetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
+					{
+						Kubecontext: "this_is_a_context",
+					},
+				},
+			},
+		},
+		{
+			description: "set global k3d disable load",
+			key:         "k3d-disable-load",
+			value:       "true",
+			global:      true,
+			expectedSetCfg: &config.GlobalConfig{
+				Global: &config.ContextConfig{
+					K3dDisableLoad: util.BoolPtr(true),
+				},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+			expectedUnsetCfg: &config.GlobalConfig{
+				Global:         &config.ContextConfig{},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

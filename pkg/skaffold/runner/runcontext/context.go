@@ -37,10 +37,11 @@ type RunContext struct {
 	Opts config.SkaffoldOptions
 	Cfg  latest.Pipeline
 
-	KubeContext        string
-	Namespaces         []string
-	WorkingDir         string
-	InsecureRegistries map[string]bool
+	KubeContext          string
+	Namespaces           []string
+	WorkingDir           string
+	InsecureRegistries   map[string]bool
+	ImageLoadingRequired bool
 }
 
 func (rc *RunContext) GetKubeContext() string                 { return rc.KubeContext }
@@ -114,13 +115,19 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		insecureRegistries[r] = true
 	}
 
+	imageLoadingRequired, err := config.IsImageLoadingRequired(opts.GlobalConfig)
+	if err != nil {
+		logrus.Warnf("error reading image loading settings from global config: images will be not loaded")
+	}
+
 	return &RunContext{
-		Opts:               opts,
-		Cfg:                cfg,
-		WorkingDir:         cwd,
-		KubeContext:        kubeContext,
-		Namespaces:         namespaces,
-		InsecureRegistries: insecureRegistries,
+		Opts:                 opts,
+		Cfg:                  cfg,
+		WorkingDir:           cwd,
+		KubeContext:          kubeContext,
+		Namespaces:           namespaces,
+		InsecureRegistries:   insecureRegistries,
+		ImageLoadingRequired: imageLoadingRequired,
 	}, nil
 }
 

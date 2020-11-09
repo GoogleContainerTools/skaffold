@@ -300,25 +300,64 @@ func (fakeClient) MinikubeExec(...string) (*exec.Cmd, error) { return nil, nil }
 
 func TestIsImageLoadingRequired(t *testing.T) {
 	tests := []struct {
-		context                      string
-		expectedImageLoadingRequired bool
+		cfg      *ContextConfig
+		expected bool
 	}{
-		{context: "kind-other", expectedImageLoadingRequired: true},
-		{context: "kind@kind", expectedImageLoadingRequired: true},
-		{context: "k3d-k3s-default", expectedImageLoadingRequired: true},
-		{context: "docker-for-desktop", expectedImageLoadingRequired: false},
-		{context: "minikube", expectedImageLoadingRequired: false},
-		{context: "docker-desktop", expectedImageLoadingRequired: false},
-		{context: "anything-else", expectedImageLoadingRequired: false},
-		{context: "kind@blah", expectedImageLoadingRequired: false},
-		{context: "other-kind", expectedImageLoadingRequired: false},
-		{context: "not-k3d", expectedImageLoadingRequired: false},
+		{
+			cfg:      &ContextConfig{Kubecontext: "kind-other"},
+			expected: true,
+		},
+		{
+
+			cfg:      &ContextConfig{Kubecontext: "kind-other", KindDisableLoad: util.BoolPtr(true)},
+			expected: false,
+		},
+		{
+			cfg:      &ContextConfig{Kubecontext: "kind@kind"},
+			expected: true,
+		},
+		{
+			cfg:      &ContextConfig{Kubecontext: "k3d-k3s-default"},
+			expected: true,
+		},
+		{
+			cfg:      &ContextConfig{Kubecontext: "k3d-k3s-default", K3dDisableLoad: util.BoolPtr(true)},
+			expected: false,
+		},
+		{
+			cfg:      &ContextConfig{Kubecontext: "docker-for-desktop"},
+			expected: false,
+		},
+		{
+			cfg:      &ContextConfig{Kubecontext: "minikube"},
+			expected: false,
+		},
+		{
+			cfg:      &ContextConfig{Kubecontext: "docker-desktop"},
+			expected: false,
+		},
+		{
+			cfg:      &ContextConfig{Kubecontext: "anything-else"},
+			expected: false},
+		{
+			cfg:      &ContextConfig{Kubecontext: "kind@blah"},
+			expected: false},
+		{
+			cfg:      &ContextConfig{Kubecontext: "other-kind"},
+			expected: false,
+		},
+		{
+			cfg:      &ContextConfig{Kubecontext: "not-k3d"},
+			expected: false,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
-			imageLoadingRequired := IsImageLoadingRequired(test.context)
+			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
 
-			t.CheckDeepEqual(test.expectedImageLoadingRequired, imageLoadingRequired)
+			imageLoadingRequired, _ := IsImageLoadingRequired("dummyname")
+
+			t.CheckDeepEqual(test.expected, imageLoadingRequired)
 		})
 	}
 }

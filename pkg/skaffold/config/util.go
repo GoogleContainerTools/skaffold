@@ -214,6 +214,21 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 	return constants.DefaultDebugHelpersRegistry, nil
 }
 
+// IsImageLoadingRequired checks if the cluster requires loading images into it
+func IsImageLoadingRequired(configFile string) (bool, error) {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		return false, err
+	}
+
+	kubeContext := cfg.Kubecontext
+	kindDisableLoad := cfg.KindDisableLoad != nil && *cfg.KindDisableLoad
+	k3dDisableLoad := cfg.K3dDisableLoad != nil && *cfg.K3dDisableLoad
+
+	return (IsKindCluster(kubeContext) && !kindDisableLoad) ||
+		(IsK3dCluster(kubeContext) && !k3dDisableLoad), nil
+}
+
 func isDefaultLocal(kubeContext string, detectMinikubeCluster bool) bool {
 	if kubeContext == constants.DefaultMinikubeContext ||
 		kubeContext == constants.DefaultDockerForDesktopContext ||
@@ -226,11 +241,6 @@ func isDefaultLocal(kubeContext string, detectMinikubeCluster bool) bool {
 		return cluster.GetClient().IsMinikube(kubeContext)
 	}
 	return false
-}
-
-// IsImageLoadingRequired checks if the cluster requires loading images into it
-func IsImageLoadingRequired(kubeContext string) bool {
-	return IsKindCluster(kubeContext) || IsK3dCluster(kubeContext)
 }
 
 // IsKindCluster checks that the given `kubeContext` is talking to `kind`.
