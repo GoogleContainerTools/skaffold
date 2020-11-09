@@ -303,53 +303,18 @@ func TestIsImageLoadingRequired(t *testing.T) {
 		cfg      *ContextConfig
 		expected bool
 	}{
-		{
-			cfg:      &ContextConfig{Kubecontext: "kind-other"},
-			expected: true,
-		},
-		{
-
-			cfg:      &ContextConfig{Kubecontext: "kind-other", KindDisableLoad: util.BoolPtr(true)},
-			expected: false,
-		},
-		{
-			cfg:      &ContextConfig{Kubecontext: "kind@kind"},
-			expected: true,
-		},
-		{
-			cfg:      &ContextConfig{Kubecontext: "k3d-k3s-default"},
-			expected: true,
-		},
-		{
-			cfg:      &ContextConfig{Kubecontext: "k3d-k3s-default", K3dDisableLoad: util.BoolPtr(true)},
-			expected: false,
-		},
-		{
-			cfg:      &ContextConfig{Kubecontext: "docker-for-desktop"},
-			expected: false,
-		},
-		{
-			cfg:      &ContextConfig{Kubecontext: "minikube"},
-			expected: false,
-		},
-		{
-			cfg:      &ContextConfig{Kubecontext: "docker-desktop"},
-			expected: false,
-		},
-		{
-			cfg:      &ContextConfig{Kubecontext: "anything-else"},
-			expected: false},
-		{
-			cfg:      &ContextConfig{Kubecontext: "kind@blah"},
-			expected: false},
-		{
-			cfg:      &ContextConfig{Kubecontext: "other-kind"},
-			expected: false,
-		},
-		{
-			cfg:      &ContextConfig{Kubecontext: "not-k3d"},
-			expected: false,
-		},
+		{cfg: &ContextConfig{Kubecontext: "kind-other"}, expected: true},
+		{cfg: &ContextConfig{Kubecontext: "kind-other", KindDisableLoad: util.BoolPtr(true)}, expected: false},
+		{cfg: &ContextConfig{Kubecontext: "kind@kind"}, expected: true},
+		{cfg: &ContextConfig{Kubecontext: "k3d-k3s-default"}, expected: true},
+		{cfg: &ContextConfig{Kubecontext: "k3d-k3s-default", K3dDisableLoad: util.BoolPtr(true)}, expected: false},
+		{cfg: &ContextConfig{Kubecontext: "docker-for-desktop"}, expected: false},
+		{cfg: &ContextConfig{Kubecontext: "minikube"}, expected: false},
+		{cfg: &ContextConfig{Kubecontext: "docker-desktop"}, expected: false},
+		{cfg: &ContextConfig{Kubecontext: "anything-else"}, expected: false},
+		{cfg: &ContextConfig{Kubecontext: "kind@blah"}, expected: false},
+		{cfg: &ContextConfig{Kubecontext: "other-kind"}, expected: false},
+		{cfg: &ContextConfig{Kubecontext: "not-k3d"}, expected: false},
 	}
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
