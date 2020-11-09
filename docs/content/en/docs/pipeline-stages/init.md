@@ -164,7 +164,7 @@ For multiple artifacts, use `--artifact` multiple times.
 ```bash
 microservices$skaffold init \
   -a '{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}' \
-  -a '{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}'
+  -a '{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web","context":"path/to/context"}'
 ```
 
 will produce an `skaffold.yaml` config like this
@@ -178,7 +178,7 @@ build:
   - image: gcr.io/k8s-skaffold/leeroy-app
     context: leeroy-app
   - image: gcr.io/k8s-skaffold/leeroy-web
-    context: leeroy-web
+    context: path/to/context
 deploy:
   kubectl:
     manifests:
