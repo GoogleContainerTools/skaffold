@@ -75,7 +75,7 @@ type Color struct {
 }
 
 type colorableWriter struct {
-	writer io.Writer
+	io.Writer
 }
 
 var (
@@ -141,8 +141,4 @@ func IsColorable(out io.Writer) bool {
 	default:
 		return false
 	}
-}
-
-func (cw colorableWriter) Write(b []byte) (int, error) {
-	return cw.writer.Write(b)
 }
