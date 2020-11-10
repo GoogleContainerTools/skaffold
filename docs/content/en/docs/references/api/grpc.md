@@ -812,6 +812,7 @@ For Cancelled Error code, use range 800 to 850.
 | DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
 | DEVINIT_REGISTER_DEPLOY_DEPS | 703 | Failed to configure watcher for deploy dependencies in dev loop |
 | DEVINIT_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
+| DEVINIT_UNSUPPORTED_V1_MANIFEST | 705 | Failed to configure watcher for build dependencies for a base image with v1 manifest. |
 | STATUSCHECK_USER_CANCELLED | 800 | User cancelled the skaffold dev run |
 | STATUSCHECK_DEADLINE_EXCEEDED | 801 | Deadline for status check exceeded |
 | BUILD_CANCELLED | 802 | Build Cancelled |
@@ -860,6 +861,7 @@ Enum for Suggestion codes
 | CHECK_HOST_CONNECTION | 408 | Cluster Connectivity error |
 | START_MINIKUBE | 501 | Minikube is stopped: use `minikube start` |
 | UNPAUSE_MINIKUBE | 502 | Minikube is paused: use `minikube unpause` |
+| RUN_DOCKER_PULL | 551 | Run Docker pull for the image with v1 manifest and try again. |
 | OPEN_ISSUE | 900 | Open an issue so this situation can be diagnosed |
 
 

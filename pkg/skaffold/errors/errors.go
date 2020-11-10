@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
-// These are phases in a DevLoop
 const (
+	// These are phases in a Skaffolld
 	Init        = Phase("Init")
 	Build       = Phase("Build")
 	Deploy      = Phase("Deploy")
@@ -88,6 +88,17 @@ func ShowAIError(err error) error {
 	return err
 }
 
+func IsOldImageManifestProblem(err error) (string, bool) {
+	if err != nil && oldImageManifest.regexp.MatchString(err.Error()) {
+		if s := oldImageManifest.suggestion(skaffoldOpts); s != nil {
+			return fmt.Sprintf("%s. %s", oldImageManifest.description(err),
+				concatSuggestions(oldImageManifest.suggestion(skaffoldOpts))), true
+		}
+		return "", true
+	}
+	return "", false
+}
+
 func getErrorCodeFromError(phase Phase, err error) (proto.StatusCode, []*proto.Suggestion) {
 	if problems, ok := allErrors[phase]; ok {
 		for _, v := range problems {
@@ -137,7 +148,7 @@ var allErrors = map[Phase][]problem{
 		errCode:    proto.StatusCode_SYNC_UNKNOWN,
 		suggestion: reportIssueSuggestion,
 	}},
-	DevInit: {{
+	DevInit: {oldImageManifest, {
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_DEVINIT_UNKNOWN,
 		suggestion: reportIssueSuggestion,
