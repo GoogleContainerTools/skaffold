@@ -22,7 +22,7 @@ when trying to run skaffold.
 
 This proposal is meant to design the flow of a user running a command without a skaffold config file already on disk. It does not cover the actual functionality of `skaffold init --force`, and doesn't address the further changes that will be made to that functionality.
 
-This functionality is planned to initially work with the `skaffold dev` and `skaffold debug` commands, as we want to cater to the commands that are meant to provide the best first time UX.
+This functionality is planned to initially work with the `run`, `dev`, and `debug` commands, as we want to cater to the commands that are meant to provide the best first time UX.
 
 ## Design
 
@@ -39,8 +39,16 @@ project-dir
 Running skaffold dev:
 ```
 ❯ skaffold dev
-Skaffold config file not found. Generating config file 'skaffold.yaml'.
-Remove this file and run 'skaffold init' if you'd like to interactively create a config.
+This seems to be your first time running skaffold in this project. If you choose to continue, skaffold will:
+- Create a skaffold config file for you
+- Build your application
+- Deploy your application to your current kubernetes context
+
+Please double check the above steps. Deploying to production kubernetes clusters can be destructive.
+
+Would you like to continue?
+> yes
+  no
 
 Listing files to watch...
  - skaffold-example
