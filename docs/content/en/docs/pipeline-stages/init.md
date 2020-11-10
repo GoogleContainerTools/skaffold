@@ -162,7 +162,7 @@ To generate a skaffold `build` config, use the `--artifact` flag per artifact.
 For multiple artifacts, use `--artifact` multiple times.
 
 ```bash
-microservices$skaffold init \
+skaffold init \
   -a '{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}' \
   -a '{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web","context":"path/to/context"}'
 ```

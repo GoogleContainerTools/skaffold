@@ -73,9 +73,11 @@ func (c *cliBuildInitializer) processCliArtifacts() error {
 func processCliArtifacts(cliArtifacts []string) ([]BuilderImagePair, error) {
 	var pairs []BuilderImagePair
 	for _, artifact := range cliArtifacts {
-		// Parses JSON in the form of: {"builder":"Name of Builder","payload":{...},"image":"image.name","context":"artifact.context"}.
-		// The builder field is parsed first to determine the builder type, and the payload is parsed
-		// afterwards once the type is determined.
+		// Parses artifacts in 1 of 2 forms:
+		// 1. JSON in the form of: {"builder":"Name of Builder","payload":{...},"image":"image.name","context":"artifact.context"}.
+		//    The builder field is parsed first to determine the builder type, and the payload is parsed
+		//    afterwards once the type is determined.
+		// 2. Key-value pair: `path/to/Dockerfile=imageName` (deprecated, historical, Docker-only)
 		a := struct {
 			Name      string `json:"builder"`
 			Image     string `json:"image"`
