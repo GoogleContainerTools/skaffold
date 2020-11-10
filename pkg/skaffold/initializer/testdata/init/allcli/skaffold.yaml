@@ -1,10 +1,12 @@
-apiVersion: skaffold/v2beta9
+apiVersion: skaffold/v2beta10
 kind: Config
 metadata:
   name: allcli
 build:
   artifacts:
     - image: passed-in-artifact
+      docker:
+        dockerfile: Dockerfile
 deploy:
   kubectl:
     manifests:

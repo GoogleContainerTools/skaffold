@@ -102,9 +102,6 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	logger := r.createLogger(out, artifacts)
 	defer logger.Stop()
 
-	forwarderManager := r.createForwarder(out)
-	defer forwarderManager.Stop()
-
 	// Logs should be retrieved up to just before the deploy
 	logger.SetSince(time.Now())
 
@@ -112,6 +109,9 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
 		return err
 	}
+
+	forwarderManager := r.createForwarder(out)
+	defer forwarderManager.Stop()
 
 	if err := forwarderManager.Start(ctx); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)

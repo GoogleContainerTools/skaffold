@@ -512,8 +512,6 @@ enum StatusCode {
     // Deploy cancelled due to user cancellation or one or more deployers failed.
     DEPLOY_CANCELLED = 803;
 
-
-
     // Skaffold Initialization Phase session errors
 
     // Skaffold was unable to create the configured tagger
@@ -535,6 +533,10 @@ enum StatusCode {
     // Skaffold encountered an error when evaluating artifact dependencies
     INIT_CREATE_ARTIFACT_DEP_ERROR = 909;
 
+    // Deploy errors
+
+    // Unable to connect to cluster
+    DEPLOY_CLUSTER_CONNECTION_ERR = 1001;
 }
 
 // Enum for Suggestion codes
@@ -560,6 +562,12 @@ enum SuggestionCode {
     // Check if docker is running
     CHECK_DOCKER_RUNNING = 106;
 
+    // Deploy error suggestion codes
+
+    // Check cluster connection
+    CHECK_CLUSTER_CONNECTION = 201;
+    // Check minikube status
+    CHECK_MINIKUBE_STATUS = 202;
 
     // Container Run time error
 

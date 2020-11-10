@@ -180,7 +180,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	if err := l.CheckCompatible(a); err != nil {
 		return "", err
 	}
-	buildArgs, err := EvalBuildArgs(opts.Mode, workspace, a, opts.ExtraBuildArgs)
+	buildArgs, err := EvalBuildArgs(opts.Mode, workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
@@ -511,37 +511,6 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 	}
 
 	return args, nil
-}
-
-// EvaluateBuildArgs evaluates templated build args.
-// An additional envMap can optionally be specified.
-// If multiple additional envMaps are specified, all but the first one will be ignored
-func EvaluateBuildArgs(args map[string]*string, envMap ...map[string]string) (map[string]*string, error) {
-	if args == nil {
-		return nil, nil
-	}
-
-	var env map[string]string
-	if len(envMap) > 0 {
-		env = envMap[0]
-	}
-
-	evaluated := map[string]*string{}
-	for k, v := range args {
-		if v == nil {
-			evaluated[k] = nil
-			continue
-		}
-
-		value, err := util.ExpandEnvTemplate(*v, env)
-		if err != nil {
-			return nil, fmt.Errorf("unable to get value for build arg %q: %w", k, err)
-		}
-
-		evaluated[k] = &value
-	}
-
-	return evaluated, nil
 }
 
 func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error) {

@@ -35,6 +35,7 @@ type Builder struct {
 
 	cfg           Config
 	kubectlcli    *kubectl.CLI
+	mode          config.RunMode
 	timeout       time.Duration
 	artifactStore build.ArtifactStore
 }
@@ -46,6 +47,7 @@ type Config interface {
 	Pipeline() latest.Pipeline
 	GetKubeContext() string
 	Muted() config.Muted
+	Mode() config.RunMode
 }
 
 // NewBuilder creates a new Builder that builds artifacts on cluster.
@@ -59,6 +61,7 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		ClusterDetails: cfg.Pipeline().Build.Cluster,
 		cfg:            cfg,
 		kubectlcli:     kubectl.NewCLI(cfg, ""),
+		mode:           cfg.Mode(),
 		timeout:        timeout,
 	}, nil
 }

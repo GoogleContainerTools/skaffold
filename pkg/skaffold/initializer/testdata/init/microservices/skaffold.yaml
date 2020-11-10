@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta9
+apiVersion: skaffold/v2beta10
 kind: Config
 metadata:
   name: microservices
@@ -6,8 +6,12 @@ build:
   artifacts:
   - image: gcr.io/k8s-skaffold/leeroy-app
     context: leeroy-app
+    docker:
+      dockerfile: Dockerfile
   - image: gcr.io/k8s-skaffold/leeroy-web
     context: leeroy-web
+    docker:
+      dockerfile: Dockerfile
 deploy:
   kubectl:
     manifests:

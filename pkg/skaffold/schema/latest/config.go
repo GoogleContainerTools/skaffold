@@ -22,8 +22,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v2beta9"
+// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+const Version string = "skaffold/v2beta10"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -1034,11 +1034,11 @@ type KanikoArtifact struct {
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
 	Image string `yaml:"image,omitempty"`
 
-	// DigestFile to to specify a file in the container. This file will receive the digest of a built image.
+	// DigestFile to specify a file in the container. This file will receive the digest of a built image.
 	// This can be used to automatically track the exact image built by kaniko.
 	DigestFile string `yaml:"digestFile,omitempty"`
 
-	// ImageNameWithDigestFile to a file to save the image name with digest of the built image to.
+	// ImageNameWithDigestFile specify a file to save the image name with digest of the built image to.
 	ImageNameWithDigestFile string `yaml:"imageNameWithDigestFile,omitempty"`
 
 	// LogFormat <text|color|json> to set the log format.
@@ -1075,7 +1075,7 @@ type KanikoArtifact struct {
 	// use a remote cache which will speed up builds.
 	Cache *KanikoCache `yaml:"cache,omitempty"`
 
-	// RegistryCertificate is to to provide a certificate for TLS communication with a given registry.
+	// RegistryCertificate is to provide a certificate for TLS communication with a given registry.
 	// my.registry.url: /path/to/the/certificate.cert is the expected format.
 	RegistryCertificate map[string]*string `yaml:"registryCertificate,omitempty"`
 

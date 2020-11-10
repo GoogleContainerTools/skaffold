@@ -93,9 +93,13 @@ func TestArtifactType(t *testing.T) {
 		expectedType latest.ArtifactType
 	}{
 		{
-			description:  "default filename",
-			config:       ArtifactConfig{File: filepath.Join("path", "to", "Dockerfile")},
-			expectedType: latest.ArtifactType{},
+			description: "default filename",
+			config:      ArtifactConfig{File: filepath.Join("path", "to", "Dockerfile")},
+			expectedType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					DockerfilePath: "Dockerfile",
+				},
+			},
 		},
 		{
 			description: "non-default filename",

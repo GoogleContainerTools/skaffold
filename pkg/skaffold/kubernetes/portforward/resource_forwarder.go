@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -45,6 +46,24 @@ var (
 
 // NewResourceForwarder returns a struct that tracks and port-forwards services as they are created and modified
 func NewResourceForwarder(entryManager *EntryManager, namespaces []string, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
+	if len(namespaces) == 1 {
+		for _, pf := range userDefinedResources {
+			if pf.Namespace == "" {
+				pf.Namespace = namespaces[0]
+			}
+		}
+	} else {
+		var validResources []*latest.PortForwardResource
+		for _, pf := range userDefinedResources {
+			if pf.Namespace != "" {
+				validResources = append(validResources, pf)
+			} else {
+				logrus.Warnf("Skipping the port forwarding resource %s/%s because namespace is not specified", pf.Type, pf.Name)
+			}
+		}
+		userDefinedResources = validResources
+	}
+
 	return &ResourceForwarder{
 		entryManager:         entryManager,
 		namespaces:           namespaces,
