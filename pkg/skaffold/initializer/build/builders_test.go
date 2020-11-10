@@ -194,12 +194,12 @@ func TestAutoSelectBuilders(t *testing.T) {
 			images: []string{"image1", "image2", "image3"},
 			expectedPairs: []BuilderImagePair{
 				{
-					jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle", Image: "image1"},
-					"image1",
+					Builder:   jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle", Image: "image1"},
+					ImageName: "image1",
 				},
 				{
-					jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "image2"},
-					"image2",
+					Builder:   jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "image2"},
+					ImageName: "image2",
 				},
 			},
 			expectedBuildersLeft:     []InitBuilder{docker.ArtifactConfig{File: "Dockerfile"}},
@@ -287,10 +287,12 @@ func TestProcessCliArtifacts(t *testing.T) {
 				{
 					Builder:   docker.ArtifactConfig{File: "/path/to/Dockerfile"},
 					ImageName: "image1",
+					Workspace: "path/to/docker/workspace",
 				},
 				{
 					Builder:   jib.ArtifactConfig{BuilderName: "Jib Gradle Plugin", File: "/path/to/build.gradle"},
 					ImageName: "image2",
+					Workspace: "path/to/jib/workspace",
 				},
 				{
 					Builder:   jib.ArtifactConfig{BuilderName: "Jib Maven Plugin", File: "/path/to/pom.xml", Project: "project-name", Image: "testImage"},
@@ -301,21 +303,14 @@ func TestProcessCliArtifacts(t *testing.T) {
 					ImageName: "image4",
 				},
 			},
-			expectedWorkspaces: []string{
-				"path/to/docker/workspace",
-				"path/to/jib/workspace",
-				"",
-				"",
-			},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pairs, workspaces, err := processCliArtifacts(test.artifacts)
+			pairs, err := processCliArtifacts(test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, pairs)
-			t.CheckDeepEqual(test.expectedWorkspaces, workspaces)
 		})
 	}
 }
