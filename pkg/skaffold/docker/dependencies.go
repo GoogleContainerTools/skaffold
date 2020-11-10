@@ -61,7 +61,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 
 	switch t := deps.(type) {
 	case error:
-		return nil, err
+		return nil, t
 	case []string:
 		return t, nil
 	default:

@@ -63,9 +63,7 @@ type fromTo struct {
 var (
 	// RetrieveImage is overridden for unit testing
 	RetrieveImage = retrieveImage
-	unsupportedMediaTypeError   = errors.New("unsupported MediaType error")
 )
-
 
 func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, cfg Config) ([]fromTo, error) {
 	f, err := os.Open(absDockerfilePath)

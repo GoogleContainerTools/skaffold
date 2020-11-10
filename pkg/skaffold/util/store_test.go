@@ -62,7 +62,6 @@ func TestSyncStore(t *testing.T) {
 		s := NewSyncStore("test-panic")
 		val := s.Exec("panic", func() interface{} {
 			panic(fmt.Errorf("message"))
-			return nil
 		})
 		// make sure val is of type StoreError
 		switch tv := val.(type) {

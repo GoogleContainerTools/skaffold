@@ -45,13 +45,12 @@ func (o *SyncStore) Exec(key string, f func() interface{}) interface{} {
 				err = retrieveError(key, rErr)
 			}
 		}()
-		if v, ok := o.results.Load(key); !ok {
-			v := f()
+		v, ok := o.results.Load(key)
+		if !ok {
+			v = f()
 			o.results.Store(key, v)
-			return v, nil
-		} else {
-			return v, nil
 		}
+		return v, nil
 	})
 	if err != nil {
 		return err
