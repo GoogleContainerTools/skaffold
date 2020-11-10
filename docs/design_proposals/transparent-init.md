@@ -22,7 +22,7 @@ when trying to run skaffold.
 
 This proposal is meant to design the flow of a user running a command without a skaffold config file already on disk. It does not cover the actual functionality of `skaffold init --force`, and doesn't address the further changes that will be made to that functionality.
 
-Additionally, this functionality is planned to work with any command that requires parsing a skaffold config.
+This functionality is planned to initially work with the `skaffold dev` and `skaffold debug` commands, as we want to cater to the commands that are meant to provide the best first time UX.
 
 ## Design
 
