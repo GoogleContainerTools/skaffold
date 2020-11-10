@@ -79,12 +79,12 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return nil, err
 	}
 
-	if !r.runCtx.SkipTests() {
+	if r.runCtx.SkipTests() {
+		logrus.Warnf("Skip tests flag (skip-tests) is set to %t. Tests won't run.", (r.runCtx.SkipTests()))
+	} else {
 		if err = r.tester.Test(ctx, out, bRes); err != nil {
 			return nil, err
 		}
-	} else {
-		logrus.Warnf("Skip tests flag (skip-tests) is set to %t. Tests won't run.", (r.runCtx.SkipTests()))
 	}
 
 	// Update which images are logged.
