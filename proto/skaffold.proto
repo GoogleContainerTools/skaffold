@@ -500,6 +500,8 @@ enum StatusCode {
     DEVINIT_REGISTER_DEPLOY_DEPS = 703;
     // Failed to configure watcher for Skaffold configuration file.
     DEVINIT_REGISTER_CONFIG_DEP = 704;
+    // Failed to configure watcher for build dependencies for a base image with v1 manifest.
+    DEVINIT_UNSUPPORTED_V1_MANIFEST = 705;
 
     // Timeout or User Cancellation Errors
 
@@ -604,10 +606,14 @@ enum SuggestionCode {
 
     // Minikube is stopped: use `minikube start`
     START_MINIKUBE = 501;
-
     // Minikube is paused: use `minikube unpause`
     UNPAUSE_MINIKUBE = 502;
 
+
+    // Dev Phase error suggestions
+
+    // Run Docker pull for the image with v1 manifest and try again.
+    RUN_DOCKER_PULL = 551;
 
     // Open an issue so this situation can be diagnosed
     OPEN_ISSUE = 900;
