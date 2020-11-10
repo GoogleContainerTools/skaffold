@@ -80,7 +80,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	}
 
 	if r.runCtx.SkipTests() {
-		logrus.Warnf("Skip tests flag (skip-tests) is set to %t. Tests won't run.", (r.runCtx.SkipTests()))
+		logrus.Warnln("Skip tests flag (skip-tests) is set to true. Tests won't run.")
 	} else {
 		if err = r.tester.Test(ctx, out, bRes); err != nil {
 			return nil, err
