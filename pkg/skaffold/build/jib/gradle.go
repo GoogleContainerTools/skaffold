@@ -99,7 +99,7 @@ func getSyncMapCommandGradle(ctx context.Context, workspace string, a *latest.Ji
 
 // GenerateGradleBuildArgs generates the arguments to Gradle for building the project as an image.
 func GenerateGradleBuildArgs(out io.Writer, task string, imageName string, a *latest.JibArtifact, skipTests, pushImages bool, deps []*latest.ArtifactDependency, r ArtifactResolver, insecureRegistries map[string]bool) []string {
-  args := gradleBuildArgsFunc(task, a, skipTests, color.IsColorable(out), MinimumJibGradleVersion)
+	args := gradleBuildArgsFunc(task, a, skipTests, color.IsColorable(out), MinimumJibGradleVersion)
 	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
