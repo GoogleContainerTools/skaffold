@@ -90,9 +90,9 @@ I would say that we don't need to. Printing the config would add a large clutter
 
 ## Implementation plan
 
-If we decide to have the config is written to disk and kept in memory, we may want to split this into a couple PRs. Maybe something like this:
+If we decide to have the config written to disk and kept in memory, we may want to split this into a couple PRs. Maybe something like this:
 1. Refactor `DoInit()` so that it is broken into parts that we can use later
-2. User the new parts to implement the automatic generation of the config
+2. Use the new parts to implement the automatic generation of the config
 
 If we decide upon the approach in which the `skaffold.yaml` is written to/read from disk, this could be done in 1 PR, as a refactor wouldn't be necessary.
 
