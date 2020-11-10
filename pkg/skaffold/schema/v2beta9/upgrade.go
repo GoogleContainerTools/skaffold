@@ -27,7 +27,6 @@ import (
 // 1. No additions:
 // 2. No removals
 // 3. Updates:
-//    - sync.auto becomes boolean
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
