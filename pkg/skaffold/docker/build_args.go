@@ -28,8 +28,13 @@ import (
 )
 
 var (
-	// EvalBuildArgs evaluates the build args provided in the artifact definition and adds additional runtime defaults and extra arguments.
-	EvalBuildArgs = evalBuildArgs
+	// EvalBuildArgsWithEnv evaluates the build args provided in the artifact definition and adds additional runtime defaults and extra arguments, based on OS and custom environment variables
+	EvalBuildArgsWithEnv = evalBuildArgs
+
+	// EvalBuildArgs evaluates the build args provided in the artifact definition and adds additional runtime defaults and extra arguments, based on OS environment variables
+	EvalBuildArgs = func(mode config.RunMode, workspace string, dockerfilePath string, args map[string]*string, extra map[string]*string) (map[string]*string, error) {
+		return evalBuildArgs(mode, workspace, dockerfilePath, args, extra, nil)
+	}
 
 	// default build args for skaffold non-debug mode
 	nonDebugModeArgs = map[string]string{}
@@ -40,8 +45,9 @@ var (
 	}
 )
 
-// evalBuildArgs evaluates the build args provided in the artifact definition and adds other default and extra arguments. Use `EvalBuildArgs` instead of using this directly.
-func evalBuildArgs(mode config.RunMode, workspace string, dockerfilePath string, args map[string]*string, extra map[string]*string) (map[string]*string, error) {
+// evalBuildArgs evaluates the build args provided in the artifact definition and adds other default and extra arguments, based on OS and custom environment variables.
+// Use `EvalBuildArgs` or `EvalBuildArgsWithEnv` instead of using this directly.
+func evalBuildArgs(mode config.RunMode, workspace string, dockerfilePath string, args map[string]*string, extra map[string]*string, env map[string]string) (map[string]*string, error) {
 	var defaults map[string]string
 	switch mode {
 	case config.RunModes.Debug:
@@ -76,7 +82,7 @@ func evalBuildArgs(mode config.RunMode, workspace string, dockerfilePath string,
 	for k, v := range args {
 		result[k] = v
 	}
-	result, err = util.EvaluateEnvTemplateMap(result)
+	result, err = util.EvaluateEnvTemplateMapWithEnv(result, env)
 	if err != nil {
 		return nil, fmt.Errorf("unable to expand build args: %w", err)
 	}

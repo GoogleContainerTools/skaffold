@@ -26,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
@@ -240,11 +239,6 @@ func kanikoArgs(artifact *latest.KanikoArtifact, tag string, insecureRegistries 
 	}
 
 	// Create pod spec
-	buildArgs, err := docker.EvaluateBuildArgs(artifact.BuildArgs, envMapFromVars(artifact.Env))
-	if err != nil {
-		return nil, fmt.Errorf("unable to evaluate environment variables in build args: %w", err)
-	}
-	artifact.BuildArgs = buildArgs
 	args, err := kaniko.Args(artifact, tag, fmt.Sprintf("dir://%s", kaniko.DefaultEmptyDirMountPath))
 	if err != nil {
 		return nil, fmt.Errorf("unable build kaniko args: %w", err)

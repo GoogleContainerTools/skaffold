@@ -37,7 +37,7 @@ import (
 
 const initContainer = "kaniko-init-container"
 
-func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifact *latest.KanikoArtifact, tag string) (string, error) {
+func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifact *latest.KanikoArtifact, tag string, requiredImages map[string]*string) (string, error) {
 	generatedEnvs, err := generateEnvFromImage(tag)
 	if err != nil {
 		return "", fmt.Errorf("error processing generated env variables from image uri: %w", err)
@@ -47,6 +47,12 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 		return "", fmt.Errorf("unable to evaluate env variables: %w", err)
 	}
 	artifact.Env = env
+
+	buildArgs, err := docker.EvalBuildArgsWithEnv(b.cfg.Mode(), workspace, artifact.DockerfilePath, artifact.BuildArgs, requiredImages, envMapFromVars(artifact.Env))
+	if err != nil {
+		return "", fmt.Errorf("unable to evaluate build args: %w", err)
+	}
+	artifact.BuildArgs = buildArgs
 
 	client, err := kubernetesclient.Client()
 	if err != nil {
