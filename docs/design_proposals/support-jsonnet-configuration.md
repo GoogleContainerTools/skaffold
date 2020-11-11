@@ -3,7 +3,8 @@
 * Author(s): Sören Bohn (@S-Bohn)
 <!-- * Design Shepherd: -->
 * Date: 5 October 2020
-<!-- * Status: [Reviewed/Cancelled/Under implementation/Complete] -->
+* Status: Shelved Temporarily
+* Reason: While reviewing the DD, the skaffold team saw few issues e.g. `skaffold fix`. Team acknowledges this is a good feature to have. @S-Bohn and skaffold team could probably pick this up after skaffold modules work is in.
 
 ## Background
 
