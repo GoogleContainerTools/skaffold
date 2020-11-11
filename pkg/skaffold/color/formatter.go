@@ -35,7 +35,7 @@ func init() {
 	colors.Disable(true)
 }
 
-// SetupColors enables/disables coloured output.
+// SetupColors conditionally wraps the input `Writer` with a color enabled `Writer`.
 func SetupColors(out io.Writer, defaultColor int, forceColors bool) io.Writer {
 	_, isTerm := util.IsTerminal(out)
 	useColors := isTerm || forceColors
