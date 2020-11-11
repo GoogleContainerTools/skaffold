@@ -25,3 +25,8 @@
 .skaffold-font {
     font-family: 'Exo 2', Arial, Helvetica, sans-serif;
 }
+
+.td-search-input{
+    font-family: FontAwesome, "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+        Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+}
