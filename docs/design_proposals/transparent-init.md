@@ -10,7 +10,7 @@
 This proposal is brought about by an older issue, [#1273](https://github.com/GoogleContainerTools/skaffold/issues/1273)
 
 With the recent focus on skaffold UX, we've decided to see how we can improve the onboarding experience when using skaffold.
-One way we'd like to do this is by allowing the user to simply install skaffold and run any of the skaffold commands in their project, without having to first run `skaffold init` and go through the interactive portion of creating a config for their project.
+One way we'd like to do this is by allowing the user to simply install skaffold and run skaffold commands like `run`, `dev`, or `debug` in their project, without having to first run `skaffold init` and go through the interactive portion of creating a config for their project.
 To do this, we'd like to automatically create a config upon invocation of skaffold commands, so that the user doesn't have to see something like this
 ```
 ❯ skaffold dev
@@ -41,8 +41,8 @@ Running skaffold dev:
 ❯ skaffold dev
 This seems to be your first time running skaffold in this project. If you choose to continue, skaffold will:
 - Create a skaffold config file for you
-- Build your application
-- Deploy your application to your current kubernetes context
+- Build your application using docker
+- Deploy your application to your current kubernetes context using kubectl
 
 Please double check the above steps. Deploying to production kubernetes clusters can be destructive.
 
@@ -69,8 +69,9 @@ There are two approaches to implementation that I've considered:
 Under the hood view:
 - `skaffold dev` is run
 - skaffold searches for a `skaffold.yaml` file in the directory, finds nothing
-- skaffold creates a new config, writes it to disk, and keeps in memory
-- `skaffold dev` continues like normal
+- `skaffold init` is run to generate a config
+- user is prompted as shown above
+- if user selects "yes", `skaffold dev` continues like normal
 
 **Creating a temporary `skaffold.yaml` by running `skaffold init --force`**
 
