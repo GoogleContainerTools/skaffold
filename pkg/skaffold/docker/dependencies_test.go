@@ -698,7 +698,7 @@ func TestGetDependenciesCached(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&RetrieveImage, test.retrieveImgMock)
 			t.Override(&util.OSEnviron, func() []string { return []string{} })
-			t.Override(&dependencyCache, util.NewSyncStore(test.description))
+			t.Override(&dependencyCache, util.NewSyncStore())
 
 			tmpDir := t.NewTempDir().Touch("server.go", "random.go")
 			tmpDir.Write("Dockerfile", copyServerGo)

@@ -26,7 +26,6 @@ import (
 // SyncStore exports a single method `Exec` to ensure single execution of a function
 // and share the result between all callers of the function.
 type SyncStore struct {
-	prefix  string
 	sf      singleflight.Group
 	results sync.Map
 }
@@ -35,8 +34,7 @@ type SyncStore struct {
 // If it's called multiple times for the same key only the first call will execute and store the result of f.
 // All other calls will be blocked until the running instance of f returns and all of them receive the same result.
 func (o *SyncStore) Exec(key string, f func() interface{}) interface{} {
-	fullKey := o.prefix + key
-	val, err := o.sf.Do(fullKey, func() (_ interface{}, err error) {
+	val, err := o.sf.Do(key, func() (_ interface{}, err error) {
 		// trap any runtime error due to synchronization issues.
 		defer func() {
 			if rErr := recover(); rErr != nil {
@@ -57,9 +55,8 @@ func (o *SyncStore) Exec(key string, f func() interface{}) interface{} {
 }
 
 // NewSyncStore returns a new instance of `SyncStore`
-func NewSyncStore(prefixCacheKey string) *SyncStore {
+func NewSyncStore() *SyncStore {
 	return &SyncStore{
-		prefix:  prefixCacheKey,
 		sf:      singleflight.Group{},
 		results: sync.Map{},
 	}

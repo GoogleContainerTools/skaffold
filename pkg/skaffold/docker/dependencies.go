@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	dependencyCache = util.NewSyncStore("getDependencies")
+	dependencyCache = util.NewSyncStore()
 )
 
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.

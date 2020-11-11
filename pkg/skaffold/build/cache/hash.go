@@ -37,10 +37,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-const (
-	storePrefix = "dependency_hash"
-)
-
 // For testing
 var (
 	newArtifactHasherFunc = newArtifactHasher
@@ -65,7 +61,7 @@ func newArtifactHasher(artifacts build.ArtifactGraph, lister DependencyLister, m
 		artifacts: artifacts,
 		lister:    lister,
 		mode:      mode,
-		syncStore: util.NewSyncStore(storePrefix),
+		syncStore: util.NewSyncStore(),
 	}
 }
 

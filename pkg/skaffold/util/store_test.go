@@ -37,7 +37,7 @@ func TestSyncStore(t *testing.T) {
 		var wg sync.WaitGroup
 		wg.Add(10)
 
-		s := NewSyncStore("test")
+		s := NewSyncStore()
 		for i := 0; i < 5; i++ {
 			for j := 0; j < 2; j++ {
 				go func(i int) {
@@ -59,7 +59,7 @@ func TestSyncStore(t *testing.T) {
 	})
 
 	testutil.Run(t, "test panic handled correctly", func(t *testutil.T) {
-		s := NewSyncStore("test-panic")
+		s := NewSyncStore()
 		val := s.Exec("panic", func() interface{} {
 			panic(fmt.Errorf("message"))
 		})
