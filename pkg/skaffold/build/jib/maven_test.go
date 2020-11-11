@@ -380,7 +380,7 @@ func TestGenerateMavenBuildArgs(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&mavenBuildArgsFunc, getMavenBuildArgsFuncFake(t, MinimumJibMavenVersion))
-			args := GenerateMavenBuildArgs(nil, "test-goal", test.image, &test.a, test.skipTests, test.pushImages, test.deps, test.r, test.insecureRegistries)
+			args := GenerateMavenBuildArgs("test-goal", test.image, &test.a, test.skipTests, test.pushImages, test.deps, test.r, test.insecureRegistries, false)
 			t.CheckDeepEqual(test.out, args)
 		})
 	}

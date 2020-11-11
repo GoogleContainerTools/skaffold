@@ -393,7 +393,7 @@ func TestGenerateGradleBuildArgs(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&gradleBuildArgsFunc, getGradleBuildArgsFuncFake(t, MinimumJibGradleVersion))
-			command := GenerateGradleBuildArgs(nil, "testTask", test.image, &test.in, test.skipTests, test.pushImages, test.deps, test.r, test.insecureRegistries)
+			command := GenerateGradleBuildArgs("testTask", test.image, &test.in, test.skipTests, test.pushImages, test.deps, test.r, test.insecureRegistries, false)
 			t.CheckDeepEqual(test.out, command)
 		})
 	}
