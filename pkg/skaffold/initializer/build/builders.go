@@ -51,6 +51,7 @@ type InitBuilder interface {
 type BuilderImagePair struct {
 	Builder   InitBuilder
 	ImageName string
+	Workspace string
 }
 
 // GeneratedBuilderImagePair pairs a discovered builder with a
