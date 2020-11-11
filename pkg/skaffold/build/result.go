@@ -25,6 +25,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -58,11 +59,16 @@ func (l *logAggregatorImpl) GetWriter() (io.Writer, func(), error) {
 		return nil, nil, err
 	}
 	r, w := io.Pipe()
+
+	writer := io.Writer(w)
+	if color.IsColorable(l.out) {
+		writer = color.NewWriter(writer)
+	}
 	ch := make(chan string, buffSize)
 	l.messages <- ch
 	// write the build output to a buffered channel.
 	go l.writeToChannel(r, ch)
-	return w, func() { w.Close() }, nil
+	return writer, func() { w.Close() }, nil
 }
 
 func (l *logAggregatorImpl) PrintInOrder(ctx context.Context) {
