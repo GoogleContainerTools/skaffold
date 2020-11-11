@@ -28,7 +28,7 @@ import (
 type SyncStore struct {
 	prefix  string
 	sf      singleflight.Group
-	results *sync.Map
+	results sync.Map
 }
 
 // Exec executes the function f if and only if it's being called the first time for a specific key.
@@ -36,9 +36,7 @@ type SyncStore struct {
 // All other calls will be blocked until the running instance of f returns and all of them receive the same result.
 func (o *SyncStore) Exec(key string, f func() interface{}) interface{} {
 	fullKey := o.prefix + key
-	var val interface{}
-	var err error
-	val, _ = o.sf.Do(fullKey, func() (interface{}, error) {
+	val, err := o.sf.Do(fullKey, func() (_ interface{}, err error) {
 		// trap any runtime error due to synchronization issues.
 		defer func() {
 			if rErr := recover(); rErr != nil {
@@ -63,7 +61,7 @@ func NewSyncStore(prefixCacheKey string) *SyncStore {
 	return &SyncStore{
 		prefix:  prefixCacheKey,
 		sf:      singleflight.Group{},
-		results: new(sync.Map),
+		results: sync.Map{},
 	}
 }
 
