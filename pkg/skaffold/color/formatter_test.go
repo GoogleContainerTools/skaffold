@@ -32,8 +32,8 @@ func TestFprintln(t *testing.T) {
 	defer func() { SetupColors(nil, DefaultColorCode, false) }()
 	var b bytes.Buffer
 
-	SetupColors(&b, 0, true)
-	Green.Fprintln(&b, "2", "less", "chars!")
+	cw := SetupColors(&b, 0, true)
+	Green.Fprintln(cw, "2", "less", "chars!")
 
 	compareText(t, "\033[32m2 less chars!\033[0m\n", b.String())
 }
@@ -42,8 +42,8 @@ func TestFprintf(t *testing.T) {
 	defer func() { SetupColors(nil, DefaultColorCode, false) }()
 	var b bytes.Buffer
 
-	SetupColors(&b, 0, true)
-	Green.Fprintf(&b, "It's been %d %s", 1, "week")
+	cw := SetupColors(&b, 0, true)
+	Green.Fprintf(cw, "It's been %d %s", 1, "week")
 
 	compareText(t, "\033[32mIt's been 1 week\033[0m", b.String())
 }
@@ -51,8 +51,8 @@ func TestFprintf(t *testing.T) {
 func TestFprintlnNoTTY(t *testing.T) {
 	var b bytes.Buffer
 
-	SetupColors(&b, 0, false)
-	Green.Fprintln(&b, "2", "less", "chars!")
+	cw := SetupColors(&b, 0, false)
+	Green.Fprintln(cw, "2", "less", "chars!")
 
 	compareText(t, "2 less chars!\n", b.String())
 }
@@ -60,8 +60,8 @@ func TestFprintlnNoTTY(t *testing.T) {
 func TestFprintfNoTTY(t *testing.T) {
 	var b bytes.Buffer
 
-	SetupColors(&b, 0, false)
-	Green.Fprintf(&b, "It's been %d %s", 1, "week")
+	cw := SetupColors(&b, 0, false)
+	Green.Fprintf(cw, "It's been %d %s", 1, "week")
 
 	compareText(t, "It's been 1 week", b.String())
 }
@@ -69,23 +69,23 @@ func TestFprintfNoTTY(t *testing.T) {
 func TestFprintlnDefaultColor(t *testing.T) {
 	var b bytes.Buffer
 
-	SetupColors(&b, 34, true)
-	Default.Fprintln(&b, "2", "less", "chars!")
+	cw := SetupColors(&b, 34, true)
+	Default.Fprintln(cw, "2", "less", "chars!")
 	compareText(t, "\033[34m2 less chars!\033[0m\n", b.String())
 }
 
 func TestFprintlnChangeDefaultToNone(t *testing.T) {
 	var b bytes.Buffer
 
-	SetupColors(&b, 0, true)
-	Default.Fprintln(&b, "2", "less", "chars!")
+	cw := SetupColors(&b, 0, true)
+	Default.Fprintln(cw, "2", "less", "chars!")
 	compareText(t, "2 less chars!\n", b.String())
 }
 
 func TestFprintlnChangeDefaultToUnknown(t *testing.T) {
 	var b bytes.Buffer
 
-	SetupColors(&b, -1, true)
-	Default.Fprintln(&b, "2", "less", "chars!")
+	cw := SetupColors(&b, -1, true)
+	Default.Fprintln(cw, "2", "less", "chars!")
 	compareText(t, "2 less chars!\n", b.String())
 }

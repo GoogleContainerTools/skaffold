@@ -194,12 +194,12 @@ func TestAutoSelectBuilders(t *testing.T) {
 			images: []string{"image1", "image2", "image3"},
 			expectedPairs: []BuilderImagePair{
 				{
-					jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle", Image: "image1"},
-					"image1",
+					Builder:   jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle", Image: "image1"},
+					ImageName: "image1",
 				},
 				{
-					jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "image2"},
-					"image2",
+					Builder:   jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "image2"},
+					ImageName: "image2",
 				},
 			},
 			expectedBuildersLeft:     []InitBuilder{docker.ArtifactConfig{File: "Dockerfile"}},
@@ -242,10 +242,11 @@ func TestAutoSelectBuilders(t *testing.T) {
 
 func TestProcessCliArtifacts(t *testing.T) {
 	tests := []struct {
-		description   string
-		artifacts     []string
-		shouldErr     bool
-		expectedPairs []BuilderImagePair
+		description        string
+		artifacts          []string
+		shouldErr          bool
+		expectedPairs      []BuilderImagePair
+		expectedWorkspaces []string
 	}{
 		{
 			description: "Invalid pairs",
@@ -277,8 +278,8 @@ func TestProcessCliArtifacts(t *testing.T) {
 		{
 			description: "Valid",
 			artifacts: []string{
-				`{"builder":"Docker","payload":{"path":"/path/to/Dockerfile"},"image":"image1"}`,
-				`{"builder":"Jib Gradle Plugin","payload":{"path":"/path/to/build.gradle"},"image":"image2"}`,
+				`{"builder":"Docker","payload":{"path":"/path/to/Dockerfile"},"image":"image1", "context": "path/to/docker/workspace"}`,
+				`{"builder":"Jib Gradle Plugin","payload":{"path":"/path/to/build.gradle"},"image":"image2", "context":"path/to/jib/workspace"}`,
 				`{"builder":"Jib Maven Plugin","payload":{"path":"/path/to/pom.xml","project":"project-name","image":"testImage"},"image":"image3"}`,
 				`{"builder":"Buildpacks","payload":{"path":"/path/to/package.json"},"image":"image4"}`,
 			},
@@ -286,10 +287,12 @@ func TestProcessCliArtifacts(t *testing.T) {
 				{
 					Builder:   docker.ArtifactConfig{File: "/path/to/Dockerfile"},
 					ImageName: "image1",
+					Workspace: "path/to/docker/workspace",
 				},
 				{
 					Builder:   jib.ArtifactConfig{BuilderName: "Jib Gradle Plugin", File: "/path/to/build.gradle"},
 					ImageName: "image2",
+					Workspace: "path/to/jib/workspace",
 				},
 				{
 					Builder:   jib.ArtifactConfig{BuilderName: "Jib Maven Plugin", File: "/path/to/pom.xml", Project: "project-name", Image: "testImage"},
