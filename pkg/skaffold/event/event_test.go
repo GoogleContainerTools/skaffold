@@ -32,7 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-var remotePort = proto.IntOrString{Type: 0, IntVal: 2001}
+var targetPort = proto.IntOrString{Type: 0, IntVal: 2001}
 
 func TestGetLogEvents(t *testing.T) {
 	for step := 0; step < 1000; step++ {
@@ -168,7 +168,13 @@ func TestPortForwarded(t *testing.T) {
 
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] == nil })
 	PortForwarded(8080, schemautil.FromInt(8888), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
-	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] != nil })
+	wait(t, func() bool {
+		return handler.getState().ForwardedPorts[8080] != nil && handler.getState().ForwardedPorts[8080].RemotePort == 8888
+	})
+
+	wait(t, func() bool { return handler.getState().ForwardedPorts[8081] == nil })
+	PortForwarded(8081, schemautil.FromString("http"), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
+	wait(t, func() bool { return handler.getState().ForwardedPorts[8081] != nil })
 }
 
 func TestStatusCheckEventStarted(t *testing.T) {
@@ -345,8 +351,9 @@ func TestResetStateOnBuild(t *testing.T) {
 		ForwardedPorts: map[int32]*proto.PortEvent{
 			2001: {
 				LocalPort:  2000,
-				RemotePort: &remotePort,
+				RemotePort: 2001,
 				PodName:    "test/pod",
+				TargetPort: &targetPort,
 			},
 		},
 		StatusCheckState: &proto.StatusCheckState{Status: Complete},
@@ -380,8 +387,9 @@ func TestResetStateOnDeploy(t *testing.T) {
 		ForwardedPorts: map[int32]*proto.PortEvent{
 			2001: {
 				LocalPort:  2000,
-				RemotePort: &remotePort,
+				RemotePort: 2001,
 				PodName:    "test/pod",
+				TargetPort: &targetPort,
 			},
 		},
 		StatusCheckState: &proto.StatusCheckState{Status: Complete},
@@ -423,8 +431,9 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 		ForwardedPorts: map[int32]*proto.PortEvent{
 			2001: {
 				LocalPort:  2000,
-				RemotePort: &remotePort,
+				RemotePort: 2001,
 				PodName:    "test/pod",
+				TargetPort: &targetPort,
 			},
 		},
 		StatusCheckState: &proto.StatusCheckState{Status: Complete},
@@ -448,8 +457,9 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 		ForwardedPorts: map[int32]*proto.PortEvent{
 			2001: {
 				LocalPort:  2000,
-				RemotePort: &remotePort,
+				RemotePort: 2001,
 				PodName:    "test/pod",
+				TargetPort: &targetPort,
 			},
 		},
 		StatusCheckState: &proto.StatusCheckState{Status: Complete},

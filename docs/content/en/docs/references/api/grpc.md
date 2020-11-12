@@ -464,7 +464,7 @@ PortEvent Event describes each port forwarding event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | localPort | [int32](#int32) |  | local port for forwarded resource |
-| remotePort | [IntOrString](#proto.IntOrString) |  | remote port is the resource port that will be forwarded. |
+| remotePort | [int32](#int32) |  | Deprecated. Uses targetPort.intVal. |
 | podName | [string](#string) |  | pod name if port forwarded resourceType is Pod |
 | containerName | [string](#string) |  | container name if specified in the kubernetes spec |
 | namespace | [string](#string) |  | the namespace of the resource to port forward. |
@@ -472,6 +472,7 @@ PortEvent Event describes each port forwarding event.
 | resourceType | [string](#string) |  | resource type e.g. "pod", "service". |
 | resourceName | [string](#string) |  | name of the resource to forward. |
 | address | [string](#string) |  | address on which to bind |
+| targetPort | [IntOrString](#proto.IntOrString) |  | target port is the resource port that will be forwarded. |
 
 
 

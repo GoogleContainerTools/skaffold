@@ -453,24 +453,11 @@
             "format": "int32"
           },
           {
-            "name": "event.portEvent.remotePort.type",
+            "name": "event.portEvent.remotePort",
             "in": "query",
             "required": false,
             "type": "integer",
             "format": "int32"
-          },
-          {
-            "name": "event.portEvent.remotePort.intVal",
-            "in": "query",
-            "required": false,
-            "type": "integer",
-            "format": "int32"
-          },
-          {
-            "name": "event.portEvent.remotePort.strVal",
-            "in": "query",
-            "required": false,
-            "type": "string"
           },
           {
             "name": "event.portEvent.podName",
@@ -510,6 +497,26 @@
           },
           {
             "name": "event.portEvent.address",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.targetPort.type",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.portEvent.targetPort.intVal",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.portEvent.targetPort.strVal",
             "in": "query",
             "required": false,
             "type": "string"
@@ -1763,7 +1770,8 @@
           "format": "int32"
         },
         "remotePort": {
-          "$ref": "#/definitions/protoIntOrString"
+          "type": "integer",
+          "format": "int32"
         },
         "podName": {
           "type": "string"
@@ -1785,6 +1793,9 @@
         },
         "address": {
           "type": "string"
+        },
+        "targetPort": {
+          "$ref": "#/definitions/protoIntOrString"
         }
       },
       "description": "PortEvent Event describes each port forwarding event."
