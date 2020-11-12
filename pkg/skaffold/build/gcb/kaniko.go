@@ -17,14 +17,25 @@ limitations under the License.
 package gcb
 
 import (
+	"fmt"
+
 	"google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func (b *Builder) kanikoBuildSpec(artifact *latest.KanikoArtifact, tag string) (cloudbuild.Build, error) {
-	kanikoArgs, err := kaniko.Args(artifact, tag, "")
+func (b *Builder) kanikoBuildSpec(a *latest.Artifact, tag string) (cloudbuild.Build, error) {
+	k := a.KanikoArtifact
+	requiredImages := docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true)
+	// add required artifacts as build args
+	buildArgs, err := docker.EvalBuildArgs(b.cfg.Mode(), a.Workspace, k.DockerfilePath, k.BuildArgs, requiredImages)
+	if err != nil {
+		return cloudbuild.Build{}, fmt.Errorf("unable to evaluate build args: %w", err)
+	}
+	k.BuildArgs = buildArgs
+	kanikoArgs, err := kaniko.Args(k, tag, "")
 	if err != nil {
 		return cloudbuild.Build{}, err
 	}

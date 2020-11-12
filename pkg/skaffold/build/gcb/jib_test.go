@@ -31,6 +31,7 @@ func TestJibMavenBuildSpec(t *testing.T) {
 	tests := []struct {
 		description  string
 		skipTests    bool
+		baseImage    string
 		expectedArgs []string
 	}{
 		{
@@ -43,12 +44,28 @@ func TestJibMavenBuildSpec(t *testing.T) {
 			skipTests:    false,
 			expectedArgs: []string{"-c", "mvn -Duser.home=$$HOME --batch-mode jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --non-recursive prepare-package jib:build -Dimage=img"},
 		},
+		{
+			description:  "custom base image",
+			baseImage:    "busybox",
+			skipTests:    false,
+			expectedArgs: []string{"-c", "mvn -Duser.home=$$HOME --batch-mode jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --non-recursive prepare-package jib:build -Djib.from.image=busybox -Dimage=img"},
+		},
+		{
+			description:  "custom base image from required artifacts",
+			baseImage:    "img2",
+			skipTests:    false,
+			expectedArgs: []string{"-c", "mvn -Duser.home=$$HOME --batch-mode jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --non-recursive prepare-package jib:build -Djib.from.image=img2:tag -Dimage=img"},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Type: string(jib.JibMaven)},
+					JibArtifact: &latest.JibArtifact{Type: string(jib.JibMaven), BaseImage: test.baseImage},
+				},
+				Dependencies: []*latest.ArtifactDependency{
+					{ImageName: "img2", Alias: "img2"},
+					{ImageName: "img3", Alias: "img3"},
 				},
 			}
 
@@ -58,7 +75,11 @@ func TestJibMavenBuildSpec(t *testing.T) {
 				},
 			})
 			builder.skipTests = test.skipTests
-
+			store := mockArtifactStore{
+				"img2": "img2:tag",
+				"img3": "img3:tag",
+			}
+			builder.ArtifactStore(store)
 			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
 			t.CheckNoError(err)
 
