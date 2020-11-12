@@ -32,6 +32,7 @@ import (
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/sirupsen/logrus"
 
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -226,16 +227,15 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, cfg Config) (
 			// was already changed.
 			if !stages[strings.ToLower(from.image)] {
 				img, err := RetrieveImage(from.image, cfg)
-				if err != nil {
+				if err == nil {
+					workdir = img.Config.WorkingDir
+				} else if _, ok := sErrors.IsOldImageManifestProblem(err); !ok {
 					return nil, err
 				}
-
-				workdir = img.Config.WorkingDir
 				if workdir == "" {
 					workdir = "/"
 				}
 			}
-
 			if onlyLastImage {
 				copied = nil
 			}
@@ -334,7 +334,9 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 				onbuildNodes = ons
 			} else if ons, err := parseOnbuild(from.image, cfg); err == nil {
 				onbuildNodes = ons
-			} else {
+			} else if warnMsg, ok := sErrors.IsOldImageManifestProblem(err); ok && warnMsg != "" {
+				logrus.Warn(warnMsg)
+			} else if !ok {
 				return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
 			}
 

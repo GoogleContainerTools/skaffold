@@ -62,6 +62,7 @@ func findExactlyOneMatchingBuilder(builderConfigs []InitBuilder, image string) i
 	return matchingConfigIndex
 }
 
+// Artifacts takes builder image pairs and workspaces and creates a list of latest.Artifacts from the data.
 func Artifacts(pairs []BuilderImagePair) []*latest.Artifact {
 	var artifacts []*latest.Artifact
 
@@ -71,7 +72,10 @@ func Artifacts(pairs []BuilderImagePair) []*latest.Artifact {
 			ArtifactType: pair.Builder.ArtifactType(),
 		}
 
-		workspace := filepath.Dir(pair.Builder.Path())
+		workspace := pair.Workspace
+		if workspace == "" {
+			workspace = filepath.Dir(pair.Builder.Path())
+		}
 		if workspace != "." {
 			fmt.Fprintf(os.Stdout, "using non standard workspace: %s\n", workspace)
 			artifact.Workspace = workspace

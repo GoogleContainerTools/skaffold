@@ -115,7 +115,10 @@ func (p *pruner) runPrune(ctx context.Context, ids []string) error {
 
 	beforeDu, err := p.diskUsage(ctx)
 	if err != nil {
-		logrus.Warnf("Failed to get docker usage info: %v", err)
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		logrus.Debugf("Failed to get docker usage info: %v", err)
 	}
 
 	pruned, err := p.localDocker.Prune(ctx, ids, p.pruneChildren)
@@ -129,7 +132,10 @@ func (p *pruner) runPrune(ctx context.Context, ids []string) error {
 	if beforeDu > 0 {
 		afterDu, err := p.diskUsage(ctx)
 		if err != nil {
-			logrus.Warnf("Failed to get docker usage info: %v", err)
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			logrus.Debugf("Failed to get docker usage info: %v", err)
 			return nil
 		}
 		if beforeDu >= afterDu {
@@ -160,7 +166,7 @@ func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []*latest.A
 		if err != nil {
 			switch err {
 			case context.Canceled, context.DeadlineExceeded:
-				return nil
+				return []string{}
 			}
 			logrus.Warnf("failed to list images: %v", err)
 			continue

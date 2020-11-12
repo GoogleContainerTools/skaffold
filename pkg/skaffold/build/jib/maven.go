@@ -24,6 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -43,7 +44,7 @@ const MinimumJibMavenVersionForSync = "2.0.0"
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
 func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, deps []*latest.ArtifactDependency, tag string) (string, error) {
-	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries())
+	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), color.IsColorable(out))
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -52,7 +53,7 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 }
 
 func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, deps []*latest.ArtifactDependency, tag string) (string, error) {
-	args := GenerateMavenBuildArgs("build", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries())
+	args := GenerateMavenBuildArgs("build", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), color.IsColorable(out))
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -98,8 +99,8 @@ func getSyncMapCommandMaven(ctx context.Context, workspace string, a *latest.Jib
 }
 
 // GenerateMavenBuildArgs generates the arguments to Maven for building the project as an image.
-func GenerateMavenBuildArgs(goal string, imageName string, a *latest.JibArtifact, skipTests, pushImages bool, deps []*latest.ArtifactDependency, r ArtifactResolver, insecureRegistries map[string]bool) []string {
-	args := mavenBuildArgsFunc(goal, a, skipTests, true, MinimumJibMavenVersion)
+func GenerateMavenBuildArgs(goal string, imageName string, a *latest.JibArtifact, skipTests, pushImages bool, deps []*latest.ArtifactDependency, r ArtifactResolver, insecureRegistries map[string]bool, showColors bool) []string {
+	args := mavenBuildArgsFunc(goal, a, skipTests, showColors, MinimumJibMavenVersion)
 	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
@@ -118,7 +119,7 @@ func mavenBuildArgs(goal string, a *latest.JibArtifact, skipTests, showColors bo
 	// but use --batch-mode for internal goals to avoid formatting issues
 	var args []string
 	if showColors {
-		args = []string{"-Djib.console=plain"}
+		args = []string{"-Dstyle.color=always", "-Djansi.passthrough=true", "-Djib.console=plain"}
 	} else {
 		args = []string{"--batch-mode"}
 	}

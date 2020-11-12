@@ -34,6 +34,7 @@ import (
 	k8syaml "sigs.k8s.io/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
@@ -56,7 +57,14 @@ const (
 
 	kustomizeDownloadLink  = "https://kubernetes-sigs.github.io/kustomize/installation/"
 	kustomizeMinVersion    = "v3.2.3"
-	kustomizeVersionRegexP = `{Version:(\S+) GitCommit:\S+ BuildDate:\d{4}-\d{2}-\d{2}T\d\d:\d\d:\d\dZ GoOs:\S+ GoArch:\S+}`
+	kustomizeVersionRegexP = `{Version:(\S+) GitCommit:\S+ BuildDate:\S+ GoOs:\S+ GoArch:\S+}`
+)
+
+var (
+	kustomizeFurtherGuidance = fmt.Sprintf("Please make sure your local "+
+		"kustomize version >= the official version %v, otherwise some features may not be "+
+		"well supported. You can download the official version "+
+		"from %v", kustomizeMinVersion, kustomizeDownloadLink)
 )
 
 // Deployer deploys workflows with kpt CLI
@@ -80,8 +88,8 @@ func NewDeployer(cfg types.Config, labels map[string]string) *Deployer {
 
 var sanityCheck = versionCheck
 
-// sanityCheck guarantees the kpt and kustomize versions are compatible with skaffold.
-func versionCheck(dir string) error {
+// versionCheck returns an error if the kpt and kustomize versions are not compatible with skaffold.
+func versionCheck(dir string, stdout io.Writer) error {
 	kptCmd := exec.Command("kpt", "version")
 	out, err := util.RunCmdOut(kptCmd)
 	if err != nil {
@@ -116,15 +124,12 @@ func versionCheck(dir string) error {
 		re := regexp.MustCompile(kustomizeVersionRegexP)
 		match := re.FindStringSubmatch(versionInfo)
 		if len(match) != 2 {
-			return fmt.Errorf("unknown kustomize version %v\nPlease upgrade your "+
-				"local kustomize CLI to a version >= %v\nSee kustomize installation: %v",
-				string(out), kustomizeMinVersion, kustomizeDownloadLink)
-		}
-		if !semver.IsValid(match[1]) || semver.Compare(match[1], kustomizeMinVersion) < 0 {
-			return fmt.Errorf("you are using kustomize %q\n"+
-				"Please update your kustomize version to >= %v\n"+
-				"See kustomize installation: %v", match[1], kustomizeMinVersion,
-				kustomizeDownloadLink)
+			color.Yellow.Fprintf(stdout, "unknown kustomize version %q\n"+
+				"Your kustomize may be not from the official release\n%v\n", string(out),
+				kustomizeFurtherGuidance)
+		} else if !semver.IsValid(match[1]) || semver.Compare(match[1], kustomizeMinVersion) < 0 {
+			color.Yellow.Fprintf(stdout, "you are using kustomize version %q\n%v\n",
+				match[1], kustomizeFurtherGuidance)
 		}
 	}
 	return nil
@@ -134,7 +139,7 @@ func versionCheck(dir string) error {
 // outputs them to the applyDir, and runs `kpt live apply` against applyDir to create resources in the cluster.
 // `kpt live apply` supports automated pruning declaratively via resources in the applyDir.
 func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
-	if err := sanityCheck(k.Dir); err != nil {
+	if err := sanityCheck(k.Dir, out); err != nil {
 		return nil, err
 	}
 	flags, err := k.getKptFnRunArgs()
@@ -229,7 +234,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 // Render hydrates manifests using both kustomization and kpt functions.
 func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, _ bool, filepath string) error {
-	if err := sanityCheck(k.Dir); err != nil {
+	if err := sanityCheck(k.Dir, out); err != nil {
 		return err
 	}
 	flags, err := k.getKptFnRunArgs()
