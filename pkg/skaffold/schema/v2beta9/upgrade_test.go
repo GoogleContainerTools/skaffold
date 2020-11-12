@@ -19,9 +19,8 @@ package v2beta9
 import (
 	"testing"
 
-	yaml "gopkg.in/yaml.v2"
-
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -61,6 +60,11 @@ deploy:
   kustomize:
     paths:
     - kustomization-main
+portForward:
+  - resourceType: deployment
+    resourceName: leeroy-app
+    port: 8080
+    localPort: 9001
 profiles:
   - name: test profile
     build:
@@ -132,6 +136,11 @@ deploy:
   kustomize:
     paths:
     - kustomization-main
+portForward:
+  - resourceType: deployment
+    resourceName: leeroy-app
+    port: 8080
+    localPort: 9001
 profiles:
   - name: test profile
     build:
