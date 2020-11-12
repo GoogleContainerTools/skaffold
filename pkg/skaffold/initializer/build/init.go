@@ -64,13 +64,13 @@ func (d *defaultBuildInitializer) PrintAnalysis(out io.Writer) error {
 
 func (d *defaultBuildInitializer) GenerateManifests() (map[GeneratedArtifactInfo][]byte, error) {
 	generatedManifests := map[GeneratedArtifactInfo][]byte{}
-	for _, pair := range d.generatedArtifactInfos {
-		manifest, err := generator.Generate(pair.ImageName)
+	for _, info := range d.generatedArtifactInfos {
+		manifest, err := generator.Generate(info.ImageName)
 		if err != nil {
 			return nil, fmt.Errorf("generating kubernetes manifest: %w", err)
 		}
-		generatedManifests[pair] = manifest
-		d.artifactInfos = append(d.artifactInfos, pair.ArtifactInfo)
+		generatedManifests[info] = manifest
+		d.artifactInfos = append(d.artifactInfos, info.ArtifactInfo)
 	}
 	d.generatedArtifactInfos = nil
 	return generatedManifests, nil
@@ -80,8 +80,8 @@ func (d *defaultBuildInitializer) GenerateManifests() (map[GeneratedArtifactInfo
 // images match an image in the image list, and returns a list of the matching builder/image pairs. Also
 // separately returns the builder configs and images that didn't have any matches.
 func (d *defaultBuildInitializer) matchBuildersToImages(images []string) {
-	pairs, unresolvedBuilders, unresolvedImages := matchBuildersToImages(d.builders, images)
-	d.artifactInfos = pairs
+	artifactInfos, unresolvedBuilders, unresolvedImages := matchBuildersToImages(d.builders, images)
+	d.artifactInfos = artifactInfos
 	d.unresolvedImages = unresolvedImages
 	d.builders = unresolvedBuilders
 }

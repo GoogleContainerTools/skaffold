@@ -71,7 +71,7 @@ func (c *cliBuildInitializer) processCliArtifacts() error {
 }
 
 func processCliArtifacts(cliArtifacts []string) ([]ArtifactInfo, error) {
-	var pairs []ArtifactInfo
+	var artifactInfos []ArtifactInfo
 	for _, artifact := range cliArtifacts {
 		// Parses artifacts in 1 of 2 forms:
 		// 1. JSON in the form of: {"builder":"Name of Builder","payload":{...},"image":"image.name","context":"artifact.context"}.
@@ -89,7 +89,7 @@ func processCliArtifacts(cliArtifacts []string) ([]ArtifactInfo, error) {
 			if len(parts) != 2 {
 				return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
 			}
-			pairs = append(pairs, ArtifactInfo{
+			artifactInfos = append(artifactInfos, ArtifactInfo{
 				Builder:   docker.ArtifactConfig{File: parts[0]},
 				ImageName: parts[1],
 			})
@@ -105,8 +105,8 @@ func processCliArtifacts(cliArtifacts []string) ([]ArtifactInfo, error) {
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
 			}
-			pair := ArtifactInfo{Builder: parsed.Payload, ImageName: a.Image, Workspace: a.Workspace}
-			pairs = append(pairs, pair)
+			info := ArtifactInfo{Builder: parsed.Payload, ImageName: a.Image, Workspace: a.Workspace}
+			artifactInfos = append(artifactInfos, info)
 
 		// FIXME: shouldn't use a human-readable name?
 		case jib.PluginName(jib.JibGradle), jib.PluginName(jib.JibMaven):
@@ -117,8 +117,8 @@ func processCliArtifacts(cliArtifacts []string) ([]ArtifactInfo, error) {
 				return nil, err
 			}
 			parsed.Payload.BuilderName = a.Name
-			pair := ArtifactInfo{Builder: parsed.Payload, ImageName: a.Image, Workspace: a.Workspace}
-			pairs = append(pairs, pair)
+			info := ArtifactInfo{Builder: parsed.Payload, ImageName: a.Image, Workspace: a.Workspace}
+			artifactInfos = append(artifactInfos, info)
 
 		case buildpacks.Name:
 			parsed := struct {
@@ -127,12 +127,12 @@ func processCliArtifacts(cliArtifacts []string) ([]ArtifactInfo, error) {
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
 			}
-			pair := ArtifactInfo{Builder: parsed.Payload, ImageName: a.Image, Workspace: a.Workspace}
-			pairs = append(pairs, pair)
+			info := ArtifactInfo{Builder: parsed.Payload, ImageName: a.Image, Workspace: a.Workspace}
+			artifactInfos = append(artifactInfos, info)
 
 		default:
 			return nil, fmt.Errorf("unknown builder type in CLI artifacts: %q", a.Name)
 		}
 	}
-	return pairs, nil
+	return artifactInfos, nil
 }

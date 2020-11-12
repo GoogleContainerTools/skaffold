@@ -50,7 +50,7 @@ func (s stubDeploymentInitializer) AddManifestForImage(string, string) {
 }
 
 type stubBuildInitializer struct {
-	pairs []build.ArtifactInfo
+	artifactInfos []build.ArtifactInfo
 }
 
 func (s stubBuildInitializer) ProcessImages([]string) error {
@@ -63,7 +63,7 @@ func (s stubBuildInitializer) PrintAnalysis(io.Writer) error {
 
 func (s stubBuildInitializer) BuildConfig() latest.BuildConfig {
 	return latest.BuildConfig{
-		Artifacts: build.Artifacts(s.pairs),
+		Artifacts: build.Artifacts(s.artifactInfos),
 	}
 }
 
@@ -77,12 +77,12 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 		expectedSkaffoldConfig *latest.SkaffoldConfig
 		deployConfig           latest.DeployConfig
 		profiles               []latest.Profile
-		builderConfigPairs     []build.ArtifactInfo
+		builderConfigInfos     []build.ArtifactInfo
 		getWd                  func() (string, error)
 	}{
 		{
 			name:               "empty",
-			builderConfigPairs: []build.ArtifactInfo{},
+			builderConfigInfos: []build.ArtifactInfo{},
 			deployConfig:       latest.DeployConfig{},
 			getWd: func() (s string, err error) {
 				return filepath.Join("rootDir", "testConfig"), nil
@@ -98,7 +98,7 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 		},
 		{
 			name: "root dir + builder image pairs",
-			builderConfigPairs: []build.ArtifactInfo{
+			builderConfigInfos: []build.ArtifactInfo{
 				{
 					Builder: docker.ArtifactConfig{
 						File: "testDir/Dockerfile",
@@ -132,7 +132,7 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 		},
 		{
 			name:               "error working dir",
-			builderConfigPairs: []build.ArtifactInfo{},
+			builderConfigInfos: []build.ArtifactInfo{},
 			deployConfig:       latest.DeployConfig{},
 			getWd: func() (s string, err error) {
 				return "", errors.New("testError")
@@ -152,7 +152,7 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 				test.profiles,
 			}
 			buildInitializer := stubBuildInitializer{
-				test.builderConfigPairs,
+				test.builderConfigInfos,
 			}
 			t.Override(&getWd, test.getWd)
 			config := generateSkaffoldConfig(buildInitializer, deploymentInitializer)
