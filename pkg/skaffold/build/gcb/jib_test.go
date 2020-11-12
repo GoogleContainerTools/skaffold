@@ -48,13 +48,13 @@ func TestJibMavenBuildSpec(t *testing.T) {
 			description:  "custom base image",
 			baseImage:    "busybox",
 			skipTests:    false,
-			expectedArgs: []string{"-c", "mvn -Duser.home=$$HOME -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --non-recursive prepare-package jib:build -Djib.from.image=busybox -Dimage=img"},
+			expectedArgs: []string{"-c", "mvn -Duser.home=$$HOME --batch-mode jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --non-recursive prepare-package jib:build -Djib.from.image=busybox -Dimage=img"},
 		},
 		{
 			description:  "custom base image from required artifacts",
 			baseImage:    "img2",
 			skipTests:    false,
-			expectedArgs: []string{"-c", "mvn -Duser.home=$$HOME -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --non-recursive prepare-package jib:build -Djib.from.image=img2:tag -Dimage=img"},
+			expectedArgs: []string{"-c", "mvn -Duser.home=$$HOME --batch-mode jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --non-recursive prepare-package jib:build -Djib.from.image=img2:tag -Dimage=img"},
 		},
 	}
 	for _, test := range tests {
