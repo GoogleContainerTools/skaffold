@@ -39,12 +39,12 @@ func (d *defaultBuildInitializer) resolveBuilderImages() error {
 	if len(d.builders) == 1 {
 		if len(d.unresolvedImages) == 0 {
 			// no image was parsed from k8s manifests, so we create an image name
-			d.generatedBuilderImagePairs = append(d.generatedBuilderImagePairs, getGeneratedBuilderPair(d.builders[0]))
+			d.generatedArtifactInfos = append(d.generatedArtifactInfos, getGeneratedBuilderPair(d.builders[0]))
 			return nil
 		}
 		// we already have the image, just use it and return
 		if len(d.unresolvedImages) == 1 {
-			d.builderImagePairs = append(d.builderImagePairs, BuilderImagePair{
+			d.artifactInfos = append(d.artifactInfos, ArtifactInfo{
 				Builder:   d.builders[0],
 				ImageName: d.unresolvedImages[0],
 			})
@@ -70,7 +70,7 @@ func (d *defaultBuildInitializer) resolveBuilderImagesForcefully() error {
 			}
 		}
 
-		d.builderImagePairs = append(d.builderImagePairs, BuilderImagePair{Builder: choice, ImageName: image})
+		d.artifactInfos = append(d.artifactInfos, ArtifactInfo{Builder: choice, ImageName: image})
 		d.unresolvedImages = []string{}
 		return nil
 	}
@@ -118,7 +118,7 @@ func (d *defaultBuildInitializer) resolveBuilderImagesInteractively() error {
 		}
 
 		if choice != NoBuilder {
-			d.builderImagePairs = append(d.builderImagePairs, BuilderImagePair{Builder: choiceMap[choice], ImageName: image})
+			d.artifactInfos = append(d.artifactInfos, ArtifactInfo{Builder: choiceMap[choice], ImageName: image})
 			choices = util.RemoveFromSlice(choices, choice)
 		}
 		d.unresolvedImages = util.RemoveFromSlice(d.unresolvedImages, image)
@@ -126,13 +126,13 @@ func (d *defaultBuildInitializer) resolveBuilderImagesInteractively() error {
 	if len(choices) > 0 {
 		// TODO(nkubala): should we ask user if they want to generate here?
 		for _, choice := range choices {
-			d.generatedBuilderImagePairs = append(d.generatedBuilderImagePairs, getGeneratedBuilderPair(choiceMap[choice]))
+			d.generatedArtifactInfos = append(d.generatedArtifactInfos, getGeneratedBuilderPair(choiceMap[choice]))
 		}
 	}
 	return nil
 }
 
-func getGeneratedBuilderPair(b InitBuilder) GeneratedBuilderImagePair {
+func getGeneratedBuilderPair(b InitBuilder) GeneratedArtifactInfo {
 	path := b.Path()
 	var imageName string
 	// if the builder is in a nested directory, use that as the image name AND the path to write the manifest
@@ -144,8 +144,8 @@ func getGeneratedBuilderPair(b InitBuilder) GeneratedBuilderImagePair {
 		imageName = fmt.Sprintf("%s-image", strings.ToLower(path))
 		path = "."
 	}
-	return GeneratedBuilderImagePair{
-		BuilderImagePair: BuilderImagePair{
+	return GeneratedArtifactInfo{
+		ArtifactInfo: ArtifactInfo{
 			Builder:   b,
 			ImageName: sanitizeImageName(imageName),
 		},

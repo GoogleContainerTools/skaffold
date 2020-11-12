@@ -28,7 +28,7 @@ import (
 func TestPrintAnalyzeJSON(t *testing.T) {
 	tests := []struct {
 		description string
-		pairs       []BuilderImagePair
+		pairs       []ArtifactInfo
 		builders    []InitBuilder
 		images      []string
 		skipBuild   bool
@@ -37,7 +37,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 	}{
 		{
 			description: "builders and images with pairs",
-			pairs:       []BuilderImagePair{{Builder: jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), Image: "image1", File: "build.gradle", Project: "project"}, ImageName: "image1"}},
+			pairs:       []ArtifactInfo{{Builder: jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), Image: "image1", File: "build.gradle", Project: "project"}, ImageName: "image1"}},
 			builders:    []InitBuilder{docker.ArtifactConfig{File: "Dockerfile"}},
 			images:      []string{"image2"},
 			expected:    `{"builders":[{"name":"Jib Gradle Plugin","payload":{"image":"image1","path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":false}]}` + "\n",
@@ -78,7 +78,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 func TestPrintAnalyzeJSONNoJib(t *testing.T) {
 	tests := []struct {
 		description string
-		pairs       []BuilderImagePair
+		pairs       []ArtifactInfo
 		builders    []InitBuilder
 		images      []string
 		skipBuild   bool

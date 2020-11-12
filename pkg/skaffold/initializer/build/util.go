@@ -25,10 +25,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func matchBuildersToImages(builders []InitBuilder, images []string) ([]BuilderImagePair, []InitBuilder, []string) {
+func matchBuildersToImages(builders []InitBuilder, images []string) ([]ArtifactInfo, []InitBuilder, []string) {
 	images = tag.StripTags(images)
 
-	var pairs []BuilderImagePair
+	var pairs []ArtifactInfo
 	var unresolvedImages = make(sortedSet)
 	for _, image := range images {
 		builderIdx := findExactlyOneMatchingBuilder(builders, image)
@@ -36,7 +36,7 @@ func matchBuildersToImages(builders []InitBuilder, images []string) ([]BuilderIm
 		// exactly one builder found for the image
 		if builderIdx != -1 {
 			// save the pair
-			pairs = append(pairs, BuilderImagePair{ImageName: image, Builder: builders[builderIdx]})
+			pairs = append(pairs, ArtifactInfo{ImageName: image, Builder: builders[builderIdx]})
 			// remove matched builder from builderConfigs
 			builders = append(builders[:builderIdx], builders[builderIdx+1:]...)
 		} else {
@@ -63,7 +63,7 @@ func findExactlyOneMatchingBuilder(builderConfigs []InitBuilder, image string) i
 }
 
 // Artifacts takes builder image pairs and workspaces and creates a list of latest.Artifacts from the data.
-func Artifacts(pairs []BuilderImagePair) []*latest.Artifact {
+func Artifacts(pairs []ArtifactInfo) []*latest.Artifact {
 	var artifacts []*latest.Artifact
 
 	for _, pair := range pairs {

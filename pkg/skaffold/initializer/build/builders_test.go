@@ -38,8 +38,8 @@ func TestResolveBuilderImages(t *testing.T) {
 		force                  bool
 		shouldMakeChoice       bool
 		shouldErr              bool
-		expectedPairs          []BuilderImagePair
-		expectedGeneratedPairs []GeneratedBuilderImagePair
+		expectedPairs          []ArtifactInfo
+		expectedGeneratedPairs []GeneratedArtifactInfo
 	}{
 		{
 			description:      "nothing to choose from",
@@ -53,7 +53,7 @@ func TestResolveBuilderImages(t *testing.T) {
 			buildConfigs:     []InitBuilder{docker.ArtifactConfig{File: "Dockerfile1"}},
 			images:           []string{"image1"},
 			shouldMakeChoice: false,
-			expectedPairs: []BuilderImagePair{
+			expectedPairs: []ArtifactInfo{
 				{
 					Builder:   docker.ArtifactConfig{File: "Dockerfile1"},
 					ImageName: "image1",
@@ -65,7 +65,7 @@ func TestResolveBuilderImages(t *testing.T) {
 			buildConfigs:     []InitBuilder{docker.ArtifactConfig{File: "Dockerfile1"}, jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"}, jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), Project: "project", File: "pom.xml"}},
 			images:           []string{"image1", "image2"},
 			shouldMakeChoice: true,
-			expectedPairs: []BuilderImagePair{
+			expectedPairs: []ArtifactInfo{
 				{
 					Builder:   docker.ArtifactConfig{File: "Dockerfile1"},
 					ImageName: "image1",
@@ -75,9 +75,9 @@ func TestResolveBuilderImages(t *testing.T) {
 					ImageName: "image2",
 				},
 			},
-			expectedGeneratedPairs: []GeneratedBuilderImagePair{
+			expectedGeneratedPairs: []GeneratedArtifactInfo{
 				{
-					BuilderImagePair: BuilderImagePair{
+					ArtifactInfo: ArtifactInfo{
 						Builder:   jib.ArtifactConfig{BuilderName: "Jib Maven Plugin", File: "pom.xml", Project: "project"},
 						ImageName: "pom.xml-image",
 					},
@@ -91,7 +91,7 @@ func TestResolveBuilderImages(t *testing.T) {
 			images:           []string{"image1"},
 			shouldMakeChoice: false,
 			force:            true,
-			expectedPairs: []BuilderImagePair{
+			expectedPairs: []ArtifactInfo{
 				{
 					Builder:   jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"},
 					ImageName: "image1",
@@ -104,7 +104,7 @@ func TestResolveBuilderImages(t *testing.T) {
 			images:           []string{"image1"},
 			shouldMakeChoice: true,
 			force:            true,
-			expectedPairs: []BuilderImagePair{
+			expectedPairs: []ArtifactInfo{
 				{
 					Builder:   docker.ArtifactConfig{File: "Dockerfile1"},
 					ImageName: "image1",
@@ -123,9 +123,9 @@ func TestResolveBuilderImages(t *testing.T) {
 			description:  "one unresolved image",
 			buildConfigs: []InitBuilder{docker.ArtifactConfig{File: "foo"}},
 			images:       []string{},
-			expectedGeneratedPairs: []GeneratedBuilderImagePair{
+			expectedGeneratedPairs: []GeneratedArtifactInfo{
 				{
-					BuilderImagePair: BuilderImagePair{
+					ArtifactInfo: ArtifactInfo{
 						Builder:   docker.ArtifactConfig{File: "foo"},
 						ImageName: "foo-image",
 					},
@@ -153,8 +153,8 @@ func TestResolveBuilderImages(t *testing.T) {
 				unresolvedImages: test.images,
 			}
 			err := initializer.resolveBuilderImages()
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, initializer.builderImagePairs, cmp.AllowUnexported())
-			t.CheckDeepEqual(test.expectedGeneratedPairs, initializer.generatedBuilderImagePairs, cmp.AllowUnexported())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, initializer.artifactInfos, cmp.AllowUnexported())
+			t.CheckDeepEqual(test.expectedGeneratedPairs, initializer.generatedArtifactInfos, cmp.AllowUnexported())
 		})
 	}
 }
@@ -164,7 +164,7 @@ func TestAutoSelectBuilders(t *testing.T) {
 		description              string
 		builderConfigs           []InitBuilder
 		images                   []string
-		expectedPairs            []BuilderImagePair
+		expectedPairs            []ArtifactInfo
 		expectedBuildersLeft     []InitBuilder
 		expectedUnresolvedImages []string
 	}{
@@ -192,7 +192,7 @@ func TestAutoSelectBuilders(t *testing.T) {
 				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "image2"},
 			},
 			images: []string{"image1", "image2", "image3"},
-			expectedPairs: []BuilderImagePair{
+			expectedPairs: []ArtifactInfo{
 				{
 					Builder:   jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle", Image: "image1"},
 					ImageName: "image1",
@@ -245,7 +245,7 @@ func TestProcessCliArtifacts(t *testing.T) {
 		description        string
 		artifacts          []string
 		shouldErr          bool
-		expectedPairs      []BuilderImagePair
+		expectedPairs      []ArtifactInfo
 		expectedWorkspaces []string
 	}{
 		{
@@ -264,7 +264,7 @@ func TestProcessCliArtifacts(t *testing.T) {
 				`/path/to/Dockerfile=image1`,
 				`/path/to/Dockerfile2=image2`,
 			},
-			expectedPairs: []BuilderImagePair{
+			expectedPairs: []ArtifactInfo{
 				{
 					Builder:   docker.ArtifactConfig{File: "/path/to/Dockerfile"},
 					ImageName: "image1",
@@ -283,7 +283,7 @@ func TestProcessCliArtifacts(t *testing.T) {
 				`{"builder":"Jib Maven Plugin","payload":{"path":"/path/to/pom.xml","project":"project-name","image":"testImage"},"image":"image3"}`,
 				`{"builder":"Buildpacks","payload":{"path":"/path/to/package.json"},"image":"image4"}`,
 			},
-			expectedPairs: []BuilderImagePair{
+			expectedPairs: []ArtifactInfo{
 				{
 					Builder:   docker.ArtifactConfig{File: "/path/to/Dockerfile"},
 					ImageName: "image1",

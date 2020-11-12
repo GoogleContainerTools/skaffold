@@ -50,7 +50,7 @@ func (s stubDeploymentInitializer) AddManifestForImage(string, string) {
 }
 
 type stubBuildInitializer struct {
-	pairs []build.BuilderImagePair
+	pairs []build.ArtifactInfo
 }
 
 func (s stubBuildInitializer) ProcessImages([]string) error {
@@ -67,7 +67,7 @@ func (s stubBuildInitializer) BuildConfig() latest.BuildConfig {
 	}
 }
 
-func (s stubBuildInitializer) GenerateManifests() (map[build.GeneratedBuilderImagePair][]byte, error) {
+func (s stubBuildInitializer) GenerateManifests() (map[build.GeneratedArtifactInfo][]byte, error) {
 	panic("no thank you")
 }
 
@@ -77,12 +77,12 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 		expectedSkaffoldConfig *latest.SkaffoldConfig
 		deployConfig           latest.DeployConfig
 		profiles               []latest.Profile
-		builderConfigPairs     []build.BuilderImagePair
+		builderConfigPairs     []build.ArtifactInfo
 		getWd                  func() (string, error)
 	}{
 		{
 			name:               "empty",
-			builderConfigPairs: []build.BuilderImagePair{},
+			builderConfigPairs: []build.ArtifactInfo{},
 			deployConfig:       latest.DeployConfig{},
 			getWd: func() (s string, err error) {
 				return filepath.Join("rootDir", "testConfig"), nil
@@ -98,7 +98,7 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 		},
 		{
 			name: "root dir + builder image pairs",
-			builderConfigPairs: []build.BuilderImagePair{
+			builderConfigPairs: []build.ArtifactInfo{
 				{
 					Builder: docker.ArtifactConfig{
 						File: "testDir/Dockerfile",
@@ -132,7 +132,7 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 		},
 		{
 			name:               "error working dir",
-			builderConfigPairs: []build.BuilderImagePair{},
+			builderConfigPairs: []build.ArtifactInfo{},
 			deployConfig:       latest.DeployConfig{},
 			getWd: func() (s string, err error) {
 				return "", errors.New("testError")
