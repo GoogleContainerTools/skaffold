@@ -3,7 +3,7 @@
 * Author(s): Gaurav Ghosh (@gsquared94)
 * Design Shepherd: Brian de Alwis (@briandealwis)
 * Date: 2020-10-01
-* Status: *Under implementation*
+* Status: *Implemented (#4713, #4922)*
 
 ## Background
 Refer [this](https://tinyurl.com/skaffold-modules) document which presents the design goals for introducing the concept of _modules_ in Skaffold. A prerequisite to being able to define modules and supporting cross module dependency is to first consider the latest version of the skaffold config (_currently `v2beta8`_) as an implicit module and allowing dependencies between artifacts defined in it. The current document aims to capture the major code changes necessary for achieving this.
