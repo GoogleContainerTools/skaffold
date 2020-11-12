@@ -86,7 +86,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 			}
 		}
 	}
-	builderImage, runImage, pull := fromRequiredArtifacts(artifact, b.artifacts, a.Dependencies, b.pushImages)
+	builderImage, runImage, pull := resolveDependencyImages(artifact, b.artifacts, a.Dependencies, b.pushImages)
 	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
 		AppPath:      workspace,
 		Builder:      builderImage,
@@ -165,9 +165,9 @@ func envMap(env []string) map[string]string {
 	return kv
 }
 
-// fromRequiredArtifacts replaces the provided builder and run images with built images from the required artifacts if specified.
+// resolveDependencyImages replaces the provided builder and run images with built images from the required artifacts if specified.
 // The return values are builder image, run image, and if remote pull is required.
-func fromRequiredArtifacts(artifact *latest.BuildpackArtifact, r ArtifactResolver, deps []*latest.ArtifactDependency, pushImages bool) (string, string, bool) {
+func resolveDependencyImages(artifact *latest.BuildpackArtifact, r ArtifactResolver, deps []*latest.ArtifactDependency, pushImages bool) (string, string, bool) {
 	builderImage, runImage := artifact.Builder, artifact.RunImage
 	builderImageLocal, runImageLocal, pull := false, false, true
 	var found bool
