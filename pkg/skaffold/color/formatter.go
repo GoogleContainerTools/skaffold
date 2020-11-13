@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package color
 import (
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	colors "github.com/heroku/color"
@@ -141,4 +142,12 @@ func IsColorable(out io.Writer) bool {
 	default:
 		return false
 	}
+}
+
+func IsStdout(out io.Writer) bool {
+	o, ok := out.(colorableWriter)
+	if ok {
+		return o.Writer == os.Stdout
+	}
+	return out == os.Stdout
 }

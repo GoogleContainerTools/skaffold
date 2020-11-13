@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,11 @@ package color
 
 import (
 	"bytes"
+	"io"
+	"os"
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func compareText(t *testing.T, expected, actual string) {
@@ -88,4 +92,36 @@ func TestFprintlnChangeDefaultToUnknown(t *testing.T) {
 	cw := SetupColors(&b, -1, true)
 	Default.Fprintln(cw, "2", "less", "chars!")
 	compareText(t, "2 less chars!\n", b.String())
+}
+
+func TestIsStdOut(t *testing.T) {
+	tests := []struct {
+		description string
+		out         io.Writer
+		expected    bool
+	}{
+		{
+			description: "std out passed",
+			out:         os.Stdout,
+			expected:    true,
+		},
+		{
+			description: "out nil",
+			out:         nil,
+		},
+		{
+			description: "out bytes buffer",
+			out:         new(bytes.Buffer),
+		},
+		{
+			description: "colorable std out passed",
+			out:         NewWriter(os.Stdout),
+			expected:    true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expected, IsStdout(test.out))
+		})
+	}
 }
