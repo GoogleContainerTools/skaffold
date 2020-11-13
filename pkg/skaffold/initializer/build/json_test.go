@@ -27,20 +27,20 @@ import (
 
 func TestPrintAnalyzeJSON(t *testing.T) {
 	tests := []struct {
-		description string
-		pairs       []BuilderImagePair
-		builders    []InitBuilder
-		images      []string
-		skipBuild   bool
-		shouldErr   bool
-		expected    string
+		description   string
+		artifactInfos []ArtifactInfo
+		builders      []InitBuilder
+		images        []string
+		skipBuild     bool
+		shouldErr     bool
+		expected      string
 	}{
 		{
-			description: "builders and images with pairs",
-			pairs:       []BuilderImagePair{{Builder: jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), Image: "image1", File: "build.gradle", Project: "project"}, ImageName: "image1"}},
-			builders:    []InitBuilder{docker.ArtifactConfig{File: "Dockerfile"}},
-			images:      []string{"image2"},
-			expected:    `{"builders":[{"name":"Jib Gradle Plugin","payload":{"image":"image1","path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":false}]}` + "\n",
+			description:   "builders and images with pairs",
+			artifactInfos: []ArtifactInfo{{Builder: jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), Image: "image1", File: "build.gradle", Project: "project"}, ImageName: "image1"}},
+			builders:      []InitBuilder{docker.ArtifactConfig{File: "Dockerfile"}},
+			images:        []string{"image2"},
+			expected:      `{"builders":[{"name":"Jib Gradle Plugin","payload":{"image":"image1","path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":false}]}` + "\n",
 		},
 		{
 			description: "builders and images with no pairs",
@@ -68,7 +68,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var out bytes.Buffer
 
-			err := PrintAnalyzeJSON(&out, test.skipBuild, test.pairs, test.builders, test.images)
+			err := PrintAnalyzeJSON(&out, test.skipBuild, test.artifactInfos, test.builders, test.images)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
 		})
@@ -77,13 +77,13 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 
 func TestPrintAnalyzeJSONNoJib(t *testing.T) {
 	tests := []struct {
-		description string
-		pairs       []BuilderImagePair
-		builders    []InitBuilder
-		images      []string
-		skipBuild   bool
-		shouldErr   bool
-		expected    string
+		description   string
+		artifactInfos []ArtifactInfo
+		builders      []InitBuilder
+		images        []string
+		skipBuild     bool
+		shouldErr     bool
+		expected      string
 	}{
 		{
 			description: "builders and images (backwards compatibility)",
@@ -111,7 +111,7 @@ func TestPrintAnalyzeJSONNoJib(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var out bytes.Buffer
 
-			err := PrintAnalyzeOldFormat(&out, test.skipBuild, test.pairs, test.builders, test.images)
+			err := PrintAnalyzeOldFormat(&out, test.skipBuild, test.artifactInfos, test.builders, test.images)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
 		})

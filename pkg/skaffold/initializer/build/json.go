@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
-func printAnalysis(out io.Writer, enableNewFormat bool, skipBuild bool, pairs []BuilderImagePair, unresolvedBuilderConfigs []InitBuilder, unresolvedImages []string) error {
+func printAnalysis(out io.Writer, enableNewFormat bool, skipBuild bool, pairs []ArtifactInfo, unresolvedBuilderConfigs []InitBuilder, unresolvedImages []string) error {
 	if !enableNewFormat {
 		return PrintAnalyzeOldFormat(out, skipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
 	}
@@ -33,7 +33,7 @@ func printAnalysis(out io.Writer, enableNewFormat bool, skipBuild bool, pairs []
 }
 
 // TODO(nkubala): make these private again once DoInit() relinquishes control of the builder/image processing
-func PrintAnalyzeOldFormat(out io.Writer, skipBuild bool, pairs []BuilderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
+func PrintAnalyzeOldFormat(out io.Writer, skipBuild bool, pairs []ArtifactInfo, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
 	if !skipBuild && len(unresolvedBuilders) == 0 {
 		return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again, or run `skaffold init --skip-build`")
 	}
@@ -60,7 +60,7 @@ func PrintAnalyzeOldFormat(out io.Writer, skipBuild bool, pairs []BuilderImagePa
 
 // printAnalyzeJSON takes the automatically resolved builder/image pairs, the unresolved images, and the unresolved builders, and generates
 // a JSON string containing builder config information,
-func PrintAnalyzeJSON(out io.Writer, skipBuild bool, pairs []BuilderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
+func PrintAnalyzeJSON(out io.Writer, skipBuild bool, pairs []ArtifactInfo, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
 	if !skipBuild && len(unresolvedBuilders) == 0 {
 		return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again, or run `skaffold init --skip-build`")
 	}

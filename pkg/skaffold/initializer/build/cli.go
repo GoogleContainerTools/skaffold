@@ -30,11 +30,11 @@ import (
 )
 
 type cliBuildInitializer struct {
-	cliArtifacts      []string
-	builderImagePairs []BuilderImagePair
-	builders          []InitBuilder
-	skipBuild         bool
-	enableNewFormat   bool
+	cliArtifacts    []string
+	artifactInfos   []ArtifactInfo
+	builders        []InitBuilder
+	skipBuild       bool
+	enableNewFormat bool
 }
 
 func (c *cliBuildInitializer) ProcessImages(images []string) error {
@@ -49,15 +49,15 @@ func (c *cliBuildInitializer) ProcessImages(images []string) error {
 
 func (c *cliBuildInitializer) BuildConfig() latest.BuildConfig {
 	return latest.BuildConfig{
-		Artifacts: Artifacts(c.builderImagePairs),
+		Artifacts: Artifacts(c.artifactInfos),
 	}
 }
 
 func (c *cliBuildInitializer) PrintAnalysis(out io.Writer) error {
-	return printAnalysis(out, c.enableNewFormat, c.skipBuild, c.builderImagePairs, c.builders, nil)
+	return printAnalysis(out, c.enableNewFormat, c.skipBuild, c.artifactInfos, c.builders, nil)
 }
 
-func (c *cliBuildInitializer) GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error) {
+func (c *cliBuildInitializer) GenerateManifests() (map[GeneratedArtifactInfo][]byte, error) {
 	return nil, nil
 }
 
@@ -66,12 +66,12 @@ func (c *cliBuildInitializer) processCliArtifacts() error {
 	if err != nil {
 		return err
 	}
-	c.builderImagePairs = pairs
+	c.artifactInfos = pairs
 	return nil
 }
 
-func processCliArtifacts(cliArtifacts []string) ([]BuilderImagePair, error) {
-	var pairs []BuilderImagePair
+func processCliArtifacts(cliArtifacts []string) ([]ArtifactInfo, error) {
+	var artifactInfos []ArtifactInfo
 	for _, artifact := range cliArtifacts {
 		// Parses artifacts in 1 of 2 forms:
 		// 1. JSON in the form of: {"builder":"Name of Builder","payload":{...},"image":"image.name","context":"artifact.context"}.
@@ -89,7 +89,7 @@ func processCliArtifacts(cliArtifacts []string) ([]BuilderImagePair, error) {
 			if len(parts) != 2 {
 				return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
 			}
-			pairs = append(pairs, BuilderImagePair{
+			artifactInfos = append(artifactInfos, ArtifactInfo{
 				Builder:   docker.ArtifactConfig{File: parts[0]},
 				ImageName: parts[1],
 			})
@@ -105,8 +105,8 @@ func processCliArtifacts(cliArtifacts []string) ([]BuilderImagePair, error) {
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
 			}
-			pair := BuilderImagePair{Builder: parsed.Payload, ImageName: a.Image, Workspace: a.Workspace}
-			pairs = append(pairs, pair)
+			info := ArtifactInfo{Builder: parsed.Payload, ImageName: a.Image, Workspace: a.Workspace}
+			artifactInfos = append(artifactInfos, info)
 
 		// FIXME: shouldn't use a human-readable name?
 		case jib.PluginName(jib.JibGradle), jib.PluginName(jib.JibMaven):
@@ -117,8 +117,8 @@ func processCliArtifacts(cliArtifacts []string) ([]BuilderImagePair, error) {
 				return nil, err
 			}
 			parsed.Payload.BuilderName = a.Name
-			pair := BuilderImagePair{Builder: parsed.Payload, ImageName: a.Image, Workspace: a.Workspace}
-			pairs = append(pairs, pair)
+			info := ArtifactInfo{Builder: parsed.Payload, ImageName: a.Image, Workspace: a.Workspace}
+			artifactInfos = append(artifactInfos, info)
 
 		case buildpacks.Name:
 			parsed := struct {
@@ -127,12 +127,12 @@ func processCliArtifacts(cliArtifacts []string) ([]BuilderImagePair, error) {
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
 			}
-			pair := BuilderImagePair{Builder: parsed.Payload, ImageName: a.Image, Workspace: a.Workspace}
-			pairs = append(pairs, pair)
+			info := ArtifactInfo{Builder: parsed.Payload, ImageName: a.Image, Workspace: a.Workspace}
+			artifactInfos = append(artifactInfos, info)
 
 		default:
 			return nil, fmt.Errorf("unknown builder type in CLI artifacts: %q", a.Name)
 		}
 	}
-	return pairs, nil
+	return artifactInfos, nil
 }
