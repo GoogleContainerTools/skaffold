@@ -1,0 +1,11 @@
+apiVersion: skaffold/v2beta8
+kind: Config
+metadata:
+  name: kpt-cl
+build:
+  artifacts:
+  - image: "frontend"
+    context: php-redis
+deploy:
+  kpt:
+    dir: config
