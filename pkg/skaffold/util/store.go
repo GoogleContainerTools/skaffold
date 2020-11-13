@@ -17,33 +17,62 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"sync"
+
+	"github.com/golang/groupcache/singleflight"
 )
 
-// SyncStore exports a single method `Exec` to ensure single execution of a function and share the result between all callers of the function.
+// SyncStore exports a single method `Exec` to ensure single execution of a function
+// and share the result between all callers of the function.
 type SyncStore struct {
-	oncePerKey *sync.Map
-	results    *sync.Map
+	sf      singleflight.Group
+	results sync.Map
 }
 
 // Exec executes the function f if and only if it's being called the first time for a specific key.
 // If it's called multiple times for the same key only the first call will execute and store the result of f.
 // All other calls will be blocked until the running instance of f returns and all of them receive the same result.
-func (o *SyncStore) Exec(key interface{}, f func() interface{}) interface{} {
-	once, _ := o.oncePerKey.LoadOrStore(key, new(sync.Once))
-	once.(*sync.Once).Do(func() {
-		res := f()
-		o.results.Store(key, res)
+func (o *SyncStore) Exec(key string, f func() interface{}) interface{} {
+	val, err := o.sf.Do(key, func() (_ interface{}, err error) {
+		// trap any runtime error due to synchronization issues.
+		defer func() {
+			if rErr := recover(); rErr != nil {
+				err = retrieveError(key, rErr)
+			}
+		}()
+		v, ok := o.results.Load(key)
+		if !ok {
+			v = f()
+			o.results.Store(key, v)
+		}
+		return v, nil
 	})
-
-	val, _ := o.results.Load(key)
+	if err != nil {
+		return err
+	}
 	return val
 }
 
 // NewSyncStore returns a new instance of `SyncStore`
 func NewSyncStore() *SyncStore {
 	return &SyncStore{
-		oncePerKey: new(sync.Map),
-		results:    new(sync.Map),
+		sf:      singleflight.Group{},
+		results: sync.Map{},
+	}
+}
+
+// StoreError represent any error that when retrieving errors from the store.
+type StoreError struct {
+	message string
+}
+
+func (e StoreError) Error() string {
+	return e.message
+}
+
+func retrieveError(key string, i interface{}) StoreError {
+	return StoreError{
+		message: fmt.Sprintf("internal error retrieving cached results for key %s: %v", key, i),
 	}
 }
