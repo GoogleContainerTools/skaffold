@@ -19,7 +19,6 @@ package survey
 import (
 	"bytes"
 	"io"
-	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -50,33 +49,6 @@ func TestDisplaySurveyForm(t *testing.T) {
 			var buf bytes.Buffer
 			New("test").DisplaySurveyPrompt(&buf)
 			t.CheckDeepEqual(test.expected, buf.String())
-		})
-	}
-}
-
-func TestIsStdOut(t *testing.T) {
-	tests := []struct {
-		description string
-		out         io.Writer
-		expected    bool
-	}{
-		{
-			description: "std out passed",
-			out:         os.Stdout,
-			expected:    true,
-		},
-		{
-			description: "out nil",
-			out:         nil,
-		},
-		{
-			description: "out bytes buffer",
-			out:         new(bytes.Buffer),
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(test.expected, isStdOut(test.out))
 		})
 	}
 }
