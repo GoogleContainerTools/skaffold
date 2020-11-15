@@ -118,17 +118,12 @@ func versionCheck(dir string, stdout io.Writer) error {
 		match := re.FindStringSubmatch(versionInfo)
 		if len(match) != 3 {
 			color.Yellow.Fprintf(stdout, "unable to determine kustomize version from %q\n"+
-				"Your kustomize may be not from the official release\n"+
-				"Please make sure your local kustomize version >= the official version %v, "+
-				"otherwise some features may not be well supported. "+
-				"You can download the official version from %v\n", string(out),
-				kustomizeMinVersion, kustomizeDownloadLink)
+				"You can download the official kustomize (recommended >= %v) from %v\n",
+				string(out), kustomizeMinVersion, kustomizeDownloadLink)
 		} else if !semver.IsValid(match[2]) || semver.Compare(match[2], kustomizeMinVersion) < 0 {
-			color.Yellow.Fprintf(stdout, "you are using kustomize version %q\n"+
-				"Please make sure your local kustomize version >= the official version %v, "+
-				"otherwise some features may not be well supported. "+
-				"You can download the official version from %v\n", match[2],
-				kustomizeMinVersion, kustomizeDownloadLink)
+			color.Yellow.Fprintf(stdout, "you are using kustomize version %q "+
+				"(recommended >= %v). You can download the official kustomize from %v\n",
+				match[2], kustomizeMinVersion, kustomizeDownloadLink)
 		}
 	}
 	return nil

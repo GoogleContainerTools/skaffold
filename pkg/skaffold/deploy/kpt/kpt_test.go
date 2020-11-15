@@ -1090,11 +1090,9 @@ func TestVersionCheck(t *testing.T) {
 			kustomizations: map[string]string{"Kustomization": `resources:
 					- foo.yaml`},
 			shouldErr: false,
-			out: fmt.Sprintf("you are using kustomize version \"v0.0.1\"\n"+
-				"Please make sure your local kustomize version >= the official version %v, "+
-				"otherwise some features may not be well supported. "+
-				"You can download the official version from %v\n", kustomizeMinVersion,
-				kustomizeDownloadLink),
+			out: fmt.Sprintf("you are using kustomize version \"v0.0.1\" "+
+				"(recommended >= %v). You can download the official kustomize from %v\n",
+				kustomizeMinVersion, kustomizeDownloadLink),
 		},
 		{
 			description: "kustomize version is unknown",
@@ -1104,11 +1102,9 @@ func TestVersionCheck(t *testing.T) {
 			kustomizations: map[string]string{"Kustomization": `resources:
 					- foo.yaml`},
 			shouldErr: false,
-			out: fmt.Sprintf("you are using kustomize version \"unknown\"\n"+
-				"Please make sure your local kustomize version >= the official version %v, "+
-				"otherwise some features may not be well supported. "+
-				"You can download the official version from %v\n", kustomizeMinVersion,
-				kustomizeDownloadLink),
+			out: fmt.Sprintf("you are using kustomize version \"unknown\" "+
+				"(recommended >= %v). You can download the official kustomize from %v\n",
+				kustomizeMinVersion, kustomizeDownloadLink),
 		},
 		{
 			description: "kustomize version is non-official",
@@ -1119,11 +1115,8 @@ func TestVersionCheck(t *testing.T) {
 					- foo.yaml`},
 			shouldErr: false,
 			out: fmt.Sprintf("unable to determine kustomize version from \"UNKNOWN\"\n"+
-				"Your kustomize may be not from the official release\n"+
-				"Please make sure your local kustomize version >= the official version %v, "+
-				"otherwise some features may not be well supported. "+
-				"You can download the official version from %v\n", kustomizeMinVersion,
-				kustomizeDownloadLink),
+				"You can download the official kustomize (recommended >= %v) from %v\n",
+				kustomizeMinVersion, kustomizeDownloadLink),
 		},
 	}
 	for _, test := range tests {
