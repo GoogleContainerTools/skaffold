@@ -1011,6 +1011,11 @@
           "description": "contains information about a local secret passed to `docker build`, along with optional destination information.",
           "x-intellij-html-description": "contains information about a local secret passed to <code>docker build</code>, along with optional destination information."
         },
+        "ssh": {
+          "type": "string",
+          "description": "used to pass in --ssh to docker build to use SSH agent. Format is \"default|<id>[=<socket>|<key>[,<key>]]\".",
+          "x-intellij-html-description": "used to pass in --ssh to docker build to use SSH agent. Format is &quot;default|<id>[=<socket>|<key>[,<key>]]&quot;."
+        },
         "target": {
           "type": "string",
           "description": "Dockerfile target name to build.",
@@ -1024,7 +1029,8 @@
         "network",
         "cacheFrom",
         "noCache",
-        "secret"
+        "secret",
+        "ssh"
       ],
       "additionalProperties": false,
       "description": "describes an artifact built from a Dockerfile, usually using `docker build`.",

@@ -104,7 +104,7 @@ func TestDockerBuildSpec(t *testing.T) {
 			},
 		},
 		{
-			description: "buildkit features not supported in GCB",
+			description: "buildkit `secret` option not supported in GCB",
 			artifact: &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
@@ -112,6 +112,18 @@ func TestDockerBuildSpec(t *testing.T) {
 						Secret: &latest.DockerSecret{
 							ID: "secret",
 						},
+					},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "buildkit `ssh` option not supported in GCB",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						DockerfilePath: "Dockerfile",
+						SSH:            "default",
 					},
 				},
 			},
