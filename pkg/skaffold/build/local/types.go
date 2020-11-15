@@ -61,6 +61,7 @@ type Builder struct {
 // into private functions for testability
 
 var getLocalCluster = config.GetLocalCluster
+var isImageLoadingRequired = config.IsImageLoadingRequired
 
 type Config interface {
 	docker.Config
@@ -91,10 +92,15 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		return nil, fmt.Errorf("getting localCluster: %w", err)
 	}
 
+	imageLoadingRequired, err := isImageLoadingRequired(cfg.GlobalConfig())
+	if err != nil {
+		return nil, fmt.Errorf("getting imageLoadingRequired: %w", err)
+	}
+
 	var pushImages bool
 	if cfg.Pipeline().Build.LocalBuild.Push == nil {
-		pushImages = !localCluster
-		logrus.Debugf("push value not present, defaulting to %t because localCluster is %t", pushImages, localCluster)
+		pushImages = !localCluster && !imageLoadingRequired
+		logrus.Debugf("push value not present, defaulting to %t because localCluster is %t and imageLoadingRequired is %t", pushImages, localCluster, imageLoadingRequired)
 	} else {
 		pushImages = *cfg.Pipeline().Build.LocalBuild.Push
 	}
