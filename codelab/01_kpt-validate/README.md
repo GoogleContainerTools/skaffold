@@ -23,10 +23,8 @@ Kpt is [an OSS tool](https://github.com/GoogleContainerTools/kpt) for Kubernetes
 -  How to reconcile your configuration changes with the live state
 
 
-TODO(yuwenma): Update the link after the first tutorial.md is merged.
-
 You can try out this interactive codelab using [Cloud Shell](https://cloud.google.com/shell). 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.png)](https://ssh.cloud.google.com/cloudshell/open?cloudshell_git_repo=https://github.com/yuwenma/skaffold&cloudshell_working_dir=codelab/kpt-101&cloudshell_workspace=codelab/kpt-101&cloudshell_tutorial=tutorial.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.png)](https://ssh.cloud.google.com/cloudshell/open?cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&cloudshell_working_dir=codelab/01_kpt-validate&cloudshell_workspace=codelab/01_kpt-validate&cloudshell_tutorial=tutorial.md)
 
 ## What's next?
 

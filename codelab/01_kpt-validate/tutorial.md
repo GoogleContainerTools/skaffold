@@ -88,7 +88,7 @@ Time to complete: **About 3 minutes**
 *   Now let's use `kpt pkg` to download the application example. 
         
     ```bash
-    kpt pkg get https://github.com/GoogleContainerTools/skaffold.git/codelab/kpt-101/resources/sample-app guestbook-cl && cd guestbook-cl
+    kpt pkg get https://github.com/GoogleContainerTools/skaffold.git/codelab/01_kpt-validate/resources/sample-app guestbook-cl && cd guestbook-cl
     ```
 
 <walkthrough-pin-section-icon></walkthrough-pin-section-icon>
@@ -171,7 +171,7 @@ can validate the app configuration and makes the validation itself **as a declar
 *   Download the kpt function resource
     
     ```bash
-    kpt pkg get https://github.com/GoogleContainerTools/skaffold.git/codelab/kpt-101/resources/validation-kubeval validation-kubeval
+    kpt pkg get https://github.com/GoogleContainerTools/skaffold.git/codelab/01_kpt-validate/resources/validation-kubeval validation-kubeval
     ```
     
 *   Now let's update the skaffold.yaml to use the new validator. Replace the following code with the 
@@ -263,7 +263,7 @@ Like the graph shows.
 
 *   Run `kpt pkg` to download the validation pipeline.
     ```bash
-    kpt pkg get https://github.com/GoogleContainerTools/skaffold.git/codelab/kpt-101/resources/validation-pipeline/ validations
+    kpt pkg get https://github.com/GoogleContainerTools/skaffold.git/codelab/01_kpt-validate/resources/validation-pipeline/ validations
     ```
     This pipeline contains two functions.
     *   A <walkthrough-editor-select-line filePath="guestbook-cl/validations/fn-pipeline.yaml" startLine="4" endLine="4" startCharacterOffset="8" endCharacterOffset="14">Kubeval</walkthrough-editor-select-line> validator to check the yaml schema
