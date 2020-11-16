@@ -361,14 +361,13 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 			onbuildNodesCache[strings.ToLower(from.image)] = ons
 		} else if warnMsg, ok := sErrors.IsOldImageManifestProblem(err); ok && warnMsg != "" {
 			logrus.Warn(warnMsg)
-		} else {
+		} else if !ok {
 			return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
 		}
 		expandedNodes = append(expandedNodes, onbuildNodes...)
 
 		// Stage names are case insensitive
 		onbuildNodesCache[strings.ToLower(from.as)] = nodes
-		onbuildNodesCache[strings.ToLower(from.image)] = nodes
 	}
 
 	return expandedNodes, nil
