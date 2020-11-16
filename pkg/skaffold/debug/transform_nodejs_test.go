@@ -370,7 +370,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
 					InitContainers: []v1.Container{{
-						Name:         "install-nodejs-support",
+						Name:         "install-nodejs-debug-support",
 						Image:        "HELPERS/nodejs",
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
@@ -410,7 +410,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-nodejs-support",
+								Name:         "install-nodejs-debug-support",
 								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -447,7 +447,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-nodejs-support",
+								Name:         "install-nodejs-debug-support",
 								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -487,7 +487,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-nodejs-support",
+								Name:         "install-nodejs-debug-support",
 								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -525,7 +525,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-nodejs-support",
+								Name:         "install-nodejs-debug-support",
 								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -564,7 +564,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-nodejs-support",
+								Name:         "install-nodejs-debug-support",
 								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -606,7 +606,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-nodejs-support",
+								Name:         "install-nodejs-debug-support",
 								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -656,7 +656,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-nodejs-support",
+								Name:         "install-nodejs-debug-support",
 								Image:        "HELPERS/nodejs",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},

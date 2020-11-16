@@ -25,19 +25,30 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
-// These are phases in a DevLoop
 const (
+	// These are phases in a Skaffolld
+	Init        = Phase("Init")
 	Build       = Phase("Build")
 	Deploy      = Phase("Deploy")
 	StatusCheck = Phase("StatusCheck")
 	FileSync    = Phase("FileSync")
 	DevInit     = Phase("DevInit")
 	Cleanup     = Phase("Cleanup")
+
+	// Report issue text
+	reportIssueText = "If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error"
 )
 
 var (
 	setOptionsOnce sync.Once
 	skaffoldOpts   config.SkaffoldOptions
+
+	reportIssueSuggestion = func(config.SkaffoldOptions) []*proto.Suggestion {
+		return []*proto.Suggestion{{
+			SuggestionCode: proto.SuggestionCode_OPEN_ISSUE,
+			Action:         reportIssueText,
+		}}
+	}
 )
 
 type Phase string
@@ -61,10 +72,15 @@ func ActionableErr(phase Phase, err error) *proto.ActionableErr {
 }
 
 func ShowAIError(err error) error {
-	for _, v := range knownBuildProblems {
+	var knownProblems = append(knownBuildProblems, knownDeployProblems...)
+	for _, v := range append(knownProblems, knownInitProblems...) {
 		if v.regexp.MatchString(err.Error()) {
 			if suggestions := v.suggestion(skaffoldOpts); suggestions != nil {
-				return fmt.Errorf("%s. %s", strings.Trim(v.description(err), "."), concatSuggestions(suggestions))
+				description := fmt.Sprintf("%s\n", err)
+				if v.description != nil {
+					description = strings.Trim(v.description(err), ".")
+				}
+				return fmt.Errorf("%s. %s", description, concatSuggestions(suggestions))
 			}
 			return fmt.Errorf(v.description(err))
 		}
@@ -72,25 +88,24 @@ func ShowAIError(err error) error {
 	return err
 }
 
+func IsOldImageManifestProblem(err error) (string, bool) {
+	if err != nil && oldImageManifest.regexp.MatchString(err.Error()) {
+		if s := oldImageManifest.suggestion(skaffoldOpts); s != nil {
+			return fmt.Sprintf("%s. %s", oldImageManifest.description(err),
+				concatSuggestions(oldImageManifest.suggestion(skaffoldOpts))), true
+		}
+		return "", true
+	}
+	return "", false
+}
+
 func getErrorCodeFromError(phase Phase, err error) (proto.StatusCode, []*proto.Suggestion) {
-	switch phase {
-	case Build:
-		for _, v := range knownBuildProblems {
+	if problems, ok := allErrors[phase]; ok {
+		for _, v := range problems {
 			if v.regexp.MatchString(err.Error()) {
 				return v.errCode, v.suggestion(skaffoldOpts)
 			}
 		}
-		return proto.StatusCode_BUILD_UNKNOWN, nil
-	case Deploy:
-		return proto.StatusCode_DEPLOY_UNKNOWN, nil
-	case StatusCheck:
-		return proto.StatusCode_STATUSCHECK_UNKNOWN, nil
-	case FileSync:
-		return proto.StatusCode_SYNC_UNKNOWN, nil
-	case DevInit:
-		return proto.StatusCode_DEVINIT_UNKNOWN, nil
-	case Cleanup:
-		return proto.StatusCode_CLEANUP_UNKNOWN, nil
 	}
 	return proto.StatusCode_UNKNOWN_ERROR, nil
 }
@@ -105,4 +120,42 @@ func concatSuggestions(suggestions []*proto.Suggestion) string {
 	}
 	s.WriteString(".")
 	return s.String()
+}
+
+var allErrors = map[Phase][]problem{
+	Build: append(knownBuildProblems, problem{
+		regexp:     re(".*"),
+		errCode:    proto.StatusCode_BUILD_UNKNOWN,
+		suggestion: reportIssueSuggestion,
+	}),
+	Init: append(knownInitProblems, problem{
+		regexp:     re(".*"),
+		errCode:    proto.StatusCode_INIT_UNKNOWN,
+		suggestion: reportIssueSuggestion,
+	}),
+	Deploy: append(knownDeployProblems, problem{
+		regexp:     re(".*"),
+		errCode:    proto.StatusCode_DEPLOY_UNKNOWN,
+		suggestion: reportIssueSuggestion,
+	}),
+	StatusCheck: {{
+		regexp:     re(".*"),
+		errCode:    proto.StatusCode_STATUSCHECK_UNKNOWN,
+		suggestion: reportIssueSuggestion,
+	}},
+	FileSync: {{
+		regexp:     re(".*"),
+		errCode:    proto.StatusCode_SYNC_UNKNOWN,
+		suggestion: reportIssueSuggestion,
+	}},
+	DevInit: {oldImageManifest, {
+		regexp:     re(".*"),
+		errCode:    proto.StatusCode_DEVINIT_UNKNOWN,
+		suggestion: reportIssueSuggestion,
+	}},
+	Cleanup: {{
+		regexp:     re(".*"),
+		errCode:    proto.StatusCode_CLEANUP_UNKNOWN,
+		suggestion: reportIssueSuggestion,
+	}},
 }

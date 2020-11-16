@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package color
 import (
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	colors "github.com/heroku/color"
@@ -35,8 +36,8 @@ func init() {
 	colors.Disable(true)
 }
 
-// SetupColors enables/disables coloured output.
-func SetupColors(out io.Writer, defaultColor int, forceColors bool) {
+// SetupColors conditionally wraps the input `Writer` with a color enabled `Writer`.
+func SetupColors(out io.Writer, defaultColor int, forceColors bool) io.Writer {
 	_, isTerm := util.IsTerminal(out)
 	useColors := isTerm || forceColors
 	if useColors {
@@ -62,11 +63,20 @@ func SetupColors(out io.Writer, defaultColor int, forceColors bool) {
 		37: White,
 		0:  None,
 	}[defaultColor]
+
+	if useColors {
+		return NewWriter(out)
+	}
+	return out
 }
 
 // Color can be used to format text so it can be printed to the terminal in color.
 type Color struct {
 	color *colors.Color
+}
+
+type colorableWriter struct {
+	io.Writer
 }
 
 var (
@@ -103,7 +113,7 @@ var (
 
 // Fprintln outputs the result to out, followed by a newline.
 func (c Color) Fprintln(out io.Writer, a ...interface{}) {
-	if c.color == nil {
+	if c.color == nil || !IsColorable(out) {
 		fmt.Fprintln(out, a...)
 		return
 	}
@@ -113,10 +123,31 @@ func (c Color) Fprintln(out io.Writer, a ...interface{}) {
 
 // Fprintf outputs the result to out.
 func (c Color) Fprintf(out io.Writer, format string, a ...interface{}) {
-	if c.color == nil {
+	if c.color == nil || !IsColorable(out) {
 		fmt.Fprintf(out, format, a...)
 		return
 	}
 
 	fmt.Fprint(out, c.color.Sprintf(format, a...))
+}
+
+func NewWriter(out io.Writer) io.Writer {
+	return colorableWriter{out}
+}
+
+func IsColorable(out io.Writer) bool {
+	switch out.(type) {
+	case colorableWriter:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsStdout(out io.Writer) bool {
+	o, ok := out.(colorableWriter)
+	if ok {
+		return o.Writer == os.Stdout
+	}
+	return out == os.Stdout
 }

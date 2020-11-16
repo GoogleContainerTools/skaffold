@@ -94,6 +94,13 @@ When overlay directories are found, these will be listed in the generated Skaffo
 
 *Note: order is guaranteed, since Skaffold's directory parsing is always deterministic.*
 
+## `--force` Flag
+`skaffold init` allows for use of a `--force` flag, which removes the prompts from vanilla `skaffold init`, and allows skaffold to make a best effort attempt to automatically generate a config for your project.
+
+In a situation where one image is detected, but multiple possible builders are detected, skaffold will choose a builder as follows: Docker > Jib > Bazel > Buildpacks.
+
+*Note: This feature is still under development, and doesn't currently support use cases such as multiple images in a project.*
+
 ## Init API
 `skaffold init` also exposes an API which tools like IDEs can integrate with via flags.
 
@@ -155,9 +162,9 @@ To generate a skaffold `build` config, use the `--artifact` flag per artifact.
 For multiple artifacts, use `--artifact` multiple times.
 
 ```bash
-microservices$skaffold init \
+skaffold init \
   -a '{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}' \
-  -a '{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}'
+  -a '{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web","context":"path/to/context"}'
 ```
 
 will produce an `skaffold.yaml` config like this
@@ -171,7 +178,7 @@ build:
   - image: gcr.io/k8s-skaffold/leeroy-app
     context: leeroy-app
   - image: gcr.io/k8s-skaffold/leeroy-web
-    context: leeroy-web
+    context: path/to/context
 deploy:
   kubectl:
     manifests:

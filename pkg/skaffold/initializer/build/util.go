@@ -25,10 +25,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func matchBuildersToImages(builders []InitBuilder, images []string) ([]BuilderImagePair, []InitBuilder, []string) {
+func matchBuildersToImages(builders []InitBuilder, images []string) ([]ArtifactInfo, []InitBuilder, []string) {
 	images = tag.StripTags(images)
 
-	var pairs []BuilderImagePair
+	var artifactInfos []ArtifactInfo
 	var unresolvedImages = make(sortedSet)
 	for _, image := range images {
 		builderIdx := findExactlyOneMatchingBuilder(builders, image)
@@ -36,7 +36,7 @@ func matchBuildersToImages(builders []InitBuilder, images []string) ([]BuilderIm
 		// exactly one builder found for the image
 		if builderIdx != -1 {
 			// save the pair
-			pairs = append(pairs, BuilderImagePair{ImageName: image, Builder: builders[builderIdx]})
+			artifactInfos = append(artifactInfos, ArtifactInfo{ImageName: image, Builder: builders[builderIdx]})
 			// remove matched builder from builderConfigs
 			builders = append(builders[:builderIdx], builders[builderIdx+1:]...)
 		} else {
@@ -44,7 +44,7 @@ func matchBuildersToImages(builders []InitBuilder, images []string) ([]BuilderIm
 			unresolvedImages.add(image)
 		}
 	}
-	return pairs, builders, unresolvedImages.values()
+	return artifactInfos, builders, unresolvedImages.values()
 }
 
 func findExactlyOneMatchingBuilder(builderConfigs []InitBuilder, image string) int {
@@ -62,16 +62,20 @@ func findExactlyOneMatchingBuilder(builderConfigs []InitBuilder, image string) i
 	return matchingConfigIndex
 }
 
-func Artifacts(pairs []BuilderImagePair) []*latest.Artifact {
+// Artifacts takes builder image pairs and workspaces and creates a list of latest.Artifacts from the data.
+func Artifacts(artifactInfos []ArtifactInfo) []*latest.Artifact {
 	var artifacts []*latest.Artifact
 
-	for _, pair := range pairs {
+	for _, info := range artifactInfos {
 		artifact := &latest.Artifact{
-			ImageName:    pair.ImageName,
-			ArtifactType: pair.Builder.ArtifactType(),
+			ImageName:    info.ImageName,
+			ArtifactType: info.Builder.ArtifactType(),
 		}
 
-		workspace := filepath.Dir(pair.Builder.Path())
+		workspace := info.Workspace
+		if workspace == "" {
+			workspace = filepath.Dir(info.Builder.Path())
+		}
 		if workspace != "." {
 			fmt.Fprintf(os.Stdout, "using non standard workspace: %s\n", workspace)
 			artifact.Workspace = workspace

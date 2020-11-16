@@ -28,10 +28,13 @@ import (
 	"regexp"
 	"strings"
 
+	"golang.org/x/mod/semver"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/kustomize/kyaml/fn/framework"
 	k8syaml "sigs.k8s.io/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
@@ -45,9 +48,16 @@ import (
 const (
 	inventoryTemplate = "inventory-template.yaml"
 	kptHydrated       = ".kpt-hydrated"
-	tmpSinkDir        = ".tmp-sink-dir"
+	tmpKustomizeDir   = ".kustomize"
 	kptFnAnnotation   = "config.kubernetes.io/function"
 	kptFnLocalConfig  = "config.kubernetes.io/local-config"
+
+	kptDownloadLink = "https://googlecontainertools.github.io/kpt/installation/"
+	kptMinVersion   = "0.34.0"
+
+	kustomizeDownloadLink  = "https://kubernetes-sigs.github.io/kustomize/installation/"
+	kustomizeMinVersion    = "v3.2.3"
+	kustomizeVersionRegexP = `{Version:(kustomize/)?(\S+) GitCommit:\S+ BuildDate:\S+ GoOs:\S+ GoArch:\S+}`
 )
 
 // Deployer deploys workflows with kpt CLI
@@ -59,6 +69,7 @@ type Deployer struct {
 	globalConfig       string
 }
 
+// NewDeployer generates a new Deployer object contains the kptDeploy schema.
 func NewDeployer(cfg types.Config, labels map[string]string) *Deployer {
 	return &Deployer{
 		KptDeploy:          cfg.Pipeline().Deploy.KptDeploy,
@@ -68,15 +79,67 @@ func NewDeployer(cfg types.Config, labels map[string]string) *Deployer {
 	}
 }
 
+var sanityCheck = versionCheck
+
+// versionCheck checks if the kpt and kustomize versions meet the minimum requirements.
+func versionCheck(dir string, stdout io.Writer) error {
+	kptCmd := exec.Command("kpt", "version")
+	out, err := util.RunCmdOut(kptCmd)
+	if err != nil {
+		return fmt.Errorf("kpt is not installed yet\nSee kpt installation: %v",
+			kptDownloadLink)
+	}
+	version := strings.TrimSuffix(string(out), "\n")
+	// kpt follows semver but does not have "v" prefix.
+	if !semver.IsValid("v" + version) {
+		return fmt.Errorf("unknown kpt version %v\nPlease upgrade your "+
+			"local kpt CLI to a version >= %v\nSee kpt installation: %v",
+			string(out), kptMinVersion, kptDownloadLink)
+	}
+	if semver.Compare("v"+version, "v"+kptMinVersion) < 0 {
+		return fmt.Errorf("you are using kpt %q\nPlease update your kpt version to"+
+			" >= %v\nSee kpt installation: %v", version[0], kptMinVersion, kptDownloadLink)
+	}
+
+	// Users can choose not to use kustomize in kpt deployer mode. We only check the kustomize
+	// version when kustomization.yaml config is directed under .deploy.kpt.dir path.
+	_, err = kustomize.FindKustomizationConfig(dir)
+	if err == nil {
+		kustomizeCmd := exec.Command("kustomize", "version")
+		out, err := util.RunCmdOut(kustomizeCmd)
+		if err != nil {
+			return fmt.Errorf("kustomize is not installed yet\nSee kpt installation: %v",
+				kustomizeDownloadLink)
+		}
+		versionInfo := strings.TrimSuffix(string(out), "\n")
+		// Kustomize version information is in the form of
+		// {Version:$VERSION GitCommit:$COMMIT BuildDate:1970-01-01T00:00:00Z GoOs:darwin GoArch:amd64}
+		re := regexp.MustCompile(kustomizeVersionRegexP)
+		match := re.FindStringSubmatch(versionInfo)
+		if len(match) != 3 {
+			color.Yellow.Fprintf(stdout, "unable to determine kustomize version from %q\n"+
+				"You can download the official kustomize (recommended >= %v) from %v\n",
+				string(out), kustomizeMinVersion, kustomizeDownloadLink)
+		} else if !semver.IsValid(match[2]) || semver.Compare(match[2], kustomizeMinVersion) < 0 {
+			color.Yellow.Fprintf(stdout, "you are using kustomize version %q "+
+				"(recommended >= %v). You can download the official kustomize from %v\n",
+				match[2], kustomizeMinVersion, kustomizeDownloadLink)
+		}
+	}
+	return nil
+}
+
 // Deploy hydrates the manifests using kustomizations and kpt functions as described in the render method,
 // outputs them to the applyDir, and runs `kpt live apply` against applyDir to create resources in the cluster.
 // `kpt live apply` supports automated pruning declaratively via resources in the applyDir.
 func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+	if err := sanityCheck(k.Dir, out); err != nil {
+		return nil, err
+	}
 	flags, err := k.getKptFnRunArgs()
 	if err != nil {
 		return []string{}, err
 	}
-
 	manifests, err := k.renderManifests(ctx, out, builds, flags)
 	if err != nil {
 		return nil, err
@@ -98,13 +161,6 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 	}
 
 	manifest.Write(manifests.String(), filepath.Join(applyDir, "resources.yaml"), out)
-	// Hydrated config is stored in applyDir, no need to dup the config in temporary sink dir.
-	if k.Fn.SinkDir == tmpSinkDir {
-		if err := os.RemoveAll(tmpSinkDir); err != nil {
-			return nil, fmt.Errorf("deleting temporary directory %s: %w", k.Fn.SinkDir, err)
-		}
-	}
-
 	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "apply"}, k.getKptLiveApplyArgs(), nil)...)
 	cmd.Stdout = out
 	cmd.Stderr = out
@@ -119,24 +175,36 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 // In dev mode, a redeploy will be triggered if one of these files is updated.
 func (k *Deployer) Dependencies() ([]string, error) {
 	deps := deployutil.NewStringSet()
-	if len(k.Fn.FnPath) > 0 {
-		deps.Insert(k.Fn.FnPath)
-	}
 
+	// Add the app configuration manifests. It may already include kpt functions and kustomize
+	// config files.
 	configDeps, err := getResources(k.Dir)
 	if err != nil {
 		return nil, fmt.Errorf("finding dependencies in %s: %w", k.Dir, err)
 	}
-
 	deps.Insert(configDeps...)
 
-	// Kpt deployer assumes that the kustomization configuration to build lives directly under k.Dir.
+	// Add the kustomize resources which lives directly under k.Dir.
 	kustomizeDeps, err := kustomize.DependenciesForKustomization(k.Dir)
 	if err != nil {
 		return nil, fmt.Errorf("finding kustomization directly under %s: %w", k.Dir, err)
 	}
-
 	deps.Insert(kustomizeDeps...)
+
+	// Add the kpt function resources when they are outside of the k.Dir directory.
+	if len(k.Fn.FnPath) > 0 {
+		if rel, err := filepath.Rel(k.Dir, k.Fn.FnPath); err != nil {
+			return nil, fmt.Errorf("finding relative path from "+
+				".deploy.kpt.fn.fnPath %v to deploy.kpt.Dir %v: %w", k.Fn.FnPath, k.Dir, err)
+		} else if strings.HasPrefix(rel, "..") {
+			// kpt.FnDir is outside the config .Dir.
+			fnDeps, err := getResources(k.Fn.FnPath)
+			if err != nil {
+				return nil, fmt.Errorf("finding kpt function outside %s: %w", k.Dir, err)
+			}
+			deps.Insert(fnDeps...)
+		}
+	}
 
 	return deps.ToList(), nil
 }
@@ -160,6 +228,9 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 // Render hydrates manifests using both kustomization and kpt functions.
 func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, _ bool, filepath string) error {
+	if err := sanityCheck(k.Dir, out); err != nil {
+		return err
+	}
 	flags, err := k.getKptFnRunArgs()
 	if err != nil {
 		return err
@@ -178,44 +249,107 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 // adding image digests, and adding run-id labels.
 func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []build.Artifact,
 	flags []string) (manifest.ManifestList, error) {
+	var err error
 	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
 	}
-	if k.Fn.SinkDir == "" {
-		k.Fn.SinkDir = tmpSinkDir
-	}
 
-	if err := os.RemoveAll(filepath.Join(k.Fn.SinkDir, k.Dir)); err != nil {
-		return nil, fmt.Errorf("deleting temporary directory %s: %w", filepath.Join(k.Fn.SinkDir, k.Dir), err)
-	}
-	if err := os.MkdirAll(filepath.Join(k.Fn.SinkDir, k.Dir), os.ModePerm); err != nil {
-		return nil, fmt.Errorf("creating temporary directory %s: %w", filepath.Join(k.Fn.SinkDir, k.Dir), err)
-	}
-
-	if err := k.readConfigs(ctx); err != nil {
+	var buf []byte
+	// Read the manifests under k.Dir as "source".
+	cmd := exec.CommandContext(
+		ctx, "kpt", kptCommandArgs(k.Dir, []string{"fn", "source"},
+			nil, nil)...)
+	buf, err = util.RunCmdOut(cmd)
+	if err != nil {
 		return nil, fmt.Errorf("reading config manifests: %w", err)
 	}
 
-	if err := k.kustomizeBuild(ctx); err != nil {
-		return nil, fmt.Errorf("kustomize build: %w", err)
+	// A workaround for issue https://github.com/GoogleContainerTools/kpt/issues/1149
+	// Problem: fn-path cannot be recognized in kpt pipeline mode, and it results in that
+	// the kpt functions in are ignored.
+	// Solution: pull kpt functions specifically from the kpt source inputs (getKptFunc) and
+	// adds it back to the pipeline after kustomize build finishes (append kptFn).
+	var kptFnBuf []byte
+	if len(k.Fn.FnPath) > 0 {
+		cmd = exec.CommandContext(
+			ctx, "kpt", kptCommandArgs(k.Fn.FnPath, []string{"fn", "source"},
+				nil, nil)...)
+		if kptFnBuf, err = util.RunCmdOut(cmd); err != nil {
+			return nil, fmt.Errorf("kpt source the fn-path config %v", err)
+		}
+	} else {
+		kptFnBuf = buf
+	}
+	kptFn, err := k.getKptFunc(kptFnBuf)
+	if err != nil {
+		return nil, err
 	}
 
-	manifests, err := k.kptFnRun(ctx, flags)
+	// Hydrate the manifests source.
+	_, err = kustomize.FindKustomizationConfig(k.Dir)
+	// Only run kustomize if kustomization.yaml is found.
+	if err == nil {
+		// Note: A tmp dir is used to provide kustomize the manifest directory.
+		// Once the unified kpt/kustomize is done, kustomize can be run as a kpt fn step and
+		// this additional directory creation/deletion will no longer be needed.
+		if err := os.RemoveAll(tmpKustomizeDir); err != nil {
+			return nil, fmt.Errorf("removing %v:%w", tmpKustomizeDir, err)
+		}
+		if err := os.MkdirAll(tmpKustomizeDir, os.ModePerm); err != nil {
+			return nil, err
+		}
+		defer func() {
+			os.RemoveAll(tmpKustomizeDir)
+		}()
+
+		err = k.sink(ctx, buf, tmpKustomizeDir)
+		if err != nil {
+			return nil, err
+		}
+
+		cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, tmpKustomizeDir)...)
+		buf, err = util.RunCmdOut(cmd)
+		if err != nil {
+			return nil, fmt.Errorf("kustomize build: %w", err)
+		}
+	}
+	// Run kpt functions against the hydrated manifests.
+	cmd = exec.CommandContext(ctx, "kpt", kptCommandArgs("", []string{"fn", "run"}, flags, nil)...)
+	buf = append(buf, []byte("---\n")...)
+	buf = append(buf, kptFn...)
+	cmd.Stdin = bytes.NewBuffer(buf)
+	buf, err = util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, fmt.Errorf("running kpt functions: %w", err)
 	}
 
-	if len(manifests) == 0 {
-		return nil, nil
+	// Store the manipulated manifests to the sink dir.
+	if k.Fn.SinkDir != "" {
+		if err := os.RemoveAll(k.Fn.SinkDir); err != nil {
+			return nil, fmt.Errorf("deleting sink directory %s: %w", k.Fn.SinkDir, err)
+		}
+
+		if err := os.MkdirAll(k.Fn.SinkDir, os.ModePerm); err != nil {
+			return nil, fmt.Errorf("creating sink directory %s: %w", k.Fn.SinkDir, err)
+		}
+		err = k.sink(ctx, buf, k.Fn.SinkDir)
+		if err != nil {
+			return nil, fmt.Errorf("sinking to directory %s: %w", k.Fn.SinkDir, err)
+		}
+		fmt.Printf(
+			"Manipulated resources are flattended and stored in your sink directory: %v\n",
+			k.Fn.SinkDir)
 	}
 
-	// exclude the kpt function from the manipulated resources.
+	var manifests manifest.ManifestList
+	if len(buf) > 0 {
+		manifests.Append(buf)
+	}
 	manifests, err = k.excludeKptFn(manifests)
 	if err != nil {
-		return nil, fmt.Errorf("exclude kpt fn from manipulated resources: %w", err)
+		return nil, fmt.Errorf("excluding kpt functions from manifests: %w", err)
 	}
-
 	manifests, err = manifests.ReplaceImages(builds)
 	if err != nil {
 		return nil, fmt.Errorf("replacing images in manifests: %w", err)
@@ -228,68 +362,43 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []bu
 	return manifests.SetLabels(k.labels)
 }
 
-// readConfigs uses `kpt fn source` to read config manifests from k.Dir
-// and uses `kpt fn sink` to output those manifests to sinkDir.
-func (k *Deployer) readConfigs(ctx context.Context) error {
-	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(k.Dir, []string{"fn", "source"}, nil, nil)...)
-	b, err := util.RunCmdOut(cmd)
-	if err != nil {
-		return err
+func (k *Deployer) getKptFunc(buf []byte) ([]byte, error) {
+	input := bytes.NewBufferString(string(buf))
+	rl := framework.ResourceList{
+		Reader: input,
 	}
-
-	cmd = exec.CommandContext(ctx, "kpt", kptCommandArgs(filepath.Join(k.Fn.SinkDir, k.Dir), []string{"fn", "sink"}, nil, nil)...)
-	cmd.Stdin = bytes.NewBuffer(b)
-	if _, err := util.RunCmdOut(cmd); err != nil {
-		return err
+	// Manipulate the kustomize "Rnode"(Kustomize term) and pulls out the "Items"
+	// from ResourceLists.
+	if err := rl.Read(); err != nil {
+		return nil, fmt.Errorf("reading ResourceList %w", err)
 	}
-
-	return nil
-}
-
-// kustomizeBuild runs `kustomize build` if a kustomization config exists and outputs to .pipeline.
-func (k *Deployer) kustomizeBuild(ctx context.Context) error {
-	if _, err := kustomize.FindKustomizationConfig(k.Dir); err != nil {
-		// No kustomization config was found directly under k.Dir, so there is no need to continue.
-		return nil
-	}
-
-	cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"},
-		kustomize.BuildCommandArgs([]string{"-o", filepath.Join(k.Fn.SinkDir, k.Dir)}, k.Dir)...)...)
-	if _, err := util.RunCmdOut(cmd); err != nil {
-		return err
-	}
-
-	deps, err := kustomize.DependenciesForKustomization(k.Dir)
-	if err != nil {
-		return fmt.Errorf("finding kustomization dependencies: %w", err)
-	}
-
-	// Kustomize build outputs hydrated configs to sinkDir, so the dry configs must be removed.
-	for _, v := range deps {
-		if err := os.RemoveAll(filepath.Join(k.Fn.SinkDir, v)); err != nil {
-			return err
+	var kptFn []byte
+	for i := range rl.Items {
+		item, err := rl.Items[i].String()
+		if err != nil {
+			return nil, fmt.Errorf("reading Item %w", err)
+		}
+		var obj unstructured.Unstructured
+		jByte, err := k8syaml.YAMLToJSON([]byte(item))
+		if err != nil {
+			continue
+		}
+		if err := obj.UnmarshalJSON(jByte); err != nil {
+			continue
+		}
+		// Found kpt fn.
+		if _, ok := obj.GetAnnotations()[kptFnAnnotation]; ok {
+			kptFn = append(kptFn, []byte(item)...)
 		}
 	}
-
-	return nil
+	return kptFn, nil
 }
 
-// kptFnRun does a dry run with the specified kpt functions (fn-path XOR image) against sinkDir.
-// If neither fn-path nor image are specified, functions will attempt to be discovered in sinkDir.
-// An error occurs if both fn-path and image are specified.
-func (k *Deployer) kptFnRun(ctx context.Context, flags []string) (manifest.ManifestList, error) {
-	var manifests manifest.ManifestList
-	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(k.Fn.SinkDir, []string{"fn", "run"}, flags, nil)...)
-	out, err := util.RunCmdOut(cmd)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(out) > 0 {
-		manifests.Append(out)
-	}
-
-	return manifests, nil
+func (k *Deployer) sink(ctx context.Context, buf []byte, sinkDir string) error {
+	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(sinkDir, []string{"fn", "sink"}, nil, nil)...)
+	cmd.Stdin = bytes.NewBuffer(buf)
+	_, err := util.RunCmdOut(cmd)
+	return err
 }
 
 // excludeKptFn adds an annotation "config.kubernetes.io/local-config: 'true'" to kpt function.
@@ -298,7 +407,10 @@ func (k *Deployer) excludeKptFn(originalManifest manifest.ManifestList) (manifes
 	var newManifest manifest.ManifestList
 	for _, yByte := range originalManifest {
 		// Convert yaml byte config to unstructured.Unstructured
-		jByte, _ := k8syaml.YAMLToJSON(yByte)
+		jByte, err := k8syaml.YAMLToJSON(yByte)
+		if err != nil {
+			return nil, fmt.Errorf("yaml to json error: %w", err)
+		}
 		var obj unstructured.Unstructured
 		if err := obj.UnmarshalJSON(jByte); err != nil {
 			return nil, fmt.Errorf("unmarshaling config: %w", err)
@@ -318,7 +430,7 @@ func (k *Deployer) excludeKptFn(originalManifest manifest.ManifestList) (manifes
 		anns := obj.GetAnnotations()
 		anns[kptFnLocalConfig] = "true"
 		obj.SetAnnotations(anns)
-		jByte, err := obj.MarshalJSON()
+		jByte, err = obj.MarshalJSON()
 		if err != nil {
 			return nil, fmt.Errorf("marshaling to json: %w", err)
 		}
@@ -432,9 +544,8 @@ func (k *Deployer) getKptFnRunArgs() ([]string, error) {
 	}
 
 	count := 0
-
+	// fn-path is not supported due to kpt issue https://github.com/GoogleContainerTools/kpt/issues/1149
 	if len(k.Fn.FnPath) > 0 {
-		flags = append(flags, "--fn-path", k.Fn.FnPath)
 		count++
 	}
 

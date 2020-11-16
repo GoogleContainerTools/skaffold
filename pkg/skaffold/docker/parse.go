@@ -27,10 +27,12 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
+	"github.com/moby/buildkit/frontend/dockerfile/instructions"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/sirupsen/logrus"
 
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -72,6 +74,11 @@ func parseDockerfile(absDockerfilePath string, buildArgs map[string]*string, cfg
 
 	res, err := parser.Parse(f)
 	if err != nil {
+		return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
+	}
+
+	// instructions.Parse will check for malformed Dockerfile
+	if _, _, err := instructions.Parse(res.AST); err != nil {
 		return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
 	}
 
@@ -229,6 +236,11 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, cfg Config) (
 		switch node.Value {
 		case command.From:
 			from := fromInstruction(node)
+			if from.image == "" {
+				// some build args like artifact dependencies are not available until the first build sequence has completed.
+				// skip check if there are unavailable images
+				continue
+			}
 			if from.as != "" {
 				// Stage names are case insensitive
 				stages[strings.ToLower(from.as)] = true
@@ -238,16 +250,15 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, cfg Config) (
 			// was already changed.
 			if !stages[strings.ToLower(from.image)] {
 				img, err := RetrieveImage(from.image, cfg)
-				if err != nil {
+				if err == nil {
+					workdir = img.Config.WorkingDir
+				} else if _, ok := sErrors.IsOldImageManifestProblem(err); !ok {
 					return nil, err
 				}
-
-				workdir = img.Config.WorkingDir
 				if workdir == "" {
 					workdir = "/"
 				}
 			}
-
 			if onlyLastImage {
 				copied = nil
 			}
@@ -335,6 +346,11 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 		}
 		from := fromInstruction(node)
 
+		if from.image == "" {
+			// some build args like artifact dependencies are not available until the first build sequence has completed.
+			// skip check if there are unavailable images
+			continue
+		}
 		// If the image referenced in FROM has ONBUILD instructions, we
 		// inline them here.
 		var onbuildNodes []*parser.Node
@@ -343,6 +359,8 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 		} else if ons, err := parseOnbuild(from.image, cfg); err == nil {
 			onbuildNodes = ons
 			onbuildNodesCache[strings.ToLower(from.image)] = ons
+		} else if warnMsg, ok := sErrors.IsOldImageManifestProblem(err); ok && warnMsg != "" {
+			logrus.Warn(warnMsg)
 		} else {
 			return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
 		}
@@ -350,6 +368,7 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 
 		// Stage names are case insensitive
 		onbuildNodesCache[strings.ToLower(from.as)] = nodes
+		onbuildNodesCache[strings.ToLower(from.image)] = nodes
 	}
 
 	return expandedNodes, nil

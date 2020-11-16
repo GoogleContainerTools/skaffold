@@ -29,6 +29,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -38,15 +39,77 @@ import (
 
 // For testing
 var (
-	hashFunction           = cacheHasher
-	artifactConfigFunction = artifactConfig
+	newArtifactHasherFunc = newArtifactHasher
+	fileHasherFunc        = fileHasher
+	artifactConfigFunc    = artifactConfig
 )
 
-func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, mode config.RunMode) (string, error) {
+type artifactHasher interface {
+	hash(ctx context.Context, a *latest.Artifact) (string, error)
+}
+
+type artifactHasherImpl struct {
+	artifacts build.ArtifactGraph
+	lister    DependencyLister
+	mode      config.RunMode
+	syncStore *util.SyncStore
+}
+
+// newArtifactHasher returns a new instance of an artifactHasher. Use newArtifactHasherFunc instead of calling this function directly.
+func newArtifactHasher(artifacts build.ArtifactGraph, lister DependencyLister, mode config.RunMode) artifactHasher {
+	return &artifactHasherImpl{
+		artifacts: artifacts,
+		lister:    lister,
+		mode:      mode,
+		syncStore: util.NewSyncStore(),
+	}
+}
+
+func (h *artifactHasherImpl) hash(ctx context.Context, a *latest.Artifact) (string, error) {
+	hash, err := h.safeHash(ctx, a)
+	if err != nil {
+		return "", err
+	}
+	hashes := []string{hash}
+	for _, dep := range sortedDependencies(a, h.artifacts) {
+		depHash, err := h.hash(ctx, dep)
+		if err != nil {
+			return "", err
+		}
+		hashes = append(hashes, depHash)
+	}
+
+	if len(hashes) == 1 {
+		return hashes[0], nil
+	}
+	return encode(hashes)
+}
+
+func (h *artifactHasherImpl) safeHash(ctx context.Context, a *latest.Artifact) (string, error) {
+	val := h.syncStore.Exec(a.ImageName,
+		func() interface{} {
+			hash, err := singleArtifactHash(ctx, h.lister, a, h.mode)
+			if err != nil {
+				return err
+			}
+			return hash
+		})
+	switch t := val.(type) {
+	case error:
+		return "", t
+	case string:
+		return t, nil
+	default:
+		return "", fmt.Errorf("internal error when retrieving cache result of type %T", t)
+	}
+}
+
+// singleArtifactHash calculates the hash for a single artifact, and ignores its required artifacts.
+func singleArtifactHash(ctx context.Context, depLister DependencyLister, a *latest.Artifact, mode config.RunMode) (string, error) {
 	var inputs []string
 
 	// Append the artifact's configuration
-	config, err := artifactConfigFunction(a)
+	config, err := artifactConfigFunc(a)
 	if err != nil {
 		return "", fmt.Errorf("getting artifact's configuration for %q: %w", a.ImageName, err)
 	}
@@ -60,7 +123,7 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 	sort.Strings(deps)
 
 	for _, d := range deps {
-		h, err := hashFunction(d)
+		h, err := fileHasherFunc(d)
 		if err != nil {
 			if os.IsNotExist(err) {
 				logrus.Tracef("skipping dependency for artifact cache calculation, file not found %s: %s", d, err)
@@ -80,14 +143,16 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 	if args != nil {
 		inputs = append(inputs, args...)
 	}
+	return encode(inputs)
+}
 
+func encode(inputs []string) (string, error) {
 	// get a key for the hashes
 	hasher := sha256.New()
 	enc := json.NewEncoder(hasher)
 	if err := enc.Encode(inputs); err != nil {
 		return "", err
 	}
-
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
@@ -107,9 +172,9 @@ func hashBuildArgs(artifact *latest.Artifact, mode config.RunMode) ([]string, er
 	var err error
 	switch {
 	case artifact.DockerArtifact != nil:
-		args, err = docker.EvalBuildArgs(mode, artifact.Workspace, artifact.DockerArtifact)
+		args, err = docker.EvalBuildArgs(mode, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.BuildArgs, nil)
 	case artifact.KanikoArtifact != nil:
-		args, err = util.EvaluateEnvTemplateMap(artifact.KanikoArtifact.BuildArgs)
+		args, err = docker.EvalBuildArgs(mode, artifact.Workspace, artifact.KanikoArtifact.DockerfilePath, artifact.KanikoArtifact.BuildArgs, nil)
 	case artifact.BuildpackArtifact != nil:
 		env, err = buildpacks.GetEnv(artifact, mode)
 	case artifact.CustomArtifact != nil && artifact.CustomArtifact.Dependencies.Dockerfile != nil:
@@ -130,8 +195,8 @@ func hashBuildArgs(artifact *latest.Artifact, mode config.RunMode) ([]string, er
 	return sl, nil
 }
 
-// cacheHasher takes hashes the contents and name of a file
-func cacheHasher(p string) (string, error) {
+// fileHasher hashes the contents and name of a file
+func fileHasher(p string) (string, error) {
 	h := md5.New()
 	fi, err := os.Lstat(p)
 	if err != nil {
@@ -150,4 +215,14 @@ func cacheHasher(p string) (string, error) {
 		}
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// sortedDependencies returns the dependencies' corresponding Artifacts as sorted by their image name.
+func sortedDependencies(a *latest.Artifact, artifacts build.ArtifactGraph) []*latest.Artifact {
+	sl := artifacts.Dependencies(a)
+	sort.Slice(sl, func(i, j int) bool {
+		ia, ja := sl[i], sl[j]
+		return ia.ImageName < ja.ImageName
+	})
+	return sl
 }

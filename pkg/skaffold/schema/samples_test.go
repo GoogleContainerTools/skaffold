@@ -36,7 +36,7 @@ const (
 )
 
 var (
-	ignoredSamples = []string{"structureTest.yaml", "build.sh", "globalConfig.yaml"}
+	ignoredSamples = []string{"structureTest.yaml", "build.sh", "globalConfig.yaml", "Dockerfile.app", "Dockerfile.base"}
 )
 
 // Test that every example can be parsed and produces a valid

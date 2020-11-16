@@ -69,6 +69,11 @@ func ExecuteEnvTemplate(envTemplate *template.Template, customMap map[string]str
 
 // EvaluateEnvTemplateMap parses and executes all map values as templates based on OS environment variables
 func EvaluateEnvTemplateMap(args map[string]*string) (map[string]*string, error) {
+	return EvaluateEnvTemplateMapWithEnv(args, nil)
+}
+
+// EvaluateEnvTemplateMapWithEnv parses and executes all map values as templates based on OS and custom environment variables
+func EvaluateEnvTemplateMapWithEnv(args map[string]*string, env map[string]string) (map[string]*string, error) {
 	if args == nil {
 		return nil, nil
 	}
@@ -80,7 +85,7 @@ func EvaluateEnvTemplateMap(args map[string]*string) (map[string]*string, error)
 			continue
 		}
 
-		value, err := ExpandEnvTemplate(*v, nil)
+		value, err := ExpandEnvTemplate(*v, env)
 		if err != nil {
 			return nil, fmt.Errorf("unable to get value for key %q: %w", k, err)
 		}

@@ -47,16 +47,17 @@ type InitBuilder interface {
 	Path() string
 }
 
-// BuilderImagePair defines a builder and the image it builds
-type BuilderImagePair struct {
+// ArtifactInfo defines a builder and the image it builds
+type ArtifactInfo struct {
 	Builder   InitBuilder
 	ImageName string
+	Workspace string
 }
 
-// GeneratedBuilderImagePair pairs a discovered builder with a
+// GeneratedArtifactInfo pairs a discovered builder with a
 // generated image name, and the path to the manifest that should be generated
-type GeneratedBuilderImagePair struct {
-	BuilderImagePair
+type GeneratedArtifactInfo struct {
+	ArtifactInfo
 	ManifestPath string
 }
 
@@ -69,7 +70,7 @@ type Initializer interface {
 	// PrintAnalysis writes the project analysis to the provided out stream
 	PrintAnalysis(io.Writer) error
 	// GenerateManifests generates image names and manifests for all unresolved pairs
-	GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error)
+	GenerateManifests() (map[GeneratedArtifactInfo][]byte, error)
 }
 
 type emptyBuildInitializer struct {
@@ -87,7 +88,7 @@ func (e *emptyBuildInitializer) PrintAnalysis(io.Writer) error {
 	return nil
 }
 
-func (e *emptyBuildInitializer) GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error) {
+func (e *emptyBuildInitializer) GenerateManifests() (map[GeneratedArtifactInfo][]byte, error) {
 	return nil, nil
 }
 

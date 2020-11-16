@@ -107,11 +107,21 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string) *Deployer {
 	}
 }
 
+func (h *Deployer) checkMinVersion(v semver.Version) error {
+	if v.LT(helm3Version) {
+		return fmt.Errorf("skaffold requires Helm version 3.0.0-beta.0 or greater")
+	}
+	return nil
+}
+
 // Deploy deploys the build results to the Kubernetes cluster
 func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
 	hv, err := h.binVer(ctx)
 	if err != nil {
 		return nil, fmt.Errorf(versionErrorString, err)
+	}
+	if err = h.checkMinVersion(hv); err != nil {
+		return nil, err
 	}
 
 	logrus.Infof("Deploying with helm v%s ...", hv)
@@ -187,15 +197,14 @@ func (h *Deployer) Dependencies() ([]string, error) {
 
 		lockFiles := []string{
 			"Chart.lock",
-			"requirements.lock",
 		}
 
 		// We can always add a dependency if it is not contained in our chartDepsDirs.
 		// However, if the file is in our chartDepsDir, we can only include the file
 		// if we are not running the helm dep build phase, as that modifies files inside
 		// the chartDepsDir and results in an infinite build loop.
-		// We additionally exclude ChartFile.lock (Helm 3) and requirements.lock (Helm 2)
-		// since they also get modified on helm dep build phase
+		// We additionally exclude ChartFile.lock,
+		// since it also gets modified during a `helm dep build`.
 		isDep := func(path string, info walk.Dirent) (bool, error) {
 			if info.IsDir() {
 				return false, nil
@@ -233,6 +242,9 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return fmt.Errorf(versionErrorString, err)
 	}
+	if err = h.checkMinVersion(hv); err != nil {
+		return err
+	}
 
 	for _, r := range h.Releases {
 		releaseName, err := util.ExpandEnvTemplate(r.Name, nil)
@@ -240,20 +252,13 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 			return fmt.Errorf("cannot parse the release name template: %w", err)
 		}
 
-		var namespace string
-		if h.namespace != "" {
-			namespace = h.namespace
-		} else if r.Namespace != "" {
-			namespace, err = util.ExpandEnvTemplate(r.Namespace, nil)
-			if err != nil {
-				return fmt.Errorf("cannot parse the release namespace template: %w", err)
-			}
+		namespace, err := h.releaseNamespace(r)
+		if err != nil {
+			return err
 		}
 
 		args := []string{"delete", releaseName}
-		if hv.LT(helm3Version) {
-			args = append(args, "--purge")
-		} else if namespace != "" {
+		if namespace != "" {
 			args = append(args, "--namespace", namespace)
 		}
 		if err := h.exec(ctx, out, false, nil, args...); err != nil {
@@ -269,18 +274,16 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 	if err != nil {
 		return fmt.Errorf(versionErrorString, err)
 	}
+	if err = h.checkMinVersion(hv); err != nil {
+		return err
+	}
 
 	renderedManifests := new(bytes.Buffer)
 
 	for _, r := range h.Releases {
 		args := []string{"template", r.ChartPath}
 
-		if hv.GTE(helm3Version) {
-			// Helm 3 requires the name to be before the chart path
-			args = append(args[:1], append([]string{r.Name}, args[1:]...)...)
-		} else {
-			args = append(args, "--name", r.Name)
-		}
+		args = append(args[:1], append([]string{r.Name}, args[1:]...)...)
 
 		for _, vf := range r.ValuesFiles {
 			args = append(args, "--values", vf)
@@ -309,13 +312,11 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 			return err
 		}
 
-		if r.Namespace != "" {
-			var namespace string
-			namespace, err = util.ExpandEnvTemplate(r.Namespace, nil)
-			if err != nil {
-				return fmt.Errorf("cannot parse the release namespace template: %w", err)
-			}
-
+		namespace, err := h.releaseNamespace(r)
+		if err != nil {
+			return err
+		}
+		if namespace != "" {
 			args = append(args, "--namespace", namespace)
 		}
 
@@ -401,16 +402,12 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, r latest.He
 		installEnv = util.EnvMapToSlice(env, "=")
 	}
 
-	if h.namespace != "" {
-		opts.namespace = h.namespace
-	} else if r.Namespace != "" {
-		opts.namespace, err = util.ExpandEnvTemplate(r.Namespace, nil)
-		if err != nil {
-			return nil, fmt.Errorf("cannot parse the release namespace template: %w", err)
-		}
+	opts.namespace, err = h.releaseNamespace(r)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := h.exec(ctx, ioutil.Discard, false, nil, getArgs(helmVersion, releaseName, opts.namespace)...); err != nil {
+	if err := h.exec(ctx, ioutil.Discard, false, nil, getArgs(releaseName, opts.namespace)...); err != nil {
 		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 
 		opts.upgrade = false
@@ -469,7 +466,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, r latest.He
 		return nil, fmt.Errorf("install: %w", err)
 	}
 
-	b, err := h.getRelease(ctx, helmVersion, releaseName, opts.namespace)
+	b, err := h.getRelease(ctx, releaseName, opts.namespace)
 	if err != nil {
 		return nil, fmt.Errorf("get release: %w", err)
 	}
@@ -479,15 +476,15 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, r latest.He
 }
 
 // getRelease confirms that a release is visible to helm
-func (h *Deployer) getRelease(ctx context.Context, helmVersion semver.Version, releaseName string, namespace string) (bytes.Buffer, error) {
-	// Retry, because under Helm 2, at least, a release may not be immediately visible
+func (h *Deployer) getRelease(ctx context.Context, releaseName string, namespace string) (bytes.Buffer, error) {
+	// Retry, because sometimes a release may not be immediately visible
 	opts := backoff.NewExponentialBackOff()
 	opts.MaxElapsedTime = 4 * time.Second
 	var b bytes.Buffer
 
 	err := backoff.Retry(
 		func() error {
-			if err := h.exec(ctx, &b, false, nil, getArgs(helmVersion, releaseName, namespace)...); err != nil {
+			if err := h.exec(ctx, &b, false, nil, getArgs(releaseName, namespace)...); err != nil {
 				logrus.Debugf("unable to get release: %v (may retry):\n%s", err, b.String())
 				return err
 			}
@@ -554,9 +551,6 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		}
 	} else {
 		args = append(args, "install")
-		if o.helmVersion.LT(helm3Version) {
-			args = append(args, "--name")
-		}
 		args = append(args, o.releaseName)
 		args = append(args, o.flags...)
 	}
@@ -661,9 +655,13 @@ func constructOverrideArgs(r *latest.HelmRelease, builds []build.Artifact, args 
 		if err != nil {
 			return nil, err
 		}
+		expandedKey, err := util.ExpandEnvTemplate(k, envMap)
+		if err != nil {
+			return nil, err
+		}
 
 		record(v)
-		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
+		args = append(args, "--set", fmt.Sprintf("%s=%s", expandedKey, v))
 	}
 
 	for _, v := range r.ValuesFiles {
@@ -693,13 +691,10 @@ func sortKeys(m map[string]string) []string {
 }
 
 // getArgs calculates the correct arguments to "helm get"
-func getArgs(v semver.Version, releaseName string, namespace string) []string {
-	args := []string{"get"}
-	if v.GTE(helm3Version) {
-		args = append(args, "all")
-		if namespace != "" {
-			args = append(args, "--namespace", namespace)
-		}
+func getArgs(releaseName string, namespace string) []string {
+	args := []string{"get", "all"}
+	if namespace != "" {
+		args = append(args, "--namespace", namespace)
 	}
 	return append(args, releaseName)
 }
@@ -794,6 +789,19 @@ func (h *Deployer) generateSkaffoldDebugFilter(buildsFile string) []string {
 		args = append(args, "--kubeconfig", h.kubeConfig)
 	}
 	return args
+}
+
+func (h *Deployer) releaseNamespace(r latest.HelmRelease) (string, error) {
+	if h.namespace != "" {
+		return h.namespace, nil
+	} else if r.Namespace != "" {
+		namespace, err := util.ExpandEnvTemplate(r.Namespace, nil)
+		if err != nil {
+			return "", fmt.Errorf("cannot parse the release namespace template: %w", err)
+		}
+		return namespace, nil
+	}
+	return "", nil
 }
 
 // imageSetFromConfig calculates the --set-string value from the helm config

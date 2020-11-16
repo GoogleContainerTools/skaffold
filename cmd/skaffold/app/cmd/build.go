@@ -19,7 +19,6 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -68,13 +67,7 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	}
 
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		ar := targetArtifacts(opts, config)
-
-		// TODO: [#4891] Remove this block after implementing proper image cache invalidation for artifacts with dependencies
-		if err := failForArtifactDependenciesWithCacheEnabled(ar, opts.CacheArtifacts); err != nil {
-			return err
-		}
-		bRes, err := r.BuildAndTest(ctx, buildOut, ar)
+		bRes, err := r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
 
 		if quietFlag || buildOutputFlag != "" {
 			cmdOut := flags.BuildOutput{Builds: bRes}
@@ -110,16 +103,4 @@ func targetArtifacts(opts config.SkaffoldOptions, cfg *latest.SkaffoldConfig) []
 	}
 
 	return targetArtifacts
-}
-
-func failForArtifactDependenciesWithCacheEnabled(artifacts []*latest.Artifact, cacheEnabled bool) error {
-	if !cacheEnabled {
-		return nil
-	}
-	for _, a := range artifacts {
-		if len(a.Dependencies) > 0 {
-			return errors.New("defining dependencies between artifacts is not yet supported for `skaffold build` with cache enabled. Run with `--cache-artifacts=false` flag")
-		}
-	}
-	return nil
 }

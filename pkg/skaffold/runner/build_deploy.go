@@ -73,16 +73,16 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 			return nil, err
 		}
 
-		if !r.runCtx.SkipTests() {
-			if err = r.tester.Test(ctx, out, bRes); err != nil {
-				return nil, err
-			}
-		}
-
 		return bRes, nil
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if !r.runCtx.SkipTests() {
+		if err = r.tester.Test(ctx, out, bRes); err != nil {
+			return nil, err
+		}
 	}
 
 	// Update which images are logged.
@@ -102,9 +102,6 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	logger := r.createLogger(out, artifacts)
 	defer logger.Stop()
 
-	forwarderManager := r.createForwarder(out)
-	defer forwarderManager.Stop()
-
 	// Logs should be retrieved up to just before the deploy
 	logger.SetSince(time.Now())
 
@@ -112,6 +109,9 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
 		return err
 	}
+
+	forwarderManager := r.createForwarder(out)
+	defer forwarderManager.Stop()
 
 	if err := forwarderManager.Start(ctx); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)

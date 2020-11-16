@@ -46,9 +46,10 @@ type testForwarder struct {
 	forwardedPorts     util.PortSet
 }
 
-func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) {
+func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) error {
 	f.forwardedResources.Store(pfe.key(), pfe)
 	f.forwardedPorts.Set(pfe.localPort)
+	return nil
 }
 
 func (f *testForwarder) Monitor(*portForwardEntry, func()) {}
@@ -206,51 +207,87 @@ func TestUserDefinedResources(t *testing.T) {
 	svc := &latest.PortForwardResource{
 		Type:      constants.Service,
 		Name:      "svc1",
-		Namespace: "default",
+		Namespace: "test",
 		Port:      8080,
 	}
 
-	pod := &latest.PortForwardResource{
-		Type:      constants.Pod,
-		Name:      "pod",
-		Namespace: "default",
-		Port:      9000,
+	tests := []struct {
+		description       string
+		userResources     []*latest.PortForwardResource
+		namespaces        []string
+		expectedResources []string
+	}{
+		{
+			description: "one service and one user defined pod",
+			userResources: []*latest.PortForwardResource{
+				{Type: constants.Pod, Name: "pod", Namespace: "some", Port: 9000},
+			},
+			namespaces: []string{"test"},
+			expectedResources: []string{
+				"service-svc1-test-8080",
+				"pod-pod-some-9000",
+			},
+		},
+		{
+			userResources: []*latest.PortForwardResource{
+				{Type: constants.Pod, Name: "pod", Port: 9000},
+			},
+			namespaces: []string{"test"},
+			expectedResources: []string{
+				"service-svc1-test-8080",
+				"pod-pod-test-9000",
+			},
+		},
+		{
+			userResources: []*latest.PortForwardResource{
+				{Type: constants.Pod, Name: "pod", Port: 9000},
+			},
+			namespaces: []string{"test", "some"},
+			expectedResources: []string{
+				"service-svc1-test-8080",
+			},
+		},
+		{
+			userResources: []*latest.PortForwardResource{
+				{Type: constants.Pod, Name: "pod", Port: 9000},
+				{Type: constants.Pod, Name: "pod", Namespace: "some", Port: 9001},
+			},
+			namespaces: []string{"test", "some"},
+			expectedResources: []string{
+				"service-svc1-test-8080",
+				"pod-pod-some-9001",
+			},
+		},
 	}
 
-	expected := map[string]*portForwardEntry{
-		"service-svc1-default-8080": {
-			resource:  *svc,
-			localPort: 8080,
-		},
-		"pod-pod-default-9000": {
-			resource:  *pod,
-			localPort: 9000,
-		},
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			event.InitializeState(latest.Pipeline{}, "", true, true, true)
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, []int{8080, 9000}))
+			t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
+				return []*latest.PortForwardResource{svc}, nil
+			})
+
+			fakeForwarder := newTestForwarder()
+			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
+
+			rf := NewResourceForwarder(entryManager, test.namespaces, "", test.userResources)
+			if err := rf.Start(context.Background()); err != nil {
+				t.Fatalf("error starting resource forwarder: %v", err)
+			}
+
+			// poll up to 10 seconds for the resources to be forwarded
+			err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
+				return len(test.expectedResources) == fakeForwarder.forwardedResources.Length(), nil
+			})
+			for _, key := range test.expectedResources {
+				t.CheckNotNil(fakeForwarder.forwardedResources.resources[key])
+			}
+			if err != nil {
+				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expectedResources, fakeForwarder.forwardedResources.resources)
+			}
+		})
 	}
-
-	testutil.Run(t, "one service and one user defined pod", func(t *testutil.T) {
-		event.InitializeState(latest.Pipeline{}, "", true, true, true)
-		t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, []int{8080, 9000}))
-		t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
-			return []*latest.PortForwardResource{svc}, nil
-		})
-
-		fakeForwarder := newTestForwarder()
-		entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
-
-		rf := NewResourceForwarder(entryManager, []string{"test"}, "", []*latest.PortForwardResource{pod})
-		if err := rf.Start(context.Background()); err != nil {
-			t.Fatalf("error starting resource forwarder: %v", err)
-		}
-
-		// poll up to 10 seconds for the resources to be forwarded
-		err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
-			return len(expected) == fakeForwarder.forwardedResources.Length(), nil
-		})
-		if err != nil {
-			t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", expected, fakeForwarder.forwardedResources.resources)
-		}
-	})
 }
 
 func mockClient(m kubernetes.Interface) func() (kubernetes.Interface, error) {

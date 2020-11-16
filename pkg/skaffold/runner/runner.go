@@ -64,13 +64,13 @@ type SkaffoldRunner struct {
 	monitor  filemon.Monitor
 	listener Listener
 
-	kubectlCLI *kubectl.CLI
-	cache      cache.Cache
-	changeSet  changeSet
-	runCtx     *runcontext.RunContext
-	labeller   *label.DefaultLabeller
-	builds     []build.Artifact
-
+	kubectlCLI    *kubectl.CLI
+	cache         cache.Cache
+	changeSet     changeSet
+	runCtx        *runcontext.RunContext
+	labeller      *label.DefaultLabeller
+	builds        []build.Artifact
+	artifactStore build.ArtifactStore
 	// podSelector is used to determine relevant pods for logging and portForwarding
 	podSelector *kubernetes.ImageList
 

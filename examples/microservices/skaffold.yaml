@@ -1,11 +1,19 @@
-apiVersion: skaffold/v2beta8
+apiVersion: skaffold/v2beta9
 kind: Config
 build:
   artifacts:
     - image: leeroy-web
       context: leeroy-web
+      requires:
+        - image: base
+          alias: BASE
     - image: leeroy-app
       context: leeroy-app
+      requires:
+        - image: base
+          alias: BASE
+    - image: base
+      context: base
 deploy:
   kubectl:
     manifests:

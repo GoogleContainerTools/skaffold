@@ -26,14 +26,14 @@ import (
 )
 
 type defaultBuildInitializer struct {
-	builders                   []InitBuilder
-	builderImagePairs          []BuilderImagePair
-	generatedBuilderImagePairs []GeneratedBuilderImagePair
-	unresolvedImages           []string
-	skipBuild                  bool
-	force                      bool
-	enableNewFormat            bool
-	resolveImages              bool
+	builders               []InitBuilder
+	artifactInfos          []ArtifactInfo
+	generatedArtifactInfos []GeneratedArtifactInfo
+	unresolvedImages       []string
+	skipBuild              bool
+	force                  bool
+	enableNewFormat        bool
+	resolveImages          bool
 }
 
 func (d *defaultBuildInitializer) ProcessImages(images []string) error {
@@ -54,25 +54,25 @@ func (d *defaultBuildInitializer) ProcessImages(images []string) error {
 
 func (d *defaultBuildInitializer) BuildConfig() latest.BuildConfig {
 	return latest.BuildConfig{
-		Artifacts: Artifacts(d.builderImagePairs),
+		Artifacts: Artifacts(d.artifactInfos),
 	}
 }
 
 func (d *defaultBuildInitializer) PrintAnalysis(out io.Writer) error {
-	return printAnalysis(out, d.enableNewFormat, d.skipBuild, d.builderImagePairs, d.builders, d.unresolvedImages)
+	return printAnalysis(out, d.enableNewFormat, d.skipBuild, d.artifactInfos, d.builders, d.unresolvedImages)
 }
 
-func (d *defaultBuildInitializer) GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error) {
-	generatedManifests := map[GeneratedBuilderImagePair][]byte{}
-	for _, pair := range d.generatedBuilderImagePairs {
-		manifest, err := generator.Generate(pair.ImageName)
+func (d *defaultBuildInitializer) GenerateManifests() (map[GeneratedArtifactInfo][]byte, error) {
+	generatedManifests := map[GeneratedArtifactInfo][]byte{}
+	for _, info := range d.generatedArtifactInfos {
+		manifest, err := generator.Generate(info.ImageName)
 		if err != nil {
 			return nil, fmt.Errorf("generating kubernetes manifest: %w", err)
 		}
-		generatedManifests[pair] = manifest
-		d.builderImagePairs = append(d.builderImagePairs, pair.BuilderImagePair)
+		generatedManifests[info] = manifest
+		d.artifactInfos = append(d.artifactInfos, info.ArtifactInfo)
 	}
-	d.generatedBuilderImagePairs = nil
+	d.generatedArtifactInfos = nil
 	return generatedManifests, nil
 }
 
@@ -80,8 +80,8 @@ func (d *defaultBuildInitializer) GenerateManifests() (map[GeneratedBuilderImage
 // images match an image in the image list, and returns a list of the matching builder/image pairs. Also
 // separately returns the builder configs and images that didn't have any matches.
 func (d *defaultBuildInitializer) matchBuildersToImages(images []string) {
-	pairs, unresolvedBuilders, unresolvedImages := matchBuildersToImages(d.builders, images)
-	d.builderImagePairs = pairs
+	artifactInfos, unresolvedBuilders, unresolvedImages := matchBuildersToImages(d.builders, images)
+	d.artifactInfos = artifactInfos
 	d.unresolvedImages = unresolvedImages
 	d.builders = unresolvedBuilders
 }

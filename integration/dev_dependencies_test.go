@@ -31,8 +31,7 @@ func TestDev_WithDependencies(t *testing.T) {
 	t.Run("required artifact rebuild & redeploy also rebuilds & redeploys dependencies", func(t *testing.T) {
 		ns, client := SetupNamespace(t)
 
-		// TODO: [#4891] Remove "--cache-artifacts=false" after implementing proper image cache invalidation for artifacts with dependencies
-		skaffold.Dev("--cache-artifacts=false").InDir("testdata/build-dependencies").InNs(ns.Name).RunBackground(t)
+		skaffold.Dev().InDir("testdata/build-dependencies").InNs(ns.Name).RunBackground(t)
 		client.waitForDeploymentsToStabilizeWithTimeout(3*time.Minute, "app1", "app2", "app3", "app4")
 
 		dep1 := client.GetDeployment("app1")

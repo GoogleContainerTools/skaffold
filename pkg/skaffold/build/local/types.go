@@ -24,9 +24,16 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
+	dockerbuilder "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Builder uses the host docker daemon to build and tag the image.
@@ -47,6 +54,7 @@ type Builder struct {
 	insecureRegistries map[string]bool
 	muted              build.Muted
 	localPruner        *pruner
+	artifactStore      build.ArtifactStore
 }
 
 // external dependencies are wrapped
@@ -111,6 +119,10 @@ func NewBuilder(cfg Config) (*Builder, error) {
 	}, nil
 }
 
+func (b *Builder) ArtifactStore(store build.ArtifactStore) {
+	b.artifactStore = store
+}
+
 func (b *Builder) PushImages() bool {
 	return b.pushImages
 }
@@ -132,4 +144,34 @@ func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	}
 	_, err := b.localDocker.Prune(ctx, toPrune, b.pruneChildren)
 	return err
+}
+
+// artifactBuilder represents a per artifact builder interface
+type artifactBuilder interface {
+	Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error)
+}
+
+// newPerArtifactBuilder returns an instance of `artifactBuilder`
+func newPerArtifactBuilder(b *Builder, a *latest.Artifact) (artifactBuilder, error) {
+	switch {
+	case a.DockerArtifact != nil:
+		return dockerbuilder.NewArtifactBuilder(b.localDocker, b.local.UseDockerCLI, b.local.UseBuildkit, b.pushImages, b.prune, b.cfg.Mode(), b.cfg.GetInsecureRegistries(), b.artifactStore), nil
+
+	case a.BazelArtifact != nil:
+		return bazel.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages), nil
+
+	case a.JibArtifact != nil:
+		return jib.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.skipTests, b.artifactStore), nil
+
+	case a.CustomArtifact != nil:
+		// required artifacts as environment variables
+		dependencies := util.EnvPtrMapToSlice(docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true), "=")
+		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, append(b.retrieveExtraEnv(), dependencies...)), nil
+
+	case a.BuildpackArtifact != nil:
+		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.mode, b.artifactStore), nil
+
+	default:
+		return nil, fmt.Errorf("unexpected type %q for local artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
+	}
 }

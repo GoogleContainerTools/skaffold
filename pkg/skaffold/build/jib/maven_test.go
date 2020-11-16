@@ -82,7 +82,7 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 			api := (&testutil.FakeAPIClient{}).Add("img:tag", "imageID")
 			localDocker := fakeLocalDaemon(api)
 
-			builder := NewArtifactBuilder(localDocker, &mockConfig{}, false, false)
+			builder := NewArtifactBuilder(localDocker, &mockConfig{}, false, false, mockArtifactResolver{})
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
@@ -147,7 +147,7 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 			})
 			localDocker := fakeLocalDaemon(&testutil.FakeAPIClient{})
 
-			builder := NewArtifactBuilder(localDocker, &mockConfig{}, true, false)
+			builder := NewArtifactBuilder(localDocker, &mockConfig{}, true, false, mockArtifactResolver{})
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
@@ -327,23 +327,60 @@ func TestGenerateMavenBuildArgs(t *testing.T) {
 	tests := []struct {
 		description        string
 		a                  latest.JibArtifact
+		deps               []*latest.ArtifactDependency
 		image              string
+		r                  ArtifactResolver
 		skipTests          bool
+		pushImages         bool
 		insecureRegistries map[string]bool
 		out                []string
 	}{
-		{"single module", latest.JibArtifact{}, "image", false, nil, []string{"fake-mavenBuildArgs-for-test-goal", "-Dimage=image"}},
-		{"single module without tests", latest.JibArtifact{}, "image", true, nil, []string{"fake-mavenBuildArgs-for-test-goal-skipTests", "-Dimage=image"}},
-		{"multi module", latest.JibArtifact{Project: "module"}, "image", false, nil, []string{"fake-mavenBuildArgs-for-module-for-test-goal", "-Dimage=image"}},
-		{"multi module without tests", latest.JibArtifact{Project: "module"}, "image", true, nil, []string{"fake-mavenBuildArgs-for-module-for-test-goal-skipTests", "-Dimage=image"}},
-		{"multi module without tests with insecure-registry", latest.JibArtifact{Project: "module"}, "registry.tld/image", true, map[string]bool{"registry.tld": true}, []string{"fake-mavenBuildArgs-for-module-for-test-goal-skipTests", "-Djib.allowInsecureRegistries=true", "-Dimage=registry.tld/image"}},
-		{"single module with custom base image", latest.JibArtifact{BaseImage: "docker://busybox"}, "image", false, nil, []string{"fake-mavenBuildArgs-for-test-goal", "-Djib.from.image=docker://busybox", "-Dimage=image"}},
-		{"multi module with custom base image", latest.JibArtifact{Project: "module", BaseImage: "docker://busybox"}, "image", false, nil, []string{"fake-mavenBuildArgs-for-module-for-test-goal", "-Djib.from.image=docker://busybox", "-Dimage=image"}},
+		{description: "single module", image: "image", out: []string{"fake-mavenBuildArgs-for-test-goal", "-Dimage=image"}},
+		{description: "single module without tests", image: "image", skipTests: true, out: []string{"fake-mavenBuildArgs-for-test-goal-skipTests", "-Dimage=image"}},
+		{description: "multi module", a: latest.JibArtifact{Project: "module"}, image: "image", out: []string{"fake-mavenBuildArgs-for-module-for-test-goal", "-Dimage=image"}},
+		{description: "multi module without tests", a: latest.JibArtifact{Project: "module"}, image: "image", skipTests: true, out: []string{"fake-mavenBuildArgs-for-module-for-test-goal-skipTests", "-Dimage=image"}},
+		{description: "multi module without tests with insecure-registry", a: latest.JibArtifact{Project: "module"}, image: "registry.tld/image", skipTests: true, insecureRegistries: map[string]bool{"registry.tld": true}, out: []string{"fake-mavenBuildArgs-for-module-for-test-goal-skipTests", "-Djib.allowInsecureRegistries=true", "-Dimage=registry.tld/image"}},
+		{description: "single module with custom base image", a: latest.JibArtifact{BaseImage: "docker://busybox"}, image: "image", out: []string{"fake-mavenBuildArgs-for-test-goal", "-Djib.from.image=docker://busybox", "-Dimage=image"}},
+		{description: "multi module with custom base image", a: latest.JibArtifact{Project: "module", BaseImage: "docker://busybox"}, image: "image", out: []string{"fake-mavenBuildArgs-for-module-for-test-goal", "-Djib.from.image=docker://busybox", "-Dimage=image"}},
+		{
+			description: "single module with local base image from required artifacts",
+			a:           latest.JibArtifact{BaseImage: "alias"},
+			deps:        []*latest.ArtifactDependency{{ImageName: "img", Alias: "alias"}},
+			image:       "image",
+			r:           mockArtifactResolver{m: map[string]string{"img": "img:tag"}},
+			out:         []string{"fake-mavenBuildArgs-for-test-goal", "-Djib.from.image=docker://img:tag", "-Dimage=image"},
+		},
+		{
+			description: "multi module with local base image from required artifacts",
+			a:           latest.JibArtifact{Project: "module", BaseImage: "alias"},
+			deps:        []*latest.ArtifactDependency{{ImageName: "img", Alias: "alias"}},
+			image:       "image",
+			r:           mockArtifactResolver{m: map[string]string{"img": "img:tag"}},
+			out:         []string{"fake-mavenBuildArgs-for-module-for-test-goal", "-Djib.from.image=docker://img:tag", "-Dimage=image"},
+		},
+		{
+			description: "single module with remote base image from required artifacts",
+			a:           latest.JibArtifact{BaseImage: "alias"},
+			deps:        []*latest.ArtifactDependency{{ImageName: "img", Alias: "alias"}},
+			image:       "image",
+			pushImages:  true,
+			r:           mockArtifactResolver{m: map[string]string{"img": "img:tag"}},
+			out:         []string{"fake-mavenBuildArgs-for-test-goal", "-Djib.from.image=img:tag", "-Dimage=image"},
+		},
+		{
+			description: "multi module with remote base image from required artifacts",
+			a:           latest.JibArtifact{Project: "module", BaseImage: "alias"},
+			deps:        []*latest.ArtifactDependency{{ImageName: "img", Alias: "alias"}},
+			image:       "image",
+			pushImages:  true,
+			r:           mockArtifactResolver{m: map[string]string{"img": "img:tag"}},
+			out:         []string{"fake-mavenBuildArgs-for-module-for-test-goal", "-Djib.from.image=img:tag", "-Dimage=image"},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&mavenBuildArgsFunc, getMavenBuildArgsFuncFake(t, MinimumJibMavenVersion))
-			args := GenerateMavenBuildArgs("test-goal", test.image, &test.a, test.skipTests, test.insecureRegistries)
+			args := GenerateMavenBuildArgs("test-goal", test.image, &test.a, test.skipTests, test.pushImages, test.deps, test.r, test.insecureRegistries, false)
 			t.CheckDeepEqual(test.out, args)
 		})
 	}
@@ -362,14 +399,14 @@ func TestMavenBuildArgs(t *testing.T) {
 			jibArtifact: latest.JibArtifact{},
 			skipTests:   false,
 			showColors:  true,
-			expected:    []string{"-Djib.console=plain", "fake-mavenArgs", "prepare-package", "jib:test-goal"},
+			expected:    []string{"-Dstyle.color=always", "-Djansi.passthrough=true", "-Djib.console=plain", "fake-mavenArgs", "prepare-package", "jib:test-goal"},
 		},
 		{
 			description: "single module skip tests",
 			jibArtifact: latest.JibArtifact{},
 			skipTests:   true,
 			showColors:  true,
-			expected:    []string{"-Djib.console=plain", "fake-mavenArgs", "-DskipTests=true", "prepare-package", "jib:test-goal"},
+			expected:    []string{"-Dstyle.color=always", "-Djansi.passthrough=true", "-Djib.console=plain", "fake-mavenArgs", "-DskipTests=true", "prepare-package", "jib:test-goal"},
 		},
 		{
 			description: "single module plain console",
@@ -383,14 +420,14 @@ func TestMavenBuildArgs(t *testing.T) {
 			jibArtifact: latest.JibArtifact{Project: "module"},
 			skipTests:   false,
 			showColors:  true,
-			expected:    []string{"-Djib.console=plain", "fake-mavenArgs-for-module", "package", "jib:test-goal", "-Djib.containerize=module"},
+			expected:    []string{"-Dstyle.color=always", "-Djansi.passthrough=true", "-Djib.console=plain", "fake-mavenArgs-for-module", "package", "jib:test-goal", "-Djib.containerize=module"},
 		},
 		{
 			description: "single module skip tests",
 			jibArtifact: latest.JibArtifact{Project: "module"},
 			skipTests:   true,
 			showColors:  true,
-			expected:    []string{"-Djib.console=plain", "fake-mavenArgs-for-module", "-DskipTests=true", "package", "jib:test-goal", "-Djib.containerize=module"},
+			expected:    []string{"-Dstyle.color=always", "-Djansi.passthrough=true", "-Djib.console=plain", "fake-mavenArgs-for-module", "-DskipTests=true", "package", "jib:test-goal", "-Djib.containerize=module"},
 		},
 	}
 	for _, test := range tests {

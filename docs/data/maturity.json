@@ -24,6 +24,16 @@
     "maturity": "beta",
     "description": "build locally using a custom build script "
   },
+  "build.dependencies": {
+    "dev": "x",
+    "build": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Build",
+    "feature": "Build Artifact Dependencies",
+    "maturity": "alpha",
+    "description": "Define build artifact dependencies"
+  },
   "build": {
     "dev": "x",
     "build": "x",

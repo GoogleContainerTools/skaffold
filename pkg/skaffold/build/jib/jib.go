@@ -326,3 +326,26 @@ func isOnInsecureRegistry(image string, insecureRegistries map[string]bool) (boo
 
 	return docker.IsInsecure(ref, insecureRegistries), nil
 }
+
+// baseImageArg formats the base image as a build argument. It also replaces the provided base image with an image from the required artifacts if specified.
+func baseImageArg(a *latest.JibArtifact, r ArtifactResolver, deps []*latest.ArtifactDependency, pushImages bool) (string, bool) {
+	if a.BaseImage == "" {
+		return "", false
+	}
+	for _, d := range deps {
+		if a.BaseImage != d.Alias {
+			continue
+		}
+		img, found := r.GetImageTag(d.ImageName)
+		if !found {
+			logrus.Fatalf("failed to resolve build result for required artifact %q", d.ImageName)
+		}
+		if pushImages {
+			// pull image from the registry (prefix `registry://` is optional)
+			return fmt.Sprintf("-Djib.from.image=%s", img), true
+		}
+		// must use `docker://` prefix to retrieve image from the local docker daemon
+		return fmt.Sprintf("-Djib.from.image=docker://%s", img), true
+	}
+	return fmt.Sprintf("-Djib.from.image=%s", a.BaseImage), true
+}

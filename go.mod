@@ -39,6 +39,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.0.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.4.1
 	github.com/google/go-containerregistry v0.1.1
@@ -69,6 +70,7 @@ require (
 	go.uber.org/multierr v1.4.0 // indirect
 	go.uber.org/zap v1.12.0 // indirect
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
+	golang.org/x/mod v0.3.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	golang.org/x/sys v0.0.0-20200523222454-059865788121
@@ -86,5 +88,6 @@ require (
 	k8s.io/kubectl v0.0.0-20190831163037-3b58a944563f
 	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
 	knative.dev/pkg v0.0.0-20200416021448-f68639f04b39 // indirect
+	sigs.k8s.io/kustomize/kyaml v0.9.2
 	sigs.k8s.io/yaml v1.2.0
 )

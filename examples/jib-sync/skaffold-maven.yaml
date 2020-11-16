@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta8
+apiVersion: skaffold/v2beta9
 kind: Config
 build:
   artifacts:
@@ -8,8 +8,9 @@ build:
       args: 
       - --no-transfer-progress
       - -Psync
+      fromImage: gcr.io/distroless/java:debug
     sync:
-      auto: {}
+      auto: true
 
 portForward:
 - resourceType: pod

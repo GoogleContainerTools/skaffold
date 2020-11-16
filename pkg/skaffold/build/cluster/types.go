@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -32,9 +33,11 @@ import (
 type Builder struct {
 	*latest.ClusterDetails
 
-	cfg        Config
-	kubectlcli *kubectl.CLI
-	timeout    time.Duration
+	cfg           Config
+	kubectlcli    *kubectl.CLI
+	mode          config.RunMode
+	timeout       time.Duration
+	artifactStore build.ArtifactStore
 }
 
 type Config interface {
@@ -44,6 +47,7 @@ type Config interface {
 	Pipeline() latest.Pipeline
 	GetKubeContext() string
 	Muted() config.Muted
+	Mode() config.RunMode
 }
 
 // NewBuilder creates a new Builder that builds artifacts on cluster.
@@ -57,8 +61,13 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		ClusterDetails: cfg.Pipeline().Build.Cluster,
 		cfg:            cfg,
 		kubectlcli:     kubectl.NewCLI(cfg, ""),
+		mode:           cfg.Mode(),
 		timeout:        timeout,
 	}, nil
+}
+
+func (b *Builder) ArtifactStore(store build.ArtifactStore) {
+	b.artifactStore = store
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {

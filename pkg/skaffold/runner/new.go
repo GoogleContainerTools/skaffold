@@ -48,6 +48,8 @@ import (
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
+	event.InitializeState(runCtx.Pipeline(), runCtx.GetKubeContext(), runCtx.AutoBuild(), runCtx.AutoDeploy(), runCtx.AutoSync())
+	event.LogMetaEvent()
 	kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
 
 	tagger, err := getTagger(runCtx)
@@ -55,7 +57,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating tagger: %w", err)
 	}
 
-	builder, imagesAreLocal, err := getBuilder(runCtx)
+	store := build.NewArtifactStore()
+	builder, imagesAreLocal, err := getBuilder(runCtx, store)
 	if err != nil {
 		return nil, fmt.Errorf("creating builder: %w", err)
 	}
@@ -73,9 +76,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
-
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx)
+		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx, store)
 		if err != nil {
 			return nil, err
 		}
@@ -88,7 +90,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return append(buildDependencies, testDependencies...), nil
 	}
 
-	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, tryImportMissing, depLister)
+	graph := build.ToArtifactGraph(runCtx.Pipeline().Build.Artifacts)
+	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, tryImportMissing, depLister, graph, store)
 	if err != nil {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
@@ -97,9 +100,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	if runCtx.Notification() {
 		deployer = WithNotification(deployer)
 	}
-
-	event.InitializeState(runCtx.Pipeline(), runCtx.GetKubeContext(), runCtx.AutoBuild(), runCtx.AutoDeploy(), runCtx.AutoSync())
-	event.LogMetaEvent()
 
 	monitor := filemon.NewMonitor()
 	intents, intentChan := setupIntents(runCtx)
@@ -120,6 +120,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 			Trigger:    trigger,
 			intentChan: intentChan,
 		},
+		artifactStore:  store,
 		kubectlCLI:     kubectlCLI,
 		labeller:       labeller,
 		podSelector:    kubernetes.NewImageList(),
@@ -167,7 +168,7 @@ func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(
 // getBuilder creates a builder from a given RunContext.
 // Returns that builder, a bool to indicate that images are local
 // (ie don't need to be pushed) and an error.
-func getBuilder(runCtx *runcontext.RunContext) (build.Builder, bool, error) {
+func getBuilder(runCtx *runcontext.RunContext, store build.ArtifactStore) (build.Builder, bool, error) {
 	b := runCtx.Pipeline().Build
 
 	switch {
@@ -177,15 +178,22 @@ func getBuilder(runCtx *runcontext.RunContext) (build.Builder, bool, error) {
 		if err != nil {
 			return nil, false, err
 		}
+		builder.ArtifactStore(store)
 		return builder, !builder.PushImages(), nil
 
 	case b.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
-		return gcb.NewBuilder(runCtx), false, nil
+		builder := gcb.NewBuilder(runCtx)
+		builder.ArtifactStore(store)
+		return builder, false, nil
 
 	case b.Cluster != nil:
 		logrus.Debugln("Using builder: cluster")
 		builder, err := cluster.NewBuilder(runCtx)
+		if err != nil {
+			return nil, false, err
+		}
+		builder.ArtifactStore(store)
 		return builder, false, err
 
 	default:

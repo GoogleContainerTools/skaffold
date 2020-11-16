@@ -66,6 +66,20 @@ func TestRunPortForward(t *testing.T) {
 	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
 }
 
+func TestRunUserPortForwardResource(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	ns, _ := SetupNamespace(t)
+
+	rpcAddr := randomPort()
+	skaffold.Run("--port-forward", "--rpc-port", rpcAddr, "--enable-rpc").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
+
+	_, entries := apiEvents(t, rpcAddr)
+
+	address, localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-web", "deployment", ns.Name)
+	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
+}
+
 // TestDevPortForwardDeletePod tests that port forwarding works
 // as expected. Then, the test force deletes a pod,
 // and tests that the pod eventually comes up at the same port again.
