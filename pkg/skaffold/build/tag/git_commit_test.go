@@ -43,8 +43,9 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 		variantAbbrevCommitSha string
 		variantTreeSha         string
 		variantAbbrevTreeSha   string
-		createGitRepo          func(string)
 		subDir                 string
+		excludedTags           string
+		createGitRepo          func(string)
 		shouldErr              bool
 		ignoreChanges          bool
 	}{
@@ -60,6 +61,22 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 					write("source.go", "code").
 					add("source.go").
 					commit("initial")
+			},
+		},
+		{
+			description:            "clean worktree with excluded tag",
+			variantTags:            "eefe1b9",
+			variantCommitSha:       "eefe1b9c44eb0aa87199c9a079f2d48d8eb8baed",
+			variantAbbrevCommitSha: "eefe1b9",
+			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c",
+			variantAbbrevTreeSha:   "3bed02c",
+			excludedTags:           "prod",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", "code").
+					add("source.go").
+					commit("initial").
+					tag("prod")
 			},
 		},
 		{
@@ -142,12 +159,13 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			},
 		},
 		{
-			description:            "clean worktree with ignore changes flag",
-			variantTags:            "v2",
+			description:            "clean worktree with tags, one excluded",
+			variantTags:            "v1-1-gaea33bc",
 			variantCommitSha:       "aea33bcc86b5af8c8570ff45d8a643202d63c808",
 			variantAbbrevCommitSha: "aea33bc",
 			variantTreeSha:         "bc69d50cda6897a6f2054e64b9059f038dc6fb0e",
 			variantAbbrevTreeSha:   "bc69d50",
+			excludedTags:           "v2",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -159,7 +177,6 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 					commit("second commit").
 					tag("v2")
 			},
-			ignoreChanges: true,
 		},
 		{
 			description:            "treeSha only considers current tree content",
@@ -201,6 +218,23 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			variantAbbrevCommitSha: "eefe1b9-dirty",
 			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c-dirty",
 			variantAbbrevTreeSha:   "3bed02c-dirty",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", "code").
+					add("source.go").
+					commit("initial").
+					tag("v1").
+					write("source.go", "updated code")
+			},
+		},
+		{
+			description:            "dirty worktree with tag, but it's excluded",
+			variantTags:            "eefe1b9-dirty",
+			variantCommitSha:       "eefe1b9c44eb0aa87199c9a079f2d48d8eb8baed-dirty",
+			variantAbbrevCommitSha: "eefe1b9-dirty",
+			variantTreeSha:         "3bed02ca656e336307e4eb4d80080d7221cba62c-dirty",
+			variantAbbrevTreeSha:   "3bed02c-dirty",
+			excludedTags:           "v1",
 			createGitRepo: func(dir string) {
 				gitInit(t, dir).
 					write("source.go", "code").
@@ -390,7 +424,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 				"TreeSha":         test.variantTreeSha,
 				"AbbrevTreeSha":   test.variantAbbrevTreeSha,
 			} {
-				tagger, err := NewGitCommit("", variant, "", test.ignoreChanges)
+				tagger, err := NewGitCommit("", variant, test.excludedTags, test.ignoreChanges)
 				t.CheckNoError(err)
 
 				tag, err := tagger.GenerateTag(workspace, "test")
@@ -513,7 +547,7 @@ func TestGitCommit_CustomTemplate(t *testing.T) {
 	}
 }
 
-func TestGitCommitSubDirectory(t *testing.T) {
+func TestGitCommit_SubDirectory(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir()
 		gitInit(t.T, tmpDir.Root()).mkdir("sub/sub").commit("initial")
