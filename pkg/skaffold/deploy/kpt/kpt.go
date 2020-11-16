@@ -57,14 +57,7 @@ const (
 
 	kustomizeDownloadLink  = "https://kubernetes-sigs.github.io/kustomize/installation/"
 	kustomizeMinVersion    = "v3.2.3"
-	kustomizeVersionRegexP = `{Version:(\S+) GitCommit:\S+ BuildDate:\S+ GoOs:\S+ GoArch:\S+}`
-)
-
-var (
-	kustomizeFurtherGuidance = fmt.Sprintf("Please make sure your local "+
-		"kustomize version >= the official version %v, otherwise some features may not be "+
-		"well supported. You can download the official version "+
-		"from %v", kustomizeMinVersion, kustomizeDownloadLink)
+	kustomizeVersionRegexP = `{Version:(kustomize/)?(\S+) GitCommit:\S+ BuildDate:\S+ GoOs:\S+ GoArch:\S+}`
 )
 
 // Deployer deploys workflows with kpt CLI
@@ -88,7 +81,7 @@ func NewDeployer(cfg types.Config, labels map[string]string) *Deployer {
 
 var sanityCheck = versionCheck
 
-// versionCheck returns an error if the kpt and kustomize versions are not compatible with skaffold.
+// versionCheck checks if the kpt and kustomize versions meet the minimum requirements.
 func versionCheck(dir string, stdout io.Writer) error {
 	kptCmd := exec.Command("kpt", "version")
 	out, err := util.RunCmdOut(kptCmd)
@@ -123,13 +116,14 @@ func versionCheck(dir string, stdout io.Writer) error {
 		// {Version:$VERSION GitCommit:$COMMIT BuildDate:1970-01-01T00:00:00Z GoOs:darwin GoArch:amd64}
 		re := regexp.MustCompile(kustomizeVersionRegexP)
 		match := re.FindStringSubmatch(versionInfo)
-		if len(match) != 2 {
-			color.Yellow.Fprintf(stdout, "unknown kustomize version %q\n"+
-				"Your kustomize may be not from the official release\n%v\n", string(out),
-				kustomizeFurtherGuidance)
-		} else if !semver.IsValid(match[1]) || semver.Compare(match[1], kustomizeMinVersion) < 0 {
-			color.Yellow.Fprintf(stdout, "you are using kustomize version %q\n%v\n",
-				match[1], kustomizeFurtherGuidance)
+		if len(match) != 3 {
+			color.Yellow.Fprintf(stdout, "unable to determine kustomize version from %q\n"+
+				"You can download the official kustomize (recommended >= %v) from %v\n",
+				string(out), kustomizeMinVersion, kustomizeDownloadLink)
+		} else if !semver.IsValid(match[2]) || semver.Compare(match[2], kustomizeMinVersion) < 0 {
+			color.Yellow.Fprintf(stdout, "you are using kustomize version %q "+
+				"(recommended >= %v). You can download the official kustomize from %v\n",
+				match[2], kustomizeMinVersion, kustomizeDownloadLink)
 		}
 	}
 	return nil

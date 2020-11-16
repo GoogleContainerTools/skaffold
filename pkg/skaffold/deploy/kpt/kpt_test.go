@@ -1055,7 +1055,7 @@ func TestVersionCheck(t *testing.T) {
 				CmdRunOut("kpt version", `0.34.0`).
 				AndRunOutErr("kustomize version", "", errors.New("BUG")),
 			kustomizations: map[string]string{"Kustomization": `resources:
-				- foo.yaml`},
+					- foo.yaml`},
 			shouldErr: true,
 			error: fmt.Errorf("kustomize is not installed yet\nSee kpt installation: %v",
 				kustomizeDownloadLink),
@@ -1065,7 +1065,7 @@ func TestVersionCheck(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kpt version", `0.1.0`),
 			kustomizations: map[string]string{"Kustomization": `resources:
-				- foo.yaml`},
+					- foo.yaml`},
 			shouldErr: true,
 			error: fmt.Errorf("you are using kpt \"0.1.0\"\n"+
 				"Please update your kpt version to >= %v\nSee kpt installation: %v",
@@ -1076,7 +1076,7 @@ func TestVersionCheck(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kpt version", `unknown`),
 			kustomizations: map[string]string{"Kustomization": `resources:
-				- foo.yaml`},
+					- foo.yaml`},
 			shouldErr: true,
 			error: fmt.Errorf("unknown kpt version unknown\nPlease upgrade your "+
 				"local kpt CLI to a version >= %v\nSee kpt installation: %v",
@@ -1088,10 +1088,11 @@ func TestVersionCheck(t *testing.T) {
 				CmdRunOut("kpt version", `0.34.0`).
 				AndRunOut("kustomize version", `{Version:v0.0.1 GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
 			kustomizations: map[string]string{"Kustomization": `resources:
-				- foo.yaml`},
+					- foo.yaml`},
 			shouldErr: false,
-			out: fmt.Sprintf("you are using kustomize version \"v0.0.1\"\n%v\n",
-				kustomizeFurtherGuidance),
+			out: fmt.Sprintf("you are using kustomize version \"v0.0.1\" "+
+				"(recommended >= %v). You can download the official kustomize from %v\n",
+				kustomizeMinVersion, kustomizeDownloadLink),
 		},
 		{
 			description: "kustomize version is unknown",
@@ -1099,10 +1100,11 @@ func TestVersionCheck(t *testing.T) {
 				CmdRunOut("kpt version", `0.34.0`).
 				AndRunOut("kustomize version", `{Version:unknown GitCommit:a0072a2cf92bf5399565e84c621e1e7c5c1f1094 BuildDate:2020-06-15T20:19:07Z GoOs:darwin GoArch:amd64}`),
 			kustomizations: map[string]string{"Kustomization": `resources:
-				- foo.yaml`},
+					- foo.yaml`},
 			shouldErr: false,
-			out: fmt.Sprintf("you are using kustomize version \"unknown\"\n%v\n",
-				kustomizeFurtherGuidance),
+			out: fmt.Sprintf("you are using kustomize version \"unknown\" "+
+				"(recommended >= %v). You can download the official kustomize from %v\n",
+				kustomizeMinVersion, kustomizeDownloadLink),
 		},
 		{
 			description: "kustomize version is non-official",
@@ -1110,11 +1112,11 @@ func TestVersionCheck(t *testing.T) {
 				CmdRunOut("kpt version", `0.34.0`).
 				AndRunOut("kustomize version", `UNKNOWN`),
 			kustomizations: map[string]string{"Kustomization": `resources:
-				- foo.yaml`},
+					- foo.yaml`},
 			shouldErr: false,
-			out: fmt.Sprintf("unknown kustomize version \"UNKNOWN\"\n"+
-				"Your kustomize may be not from the official release\n%v\n",
-				kustomizeFurtherGuidance),
+			out: fmt.Sprintf("unable to determine kustomize version from \"UNKNOWN\"\n"+
+				"You can download the official kustomize (recommended >= %v) from %v\n",
+				kustomizeMinVersion, kustomizeDownloadLink),
 		},
 	}
 	for _, test := range tests {
