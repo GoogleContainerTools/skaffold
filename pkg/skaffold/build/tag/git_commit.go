@@ -69,11 +69,13 @@ func (t *GitCommit) GenerateTag(workingDir, _ string) (string, error) {
 		return "", fmt.Errorf("getting git status: %w", err)
 	}
 
+	ref = sanitizeTag(ref)
+
 	if len(changes) > 0 {
 		return fmt.Sprintf("%s%s-dirty", t.prefix, ref), nil
 	}
 
-	return t.prefix + sanitizeTag(ref), nil
+	return t.prefix + ref, nil
 }
 
 // sanitizeTag takes a git tag and converts it to a docker tag by removing
