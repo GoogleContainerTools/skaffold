@@ -1132,6 +1132,12 @@
     },
     "GitTagger": {
       "properties": {
+        "ignoreChanges": {
+          "type": "boolean",
+          "description": "specifies whether to omit the `-dirty` postfix if there are uncommitted changes.",
+          "x-intellij-html-description": "specifies whether to omit the <code>-dirty</code> postfix if there are uncommitted changes.",
+          "default": "false"
+        },
         "prefix": {
           "type": "string",
           "description": "adds a fixed prefix to the tag.",
@@ -1145,7 +1151,8 @@
       },
       "preferredOrder": [
         "variant",
-        "prefix"
+        "prefix",
+        "ignoreChanges"
       ],
       "additionalProperties": false,
       "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",

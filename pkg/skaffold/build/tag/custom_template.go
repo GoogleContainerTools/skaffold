@@ -63,7 +63,7 @@ func (t *customTemplateTagger) GenerateTag(workingDir, imageName string) (string
 func (t *customTemplateTagger) EvaluateComponents(workingDir, imageName string) (map[string]string, error) {
 	customMap := map[string]string{}
 
-	gitTagger, _ := NewGitCommit("", "")
+	gitTagger, _ := NewGitCommit("", "", false)
 	dateTimeTagger := NewDateTimeTagger("", "")
 
 	for k, v := range map[string]Tagger{"GIT": gitTagger, "DATE": dateTimeTagger, "SHA": &ChecksumTagger{}} {
