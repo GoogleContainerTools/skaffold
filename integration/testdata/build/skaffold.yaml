@@ -38,3 +38,8 @@ build:
     # Would have caught #2315
   - image: multi-stage
     context: multi-stage
+
+    # UseBuildkit
+    # https://github.com/GoogleContainerTools/skaffold/pull/5006#issuecomment-728276690
+  - image: secret
+    context: secret
