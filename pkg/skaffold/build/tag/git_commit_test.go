@@ -81,6 +81,26 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			},
 		},
 		{
+			description:            "dirty worktree with tag containing a slash",
+			variantTags:            "v_2-dirty",
+			variantCommitSha:       "aea33bcc86b5af8c8570ff45d8a643202d63c808-dirty",
+			variantAbbrevCommitSha: "aea33bc-dirty",
+			variantTreeSha:         "bc69d50cda6897a6f2054e64b9059f038dc6fb0e-dirty",
+			variantAbbrevTreeSha:   "bc69d50-dirty",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", "code").
+					add("source.go").
+					commit("initial").
+					tag("v/1").
+					write("other.go", "other").
+					add("other.go").
+					commit("second commit").
+					tag("v/2").
+					write("other.go", "updated code")
+			},
+		},
+		{
 			description:            "clean worktree with tags",
 			variantTags:            "v2",
 			variantCommitSha:       "aea33bcc86b5af8c8570ff45d8a643202d63c808",
