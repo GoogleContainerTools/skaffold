@@ -39,21 +39,27 @@ type skaffoldMeter struct {
 	EnumFlags      map[string]interface{}
 	Builders       map[string]bool
 	SyncType       map[string]bool
-	DevIterations  map[string]int
+	DevIterations  []devIteration
 	StartTime      time.Time
 	ErrorCode      proto.StatusCode
 }
 
+type devIteration struct {
+	intent    string
+	errorCode proto.StatusCode
+}
+
 var (
 	meter = skaffoldMeter{
-		OS:        runtime.GOOS,
-		Arch:      runtime.GOARCH,
-		Builders:  map[string]bool{},
-		SyncType:  map[string]bool{},
-		StartTime: time.Now(),
-		Version:   version.Get().Version,
-		ExitCode:  0,
-		ErrorCode: proto.StatusCode_OK,
+		OS:            runtime.GOOS,
+		Arch:          runtime.GOARCH,
+		Builders:      map[string]bool{},
+		SyncType:      map[string]bool{},
+		DevIterations: []devIteration{},
+		StartTime:     time.Now(),
+		Version:       version.Get().Version,
+		ExitCode:      0,
+		ErrorCode:     proto.StatusCode_OK,
 	}
 )
 
@@ -72,4 +78,15 @@ func InitMeter(runCtx *runcontext.RunContext, config *latest.SkaffoldConfig) {
 
 func SetErrorCode(errorCode proto.StatusCode) {
 	meter.ErrorCode = errorCode
+}
+
+func AddDevIteration(intent string) {
+	meter.DevIterations = append(meter.DevIterations, devIteration{intent: intent})
+}
+
+func AddDevIterationErr(i int, errorCode proto.StatusCode) {
+	if len(meter.DevIterations) == i {
+		meter.DevIterations = append(meter.DevIterations, devIteration{intent: "error"})
+	}
+	meter.DevIterations[i].errorCode = errorCode
 }
