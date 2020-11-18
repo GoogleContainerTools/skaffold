@@ -23,9 +23,13 @@ import (
 
 	"github.com/buildpacks/imgutil"
 	"github.com/buildpacks/imgutil/local"
+	"github.com/buildpacks/pack"
+	packcfg "github.com/buildpacks/pack/config"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
+
+var _ pack.ImageFetcher = (*fetcher)(nil)
 
 type fetcher struct {
 	out    io.Writer
@@ -39,8 +43,8 @@ func newFetcher(out io.Writer, docker docker.LocalDaemon) *fetcher {
 	}
 }
 
-func (f *fetcher) Fetch(ctx context.Context, name string, _, pull bool) (imgutil.Image, error) {
-	if pull {
+func (f *fetcher) Fetch(ctx context.Context, name string, _ bool, pullPolicy packcfg.PullPolicy) (imgutil.Image, error) {
+	if pullPolicy == packcfg.PullAlways || (pullPolicy == packcfg.PullIfNotPresent && !f.docker.ImageExists(ctx, name)) {
 		if err := f.docker.Pull(ctx, f.out, name); err != nil {
 			return nil, err
 		}
