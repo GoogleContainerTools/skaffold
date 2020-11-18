@@ -17,14 +17,15 @@
 <img src="resources/pack-build.gif" width="600px" />
 
 ## Getting Started
-
 Get started by running through our tutorial: [An App’s Brief Journey from Source to Image][getting-started]
 
 ## Contributing
-
 - [CONTRIBUTING](CONTRIBUTING.md) - Information on how to contribute, including the pull request process.
 - [DEVELOPMENT](DEVELOPMENT.md) - Further detail to help you during the development process.
+- [RELEASE](RELEASE.md) - Further details about our release process.
 
+## Documentation
+Check out the command line documentation [here][pack-docs]
 
 ## Specifications
 `pack` is a CLI implementation of the [Platform Interface Specification][platform-spec] for [Cloud Native Buildpacks][buildpacks.io].
@@ -39,3 +40,4 @@ To learn more about the details, check out the [specs repository][specs].
 [getting-started]: https://buildpacks.io/docs/app-journey
 [specs]: https://github.com/buildpacks/spec/
 [platform-spec]: https://github.com/buildpacks/spec/blob/main/platform.md
+[pack-docs]: https://buildpacks.io/docs/tools/pack/cli/pack/

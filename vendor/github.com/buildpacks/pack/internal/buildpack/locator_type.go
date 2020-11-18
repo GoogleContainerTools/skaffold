@@ -23,8 +23,10 @@ const (
 	RegistryLocator
 )
 
-const fromBuilderPrefix = "from=builder"
+const fromBuilderPrefix = "urn:cnb:builder"
+const deprecatedFromBuilderPrefix = "from=builder"
 const fromRegistryPrefix = "urn:cnb:registry"
+const fromDockerPrefix = "docker:/"
 
 func (l LocatorType) String() string {
 	return []string{
@@ -40,11 +42,11 @@ func (l LocatorType) String() string {
 // If a type cannot be determined, `INVALID_LOCATOR` will be returned. If an error
 // is encountered, it will be returned.
 func GetLocatorType(locator string, buildpacksFromBuilder []dist.BuildpackInfo) (LocatorType, error) {
-	if locator == fromBuilderPrefix {
+	if locator == deprecatedFromBuilderPrefix {
 		return FromBuilderLocator, nil
 	}
 
-	if strings.HasPrefix(locator, fromBuilderPrefix+":") {
+	if strings.HasPrefix(locator, fromBuilderPrefix+":") || strings.HasPrefix(locator, deprecatedFromBuilderPrefix+":") {
 		if !builderMatchFound(locator, buildpacksFromBuilder) {
 			return InvalidLocator, fmt.Errorf("%s is not a valid identifier", style.Symbol(locator))
 		}
@@ -56,22 +58,19 @@ func GetLocatorType(locator string, buildpacksFromBuilder []dist.BuildpackInfo) 
 	}
 
 	if paths.IsURI(locator) {
+		if HasDockerLocator(locator) {
+			if _, err := name.ParseReference(locator); err == nil {
+				return PackageLocator, nil
+			}
+		}
 		return URILocator, nil
 	}
 
-	if _, err := os.Stat(locator); err == nil {
-		return URILocator, nil
-	}
+	return parseNakedLocator(locator, buildpacksFromBuilder), nil
+}
 
-	if builderMatchFound(locator, buildpacksFromBuilder) {
-		return IDLocator, nil
-	}
-
-	if _, err := name.ParseReference(locator); err == nil {
-		return PackageLocator, nil
-	}
-
-	return InvalidLocator, nil
+func HasDockerLocator(locator string) bool {
+	return strings.HasPrefix(locator, fromDockerPrefix)
 }
 
 func builderMatchFound(locator string, candidates []dist.BuildpackInfo) bool {
@@ -82,4 +81,43 @@ func builderMatchFound(locator string, candidates []dist.BuildpackInfo) bool {
 		}
 	}
 	return false
+}
+
+func hasHostPortPrefix(locator string) bool {
+	if strings.Contains(locator, "/") {
+		prefix := strings.Split(locator, "/")[0]
+		if strings.Contains(prefix, ":") {
+			return true
+		}
+	}
+	return false
+}
+
+func parseNakedLocator(locator string, buildpacksFromBuilder []dist.BuildpackInfo) LocatorType {
+	// from here on, we're dealing with a naked locator, and we try to figure out what it is. To do this we check
+	// the following characteristics in order:
+	//   1. Does it match a path on the file system
+	//   2. Does it match a buildpack ID in the builder
+	//   3. Does it look like a Docker ref
+	//   4. Does it look like a Buildpack Registry ID
+
+	if _, err := os.Stat(locator); err == nil {
+		return URILocator
+	}
+
+	if builderMatchFound(locator, buildpacksFromBuilder) {
+		return IDLocator
+	}
+
+	if hasHostPortPrefix(locator) || strings.Contains(locator, "@sha") || strings.Count(locator, "/") > 1 {
+		if _, err := name.ParseReference(locator); err == nil {
+			return PackageLocator
+		}
+	}
+
+	if strings.Count(locator, "/") == 1 {
+		return RegistryLocator
+	}
+
+	return InvalidLocator
 }

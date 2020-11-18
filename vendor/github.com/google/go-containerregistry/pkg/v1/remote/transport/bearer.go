@@ -238,10 +238,10 @@ func (bt *bearerTransport) refreshBasic() ([]byte, error) {
 	}
 	client := http.Client{Transport: b}
 
-	u.RawQuery = url.Values{
-		"scope":   bt.scopes,
-		"service": []string{bt.service},
-	}.Encode()
+	v := u.Query()
+	v["scope"] = bt.scopes
+	v.Set("service", bt.service)
+	u.RawQuery = v.Encode()
 
 	resp, err := client.Get(u.String())
 	if err != nil {

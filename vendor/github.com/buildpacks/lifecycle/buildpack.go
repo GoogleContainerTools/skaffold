@@ -12,6 +12,7 @@ type Buildpack struct {
 	ID       string `toml:"id" json:"id"`
 	Version  string `toml:"version" json:"version"`
 	Optional bool   `toml:"optional,omitempty" json:"optional,omitempty"`
+	API      string `toml:"api,omitempty" json:"-"`
 }
 
 func (bp Buildpack) String() string {
@@ -23,8 +24,13 @@ func (bp Buildpack) noOpt() Buildpack {
 	return bp
 }
 
-func (bp Buildpack) lookup(buildpacksDir string) (*buildpackTOML, error) {
-	bpTOML := buildpackTOML{}
+func (bp Buildpack) noAPI() Buildpack {
+	bp.API = ""
+	return bp
+}
+
+func (bp Buildpack) Lookup(buildpacksDir string) (*BuildpackTOML, error) {
+	bpTOML := BuildpackTOML{}
 	bpPath, err := filepath.Abs(filepath.Join(buildpacksDir, launch.EscapeID(bp.ID), bp.Version))
 	if err != nil {
 		return nil, err
@@ -37,19 +43,20 @@ func (bp Buildpack) lookup(buildpacksDir string) (*buildpackTOML, error) {
 	return &bpTOML, nil
 }
 
-type buildpackTOML struct {
-	Buildpack buildpackInfo  `toml:"buildpack"`
+type BuildpackTOML struct {
+	API       string         `toml:"api"`
+	Buildpack BuildpackInfo  `toml:"buildpack"`
 	Order     BuildpackOrder `toml:"order"`
 	Path      string         `toml:"-"`
 }
 
-type buildpackInfo struct {
+type BuildpackInfo struct {
 	ID       string `toml:"id"`
 	Version  string `toml:"version"`
 	Name     string `toml:"name"`
 	ClearEnv bool   `toml:"clear-env,omitempty"`
 }
 
-func (bp buildpackTOML) String() string {
+func (bp BuildpackTOML) String() string {
 	return bp.Buildpack.Name + " " + bp.Buildpack.Version
 }

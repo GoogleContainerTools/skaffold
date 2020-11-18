@@ -5,6 +5,7 @@ Package log implements a simple structured logging API inspired by Logrus, desig
 
 ## Handlers
 
+- __apexlogs__ – handler for [Apex Logs](https://apex.sh/logs/)
 - __cli__ – human-friendly CLI output
 - __discard__ – discards all logs
 - __es__ – Elasticsearch handler
@@ -18,6 +19,37 @@ Package log implements a simple structured logging API inspired by Logrus, desig
 - __papertrail__ – Papertrail handler
 - __text__ – human-friendly colored output
 - __delta__ – outputs the delta between log calls and spinner
+
+## Example
+
+Example using the [Apex Logs](https://apex.sh/logs/) handler.
+
+```go
+package main
+
+import (
+	"errors"
+	"time"
+
+	"github.com/apex/log"
+)
+
+func main() {
+	ctx := log.WithFields(log.Fields{
+		"file": "something.png",
+		"type": "image/png",
+		"user": "tobi",
+	})
+
+	for range time.Tick(time.Millisecond * 200) {
+		ctx.Info("upload")
+		ctx.Info("upload complete")
+		ctx.Warn("upload retry")
+		ctx.WithError(errors.New("unauthorized")).Error("upload failed")
+		ctx.Errorf("failed to upload %s", "img.png")
+	}
+}
+```
 
 ---
 

@@ -10,7 +10,7 @@ coverage:
         threshold: 1%
     patch:
       default:
-        threshold: 1%
+        threshold: 10%
 
 comment:
   layout: "reach,diff,flags"

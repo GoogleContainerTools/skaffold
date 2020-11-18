@@ -6,14 +6,25 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
+
+	"github.com/buildpacks/pack/internal/style"
 )
 
 type Config struct {
-	RunImages       []RunImage       `toml:"run-images"`
-	DefaultBuilder  string           `toml:"default-builder-image,omitempty"`
-	DefaultRegistry string           `toml:"default-registry-url,omitempty"`
-	Experimental    bool             `toml:"experimental,omitempty"`
-	TrustedBuilders []TrustedBuilder `toml:"trusted-builders,omitempty"`
+	// Deprecated: Use DefaultRegistryName instead. See https://github.com/buildpacks/pack/issues/747.
+	DefaultRegistry     string           `toml:"default-registry-url,omitempty"`
+	DefaultRegistryName string           `toml:"default-registry,omitempty"`
+	DefaultBuilder      string           `toml:"default-builder-image,omitempty"`
+	Experimental        bool             `toml:"experimental,omitempty"`
+	RunImages           []RunImage       `toml:"run-images"`
+	TrustedBuilders     []TrustedBuilder `toml:"trusted-builders,omitempty"`
+	Registries          []Registry       `toml:"registries,omitempty"`
+}
+
+type Registry struct {
+	Name string `toml:"name"`
+	Type string `toml:"type"`
+	URL  string `toml:"url"`
 }
 
 type RunImage struct {
@@ -23,6 +34,16 @@ type RunImage struct {
 
 type TrustedBuilder struct {
 	Name string `toml:"name"`
+}
+
+const OfficialRegistryName = "official"
+
+func DefaultRegistry() Registry {
+	return Registry{
+		OfficialRegistryName,
+		"github",
+		"https://github.com/buildpacks/registry-index",
+	}
 }
 
 func DefaultConfigPath() (string, error) {
@@ -81,4 +102,25 @@ func SetRunImageMirrors(cfg Config, image string, mirrors []string) Config {
 	}
 	cfg.RunImages = append(cfg.RunImages, RunImage{Image: image, Mirrors: mirrors})
 	return cfg
+}
+
+func GetRegistries(cfg Config) []Registry {
+	return append(cfg.Registries, DefaultRegistry())
+}
+
+func GetRegistry(cfg Config, registryName string) (Registry, error) {
+	if registryName == "" && cfg.DefaultRegistryName != "" {
+		registryName = cfg.DefaultRegistryName
+	}
+	if registryName == "" && cfg.DefaultRegistryName == "" {
+		registryName = OfficialRegistryName
+	}
+	if registryName != "" {
+		for _, registry := range GetRegistries(cfg) {
+			if registry.Name == registryName {
+				return registry, nil
+			}
+		}
+	}
+	return Registry{}, errors.Errorf("registry %s is not defined in your config file", style.Symbol(registryName))
 }

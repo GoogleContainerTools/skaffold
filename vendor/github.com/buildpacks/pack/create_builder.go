@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/buildpacks/pack/config"
+
 	"github.com/Masterminds/semver"
 	"github.com/buildpacks/imgutil"
 	"github.com/pkg/errors"
@@ -18,16 +20,28 @@ import (
 	"github.com/buildpacks/pack/internal/style"
 )
 
-// CreateBuilderOptions are options passed to CreateBuilder
+// CreateBuilderOptions is a configuration object used to change the behavior of
+// CreateBuilder.
 type CreateBuilderOptions struct {
+	// Name of the builder.
 	BuilderName string
-	Config      pubbldr.Config
-	Publish     bool
-	NoPull      bool
-	Registry    string
+
+	// Configuration that defines the functionality a builder provides.
+	Config pubbldr.Config
+
+	// Skip building image locally, directly publish to a registry.
+	// Requires BuilderName to be a valid registry location.
+	Publish bool
+
+	// Buildpack registry name. Defines where all registry buildpacks will be pulled from.
+	Registry string
+
+	// Strategy for updating images before a build.
+	PullPolicy config.PullPolicy
 }
 
-// CreateBuilder creates a builder
+// CreateBuilder creates and saves a builder image to a registry with the provided options.
+// If any configuration is invalid, it will error and exit without creating any images.
 func (c *Client) CreateBuilder(ctx context.Context, opts CreateBuilderOptions) error {
 	if err := c.validateConfig(ctx, opts); err != nil {
 		return err
@@ -64,7 +78,7 @@ func (c *Client) validateRunImageConfig(ctx context.Context, opts CreateBuilderO
 	var runImages []imgutil.Image
 	for _, i := range append([]string{opts.Config.Stack.RunImage}, opts.Config.Stack.RunImageMirrors...) {
 		if !opts.Publish {
-			img, err := c.imageFetcher.Fetch(ctx, i, true, false)
+			img, err := c.imageFetcher.Fetch(ctx, i, true, opts.PullPolicy)
 			if err != nil {
 				if errors.Cause(err) != image.ErrNotFound {
 					return errors.Wrap(err, "failed to fetch image")
@@ -75,7 +89,7 @@ func (c *Client) validateRunImageConfig(ctx context.Context, opts CreateBuilderO
 			}
 		}
 
-		img, err := c.imageFetcher.Fetch(ctx, i, false, false)
+		img, err := c.imageFetcher.Fetch(ctx, i, false, opts.PullPolicy)
 		if err != nil {
 			if errors.Cause(err) != image.ErrNotFound {
 				return errors.Wrap(err, "failed to fetch image")
@@ -106,7 +120,7 @@ func (c *Client) validateRunImageConfig(ctx context.Context, opts CreateBuilderO
 }
 
 func (c *Client) createBaseBuilder(ctx context.Context, opts CreateBuilderOptions) (*builder.Builder, error) {
-	baseImage, err := c.imageFetcher.Fetch(ctx, opts.Config.Stack.BuildImage, !opts.Publish, !opts.NoPull)
+	baseImage, err := c.imageFetcher.Fetch(ctx, opts.Config.Stack.BuildImage, !opts.Publish, opts.PullPolicy)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetch build image")
 	}
@@ -136,7 +150,7 @@ func (c *Client) createBaseBuilder(ctx context.Context, opts CreateBuilderOption
 		)
 	}
 
-	lifecycle, err := c.fetchLifecycle(ctx, opts.Config.Lifecycle)
+	lifecycle, err := c.fetchLifecycle(ctx, opts.Config.Lifecycle, os)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetch lifecycle")
 	}
@@ -146,7 +160,7 @@ func (c *Client) createBaseBuilder(ctx context.Context, opts CreateBuilderOption
 	return bldr, nil
 }
 
-func (c *Client) fetchLifecycle(ctx context.Context, config pubbldr.LifecycleConfig) (builder.Lifecycle, error) {
+func (c *Client) fetchLifecycle(ctx context.Context, config pubbldr.LifecycleConfig, os string) (builder.Lifecycle, error) {
 	if config.Version != "" && config.URI != "" {
 		return nil, errors.Errorf(
 			"%s can only declare %s or %s, not both",
@@ -162,11 +176,11 @@ func (c *Client) fetchLifecycle(ctx context.Context, config pubbldr.LifecycleCon
 			return nil, errors.Wrapf(err, "%s must be a valid semver", style.Symbol("lifecycle.version"))
 		}
 
-		uri = uriFromLifecycleVersion(*v)
+		uri = uriFromLifecycleVersion(*v, os)
 	case config.URI != "":
 		uri = config.URI
 	default:
-		uri = uriFromLifecycleVersion(*semver.MustParse(builder.DefaultLifecycleVersion))
+		uri = uriFromLifecycleVersion(*semver.MustParse(builder.DefaultLifecycleVersion), os)
 	}
 
 	b, err := c.downloader.Download(ctx, uri)
@@ -188,16 +202,25 @@ func (c *Client) addBuildpacksToBuilder(ctx context.Context, opts CreateBuilderO
 
 		locator := b.URI
 		if locator == "" && b.ImageName != "" {
+			c.logger.Warn("The 'image' key is deprecated. Use 'uri=\"docker://...\"' instead.")
 			locator = b.ImageName
 		}
 
 		locatorType, err := buildpack.GetLocatorType(locator, []dist.BuildpackInfo{})
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "locator type %s", locator)
 		}
 
-		var bps []dist.Buildpack
+		var mainBP dist.Buildpack
+		var depBPs []dist.Buildpack
 		switch locatorType {
+		case buildpack.PackageLocator:
+			imageName := buildpack.ParsePackageLocator(locator)
+			c.logger.Debugf("Downloading buildpack from image: %s", style.Symbol(imageName))
+			mainBP, depBPs, err = extractPackagedBuildpacks(ctx, imageName, c.imageFetcher, opts.Publish, opts.PullPolicy)
+			if err != nil {
+				return err
+			}
 		case buildpack.RegistryLocator:
 			c.logger.Debugf("Downloading buildpack from registry: %s", style.Symbol(b.URI))
 
@@ -211,22 +234,14 @@ func (c *Client) addBuildpacksToBuilder(ctx context.Context, opts CreateBuilderO
 				return errors.Wrapf(err, "locating in registry %s", style.Symbol(b.URI))
 			}
 
-			mainBP, depBPs, err := extractPackagedBuildpacks(ctx, registryBp.Address, c.imageFetcher, opts.Publish, opts.NoPull)
+			mainBP, depBPs, err = extractPackagedBuildpacks(ctx, registryBp.Address, c.imageFetcher, opts.Publish, opts.PullPolicy)
 			if err != nil {
 				return errors.Wrapf(err, "extracting from registry %s", style.Symbol(b.URI))
 			}
-
-			bps = append([]dist.Buildpack{mainBP}, depBPs...)
-		case buildpack.PackageLocator:
-			c.logger.Debugf("Downloading buildpack from image: %s", style.Symbol(b.ImageName))
-
-			mainBP, depBPs, err := extractPackagedBuildpacks(ctx, b.ImageName, c.imageFetcher, opts.Publish, opts.NoPull)
-			if err != nil {
-				return err
-			}
-
-			bps = append([]dist.Buildpack{mainBP}, depBPs...)
 		case buildpack.URILocator:
+			if b.URI == "" {
+				b.URI = locator
+			}
 			c.logger.Debugf("Downloading buildpack from URI: %s", style.Symbol(b.URI))
 
 			err := ensureBPSupport(b.URI)
@@ -245,35 +260,43 @@ func (c *Client) addBuildpacksToBuilder(ctx context.Context, opts CreateBuilderO
 			}
 
 			if isOCILayout {
-				mainBP, depBPs, err := buildpackage.BuildpacksFromOCILayoutBlob(blob)
+				mainBP, depBPs, err = buildpackage.BuildpacksFromOCILayoutBlob(blob)
 				if err != nil {
 					return errors.Wrapf(err, "extracting buildpacks from %s", style.Symbol(b.ID))
 				}
-
-				bps = append([]dist.Buildpack{mainBP}, depBPs...)
 			} else {
-				layerWriterFactory, err := layer.NewWriterFactory(bldr.Image())
+				imageOS, err := bldr.Image().OS()
+				if err != nil {
+					return errors.Wrap(err, "getting image OS")
+				}
+				layerWriterFactory, err := layer.NewWriterFactory(imageOS)
 				if err != nil {
 					return errors.Wrapf(err, "get tar writer factory for image %s", style.Symbol(bldr.Name()))
 				}
 
-				fetchedBp, err := dist.BuildpackFromRootBlob(blob, layerWriterFactory)
+				mainBP, err = dist.BuildpackFromRootBlob(blob, layerWriterFactory)
 				if err != nil {
 					return errors.Wrapf(err, "creating buildpack from %s", style.Symbol(b.URI))
 				}
-
-				err = validateBuildpack(fetchedBp, b.URI, b.ID, b.Version)
-				if err != nil {
-					return errors.Wrap(err, "invalid buildpack")
-				}
-
-				bps = []dist.Buildpack{fetchedBp}
 			}
 		default:
 			return fmt.Errorf("error reading %s: invalid locator: %s", locator, locatorType)
 		}
 
-		for _, bp := range bps {
+		err = validateBuildpack(mainBP, b.URI, b.ID, b.Version)
+		if err != nil {
+			return errors.Wrap(err, "invalid buildpack")
+		}
+
+		bpDesc := mainBP.Descriptor()
+		for _, deprecatedAPI := range bldr.LifecycleDescriptor().APIs.Buildpack.Deprecated {
+			if deprecatedAPI.Equal(bpDesc.API) {
+				c.logger.Warnf("Buildpack %s is using deprecated Buildpacks API version %s", style.Symbol(bpDesc.Info.FullName()), style.Symbol(bpDesc.API.String()))
+				break
+			}
+		}
+
+		for _, bp := range append([]dist.Buildpack{mainBP}, depBPs...) {
 			bldr.AddBuildpack(bp)
 		}
 	}
@@ -303,6 +326,10 @@ func validateBuildpack(bp dist.Buildpack, source, expectedID, expectedBPVersion 
 	return nil
 }
 
-func uriFromLifecycleVersion(version semver.Version) string {
+func uriFromLifecycleVersion(version semver.Version, os string) string {
+	if os == "windows" {
+		return fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/v%s/lifecycle-v%s+windows.x86-64.tgz", version.String(), version.String())
+	}
+
 	return fmt.Sprintf("https://github.com/buildpacks/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz", version.String(), version.String())
 }

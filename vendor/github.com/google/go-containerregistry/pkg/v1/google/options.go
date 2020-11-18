@@ -15,6 +15,7 @@
 package google
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -51,6 +52,15 @@ func WithAuthFromKeychain(keys authn.Keychain) ListerOption {
 			logs.Warn.Println("No matching credentials were found, falling back on anonymous")
 		}
 		l.auth = auth
+		return nil
+	}
+}
+
+// WithContext is a functional option for overriding the default
+// context.Context for HTTP request to list remote images
+func WithContext(ctx context.Context) ListerOption {
+	return func(l *lister) error {
+		l.ctx = ctx
 		return nil
 	}
 }

@@ -4,7 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/buildpacks/lifecycle/archive"
+	"github.com/buildpacks/lifecycle/layers"
 )
 
 type Restorer struct {
@@ -82,5 +82,5 @@ func (r *Restorer) restoreLayer(cache Cache, sha string) error {
 	}
 	defer rc.Close()
 
-	return archive.Untar(rc, "/")
+	return layers.Extract(rc, "")
 }

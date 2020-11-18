@@ -6,11 +6,14 @@ import (
 	"github.com/heroku/color"
 )
 
-var Noop = func(format string, a ...interface{}) string {
-	return color.WhiteString("") + fmt.Sprintf(format, a...)
+var Symbol = func(value string) string {
+	if color.Enabled() {
+		return Key(value)
+	}
+	return "'" + value + "'"
 }
 
-var Symbol = func(format string, a ...interface{}) string {
+var SymbolF = func(format string, a ...interface{}) string {
 	if color.Enabled() {
 		return Key(format, a...)
 	}
@@ -30,9 +33,6 @@ var Step = func(format string, a ...interface{}) string {
 }
 
 var Prefix = color.CyanString
-
-var TimestampColorCode = color.FgHiBlack
-
 var Waiting = color.HiBlackString
 var Working = color.HiBlueString
 var Complete = color.GreenString

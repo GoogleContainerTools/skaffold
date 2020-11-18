@@ -28,16 +28,16 @@ import (
 // from a redirect. These redirects often included tokens or signed URLs.
 var paramWhitelist = map[string]struct{}{
 	// Token exchange
-	"scope":   struct{}{},
-	"service": struct{}{},
+	"scope":   {},
+	"service": {},
 	// Cross-repo mounting
-	"mount": struct{}{},
-	"from":  struct{}{},
+	"mount": {},
+	"from":  {},
 	// Layer PUT
-	"digest": struct{}{},
+	"digest": {},
 	// Listing tags and catalog
-	"n":    struct{}{},
-	"last": struct{}{},
+	"n":    {},
+	"last": {},
 }
 
 // Error implements error to support the following error specification:
@@ -89,8 +89,7 @@ func (e *Error) Temporary() bool {
 		return false
 	}
 	for _, d := range e.Errors {
-		// TODO: Include other error types.
-		if d.Code != BlobUploadInvalidErrorCode {
+		if _, ok := temporaryErrorCodes[d.Code]; !ok {
 			return false
 		}
 	}
@@ -149,7 +148,14 @@ const (
 	UnauthorizedErrorCode        ErrorCode = "UNAUTHORIZED"
 	DeniedErrorCode              ErrorCode = "DENIED"
 	UnsupportedErrorCode         ErrorCode = "UNSUPPORTED"
+	TooManyRequestsErrorCode     ErrorCode = "TOOMANYREQUESTS"
 )
+
+// TODO: Include other error types.
+var temporaryErrorCodes = map[ErrorCode]struct{}{
+	BlobUploadInvalidErrorCode: {},
+	TooManyRequestsErrorCode:   {},
+}
 
 // CheckError returns a structured error if the response status is not in codes.
 func CheckError(resp *http.Response, codes ...int) error {
@@ -166,10 +172,14 @@ func CheckError(resp *http.Response, codes ...int) error {
 
 	// https://github.com/docker/distribution/blob/master/docs/spec/api.md#errors
 	structuredError := &Error{}
-	if err := json.Unmarshal(b, structuredError); err != nil {
-		structuredError.rawBody = string(b)
-	}
+
+	// This can fail if e.g. the response body is not valid JSON. That's fine,
+	// we'll construct an appropriate error string from the body and status code.
+	_ = json.Unmarshal(b, structuredError)
+
+	structuredError.rawBody = string(b)
 	structuredError.StatusCode = resp.StatusCode
 	structuredError.request = resp.Request
+
 	return structuredError
 }

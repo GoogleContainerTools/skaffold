@@ -105,6 +105,14 @@ func (i *Image) Label(key string) (string, error) {
 	return labels[key], nil
 }
 
+func (i *Image) Labels() (map[string]string, error) {
+	copiedLabels := make(map[string]string)
+	for i, l := range i.inspect.Config.Labels {
+		copiedLabels[i] = l
+	}
+	return copiedLabels, nil
+}
+
 func (i *Image) Env(key string) (string, error) {
 	for _, envVar := range i.inspect.Config.Env {
 		parts := strings.Split(envVar, "=")
@@ -234,7 +242,43 @@ func (i *Image) SetLabel(key, val string) error {
 	return nil
 }
 
+func (i *Image) SetOS(osVal string) error {
+	if osVal != i.inspect.Os {
+		return fmt.Errorf(`invalid os: must match the daemon: "%s"`, i.inspect.Os)
+	}
+	return nil
+}
+
+func (i *Image) SetOSVersion(osVersion string) error {
+	i.inspect.OsVersion = osVersion
+	return nil
+}
+
+func (i *Image) SetArchitecture(architecture string) error {
+	i.inspect.Architecture = architecture
+	return nil
+}
+
+func (i *Image) RemoveLabel(key string) error {
+	delete(i.inspect.Config.Labels, key)
+	return nil
+}
+
 func (i *Image) SetEnv(key, val string) error {
+	ignoreCase := i.inspect.Os == "windows"
+	for idx, kv := range i.inspect.Config.Env {
+		parts := strings.SplitN(kv, "=", 2)
+		foundKey := parts[0]
+		searchKey := key
+		if ignoreCase {
+			foundKey = strings.ToUpper(foundKey)
+			searchKey = strings.ToUpper(searchKey)
+		}
+		if foundKey == searchKey {
+			i.inspect.Config.Env[idx] = fmt.Sprintf("%s=%s", key, val)
+			return nil
+		}
+	}
 	i.inspect.Config.Env = append(i.inspect.Config.Env, fmt.Sprintf("%s=%s", key, val))
 	return nil
 }
@@ -358,7 +402,7 @@ func (i *Image) doSave() (types.ImageInspect, error) {
 		return types.ImageInspect{}, err
 	}
 
-	//returns valid 'name:tag' appending 'latest', if missing tag
+	// returns valid 'name:tag' appending 'latest', if missing tag
 	repoName := t.Name()
 
 	pr, pw := io.Pipe()
@@ -370,7 +414,7 @@ func (i *Image) doSave() (types.ImageInspect, error) {
 			return
 		}
 
-		//only return response error after response is drained and closed
+		// only return response error after response is drained and closed
 		responseErr := checkResponseError(res.Body)
 		drainCloseErr := ensureReaderClosed(res.Body)
 		if responseErr != nil {
@@ -641,7 +685,6 @@ func defaultInspect(docker client.CommonAPIClient) (types.ImageInspect, error) {
 
 	return types.ImageInspect{
 		Os:           daemonInfo.OSType,
-		OsVersion:    daemonInfo.OSVersion,
 		Architecture: "amd64",
 		Config:       &container.Config{},
 	}, nil

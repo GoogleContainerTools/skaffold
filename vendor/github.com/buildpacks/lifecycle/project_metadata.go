@@ -5,11 +5,11 @@ const (
 )
 
 type ProjectMetadata struct {
-	Source ProjectSource `toml:"source" json:"source"`
+	Source *ProjectSource `toml:"source" json:"source,omitempty"`
 }
 
 type ProjectSource struct {
-	Type     string                 `toml:"type" json:"type"`
-	Version  map[string]interface{} `toml:"version" json:"version"`
-	Metadata map[string]interface{} `toml:"metadata" json:"metadata"`
+	Type     string                 `toml:"type" json:"type,omitempty"`
+	Version  map[string]interface{} `toml:"version" json:"version,omitempty"`
+	Metadata map[string]interface{} `toml:"metadata" json:"metadata,omitempty"`
 }

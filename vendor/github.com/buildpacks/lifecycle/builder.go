@@ -1,16 +1,20 @@
 package lifecycle
 
 import (
+	"fmt"
+	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 
 	"github.com/BurntSushi/toml"
+	"github.com/pkg/errors"
 
+	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/launch"
+	"github.com/buildpacks/lifecycle/layers"
 )
 
 type Builder struct {
@@ -18,10 +22,11 @@ type Builder struct {
 	LayersDir     string
 	PlatformDir   string
 	BuildpacksDir string
+	PlatformAPI   *api.Version
 	Env           BuildEnv
 	Group         BuildpackGroup
 	Plan          BuildPlan
-	Out, Err      *log.Logger
+	Out, Err      io.Writer
 }
 
 type BuildEnv interface {
@@ -31,13 +36,15 @@ type BuildEnv interface {
 	List() []string
 }
 
-type Slice struct {
-	Paths []string `tom:"paths"`
+type LaunchTOML struct {
+	Labels    []Label
+	Processes []launch.Process `toml:"processes"`
+	Slices    []layers.Slice   `toml:"slices"`
 }
 
-type LaunchTOML struct {
-	Processes []launch.Process `toml:"processes"`
-	Slices    []Slice          `toml:"slices"`
+type Label struct {
+	Key   string `toml:"key"`
+	Value string `toml:"value"`
 }
 
 type BOMEntry struct {
@@ -45,7 +52,7 @@ type BOMEntry struct {
 	Buildpack Buildpack `toml:"buildpack" json:"buildpack"`
 }
 
-type buildpackPlan struct {
+type BuildpackPlan struct {
 	Entries []Require `toml:"entries"`
 }
 
@@ -71,10 +78,11 @@ func (b *Builder) Build() (*BuildMetadata, error) {
 	procMap := processMap{}
 	plan := b.Plan
 	var bom []BOMEntry
-	var slices []Slice
+	var slices []layers.Slice
+	var labels []Label
 
 	for _, bp := range b.Group.Group {
-		bpInfo, err := bp.lookup(b.BuildpacksDir)
+		bpInfo, err := bp.Lookup(b.BuildpacksDir)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +97,14 @@ func (b *Builder) Build() (*BuildMetadata, error) {
 			return nil, err
 		}
 		bpPlanPath := filepath.Join(bpPlanDir, "plan.toml")
-		if err := WriteTOML(bpPlanPath, plan.find(bp)); err != nil {
+
+		foundPlan := plan.find(bp.noAPI())
+		if api.MustParse(bp.API).Equal(api.MustParse("0.2")) {
+			for i := range foundPlan.Entries {
+				foundPlan.Entries[i].convertMetadataToVersion()
+			}
+		}
+		if err := WriteTOML(bpPlanPath, foundPlan); err != nil {
 			return nil, err
 		}
 
@@ -100,8 +115,8 @@ func (b *Builder) Build() (*BuildMetadata, error) {
 			bpPlanPath,
 		)
 		cmd.Dir = appDir
-		cmd.Stdout = b.Out.Writer()
-		cmd.Stderr = b.Err.Writer()
+		cmd.Stdout = b.Out
+		cmd.Stderr = b.Err
 
 		if bpInfo.Buildpack.ClearEnv {
 			cmd.Env = b.Env.List()
@@ -111,14 +126,15 @@ func (b *Builder) Build() (*BuildMetadata, error) {
 				return nil, err
 			}
 		}
+		cmd.Env = append(cmd.Env, EnvBuildpackDir+"="+bpInfo.Path)
 
 		if err := cmd.Run(); err != nil {
-			return nil, err
+			return nil, NewLifecycleError(err, ErrTypeBuildpack)
 		}
 		if err := setupEnv(b.Env, bpLayersDir); err != nil {
 			return nil, err
 		}
-		var bpPlanOut buildpackPlan
+		var bpPlanOut BuildpackPlan
 		if _, err := toml.DecodeFile(bpPlanPath, &bpPlanOut); err != nil {
 			return nil, err
 		}
@@ -133,19 +149,39 @@ func (b *Builder) Build() (*BuildMetadata, error) {
 		} else if err != nil {
 			return nil, err
 		}
+		for i := range launch.Processes {
+			launch.Processes[i].BuildpackID = bp.ID
+		}
 		procMap.add(launch.Processes)
 		slices = append(slices, launch.Slices...)
+		labels = append(labels, launch.Labels...)
+	}
+
+	if b.PlatformAPI.Compare(api.MustParse("0.4")) < 0 {
+		//plaformApiVersion is less than comparisonVersion
+		for i := range bom {
+			if err := bom[i].convertMetadataToVersion(); err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		for i := range bom {
+			if err := bom[i].convertVersionToMetadata(); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return &BuildMetadata{
-		Processes:  procMap.list(),
-		Buildpacks: b.Group.Group,
 		BOM:        bom,
+		Buildpacks: b.Group.Group,
+		Labels:     labels,
+		Processes:  procMap.list(),
 		Slices:     slices,
 	}, nil
 }
 
-func (p BuildPlan) find(bp Buildpack) buildpackPlan {
+func (p BuildPlan) find(bp Buildpack) BuildpackPlan {
 	var out []Require
 	for _, entry := range p.Entries {
 		for _, provider := range entry.Providers {
@@ -155,11 +191,11 @@ func (p BuildPlan) find(bp Buildpack) buildpackPlan {
 			}
 		}
 	}
-	return buildpackPlan{Entries: out}
+	return BuildpackPlan{Entries: out}
 }
 
 // TODO: ensure at least one claimed entry of each name is provided by the BP
-func (p BuildPlan) filter(bp Buildpack, plan buildpackPlan) (BuildPlan, []BOMEntry) {
+func (p BuildPlan) filter(bp Buildpack, plan BuildpackPlan) (BuildPlan, []BOMEntry) {
 	var out []BuildPlanEntry
 	for _, entry := range p.Entries {
 		if !plan.has(entry) {
@@ -168,12 +204,12 @@ func (p BuildPlan) filter(bp Buildpack, plan buildpackPlan) (BuildPlan, []BOMEnt
 	}
 	var bom []BOMEntry
 	for _, entry := range plan.Entries {
-		bom = append(bom, BOMEntry{Require: entry, Buildpack: bp})
+		bom = append(bom, BOMEntry{Require: entry, Buildpack: bp.noAPI()})
 	}
 	return BuildPlan{Entries: out}, bom
 }
 
-func (p buildpackPlan) has(entry BuildPlanEntry) bool {
+func (p BuildpackPlan) has(entry BuildPlanEntry) bool {
 	for _, buildEntry := range p.Entries {
 		for _, req := range entry.Requires {
 			if req.Name == buildEntry.Name {
@@ -182,6 +218,34 @@ func (p buildpackPlan) has(entry BuildPlanEntry) bool {
 		}
 	}
 	return false
+}
+
+func (bom *BOMEntry) convertMetadataToVersion() error {
+	if version, ok := bom.Metadata["version"]; ok {
+		metadataVersion := fmt.Sprintf("%v", version)
+		if bom.Version != "" && bom.Version != metadataVersion {
+			return errors.New("top level version does not match metadata version")
+		}
+		bom.Version = metadataVersion
+	}
+	return nil
+}
+
+func (bom *BOMEntry) convertVersionToMetadata() error {
+	if bom.Version != "" {
+		if bom.Metadata == nil {
+			bom.Metadata = make(map[string]interface{})
+		}
+		if version, ok := bom.Metadata["version"]; ok {
+			metadataVersion := fmt.Sprintf("%v", version)
+			if metadataVersion != "" && metadataVersion != bom.Version {
+				return errors.New("metadata version does not match top level version")
+			}
+		}
+		bom.Metadata["version"] = bom.Version
+		bom.Version = ""
+	}
+	return nil
 }
 
 func setupEnv(env BuildEnv, layersDir string) error {

@@ -12,14 +12,20 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
+
+	"github.com/buildpacks/lifecycle/api"
 )
 
 const (
-	CodeDetectPass = 0
-	CodeDetectFail = 100
+	CodeDetectPass  = 0
+	CodeDetectFail  = 100
+	EnvBuildpackDir = "CNB_BUILDPACK_DIR"
 )
 
-var ErrFail = errors.New("no buildpacks participating")
+var (
+	errFailedDetection = errors.New("no buildpacks participating")
+	errBuildpack       = errors.New("buildpack(s) failed with err")
+)
 
 type BuildPlan struct {
 	Entries []BuildPlanEntry `toml:"entries"`
@@ -33,7 +39,7 @@ type BuildPlanEntry struct {
 func (be BuildPlanEntry) noOpt() BuildPlanEntry {
 	var out []Buildpack
 	for _, p := range be.Providers {
-		out = append(out, p.noOpt())
+		out = append(out, p.noOpt().noAPI())
 	}
 	be.Providers = out
 	return be
@@ -41,8 +47,42 @@ func (be BuildPlanEntry) noOpt() BuildPlanEntry {
 
 type Require struct {
 	Name     string                 `toml:"name" json:"name"`
-	Version  string                 `toml:"version" json:"version"`
+	Version  string                 `toml:"version,omitempty" json:"version,omitempty"`
 	Metadata map[string]interface{} `toml:"metadata" json:"metadata"`
+}
+
+func (r *Require) convertMetadataToVersion() {
+	if version, ok := r.Metadata["version"]; ok {
+		r.Version = fmt.Sprintf("%v", version)
+	}
+}
+
+func (r *Require) convertVersionToMetadata() {
+	if r.Version != "" {
+		if r.Metadata == nil {
+			r.Metadata = make(map[string]interface{})
+		}
+		r.Metadata["version"] = r.Version
+		r.Version = ""
+	}
+}
+
+func (r *Require) hasInconsistentVersions() bool {
+	if version, ok := r.Metadata["version"]; ok {
+		return r.Version != "" && r.Version != version
+	}
+	return false
+}
+
+func (r *Require) hasDoublySpecifiedVersions() bool {
+	if _, ok := r.Metadata["version"]; ok {
+		return r.Version != ""
+	}
+	return false
+}
+
+func (r *Require) hasTopLevelVersions() bool {
+	return r.Version != ""
 }
 
 type Provide struct {
@@ -60,20 +100,28 @@ type DetectConfig struct {
 }
 
 func (c *DetectConfig) process(done []Buildpack) ([]Buildpack, []BuildPlanEntry, error) {
-	var runs []detectRun
+	var runs []DetectRun
 	for _, bp := range done {
 		t, ok := c.runs.Load(bp.String())
 		if !ok {
 			return nil, nil, errors.Errorf("missing detection of '%s'", bp)
 		}
-		run := t.(detectRun)
+		run := t.(DetectRun)
+		outputLogf := c.Logger.Debugf
+
+		switch run.Code {
+		case CodeDetectPass, CodeDetectFail:
+		default:
+			outputLogf = c.Logger.Infof
+		}
+
 		if len(run.Output) > 0 {
-			c.Logger.Debugf("======== Output: %s ========", bp)
-			c.Logger.Debug(string(run.Output))
+			outputLogf("======== Output: %s ========", bp)
+			outputLogf(string(run.Output))
 		}
 		if run.Err != nil {
-			c.Logger.Debugf("======== Error: %s ========", bp)
-			c.Logger.Debug(run.Err.Error())
+			outputLogf("======== Error: %s ========", bp)
+			outputLogf(run.Err.Error())
 		}
 		runs = append(runs, run)
 	}
@@ -82,6 +130,7 @@ func (c *DetectConfig) process(done []Buildpack) ([]Buildpack, []BuildPlanEntry,
 
 	results := detectResults{}
 	detected := true
+	buildpackErr := false
 	for i, bp := range done {
 		run := runs[i]
 		switch run.Code {
@@ -96,15 +145,20 @@ func (c *DetectConfig) process(done []Buildpack) ([]Buildpack, []BuildPlanEntry,
 			}
 			detected = detected && bp.Optional
 		case -1:
-			c.Logger.Debugf("err:  %s", bp)
+			c.Logger.Infof("err:  %s", bp)
+			buildpackErr = true
 			detected = detected && bp.Optional
 		default:
-			c.Logger.Debugf("err:  %s (%d)", bp, run.Code)
+			c.Logger.Infof("err:  %s (%d)", bp, run.Code)
+			buildpackErr = true
 			detected = detected && bp.Optional
 		}
 	}
 	if !detected {
-		return nil, nil, ErrFail
+		if buildpackErr {
+			return nil, nil, errBuildpack
+		}
+		return nil, nil, errFailedDetection
 	}
 
 	i := 0
@@ -158,7 +212,7 @@ func (c *DetectConfig) runTrial(i int, trial detectTrial) (depMap, detectTrial, 
 			retry = true
 			if !bp.Optional {
 				c.Logger.Debugf("fail: %s requires %s", bp, name)
-				return ErrFail
+				return errFailedDetection
 			}
 			c.Logger.Debugf("skip: %s requires %s", bp, name)
 			trial = trial.remove(bp)
@@ -171,7 +225,7 @@ func (c *DetectConfig) runTrial(i int, trial detectTrial) (depMap, detectTrial, 
 			retry = true
 			if !bp.Optional {
 				c.Logger.Debugf("fail: %s provides unused %s", bp, name)
-				return ErrFail
+				return errFailedDetection
 			}
 			c.Logger.Debugf("skip: %s provides unused %s", bp, name)
 			trial = trial.remove(bp)
@@ -183,29 +237,29 @@ func (c *DetectConfig) runTrial(i int, trial detectTrial) (depMap, detectTrial, 
 
 	if len(trial) == 0 {
 		c.Logger.Debugf("fail: no viable buildpacks in group")
-		return nil, nil, ErrFail
+		return nil, nil, errFailedDetection
 	}
 	return deps, trial, nil
 }
 
-func (bp *buildpackTOML) Detect(c *DetectConfig) detectRun {
+func (bp *BuildpackTOML) Detect(c *DetectConfig) DetectRun {
 	appDir, err := filepath.Abs(c.AppDir)
 	if err != nil {
-		return detectRun{Code: -1, Err: err}
+		return DetectRun{Code: -1, Err: err}
 	}
 	platformDir, err := filepath.Abs(c.PlatformDir)
 	if err != nil {
-		return detectRun{Code: -1, Err: err}
+		return DetectRun{Code: -1, Err: err}
 	}
 	planDir, err := ioutil.TempDir("", "plan.")
 	if err != nil {
-		return detectRun{Code: -1, Err: err}
+		return DetectRun{Code: -1, Err: err}
 	}
 	defer os.RemoveAll(planDir)
 
 	planPath := filepath.Join(planDir, "plan.toml")
 	if err := ioutil.WriteFile(planPath, nil, 0777); err != nil {
-		return detectRun{Code: -1, Err: err}
+		return DetectRun{Code: -1, Err: err}
 	}
 
 	out := &bytes.Buffer{}
@@ -221,18 +275,36 @@ func (bp *buildpackTOML) Detect(c *DetectConfig) detectRun {
 	if bp.Buildpack.ClearEnv {
 		cmd.Env = c.ClearEnv
 	}
+	cmd.Env = append(cmd.Env, EnvBuildpackDir+"="+bp.Path)
 
 	if err := cmd.Run(); err != nil {
 		if err, ok := err.(*exec.ExitError); ok {
 			if status, ok := err.Sys().(syscall.WaitStatus); ok {
-				return detectRun{Code: status.ExitStatus(), Output: out.Bytes()}
+				return DetectRun{Code: status.ExitStatus(), Output: out.Bytes()}
 			}
 		}
-		return detectRun{Code: -1, Err: err, Output: out.Bytes()}
+		return DetectRun{Code: -1, Err: err, Output: out.Bytes()}
 	}
-	var t detectRun
+	var t DetectRun
 	if _, err := toml.DecodeFile(planPath, &t); err != nil {
-		return detectRun{Code: -1, Err: err}
+		return DetectRun{Code: -1, Err: err}
+	}
+	if api.MustParse(bp.API).Equal(api.MustParse("0.2")) {
+		if t.hasInconsistentVersions() || t.Or.hasInconsistentVersions() {
+			t.Err = errors.Errorf(`buildpack %s has a "version" key that does not match "metadata.version"`, bp.Buildpack.ID)
+			t.Code = -1
+		}
+	}
+	if api.MustParse(bp.API).Compare(api.MustParse("0.3")) >= 0 {
+		if t.hasDoublySpecifiedVersions() || t.Or.hasDoublySpecifiedVersions() {
+			t.Err = errors.Errorf(`buildpack %s has a "version" key and a "metadata.version" which cannot be specified together. "metadata.version" should be used instead`, bp.Buildpack.ID)
+			t.Code = -1
+		}
+	}
+	if api.MustParse(bp.API).Compare(api.MustParse("0.3")) >= 0 {
+		if t.hasTopLevelVersions() || t.Or.hasTopLevelVersions() {
+			c.Logger.Warnf(`Warning: buildpack %s has a "version" key. This key is deprecated in build plan requirements in buildpack API 0.3. "metadata.version" should be used instead`, bp.Buildpack.ID)
+		}
 	}
 	t.Output = out.Bytes()
 	return t
@@ -247,6 +319,16 @@ func (bg BuildpackGroup) Detect(c *DetectConfig) (BuildpackGroup, BuildPlan, err
 		c.runs = &sync.Map{}
 	}
 	bps, entries, err := bg.detect(nil, &sync.WaitGroup{}, c)
+	if err == errBuildpack {
+		err = NewLifecycleError(err, ErrTypeBuildpack)
+	} else if err == errFailedDetection {
+		err = NewLifecycleError(err, ErrTypeFailedDetection)
+	}
+	for i := range entries {
+		for j := range entries[i].Requires {
+			entries[i].Requires[j].convertVersionToMetadata()
+		}
+	}
 	return BuildpackGroup{Group: bps}, BuildPlan{Entries: entries}, err
 }
 
@@ -256,10 +338,11 @@ func (bg BuildpackGroup) detect(done []Buildpack, wg *sync.WaitGroup, c *DetectC
 		if hasID(done, bp.ID) {
 			continue
 		}
-		info, err := bp.lookup(c.BuildpacksDir)
+		info, err := bp.Lookup(c.BuildpacksDir)
 		if err != nil {
 			return nil, nil, err
 		}
+		bp.API = info.API
 		if info.Order != nil {
 			// TODO: double-check slice safety here
 			// FIXME: cyclical references lead to infinite recursion
@@ -294,15 +377,29 @@ func (bo BuildpackOrder) Detect(c *DetectConfig) (BuildpackGroup, BuildPlan, err
 		c.runs = &sync.Map{}
 	}
 	bps, entries, err := bo.detect(nil, nil, false, &sync.WaitGroup{}, c)
+	if err == errBuildpack {
+		err = NewLifecycleError(err, ErrTypeBuildpack)
+	} else if err == errFailedDetection {
+		err = NewLifecycleError(err, ErrTypeFailedDetection)
+	}
+	for i := range entries {
+		for j := range entries[i].Requires {
+			entries[i].Requires[j].convertVersionToMetadata()
+		}
+	}
 	return BuildpackGroup{Group: bps}, BuildPlan{Entries: entries}, err
 }
 
 func (bo BuildpackOrder) detect(done, next []Buildpack, optional bool, wg *sync.WaitGroup, c *DetectConfig) ([]Buildpack, []BuildPlanEntry, error) {
 	ngroup := BuildpackGroup{Group: next}
+	buildpackErr := false
 	for _, group := range bo {
 		// FIXME: double-check slice safety here
 		found, plan, err := group.append(ngroup).detect(done, wg, c)
-		if err == ErrFail {
+		if err == errBuildpack {
+			buildpackErr = true
+		}
+		if err == errFailedDetection || err == errBuildpack {
 			wg = &sync.WaitGroup{}
 			continue
 		}
@@ -311,7 +408,11 @@ func (bo BuildpackOrder) detect(done, next []Buildpack, optional bool, wg *sync.
 	if optional {
 		return ngroup.detect(done, wg, c)
 	}
-	return nil, nil, ErrFail
+
+	if buildpackErr {
+		return nil, nil, errBuildpack
+	}
+	return nil, nil, errFailedDetection
 }
 
 func hasID(bps []Buildpack, id string) bool {
@@ -323,12 +424,12 @@ func hasID(bps []Buildpack, id string) bool {
 	return false
 }
 
-type detectRun struct {
+type DetectRun struct {
 	planSections
-	Or     []planSections `toml:"or"`
-	Output []byte         `toml:"-"`
-	Code   int            `toml:"-"`
-	Err    error          `toml:"-"`
+	Or     planSectionsList `toml:"or"`
+	Output []byte           `toml:"-"`
+	Code   int              `toml:"-"`
+	Err    error            `toml:"-"`
 }
 
 type planSections struct {
@@ -336,9 +437,65 @@ type planSections struct {
 	Provides []Provide `toml:"provides"`
 }
 
+func (p *planSections) hasInconsistentVersions() bool {
+	for _, req := range p.Requires {
+		if req.hasInconsistentVersions() {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *planSections) hasDoublySpecifiedVersions() bool {
+	for _, req := range p.Requires {
+		if req.hasDoublySpecifiedVersions() {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *planSections) hasTopLevelVersions() bool {
+	for _, req := range p.Requires {
+		if req.hasTopLevelVersions() {
+			return true
+		}
+	}
+	return false
+}
+
+type planSectionsList []planSections
+
+func (p *planSectionsList) hasInconsistentVersions() bool {
+	for _, planSection := range *p {
+		if planSection.hasInconsistentVersions() {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *planSectionsList) hasDoublySpecifiedVersions() bool {
+	for _, planSection := range *p {
+		if planSection.hasDoublySpecifiedVersions() {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *planSectionsList) hasTopLevelVersions() bool {
+	for _, planSection := range *p {
+		if planSection.hasTopLevelVersions() {
+			return true
+		}
+	}
+	return false
+}
+
 type detectResult struct {
 	Buildpack
-	detectRun
+	DetectRun
 }
 
 func (r *detectResult) options() []detectOption {

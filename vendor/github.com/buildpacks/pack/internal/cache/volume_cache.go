@@ -7,6 +7,8 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
+
+	"github.com/buildpacks/pack/internal/paths"
 )
 
 type VolumeCache struct {
@@ -16,8 +18,10 @@ type VolumeCache struct {
 
 func NewVolumeCache(imageRef name.Reference, suffix string, dockerClient client.CommonAPIClient) *VolumeCache {
 	sum := sha256.Sum256([]byte(imageRef.Name()))
+
+	vol := paths.FilterReservedNames(fmt.Sprintf("%x", sum[:6]))
 	return &VolumeCache{
-		volume: fmt.Sprintf("pack-cache-%x.%s", sum[:6], suffix),
+		volume: fmt.Sprintf("pack-cache-%s.%s", vol, suffix),
 		docker: dockerClient,
 	}
 }
