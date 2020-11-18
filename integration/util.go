@@ -103,11 +103,11 @@ func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient) {
 		t.Fatalf("Test setup error: getting Kubernetes client: %s", err)
 	}
 
-	ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{
+	ns, err := client.CoreV1().Namespaces().Create(context.Background(), &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "skaffold",
 		},
-	})
+	}, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("creating namespace: %s", err)
 	}
@@ -121,7 +121,7 @@ func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient) {
 	}
 
 	t.Cleanup(func() {
-		client.CoreV1().Namespaces().Delete(ns.Name, &metav1.DeleteOptions{})
+		client.CoreV1().Namespaces().Delete(context.Background(), ns.Name, metav1.DeleteOptions{})
 	})
 
 	return ns, nsClient
@@ -155,14 +155,14 @@ func (k *NSKubernetesClient) DefaultSecrets() corev1.SecretInterface {
 }
 
 func (k *NSKubernetesClient) CreateSecretFrom(ns, name string) {
-	secret, err := k.client.CoreV1().Secrets(ns).Get(name, metav1.GetOptions{})
+	secret, err := k.client.CoreV1().Secrets(ns).Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {
 		k.t.Fatalf("failed reading default/e2esecret: %s", err)
 	}
 
 	secret.Namespace = k.ns
 	secret.ResourceVersion = ""
-	if _, err = k.Secrets().Create(secret); err != nil {
+	if _, err = k.Secrets().Create(context.Background(), secret, metav1.CreateOptions{}); err != nil {
 		k.t.Fatalf("failed creating %s/e2esecret: %s", k.ns, err)
 	}
 }
@@ -184,7 +184,7 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 	defer cancelTimeout()
 
 	pods := k.Pods()
-	w, err := pods.Watch(metav1.ListOptions{})
+	w, err := pods.Watch(ctx, metav1.ListOptions{})
 	if err != nil {
 		k.t.Fatalf("Unable to watch pods: %v", err)
 	}
@@ -208,7 +208,7 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 			pod := event.Object.(*v1.Pod)
 			logrus.Infoln("Pod", pod.Name, "is", pod.Status.Phase)
 			if pod.Status.Phase == v1.PodFailed {
-				logs, err := pods.GetLogs(pod.Name, &v1.PodLogOptions{}).DoRaw()
+				logs, err := pods.GetLogs(pod.Name, &v1.PodLogOptions{}).DoRaw(ctx)
 				if err != nil {
 					k.t.Fatalf("failed to get logs for failed pod %s: %s", pod.Name, err)
 				}
@@ -233,7 +233,7 @@ func (k *NSKubernetesClient) GetPod(podName string) *v1.Pod {
 	k.t.Helper()
 	k.WaitForPodsReady(podName)
 
-	pod, err := k.Pods().Get(podName, metav1.GetOptions{})
+	pod, err := k.Pods().Get(context.Background(), podName, metav1.GetOptions{})
 	if err != nil {
 		k.t.Fatalf("Could not find pod: %s in namespace %s", podName, k.ns)
 	}
@@ -245,7 +245,7 @@ func (k *NSKubernetesClient) GetDeployment(depName string) *appsv1.Deployment {
 	k.t.Helper()
 	k.WaitForDeploymentsToStabilize(depName)
 
-	dep, err := k.Deployments().Get(depName, metav1.GetOptions{})
+	dep, err := k.Deployments().Get(context.Background(), depName, metav1.GetOptions{})
 	if err != nil {
 		k.t.Fatalf("Could not find deployment: %s in namespace %s", depName, k.ns)
 	}
@@ -269,7 +269,7 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), timeout)
 	defer cancelTimeout()
 
-	w, err := k.Deployments().Watch(metav1.ListOptions{})
+	w, err := k.Deployments().Watch(ctx, metav1.ListOptions{})
 	if err != nil {
 		k.t.Fatalf("Unable to watch deployments: %v", err)
 	}
@@ -328,7 +328,7 @@ func (k *NSKubernetesClient) printDiskFreeSpace() {
 
 // ExternalIP waits for the external IP aof a given service.
 func (k *NSKubernetesClient) ExternalIP(serviceName string) string {
-	svc, err := k.Services().Get(serviceName, metav1.GetOptions{})
+	svc, err := k.Services().Get(context.Background(), serviceName, metav1.GetOptions{})
 	if err != nil {
 		k.t.Fatalf("error getting registry service: %v", err)
 	}

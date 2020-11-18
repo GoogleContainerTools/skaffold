@@ -20,11 +20,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/pkg/apis/duck"
+
+	"knative.dev/pkg/apis/duck/ducktypes"
 )
 
 // SchemeGroupVersion is group version used to register these objects
-var SchemeGroupVersion = schema.GroupVersion{Group: duck.GroupName, Version: "v1"}
+var SchemeGroupVersion = schema.GroupVersion{Group: ducktypes.GroupName, Version: "v1"}
 
 // Kind takes an unqualified kind and returns back a Group qualified GroupKind
 func Kind(kind string) schema.GroupKind {
@@ -53,6 +54,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		(&Source{}).GetListType(),
 		&WithPod{},
 		(&WithPod{}).GetListType(),
+		&Binding{},
+		(&Binding{}).GetListType(),
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

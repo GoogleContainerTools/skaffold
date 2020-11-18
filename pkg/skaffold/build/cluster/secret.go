@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -35,7 +36,7 @@ const (
 	defaultKanikoSecretPath = "kaniko-secret"
 )
 
-func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
+func (b *Builder) setupPullSecret(ctx context.Context, out io.Writer) (func(), error) {
 	if b.PullSecretPath == "" && b.PullSecretName == "" {
 		return func() {}, nil
 	}
@@ -47,12 +48,12 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 	}
 
 	secrets := client.CoreV1().Secrets(b.Namespace)
-	if _, err := secrets.Get(b.PullSecretName, metav1.GetOptions{}); err != nil {
+	if _, err := secrets.Get(ctx, b.PullSecretName, metav1.GetOptions{}); err != nil {
 		color.Default.Fprintf(out, "Creating kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
 		if b.PullSecretPath == "" {
 			return nil, fmt.Errorf("secret %s does not exist. No path specified to create it", b.PullSecretName)
 		}
-		return b.createSecretFromFile(secrets)
+		return b.createSecretFromFile(ctx, secrets)
 	}
 	if b.PullSecretPath == "" {
 		// TODO: Remove the warning when pod health check can display pod failure errors.
@@ -63,7 +64,7 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 	return func() {}, nil
 }
 
-func (b *Builder) createSecretFromFile(secrets typedV1.SecretInterface) (func(), error) {
+func (b *Builder) createSecretFromFile(ctx context.Context, secrets typedV1.SecretInterface) (func(), error) {
 	secretData, err := ioutil.ReadFile(b.PullSecretPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create secret %s from path %s. reading pull secret: %w", b.PullSecretName, b.PullSecretPath, err)
@@ -78,18 +79,18 @@ func (b *Builder) createSecretFromFile(secrets typedV1.SecretInterface) (func(),
 		},
 	}
 	b.PullSecretPath = kaniko.DefaultSecretName
-	if _, err := secrets.Create(secret); err != nil {
+	if _, err := secrets.Create(ctx, secret, metav1.CreateOptions{}); err != nil {
 		return nil, fmt.Errorf("creating pull secret %q: %w", b.PullSecretName, err)
 	}
 
 	return func() {
-		if err := secrets.Delete(b.PullSecretName, &metav1.DeleteOptions{}); err != nil {
+		if err := secrets.Delete(ctx, b.PullSecretName, metav1.DeleteOptions{}); err != nil {
 			logrus.Warnf("deleting pull secret")
 		}
 	}, nil
 }
 
-func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
+func (b *Builder) setupDockerConfigSecret(ctx context.Context, out io.Writer) (func(), error) {
 	if b.DockerConfig == nil {
 		return func() {}, nil
 	}
@@ -106,7 +107,7 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 	if b.DockerConfig.Path == "" {
 		logrus.Debug("No docker config specified. Checking for one in the cluster.")
 
-		if _, err := secrets.Get(b.DockerConfig.SecretName, metav1.GetOptions{}); err != nil {
+		if _, err := secrets.Get(ctx, b.DockerConfig.SecretName, metav1.GetOptions{}); err != nil {
 			return nil, fmt.Errorf("checking for existing kaniko secret: %w", err)
 		}
 
@@ -128,12 +129,12 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 		},
 	}
 
-	if _, err := secrets.Create(secret); err != nil {
+	if _, err := secrets.Create(ctx, secret, metav1.CreateOptions{}); err != nil {
 		return nil, fmt.Errorf("creating docker config secret %q: %w", b.DockerConfig.SecretName, err)
 	}
 
 	return func() {
-		if err := secrets.Delete(b.DockerConfig.SecretName, &metav1.DeleteOptions{}); err != nil {
+		if err := secrets.Delete(ctx, b.DockerConfig.SecretName, metav1.DeleteOptions{}); err != nil {
 			logrus.Warnf("deleting docker config secret")
 		}
 	}, nil

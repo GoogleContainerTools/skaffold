@@ -110,7 +110,7 @@ func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.St
 
 	deployments := make([]*resource.Deployment, 0)
 	for _, n := range s.cfg.GetNamespaces() {
-		newDeployments, err := getDeployments(client, n, s.labeller,
+		newDeployments, err := getDeployments(ctx, client, n, s.labeller,
 			getDeadline(s.cfg.Pipeline().Deploy.StatusCheckDeadlineSeconds))
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
@@ -151,8 +151,8 @@ func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.St
 	return getSkaffoldDeployStatus(c, deployments)
 }
 
-func getDeployments(client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
-	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
+func getDeployments(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
+	deps, err := client.AppsV1().Deployments(ns).List(ctx, metav1.ListOptions{
 		LabelSelector: l.RunIDSelector(),
 	})
 	if err != nil {

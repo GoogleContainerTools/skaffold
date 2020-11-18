@@ -17,6 +17,8 @@ limitations under the License.
 package duck
 
 import (
+	"context"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/kmeta"
@@ -26,7 +28,7 @@ import (
 // InformerFactory is used to create Informer/Lister pairs for a schema.GroupVersionResource
 type InformerFactory interface {
 	// Get returns a synced Informer/Lister pair for the provided schema.GroupVersionResource.
-	Get(schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error)
+	Get(context.Context, schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error)
 }
 
 // OneOfOurs is the union of our Accessor interface and the OwnerRefable interface

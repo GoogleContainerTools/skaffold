@@ -108,9 +108,6 @@ type Mount struct {
 	CacheID      string
 	CacheSharing string
 	Required     bool
-	Mode         *uint64
-	UID          *uint64
-	GID          *uint64
 }
 
 func parseMount(value string) (*Mount, error) {
@@ -142,8 +139,6 @@ func parseMount(value string) (*Mount, error) {
 				if m.Type == "secret" || m.Type == "ssh" {
 					m.Required = true
 					continue
-				} else {
-					return nil, errors.Errorf("unexpected key '%s' for mount type '%s'", key, m.Type)
 				}
 			}
 		}
@@ -178,16 +173,6 @@ func parseMount(value string) (*Mount, error) {
 			}
 			m.ReadOnly = !rw
 			roAuto = false
-		case "required":
-			if m.Type == "secret" || m.Type == "ssh" {
-				v, err := strconv.ParseBool(value)
-				if err != nil {
-					return nil, errors.Errorf("invalid value for %s: %s", key, value)
-				}
-				m.Required = v
-			} else {
-				return nil, errors.Errorf("unexpected key '%s' for mount type '%s'", key, m.Type)
-			}
 		case "id":
 			m.CacheID = value
 		case "sharing":
@@ -195,45 +180,13 @@ func parseMount(value string) (*Mount, error) {
 				return nil, errors.Errorf("unsupported sharing value %q", value)
 			}
 			m.CacheSharing = strings.ToLower(value)
-		case "mode":
-			mode, err := strconv.ParseUint(value, 8, 32)
-			if err != nil {
-				return nil, errors.Errorf("invalid value %s for mode", value)
-			}
-			m.Mode = &mode
-		case "uid":
-			uid, err := strconv.ParseUint(value, 10, 32)
-			if err != nil {
-				return nil, errors.Errorf("invalid value %s for uid", value)
-			}
-			m.UID = &uid
-		case "gid":
-			gid, err := strconv.ParseUint(value, 10, 32)
-			if err != nil {
-				return nil, errors.Errorf("invalid value %s for gid", value)
-			}
-			m.GID = &gid
 		default:
 			return nil, errors.Errorf("unexpected key '%s' in '%s'", key, field)
 		}
 	}
 
-	fileInfoAllowed := m.Type == MountTypeSecret || m.Type == MountTypeSSH || m.Type == MountTypeCache
-
-	if m.Mode != nil && !fileInfoAllowed {
-		return nil, errors.Errorf("mode not allowed for %q type mounts", m.Type)
-	}
-
-	if m.UID != nil && !fileInfoAllowed {
-		return nil, errors.Errorf("uid not allowed for %q type mounts", m.Type)
-	}
-
-	if m.GID != nil && !fileInfoAllowed {
-		return nil, errors.Errorf("gid not allowed for %q type mounts", m.Type)
-	}
-
 	if roAuto {
-		if m.Type == MountTypeCache || m.Type == MountTypeTmpfs {
+		if m.Type == MountTypeCache {
 			m.ReadOnly = false
 		} else {
 			m.ReadOnly = true

@@ -123,7 +123,7 @@ func TestStart(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(latest.Pipeline{}, "", true, true, true)
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, test.availablePorts))
-			t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
+			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latest.PortForwardResource, error) {
 				return test.resources, nil
 			})
 
@@ -265,7 +265,7 @@ func TestUserDefinedResources(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(latest.Pipeline{}, "", true, true, true)
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, []int{8080, 9000}))
-			t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
+			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latest.PortForwardResource, error) {
 				return []*latest.PortForwardResource{svc}, nil
 			})
 
@@ -384,7 +384,7 @@ func TestRetrieveServices(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(objs...)
 			t.Override(&kubernetesclient.Client, mockClient(client))
 
-			actual, err := retrieveServiceResources(fmt.Sprintf("%s=9876-6789", label.RunIDLabel), test.namespaces)
+			actual, err := retrieveServiceResources(context.Background(), fmt.Sprintf("%s=9876-6789", label.RunIDLabel), test.namespaces)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)

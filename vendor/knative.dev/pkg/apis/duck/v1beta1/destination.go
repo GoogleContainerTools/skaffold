@@ -107,9 +107,8 @@ func ValidateDestination(dest Destination, allowDeprecatedFields bool) *apis.Fie
 	if ref != nil && dest.URI == nil {
 		if dest.Ref != nil {
 			return validateDestinationRef(*ref).ViaField("ref")
-		} else {
-			return validateDestinationRef(*ref)
 		}
+		return validateDestinationRef(*ref)
 	}
 	return nil
 }

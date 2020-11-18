@@ -17,6 +17,7 @@ limitations under the License.
 package duck
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -45,17 +46,17 @@ type TypedInformerFactory struct {
 var _ InformerFactory = (*TypedInformerFactory)(nil)
 
 // Get implements InformerFactory.
-func (dif *TypedInformerFactory) Get(gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
+func (dif *TypedInformerFactory) Get(ctx context.Context, gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
 	// Avoid error cases, like the GVR does not exist.
 	// It is not a full check. Some RBACs might sneak by, but the window is very small.
-	if _, err := dif.Client.Resource(gvr).List(metav1.ListOptions{}); err != nil {
+	if _, err := dif.Client.Resource(gvr).List(ctx, metav1.ListOptions{}); err != nil {
 		return nil, nil, err
 	}
 
 	listObj := dif.Type.GetListType()
 	lw := &cache.ListWatch{
-		ListFunc:  asStructuredLister(dif.Client.Resource(gvr).List, listObj),
-		WatchFunc: AsStructuredWatcher(dif.Client.Resource(gvr).Watch, dif.Type),
+		ListFunc:  asStructuredLister(ctx, dif.Client.Resource(gvr).List, listObj),
+		WatchFunc: AsStructuredWatcher(ctx, dif.Client.Resource(gvr).Watch, dif.Type),
 	}
 	inf := cache.NewSharedIndexInformer(lw, dif.Type, dif.ResyncPeriod, cache.Indexers{
 		cache.NamespaceIndex: cache.MetaNamespaceIndexFunc,
@@ -72,11 +73,11 @@ func (dif *TypedInformerFactory) Get(gvr schema.GroupVersionResource) (cache.Sha
 	return inf, lister, nil
 }
 
-type unstructuredLister func(metav1.ListOptions) (*unstructured.UnstructuredList, error)
+type unstructuredLister func(context.Context, metav1.ListOptions) (*unstructured.UnstructuredList, error)
 
-func asStructuredLister(ulist unstructuredLister, listObj runtime.Object) cache.ListFunc {
+func asStructuredLister(ctx context.Context, ulist unstructuredLister, listObj runtime.Object) cache.ListFunc {
 	return func(opts metav1.ListOptions) (runtime.Object, error) {
-		ul, err := ulist(opts)
+		ul, err := ulist(ctx, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -88,11 +89,13 @@ func asStructuredLister(ulist unstructuredLister, listObj runtime.Object) cache.
 	}
 }
 
+type structuredWatcher func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
+
 // AsStructuredWatcher is public for testing only.
 // TODO(mattmoor): Move tests for this to `package duck` and make private.
-func AsStructuredWatcher(wf cache.WatchFunc, obj runtime.Object) cache.WatchFunc {
+func AsStructuredWatcher(ctx context.Context, wf structuredWatcher, obj runtime.Object) cache.WatchFunc {
 	return func(lo metav1.ListOptions) (watch.Interface, error) {
-		uw, err := wf(lo)
+		uw, err := wf(ctx, lo)
 		if err != nil {
 			return nil, err
 		}
@@ -134,6 +137,6 @@ func AsStructuredWatcher(wf cache.WatchFunc, obj runtime.Object) cache.WatchFunc
 			}
 		}()
 
-		return NewProxyWatcher(structuredCh), nil
+		return watch.NewProxyWatcher(structuredCh), nil
 	}
 }

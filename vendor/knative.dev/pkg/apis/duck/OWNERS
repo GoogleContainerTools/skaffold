@@ -2,3 +2,6 @@
 
 approvers:
 - apis-duck-approvers
+
+reviewers:
+- apis-duck-reviewers

@@ -68,7 +68,7 @@ func TestFetcher(t *testing.T) {
 			var out bytes.Buffer
 
 			f := newFetcher(&out, docker)
-			f.Fetch(context.Background(), "image", true, test.pull)
+			f.Fetch(context.Background(), "image", true, test.pullPolicy)
 
 			t.CheckDeepEqual(test.expectedPulled, api.Pulled())
 		})

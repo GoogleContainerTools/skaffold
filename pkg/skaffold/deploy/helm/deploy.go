@@ -152,7 +152,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 		}
 	}
 
-	if err := label.Apply(h.labels, dRes); err != nil {
+	if err := label.Apply(ctx, h.labels, dRes); err != nil {
 		return nil, fmt.Errorf("adding labels: %w", err)
 	}
 

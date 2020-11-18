@@ -120,7 +120,7 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 			},
 		},
 	}
-	return client.AppsV1().Deployments(constants.Namespace).Create(d)
+	return client.AppsV1().Deployments(constants.Namespace).Create(context.Background(), d, metav1.CreateOptions{})
 }
 
 // WaitForDeploymentToStabilize waits till the Deployment has stabilized

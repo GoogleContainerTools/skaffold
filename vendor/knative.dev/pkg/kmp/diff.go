@@ -73,7 +73,7 @@ func SafeEqual(x, y interface{}, opts ...cmp.Option) (equal bool, err error) {
 // CompareSetFields returns a list of field names that differ between
 // x and y. Uses SafeEqual for comparison.
 func CompareSetFields(x, y interface{}, opts ...cmp.Option) ([]string, error) {
-	r := new(FieldListReporter)
+	r := new(fieldListReporter)
 	opts = append(opts, cmp.Reporter(r))
 	_, err := SafeEqual(x, y, opts...)
 	return r.Fields(), err
@@ -82,7 +82,7 @@ func CompareSetFields(x, y interface{}, opts ...cmp.Option) ([]string, error) {
 // ShortDiff returns a zero-context, unified human-readable diff.
 // Uses SafeEqual for comparison.
 func ShortDiff(prev, cur interface{}, opts ...cmp.Option) (string, error) {
-	r := new(ShortDiffReporter)
+	r := new(shortDiffReporter)
 	opts = append(opts, cmp.Reporter(r))
 	var err error
 	if _, err = SafeEqual(prev, cur, opts...); err != nil {

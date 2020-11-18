@@ -75,6 +75,7 @@ const apiId = "cloudbuild:v1"
 const apiName = "cloudbuild"
 const apiVersion = "v1"
 const basePath = "https://cloudbuild.googleapis.com/"
+const mtlsBasePath = "https://cloudbuild.mtls.googleapis.com/"
 
 // OAuth2 scopes used by this API.
 const (
@@ -90,6 +91,7 @@ func NewService(ctx context.Context, opts ...option.ClientOption) (*Service, err
 	// NOTE: prepend, so we don't override user-specified scopes.
 	opts = append([]option.ClientOption{scopesOption}, opts...)
 	opts = append(opts, internaloption.WithDefaultEndpoint(basePath))
+	opts = append(opts, internaloption.WithDefaultMTLSEndpoint(mtlsBasePath))
 	client, endpoint, err := htransport.NewClient(ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -148,6 +150,7 @@ type OperationsService struct {
 func NewProjectsService(s *Service) *ProjectsService {
 	rs := &ProjectsService{s: s}
 	rs.Builds = NewProjectsBuildsService(s)
+	rs.Locations = NewProjectsLocationsService(s)
 	rs.Triggers = NewProjectsTriggersService(s)
 	return rs
 }
@@ -156,6 +159,8 @@ type ProjectsService struct {
 	s *Service
 
 	Builds *ProjectsBuildsService
+
+	Locations *ProjectsLocationsService
 
 	Triggers *ProjectsTriggersService
 }
@@ -169,6 +174,39 @@ type ProjectsBuildsService struct {
 	s *Service
 }
 
+func NewProjectsLocationsService(s *Service) *ProjectsLocationsService {
+	rs := &ProjectsLocationsService{s: s}
+	rs.Builds = NewProjectsLocationsBuildsService(s)
+	rs.Operations = NewProjectsLocationsOperationsService(s)
+	return rs
+}
+
+type ProjectsLocationsService struct {
+	s *Service
+
+	Builds *ProjectsLocationsBuildsService
+
+	Operations *ProjectsLocationsOperationsService
+}
+
+func NewProjectsLocationsBuildsService(s *Service) *ProjectsLocationsBuildsService {
+	rs := &ProjectsLocationsBuildsService{s: s}
+	return rs
+}
+
+type ProjectsLocationsBuildsService struct {
+	s *Service
+}
+
+func NewProjectsLocationsOperationsService(s *Service) *ProjectsLocationsOperationsService {
+	rs := &ProjectsLocationsOperationsService{s: s}
+	return rs
+}
+
+type ProjectsLocationsOperationsService struct {
+	s *Service
+}
+
 func NewProjectsTriggersService(s *Service) *ProjectsTriggersService {
 	rs := &ProjectsTriggersService{s: s}
 	return rs
@@ -179,19 +217,13 @@ type ProjectsTriggersService struct {
 }
 
 // ArtifactObjects: Files in the workspace to upload to Cloud Storage
-// upon successful
-// completion of all build steps.
+// upon successful completion of all build steps.
 type ArtifactObjects struct {
-	// Location: Cloud Storage bucket and optional object path, in the
-	// form
-	// "gs://bucket/path/to/somewhere/". (see [Bucket
-	// Name
-	// Requirements](https://cloud.google.com/storage/docs/bucket-naming
-	// #requirements)).
-	//
-	// Files in the workspace matching any path pattern will be uploaded
-	// to
-	// Cloud Storage with this location as a prefix.
+	// Location: Cloud Storage bucket and optional object path, in the form
+	// "gs://bucket/path/to/somewhere/". (see [Bucket Name
+	// Requirements](https://cloud.google.com/storage/docs/bucket-naming#requ
+	// irements)). Files in the workspace matching any path pattern will be
+	// uploaded to Cloud Storage with this location as a prefix.
 	Location string `json:"location,omitempty"`
 
 	// Paths: Path globs used to match files in the build's workspace.
@@ -224,16 +256,14 @@ func (s *ArtifactObjects) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// ArtifactResult: An artifact that was uploaded during a build. This
-// is a single record in the artifact manifest JSON file.
+// ArtifactResult: An artifact that was uploaded during a build. This is
+// a single record in the artifact manifest JSON file.
 type ArtifactResult struct {
 	// FileHash: The file hash of the artifact.
 	FileHash []*FileHashes `json:"fileHash,omitempty"`
 
 	// Location: The path of an artifact in a Google Cloud Storage bucket,
-	// with the
-	// generation number. For
-	// example,
+	// with the generation number. For example,
 	// `gs://mybucket/path/to/output.jar#generation`.
 	Location string `json:"location,omitempty"`
 
@@ -260,39 +290,23 @@ func (s *ArtifactResult) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Artifacts: Artifacts produced by a build that should be uploaded
-// upon
+// Artifacts: Artifacts produced by a build that should be uploaded upon
 // successful completion of all build steps.
 type Artifacts struct {
 	// Images: A list of images to be pushed upon the successful completion
-	// of all build
-	// steps.
-	//
-	// The images will be pushed using the builder service account's
-	// credentials.
-	//
-	// The digests of the pushed images will be stored in the Build
-	// resource's
-	// results field.
-	//
-	// If any of the images fail to be pushed, the build is marked FAILURE.
+	// of all build steps. The images will be pushed using the builder
+	// service account's credentials. The digests of the pushed images will
+	// be stored in the Build resource's results field. If any of the images
+	// fail to be pushed, the build is marked FAILURE.
 	Images []string `json:"images,omitempty"`
 
 	// Objects: A list of objects to be uploaded to Cloud Storage upon
-	// successful
-	// completion of all build steps.
-	//
-	// Files in the workspace matching specified paths globs will be
-	// uploaded to
-	// the specified Cloud Storage location using the builder service
-	// account's
-	// credentials.
-	//
-	// The location and generation of the uploaded objects will be stored in
-	// the
-	// Build resource's results field.
-	//
-	// If any objects fail to be pushed, the build is marked FAILURE.
+	// successful completion of all build steps. Files in the workspace
+	// matching specified paths globs will be uploaded to the specified
+	// Cloud Storage location using the builder service account's
+	// credentials. The location and generation of the uploaded objects will
+	// be stored in the Build resource's results field. If any objects fail
+	// to be pushed, the build is marked FAILURE.
 	Objects *ArtifactObjects `json:"objects,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Images") to
@@ -318,36 +332,25 @@ func (s *Artifacts) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Build: A build resource in the Cloud Build API.
-//
-// At a high level, a `Build` describes where to find source code, how
-// to build
-// it (for example, the builder image to run on the source), and where
-// to store
-// the built artifacts.
-//
-// Fields can include the following variables, which will be expanded
-// when the
-// build is created:
-//
-// - $PROJECT_ID: the project ID of the build.
-// - $BUILD_ID: the autogenerated ID of the build.
-// - $REPO_NAME: the source repository name specified by RepoSource.
-// - $BRANCH_NAME: the branch name specified by RepoSource.
-// - $TAG_NAME: the tag name specified by RepoSource.
-// - $REVISION_ID or $COMMIT_SHA: the commit SHA specified by RepoSource
-// or
-//   resolved from the specified branch or tag.
-// - $SHORT_SHA: first 7 characters of $REVISION_ID or $COMMIT_SHA.
+// Build: A build resource in the Cloud Build API. At a high level, a
+// `Build` describes where to find source code, how to build it (for
+// example, the builder image to run on the source), and where to store
+// the built artifacts. Fields can include the following variables,
+// which will be expanded when the build is created: - $PROJECT_ID: the
+// project ID of the build. - $BUILD_ID: the autogenerated ID of the
+// build. - $REPO_NAME: the source repository name specified by
+// RepoSource. - $BRANCH_NAME: the branch name specified by RepoSource.
+// - $TAG_NAME: the tag name specified by RepoSource. - $REVISION_ID or
+// $COMMIT_SHA: the commit SHA specified by RepoSource or resolved from
+// the specified branch or tag. - $SHORT_SHA: first 7 characters of
+// $REVISION_ID or $COMMIT_SHA.
 type Build struct {
 	// Artifacts: Artifacts produced by the build that should be uploaded
-	// upon
-	// successful completion of all build steps.
+	// upon successful completion of all build steps.
 	Artifacts *Artifacts `json:"artifacts,omitempty"`
 
 	// BuildTriggerId: Output only. The ID of the `BuildTrigger` that
-	// triggered this build, if it
-	// was triggered automatically.
+	// triggered this build, if it was triggered automatically.
 	BuildTriggerId string `json:"buildTriggerId,omitempty"`
 
 	// CreateTime: Output only. Time at which the request to create the
@@ -355,30 +358,18 @@ type Build struct {
 	CreateTime string `json:"createTime,omitempty"`
 
 	// FinishTime: Output only. Time at which execution of the build was
-	// finished.
-	//
-	// The difference between finish_time and start_time is the duration of
-	// the
-	// build's execution.
+	// finished. The difference between finish_time and start_time is the
+	// duration of the build's execution.
 	FinishTime string `json:"finishTime,omitempty"`
 
 	// Id: Output only. Unique identifier of the build.
 	Id string `json:"id,omitempty"`
 
 	// Images: A list of images to be pushed upon the successful completion
-	// of all build
-	// steps.
-	//
-	// The images are pushed using the builder service account's
-	// credentials.
-	//
-	// The digests of the pushed images will be stored in the `Build`
-	// resource's
-	// results field.
-	//
-	// If any of the images fail to be pushed, the build status is
-	// marked
-	// `FAILURE`.
+	// of all build steps. The images are pushed using the builder service
+	// account's credentials. The digests of the pushed images will be
+	// stored in the `Build` resource's results field. If any of the images
+	// fail to be pushed, the build status is marked `FAILURE`.
 	Images []string `json:"images,omitempty"`
 
 	// LogUrl: Output only. URL to logs for this build in Google Cloud
@@ -386,14 +377,16 @@ type Build struct {
 	LogUrl string `json:"logUrl,omitempty"`
 
 	// LogsBucket: Google Cloud Storage bucket where logs should be written
-	// (see
-	// [Bucket
-	// Name
-	// Requirements](https://cloud.google.com/storage/docs/bucket-naming
-	// #requirements)).
-	// Logs file names will be of the format
+	// (see [Bucket Name
+	// Requirements](https://cloud.google.com/storage/docs/bucket-naming#requ
+	// irements)). Logs file names will be of the format
 	// `${logs_bucket}/log-${build_id}.txt`.
 	LogsBucket string `json:"logsBucket,omitempty"`
+
+	// Name: Output only. The 'Build' name with format:
+	// `projects/{project}/locations/{location}/builds/{build}`, where
+	// {build} is a unique identifier generated by the service.
+	Name string `json:"name,omitempty"`
 
 	// Options: Special options for this build.
 	Options *BuildOptions `json:"options,omitempty"`
@@ -402,12 +395,8 @@ type Build struct {
 	ProjectId string `json:"projectId,omitempty"`
 
 	// QueueTtl: TTL in queue for this build. If provided and the build is
-	// enqueued longer
-	// than this value, the build will expire and the build status will
-	// be
-	// `EXPIRED`.
-	//
-	// The TTL starts ticking from create_time.
+	// enqueued longer than this value, the build will expire and the build
+	// status will be `EXPIRED`. The TTL starts ticking from create_time.
 	QueueTtl string `json:"queueTtl,omitempty"`
 
 	// Results: Output only. Results of the build.
@@ -415,6 +404,13 @@ type Build struct {
 
 	// Secrets: Secrets to decrypt using Cloud Key Management Service.
 	Secrets []*Secret `json:"secrets,omitempty"`
+
+	// ServiceAccount: IAM service account whose credentials will be used at
+	// build runtime. Must be of the format
+	// `projects/{PROJECT_ID}/serviceAccounts/{ACCOUNT}`. ACCOUNT can be
+	// email address or uniqueId of the service account. This field is in
+	// alpha and is not publicly available.
+	ServiceAccount string `json:"serviceAccount,omitempty"`
 
 	// Source: The location of the source files to build.
 	Source *Source `json:"source,omitempty"`
@@ -456,24 +452,16 @@ type Build struct {
 	Tags []string `json:"tags,omitempty"`
 
 	// Timeout: Amount of time that this build should be allowed to run, to
-	// second
-	// granularity. If this amount of time elapses, work on the build will
-	// cease
-	// and the build status will be `TIMEOUT`.
-	//
-	// Default time is ten minutes.
+	// second granularity. If this amount of time elapses, work on the build
+	// will cease and the build status will be `TIMEOUT`. `timeout` starts
+	// ticking from `startTime`. Default time is ten minutes.
 	Timeout string `json:"timeout,omitempty"`
 
 	// Timing: Output only. Stores timing information for phases of the
-	// build. Valid keys
-	// are:
-	//
-	// * BUILD: time to execute all build steps
-	// * PUSH: time to push all specified images.
-	// * FETCHSOURCE: time to fetch source.
-	//
-	// If the build does not specify source or images,
-	// these keys will not be included.
+	// build. Valid keys are: * BUILD: time to execute all build steps *
+	// PUSH: time to push all specified images. * FETCHSOURCE: time to fetch
+	// source. If the build does not specify source or images, these keys
+	// will not be included.
 	Timing map[string]TimeSpan `json:"timing,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -535,32 +523,29 @@ func (s *BuildOperationMetadata) MarshalJSON() ([]byte, error) {
 // builds.
 type BuildOptions struct {
 	// DiskSizeGb: Requested disk size for the VM that runs the build. Note
-	// that this is *NOT*
-	// "disk free"; some of the space will be used by the operating system
-	// and
-	// build utilities. Also note that this is the minimum disk size that
-	// will be
-	// allocated for the build -- the build may run with a larger disk
-	// than
-	// requested. At present, the maximum disk size is 1000GB; builds that
-	// request
-	// more than the maximum are rejected with an error.
+	// that this is *NOT* "disk free"; some of the space will be used by the
+	// operating system and build utilities. Also note that this is the
+	// minimum disk size that will be allocated for the build -- the build
+	// may run with a larger disk than requested. At present, the maximum
+	// disk size is 1000GB; builds that request more than the maximum are
+	// rejected with an error.
 	DiskSizeGb int64 `json:"diskSizeGb,omitempty,string"`
 
+	// DynamicSubstitutions: Option to specify whether or not to apply bash
+	// style string operations to the substitutions. NOTE: this is always
+	// enabled for triggered builds and cannot be overridden in the build
+	// configuration file.
+	DynamicSubstitutions bool `json:"dynamicSubstitutions,omitempty"`
+
 	// Env: A list of global environment variable definitions that will
-	// exist for all
-	// build steps in this build. If a variable is defined in both globally
-	// and in
-	// a build step, the variable will use the build step value.
-	//
-	// The elements are of the form "KEY=VALUE" for the environment variable
-	// "KEY"
-	// being given the value "VALUE".
+	// exist for all build steps in this build. If a variable is defined in
+	// both globally and in a build step, the variable will use the build
+	// step value. The elements are of the form "KEY=VALUE" for the
+	// environment variable "KEY" being given the value "VALUE".
 	Env []string `json:"env,omitempty"`
 
 	// LogStreamingOption: Option to define build log streaming behavior to
-	// Google Cloud
-	// Storage.
+	// Google Cloud Storage.
 	//
 	// Possible values:
 	//   "STREAM_DEFAULT" - Service may automatically determine build log
@@ -568,21 +553,24 @@ type BuildOptions struct {
 	//   "STREAM_ON" - Build logs should be streamed to Google Cloud
 	// Storage.
 	//   "STREAM_OFF" - Build logs should not be streamed to Google Cloud
-	// Storage; they will be
-	// written when the build is completed.
+	// Storage; they will be written when the build is completed.
 	LogStreamingOption string `json:"logStreamingOption,omitempty"`
 
-	// Logging: Option to specify the logging mode, which determines where
-	// the logs are
-	// stored.
+	// Logging: Option to specify the logging mode, which determines if and
+	// where build logs are stored.
 	//
 	// Possible values:
 	//   "LOGGING_UNSPECIFIED" - The service determines the logging mode.
-	// The default is `LEGACY`. Do not
-	// rely on the default logging behavior as it may change in the future.
-	//   "LEGACY" - Stackdriver logging and Cloud Storage logging are
-	// enabled.
+	// The default is `LEGACY`. Do not rely on the default logging behavior
+	// as it may change in the future.
+	//   "LEGACY" - Cloud Logging and Cloud Storage logging are enabled.
 	//   "GCS_ONLY" - Only Cloud Storage logging is enabled.
+	//   "STACKDRIVER_ONLY" - This option is the same as CLOUD_LOGGING_ONLY.
+	//   "CLOUD_LOGGING_ONLY" - Only Cloud Logging is enabled. Note that
+	// logs for both the Cloud Console UI and Cloud SDK are based on Cloud
+	// Storage logs, so neither will provide logs if this option is chosen.
+	//   "NONE" - Turn off all logging. No build logs will be captured. Next
+	// ID: 6
 	Logging string `json:"logging,omitempty"`
 
 	// MachineType: Compute Engine machine type on which to run the build.
@@ -601,12 +589,9 @@ type BuildOptions struct {
 	RequestedVerifyOption string `json:"requestedVerifyOption,omitempty"`
 
 	// SecretEnv: A list of global environment variables, which are
-	// encrypted using a Cloud
-	// Key Management Service crypto key. These values must be specified in
-	// the
-	// build's `Secret`. These variables will be available to all build
-	// steps
-	// in this build.
+	// encrypted using a Cloud Key Management Service crypto key. These
+	// values must be specified in the build's `Secret`. These variables
+	// will be available to all build steps in this build.
 	SecretEnv []string `json:"secretEnv,omitempty"`
 
 	// SourceProvenanceHash: Requested hash for SourceProvenance.
@@ -618,36 +603,29 @@ type BuildOptions struct {
 	SourceProvenanceHash []string `json:"sourceProvenanceHash,omitempty"`
 
 	// SubstitutionOption: Option to specify behavior when there is an error
-	// in the substitution
-	// checks.
+	// in the substitution checks. NOTE: this is always set to ALLOW_LOOSE
+	// for triggered builds and cannot be overridden in the build
+	// configuration file.
 	//
 	// Possible values:
 	//   "MUST_MATCH" - Fails the build if error in substitutions checks,
-	// like missing
-	// a substitution in the template or in the map.
+	// like missing a substitution in the template or in the map.
 	//   "ALLOW_LOOSE" - Do not fail the build if error in substitutions
 	// checks.
 	SubstitutionOption string `json:"substitutionOption,omitempty"`
 
-	// Volumes: Global list of volumes to mount for ALL build steps
-	//
-	// Each volume is created as an empty volume prior to starting the
-	// build
-	// process. Upon completion of the build, volumes and their contents
-	// are
+	// Volumes: Global list of volumes to mount for ALL build steps Each
+	// volume is created as an empty volume prior to starting the build
+	// process. Upon completion of the build, volumes and their contents are
 	// discarded. Global volume names and paths cannot conflict with the
-	// volumes
-	// defined a build step.
-	//
-	// Using a global volume in a build with only one step is not valid
-	// as
-	// it is indicative of a build request with an incorrect configuration.
+	// volumes defined a build step. Using a global volume in a build with
+	// only one step is not valid as it is indicative of a build request
+	// with an incorrect configuration.
 	Volumes []*Volume `json:"volumes,omitempty"`
 
-	// WorkerPool: Option to specify a `WorkerPool` for the build.
-	// Format: projects/{project}/workerPools/{workerPool}
-	//
-	// This field is experimental.
+	// WorkerPool: Option to specify a `WorkerPool` for the build. Format:
+	// projects/{project}/locations/{location}/workerPools/{workerPool} This
+	// field is experimental.
 	WorkerPool string `json:"workerPool,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "DiskSizeGb") to
@@ -676,100 +654,62 @@ func (s *BuildOptions) MarshalJSON() ([]byte, error) {
 // BuildStep: A step in the build pipeline.
 type BuildStep struct {
 	// Args: A list of arguments that will be presented to the step when it
-	// is started.
-	//
-	// If the image used to run the step's container has an entrypoint, the
-	// `args`
-	// are used as arguments to that entrypoint. If the image does not
-	// define
-	// an entrypoint, the first element in args is used as the
-	// entrypoint,
-	// and the remainder will be used as arguments.
+	// is started. If the image used to run the step's container has an
+	// entrypoint, the `args` are used as arguments to that entrypoint. If
+	// the image does not define an entrypoint, the first element in args is
+	// used as the entrypoint, and the remainder will be used as arguments.
 	Args []string `json:"args,omitempty"`
 
-	// Dir: Working directory to use when running this step's container.
-	//
-	// If this value is a relative path, it is relative to the build's
-	// working
+	// Dir: Working directory to use when running this step's container. If
+	// this value is a relative path, it is relative to the build's working
 	// directory. If this value is absolute, it may be outside the build's
-	// working
-	// directory, in which case the contents of the path may not be
-	// persisted
-	// across build step executions, unless a `volume` for that path is
-	// specified.
-	//
-	// If the build specifies a `RepoSource` with `dir` and a step with a
-	// `dir`,
-	// which specifies an absolute path, the `RepoSource` `dir` is ignored
-	// for
-	// the step's execution.
+	// working directory, in which case the contents of the path may not be
+	// persisted across build step executions, unless a `volume` for that
+	// path is specified. If the build specifies a `RepoSource` with `dir`
+	// and a step with a `dir`, which specifies an absolute path, the
+	// `RepoSource` `dir` is ignored for the step's execution.
 	Dir string `json:"dir,omitempty"`
 
 	// Entrypoint: Entrypoint to be used instead of the build step image's
-	// default entrypoint.
-	// If unset, the image's default entrypoint is used.
+	// default entrypoint. If unset, the image's default entrypoint is used.
 	Entrypoint string `json:"entrypoint,omitempty"`
 
 	// Env: A list of environment variable definitions to be used when
-	// running a step.
-	//
-	// The elements are of the form "KEY=VALUE" for the environment variable
-	// "KEY"
-	// being given the value "VALUE".
+	// running a step. The elements are of the form "KEY=VALUE" for the
+	// environment variable "KEY" being given the value "VALUE".
 	Env []string `json:"env,omitempty"`
 
-	// Id: Unique identifier for this build step, used in `wait_for`
-	// to
+	// Id: Unique identifier for this build step, used in `wait_for` to
 	// reference this build step as a dependency.
 	Id string `json:"id,omitempty"`
 
 	// Name: Required. The name of the container image that will run this
-	// particular
-	// build step.
-	//
-	// If the image is available in the host's Docker daemon's cache,
-	// it
-	// will be run directly. If not, the host will attempt to pull the
-	// image
-	// first, using the builder service account's credentials if
-	// necessary.
-	//
-	// The Docker daemon's cache will already have the latest versions of
-	// all of
-	// the officially supported build
-	// steps
-	// ([https://github.com/GoogleCloudPlatform/cloud-builders](https:/
-	// /github.com/GoogleCloudPlatform/cloud-builders)).
-	// The Docker daemon will also have cached many of the layers for some
-	// popular
-	// images, like "ubuntu", "debian", but they will be refreshed at the
-	// time you
-	// attempt to use them.
-	//
-	// If you built an image in a previous build step, it will be stored in
-	// the
-	// host's Docker daemon's cache and is available to use as the name for
-	// a
-	// later build step.
+	// particular build step. If the image is available in the host's Docker
+	// daemon's cache, it will be run directly. If not, the host will
+	// attempt to pull the image first, using the builder service account's
+	// credentials if necessary. The Docker daemon's cache will already have
+	// the latest versions of all of the officially supported build steps
+	// ([https://github.com/GoogleCloudPlatform/cloud-builders](https://githu
+	// b.com/GoogleCloudPlatform/cloud-builders)). The Docker daemon will
+	// also have cached many of the layers for some popular images, like
+	// "ubuntu", "debian", but they will be refreshed at the time you
+	// attempt to use them. If you built an image in a previous build step,
+	// it will be stored in the host's Docker daemon's cache and is
+	// available to use as the name for a later build step.
 	Name string `json:"name,omitempty"`
 
 	// PullTiming: Output only. Stores timing information for pulling this
-	// build step's
-	// builder image only.
+	// build step's builder image only.
 	PullTiming *TimeSpan `json:"pullTiming,omitempty"`
 
 	// SecretEnv: A list of environment variables which are encrypted using
-	// a Cloud Key
-	// Management Service crypto key. These values must be specified in
-	// the
-	// build's `Secret`.
+	// a Cloud Key Management Service crypto key. These values must be
+	// specified in the build's `Secret`.
 	SecretEnv []string `json:"secretEnv,omitempty"`
 
 	// Status: Output only. Status of the build step. At this time, build
-	// step status is
-	// only updated on build completion; step status is not updated in
-	// real-time
-	// as the build progresses.
+	// step status is only updated on build completion; step status is not
+	// updated in real-time as the build progresses.
 	//
 	// Possible values:
 	//   "STATUS_UNKNOWN" - Status of the build is unknown.
@@ -785,38 +725,26 @@ type BuildStep struct {
 	Status string `json:"status,omitempty"`
 
 	// Timeout: Time limit for executing this build step. If not defined,
-	// the step has no
-	// time limit and will be allowed to continue to run until either it
-	// completes
-	// or the build itself times out.
+	// the step has no time limit and will be allowed to continue to run
+	// until either it completes or the build itself times out.
 	Timeout string `json:"timeout,omitempty"`
 
 	// Timing: Output only. Stores timing information for executing this
 	// build step.
 	Timing *TimeSpan `json:"timing,omitempty"`
 
-	// Volumes: List of volumes to mount into the build step.
-	//
-	// Each volume is created as an empty volume prior to execution of
-	// the
-	// build step. Upon completion of the build, volumes and their contents
-	// are
-	// discarded.
-	//
+	// Volumes: List of volumes to mount into the build step. Each volume is
+	// created as an empty volume prior to execution of the build step. Upon
+	// completion of the build, volumes and their contents are discarded.
 	// Using a named volume in only one step is not valid as it is
-	// indicative
-	// of a build request with an incorrect configuration.
+	// indicative of a build request with an incorrect configuration.
 	Volumes []*Volume `json:"volumes,omitempty"`
 
-	// WaitFor: The ID(s) of the step(s) that this build step depends
-	// on.
+	// WaitFor: The ID(s) of the step(s) that this build step depends on.
 	// This build step will not start until all the build steps in
-	// `wait_for`
-	// have completed successfully. If `wait_for` is empty, this build step
-	// will
-	// start when all previous build steps in the `Build.Steps` list
-	// have
-	// completed successfully.
+	// `wait_for` have completed successfully. If `wait_for` is empty, this
+	// build step will start when all previous build steps in the
+	// `Build.Steps` list have completed successfully.
 	WaitFor []string `json:"waitFor,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Args") to
@@ -843,8 +771,7 @@ func (s *BuildStep) MarshalJSON() ([]byte, error) {
 }
 
 // BuildTrigger: Configuration for an automated build in response to
-// source repository
-// changes.
+// source repository changes.
 type BuildTrigger struct {
 	// Build: Contents of the build template.
 	Build *Build `json:"build,omitempty"`
@@ -855,82 +782,60 @@ type BuildTrigger struct {
 	// Description: Human-readable description of this trigger.
 	Description string `json:"description,omitempty"`
 
-	// Disabled: If true, the trigger will never result in a build.
+	// Disabled: If true, the trigger will never automatically execute a
+	// build.
 	Disabled bool `json:"disabled,omitempty"`
 
 	// Filename: Path, from the source root, to a file whose contents is
-	// used for the
-	// template.
+	// used for the template.
 	Filename string `json:"filename,omitempty"`
 
 	// Github: GitHubEventsConfig describes the configuration of a trigger
-	// that creates
-	// a build whenever a GitHub event is received.
-	//
-	// Mutually exclusive with `trigger_template`.
+	// that creates a build whenever a GitHub event is received. Mutually
+	// exclusive with `trigger_template`.
 	Github *GitHubEventsConfig `json:"github,omitempty"`
 
 	// Id: Output only. Unique identifier of the trigger.
 	Id string `json:"id,omitempty"`
 
 	// IgnoredFiles: ignored_files and included_files are file glob matches
-	// using
-	// https://golang.org/pkg/path/filepath/#Match extended with support for
-	// "**".
-	//
-	// If ignored_files and changed files are both empty, then they are
-	// not used to determine whether or not to trigger a build.
-	//
-	// If ignored_files is not empty, then we ignore any files that
-	// match
-	// any of the ignored_file globs. If the change has no files that
-	// are
-	// outside of the ignored_files globs, then we do not trigger a build.
+	// using https://golang.org/pkg/path/filepath/#Match extended with
+	// support for "**". If ignored_files and changed files are both empty,
+	// then they are not used to determine whether or not to trigger a
+	// build. If ignored_files is not empty, then we ignore any files that
+	// match any of the ignored_file globs. If the change has no files that
+	// are outside of the ignored_files globs, then we do not trigger a
+	// build.
 	IgnoredFiles []string `json:"ignoredFiles,omitempty"`
 
 	// IncludedFiles: If any of the files altered in the commit pass the
-	// ignored_files
-	// filter and included_files is empty, then as far as this filter
-	// is
-	// concerned, we should trigger the build.
-	//
-	// If any of the files altered in the commit pass the
-	// ignored_files
-	// filter and included_files is not empty, then we make sure that
-	// at
-	// least one of those files matches a included_files glob. If not,
-	// then we do not trigger a build.
+	// ignored_files filter and included_files is empty, then as far as this
+	// filter is concerned, we should trigger the build. If any of the files
+	// altered in the commit pass the ignored_files filter and
+	// included_files is not empty, then we make sure that at least one of
+	// those files matches a included_files glob. If not, then we do not
+	// trigger a build.
 	IncludedFiles []string `json:"includedFiles,omitempty"`
 
 	// Name: User-assigned name of the trigger. Must be unique within the
-	// project.
-	// Trigger names must meet the following requirements:
-	//
-	// + They must contain only alphanumeric characters and dashes.
-	// + They can be 1-64 characters long.
-	// + They must begin and end with an alphanumeric character.
+	// project. Trigger names must meet the following requirements: + They
+	// must contain only alphanumeric characters and dashes. + They can be
+	// 1-64 characters long. + They must begin and end with an alphanumeric
+	// character.
 	Name string `json:"name,omitempty"`
 
 	// Substitutions: Substitutions for Build resource. The keys must match
-	// the following
-	// regular expression: `^_[A-Z0-9_]+$`.The keys cannot conflict with
-	// the
-	// keys in bindings.
+	// the following regular expression: `^_[A-Z0-9_]+$`.
 	Substitutions map[string]string `json:"substitutions,omitempty"`
 
 	// Tags: Tags for annotation of a `BuildTrigger`
 	Tags []string `json:"tags,omitempty"`
 
 	// TriggerTemplate: Template describing the types of source changes to
-	// trigger a build.
-	//
-	// Branch and tag names in trigger templates are interpreted as
-	// regular
-	// expressions. Any branch or tag change that matches that regular
-	// expression
-	// will trigger a build.
-	//
-	// Mutually exclusive with `github`.
+	// trigger a build. Branch and tag names in trigger templates are
+	// interpreted as regular expressions. Any branch or tag change that
+	// matches that regular expression will trigger a build. Mutually
+	// exclusive with `github`.
 	TriggerTemplate *RepoSource `json:"triggerTemplate,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -966,8 +871,7 @@ type BuiltImage struct {
 	Digest string `json:"digest,omitempty"`
 
 	// Name: Name used to push the container image to Google Container
-	// Registry, as
-	// presented to `docker push`.
+	// Registry, as presented to `docker push`.
 	Name string `json:"name,omitempty"`
 
 	// PushTiming: Output only. Stores timing information for pushing the
@@ -999,6 +903,37 @@ func (s *BuiltImage) MarshalJSON() ([]byte, error) {
 
 // CancelBuildRequest: Request to cancel an ongoing build.
 type CancelBuildRequest struct {
+	// Id: Required. ID of the build.
+	Id string `json:"id,omitempty"`
+
+	// Name: The name of the `Build` to retrieve. Format:
+	// `projects/{project}/locations/{location}/builds/{build}`
+	Name string `json:"name,omitempty"`
+
+	// ProjectId: Required. ID of the project.
+	ProjectId string `json:"projectId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Id") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CancelBuildRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod CancelBuildRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // CancelOperationRequest: The request message for
@@ -1007,17 +942,11 @@ type CancelOperationRequest struct {
 }
 
 // Empty: A generic empty message that you can re-use to avoid defining
-// duplicated
-// empty messages in your APIs. A typical example is to use it as the
-// request
-// or the response type of an API method. For instance:
-//
-//     service Foo {
-//       rpc Bar(google.protobuf.Empty) returns
-// (google.protobuf.Empty);
-//     }
-//
-// The JSON representation for `Empty` is empty JSON object `{}`.
+// duplicated empty messages in your APIs. A typical example is to use
+// it as the request or the response type of an API method. For
+// instance: service Foo { rpc Bar(google.protobuf.Empty) returns
+// (google.protobuf.Empty); } The JSON representation for `Empty` is
+// empty JSON object `{}`.
 type Empty struct {
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
@@ -1025,9 +954,8 @@ type Empty struct {
 }
 
 // FileHashes: Container message for hashes of byte content of files,
-// used in
-// SourceProvenance messages to verify integrity of source input to the
-// build.
+// used in SourceProvenance messages to verify integrity of source input
+// to the build.
 type FileHashes struct {
 	// FileHash: Collection of file hashes.
 	FileHash []*Hash `json:"fileHash,omitempty"`
@@ -1056,24 +984,19 @@ func (s *FileHashes) MarshalJSON() ([]byte, error) {
 }
 
 // GitHubEventsConfig: GitHubEventsConfig describes the configuration of
-// a trigger that creates a
-// build whenever a GitHub event is received.
-//
+// a trigger that creates a build whenever a GitHub event is received.
 // This message is experimental.
 type GitHubEventsConfig struct {
 	// InstallationId: The installationID that emits the GitHub event.
 	InstallationId int64 `json:"installationId,omitempty,string"`
 
-	// Name: Name of the repository. For example: The name
-	// for
+	// Name: Name of the repository. For example: The name for
 	// https://github.com/googlecloudplatform/cloud-builders is
 	// "cloud-builders".
 	Name string `json:"name,omitempty"`
 
-	// Owner: Owner of the repository. For example: The owner
-	// for
-	// https://github.com/googlecloudplatform/cloud-builders
-	// is
+	// Owner: Owner of the repository. For example: The owner for
+	// https://github.com/googlecloudplatform/cloud-builders is
 	// "googlecloudplatform".
 	Owner string `json:"owner,omitempty"`
 
@@ -1103,6 +1026,36 @@ type GitHubEventsConfig struct {
 
 func (s *GitHubEventsConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod GitHubEventsConfig
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// HTTPDelivery: HTTPDelivery is the delivery configuration for an HTTP
+// notification.
+type HTTPDelivery struct {
+	// Uri: The URI to which JSON-containing HTTP POST requests should be
+	// sent.
+	Uri string `json:"uri,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Uri") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Uri") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *HTTPDelivery) MarshalJSON() ([]byte, error) {
+	type NoMethod HTTPDelivery
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -1185,7 +1138,8 @@ type ListBuildsResponse struct {
 	// Builds: Builds will be sorted by `create_time`, descending.
 	Builds []*Build `json:"builds,omitempty"`
 
-	// NextPageToken: Token to receive the next page of results.
+	// NextPageToken: Token to receive the next page of results. This will
+	// be absent if the end of the response list has been reached.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1215,21 +1169,28 @@ func (s *ListBuildsResponse) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// ListOperationsResponse: The response message for
-// Operations.ListOperations.
-type ListOperationsResponse struct {
-	// NextPageToken: The standard List next-page token.
-	NextPageToken string `json:"nextPageToken,omitempty"`
+// Notification: Notification is the container which holds the data that
+// is relevant to this particular notification.
+type Notification struct {
+	// Filter: The filter string to use for notification filtering.
+	// Currently, this is assumed to be a CEL program. See
+	// https://opensource.google/projects/cel for more.
+	Filter string `json:"filter,omitempty"`
 
-	// Operations: A list of operations that matches the specified filter in
-	// the request.
-	Operations []*Operation `json:"operations,omitempty"`
+	// HttpDelivery: Configuration for HTTP delivery.
+	HttpDelivery *HTTPDelivery `json:"httpDelivery,omitempty"`
 
-	// ServerResponse contains the HTTP response code and headers from the
-	// server.
-	googleapi.ServerResponse `json:"-"`
+	// SlackDelivery: Configuration for Slack delivery.
+	SlackDelivery *SlackDelivery `json:"slackDelivery,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "NextPageToken") to
+	// SmtpDelivery: Configuration for SMTP (email) delivery.
+	SmtpDelivery *SMTPDelivery `json:"smtpDelivery,omitempty"`
+
+	// StructDelivery: Escape hatch for users to supply custom delivery
+	// configs.
+	StructDelivery googleapi.RawMessage `json:"structDelivery,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Filter") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -1237,7 +1198,179 @@ type ListOperationsResponse struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "NextPageToken") to include
+	// NullFields is a list of field names (e.g. "Filter") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Notification) MarshalJSON() ([]byte, error) {
+	type NoMethod Notification
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// NotifierConfig: NotifierConfig is the top-level configuration
+// message.
+type NotifierConfig struct {
+	// ApiVersion: The API version of this configuration format.
+	ApiVersion string `json:"apiVersion,omitempty"`
+
+	// Kind: The type of notifier to use (e.g. SMTPNotifier).
+	Kind string `json:"kind,omitempty"`
+
+	// Metadata: Metadata for referring to/handling/deploying this notifier.
+	Metadata *NotifierMetadata `json:"metadata,omitempty"`
+
+	// Spec: The actual configuration for this notifier.
+	Spec *NotifierSpec `json:"spec,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ApiVersion") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ApiVersion") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *NotifierConfig) MarshalJSON() ([]byte, error) {
+	type NoMethod NotifierConfig
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// NotifierMetadata: NotifierMetadata contains the data which can be
+// used to reference or describe this notifier.
+type NotifierMetadata struct {
+	// Name: The human-readable and user-given name for the notifier. For
+	// example: "repo-merge-email-notifier".
+	Name string `json:"name,omitempty"`
+
+	// Notifier: The string representing the name and version of notifier to
+	// deploy. Expected to be of the form of "/:". For example:
+	// "gcr.io/my-project/notifiers/smtp:1.2.34".
+	Notifier string `json:"notifier,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Name") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Name") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *NotifierMetadata) MarshalJSON() ([]byte, error) {
+	type NoMethod NotifierMetadata
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// NotifierSecret: NotifierSecret is the container that maps a secret
+// name (reference) to its Google Cloud Secret Manager resource path.
+type NotifierSecret struct {
+	// Name: Name is the local name of the secret, such as the verbatim
+	// string "my-smtp-password".
+	Name string `json:"name,omitempty"`
+
+	// Value: Value is interpreted to be a resource path for fetching the
+	// actual (versioned) secret data for this secret. For example, this
+	// would be a Google Cloud Secret Manager secret version resource path
+	// like: "projects/my-project/secrets/my-secret/versions/latest".
+	Value string `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Name") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Name") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *NotifierSecret) MarshalJSON() ([]byte, error) {
+	type NoMethod NotifierSecret
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// NotifierSecretRef: NotifierSecretRef contains the reference to a
+// secret stored in the corresponding NotifierSpec.
+type NotifierSecretRef struct {
+	// SecretRef: The value of `secret_ref` should be a `name` that is
+	// registered in a `Secret` in the `secrets` list of the `Spec`.
+	SecretRef string `json:"secretRef,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "SecretRef") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "SecretRef") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *NotifierSecretRef) MarshalJSON() ([]byte, error) {
+	type NoMethod NotifierSecretRef
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// NotifierSpec: NotifierSpec is the configuration container for
+// notifications.
+type NotifierSpec struct {
+	// Notification: The configuration of this particular notifier.
+	Notification *Notification `json:"notification,omitempty"`
+
+	// Secrets: Configurations for secret resources used by this particular
+	// notifier.
+	Secrets []*NotifierSecret `json:"secrets,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Notification") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Notification") to include
 	// in API requests with the JSON null value. By default, fields with
 	// empty values are omitted from API requests. However, any field with
 	// an empty value appearing in NullFields will be sent to the server as
@@ -1246,59 +1379,45 @@ type ListOperationsResponse struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ListOperationsResponse) MarshalJSON() ([]byte, error) {
-	type NoMethod ListOperationsResponse
+func (s *NotifierSpec) MarshalJSON() ([]byte, error) {
+	type NoMethod NotifierSpec
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // Operation: This resource represents a long-running operation that is
-// the result of a
-// network API call.
+// the result of a network API call.
 type Operation struct {
 	// Done: If the value is `false`, it means the operation is still in
-	// progress.
-	// If `true`, the operation is completed, and either `error` or
-	// `response` is
-	// available.
+	// progress. If `true`, the operation is completed, and either `error`
+	// or `response` is available.
 	Done bool `json:"done,omitempty"`
 
 	// Error: The error result of the operation in case of failure or
 	// cancellation.
 	Error *Status `json:"error,omitempty"`
 
-	// Metadata: Service-specific metadata associated with the operation.
-	// It typically
-	// contains progress information and common metadata such as create
-	// time.
-	// Some services might not provide such metadata.  Any method that
-	// returns a
-	// long-running operation should document the metadata type, if any.
+	// Metadata: Service-specific metadata associated with the operation. It
+	// typically contains progress information and common metadata such as
+	// create time. Some services might not provide such metadata. Any
+	// method that returns a long-running operation should document the
+	// metadata type, if any.
 	Metadata googleapi.RawMessage `json:"metadata,omitempty"`
 
 	// Name: The server-assigned name, which is only unique within the same
-	// service that
-	// originally returns it. If you use the default HTTP mapping,
-	// the
-	// `name` should be a resource name ending with
+	// service that originally returns it. If you use the default HTTP
+	// mapping, the `name` should be a resource name ending with
 	// `operations/{unique_id}`.
 	Name string `json:"name,omitempty"`
 
-	// Response: The normal response of the operation in case of success.
-	// If the original
-	// method returns no data on success, such as `Delete`, the response
-	// is
-	// `google.protobuf.Empty`.  If the original method is
-	// standard
-	// `Get`/`Create`/`Update`, the response should be the resource.  For
-	// other
-	// methods, the response should have the type `XxxResponse`, where
-	// `Xxx`
-	// is the original method name.  For example, if the original method
-	// name
-	// is `TakeSnapshot()`, the inferred response type
-	// is
-	// `TakeSnapshotResponse`.
+	// Response: The normal response of the operation in case of success. If
+	// the original method returns no data on success, such as `Delete`, the
+	// response is `google.protobuf.Empty`. If the original method is
+	// standard `Get`/`Create`/`Update`, the response should be the
+	// resource. For other methods, the response should have the type
+	// `XxxResponse`, where `Xxx` is the original method name. For example,
+	// if the original method name is `TakeSnapshot()`, the inferred
+	// response type is `TakeSnapshotResponse`.
 	Response googleapi.RawMessage `json:"response,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1329,26 +1448,25 @@ func (s *Operation) MarshalJSON() ([]byte, error) {
 }
 
 // PullRequestFilter: PullRequestFilter contains filter properties for
-// matching GitHub Pull
-// Requests.
+// matching GitHub Pull Requests.
 type PullRequestFilter struct {
-	// Branch: Regex of branches to match.
-	//
-	// The syntax of the regular expressions accepted is the syntax accepted
-	// by
-	// RE2 and described at https://github.com/google/re2/wiki/Syntax
+	// Branch: Regex of branches to match. The syntax of the regular
+	// expressions accepted is the syntax accepted by RE2 and described at
+	// https://github.com/google/re2/wiki/Syntax
 	Branch string `json:"branch,omitempty"`
 
-	// CommentControl: Configure builds to run only when a repository owner
-	// or collaborator
-	// comments `/gcbrun`.
+	// CommentControl: Configure builds to run whether a repository owner or
+	// collaborator need to comment `/gcbrun`.
 	//
 	// Possible values:
 	//   "COMMENTS_DISABLED" - Do not require comments on Pull Requests
 	// before builds are triggered.
 	//   "COMMENTS_ENABLED" - Enforce that repository owners or
-	// collaborators must comment on Pull
-	// Requests before builds are triggered.
+	// collaborators must comment on Pull Requests before builds are
+	// triggered.
+	//   "COMMENTS_ENABLED_FOR_EXTERNAL_CONTRIBUTORS_ONLY" - Enforce that
+	// repository owners or collaborators must comment on external
+	// contributors' Pull Requests before builds are triggered.
 	CommentControl string `json:"commentControl,omitempty"`
 
 	// InvertRegex: If true, branches that do NOT match the git_ref will
@@ -1381,23 +1499,18 @@ func (s *PullRequestFilter) MarshalJSON() ([]byte, error) {
 // PushFilter: Push contains filter properties for matching GitHub git
 // pushes.
 type PushFilter struct {
-	// Branch: Regexes matching branches to build.
-	//
-	// The syntax of the regular expressions accepted is the syntax accepted
-	// by
-	// RE2 and described at https://github.com/google/re2/wiki/Syntax
+	// Branch: Regexes matching branches to build. The syntax of the regular
+	// expressions accepted is the syntax accepted by RE2 and described at
+	// https://github.com/google/re2/wiki/Syntax
 	Branch string `json:"branch,omitempty"`
 
 	// InvertRegex: When true, only trigger a build if the revision regex
-	// does NOT match the
-	// git_ref regex.
+	// does NOT match the git_ref regex.
 	InvertRegex bool `json:"invertRegex,omitempty"`
 
-	// Tag: Regexes matching tags to build.
-	//
-	// The syntax of the regular expressions accepted is the syntax accepted
-	// by
-	// RE2 and described at https://github.com/google/re2/wiki/Syntax
+	// Tag: Regexes matching tags to build. The syntax of the regular
+	// expressions accepted is the syntax accepted by RE2 and described at
+	// https://github.com/google/re2/wiki/Syntax
 	Tag string `json:"tag,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Branch") to
@@ -1426,46 +1539,38 @@ func (s *PushFilter) MarshalJSON() ([]byte, error) {
 // RepoSource: Location of the source in a Google Cloud Source
 // Repository.
 type RepoSource struct {
-	// BranchName: Regex matching branches to build.
-	//
-	// The syntax of the regular expressions accepted is the syntax accepted
-	// by
-	// RE2 and described at https://github.com/google/re2/wiki/Syntax
+	// BranchName: Regex matching branches to build. The syntax of the
+	// regular expressions accepted is the syntax accepted by RE2 and
+	// described at https://github.com/google/re2/wiki/Syntax
 	BranchName string `json:"branchName,omitempty"`
 
 	// CommitSha: Explicit commit SHA to build.
 	CommitSha string `json:"commitSha,omitempty"`
 
 	// Dir: Directory, relative to the source root, in which to run the
-	// build.
-	//
-	// This must be a relative path. If a step's `dir` is specified and is
-	// an
-	// absolute path, this value is ignored for that step's execution.
+	// build. This must be a relative path. If a step's `dir` is specified
+	// and is an absolute path, this value is ignored for that step's
+	// execution.
 	Dir string `json:"dir,omitempty"`
 
 	// InvertRegex: Only trigger a build if the revision regex does NOT
-	// match the revision
-	// regex.
+	// match the revision regex.
 	InvertRegex bool `json:"invertRegex,omitempty"`
 
 	// ProjectId: ID of the project that owns the Cloud Source Repository.
-	// If omitted, the
-	// project ID requesting the build is assumed.
+	// If omitted, the project ID requesting the build is assumed.
 	ProjectId string `json:"projectId,omitempty"`
 
 	// RepoName: Required. Name of the Cloud Source Repository.
 	RepoName string `json:"repoName,omitempty"`
 
-	// Substitutions: Substitutions to use in a triggered build.
-	// Should only be used with RunBuildTrigger
+	// Substitutions: Substitutions to use in a triggered build. Should only
+	// be used with RunBuildTrigger
 	Substitutions map[string]string `json:"substitutions,omitempty"`
 
-	// TagName: Regex matching tags to build.
-	//
-	// The syntax of the regular expressions accepted is the syntax accepted
-	// by
-	// RE2 and described at https://github.com/google/re2/wiki/Syntax
+	// TagName: Regex matching tags to build. The syntax of the regular
+	// expressions accepted is the syntax accepted by RE2 and described at
+	// https://github.com/google/re2/wiki/Syntax
 	TagName string `json:"tagName,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "BranchName") to
@@ -1501,19 +1606,14 @@ type Results struct {
 	ArtifactTiming *TimeSpan `json:"artifactTiming,omitempty"`
 
 	// BuildStepImages: List of build step digests, in the order
-	// corresponding to build step
-	// indices.
+	// corresponding to build step indices.
 	BuildStepImages []string `json:"buildStepImages,omitempty"`
 
 	// BuildStepOutputs: List of build step outputs, produced by builder
-	// images, in the order
-	// corresponding to build step indices.
-	//
-	// [Cloud
+	// images, in the order corresponding to build step indices. [Cloud
 	// Builders](https://cloud.google.com/cloud-build/docs/cloud-builders)
-	// ca
-	// n produce this output by writing to `$BUILDER_OUTPUT/output`.
-	// Only the first 4KB of data is stored.
+	// can produce this output by writing to `$BUILDER_OUTPUT/output`. Only
+	// the first 4KB of data is stored.
 	BuildStepOutputs []string `json:"buildStepOutputs,omitempty"`
 
 	// Images: Container images that were built as a part of the build.
@@ -1549,25 +1649,97 @@ func (s *Results) MarshalJSON() ([]byte, error) {
 
 // RetryBuildRequest: Specifies a build to retry.
 type RetryBuildRequest struct {
+	// Id: Required. Build ID of the original build.
+	Id string `json:"id,omitempty"`
+
+	// Name: The name of the `Build` to retry. Format:
+	// `projects/{project}/locations/{location}/builds/{build}`
+	Name string `json:"name,omitempty"`
+
+	// ProjectId: Required. ID of the project.
+	ProjectId string `json:"projectId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Id") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *RetryBuildRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod RetryBuildRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// SMTPDelivery: SMTPDelivery is the delivery configuration for an SMTP
+// (email) notification.
+type SMTPDelivery struct {
+	// FromAddress: This is the SMTP account/email that appears in the
+	// `From:` of the email. If empty, it is assumed to be sender.
+	FromAddress string `json:"fromAddress,omitempty"`
+
+	// Password: The SMTP sender's password.
+	Password *NotifierSecretRef `json:"password,omitempty"`
+
+	// Port: The SMTP port of the server.
+	Port string `json:"port,omitempty"`
+
+	// RecipientAddresses: This is the list of addresses to which we send
+	// the email (i.e. in the `To:` of the email).
+	RecipientAddresses []string `json:"recipientAddresses,omitempty"`
+
+	// SenderAddress: This is the SMTP account/email that is used to send
+	// the message.
+	SenderAddress string `json:"senderAddress,omitempty"`
+
+	// Server: The address of the SMTP server.
+	Server string `json:"server,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "FromAddress") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "FromAddress") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SMTPDelivery) MarshalJSON() ([]byte, error) {
+	type NoMethod SMTPDelivery
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // Secret: Pairs a set of secret environment variables containing
-// encrypted
-// values with the Cloud KMS key to use to decrypt the value.
+// encrypted values with the Cloud KMS key to use to decrypt the value.
 type Secret struct {
 	// KmsKeyName: Cloud KMS key name to use to decrypt these envs.
 	KmsKeyName string `json:"kmsKeyName,omitempty"`
 
-	// SecretEnv: Map of environment variable name to its encrypted
-	// value.
-	//
-	// Secret environment variables must be unique across all of a
-	// build's
+	// SecretEnv: Map of environment variable name to its encrypted value.
+	// Secret environment variables must be unique across all of a build's
 	// secrets, and must be used by at least one build step. Values can be
-	// at most
-	// 64 KB in size. There can be at most 100 secret values across all of
-	// a
-	// build's secrets.
+	// at most 64 KB in size. There can be at most 100 secret values across
+	// all of a build's secrets.
 	SecretEnv map[string]string `json:"secretEnv,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "KmsKeyName") to
@@ -1593,11 +1765,41 @@ func (s *Secret) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// SlackDelivery: SlackDelivery is the delivery configuration for
+// delivering Slack messages via webhooks. See Slack webhook
+// documentation at: https://api.slack.com/messaging/webhooks.
+type SlackDelivery struct {
+	// WebhookUri: The secret reference for the Slack webhook URI for
+	// sending messages to a channel.
+	WebhookUri *NotifierSecretRef `json:"webhookUri,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "WebhookUri") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "WebhookUri") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SlackDelivery) MarshalJSON() ([]byte, error) {
+	type NoMethod SlackDelivery
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // Source: Location of the source in a supported storage service.
 type Source struct {
 	// RepoSource: If provided, get the source from this location in a Cloud
-	// Source
-	// Repository.
+	// Source Repository.
 	RepoSource *RepoSource `json:"repoSource,omitempty"`
 
 	// StorageSource: If provided, get the source from this location in
@@ -1628,34 +1830,24 @@ func (s *Source) MarshalJSON() ([]byte, error) {
 }
 
 // SourceProvenance: Provenance of the source. Ways to find the original
-// source, or verify that
-// some source was used for this build.
+// source, or verify that some source was used for this build.
 type SourceProvenance struct {
 	// FileHashes: Output only. Hash(es) of the build source, which can be
-	// used to verify that
-	// the original source integrity was maintained in the build. Note
-	// that
-	// `FileHashes` will only be populated if `BuildOptions` has requested
-	// a
-	// `SourceProvenanceHash`.
-	//
-	// The keys to this map are file paths used as build source and the
-	// values
-	// contain the hash values for those files.
-	//
-	// If the build source came in a single package such as a gzipped
-	// tarfile
-	// (`.tar.gz`), the `FileHash` will be for the single path to that file.
+	// used to verify that the original source integrity was maintained in
+	// the build. Note that `FileHashes` will only be populated if
+	// `BuildOptions` has requested a `SourceProvenanceHash`. The keys to
+	// this map are file paths used as build source and the values contain
+	// the hash values for those files. If the build source came in a single
+	// package such as a gzipped tarfile (`.tar.gz`), the `FileHash` will be
+	// for the single path to that file.
 	FileHashes map[string]FileHashes `json:"fileHashes,omitempty"`
 
 	// ResolvedRepoSource: A copy of the build's `source.repo_source`, if
-	// exists, with any
-	// revisions resolved.
+	// exists, with any revisions resolved.
 	ResolvedRepoSource *RepoSource `json:"resolvedRepoSource,omitempty"`
 
 	// ResolvedStorageSource: A copy of the build's `source.storage_source`,
-	// if exists, with any
-	// generations resolved.
+	// if exists, with any generations resolved.
 	ResolvedStorageSource *StorageSource `json:"resolvedStorageSource,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "FileHashes") to
@@ -1682,32 +1874,24 @@ func (s *SourceProvenance) MarshalJSON() ([]byte, error) {
 }
 
 // Status: The `Status` type defines a logical error model that is
-// suitable for
-// different programming environments, including REST APIs and RPC APIs.
-// It is
-// used by [gRPC](https://github.com/grpc). Each `Status` message
-// contains
-// three pieces of data: error code, error message, and error
-// details.
-//
-// You can find out more about this error model and how to work with it
-// in the
-// [API Design Guide](https://cloud.google.com/apis/design/errors).
+// suitable for different programming environments, including REST APIs
+// and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each
+// `Status` message contains three pieces of data: error code, error
+// message, and error details. You can find out more about this error
+// model and how to work with it in the [API Design
+// Guide](https://cloud.google.com/apis/design/errors).
 type Status struct {
 	// Code: The status code, which should be an enum value of
 	// google.rpc.Code.
 	Code int64 `json:"code,omitempty"`
 
-	// Details: A list of messages that carry the error details.  There is a
-	// common set of
-	// message types for APIs to use.
+	// Details: A list of messages that carry the error details. There is a
+	// common set of message types for APIs to use.
 	Details []googleapi.RawMessage `json:"details,omitempty"`
 
 	// Message: A developer-facing error message, which should be in
-	// English. Any
-	// user-facing error message should be localized and sent in
-	// the
-	// google.rpc.Status.details field, or localized by the client.
+	// English. Any user-facing error message should be localized and sent
+	// in the google.rpc.Status.details field, or localized by the client.
 	Message string `json:"message,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Code") to
@@ -1736,24 +1920,19 @@ func (s *Status) MarshalJSON() ([]byte, error) {
 // StorageSource: Location of the source in an archive file in Google
 // Cloud Storage.
 type StorageSource struct {
-	// Bucket: Google Cloud Storage bucket containing the source
-	// (see
-	// [Bucket
-	// Name
-	// Requirements](https://cloud.google.com/storage/docs/bucket-naming
-	// #requirements)).
+	// Bucket: Google Cloud Storage bucket containing the source (see
+	// [Bucket Name
+	// Requirements](https://cloud.google.com/storage/docs/bucket-naming#requ
+	// irements)).
 	Bucket string `json:"bucket,omitempty"`
 
 	// Generation: Google Cloud Storage generation for the object. If the
-	// generation is
-	// omitted, the latest generation will be used.
+	// generation is omitted, the latest generation will be used.
 	Generation int64 `json:"generation,omitempty,string"`
 
-	// Object: Google Cloud Storage object containing the source.
-	//
-	// This object must be a gzipped archive file (`.tar.gz`) containing
-	// source to
-	// build.
+	// Object: Google Cloud Storage object containing the source. This
+	// object must be a gzipped archive file (`.tar.gz`) containing source
+	// to build.
 	Object string `json:"object,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Bucket") to
@@ -1811,22 +1990,17 @@ func (s *TimeSpan) MarshalJSON() ([]byte, error) {
 }
 
 // Volume: Volume describes a Docker container volume which is mounted
-// into build steps
-// in order to persist files across build step execution.
+// into build steps in order to persist files across build step
+// execution.
 type Volume struct {
-	// Name: Name of the volume to mount.
-	//
-	// Volume names must be unique per build step and must be valid names
-	// for
-	// Docker volumes. Each named volume must be used by at least two build
-	// steps.
+	// Name: Name of the volume to mount. Volume names must be unique per
+	// build step and must be valid names for Docker volumes. Each named
+	// volume must be used by at least two build steps.
 	Name string `json:"name,omitempty"`
 
-	// Path: Path at which to mount the volume.
-	//
-	// Paths must be absolute and cannot conflict with other volume paths on
-	// the
-	// same build step or with certain reserved volume paths.
+	// Path: Path at which to mount the volume. Paths must be absolute and
+	// cannot conflict with other volume paths on the same build step or
+	// with certain reserved volume paths.
 	Path string `json:"path,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Name") to
@@ -1864,23 +2038,15 @@ type OperationsCancelCall struct {
 }
 
 // Cancel: Starts asynchronous cancellation on a long-running operation.
-//  The server
-// makes a best effort to cancel the operation, but success is
-// not
-// guaranteed.  If the server doesn't support this method, it
-// returns
-// `google.rpc.Code.UNIMPLEMENTED`.  Clients can
-// use
-// Operations.GetOperation or
-// other methods to check whether the cancellation succeeded or whether
-// the
-// operation completed despite cancellation. On successful
-// cancellation,
-// the operation is not deleted; instead, it becomes an operation
-// with
-// an Operation.error value with a google.rpc.Status.code of
-// 1,
-// corresponding to `Code.CANCELLED`.
+// The server makes a best effort to cancel the operation, but success
+// is not guaranteed. If the server doesn't support this method, it
+// returns `google.rpc.Code.UNIMPLEMENTED`. Clients can use
+// Operations.GetOperation or other methods to check whether the
+// cancellation succeeded or whether the operation completed despite
+// cancellation. On successful cancellation, the operation is not
+// deleted; instead, it becomes an operation with an Operation.error
+// value with a google.rpc.Status.code of 1, corresponding to
+// `Code.CANCELLED`.
 func (r *OperationsService) Cancel(name string, canceloperationrequest *CancelOperationRequest) *OperationsCancelCall {
 	c := &OperationsCancelCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -1915,7 +2081,7 @@ func (c *OperationsCancelCall) Header() http.Header {
 
 func (c *OperationsCancelCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
@@ -1979,7 +2145,7 @@ func (c *OperationsCancelCall) Do(opts ...googleapi.CallOption) (*Empty, error) 
 	}
 	return ret, nil
 	// {
-	//   "description": "Starts asynchronous cancellation on a long-running operation.  The server\nmakes a best effort to cancel the operation, but success is not\nguaranteed.  If the server doesn't support this method, it returns\n`google.rpc.Code.UNIMPLEMENTED`.  Clients can use\nOperations.GetOperation or\nother methods to check whether the cancellation succeeded or whether the\noperation completed despite cancellation. On successful cancellation,\nthe operation is not deleted; instead, it becomes an operation with\nan Operation.error value with a google.rpc.Status.code of 1,\ncorresponding to `Code.CANCELLED`.",
+	//   "description": "Starts asynchronous cancellation on a long-running operation. The server makes a best effort to cancel the operation, but success is not guaranteed. If the server doesn't support this method, it returns `google.rpc.Code.UNIMPLEMENTED`. Clients can use Operations.GetOperation or other methods to check whether the cancellation succeeded or whether the operation completed despite cancellation. On successful cancellation, the operation is not deleted; instead, it becomes an operation with an Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
 	//   "flatPath": "v1/operations/{operationsId}:cancel",
 	//   "httpMethod": "POST",
 	//   "id": "cloudbuild.operations.cancel",
@@ -2020,11 +2186,9 @@ type OperationsGetCall struct {
 	header_      http.Header
 }
 
-// Get: Gets the latest state of a long-running operation.  Clients can
-// use this
-// method to poll the operation result at intervals as recommended by
-// the API
-// service.
+// Get: Gets the latest state of a long-running operation. Clients can
+// use this method to poll the operation result at intervals as
+// recommended by the API service.
 func (r *OperationsService) Get(name string) *OperationsGetCall {
 	c := &OperationsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -2068,7 +2232,7 @@ func (c *OperationsGetCall) Header() http.Header {
 
 func (c *OperationsGetCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
@@ -2130,7 +2294,7 @@ func (c *OperationsGetCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 	}
 	return ret, nil
 	// {
-	//   "description": "Gets the latest state of a long-running operation.  Clients can use this\nmethod to poll the operation result at intervals as recommended by the API\nservice.",
+	//   "description": "Gets the latest state of a long-running operation. Clients can use this method to poll the operation result at intervals as recommended by the API service.",
 	//   "flatPath": "v1/operations/{operationsId}",
 	//   "httpMethod": "GET",
 	//   "id": "cloudbuild.operations.get",
@@ -2155,224 +2319,6 @@ func (c *OperationsGetCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 	//   ]
 	// }
 
-}
-
-// method id "cloudbuild.operations.list":
-
-type OperationsListCall struct {
-	s            *Service
-	name         string
-	urlParams_   gensupport.URLParams
-	ifNoneMatch_ string
-	ctx_         context.Context
-	header_      http.Header
-}
-
-// List: Lists operations that match the specified filter in the
-// request. If the
-// server doesn't support this method, it returns
-// `UNIMPLEMENTED`.
-//
-// NOTE: the `name` binding allows API services to override the
-// binding
-// to use different resource name schemes, such as `users/*/operations`.
-// To
-// override the binding, API services can add a binding such
-// as
-// "/v1/{name=users/*}/operations" to their service configuration.
-// For backwards compatibility, the default name includes the
-// operations
-// collection id, however overriding users must ensure the name
-// binding
-// is the parent resource, without the operations collection id.
-func (r *OperationsService) List(name string) *OperationsListCall {
-	c := &OperationsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
-	c.name = name
-	return c
-}
-
-// Filter sets the optional parameter "filter": The standard list
-// filter.
-func (c *OperationsListCall) Filter(filter string) *OperationsListCall {
-	c.urlParams_.Set("filter", filter)
-	return c
-}
-
-// PageSize sets the optional parameter "pageSize": The standard list
-// page size.
-func (c *OperationsListCall) PageSize(pageSize int64) *OperationsListCall {
-	c.urlParams_.Set("pageSize", fmt.Sprint(pageSize))
-	return c
-}
-
-// PageToken sets the optional parameter "pageToken": The standard list
-// page token.
-func (c *OperationsListCall) PageToken(pageToken string) *OperationsListCall {
-	c.urlParams_.Set("pageToken", pageToken)
-	return c
-}
-
-// Fields allows partial responses to be retrieved. See
-// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
-// for more information.
-func (c *OperationsListCall) Fields(s ...googleapi.Field) *OperationsListCall {
-	c.urlParams_.Set("fields", googleapi.CombineFields(s))
-	return c
-}
-
-// IfNoneMatch sets the optional parameter which makes the operation
-// fail if the object's ETag matches the given value. This is useful for
-// getting updates only after the object has changed since the last
-// request. Use googleapi.IsNotModified to check whether the response
-// error from Do is the result of In-None-Match.
-func (c *OperationsListCall) IfNoneMatch(entityTag string) *OperationsListCall {
-	c.ifNoneMatch_ = entityTag
-	return c
-}
-
-// Context sets the context to be used in this call's Do method. Any
-// pending HTTP request will be aborted if the provided context is
-// canceled.
-func (c *OperationsListCall) Context(ctx context.Context) *OperationsListCall {
-	c.ctx_ = ctx
-	return c
-}
-
-// Header returns an http.Header that can be modified by the caller to
-// add HTTP headers to the request.
-func (c *OperationsListCall) Header() http.Header {
-	if c.header_ == nil {
-		c.header_ = make(http.Header)
-	}
-	return c.header_
-}
-
-func (c *OperationsListCall) doRequest(alt string) (*http.Response, error) {
-	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
-	for k, v := range c.header_ {
-		reqHeaders[k] = v
-	}
-	reqHeaders.Set("User-Agent", c.s.userAgent())
-	if c.ifNoneMatch_ != "" {
-		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
-	}
-	var body io.Reader = nil
-	c.urlParams_.Set("alt", alt)
-	c.urlParams_.Set("prettyPrint", "false")
-	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}")
-	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header = reqHeaders
-	googleapi.Expand(req.URL, map[string]string{
-		"name": c.name,
-	})
-	return gensupport.SendRequest(c.ctx_, c.s.client, req)
-}
-
-// Do executes the "cloudbuild.operations.list" call.
-// Exactly one of *ListOperationsResponse or error will be non-nil. Any
-// non-2xx status code is an error. Response headers are in either
-// *ListOperationsResponse.ServerResponse.Header or (if a response was
-// returned at all) in error.(*googleapi.Error).Header. Use
-// googleapi.IsNotModified to check whether the returned error was
-// because http.StatusNotModified was returned.
-func (c *OperationsListCall) Do(opts ...googleapi.CallOption) (*ListOperationsResponse, error) {
-	gensupport.SetOptions(c.urlParams_, opts...)
-	res, err := c.doRequest("json")
-	if res != nil && res.StatusCode == http.StatusNotModified {
-		if res.Body != nil {
-			res.Body.Close()
-		}
-		return nil, &googleapi.Error{
-			Code:   res.StatusCode,
-			Header: res.Header,
-		}
-	}
-	if err != nil {
-		return nil, err
-	}
-	defer googleapi.CloseBody(res)
-	if err := googleapi.CheckResponse(res); err != nil {
-		return nil, err
-	}
-	ret := &ListOperationsResponse{
-		ServerResponse: googleapi.ServerResponse{
-			Header:         res.Header,
-			HTTPStatusCode: res.StatusCode,
-		},
-	}
-	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
-		return nil, err
-	}
-	return ret, nil
-	// {
-	//   "description": "Lists operations that match the specified filter in the request. If the\nserver doesn't support this method, it returns `UNIMPLEMENTED`.\n\nNOTE: the `name` binding allows API services to override the binding\nto use different resource name schemes, such as `users/*/operations`. To\noverride the binding, API services can add a binding such as\n`\"/v1/{name=users/*}/operations\"` to their service configuration.\nFor backwards compatibility, the default name includes the operations\ncollection id, however overriding users must ensure the name binding\nis the parent resource, without the operations collection id.",
-	//   "flatPath": "v1/operations",
-	//   "httpMethod": "GET",
-	//   "id": "cloudbuild.operations.list",
-	//   "parameterOrder": [
-	//     "name"
-	//   ],
-	//   "parameters": {
-	//     "filter": {
-	//       "description": "The standard list filter.",
-	//       "location": "query",
-	//       "type": "string"
-	//     },
-	//     "name": {
-	//       "description": "The name of the operation's parent resource.",
-	//       "location": "path",
-	//       "pattern": "^operations$",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "pageSize": {
-	//       "description": "The standard list page size.",
-	//       "format": "int32",
-	//       "location": "query",
-	//       "type": "integer"
-	//     },
-	//     "pageToken": {
-	//       "description": "The standard list page token.",
-	//       "location": "query",
-	//       "type": "string"
-	//     }
-	//   },
-	//   "path": "v1/{+name}",
-	//   "response": {
-	//     "$ref": "ListOperationsResponse"
-	//   },
-	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform"
-	//   ]
-	// }
-
-}
-
-// Pages invokes f for each page of results.
-// A non-nil error returned from f will halt the iteration.
-// The provided context supersedes any context provided to the Context method.
-func (c *OperationsListCall) Pages(ctx context.Context, f func(*ListOperationsResponse) error) error {
-	c.ctx_ = ctx
-	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
-	for {
-		x, err := c.Do()
-		if err != nil {
-			return err
-		}
-		if err := f(x); err != nil {
-			return err
-		}
-		if x.NextPageToken == "" {
-			return nil
-		}
-		c.PageToken(x.NextPageToken)
-	}
 }
 
 // method id "cloudbuild.projects.builds.cancel":
@@ -2423,7 +2369,7 @@ func (c *ProjectsBuildsCancelCall) Header() http.Header {
 
 func (c *ProjectsBuildsCancelCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
@@ -2535,17 +2481,22 @@ type ProjectsBuildsCreateCall struct {
 	header_    http.Header
 }
 
-// Create: Starts a build with the specified configuration.
-//
-// This method returns a long-running `Operation`, which includes the
-// build
-// ID. Pass the build ID to `GetBuild` to determine the build status
-// (such as
+// Create: Starts a build with the specified configuration. This method
+// returns a long-running `Operation`, which includes the build ID. Pass
+// the build ID to `GetBuild` to determine the build status (such as
 // `SUCCESS` or `FAILURE`).
 func (r *ProjectsBuildsService) Create(projectId string, build *Build) *ProjectsBuildsCreateCall {
 	c := &ProjectsBuildsCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectId = projectId
 	c.build = build
+	return c
+}
+
+// Parent sets the optional parameter "parent": The parent resource
+// where this build will be created. Format:
+// `projects/{project}/locations/{location}`
+func (c *ProjectsBuildsCreateCall) Parent(parent string) *ProjectsBuildsCreateCall {
+	c.urlParams_.Set("parent", parent)
 	return c
 }
 
@@ -2576,7 +2527,7 @@ func (c *ProjectsBuildsCreateCall) Header() http.Header {
 
 func (c *ProjectsBuildsCreateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
@@ -2640,7 +2591,7 @@ func (c *ProjectsBuildsCreateCall) Do(opts ...googleapi.CallOption) (*Operation,
 	}
 	return ret, nil
 	// {
-	//   "description": "Starts a build with the specified configuration.\n\nThis method returns a long-running `Operation`, which includes the build\nID. Pass the build ID to `GetBuild` to determine the build status (such as\n`SUCCESS` or `FAILURE`).",
+	//   "description": "Starts a build with the specified configuration. This method returns a long-running `Operation`, which includes the build ID. Pass the build ID to `GetBuild` to determine the build status (such as `SUCCESS` or `FAILURE`).",
 	//   "flatPath": "v1/projects/{projectId}/builds",
 	//   "httpMethod": "POST",
 	//   "id": "cloudbuild.projects.builds.create",
@@ -2648,6 +2599,11 @@ func (c *ProjectsBuildsCreateCall) Do(opts ...googleapi.CallOption) (*Operation,
 	//     "projectId"
 	//   ],
 	//   "parameters": {
+	//     "parent": {
+	//       "description": "The parent resource where this build will be created. Format: `projects/{project}/locations/{location}`",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
 	//     "projectId": {
 	//       "description": "Required. ID of the project.",
 	//       "location": "path",
@@ -2681,15 +2637,21 @@ type ProjectsBuildsGetCall struct {
 	header_      http.Header
 }
 
-// Get: Returns information about a previously requested build.
-//
-// The `Build` that is returned includes its status (such as
-// `SUCCESS`,
+// Get: Returns information about a previously requested build. The
+// `Build` that is returned includes its status (such as `SUCCESS`,
 // `FAILURE`, or `WORKING`), and timing information.
 func (r *ProjectsBuildsService) Get(projectId string, id string) *ProjectsBuildsGetCall {
 	c := &ProjectsBuildsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectId = projectId
 	c.id = id
+	return c
+}
+
+// Name sets the optional parameter "name": The name of the `Build` to
+// retrieve. Format:
+// `projects/{project}/locations/{location}/builds/{build}`
+func (c *ProjectsBuildsGetCall) Name(name string) *ProjectsBuildsGetCall {
+	c.urlParams_.Set("name", name)
 	return c
 }
 
@@ -2730,7 +2692,7 @@ func (c *ProjectsBuildsGetCall) Header() http.Header {
 
 func (c *ProjectsBuildsGetCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
@@ -2793,7 +2755,7 @@ func (c *ProjectsBuildsGetCall) Do(opts ...googleapi.CallOption) (*Build, error)
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns information about a previously requested build.\n\nThe `Build` that is returned includes its status (such as `SUCCESS`,\n`FAILURE`, or `WORKING`), and timing information.",
+	//   "description": "Returns information about a previously requested build. The `Build` that is returned includes its status (such as `SUCCESS`, `FAILURE`, or `WORKING`), and timing information.",
 	//   "flatPath": "v1/projects/{projectId}/builds/{id}",
 	//   "httpMethod": "GET",
 	//   "id": "cloudbuild.projects.builds.get",
@@ -2806,6 +2768,11 @@ func (c *ProjectsBuildsGetCall) Do(opts ...googleapi.CallOption) (*Build, error)
 	//       "description": "Required. ID of the build.",
 	//       "location": "path",
 	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "name": {
+	//       "description": "The name of the `Build` to retrieve. Format: `projects/{project}/locations/{location}/builds/{build}`",
+	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "projectId": {
@@ -2837,11 +2804,9 @@ type ProjectsBuildsListCall struct {
 	header_      http.Header
 }
 
-// List: Lists previously requested builds.
-//
-// Previously requested builds may still be in-progress, or may have
-// finished
-// successfully or unsuccessfully.
+// List: Lists previously requested builds. Previously requested builds
+// may still be in-progress, or may have finished successfully or
+// unsuccessfully.
 func (r *ProjectsBuildsService) List(projectId string) *ProjectsBuildsListCall {
 	c := &ProjectsBuildsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectId = projectId
@@ -2862,10 +2827,22 @@ func (c *ProjectsBuildsListCall) PageSize(pageSize int64) *ProjectsBuildsListCal
 	return c
 }
 
-// PageToken sets the optional parameter "pageToken": Token to provide
-// to skip to a particular spot in the list.
+// PageToken sets the optional parameter "pageToken": The page token for
+// the next page of Builds. If unspecified, the first page of results is
+// returned. If the token is rejected for any reason, INVALID_ARGUMENT
+// will be thrown. In this case, the token should be discarded, and
+// pagination should be restarted from the first page of results. See
+// https://google.aip.dev/158 for more.
 func (c *ProjectsBuildsListCall) PageToken(pageToken string) *ProjectsBuildsListCall {
 	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Parent sets the optional parameter "parent": The parent of the
+// collection of `Builds`. Format:
+// `projects/{project}/locations/location`
+func (c *ProjectsBuildsListCall) Parent(parent string) *ProjectsBuildsListCall {
+	c.urlParams_.Set("parent", parent)
 	return c
 }
 
@@ -2906,7 +2883,7 @@ func (c *ProjectsBuildsListCall) Header() http.Header {
 
 func (c *ProjectsBuildsListCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
@@ -2968,7 +2945,7 @@ func (c *ProjectsBuildsListCall) Do(opts ...googleapi.CallOption) (*ListBuildsRe
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists previously requested builds.\n\nPreviously requested builds may still be in-progress, or may have finished\nsuccessfully or unsuccessfully.",
+	//   "description": "Lists previously requested builds. Previously requested builds may still be in-progress, or may have finished successfully or unsuccessfully.",
 	//   "flatPath": "v1/projects/{projectId}/builds",
 	//   "httpMethod": "GET",
 	//   "id": "cloudbuild.projects.builds.list",
@@ -2988,7 +2965,12 @@ func (c *ProjectsBuildsListCall) Do(opts ...googleapi.CallOption) (*ListBuildsRe
 	//       "type": "integer"
 	//     },
 	//     "pageToken": {
-	//       "description": "Token to provide to skip to a particular spot in the list.",
+	//       "description": "The page token for the next page of Builds. If unspecified, the first page of results is returned. If the token is rejected for any reason, INVALID_ARGUMENT will be thrown. In this case, the token should be discarded, and pagination should be restarted from the first page of results. See https://google.aip.dev/158 for more.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "parent": {
+	//       "description": "The parent of the collection of `Builds`. Format: `projects/{project}/locations/location`",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -3043,44 +3025,24 @@ type ProjectsBuildsRetryCall struct {
 	header_           http.Header
 }
 
-// Retry: Creates a new build based on the specified build.
-//
-// This method creates a new build using the original build request,
-// which may
-// or may not result in an identical build.
-//
-// For triggered builds:
-//
-// * Triggered builds resolve to a precise revision; therefore a retry
-// of a
-// triggered build will result in a build that uses the same
-// revision.
-//
-// For non-triggered builds that specify `RepoSource`:
-//
-// * If the original build built from the tip of a branch, the retried
-// build
-// will build from the tip of that branch, which may not be the same
-// revision
-// as the original build.
-// * If the original build specified a commit sha or revision ID, the
-// retried
-// build will use the identical source.
-//
-// For builds that specify `StorageSource`:
-//
-// * If the original build pulled source from Google Cloud Storage
-// without
-// specifying the generation of the object, the new build will use the
-// current
-// object, which may be different from the original build source.
-// * If the original build pulled source from Cloud Storage and
-// specified the
-// generation of the object, the new build will attempt to use the
-// same
-// object, which may or may not be available depending on the
-// bucket's
-// lifecycle management settings.
+// Retry: Creates a new build based on the specified build. This method
+// creates a new build using the original build request, which may or
+// may not result in an identical build. For triggered builds: *
+// Triggered builds resolve to a precise revision; therefore a retry of
+// a triggered build will result in a build that uses the same revision.
+// For non-triggered builds that specify `RepoSource`: * If the original
+// build built from the tip of a branch, the retried build will build
+// from the tip of that branch, which may not be the same revision as
+// the original build. * If the original build specified a commit sha or
+// revision ID, the retried build will use the identical source. For
+// builds that specify `StorageSource`: * If the original build pulled
+// source from Google Cloud Storage without specifying the generation of
+// the object, the new build will use the current object, which may be
+// different from the original build source. * If the original build
+// pulled source from Cloud Storage and specified the generation of the
+// object, the new build will attempt to use the same object, which may
+// or may not be available depending on the bucket's lifecycle
+// management settings.
 func (r *ProjectsBuildsService) Retry(projectId string, id string, retrybuildrequest *RetryBuildRequest) *ProjectsBuildsRetryCall {
 	c := &ProjectsBuildsRetryCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectId = projectId
@@ -3116,7 +3078,7 @@ func (c *ProjectsBuildsRetryCall) Header() http.Header {
 
 func (c *ProjectsBuildsRetryCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
@@ -3181,7 +3143,7 @@ func (c *ProjectsBuildsRetryCall) Do(opts ...googleapi.CallOption) (*Operation, 
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a new build based on the specified build.\n\nThis method creates a new build using the original build request, which may\nor may not result in an identical build.\n\nFor triggered builds:\n\n* Triggered builds resolve to a precise revision; therefore a retry of a\ntriggered build will result in a build that uses the same revision.\n\nFor non-triggered builds that specify `RepoSource`:\n\n* If the original build built from the tip of a branch, the retried build\nwill build from the tip of that branch, which may not be the same revision\nas the original build.\n* If the original build specified a commit sha or revision ID, the retried\nbuild will use the identical source.\n\nFor builds that specify `StorageSource`:\n\n* If the original build pulled source from Google Cloud Storage without\nspecifying the generation of the object, the new build will use the current\nobject, which may be different from the original build source.\n* If the original build pulled source from Cloud Storage and specified the\ngeneration of the object, the new build will attempt to use the same\nobject, which may or may not be available depending on the bucket's\nlifecycle management settings.",
+	//   "description": "Creates a new build based on the specified build. This method creates a new build using the original build request, which may or may not result in an identical build. For triggered builds: * Triggered builds resolve to a precise revision; therefore a retry of a triggered build will result in a build that uses the same revision. For non-triggered builds that specify `RepoSource`: * If the original build built from the tip of a branch, the retried build will build from the tip of that branch, which may not be the same revision as the original build. * If the original build specified a commit sha or revision ID, the retried build will use the identical source. For builds that specify `StorageSource`: * If the original build pulled source from Google Cloud Storage without specifying the generation of the object, the new build will use the current object, which may be different from the original build source. * If the original build pulled source from Cloud Storage and specified the generation of the object, the new build will attempt to use the same object, which may or may not be available depending on the bucket's lifecycle management settings.",
 	//   "flatPath": "v1/projects/{projectId}/builds/{id}:retry",
 	//   "httpMethod": "POST",
 	//   "id": "cloudbuild.projects.builds.retry",
@@ -3217,6 +3179,1142 @@ func (c *ProjectsBuildsRetryCall) Do(opts ...googleapi.CallOption) (*Operation, 
 
 }
 
+// method id "cloudbuild.projects.locations.builds.cancel":
+
+type ProjectsLocationsBuildsCancelCall struct {
+	s                  *Service
+	name               string
+	cancelbuildrequest *CancelBuildRequest
+	urlParams_         gensupport.URLParams
+	ctx_               context.Context
+	header_            http.Header
+}
+
+// Cancel: Cancels a build in progress.
+func (r *ProjectsLocationsBuildsService) Cancel(name string, cancelbuildrequest *CancelBuildRequest) *ProjectsLocationsBuildsCancelCall {
+	c := &ProjectsLocationsBuildsCancelCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	c.cancelbuildrequest = cancelbuildrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsLocationsBuildsCancelCall) Fields(s ...googleapi.Field) *ProjectsLocationsBuildsCancelCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsLocationsBuildsCancelCall) Context(ctx context.Context) *ProjectsLocationsBuildsCancelCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsLocationsBuildsCancelCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsLocationsBuildsCancelCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.cancelbuildrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}:cancel")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "cloudbuild.projects.locations.builds.cancel" call.
+// Exactly one of *Build or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Build.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ProjectsLocationsBuildsCancelCall) Do(opts ...googleapi.CallOption) (*Build, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Build{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Cancels a build in progress.",
+	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/builds/{buildsId}:cancel",
+	//   "httpMethod": "POST",
+	//   "id": "cloudbuild.projects.locations.builds.cancel",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "The name of the `Build` to retrieve. Format: `projects/{project}/locations/{location}/builds/{build}`",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+/locations/[^/]+/builds/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}:cancel",
+	//   "request": {
+	//     "$ref": "CancelBuildRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Build"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "cloudbuild.projects.locations.builds.create":
+
+type ProjectsLocationsBuildsCreateCall struct {
+	s          *Service
+	parent     string
+	build      *Build
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Create: Starts a build with the specified configuration. This method
+// returns a long-running `Operation`, which includes the build ID. Pass
+// the build ID to `GetBuild` to determine the build status (such as
+// `SUCCESS` or `FAILURE`).
+func (r *ProjectsLocationsBuildsService) Create(parent string, build *Build) *ProjectsLocationsBuildsCreateCall {
+	c := &ProjectsLocationsBuildsCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	c.build = build
+	return c
+}
+
+// ProjectId sets the optional parameter "projectId": Required. ID of
+// the project.
+func (c *ProjectsLocationsBuildsCreateCall) ProjectId(projectId string) *ProjectsLocationsBuildsCreateCall {
+	c.urlParams_.Set("projectId", projectId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsLocationsBuildsCreateCall) Fields(s ...googleapi.Field) *ProjectsLocationsBuildsCreateCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsLocationsBuildsCreateCall) Context(ctx context.Context) *ProjectsLocationsBuildsCreateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsLocationsBuildsCreateCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsLocationsBuildsCreateCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.build)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+parent}/builds")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "cloudbuild.projects.locations.builds.create" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ProjectsLocationsBuildsCreateCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Starts a build with the specified configuration. This method returns a long-running `Operation`, which includes the build ID. Pass the build ID to `GetBuild` to determine the build status (such as `SUCCESS` or `FAILURE`).",
+	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/builds",
+	//   "httpMethod": "POST",
+	//   "id": "cloudbuild.projects.locations.builds.create",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "parent": {
+	//       "description": "The parent resource where this build will be created. Format: `projects/{project}/locations/{location}`",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+/locations/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "projectId": {
+	//       "description": "Required. ID of the project.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+parent}/builds",
+	//   "request": {
+	//     "$ref": "Build"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "cloudbuild.projects.locations.builds.get":
+
+type ProjectsLocationsBuildsGetCall struct {
+	s            *Service
+	name         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Get: Returns information about a previously requested build. The
+// `Build` that is returned includes its status (such as `SUCCESS`,
+// `FAILURE`, or `WORKING`), and timing information.
+func (r *ProjectsLocationsBuildsService) Get(name string) *ProjectsLocationsBuildsGetCall {
+	c := &ProjectsLocationsBuildsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Id sets the optional parameter "id": Required. ID of the build.
+func (c *ProjectsLocationsBuildsGetCall) Id(id string) *ProjectsLocationsBuildsGetCall {
+	c.urlParams_.Set("id", id)
+	return c
+}
+
+// ProjectId sets the optional parameter "projectId": Required. ID of
+// the project.
+func (c *ProjectsLocationsBuildsGetCall) ProjectId(projectId string) *ProjectsLocationsBuildsGetCall {
+	c.urlParams_.Set("projectId", projectId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsLocationsBuildsGetCall) Fields(s ...googleapi.Field) *ProjectsLocationsBuildsGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ProjectsLocationsBuildsGetCall) IfNoneMatch(entityTag string) *ProjectsLocationsBuildsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsLocationsBuildsGetCall) Context(ctx context.Context) *ProjectsLocationsBuildsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsLocationsBuildsGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsLocationsBuildsGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "cloudbuild.projects.locations.builds.get" call.
+// Exactly one of *Build or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Build.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ProjectsLocationsBuildsGetCall) Do(opts ...googleapi.CallOption) (*Build, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Build{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Returns information about a previously requested build. The `Build` that is returned includes its status (such as `SUCCESS`, `FAILURE`, or `WORKING`), and timing information.",
+	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/builds/{buildsId}",
+	//   "httpMethod": "GET",
+	//   "id": "cloudbuild.projects.locations.builds.get",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "id": {
+	//       "description": "Required. ID of the build.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "name": {
+	//       "description": "The name of the `Build` to retrieve. Format: `projects/{project}/locations/{location}/builds/{build}`",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+/locations/[^/]+/builds/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "projectId": {
+	//       "description": "Required. ID of the project.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}",
+	//   "response": {
+	//     "$ref": "Build"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "cloudbuild.projects.locations.builds.list":
+
+type ProjectsLocationsBuildsListCall struct {
+	s            *Service
+	parent       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: Lists previously requested builds. Previously requested builds
+// may still be in-progress, or may have finished successfully or
+// unsuccessfully.
+func (r *ProjectsLocationsBuildsService) List(parent string) *ProjectsLocationsBuildsListCall {
+	c := &ProjectsLocationsBuildsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	return c
+}
+
+// Filter sets the optional parameter "filter": The raw filter text to
+// constrain the results.
+func (c *ProjectsLocationsBuildsListCall) Filter(filter string) *ProjectsLocationsBuildsListCall {
+	c.urlParams_.Set("filter", filter)
+	return c
+}
+
+// PageSize sets the optional parameter "pageSize": Number of results to
+// return in the list.
+func (c *ProjectsLocationsBuildsListCall) PageSize(pageSize int64) *ProjectsLocationsBuildsListCall {
+	c.urlParams_.Set("pageSize", fmt.Sprint(pageSize))
+	return c
+}
+
+// PageToken sets the optional parameter "pageToken": The page token for
+// the next page of Builds. If unspecified, the first page of results is
+// returned. If the token is rejected for any reason, INVALID_ARGUMENT
+// will be thrown. In this case, the token should be discarded, and
+// pagination should be restarted from the first page of results. See
+// https://google.aip.dev/158 for more.
+func (c *ProjectsLocationsBuildsListCall) PageToken(pageToken string) *ProjectsLocationsBuildsListCall {
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// ProjectId sets the optional parameter "projectId": Required. ID of
+// the project.
+func (c *ProjectsLocationsBuildsListCall) ProjectId(projectId string) *ProjectsLocationsBuildsListCall {
+	c.urlParams_.Set("projectId", projectId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsLocationsBuildsListCall) Fields(s ...googleapi.Field) *ProjectsLocationsBuildsListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ProjectsLocationsBuildsListCall) IfNoneMatch(entityTag string) *ProjectsLocationsBuildsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsLocationsBuildsListCall) Context(ctx context.Context) *ProjectsLocationsBuildsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsLocationsBuildsListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsLocationsBuildsListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+parent}/builds")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "cloudbuild.projects.locations.builds.list" call.
+// Exactly one of *ListBuildsResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ListBuildsResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ProjectsLocationsBuildsListCall) Do(opts ...googleapi.CallOption) (*ListBuildsResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &ListBuildsResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Lists previously requested builds. Previously requested builds may still be in-progress, or may have finished successfully or unsuccessfully.",
+	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/builds",
+	//   "httpMethod": "GET",
+	//   "id": "cloudbuild.projects.locations.builds.list",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "filter": {
+	//       "description": "The raw filter text to constrain the results.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "pageSize": {
+	//       "description": "Number of results to return in the list.",
+	//       "format": "int32",
+	//       "location": "query",
+	//       "type": "integer"
+	//     },
+	//     "pageToken": {
+	//       "description": "The page token for the next page of Builds. If unspecified, the first page of results is returned. If the token is rejected for any reason, INVALID_ARGUMENT will be thrown. In this case, the token should be discarded, and pagination should be restarted from the first page of results. See https://google.aip.dev/158 for more.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "parent": {
+	//       "description": "The parent of the collection of `Builds`. Format: `projects/{project}/locations/location`",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+/locations/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "projectId": {
+	//       "description": "Required. ID of the project.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+parent}/builds",
+	//   "response": {
+	//     "$ref": "ListBuildsResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *ProjectsLocationsBuildsListCall) Pages(ctx context.Context, f func(*ListBuildsResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
+// method id "cloudbuild.projects.locations.builds.retry":
+
+type ProjectsLocationsBuildsRetryCall struct {
+	s                 *Service
+	name              string
+	retrybuildrequest *RetryBuildRequest
+	urlParams_        gensupport.URLParams
+	ctx_              context.Context
+	header_           http.Header
+}
+
+// Retry: Creates a new build based on the specified build. This method
+// creates a new build using the original build request, which may or
+// may not result in an identical build. For triggered builds: *
+// Triggered builds resolve to a precise revision; therefore a retry of
+// a triggered build will result in a build that uses the same revision.
+// For non-triggered builds that specify `RepoSource`: * If the original
+// build built from the tip of a branch, the retried build will build
+// from the tip of that branch, which may not be the same revision as
+// the original build. * If the original build specified a commit sha or
+// revision ID, the retried build will use the identical source. For
+// builds that specify `StorageSource`: * If the original build pulled
+// source from Google Cloud Storage without specifying the generation of
+// the object, the new build will use the current object, which may be
+// different from the original build source. * If the original build
+// pulled source from Cloud Storage and specified the generation of the
+// object, the new build will attempt to use the same object, which may
+// or may not be available depending on the bucket's lifecycle
+// management settings.
+func (r *ProjectsLocationsBuildsService) Retry(name string, retrybuildrequest *RetryBuildRequest) *ProjectsLocationsBuildsRetryCall {
+	c := &ProjectsLocationsBuildsRetryCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	c.retrybuildrequest = retrybuildrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsLocationsBuildsRetryCall) Fields(s ...googleapi.Field) *ProjectsLocationsBuildsRetryCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsLocationsBuildsRetryCall) Context(ctx context.Context) *ProjectsLocationsBuildsRetryCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsLocationsBuildsRetryCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsLocationsBuildsRetryCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.retrybuildrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}:retry")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "cloudbuild.projects.locations.builds.retry" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ProjectsLocationsBuildsRetryCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Creates a new build based on the specified build. This method creates a new build using the original build request, which may or may not result in an identical build. For triggered builds: * Triggered builds resolve to a precise revision; therefore a retry of a triggered build will result in a build that uses the same revision. For non-triggered builds that specify `RepoSource`: * If the original build built from the tip of a branch, the retried build will build from the tip of that branch, which may not be the same revision as the original build. * If the original build specified a commit sha or revision ID, the retried build will use the identical source. For builds that specify `StorageSource`: * If the original build pulled source from Google Cloud Storage without specifying the generation of the object, the new build will use the current object, which may be different from the original build source. * If the original build pulled source from Cloud Storage and specified the generation of the object, the new build will attempt to use the same object, which may or may not be available depending on the bucket's lifecycle management settings.",
+	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/builds/{buildsId}:retry",
+	//   "httpMethod": "POST",
+	//   "id": "cloudbuild.projects.locations.builds.retry",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "The name of the `Build` to retry. Format: `projects/{project}/locations/{location}/builds/{build}`",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+/locations/[^/]+/builds/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}:retry",
+	//   "request": {
+	//     "$ref": "RetryBuildRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "cloudbuild.projects.locations.operations.cancel":
+
+type ProjectsLocationsOperationsCancelCall struct {
+	s                      *Service
+	name                   string
+	canceloperationrequest *CancelOperationRequest
+	urlParams_             gensupport.URLParams
+	ctx_                   context.Context
+	header_                http.Header
+}
+
+// Cancel: Starts asynchronous cancellation on a long-running operation.
+// The server makes a best effort to cancel the operation, but success
+// is not guaranteed. If the server doesn't support this method, it
+// returns `google.rpc.Code.UNIMPLEMENTED`. Clients can use
+// Operations.GetOperation or other methods to check whether the
+// cancellation succeeded or whether the operation completed despite
+// cancellation. On successful cancellation, the operation is not
+// deleted; instead, it becomes an operation with an Operation.error
+// value with a google.rpc.Status.code of 1, corresponding to
+// `Code.CANCELLED`.
+func (r *ProjectsLocationsOperationsService) Cancel(name string, canceloperationrequest *CancelOperationRequest) *ProjectsLocationsOperationsCancelCall {
+	c := &ProjectsLocationsOperationsCancelCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	c.canceloperationrequest = canceloperationrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsLocationsOperationsCancelCall) Fields(s ...googleapi.Field) *ProjectsLocationsOperationsCancelCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsLocationsOperationsCancelCall) Context(ctx context.Context) *ProjectsLocationsOperationsCancelCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsLocationsOperationsCancelCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsLocationsOperationsCancelCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.canceloperationrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}:cancel")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "cloudbuild.projects.locations.operations.cancel" call.
+// Exactly one of *Empty or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Empty.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ProjectsLocationsOperationsCancelCall) Do(opts ...googleapi.CallOption) (*Empty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Empty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Starts asynchronous cancellation on a long-running operation. The server makes a best effort to cancel the operation, but success is not guaranteed. If the server doesn't support this method, it returns `google.rpc.Code.UNIMPLEMENTED`. Clients can use Operations.GetOperation or other methods to check whether the cancellation succeeded or whether the operation completed despite cancellation. On successful cancellation, the operation is not deleted; instead, it becomes an operation with an Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}:cancel",
+	//   "httpMethod": "POST",
+	//   "id": "cloudbuild.projects.locations.operations.cancel",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "The name of the operation resource to be cancelled.",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+/locations/[^/]+/operations/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}:cancel",
+	//   "request": {
+	//     "$ref": "CancelOperationRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Empty"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "cloudbuild.projects.locations.operations.get":
+
+type ProjectsLocationsOperationsGetCall struct {
+	s            *Service
+	name         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Get: Gets the latest state of a long-running operation. Clients can
+// use this method to poll the operation result at intervals as
+// recommended by the API service.
+func (r *ProjectsLocationsOperationsService) Get(name string) *ProjectsLocationsOperationsGetCall {
+	c := &ProjectsLocationsOperationsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsLocationsOperationsGetCall) Fields(s ...googleapi.Field) *ProjectsLocationsOperationsGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ProjectsLocationsOperationsGetCall) IfNoneMatch(entityTag string) *ProjectsLocationsOperationsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsLocationsOperationsGetCall) Context(ctx context.Context) *ProjectsLocationsOperationsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsLocationsOperationsGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsLocationsOperationsGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "cloudbuild.projects.locations.operations.get" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ProjectsLocationsOperationsGetCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Gets the latest state of a long-running operation. Clients can use this method to poll the operation result at intervals as recommended by the API service.",
+	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}",
+	//   "httpMethod": "GET",
+	//   "id": "cloudbuild.projects.locations.operations.get",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "The name of the operation resource.",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+/locations/[^/]+/operations/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}",
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
 // method id "cloudbuild.projects.triggers.create":
 
 type ProjectsTriggersCreateCall struct {
@@ -3228,9 +4326,7 @@ type ProjectsTriggersCreateCall struct {
 	header_      http.Header
 }
 
-// Create: Creates a new `BuildTrigger`.
-//
-// This API is experimental.
+// Create: Creates a new `BuildTrigger`. This API is experimental.
 func (r *ProjectsTriggersService) Create(projectId string, buildtrigger *BuildTrigger) *ProjectsTriggersCreateCall {
 	c := &ProjectsTriggersCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectId = projectId
@@ -3265,7 +4361,7 @@ func (c *ProjectsTriggersCreateCall) Header() http.Header {
 
 func (c *ProjectsTriggersCreateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
@@ -3329,7 +4425,7 @@ func (c *ProjectsTriggersCreateCall) Do(opts ...googleapi.CallOption) (*BuildTri
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a new `BuildTrigger`.\n\nThis API is experimental.",
+	//   "description": "Creates a new `BuildTrigger`. This API is experimental.",
 	//   "flatPath": "v1/projects/{projectId}/triggers",
 	//   "httpMethod": "POST",
 	//   "id": "cloudbuild.projects.triggers.create",
@@ -3369,9 +4465,7 @@ type ProjectsTriggersDeleteCall struct {
 	header_    http.Header
 }
 
-// Delete: Deletes a `BuildTrigger` by its project ID and trigger
-// ID.
-//
+// Delete: Deletes a `BuildTrigger` by its project ID and trigger ID.
 // This API is experimental.
 func (r *ProjectsTriggersService) Delete(projectId string, triggerId string) *ProjectsTriggersDeleteCall {
 	c := &ProjectsTriggersDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
@@ -3407,7 +4501,7 @@ func (c *ProjectsTriggersDeleteCall) Header() http.Header {
 
 func (c *ProjectsTriggersDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
@@ -3467,7 +4561,7 @@ func (c *ProjectsTriggersDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, e
 	}
 	return ret, nil
 	// {
-	//   "description": "Deletes a `BuildTrigger` by its project ID and trigger ID.\n\nThis API is experimental.",
+	//   "description": "Deletes a `BuildTrigger` by its project ID and trigger ID. This API is experimental.",
 	//   "flatPath": "v1/projects/{projectId}/triggers/{triggerId}",
 	//   "httpMethod": "DELETE",
 	//   "id": "cloudbuild.projects.triggers.delete",
@@ -3512,9 +4606,8 @@ type ProjectsTriggersGetCall struct {
 	header_      http.Header
 }
 
-// Get: Returns information about a `BuildTrigger`.
-//
-// This API is experimental.
+// Get: Returns information about a `BuildTrigger`. This API is
+// experimental.
 func (r *ProjectsTriggersService) Get(projectId string, triggerId string) *ProjectsTriggersGetCall {
 	c := &ProjectsTriggersGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectId = projectId
@@ -3559,7 +4652,7 @@ func (c *ProjectsTriggersGetCall) Header() http.Header {
 
 func (c *ProjectsTriggersGetCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
@@ -3622,7 +4715,7 @@ func (c *ProjectsTriggersGetCall) Do(opts ...googleapi.CallOption) (*BuildTrigge
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns information about a `BuildTrigger`.\n\nThis API is experimental.",
+	//   "description": "Returns information about a `BuildTrigger`. This API is experimental.",
 	//   "flatPath": "v1/projects/{projectId}/triggers/{triggerId}",
 	//   "httpMethod": "GET",
 	//   "id": "cloudbuild.projects.triggers.get",
@@ -3666,9 +4759,7 @@ type ProjectsTriggersListCall struct {
 	header_      http.Header
 }
 
-// List: Lists existing `BuildTrigger`s.
-//
-// This API is experimental.
+// List: Lists existing `BuildTrigger`s. This API is experimental.
 func (r *ProjectsTriggersService) List(projectId string) *ProjectsTriggersListCall {
 	c := &ProjectsTriggersListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectId = projectId
@@ -3726,7 +4817,7 @@ func (c *ProjectsTriggersListCall) Header() http.Header {
 
 func (c *ProjectsTriggersListCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
@@ -3788,7 +4879,7 @@ func (c *ProjectsTriggersListCall) Do(opts ...googleapi.CallOption) (*ListBuildT
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists existing `BuildTrigger`s.\n\nThis API is experimental.",
+	//   "description": "Lists existing `BuildTrigger`s. This API is experimental.",
 	//   "flatPath": "v1/projects/{projectId}/triggers",
 	//   "httpMethod": "GET",
 	//   "id": "cloudbuild.projects.triggers.list",
@@ -3858,9 +4949,7 @@ type ProjectsTriggersPatchCall struct {
 	header_      http.Header
 }
 
-// Patch: Updates a `BuildTrigger` by its project ID and trigger
-// ID.
-//
+// Patch: Updates a `BuildTrigger` by its project ID and trigger ID.
 // This API is experimental.
 func (r *ProjectsTriggersService) Patch(projectId string, triggerId string, buildtrigger *BuildTrigger) *ProjectsTriggersPatchCall {
 	c := &ProjectsTriggersPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
@@ -3897,7 +4986,7 @@ func (c *ProjectsTriggersPatchCall) Header() http.Header {
 
 func (c *ProjectsTriggersPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
@@ -3962,7 +5051,7 @@ func (c *ProjectsTriggersPatchCall) Do(opts ...googleapi.CallOption) (*BuildTrig
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates a `BuildTrigger` by its project ID and trigger ID.\n\nThis API is experimental.",
+	//   "description": "Updates a `BuildTrigger` by its project ID and trigger ID. This API is experimental.",
 	//   "flatPath": "v1/projects/{projectId}/triggers/{triggerId}",
 	//   "httpMethod": "PATCH",
 	//   "id": "cloudbuild.projects.triggers.patch",
@@ -4046,7 +5135,7 @@ func (c *ProjectsTriggersRunCall) Header() http.Header {
 
 func (c *ProjectsTriggersRunCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
-	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20200514")
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/20201016")
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
