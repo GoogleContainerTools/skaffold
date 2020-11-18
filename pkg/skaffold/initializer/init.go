@@ -47,7 +47,7 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 	}
 
 	newConfig, newManifests, err := Initialize(out, c, a)
-	if err != nil {
+	if err != nil || c.Analyze {
 		return err
 	}
 
@@ -86,24 +86,33 @@ func Initialize(out io.Writer, c config.Config, a *analyze.ProjectAnalysis) (*la
 		return nil, nil, buildInitializer.PrintAnalysis(out)
 	}
 
-	var generatedManifests map[string][]byte
-	if c.EnableManifestGeneration {
-		generatedManifestPairs, err := buildInitializer.GenerateManifests()
-		if err != nil {
-			return nil, nil, err
-		}
-		generatedManifests = make(map[string][]byte, len(generatedManifestPairs))
-		for pair, manifest := range generatedManifestPairs {
-			deployInitializer.AddManifestForImage(pair.ManifestPath, pair.ImageName)
-			generatedManifests[pair.ManifestPath] = manifest
-		}
+	newManifests, err := generateManifests(c, buildInitializer, deployInitializer)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	if err := deployInitializer.Validate(); err != nil {
 		return nil, nil, err
 	}
 
-	return generateSkaffoldConfig(buildInitializer, deployInitializer), generatedManifests, nil
+	return generateSkaffoldConfig(buildInitializer, deployInitializer), newManifests, nil
+}
+
+func generateManifests(c config.Config, bInitializer build.Initializer, dInitializer deploy.Initializer) (map[string][]byte, error) {
+	var generatedManifests map[string][]byte
+	if c.EnableManifestGeneration {
+		generatedManifestPairs, err := bInitializer.GenerateManifests()
+		if err != nil {
+			return nil, err
+		}
+		generatedManifests = make(map[string][]byte, len(generatedManifestPairs))
+		for pair, manifest := range generatedManifestPairs {
+			dInitializer.AddManifestForImage(pair.ManifestPath, pair.ImageName)
+			generatedManifests[pair.ManifestPath] = manifest
+		}
+	}
+
+	return generatedManifests, nil
 }
 
 // WriteData takes the given skaffold config and k8s manifests and writes them out to a file or the given io.Writer
