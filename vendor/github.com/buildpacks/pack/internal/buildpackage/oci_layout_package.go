@@ -48,6 +48,14 @@ func BuildpacksFromOCILayoutBlob(blob dist.Blob) (mainBP dist.Buildpack, depende
 	return ExtractBuildpacks(layoutPackage)
 }
 
+func ConfigFromOCILayoutBlob(blob dist.Blob) (config v1.ImageConfig, err error) {
+	layoutPackage, err := newOCILayoutPackage(blob)
+	if err != nil {
+		return v1.ImageConfig{}, err
+	}
+	return layoutPackage.imageInfo.Config, nil
+}
+
 type ociLayoutPackage struct {
 	imageInfo v1.Image
 	manifest  v1.Manifest

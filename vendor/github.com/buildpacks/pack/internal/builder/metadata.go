@@ -15,13 +15,15 @@ type Metadata struct {
 }
 
 type CreatorMetadata struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
+	Name    string `json:"name" yaml:"name"`
+	Version string `json:"version" yaml:"version"`
 }
 
 type LifecycleMetadata struct {
 	LifecycleInfo
-	API LifecycleAPI `json:"api"`
+	// Deprecated: use APIs instead
+	API  LifecycleAPI  `json:"api"`
+	APIs LifecycleAPIs `json:"apis"`
 }
 
 type StackMetadata struct {

@@ -37,17 +37,18 @@ func readBuildpackLayersDir(layersDir string, buildpack Buildpack) (bpLayersDir,
 	}
 
 	names := map[string]struct{}{}
+	var tomls []string
 	for _, fi := range fis {
 		if fi.IsDir() {
 			bpDir.layers = append(bpDir.layers, *bpDir.newBPLayer(fi.Name()))
 			names[fi.Name()] = struct{}{}
+			continue
+		}
+		if strings.HasSuffix(fi.Name(), ".toml") {
+			tomls = append(tomls, filepath.Join(path, fi.Name()))
 		}
 	}
 
-	tomls, err := filepath.Glob(filepath.Join(path, "*.toml"))
-	if err != nil {
-		return bpLayersDir{}, err
-	}
 	for _, tf := range tomls {
 		name := strings.TrimSuffix(filepath.Base(tf), ".toml")
 		if name == "store" {
@@ -187,7 +188,7 @@ func (l *layer) Path() string {
 	return l.path
 }
 
-type identifiableLayer interface {
+type layerDir interface {
 	Identifier() string
 	Path() string
 }

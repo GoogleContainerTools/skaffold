@@ -1,4 +1,42 @@
 
+v1.9.0 / 2020-08-18
+===================
+
+  * add `WithDuration()` method to record a duration as milliseconds
+  * add: ignore nil errors in `WithError()`
+  * change trace duration to milliseconds (arguably a breaking change)
+
+v1.8.0 / 2020-08-05
+===================
+
+  * refactor apexlogs handler to not make the AddEvents() call if there are no events to flush
+
+v1.7.1 / 2020-08-05
+===================
+
+  * fix potential nil panic in apexlogs handler
+
+v1.7.0 / 2020-08-03
+===================
+
+  * add FlushSync() to apexlogs handler
+
+v1.6.0 / 2020-07-13
+===================
+
+  * update apex/logs dep to v1.0.0
+  * docs: mention that Flush() is non-blocking now, use Close()
+
+v1.5.0 / 2020-07-11
+===================
+
+  * add buffering to Apex Logs handler
+
+v1.4.0 / 2020-06-16
+===================
+
+  * add AuthToken to apexlogs handler
+
 v1.3.0 / 2020-05-26
 ===================
 

@@ -58,6 +58,13 @@ func ListWithContext(ctx context.Context, repo name.Repository, options ...Optio
 		RawQuery: "n=1000",
 	}
 
+	// This is lazy, but I want to make sure List(..., WithContext(ctx)) works
+	// without calling makeOptions() twice (which can have side effects).
+	// This means ListWithContext(ctx, ..., WithContext(ctx2)) prefers ctx2.
+	if o.context != context.Background() {
+		ctx = o.context
+	}
+
 	client := http.Client{Transport: tr}
 	tagList := []string{}
 	parsed := tags{}

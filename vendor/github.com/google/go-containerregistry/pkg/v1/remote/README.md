@@ -8,7 +8,7 @@ per the [OCI distribution spec](https://github.com/opencontainers/distribution-s
 It leans heavily on the lower level [`transport`](/pkg/v1/remote/transport) package, which handles the
 authentication handshake and structured errors.
 
-## Usage 
+## Usage
 
 ```go
 package main

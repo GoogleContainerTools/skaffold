@@ -15,6 +15,7 @@
 package google
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -37,6 +38,7 @@ type lister struct {
 	transport http.RoundTripper
 	repo      name.Repository
 	client    *http.Client
+	ctx       context.Context
 }
 
 func newLister(repo name.Repository, options ...ListerOption) (*lister, error) {
@@ -44,6 +46,7 @@ func newLister(repo name.Repository, options ...ListerOption) (*lister, error) {
 		auth:      authn.Anonymous,
 		transport: http.DefaultTransport,
 		repo:      repo,
+		ctx:       context.Background(),
 	}
 
 	for _, option := range options {
@@ -80,7 +83,11 @@ func (l *lister) list(repo name.Repository) (*Tags, error) {
 		Path:   fmt.Sprintf("/v2/%s/tags/list", repo.RepositoryStr()),
 	}
 
-	resp, err := l.client.Get(uri.String())
+	req, err := http.NewRequestWithContext(l.ctx, http.MethodGet, uri.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := l.client.Do(req)
 	if err != nil {
 		return nil, err
 	}

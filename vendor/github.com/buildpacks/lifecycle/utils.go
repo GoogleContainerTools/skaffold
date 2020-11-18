@@ -2,7 +2,6 @@ package lifecycle
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,10 +62,41 @@ func DecodeLabel(image imgutil.Image, label string, v interface{}) error {
 	return nil
 }
 
-func isEmptyDir(name string) (bool, error) {
-	entries, err := ioutil.ReadDir(name)
-	if err != nil {
-		return false, err
+func syncLabels(sourceImg imgutil.Image, destImage imgutil.Image, test func(string) bool) error {
+	if err := removeLabels(destImage, test); err != nil {
+		return err
 	}
-	return len(entries) == 0, nil
+	return copyLabels(sourceImg, destImage, test)
+}
+
+func removeLabels(image imgutil.Image, test func(string) bool) error {
+	labels, err := image.Labels()
+	if err != nil {
+		return err
+	}
+
+	for label := range labels {
+		if test(label) {
+			if err := image.RemoveLabel(label); err != nil {
+				return errors.Wrapf(err, "failed to remove label '%s'", label)
+			}
+		}
+	}
+	return nil
+}
+
+func copyLabels(fromImage imgutil.Image, destImage imgutil.Image, test func(string) bool) error {
+	fromLabels, err := fromImage.Labels()
+	if err != nil {
+		return err
+	}
+
+	for label, labelValue := range fromLabels {
+		if test(label) {
+			if err := destImage.SetLabel(label, labelValue); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

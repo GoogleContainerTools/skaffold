@@ -69,7 +69,7 @@ func (t Tag) Scope(action string) string {
 }
 
 func checkTag(name string) error {
-	return checkElement("tag", name, tagChars, 1, 127)
+	return checkElement("tag", name, tagChars, 1, 128)
 }
 
 // NewTag returns a new Tag representing the given name, according to the given strictness.

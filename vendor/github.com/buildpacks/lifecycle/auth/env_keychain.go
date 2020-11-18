@@ -12,19 +12,22 @@ import (
 	"github.com/pkg/errors"
 )
 
-// EnvKeychain creates a keychain augmenting the default keychain with information from an environment variable.
-//
-// See `ReadEnvVar`.
-func EnvKeychain(envVar string) authn.Keychain {
-	return authn.NewMultiKeychain(&envKeychain{envVar: envVar}, authn.DefaultKeychain)
+// NewKeychain returns either a EnvKeychain or a authn.DefaultKeychain depending on whether the provided environment variable is set
+func NewKeychain(envVar string) authn.Keychain {
+	_, ok := os.LookupEnv(envVar)
+	if !ok {
+		return authn.DefaultKeychain
+	}
+	return &EnvKeychain{EnvVar: envVar}
 }
 
-type envKeychain struct {
-	envVar string
+// EnvKeychain uses the contents of an environment variable to resolve auth for a registry
+type EnvKeychain struct {
+	EnvVar string
 }
 
-func (k *envKeychain) Resolve(resource authn.Resource) (authn.Authenticator, error) {
-	authHeaders, err := ReadEnvVar(k.envVar)
+func (k *EnvKeychain) Resolve(resource authn.Resource) (authn.Authenticator, error) {
+	authHeaders, err := ReadEnvVar(k.EnvVar)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading auth env var")
 	}

@@ -40,6 +40,7 @@ type Addendum struct {
 	History     v1.History
 	URLs        []string
 	Annotations map[string]string
+	MediaType   types.MediaType
 }
 
 // AppendLayers applies layers to a base image.

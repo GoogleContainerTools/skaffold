@@ -5,7 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/buildpacks/pack/internal/api"
+	"github.com/buildpacks/lifecycle/api"
+
 	"github.com/buildpacks/pack/internal/stringset"
 	"github.com/buildpacks/pack/internal/style"
 )

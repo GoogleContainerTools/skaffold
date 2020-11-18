@@ -50,48 +50,95 @@ func Rebase(orig, oldBase, newBase v1.Image) (v1.Image, error) {
 		}
 	}
 
+	oldConfig, err := oldBase.ConfigFile()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get config for old base: %v", err)
+	}
+
 	origConfig, err := orig.ConfigFile()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config for original: %v", err)
 	}
 
+	newConfig, err := newBase.ConfigFile()
+	if err != nil {
+		return nil, fmt.Errorf("could not get config for new base: %v", err)
+	}
+
 	// Stitch together an image that contains:
 	// - original image's config
+	// - new base image's os/arch properties
 	// - new base image's layers + top of original image's layers
 	// - new base image's history + top of original image's history
 	rebasedImage, err := Config(empty.Image, *origConfig.Config.DeepCopy())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create empty image with original config: %v", err)
 	}
+
+	// Add new config properties from existing images.
+	rebasedConfig, err := rebasedImage.ConfigFile()
+	if err != nil {
+		return nil, fmt.Errorf("could not get config for rebased image: %v", err)
+	}
+	// OS/Arch properties from new base
+	rebasedConfig.Architecture = newConfig.Architecture
+	rebasedConfig.OS = newConfig.OS
+	rebasedConfig.OSVersion = newConfig.OSVersion
+
+	// Apply config properties to rebased.
+	rebasedImage, err = ConfigFile(rebasedImage, rebasedConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to replace config for rebased image: %v", err)
+	}
+
 	// Get new base layers and config for history.
 	newBaseLayers, err := newBase.Layers()
 	if err != nil {
 		return nil, fmt.Errorf("could not get new base layers for new base: %v", err)
 	}
-	newConfig, err := newBase.ConfigFile()
-	if err != nil {
-		return nil, fmt.Errorf("could not get config for new base: %v", err)
-	}
 	// Add new base layers.
-	for i := range newBaseLayers {
-		rebasedImage, err = Append(rebasedImage, Addendum{
-			Layer:   newBaseLayers[i],
-			History: newConfig.History[i],
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to append layer %d of new base layers", i)
-		}
+	rebasedImage, err = Append(rebasedImage, createAddendums(0, 0, newConfig.History, newBaseLayers)...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to append new base image: %v", err)
 	}
+
 	// Add original layers above the old base.
-	start := len(oldBaseLayers)
-	for i := range origLayers[start:] {
-		rebasedImage, err = Append(rebasedImage, Addendum{
-			Layer:   origLayers[start+i],
-			History: origConfig.History[start+i],
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to append layer %d of original layers", i)
+	rebasedImage, err = Append(rebasedImage, createAddendums(len(oldConfig.History), len(oldBaseLayers)+1, origConfig.History, origLayers)...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to append original image: %v", err)
+	}
+
+	return rebasedImage, nil
+}
+
+// createAddendums makes a list of addendums from a history and layers starting from a specific history and layer
+// indexes.
+func createAddendums(startHistory, startLayer int, history []v1.History, layers []v1.Layer) []Addendum {
+	var adds []Addendum
+	// History should be a superset of layers; empty layers (e.g. ENV statements) only exist in history.
+	// They cannot be iterated identically but must be walked independently, only advancing the iterator for layers
+	// when a history entry for a non-empty layer is seen.
+	layerIndex := 0
+	for historyIndex := range history {
+		var layer v1.Layer
+		emptyLayer := history[historyIndex].EmptyLayer
+		if !emptyLayer {
+			layer = layers[layerIndex]
+			layerIndex++
+		}
+		if historyIndex >= startHistory || layerIndex >= startLayer {
+			adds = append(adds, Addendum{
+				Layer:   layer,
+				History: history[historyIndex],
+			})
 		}
 	}
-	return rebasedImage, nil
+	// In the event history was malformed or non-existent, append the remaining layers.
+	for i := layerIndex; i < len(layers); i++ {
+		if i >= startLayer {
+			adds = append(adds, Addendum{Layer: layers[layerIndex]})
+		}
+	}
+
+	return adds
 }

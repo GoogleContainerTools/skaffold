@@ -1,6 +1,5 @@
 run:
   timeout: 6m
-  modules-download-mode: vendor
 
 linters:
   disable-all: true
@@ -8,6 +7,7 @@ linters:
     - bodyclose
     - deadcode
     - dogsled
+    - errcheck
     - gocritic
     - goimports
     - golint

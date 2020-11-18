@@ -30,12 +30,17 @@ type Image interface {
 	Name() string
 	Rename(name string)
 	Label(string) (string, error)
+	Labels() (map[string]string, error)
 	SetLabel(string, string) error
+	RemoveLabel(string) error
 	Env(key string) (string, error)
 	SetEnv(string, string) error
 	SetEntrypoint(...string) error
 	SetWorkingDir(string) error
 	SetCmd(...string) error
+	SetOS(string) error
+	SetOSVersion(string) error
+	SetArchitecture(string) error
 	Rebase(string, Image) error
 	AddLayer(path string) error
 	AddLayerWithDiffID(path, diffID string) error

@@ -156,7 +156,12 @@ func (rl *remoteImageLayer) Compressed() (io.ReadCloser, error) {
 	// TODO: Maybe we don't want to try pulling from the registry first?
 	var lastErr error
 	for _, u := range urls {
-		resp, err := rl.ri.Client.Get(u.String())
+		req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := rl.ri.Client.Do(req.WithContext(rl.ri.context))
 		if err != nil {
 			lastErr = err
 			continue

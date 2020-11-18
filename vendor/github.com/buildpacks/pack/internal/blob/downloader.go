@@ -151,7 +151,7 @@ func (d *downloader) downloadAsStream(ctx context.Context, uri string, etag stri
 
 	return nil, "", fmt.Errorf(
 		"could not download from %s, code http status %s",
-		style.Symbol(uri), style.Symbol("%d", resp.StatusCode),
+		style.Symbol(uri), style.SymbolF("%d", resp.StatusCode),
 	)
 }
 

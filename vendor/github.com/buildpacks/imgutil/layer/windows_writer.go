@@ -2,6 +2,7 @@ package layer
 
 import (
 	"archive/tar"
+	"fmt"
 	"io"
 	"path"
 	"strings"
@@ -28,6 +29,9 @@ func (w *WindowsWriter) WriteHeader(header *tar.Header) error {
 		return err
 	}
 
+	if err := w.validateHeader(header); err != nil {
+		return err
+	}
 	header.Name = layerFilesPath(header.Name)
 
 	err := w.writeParentPaths(header.Name)
@@ -35,10 +39,26 @@ func (w *WindowsWriter) WriteHeader(header *tar.Header) error {
 		return err
 	}
 
+	header.Format = tar.FormatPAX
+	if header.PAXRecords == nil {
+		header.PAXRecords = map[string]string{}
+	}
+	ensureSecurityDescriptor(header)
+
 	if header.Typeflag == tar.TypeDir {
 		return w.writeDirHeader(header)
 	}
 	return w.tarWriter.WriteHeader(header)
+}
+
+func ensureSecurityDescriptor(header *tar.Header) {
+	if _, ok := header.PAXRecords["MSWINDOWS.rawsd"]; !ok {
+		if header.Uid == 0 && header.Gid == 0 {
+			header.PAXRecords["MSWINDOWS.rawsd"] = AdministratratorOwnerAndGroupSID
+		} else {
+			header.PAXRecords["MSWINDOWS.rawsd"] = UserOwnerAndGroupSID
+		}
+	}
 }
 
 func (w *WindowsWriter) Close() (err error) {
@@ -94,9 +114,17 @@ func (w *WindowsWriter) writeDirHeader(header *tar.Header) error {
 	if w.writtenParentPaths[header.Name] {
 		return nil
 	}
+
 	if err := w.tarWriter.WriteHeader(header); err != nil {
 		return err
 	}
 	w.writtenParentPaths[header.Name] = true
+	return nil
+}
+
+func (w *WindowsWriter) validateHeader(header *tar.Header) error {
+	if !path.IsAbs(header.Name) {
+		return fmt.Errorf("invalid header name: must be absolute, posix path: %s", header.Name)
+	}
 	return nil
 }
