@@ -17,8 +17,13 @@ limitations under the License.
 package instrumentation
 
 import (
+	"runtime"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -37,4 +42,29 @@ type skaffoldMeter struct {
 	DevIterations  map[string]int
 	StartTime      time.Time
 	ErrorCode      proto.StatusCode
+}
+
+var (
+	meter = skaffoldMeter{
+		OS:        runtime.GOOS,
+		Arch:      runtime.GOARCH,
+		Builders:  map[string]bool{},
+		SyncType:  map[string]bool{},
+		StartTime: time.Now(),
+		Version:   version.Get().Version,
+		ExitCode:  0,
+		ErrorCode: proto.StatusCode_OK,
+	}
+)
+
+func InitMeter(runCtx *runcontext.RunContext, config *latest.SkaffoldConfig) {
+	meter.Command = runCtx.Opts.Command
+	meter.PlatformType = yamltags.GetYamlTag(config.Build.BuildType)
+	for _, artifact := range config.Pipeline.Build.Artifacts {
+		meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)] = true
+		if artifact.Sync != nil {
+			meter.SyncType[yamltags.GetYamlTag(artifact.Sync)] = true
+		}
+	}
+	meter.BuildArtifacts = len(config.Pipeline.Build.Artifacts)
 }

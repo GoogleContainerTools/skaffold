@@ -197,3 +197,48 @@ func TestYamlName(t *testing.T) {
 	testutil.CheckDeepEqual(t, "named", YamlName(reflect.TypeOf(object).Field(1)))
 	testutil.CheckDeepEqual(t, "Missing", YamlName(reflect.TypeOf(object).Field(2)))
 }
+
+type abc struct {
+	A *string `yaml:"a,omitempty"`
+	B *string `yaml:"b,omitempty"`
+	C *string `yaml:"c,omitempty"`
+}
+
+func TestGetYamlTag(t *testing.T) {
+	a := "it's A"
+	b := "it's B"
+	c := "it's C"
+
+	tests := []struct {
+		name        string
+		yaml        interface{}
+		expectedTag string
+	}{
+		{
+			name:        "test get first field",
+			yaml:        abc{A: &a},
+			expectedTag: "a",
+		},
+		{
+			name:        "test get second field",
+			yaml:        abc{B: &b},
+			expectedTag: "b",
+		},
+		{
+			name:        "test get third field",
+			yaml:        abc{C: &c},
+			expectedTag: "c",
+		},
+		{
+			name:        "test returns empty string on empty struct",
+			yaml:        abc{},
+			expectedTag: "",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expectedTag, GetYamlTag(test.yaml))
+		})
+	}
+}
