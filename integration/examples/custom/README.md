@@ -4,7 +4,7 @@ This example shows how the custom builder can be used to
 build artifacts with [ko](https://github.com/google/ko).
 
 * **building** a single Go file app with ko
-* **tagging** using the default tagPolicy (`gitCommit`)
+* **tagging** using the tagPolicy (`sha256`), to mimic the behavior of ko
 * **deploying** a single container pod using `kubectl`
 
 #### Before you begin
@@ -31,7 +31,9 @@ $ cat build.sh
 set -e
 
 if ! [ -x "$(command -v ko)" ]; then
-    GO111MODULE=on go get -mod=readonly github.com/google/ko/cmd/ko@v0.4.0
+    pushd $(mktemp -d)
+    go mod init tmp; GOFLAGS= go get github.com/google/ko/cmd/ko@v0.6.0
+    popd
 fi
 
 output=$(ko publish --local --preserve-import-paths --tags= . | tee)
@@ -43,17 +45,37 @@ if $PUSH_IMAGE; then
 fi
 ```
 
-and the skaffold config, which configures artifact `skaffold-example` to build with `build.sh`:
+and the skaffold config, which configures image `ko://github.com/GoogleContainerTools/skaffold/examples/custom` to build with `build.sh`:
 
 ```yaml
 $ cat skaffold.yaml
-apiVersion: skaffold/v2alpha1
+apiVersion: skaffold/v2beta9
 kind: Config
 build:
   artifacts:
-  - image: skaffold-custom
+  - image: ko://github.com/GoogleContainerTools/skaffold/examples/custom
     custom:
       buildCommand: ./build.sh
+      dependencies:
+        paths:
+        - "go.mod"
+        - "**.go"
+  tagPolicy:
+    sha256: {}
+```
+
+The `k8s/pod.yaml` manifest file uses the same image reference:
+
+```yaml
+$ cat k8s/pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - name: getting-started
+    image: ko://github.com/GoogleContainerTools/skaffold/examples/custom
 ```
 
 For more information about how this works, see the Skaffold custom builder [documentation](https://skaffold.dev/docs/how-tos/builders/#custom-build-script-run-locally).
@@ -64,7 +86,7 @@ Now, use Skaffold to deploy this application to your Kubernetes cluster:
 $ skaffold run --tail --default-repo <your repo>
 ```
 
-With this command, Skaffold will build the `skaffold-example` artifact with ko and deploy the application to Kubernetes.
+With this command, Skaffold will build the `github.com/googlecontainertools/skaffold/examples/custom` artifact with ko and deploy the application to Kubernetes.
 You should be able to see *Hello, World!* printed every second in the Skaffold logs.
 
 #### Cleanup

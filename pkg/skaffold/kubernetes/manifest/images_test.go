@@ -77,6 +77,7 @@ spec:
   - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
     name: digest
   - image: skaffold/usedbyfqn:TAG
+  - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
   - image: not valid
   - image: unknown
 `)}
@@ -93,6 +94,9 @@ spec:
 	}, {
 		ImageName: "skaffold/usedbyfqn",
 		Tag:       "skaffold/usedbyfqn:TAG",
+	}, {
+		ImageName: "github.com/GoogleContainerTools/skaffold/cmd/skaffold",
+		Tag:       "gcr.io/k8s-skaffold/github.com/googlecontainertools/skaffold/cmd/skaffold:TAG",
 	}}
 
 	expected := ManifestList{[]byte(`
@@ -113,6 +117,7 @@ spec:
   - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
     name: digest
   - image: skaffold/usedbyfqn:TAG
+  - image: gcr.io/k8s-skaffold/github.com/googlecontainertools/skaffold/cmd/skaffold:TAG
   - image: not valid
   - image: unknown
 `)}

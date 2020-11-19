@@ -84,6 +84,18 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			expectedImage: "myrepo/skaffold-example",
 		},
 		{
+			description:   "ko with GCR",
+			image:         "ko://example.com/cmd/app",
+			defaultRepo:   "gcr.io/default",
+			expectedImage: "gcr.io/default/example.com/cmd/app",
+		},
+		{
+			description:   "ko with not GCR",
+			image:         "ko://example.com/cmd/app",
+			defaultRepo:   "myrepo",
+			expectedImage: "myrepo/example_com_cmd_app",
+		},
+		{
 			description:   "keep tag",
 			image:         "img:tag",
 			defaultRepo:   "gcr.io/default",

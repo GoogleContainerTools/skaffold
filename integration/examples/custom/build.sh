@@ -3,7 +3,7 @@ set -e
 
 if ! [ -x "$(command -v ko)" ]; then
     pushd $(mktemp -d)
-    go mod init tmp; GOFLAGS= go get github.com/google/ko/cmd/ko@v0.4.0
+    go mod init tmp; GOFLAGS= go get github.com/google/ko/cmd/ko@v0.6.0
     popd
 fi
 
