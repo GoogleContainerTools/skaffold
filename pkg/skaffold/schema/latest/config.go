@@ -17,7 +17,9 @@ limitations under the License.
 package latest
 
 import (
+	"encoding/json"
 	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
@@ -1174,4 +1176,104 @@ type JibArtifact struct {
 
 	// BaseImage overrides the configured jib base image.
 	BaseImage string `yaml:"fromImage,omitempty"`
+}
+
+// UnmarshalYAML provides a custom unmarshler to deal with
+// https://github.com/GoogleContainerTools/skaffold/issues/4175
+func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
+	// We do this as follows
+	// 1. We zero out the fields in the node that require custom processing
+	// 2. We unmarshall all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinetly
+	// 3. We deserialize the special fields as required.
+	type ClusterDetailsForUnmarshaling ClusterDetails
+
+	clusterMap := make(map[string]interface{})
+
+	value.Decode(clusterMap)
+
+	var volumes []v1.Volume
+
+	if vMap, hasVolumes := clusterMap["volumes"]; hasVolumes {
+		volumes = []v1.Volume{}
+		volumesBuff, err := json.Marshal(vMap)
+
+		if err != nil {
+			return err
+		}
+
+		if err := json.Unmarshal(volumesBuff, &volumes); err != nil {
+			return err
+		}
+
+		delete(clusterMap, "volumes")
+	}
+
+	// Remarshal the remaining values
+	buff, err := yaml.Marshal(clusterMap)
+
+	if err != nil {
+		return err
+	}
+
+	// Unmarshal the remaining values
+	aux := (*ClusterDetailsForUnmarshaling)(clusterDetails)
+	err = yaml.Unmarshal(buff, aux)
+
+	if err != nil {
+		return err
+	}
+
+	clusterDetails.Volumes = volumes
+	return nil
+}
+
+// UnmarshalYAML provides a custom unmarshler to deal with
+// https://github.com/GoogleContainerTools/skaffold/issues/4175
+func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
+	// We do this as follows
+	// 1. We zero out the fields in the node that require custom processing
+	// 2. We unmarshall all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinetly
+	// 3. We deserialize the special fields as required.
+	type KanikoArtifactForUnmarshaling KanikoArtifact
+
+	kaMap := make(map[string]interface{})
+
+	value.Decode(kaMap)
+
+	var mounts []v1.VolumeMount
+
+	if vMap, hasVolumes := kaMap["volumeMounts"]; hasVolumes {
+		mounts = []v1.VolumeMount{}
+		volumesBuff, err := json.Marshal(vMap)
+
+		if err != nil {
+			return err
+		}
+
+		if err := json.Unmarshal(volumesBuff, &mounts); err != nil {
+			return err
+		}
+
+		delete(kaMap, "volumeMounts")
+	}
+
+	// Remarshal the remaining values
+	buff, err := yaml.Marshal(kaMap)
+
+	if err != nil {
+		return err
+	}
+
+	// Unmarshal the remaining values
+	aux := (*KanikoArtifactForUnmarshaling)(ka)
+	err = yaml.Unmarshal(buff, aux)
+
+	if err != nil {
+		return err
+	}
+
+	ka.VolumeMounts = mounts
+	return nil
 }

@@ -18,6 +18,7 @@ package schema
 
 import (
 	"fmt"
+	v1 "k8s.io/api/core/v1"
 	"testing"
 
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -83,6 +84,23 @@ build:
     kaniko: {}
   cluster: {}
 `
+	kanikoConfigMap = `
+build:
+  artifacts:
+  - image: image1
+    context: ./examples/app1
+    kaniko:
+      volumeMounts:
+      - name: docker-config
+        mountPath: /kaniko/.docker
+  cluster:
+    pullSecretName: "some-secret"
+    volumes:
+    - name: docker-config
+      configMap:
+        name: docker-config
+`
+
 	completeClusterConfig = `
 build:
   artifacts:
@@ -164,6 +182,29 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 		expected    util.VersionedConfig
 		shouldErr   bool
 	}{
+		{
+			apiVersion:  latest.Version,
+			description: "Kaniko Volume Mount - ConfigMap",
+			config:      kanikoConfigMap,
+			expected: config(
+				withClusterBuild("some-secret", "/secret", "default", "", "20m",
+					withGitTagger(),
+					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
+					withKanikoVolumeMount("docker-config", "/kaniko/.docker"),
+					withVolume(v1.Volume{
+						Name: "docker-config",
+						VolumeSource: v1.VolumeSource{
+							ConfigMap: &v1.ConfigMapVolumeSource{
+									LocalObjectReference: v1.LocalObjectReference{
+										Name: "docker-config",
+									},
+							},
+						},
+					})),
+				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
+			),
+		},
 		{
 			apiVersion:  latest.Version,
 			description: "Minimal config",
@@ -435,6 +476,30 @@ func withKanikoArtifact(image, workspace, dockerfile string) func(*latest.BuildC
 				},
 			},
 		})
+	}
+}
+
+// withKanikoVolumeMount appends a volume mount to the latest Kaniko artifact
+func withKanikoVolumeMount(name, mountPath string) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) {
+		if cfg.Artifacts[len(cfg.Artifacts) -1 ].KanikoArtifact.VolumeMounts == nil {
+			cfg.Artifacts[len(cfg.Artifacts) -1 ].KanikoArtifact.VolumeMounts = []v1.VolumeMount{}
+		}
+
+		cfg.Artifacts[len(cfg.Artifacts) -1 ].KanikoArtifact.VolumeMounts = append(
+			cfg.Artifacts[len(cfg.Artifacts) -1 ].KanikoArtifact.VolumeMounts,
+			v1.VolumeMount{
+				Name: name,
+				MountPath: mountPath,
+			},
+		)
+	}
+}
+
+// withVolume appends a volume to the cluster
+func withVolume(v v1.Volume) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) {
+		cfg.Cluster.Volumes = append(cfg.Cluster.Volumes, v)
 	}
 }
 
