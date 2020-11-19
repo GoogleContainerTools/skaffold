@@ -1,6 +1,15 @@
 # using default substitutions, provided by Google Cloud Build
 # see: https://cloud.google.com/container-builder/docs/configuring-builds/substitute-variable-values#using_default_substitutions
 steps:
+# Grab secret credentials from gcp bucket
+  - name: gcr.io/cloud-builders/gsutil
+    args:
+    - 'cp'
+    - '-r'
+    - 'gs://$PROJECT_ID-secrets'
+    - './secrets/'
+
+# Build and tag skaffold builder
   - name: 'gcr.io/cloud-builders/docker'
     args:
     - 'build'
