@@ -18,9 +18,10 @@ package schema
 
 import (
 	"fmt"
-	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
 	"testing"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
@@ -195,9 +196,9 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 						Name: "docker-config",
 						VolumeSource: v1.VolumeSource{
 							ConfigMap: &v1.ConfigMapVolumeSource{
-									LocalObjectReference: v1.LocalObjectReference{
-										Name: "docker-config",
-									},
+								LocalObjectReference: v1.LocalObjectReference{
+									Name: "docker-config",
+								},
 							},
 						},
 					})),
@@ -353,6 +354,55 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 	}
 }
 
+func TestMarshalConfig(t *testing.T) {
+	tests := []struct {
+		description string
+		config      *latest.SkaffoldConfig
+		shouldErr   bool
+	}{
+		{
+			description: "Kaniko Volume Mount - ConfigMap",
+			config: config(
+				withClusterBuild("some-secret", "/secret", "default", "", "20m",
+					withGitTagger(),
+					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
+					withKanikoVolumeMount("docker-config", "/kaniko/.docker"),
+					withVolume(v1.Volume{
+						Name: "docker-config",
+						VolumeSource: v1.VolumeSource{
+							ConfigMap: &v1.ConfigMapVolumeSource{
+								LocalObjectReference: v1.LocalObjectReference{
+									Name: "docker-config",
+								},
+							},
+						},
+					})),
+				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
+			),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+
+			actual, err := yaml.Marshal(test.config)
+			t.CheckNoError(err)
+
+			// Unmarshal the YAML and make sure it equals the original.
+			// We can't comapre the strings because the YAML serializer isn't deterministic.
+			// TestParseConfigAndUpgrade verifies that YAML -> Go works correctly.
+			// This test veries Go -> YAML -> Go returns the original structure. Since we know
+			// YAML -> Go is working this ensures Go -> YAML is correct.
+			recovered := &latest.SkaffoldConfig{}
+
+			err = yaml.Unmarshal(actual, recovered)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.config, recovered)
+		})
+	}
+}
+
 func config(ops ...func(*latest.SkaffoldConfig)) *latest.SkaffoldConfig {
 	cfg := &latest.SkaffoldConfig{APIVersion: latest.Version, Kind: "Config"}
 	for _, op := range ops {
@@ -482,14 +532,14 @@ func withKanikoArtifact(image, workspace, dockerfile string) func(*latest.BuildC
 // withKanikoVolumeMount appends a volume mount to the latest Kaniko artifact
 func withKanikoVolumeMount(name, mountPath string) func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) {
-		if cfg.Artifacts[len(cfg.Artifacts) -1 ].KanikoArtifact.VolumeMounts == nil {
-			cfg.Artifacts[len(cfg.Artifacts) -1 ].KanikoArtifact.VolumeMounts = []v1.VolumeMount{}
+		if cfg.Artifacts[len(cfg.Artifacts)-1].KanikoArtifact.VolumeMounts == nil {
+			cfg.Artifacts[len(cfg.Artifacts)-1].KanikoArtifact.VolumeMounts = []v1.VolumeMount{}
 		}
 
-		cfg.Artifacts[len(cfg.Artifacts) -1 ].KanikoArtifact.VolumeMounts = append(
-			cfg.Artifacts[len(cfg.Artifacts) -1 ].KanikoArtifact.VolumeMounts,
+		cfg.Artifacts[len(cfg.Artifacts)-1].KanikoArtifact.VolumeMounts = append(
+			cfg.Artifacts[len(cfg.Artifacts)-1].KanikoArtifact.VolumeMounts,
 			v1.VolumeMount{
-				Name: name,
+				Name:      name,
 				MountPath: mountPath,
 			},
 		)

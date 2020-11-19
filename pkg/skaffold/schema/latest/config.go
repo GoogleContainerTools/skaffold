@@ -1188,29 +1188,7 @@ func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
 	// 3. We deserialize the special fields as required.
 	type ClusterDetailsForUnmarshaling ClusterDetails
 
-	clusterMap := make(map[string]interface{})
-
-	value.Decode(clusterMap)
-
-	var volumes []v1.Volume
-
-	if vMap, hasVolumes := clusterMap["volumes"]; hasVolumes {
-		volumes = []v1.Volume{}
-		volumesBuff, err := json.Marshal(vMap)
-
-		if err != nil {
-			return err
-		}
-
-		if err := json.Unmarshal(volumesBuff, &volumes); err != nil {
-			return err
-		}
-
-		delete(clusterMap, "volumes")
-	}
-
-	// Remarshal the remaining values
-	buff, err := yaml.Marshal(clusterMap)
+	volumes, remaining, err := util.UnmarshalClusterVolumes(value)
 
 	if err != nil {
 		return err
@@ -1218,7 +1196,7 @@ func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
 
 	// Unmarshal the remaining values
 	aux := (*ClusterDetailsForUnmarshaling)(clusterDetails)
-	err = yaml.Unmarshal(buff, aux)
+	err = yaml.Unmarshal(remaining, aux)
 
 	if err != nil {
 		return err
@@ -1238,29 +1216,7 @@ func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
 	// 3. We deserialize the special fields as required.
 	type KanikoArtifactForUnmarshaling KanikoArtifact
 
-	kaMap := make(map[string]interface{})
-
-	value.Decode(kaMap)
-
-	var mounts []v1.VolumeMount
-
-	if vMap, hasVolumes := kaMap["volumeMounts"]; hasVolumes {
-		mounts = []v1.VolumeMount{}
-		volumesBuff, err := json.Marshal(vMap)
-
-		if err != nil {
-			return err
-		}
-
-		if err := json.Unmarshal(volumesBuff, &mounts); err != nil {
-			return err
-		}
-
-		delete(kaMap, "volumeMounts")
-	}
-
-	// Remarshal the remaining values
-	buff, err := yaml.Marshal(kaMap)
+	mounts, remaining, err := util.UnmarshalKanikoArtifact(value)
 
 	if err != nil {
 		return err
@@ -1268,7 +1224,7 @@ func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
 
 	// Unmarshal the remaining values
 	aux := (*KanikoArtifactForUnmarshaling)(ka)
-	err = yaml.Unmarshal(buff, aux)
+	err = yaml.Unmarshal(remaining, aux)
 
 	if err != nil {
 		return err
@@ -1276,4 +1232,123 @@ func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
 
 	ka.VolumeMounts = mounts
 	return nil
+}
+
+// MarshalYAML provides a custom marshler to deal with
+// https://github.com/GoogleContainerTools/skaffold/issues/4175
+func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
+	// We do this as follows
+	// 1. We zero out the fields in the node that require custom processing
+	// 2. We marshall all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinetly
+	// 3. We unmarshal to a map
+	// 4. We marshall the special fields to json and unmarhsal to a map
+	//    * This leverages the json struct annotations to marshal as expected
+	// 5. We combine the two maps and return
+	type ClusterDetailsForUnmarshaling ClusterDetails
+
+	// Marshal volumes to a list. Use json because the Kubernetes resources have json annotations.
+	volumes := clusterDetails.Volumes
+
+	j, err := json.Marshal(volumes)
+
+	if err != nil {
+		return err, nil
+	}
+
+	vList := []interface{}{}
+
+	if err := json.Unmarshal(j, &vList); err != nil {
+		return nil, err
+	}
+
+	// Make a deep copy of clusterDetails because we need to zero out volumes and we don't want to modify the
+	// current object.
+	aux := &ClusterDetailsForUnmarshaling{}
+
+	b, err := json.Marshal(clusterDetails)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(b, aux); err != nil {
+		return nil, err
+	}
+
+	aux.Volumes = nil
+
+	marshaled, err := yaml.Marshal(aux)
+
+	if err != nil {
+		return nil, err
+	}
+
+	m := map[string]interface{}{}
+
+	err = yaml.Unmarshal(marshaled, m)
+
+	if len(vList) > 0 {
+		m["volumes"] = vList
+	}
+	return m, err
+}
+
+// MarshalYAML provides a custom marshler to deal with
+// https://github.com/GoogleContainerTools/skaffold/issues/4175
+func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
+	// We do this as follows
+	// 1. We zero out the fields in the node that require custom processing
+	// 2. We marshall all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinetly
+	// 3. We unmarshal to a map
+	// 4. We marshall the special fields to json and unmarhsal to a map
+	//    * This leverages the json struct annotations to marshal as expected
+	// 5. We combine the two maps and return
+	type KanikoArtifactForUnmarshaling KanikoArtifact
+
+	// Marshal volumes to a map. User json because the Kubernetes resources have json annotations.
+	volumeMounts := ka.VolumeMounts
+
+	j, err := json.Marshal(volumeMounts)
+
+	if err != nil {
+		return err, nil
+	}
+
+	vList := []interface{}{}
+
+	if err := json.Unmarshal(j, &vList); err != nil {
+		return nil, err
+	}
+
+	// Make a deep copy of kanikoArtifact because we need to zero out volumeMounts and we don't want to modify the
+	// current object.
+	aux := &KanikoArtifactForUnmarshaling{}
+
+	b, err := json.Marshal(ka)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(b, aux); err != nil {
+		return nil, err
+	}
+	aux.VolumeMounts = nil
+
+	marshaled, err := yaml.Marshal(aux)
+
+	if err != nil {
+		return nil, err
+	}
+
+	m := map[string]interface{}{}
+
+	err = yaml.Unmarshal(marshaled, m)
+
+	if len(vList) > 0 {
+		m["volumeMounts"] = vList
+	}
+	return m, err
 }
