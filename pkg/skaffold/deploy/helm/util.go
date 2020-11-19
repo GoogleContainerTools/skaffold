@@ -29,13 +29,14 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/blang/semver"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/blang/semver"
-	"github.com/sirupsen/logrus"
 )
 
 func IsHelmChart(path string) bool {

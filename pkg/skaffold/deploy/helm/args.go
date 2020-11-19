@@ -21,13 +21,14 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/blang/semver"
+	"github.com/mitchellh/go-homedir"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/blang/semver"
-	"github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
 )
 
 // installOpts are options to be passed to "helm install"
