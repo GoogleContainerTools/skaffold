@@ -20,24 +20,20 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/blang/semver"
 	backoff "github.com/cenkalti/backoff/v4"
 	shell "github.com/kballard/go-shellquote"
-	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -47,7 +43,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -105,13 +100,6 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string) *Deployer {
 		labels:      labels,
 		enableDebug: cfg.Mode() == config.RunModes.Debug,
 	}
-}
-
-func (h *Deployer) checkMinVersion(v semver.Version) error {
-	if v.LT(helm3Version) {
-		return fmt.Errorf("skaffold requires Helm version 3.0.0-beta.0 or greater")
-	}
-	return nil
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
@@ -330,31 +318,6 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 	return manifest.Write(renderedManifests.String(), filepath, out)
 }
 
-// exec executes the helm command, writing combined stdout/stderr to the provided writer
-func (h *Deployer) exec(ctx context.Context, out io.Writer, useSecrets bool, env []string, args ...string) error {
-	if args[0] != "version" {
-		args = append([]string{"--kube-context", h.kubeContext}, args...)
-		args = append(args, h.Flags.Global...)
-
-		if h.kubeConfig != "" {
-			args = append(args, "--kubeconfig", h.kubeConfig)
-		}
-
-		if useSecrets {
-			args = append([]string{"secrets"}, args...)
-		}
-	}
-
-	cmd := exec.CommandContext(ctx, "helm", args...)
-	if len(env) > 0 {
-		cmd.Env = env
-	}
-	cmd.Stdout = out
-	cmd.Stderr = out
-
-	return util.RunCmd(cmd)
-}
-
 // deployRelease deploys a single release
 func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]types.Artifact, error) {
 	releaseName, err := util.ExpandEnvTemplate(r.Name, nil)
@@ -496,241 +459,6 @@ func (h *Deployer) getRelease(ctx context.Context, releaseName string, namespace
 	return b, err
 }
 
-// binVer returns the version of the helm binary found in PATH. May be cached.
-func (h *Deployer) binVer(ctx context.Context) (semver.Version, error) {
-	// Return the cached version value if non-zero
-	if h.bV.Major != 0 || h.bV.Minor != 0 {
-		return h.bV, nil
-	}
-
-	var b bytes.Buffer
-	// Only 3.0.0-beta doesn't support --client
-	if err := h.exec(ctx, &b, false, nil, "version", "--client"); err != nil {
-		return semver.Version{}, fmt.Errorf("helm version command failed %q: %w", b.String(), err)
-	}
-	raw := b.String()
-	matches := versionRegex.FindStringSubmatch(raw)
-	if len(matches) == 0 {
-		return semver.Version{}, fmt.Errorf("unable to parse output: %q", raw)
-	}
-
-	v, err := semver.ParseTolerant(matches[1])
-	if err != nil {
-		return semver.Version{}, fmt.Errorf("semver make %q: %w", matches[1], err)
-	}
-
-	h.bV = v
-	return h.bV, nil
-}
-
-// installOpts are options to be passed to "helm install"
-type installOpts struct {
-	flags        []string
-	releaseName  string
-	namespace    string
-	chartPath    string
-	upgrade      bool
-	force        bool
-	helmVersion  semver.Version
-	postRenderer string
-}
-
-// installArgs calculates the correct arguments to "helm install"
-func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool, o installOpts) ([]string, error) {
-	var args []string
-	if o.upgrade {
-		args = append(args, "upgrade", o.releaseName)
-		args = append(args, o.flags...)
-
-		if o.force {
-			args = append(args, "--force")
-		}
-
-		if r.RecreatePods {
-			args = append(args, "--recreate-pods")
-		}
-	} else {
-		args = append(args, "install")
-		args = append(args, o.releaseName)
-		args = append(args, o.flags...)
-	}
-
-	if o.postRenderer != "" {
-		args = append(args, "--post-renderer")
-		args = append(args, o.postRenderer)
-	}
-
-	// There are 2 strategies:
-	// 1) Deploy chart directly from filesystem path or from repository
-	//    (like stable/kubernetes-dashboard). Version only applies to a
-	//    chart from repository.
-	// 2) Package chart into a .tgz archive with specific version and then deploy
-	//    that packaged chart. This way user can apply any version and appVersion
-	//    for the chart.
-	if r.Packaged == nil && r.Version != "" {
-		args = append(args, "--version", r.Version)
-	}
-
-	args = append(args, o.chartPath)
-
-	if o.namespace != "" {
-		args = append(args, "--namespace", o.namespace)
-	}
-
-	if r.CreateNamespace != nil && *r.CreateNamespace && !o.upgrade {
-		if o.helmVersion.LT(helm32Version) {
-			return nil, errors.New("the createNamespace option is not available in the current Helm version. Update Helm to version 3.2 or higher")
-		}
-		args = append(args, "--create-namespace")
-	}
-
-	params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
-	if err != nil {
-		return nil, fmt.Errorf("matching build results to chart values: %w", err)
-	}
-
-	if len(r.Overrides.Values) != 0 {
-		args = append(args, "-f", constants.HelmOverridesFilename)
-	}
-
-	for k, v := range params {
-		var value string
-
-		cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
-
-		value, err = imageSetFromConfig(cfg, k, v.Tag)
-		if err != nil {
-			return nil, err
-		}
-
-		valuesSet[v.Tag] = true
-		args = append(args, "--set-string", value)
-	}
-
-	args, err = constructOverrideArgs(&r, builds, args, func(k string) {
-		valuesSet[k] = true
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if r.Wait {
-		args = append(args, "--wait")
-	}
-
-	return args, nil
-}
-
-// constructOverrideArgs creates the command line arguments for overrides
-func constructOverrideArgs(r *latest.HelmRelease, builds []build.Artifact, args []string, record func(string)) ([]string, error) {
-	for _, k := range sortKeys(r.SetValues) {
-		record(r.SetValues[k])
-		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
-	}
-
-	for _, k := range sortKeys(r.SetFiles) {
-		exp, err := homedir.Expand(r.SetFiles[k])
-		if err != nil {
-			return nil, fmt.Errorf("unable to expand %q: %w", r.SetFiles[k], err)
-		}
-		record(exp)
-		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, exp))
-	}
-
-	envMap := map[string]string{}
-	for idx, b := range builds {
-		suffix := ""
-		if idx > 0 {
-			suffix = strconv.Itoa(idx + 1)
-		}
-
-		for k, v := range envVarForImage(b.ImageName, b.Tag) {
-			envMap[k+suffix] = v
-		}
-	}
-	logrus.Debugf("EnvVarMap: %+v\n", envMap)
-
-	for _, k := range sortKeys(r.SetValueTemplates) {
-		v, err := util.ExpandEnvTemplate(r.SetValueTemplates[k], envMap)
-		if err != nil {
-			return nil, err
-		}
-		expandedKey, err := util.ExpandEnvTemplate(k, envMap)
-		if err != nil {
-			return nil, err
-		}
-
-		record(v)
-		args = append(args, "--set", fmt.Sprintf("%s=%s", expandedKey, v))
-	}
-
-	for _, v := range r.ValuesFiles {
-		exp, err := homedir.Expand(v)
-		if err != nil {
-			return nil, fmt.Errorf("unable to expand %q: %w", v, err)
-		}
-
-		exp, err = util.ExpandEnvTemplate(exp, envMap)
-		if err != nil {
-			return nil, err
-		}
-
-		args = append(args, "-f", exp)
-	}
-	return args, nil
-}
-
-// sortKeys returns the map keys in sorted order
-func sortKeys(m map[string]string) []string {
-	s := make([]string, 0, len(m))
-	for k := range m {
-		s = append(s, k)
-	}
-	sort.Strings(s)
-	return s
-}
-
-// getArgs calculates the correct arguments to "helm get"
-func getArgs(releaseName string, namespace string) []string {
-	args := []string{"get", "all"}
-	if namespace != "" {
-		args = append(args, "--namespace", namespace)
-	}
-	return append(args, releaseName)
-}
-
-// envVarForImage creates an environment map for an image and digest tag (fqn)
-func envVarForImage(imageName string, digest string) map[string]string {
-	customMap := map[string]string{
-		"IMAGE_NAME": imageName,
-		"DIGEST":     digest, // The `DIGEST` name is kept for compatibility reasons
-	}
-
-	// Standardize access to Image reference fields in templates
-	ref, err := docker.ParseReference(digest)
-	if err == nil {
-		customMap[constants.ImageRef.Repo] = ref.BaseName
-		customMap[constants.ImageRef.Tag] = ref.Tag
-		customMap[constants.ImageRef.Digest] = ref.Digest
-	} else {
-		logrus.Warnf("unable to extract values for %v, %v and %v from image %v due to error:\n%v", constants.ImageRef.Repo, constants.ImageRef.Tag, constants.ImageRef.Digest, digest, err)
-	}
-
-	if digest == "" {
-		return customMap
-	}
-
-	// DIGEST_ALGO and DIGEST_HEX are deprecated and will contain nonsense values
-	names := strings.SplitN(digest, ":", 2)
-	if len(names) >= 2 {
-		customMap["DIGEST_ALGO"] = names[0]
-		customMap["DIGEST_HEX"] = names[1]
-	} else {
-		customMap["DIGEST_HEX"] = digest
-	}
-	return customMap
-}
-
 // packageChart packages the chart and returns the path to the resulting chart archive
 func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (string, error) {
 	// Allow a test to sneak a predictable path in
@@ -776,107 +504,4 @@ func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (stri
 	}
 
 	return output[idx:], nil
-}
-
-func (h *Deployer) generateSkaffoldDebugFilter(buildsFile string) []string {
-	args := []string{"filter", "--debugging", "--kube-context", h.kubeContext}
-	if len(buildsFile) > 0 {
-		args = append(args, "--build-artifacts", buildsFile)
-	}
-	args = append(args, h.Flags.Global...)
-
-	if h.kubeConfig != "" {
-		args = append(args, "--kubeconfig", h.kubeConfig)
-	}
-	return args
-}
-
-func (h *Deployer) releaseNamespace(r latest.HelmRelease) (string, error) {
-	if h.namespace != "" {
-		return h.namespace, nil
-	} else if r.Namespace != "" {
-		namespace, err := util.ExpandEnvTemplate(r.Namespace, nil)
-		if err != nil {
-			return "", fmt.Errorf("cannot parse the release namespace template: %w", err)
-		}
-		return namespace, nil
-	}
-	return "", nil
-}
-
-// imageSetFromConfig calculates the --set-string value from the helm config
-func imageSetFromConfig(cfg *latest.HelmConventionConfig, valueName string, tag string) (string, error) {
-	if cfg == nil {
-		return fmt.Sprintf("%s=%s", valueName, tag), nil
-	}
-
-	ref, err := docker.ParseReference(tag)
-	if err != nil {
-		return "", fmt.Errorf("cannot parse the image reference %q: %w", tag, err)
-	}
-
-	var imageTag string
-	if ref.Digest != "" {
-		imageTag = fmt.Sprintf("%s@%s", ref.Tag, ref.Digest)
-	} else {
-		imageTag = ref.Tag
-	}
-
-	if cfg.ExplicitRegistry {
-		if ref.Domain == "" {
-			return "", fmt.Errorf("image reference %s has no domain", tag)
-		}
-		return fmt.Sprintf("%[1]s.registry=%[2]s,%[1]s.repository=%[3]s,%[1]s.tag=%[4]s", valueName, ref.Domain, ref.Path, imageTag), nil
-	}
-
-	return fmt.Sprintf("%[1]s.repository=%[2]s,%[1]s.tag=%[3]s", valueName, ref.BaseName, imageTag), nil
-}
-
-// pairParamsToArtifacts associates parameters to the build artifact it creates
-func pairParamsToArtifacts(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
-	imageToBuildResult := map[string]build.Artifact{}
-	for _, b := range builds {
-		imageToBuildResult[b.ImageName] = b
-	}
-
-	paramToBuildResult := map[string]build.Artifact{}
-
-	for param, imageName := range params {
-		b, ok := imageToBuildResult[imageName]
-		if !ok {
-			return nil, fmt.Errorf("no build present for %s", imageName)
-		}
-
-		paramToBuildResult[param] = b
-	}
-
-	return paramToBuildResult, nil
-}
-
-func IsHelmChart(path string) bool {
-	return filepath.Base(path) == "Chart.yaml"
-}
-
-// copy of cmd/skaffold/app/flags.BuildOutputs
-type buildOutputs struct {
-	Builds []build.Artifact `json:"builds"`
-}
-
-func writeBuildArtifacts(builds []build.Artifact) (string, func(), error) {
-	buildOutput, err := json.Marshal(buildOutputs{builds})
-	if err != nil {
-		return "", nil, fmt.Errorf("cannot marshal build artifacts: %w", err)
-	}
-
-	f, err := ioutil.TempFile("", "builds*.yaml")
-	if err != nil {
-		return "", nil, fmt.Errorf("cannot create temp file: %w", err)
-	}
-	if _, err := f.Write(buildOutput); err != nil {
-		return "", nil, fmt.Errorf("cannot write to temp file: %w", err)
-	}
-	if err := f.Close(); err != nil {
-		return "", nil, fmt.Errorf("cannot close temp file: %w", err)
-	}
-	return f.Name(), func() { os.Remove(f.Name()) }, nil
 }
