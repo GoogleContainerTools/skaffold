@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -141,7 +142,7 @@ func retrieveServiceResources(label string, namespaces []string) ([]*latest.Port
 					Type:      constants.Service,
 					Name:      s.Name,
 					Namespace: s.Namespace,
-					Port:      int(p.Port),
+					Port:      schemautil.FromInt(int(p.Port)),
 					Address:   constants.DefaultPortForwardAddress,
 					LocalPort: int(p.Port),
 				})

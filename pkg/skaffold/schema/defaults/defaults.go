@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -356,7 +357,9 @@ func currentNamespace() (string, error) {
 
 func setDefaultLocalPort(pf *latest.PortForwardResource) {
 	if pf.LocalPort == 0 {
-		pf.LocalPort = pf.Port
+		if pf.Port.Type == schemautil.Int {
+			pf.LocalPort = pf.Port.IntVal
+		}
 	}
 }
 

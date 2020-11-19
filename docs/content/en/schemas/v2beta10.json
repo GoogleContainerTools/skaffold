@@ -2288,7 +2288,14 @@
           "x-intellij-html-description": "namespace of the resource to port forward."
         },
         "port": {
-          "type": "integer",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ],
           "description": "resource port that will be forwarded.",
           "x-intellij-html-description": "resource port that will be forwarded."
         },

@@ -502,6 +502,26 @@
             "type": "string"
           },
           {
+            "name": "event.portEvent.targetPort.type",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.portEvent.targetPort.intVal",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.portEvent.targetPort.strVal",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
             "name": "event.statusCheckEvent.status",
             "in": "query",
             "required": false,
@@ -1659,6 +1679,23 @@
       },
       "description": "`FileSyncState` contains the status of the current file sync"
     },
+    "protoIntOrString": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "intVal": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "strVal": {
+          "type": "string"
+        }
+      },
+      "description": "IntOrString is a type that can hold an int32 or a string."
+    },
     "protoIntent": {
       "type": "object",
       "properties": {
@@ -1756,6 +1793,9 @@
         },
         "address": {
           "type": "string"
+        },
+        "targetPort": {
+          "$ref": "#/definitions/protoIntOrString"
         }
       },
       "description": "PortEvent Event describes each port forwarding event."
