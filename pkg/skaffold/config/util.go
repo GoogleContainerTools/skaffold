@@ -169,27 +169,6 @@ func GetDefaultRepo(configFile string, cliValue *string) (string, error) {
 	return cfg.DefaultRepo, nil
 }
 
-func GetLocalCluster(configFile string, minikubeProfile string, detectMinikubeCluster bool) (bool, error) {
-	if minikubeProfile != "" {
-		return true, nil
-	}
-	cfg, err := GetConfigForCurrentKubectx(configFile)
-	if err != nil {
-		return false, err
-	}
-	// when set, the local-cluster config takes precedence
-	if cfg.LocalCluster != nil {
-		logrus.Infof("Using local-cluster=%v from config", *cfg.LocalCluster)
-		return *cfg.LocalCluster, nil
-	}
-
-	config, err := kubectx.CurrentConfig()
-	if err != nil {
-		return true, err
-	}
-	return isDefaultLocal(config.CurrentContext, detectMinikubeCluster), nil
-}
-
 func GetInsecureRegistries(configFile string) ([]string, error) {
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {
@@ -214,22 +193,43 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 	return constants.DefaultDebugHelpersRegistry, nil
 }
 
-// IsImageLoadingRequired checks if the cluster requires loading images into it
-func IsImageLoadingRequired(configFile string) (bool, error) {
+func GetCluster(configFile string, minikubeProfile string, detectMinikube bool) (Cluster, error) {
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {
-		return false, err
+		return Cluster{}, err
 	}
+
+	local := isLocalCluster(cfg, minikubeProfile, detectMinikube)
 
 	kubeContext := cfg.Kubecontext
 	kindDisableLoad := cfg.KindDisableLoad != nil && *cfg.KindDisableLoad
 	k3dDisableLoad := cfg.K3dDisableLoad != nil && *cfg.K3dDisableLoad
 
-	return (IsKindCluster(kubeContext) && !kindDisableLoad) ||
-		(IsK3dCluster(kubeContext) && !k3dDisableLoad), nil
+	loadImages := (IsKindCluster(kubeContext) && !kindDisableLoad) ||
+		(IsK3dCluster(kubeContext) && !k3dDisableLoad)
+
+	pushImages := !local || !loadImages
+
+	return Cluster{
+		Local:      local,
+		LoadImages: loadImages,
+		PushImages: pushImages,
+	}, nil
 }
 
-func isDefaultLocal(kubeContext string, detectMinikubeCluster bool) bool {
+func isLocalCluster(cfg *ContextConfig, minikubeProfile string, detectMinikubeCluster bool) bool {
+	if minikubeProfile != "" {
+		return true
+	}
+
+	// when set, the local-cluster config takes precedence
+	if cfg.LocalCluster != nil {
+		logrus.Infof("Using local-cluster=%v from config", *cfg.LocalCluster)
+		return *cfg.LocalCluster
+	}
+
+	kubeContext := cfg.Kubecontext
+
 	if kubeContext == constants.DefaultMinikubeContext ||
 		kubeContext == constants.DefaultDockerForDesktopContext ||
 		kubeContext == constants.DefaultDockerDesktopContext ||
@@ -237,9 +237,11 @@ func isDefaultLocal(kubeContext string, detectMinikubeCluster bool) bool {
 		IsK3dCluster(kubeContext) {
 		return true
 	}
+
 	if detectMinikubeCluster {
 		return cluster.GetClient().IsMinikube(kubeContext)
 	}
+
 	return false
 }
 

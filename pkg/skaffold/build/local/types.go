@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
@@ -34,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/sirupsen/logrus"
 )
 
 // Builder uses the host docker daemon to build and tag the image.
@@ -60,8 +59,7 @@ type Builder struct {
 // external dependencies are wrapped
 // into private functions for testability
 
-var getLocalCluster = config.GetLocalCluster
-var isImageLoadingRequired = config.IsImageLoadingRequired
+var getCluster = config.GetCluster
 
 type Config interface {
 	docker.Config
@@ -69,7 +67,7 @@ type Config interface {
 	Pipeline() latest.Pipeline
 	GlobalConfig() string
 	GetKubeContext() string
-	DetectMinikube() bool
+	GetCluster() config.Cluster
 	SkipTests() bool
 	Mode() config.RunMode
 	NoPruneChildren() bool
@@ -83,24 +81,12 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		return nil, fmt.Errorf("getting docker client: %w", err)
 	}
 
-	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
-	// remove minikubeProfile from here and instead detect it by matching the
-	// kubecontext API Server to minikube profiles
-
-	localCluster, err := getLocalCluster(cfg.GlobalConfig(), cfg.MinikubeProfile(), cfg.DetectMinikube())
-	if err != nil {
-		return nil, fmt.Errorf("getting localCluster: %w", err)
-	}
-
-	imageLoadingRequired, err := isImageLoadingRequired(cfg.GlobalConfig())
-	if err != nil {
-		return nil, fmt.Errorf("getting imageLoadingRequired: %w", err)
-	}
+	cluster := cfg.GetCluster()
 
 	var pushImages bool
 	if cfg.Pipeline().Build.LocalBuild.Push == nil {
-		pushImages = !localCluster && !imageLoadingRequired
-		logrus.Debugf("push value not present, defaulting to %t because localCluster is %t and imageLoadingRequired is %t", pushImages, localCluster, imageLoadingRequired)
+		pushImages = cluster.PushImages
+		logrus.Debugf("push value not present, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
 	} else {
 		pushImages = *cfg.Pipeline().Build.LocalBuild.Push
 	}
@@ -112,7 +98,7 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		cfg:                cfg,
 		kubeContext:        cfg.GetKubeContext(),
 		localDocker:        localDocker,
-		localCluster:       localCluster,
+		localCluster:       cluster.Local,
 		pushImages:         pushImages,
 		tryImportMissing:   tryImportMissing,
 		skipTests:          cfg.SkipTests(),

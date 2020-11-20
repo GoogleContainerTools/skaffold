@@ -59,7 +59,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
-	if r.imagesAreLocal && r.runCtx.ImageLoadingRequired {
+	if r.imagesAreLocal && r.runCtx.Cluster.LoadImages {
 		err := r.loadImagesIntoCluster(ctx, out, artifacts)
 		if err != nil {
 			return err

@@ -265,40 +265,43 @@ func TestIsUpdateCheckEnabled(t *testing.T) {
 	}
 }
 
-func TestIsDefaultLocal(t *testing.T) {
-	tests := []struct {
-		context       string
-		expectedLocal bool
-	}{
-		{context: "kind-other", expectedLocal: true},
-		{context: "kind@kind", expectedLocal: true},
-		{context: "k3d-k3s-default", expectedLocal: true},
-		{context: "docker-for-desktop", expectedLocal: true},
-		{context: "minikube", expectedLocal: true},
-		{context: "docker-desktop", expectedLocal: true},
-		{context: "anything-else", expectedLocal: false},
-		{context: "kind@blah", expectedLocal: false},
-		{context: "other-kind", expectedLocal: false},
-		{context: "not-k3d", expectedLocal: false},
-	}
-	for _, test := range tests {
-		testutil.Run(t, "", func(t *testutil.T) {
-			t.Override(&cluster.GetClient, func() cluster.Client { return fakeClient{} })
-
-			local := isDefaultLocal(test.context, true)
-			t.CheckDeepEqual(test.expectedLocal, local)
-			local = isDefaultLocal(test.context, false)
-			t.CheckDeepEqual(test.expectedLocal, local)
-		})
-	}
-}
-
 type fakeClient struct{}
 
 func (fakeClient) IsMinikube(kubeContext string) bool        { return kubeContext == "minikube" }
 func (fakeClient) MinikubeExec(...string) (*exec.Cmd, error) { return nil, nil }
 
-func TestIsImageLoadingRequired(t *testing.T) {
+func TestClusterLocal(t *testing.T) {
+	tests := []struct {
+		cfg           *ContextConfig
+		context       string
+		expectedLocal bool
+		expectedLoad  bool
+	}{
+		{cfg: &ContextConfig{Kubecontext: "kind-other"}, expectedLocal: true},
+		{cfg: &ContextConfig{Kubecontext: "kind@kind"}, expectedLocal: true},
+		{cfg: &ContextConfig{Kubecontext: "k3d-k3s-default"}, expectedLocal: true},
+		{cfg: &ContextConfig{Kubecontext: "docker-for-desktop"}, expectedLocal: true},
+		{cfg: &ContextConfig{Kubecontext: "minikube"}, expectedLocal: true},
+		{cfg: &ContextConfig{Kubecontext: "docker-desktop"}, expectedLocal: true},
+		{cfg: &ContextConfig{Kubecontext: "anything-else"}, expectedLocal: false},
+		{cfg: &ContextConfig{Kubecontext: "kind@blah"}, expectedLocal: false},
+		{cfg: &ContextConfig{Kubecontext: "other-kind"}, expectedLocal: false},
+		{cfg: &ContextConfig{Kubecontext: "not-k3d"}, expectedLocal: false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
+			t.Override(&cluster.GetClient, func() cluster.Client { return fakeClient{} })
+
+			cluster, _ := GetCluster("dummyname", "", true)
+			t.CheckDeepEqual(test.expectedLocal, cluster.Local)
+
+			cluster, _ = GetCluster("dummyname", "", false)
+			t.CheckDeepEqual(test.expectedLocal, cluster.Local)
+		})
+	}
+}
+func TestClusterLoadImages(t *testing.T) {
 	tests := []struct {
 		cfg      *ContextConfig
 		expected bool
@@ -320,9 +323,8 @@ func TestIsImageLoadingRequired(t *testing.T) {
 		testutil.Run(t, "", func(t *testutil.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
 
-			imageLoadingRequired, _ := IsImageLoadingRequired("dummyname")
-
-			t.CheckDeepEqual(test.expected, imageLoadingRequired)
+			cluster, _ := GetCluster("dummyname", "", false)
+			t.CheckDeepEqual(test.expected, cluster.LoadImages)
 		})
 	}
 }

@@ -58,3 +58,9 @@ func (m Muted) MuteDeploy() bool      { return m.mute("deploy") }
 func (m Muted) mute(phase string) bool {
 	return util.StrSliceContains(m.Phases, phase) || util.StrSliceContains(m.Phases, "all")
 }
+
+type Cluster struct {
+	Local      bool
+	PushImages bool
+	LoadImages bool
+}
