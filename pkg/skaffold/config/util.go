@@ -227,12 +227,16 @@ func GetCluster(configFile string, minikubeProfile string, detectMinikube bool) 
 	kindDisableLoad := cfg.KindDisableLoad != nil && *cfg.KindDisableLoad
 	k3dDisableLoad := cfg.K3dDisableLoad != nil && *cfg.K3dDisableLoad
 
+	// load images for local kind/k3d cluster unless explicitly disabled
 	loadImages := local && ((isKindCluster && !kindDisableLoad) || (isK3dCluster && !k3dDisableLoad))
+
+	// push images for remote cluster or local kind/k3d cluster with image loading disabled
+	pushImages := !local || (isKindCluster && kindDisableLoad) || (isK3dCluster && k3dDisableLoad)
 
 	return Cluster{
 		Local:      local,
 		LoadImages: loadImages,
-		PushImages: !loadImages,
+		PushImages: pushImages,
 	}, nil
 }
 

@@ -272,78 +272,95 @@ func (fakeClient) MinikubeExec(...string) (*exec.Cmd, error) { return nil, nil }
 
 func TestGetCluster(t *testing.T) {
 	tests := []struct {
-		cfg      *ContextConfig
-		profile  string
-		expected Cluster
+		description string
+		cfg         *ContextConfig
+		profile     string
+		expected    Cluster
 	}{
 		{
-			cfg:      &ContextConfig{Kubecontext: "kind-other"},
-			expected: Cluster{Local: true, LoadImages: true, PushImages: false},
+			description: "kind",
+			cfg:         &ContextConfig{Kubecontext: "kind-other"},
+			expected:    Cluster{Local: true, LoadImages: true, PushImages: false},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "kind-other", LocalCluster: util.BoolPtr(false)},
-			expected: Cluster{Local: false, LoadImages: false, PushImages: true},
+			description: "kind with local-cluster=false",
+			cfg:         &ContextConfig{Kubecontext: "kind-other", LocalCluster: util.BoolPtr(false)},
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "kind-other", KindDisableLoad: util.BoolPtr(true)},
-			expected: Cluster{Local: true, LoadImages: false, PushImages: true},
+			description: "kind with kind-disable-load=true",
+			cfg:         &ContextConfig{Kubecontext: "kind-other", KindDisableLoad: util.BoolPtr(true)},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: true},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "kind@kind"},
-			expected: Cluster{Local: true, LoadImages: true, PushImages: false},
+			description: "kind with legacy name",
+			cfg:         &ContextConfig{Kubecontext: "kind@kind"},
+			expected:    Cluster{Local: true, LoadImages: true, PushImages: false},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "k3d-k3s-default"},
-			expected: Cluster{Local: true, LoadImages: true, PushImages: false},
+			description: "k3d",
+			cfg:         &ContextConfig{Kubecontext: "k3d-k3s-default"},
+			expected:    Cluster{Local: true, LoadImages: true, PushImages: false},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "k3d-k3s-default", LocalCluster: util.BoolPtr(false)},
-			expected: Cluster{Local: false, LoadImages: false, PushImages: true},
+			description: "k3d with local-cluster=false",
+			cfg:         &ContextConfig{Kubecontext: "k3d-k3s-default", LocalCluster: util.BoolPtr(false)},
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "k3d-k3s-default", K3dDisableLoad: util.BoolPtr(true)},
-			expected: Cluster{Local: true, LoadImages: false, PushImages: true},
+			description: "k3d with disable-load=true",
+			cfg:         &ContextConfig{Kubecontext: "k3d-k3s-default", K3dDisableLoad: util.BoolPtr(true)},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: true},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "docker-for-desktop"},
-			expected: Cluster{Local: true, LoadImages: false, PushImages: true},
+			description: "docker-for-desktop",
+			cfg:         &ContextConfig{Kubecontext: "docker-for-desktop"},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "minikube"},
-			expected: Cluster{Local: true, LoadImages: false, PushImages: true},
+			description: "minikube",
+			cfg:         &ContextConfig{Kubecontext: "minikube"},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "docker-desktop"},
-			expected: Cluster{Local: true, LoadImages: false, PushImages: true},
+			description: "docker-desktop",
+			cfg:         &ContextConfig{Kubecontext: "docker-desktop"},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "some-cluster", LocalCluster: util.BoolPtr(true)},
-			expected: Cluster{Local: true, LoadImages: false, PushImages: true},
+			description: "generic cluster with local-cluster=true",
+			cfg:         &ContextConfig{Kubecontext: "some-cluster", LocalCluster: util.BoolPtr(true)},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "some-cluster", LocalCluster: util.BoolPtr(true)},
-			profile:  "someprofile",
-			expected: Cluster{Local: true, LoadImages: false, PushImages: true},
+			description: "generic cluster with minikube profile",
+			cfg:         &ContextConfig{Kubecontext: "some-cluster"},
+			profile:     "someprofile",
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "anything-else"},
-			expected: Cluster{Local: false, LoadImages: false, PushImages: true},
+			description: "generic cluster",
+			cfg:         &ContextConfig{Kubecontext: "anything-else"},
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "kind@blah"},
-			expected: Cluster{Local: false, LoadImages: false, PushImages: true},
+			description: "not a legacy kind cluster",
+			cfg:         &ContextConfig{Kubecontext: "kind@blah"},
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "other-kind"},
-			expected: Cluster{Local: false, LoadImages: false, PushImages: true},
+			description: "not a kind cluster",
+			cfg:         &ContextConfig{Kubecontext: "other-kind"},
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
 		},
 		{
-			cfg:      &ContextConfig{Kubecontext: "not-k3d"},
-			expected: Cluster{Local: false, LoadImages: false, PushImages: true},
+			description: "not a k3d cluster",
+			cfg:         &ContextConfig{Kubecontext: "not-k3d"},
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
 		},
 	}
 	for _, test := range tests {
-		testutil.Run(t, "", func(t *testutil.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeClient{} })
 
