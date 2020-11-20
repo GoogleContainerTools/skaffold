@@ -2,10 +2,20 @@ import { html, render } from 'https://unpkg.com/lit-html@1.1.2/lit-html.js';
 import { unsafeHTML } from 'https://unpkg.com/lit-html@1.1.2/directives/unsafe-html.js';
 
 var version;
+let latest;
 (async function() {
+  const versionParam = "?version=";
+  const index = window.location.href.indexOf(versionParam);
   const table = document.getElementById('table');
-  version = table.attributes['data-version'].value;
-  version = version.replace('skaffold/', '');
+
+  latest = table.attributes['latest'].value.trim();
+  if (index === -1) {
+    version = table.attributes['data-version'].value.trim();
+    version = version.replace('skaffold/', '');
+  } else {
+    version = window.location.href.substr(index + versionParam.length);
+    table.attributes['data-version'].value = 'skaffold/' + version;
+  }
 
   const response = await fetch(`/schemas/${version}.json`);
   const json = await response.json();
@@ -59,7 +69,10 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
     let valueClass = definition.examples ? 'example' : 'value';
 
     // Description
-    const desc = definition['x-intellij-html-description'];
+    let desc = definition['x-intellij-html-description'];
+    if (!desc) {
+      desc = ""
+    }
     
     // Don't duplicate definitions of top level sections such as build, test, deploy and portForward.
     if ((name === 'Profile') && definitions['SkaffoldConfig'].properties[key]) {
@@ -80,6 +93,9 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
     if (definition.$ref) {
       // Check if the referenced description is a final one
       const refName = definition.$ref.replace('#/definitions/', '');
+      if (desc === "" && definitions[refName]['x-intellij-html-description']) {
+        desc = definitions[refName]['x-intellij-html-description'];
+      }
       if (!definitions[refName].properties && !definitions[refName].anyOf) {
         value = '{}';
       }
@@ -95,6 +111,10 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
         </tr>
       `;
     } else if (definition.items && definition.items.$ref) {
+      const refName = definition.items.$ref.replace('#/definitions/', '');
+      if (desc === "" && definitions[refName]['x-intellij-html-description']) {
+        desc = definitions[refName]['x-intellij-html-description'];
+      }
       yield html`
         <tr class="top">
           <td>
@@ -177,6 +197,7 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
           <td>
             <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:</span>
             <span class="${valueClass}">${value}</span>
+            <span class="${keyClass}">${getLatest(key === 'apiVersion' && latest === value)}</span>
           </td>
           <td class="comment">#&nbsp;</td>
           <td class="comment">${unsafeHTML(desc)}</td>
@@ -203,6 +224,10 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
       }
     }
   }
+}
+
+function getLatest(isLatest) {
+  return isLatest ? "latest" : "";
 }
 
 function anchor(path, label) {
