@@ -273,12 +273,16 @@ func (fakeClient) MinikubeExec(...string) (*exec.Cmd, error) { return nil, nil }
 func TestGetCluster(t *testing.T) {
 	tests := []struct {
 		cfg      *ContextConfig
-		context  string
+		profile  string
 		expected Cluster
 	}{
 		{
 			cfg:      &ContextConfig{Kubecontext: "kind-other"},
 			expected: Cluster{Local: true, LoadImages: true, PushImages: false},
+		},
+		{
+			cfg:      &ContextConfig{Kubecontext: "kind-other", LocalCluster: util.BoolPtr(false)},
+			expected: Cluster{Local: false, LoadImages: false, PushImages: true},
 		},
 		{
 			cfg:      &ContextConfig{Kubecontext: "kind-other", KindDisableLoad: util.BoolPtr(true)},
@@ -291,6 +295,10 @@ func TestGetCluster(t *testing.T) {
 		{
 			cfg:      &ContextConfig{Kubecontext: "k3d-k3s-default"},
 			expected: Cluster{Local: true, LoadImages: true, PushImages: false},
+		},
+		{
+			cfg:      &ContextConfig{Kubecontext: "k3d-k3s-default", LocalCluster: util.BoolPtr(false)},
+			expected: Cluster{Local: false, LoadImages: false, PushImages: true},
 		},
 		{
 			cfg:      &ContextConfig{Kubecontext: "k3d-k3s-default", K3dDisableLoad: util.BoolPtr(true)},
@@ -306,6 +314,15 @@ func TestGetCluster(t *testing.T) {
 		},
 		{
 			cfg:      &ContextConfig{Kubecontext: "docker-desktop"},
+			expected: Cluster{Local: true, LoadImages: false, PushImages: true},
+		},
+		{
+			cfg:      &ContextConfig{Kubecontext: "some-cluster", LocalCluster: util.BoolPtr(true)},
+			expected: Cluster{Local: true, LoadImages: false, PushImages: true},
+		},
+		{
+			cfg:      &ContextConfig{Kubecontext: "some-cluster", LocalCluster: util.BoolPtr(true)},
+			profile:  "someprofile",
 			expected: Cluster{Local: true, LoadImages: false, PushImages: true},
 		},
 		{
@@ -330,10 +347,10 @@ func TestGetCluster(t *testing.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
 			t.Override(&cluster.GetClient, func() cluster.Client { return fakeClient{} })
 
-			cluster, _ := GetCluster("dummyname", "", true)
+			cluster, _ := GetCluster("dummyname", test.profile, true)
 			t.CheckDeepEqual(test.expected, cluster)
 
-			cluster, _ = GetCluster("dummyname", "", false)
+			cluster, _ = GetCluster("dummyname", test.profile, false)
 			t.CheckDeepEqual(test.expected, cluster)
 		})
 	}

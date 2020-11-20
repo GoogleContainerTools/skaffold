@@ -281,8 +281,8 @@ func TestNewBuilder(t *testing.T) {
 		description   string
 		shouldErr     bool
 		expectedPush  bool
-		localBuild    latest.LocalBuild
 		cluster       config.Cluster
+		localBuild    latest.LocalBuild
 		localDockerFn func(docker.Config) (docker.LocalDaemon, error)
 	}{
 		{

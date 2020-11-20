@@ -199,50 +199,41 @@ func GetCluster(configFile string, minikubeProfile string, detectMinikube bool) 
 		return Cluster{}, err
 	}
 
-	local := isLocalCluster(cfg, minikubeProfile, detectMinikube)
-
 	kubeContext := cfg.Kubecontext
+	isKindCluster, isK3dCluster := IsKindCluster(kubeContext), IsK3dCluster(kubeContext)
+
+	var local bool
+	switch {
+	case minikubeProfile != "":
+		local = true
+
+	case cfg.LocalCluster != nil:
+		logrus.Infof("Using local-cluster=%t from config", *cfg.LocalCluster)
+		local = *cfg.LocalCluster
+
+	case kubeContext == constants.DefaultMinikubeContext ||
+		kubeContext == constants.DefaultDockerForDesktopContext ||
+		kubeContext == constants.DefaultDockerDesktopContext ||
+		isKindCluster || isK3dCluster:
+		local = true
+
+	case detectMinikube:
+		local = cluster.GetClient().IsMinikube(kubeContext)
+
+	default:
+		local = false
+	}
+
 	kindDisableLoad := cfg.KindDisableLoad != nil && *cfg.KindDisableLoad
 	k3dDisableLoad := cfg.K3dDisableLoad != nil && *cfg.K3dDisableLoad
 
-	loadImages := (IsKindCluster(kubeContext) && !kindDisableLoad) ||
-		(IsK3dCluster(kubeContext) && !k3dDisableLoad)
-
-	pushImages := !local || !loadImages
+	loadImages := local && ((isKindCluster && !kindDisableLoad) || (isK3dCluster && !k3dDisableLoad))
 
 	return Cluster{
 		Local:      local,
 		LoadImages: loadImages,
-		PushImages: pushImages,
+		PushImages: !loadImages,
 	}, nil
-}
-
-func isLocalCluster(cfg *ContextConfig, minikubeProfile string, detectMinikubeCluster bool) bool {
-	if minikubeProfile != "" {
-		return true
-	}
-
-	// when set, the local-cluster config takes precedence
-	if cfg.LocalCluster != nil {
-		logrus.Infof("Using local-cluster=%v from config", *cfg.LocalCluster)
-		return *cfg.LocalCluster
-	}
-
-	kubeContext := cfg.Kubecontext
-
-	if kubeContext == constants.DefaultMinikubeContext ||
-		kubeContext == constants.DefaultDockerForDesktopContext ||
-		kubeContext == constants.DefaultDockerDesktopContext ||
-		IsKindCluster(kubeContext) ||
-		IsK3dCluster(kubeContext) {
-		return true
-	}
-
-	if detectMinikubeCluster {
-		return cluster.GetClient().IsMinikube(kubeContext)
-	}
-
-	return false
 }
 
 // IsKindCluster checks that the given `kubeContext` is talking to `kind`.
