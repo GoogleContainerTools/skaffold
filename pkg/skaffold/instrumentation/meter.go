@@ -49,26 +49,63 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
+// skaffoldMeter describes the data used to determine operational metrics.
 type skaffoldMeter struct {
-	ExitCode       int
+	// ExitCode The exit code returned by skaffold at the end of execution.
+	ExitCode int
+
+	// BuildArtifacts The number of artifacts built in the current execution as defined in skaffold.yaml.
 	BuildArtifacts int
-	Command        string
-	Version        string
-	OS             string
-	Arch           string
-	PlatformType   string
-	Deployers      []string
-	EnumFlags      map[string]string
-	Builders       map[string]int
-	SyncType       map[string]bool
-	DevIterations  []devIteration
-	StartTime      time.Time
-	Duration       time.Duration
-	ErrorCode      proto.StatusCode
+
+	// Command The command that is used to execute skaffold `dev, build, render, run, etc.`.
+	Command string
+
+	// Version The version of skaffold being used "v1.18.0, v1.19.1, etc.".
+	Version string
+
+	// OS The OS running skaffold as returned from runtime.GOOS.
+	OS string
+
+	// Arch The architecture running skaffold as returned from runtime.GOARCH.
+	Arch string
+
+	// PlatformType Where skaffold is deploying to (sync, build, or google cloud build).
+	PlatformType string
+
+	// Deployers All the deployers used in the skaffold execution.
+	Deployers []string
+
+	// EnumFlags Any flags passed into Skaffld that have a pre-defined list of
+	// valid values e.g. `'–cache-artifacts=false', '–mute-logs=["build", "deploy"]'`.
+	EnumFlags map[string]string
+
+	// Builders All the builders used to build the artifacts built.
+	Builders map[string]int
+
+	// SyncType The sync type used in the build configuration: infer, auto, and/or manual.
+	SyncType map[string]bool
+
+	// DevIterations The error results of the various dev iterations and the
+	// reasons they were triggered. The triggers can be one sync, build or deploy.
+	DevIterations []devIteration
+
+	// StartTime the start time of the skaffold program, used to track how long skaffold took to finish executing.
+	StartTime time.Time
+
+	// Duration of skaffold instance.
+	Duration time.Duration
+
+	// ErrorCode Skaffold reports [error codes](/docs/references/api/grpc/#statuscode)
+	// and these are monitored in order to determine the most frequent errors.
+	ErrorCode proto.StatusCode
 }
 
+// devIteration describes how an iteration and started and if an error happened.
 type devIteration struct {
-	Intent    string
+	// Intent is the cause of initiating the dev iteration (sync, build, deploy).
+	Intent string
+
+	// ErrorCode is the error that may have occured during the (sync/build/deploy).
 	ErrorCode proto.StatusCode
 }
 
@@ -201,7 +238,9 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 	return nil
 }
 
+// creds contains the gcp project id.
 type creds struct {
+	// ProjectID is the id of the gcp project which to upload metrics to.
 	ProjectID string `json:"project_id"`
 }
 
