@@ -84,7 +84,7 @@ ADD server.go .
 
 const buildKitDockerfile = `
 # syntax = docker/dockerfile:1-experimental
-FROM golang:1.14
+FROM golang:1.9.2
 COPY server.go .
 RUN --mount=type=cache,target=/go/pkg/mod go build .
 `
@@ -271,7 +271,7 @@ func TestGetDependencies(t *testing.T) {
 			description: "buildkit dockerfile",
 			dockerfile:  buildKitDockerfile,
 			workspace:   "",
-			expected:    []string{"Dockerfile", "worker.go"},
+			expected:    []string{"Dockerfile", "server.go"},
 		},
 		{
 			description: "copy dependency",
