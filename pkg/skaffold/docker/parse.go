@@ -27,7 +27,6 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
-	"github.com/moby/buildkit/frontend/dockerfile/instructions"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/sirupsen/logrus"
@@ -77,10 +76,12 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 		return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
 	}
 
+	// TODO: re-enable this after updating moby/buildkit dependency
+	// https://github.com/GoogleContainerTools/skaffold/issues/5049
 	// instructions.Parse will check for malformed Dockerfile
-	if _, _, err := instructions.Parse(res.AST); err != nil {
-		return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
-	}
+	// if _, _, err := instructions.Parse(res.AST); err != nil {
+	// 	return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
+	// }
 
 	dockerfileLines := res.AST.Children
 
