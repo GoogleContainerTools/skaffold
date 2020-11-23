@@ -355,6 +355,13 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--secret", "id=mysecret,src=foo.src,dst=foo.dst"},
 		},
 		{
+			description: "ssh with no source",
+			artifact: &latest.DockerArtifact{
+				SSH: "default",
+			},
+			want: []string{"--ssh", "default"},
+		},
+		{
 			description: "all",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{

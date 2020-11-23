@@ -167,8 +167,8 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 }
 
 func (l *localDaemon) CheckCompatible(a *latest.DockerArtifact) error {
-	if a.Secret != nil {
-		return fmt.Errorf("docker build secrets require BuildKit - set `useBuildkit: true` in your config, or run with `DOCKER_BUILDKIT=1`")
+	if a.Secret != nil || a.SSH != "" {
+		return fmt.Errorf("docker build options, secrets and ssh, require BuildKit - set `useBuildkit: true` in your config, or run with `DOCKER_BUILDKIT=1`")
 	}
 	return nil
 }
@@ -508,6 +508,10 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 			secretString += ",dst=" + a.Secret.Destination
 		}
 		args = append(args, "--secret", secretString)
+	}
+
+	if a.SSH != "" {
+		args = append(args, "--ssh", a.SSH)
 	}
 
 	return args, nil

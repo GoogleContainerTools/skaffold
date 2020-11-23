@@ -1125,6 +1125,9 @@ type DockerArtifact struct {
 	// Secret contains information about a local secret passed to `docker build`,
 	// along with optional destination information.
 	Secret *DockerSecret `yaml:"secret,omitempty"`
+
+	// SSH is used to pass in --ssh to docker build to use SSH agent. Format is "default|<id>[=<socket>|<key>[,<key>]]".
+	SSH string `yaml:"ssh,omitempty"`
 }
 
 // DockerSecret contains information about a local secret passed to `docker build`,
