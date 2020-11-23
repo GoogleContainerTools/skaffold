@@ -47,6 +47,8 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 	}
 
 	newConfig, newManifests, err := Initialize(out, c, a)
+	// If the --analyze flag is used, we return early with the result of PrintAnalysis()
+	// TODO(marlongamez): Figure out a cleaner way to do this. Might have to change return values to include the different Initializers.
 	if err != nil || c.Analyze {
 		return err
 	}
@@ -73,6 +75,7 @@ See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed gui
 }
 
 // Initialize uses the information gathered by the analyzer to create a skaffold config and generate kubernetes manifests.
+// The returned map[string][]byte represents a mapping from generated config name to its respective manifest data held in a []byte
 func Initialize(out io.Writer, c config.Config, a *analyze.ProjectAnalysis) (*latest.SkaffoldConfig, map[string][]byte, error) {
 	deployInitializer := deploy.NewInitializer(a.Manifests(), a.KustomizeBases(), a.KustomizePaths(), c)
 	images := deployInitializer.GetImages()
