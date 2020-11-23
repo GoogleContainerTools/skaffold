@@ -21,8 +21,8 @@ jobs:
         echo Malformed title for PR; failed to extract semVer tag
         return 1
         fi
-        echo ::set-env name=TAG_NAME::"v${t}"
-        echo ::set-env name=RELEASE_NAME::"v${t} Release"
+        echo TAG_NAME="v${t}" >> $GITHUB_ENV
+        echo RELEASE_NAME="v${t} Release" >> $GITHUB_ENV
 
     - name: Create and push Tag
       run: |
