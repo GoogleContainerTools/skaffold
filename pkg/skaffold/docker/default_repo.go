@@ -19,13 +19,15 @@ package docker
 import (
 	"regexp"
 	"strings"
+
+	"github.com/docker/distribution/reference"
 )
 
 const maxLength = 255
 
 var (
 	escapeRegex = regexp.MustCompile(`[/._:@]`)
-	prefixRegex = regexp.MustCompile(`(.*\.)?gcr.io/[a-zA-Z0-9-_]+/?`)
+	prefixRegex = regexp.MustCompile(`^` + reference.DomainRegexp.String() + `/[a-z0-9]+/?`)
 )
 
 func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, error) {
@@ -68,7 +70,7 @@ func replace(defaultRepo string, baseImage string) string {
 }
 
 func registrySupportsMultiLevelRepos(repo string) bool {
-	return strings.Contains(repo, "gcr.io")
+	return strings.Contains(repo, "gcr.io") || strings.Contains(repo, "-docker.pkg.dev")
 }
 
 func truncate(image string) string {

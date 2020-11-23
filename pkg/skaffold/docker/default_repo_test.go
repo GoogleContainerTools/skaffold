@@ -37,6 +37,12 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			expectedImage: "gcr.io/default/gcr.io/some/registry",
 		},
 		{
+			description:   "basic AR concatenation",
+			image:         "github.com/org/app",
+			defaultRepo:   "us-central1-docker.pkg.dev/default",
+			expectedImage: "us-central1-docker.pkg.dev/default/github.com/org/app",
+		},
+		{
 			description:   "no default repo set",
 			image:         "gcr.io/some/registry",
 			expectedImage: "gcr.io/some/registry",
