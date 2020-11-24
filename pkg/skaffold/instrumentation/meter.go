@@ -69,3 +69,7 @@ func InitMeter(runCtx *runcontext.RunContext, config *latest.SkaffoldConfig) {
 	meter.Deployers = yamltags.GetYamlTags(config.Deploy.DeployType)
 	meter.BuildArtifacts = len(config.Pipeline.Build.Artifacts)
 }
+
+func SetErrorCode(errorCode proto.StatusCode) {
+	meter.ErrorCode = errorCode
+}

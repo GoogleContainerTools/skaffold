@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -73,12 +74,14 @@ func ActionableErr(phase Phase, err error) *proto.ActionableErr {
 
 func ShowAIError(err error) error {
 	if IsSkaffoldErr(err) {
+		instrumentation.SetErrorCode(err.(Error).StatusCode())
 		return err
 	}
 
 	var knownProblems = append(knownBuildProblems, knownDeployProblems...)
 	for _, v := range append(knownProblems, knownInitProblems...) {
 		if v.regexp.MatchString(err.Error()) {
+			instrumentation.SetErrorCode(v.errCode)
 			if suggestions := v.suggestion(skaffoldOpts); suggestions != nil {
 				description := fmt.Sprintf("%s\n", err)
 				if v.description != nil {
