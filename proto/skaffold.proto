@@ -413,9 +413,30 @@ enum StatusCode {
     BUILD_PUSH_ACCESS_DENIED = 101;
     // Build error due to GCP project not found.
     BUILD_PROJECT_NOT_FOUND = 102;
+    // Docker build error due to docker daemon not running
     BUILD_DOCKER_DAEMON_NOT_RUNNING = 103;
     // Build error due to user application code, e.g. compilation error, dockerfile error etc
     BUILD_USER_ERROR = 104;
+    // Build error due to docker not available
+    BUILD_DOCKER_UNAVAILABLE = 105;
+    // Docker build error due to user not authorized to perform the action
+    BUILD_DOCKER_UNAUTHORIZED = 106;
+    // Docker system build error
+    BUILD_DOCKER_SYSTEM_ERR = 107;
+    // Docker build error due to Docker build container is already in the desired state
+    BUILD_DOCKER_NOT_MODIFIED_ERR = 108;
+    // Docker build error indicating a feature not supported
+    BUILD_DOCKER_NOT_IMPLEMENTED_ERR = 109;
+    // Docker build error indicates that for given build, data was lost or there is data corruption
+    BUILD_DOCKER_DATA_LOSS_ERR = 110;
+    // Docker build error indicates user is forbidden to perform the build or step/action.
+    BUILD_DOCKER_FORBIDDEN_ERR = 111;
+    // Docker build error due to some internal error and docker container state conflicts with the requested action and can't be performed
+    BUILD_DOCKER_CONFLICT_ERR = 112;
+    // Docker build error indicates the requested object does not exist
+    BUILD_DOCKER_ERROR_NOT_FOUND = 113;
+    // Docker build error indication invalid parameter sent to docker command
+    BUILD_DOCKER_INVALID_PARAM_ERR = 114;
     // Build error due to digest for built artifact could not be retrieved from docker daemon.
     BUILD_DOCKER_GET_DIGEST_ERR = 117;
     // Build error due to digest for built artifact could not be retrieved from registry.
@@ -504,6 +525,8 @@ enum StatusCode {
     CLEANUP_UNKNOWN = 508;
     // Initialization of the Skaffold session failed due to unknown reason(s)
     INIT_UNKNOWN = 510 ;
+    // Build failed due to docker unknown error
+    BUILD_DOCKER_UNKNOWN = 511;
 
     // FILE_SYNC Failures
 
@@ -534,6 +557,10 @@ enum StatusCode {
     BUILD_CANCELLED = 802;
     // Deploy cancelled due to user cancellation or one or more deployers failed.
     DEPLOY_CANCELLED = 803;
+    // Docker build cancelled.
+    BUILD_DOCKER_CANCELLED = 804;
+    // Build error due to docker deadline was reached before the docker action completed
+    BUILD_DOCKER_DEADLINE = 805;
 
     // Skaffold Initialization Phase session errors
 
@@ -580,12 +607,14 @@ enum SuggestionCode {
     GCLOUD_DOCKER_AUTH_CONFIGURE = 103;
     // Run docker auth configure
     DOCKER_AUTH_CONFIGURE = 104;
-    //Verify Gcloud Project
+    // Verify Gcloud Project
     CHECK_GCLOUD_PROJECT = 105;
     // Check if docker is running
     CHECK_DOCKER_RUNNING = 106;
     // Fix User Build Error
     FIX_USER_BUILD_ERR = 107;
+    // Docker build internal error, try again
+    DOCKER_BUILD_RETRY = 108;
     // Use a supported Jib plugin type
     FIX_JIB_PLUGIN_CONFIGURATION = 111;
 

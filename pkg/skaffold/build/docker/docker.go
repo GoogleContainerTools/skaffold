@@ -53,7 +53,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	}
 
 	if err != nil {
-		return "", err
+		return "", newBuildError(err)
 	}
 
 	if b.pushImages {

@@ -793,8 +793,18 @@ For Cancelled Error code, use range 800 to 850.
 | DEPLOY_SUCCESS | 202 | Deploy Success |
 | BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
 | BUILD_PROJECT_NOT_FOUND | 102 | Build error due to GCP project not found. |
-| BUILD_DOCKER_DAEMON_NOT_RUNNING | 103 |  |
+| BUILD_DOCKER_DAEMON_NOT_RUNNING | 103 | Docker build error due to docker daemon not running |
 | BUILD_USER_ERROR | 104 | Build error due to user application code, e.g. compilation error, dockerfile error etc |
+| BUILD_DOCKER_UNAVAILABLE | 105 | Build error due to docker not available |
+| BUILD_DOCKER_UNAUTHORIZED | 106 | Docker build error due to user not authorized to perform the action |
+| BUILD_DOCKER_SYSTEM_ERR | 107 | Docker system build error |
+| BUILD_DOCKER_NOT_MODIFIED_ERR | 108 | Docker build error due to Docker build container is already in the desired state |
+| BUILD_DOCKER_NOT_IMPLEMENTED_ERR | 109 | Docker build error indicating a feature not supported |
+| BUILD_DOCKER_DATA_LOSS_ERR | 110 | Docker build error indicates that for given build, data was lost or there is data corruption |
+| BUILD_DOCKER_FORBIDDEN_ERR | 111 | Docker build error indicates user is forbidden to perform the build or step/action. |
+| BUILD_DOCKER_CONFLICT_ERR | 112 | Docker build error due to some internal error and docker container state conflicts with the requested action and can't be performed |
+| BUILD_DOCKER_ERROR_NOT_FOUND | 113 | Docker build error indicates the requested object does not exist |
+| BUILD_DOCKER_INVALID_PARAM_ERR | 114 | Docker build error indication invalid parameter sent to docker command |
 | BUILD_DOCKER_GET_DIGEST_ERR | 117 | Build error due to digest for built artifact could not be retrieved from docker daemon. |
 | BUILD_REGISTRY_GET_DIGEST_ERR | 118 | Build error due to digest for built artifact could not be retrieved from registry. |
 | BUILD_UNKNOWN_JIB_PLUGIN_TYPE | 119 | Build error indicating unknown Jib plugin type. Should be one of [maven, gradle] |
@@ -831,6 +841,7 @@ For Cancelled Error code, use range 800 to 850.
 | DEVINIT_UNKNOWN | 507 | Dev Init failed due to unknown reason |
 | CLEANUP_UNKNOWN | 508 | Cleanup failed due to unknown reason |
 | INIT_UNKNOWN | 510 | Initialization of the Skaffold session failed due to unknown reason(s) |
+| BUILD_DOCKER_UNKNOWN | 511 | Build failed due to docker unknown error |
 | SYNC_INIT_ERROR | 601 | File Sync Initialize failure |
 | DEVINIT_REGISTER_BUILD_DEPS | 701 | Failed to configure watcher for build dependencies in dev loop |
 | DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
@@ -841,6 +852,8 @@ For Cancelled Error code, use range 800 to 850.
 | STATUSCHECK_DEADLINE_EXCEEDED | 801 | Deadline for status check exceeded |
 | BUILD_CANCELLED | 802 | Build Cancelled |
 | DEPLOY_CANCELLED | 803 | Deploy cancelled due to user cancellation or one or more deployers failed. |
+| BUILD_DOCKER_CANCELLED | 804 | Docker build cancelled. |
+| BUILD_DOCKER_DEADLINE | 805 | Build error due to docker deadline was reached before the docker action completed |
 | INIT_CREATE_TAGGER_ERROR | 901 | Skaffold was unable to create the configured tagger |
 | INIT_MINIKUBE_PAUSED_ERROR | 902 | Skaffold was unable to start as Minikube appears to be paused |
 | INIT_MINIKUBE_NOT_RUNNING_ERROR | 903 | Skaffold was unable to start as Minikube appears to be stopped |
@@ -870,6 +883,7 @@ Enum for Suggestion codes
 | CHECK_GCLOUD_PROJECT | 105 | Verify Gcloud Project |
 | CHECK_DOCKER_RUNNING | 106 | Check if docker is running |
 | FIX_USER_BUILD_ERR | 107 | Fix User Build Error |
+| DOCKER_BUILD_RETRY | 108 | Docker build internal error, try again |
 | FIX_JIB_PLUGIN_CONFIGURATION | 111 | Use a supported Jib plugin type |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |
