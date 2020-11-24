@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/docker/docker/api/types"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -80,6 +82,7 @@ func TestDockerCLIBuild(t *testing.T) {
 				"docker build . --file "+dockerfilePath+" -t tag --force-rm",
 				test.expectedEnv,
 			))
+			t.Override(&docker.DefaultAuthHelper, stubAuth{})
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
 
 			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv(test.extraEnv), test.localBuild.UseDockerCLI, test.localBuild.UseBuildkit, false, false, test.mode, nil, mockArtifactResolver{make(map[string]string)})
@@ -113,4 +116,13 @@ func (r mockArtifactResolver) GetImageTag(imageName string) (string, bool) {
 	}
 	val, found := r.m[imageName]
 	return val, found
+}
+
+type stubAuth struct{}
+
+func (t stubAuth) GetAuthConfig(string) (types.AuthConfig, error) {
+	return types.AuthConfig{}, nil
+}
+func (t stubAuth) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
+	return nil, nil
 }
