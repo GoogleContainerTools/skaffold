@@ -17,11 +17,18 @@ limitations under the License.
 package instrumentation
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"runtime"
 	"time"
 
+	"github.com/mitchellh/go-homedir"
 	flag "github.com/spf13/pflag"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -43,6 +50,7 @@ type skaffoldMeter struct {
 	SyncType       map[string]bool
 	DevIterations  []devIteration
 	StartTime      time.Time
+	Duration       time.Duration
 	ErrorCode      proto.StatusCode
 }
 
@@ -64,6 +72,7 @@ var (
 		ExitCode:      0,
 		ErrorCode:     proto.StatusCode_OK,
 	}
+	skipExport = os.Getenv("SKAFFOLD_EXPORT_METRICS")
 )
 
 func InitMeter(runCtx *runcontext.RunContext, config *latest.SkaffoldConfig) {
@@ -96,4 +105,33 @@ func AddDevIterationErr(i int, errorCode proto.StatusCode) {
 
 func AddFlag(flag *flag.Flag) {
 	meter.EnumFlags[flag.Name] = flag
+}
+
+func ExportMetrics(exitCode int) error {
+	home, err := homedir.Dir()
+	if err != nil {
+		return fmt.Errorf("retrieving home directory: %w", err)
+	}
+	meter.ExitCode = exitCode
+	meter.Duration = time.Since(meter.StartTime)
+	return exportMetrics(filepath.Join(home, constants.DefaultSkaffoldDir, constants.DefaultMetricFile), meter)
+}
+
+func exportMetrics(filename string, meter skaffoldMeter) error {
+	if skipExport != "true" || meter.Command == "" {
+		return nil
+	}
+	b, err := ioutil.ReadFile(filename)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	var meters []skaffoldMeter
+	err = json.Unmarshal(b, &meters)
+	if err != nil {
+		meters = []skaffoldMeter{}
+	}
+	meters = append(meters, meter)
+	b, _ = json.Marshal(meters)
+	return ioutil.WriteFile(filename, b, 0666)
 }
