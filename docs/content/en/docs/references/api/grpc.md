@@ -805,6 +805,8 @@ For Cancelled Error code, use range 800 to 850.
 | BUILD_DOCKER_CONFLICT_ERR | 112 | Docker build error due to some internal error and docker container state conflicts with the requested action and can't be performed |
 | BUILD_DOCKER_ERROR_NOT_FOUND | 113 | Docker build error indicates the requested object does not exist |
 | BUILD_DOCKER_INVALID_PARAM_ERR | 114 | Docker build error indication invalid parameter sent to docker command |
+| BUILD_DOCKERFILE_NOT_FOUND | 115 | Docker build failed due to dockerfile not found |
+| BUILD_DOCKER_CACHE_FROM_PULL_ERR | 116 | Docker build failed due `cacheFrom` user config error |
 | BUILD_DOCKER_GET_DIGEST_ERR | 117 | Build error due to digest for built artifact could not be retrieved from docker daemon. |
 | BUILD_REGISTRY_GET_DIGEST_ERR | 118 | Build error due to digest for built artifact could not be retrieved from registry. |
 | BUILD_UNKNOWN_JIB_PLUGIN_TYPE | 119 | Build error indicating unknown Jib plugin type. Should be one of [maven, gradle] |
@@ -884,6 +886,8 @@ Enum for Suggestion codes
 | CHECK_DOCKER_RUNNING | 106 | Check if docker is running |
 | FIX_USER_BUILD_ERR | 107 | Fix User Build Error |
 | DOCKER_BUILD_RETRY | 108 | Docker build internal error, try again |
+| FIX_CACHE_FROM_ARTIFACT_CONFIG | 109 | Fix `cacheFrom` config for given artifact and try again |
+| FIX_DOCKERFILE_CONFIG | 110 | Fix `dockerfile` config for a given artifact and try again. |
 | FIX_JIB_PLUGIN_CONFIGURATION | 111 | Use a supported Jib plugin type |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |

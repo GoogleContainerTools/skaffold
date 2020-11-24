@@ -437,6 +437,10 @@ enum StatusCode {
     BUILD_DOCKER_ERROR_NOT_FOUND = 113;
     // Docker build error indication invalid parameter sent to docker command
     BUILD_DOCKER_INVALID_PARAM_ERR = 114;
+    // Docker build failed due to dockerfile not found
+    BUILD_DOCKERFILE_NOT_FOUND = 115;
+    // Docker build failed due `cacheFrom` user config error
+    BUILD_DOCKER_CACHE_FROM_PULL_ERR = 116;
     // Build error due to digest for built artifact could not be retrieved from docker daemon.
     BUILD_DOCKER_GET_DIGEST_ERR = 117;
     // Build error due to digest for built artifact could not be retrieved from registry.
@@ -447,7 +451,6 @@ enum StatusCode {
     BUILD_JIB_GRADLE_DEP_ERR = 120;
     // Build error determining dependency for jib gradle project.
     BUILD_JIB_MAVEN_DEP_ERR = 121;
-
 
     // Container errors
 
@@ -527,6 +530,7 @@ enum StatusCode {
     INIT_UNKNOWN = 510 ;
     // Build failed due to docker unknown error
     BUILD_DOCKER_UNKNOWN = 511;
+
 
     // FILE_SYNC Failures
 
@@ -615,6 +619,10 @@ enum SuggestionCode {
     FIX_USER_BUILD_ERR = 107;
     // Docker build internal error, try again
     DOCKER_BUILD_RETRY = 108;
+    // Fix `cacheFrom` config for given artifact and try again
+    FIX_CACHE_FROM_ARTIFACT_CONFIG = 109;
+    // Fix `dockerfile` config for a given artifact and try again.
+    FIX_DOCKERFILE_CONFIG = 110;
     // Use a supported Jib plugin type
     FIX_JIB_PLUGIN_CONFIGURATION = 111;
 

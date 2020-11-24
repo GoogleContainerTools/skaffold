@@ -18,6 +18,7 @@ package docker
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/jsonmessage"
@@ -35,7 +36,6 @@ func newBuildError(err error) error {
 	switch errU.(type) {
 	case *jsonmessage.JSONError:
 		return sErrors.NewError(
-			err,
 			proto.ActionableErr{
 				Message: err.Error(),
 				ErrCode: proto.StatusCode_BUILD_USER_ERROR,
@@ -48,7 +48,6 @@ func newBuildError(err error) error {
 			})
 	default:
 		return sErrors.NewError(
-			err,
 			proto.ActionableErr{
 				Message: errU.Error(),
 				ErrCode: getErrorCode(errU),
@@ -91,4 +90,34 @@ func getErrorCode(err error) proto.StatusCode {
 	default:
 		return proto.StatusCode_BUILD_DOCKER_UNKNOWN
 	}
+}
+
+func dockerfileNotFound(err error, artifact string) error {
+	return sErrors.NewError(
+		proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_BUILD_DOCKERFILE_NOT_FOUND,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_FIX_DOCKERFILE_CONFIG,
+					Action: fmt.Sprintf("Dockerfile not found. Please check config `dockerfile` for artifact %s."+
+						"\nRefer https://skaffold.dev/docs/references/yaml/#build-artifacts-docker for details.", artifact),
+				},
+			},
+		})
+}
+
+func cacheFromPullErr(err error, artifact string) error {
+	return sErrors.NewError(
+		proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_BUILD_DOCKER_CACHE_FROM_PULL_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_FIX_CACHE_FROM_ARTIFACT_CONFIG,
+					Action: fmt.Sprintf("Fix `cacheFrom` config for artifact %s."+
+						"\nRefer https://skaffold.dev/docs/references/yaml/#build-artifacts-docker for details.", artifact),
+				},
+			},
+		})
 }
