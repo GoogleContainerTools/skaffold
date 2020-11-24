@@ -26,6 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 )
 
 var (
@@ -44,6 +45,7 @@ type Flag struct {
 	FlagAddMethod      string
 	DefinedOn          []string
 	Hidden             bool
+	IsEnum             bool
 
 	pflag *pflag.Flag
 }
@@ -99,6 +101,7 @@ var flagRegistry = []Flag{
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "cache-file",
@@ -126,6 +129,7 @@ var flagRegistry = []Flag{
 		},
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "rpc-port",
@@ -159,6 +163,7 @@ var flagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
+		IsEnum:        true,
 	},
 	{
 		Name:     "tail",
@@ -171,6 +176,7 @@ var flagRegistry = []Flag{
 		},
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug", "deploy"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "force",
@@ -179,6 +185,7 @@ var flagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "skip-tests",
@@ -187,6 +194,7 @@ var flagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug", "build"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "cleanup",
@@ -195,6 +203,7 @@ var flagRegistry = []Flag{
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "no-prune",
@@ -203,6 +212,7 @@ var flagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "no-prune-children",
@@ -211,6 +221,7 @@ var flagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "port-forward",
@@ -219,6 +230,7 @@ var flagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "status-check",
@@ -227,6 +239,7 @@ var flagRegistry = []Flag{
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "render-only",
@@ -235,6 +248,7 @@ var flagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "render-output",
@@ -297,6 +311,7 @@ var flagRegistry = []Flag{
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "trigger",
@@ -305,6 +320,7 @@ var flagRegistry = []Flag{
 		DefValue:      "notify",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"dev", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:     "auto-build",
@@ -318,6 +334,7 @@ var flagRegistry = []Flag{
 		},
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:     "auto-sync",
@@ -331,6 +348,7 @@ var flagRegistry = []Flag{
 		},
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:     "auto-deploy",
@@ -344,6 +362,7 @@ var flagRegistry = []Flag{
 		},
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "watch-image",
@@ -370,6 +389,7 @@ var flagRegistry = []Flag{
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"render"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "mute-logs",
@@ -378,6 +398,7 @@ var flagRegistry = []Flag{
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
 		DefinedOn:     []string{"dev", "run", "debug", "build", "deploy"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "wait-for-deletions",
@@ -386,6 +407,7 @@ var flagRegistry = []Flag{
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "wait-for-deletions-max",
@@ -419,6 +441,7 @@ var flagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "build-artifacts",
@@ -480,10 +503,14 @@ func AddFlags(cmd *cobra.Command) {
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		// Update default values.
 		for _, fl := range flagsForCommand {
+			flag := cmd.Flag(fl.Name)
 			if defValue, present := fl.DefValuePerCommand[cmd.Use]; present {
-				if flag := cmd.Flag(fl.Name); !flag.Changed {
+				if !flag.Changed {
 					flag.Value.Set(fmt.Sprintf("%v", defValue))
 				}
+			}
+			if fl.IsEnum {
+				instrumentation.AddFlag(flag)
 			}
 		}
 

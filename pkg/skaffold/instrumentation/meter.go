@@ -20,6 +20,8 @@ import (
 	"runtime"
 	"time"
 
+	flag "github.com/spf13/pflag"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -36,7 +38,7 @@ type skaffoldMeter struct {
 	Arch           string
 	PlatformType   string
 	Deployers      []string
-	EnumFlags      map[string]interface{}
+	EnumFlags      map[string]*flag.Flag
 	Builders       map[string]bool
 	SyncType       map[string]bool
 	DevIterations  []devIteration
@@ -53,6 +55,7 @@ var (
 	meter = skaffoldMeter{
 		OS:            runtime.GOOS,
 		Arch:          runtime.GOARCH,
+		EnumFlags:     map[string]*flag.Flag{},
 		Builders:      map[string]bool{},
 		SyncType:      map[string]bool{},
 		DevIterations: []devIteration{},
@@ -89,4 +92,8 @@ func AddDevIterationErr(i int, errorCode proto.StatusCode) {
 		meter.DevIterations = append(meter.DevIterations, devIteration{intent: "error"})
 	}
 	meter.DevIterations[i].errorCode = errorCode
+}
+
+func AddFlag(flag *flag.Flag) {
+	meter.EnumFlags[flag.Name] = flag
 }
