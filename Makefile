@@ -13,7 +13,7 @@
 # limitations under the License.
 GOPATH ?= $(shell go env GOPATH)
 GOOS ?= $(shell go env GOOS)
-GOARCH ?= amd64
+GOARCH ?= $(shell go env GOARCH)
 BUILD_DIR ?= ./out
 ORG = github.com/GoogleContainerTools
 PROJECT = skaffold
