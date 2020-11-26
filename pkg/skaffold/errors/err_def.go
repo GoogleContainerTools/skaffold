@@ -34,6 +34,7 @@ type ErrDef struct {
 	ae  proto.ActionableErr
 }
 
+
 func (e ErrDef) Error() string {
 	if s := concatSuggestions(e.Suggestions()); s != "" {
 		return fmt.Sprintf("%s. %s", e.ae.Message, concatSuggestions(e.Suggestions()))
@@ -52,6 +53,7 @@ func (e ErrDef) StatusCode() proto.StatusCode {
 func (e ErrDef) Suggestions() []*proto.Suggestion {
 	return e.ae.Suggestions
 }
+
 
 func NewError(err error, ae proto.ActionableErr) ErrDef {
 	return ErrDef{

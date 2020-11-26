@@ -866,6 +866,26 @@ For Cancelled Error code, use range 800 to 850.
 | INIT_CREATE_WATCH_TRIGGER_ERROR | 908 | Skaffold encountered an error when configuring file watching |
 | INIT_CREATE_ARTIFACT_DEP_ERROR | 909 | Skaffold encountered an error when evaluating artifact dependencies |
 | DEPLOY_CLUSTER_CONNECTION_ERR | 1001 | Unable to connect to cluster |
+| DEPLOY_DEBUG_HELPER_RETRIEVE_ERR | 1002 | Could not retrieve debug helpers. |
+| DEPLOY_CLEANUP_ERR | 1003 | Deploy clean up error |
+| DEPLOY_HELM_APPLY_LABELS | 1004 | Unable to apply helm labels. |
+| DEPLOY_HELM_USER_ERR | 1005 | Deploy error due to user deploy config for helm deployer |
+| DEPLOY_NO_MATCHING_BUILD | 1006 | Helm error when no build result is found of value specified in helm `artifactOverrides` |
+| DEPLOY_HELM_VERSION_GET_ERR | 1007 | Unable to get helm client version |
+| DEPLOY_HELM_MIN_VERSION_ERR | 1008 | Helm version not supported. Should be 3.0.0-beta.0 or greater. |
+| DEPLOY_KUBECTL_VERSION_ERR | 1109 | Unable to retrieve kubectl version |
+| DEPLOY_KUBECTL_OFFLINE_MODE_ERR | 1010 | User specified offline mode for rendering but remote manifests presents. |
+| DEPLOY_ERR_WAITING_FOR_DELETION | 1011 | Error waiting for previous version deletion before next version is active. |
+| DEPLOY_READ_MANIFEST_ERR | 1012 | Error reading manifests |
+| DEPLOY_READ_REMOTE_MANIFEST_ERR | 1013 | Error reading remote manifests |
+| DEPLOY_LIST_MANIFEST_ERR | 1014 | Errors listing manifests |
+| DEPLOY_KUBECTL_USER_ERR | 1015 | Deploy error due to user deploy config for kubectl deployer |
+| DEPLOY_KUSTOMIZE_USER_ERR | 1016 | Deploy error due to user deploy config for kustomize deployer |
+| DEPLOY_REPLACE_IMAGE_ERR | 1017 | Error replacing a built artifact in the manifests |
+| DEPLOY_TRANSFORM_MANIFEST_ERR | 1018 | Error transforming a manifest during skaffold debug |
+| DEPLOY_SET_LABEL_ERR | 1019 | Error setting user specified additional labels. |
+| DEPLOY_MANIFEST_WRITE_ERR | 1020 | Error writing hydrated kubernetes manifests. |
+| DEPLOY_GET_IMAGE_ERR | 1021 | Error getting images from a kubernetes manifest. |
 
 
 

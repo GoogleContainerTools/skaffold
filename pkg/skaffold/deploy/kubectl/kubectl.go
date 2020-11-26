@@ -19,7 +19,6 @@ package kubectl
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -32,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -130,19 +130,19 @@ func (k *Deployer) manifestFiles(manifests []string) ([]string, error) {
 
 	list, err := util.ExpandPathsGlob(k.workingDir, nonURLManifests)
 	if err != nil {
-		return nil, fmt.Errorf("expanding kubectl manifest paths: %w", err)
+		return nil, userErr(fmt.Errorf("expanding kubectl manifest paths: %w", err))
 	}
 
 	if len(gcsManifests) != 0 {
 		// return tmp dir of the downloaded manifests
 		tmpDir, err := manifest.DownloadFromGCS(gcsManifests)
 		if err != nil {
-			return nil, fmt.Errorf("downloading from GCS: %w", err)
+			return nil, userErr(fmt.Errorf("downloading from GCS: %w", err))
 		}
 		k.gcsManifestDir = tmpDir
 		l, err := util.ExpandPathsGlob(tmpDir, []string{"*"})
 		if err != nil {
-			return nil, fmt.Errorf("expanding kubectl manifest paths: %w", err)
+			return nil, userErr(fmt.Errorf("expanding kubectl manifest paths: %w", err))
 		}
 		list = append(list, l...)
 	}
@@ -170,7 +170,7 @@ func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.Ma
 	defer os.RemoveAll(k.gcsManifestDir)
 
 	if err != nil {
-		return nil, fmt.Errorf("listing manifests: %w", err)
+		return nil, listManifestErr(fmt.Errorf("listing manifests: %w", err))
 	}
 
 	// Append URL manifests
@@ -193,14 +193,14 @@ func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.Ma
 	// In case no URLs are provided, we can stay offline - no need to run "kubectl create" which
 	// would try to connect to a cluster (https://github.com/kubernetes/kubernetes/issues/51475)
 	if hasURLManifest {
-		return nil, errors.New("cannot use offline mode if URL manifests are configured")
+		return nil, offlineModeErr()
 	}
 
 	var manifestList manifest.ManifestList
 	for _, manifestFilePath := range manifests {
 		manifestFileContent, err := ioutil.ReadFile(manifestFilePath)
 		if err != nil {
-			return nil, fmt.Errorf("reading manifest file %v: %w", manifestFilePath, err)
+			return nil, readManifestErr(fmt.Errorf("reading manifest file %v: %w", manifestFilePath, err))
 		}
 		manifestList.Append(manifestFileContent)
 	}
@@ -221,7 +221,7 @@ func (k *Deployer) readRemoteManifest(ctx context.Context, name string) ([]byte,
 	var manifest bytes.Buffer
 	err := k.kubectl.RunInNamespace(ctx, nil, &manifest, "get", ns, args...)
 	if err != nil {
-		return nil, fmt.Errorf("getting manifest: %w", err)
+		return nil, readRemoteManifestErr(fmt.Errorf("getting remote manifests: %w", err))
 	}
 
 	return manifest.Bytes(), nil
@@ -244,18 +244,18 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 
 	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
+		return nil, deployerr.DebugHelperRetrieveErr(fmt.Errorf("retrieving debug helpers registry: %w", err))
 	}
 
 	manifests, err := k.readManifests(ctx, offline)
 	if err != nil {
-		return nil, fmt.Errorf("reading manifests: %w", err)
+		return nil, err
 	}
 
 	for _, m := range k.RemoteManifests {
 		manifest, err := k.readRemoteManifest(ctx, m)
 		if err != nil {
-			return nil, fmt.Errorf("get remote manifests: %w", err)
+			return nil, err
 		}
 
 		manifests = append(manifests, manifest)
@@ -264,7 +264,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 	if len(k.originalImages) == 0 {
 		k.originalImages, err = manifests.GetImages()
 		if err != nil {
-			return nil, fmt.Errorf("get images from manifests: %w", err)
+			return nil, err
 		}
 	}
 
@@ -301,7 +301,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	manifests, err := k.readManifests(ctx, false)
 	if err != nil {
-		return fmt.Errorf("reading manifests: %w", err)
+		return err
 	}
 
 	// revert remote manifests
@@ -312,23 +312,23 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 		for _, m := range k.RemoteManifests {
 			manifest, err := k.readRemoteManifest(ctx, m)
 			if err != nil {
-				return fmt.Errorf("get remote manifests: %w", err)
+				return err
 			}
 			rm = append(rm, manifest)
 		}
 
 		upd, err := rm.ReplaceImages(k.originalImages)
 		if err != nil {
-			return fmt.Errorf("replacing with originals: %w", err)
+			return err
 		}
 
 		if err := k.kubectl.Apply(ctx, out, upd); err != nil {
-			return fmt.Errorf("apply original: %w", err)
+			return err
 		}
 	}
 
 	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
-		return fmt.Errorf("delete: %w", err)
+		return err
 	}
 
 	return nil

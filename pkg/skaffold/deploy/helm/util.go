@@ -106,7 +106,7 @@ func (h *Deployer) binVer(ctx context.Context) (semver.Version, error) {
 
 func (h *Deployer) checkMinVersion(v semver.Version) error {
 	if v.LT(helm3Version) {
-		return fmt.Errorf("skaffold requires Helm version 3.0.0-beta.0 or greater")
+		return minVersionErr()
 	}
 	return nil
 }
@@ -179,7 +179,7 @@ func (h *Deployer) releaseNamespace(r latest.HelmRelease) (string, error) {
 	} else if r.Namespace != "" {
 		namespace, err := util.ExpandEnvTemplate(r.Namespace, nil)
 		if err != nil {
-			return "", fmt.Errorf("cannot parse the release namespace template: %w", err)
+			return "", userErr(fmt.Errorf("cannot parse the release namespace template: %w", err))
 		}
 		return namespace, nil
 	}

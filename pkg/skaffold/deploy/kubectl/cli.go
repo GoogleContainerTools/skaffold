@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	kubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
@@ -64,7 +65,7 @@ func NewCLI(cfg Config, flags latest.KubectlFlags, defaultNameSpace string) CLI 
 func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests manifest.ManifestList) error {
 	args := c.args(c.Flags.Delete, "--ignore-not-found=true", "-f", "-")
 	if err := c.Run(ctx, manifests.Reader(), out, "delete", args...); err != nil {
-		return fmt.Errorf("kubectl delete: %w", err)
+		return deployerr.CleanupErr(fmt.Errorf("kubectl delete: %w", err))
 	}
 
 	return nil
@@ -91,7 +92,7 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests manifest.Manif
 	}
 
 	if err := c.Run(ctx, updated.Reader(), out, "apply", c.args(c.Flags.Apply, args...)...); err != nil {
-		return fmt.Errorf("kubectl apply: %w", err)
+		return userErr(fmt.Errorf("kubectl apply: %w", err))
 	}
 
 	return nil
@@ -126,12 +127,12 @@ func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests man
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("%d resources failed to complete their deletion before a new deployment: %s", previousCount, previousList)
+			return waitForDeletionErr(fmt.Errorf("%d resources failed to complete their deletion before a new deployment: %s", previousCount, previousList))
 		default:
 			// List resources in json format.
 			buf, err := c.RunOutInput(ctx, manifests.Reader(), "get", c.args(nil, "-f", "-", "--ignore-not-found", "-ojson")...)
 			if err != nil {
-				return err
+				return waitForDeletionErr(err)
 			}
 
 			// No resource found.
@@ -142,7 +143,7 @@ func (c *CLI) WaitForDeletions(ctx context.Context, out io.Writer, manifests man
 			// Find which ones are marked for deletion. They have a `metadata.deletionTimestamp` field.
 			var result getResult
 			if err := json.Unmarshal(buf, &result); err != nil {
-				return err
+				return waitForDeletionErr(err)
 			}
 
 			var marked []string
@@ -186,7 +187,7 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (manifest.M
 	var dryRun = "--dry-run"
 	compTo1_18, err := c.CLI.CompareVersionTo(ctx, 1, 18)
 	if err != nil {
-		return nil, err
+		return nil, versionGetErr(err)
 	}
 	if compTo1_18 >= 0 {
 		dryRun += "=client"
@@ -199,7 +200,7 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (manifest.M
 
 	buf, err := c.RunOut(ctx, "create", args...)
 	if err != nil {
-		return nil, fmt.Errorf("kubectl create: %w", err)
+		return nil, readManifestErr(fmt.Errorf("kubectl create: %w", err))
 	}
 
 	var manifestList manifest.ManifestList
