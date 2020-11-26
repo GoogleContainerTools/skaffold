@@ -200,7 +200,6 @@ func envVarForImage(imageName string, digest string) map[string]string {
 
 // exec executes the helm command, writing combined stdout/stderr to the provided writer
 func (h *Deployer) exec(ctx context.Context, out io.Writer, useSecrets bool, env []string, args ...string) error {
-
 	args = append([]string{"--kube-context", h.kubeContext}, args...)
 	args = append(args, h.Flags.Global...)
 

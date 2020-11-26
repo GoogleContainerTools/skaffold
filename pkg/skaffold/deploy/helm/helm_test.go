@@ -953,7 +953,6 @@ func TestHelmDeploy(t *testing.T) {
 			_, err = deployer.Deploy(context.Background(), ioutil.Discard, test.builds)
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
-
 		})
 	}
 }
@@ -1022,7 +1021,7 @@ func TestHelmCleanup(t *testing.T) {
 				helm:      test.helm,
 				namespace: test.namespace,
 			}, nil)
-			if err != nil{
+			if err != nil {
 				t.Fatal(err)
 			}
 
@@ -1337,7 +1336,9 @@ func TestHelmRender(t *testing.T) {
 				helm:      test.helm,
 				namespace: test.namespace,
 			}, nil)
-
+			if err != nil {
+				t.Fatal(err)
+			}
 			err = deployer.Render(context.Background(), ioutil.Discard, test.builds, true, file)
 			t.CheckError(test.shouldErr, err)
 

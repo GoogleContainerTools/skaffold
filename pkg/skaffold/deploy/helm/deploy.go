@@ -114,7 +114,6 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string) (*Deployer, error
 
 // Deploy deploys the build results to the Kubernetes cluster
 func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
-
 	logrus.Infof("Deploying with helm v%s ...", h.bV)
 
 	var dRes []types.Artifact
