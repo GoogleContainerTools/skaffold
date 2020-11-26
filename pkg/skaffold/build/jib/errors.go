@@ -26,10 +26,9 @@ import (
 )
 
 func unknownPlugin(ws string) error {
-	s := fmt.Sprintf("Unknown Jib builder type for workspace %s", ws)
-	return sErrors.NewError(fmt.Errorf(s),
+	return sErrors.NewErrorWithStatusCode(
 		proto.ActionableErr{
-			Message: s,
+			Message: fmt.Sprintf("Unknown Jib builder type for workspace %s", ws),
 			ErrCode: proto.StatusCode_BUILD_UNKNOWN_JIB_PLUGIN_TYPE,
 			Suggestions: []*proto.Suggestion{
 				{

@@ -59,3 +59,9 @@ func NewError(err error, ae proto.ActionableErr) ErrDef {
 		ae:  ae,
 	}
 }
+
+func NewErrorWithStatusCode(ae proto.ActionableErr) ErrDef {
+	return ErrDef{
+		ae: ae,
+	}
+}
