@@ -31,7 +31,7 @@ func unknownPlugin(ws string) error {
 			Suggestions: []*proto.Suggestion{
 				{
 					SuggestionCode: proto.SuggestionCode_FIX_JIB_PLUGIN,
-					Action:         fmt.Sprintf("Please use one of supported jib plugins [%s, %s]", JibMaven, JibGradle),
+					Action:         fmt.Sprintf("Use one of supported Jib plugin types [%s, %s]", JibMaven, JibGradle),
 				},
 			},
 		})
@@ -45,13 +45,21 @@ func unableToDeterminePlugin(ws string, err error) error {
 			Suggestions: []*proto.Suggestion{
 				{
 					SuggestionCode: proto.SuggestionCode_FIX_JIB_PLUGIN,
-					Action:         fmt.Sprintf("Please use one of supported jib plugins [%s, %s]", JibMaven, JibGradle),
+					Action:         fmt.Sprintf("Use one of supported Jib plugin types [%s, %s]", JibMaven, JibGradle),
 				},
 			},
 		})
 }
 
-func dependencyErr(code proto.StatusCode, workspace string, err error) error {
+import ".../pkg/skaffold/build/jib/"
+
+func dependencyErr(type jib.PluginType, workspace string, err error) error {
+    var code proto.StatusCode
+    switch type {
+    case jib.JibMaven: code = StatusCode_BUILD_JIB_MAVEN_DEP_ERR
+    case jib.JibGradle: code = StatusCode_BUILD_JIB_GRADLE_DEP_ERR
+    default: logrus.Fatal("Unknown jib build type", type)
+    }
 	return sErrors.NewError(
 		proto.ActionableErr{
 			Message: fmt.Sprintf("could not fetch dependencies for workspace %s: %s", workspace, err.Error()),
@@ -67,7 +75,7 @@ func jibToolErr(err error) error {
 			Suggestions: []*proto.Suggestion{
 				{
 					SuggestionCode: proto.SuggestionCode_FIX_USER_BUILD_ERR,
-					Action:         "",
+					Action:         "See the build transcript for suggestions.",
 				},
 			},
 		})
