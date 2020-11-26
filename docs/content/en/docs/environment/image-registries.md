@@ -40,7 +40,7 @@ the full image name is rewritten on top of the default-repo so similar image nam
 
 Automated image name rewriting strategies are determined based on the default-repo and the original image repository:
 
-* default-repo does not begin with gcr.io
+* default-repo domain does not contain `gcr.io` or `-docker.pkg.dev`
   * **strategy**: 		escape & concat & truncate to 256
 
     ```
@@ -49,7 +49,7 @@ Automated image name rewriting strategies are determined based on the default-re
      rewritten image:   aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_k8s-skaffold_skaffold-example1
     ```
 
-* default-repo begins with "gcr.io" (special case - as GCR allows for infinite deep image repo names)
+* default-repo contain `gcr.io` or `-docker.pkg.dev` (special cases - as GCR and AR allow for arbitrarily deep directory structure in image repo names)
   * **strategy**: concat unless prefix matches
   * **example1**: prefix doesn't match:
 
@@ -63,14 +63,14 @@ Automated image name rewriting strategies are determined based on the default-re
     ```
       original image: 	gcr.io/k8s-skaffold/skaffold-example1
       default-repo: 	gcr.io/k8s-skaffold
-      rewritten image:  gcr.io/k8s-skaffold/skaffold-example1	
+      rewritten image:  gcr.io/k8s-skaffold/skaffold-example1
     ```
   * **example3**: shared prefix:
 
     ```
       original image: 	gcr.io/k8s-skaffold/skaffold-example1
       default-repo: 	gcr.io/k8s-skaffold/myimage
-      rewritten image:  gcr.io/k8s-skaffold/myimage/skaffold-example1	
+      rewritten image:  gcr.io/k8s-skaffold/myimage/skaffold-example1
     ```
 
 ## Insecure image registries
@@ -86,15 +86,15 @@ There are several levels of granularity to allow insecure communication with som
     ```bash
     skaffold dev --insecure-registry insecure1.io --insecure-registry insecure2.io
     ```
-    
+
 1. Per Skaffold run via `SKAFFOLD_INSECURE_REGISTRY` environment variable
 
     ```bash
     SKAFFOLD_INSECURE_REGISTRY='insecure1.io,insecure2.io' skaffold dev
     ```
-    
+
 1. Per project via the Skaffold pipeline config `skaffold.yaml`
-    
+
     ```yaml
     build:
         insecureRegistries:
@@ -108,8 +108,8 @@ There are several levels of granularity to allow insecure communication with som
     skaffold config set insecure-registries insecure1.io           # for the current kube-context
     skaffold config set --global insecure-registries insecure2.io  # for any kube-context
     ```
-    
+
     Note that multiple set commands _add_ to the existing list of insecure registries.
     To clear the list, run `skaffold config unset insecure-registries`.
-    
+
 Skaffold will join the lists of insecure registries, if configured via multiple sources.
