@@ -27,9 +27,9 @@ const maxLength = 255
 
 var (
 	escapeRegex = regexp.MustCompile(`[/._:@]`)
-         // gcpProjectIDRegex matches a GCP Project ID as according to console.cloud.google.com.
-         gcpProjectIDRegex = `[a-z][a-z0-9-]{4,28}[a-z0-9]`
-         // prefixRegex is used to match a GCR or AR reference, which must have a project ID.
+	// gcpProjectIDRegex matches a GCP Project ID as according to console.cloud.google.com.
+	gcpProjectIDRegex = `[a-z][a-z0-9-]{4,28}[a-z0-9]`
+	// prefixRegex is used to match a GCR or AR reference, which must have a project ID.
 	prefixRegex = regexp.MustCompile(`^` + reference.DomainRegexp.String() + `/` + gcpProjectIDRegex + `/?`)
 )
 
