@@ -48,7 +48,6 @@ func (e ErrDef) Error() string {
 
 func (e ErrDef) Unwrap() error {
 	return e.err
-=======
 }
 
 type ErrDef struct {
@@ -56,8 +55,10 @@ type ErrDef struct {
 }
 
 func (e ErrDef) Error() string {
-	return fmt.Sprintf("%s. %s", e.ae.Message, concatSuggestions(e.Suggestions()))
->>>>>>> c0434f6aa (add tests)
+	if s := concatSuggestions(e.Suggestions()); s != "" {
+		return fmt.Sprintf("%s. %s", e.ae.Message, concatSuggestions(e.Suggestions()))
+	}
+	return e.ae.Message
 }
 
 func (e ErrDef) StatusCode() proto.StatusCode {
@@ -68,7 +69,6 @@ func (e ErrDef) Suggestions() []*proto.Suggestion {
 	return e.ae.Suggestions
 }
 
-<<<<<<< HEAD
 func NewError(err error, ae proto.ActionableErr) ErrDef {
 	return ErrDef{
 		err: err,
@@ -77,9 +77,6 @@ func NewError(err error, ae proto.ActionableErr) ErrDef {
 }
 
 func NewErrorWithStatusCode(ae proto.ActionableErr) ErrDef {
-=======
-func NewError(ae proto.ActionableErr) ErrDef {
->>>>>>> c0434f6aa (add tests)
 	return ErrDef{
 		ae: ae,
 	}
