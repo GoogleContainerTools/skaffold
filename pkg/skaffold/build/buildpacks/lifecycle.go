@@ -142,20 +142,26 @@ func rewriteLifecycleStatusCode(lce error) error {
 
 func mapLifecycleStatusCode(code int) string {
 	switch code {
+	case lifecycle.CodeFailed:
+		return "buildpacks lifecycle failed"
 	case lifecycle.CodeInvalidArgs:
 		return "lifecycle reported invalid arguments"
-	case lifecycle.CodeFailedDetect, lifecycle.CodeFailedDetectWithErrors:
-		return "buildpacks could not determine application type"
-		return "buildpacks failed during detection phase"
-	case lifecycle.CodeFailedBuildWithErrors, lifecycle.CodeBuildError:
-		return "buildpacks build failure"
-	case lifecycle.CodeExportError:
-		return "buildpacks failed to save image"
 	case lifecycle.CodeIncompatiblePlatformAPI:
 		return "incompatible version of Platform API"
 	case lifecycle.CodeIncompatibleBuildpackAPI:
 		return "incompatible version of Buildpacks API"
+	case lifecycle.CodeFailedDetect, lifecycle.CodeFailedDetectWithErrors:
+		return "buildpacks could not determine application type"
+	case lifecycle.CodeAnalyzeError:
+		return "buildpacks failed analyzing metadata from previous builds"
+	case lifecycle.CodeRestoreError:
+		return "buildpacks failed to restoring cached layers"
+	case lifecycle.CodeFailedBuildWithErrors, lifecycle.CodeBuildError:
+		return "buildpacks failed to build image"
+	case lifecycle.CodeExportError:
+		return "buildpacks failed to save image and cache layers"
 	default:
+		// we should never see CodeRebaseError or CodeLaunchError
 		return fmt.Sprintf("lifecycle failed with status code %d", code)
 	}
 }

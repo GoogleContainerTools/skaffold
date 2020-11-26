@@ -18,59 +18,46 @@ package buildpacks
 
 import (
 	"errors"
+	"fmt"
 	"testing"
+
+	lifecycle "github.com/buildpacks/lifecycle/cmd"
 )
 
-func TestRewriteLifecycleStatusCode(t *testing.T) {
-	tests := []struct {
-		errText  string
-		expected string
-	}{
-		{"blah blah", "blah blah"},
-		{"failed with status code: 0", "lifecycle failed with status code 0"},
-		{"failed with status code: 1", "lifecycle failed with status code 1"},
-		{"failed with status code: 2", "lifecycle failed with status code 2"},
-		{"failed with status code: 3", "lifecycle reported invalid arguments"}, //CodeInvalidArgs
-		{"failed with status code: 4", "lifecycle failed with status code 4"},
-		{"failed with status code: 5", "lifecycle failed with status code 5"},
-		{"failed with status code: 6", "buildpacks could not determine application type"}, //CodeFailedDetect
-		{"failed with status code: 7", "buildpacks failed to build"},                      //CodeFailedBuild
-		{"failed with status code: 8", "lifecycle failed with status code 8"},
-		{"failed with status code: 9", "lifecycle failed with status code 9"},
-		{"failed with status code: 10", "buildpacks failed to save image"}, //CodeFailedSave
-		{"failed with status code: 11", "incompatible lifecycle version"},  //CodeIncompatible
-	}
-	for _, test := range tests {
-		result := rewriteLifecycleStatusCode(errors.New(test.errText))
-		if result.Error() != test.expected {
-			t.Errorf("got %q, wanted %q", result.Error(), test.expected)
-		}
-	}
-}
-
-func TestMapLifecycleStatusCode(t *testing.T) {
+func TestLifecycleStatusCode(t *testing.T) {
 	tests := []struct {
 		code     int
 		expected string
 	}{
+		{lifecycle.CodeFailed, "buildpacks lifecycle failed"},
+		{lifecycle.CodeInvalidArgs, "lifecycle reported invalid arguments"},
+		{lifecycle.CodeIncompatiblePlatformAPI, "incompatible version of Platform API"},
+		{lifecycle.CodeIncompatibleBuildpackAPI, "incompatible version of Buildpacks API"},
+		{lifecycle.CodeFailedDetect, "buildpacks could not determine application type"},
+		{lifecycle.CodeFailedDetectWithErrors, "buildpacks could not determine application type"},
+		{lifecycle.CodeAnalyzeError, "buildpacks failed analyzing metadata from previous builds"},
+		{lifecycle.CodeRestoreError, "buildpacks failed to restoring cached layers"},
+		{lifecycle.CodeFailedBuildWithErrors, "buildpacks failed to build image"},
+		{lifecycle.CodeBuildError, "buildpacks failed to build image"},
+		{lifecycle.CodeExportError, "buildpacks failed to save image and cache layers"},
+
 		{0, "lifecycle failed with status code 0"},
-		{1, "lifecycle failed with status code 1"},
-		{2, "lifecycle failed with status code 2"},
-		{3, "lifecycle reported invalid arguments"}, // CodeInvalidArgs
-		{4, "lifecycle failed with status code 4"},
-		{5, "lifecycle failed with status code 5"},
-		{6, "buildpacks could not determine application type"}, // CodeFailedDetect
-		{7, "buildpacks failed to build"},                      // CodeFailedBuild
-		{8, "lifecycle failed with status code 8"},
-		{9, "lifecycle failed with status code 9"},
-		{10, "buildpacks failed to save image"}, //CodeFailedSave
-		{11, "incompatible lifecycle version"},  // CodeIncompatible
-		{12, "lifecycle failed with status code 12"},
+		// we do not handle CodeRebaseError
+		{lifecycle.CodeRebaseError, "lifecycle failed with status code 602"},
+		// we do not handle CodeLaunchError
+		{lifecycle.CodeLaunchError, "lifecycle failed with status code 702"},
 	}
 	for _, test := range tests {
 		result := mapLifecycleStatusCode(test.code)
 		if result != test.expected {
 			t.Errorf("code %d: got %q, wanted %q", test.code, result, test.expected)
+		}
+	}
+	for _, test := range tests {
+		errText := fmt.Sprintf("failed with status code: %d", test.code)
+		result := rewriteLifecycleStatusCode(errors.New(errText))
+		if result.Error() != test.expected {
+			t.Errorf("got %q, wanted %q", result.Error(), test.expected)
 		}
 	}
 }

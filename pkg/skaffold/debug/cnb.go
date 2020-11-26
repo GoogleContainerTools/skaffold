@@ -233,8 +233,8 @@ func findCNBProcess(ic imageConfiguration, m cnb.BuildMetadata) (cnbl.Process, [
 
 	// determine process-type
 	processType := "web" // default buildpacks process type
-	platformApi := ic.env["CNB_PLATFORM_API"]
-	if platformApi == "0.4" {
+	platformAPI := ic.env["CNB_PLATFORM_API"]
+	if platformAPI == "0.4" {
 		// Platform API 0.4-style /cnb/process/xxx
 		if !strings.HasPrefix(ic.entrypoint[0], cnbProcessLauncherPrefix) {
 			return cnbl.Process{}, nil, false
