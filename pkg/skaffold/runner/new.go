@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -29,7 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
@@ -215,7 +215,11 @@ func getDeployer(cfg kubectl.Config, labels map[string]string) (deploy.Deployer,
 	var deployers deploy.DeployerMux
 
 	if d.HelmDeploy != nil {
-		deployers = append(deployers, helm.NewDeployer(cfg, labels))
+		h, err := helm.NewDeployer(cfg, labels)
+		if err != nil {
+			return nil, err
+		}
+		deployers = append(deployers, h)
 	}
 
 	if d.KptDeploy != nil {

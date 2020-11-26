@@ -420,18 +420,14 @@ func TestBinVer(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
-
-			deployer := NewDeployer(&helmConfig{
-				helm: testDeployConfig,
-			}, nil)
-			ver, err := deployer.binVer(context.TODO())
+			ver, err := binVer()
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, ver.String())
 		})
 	}
 }
 
-func TestMinVersion(t *testing.T) {
+func TestNewDeployer(t *testing.T) {
 	tests := []struct {
 		description string
 		helmVersion string
@@ -442,18 +438,16 @@ func TestMinVersion(t *testing.T) {
 		{"Helm 3.0.0-beta.0", version30b, false},
 		{"Helm 3.0", version30, false},
 		{"Helm 3.1.1", version31, false},
+		{"helm3 unparseable version", "gobbledygook", true},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
 
-			deployer := NewDeployer(&helmConfig{
+			_, err := NewDeployer(&helmConfig{
 				helm: testDeployConfig,
 			}, nil)
-			ver, _ := deployer.binVer(context.TODO())
-
-			err := deployer.checkMinVersion(ver)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -481,15 +475,7 @@ func TestHelmDeploy(t *testing.T) {
 		expectedWarnings []string
 		envs             map[string]string
 	}{
-		{
-			description: "deploy fails with version 2.1",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version21).
-				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig"),
-			helm:      testDeployConfig,
-			builds:    testBuilds,
-			shouldErr: true,
-		},
+
 		{
 			description: "helm3.0beta deploy success",
 			commands: testutil.
@@ -626,13 +612,6 @@ func TestHelmDeploy(t *testing.T) {
 			helm:      testDeployNamespacedConfig,
 			namespace: kubectl.TestNamespace,
 			builds:    testBuilds,
-		},
-		{
-			description: "helm3 unparseable version",
-			commands:    testutil.CmdRunWithOutput("helm version --client", "gobbledygook"),
-			helm:        testDeployConfig,
-			builds:      testBuilds,
-			shouldErr:   true,
 		},
 		{
 			description: "deploy success with recreatePods",
@@ -958,19 +937,23 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&osExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 
-			deployer := NewDeployer(&helmConfig{
+			deployer, err := NewDeployer(&helmConfig{
 				helm:      test.helm,
 				namespace: test.namespace,
 				force:     test.force,
 			}, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			if test.configure != nil {
 				test.configure(deployer)
 			}
 			deployer.pkgTmpDir = tmpDir
-			_, err := deployer.Deploy(context.Background(), ioutil.Discard, test.builds)
-
+			_, err = deployer.Deploy(context.Background(), ioutil.Discard, test.builds)
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
+
 		})
 	}
 }
@@ -982,18 +965,9 @@ func TestHelmCleanup(t *testing.T) {
 		helm             latest.HelmDeploy
 		namespace        string
 		builds           []build.Artifact
-		shouldErr        bool
 		expectedWarnings []string
 		envs             map[string]string
 	}{
-		{
-			description: "cleanup fails on helm 2",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version20rc),
-			helm:      testDeployConfig,
-			builds:    testBuilds,
-			shouldErr: true,
-		},
 		{
 			description: "helm3 cleanup success",
 			commands: testutil.
@@ -1044,13 +1018,16 @@ func TestHelmCleanup(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			deployer := NewDeployer(&helmConfig{
+			deployer, err := NewDeployer(&helmConfig{
 				helm:      test.helm,
 				namespace: test.namespace,
 			}, nil)
-			err := deployer.Cleanup(context.Background(), ioutil.Discard)
+			if err != nil{
+				t.Fatal(err)
+			}
 
-			t.CheckError(test.shouldErr, err)
+			deployer.Cleanup(context.Background(), ioutil.Discard)
+
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}
@@ -1140,10 +1117,12 @@ func TestHelmDependencies(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version30))
+
 			tmpDir := t.NewTempDir().
 				Touch(test.files...)
 
-			deployer := NewDeployer(&helmConfig{
+			deployer, err := NewDeployer(&helmConfig{
 				helm: latest.HelmDeploy{
 					Releases: []latest.HelmRelease{{
 						Name:                  "skaffold-helm",
@@ -1156,7 +1135,9 @@ func TestHelmDependencies(t *testing.T) {
 						Remote:                test.remote,
 					}},
 				}}, nil)
-
+			if err != nil {
+				t.Fatal(err)
+			}
 			deps, err := deployer.Dependencies()
 
 			t.CheckNoError(err)
@@ -1248,25 +1229,6 @@ func TestHelmRender(t *testing.T) {
 		envs        map[string]string
 		namespace   string
 	}{
-		{
-			description: "error if version can't be retrieved",
-			shouldErr:   true,
-			commands:    testutil.CmdRunErr("helm version --client", fmt.Errorf("yep not working")),
-			helm:        testDeployConfig,
-		},
-		{
-			description: "render fails on version 2.1",
-			shouldErr:   true,
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version21),
-			helm: testDeployConfig,
-			builds: []build.Artifact{
-				{
-					ImageName: "skaffold-helm",
-					Tag:       "skaffold-helm:tag1",
-				},
-			},
-		},
 		{
 			description: "normal render v3",
 			shouldErr:   false,
@@ -1370,14 +1332,13 @@ func TestHelmRender(t *testing.T) {
 			}
 
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
-
-			deployer := NewDeployer(&helmConfig{
+			t.Override(&util.DefaultExecCommand, test.commands)
+			deployer, err := NewDeployer(&helmConfig{
 				helm:      test.helm,
 				namespace: test.namespace,
 			}, nil)
 
-			t.Override(&util.DefaultExecCommand, test.commands)
-			err := deployer.Render(context.Background(), ioutil.Discard, test.builds, true, file)
+			err = deployer.Render(context.Background(), ioutil.Discard, test.builds, true, file)
 			t.CheckError(test.shouldErr, err)
 
 			if file != "" {
@@ -1443,9 +1404,13 @@ func TestGenerateSkaffoldDebugFilter(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			h := NewDeployer(&helmConfig{
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
+			h, err := NewDeployer(&helmConfig{
 				helm: testDeployConfig,
 			}, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
 			result := h.generateSkaffoldDebugFilter(test.buildFile)
 			t.CheckDeepEqual(test.result, result)
 		})
