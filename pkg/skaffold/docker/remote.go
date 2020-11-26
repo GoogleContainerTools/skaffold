@@ -139,7 +139,7 @@ type digester interface {
 func digest(d digester) (string, error) {
 	h, err := d.Digest()
 	if err != nil {
-		return "", fmt.Errorf("getting digest: %w", err)
+		return "", remoteDigestGetErr(err)
 	}
 
 	return h.String(), nil

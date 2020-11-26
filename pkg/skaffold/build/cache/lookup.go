@@ -79,7 +79,7 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 	// Check the imageID for the tag
 	idForTag, err := c.client.ImageID(ctx, tag)
 	if err != nil {
-		return failed{err: fmt.Errorf("getting imageID for %s: %v", tag, err)}
+		return failed{err: err}
 	}
 
 	// Image exists locally with the same tag
