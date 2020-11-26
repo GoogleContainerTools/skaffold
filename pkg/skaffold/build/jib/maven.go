@@ -28,7 +28,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 // For testing
@@ -81,7 +80,7 @@ func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace 
 func getDependenciesMaven(ctx context.Context, workspace string, a *latest.JibArtifact) ([]string, error) {
 	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a), a)
 	if err != nil {
-		return nil, dependencyErr(proto.StatusCode_BUILD_JIB_MAVEN_DEP_ERR, workspace, err)
+		return nil, dependencyErr(JibMaven, workspace, err)
 	}
 	logrus.Debugf("Found dependencies for jib maven artifact: %v", deps)
 	return deps, nil

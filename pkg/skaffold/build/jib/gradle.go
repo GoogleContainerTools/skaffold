@@ -28,7 +28,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 // For testing
@@ -82,7 +81,7 @@ func getDependenciesGradle(ctx context.Context, workspace string, a *latest.JibA
 	cmd := getCommandGradle(ctx, workspace, a)
 	deps, err := getDependencies(workspace, cmd, a)
 	if err != nil {
-		return nil, dependencyErr(proto.StatusCode_BUILD_JIB_GRADLE_DEP_ERR, workspace, err)
+		return nil, dependencyErr(JibGradle, workspace, err)
 	}
 	logrus.Debugf("Found dependencies for jib-gradle artifact: %v", deps)
 	return deps, nil

@@ -256,7 +256,7 @@ func TestImageID(t *testing.T) {
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, imageID)
 			if test.shouldErr {
 				if e, ok := err.(sErrors.Error); ok {
-					t.CheckDeepEqual(e.StatusCode(), proto.StatusCode_BUILD_LOCAL_DIGEST_GET_ERR)
+					t.CheckDeepEqual(e.StatusCode(), proto.StatusCode_BUILD_DOCKER_GET_DIGEST_ERR)
 				} else {
 					t.Error("expected to be of type actionable err not found")
 				}

@@ -31,7 +31,7 @@ type Error interface {
 
 type ErrDef struct {
 	err error
-	ae proto.ActionableErr
+	ae  proto.ActionableErr
 }
 
 func (e ErrDef) Error() string {
@@ -56,6 +56,6 @@ func (e ErrDef) Suggestions() []*proto.Suggestion {
 func NewError(err error, ae proto.ActionableErr) ErrDef {
 	return ErrDef{
 		err: err,
-		ae: ae,
+		ae:  ae,
 	}
 }

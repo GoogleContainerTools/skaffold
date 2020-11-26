@@ -24,17 +24,18 @@ import (
 )
 
 func remoteDigestGetErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
-			ErrCode: proto.StatusCode_BUILD_REMOTE_DIGEST_GET_ERR,
+			ErrCode: proto.StatusCode_BUILD_REGISTRY_GET_DIGEST_ERR,
 		})
 }
 
 func localDigestGetErr(tag string, err error) error {
-	return sErrors.NewError(
+	err = fmt.Errorf("getting imageID for %s: %s", tag, err)
+	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: fmt.Sprintf("getting imageID for %s: %s", tag, err.Error()),
-			ErrCode: proto.StatusCode_BUILD_LOCAL_DIGEST_GET_ERR,
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_BUILD_DOCKER_GET_DIGEST_ERR,
 		})
 }
