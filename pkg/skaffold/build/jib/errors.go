@@ -18,15 +18,17 @@ package jib
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
-func unknownPlugin(ws string) error {
-	return sErrors.NewError(
+func unknownPlugin(ws string, err error) error {
+	s := fmt.Sprintf("Unknown Jib builder type for workspace %s", ws)
+	return sErrors.NewError(fmt.Errorf(s),
 		proto.ActionableErr{
-			Message: fmt.Sprintf("Unknown Jib builder type for workspace %s", ws),
+			Message: s,
 			ErrCode: proto.StatusCode_BUILD_UNKNOWN_JIB_PLUGIN,
 			Suggestions: []*proto.Suggestion{
 				{
@@ -38,7 +40,7 @@ func unknownPlugin(ws string) error {
 }
 
 func unableToDeterminePlugin(ws string, err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("unable to determine Jib builder type for workspace %s due to %s", ws, err),
 			ErrCode: proto.StatusCode_BUILD_UNKNOWN_JIB_PLUGIN,
@@ -51,16 +53,14 @@ func unableToDeterminePlugin(ws string, err error) error {
 		})
 }
 
-import ".../pkg/skaffold/build/jib/"
-
-func dependencyErr(type jib.PluginType, workspace string, err error) error {
+func dependencyErr(pType PluginType, workspace string, err error) error {
     var code proto.StatusCode
-    switch type {
-    case jib.JibMaven: code = StatusCode_BUILD_JIB_MAVEN_DEP_ERR
-    case jib.JibGradle: code = StatusCode_BUILD_JIB_GRADLE_DEP_ERR
-    default: logrus.Fatal("Unknown jib build type", type)
+    switch pType {
+    case JibMaven: code = proto.StatusCode_BUILD_JIB_MAVEN_DEP_ERR
+    case JibGradle: code = proto.StatusCode_BUILD_JIB_GRADLE_DEP_ERR
+    default: logrus.Fatal("Unknown jib build type", pType)
     }
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("could not fetch dependencies for workspace %s: %s", workspace, err.Error()),
 			ErrCode: code,
@@ -68,7 +68,7 @@ func dependencyErr(type jib.PluginType, workspace string, err error) error {
 }
 
 func jibToolErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_BUILD_USER_ERROR,

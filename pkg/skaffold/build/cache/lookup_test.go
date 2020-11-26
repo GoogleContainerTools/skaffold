@@ -19,6 +19,7 @@ package cache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -80,6 +81,7 @@ func TestLookupLocal(t *testing.T) {
 				ErrImageInspect: true,
 			},
 			expected: failed{err: sErrors.NewError(
+				fmt.Errorf("getting imageID for tag:"),
 				proto.ActionableErr{
 					Message: "getting imageID for tag: ",
 					ErrCode: proto.StatusCode_BUILD_LOCAL_DIGEST_GET_ERR,
