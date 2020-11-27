@@ -44,14 +44,20 @@ func init() {
 	entrypointLaunchers = append(entrypointLaunchers, cnbLauncher)
 }
 
+// isCNBImage returns true if this image is a CNB-produced image.
 // CNB images use a special launcher as the entrypoint. In CNB Platform API 0.3,
 // this was always `/cnb/lifecycle/launcher`, but Platform API 0.4 (introduced in pack 0.13)
 // allows using a symlink to a file in `/cnb/process/<type>`.  More below.
-func isCnbImage(ic imageConfiguration) bool {
+func isCNBImage(ic imageConfiguration) bool {
 	if _, found := ic.labels["io.buildpacks.stack.id"]; !found {
 		return false
 	}
-	return len(ic.entrypoint) > 0 && (ic.entrypoint[0] == cnbLauncher || strings.HasPrefix(ic.entrypoint[0], cnbProcessLauncherPrefix))
+	return len(ic.entrypoint) == 1 && (ic.entrypoint[0] == cnbLauncher || strings.HasPrefix(ic.entrypoint[0], cnbProcessLauncherPrefix))
+}
+
+// hasCNBLauncherEntrypoint returns true if the entrypoint is the cnbLauncher.
+func hasCNBLauncherEntrypoint(ic imageConfiguration) bool {
+	return len(ic.entrypoint) == 1 && ic.entrypoint[0] == cnbLauncher
 }
 
 // updateForCNBImage normalizes a CNB image by rewriting the CNB launch configuration into
@@ -171,6 +177,7 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 			} else {
 				args := append([]string{p.Command}, p.Args...)
 				args = append(args, clArgs...)
+				ic.entrypoint = []string{cnbLauncher}
 				ic.arguments = args
 				return ic, func(transformed []string) []string {
 					return append([]string{"--"}, transformed...)
@@ -178,6 +185,7 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 			}
 		}
 		// Script type: split p.Command, pass it through the transformer, and then reassemble in the rewriter.
+		ic.entrypoint = []string{cnbLauncher}
 		if args, err := shell.Split(p.Command); err == nil {
 			ic.arguments = args
 		} else {
@@ -197,22 +205,16 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 	}
 
 	// ic.arguments[0] is a shell script:  split it, pass it through the transformer, and then reassemble in the rewriter.
-	// If it can't be split, then we fall through and return it untouched, to be handled by the normal debug process.
-	var rewriter func(transformed []string) []string
-	if args, err := shell.Split(ic.arguments[0]); err == nil {
-		remnants := ic.arguments[1:]
-		ic.arguments = args
-		rewriter = func(transformed []string) []string {
-			// reassemble back into a script with arguments
-			return append([]string{shJoin(transformed)}, remnants...)
+	// If it can't be split, then we return it untouched, to be handled by the normal debug process.
+	if cmdline, err := shell.Split(ic.arguments[0]); err == nil {
+		positionals := ic.arguments[1:] // save aside the script positional arguments
+		ic.arguments = cmdline
+		return ic, func(transformed []string) []string {
+			// reassemble back into a script with the positional arguments
+			return append([]string{shJoin(transformed)}, positionals...)
 		}
 	}
-	return ic, rewriter
-}
-
-// hasCNBLauncherEntrypoint returns true if the entrypoint is the cnbLauncher.
-func hasCNBLauncherEntrypoint(ic imageConfiguration) bool {
-	return len(ic.entrypoint) > 0 && ic.entrypoint[0] == cnbLauncher
+	return ic, nil
 }
 
 // findCNBProcess tries to resolve a CNB process definition given the image configuration.

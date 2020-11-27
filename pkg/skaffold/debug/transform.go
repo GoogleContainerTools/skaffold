@@ -333,7 +333,7 @@ func transformContainer(container *v1.Container, config imageConfiguration, port
 	next := func(container *v1.Container, config imageConfiguration) (ContainerDebugConfiguration, string, error) {
 		return performContainerTransform(container, config, portAlloc)
 	}
-	if isCnbImage(config) {
+	if isCNBImage(config) {
 		return updateForCNBImage(container, config, next)
 	}
 	return updateForShDashC(container, config, next)

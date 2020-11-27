@@ -22,11 +22,32 @@ import (
 
 	cnb "github.com/buildpacks/lifecycle"
 	"github.com/buildpacks/lifecycle/launch"
+	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func TestIsCNBImage(t *testing.T) {
+	tests := []struct {
+		description string
+		input       imageConfiguration
+		expected    bool
+	}{
+		{"non-cnb image", imageConfiguration{entrypoint: []string{"/usr/bin/java", "-jar", "foo.jar"}}, false},
+		{"implicit platform 0.3 with launcher missing label", imageConfiguration{entrypoint: []string{cnbLauncher}}, false},
+		{"implicit platform 0.3 with launcher", imageConfiguration{entrypoint: []string{cnbLauncher}, labels: map[string]string{"io.buildpacks.stack.id": "not checked"}}, true},
+		{"explicit platform 0.3 with launcher", imageConfiguration{entrypoint: []string{cnbLauncher}, env: map[string]string{"CNB_PLATFORM_API": "0.3"}, labels: map[string]string{"io.buildpacks.stack.id": "not checked"}}, true},
+		{"platform 0.4 with launcher", imageConfiguration{entrypoint: []string{cnbLauncher}, env: map[string]string{"CNB_PLATFORM_API": "0.4"}, labels: map[string]string{"io.buildpacks.stack.id": "not checked"}}, true},
+		{"platform 0.4 with process executable", imageConfiguration{entrypoint: []string{"/cnb/process/diag"}, arguments: []string{"arg"}, env: map[string]string{"CNB_PLATFORM_API": "0.4"}, labels: map[string]string{"io.buildpacks.stack.id": "not checked"}}, true},
+		{"platform 0.4 with non-cnb entrypoint", imageConfiguration{entrypoint: []string{"/usr/bin/java", "-jar", "foo.jar"}, arguments: []string{"arg"}, env: map[string]string{"CNB_PLATFORM_API": "0.4"}, labels: map[string]string{"io.buildpacks.stack.id": "not checked"}}, false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expected, isCNBImage(test.input))
+		})
+	}
+}
 func TestHasCNBLauncherEntrypoint(t *testing.T) {
 	tests := []struct {
 		description string
@@ -75,6 +96,105 @@ func TestFindCNBProcess(t *testing.T) {
 			if found {
 				t.CheckDeepEqual(test.processType, p.Type)
 				t.CheckDeepEqual(test.args, args)
+			}
+		})
+	}
+}
+
+func TestAdjustCommandLine(t *testing.T) {
+	// metadata with default process type `web`
+	md := cnb.BuildMetadata{Processes: []launch.Process{
+		{Type: "web", Command: "webProcess arg1 arg2", Args: []string{"posArg1", "posArg2"}},
+		{Type: "diag", Command: "diagProcess", Args: []string{"posArg1", "posArg2"}, Direct: true},
+	}}
+	tests := []struct {
+		description string
+		input       imageConfiguration
+		result      imageConfiguration
+		hasRewriter bool
+	}{
+		{
+			description: "platform 0.3 default web process",
+			input:       imageConfiguration{entrypoint: []string{cnbLauncher}},
+			result:      imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"webProcess", "arg1", "arg2"}},
+			hasRewriter: true,
+		},
+		{
+			description: "platform 0.3 explicit web",
+			input:       imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"web"}},
+			result:      imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"webProcess", "arg1", "arg2"}},
+			hasRewriter: true,
+		},
+		{
+			description: "platform 0.3 explicit diag",
+			input:       imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"diag"}},
+			result:      imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"diagProcess", "posArg1", "posArg2"}},
+			hasRewriter: true,
+		},
+		{
+			description: "platform 0.3 environment",
+			input:       imageConfiguration{entrypoint: []string{cnbLauncher}, env: map[string]string{"CNB_PROCESS_TYPE": "diag"}},
+			result:      imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"diagProcess", "posArg1", "posArg2"}, env: map[string]string{"CNB_PROCESS_TYPE": "diag"}},
+			hasRewriter: true,
+		},
+		{
+			description: "platform 0.3 invalid process (env) should be untouched",
+			input:       imageConfiguration{entrypoint: []string{cnbLauncher}, env: map[string]string{"CNB_PROCESS_TYPE": "not-found"}},
+			result:      imageConfiguration{entrypoint: []string{cnbLauncher}, env: map[string]string{"CNB_PROCESS_TYPE": "not-found"}},
+			hasRewriter: false,
+		},
+		{
+			description: "platform 0.3 script-style with args",
+			input:       imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"the command line", "arg"}},
+			result:      imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"the", "command", "line"}},
+			hasRewriter: true,
+		},
+		{
+			description: "platform 0.3 direct with args",
+			input:       imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"--", "the", "command", "line"}},
+			result:      imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"the", "command", "line"}},
+			hasRewriter: true,
+		},
+		{
+			description: "platform 0.4 with no default should be unchanged",
+			input:       imageConfiguration{entrypoint: []string{cnbLauncher}, env: map[string]string{"CNB_PLATFORM_API": "0.4"}},
+			result:      imageConfiguration{entrypoint: []string{cnbLauncher}, env: map[string]string{"CNB_PLATFORM_API": "0.4"}},
+			hasRewriter: false,
+		},
+		{
+			description: "platform 0.4 process executable",
+			input:       imageConfiguration{entrypoint: []string{"/cnb/process/diag"}, arguments: []string{"arg"}, env: map[string]string{"CNB_PLATFORM_API": "0.4"}},
+			result:      imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"diagProcess", "posArg1", "posArg2", "arg"}, env: map[string]string{"CNB_PLATFORM_API": "0.4"}},
+			hasRewriter: true,
+		},
+		{
+			description: "platform 0.4 invalid process (env) should be untouched",
+			input:       imageConfiguration{entrypoint: []string{cnbLauncher}, env: map[string]string{"CNB_PLATFORM_API": "0.4", "CNB_PROCESS_TYPE": "not-found"}},
+			result:      imageConfiguration{entrypoint: []string{cnbLauncher}, env: map[string]string{"CNB_PLATFORM_API": "0.4", "CNB_PROCESS_TYPE": "not-found"}},
+			hasRewriter: false,
+		},
+		{
+			description: "platform 0.4 direct with args",
+			input:       imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"--", "the", "command", "line"}, env: map[string]string{"CNB_PLATFORM_API": "0.4"}},
+			result:      imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"the", "command", "line"}, env: map[string]string{"CNB_PLATFORM_API": "0.4"}},
+			hasRewriter: true,
+		},
+		{
+			description: "platform 0.4 script-style with args",
+			input:       imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"the command line", "arg"}, env: map[string]string{"CNB_PLATFORM_API": "0.4"}},
+			result:      imageConfiguration{entrypoint: []string{cnbLauncher}, arguments: []string{"the", "command", "line"}, env: map[string]string{"CNB_PLATFORM_API": "0.4"}},
+			hasRewriter: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			ic, rewriter := adjustCommandLine(md, test.input)
+			t.CheckDeepEqual(test.result, ic, cmp.AllowUnexported(test.result))
+			if test.hasRewriter {
+				// todo: can we test the rewriter?  We do exercise it in TestForCNBImage
+				t.CheckNotNil(rewriter)
+			} else {
+				t.CheckNil(rewriter)
 			}
 		})
 	}
