@@ -115,7 +115,7 @@ func TestResolve(t *testing.T) {
 			if test.expectAnonymous {
 				t.CheckDeepEqual(&authn.AuthConfig{}, authConfig)
 			} else {
-				t.CheckDeepEqual("TOKEN", authConfig.RegistryToken)
+				t.CheckDeepEqual("TOKEN", authConfig.Password)
 			}
 			t.CheckNoError(err)
 		})
