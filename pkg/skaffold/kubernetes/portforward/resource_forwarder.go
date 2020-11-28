@@ -37,6 +37,7 @@ type ResourceForwarder struct {
 	namespaces           []string
 	label                string
 	userDefinedResources []*latest.PortForwardResource
+	services             bool
 }
 
 var (
@@ -45,8 +46,18 @@ var (
 	retrieveServices      = retrieveServiceResources
 )
 
-// NewResourceForwarder returns a struct that tracks and port-forwards services as they are created and modified
-func NewResourceForwarder(entryManager *EntryManager, namespaces []string, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
+// NewServicesForwarder returns a struct that tracks and port-forwards services as they are created and modified
+func NewServicesForwarder(entryManager *EntryManager, namespaces []string, label string) *ResourceForwarder {
+	return &ResourceForwarder{
+		entryManager: entryManager,
+		namespaces:   namespaces,
+		label:        label,
+		services:     true,
+	}
+}
+
+// NewUserDefinedForwarder returns a struct that tracks and port-forwards services as they are created and modified
+func NewUserDefinedForwarder(entryManager *EntryManager, namespaces []string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
 	if len(namespaces) == 1 {
 		for _, pf := range userDefinedResources {
 			if pf.Namespace == "" {
@@ -67,8 +78,6 @@ func NewResourceForwarder(entryManager *EntryManager, namespaces []string, label
 
 	return &ResourceForwarder{
 		entryManager:         entryManager,
-		namespaces:           namespaces,
-		label:                label,
 		userDefinedResources: userDefinedResources,
 	}
 }
@@ -76,9 +85,13 @@ func NewResourceForwarder(entryManager *EntryManager, namespaces []string, label
 // Start gets a list of services deployed by skaffold as []latest.PortForwardResource and
 // forwards them.
 func (p *ResourceForwarder) Start(ctx context.Context) error {
-	serviceResources, err := retrieveServices(ctx, p.label, p.namespaces)
-	if err != nil {
-		return fmt.Errorf("retrieving services for automatic port forwarding: %w", err)
+	var serviceResources []*latest.PortForwardResource
+	if p.services {
+		found, err := retrieveServices(ctx, p.label, p.namespaces)
+		if err != nil {
+			return fmt.Errorf("retrieving services for automatic port forwarding: %w", err)
+		}
+		serviceResources = found
 	}
 	p.portForwardResources(ctx, append(p.userDefinedResources, serviceResources...))
 	return nil
