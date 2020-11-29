@@ -19,6 +19,7 @@ package runner
 import (
 	"context"
 	"fmt"
+	"github.com/dustin/go-humanize"
 	"io"
 	"time"
 
@@ -156,7 +157,14 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 	if err := s.Check(ctx, out); err != nil {
 		return err
 	}
+	//Create human readable time string
+	prettyTime := humanize.Time(start)
 
-	color.Default.Fprintln(out, "Deployments stabilized in", time.Since(start))
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		prettyTime = time.Since(start).String() + " ago"
+	}
+
+	color.Default.Fprintln(out, "Deployments stabilized ", prettyTime)
 	return nil
 }
