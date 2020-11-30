@@ -19,9 +19,10 @@ package runner
 import (
 	"context"
 	"fmt"
-	"github.com/dustin/go-humanize"
 	"io"
 	"time"
+
+	"github.com/dustin/go-humanize"
 
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -157,6 +158,7 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 	if err := s.Check(ctx, out); err != nil {
 		return err
 	}
+
 	//Create human readable time string
 	prettyTime := humanize.Time(start)
 
