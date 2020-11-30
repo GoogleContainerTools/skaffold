@@ -887,7 +887,7 @@ Enum for Suggestion codes
 | FIX_USER_BUILD_ERR | 107 | Fix User Build Error |
 | DOCKER_BUILD_RETRY | 108 | Docker build internal error, try again |
 | FIX_CACHE_FROM_ARTIFACT_CONFIG | 109 | Fix `cacheFrom` config for given artifact and try again |
-| FIX_DOCKERFILE_CONFIG | 110 | Fix `dockerfile` config for a given artifact and try again. |
+| FIX_SKAFFOLD_CONFIG_DOCKERFILE | 110 | Fix `dockerfile` config for a given artifact and try again. |
 | FIX_JIB_PLUGIN_CONFIGURATION | 111 | Use a supported Jib plugin type |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |

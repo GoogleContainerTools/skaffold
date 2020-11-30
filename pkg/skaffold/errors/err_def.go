@@ -1,9 +1,5 @@
 /*
-<<<<<<< HEAD
-Copyright 2019 The Skaffold Authors
-=======
 Copyright 2020 The Skaffold Authors
->>>>>>> c0434f6aa (add tests)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,7 +26,6 @@ type Error interface {
 	Error() string
 	StatusCode() proto.StatusCode
 	Suggestions() []*proto.Suggestion
-<<<<<<< HEAD
 	Unwrap() error
 }
 
@@ -48,17 +43,6 @@ func (e ErrDef) Error() string {
 
 func (e ErrDef) Unwrap() error {
 	return e.err
-}
-
-type ErrDef struct {
-	ae proto.ActionableErr
-}
-
-func (e ErrDef) Error() string {
-	if s := concatSuggestions(e.Suggestions()); s != "" {
-		return fmt.Sprintf("%s. %s", e.ae.Message, concatSuggestions(e.Suggestions()))
-	}
-	return e.ae.Message
 }
 
 func (e ErrDef) StatusCode() proto.StatusCode {

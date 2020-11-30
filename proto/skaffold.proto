@@ -622,7 +622,7 @@ enum SuggestionCode {
     // Fix `cacheFrom` config for given artifact and try again
     FIX_CACHE_FROM_ARTIFACT_CONFIG = 109;
     // Fix `dockerfile` config for a given artifact and try again.
-    FIX_DOCKERFILE_CONFIG = 110;
+    FIX_SKAFFOLD_CONFIG_DOCKERFILE = 110;
     // Use a supported Jib plugin type
     FIX_JIB_PLUGIN_CONFIGURATION = 111;
 

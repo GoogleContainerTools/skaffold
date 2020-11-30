@@ -27,6 +27,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
+// newBuildError turns Docker-specific errors into actionable errors.
+// The input errors are assumed to be from the Skaffold docker invocation.
 func newBuildError(err error) error {
 	errU := errors.Unwrap(err)
 	if errU == nil {
@@ -35,7 +37,7 @@ func newBuildError(err error) error {
 
 	switch errU.(type) {
 	case *jsonmessage.JSONError:
-		return sErrors.NewError(
+		return sErrors.NewError(err,
 			proto.ActionableErr{
 				Message: err.Error(),
 				ErrCode: proto.StatusCode_BUILD_USER_ERROR,
@@ -47,7 +49,7 @@ func newBuildError(err error) error {
 				},
 			})
 	default:
-		return sErrors.NewError(
+		return sErrors.NewError(err,
 			proto.ActionableErr{
 				Message: errU.Error(),
 				ErrCode: getErrorCode(errU),
@@ -93,13 +95,13 @@ func getErrorCode(err error) proto.StatusCode {
 }
 
 func dockerfileNotFound(err error, artifact string) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_BUILD_DOCKERFILE_NOT_FOUND,
 			Suggestions: []*proto.Suggestion{
 				{
-					SuggestionCode: proto.SuggestionCode_FIX_DOCKERFILE_CONFIG,
+					SuggestionCode: proto.SuggestionCode_FIX_SKAFFOLD_CONFIG_DOCKERFILE,
 					Action: fmt.Sprintf("Dockerfile not found. Please check config `dockerfile` for artifact %s."+
 						"\nRefer https://skaffold.dev/docs/references/yaml/#build-artifacts-docker for details.", artifact),
 				},
@@ -108,7 +110,7 @@ func dockerfileNotFound(err error, artifact string) error {
 }
 
 func cacheFromPullErr(err error, artifact string) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_BUILD_DOCKER_CACHE_FROM_PULL_ERR,
