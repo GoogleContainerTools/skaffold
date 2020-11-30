@@ -44,6 +44,6 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 		return b.buildJibGradleToDocker(ctx, out, artifact.Workspace, artifact.JibArtifact, artifact.Dependencies, tag)
 
 	default:
-		return "", unknownPlugin(artifact.Workspace)
+		return "", unknownPluginType(artifact.Workspace)
 	}
 }

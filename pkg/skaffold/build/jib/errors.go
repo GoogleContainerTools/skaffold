@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
-func unknownPlugin(ws string) error {
+func unknownPluginType(ws string) error {
 	return sErrors.NewErrorWithStatusCode(
 		proto.ActionableErr{
 			Message: fmt.Sprintf("Unknown Jib builder type for workspace %s", ws),
@@ -39,7 +39,7 @@ func unknownPlugin(ws string) error {
 		})
 }
 
-func unableToDeterminePlugin(ws string, err error) error {
+func unableToDeterminePluginType(ws string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("unable to determine Jib builder type for workspace %s due to %s", ws, err),

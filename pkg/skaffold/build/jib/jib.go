@@ -103,7 +103,7 @@ func GetBuildDefinitions(workspace string, a *latest.JibArtifact) []string {
 func GetDependencies(ctx context.Context, workspace string, artifact *latest.JibArtifact) ([]string, error) {
 	t, err := DeterminePluginType(workspace, artifact)
 	if err != nil {
-		return nil, unableToDeterminePlugin(workspace, err)
+		return nil, unableToDeterminePluginType(workspace, err)
 	}
 	switch t {
 	case JibMaven:
@@ -111,7 +111,7 @@ func GetDependencies(ctx context.Context, workspace string, artifact *latest.Jib
 	case JibGradle:
 		return getDependenciesGradle(ctx, workspace, artifact)
 	default:
-		return nil, unknownPlugin(workspace)
+		return nil, unknownPluginType(workspace)
 	}
 }
 
