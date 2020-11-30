@@ -414,6 +414,19 @@ enum StatusCode {
     // Build error due to GCP project not found.
     BUILD_PROJECT_NOT_FOUND = 102;
     BUILD_DOCKER_DAEMON_NOT_RUNNING = 103;
+    // Build error due to user application code, e.g. compilation error, dockerfile error etc
+    BUILD_USER_ERROR = 104;
+    // Build error due to digest for built artifact could not be retrieved from docker daemon.
+    BUILD_DOCKER_GET_DIGEST_ERR = 117;
+    // Build error due to digest for built artifact could not be retrieved from registry.
+    BUILD_REGISTRY_GET_DIGEST_ERR = 118;
+    // Build error indicating unknown Jib plugin type. Should be one of [maven, gradle]
+    BUILD_UNKNOWN_JIB_PLUGIN_TYPE = 119;
+    // Build error determining dependency for jib gradle project.
+    BUILD_JIB_GRADLE_DEP_ERR = 120;
+    // Build error determining dependency for jib gradle project.
+    BUILD_JIB_MAVEN_DEP_ERR = 121;
+
 
     // Container errors
 
@@ -571,6 +584,10 @@ enum SuggestionCode {
     CHECK_GCLOUD_PROJECT = 105;
     // Check if docker is running
     CHECK_DOCKER_RUNNING = 106;
+    // Fix User Build Error
+    FIX_USER_BUILD_ERR = 107;
+    // Use a supported Jib plugin type
+    FIX_JIB_PLUGIN_CONFIGURATION = 111;
 
     // Deploy error suggestion codes
 
@@ -626,4 +643,3 @@ enum SuggestionCode {
     // Open an issue so this situation can be diagnosed
     OPEN_ISSUE = 900;
 }
-

@@ -794,6 +794,12 @@ For Cancelled Error code, use range 800 to 850.
 | BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
 | BUILD_PROJECT_NOT_FOUND | 102 | Build error due to GCP project not found. |
 | BUILD_DOCKER_DAEMON_NOT_RUNNING | 103 |  |
+| BUILD_USER_ERROR | 104 | Build error due to user application code, e.g. compilation error, dockerfile error etc |
+| BUILD_DOCKER_GET_DIGEST_ERR | 117 | Build error due to digest for built artifact could not be retrieved from docker daemon. |
+| BUILD_REGISTRY_GET_DIGEST_ERR | 118 | Build error due to digest for built artifact could not be retrieved from registry. |
+| BUILD_UNKNOWN_JIB_PLUGIN_TYPE | 119 | Build error indicating unknown Jib plugin type. Should be one of [maven, gradle] |
+| BUILD_JIB_GRADLE_DEP_ERR | 120 | Build error determining dependency for jib gradle project. |
+| BUILD_JIB_MAVEN_DEP_ERR | 121 | Build error determining dependency for jib gradle project. |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
@@ -863,6 +869,8 @@ Enum for Suggestion codes
 | DOCKER_AUTH_CONFIGURE | 104 | Run docker auth configure |
 | CHECK_GCLOUD_PROJECT | 105 | Verify Gcloud Project |
 | CHECK_DOCKER_RUNNING | 106 | Check if docker is running |
+| FIX_USER_BUILD_ERR | 107 | Fix User Build Error |
+| FIX_JIB_PLUGIN_CONFIGURATION | 111 | Use a supported Jib plugin type |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |
 | CHECK_CONTAINER_LOGS | 301 | Container run error |

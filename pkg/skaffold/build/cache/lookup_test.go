@@ -19,6 +19,7 @@ package cache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -27,7 +28,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -77,7 +80,12 @@ func TestLookupLocal(t *testing.T) {
 			api: &testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
-			expected: failed{err: errors.New("getting imageID for tag: ")},
+			expected: failed{err: sErrors.NewError(
+				fmt.Errorf("getting imageID for tag: "),
+				proto.ActionableErr{
+					Message: "getting imageID for tag: ",
+					ErrCode: proto.StatusCode_BUILD_DOCKER_GET_DIGEST_ERR,
+				})},
 		},
 		{
 			description: "hit",

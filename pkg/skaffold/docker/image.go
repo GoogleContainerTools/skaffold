@@ -422,7 +422,7 @@ func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 		if client.IsErrNotFound(err) {
 			return "", nil
 		}
-		return "", err
+		return "", localDigestGetErr(ref, err)
 	}
 
 	return image.ID, nil

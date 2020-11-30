@@ -79,7 +79,8 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 	// Check the imageID for the tag
 	idForTag, err := c.client.ImageID(ctx, tag)
 	if err != nil {
-		return failed{err: fmt.Errorf("getting imageID for %s: %v", tag, err)}
+		// Rely on actionable errors thrown from pkg/skaffold/docker.LocalDaemon api.
+		return failed{err: err}
 	}
 
 	// Image exists locally with the same tag

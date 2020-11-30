@@ -46,7 +46,7 @@ var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"
 func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, deps []*latest.ArtifactDependency, tag string) (string, error) {
 	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), color.IsColorable(out))
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
-		return "", err
+		return "", jibToolErr(err)
 	}
 
 	return b.localDocker.ImageID(ctx, tag)
@@ -55,7 +55,7 @@ func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, wor
 func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, deps []*latest.ArtifactDependency, tag string) (string, error) {
 	args := GenerateGradleBuildArgs("jib", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), color.IsColorable(out))
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
-		return "", err
+		return "", jibToolErr(err)
 	}
 
 	return docker.RemoteDigest(tag, b.cfg)
@@ -81,7 +81,7 @@ func getDependenciesGradle(ctx context.Context, workspace string, a *latest.JibA
 	cmd := getCommandGradle(ctx, workspace, a)
 	deps, err := getDependencies(workspace, cmd, a)
 	if err != nil {
-		return nil, fmt.Errorf("getting jib-gradle dependencies: %w", err)
+		return nil, dependencyErr(JibGradle, workspace, err)
 	}
 	logrus.Debugf("Found dependencies for jib-gradle artifact: %v", deps)
 	return deps, nil

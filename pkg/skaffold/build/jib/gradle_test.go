@@ -235,9 +235,11 @@ func TestGetDependenciesGradle(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			deps, err := getDependenciesGradle(ctx, tmpDir.Root(), &latest.JibArtifact{Project: "gradle-test"})
+			ws := tmpDir.Root()
+			deps, err := getDependenciesGradle(ctx, ws, &latest.JibArtifact{Project: "gradle-test"})
 			if test.err != nil {
-				t.CheckErrorAndDeepEqual(true, err, "getting jib-gradle dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies: "+test.err.Error(), err.Error())
+				prefix := fmt.Sprintf("could not fetch dependencies for workspace %s: initial Jib dependency refresh failed: failed to get Jib dependencies: ", ws)
+				t.CheckErrorAndDeepEqual(true, err, prefix+test.err.Error(), err.Error())
 			} else {
 				t.CheckDeepEqual(test.expected, deps)
 			}

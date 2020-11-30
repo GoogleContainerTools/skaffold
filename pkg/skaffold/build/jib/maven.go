@@ -46,7 +46,7 @@ var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, deps []*latest.ArtifactDependency, tag string) (string, error) {
 	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), color.IsColorable(out))
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
-		return "", err
+		return "", jibToolErr(err)
 	}
 
 	return b.localDocker.ImageID(ctx, tag)
@@ -55,7 +55,7 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, deps []*latest.ArtifactDependency, tag string) (string, error) {
 	args := GenerateMavenBuildArgs("build", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), color.IsColorable(out))
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
-		return "", err
+		return "", jibToolErr(err)
 	}
 
 	return docker.RemoteDigest(tag, b.cfg)
@@ -80,7 +80,7 @@ func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace 
 func getDependenciesMaven(ctx context.Context, workspace string, a *latest.JibArtifact) ([]string, error) {
 	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a), a)
 	if err != nil {
-		return nil, fmt.Errorf("getting jib-maven dependencies: %w", err)
+		return nil, dependencyErr(JibMaven, workspace, err)
 	}
 	logrus.Debugf("Found dependencies for jib maven artifact: %v", deps)
 	return deps, nil

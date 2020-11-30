@@ -228,10 +228,11 @@ func TestGetDependenciesMaven(t *testing.T) {
 			if err := os.Chtimes(build, test.modTime, test.modTime); err != nil {
 				t.Fatal(err)
 			}
-
-			deps, err := getDependenciesMaven(ctx, tmpDir.Root(), &latest.JibArtifact{Project: "maven-test"})
+			ws := tmpDir.Root()
+			deps, err := getDependenciesMaven(ctx, ws, &latest.JibArtifact{Project: "maven-test"})
 			if test.err != nil {
-				t.CheckErrorAndDeepEqual(true, err, "getting jib-maven dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies: "+test.err.Error(), err.Error())
+				prefix := fmt.Sprintf("could not fetch dependencies for workspace %s: initial Jib dependency refresh failed: failed to get Jib dependencies: ", ws)
+				t.CheckErrorAndDeepEqual(true, err, prefix+test.err.Error(), err.Error())
 			} else {
 				t.CheckDeepEqual(test.expected, deps)
 			}

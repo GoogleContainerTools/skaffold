@@ -103,16 +103,15 @@ func GetBuildDefinitions(workspace string, a *latest.JibArtifact) []string {
 func GetDependencies(ctx context.Context, workspace string, artifact *latest.JibArtifact) ([]string, error) {
 	t, err := DeterminePluginType(workspace, artifact)
 	if err != nil {
-		return nil, err
+		return nil, unableToDeterminePluginType(workspace, err)
 	}
-
 	switch t {
 	case JibMaven:
 		return getDependenciesMaven(ctx, workspace, artifact)
 	case JibGradle:
 		return getDependenciesGradle(ctx, workspace, artifact)
 	default:
-		return nil, fmt.Errorf("unable to determine Jib builder type for %s", workspace)
+		return nil, unknownPluginType(workspace)
 	}
 }
 
