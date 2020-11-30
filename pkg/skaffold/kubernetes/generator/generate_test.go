@@ -38,7 +38,7 @@ metadata:
   labels:
     app: foo
 spec:
-  ports: 
+  ports:
   - port: 8080
     protocol: TCP
   clusterIP: None
