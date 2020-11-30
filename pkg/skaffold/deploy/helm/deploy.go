@@ -93,11 +93,11 @@ type Deployer struct {
 func NewDeployer(cfg kubectl.Config, labels map[string]string) (*Deployer, error) {
 	hv, err := binVer()
 	if err != nil {
-		return nil, fmt.Errorf(versionErrorString, err)
+		return nil, versionGetErr(err)
 	}
 
 	if hv.LT(helm3Version) {
-		return nil, fmt.Errorf("skaffold requires Helm version 3.0.0-beta.0 or greater")
+		return nil, minVersionErr()
 	}
 
 	return &Deployer{

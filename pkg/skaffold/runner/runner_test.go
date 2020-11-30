@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -39,6 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -378,12 +380,14 @@ func TestNewForConfig(t *testing.T) {
 					DeployType: latest.DeployType{
 						KubectlDeploy:   &latest.KubectlDeploy{},
 						KustomizeDeploy: &latest.KustomizeDeploy{},
+						HelmDeploy:      &latest.HelmDeploy{},
 					},
 				},
 			},
 			expectedBuilder: &local.Builder{},
 			expectedTester:  &test.FullTester{},
 			expectedDeployer: deploy.DeployerMux([]deploy.Deployer{
+				&helm.Deployer{},
 				&kubectl.Deployer{},
 				&kustomize.Deployer{},
 			}),
@@ -392,6 +396,9 @@ func TestNewForConfig(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
+				"helm version --client", `version.BuildInfo{Version:"v3.0.0"}`).
+				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
 
 			runCtx := &runcontext.RunContext{
 				Cfg: test.pipeline,
