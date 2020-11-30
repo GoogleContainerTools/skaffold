@@ -278,12 +278,12 @@ func TestNewBuilder(t *testing.T) {
 	dummyDaemon := dummyLocalDaemon{}
 
 	tests := []struct {
-		description    string
-		shouldErr      bool
-		expectedPush   bool
-		localBuild     latest.LocalBuild
-		localClusterFn func(string, string, bool) (bool, error)
-		localDockerFn  func(docker.Config) (docker.LocalDaemon, error)
+		description   string
+		shouldErr     bool
+		expectedPush  bool
+		cluster       config.Cluster
+		localBuild    latest.LocalBuild
+		localDockerFn func(docker.Config) (docker.LocalDaemon, error)
 	}{
 		{
 			description: "failed to get docker client",
@@ -293,14 +293,11 @@ func TestNewBuilder(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "pushImages becomes !localCluster when local:push is not defined",
+			description: "pushImages becomes cluster.PushImages when local:push is not defined",
 			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
-			localClusterFn: func(string, string, bool) (b bool, e error) {
-				b = false //because this is false and localBuild.push is nil
-				return
-			},
+			cluster:      config.Cluster{PushImages: true},
 			expectedPush: true,
 		},
 		{
@@ -308,10 +305,7 @@ func TestNewBuilder(t *testing.T) {
 			localDockerFn: func(docker.Config) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
-			localClusterFn: func(string, string, bool) (b bool, e error) {
-				b = false
-				return
-			},
+			cluster: config.Cluster{PushImages: true},
 			localBuild: latest.LocalBuild{
 				Push: util.BoolPtr(false),
 			},
@@ -324,12 +318,10 @@ func TestNewBuilder(t *testing.T) {
 			if test.localDockerFn != nil {
 				t.Override(&docker.NewAPIClient, test.localDockerFn)
 			}
-			if test.localClusterFn != nil {
-				t.Override(&getLocalCluster, test.localClusterFn)
-			}
 
 			builder, err := NewBuilder(&mockConfig{
-				local: test.localBuild,
+				local:   test.localBuild,
+				cluster: test.cluster,
 			})
 
 			t.CheckError(test.shouldErr, err)
@@ -442,6 +434,7 @@ type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	local                 latest.LocalBuild
 	mode                  config.RunMode
+	cluster               config.Cluster
 }
 
 func (c *mockConfig) Pipeline() latest.Pipeline {
@@ -452,4 +445,8 @@ func (c *mockConfig) Pipeline() latest.Pipeline {
 
 func (c *mockConfig) Mode() config.RunMode {
 	return c.mode
+}
+
+func (c *mockConfig) GetCluster() config.Cluster {
+	return c.cluster
 }

@@ -34,6 +34,8 @@ type ContextConfig struct {
 	DebugHelpersRegistry string        `yaml:"debug-helpers-registry,omitempty"`
 	UpdateCheck          *bool         `yaml:"update-check,omitempty"`
 	Survey               *SurveyConfig `yaml:"survey,omitempty"`
+	KindDisableLoad      *bool         `yaml:"kind-disable-load,omitempty"`
+	K3dDisableLoad       *bool         `yaml:"k3d-disable-load,omitempty"`
 }
 
 // SurveyConfig is the survey config information
