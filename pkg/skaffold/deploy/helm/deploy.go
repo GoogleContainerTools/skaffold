@@ -89,7 +89,7 @@ type Deployer struct {
 	bV semver.Version
 }
 
-// NewDeployer returns a configured Deployer if current version of helm is greater than 3.0.0
+// NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
 func NewDeployer(cfg kubectl.Config, labels map[string]string) (*Deployer, error) {
 	hv, err := binVer()
 	if err != nil {

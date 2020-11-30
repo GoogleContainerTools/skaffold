@@ -431,9 +431,7 @@ spec:
 					},
 				},
 			}, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			t.RequireNoError(err)
 			var b bytes.Buffer
 			err = deployer.Render(context.Background(), &b, test.builds, true, "")
 

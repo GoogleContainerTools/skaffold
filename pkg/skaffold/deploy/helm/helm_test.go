@@ -942,9 +942,7 @@ func TestHelmDeploy(t *testing.T) {
 				namespace: test.namespace,
 				force:     test.force,
 			}, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			t.RequireNoError(err)
 
 			if test.configure != nil {
 				test.configure(deployer)
@@ -1021,9 +1019,7 @@ func TestHelmCleanup(t *testing.T) {
 				helm:      test.helm,
 				namespace: test.namespace,
 			}, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			t.RequireNoError(err)
 
 			deployer.Cleanup(context.Background(), ioutil.Discard)
 
@@ -1134,9 +1130,7 @@ func TestHelmDependencies(t *testing.T) {
 						Remote:                test.remote,
 					}},
 				}}, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			t.RequireNoError(err)
 			deps, err := deployer.Dependencies()
 
 			t.CheckNoError(err)
@@ -1336,9 +1330,7 @@ func TestHelmRender(t *testing.T) {
 				helm:      test.helm,
 				namespace: test.namespace,
 			}, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			t.RequireNoError(err)
 			err = deployer.Render(context.Background(), ioutil.Discard, test.builds, true, file)
 			t.CheckError(test.shouldErr, err)
 
@@ -1409,9 +1401,7 @@ func TestGenerateSkaffoldDebugFilter(t *testing.T) {
 			h, err := NewDeployer(&helmConfig{
 				helm: testDeployConfig,
 			}, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			t.RequireNoError(err)
 			result := h.generateSkaffoldDebugFilter(test.buildFile)
 			t.CheckDeepEqual(test.result, result)
 		})
