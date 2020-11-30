@@ -23,12 +23,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/generator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 type defaultBuildInitializer struct {
 	builders               []InitBuilder
 	artifactInfos          []ArtifactInfo
 	generatedArtifactInfos []GeneratedArtifactInfo
+	manifests              []*generator.Container
 	unresolvedImages       []string
 	skipBuild              bool
 	force                  bool
@@ -52,10 +54,20 @@ func (d *defaultBuildInitializer) ProcessImages(images []string) error {
 	return nil
 }
 
-func (d *defaultBuildInitializer) BuildConfig() latest.BuildConfig {
+func (d *defaultBuildInitializer) BuildConfig() (latest.BuildConfig, []*latest.PortForwardResource) {
+	pf := []*latest.PortForwardResource{}
+
+	for _, manifestInfo := range d.manifests {
+		pf = append(pf, &latest.PortForwardResource{
+			Type: "service",
+			Name: manifestInfo.Name,
+			Port: util.FromInt(manifestInfo.Port),
+		})
+	}
+
 	return latest.BuildConfig{
 		Artifacts: Artifacts(d.artifactInfos),
-	}
+	}, pf
 }
 
 func (d *defaultBuildInitializer) PrintAnalysis(out io.Writer) error {
@@ -65,11 +77,12 @@ func (d *defaultBuildInitializer) PrintAnalysis(out io.Writer) error {
 func (d *defaultBuildInitializer) GenerateManifests() (map[GeneratedArtifactInfo][]byte, error) {
 	generatedManifests := map[GeneratedArtifactInfo][]byte{}
 	for _, info := range d.generatedArtifactInfos {
-		manifest, err := generator.Generate(info.ImageName)
+		manifest, manifestInfo, err := generator.Generate(info.ImageName)
 		if err != nil {
 			return nil, fmt.Errorf("generating kubernetes manifest: %w", err)
 		}
 		generatedManifests[info] = manifest
+		d.manifests = append(d.manifests, manifestInfo)
 		d.artifactInfos = append(d.artifactInfos, info.ArtifactInfo)
 	}
 	d.generatedArtifactInfos = nil

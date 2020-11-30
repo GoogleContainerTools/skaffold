@@ -66,7 +66,7 @@ type Initializer interface {
 	// contained in the initializer with the provided images from the deploy initializer
 	ProcessImages([]string) error
 	// BuildConfig returns the processed build config to be written to the skaffold.yaml
-	BuildConfig() latest.BuildConfig
+	BuildConfig() (latest.BuildConfig, []*latest.PortForwardResource)
 	// PrintAnalysis writes the project analysis to the provided out stream
 	PrintAnalysis(io.Writer) error
 	// GenerateManifests generates image names and manifests for all unresolved pairs
@@ -80,8 +80,8 @@ func (e *emptyBuildInitializer) ProcessImages([]string) error {
 	return nil
 }
 
-func (e *emptyBuildInitializer) BuildConfig() latest.BuildConfig {
-	return latest.BuildConfig{}
+func (e *emptyBuildInitializer) BuildConfig() (latest.BuildConfig, []*latest.PortForwardResource) {
+	return latest.BuildConfig{}, nil
 }
 
 func (e *emptyBuildInitializer) PrintAnalysis(io.Writer) error {

@@ -46,6 +46,7 @@ func generateSkaffoldConfig(b build.Initializer, d deploy.Initializer) *latest.S
 	}
 
 	deploy, profiles := d.DeployConfig()
+	build, portForward := b.BuildConfig()
 
 	return &latest.SkaffoldConfig{
 		APIVersion: latest.Version,
@@ -54,8 +55,9 @@ func generateSkaffoldConfig(b build.Initializer, d deploy.Initializer) *latest.S
 			Name: name,
 		},
 		Pipeline: latest.Pipeline{
-			Build:  b.BuildConfig(),
-			Deploy: deploy,
+			Build:       build,
+			Deploy:      deploy,
+			PortForward: portForward,
 		},
 		Profiles: profiles,
 	}
