@@ -155,7 +155,7 @@ func (r *remoteIndex) childByPlatform(platform v1.Platform) (*Descriptor, error)
 			return r.childDescriptor(childDesc, platform)
 		}
 	}
-	return nil, fmt.Errorf("no child with platform %s/%s in index %s", platform.Architecture, platform.OS, r.Ref)
+	return nil, fmt.Errorf("no child with platform %s/%s in index %s", platform.OS, platform.Architecture, r.Ref)
 }
 
 func (r *remoteIndex) childByHash(h v1.Hash) (*Descriptor, error) {
@@ -180,8 +180,9 @@ func (r *remoteIndex) childDescriptor(child v1.Descriptor, platform v1.Platform)
 	}
 	return &Descriptor{
 		fetcher: fetcher{
-			Ref:    ref,
-			Client: r.Client,
+			Ref:     ref,
+			Client:  r.Client,
+			context: r.context,
 		},
 		Manifest:   manifest,
 		Descriptor: child,

@@ -92,8 +92,8 @@ func newV1Image(keychain authn.Keychain, repoName string) (v1.Image, error) {
 	image, err := remote.Image(ref, remote.WithAuth(auth), remote.WithTransport(http.DefaultTransport))
 	if err != nil {
 		if transportErr, ok := err.(*transport.Error); ok && len(transportErr.Errors) > 0 {
-			switch transportErr.Errors[0].Code {
-			case transport.UnauthorizedErrorCode, transport.ManifestUnknownErrorCode:
+			switch transportErr.StatusCode {
+			case http.StatusNotFound, http.StatusUnauthorized:
 				return emptyImage()
 			}
 		}
@@ -136,6 +136,14 @@ func (i *Image) Label(key string) (string, error) {
 	}
 	labels := cfg.Config.Labels
 	return labels[key], nil
+}
+
+func (i *Image) Labels() (map[string]string, error) {
+	cfg, err := i.image.ConfigFile()
+	if err != nil || cfg == nil {
+		return nil, fmt.Errorf("failed to get config file for image '%s'", i.repoName)
+	}
+	return cfg.Config.Labels, nil
 }
 
 func (i *Image) Env(key string) (string, error) {
@@ -189,7 +197,7 @@ func (i *Image) Found() bool {
 	if err != nil {
 		return false
 	}
-	_, err = remote.Image(ref, remote.WithAuth(auth), remote.WithTransport(http.DefaultTransport))
+	_, err = remote.Head(ref, remote.WithAuth(auth), remote.WithTransport(http.DefaultTransport))
 	return err == nil
 }
 
@@ -232,6 +240,26 @@ func (i *Image) Rebase(baseTopLayer string, newBase imgutil.Image) error {
 	if err != nil {
 		return errors.Wrap(err, "rebase")
 	}
+
+	newImageConfig, err := newImage.ConfigFile()
+	if err != nil {
+		return err
+	}
+
+	newBaseRemoteConfig, err := newBaseRemote.image.ConfigFile()
+	if err != nil {
+		return err
+	}
+
+	newImageConfig.Architecture = newBaseRemoteConfig.Architecture
+	newImageConfig.OS = newBaseRemoteConfig.OS
+	newImageConfig.OSVersion = newBaseRemoteConfig.OSVersion
+
+	newImage, err = mutate.ConfigFile(newImage, newImageConfig)
+	if err != nil {
+		return err
+	}
+
 	i.image = newImage
 	return nil
 }
@@ -250,15 +278,33 @@ func (i *Image) SetLabel(key, val string) error {
 	return err
 }
 
+func (i *Image) RemoveLabel(key string) error {
+	cfg, err := i.image.ConfigFile()
+	if err != nil || cfg == nil {
+		return fmt.Errorf("failed to get config file for image '%s'", i.repoName)
+	}
+	config := *cfg.Config.DeepCopy()
+	delete(config.Labels, key)
+	i.image, err = mutate.Config(i.image, config)
+	return err
+}
+
 func (i *Image) SetEnv(key, val string) error {
 	configFile, err := i.image.ConfigFile()
 	if err != nil {
 		return err
 	}
 	config := *configFile.Config.DeepCopy()
+	ignoreCase := configFile.OS == "windows"
 	for idx, e := range config.Env {
 		parts := strings.Split(e, "=")
-		if parts[0] == key {
+		foundKey := parts[0]
+		searchKey := key
+		if ignoreCase {
+			foundKey = strings.ToUpper(foundKey)
+			searchKey = strings.ToUpper(searchKey)
+		}
+		if foundKey == searchKey {
 			config.Env[idx] = fmt.Sprintf("%s=%s", key, val)
 			i.image, err = mutate.Config(i.image, config)
 			if err != nil {
@@ -302,6 +348,36 @@ func (i *Image) SetCmd(cmd ...string) error {
 	config := *configFile.Config.DeepCopy()
 	config.Cmd = cmd
 	i.image, err = mutate.Config(i.image, config)
+	return err
+}
+
+func (i *Image) SetOS(osVal string) error {
+	configFile, err := i.image.ConfigFile()
+	if err != nil {
+		return err
+	}
+	configFile.OS = osVal
+	i.image, err = mutate.ConfigFile(i.image, configFile)
+	return err
+}
+
+func (i *Image) SetOSVersion(osVersion string) error {
+	configFile, err := i.image.ConfigFile()
+	if err != nil {
+		return err
+	}
+	configFile.OSVersion = osVersion
+	i.image, err = mutate.ConfigFile(i.image, configFile)
+	return err
+}
+
+func (i *Image) SetArchitecture(architecture string) error {
+	configFile, err := i.image.ConfigFile()
+	if err != nil {
+		return err
+	}
+	configFile.Architecture = architecture
+	i.image, err = mutate.ConfigFile(i.image, configFile)
 	return err
 }
 
@@ -463,10 +539,10 @@ func (si *subImage) Layers() ([]v1.Layer, error) {
 	}
 	return nil, errors.New("could not find base layer in image")
 }
+func (si *subImage) ConfigFile() (*v1.ConfigFile, error)     { return si.img.ConfigFile() }
 func (si *subImage) BlobSet() (map[v1.Hash]struct{}, error)  { panic("Not Implemented") }
 func (si *subImage) MediaType() (types.MediaType, error)     { panic("Not Implemented") }
 func (si *subImage) ConfigName() (v1.Hash, error)            { panic("Not Implemented") }
-func (si *subImage) ConfigFile() (*v1.ConfigFile, error)     { panic("Not Implemented") }
 func (si *subImage) RawConfigFile() ([]byte, error)          { panic("Not Implemented") }
 func (si *subImage) Digest() (v1.Hash, error)                { panic("Not Implemented") }
 func (si *subImage) Manifest() (*v1.Manifest, error)         { panic("Not Implemented") }

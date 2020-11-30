@@ -81,7 +81,12 @@ func GenerateTarWithWriter(genFn func(TarWriter) error, twf TarWriterFactory) io
 		errChan <- closeErr
 	}()
 
+	closed := false
 	return ioutils.NewReadCloserWrapper(pr, func() error {
+		if closed {
+			return errors.New("reader already closed")
+		}
+
 		var completeErr error
 
 		// closing the reader ensures that if anything attempts
@@ -95,6 +100,7 @@ func GenerateTarWithWriter(genFn func(TarWriter) error, twf TarWriterFactory) io
 			completeErr = aggregateError(completeErr, err)
 		}
 
+		closed = true
 		return completeErr
 	})
 }
@@ -178,7 +184,8 @@ func WriteDirToTar(tw TarWriter, srcDir, basePath string, uid, gid int, mode int
 				return err
 			}
 
-			header, err = tar.FileInfoHeader(fi, target)
+			// Ensure that symlinks have Linux link names, independent of source OS
+			header, err = tar.FileInfoHeader(fi, filepath.ToSlash(target))
 			if err != nil {
 				return err
 			}

@@ -13,3 +13,6 @@
 
 # IDEs
 .idea/
+
+# Build timestamp
+tools/bcdhive_generator/.build

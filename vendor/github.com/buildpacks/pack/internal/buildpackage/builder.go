@@ -3,8 +3,11 @@ package buildpackage
 import (
 	"archive/tar"
 	"compress/gzip"
+	"io"
 	"io/ioutil"
 	"os"
+
+	"github.com/buildpacks/imgutil/layer"
 
 	"github.com/buildpacks/imgutil"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -25,6 +28,7 @@ type ImageFactory interface {
 }
 
 type WorkableImage interface {
+	SetOS(string) error
 	SetLabel(string, string) error
 	AddLayerWithDiffID(path, diffID string) error
 }
@@ -47,12 +51,22 @@ func (i *layoutImage) SetLabel(key string, val string) error {
 	return err
 }
 
-func (i *layoutImage) AddLayerWithDiffID(path, _ string) error {
-	layer, err := tarball.LayerFromFile(path, tarball.WithCompressionLevel(gzip.DefaultCompression))
+func (i *layoutImage) SetOS(osVal string) error {
+	configFile, err := i.ConfigFile()
 	if err != nil {
 		return err
 	}
-	i.Image, err = mutate.AppendLayers(i.Image, layer)
+	configFile.OS = osVal
+	i.Image, err = mutate.ConfigFile(i.Image, configFile)
+	return err
+}
+
+func (i *layoutImage) AddLayerWithDiffID(path, _ string) error {
+	tarLayer, err := tarball.LayerFromFile(path, tarball.WithCompressionLevel(gzip.DefaultCompression))
+	if err != nil {
+		return err
+	}
+	i.Image, err = mutate.AppendLayers(i.Image, tarLayer)
 	if err != nil {
 		return errors.Wrap(err, "add layer")
 	}
@@ -79,12 +93,22 @@ func (b *PackageBuilder) AddDependency(buildpack dist.Buildpack) {
 	b.dependencies = append(b.dependencies, buildpack)
 }
 
-func (b *PackageBuilder) finalizeImage(tmpDir string, image WorkableImage) error {
+func (b *PackageBuilder) finalizeImage(image WorkableImage, imageOS, tmpDir string) error {
 	if err := dist.SetLabel(image, MetadataLabel, &Metadata{
 		BuildpackInfo: b.buildpack.Descriptor().Info,
 		Stacks:        b.resolvedStacks(),
 	}); err != nil {
 		return err
+	}
+
+	if err := image.SetOS(imageOS); err != nil {
+		return err
+	}
+
+	if imageOS == "windows" {
+		if err := addWindowsShimBaseLayer(image, tmpDir); err != nil {
+			return err
+		}
 	}
 
 	bpLayers := dist.BuildpackLayers{}
@@ -110,6 +134,39 @@ func (b *PackageBuilder) finalizeImage(tmpDir string, image WorkableImage) error
 	}
 
 	if err := dist.SetLabel(image, dist.BuildpackLayersLabel, bpLayers); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func addWindowsShimBaseLayer(image WorkableImage, tmpDir string) error {
+	baseLayerFile, err := ioutil.TempFile(tmpDir, "windows-baselayer")
+	if err != nil {
+		return err
+	}
+	defer baseLayerFile.Close()
+
+	baseLayer, err := layer.WindowsBaseLayer()
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(baseLayerFile, baseLayer); err != nil {
+		return err
+	}
+
+	if err := baseLayerFile.Close(); err != nil {
+		return err
+	}
+
+	baseLayerPath := baseLayerFile.Name()
+	diffID, err := dist.LayerDiffID(baseLayerPath)
+	if err != nil {
+		return err
+	}
+
+	if err := image.AddLayerWithDiffID(baseLayerPath, diffID.String()); err != nil {
 		return err
 	}
 
@@ -147,7 +204,7 @@ func (b *PackageBuilder) resolvedStacks() []dist.Stack {
 	return stacks
 }
 
-func (b *PackageBuilder) SaveAsFile(path string) error {
+func (b *PackageBuilder) SaveAsFile(path, imageOS string) error {
 	if err := b.validate(); err != nil {
 		return err
 	}
@@ -162,7 +219,7 @@ func (b *PackageBuilder) SaveAsFile(path string) error {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	if err := b.finalizeImage(tmpDir, layoutImage); err != nil {
+	if err := b.finalizeImage(layoutImage, imageOS, tmpDir); err != nil {
 		return err
 	}
 
@@ -192,7 +249,7 @@ func (b *PackageBuilder) SaveAsFile(path string) error {
 	return archive.WriteDirToTar(tw, layoutDir, "/", 0, 0, 0755, true, nil)
 }
 
-func (b *PackageBuilder) SaveAsImage(repoName string, publish bool) (imgutil.Image, error) {
+func (b *PackageBuilder) SaveAsImage(repoName string, publish bool, imageOS string) (imgutil.Image, error) {
 	if err := b.validate(); err != nil {
 		return nil, err
 	}
@@ -208,7 +265,7 @@ func (b *PackageBuilder) SaveAsImage(repoName string, publish bool) (imgutil.Ima
 	}
 	defer os.RemoveAll(tmpDir)
 
-	if err := b.finalizeImage(tmpDir, image); err != nil {
+	if err := b.finalizeImage(image, imageOS, tmpDir); err != nil {
 		return nil, err
 	}
 

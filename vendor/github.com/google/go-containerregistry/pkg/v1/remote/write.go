@@ -16,6 +16,7 @@ package remote
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -56,8 +57,9 @@ func Write(ref name.Reference, img v1.Image, options ...Option) error {
 		return err
 	}
 	w := writer{
-		repo:   ref.Context(),
-		client: &http.Client{Transport: tr},
+		repo:    ref.Context(),
+		client:  &http.Client{Transport: tr},
+		context: o.context,
 	}
 
 	// Upload individual layers in goroutines and collect any errors.
@@ -130,8 +132,9 @@ func Write(ref name.Reference, img v1.Image, options ...Option) error {
 
 // writer writes the elements of an image to a remote image reference.
 type writer struct {
-	repo   name.Repository
-	client *http.Client
+	repo    name.Repository
+	client  *http.Client
+	context context.Context
 }
 
 // url returns a url.Url for the specified path in the context of this remote image reference.
@@ -166,7 +169,12 @@ func (w *writer) nextLocation(resp *http.Response) (string, error) {
 func (w *writer) checkExistingBlob(h v1.Hash) (bool, error) {
 	u := w.url(fmt.Sprintf("/v2/%s/blobs/%s", w.repo.RepositoryStr(), h.String()))
 
-	resp, err := w.client.Head(u.String())
+	req, err := http.NewRequest(http.MethodHead, u.String(), nil)
+	if err != nil {
+		return false, err
+	}
+
+	resp, err := w.client.Do(req.WithContext(w.context))
 	if err != nil {
 		return false, err
 	}
@@ -190,7 +198,7 @@ func (w *writer) checkExistingManifest(h v1.Hash, mt types.MediaType) (bool, err
 	}
 	req.Header.Set("Accept", string(mt))
 
-	resp, err := w.client.Do(req)
+	resp, err := w.client.Do(req.WithContext(w.context))
 	if err != nil {
 		return false, err
 	}
@@ -220,7 +228,12 @@ func (w *writer) initiateUpload(from, mount string) (location string, mounted bo
 	u.RawQuery = uv.Encode()
 
 	// Make the request to initiate the blob upload.
-	resp, err := w.client.Post(u.String(), "application/json", nil)
+	req, err := http.NewRequest(http.MethodPost, u.String(), nil)
+	if err != nil {
+		return "", false, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := w.client.Do(req.WithContext(w.context))
 	if err != nil {
 		return "", false, err
 	}
@@ -248,14 +261,12 @@ func (w *writer) initiateUpload(from, mount string) (location string, mounted bo
 // On failure, this will return an error.  On success, this will return the location
 // header indicating how to commit the streamed blob.
 func (w *writer) streamBlob(blob io.ReadCloser, streamLocation string) (commitLocation string, err error) {
-	defer blob.Close()
-
 	req, err := http.NewRequest(http.MethodPatch, streamLocation, blob)
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := w.client.Do(req)
+	resp, err := w.client.Do(req.WithContext(w.context))
 	if err != nil {
 		return "", err
 	}
@@ -286,7 +297,7 @@ func (w *writer) commitBlob(location, digest string) error {
 		return err
 	}
 
-	resp, err := w.client.Do(req)
+	resp, err := w.client.Do(req.WithContext(w.context))
 	if err != nil {
 		return err
 	}
@@ -426,7 +437,7 @@ func (w *writer) commitImage(t Taggable, ref name.Reference) error {
 	}
 	req.Header.Set("Content-Type", string(desc.MediaType))
 
-	resp, err := w.client.Do(req)
+	resp, err := w.client.Do(req.WithContext(w.context))
 	if err != nil {
 		return err
 	}
@@ -485,8 +496,9 @@ func WriteIndex(ref name.Reference, ii v1.ImageIndex, options ...Option) error {
 		return err
 	}
 	w := writer{
-		repo:   ref.Context(),
-		client: &http.Client{Transport: tr},
+		repo:    ref.Context(),
+		client:  &http.Client{Transport: tr},
+		context: o.context,
 	}
 
 	for _, desc := range index.Manifests {
@@ -538,8 +550,9 @@ func WriteLayer(repo name.Repository, layer v1.Layer, options ...Option) error {
 		return err
 	}
 	w := writer{
-		repo:   repo,
-		client: &http.Client{Transport: tr},
+		repo:    repo,
+		client:  &http.Client{Transport: tr},
+		context: o.context,
 	}
 
 	return w.uploadOne(layer)
@@ -564,8 +577,9 @@ func Tag(tag name.Tag, t Taggable, options ...Option) error {
 		return err
 	}
 	w := writer{
-		repo:   tag.Context(),
-		client: &http.Client{Transport: tr},
+		repo:    tag.Context(),
+		client:  &http.Client{Transport: tr},
+		context: o.context,
 	}
 
 	return w.commitImage(t, tag)

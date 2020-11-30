@@ -4,3 +4,5 @@
 *.test
 *~
 /out
+
+acceptance/testdata/*/**/container/cnb/lifecycle/*

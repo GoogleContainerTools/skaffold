@@ -9,35 +9,44 @@ import (
 	"github.com/pkg/errors"
 )
 
-func saveImage(image imgutil.Image, additionalNames []string, logger Logger) error {
+func saveImage(image imgutil.Image, additionalNames []string, logger Logger) (ImageReport, error) {
 	var saveErr error
+	imageReport := ImageReport{}
 	if err := image.Save(additionalNames...); err != nil {
 		var ok bool
 		if saveErr, ok = err.(imgutil.SaveError); !ok {
-			return errors.Wrap(err, "saving image")
+			return ImageReport{}, errors.Wrap(err, "saving image")
 		}
 	}
 
 	id, idErr := image.Identifier()
 	if idErr != nil {
 		if saveErr != nil {
-			return &MultiError{Errors: []error{idErr, saveErr}}
+			return ImageReport{}, &MultiError{Errors: []error{idErr, saveErr}}
 		}
-		return idErr
+		return ImageReport{}, idErr
 	}
 
-	refType, ref, shortRef := getReference(id)
-	logger.Infof("*** Images (%s):\n", shortRef)
+	logger.Infof("*** Images (%s):\n", shortID(id))
 	for _, n := range append([]string{image.Name()}, additionalNames...) {
 		if ok, message := getSaveStatus(saveErr, n); !ok {
 			logger.Infof("      %s - %s\n", n, message)
 		} else {
 			logger.Infof("      %s\n", n)
+			imageReport.Tags = append(imageReport.Tags, n)
 		}
 	}
+	switch v := id.(type) {
+	case local.IDIdentifier:
+		imageReport.ImageID = v.String()
+		logger.Debugf("\n*** Image ID: %s\n", v.String())
+	case remote.DigestIdentifier:
+		imageReport.Digest = v.Digest.DigestStr()
+		logger.Debugf("\n*** Digest: %s\n", v.Digest.DigestStr())
+	default:
+	}
 
-	logger.Debugf("\n*** %s: %s\n", refType, ref)
-	return saveErr
+	return imageReport, saveErr
 }
 
 type MultiError struct {
@@ -48,14 +57,14 @@ func (me *MultiError) Error() string {
 	return fmt.Sprintf("failed with multiple errors %+v", me.Errors)
 }
 
-func getReference(identifier imgutil.Identifier) (string, string, string) {
+func shortID(identifier imgutil.Identifier) string {
 	switch v := identifier.(type) {
 	case local.IDIdentifier:
-		return "Image ID", v.String(), TruncateSha(v.String())
+		return TruncateSha(v.String())
 	case remote.DigestIdentifier:
-		return "Digest", v.Digest.DigestStr(), v.Digest.DigestStr()
+		return v.Digest.DigestStr()
 	default:
-		return "Reference", v.String(), v.String()
+		return v.String()
 	}
 }
 

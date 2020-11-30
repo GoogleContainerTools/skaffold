@@ -1,11 +1,24 @@
 package build
 
-type DefaultPhaseFactory struct {
-	lifecycle *Lifecycle
+import "context"
+
+type RunnerCleaner interface {
+	Run(ctx context.Context) error
+	Cleanup() error
 }
 
-func NewDefaultPhaseFactory(lifecycle *Lifecycle) *DefaultPhaseFactory {
-	return &DefaultPhaseFactory{lifecycle: lifecycle}
+type PhaseFactory interface {
+	New(provider *PhaseConfigProvider) RunnerCleaner
+}
+
+type DefaultPhaseFactory struct {
+	lifecycleExec *LifecycleExecution
+}
+
+type PhaseFactoryCreator func(*LifecycleExecution) PhaseFactory
+
+func NewDefaultPhaseFactory(lifecycleExec *LifecycleExecution) PhaseFactory {
+	return &DefaultPhaseFactory{lifecycleExec: lifecycleExec}
 }
 
 func (m *DefaultPhaseFactory) New(provider *PhaseConfigProvider) RunnerCleaner {
@@ -13,13 +26,13 @@ func (m *DefaultPhaseFactory) New(provider *PhaseConfigProvider) RunnerCleaner {
 		ctrConf:      provider.ContainerConfig(),
 		hostConf:     provider.HostConfig(),
 		name:         provider.Name(),
-		docker:       m.lifecycle.docker,
+		docker:       m.lifecycleExec.docker,
 		infoWriter:   provider.InfoWriter(),
 		errorWriter:  provider.ErrorWriter(),
-		uid:          m.lifecycle.builder.UID(),
-		gid:          m.lifecycle.builder.GID(),
-		appPath:      m.lifecycle.appPath,
+		uid:          m.lifecycleExec.opts.Builder.UID(),
+		gid:          m.lifecycleExec.opts.Builder.GID(),
+		appPath:      m.lifecycleExec.opts.AppPath,
 		containerOps: provider.containerOps,
-		fileFilter:   m.lifecycle.fileFilter,
+		fileFilter:   m.lifecycleExec.opts.FileFilter,
 	}
 }

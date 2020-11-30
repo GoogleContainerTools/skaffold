@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/buildpacks/pack"
+	packcfg "github.com/buildpacks/pack/config"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -76,12 +77,12 @@ func TestBuild(t *testing.T) {
 			api:         &testutil.FakeAPIClient{},
 			resolver:    mockArtifactResolver{},
 			expectedOptions: &pack.BuildOptions{
-				AppPath:  ".",
-				Builder:  "my/builder",
-				RunImage: "my/run",
-				NoPull:   true,
-				Env:      nonDebugModeArgs,
-				Image:    "img:latest",
+				AppPath:    ".",
+				Builder:    "my/builder",
+				RunImage:   "my/run",
+				PullPolicy: packcfg.PullNever,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
 			},
 		},
 
@@ -115,7 +116,7 @@ func TestBuild(t *testing.T) {
 				RunImage:     "my/otherRun",
 				Buildpacks:   []string{"my/buildpack", "my/otherBuildpack"},
 				TrustBuilder: true,
-				NoPull:       true,
+				PullPolicy:   packcfg.PullNever,
 				Env:          nonDebugModeArgs,
 				Image:        "img:latest",
 			},
@@ -309,12 +310,12 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 			api:         &testutil.FakeAPIClient{},
 			resolver:    mockArtifactResolver{m: map[string]string{"builder-image": "my/custom-builder"}},
 			expectedOptions: &pack.BuildOptions{
-				AppPath:  ".",
-				Builder:  "my/custom-builder",
-				RunImage: "my/run",
-				NoPull:   true,
-				Env:      nonDebugModeArgs,
-				Image:    "img:latest",
+				AppPath:    ".",
+				Builder:    "my/custom-builder",
+				RunImage:   "my/run",
+				PullPolicy: packcfg.PullIfNotPresent,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
 			},
 		},
 		{
@@ -326,12 +327,12 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 			api:         &testutil.FakeAPIClient{},
 			resolver:    mockArtifactResolver{m: map[string]string{"run-image": "my/custom-run"}},
 			expectedOptions: &pack.BuildOptions{
-				AppPath:  ".",
-				Builder:  "my/builder",
-				RunImage: "my/custom-run",
-				NoPull:   true,
-				Env:      nonDebugModeArgs,
-				Image:    "img:latest",
+				AppPath:    ".",
+				Builder:    "my/builder",
+				RunImage:   "my/custom-run",
+				PullPolicy: packcfg.PullIfNotPresent,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
 			},
 		},
 		{
@@ -343,12 +344,12 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 			api:         &testutil.FakeAPIClient{},
 			resolver:    mockArtifactResolver{m: map[string]string{"builder-image": "my/custom-builder"}},
 			expectedOptions: &pack.BuildOptions{
-				AppPath:  ".",
-				Builder:  "my/custom-builder",
-				RunImage: "my/run",
-				NoPull:   false,
-				Env:      nonDebugModeArgs,
-				Image:    "img:latest",
+				AppPath:    ".",
+				Builder:    "my/custom-builder",
+				RunImage:   "my/run",
+				PullPolicy: packcfg.PullIfNotPresent,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
 			},
 		},
 		{
@@ -360,12 +361,12 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 			api:         &testutil.FakeAPIClient{},
 			resolver:    mockArtifactResolver{m: map[string]string{"run-image": "my/custom-run"}},
 			expectedOptions: &pack.BuildOptions{
-				AppPath:  ".",
-				Builder:  "my/builder",
-				RunImage: "my/custom-run",
-				NoPull:   false,
-				Env:      nonDebugModeArgs,
-				Image:    "img:latest",
+				AppPath:    ".",
+				Builder:    "my/builder",
+				RunImage:   "my/custom-run",
+				PullPolicy: packcfg.PullIfNotPresent,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
 			},
 		},
 		{
@@ -377,12 +378,12 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 			api:         &testutil.FakeAPIClient{},
 			resolver:    mockArtifactResolver{m: map[string]string{"builder-image": "my/custom-builder", "run-image": "my/custom-run"}},
 			expectedOptions: &pack.BuildOptions{
-				AppPath:  ".",
-				Builder:  "my/custom-builder",
-				RunImage: "my/custom-run",
-				NoPull:   true,
-				Env:      nonDebugModeArgs,
-				Image:    "img:latest",
+				AppPath:    ".",
+				Builder:    "my/custom-builder",
+				RunImage:   "my/custom-run",
+				PullPolicy: packcfg.PullNever,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
 			},
 		},
 		{
@@ -394,12 +395,12 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 			api:         &testutil.FakeAPIClient{},
 			resolver:    mockArtifactResolver{m: map[string]string{"builder-image": "my/custom-builder", "run-image": "my/custom-run"}},
 			expectedOptions: &pack.BuildOptions{
-				AppPath:  ".",
-				Builder:  "my/custom-builder",
-				RunImage: "my/custom-run",
-				NoPull:   true,
-				Env:      nonDebugModeArgs,
-				Image:    "img:latest",
+				AppPath:    ".",
+				Builder:    "my/custom-builder",
+				RunImage:   "my/custom-run",
+				PullPolicy: packcfg.PullNever,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
 			},
 		},
 	}

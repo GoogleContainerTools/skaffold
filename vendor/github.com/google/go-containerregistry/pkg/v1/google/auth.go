@@ -118,7 +118,8 @@ func (tsa *tokenSourceAuth) Authorization() (*authn.AuthConfig, error) {
 	}
 
 	return &authn.AuthConfig{
-		RegistryToken: token.AccessToken,
+		Username: "_token",
+		Password: token.AccessToken,
 	}, nil
 }
 

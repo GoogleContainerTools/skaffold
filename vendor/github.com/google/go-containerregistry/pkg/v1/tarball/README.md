@@ -75,7 +75,7 @@ ubuntu/
 There are a couple interesting files here.
 
 `manifest.json` is the entrypoint: a list of [`tarball.Descriptor`s](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/tarball#Descriptor)
-that describe the images containd in this tarball.
+that describe the images contained in this tarball.
 
 For each image, this has the `RepoTags` (how it was pulled), a `Config` file
 that points to the image's config file, a list of `Layers`, and (optionally)

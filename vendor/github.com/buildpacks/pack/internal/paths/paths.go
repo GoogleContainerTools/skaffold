@@ -15,8 +15,8 @@ func IsURI(ref string) bool {
 	return schemeRegexp.MatchString(ref)
 }
 
-func IsDir(path string) (bool, error) {
-	fileInfo, err := os.Stat(path)
+func IsDir(p string) (bool, error) {
+	fileInfo, err := os.Stat(p)
 	if err != nil {
 		return false, err
 	}
@@ -24,22 +24,22 @@ func IsDir(path string) (bool, error) {
 	return fileInfo.IsDir(), nil
 }
 
-func FilePathToURI(path string) (string, error) {
+func FilePathToURI(p string) (string, error) {
 	var err error
-	if !filepath.IsAbs(path) {
-		path, err = filepath.Abs(path)
+	if !filepath.IsAbs(p) {
+		p, err = filepath.Abs(p)
 		if err != nil {
 			return "", err
 		}
 	}
 
 	if runtime.GOOS == "windows" {
-		if strings.HasPrefix(path, `\\`) {
-			return "file://" + filepath.ToSlash(strings.TrimPrefix(path, `\\`)), nil
+		if strings.HasPrefix(p, `\\`) {
+			return "file://" + filepath.ToSlash(strings.TrimPrefix(p, `\\`)), nil
 		}
-		return "file:///" + filepath.ToSlash(path), nil
+		return "file:///" + filepath.ToSlash(p), nil
 	}
-	return "file://" + path, nil
+	return "file://" + p, nil
 }
 
 // examples:
@@ -85,4 +85,60 @@ func ToAbsolute(uri, relativeTo string) (string, error) {
 	}
 
 	return uri, nil
+}
+
+func FilterReservedNames(p string) string {
+	// The following keys are reserved on Windows
+	// https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file?redirectedfrom=MSDN#win32-file-namespaces
+	reservedNameConversions := map[string]string{
+		"aux": "a_u_x",
+		"com": "c_o_m",
+		"con": "c_o_n",
+		"lpt": "l_p_t",
+		"nul": "n_u_l",
+		"prn": "p_r_n",
+	}
+	for k, v := range reservedNameConversions {
+		p = strings.Replace(p, k, v, -1)
+	}
+
+	return p
+}
+
+//WindowsDir is equivalent to path.Dir or filepath.Dir but always for Windows paths
+//reproduced because Windows implementation is not exported
+func WindowsDir(p string) string {
+	pathElements := strings.Split(p, `\`)
+
+	dirName := strings.Join(pathElements[:len(pathElements)-1], `\`)
+
+	return dirName
+}
+
+//WindowsBasename is equivalent to path.Basename or filepath.Basename but always for Windows paths
+//reproduced because Windows implementation is not exported
+func WindowsBasename(p string) string {
+	pathElements := strings.Split(p, `\`)
+
+	return pathElements[len(pathElements)-1]
+}
+
+//WindowsToSlash is equivalent to path.ToSlash or filepath.ToSlash but always for Windows paths
+//reproduced because Windows implementation is not exported
+func WindowsToSlash(p string) string {
+	slashPath := strings.ReplaceAll(p, `\`, "/") // convert slashes
+	if len(slashPath) < 2 {
+		return ""
+	}
+
+	return slashPath[2:] // strip volume
+}
+
+//WindowsPathSID returns the appropriate SID for a given UID and GID
+//This the basic logic for path permissions in Pack and Lifecycle
+func WindowsPathSID(uid, gid int) string {
+	if uid == 0 && gid == 0 {
+		return "S-1-5-32-544" // BUILTIN\Administrators
+	}
+	return "S-1-5-32-545" // BUILTIN\Users
 }

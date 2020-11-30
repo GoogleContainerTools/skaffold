@@ -6,33 +6,63 @@ import (
 	"github.com/pkg/errors"
 
 	pubbldpkg "github.com/buildpacks/pack/buildpackage"
-	"github.com/buildpacks/pack/internal/archive"
+	"github.com/buildpacks/pack/config"
+	"github.com/buildpacks/pack/internal/buildpack"
 	"github.com/buildpacks/pack/internal/buildpackage"
 	"github.com/buildpacks/pack/internal/dist"
+	"github.com/buildpacks/pack/internal/layer"
 	"github.com/buildpacks/pack/internal/style"
 )
 
 const (
+	// Packaging indicator that format of inputs/outputs will be an OCI image on the registry.
 	FormatImage = "image"
-	FormatFile  = "file"
+
+	// Packaging indicator that format of output will be a file on the host filesystem.
+	FormatFile = "file"
 )
 
-// PackageBuildpackOptions are configuration options and metadata you can pass into PackageBuildpack
+// PackageBuildpackOptions is a configuration object used to define
+// the behavior of PackageBuildpack.
 type PackageBuildpackOptions struct {
-	Name    string
-	Format  string
-	Config  pubbldpkg.Config
+	// The name of the output buildpack artifact.
+	Name string
+
+	// Type of output format, The options are the either the const FormatImage, or FormatFile.
+	Format string
+
+	// Defines the Buildpacks configuration.
+	Config pubbldpkg.Config
+
+	// Push resulting builder image up to a registry
+	// specified in the Name variable.
 	Publish bool
-	NoPull  bool
+
+	// Strategy for updating images before packaging.
+	PullPolicy config.PullPolicy
 }
 
-// PackageBuildpack packages buildpack(s) into an image or file
+// PackageBuildpack packages buildpack(s) into either an image or file.
 func (c *Client) PackageBuildpack(ctx context.Context, opts PackageBuildpackOptions) error {
-	packageBuilder := buildpackage.NewBuilder(c.imageFactory)
-
 	if opts.Format == "" {
 		opts.Format = FormatImage
 	}
+
+	if opts.Config.Platform.OS == "windows" && !c.experimental {
+		return NewExperimentError("Windows buildpackage support is currently experimental.")
+	}
+
+	err := c.validateOSPlatform(ctx, opts.Config.Platform.OS, opts.Publish, opts.Format)
+	if err != nil {
+		return err
+	}
+
+	writerFactory, err := layer.NewWriterFactory(opts.Config.Platform.OS)
+	if err != nil {
+		return errors.Wrap(err, "creating layer writer factory")
+	}
+
+	packageBuilder := buildpackage.NewBuilder(c.imageFactory)
 
 	bpURI := opts.Config.Buildpack.URI
 	if bpURI == "" {
@@ -44,7 +74,7 @@ func (c *Client) PackageBuildpack(ctx context.Context, opts PackageBuildpackOpti
 		return errors.Wrapf(err, "downloading buildpack from %s", style.Symbol(bpURI))
 	}
 
-	bp, err := dist.BuildpackFromRootBlob(blob, archive.DefaultTarWriterFactory())
+	bp, err := dist.BuildpackFromRootBlob(blob, writerFactory)
 	if err != nil {
 		return errors.Wrapf(err, "creating buildpack from %s", style.Symbol(bpURI))
 	}
@@ -55,32 +85,44 @@ func (c *Client) PackageBuildpack(ctx context.Context, opts PackageBuildpackOpti
 		var depBPs []dist.Buildpack
 
 		if dep.URI != "" {
-			blob, err := c.downloader.Download(ctx, dep.URI)
-			if err != nil {
-				return errors.Wrapf(err, "downloading buildpack from %s", style.Symbol(dep.URI))
-			}
-
-			isOCILayout, err := buildpackage.IsOCILayoutBlob(blob)
-			if err != nil {
-				return errors.Wrap(err, "inspecting buildpack blob")
-			}
-
-			if isOCILayout {
-				mainBP, deps, err := buildpackage.BuildpacksFromOCILayoutBlob(blob)
+			if buildpack.HasDockerLocator(dep.URI) {
+				imageName := buildpack.ParsePackageLocator(dep.URI)
+				c.logger.Debugf("Downloading buildpack from image: %s", style.Symbol(imageName))
+				mainBP, deps, err := extractPackagedBuildpacks(ctx, imageName, c.imageFetcher, opts.Publish, opts.PullPolicy)
 				if err != nil {
-					return errors.Wrapf(err, "extracting buildpacks from %s", style.Symbol(dep.URI))
+					return err
 				}
 
 				depBPs = append([]dist.Buildpack{mainBP}, deps...)
 			} else {
-				depBP, err := dist.BuildpackFromRootBlob(blob, archive.DefaultTarWriterFactory())
+				blob, err := c.downloader.Download(ctx, dep.URI)
 				if err != nil {
-					return errors.Wrapf(err, "creating buildpack from %s", style.Symbol(dep.URI))
+					return errors.Wrapf(err, "downloading buildpack from %s", style.Symbol(dep.URI))
 				}
-				depBPs = []dist.Buildpack{depBP}
+
+				isOCILayout, err := buildpackage.IsOCILayoutBlob(blob)
+				if err != nil {
+					return errors.Wrap(err, "inspecting buildpack blob")
+				}
+
+				if isOCILayout {
+					mainBP, deps, err := buildpackage.BuildpacksFromOCILayoutBlob(blob)
+					if err != nil {
+						return errors.Wrapf(err, "extracting buildpacks from %s", style.Symbol(dep.URI))
+					}
+
+					depBPs = append([]dist.Buildpack{mainBP}, deps...)
+				} else {
+					depBP, err := dist.BuildpackFromRootBlob(blob, writerFactory)
+					if err != nil {
+						return errors.Wrapf(err, "creating buildpack from %s", style.Symbol(dep.URI))
+					}
+					depBPs = []dist.Buildpack{depBP}
+				}
 			}
 		} else if dep.ImageName != "" {
-			mainBP, deps, err := extractPackagedBuildpacks(ctx, dep.ImageName, c.imageFetcher, opts.Publish, opts.NoPull)
+			c.logger.Warn("The 'image' key is deprecated. Use 'uri=\"docker://...\"' instead.")
+			mainBP, deps, err := extractPackagedBuildpacks(ctx, dep.ImageName, c.imageFetcher, opts.Publish, opts.PullPolicy)
 			if err != nil {
 				return err
 			}
@@ -95,11 +137,28 @@ func (c *Client) PackageBuildpack(ctx context.Context, opts PackageBuildpackOpti
 
 	switch opts.Format {
 	case FormatFile:
-		return packageBuilder.SaveAsFile(opts.Name)
+		return packageBuilder.SaveAsFile(opts.Name, opts.Config.Platform.OS)
 	case FormatImage:
-		_, err = packageBuilder.SaveAsImage(opts.Name, opts.Publish)
+		_, err = packageBuilder.SaveAsImage(opts.Name, opts.Publish, opts.Config.Platform.OS)
 		return errors.Wrapf(err, "saving image")
 	default:
 		return errors.Errorf("unknown format: %s", style.Symbol(opts.Format))
 	}
+}
+
+func (c *Client) validateOSPlatform(ctx context.Context, os string, publish bool, format string) error {
+	if publish || format == FormatFile {
+		return nil
+	}
+
+	info, err := c.docker.Info(ctx)
+	if err != nil {
+		return err
+	}
+
+	if info.OSType != os {
+		return errors.Errorf("invalid %s specified: DOCKER_OS is %s", style.Symbol("platform.os"), style.Symbol(info.OSType))
+	}
+
+	return nil
 }

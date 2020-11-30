@@ -51,7 +51,7 @@ There are some properties of a [`Descriptor`](https://github.com/opencontainers/
 
 For example, in a `tarball.Image`, there is a `LayerSources` field that contains
 an entire layer descriptor with `URLs` information for foreign layers. This
-information can be passed through to callers by implementing this optional 
+information can be passed through to callers by implementing this optional
 `Descriptor` method.
 
 See [`#654`](https://github.com/google/go-containerregistry/pull/654).

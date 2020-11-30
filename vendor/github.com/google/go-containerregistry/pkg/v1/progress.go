@@ -17,6 +17,7 @@ package v1
 // Update representation of an update of transfer progress. Some functions
 // in this module can take a channel to which updates will be sent while a
 // transfer is in progress.
+// +k8s:deepcopy-gen=false
 type Update struct {
 	Total    int64
 	Complete int64

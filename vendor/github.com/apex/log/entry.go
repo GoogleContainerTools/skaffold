@@ -47,11 +47,21 @@ func (e *Entry) WithField(key string, value interface{}) *Entry {
 	return e.WithFields(Fields{key: value})
 }
 
+// WithDuration returns a new entry with the "duration" field set
+// to the given duration in milliseconds.
+func (e *Entry) WithDuration(d time.Duration) *Entry {
+	return e.WithField("duration", d.Milliseconds())
+}
+
 // WithError returns a new entry with the "error" set to `err`.
 //
 // The given error may implement .Fielder, if it does the method
 // will add all its `.Fields()` into the returned entry.
 func (e *Entry) WithError(err error) *Entry {
+	if err == nil {
+		return e
+	}
+
 	ctx := e.WithField("error", err.Error())
 
 	if s, ok := err.(stackTracer); ok {
@@ -141,9 +151,9 @@ func (e *Entry) Trace(msg string) *Entry {
 // an `err` is passed the "error" field is set, and the log level is error.
 func (e *Entry) Stop(err *error) {
 	if err == nil || *err == nil {
-		e.WithField("duration", time.Since(e.start)).Info(e.Message)
+		e.WithDuration(time.Since(e.start)).Info(e.Message)
 	} else {
-		e.WithField("duration", time.Since(e.start)).WithError(*err).Error(e.Message)
+		e.WithDuration(time.Since(e.start)).WithError(*err).Error(e.Message)
 	}
 }
 

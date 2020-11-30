@@ -14,25 +14,47 @@ const (
 	warnLevelText  = "Warning: "
 )
 
-// Default logger
+func init() {
+	// TODO: uncomment when buildpacks/pack#493 (lifecycle containers with a tty) is implemented
+	//color.Disable(!terminal.IsTerminal(int(os.Stdout.Fd())))
+}
+
 var (
-	Logger = &log.Logger{
-		Handler: &handler{
-			writer: os.Stdout,
+	DefaultLogger = &Logger{
+		&log.Logger{
+			Handler: &handler{
+				writer: Stdout,
+			},
 		},
 	}
+	Stdout     = color.NewConsole(os.Stdout)
+	Stderr     = color.NewConsole(os.Stderr)
 	warnStyle  = color.New(color.FgYellow, color.Bold).SprintfFunc()
 	errorStyle = color.New(color.FgRed, color.Bold).SprintfFunc()
+	phaseStyle = color.New(color.FgCyan).SprintfFunc()
 )
+
+type Logger struct {
+	*log.Logger
+}
+
+func (l *Logger) Phase(name string) {
+	l.Infof(phaseStyle("===> %s", name))
+}
 
 func SetLogLevel(level string) *ErrorFail {
 	var err error
-	Logger.Level, err = log.ParseLevel(level)
+	DefaultLogger.Level, err = log.ParseLevel(level)
 	if err != nil {
 		return FailErrCode(err, CodeInvalidArgs, "parse log level")
 	}
 
 	return nil
+}
+
+func DisableColor(noColor bool) {
+	Stdout.DisableColors(noColor)
+	Stderr.DisableColors(noColor)
 }
 
 type handler struct {

@@ -1,5 +1,7 @@
 package log
 
+import "time"
+
 // singletons ftw?
 var Log Interface = &Logger{
 	Handler: HandlerFunc(handleStdLog),
@@ -36,6 +38,12 @@ func WithFields(fields Fielder) *Entry {
 // WithField returns a new entry with the `key` and `value` set.
 func WithField(key string, value interface{}) *Entry {
 	return Log.WithField(key, value)
+}
+
+// WithDuration returns a new entry with the "duration" field set
+// to the given duration in milliseconds.
+func WithDuration(d time.Duration) *Entry {
+	return Log.WithDuration(d)
 }
 
 // WithError returns a new entry with the "error" set to `err`.

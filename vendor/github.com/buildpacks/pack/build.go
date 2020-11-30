@@ -6,11 +6,17 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
+
+	"github.com/buildpacks/imgutil/local"
+	"github.com/buildpacks/imgutil/remote"
+
+	"github.com/buildpacks/pack/logging"
+
+	"github.com/buildpacks/pack/config"
 
 	"github.com/Masterminds/semver"
 	"github.com/buildpacks/imgutil"
@@ -19,7 +25,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 
-	"github.com/buildpacks/pack/internal/api"
 	"github.com/buildpacks/pack/internal/archive"
 	"github.com/buildpacks/pack/internal/build"
 	"github.com/buildpacks/pack/internal/builder"
@@ -34,46 +39,139 @@ import (
 )
 
 const (
+	// The lifecycle image that will be used for the analysis, restore and export phases
+	// when using an untrusted builder.
 	lifecycleImageRepo                   = "buildpacksio/lifecycle"
 	minLifecycleVersionSupportingCreator = "0.7.4"
 	prevLifecycleVersionSupportingImage  = "0.6.1"
 	minLifecycleVersionSupportingImage   = "0.7.5"
 )
 
-type Lifecycle interface {
+// LifecycleExecutor executes the lifecycle which satisfies the Cloud Native Buildpacks Lifecycle specification.
+// Implementations of the Lifecycle must execute the following phases by calling the
+// phase-specific lifecycle binary in order:
+//
+//  Detection:         /cnb/lifecycle/detector
+//  Analysis:          /cnb/lifecycle/analyzer
+//  Cache Restoration: /cnb/lifecycle/restorer
+//  Build:             /cnb/lifecycle/builder
+//  Export:            /cnb/lifecycle/exporter
+//
+// or invoke the single creator binary:
+//
+//  Creator:            /cnb/lifecycle/creator
+//
+type LifecycleExecutor interface {
+	// Execute is responsible for invoking each of these binaries
+	// with the desired configuration.
 	Execute(ctx context.Context, opts build.LifecycleOptions) error
 }
 
+// BuildOptions defines configuration settings for a Build.
 type BuildOptions struct {
-	Image              string // required
-	Builder            string // required
-	Registry           string
-	AppPath            string              // defaults to current working directory
-	RunImage           string              // defaults to the best mirror from the builder metadata or AdditionalMirrors
-	AdditionalMirrors  map[string][]string // only considered if RunImage is not provided
-	Env                map[string]string
-	Publish            bool
-	NoPull             bool
-	ClearCache         bool
-	TrustBuilder       bool
-	Buildpacks         []string
-	ProxyConfig        *ProxyConfig // defaults to  environment proxy vars
-	ContainerConfig    ContainerConfig
+	// required. Name of output image.
+	Image string
+
+	// required. Builder image name.
+	Builder string
+
+	// Name of the buildpack registry. Used to
+	// add buildpacks to a build.
+	Registry string
+
+	// AppPath is the path to application bits.
+	// If unset it defaults to current working directory.
+	AppPath string
+
+	// Specify the run image the Image will be
+	// built atop.
+	RunImage string
+
+	// Used to determine a run-image mirror if Run Image is empty.
+	// Used in combination with Builder metadata to determine to the the 'best' mirror.
+	// 'best' is defined as:
+	//  - if Publish is true, the best mirror matches registry we are publishing to.
+	//  - if Publish is false, the best mirror matches a registry specified in Image.
+	//  - otherwise if both of the above did not match, use mirror specified in
+	//    the builder metadata
+	AdditionalMirrors map[string][]string
+
+	// User provided environment variables to the buildpacks.
+	// Buildpacks may both read and overwrite these values.
+	Env map[string]string
+
+	// Option passed directly to the lifecycle.
+	// If true, publishes Image directly to a registry.
+	// Assumes Image contains a valid registry with credentials
+	// provided by the docker client.
+	Publish bool
+
+	// Clear the build cache from previous builds.
+	ClearCache bool
+
+	// TrustBuilder when true optimizes builds by running
+	// all lifecycle phases in a single container.
+	// This places registry credentials on the builder's build image.
+	// Only trust builders from reputable sources.
+	TrustBuilder bool
+
+	// List of buildpack images or archives to add to a builder.
+	// These buildpacks may overwrite those on the builder if they
+	// share both an ID and Version with a buildpack on the builder.
+	Buildpacks []string
+
+	// Configure the proxy environment variables,
+	// These variables will only be set in the build image
+	// and will not be used if proxy env vars are already set.
+	ProxyConfig *ProxyConfig
+
+	// Configure network and volume mounts for the build containers.
+	ContainerConfig ContainerConfig
+
+	// Process type that will be used when setting container start command.
 	DefaultProcessType string
-	FileFilter         func(string) bool
+
+	// Filter files from the application source.
+	// If true include file, otherwise exclude.
+	FileFilter func(string) bool
+
+	// Strategy for updating local images before a build.
+	PullPolicy config.PullPolicy
 }
 
+// ProxyConfig specifies proxy setting to be set as environment variables in a container.
 type ProxyConfig struct {
-	HTTPProxy  string
-	HTTPSProxy string
-	NoProxy    string
+	HTTPProxy  string // Used to set HTTP_PROXY env var.
+	HTTPSProxy string // Used to set HTTPS_PROXY env var.
+	NoProxy    string // Used to set NO_PROXY env var.
 }
 
+// ContainerConfig is additional configuration of the docker container that all build steps
+// occur within.
 type ContainerConfig struct {
+	// Configure network settings of the build containers.
+	// The value of Network is handed directly to the docker client.
+	// For valid values of this field see:
+	// https://docs.docker.com/network/#network-drivers
 	Network string
+
+	// Volumes are accessible during both detect build phases
+	// should have the form: /path/in/host:/path/in/container.
+	// For more about volume mounts, and their permissions see:
+	// https://docs.docker.com/storage/volumes/
+	//
+	// It is strongly recommended you do not override any of the
+	// paths with volume mounts at the following locations:
+	// - /cnb
+	// - /layers
+	// - anything below /cnb/**
 	Volumes []string
 }
 
+// Build configures settings for the build container(s) and lifecycle.
+// It then invokes the lifecycle to build an app image.
+// If any configuration is deemed invalid, or if any lifecycle phases fail,
+// an error will be returned and no image produced.
 func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 	imageRef, err := c.parseTagReference(opts.Image)
 	if err != nil {
@@ -92,18 +190,18 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		return errors.Wrapf(err, "invalid builder '%s'", opts.Builder)
 	}
 
-	rawBuilderImage, err := c.imageFetcher.Fetch(ctx, builderRef.Name(), true, !opts.NoPull)
+	rawBuilderImage, err := c.imageFetcher.Fetch(ctx, builderRef.Name(), true, opts.PullPolicy)
 	if err != nil {
 		return errors.Wrapf(err, "failed to fetch builder image '%s'", builderRef.Name())
 	}
 
 	bldr, err := c.getBuilder(rawBuilderImage)
 	if err != nil {
-		return errors.Wrapf(err, "invalid builder '%s'", opts.Builder)
+		return errors.Wrapf(err, "invalid builder %s", style.Symbol(opts.Builder))
 	}
 
-	runImageName := c.resolveRunImage(opts.RunImage, imageRef.Context().RegistryStr(), bldr.Stack(), opts.AdditionalMirrors)
-	runImage, err := c.validateRunImage(ctx, runImageName, opts.NoPull, opts.Publish, bldr.StackID)
+	runImageName := c.resolveRunImage(opts.RunImage, imageRef.Context().RegistryStr(), builderRef.Context().RegistryStr(), bldr.Stack(), opts.AdditionalMirrors, opts.Publish)
+	runImage, err := c.validateRunImage(ctx, runImageName, opts.PullPolicy, opts.Publish, bldr.StackID)
 	if err != nil {
 		return errors.Wrapf(err, "invalid run-image '%s'", runImageName)
 	}
@@ -113,7 +211,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		return err
 	}
 
-	fetchedBPs, order, err := c.processBuildpacks(ctx, bldr.Image(), bldr.Buildpacks(), bldr.Order(), opts.Buildpacks, opts.NoPull, opts.Publish, opts.Registry)
+	fetchedBPs, order, err := c.processBuildpacks(ctx, bldr.Image(), bldr.Buildpacks(), bldr.Order(), opts.Buildpacks, opts.PullPolicy, opts.Publish, opts.Registry)
 	if err != nil {
 		return err
 	}
@@ -128,23 +226,29 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 	}
 	defer c.docker.ImageRemove(context.Background(), ephemeralBuilder.Name(), types.ImageRemoveOptions{Force: true})
 
-	lcPlatformAPIVersion := ephemeralBuilder.LifecycleDescriptor().API.PlatformVersion
-	supportsPlatform := false
-	for _, v := range build.SupportedPlatformAPIVersions {
-		if api.MustParse(v).SupportsVersion(lcPlatformAPIVersion) {
-			supportsPlatform = true
-			break
-		}
-	}
-	if !supportsPlatform {
-		c.logger.Debugf("pack %s supports Platform API version(s): %s", Version, strings.Join(build.SupportedPlatformAPIVersions, ", "))
-		c.logger.Debugf("Builder %s has Platform API version: %s", style.Symbol(opts.Builder), lcPlatformAPIVersion)
+	builderPlatformAPIs := append(
+		ephemeralBuilder.LifecycleDescriptor().APIs.Platform.Deprecated,
+		ephemeralBuilder.LifecycleDescriptor().APIs.Platform.Supported...,
+	)
+
+	if !supportsPlatformAPI(builderPlatformAPIs) {
+		c.logger.Debugf("pack %s supports Platform API(s): %s", Version, strings.Join(build.SupportedPlatformAPIVersions.AsStrings(), ", "))
+		c.logger.Debugf("Builder %s supports Platform API(s): %s", style.Symbol(opts.Builder), strings.Join(builderPlatformAPIs.AsStrings(), ", "))
 		return errors.Errorf("Builder %s is incompatible with this version of pack", style.Symbol(opts.Builder))
 	}
 
-	platformVolumes, err := buildPlatformVolumes(opts.ContainerConfig.Volumes)
+	imgOS, err := rawBuilderImage.OS()
+	if err != nil {
+		return errors.Wrapf(err, "getting builder OS")
+	}
+
+	processedVolumes, warnings, err := processVolumes(imgOS, opts.ContainerConfig.Volumes)
 	if err != nil {
 		return err
+	}
+
+	for _, warning := range warnings {
+		c.logger.Warn(warning)
 	}
 
 	lifecycleOpts := build.LifecycleOptions{
@@ -161,7 +265,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		HTTPSProxy:         proxyConfig.HTTPSProxy,
 		NoProxy:            proxyConfig.NoProxy,
 		Network:            opts.ContainerConfig.Network,
-		Volumes:            platformVolumes,
+		Volumes:            processedVolumes,
 		DefaultProcessType: opts.DefaultProcessType,
 		FileFilter:         opts.FileFilter,
 	}
@@ -174,35 +278,55 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 	if lifecycleSupportsCreator && opts.TrustBuilder {
 		lifecycleOpts.UseCreator = true
 		// no need to fetch a lifecycle image, it won't be used
-		return c.lifecycle.Execute(ctx, lifecycleOpts)
+		if err := c.lifecycleExecutor.Execute(ctx, lifecycleOpts); err != nil {
+			return errors.Wrap(err, "executing lifecycle")
+		}
+
+		return c.logImageNameAndSha(ctx, opts.Publish, imageRef)
 	}
 
-	lifecycleImageSupported := lifecycleVersion.Equal(builder.VersionMustParse(prevLifecycleVersionSupportingImage)) || !lifecycleVersion.LessThan(semver.MustParse(minLifecycleVersionSupportingImage))
-
 	if !opts.TrustBuilder {
-		switch lifecycleImageSupported {
-		case true:
+		if lifecycleImageSupported(imgOS, lifecycleVersion) {
 			lifecycleImage, err := c.imageFetcher.Fetch(
 				ctx,
 				fmt.Sprintf("%s:%s", lifecycleImageRepo, lifecycleVersion.String()),
 				true,
-				!opts.NoPull,
+				opts.PullPolicy,
 			)
 			if err != nil {
 				return errors.Wrap(err, "fetching lifecycle image")
 			}
 
 			lifecycleOpts.LifecycleImage = lifecycleImage.Name()
-		default:
+		} else {
 			return errors.Errorf("Lifecycle %s does not have an associated lifecycle image. Builder must be trusted.", lifecycleVersion.String())
 		}
 	}
 
-	if err := c.lifecycle.Execute(ctx, lifecycleOpts); err != nil {
+	if err := c.lifecycleExecutor.Execute(ctx, lifecycleOpts); err != nil {
 		return errors.Wrap(err, "executing lifecycle. This may be the result of using an untrusted builder")
 	}
 
-	return nil
+	return c.logImageNameAndSha(ctx, opts.Publish, imageRef)
+}
+
+func lifecycleImageSupported(builderOS string, lifecycleVersion *builder.Version) bool {
+	return lifecycleVersion.Equal(builder.VersionMustParse(prevLifecycleVersionSupportingImage)) ||
+		!lifecycleVersion.LessThan(semver.MustParse(minLifecycleVersionSupportingImage))
+}
+
+// supportsPlatformAPI determines whether pack can build using the builder based on the builder's supported Platform API versions.
+func supportsPlatformAPI(builderPlatformAPIs builder.APISet) bool {
+	for _, packSupportedAPI := range build.SupportedPlatformAPIVersions {
+		for _, builderSupportedAPI := range builderPlatformAPIs {
+			supportsPlatform := packSupportedAPI.Compare(builderSupportedAPI) == 0
+			if supportsPlatform {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (c *Client) processBuilderName(builderName string) (name.Reference, error) {
@@ -218,25 +342,28 @@ func (c *Client) getBuilder(img imgutil.Image) (*builder.Builder, error) {
 		return nil, err
 	}
 	if bldr.Stack().RunImage.Image == "" {
-		return nil, errors.New("builder metadata is missing runImage")
+		return nil, errors.New("builder metadata is missing run-image")
 	}
-	if bldr.LifecycleDescriptor().Info.Version == nil {
+
+	lifecycleDescriptor := bldr.LifecycleDescriptor()
+	if lifecycleDescriptor.Info.Version == nil {
 		return nil, errors.New("lifecycle version must be specified in builder")
 	}
-	if bldr.LifecycleDescriptor().API.BuildpackVersion == nil {
-		return nil, errors.New("lifecycle buildpack api version must be specified in builder")
+	if len(lifecycleDescriptor.APIs.Buildpack.Supported) == 0 {
+		return nil, errors.New("supported Lifecycle Buildpack APIs not specified")
 	}
-	if bldr.LifecycleDescriptor().API.PlatformVersion == nil {
-		return nil, errors.New("lifecycle platform api version must be specified in builder")
+	if len(lifecycleDescriptor.APIs.Platform.Supported) == 0 {
+		return nil, errors.New("supported Lifecycle Platform APIs not specified")
 	}
+
 	return bldr, nil
 }
 
-func (c *Client) validateRunImage(context context.Context, name string, noPull bool, publish bool, expectedStack string) (imgutil.Image, error) {
+func (c *Client) validateRunImage(context context.Context, name string, pullPolicy config.PullPolicy, publish bool, expectedStack string) (imgutil.Image, error) {
 	if name == "" {
 		return nil, errors.New("run image must be specified")
 	}
-	img, err := c.imageFetcher.Fetch(context, name, !publish, !noPull)
+	img, err := c.imageFetcher.Fetch(context, name, !publish, pullPolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -446,7 +573,7 @@ func (c *Client) processProxyConfig(config *ProxyConfig) ProxyConfig {
 // 	----------
 // 	- group:
 //		- A
-func (c *Client) processBuildpacks(ctx context.Context, builderImage imgutil.Image, builderBPs []dist.BuildpackInfo, builderOrder dist.Order, declaredBPs []string, noPull bool, publish bool, registry string) (fetchedBPs []dist.Buildpack, order dist.Order, err error) {
+func (c *Client) processBuildpacks(ctx context.Context, builderImage imgutil.Image, builderBPs []dist.BuildpackInfo, builderOrder dist.Order, declaredBPs []string, pullPolicy config.PullPolicy, publish bool, registry string) (fetchedBPs []dist.Buildpack, order dist.Order, err error) {
 	order = dist.Order{{Group: []dist.BuildpackRef{}}}
 	for _, bp := range declaredBPs {
 		locatorType, err := buildpack.GetLocatorType(bp, builderBPs)
@@ -503,7 +630,11 @@ func (c *Client) processBuildpacks(ctx context.Context, builderImage imgutil.Ima
 					return fetchedBPs, order, errors.Wrapf(err, "extracting buildpacks from %s", style.Symbol(bp))
 				}
 			} else {
-				layerWriterFactory, err := layer.NewWriterFactory(builderImage)
+				imageOS, err := builderImage.OS()
+				if err != nil {
+					return fetchedBPs, order, errors.Wrap(err, "getting image OS")
+				}
+				layerWriterFactory, err := layer.NewWriterFactory(imageOS)
 				if err != nil {
 					return fetchedBPs, order, errors.Wrapf(err, "get tar writer factory for image %s", style.Symbol(builderImage.Name()))
 				}
@@ -516,7 +647,8 @@ func (c *Client) processBuildpacks(ctx context.Context, builderImage imgutil.Ima
 			fetchedBPs = append(append(fetchedBPs, mainBP), dependencyBPs...)
 			order = appendBuildpackToOrder(order, mainBP.Descriptor().Info)
 		case buildpack.PackageLocator:
-			mainBP, depBPs, err := extractPackagedBuildpacks(ctx, bp, c.imageFetcher, publish, noPull)
+			imageName := buildpack.ParsePackageLocator(bp)
+			mainBP, depBPs, err := extractPackagedBuildpacks(ctx, imageName, c.imageFetcher, publish, pullPolicy)
 			if err != nil {
 				return fetchedBPs, order, errors.Wrapf(err, "creating from buildpackage %s", style.Symbol(bp))
 			}
@@ -534,7 +666,7 @@ func (c *Client) processBuildpacks(ctx context.Context, builderImage imgutil.Ima
 				return fetchedBPs, order, errors.Wrapf(err, "locating in registry %s", style.Symbol(bp))
 			}
 
-			mainBP, depBPs, err := extractPackagedBuildpacks(ctx, registryBp.Address, c.imageFetcher, publish, noPull)
+			mainBP, depBPs, err := extractPackagedBuildpacks(ctx, registryBp.Address, c.imageFetcher, publish, pullPolicy)
 			if err != nil {
 				return fetchedBPs, order, errors.Wrapf(err, "extracting from registry %s", style.Symbol(bp))
 			}
@@ -625,19 +757,79 @@ func randString(n int) string {
 	return string(b)
 }
 
-func buildPlatformVolumes(volumes []string) ([]string, error) {
-	platformVolumes := make([]string, len(volumes))
-	// Assume a linux container
-	parser := mounts.NewParser(mounts.OSLinux)
-	for i, v := range volumes {
+func processVolumes(imgOS string, volumes []string) (processed []string, warnings []string, err error) {
+	parserOS := mounts.OSLinux
+	if imgOS == "windows" {
+		parserOS = mounts.OSWindows
+	}
+	parser := mounts.NewParser(parserOS)
+	for _, v := range volumes {
 		volume, err := parser.ParseMountRaw(v, "")
 		if err != nil {
-			return nil, errors.Wrapf(err, "Platform volume %q has invalid format", v)
+			return nil, nil, errors.Wrapf(err, "platform volume %q has invalid format", v)
 		}
 
-		// Use path.Join instead of filepath.Join because we assume the container OS is linux but the host may be windows
-		dest := path.Join("/platform", volume.Destination)
-		platformVolumes[i] = fmt.Sprintf("%v:%v:ro", volume.Spec.Source, dest)
+		sensitiveDirs := []string{"/cnb", "/layers"}
+		if imgOS == "windows" {
+			sensitiveDirs = []string{`c:/cnb`, `c:\cnb`, `c:/layers`, `c:\layers`}
+		}
+		for _, p := range sensitiveDirs {
+			if strings.HasPrefix(strings.ToLower(volume.Spec.Target), p) {
+				warnings = append(warnings, fmt.Sprintf("Mounting to a sensitive directory %s", style.Symbol(volume.Spec.Target)))
+			}
+		}
+
+		processed = append(processed, fmt.Sprintf("%s:%s:%s", volume.Spec.Source, volume.Spec.Target, processMode(volume.Mode)))
 	}
-	return platformVolumes, nil
+	return processed, warnings, nil
+}
+
+func processMode(mode string) string {
+	if mode == "" {
+		return "ro"
+	}
+
+	return mode
+}
+
+func (c *Client) logImageNameAndSha(ctx context.Context, publish bool, imageRef name.Reference) error {
+	// The image name and sha are printed in the lifecycle logs, and there is no need to print it again, unless output is suppressed.
+	if !logging.IsQuiet(c.logger) {
+		return nil
+	}
+
+	img, err := c.imageFetcher.Fetch(ctx, imageRef.Name(), !publish, config.PullNever)
+	if err != nil {
+		return errors.Wrap(err, "fetching built image")
+	}
+
+	id, err := img.Identifier()
+	if err != nil {
+		return errors.Wrap(err, "reading image sha")
+	}
+
+	// Remove tag, if it exists, from the image name
+	imgName := strings.TrimSuffix(imageRef.String(), imageRef.Identifier())
+	imgNameAndSha := fmt.Sprintf("%s@%s\n", imgName, parseShortDigestFromImageID(id))
+
+	// Access the logger's Writer directly to bypass ReportSuccessfulQuietBuild mode
+	_, err = c.logger.Writer().Write([]byte(imgNameAndSha))
+	return err
+}
+
+func parseShortDigestFromImageID(id imgutil.Identifier) string {
+	var shortID string
+	switch v := id.(type) {
+	case local.IDIdentifier:
+		shortID = v.String()
+	case remote.DigestIdentifier:
+		shortID = v.Digest.DigestStr()
+	}
+
+	shortID = strings.TrimPrefix(shortID, "sha256:")
+	if len(shortID) > 12 {
+		shortID = shortID[0:12]
+	}
+
+	return fmt.Sprintf("sha256:%s", shortID)
 }

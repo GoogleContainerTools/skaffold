@@ -1,5 +1,6 @@
 # Go parameters
 GOCMD?=go
+GO_VERSION=$(shell go list -m -f "{{.GoVersion}}")
 PACKAGE_BASE=github.com/buildpacks/imgutil
 
 all: test
@@ -20,5 +21,22 @@ lint: install-golangci-lint
 	@echo "> Linting code..."
 	@golangci-lint run -c golangci.yaml
 
-test: format lint
+tools/bcdhive_generator/.build: $(wildcard tools/bcdhive_generator/*)
+ifneq ($(OS),Windows_NT)
+	@echo "> Building bcdhive-generator in Docker using current golang version"
+	docker build tools/bcdhive_generator --tag bcdhive-generator --build-arg go_version=$(GO_VERSION)
+
+	@touch tools/bcdhive_generator/.build
+else
+	@echo "> Cannot generate on Windows"
+endif
+
+layer/bcdhive_generated.go: layer/windows_baselayer.go tools/bcdhive_generator/.build
+ifneq ($(OS),Windows_NT)
+	$(GOCMD) generate ./...
+else
+	@echo "> Cannot generate on Windows"
+endif
+
+test: layer/bcdhive_generated.go format lint
 	$(GOCMD) test -parallel=1 -count=1 -v ./...
