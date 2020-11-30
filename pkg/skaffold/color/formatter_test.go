@@ -125,3 +125,27 @@ func TestIsStdOut(t *testing.T) {
 		})
 	}
 }
+
+func TestGetWriter(t *testing.T) {
+	tests := []struct {
+		description string
+		out         io.Writer
+		expected    io.Writer
+	}{
+		{
+			description: "colorable os.Stdout returns os.Stdout",
+			out:         colorableWriter{os.Stdout},
+			expected:    os.Stdout,
+		},
+		{
+			description: "GetWriter returns original writer if not colorable",
+			out:         os.Stdout,
+			expected:    os.Stdout,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(true, test.expected == GetWriter(test.out))
+		})
+	}
+}

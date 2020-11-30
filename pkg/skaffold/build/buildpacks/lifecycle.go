@@ -32,6 +32,7 @@ import (
 	"github.com/buildpacks/pack/project"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -90,7 +91,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 
 	builderImage, runImage, pullPolicy := resolveDependencyImages(artifact, b.artifacts, a.Dependencies, b.pushImages)
 
-	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
+	if err := runPackBuildFunc(ctx, color.GetWriter(out), b.localDocker, pack.BuildOptions{
 		AppPath:      workspace,
 		Builder:      builderImage,
 		RunImage:     runImage,
