@@ -2,17 +2,17 @@
 
 This codelab introduces how to validate your app configurations before deploying them to the cluster. You are **not** required to know `kpt` or `skaffold` before starting the codelab. 
 
-After this session, you should be obtain more powerful tools to validate and manage your configurations.
+After this session, you will have obtained more powerful tools to validate and manage your configurations.
 
 ## What is kpt?
 
 Kpt is [an OSS tool](https://github.com/GoogleContainerTools/kpt) for Kubernetes packaging, which uses a standard format to bundle, publish, customize, update, and apply configuration manifests.
 
-## What kpt can help you in skaffold
+## What kpt can help you
 
 -  You can validate each of your config changes **declaratively**.
 -  You will get an hands-on off-the-shelf experience about the **GitOps** CI/CD workflow in skaffold.
--  You **won't **encounter** version conflict** if the config hydration (a.k.a kustomize) mismatch with the deployment tool (e.g. kubectl). 
+-  You **won't** encounter **version conflict** if the config hydration (a.k.a kustomize) mismatch with the deployment tool (e.g. kubectl). 
 -  You can prune your resources accurately with [a three-way merge strategy](https://kubectl.docs.kubernetes.io/pages/app_management/field_merge_semantics.html). 
 
 ## What you'll learn

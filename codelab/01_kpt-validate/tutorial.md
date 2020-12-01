@@ -8,7 +8,7 @@
 
 Kpt is [an OSS tool](https://github.com/GoogleContainerTools/kpt) for Kubernetes packaging, which uses a standard format to bundle, publish, customize, update, and apply configuration manifests.
 
-#### What kpt can help you in skaffold
+#### What kpt can help you
     
 *  You will get an hands-on off-the-shelf experience about the **GitOps** CI/CD workflow in skaffold.
 *  You can validate each of your config changes **declaratively**.
@@ -36,12 +36,12 @@ Or just follow this codelab, we will explain what happens in each step.
 *   If you haven't installed `skaffold` previously, run
     ```bash
     curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64 && \
-    sudo install skaffold /usr/local/bin/ | bash
+    sudo install skaffold /usr/bin/ | bash
     ```  
 *   To upgrade skaffold to a newer version, run
     ```bash
-    sudo rm -f /usr/local/bin/skaffold && curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64 && \
-    sudo install skaffold /usr/local/bin/ | bash
+    sudo rm -f /usr/bin/skaffold && curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64 && \
+    sudo install skaffold /usr/bin/ | bash
     ```
     
 #### Install `kpt`
@@ -234,7 +234,7 @@ Since the validation passes silently, let's break the kubeval to prove the valid
     The Deployment "frontend" is invalid: spec.template.spec.containers[0].image: Required value
     ```
 
-*   Add back the removed line and make it work again.  
+*   You can add back the removed line by copying the following command and running it in the terminal.  
 
     ```shell script
     sed -i '18 a \        image: "frontend"'     ./config/frontend/deployment.yaml
@@ -257,7 +257,7 @@ To do so, you can put a list of `kpt` functions into a single file and kpt will 
 resources through these functions based on the function orders in the single file. 
 Like the graph shows.
 
-![image](https://sites.google.com/a/google.com/d2html-img/users/yuwenma/skaffoldcodela--yvbbp5pxqzo.png)
+![image](https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/logo/kpt-pipeline.png)
 
 *Let's go through an example!*    
 
@@ -266,12 +266,12 @@ Like the graph shows.
     kpt pkg get https://github.com/GoogleContainerTools/skaffold.git/codelab/01_kpt-validate/resources/validation-pipeline/ validations
     ```
     This pipeline contains two functions.
-    *   A <walkthrough-editor-select-line filePath="guestbook-cl/validations/fn-pipeline.yaml" startLine="4" endLine="4" startCharacterOffset="8" endCharacterOffset="14">Kubeval</walkthrough-editor-select-line> validator to check the yaml schema
-    *   A <walkthrough-editor-select-line filePath="guestbook-cl/validations/fn-pipeline.yaml" startLine="15" endLine="15" startCharacterOffset="8" endCharacterOffset="20">CPUAndMemory<> validator to check if all containers have the CPU and memory reservation set.   
+    *   A <walkthrough-editor-select-line filePath="guestbook-cl/validations/fn-pipeline.yaml" startLine="4" endLine="4" startCharacterOffset="8" endCharacterOffset="20">YamlValidate</walkthrough-editor-select-line> validator to check the yaml schema
+    *   A <walkthrough-editor-select-line filePath="guestbook-cl/validations/fn-pipeline.yaml" startLine="16" endLine="16" startCharacterOffset="8" endCharacterOffset="21">CPUAndMemory</walkthrough-editor-select-line> validator to check if all containers have the CPU and memory reservation set.   
 
 *   Now let's update the <walkthrough-editor-open-file filePath="guestbook-cl/skaffold.yaml">skaffold.yaml</walkthrough-editor-open-file> 
     to use the new validator pipeline. In <walkthrough-editor-select-line filePath="guestbook-cl/skaffold.yaml" startLine="8" endLine="13" startCharacterOffset="0" endCharacterOffset="100">skaffold.yaml</walkthrough-editor-select-line>，
-    replace the `.deploy` section with the following code.
+    replace the <walkthrough-editor-select-line filePath="guestbook-cl/skaffold.yaml" startLine="8" endLine="15" startCharacterOffset="0" endCharacterOffset="0">deploy</walkthrough-editor-select-line> section with the following code.
 
     See the full [skaffold.yaml](https://github.com/yuwenma/sample-app/blob/kubeval/skaffold.yaml#L12) 
     ```yaml
@@ -293,7 +293,7 @@ Like the graph shows.
 
 Let's  break the validator pipeline. 
 
-*   In <walkthrough-editor-open-file filePath="guestbook-cl/config/frontend/deployment.yaml>config/frontend/deployment.yaml</walkthrough-editor-open-file>, 
+*   In <walkthrough-editor-open-file filePath="guestbook-cl/config/frontend/deployment.yaml">config/frontend/deployment.yaml</walkthrough-editor-open-file>, 
     remove the container's  <walkthrough-editor-select-line filePath="guestbook-cl/config/frontend/deployment.yaml" startLine="21" endLine="21" startCharacterOffset="12" endCharacterOffset="15">spec.template.spec.containers.resources.requests.cpu</walkthrough-editor-select-line> field (in line 22)  
     
     *You can **either** manually delete the line **or** run the following command*
@@ -307,22 +307,15 @@ Let's  break the validator pipeline.
     ```bash
     skaffold dev
     ```
-    
-    You should see the following warning.
-
-    TODO: update the content.
-    ```terminal
-
-    ```
 
 ## Conclusion
 
 <walkthrough-conclusion-trophy></walkthrough-conclusion-trophy>
 
-Congratulations, you've known how to validate configurations in skaffold! You can explore the full kpt configuration 
-from the skaffold.yaml[ reference doc](https://skaffold.dev/docs/references/yaml/#deploy-kpt). 
+Congratulations, you known how to validate configurations in skaffold! You can explore the full kpt configuration 
+from the skaffold.yaml [reference doc](https://skaffold.dev/docs/references/yaml/#deploy-kpt). 
 
 
 You can also try out other kpt features like `kpt pkg` and `kpt cfg` from 
 [the user guide](https://googlecontainertools.github.io/kpt/reference/). They will be supported 
-in the skaffold soon. Stay tuned!  
+in skaffold soon. Stay tuned!  

@@ -4,18 +4,21 @@ metadata:
   # Validates the yaml schema.
   name: YamlValidate
   annotations:
-    config.kubernetes.io/function: |
+    config.k8s.io/function: |
       container:
         image: gcr.io/kpt-functions/kubeval
-        network: true
+        network:
+          required: true
+    config.kubernetes.io/local-config: 'true'
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  # Validates that all containers have cpu and memory reservations set.
-  name: CPUAndMemory
+  name: my-config
   annotations:
     config.kubernetes.io/function: |
       container:
-        image: gcr.io/kustomize-functions/example-validator-kubeval:v0.1.0
-        network: true
+        image: gcr.io/kpt-functions/annotate-config
+data:
+  "annotation_name": "owner"
+  "annotation_value": "YOUR-NAME"
