@@ -33,14 +33,14 @@ import (
 
 // Build builds a list of artifacts with Kaniko.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	teardownPullSecret, err := b.setupPullSecret(out)
+	teardownPullSecret, err := b.setupPullSecret(ctx, out)
 	if err != nil {
 		return nil, fmt.Errorf("setting up pull secret: %w", err)
 	}
 	defer teardownPullSecret()
 
 	if b.DockerConfig != nil {
-		teardownDockerConfigSecret, err := b.setupDockerConfigSecret(out)
+		teardownDockerConfigSecret, err := b.setupDockerConfigSecret(ctx, out)
 		if err != nil {
 			return nil, fmt.Errorf("setting up docker config secret: %w", err)
 		}

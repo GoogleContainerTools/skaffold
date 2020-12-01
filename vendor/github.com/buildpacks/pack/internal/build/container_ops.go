@@ -107,7 +107,7 @@ func copyDirWindows(ctx context.Context, ctrClient client.CommonAPIClient, conta
 			Binds:     []string{fmt.Sprintf("%s:%s", mnt.Name, mnt.Destination)},
 			Isolation: dcontainer.IsolationProcess,
 		},
-		nil, "",
+		nil, nil, "",
 	)
 	if err != nil {
 		return errors.Wrapf(err, "creating prep container")
@@ -231,7 +231,7 @@ func EnsureVolumeAccess(uid, gid int, os string, volumeNames ...string) Containe
 				Binds:     binds,
 				Isolation: dcontainer.IsolationProcess,
 			},
-			nil, "",
+			nil, nil, "",
 		)
 		if err != nil {
 			return err

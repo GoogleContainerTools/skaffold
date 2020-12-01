@@ -24,11 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck"
+	"knative.dev/pkg/apis/duck/ducktypes"
 )
-
-// Source is an Implementable "duck type".
-var _ duck.Implementable = (*Source)(nil)
 
 // +genduck
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -70,7 +67,7 @@ type CloudEventOverrides struct {
 // SourceStatus shows how we expect folks to embed Addressable in
 // their Status field.
 type SourceStatus struct {
-	// inherits duck/v1beta1 Status, which currently provides:
+	// inherits Status, which currently provides:
 	// * ObservedGeneration - the 'Generation' of the Service that was last
 	//   processed by the controller.
 	// * Conditions - the latest available observations of a resource's current
@@ -91,7 +88,6 @@ type SourceStatus struct {
 // CloudEventAttributes specifies the attributes that a Source
 // uses as part of its CloudEvents.
 type CloudEventAttributes struct {
-
 	// Type refers to the CloudEvent type attribute.
 	Type string `json:"type,omitempty"`
 
@@ -112,10 +108,11 @@ func (ss *SourceStatus) IsReady() bool {
 	return false
 }
 
+// Verify Source resources meet duck contracts.
 var (
-	// Verify Source resources meet duck contracts.
-	_ duck.Populatable = (*Source)(nil)
-	_ apis.Listable    = (*Source)(nil)
+	_ apis.Listable           = (*Source)(nil)
+	_ ducktypes.Implementable = (*Source)(nil)
+	_ ducktypes.Populatable   = (*Source)(nil)
 )
 
 const (
@@ -125,7 +122,7 @@ const (
 )
 
 // GetFullType implements duck.Implementable
-func (*Source) GetFullType() duck.Populatable {
+func (*Source) GetFullType() ducktypes.Populatable {
 	return &Source{}
 }
 

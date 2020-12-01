@@ -25,7 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck"
+	"knative.dev/pkg/apis/duck/ducktypes"
+	"knative.dev/pkg/kmeta"
 )
 
 // +genduck
@@ -33,8 +34,8 @@ import (
 // Conditions is a simple wrapper around apis.Conditions to implement duck.Implementable.
 type Conditions apis.Conditions
 
-// Conditions is an Implementable "duck type".
-var _ duck.Implementable = (*Conditions)(nil)
+// Conditions is an Implementable duck type.
+var _ ducktypes.Implementable = (*Conditions)(nil)
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -63,6 +64,12 @@ type Status struct {
 	// +patchMergeKey=type
 	// +patchStrategy=merge
 	Conditions Conditions `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+
+	// Annotations is additional Status fields for the Resource to save some
+	// additional State as well as convey more information to the user. This is
+	// roughly akin to Annotations on any k8s resource, just the reconciler conveying
+	// richer information outwards.
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 var _ apis.ConditionsAccessor = (*Status)(nil)
@@ -77,14 +84,14 @@ func (s *Status) SetConditions(c apis.Conditions) {
 	s.Conditions = Conditions(c)
 }
 
-// In order for Conditions to be Implementable, KResource must be Populatable.
-var _ duck.Populatable = (*KResource)(nil)
-
-// Ensure KResource satisfies apis.Listable
-var _ apis.Listable = (*KResource)(nil)
+// Verify KResource resources meet duck contracts.
+var (
+	_ apis.Listable         = (*KResource)(nil)
+	_ ducktypes.Populatable = (*KResource)(nil)
+)
 
 // GetFullType implements duck.Implementable
-func (*Conditions) GetFullType() duck.Populatable {
+func (*Conditions) GetFullType() ducktypes.Populatable {
 	return &KResource{}
 }
 
@@ -99,9 +106,13 @@ func (s *Status) GetCondition(t apis.ConditionType) *apis.Condition {
 }
 
 // ConvertTo helps implement apis.Convertible for types embedding this Status.
-func (source *Status) ConvertTo(ctx context.Context, sink *Status) {
-	sink.ObservedGeneration = source.ObservedGeneration
-	for _, c := range source.Conditions {
+func (s *Status) ConvertTo(ctx context.Context, sink *Status) {
+	sink.ObservedGeneration = s.ObservedGeneration
+	if s.Annotations != nil {
+		// This will deep copy the map.
+		sink.Annotations = kmeta.UnionMaps(s.Annotations)
+	}
+	for _, c := range s.Conditions {
 		switch c.Type {
 		// Copy over the "happy" condition, which is the only condition that
 		// we can reliably transfer.

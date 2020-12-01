@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+// based on https://cloud.google.com/container-registry/docs/advanced-authentication#linux-macos
 func TestResolve(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("test doesn't work on windows")

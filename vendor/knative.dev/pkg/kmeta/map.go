@@ -25,16 +25,18 @@ func CopyMap(a map[string]string) map[string]string {
 	return ret
 }
 
-// UnionMaps returns a map constructed from the union of `a` and `b`,
-// where value from `b` wins.
-func UnionMaps(a, b map[string]string) map[string]string {
-	out := make(map[string]string, len(a)+len(b))
-
-	for k, v := range a {
-		out[k] = v
+// UnionMaps returns a map constructed from the union of input maps.
+// where values from latter maps win.
+func UnionMaps(maps ...map[string]string) map[string]string {
+	if len(maps) == 0 {
+		return map[string]string{}
 	}
-	for k, v := range b {
-		out[k] = v
+	out := make(map[string]string, len(maps[0]))
+
+	for _, m := range maps {
+		for k, v := range m {
+			out[k] = v
+		}
 	}
 	return out
 }

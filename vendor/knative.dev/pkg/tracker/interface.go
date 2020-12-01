@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	"knative.dev/pkg/apis"
@@ -70,6 +71,15 @@ type Interface interface {
 	// OnChanged is a callback to register with the InformerFactory
 	// so that we are notified for appropriate object changes.
 	OnChanged(obj interface{})
+
+	// GetObservers returns the names of all observers for the given
+	// object.
+	GetObservers(obj interface{}) []types.NamespacedName
+
+	// OnDeletedObserver is a callback to register with the InformerFactory
+	// so that we are notified for deletions of a watching parent to
+	// remove the respective tracking.
+	OnDeletedObserver(obj interface{})
 }
 
 // GroupVersionKind returns the GroupVersion of the object referenced.

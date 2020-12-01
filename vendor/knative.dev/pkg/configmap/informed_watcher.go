@@ -33,13 +33,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// NewDefaultWatcher creates a new default configmap.Watcher instance.
-//
-// Deprecated: Use NewInformedWatcher
-func NewDefaultWatcher(kc kubernetes.Interface, namespace string) *InformedWatcher {
-	return NewInformedWatcher(kc, namespace)
-}
-
 // NewInformedWatcherFromFactory watches a Kubernetes namespace for ConfigMap changes.
 func NewInformedWatcherFromFactory(sif informers.SharedInformerFactory, namespace string) *InformedWatcher {
 	return &InformedWatcher{

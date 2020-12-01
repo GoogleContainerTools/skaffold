@@ -39,6 +39,21 @@ func IsInCreate(ctx context.Context) bool {
 }
 
 // This is attached to contexts passed to webhook interfaces when
+// the receiver being validated is being deleted.
+type inDeleteKey struct{}
+
+// WithinDelete is used to note that the webhook is calling within
+// the context of a Delete operation.
+func WithinDelete(ctx context.Context) context.Context {
+	return context.WithValue(ctx, inDeleteKey{}, struct{}{})
+}
+
+// IsInDelete checks whether the context is a Delete.
+func IsInDelete(ctx context.Context) bool {
+	return ctx.Value(inDeleteKey{}) != nil
+}
+
+// This is attached to contexts passed to webhook interfaces when
 // the receiver being validated is being updated.
 type inUpdateKey struct{}
 
@@ -117,6 +132,12 @@ type parentMetaKey struct{}
 // interfaces like apis.Defaultable and apis.Validatable.
 func WithinParent(ctx context.Context, om metav1.ObjectMeta) context.Context {
 	return context.WithValue(ctx, parentMetaKey{}, om)
+}
+
+// IsWithinParent returns true if we're within parent context.
+func IsWithinParent(ctx context.Context) bool {
+	_, ok := ctx.Value(parentMetaKey{}).(metav1.ObjectMeta)
+	return ok
 }
 
 // ParentMeta accesses the ObjectMeta of the enclosing parent resource
@@ -199,7 +220,8 @@ func IsDifferentNamespaceAllowed(ctx context.Context) bool {
 	return ctx.Value(allowDifferentNamespace{}) != nil
 }
 
-// This is attached to contexts passed to webhook interfaces when the user has request DryRun mode.
+// This is attached to contexts passed to webhook interfaces when the user
+// has requested DryRun mode.
 type isDryRun struct{}
 
 // WithDryRun is used to indicate that this call is in DryRun mode.

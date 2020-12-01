@@ -94,7 +94,7 @@ func (p *WatchingPodForwarder) Stop() {
 }
 
 func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
-	ownerReference := topLevelOwnerKey(pod, pod.Kind)
+	ownerReference := topLevelOwnerKey(ctx, pod, pod.Kind)
 	for _, c := range pod.Spec.Containers {
 		for _, port := range c.Ports {
 			// get current entry for this container

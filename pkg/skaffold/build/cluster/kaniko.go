@@ -65,12 +65,12 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 		return "", err
 	}
 
-	pod, err := pods.Create(podSpec)
+	pod, err := pods.Create(ctx, podSpec, metav1.CreateOptions{})
 	if err != nil {
 		return "", fmt.Errorf("creating kaniko pod: %w", err)
 	}
 	defer func() {
-		if err := pods.Delete(pod.Name, &metav1.DeleteOptions{
+		if err := pods.Delete(ctx, pod.Name, metav1.DeleteOptions{
 			GracePeriodSeconds: new(int64),
 		}); err != nil {
 			logrus.Fatalf("deleting pod: %s", err)

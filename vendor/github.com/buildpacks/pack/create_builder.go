@@ -200,22 +200,24 @@ func (c *Client) addBuildpacksToBuilder(ctx context.Context, opts CreateBuilderO
 	for _, b := range opts.Config.Buildpacks {
 		c.logger.Debugf("Looking up buildpack %s", style.Symbol(b.FullName()))
 
-		locator := b.URI
-		if locator == "" && b.ImageName != "" {
+		var err error
+		var locatorType buildpack.LocatorType
+		if b.URI == "" && b.ImageName != "" {
 			c.logger.Warn("The 'image' key is deprecated. Use 'uri=\"docker://...\"' instead.")
-			locator = b.ImageName
-		}
-
-		locatorType, err := buildpack.GetLocatorType(locator, []dist.BuildpackInfo{})
-		if err != nil {
-			return errors.Wrapf(err, "locator type %s", locator)
+			b.URI = b.ImageName
+			locatorType = buildpack.PackageLocator
+		} else {
+			locatorType, err = buildpack.GetLocatorType(b.URI, []dist.BuildpackInfo{})
+			if err != nil {
+				return err
+			}
 		}
 
 		var mainBP dist.Buildpack
 		var depBPs []dist.Buildpack
 		switch locatorType {
 		case buildpack.PackageLocator:
-			imageName := buildpack.ParsePackageLocator(locator)
+			imageName := buildpack.ParsePackageLocator(b.URI)
 			c.logger.Debugf("Downloading buildpack from image: %s", style.Symbol(imageName))
 			mainBP, depBPs, err = extractPackagedBuildpacks(ctx, imageName, c.imageFetcher, opts.Publish, opts.PullPolicy)
 			if err != nil {
@@ -239,9 +241,6 @@ func (c *Client) addBuildpacksToBuilder(ctx context.Context, opts CreateBuilderO
 				return errors.Wrapf(err, "extracting from registry %s", style.Symbol(b.URI))
 			}
 		case buildpack.URILocator:
-			if b.URI == "" {
-				b.URI = locator
-			}
 			c.logger.Debugf("Downloading buildpack from URI: %s", style.Symbol(b.URI))
 
 			err := ensureBPSupport(b.URI)
@@ -280,7 +279,7 @@ func (c *Client) addBuildpacksToBuilder(ctx context.Context, opts CreateBuilderO
 				}
 			}
 		default:
-			return fmt.Errorf("error reading %s: invalid locator: %s", locator, locatorType)
+			return fmt.Errorf("error reading %s: invalid locator: %s", b.URI, locatorType)
 		}
 
 		err = validateBuildpack(mainBP, b.URI, b.ID, b.Version)

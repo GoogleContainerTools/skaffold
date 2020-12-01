@@ -109,7 +109,7 @@ func NewBatchConditionSet(d ...ConditionType) ConditionSet {
 // important for the caller. The first ConditionType is the overarching status
 // for that will be used to signal the resources' status is Ready or Succeeded.
 func newConditionSet(happy ConditionType, dependents ...ConditionType) ConditionSet {
-	var deps []ConditionType
+	deps := make([]ConditionType, 0, len(dependents))
 	for _, d := range dependents {
 		// Skip duplicates
 		if d == happy || contains(deps, d) {
@@ -140,6 +140,11 @@ var _ ConditionManager = (*conditionsImpl)(nil)
 type conditionsImpl struct {
 	ConditionSet
 	accessor ConditionsAccessor
+}
+
+// GetTopLevelConditionType is an accessor for the top-level happy condition.
+func (r ConditionSet) GetTopLevelConditionType() ConditionType {
+	return r.happy
 }
 
 // Manage creates a ConditionManager from an accessor object using the original
@@ -179,25 +184,25 @@ func (r conditionsImpl) GetCondition(t ConditionType) *Condition {
 
 // SetCondition sets or updates the Condition on Conditions for Condition.Type.
 // If there is an update, Conditions are stored back sorted.
-func (r conditionsImpl) SetCondition(new Condition) {
+func (r conditionsImpl) SetCondition(cond Condition) {
 	if r.accessor == nil {
 		return
 	}
-	t := new.Type
+	t := cond.Type
 	var conditions Conditions
 	for _, c := range r.accessor.GetConditions() {
 		if c.Type != t {
 			conditions = append(conditions, c)
 		} else {
 			// If we'd only update the LastTransitionTime, then return.
-			new.LastTransitionTime = c.LastTransitionTime
-			if reflect.DeepEqual(&new, &c) {
+			cond.LastTransitionTime = c.LastTransitionTime
+			if reflect.DeepEqual(cond, c) {
 				return
 			}
 		}
 	}
-	new.LastTransitionTime = VolatileTime{Inner: metav1.NewTime(time.Now())}
-	conditions = append(conditions, new)
+	cond.LastTransitionTime = VolatileTime{Inner: metav1.NewTime(time.Now())}
+	conditions = append(conditions, cond)
 	// Sorted for convenience of the consumer, i.e. kubectl.
 	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })
 	r.accessor.SetConditions(conditions)
@@ -229,7 +234,7 @@ func (r conditionsImpl) ClearCondition(t ConditionType) error {
 	}
 	// Terminal conditions are not handled as they can't be nil
 	if r.isTerminal(t) {
-		return fmt.Errorf("Clearing terminal conditions not implemented")
+		return fmt.Errorf("clearing terminal conditions not implemented")
 	}
 	cond := r.GetCondition(t)
 	if cond == nil {

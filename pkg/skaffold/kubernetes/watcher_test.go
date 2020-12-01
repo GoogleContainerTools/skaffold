@@ -17,6 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
+	"context"
 	"errors"
 	"sort"
 	"testing"
@@ -108,12 +109,12 @@ func TestPodWatcher(t *testing.T) {
 		t.CheckNoError(err)
 
 		// Send three pod events among other events
-		clientset.CoreV1().Pods("ns1").Create(pod("pod1"))
-		clientset.CoreV1().Pods("ignored").Create(pod("ignored"))     // Different namespace
-		clientset.CoreV1().Services("ns1").Create(service("ignored")) // Not a pod
-		clientset.CoreV1().Pods("ns2").Create(pod("ignored"))         // Rejected by podSelector
-		clientset.CoreV1().Pods("ns2").Create(pod("pod2"))
-		clientset.CoreV1().Pods("ns2").Create(pod("pod3"))
+		clientset.CoreV1().Pods("ns1").Create(context.Background(), pod("pod1"), metav1.CreateOptions{})
+		clientset.CoreV1().Pods("ignored").Create(context.Background(), pod("ignored"), metav1.CreateOptions{})     // Different namespace
+		clientset.CoreV1().Services("ns1").Create(context.Background(), service("ignored"), metav1.CreateOptions{}) // Not a pod
+		clientset.CoreV1().Pods("ns2").Create(context.Background(), pod("ignored"), metav1.CreateOptions{})         // Rejected by podSelector
+		clientset.CoreV1().Pods("ns2").Create(context.Background(), pod("pod2"), metav1.CreateOptions{})
+		clientset.CoreV1().Pods("ns2").Create(context.Background(), pod("pod3"), metav1.CreateOptions{})
 
 		// Retrieve three events
 		var podEvents []PodEvent

@@ -238,7 +238,7 @@ func findNewestPodForService(ctx context.Context, ns, serviceName string, servic
 	if err != nil {
 		return "", -1, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
-	svc, err := client.CoreV1().Services(ns).Get(serviceName, metav1.GetOptions{})
+	svc, err := client.CoreV1().Services(ns).Get(ctx, serviceName, metav1.GetOptions{})
 	if err != nil {
 		return "", -1, fmt.Errorf("getting service %s/%s: %w", ns, serviceName, err)
 	}
@@ -254,7 +254,7 @@ func findNewestPodForService(ctx context.Context, ns, serviceName string, servic
 	listOptions := metav1.ListOptions{
 		LabelSelector: set.AsSelector().String(),
 	}
-	podsList, err := client.CoreV1().Pods(ns).List(listOptions)
+	podsList, err := client.CoreV1().Pods(ns).List(ctx, listOptions)
 	if err != nil {
 		return "", -1, fmt.Errorf("listing pods: %w", err)
 	}

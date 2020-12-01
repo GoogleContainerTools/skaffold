@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck"
+	"knative.dev/pkg/apis/duck/ducktypes"
 )
 
 // +genduck
@@ -30,6 +30,9 @@ import (
 // PodSpecable is implemented by types containing a PodTemplateSpec
 // in the manner of ReplicaSet, Deployment, DaemonSet, StatefulSet.
 type PodSpecable corev1.PodTemplateSpec
+
+// PodSpecable is an Implementable duck type.
+var _ ducktypes.Implementable = (*PodSpecable)(nil)
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -47,16 +50,14 @@ type WithPodSpec struct {
 	Template PodSpecable `json:"template,omitempty"`
 }
 
-// Assert that we implement the interfaces necessary to
-// use duck.VerifyType.
+// Verify WithPod resources meet duck contracts.
 var (
-	_ duck.Populatable   = (*WithPod)(nil)
-	_ duck.Implementable = (*PodSpecable)(nil)
-	_ apis.Listable      = (*WithPod)(nil)
+	_ apis.Listable         = (*WithPod)(nil)
+	_ ducktypes.Populatable = (*WithPod)(nil)
 )
 
 // GetFullType implements duck.Implementable
-func (*PodSpecable) GetFullType() duck.Populatable {
+func (*PodSpecable) GetFullType() ducktypes.Populatable {
 	return &WithPod{}
 }
 

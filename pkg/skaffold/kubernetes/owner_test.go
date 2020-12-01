@@ -17,6 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
+	"context"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -104,7 +105,7 @@ func TestTopLevelOwnerKey(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(test.objects...)
 			t.Override(&kubernetesclient.Client, mockClient(client))
 
-			actual := TopLevelOwnerKey(test.initialObject, test.kind)
+			actual := TopLevelOwnerKey(context.Background(), test.initialObject, test.kind)
 
 			t.CheckDeepEqual(test.expected, actual)
 		})
@@ -280,7 +281,7 @@ func TestOwnerMetaObject(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(test.objects...)
 			t.Override(&kubernetesclient.Client, mockClient(client))
 
-			actual, err := ownerMetaObject("ns", test.or)
+			actual, err := ownerMetaObject(context.Background(), "ns", test.or)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)

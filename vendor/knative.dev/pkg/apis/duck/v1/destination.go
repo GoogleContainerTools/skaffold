@@ -35,11 +35,11 @@ type Destination struct {
 
 // Validate the Destination has all the necessary fields and check the
 // Namespace matches that of the parent object (using apis.ParentMeta).
-func (dest *Destination) Validate(ctx context.Context) *apis.FieldError {
-	if dest == nil {
+func (d *Destination) Validate(ctx context.Context) *apis.FieldError {
+	if d == nil {
 		return nil
 	}
-	return ValidateDestination(ctx, *dest).ViaField(apis.CurrentField)
+	return ValidateDestination(ctx, *d).ViaField(apis.CurrentField)
 }
 
 // ValidateDestination validates Destination.
@@ -65,11 +65,11 @@ func ValidateDestination(ctx context.Context, dest Destination) *apis.FieldError
 
 // GetRef gets the KReference from this Destination, if one is present. If no ref is present,
 // then nil is returned.
-func (dest *Destination) GetRef() *KReference {
-	if dest == nil {
+func (d *Destination) GetRef() *KReference {
+	if d == nil {
 		return nil
 	}
-	return dest.Ref
+	return d.Ref
 }
 
 func (d *Destination) SetDefaults(ctx context.Context) {
