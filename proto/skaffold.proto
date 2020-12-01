@@ -630,7 +630,7 @@ enum StatusCode {
     // Error writing hydrated kubernetes manifests.
     DEPLOY_MANIFEST_WRITE_ERR = 1020;
     // Error getting images from a kubernetes manifest.
-    DEPLOY_GET_IMAGES_ERR = 1021;
+    DEPLOY_PARSE_MANIFEST_IMAGES_ERR = 1021;
     // Helm config `createNamespace` not available
     DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE = 1022;
 }

@@ -47,14 +47,14 @@ func labelSettingErr(err error) error {
 		})
 }
 
-func getImagesErr(err error) error {
+func parseImagesInManifestErr(err error) error {
 	if err == nil {
 		return err
 	}
 	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: fmt.Sprintf("get images from manifests: %s", err),
-			ErrCode: proto.StatusCode_DEPLOY_GET_IMAGES_ERR,
+			Message: fmt.Sprintf("parsing images in manifests: %s", err),
+			ErrCode: proto.StatusCode_DEPLOY_PARSE_MANIFEST_IMAGES_ERR,
 		})
 }
 

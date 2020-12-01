@@ -28,7 +28,7 @@ import (
 func (l *ManifestList) GetImages() ([]build.Artifact, error) {
 	s := &imageSaver{}
 	_, err := l.Visit(s)
-	return s.Images, getImagesErr(err)
+	return s.Images, parseImagesInManifestErr(err)
 }
 
 type imageSaver struct {

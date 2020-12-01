@@ -885,7 +885,7 @@ For Cancelled Error code, use range 800 to 850.
 | DEPLOY_TRANSFORM_MANIFEST_ERR | 1018 | Error transforming a manifest during skaffold debug |
 | DEPLOY_SET_LABEL_ERR | 1019 | Error setting user specified additional labels. |
 | DEPLOY_MANIFEST_WRITE_ERR | 1020 | Error writing hydrated kubernetes manifests. |
-| DEPLOY_GET_IMAGES_ERR | 1021 | Error getting images from a kubernetes manifest. |
+| DEPLOY_PARSE_MANIFEST_IMAGES_ERR | 1021 | Error getting images from a kubernetes manifest. |
 | DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE | 1022 | Helm config `createNamespace` not available |
 
 
