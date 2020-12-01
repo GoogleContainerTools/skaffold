@@ -200,7 +200,7 @@ func TestLocalRun(t *testing.T) {
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:1",
 			}},
-			expectedWarnings: []string{"Cache-From image couldn't be pulled: pull1\n"},
+			expectedWarnings: []string{"cacheFrom image couldn't be pulled: pull1\n"},
 		},
 		{
 			description: "error checking cache-from image",

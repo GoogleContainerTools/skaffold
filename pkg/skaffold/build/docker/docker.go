@@ -33,42 +33,39 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	// Fail fast if the Dockerfile can't be found.
 	dockerfile, err := docker.NormalizeDockerfilePath(a.Workspace, a.DockerArtifact.DockerfilePath)
 	if err != nil {
-		return "", fmt.Errorf("normalizing dockerfile path: %w", err)
+		return "", dockerfileNotFound(fmt.Errorf("normalizing dockerfile path: %w", err), a.ImageName)
 	}
 	if _, err := os.Stat(dockerfile); os.IsNotExist(err) {
-		return "", fmt.Errorf("dockerfile %q not found", dockerfile)
+		return "", dockerfileNotFound(err, a.ImageName)
 	}
 
 	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact); err != nil {
-		return "", fmt.Errorf("pulling cache-from images: %w", err)
+		return "", cacheFromPullErr(err, a.ImageName)
 	}
 	opts := docker.BuildOptions{Tag: tag, Mode: b.mode, ExtraBuildArgs: docker.ResolveDependencyImages(a.Dependencies, b.artifacts, true)}
 
 	var imageID string
 
 	if b.useCLI {
-		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, opts)
+		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts)
 	} else {
 		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, opts)
 	}
 
 	if err != nil {
-		return "", err
+		return "", newBuildError(err)
 	}
 
 	if b.pushImages {
+		// TODO (tejaldesai) Remove https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/errors/err_map.go#L56
+		// and instead define a pushErr() method here.
 		return b.localDocker.Push(ctx, out, tag)
 	}
 
 	return imageID, nil
 }
 
-func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, opts docker.BuildOptions) (string, error) {
-	dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.DockerfilePath)
-	if err != nil {
-		return "", fmt.Errorf("normalizing dockerfile path: %w", err)
-	}
-
+func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, dockerfilePath string, a *latest.DockerArtifact, opts docker.BuildOptions) (string, error) {
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", opts.Tag}
 	ba, err := docker.EvalBuildArgs(b.mode, workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs)
 	if err != nil {
@@ -115,7 +112,7 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 		}
 
 		if err := b.localDocker.Pull(ctx, out, image); err != nil {
-			warnings.Printf("Cache-From image couldn't be pulled: %s\n", image)
+			warnings.Printf("cacheFrom image couldn't be pulled: %s\n", image)
 		}
 	}
 
