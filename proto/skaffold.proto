@@ -632,7 +632,7 @@ enum StatusCode {
     // Error getting images from a kubernetes manifest.
     DEPLOY_GET_IMAGES_ERR = 1021;
     // Helm config `createNamespace` not available
-    DEPLOY_HEML_CREATE_NS_NOT_AVAILABLE = 1022;
+    DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE = 1022;
 }
 
 // Enum for Suggestion codes

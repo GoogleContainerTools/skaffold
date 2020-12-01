@@ -95,7 +95,7 @@ func createNamespaceErr(version string) error {
 	return sErrors.NewErrorWithStatusCode(
 		proto.ActionableErr{
 			Message: fmt.Sprintf("Skaffold config options `createNamespace` is not available in the current Helm version %s", version),
-			ErrCode: proto.StatusCode_DEPLOY_HEML_CREATE_NS_NOT_AVAILABLE,
+			ErrCode: proto.StatusCode_DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE,
 			Suggestions: []*proto.Suggestion{
 				{
 					SuggestionCode: proto.SuggestionCode_UPGRADE_HELM32,
