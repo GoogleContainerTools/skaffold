@@ -17,8 +17,6 @@ limitations under the License.
 package manifest
 
 import (
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,7 +29,7 @@ func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error)
 	replacer := newLabelsSetter(labels)
 	updated, err := l.Visit(replacer)
 	if err != nil {
-		return nil, fmt.Errorf("setting labels in manifests: %w", err)
+		return nil, labelSettingErr(err)
 	}
 
 	logrus.Debugln("manifests with labels", updated.String())

@@ -106,7 +106,7 @@ func (h *Deployer) binVer(ctx context.Context) (semver.Version, error) {
 
 func (h *Deployer) checkMinVersion(v semver.Version) error {
 	if v.LT(helm3Version) {
-		return fmt.Errorf("skaffold requires Helm version 3.0.0-beta.0 or greater")
+		return minVersionErr()
 	}
 	return nil
 }
@@ -151,7 +151,7 @@ func pairParamsToArtifacts(builds []build.Artifact, params map[string]string) (m
 	for param, imageName := range params {
 		b, ok := imageToBuildResult[imageName]
 		if !ok {
-			return nil, fmt.Errorf("no build present for %s", imageName)
+			return nil, noMatchingBuild(imageName)
 		}
 
 		paramToBuildResult[param] = b
@@ -179,7 +179,7 @@ func (h *Deployer) releaseNamespace(r latest.HelmRelease) (string, error) {
 	} else if r.Namespace != "" {
 		namespace, err := util.ExpandEnvTemplate(r.Namespace, nil)
 		if err != nil {
-			return "", fmt.Errorf("cannot parse the release namespace template: %w", err)
+			return "", userErr("cannot parse the release namespace template", err)
 		}
 		return namespace, nil
 	}

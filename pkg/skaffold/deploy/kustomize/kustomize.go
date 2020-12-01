@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -177,12 +178,12 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 
 	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving debug helpers registry: %w", err)
+		return nil, deployerr.DebugHelperRetrieveErr(err)
 	}
 
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("reading manifests: %w", err)
+		return nil, err
 	}
 
 	if len(manifests) == 0 {
@@ -191,7 +192,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 
 	manifests, err = manifests.ReplaceImages(builds)
 	if err != nil {
-		return nil, fmt.Errorf("replacing images in manifests: %w", err)
+		return nil, err
 	}
 
 	if manifests, err = manifest.ApplyTransforms(manifests, builds, k.insecureRegistries, debugHelpersRegistry); err != nil {
@@ -205,11 +206,11 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
-		return fmt.Errorf("reading manifests: %w", err)
+		return err
 	}
 
 	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
-		return fmt.Errorf("delete: %w", err)
+		return err
 	}
 
 	return nil
@@ -221,7 +222,7 @@ func (k *Deployer) Dependencies() ([]string, error) {
 	for _, kustomizePath := range k.KustomizePaths {
 		depsForKustomization, err := DependenciesForKustomization(kustomizePath)
 		if err != nil {
-			return nil, err
+			return nil, userErr(err)
 		}
 		deps.Insert(depsForKustomization...)
 	}
@@ -289,7 +290,7 @@ func (k *Deployer) readManifests(ctx context.Context) (manifest.ManifestList, er
 		}
 
 		if err != nil {
-			return nil, fmt.Errorf("kustomize build: %w", err)
+			return nil, userErr(err)
 		}
 
 		if len(out) == 0 {
