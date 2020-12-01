@@ -24,7 +24,7 @@ import (
 )
 
 func versionGetErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_KUBECTL_VERSION_ERR,
@@ -32,7 +32,7 @@ func versionGetErr(err error) error {
 }
 
 func offlineModeErr() error {
-	return sErrors.NewError(
+	return sErrors.NewErrorWithStatusCode(
 		proto.ActionableErr{
 			Message: "cannot use offline mode if URL manifests are configured",
 			ErrCode: proto.StatusCode_DEPLOY_KUBECTL_OFFLINE_MODE_ERR,
@@ -40,7 +40,7 @@ func offlineModeErr() error {
 }
 
 func waitForDeletionErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("waiting for deletion: %s", err),
 			ErrCode: proto.StatusCode_DEPLOY_ERR_WAITING_FOR_DELETION,
@@ -48,7 +48,7 @@ func waitForDeletionErr(err error) error {
 }
 
 func readManifestErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
@@ -56,7 +56,7 @@ func readManifestErr(err error) error {
 }
 
 func readRemoteManifestErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_REMOTE_MANIFEST_ERR,
@@ -64,7 +64,7 @@ func readRemoteManifestErr(err error) error {
 }
 
 func listManifestErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_LIST_MANIFEST_ERR,
@@ -72,7 +72,7 @@ func listManifestErr(err error) error {
 }
 
 func userErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_KUBECTL_USER_ERR,

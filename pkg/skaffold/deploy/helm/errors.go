@@ -24,7 +24,7 @@ import (
 )
 
 func versionGetErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf(versionErrorString, err.Error()),
 			ErrCode: proto.StatusCode_DEPLOY_HELM_VERSION_GET_ERR,
@@ -32,7 +32,7 @@ func versionGetErr(err error) error {
 }
 
 func minVersionErr() error {
-	return sErrors.NewError(
+	return sErrors.NewErrorWithStatusCode(
 		proto.ActionableErr{
 			Message: "skaffold requires Helm version 3.0.0-beta.0 or greater",
 			ErrCode: proto.StatusCode_DEPLOY_HELM_MIN_VERSION_ERR,
@@ -40,7 +40,7 @@ func minVersionErr() error {
 }
 
 func helmLabelErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_HELM_APPLY_LABELS,
@@ -48,7 +48,7 @@ func helmLabelErr(err error) error {
 }
 
 func userErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_HELM_USER_ERR,
@@ -56,7 +56,7 @@ func userErr(err error) error {
 }
 
 func noMatchingBuild(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("matching build results to chart values: %s", err),
 			ErrCode: proto.StatusCode_DEPLOY_NO_MATCHING_BUILD,

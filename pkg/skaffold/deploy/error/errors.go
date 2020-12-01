@@ -24,7 +24,7 @@ import (
 // DebugHelperRetrieveErr is thrown when debug helpers could not be retrieved.
 // This error occurs in skaffold debug command when transforming the manifest before deploying.
 func DebugHelperRetrieveErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_DEBUG_HELPER_RETRIEVE_ERR,
@@ -35,7 +35,7 @@ func DebugHelperRetrieveErr(err error) error {
 // This error could happen in the skaffold clean up phase or
 // if `wait-for-deletions` is specified on command line.
 func CleanupErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_CLEANUP_ERR,

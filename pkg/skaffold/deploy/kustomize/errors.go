@@ -22,7 +22,7 @@ import (
 )
 
 func userErr(err error) error {
-	return sErrors.NewError(
+	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_KUSTOMIZE_USER_ERR,
