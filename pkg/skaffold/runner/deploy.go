@@ -73,12 +73,13 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 
 	event.DeployInProgress()
 	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
-	r.hasDeployed = true
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
 		return err
 	}
+
+	r.hasDeployed = true
 
 	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	postStatusCheckFn()

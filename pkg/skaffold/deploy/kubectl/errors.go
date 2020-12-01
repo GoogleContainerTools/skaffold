@@ -19,23 +19,41 @@ package kubectl
 import (
 	"fmt"
 
+	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto"
+)
+
+const (
+	toolName    = "Kubectl"
+	installLink = "https://kubernetes.io/docs/tasks/tools/install-kubectl"
 )
 
 func versionGetErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: err.Error(),
+			Message: deployerr.MissingToolErr(toolName, err),
 			ErrCode: proto.StatusCode_DEPLOY_KUBECTL_VERSION_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_INSTALL_KUBECTL,
+					Action:         fmt.Sprintf("Please install kubeclt via %s", installLink),
+				},
+			},
 		})
 }
 
 func offlineModeErr() error {
 	return sErrors.NewErrorWithStatusCode(
 		proto.ActionableErr{
-			Message: "cannot use offline mode if URL manifests are configured",
+			Message: "Cannot use offline mode if URL manifests are configured",
 			ErrCode: proto.StatusCode_DEPLOY_KUBECTL_OFFLINE_MODE_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_SET_RENDER_FLAG_OFFLINE_FALSE,
+					Action:         "Please rerun with --offline=false",
+				},
+			},
 		})
 }
 

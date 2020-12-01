@@ -72,7 +72,7 @@ func ActionableErr(phase Phase, err error) *proto.ActionableErr {
 }
 
 func ShowAIError(err error) error {
-	if _, ok := err.(Error); ok {
+	if IsSkaffoldErr(err) {
 		return err
 	}
 

@@ -631,6 +631,8 @@ enum StatusCode {
     DEPLOY_MANIFEST_WRITE_ERR = 1020;
     // Error getting images from a kubernetes manifest.
     DEPLOY_GET_IMAGES_ERR = 1021;
+    // Helm config `createNamespace` not available
+    DEPLOY_HEML_CREATE_NS_NOT_AVAILABLE = 1022;
 }
 
 // Enum for Suggestion codes
@@ -672,6 +674,19 @@ enum SuggestionCode {
     CHECK_CLUSTER_CONNECTION = 201;
     // Check minikube status
     CHECK_MINIKUBE_STATUS = 202;
+    // Install helm tool
+    INSTALL_HELM = 203;
+    // Upgrade helm tool
+    UPGRADE_HELM = 204;
+    // Fix helm `releases.artifactOverrides` config to match with `build.artiofacts`
+    FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES = 205;
+    // Upgrade helm version to v3.2.0 and higher.
+    UPGRADE_HELM32 = 206;
+    // Set `releases.createNamespace` to false.
+    FIX_SKAFFOLD_CONFIG_HELM_CREATE_NAMESPACE = 207;
+
+    // Install kubectl tool
+    INSTALL_KUBECTL = 220;
 
     // Container Run time error
 
@@ -716,6 +731,12 @@ enum SuggestionCode {
 
     // Run Docker pull for the image with v1 manifest and try again.
     RUN_DOCKER_PULL = 551;
+
+
+    // Render Error suggestion codes
+
+    // Rerun with correct offline flag value.
+    SET_RENDER_FLAG_OFFLINE_FALSE = 600;
 
     // Open an issue so this situation can be diagnosed
     OPEN_ISSUE = 900;

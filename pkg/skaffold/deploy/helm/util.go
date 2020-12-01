@@ -151,7 +151,7 @@ func pairParamsToArtifacts(builds []build.Artifact, params map[string]string) (m
 	for param, imageName := range params {
 		b, ok := imageToBuildResult[imageName]
 		if !ok {
-			return nil, fmt.Errorf("no build present for %s", imageName)
+			return nil, noMatchingBuild(imageName)
 		}
 
 		paramToBuildResult[param] = b
@@ -179,7 +179,7 @@ func (h *Deployer) releaseNamespace(r latest.HelmRelease) (string, error) {
 	} else if r.Namespace != "" {
 		namespace, err := util.ExpandEnvTemplate(r.Namespace, nil)
 		if err != nil {
-			return "", userErr(fmt.Errorf("cannot parse the release namespace template: %w", err))
+			return "", userErr("cannot parse the release namespace template", err)
 		}
 		return namespace, nil
 	}

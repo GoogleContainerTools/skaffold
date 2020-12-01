@@ -17,8 +17,16 @@ limitations under the License.
 package error
 
 import (
+	"fmt"
+	"strings"
+
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto"
+)
+
+const (
+	executableNotFound = "executable file not found"
+	notFound           = "%s not found"
 )
 
 // DebugHelperRetrieveErr is thrown when debug helpers could not be retrieved.
@@ -40,4 +48,12 @@ func CleanupErr(err error) error {
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_CLEANUP_ERR,
 		})
+}
+
+// MissingToolErr returns a concise error if error is due to deploy tool executable not found.
+func MissingToolErr(toolName string, err error) string {
+	if strings.Contains(err.Error(), executableNotFound) {
+		return fmt.Sprintf(notFound, toolName)
+	}
+	return err.Error()
 }

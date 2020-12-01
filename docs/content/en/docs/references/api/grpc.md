@@ -886,6 +886,7 @@ For Cancelled Error code, use range 800 to 850.
 | DEPLOY_SET_LABEL_ERR | 1019 | Error setting user specified additional labels. |
 | DEPLOY_MANIFEST_WRITE_ERR | 1020 | Error writing hydrated kubernetes manifests. |
 | DEPLOY_GET_IMAGES_ERR | 1021 | Error getting images from a kubernetes manifest. |
+| DEPLOY_HEML_CREATE_NS_NOT_AVAILABLE | 1022 | Helm config `createNamespace` not available |
 
 
 
@@ -911,6 +912,12 @@ Enum for Suggestion codes
 | FIX_JIB_PLUGIN_CONFIGURATION | 111 | Use a supported Jib plugin type |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |
+| INSTALL_HELM | 203 | Install helm tool |
+| UPGRADE_HELM | 204 | Upgrade helm tool |
+| FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES | 205 | Fix helm `releases.artifactOverrides` config to match with `build.artiofacts` |
+| UPGRADE_HELM32 | 206 | Upgrade helm version to v3.2.0 and higher. |
+| FIX_SKAFFOLD_CONFIG_HELM_CREATE_NAMESPACE | 207 | Set `releases.createNamespace` to false. |
+| INSTALL_KUBECTL | 220 | Install kubectl tool |
 | CHECK_CONTAINER_LOGS | 301 | Container run error |
 | CHECK_READINESS_PROBE | 302 | Pod Health check error |
 | CHECK_CONTAINER_IMAGE | 303 | Check Container image |
@@ -926,6 +933,7 @@ Enum for Suggestion codes
 | START_MINIKUBE | 501 | Minikube is stopped: use `minikube start` |
 | UNPAUSE_MINIKUBE | 502 | Minikube is paused: use `minikube unpause` |
 | RUN_DOCKER_PULL | 551 | Run Docker pull for the image with v1 manifest and try again. |
+| SET_RENDER_FLAG_OFFLINE_FALSE | 600 | Rerun with correct offline flag value. |
 | OPEN_ISSUE | 900 | Open an issue so this situation can be diagnosed |
 
 

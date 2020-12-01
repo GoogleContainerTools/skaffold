@@ -19,23 +19,42 @@ package helm
 import (
 	"fmt"
 
+	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto"
+)
+
+const (
+	installLink            = "https://helm.sh/docs/intro/install"
+	toolName               = "Helm"
+	artifactOverrridesLink = "https://skaffold.dev/docs/references/yaml/#deploy-helm-releases-artifactOverrides"
 )
 
 func versionGetErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: fmt.Sprintf(versionErrorString, err.Error()),
+			Message: deployerr.MissingToolErr(toolName, fmt.Errorf(versionErrorString, err)),
 			ErrCode: proto.StatusCode_DEPLOY_HELM_VERSION_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_INSTALL_HELM,
+					Action:         fmt.Sprintf("Please install helm via %s", installLink),
+				},
+			},
 		})
 }
 
 func minVersionErr() error {
 	return sErrors.NewErrorWithStatusCode(
 		proto.ActionableErr{
-			Message: "skaffold requires Helm version 3.0.0-beta.0 or greater",
+			Message: "skaffold requires Helm version 3.0.0 or greater",
 			ErrCode: proto.StatusCode_DEPLOY_HELM_MIN_VERSION_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_UPGRADE_HELM,
+					Action:         fmt.Sprintf("Please upgrade helm to v3.0.0 or higher via %s", installLink),
+				},
+			},
 		})
 }
 
@@ -47,18 +66,45 @@ func helmLabelErr(err error) error {
 		})
 }
 
-func userErr(err error) error {
+func userErr(prefix string, err error) error {
+	if sErrors.IsSkaffoldErr(err) {
+		return err
+	}
 	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: err.Error(),
+			Message: fmt.Sprintf("%s: %s", prefix, err.Error()),
 			ErrCode: proto.StatusCode_DEPLOY_HELM_USER_ERR,
 		})
 }
 
-func noMatchingBuild(err error) error {
-	return sErrors.NewError(err,
+func noMatchingBuild(image string) error {
+	return sErrors.NewErrorWithStatusCode(
 		proto.ActionableErr{
-			Message: fmt.Sprintf("matching build results to chart values: %s", err),
+			Message: fmt.Sprintf("No built image found for `releases.artifactOverrides` value %s", image),
 			ErrCode: proto.StatusCode_DEPLOY_NO_MATCHING_BUILD,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES,
+					Action:         fmt.Sprintf("\nPlease verify `%s` is present in `build.artifacts`. See %s for more help", image, artifactOverrridesLink),
+				},
+			},
+		})
+}
+
+func createNamespaceErr(version string) error {
+	return sErrors.NewErrorWithStatusCode(
+		proto.ActionableErr{
+			Message: fmt.Sprintf("Skaffold config options `createNamespace` is not available in the current Helm version %s", version),
+			ErrCode: proto.StatusCode_DEPLOY_HEML_CREATE_NS_NOT_AVAILABLE,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_UPGRADE_HELM32,
+					Action:         "\nPlease update Helm to version 3.2 or higher",
+				},
+				{
+					SuggestionCode: proto.SuggestionCode_FIX_SKAFFOLD_CONFIG_HELM_CREATE_NAMESPACE,
+					Action:         "set `releases.createNamespace` to false and try again",
+				},
+			},
 		})
 }
