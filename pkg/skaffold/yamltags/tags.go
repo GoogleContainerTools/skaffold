@@ -22,6 +22,8 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 type fieldSet map[string]struct{}
@@ -55,6 +57,21 @@ func YamlName(field reflect.StructField) string {
 		}
 	}
 	return field.Name
+}
+
+// GetYamlTag returns the first yaml tag used in the raw yaml text of the given struct
+func GetYamlTag(value interface{}) string {
+	buf, err := yaml.Marshal(value)
+	if err != nil {
+		logrus.Warnf("error marshaling %-v", value)
+		return ""
+	}
+	rawStr := string(buf)
+	i := strings.Index(rawStr, ":")
+	if i == -1 {
+		return ""
+	}
+	return rawStr[:i]
 }
 
 func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value, field reflect.StructField) error {
