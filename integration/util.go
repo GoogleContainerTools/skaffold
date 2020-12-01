@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -374,4 +375,14 @@ func WaitForLogs(t *testing.T, out io.Reader, firstMessage string, moreMessages 
 			}
 		}
 	}
+}
+
+func logOnFailure(t *testing.T, r io.Reader) {
+	t.Cleanup(func() {
+		if t.Failed() {
+			b, _ := ioutil.ReadAll(r)
+			t.Log("Skaffold log:\n", strings.ReplaceAll(string(b), "\n", "\n> "))
+		}
+	})
+
 }
