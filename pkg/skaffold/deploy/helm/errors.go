@@ -27,7 +27,7 @@ func versionGetErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf(versionErrorString, err.Error()),
-			ErrCode: proto.StatusCode_DEPLOY_HELM_VERSION_GET_ERR,
+			ErrCode: proto.StatusCode_DEPLOY_HELM_VERSION_ERR,
 		})
 }
 

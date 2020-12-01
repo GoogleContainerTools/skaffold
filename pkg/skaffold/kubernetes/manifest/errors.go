@@ -39,7 +39,7 @@ func transformManifestErr(err error) error {
 		})
 }
 
-func setLabelErr(err error) error {
+func labelSettingErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("setting labels in manifests: %s", err),
@@ -54,7 +54,7 @@ func getImagesErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("get images from manifests: %s", err),
-			ErrCode: proto.StatusCode_DEPLOY_GET_IMAGE_ERR,
+			ErrCode: proto.StatusCode_DEPLOY_GET_IMAGES_ERR,
 		})
 }
 

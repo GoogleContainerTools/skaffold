@@ -29,7 +29,7 @@ func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error)
 	replacer := newLabelsSetter(labels)
 	updated, err := l.Visit(replacer)
 	if err != nil {
-		return nil, setLabelErr(err)
+		return nil, labelSettingErr(err)
 	}
 
 	logrus.Debugln("manifests with labels", updated.String())

@@ -602,8 +602,8 @@ enum StatusCode {
     // Helm error when no build result is found of value  specified in helm `artifactOverrides`
     DEPLOY_NO_MATCHING_BUILD = 1006;
     // Unable to get helm client version
-    DEPLOY_HELM_VERSION_GET_ERR = 1007;
-    // Helm version not supported. Should be 3.0.0-beta.0 or greater.
+    DEPLOY_HELM_VERSION_ERR = 1007;
+    // Helm version not supported.
     DEPLOY_HELM_MIN_VERSION_ERR = 1008;
     // Unable to retrieve kubectl version
     DEPLOY_KUBECTL_VERSION_ERR = 1109;
@@ -630,7 +630,7 @@ enum StatusCode {
     // Error writing hydrated kubernetes manifests.
     DEPLOY_MANIFEST_WRITE_ERR = 1020;
     // Error getting images from a kubernetes manifest.
-    DEPLOY_GET_IMAGE_ERR = 1021;
+    DEPLOY_GET_IMAGES_ERR = 1021;
 }
 
 // Enum for Suggestion codes
