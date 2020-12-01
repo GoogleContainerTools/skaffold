@@ -179,7 +179,7 @@ func validateUniqueDependencyAliases(artifacts []*latest.Artifact) (errs []error
 	return
 }
 
-// validateDockerNetworkMode makes sure that networkMode is one of `bridge`, `none`, or `host` if set.
+// validateDockerNetworkMode makes sure that networkMode is one of `bridge`, `none`, `container:<name|id>`, or `host` if set.
 func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 	for _, a := range artifacts {
 		if a.DockerArtifact == nil || a.DockerArtifact.NetworkMode == "" {
@@ -189,6 +189,11 @@ func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 		if mode == "none" || mode == "bridge" || mode == "host" {
 			continue
 		}
+		containerRegExp := regexp.MustCompile("container:.+")
+		if containerRegExp.MatchString(mode) {
+			continue
+		}
+
 		errs = append(errs, fmt.Errorf("artifact %s has invalid networkMode '%s'", a.ImageName, mode))
 	}
 	return

@@ -295,6 +295,33 @@ func TestValidateNetworkMode(t *testing.T) {
 			},
 		},
 		{
+			description: "empty container's network stack",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:",
+						},
+					},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "container's network stack",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:unique-identifier",
+						},
+					},
+				},
+			},
+		},
+		{
 			description: "none",
 			artifacts: []*latest.Artifact{
 				{
