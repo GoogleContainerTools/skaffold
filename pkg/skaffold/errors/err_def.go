@@ -19,6 +19,7 @@ package errors
 import (
 	"fmt"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -53,6 +54,7 @@ func (e ErrDef) Suggestions() []*proto.Suggestion {
 	return e.ae.Suggestions
 }
 
+// NewError creates an actionable error message preserving the actual error.
 func NewError(err error, ae proto.ActionableErr) ErrDef {
 	return ErrDef{
 		err: err,
@@ -60,8 +62,20 @@ func NewError(err error, ae proto.ActionableErr) ErrDef {
 	}
 }
 
+// NewError creates an actionable error message.
 func NewErrorWithStatusCode(ae proto.ActionableErr) ErrDef {
 	return ErrDef{
+		ae: ae,
+	}
+}
+
+// NewError creates an actionable error message with a suggestions evaluated at
+// based on SkaffoldOptions which include command line options, global configuration etc.
+func NewErrorWithSuggestions(err error, ae proto.ActionableErr, suggest func (c config.SkaffoldOptions) []*proto.Suggestion) ErrDef {
+	newAe := ae
+	newAe.Suggestions = suggest(skaffoldOpts)
+	return ErrDef{
+		err: err,
 		ae: ae,
 	}
 }
