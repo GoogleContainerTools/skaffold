@@ -22,10 +22,6 @@ import (
 	"html/template"
 )
 
-var (
-	port = 8080
-)
-
 type Container struct {
 	Name  string
 	Image string
@@ -34,8 +30,7 @@ type Container struct {
 
 // Generate generates kubernetes resources for the given image, and returns the generated manifest string
 func Generate(name string) ([]byte, *Container, error) {
-	c := Container{name, name, port}
-	port++
+	c := Container{name, name, 8080}
 
 	t, err := template.New("deployment").Parse(yamlTemplate)
 	if err != nil {
