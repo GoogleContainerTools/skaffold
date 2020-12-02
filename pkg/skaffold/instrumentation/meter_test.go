@@ -17,6 +17,7 @@ limitations under the License.
 package instrumentation
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -29,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestExportMetrics(t *testing.T) {
+func TestOfflineExportMetrics(t *testing.T) {
 	startTime, _ := time.Parse(time.ANSIC, "Mon Jan 2 15:04:05 -0700 MST 2006")
 	validMeter := skaffoldMeter{
 		Command:        "build",
@@ -37,7 +38,7 @@ func TestExportMetrics(t *testing.T) {
 		Version:        "vTest.0",
 		Arch:           "test arch",
 		OS:             "test os",
-		Builders:       map[string]bool{"docker": true, "buildpacks": true},
+		Builders:       map[string]int{"docker": 1, "buildpacks": 1},
 		EnumFlags:      map[string]*pflag.Flag{"test": {Name: "test", Shorthand: "t"}},
 		StartTime:      startTime,
 		Duration:       time.Minute,
@@ -85,7 +86,7 @@ func TestExportMetrics(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			t.Override(&skipExport, "true")
+			t.Override(&isOnline, false)
 			filename := "metrics"
 			tmp := t.NewTempDir()
 			var savedMetrics []skaffoldMeter
@@ -97,7 +98,7 @@ func TestExportMetrics(t *testing.T) {
 					t.Error(err)
 				}
 			}
-			_ = exportMetrics(tmp.Path(filename), test.meter)
+			_ = exportMetrics(context.Background(), tmp.Path(filename), test.meter)
 
 			if test.shouldSkip {
 				_, err := os.Stat(filename)
