@@ -38,6 +38,9 @@ metadata:
   labels:
     app: foo
 spec:
+  ports:
+  - port: 8080
+    protocol: TCP
   clusterIP: None
   selector:
     app: foo
@@ -68,7 +71,7 @@ spec:
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			for _, image := range test.images {
-				manifest, err := Generate(image)
+				manifest, _, err := Generate(image)
 
 				t.CheckNoError(err)
 				t.CheckDeepEqual(test.expectedManifest, string(manifest))

@@ -23,6 +23,9 @@ metadata:
   labels:
     app: {{.Name}}
 spec:
+  ports:
+  - port: {{.Port}}
+    protocol: TCP
   clusterIP: None
   selector:
     app: {{.Name}}
