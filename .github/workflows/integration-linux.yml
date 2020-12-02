@@ -53,7 +53,7 @@ jobs:
         wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${{ matrix.gcloud_sdk_version }}-linux-x86_64.tar.gz
         sudo tar -xvf gcloud.tar.gz -C /
         sudo CLOUDSDK_PYTHON="python2.7" /google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
-        echo "::add-path::/google-cloud-sdk/bin"
+        echo "/google-cloud-sdk/bin" >> $GITHUB_PATH
 
     - name: Configure GCloud with Docker
       run:  sudo gcloud auth configure-docker

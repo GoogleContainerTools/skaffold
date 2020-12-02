@@ -35,7 +35,7 @@ jobs:
       run: |
         curl -Lo $HOME/gsutil.tar.gz https://storage.googleapis.com/pub/gsutil.tar.gz
         tar xfz $HOME/gsutil.tar.gz -C $HOME
-        echo ::add-path::$HOME/gsutil
+        echo "$HOME/gsutil" >> $GITHUB_PATH
 
     - name: Download release artifacts
       run: |
