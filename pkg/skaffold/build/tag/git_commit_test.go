@@ -46,6 +46,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 		createGitRepo          func(string)
 		subDir                 string
 		shouldErr              bool
+		ignoreChanges          bool
 	}{
 		{
 			description:            "clean worktree without tag",
@@ -101,6 +102,27 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 			},
 		},
 		{
+			description:            "dirty worktree with ignore changes flag",
+			variantTags:            "v_2",
+			variantCommitSha:       "aea33bcc86b5af8c8570ff45d8a643202d63c808",
+			variantAbbrevCommitSha: "aea33bc",
+			variantTreeSha:         "bc69d50cda6897a6f2054e64b9059f038dc6fb0e",
+			variantAbbrevTreeSha:   "bc69d50",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", "code").
+					add("source.go").
+					commit("initial").
+					tag("v/1").
+					write("other.go", "other").
+					add("other.go").
+					commit("second commit").
+					tag("v/2").
+					write("other.go", "updated code")
+			},
+			ignoreChanges: true,
+		},
+		{
 			description:            "clean worktree with tags",
 			variantTags:            "v2",
 			variantCommitSha:       "aea33bcc86b5af8c8570ff45d8a643202d63c808",
@@ -118,6 +140,26 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 					commit("second commit").
 					tag("v2")
 			},
+		},
+		{
+			description:            "clean worktree with ignore changes flag",
+			variantTags:            "v2",
+			variantCommitSha:       "aea33bcc86b5af8c8570ff45d8a643202d63c808",
+			variantAbbrevCommitSha: "aea33bc",
+			variantTreeSha:         "bc69d50cda6897a6f2054e64b9059f038dc6fb0e",
+			variantAbbrevTreeSha:   "bc69d50",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", "code").
+					add("source.go").
+					commit("initial").
+					tag("v1").
+					write("other.go", "other").
+					add("other.go").
+					commit("second commit").
+					tag("v2")
+			},
+			ignoreChanges: true,
 		},
 		{
 			description:            "treeSha only considers current tree content",
@@ -349,7 +391,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 				"TreeSha":         test.variantTreeSha,
 				"AbbrevTreeSha":   test.variantAbbrevTreeSha,
 			} {
-				tagger, err := NewGitCommit("", variant)
+				tagger, err := NewGitCommit("", variant, test.ignoreChanges)
 				t.CheckNoError(err)
 
 				tag, err := tagger.GenerateTag(workspace, "test")
@@ -408,7 +450,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 				"TreeSha":         test.variantTreeSha,
 				"AbbrevTreeSha":   test.variantAbbrevTreeSha,
 			} {
-				tagger, err := NewGitCommit("", variant)
+				tagger, err := NewGitCommit("", variant, false)
 				t.CheckNoError(err)
 
 				tag, err := GenerateFullyQualifiedImageName(tagger, workspace, "test")
@@ -420,7 +462,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 }
 
 func TestGitCommit_CustomTemplate(t *testing.T) {
-	gitCommitExample, _ := NewGitCommit("", "CommitSha")
+	gitCommitExample, _ := NewGitCommit("", "CommitSha", false)
 	tests := []struct {
 		description   string
 		template      string
@@ -478,30 +520,30 @@ func TestGitCommitSubDirectory(t *testing.T) {
 		gitInit(t.T, tmpDir.Root()).mkdir("sub/sub").commit("initial")
 		workspace := tmpDir.Path("sub/sub")
 
-		tagger, err := NewGitCommit("", "Tags")
+		tagger, err := NewGitCommit("", "Tags", false)
 		t.CheckNoError(err)
 		tag, err := tagger.GenerateTag(workspace, "test")
 		t.CheckNoError(err)
 		t.CheckDeepEqual("a7b32a6", tag)
 
-		tagger, err = NewGitCommit("", "CommitSha")
+		tagger, err = NewGitCommit("", "CommitSha", false)
 		t.CheckNoError(err)
 		tag, err = tagger.GenerateTag(workspace, "test")
 		t.CheckNoError(err)
 		t.CheckDeepEqual("a7b32a69335a6daa51bd89cc1bf30bd31df228ba", tag)
 
-		tagger, err = NewGitCommit("", "AbbrevCommitSha")
+		tagger, err = NewGitCommit("", "AbbrevCommitSha", false)
 		t.CheckNoError(err)
 		tag, err = tagger.GenerateTag(workspace, "test")
 		t.CheckNoError(err)
 		t.CheckDeepEqual("a7b32a6", tag)
 
-		tagger, err = NewGitCommit("", "TreeSha")
+		tagger, err = NewGitCommit("", "TreeSha", false)
 		t.CheckNoError(err)
 		_, err = tagger.GenerateTag(workspace, "test")
 		t.CheckErrorAndDeepEqual(true, err, "a7b32a6", tag)
 
-		tagger, err = NewGitCommit("", "AbbrevTreeSha")
+		tagger, err = NewGitCommit("", "AbbrevTreeSha", false)
 		t.CheckNoError(err)
 		_, err = tagger.GenerateTag(workspace, "test")
 		t.CheckErrorAndDeepEqual(true, err, "a7b32a6", tag)
@@ -514,13 +556,13 @@ func TestPrefix(t *testing.T) {
 		gitInit(t.T, tmpDir.Root()).commit("initial")
 		workspace := tmpDir.Path(".")
 
-		tagger, err := NewGitCommit("tag-", "Tags")
+		tagger, err := NewGitCommit("tag-", "Tags", false)
 		t.CheckNoError(err)
 		tag, err := tagger.GenerateTag(workspace, "test")
 		t.CheckNoError(err)
 		t.CheckDeepEqual("tag-a7b32a6", tag)
 
-		tagger, err = NewGitCommit("commit-", "CommitSha")
+		tagger, err = NewGitCommit("commit-", "CommitSha", false)
 		t.CheckNoError(err)
 		tag, err = tagger.GenerateTag(workspace, "test")
 		t.CheckNoError(err)
@@ -530,7 +572,7 @@ func TestPrefix(t *testing.T) {
 
 func TestInvalidVariant(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		_, err := NewGitCommit("", "Invalid")
+		_, err := NewGitCommit("", "Invalid", false)
 
 		t.CheckErrorContains("\"Invalid\" is not a valid git tagger variant", err)
 	})

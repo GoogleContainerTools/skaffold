@@ -121,7 +121,7 @@ func TestGetDeployer(tOuter *testing.T) {
 }
 
 func TestCreateComponents(t *testing.T) {
-	gitExample, _ := tag.NewGitCommit("", "")
+	gitExample, _ := tag.NewGitCommit("", "", false)
 	envExample, _ := tag.NewEnvTemplateTagger("test")
 
 	tests := []struct {
