@@ -58,7 +58,7 @@ jobs:
         wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${{ matrix.gcloud_sdk_version }}-darwin-x86_64.tar.gz
         tar -xvf gcloud.tar.gz -C ${HOME}
         CLOUDSDK_PYTHON="python2.7" ${HOME}/google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
-        echo ::add-path::${HOME}/google-cloud-sdk/bin
+        echo "${HOME}/google-cloud-sdk/bin" >> $GITHUB_PATH
 
     - name: Install Kubectl
       run: |
