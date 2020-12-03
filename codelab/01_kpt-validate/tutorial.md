@@ -8,7 +8,7 @@
 
 Kpt is [an OSS tool](https://github.com/GoogleContainerTools/kpt) for Kubernetes packaging, which uses a standard format to bundle, publish, customize, update, and apply configuration manifests.
 
-#### What kpt can help you
+#### What kpt can help you with
     
 *  You will get an hands-on off-the-shelf experience about the **GitOps** CI/CD workflow in skaffold.
 *  You can validate each of your config changes **declaratively**.
@@ -18,7 +18,7 @@ Kpt is [an OSS tool](https://github.com/GoogleContainerTools/kpt) for Kubernetes
 #### What you'll learn
     
 *  How to add a validation to your config changes. 
-*  How to define validation rules in the form of a declarative pipeline.
+*  How to define validation rules in the form of a declarative configuration.
 *  How to use the validation in kustomized resources. 
 
 ## Prerequisites
@@ -63,7 +63,7 @@ Or just follow this codelab, we will explain what happens in each step.
     ```
 *   If you haven't installed `kustomize` previously, run
     ```bash
-        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash &&  sudo mv kustomize /usr/local/go/bin
+    curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash &&  sudo mv kustomize /usr/local/go/bin
     ```  
     
 ## Getting started
@@ -245,68 +245,6 @@ Since the validation passes silently, let's break the kubeval to prove the valid
 > You can find all the `kpt` validation functions from this [catalog](https://googlecontainertools.github.io/kpt/guides/consumer/function/catalog/validators/)
 > 
 > Or write your own versions. See [instructions](https://googlecontainertools.github.io/kpt/guides/consumer/function/).
-    
-    
-## Validating through a pipeline
-Time to complete: **About 5 minutes**
-
-Instead of using a single validation function, we are more interested in applying the 
-configurations through a series of validation functions, each of which checks a specific rule.
-
-To do so, you can put a list of `kpt` functions into a single file and kpt will apply the 
-resources through these functions based on the function orders in the single file. 
-Like the graph shows.
-
-![image](https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/logo/kpt-pipeline.png)
-
-*Let's go through an example!*    
-
-*   Run `kpt pkg` to download the validation pipeline.
-    ```bash
-    kpt pkg get https://github.com/GoogleContainerTools/skaffold.git/codelab/01_kpt-validate/resources/validation-pipeline/ validations
-    ```
-    This pipeline contains two functions.
-    *   A <walkthrough-editor-select-line filePath="guestbook-cl/validations/fn-pipeline.yaml" startLine="4" endLine="4" startCharacterOffset="8" endCharacterOffset="20">YamlValidate</walkthrough-editor-select-line> validator to check the yaml schema
-    *   A <walkthrough-editor-select-line filePath="guestbook-cl/validations/fn-pipeline.yaml" startLine="16" endLine="16" startCharacterOffset="8" endCharacterOffset="21">CPUAndMemory</walkthrough-editor-select-line> validator to check if all containers have the CPU and memory reservation set.   
-
-*   Now let's update the <walkthrough-editor-open-file filePath="guestbook-cl/skaffold.yaml">skaffold.yaml</walkthrough-editor-open-file> 
-    to use the new validator pipeline. In <walkthrough-editor-select-line filePath="guestbook-cl/skaffold.yaml" startLine="8" endLine="13" startCharacterOffset="0" endCharacterOffset="100">skaffold.yaml</walkthrough-editor-select-line>，
-    replace the <walkthrough-editor-select-line filePath="guestbook-cl/skaffold.yaml" startLine="8" endLine="15" startCharacterOffset="0" endCharacterOffset="0">deploy</walkthrough-editor-select-line> section with the following code.
-
-    See the full [skaffold.yaml](https://github.com/yuwenma/sample-app/blob/kubeval/skaffold.yaml#L12) 
-    ```yaml
-    deploy:
-      kpt:
-        dir: config
-        fn:
-          fnPath: validations
-          network: true
-    ```
-    
-*   Check the result. 
-
-    ```bash
-    skaffold dev
-    ```
-
-## Verify the validation pipeline "sad path" 
-
-Let's  break the validator pipeline. 
-
-*   In <walkthrough-editor-open-file filePath="guestbook-cl/config/frontend/deployment.yaml">config/frontend/deployment.yaml</walkthrough-editor-open-file>, 
-    remove the container's  <walkthrough-editor-select-line filePath="guestbook-cl/config/frontend/deployment.yaml" startLine="21" endLine="21" startCharacterOffset="12" endCharacterOffset="15">spec.template.spec.containers.resources.requests.cpu</walkthrough-editor-select-line> field (in line 22)  
-    
-    *You can **either** manually delete the line **or** run the following command*
-
-    ```bash
-    sed -i '22d' ./config/frontend/deployment.yaml
-    ```
-
-*   Check the `skaffold dev` output. 
-
-    ```bash
-    skaffold dev
-    ```
 
 ## Conclusion
 

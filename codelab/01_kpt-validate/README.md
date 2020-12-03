@@ -8,7 +8,7 @@ After this session, you will have obtained more powerful tools to validate and m
 
 Kpt is [an OSS tool](https://github.com/GoogleContainerTools/kpt) for Kubernetes packaging, which uses a standard format to bundle, publish, customize, update, and apply configuration manifests.
 
-## What kpt can help you
+## What kpt can help you with
 
 -  You can validate each of your config changes **declaratively**.
 -  You will get an hands-on off-the-shelf experience about the **GitOps** CI/CD workflow in skaffold.
@@ -18,7 +18,7 @@ Kpt is [an OSS tool](https://github.com/GoogleContainerTools/kpt) for Kubernetes
 ## What you'll learn
 
 -  How to add a validation to your config changes. 
--  How to define validation rules in the form of a declarative pipeline.
+-  How to define validation rules in the form of a declarative configuration.
 -  How to use the validation in kustomized resources. 
 -  How to reconcile your configuration changes with the live state
 
