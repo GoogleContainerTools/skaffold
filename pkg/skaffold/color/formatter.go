@@ -151,3 +151,12 @@ func IsStdout(out io.Writer) bool {
 	}
 	return out == os.Stdout
 }
+
+// GetWriter returns the underlying writer if out is a colorableWriter
+func GetWriter(out io.Writer) io.Writer {
+	o, ok := out.(colorableWriter)
+	if ok {
+		return o.Writer
+	}
+	return out
+}
