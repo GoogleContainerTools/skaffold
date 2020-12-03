@@ -108,7 +108,7 @@ func TestDevAutoSync(t *testing.T) {
 
 			ns, client := SetupNamespace(t)
 
-			output := skaffold.Dev("--trigger", "notify").WithConfig(test.configFile).InDir(dir).InNs(ns.Name).RunBackground(t)
+			output := skaffold.Dev("--trigger", "notify").WithConfig(test.configFile).InDir(dir).InNs(ns.Name).RunLive(t)
 
 			client.WaitForPodsReady("test-file-sync")
 

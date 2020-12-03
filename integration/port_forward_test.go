@@ -106,8 +106,7 @@ func TestDevPortForwardDeletePod(t *testing.T) {
 	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	r := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
-	logOnFailure(t, r)
+	skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
 
 	_, entries := apiEvents(t, rpcAddr)
 

@@ -167,16 +167,40 @@ func (b *RunBuilder) WithProfiles(profiles []string) *RunBuilder {
 	return b
 }
 
-// RunBackground runs the skaffold command in the background.
-func (b *RunBuilder) RunBackground(t *testing.T) io.ReadCloser {
+// RunBackground runs the skaffold command in the background.  The Skaffold output
+// is accumulated and logged on test failure.
+func (b *RunBuilder) RunBackground(t *testing.T) io.Reader {
 	t.Helper()
+	out := bytes.Buffer{}
+	b.runForked(t, &out)
 
+	t.Cleanup(func() {
+		if t.Failed() {
+			t.Log("Skaffold log:\n", strings.ReplaceAll(out.String(), "\n", "\n> "))
+		}
+	})
+	return &out
+}
+
+// RunLive runs the skaffold command in the background with live output.
+func (b *RunBuilder) RunLive(t *testing.T) io.ReadCloser {
+	t.Helper()
 	pr, pw := io.Pipe()
+	b.runForked(t, pw)
+	t.Cleanup(func() {
+		pr.Close()
+	})
+	return pr
+}
+
+// runForked runs the skaffold command in the background with stdout sent to the provided writer.
+func (b *RunBuilder) runForked(t *testing.T, out io.Writer) {
+	t.Helper()
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cmd := b.cmd(ctx)
-	cmd.Stdout = pw
+	cmd.Stdout = out
 	logrus.Infoln(cmd.Args)
 
 	start := time.Now()
@@ -192,10 +216,7 @@ func (b *RunBuilder) RunBackground(t *testing.T) io.ReadCloser {
 	t.Cleanup(func() {
 		cancel()
 		cmd.Wait()
-		pr.Close()
 	})
-
-	return pr
 }
 
 // RunOrFail runs the skaffold command and fails the test
