@@ -189,7 +189,7 @@ func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 		if mode == "none" || mode == "bridge" || mode == "host" {
 			continue
 		}
-		containerRegExp := regexp.MustCompile("container:.+")
+		containerRegExp := regexp.MustCompile("^container:[a-zA-Z0-9][a-zA-Z0-9_.-]*$")
 		if containerRegExp.MatchString(mode) {
 			continue
 		}

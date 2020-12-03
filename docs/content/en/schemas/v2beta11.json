@@ -992,11 +992,12 @@
         },
         "network": {
           "type": "string",
-          "description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are `host`: use the host's networking stack. `bridge`: use the bridged network configuration. `none`: no networking in the container.",
-          "x-intellij-html-description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are <code>host</code>: use the host's networking stack. <code>bridge</code>: use the bridged network configuration. <code>none</code>: no networking in the container.",
+          "description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are `host`: use the host's networking stack. `bridge`: use the bridged network configuration. `container:<name|id>`: reuse another container's network stack. `none`: no networking in the container.",
+          "x-intellij-html-description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are <code>host</code>: use the host's networking stack. <code>bridge</code>: use the bridged network configuration. <code>container:&lt;name|id&gt;</code>: reuse another container's network stack. <code>none</code>: no networking in the container.",
           "enum": [
             "host",
             "bridge",
+            "container:<name|id>",
             "none"
           ]
         },

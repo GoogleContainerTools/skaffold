@@ -309,13 +309,54 @@ func TestValidateNetworkMode(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "container's network stack",
+			description: "wrong container's network stack '-not-valid'",
 			artifacts: []*latest.Artifact{
 				{
 					ImageName: "image/container",
 					ArtifactType: latest.ArtifactType{
 						DockerArtifact: &latest.DockerArtifact{
-							NetworkMode: "Container:unique-identifier",
+							NetworkMode: "Container:-not-valid",
+						},
+					},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "wrong container's network stack 'fussball'",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:fußball",
+						},
+					},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "container's network stack 'unique'",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:unique",
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "container's network stack 'unique-id.123'",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:unique-id.123",
 						},
 					},
 				},
