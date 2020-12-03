@@ -169,7 +169,7 @@ func (b *RunBuilder) WithProfiles(profiles []string) *RunBuilder {
 
 // RunBackground runs the skaffold command in the background.  The Skaffold output
 // is accumulated and logged on test failure.
-func (b *RunBuilder) RunBackground(t *testing.T) io.Reader {
+func (b *RunBuilder) RunBackground(t *testing.T) {
 	t.Helper()
 	out := bytes.Buffer{}
 	b.runForked(t, &out)
@@ -179,7 +179,6 @@ func (b *RunBuilder) RunBackground(t *testing.T) io.Reader {
 			t.Log("Skaffold log:\n", strings.ReplaceAll(out.String(), "\n", "\n> "))
 		}
 	})
-	return &out
 }
 
 // RunLive runs the skaffold command in the background with live output.
