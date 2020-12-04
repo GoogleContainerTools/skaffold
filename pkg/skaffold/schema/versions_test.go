@@ -18,16 +18,18 @@ package schema
 
 import (
 	"fmt"
+	"testing"
+
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/tools/clientcmd/api"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/tools/clientcmd/api"
-	"sigs.k8s.io/kustomize/kyaml/yaml"
-	"testing"
 )
 
 const (
@@ -361,7 +363,7 @@ func TestMarshalConfig(t *testing.T) {
 		{
 			description: "Kaniko Volume Mount - ConfigMap",
 			config: config(
-				withClusterBuild("some-secret", "/secret", "default", "", "20m",
+				withClusterBuild("some-secret", "/some/secret", "default", "", "20m",
 					withGitTagger(),
 					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
 					withKanikoVolumeMount("docker-config", "/kaniko/.docker"),
@@ -388,7 +390,7 @@ func TestMarshalConfig(t *testing.T) {
 			t.CheckNoError(err)
 
 			// Unmarshal the YAML and make sure it equals the original.
-			// We can't comapre the strings because the YAML serializer isn't deterministic.
+			// We can't compare the strings because the YAML serializer isn't deterministic.
 			// TestParseConfigAndUpgrade verifies that YAML -> Go works correctly.
 			// This test veries Go -> YAML -> Go returns the original structure. Since we know
 			// YAML -> Go is working this ensures Go -> YAML is correct.
