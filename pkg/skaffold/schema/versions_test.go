@@ -18,18 +18,16 @@ package schema
 
 import (
 	"fmt"
-	"sigs.k8s.io/kustomize/kyaml/yaml"
-	"testing"
-
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/tools/clientcmd/api"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/tools/clientcmd/api"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
+	"testing"
 )
 
 const (
