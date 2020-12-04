@@ -190,7 +190,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			expected: config(
 				withClusterBuild("some-secret", "/secret", "default", "", "20m",
 					withGitTagger(),
-					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
+					withKanikoArtifact(),
 					withKanikoVolumeMount("docker-config", "/kaniko/.docker"),
 					withVolume(v1.Volume{
 						Name: "docker-config",
@@ -264,7 +264,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			expected: config(
 				withClusterBuild("", "/secret", "default", "", "20m",
 					withGitTagger(),
-					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
+					withKanikoArtifact(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
@@ -278,7 +278,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				withClusterBuild("secret-name", "/secret", "nskaniko", "/secret.json", "120m",
 					withGitTagger(),
 					withDockerConfig("config-name", "/kaniko/.docker"),
-					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
+					withKanikoArtifact(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 				withLogsPrefix("container"),
@@ -365,7 +365,7 @@ func TestMarshalConfig(t *testing.T) {
 			config: config(
 				withClusterBuild("some-secret", "/some/secret", "default", "", "20m",
 					withGitTagger(),
-					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
+					withKanikoArtifact(),
 					withKanikoVolumeMount("docker-config", "/kaniko/.docker"),
 					withVolume(v1.Volume{
 						Name: "docker-config",
@@ -513,14 +513,14 @@ func withBazelArtifact(image, workspace, target string) func(*latest.BuildConfig
 	}
 }
 
-func withKanikoArtifact(image, workspace, dockerfile string) func(*latest.BuildConfig) {
+func withKanikoArtifact() func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) {
 		cfg.Artifacts = append(cfg.Artifacts, &latest.Artifact{
-			ImageName: image,
-			Workspace: workspace,
+			ImageName: "image1",
+			Workspace: "./examples/app1",
 			ArtifactType: latest.ArtifactType{
 				KanikoArtifact: &latest.KanikoArtifact{
-					DockerfilePath: dockerfile,
+					DockerfilePath: "Dockerfile",
 					InitImage:      constants.DefaultBusyboxImage,
 					Image:          kaniko.DefaultImage,
 				},
