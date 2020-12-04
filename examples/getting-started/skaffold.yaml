@@ -3,6 +3,9 @@ kind: Config
 build:
   artifacts:
   - image: skaffold-example
+    context: .
+    docker:
+      network: "container:alpine"
 deploy:
   kubectl:
     manifests:

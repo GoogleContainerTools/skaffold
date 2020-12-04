@@ -18,8 +18,12 @@ package validation
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/buildpacks/pack/testmocks"
+	"github.com/docker/docker/api/types"
+	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -429,6 +433,120 @@ func TestValidateNetworkMode(t *testing.T) {
 						},
 					},
 				})
+
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
+func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tests := []struct {
+		description    string
+		artifacts      []*latest.Artifact
+		clientResponse []types.Container
+		shouldErr      bool
+	}{
+		{
+			description: "no running containers",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:foo",
+						},
+					},
+				},
+			},
+			clientResponse: []types.Container{},
+			shouldErr:      true,
+		},
+		{
+			description: "not matching running containers",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:foo",
+						},
+					},
+				},
+			},
+			clientResponse: []types.Container{
+				{
+					ID:    "not-foo",
+					Names: []string{"/bar"},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "existing running container referenced by id",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:foo",
+						},
+					},
+				},
+			},
+			clientResponse: []types.Container{
+				{
+					ID: "foo",
+				},
+			},
+		},
+		{
+			description: "existing running container referenced by name",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:foo",
+						},
+					},
+				},
+			},
+			clientResponse: []types.Container{
+				{
+					ID:    "no-foo",
+					Names: []string{"/foo"},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// disable yamltags validation
+			t.Override(&validateYamltags, func(interface{}) error { return nil })
+
+			client := testmocks.NewMockCommonAPIClient(ctrl)
+			client.EXPECT().ContainerList(gomock.Any(), gomock.Any()).Return(test.clientResponse, nil)
+
+			errs := ProcessWithDockerClient(
+				&latest.SkaffoldConfig{
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							Artifacts: test.artifacts,
+						},
+					},
+				}, client)
+
+			var err error
+			if len(errs) != 0 {
+				var messages []string
+				for _, e := range errs {
+					messages = append(messages, e.Error())
+				}
+				err = fmt.Errorf(strings.Join(messages, " | "))
+			}
 
 			t.CheckError(test.shouldErr, err)
 		})

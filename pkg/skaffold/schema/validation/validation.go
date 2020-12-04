@@ -17,13 +17,19 @@ limitations under the License.
 package validation
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
@@ -58,6 +64,35 @@ func Process(config *latest.SkaffoldConfig) error {
 		messages = append(messages, err.Error())
 	}
 	return fmt.Errorf(strings.Join(messages, " | "))
+}
+
+// ProcessWithRunContext checks if the Skaffold pipeline is valid when a RunContext is required.
+// It returns all encountered errors as a concatenated string.
+func ProcessWithRunContext(config *latest.SkaffoldConfig, runCtx *runcontext.RunContext) error {
+	apiClient, err := docker.NewAPIClient(runCtx)
+	if err != nil {
+		return err
+	}
+	client := apiClient.RawClient()
+
+	var errs []error
+	errs = append(errs, ProcessWithDockerClient(config, client)...)
+	if len(errs) == 0 {
+		return nil
+	}
+	var messages []string
+	for _, err := range errs {
+		messages = append(messages, err.Error())
+	}
+	return fmt.Errorf(strings.Join(messages, " | "))
+}
+
+// ProcessWithDockerClient checks if the Skaffold pipeline is valid when a client.CommonAPIClient is required.
+// It returns all encountered errors as a concatenated string.
+// Injecting `client` –a client.CommonAPIClient– for make it testable
+func ProcessWithDockerClient(config *latest.SkaffoldConfig, client client.CommonAPIClient) (errs []error) {
+	errs = append(errs, validateDockerNetworkContainerExists(config.Build.Artifacts, client)...)
+	return
 }
 
 // validateTaggingPolicy checks that the tagging policy is valid in combination with other options.
@@ -197,6 +232,43 @@ func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 		errs = append(errs, fmt.Errorf("artifact %s has invalid networkMode '%s'", a.ImageName, mode))
 	}
 	return
+}
+
+// Validates that a Docker Container with a Network Mode "container:<id|name>" points to an actually running container
+func validateDockerNetworkContainerExists(artifacts []*latest.Artifact, client client.CommonAPIClient) []error {
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
+	defer cancel()
+
+	var errs []error
+	for _, a := range artifacts {
+		if a.DockerArtifact == nil || a.DockerArtifact.NetworkMode == "" {
+			continue
+		}
+		mode := strings.ToLower(a.DockerArtifact.NetworkMode)
+		prefix := "container:"
+		if strings.HasPrefix(mode, prefix) {
+			id := strings.TrimPrefix(mode, prefix)
+			containers, err := client.ContainerList(ctx, types.ContainerListOptions{})
+			if err != nil {
+				errs = append(errs, fmt.Errorf("retrieving docker containers list: %s", err.Error()))
+				return errs
+			}
+			for _, c := range containers {
+				// Comparing ID seeking for <id>
+				if c.ID == id {
+					return errs
+				}
+				for _, name := range c.Names {
+					// c.Names come in form "/<name>"
+					if name == "/"+id {
+						return errs
+					}
+				}
+			}
+			errs = append(errs, fmt.Errorf("container '%s' not found. Required by image '%s' for docker network stack sharing", id, a.ImageName))
+		}
+	}
+	return errs
 }
 
 // validateCustomDependencies makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
