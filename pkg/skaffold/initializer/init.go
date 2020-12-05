@@ -89,7 +89,7 @@ func Initialize(out io.Writer, c config.Config, a *analyze.ProjectAnalysis) (*la
 		return nil, nil, buildInitializer.PrintAnalysis(out)
 	}
 
-	newManifests, err := generateManifests(c, buildInitializer, deployInitializer)
+	newManifests, err := generateManifests(out, c, buildInitializer, deployInitializer)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -101,10 +101,10 @@ func Initialize(out io.Writer, c config.Config, a *analyze.ProjectAnalysis) (*la
 	return generateSkaffoldConfig(buildInitializer, deployInitializer), newManifests, nil
 }
 
-func generateManifests(c config.Config, bInitializer build.Initializer, dInitializer deploy.Initializer) (map[string][]byte, error) {
+func generateManifests(out io.Writer, c config.Config, bInitializer build.Initializer, dInitializer deploy.Initializer) (map[string][]byte, error) {
 	var generatedManifests map[string][]byte
 	if c.EnableManifestGeneration {
-		generatedManifestPairs, err := bInitializer.GenerateManifests()
+		generatedManifestPairs, err := bInitializer.GenerateManifests(out, c.Force)
 		if err != nil {
 			return nil, err
 		}

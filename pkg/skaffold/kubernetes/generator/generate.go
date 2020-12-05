@@ -29,8 +29,8 @@ type Container struct {
 }
 
 // Generate generates kubernetes resources for the given image, and returns the generated manifest string
-func Generate(name string) ([]byte, *Container, error) {
-	c := Container{name, name, 8080}
+func Generate(name string, port int) ([]byte, *Container, error) {
+	c := Container{name, name, port}
 
 	t, err := template.New("deployment").Parse(yamlTemplate)
 	if err != nil {

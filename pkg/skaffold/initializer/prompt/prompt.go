@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"gopkg.in/AlecAivazis/survey.v1"
@@ -77,4 +78,24 @@ confirmLoop:
 		}
 	}
 	return false, nil
+}
+
+// PortForwardResource prompts the user to give a port to forward the current resource on
+func PortForwardResource(out io.Writer, imageName string) (int, error) {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Fprintf(out, "Select port to forward for %s (leave blank for none): ", imageName)
+
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		return 0, fmt.Errorf("reading user confirmation: %w", err)
+	}
+
+	response = strings.ToLower(strings.TrimSpace(response))
+	if response == "" {
+		return 0, nil
+	}
+
+	responseInt, _ := strconv.Atoi(response)
+	return responseInt, nil
 }
