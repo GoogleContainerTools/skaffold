@@ -322,7 +322,13 @@ func TestGetBuildArgs(t *testing.T) {
 			},
 			want: []string{"--no-cache"},
 		},
-
+		{
+			description: "squash",
+			artifact: &latest.DockerArtifact{
+				Squash: true,
+			},
+			want: []string{"--squash"},
+		},
 		{
 			description: "secret with no source",
 			artifact: &latest.DockerArtifact{
