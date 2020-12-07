@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
@@ -42,6 +43,10 @@ type Flag struct {
 
 	pflag *pflag.Flag
 }
+
+var (
+	fromBuildOutputFile flags.BuildOutputFileFlag
+)
 
 // flagRegistry is a list of all Skaffold CLI flags.
 // When adding a new flag to the registry, please specify the
@@ -414,6 +419,14 @@ var flagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+	},
+	{
+		Name:          "artifacts-from-build-output-file",
+		Usage:         "Use artifacts from the build output file",
+		Value:         &fromBuildOutputFile,
+		DefValue:      nil,
+		FlagAddMethod: "var",
+		DefinedOn:     []string{"test", "deploy"},
 	},
 }
 
