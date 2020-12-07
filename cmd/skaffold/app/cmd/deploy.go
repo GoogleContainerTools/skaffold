@@ -58,7 +58,7 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 			return r.DeployAndLog(ctx, out, []build.Artifact{})
 		}
 
-		buildArtifacts, err := getBuildArtifactsAndSetTags(out, r, config)
+		buildArtifacts, err := getBuildArtifactsAndSetTags(r, config)
 		if err != nil {
 			return err
 		}

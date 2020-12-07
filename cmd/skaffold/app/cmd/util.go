@@ -1,9 +1,12 @@
 /*
 Copyright 2020 The Skaffold Authors
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
+
     http://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,16 +17,14 @@ limitations under the License.
 package cmd
 
 import (
-	"io"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func getBuildArtifactsAndSetTags(out io.Writer, r runner.Runner, config *latest.SkaffoldConfig) ([]build.Artifact, error) {
-	buildArtifacts, err := getArtifacts(out, fromBuildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
+func getBuildArtifactsAndSetTags(r runner.Runner, config *latest.SkaffoldConfig) ([]build.Artifact, error) {
+	buildArtifacts, err := getArtifacts(fromBuildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +40,7 @@ func getBuildArtifactsAndSetTags(out io.Writer, r runner.Runner, config *latest.
 	return buildArtifacts, nil
 }
 
-func getArtifacts(out io.Writer, fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func getArtifacts(fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var buildArtifacts []build.Artifact
 	for _, artifact := range artifacts {
 		buildArtifacts = append(buildArtifacts, build.Artifact{

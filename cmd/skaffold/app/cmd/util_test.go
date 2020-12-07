@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -106,7 +105,7 @@ func TestGetArtifacts(t *testing.T) {
 				t.Override(&opts.CustomTag, test.customTag)
 			}
 
-			artifacts, err := getArtifacts(ioutil.Discard, test.fromFile, test.fromCLI, test.artifacts)
+			artifacts, err := getArtifacts(test.fromFile, test.fromCLI, test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, artifacts)
 		})
