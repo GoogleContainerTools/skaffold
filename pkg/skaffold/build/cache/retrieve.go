@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -110,8 +111,14 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			Tag:       uniqueTag,
 		})
 	}
+	//Create human readable time string
+	showsTime := humanize.Time(start)
 
-	logrus.Infoln("Cache check complete in", time.Since(start))
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		showsTime = time.Since(start).String() + " ago"
+	}
+	logrus.Infoln("Cache check completed", showsTime)
 
 	bRes, err := buildAndTest(ctx, out, tags, needToBuild)
 	if err != nil {

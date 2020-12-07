@@ -21,6 +21,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -60,8 +61,14 @@ func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 	if err != nil {
 		return nil, err
 	}
+	//Create human readable time string
+	showsTime := humanize.Time(start)
 
-	logrus.Infoln("Build complete in", time.Since(start))
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		showsTime = time.Since(start).String() + " ago"
+	}
+	logrus.Infoln("Build completed", showsTime)
 	return bRes, nil
 }
 
@@ -72,8 +79,14 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Art
 	if err != nil {
 		return err
 	}
+	//Create human readable time string
+	showsTime := humanize.Time(start)
 
-	logrus.Infoln("Test complete in", time.Since(start))
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		showsTime = time.Since(start).String() + " ago"
+	}
+	logrus.Infoln("Test completed", showsTime)
 	return nil
 }
 
@@ -85,8 +98,14 @@ func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.A
 	if err != nil {
 		return nil, err
 	}
+	//Create human readable time string
+	showsTime := humanize.Time(start)
 
-	logrus.Infoln("Deploy complete in", time.Since(start))
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		showsTime = time.Since(start).String() + " ago"
+	}
+	logrus.Infoln("Deploy completed", showsTime)
 	return ns, err
 }
 
@@ -98,8 +117,14 @@ func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
+	//Create human readable time string
+	showsTime := humanize.Time(start)
 
-	logrus.Infoln("Cleanup complete in", time.Since(start))
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		showsTime = time.Since(start).String() + " ago"
+	}
+	logrus.Infoln("Cleanup completed", showsTime)
 	return nil
 }
 
@@ -111,7 +136,13 @@ func (w withTimings) Prune(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
+	//Create human readable time string
+	showsTime := humanize.Time(start)
 
-	logrus.Infoln("Image prune complete in", time.Since(start))
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		showsTime = time.Since(start).String()
+	}
+	logrus.Infoln("Image prune completed", showsTime)
 	return nil
 }

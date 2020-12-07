@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -186,7 +187,14 @@ func (b *RunBuilder) RunBackground(t *testing.T) io.ReadCloser {
 
 	go func() {
 		cmd.Wait()
-		logrus.Infoln("Ran in", time.Since(start))
+		//Create human readable time string
+		showsTime := humanize.Time(start)
+
+		//Case for when it takes less than a second
+		if time.Since(start).Seconds() < 1 {
+			showsTime = time.Since(start).String() + " ago"
+		}
+		logrus.Infoln("Ran", showsTime)
 	}()
 
 	t.Cleanup(func() {
@@ -215,8 +223,14 @@ func (b *RunBuilder) Run(t *testing.T) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
+	//Create human readable time string
+	showsTime := humanize.Time(start)
 
-	logrus.Infoln("Ran in", time.Since(start))
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		showsTime = time.Since(start).String() + " ago"
+	}
+	logrus.Infoln("Ran", showsTime)
 	return nil
 }
 
@@ -233,8 +247,14 @@ func (b *RunBuilder) RunWithCombinedOutput(t *testing.T) ([]byte, error) {
 	if err != nil {
 		return out, fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
+	//Create human readable time string
+	showsTime := humanize.Time(start)
 
-	logrus.Infoln("Ran in", time.Since(start))
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		showsTime = time.Since(start).String() + " ago"
+	}
+	logrus.Infoln("Ran", showsTime)
 	return out, nil
 }
 
@@ -256,8 +276,14 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 		}
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
 	}
+	//Create human readable time string
+	showsTime := humanize.Time(start)
 
-	logrus.Infoln("Ran in", time.Since(start))
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		showsTime = time.Since(start).String() + " ago"
+	}
+	logrus.Infoln("Ran", showsTime)
 	return out
 }
 

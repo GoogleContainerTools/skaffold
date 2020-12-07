@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/docker/distribution/reference"
+	"github.com/dustin/go-humanize"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -85,8 +86,14 @@ func (r *SkaffoldRunner) loadImages(ctx context.Context, out io.Writer, artifact
 
 		color.Green.Fprintln(out, "Loaded")
 	}
+	//Create human readable time string
+	showsTime := humanize.Time(start)
 
-	color.Default.Fprintln(out, "Images loaded in", time.Since(start))
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		showsTime = time.Since(start).String() + " ago"
+	}
+	color.Default.Fprintln(out, "Images loaded", showsTime)
 	return nil
 }
 

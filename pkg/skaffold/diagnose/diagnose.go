@@ -23,6 +23,8 @@ import (
 	"io/ioutil"
 	"time"
 
+	"github.com/dustin/go-humanize"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -60,7 +62,7 @@ func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
 		}
 
 		fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
-		fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
+		fmt.Fprintf(out, " - Time to list dependencies: %s (2nd time: %s)\n", timeDeps1, timeDeps2)
 
 		timeSyncMap1, err := timeToConstructSyncMap(artifact, cfg)
 		if err != nil {
@@ -74,7 +76,7 @@ func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
 				return fmt.Errorf("construct artifact dependencies: %w", err)
 			}
 		} else {
-			fmt.Fprintf(out, " - Time to construct sync-map: %v (2nd time: %v)\n", timeSyncMap1, timeSyncMap2)
+			fmt.Fprintf(out, " - Time to construct sync-map: %s (2nd time: %s)\n", timeSyncMap1, timeSyncMap2)
 		}
 
 		timeMTimes1, err := timeToComputeMTimes(deps)
@@ -86,7 +88,7 @@ func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
 			return fmt.Errorf("computing modTimes: %w", err)
 		}
 
-		fmt.Fprintf(out, " - Time to compute mTimes on dependencies: %v (2nd time: %v)\n", timeMTimes1, timeMTimes2)
+		fmt.Fprintf(out, " - Time to compute mTimes on dependencies: %s (2nd time: %s)\n", timeMTimes1, timeMTimes2)
 	}
 
 	return nil
@@ -111,26 +113,46 @@ func typeOfArtifact(a *latest.Artifact) string {
 	}
 }
 
-func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg docker.Config) (time.Duration, []string, error) {
+func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg docker.Config) (string, []string, error) {
 	start := time.Now()
 	paths, err := build.DependenciesForArtifact(ctx, a, cfg, nil)
-	return time.Since(start), paths, err
+	//Create human readable time string
+	showsTime := humanize.Time(start)
+
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		showsTime = time.Since(start).String() + " ago"
+	}
+	return showsTime, paths, err
 }
 
-func timeToConstructSyncMap(a *latest.Artifact, cfg docker.Config) (time.Duration, error) {
+func timeToConstructSyncMap(a *latest.Artifact, cfg docker.Config) (string, error) {
 	start := time.Now()
 	_, err := sync.SyncMap(a, cfg)
-	return time.Since(start), err
+	//Create human readable time string
+	showsTime := humanize.Time(start)
+
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		showsTime = time.Since(start).String() + " ago"
+	}
+	return showsTime, err
 }
 
-func timeToComputeMTimes(deps []string) (time.Duration, error) {
+func timeToComputeMTimes(deps []string) (string, error) {
 	start := time.Now()
 
 	if _, err := filemon.Stat(func() ([]string, error) { return deps, nil }); err != nil {
-		return 0, fmt.Errorf("computing modTimes: %w", err)
+		return "nil", fmt.Errorf("computing modTimes: %w", err)
 	}
+	//Create human readable time string
+	showsTime := humanize.Time(start)
 
-	return time.Since(start), nil
+	//Case for when it takes less than a second
+	if time.Since(start).Seconds() < 1 {
+		showsTime = time.Since(start).String() + " ago"
+	}
+	return showsTime, nil
 }
 
 func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, cfg docker.Config) (int64, error) {
