@@ -421,12 +421,13 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
 	},
 	{
-		Name:          "artifacts-from-build-output-file",
-		Usage:         "Use artifacts from the build output file",
+		Name:          "build-artifacts",
+		Shorthand:     "a",
+		Usage:         "File containing build result from a previous 'skaffold build --file-output'",
 		Value:         &fromBuildOutputFile,
-		DefValue:      nil,
+		DefValue:      "",
 		FlagAddMethod: "var",
-		DefinedOn:     []string{"test", "deploy"},
+		DefinedOn:     []string{"deploy"},
 	},
 }
 
