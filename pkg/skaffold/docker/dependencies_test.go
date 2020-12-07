@@ -708,7 +708,7 @@ func TestGetDependenciesCached(t *testing.T) {
 					return v
 				})
 			}
-			deps, err := GetDependencies(context.Background(), tmpDir.Root(), "Dockerfile", map[string]*string{}, nil)
+			deps, err := GetDependenciesCached(context.Background(), tmpDir.Root(), "Dockerfile", map[string]*string{}, nil)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
 		})
 	}

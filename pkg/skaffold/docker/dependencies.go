@@ -48,8 +48,21 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 }
 
 // GetDependencies finds the sources dependency for the given docker artifact.
+// it caches the results for the computed dependency which can be used by `GetDependenciesCached`
 // All paths are relative to the workspace.
 func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error) {
+	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
+	if err != nil {
+		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
+	}
+	result := getDependencies(workspace, dockerfilePath, absDockerfilePath, buildArgs, cfg)
+	dependencyCache.Store(absDockerfilePath, result)
+	return resultPair(result)
+}
+
+// GetDependenciesCached reads from cache finds the sources dependency for the given docker artifact.
+// All paths are relative to the workspace.
+func GetDependenciesCached(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
 		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
@@ -58,7 +71,10 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 	deps := dependencyCache.Exec(absDockerfilePath, func() interface{} {
 		return getDependencies(workspace, dockerfilePath, absDockerfilePath, buildArgs, cfg)
 	})
+	return resultPair(deps)
+}
 
+func resultPair(deps interface{}) ([]string, error) {
 	switch t := deps.(type) {
 	case error:
 		return nil, t

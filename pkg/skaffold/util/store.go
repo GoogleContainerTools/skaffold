@@ -54,6 +54,15 @@ func (o *SyncStore) Exec(key string, f func() interface{}) interface{} {
 	return val
 }
 
+// Store will store the results for a key in a cache
+// It makes sure only one execution is in-flight for a given key at any time.
+func (o *SyncStore) Store(key string, r interface{}) {
+	o.sf.Do(fmt.Sprintf("%s-put", key), func() (interface{}, error) {
+		o.results.Store(key, r)
+		return nil, nil
+	})
+}
+
 // NewSyncStore returns a new instance of `SyncStore`
 func NewSyncStore() *SyncStore {
 	return &SyncStore{
