@@ -46,7 +46,6 @@ func NewCmdDeploy() *cobra.Command {
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
-			f.VarP(&fromBuildOutputFile, "build-artifacts", "a", "File containing build result from a previous 'skaffold build --file-output'")
 			f.BoolVar(&opts.SkipRender, "skip-render", false, "Don't render the manifests, just deploy them")
 		}).
 		WithHouseKeepingMessages().

@@ -28,6 +28,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
+var (
+	fromBuildOutputFile flags.BuildOutputFileFlag
+)
+
 // Flag defines a Skaffold CLI flag which contains a list of
 // subcommands the flag belongs to in `DefinedOn` field.
 type Flag struct {
@@ -43,10 +47,6 @@ type Flag struct {
 
 	pflag *pflag.Flag
 }
-
-var (
-	fromBuildOutputFile flags.BuildOutputFileFlag
-)
 
 // flagRegistry is a list of all Skaffold CLI flags.
 // When adding a new flag to the registry, please specify the
@@ -276,7 +276,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.CustomTag,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "dev", "run", "deploy"},
+		DefinedOn:     []string{"build", "debug", "test", "dev", "run", "deploy"},
 	},
 	{
 		Name:          "minikube-profile",
@@ -426,7 +426,7 @@ var flagRegistry = []Flag{
 		Usage:         "File containing build result from a previous 'skaffold build --file-output'",
 		Value:         &fromBuildOutputFile,
 		DefValue:      "",
-		FlagAddMethod: "var",
+		FlagAddMethod: "Var",
 		DefinedOn:     []string{"deploy"},
 	},
 }
