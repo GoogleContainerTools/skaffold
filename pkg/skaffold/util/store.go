@@ -55,12 +55,10 @@ func (o *SyncStore) Exec(key string, f func() interface{}) interface{} {
 }
 
 // Store will store the results for a key in a cache
-// It makes sure only one execution is in-flight for a given key at any time.
+// This function is not safe to use if multiple subroutines store the
+// result for the same artifact.
 func (o *SyncStore) Store(key string, r interface{}) {
-	o.sf.Do(fmt.Sprintf("%s-put", key), func() (interface{}, error) {
-		o.results.Store(key, r)
-		return nil, nil
-	})
+	o.results.Store(key, r)
 }
 
 // NewSyncStore returns a new instance of `SyncStore`
