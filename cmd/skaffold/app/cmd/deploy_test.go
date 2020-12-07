@@ -21,92 +21,44 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetDeployedArtifacts(t *testing.T) {
+func TestDoDeploy(t *testing.T) {
 	tests := []struct {
 		description string
-		artifacts   []*latest.Artifact
-		fromFile    []build.Artifact
-		fromCLI     []build.Artifact
-		expected    []build.Artifact
-		customTag   string
+		artifacts   []build.Artifact
+		expected    bool
 		shouldErr   bool
 	}{
 		{
 			description: "no artifact",
 			artifacts:   nil,
-			fromFile:    nil,
-			fromCLI:     nil,
-			expected:    []build.Artifact(nil),
+			expected:    true,
+			shouldErr:   false,
 		},
 		{
-			description: "from file",
-			artifacts:   []*latest.Artifact{{ImageName: "image"}},
-			fromFile:    []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
-			fromCLI:     nil,
-			expected:    []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
-		},
-		{
-			description: "from CLI",
-			artifacts:   []*latest.Artifact{{ImageName: "image"}},
-			fromFile:    nil,
-			fromCLI:     []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
-			expected:    []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
-		},
-		{
-			description: "one from file, one from CLI",
-			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			fromFile:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}},
-			fromCLI:     []build.Artifact{{ImageName: "image2", Tag: "image2:tag"}},
-			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
-		},
-		{
-			description: "file takes precedence on CLI",
-			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			fromFile:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
-			fromCLI:     []build.Artifact{{ImageName: "image1", Tag: "image1:ignored"}},
-			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
-		},
-		{
-			description: "provide tag for non-artifact",
-			artifacts:   []*latest.Artifact{},
-			fromCLI:     []build.Artifact{{ImageName: "busybox", Tag: "busybox:v1"}},
-			expected:    []build.Artifact{{ImageName: "busybox", Tag: "busybox:v1"}},
-		},
-		{
-			description: "missing tag",
-			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			fromFile:    nil,
-			fromCLI:     nil,
+			description: "missing tags",
+			artifacts:   []build.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
+			expected:    false,
 			shouldErr:   true,
 		},
 		{
-			description: "override tag",
-			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			fromFile:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}},
-			fromCLI:     []build.Artifact{{ImageName: "image2", Tag: "image2:tag"}},
-			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
-			customTag:   "test",
+			description: "one missing tag",
+			artifacts:   []build.Artifact{{ImageName: "image1"}, {ImageName: "image2", Tag: "image2:tag"}},
+			expected:    false,
+			shouldErr:   true,
 		},
 		{
-			description: "override missing tag",
-			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			fromFile:    nil,
-			fromCLI:     nil,
-			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
-			customTag:   "test",
+			description: "with tags",
+			artifacts:   []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
+			expected:    true,
+			shouldErr:   false,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			if test.customTag != "" {
-				t.Override(&opts.CustomTag, test.customTag)
-			}
-
-			deployed, err := getArtifactsToDeploy(ioutil.Discard, test.fromFile, test.fromCLI, test.artifacts)
+			deployed, err := validateArtifactTags(ioutil.Discard, test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deployed)
 		})
