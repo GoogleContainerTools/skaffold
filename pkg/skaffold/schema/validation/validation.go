@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -69,14 +68,9 @@ func Process(config *latest.SkaffoldConfig) error {
 // ProcessWithRunContext checks if the Skaffold pipeline is valid when a RunContext is required.
 // It returns all encountered errors as a concatenated string.
 func ProcessWithRunContext(config *latest.SkaffoldConfig, runCtx *runcontext.RunContext) error {
-	apiClient, err := docker.NewAPIClient(runCtx)
-	if err != nil {
-		return err
-	}
-	client := apiClient.RawClient()
-
 	var errs []error
-	errs = append(errs, ProcessWithDockerClient(config, client)...)
+	errs = append(errs, validateDockerNetworkContainerExists(config.Build.Artifacts, runCtx)...)
+
 	if len(errs) == 0 {
 		return nil
 	}
@@ -85,14 +79,6 @@ func ProcessWithRunContext(config *latest.SkaffoldConfig, runCtx *runcontext.Run
 		messages = append(messages, err.Error())
 	}
 	return fmt.Errorf(strings.Join(messages, " | "))
-}
-
-// ProcessWithDockerClient checks if the Skaffold pipeline is valid when a client.CommonAPIClient is required.
-// It returns all encountered errors as a concatenated string.
-// Injecting `client` –a client.CommonAPIClient– for make it testable
-func ProcessWithDockerClient(config *latest.SkaffoldConfig, client client.CommonAPIClient) (errs []error) {
-	errs = append(errs, validateDockerNetworkContainerExists(config.Build.Artifacts, client)...)
-	return
 }
 
 // validateTaggingPolicy checks that the tagging policy is valid in combination with other options.
@@ -235,11 +221,18 @@ func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 }
 
 // Validates that a Docker Container with a Network Mode "container:<id|name>" points to an actually running container
-func validateDockerNetworkContainerExists(artifacts []*latest.Artifact, client client.CommonAPIClient) []error {
+func validateDockerNetworkContainerExists(artifacts []*latest.Artifact, runCtx docker.Config) []error {
+	var errs []error
+	apiClient, err := docker.NewAPIClient(runCtx)
+	if err != nil {
+		errs = append(errs, err)
+		return errs
+	}
+
+	client := apiClient.RawClient()
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
 	defer cancel()
 
-	var errs []error
 	for _, a := range artifacts {
 		if a.DockerArtifact == nil || a.DockerArtifact.NetworkMode == "" {
 			continue

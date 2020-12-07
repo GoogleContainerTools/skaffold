@@ -17,15 +17,16 @@ limitations under the License.
 package validation
 
 import (
+	"context"
 	"fmt"
-	"strings"
 	"testing"
 
-	"github.com/buildpacks/pack/testmocks"
 	"github.com/docker/docker/api/types"
-	"github.com/golang/mock/gomock"
+	"github.com/docker/docker/client"
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -439,10 +440,16 @@ func TestValidateNetworkMode(t *testing.T) {
 	}
 }
 
-func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+type fakeCommonAPIClient struct {
+	client.CommonAPIClient
+	expectedResponse []types.Container
+}
 
+func (f fakeCommonAPIClient) ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error) {
+	return f.expectedResponse, nil
+}
+
+func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 	tests := []struct {
 		description    string
 		artifacts      []*latest.Artifact
@@ -526,27 +533,24 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			// disable yamltags validation
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
+			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+				fakeClient := &fakeCommonAPIClient{
+					CommonAPIClient: &testutil.FakeAPIClient{
+						ErrVersion: true,
+					},
+					expectedResponse: test.clientResponse,
+				}
+				return docker.NewLocalDaemon(fakeClient, nil, false, nil), nil
+			})
 
-			client := testmocks.NewMockCommonAPIClient(ctrl)
-			client.EXPECT().ContainerList(gomock.Any(), gomock.Any()).Return(test.clientResponse, nil)
-
-			errs := ProcessWithDockerClient(
+			err := ProcessWithRunContext(
 				&latest.SkaffoldConfig{
 					Pipeline: latest.Pipeline{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
-				}, client)
-
-			var err error
-			if len(errs) != 0 {
-				var messages []string
-				for _, e := range errs {
-					messages = append(messages, e.Error())
-				}
-				err = fmt.Errorf(strings.Join(messages, " | "))
-			}
+				}, &runcontext.RunContext{})
 
 			t.CheckError(test.shouldErr, err)
 		})
