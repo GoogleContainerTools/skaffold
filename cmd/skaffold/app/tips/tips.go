@@ -37,6 +37,13 @@ func PrintForInit(out io.Writer, opts config.SkaffoldOptions) {
 	printTip(out, "or [skaffold dev] to enter development mode, with auto-redeploy")
 }
 
+// PrintUseRunVsTest prints tips on when to use skaffold run vs test.
+func PrintUseRunVsTest(out io.Writer) {
+	printTip(out, "You either need to:")
+	printTip(out, "run [skaffold test] with [--images TAG] for each pre-built artifact")
+	printTip(out, "or [skaffold run] instead, to let Skaffold build, tag and test artifacts.")
+}
+
 // PrintUseRunVsDeploy prints tips on when to use skaffold run vs deploy.
 func PrintUseRunVsDeploy(out io.Writer) {
 	printTip(out, "You either need to:")
