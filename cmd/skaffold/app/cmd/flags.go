@@ -454,20 +454,41 @@ var flagRegistry = []Flag{
 	},
 }
 
+func methodNameByType(v reflect.Value) string {
+	t := v.Type().Kind()
+	switch t {
+	case reflect.Bool:
+		return "BoolVar"
+	case reflect.String:
+		return "StringVar"
+	case reflect.Slice:
+		return "StringSliceVar"
+	case reflect.Struct:
+		return "Var"
+	case reflect.Ptr:
+		return methodNameByType(reflect.Indirect(v))
+	}
+	return ""
+}
+
 func (fl *Flag) flag() *pflag.Flag {
 	if fl.pflag != nil {
 		return fl.pflag
 	}
 
+	methodName := fl.FlagAddMethod
+	if methodName == "" {
+		methodName = methodNameByType(reflect.ValueOf(fl.Value))
+	}
 	inputs := []interface{}{fl.Value, fl.Name}
-	if fl.FlagAddMethod != "Var" {
+	if methodName != "Var" {
 		inputs = append(inputs, fl.DefValue)
 	}
 	inputs = append(inputs, fl.Usage)
 
 	fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
 
-	reflect.ValueOf(fs).MethodByName(fl.FlagAddMethod).Call(reflectValueOf(inputs))
+	reflect.ValueOf(fs).MethodByName(methodName).Call(reflectValueOf(inputs))
 	f := fs.Lookup(fl.Name)
 	f.Shorthand = fl.Shorthand
 	f.Hidden = fl.Hidden
@@ -482,6 +503,23 @@ func reflectValueOf(values []interface{}) []reflect.Value {
 		results = append(results, reflect.ValueOf(v))
 	}
 	return results
+}
+
+func ParseFlags(cmd *cobra.Command, flags []*Flag) {
+	// Update default values.
+	for _, fl := range flags {
+		flag := cmd.Flag(fl.Name)
+		if fl.DefValuePerCommand != nil {
+			if defValue, present := fl.DefValuePerCommand[cmd.Use]; present {
+				if !flag.Changed {
+					flag.Value.Set(fmt.Sprintf("%v", defValue))
+				}
+			}
+		}
+		if fl.IsEnum {
+			instrumentation.AddFlag(flag)
+		}
+	}
 }
 
 // AddFlags adds to the command the common flags that are annotated with the command name.
@@ -501,19 +539,7 @@ func AddFlags(cmd *cobra.Command) {
 
 	// Apply command-specific default values to flags.
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		// Update default values.
-		for _, fl := range flagsForCommand {
-			flag := cmd.Flag(fl.Name)
-			if defValue, present := fl.DefValuePerCommand[cmd.Use]; present {
-				if !flag.Changed {
-					flag.Value.Set(fmt.Sprintf("%v", defValue))
-				}
-			}
-			if fl.IsEnum {
-				instrumentation.AddFlag(flag)
-			}
-		}
-
+		ParseFlags(cmd, flagsForCommand)
 		// Since PersistentPreRunE replaces the parent's PersistentPreRunE,
 		// make sure we call it, if it is set.
 		if parent := cmd.Parent(); parent != nil {

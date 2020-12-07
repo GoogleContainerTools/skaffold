@@ -96,7 +96,7 @@ func NewInitializer(builders []InitBuilder, c config.Config) Initializer {
 	switch {
 	case c.SkipBuild:
 		return &emptyBuildInitializer{}
-	case c.CliArtifacts != nil:
+	case len(c.CliArtifacts) > 0:
 		return &cliBuildInitializer{
 			cliArtifacts:    c.CliArtifacts,
 			builders:        builders,
