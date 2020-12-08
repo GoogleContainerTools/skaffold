@@ -66,5 +66,6 @@ func InitMeter(runCtx *runcontext.RunContext, config *latest.SkaffoldConfig) {
 			meter.SyncType[yamltags.GetYamlTag(artifact.Sync)] = true
 		}
 	}
+	meter.Deployers = yamltags.GetYamlTags(config.Deploy.DeployType)
 	meter.BuildArtifacts = len(config.Pipeline.Build.Artifacts)
 }

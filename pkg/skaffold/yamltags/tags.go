@@ -17,9 +17,12 @@ limitations under the License.
 package yamltags
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"reflect"
 	"strings"
+	"unicode"
 
 	"github.com/sirupsen/logrus"
 
@@ -72,6 +75,39 @@ func GetYamlTag(value interface{}) string {
 		return ""
 	}
 	return rawStr[:i]
+}
+
+// GetYamlTags returns the tags of the non-nested fields of the given non-nil value
+// If value interface{} is
+// latest.DeployType{HelmDeploy: &HelmDeploy{...}, KustomizeDeploy: &KustomizeDeploy{...}}
+// then this parses that interface as it's raw yaml:
+// 	kubectl:
+//    manifests:
+//    - k8s/*.yaml
+//  kustomize:
+//    paths:
+//    - k8s/
+// and returns ["kubectl", "kustomize"]
+// empty structs (e.g. latest.DeployType{}) when parsed look like "{}"" and so this function returns []
+func GetYamlTags(value interface{}) []string {
+	var tags []string
+
+	buf, err := yaml.Marshal(value)
+	if err != nil {
+		logrus.Warnf("error marshaling %-v", value)
+		return tags
+	}
+
+	r := bufio.NewScanner(bytes.NewBuffer(buf))
+	for r.Scan() {
+		l := r.Text()
+		i := strings.Index(l, ":")
+		if !unicode.IsSpace(rune(l[0])) && l[0] != '-' && i >= 0 {
+			tags = append(tags, l[:i])
+		}
+	}
+
+	return tags
 }
 
 func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value, field reflect.StructField) error {

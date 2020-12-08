@@ -242,3 +242,57 @@ func TestGetYamlTag(t *testing.T) {
 		})
 	}
 }
+
+func TestGetYamlTags(t *testing.T) {
+	a := "it's A"
+	b := "it's B"
+	c := "it's C"
+
+	tests := []struct {
+		name         string
+		yaml         interface{}
+		expectedTags []string
+	}{
+		{
+			name:         "empty struct of pointers returns nil array",
+			yaml:         abc{},
+			expectedTags: nil,
+		},
+		{
+			name:         "subset of fields returns subset of tags",
+			yaml:         abc{B: &b, C: &c},
+			expectedTags: []string{"b", "c"},
+		},
+		{
+			name: "nested fields are not returned",
+			yaml: struct {
+				D      *string `yaml:"d"`
+				Nested *abc    `yaml:"nested"`
+			}{D: &a, Nested: &abc{A: &a, B: &b}},
+			expectedTags: []string{"d", "nested"},
+		},
+		{
+			name:         "only one field is returned if only one set",
+			yaml:         abc{C: &c},
+			expectedTags: []string{"c"},
+		},
+		{
+			name:         "non-pointer fields are returned in empty struct",
+			yaml:         struct{ A string }{},
+			expectedTags: []string{"a"},
+		},
+		{
+			name: "array fields are not included",
+			yaml: struct {
+				List []abc `yaml:"abcs"`
+			}{List: []abc{{A: &a}, {B: &b}}},
+			expectedTags: []string{"abcs"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expectedTags, GetYamlTags(test.yaml))
+		})
+	}
+}
