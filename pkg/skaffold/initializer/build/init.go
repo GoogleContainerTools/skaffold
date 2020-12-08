@@ -84,7 +84,7 @@ func (d *defaultBuildInitializer) GenerateManifests(out io.Writer, force bool) (
 		port := 8080
 		var err error
 		if !force {
-			port, err = prompt.PortForwardResource(out, info.ImageName)
+			port, err = prompt.PortForwardResourceFunc(out, info.ImageName)
 			if err != nil {
 				return nil, fmt.Errorf("getting port input: %w", err)
 			}

@@ -29,7 +29,8 @@ import (
 
 // For testing
 var (
-	BuildConfigFunc = buildConfig
+	BuildConfigFunc         = buildConfig
+	PortForwardResourceFunc = portForwardResource
 )
 
 func buildConfig(image string, choices []string) (string, error) {
@@ -81,7 +82,7 @@ confirmLoop:
 }
 
 // PortForwardResource prompts the user to give a port to forward the current resource on
-func PortForwardResource(out io.Writer, imageName string) (int, error) {
+func portForwardResource(out io.Writer, imageName string) (int, error) {
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Fprintf(out, "Select port to forward for %s (leave blank for none): ", imageName)
