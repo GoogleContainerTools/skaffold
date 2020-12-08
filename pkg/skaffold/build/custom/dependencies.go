@@ -30,11 +30,10 @@ import (
 )
 
 // GetDependencies returns dependencies listed for a custom artifact
-func GetDependencies(ctx context.Context, workspace string, a *latest.CustomArtifact, cfg docker.Config) ([]string, error) {
+func GetDependencies(ctx context.Context, workspace string, artifactName string, a *latest.CustomArtifact, cfg docker.Config) ([]string, error) {
 	switch {
 	case a.Dependencies.Dockerfile != nil:
-		dockerfile := a.Dependencies.Dockerfile
-		return docker.GetDependencies(ctx, workspace, dockerfile.Path, dockerfile.BuildArgs, cfg)
+		return docker.GetDependencies(ctx, getDockerBuildConfig(workspace, artifactName, a), cfg)
 
 	case a.Dependencies.Command != "":
 		split := strings.Split(a.Dependencies.Command, " ")
@@ -52,4 +51,9 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.CustomArti
 	default:
 		return list.Files(workspace, a.Dependencies.Paths, a.Dependencies.Ignore)
 	}
+}
+
+func getDockerBuildConfig(ws string, artifact string, a *latest.CustomArtifact) docker.BuildConfig {
+	dockerfile := a.Dependencies.Dockerfile
+	return docker.NewBuildConfig(ws, artifact, dockerfile.Path, dockerfile.BuildArgs)
 }

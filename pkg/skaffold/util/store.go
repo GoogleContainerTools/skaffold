@@ -56,7 +56,7 @@ func (o *SyncStore) Exec(key string, f func() interface{}) interface{} {
 
 // Store will store the results for a key in a cache
 // This function is not safe to use if multiple subroutines store the
-// result for the same artifact.
+// result for the same key.
 func (o *SyncStore) Store(key string, r interface{}) {
 	o.results.Store(key, r)
 }

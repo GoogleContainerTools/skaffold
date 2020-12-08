@@ -104,10 +104,8 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, workspace, &latest.DockerArtifact{
-			BuildArgs:      artifact.BuildArgs,
-			DockerfilePath: artifact.DockerfilePath,
-		}, b.cfg)
+		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, docker.NewBuildConfig(
+			workspace, artifact.Image, artifact.DockerfilePath, artifact.BuildArgs), b.cfg)
 		if err != nil {
 			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return
