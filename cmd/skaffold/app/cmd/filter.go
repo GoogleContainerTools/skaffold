@@ -48,7 +48,7 @@ func NewCmdFilter() *cobra.Command {
 		WithCommonFlags().
 		WithFlags([]*Flag{
 			{Value: &renderFromBuildOutputFile, Name: "build-artifacts", Shorthand: "a", Usage: "File containing build result from a previous 'skaffold build --file-output'"},
-			{Value: &debuggingFilters, Name: "debugging", DefValue: false, Usage: `Apply debug transforms similar to "skaffold debug"`},
+			{Value: &debuggingFilters, Name: "debugging", DefValue: false, Usage: `Apply debug transforms similar to "skaffold debug"`, IsEnum: true},
 		}).
 		NoArgs(func(ctx context.Context, out io.Writer) error {
 			return doFilter(ctx, out, debuggingFilters, renderFromBuildOutputFile.BuildArtifacts())

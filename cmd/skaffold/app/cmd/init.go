@@ -54,20 +54,20 @@ func NewCmdInit() *cobra.Command {
 		WithDescription("[alpha] Generate configuration for deploying an application").
 		WithCommonFlags().
 		WithFlags([]*Flag{
-			{Value: &skipBuild, Name: "skip-build", DefValue: false, Usage: "Skip generating build artifacts in Skaffold config"},
-			{Value: &skipDeploy, Name: "skip-deploy", DefValue: false, Usage: "Skip generating deploy stanza in Skaffold config", Hidden: true},
-			{Value: &force, Name: "force", DefValue: false, Usage: "Force the generation of the Skaffold config"},
+			{Value: &skipBuild, Name: "skip-build", DefValue: false, Usage: "Skip generating build artifacts in Skaffold config", IsEnum: true},
+			{Value: &skipDeploy, Name: "skip-deploy", DefValue: false, Usage: "Skip generating deploy stanza in Skaffold config", Hidden: true, IsEnum: true},
+			{Value: &force, Name: "force", DefValue: false, Usage: "Force the generation of the Skaffold config", IsEnum: true},
 			{Value: &composeFile, Name: "compose-file", DefValue: "", Usage: "Initialize from a docker-compose file"},
 			{Value: &defaultKustomization, Name: "default-kustomization", DefValue: "", Usage: "Default Kustomization overlay path (others will be added as profiles)"},
 			{Value: &cliArtifacts, Name: "artifact", Shorthand: "a", DefValue: []string{}, Usage: "'='-delimited Dockerfile/image pair, or JSON string, to generate build artifact\n(example: --artifact='{\"builder\":\"Docker\",\"payload\":{\"path\":\"/web/Dockerfile.web\"},\"image\":\"gcr.io/web-project/image\"}')"},
 			{Value: &cliKubernetesManifests, Name: "kubernetes-manifest", Shorthand: "k", DefValue: []string{}, Usage: "A path or a glob pattern to kubernetes manifests (can be non-existent) to be added to the kubectl deployer (overrides detection of kubernetes manifests). Repeat the flag for multiple entries. E.g.: skaffold init -k pod.yaml -k k8s/*.yml"},
-			{Value: &analyze, Name: "analyze", DefValue: false, Usage: "Print all discoverable Dockerfiles and images in JSON format to stdout"},
-			{Value: &enableNewInitFormat, Name: "XXenableNewInitFormat", DefValue: false, Usage: "", Hidden: true},
-			{Value: &enableJibInit, Name: "XXenableJibInit", DefValue: false, Usage: "", Hidden: true},
-			{Value: &enableJibGradleInit, Name: "XXenableJibGradleInit", DefValue: false, Usage: "", Hidden: true},
-			{Value: &enableBuildpacksInit, Name: "XXenableBuildpacksInit", DefValue: false, Usage: "", Hidden: true},
+			{Value: &analyze, Name: "analyze", DefValue: false, Usage: "Print all discoverable Dockerfiles and images in JSON format to stdout", IsEnum: true},
+			{Value: &enableNewInitFormat, Name: "XXenableNewInitFormat", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
+			{Value: &enableJibInit, Name: "XXenableJibInit", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
+			{Value: &enableJibGradleInit, Name: "XXenableJibGradleInit", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
+			{Value: &enableBuildpacksInit, Name: "XXenableBuildpacksInit", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
 			{Value: &buildpacksBuilder, Name: "XXdefaultBuildpacksBuilder", DefValue: "gcr.io/buildpacks/builder:v1", Usage: "", Hidden: true},
-			{Value: &enableManifestGeneration, Name: "XXenableManifestGeneration", DefValue: false, Usage: "", Hidden: true},
+			{Value: &enableManifestGeneration, Name: "XXenableManifestGeneration", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
 		}).
 		NoArgs(doInit)
 }

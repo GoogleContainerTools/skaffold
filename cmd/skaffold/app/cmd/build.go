@@ -50,10 +50,10 @@ func NewCmdBuild() *cobra.Command {
 		WithExample("Print the final image names", "build -q --dry-run").
 		WithCommonFlags().
 		WithFlags([]*Flag{
-			{Value: &quietFlag, Name: "quiet", Shorthand: "q", DefValue: false, Usage: "Suppress the build output and print image built on success. See --output to format output."},
+			{Value: &quietFlag, Name: "quiet", Shorthand: "q", DefValue: false, Usage: "Suppress the build output and print image built on success. See --output to format output.", IsEnum: true},
 			{Value: buildFormatFlag, Name: "output", Shorthand: "o", Usage: "Used in conjunction with --quiet flag. " + buildFormatFlag.Usage()},
 			{Value: &buildOutputFlag, Name: "file-output", DefValue: "", Usage: "Filename to write build images to"},
-			{Value: &opts.DryRun, Name: "dry-run", DefValue: false, Usage: "Don't build images, just compute the tag for each artifact."},
+			{Value: &opts.DryRun, Name: "dry-run", DefValue: false, Usage: "Don't build images, just compute the tag for each artifact.", IsEnum: true},
 		}).
 		WithHouseKeepingMessages().
 		NoArgs(doBuild)

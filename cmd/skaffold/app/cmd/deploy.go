@@ -44,7 +44,7 @@ func NewCmdDeploy() *cobra.Command {
 		WithCommonFlags().
 		WithFlags([]*Flag{
 			{Value: &preBuiltImages, Name: "images", Shorthand: "i", Usage: "A list of pre-built images to deploy"},
-			{Value: &opts.SkipRender, Name: "skip-render", DefValue: false, Usage: "Don't render the manifests, just deploy them"},
+			{Value: &opts.SkipRender, Name: "skip-render", DefValue: false, Usage: "Don't render the manifests, just deploy them", IsEnum: true},
 		}).
 		WithHouseKeepingMessages().
 		NoArgs(doDeploy)
