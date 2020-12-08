@@ -28,10 +28,12 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 var (
@@ -215,7 +217,18 @@ func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 			continue
 		}
 
-		errs = append(errs, fmt.Errorf("artifact %s has invalid networkMode '%s'", a.ImageName, mode))
+		errMsg := fmt.Sprintf("artifact %s has invalid networkMode '%s'", a.ImageName, mode)
+		errs = append(errs, sErrors.NewError(fmt.Errorf(errMsg),
+			proto.ActionableErr{
+				Message: errMsg,
+				ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME,
+				Suggestions: []*proto.Suggestion{
+					{
+						SuggestionCode: proto.SuggestionCode_FIX_DOCKER_NETWORK_CONTAINER_NAME,
+						Action:         "Please fix the docker network container name and try again",
+					},
+				},
+			}))
 	}
 	return
 }
@@ -243,7 +256,17 @@ func validateDockerNetworkContainerExists(artifacts []*latest.Artifact, runCtx d
 			id := strings.TrimPrefix(mode, prefix)
 			containers, err := client.ContainerList(ctx, types.ContainerListOptions{})
 			if err != nil {
-				errs = append(errs, fmt.Errorf("retrieving docker containers list: %s", err.Error()))
+				errs = append(errs, sErrors.NewError(err,
+					proto.ActionableErr{
+						Message: "error retrieving docker containers list",
+						ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_LISTING_CONTAINERS,
+						Suggestions: []*proto.Suggestion{
+							{
+								SuggestionCode: proto.SuggestionCode_CHECK_DOCKER_RUNNING,
+								Action:         "Please check docker is running and try again",
+							},
+						},
+					}))
 				return errs
 			}
 			for _, c := range containers {
@@ -258,7 +281,18 @@ func validateDockerNetworkContainerExists(artifacts []*latest.Artifact, runCtx d
 					}
 				}
 			}
-			errs = append(errs, fmt.Errorf("container '%s' not found. Required by image '%s' for docker network stack sharing", id, a.ImageName))
+			errMsg := fmt.Sprintf("container '%s' not found, required by image '%s' for docker network stack sharing", id, a.ImageName)
+			errs = append(errs, sErrors.NewError(fmt.Errorf(errMsg),
+				proto.ActionableErr{
+					Message: errMsg,
+					ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST,
+					Suggestions: []*proto.Suggestion{
+						{
+							SuggestionCode: proto.SuggestionCode_CHECK_DOCKER_NETWORK_CONTAINER_RUNNING,
+							Action:         "Please fix the docker network container name and try again.",
+						},
+					},
+				}))
 		}
 	}
 	return errs
