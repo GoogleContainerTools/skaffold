@@ -66,7 +66,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 	requiredImages := docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true)
 	switch {
 	case a.KanikoArtifact != nil:
-		return b.buildWithKaniko(ctx, out, a.Workspace, a.KanikoArtifact, tag, requiredImages)
+		return b.buildWithKaniko(ctx, out, a.Workspace, a.ImageName, a.KanikoArtifact, tag, requiredImages)
 
 	case a.CustomArtifact != nil:
 		return custom.NewArtifactBuilder(nil, b.cfg, true, append(b.retrieveExtraEnv(), util.EnvPtrMapToSlice(requiredImages, "=")...)).Build(ctx, out, a, tag)

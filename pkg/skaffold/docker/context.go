@@ -22,22 +22,21 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func CreateDockerTarContext(ctx context.Context, w io.Writer, workspace string, a *latest.DockerArtifact, cfg Config) error {
-	paths, err := GetDependencies(ctx, workspace, a.DockerfilePath, a.BuildArgs, cfg)
+func CreateDockerTarContext(ctx context.Context, w io.Writer, buildCfg BuildConfig, cfg Config) error {
+	paths, err := GetDependenciesCached(ctx, buildCfg, cfg)
 	if err != nil {
 		return fmt.Errorf("getting relative tar paths: %w", err)
 	}
 
 	var p []string
 	for _, path := range paths {
-		p = append(p, filepath.Join(workspace, path))
+		p = append(p, filepath.Join(buildCfg.workspace, path))
 	}
 
-	if err := util.CreateTar(w, workspace, p); err != nil {
+	if err := util.CreateTar(w, buildCfg.workspace, p); err != nil {
 		return fmt.Errorf("creating tar gz: %w", err)
 	}
 

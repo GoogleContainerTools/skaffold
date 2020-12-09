@@ -33,7 +33,25 @@ var (
 	dependencyCache = util.NewSyncStore()
 )
 
-// NormalizeDockerfilePath returns the absolute path to the dockerfile.
+// BuildConfig encapsulates all the build configuration required for performing a dockerbuild.
+type BuildConfig struct {
+	workspace      string
+	artifact       string
+	dockerfilePath string
+	args           map[string]*string
+}
+
+// NewBuildConfig returns a `BuildConfig` for a dockerfilePath build.
+func NewBuildConfig(ws string, a string, path string, args map[string]*string) BuildConfig {
+	return BuildConfig{
+		workspace:      ws,
+		artifact:       a,
+		dockerfilePath: path,
+		args:           args,
+	}
+}
+
+// NormalizeDockerfilePath returns the absolute path to the dockerfilePath.
 func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 	// Expected case: should be found relative to the context directory.
 	// If it does not exist, check if it's found relative to the current directory in case it's shared.
@@ -48,17 +66,33 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 }
 
 // GetDependencies finds the sources dependency for the given docker artifact.
+// it caches the results for the computed dependency which can be used by `GetDependenciesCached`
 // All paths are relative to the workspace.
-func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error) {
-	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
+func GetDependencies(ctx context.Context, buildCfg BuildConfig, cfg Config) ([]string, error) {
+	absDockerfilePath, err := NormalizeDockerfilePath(buildCfg.workspace, buildCfg.dockerfilePath)
 	if err != nil {
-		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
+		return nil, fmt.Errorf("normalizing dockerfilePath path: %w", err)
+	}
+	result := getDependencies(buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg)
+	dependencyCache.Store(buildCfg.artifact, result)
+	return resultPair(result)
+}
+
+// GetDependenciesCached reads from cache finds the sources dependency for the given docker artifact.
+// All paths are relative to the workspace.
+func GetDependenciesCached(ctx context.Context, buildCfg BuildConfig, cfg Config) ([]string, error) {
+	absDockerfilePath, err := NormalizeDockerfilePath(buildCfg.workspace, buildCfg.dockerfilePath)
+	if err != nil {
+		return nil, fmt.Errorf("normalizing dockerfilePath path: %w", err)
 	}
 
-	deps := dependencyCache.Exec(absDockerfilePath, func() interface{} {
-		return getDependencies(workspace, dockerfilePath, absDockerfilePath, buildArgs, cfg)
+	deps := dependencyCache.Exec(buildCfg.artifact, func() interface{} {
+		return getDependencies(buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg)
 	})
+	return resultPair(deps)
+}
 
+func resultPair(deps interface{}) ([]string, error) {
 	switch t := deps.(type) {
 	case error:
 		return nil, t

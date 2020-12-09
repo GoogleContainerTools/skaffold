@@ -48,7 +48,7 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker
 		if evalErr != nil {
 			return nil, fmt.Errorf("unable to evaluate build args: %w", evalErr)
 		}
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, args, cfg)
+		paths, err = docker.GetDependencies(ctx, docker.NewBuildConfig(a.Workspace, a.ImageName, a.DockerArtifact.DockerfilePath, args), cfg)
 
 	case a.KanikoArtifact != nil:
 		deps := docker.ResolveDependencyImages(a.Dependencies, r, false)
@@ -56,7 +56,7 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker
 		if evalErr != nil {
 			return nil, fmt.Errorf("unable to evaluate build args: %w", evalErr)
 		}
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.KanikoArtifact.DockerfilePath, args, cfg)
+		paths, err = docker.GetDependencies(ctx, docker.NewBuildConfig(a.Workspace, a.ImageName, a.KanikoArtifact.DockerfilePath, args), cfg)
 
 	case a.BazelArtifact != nil:
 		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)
@@ -65,7 +65,7 @@ func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker
 		paths, err = jib.GetDependencies(ctx, a.Workspace, a.JibArtifact)
 
 	case a.CustomArtifact != nil:
-		paths, err = custom.GetDependencies(ctx, a.Workspace, a.CustomArtifact, cfg)
+		paths, err = custom.GetDependencies(ctx, a.Workspace, a.ImageName, a.CustomArtifact, cfg)
 
 	case a.BuildpackArtifact != nil:
 		paths, err = buildpacks.GetDependencies(ctx, a.Workspace, a.BuildpackArtifact)

@@ -54,6 +54,13 @@ func (o *SyncStore) Exec(key string, f func() interface{}) interface{} {
 	return val
 }
 
+// Store will store the results for a key in a cache
+// This function is not safe to use if multiple subroutines store the
+// result for the same key.
+func (o *SyncStore) Store(key string, r interface{}) {
+	o.results.Store(key, r)
+}
+
 // NewSyncStore returns a new instance of `SyncStore`
 func NewSyncStore() *SyncStore {
 	return &SyncStore{
