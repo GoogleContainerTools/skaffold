@@ -60,12 +60,7 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 
 		buildArtifacts, err := getBuildArtifactsAndSetTags(r, config)
 		if err != nil {
-			return err
-		}
-
-		// Check that every image has a non empty tag
-		_, err = validateArtifactTags(out, buildArtifacts)
-		if err != nil {
+			tips.PrintUseRunVsDeploy(out)
 			return err
 		}
 
@@ -73,10 +68,9 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 	})
 }
 
-func validateArtifactTags(out io.Writer, artifacts []build.Artifact) (bool, error) {
+func validateArtifactTags(artifacts []build.Artifact) (bool, error) {
 	for _, artifact := range artifacts {
 		if artifact.Tag == "" {
-			tips.PrintUseRunVsDeploy(out)
 			return false, fmt.Errorf("no tag provided for image [%s]", artifact.ImageName)
 		}
 	}

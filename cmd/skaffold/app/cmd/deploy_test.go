@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -58,7 +57,7 @@ func TestDoDeploy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployed, err := validateArtifactTags(ioutil.Discard, test.artifacts)
+			deployed, err := validateArtifactTags(test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deployed)
 		})

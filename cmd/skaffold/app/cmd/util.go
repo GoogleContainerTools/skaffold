@@ -57,6 +57,12 @@ func getArtifacts(fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifa
 		return nil, err
 	}
 
+	// Check that every image has a non empty tag
+	_, err = validateArtifactTags(buildArtifacts)
+	if err != nil {
+		return nil, err
+	}
+
 	return buildArtifacts, nil
 }
 
