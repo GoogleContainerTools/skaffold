@@ -47,7 +47,7 @@ func PrintTest(out io.Writer) {
 func PrintUseRunVsDeploy(out io.Writer) {
 	printTip(out, "You either need to:")
 	printTip(out, "run [skaffold deploy] with [--images TAG] for each pre-built artifact")
-	printTip(out, "or [skaffold run] instead, to let Skaffold build, tag, and deploy artifacts.")
+	printTip(out, "or [skaffold run] instead, to let Skaffold build, tag and deploy artifacts.")
 }
 
 func printTip(out io.Writer, message string) {
