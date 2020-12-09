@@ -73,6 +73,7 @@ End-to-end pipelines:
 
 Pipeline building blocks for CI/CD:
   build             Build the artifacts
+  test              Test the artifacts
   deploy            Deploy pre-built artifacts
   delete            Delete the deployed application
   render            [alpha] Perform all image builds, and output rendered Kubernetes manifests
@@ -958,6 +959,39 @@ Use "skaffold options" for a list of global command-line options (applies to all
 
 
 ```
+
+### skaffold test
+
+Test the artifacts
+
+```
+
+
+Examples:
+  # Build the artifacts and collect the tags into a file
+  skaffold build --file-output=tags.json
+
+  # Test those tags
+  skaffold test --build-artifacts=tags.json
+
+  # Build the artifacts and then test them
+  skaffold build -q | skaffold test --build-artifacts -
+
+Options:
+  -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+
+Usage:
+  skaffold test [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+Env vars:
+
+* `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
 
 ### skaffold version
 
