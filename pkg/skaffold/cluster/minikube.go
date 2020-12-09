@@ -97,11 +97,7 @@ func minikubeExec(arg ...string) (*exec.Cmd, error) {
 }
 
 func minikubeBinary() (string, error) {
-	execName := "minikube"
-	if found, _ := util.DetectWSL(); found {
-		execName = "minikube.exe"
-	}
-	filename, err := exec.LookPath(execName)
+	filename, err := exec.LookPath("minikube")
 	if err != nil {
 		return "", errors.New("unable to find minikube executable. Please add it to PATH environment variable")
 	}

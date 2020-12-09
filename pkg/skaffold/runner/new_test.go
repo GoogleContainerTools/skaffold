@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -36,16 +37,25 @@ func TestGetDeployer(tOuter *testing.T) {
 		tests := []struct {
 			description string
 			cfg         latest.DeployType
+			helmVersion string
 			expected    deploy.Deployer
+			shouldErr   bool
 		}{
 			{
 				description: "no deployer",
 				expected:    deploy.DeployerMux{},
 			},
 			{
-				description: "helm deployer",
+				description: "helm deployer with 3.0.0 version",
 				cfg:         latest.DeployType{HelmDeploy: &latest.HelmDeploy{}},
-				expected:    helm.NewDeployer(&runcontext.RunContext{}, nil),
+				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
+				expected:    &helm.Deployer{},
+			},
+			{
+				description: "helm deployer with less than 3.0.0 version",
+				cfg:         latest.DeployType{HelmDeploy: &latest.HelmDeploy{}},
+				helmVersion: "2.0.0",
+				shouldErr:   true,
 			},
 			{
 				description: "kubectl deployer",
@@ -88,14 +98,22 @@ func TestGetDeployer(tOuter *testing.T) {
 					HelmDeploy: &latest.HelmDeploy{},
 					KptDeploy:  &latest.KptDeploy{},
 				},
+				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
 				expected: deploy.DeployerMux{
-					helm.NewDeployer(&runcontext.RunContext{}, nil),
+					&helm.Deployer{},
 					kpt.NewDeployer(&runcontext.RunContext{}, nil),
 				},
 			},
 		}
 		for _, test := range tests {
 			testutil.Run(tOuter, test.description, func(t *testutil.T) {
+				if test.helmVersion != "" {
+					t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
+						"helm version --client",
+						test.helmVersion,
+					))
+				}
+
 				deployer, err := getDeployer(&runcontext.RunContext{
 					Cfg: latest.Pipeline{
 						Deploy: latest.DeployConfig{
@@ -104,7 +122,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					},
 				}, nil)
 
-				t.RequireNoError(err)
+				t.CheckError(test.shouldErr, err)
 				t.CheckTypeEquality(test.expected, deployer)
 
 				if reflect.TypeOf(test.expected) == reflect.TypeOf(deploy.DeployerMux{}) {

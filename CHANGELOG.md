@@ -1,3 +1,22 @@
+# v1.17.2 Release - 12/08/2020
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.17.2/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.17.2/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.17.2/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.17.2`
+
+This is a minor release with a fix for sync issue for docker artifacts in `skaffold dev`. See [#5110](https://github.com/GoogleContainerTools/skaffold/issues/5110) & [#5115](https://github.com/GoogleContainerTools/skaffold/issues/5115)
+
+Fixes:
+* Recompute docker dependencies across dev loops. [#5121](https://github.com/GoogleContainerTools/skaffold/pull/5121)
+
+
 # v1.17.1 Release - 12/01/2020
 **Linux**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.17.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`

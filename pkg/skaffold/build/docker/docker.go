@@ -47,10 +47,10 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 
 	var imageID string
 
-	if b.useCLI {
+	if b.useCLI || b.useBuildKit {
 		imageID, err = b.dockerCLIBuild(ctx, color.GetWriter(out), a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts)
 	} else {
-		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, opts)
+		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ImageName, a.ArtifactType.DockerArtifact, opts)
 	}
 
 	if err != nil {

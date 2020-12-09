@@ -451,6 +451,13 @@ enum StatusCode {
     BUILD_JIB_GRADLE_DEP_ERR = 120;
     // Build error determining dependency for jib gradle project.
     BUILD_JIB_MAVEN_DEP_ERR = 121;
+    // Docker build error when listing containers.
+    INIT_DOCKER_NETWORK_LISTING_CONTAINERS = 122;
+    // Docker build error indicating an invalid container name (or id).
+    INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME = 123;
+    // Docker build error indicating the container referenced does not exists in the docker context used.
+    INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST = 124;
+
 
     // Container errors
 
@@ -667,6 +674,10 @@ enum SuggestionCode {
     FIX_SKAFFOLD_CONFIG_DOCKERFILE = 110;
     // Use a supported Jib plugin type
     FIX_JIB_PLUGIN_CONFIGURATION = 111;
+    // Docker build network invalid docker container name (or id).
+    FIX_DOCKER_NETWORK_CONTAINER_NAME = 112;
+    // Docker build network container not existing in the current context.
+    CHECK_DOCKER_NETWORK_CONTAINER_RUNNING = 113;
 
     // Deploy error suggestion codes
 

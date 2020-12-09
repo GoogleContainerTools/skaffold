@@ -37,7 +37,7 @@ import (
 
 const initContainer = "kaniko-init-container"
 
-func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifact *latest.KanikoArtifact, tag string, requiredImages map[string]*string) (string, error) {
+func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifactName string, artifact *latest.KanikoArtifact, tag string, requiredImages map[string]*string) (string, error) {
 	generatedEnvs, err := generateEnvFromImage(tag)
 	if err != nil {
 		return "", fmt.Errorf("error processing generated env variables from image uri: %w", err)
@@ -77,7 +77,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 		}
 	}()
 
-	if err := b.copyKanikoBuildContext(ctx, workspace, artifact, pods, pod.Name); err != nil {
+	if err := b.copyKanikoBuildContext(ctx, workspace, artifactName, artifact, pods, pod.Name); err != nil {
 		return "", fmt.Errorf("copying sources: %w", err)
 	}
 
@@ -97,17 +97,15 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 // first copy over the buildcontext tarball into the init container tmp dir via kubectl cp
 // Via kubectl exec, we extract the tarball to the empty dir
 // Then, via kubectl exec, create the /tmp/complete file via kubectl exec to complete the init container
-func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, artifact *latest.KanikoArtifact, pods corev1.PodInterface, podName string) error {
+func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, artifactName string, artifact *latest.KanikoArtifact, pods corev1.PodInterface, podName string) error {
 	if err := kubernetes.WaitForPodInitialized(ctx, pods, podName); err != nil {
 		return fmt.Errorf("waiting for pod to initialize: %w", err)
 	}
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, workspace, &latest.DockerArtifact{
-			BuildArgs:      artifact.BuildArgs,
-			DockerfilePath: artifact.DockerfilePath,
-		}, b.cfg)
+		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, docker.NewBuildConfig(
+			workspace, artifactName, artifact.DockerfilePath, artifact.BuildArgs), b.cfg)
 		if err != nil {
 			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return

@@ -24,7 +24,6 @@ require (
 	github.com/buildpacks/pack v0.15.2-0.20201119222735-f85ce4770ba9
 	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
-	github.com/daixiang0/gci v0.2.7 // indirect
 	github.com/docker/cli v20.10.0-beta1.0.20201117192004-5cc239616494+incompatible
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v20.10.0-beta1.0.20201110211921-af34b94a78a1+incompatible
@@ -40,6 +39,7 @@ require (
 	github.com/google/go-cmp v0.5.2
 	github.com/google/go-containerregistry v0.1.4
 	github.com/google/go-github v17.0.0+incompatible
+	github.com/google/martian v2.1.1-0.20190517191504-25dcb96d9e51+incompatible // indirect
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.14.8
@@ -51,7 +51,7 @@ require (
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mitchellh/go-homedir v1.1.0
 	// github.com/moby/buildkit v0.7.1
-	github.com/moby/buildkit v0.3.3
+	github.com/moby/buildkit v0.8.0
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/opencontainers/runc v1.0.0-rc92 // indirect
@@ -65,11 +65,13 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
 	github.com/xeipuuv/gojsonschema v1.2.0
-	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
+	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
 	golang.org/x/mod v0.3.0
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/sys v0.0.0-20201015000850-e3ed0017c211
+	golang.org/x/term v0.0.0-20201117132131-f5c789dd3221
+	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
 	google.golang.org/api v0.34.0
 	google.golang.org/genproto v0.0.0-20201022181438-0ff5f38871d5
 	google.golang.org/grpc v1.33.1

@@ -105,6 +105,10 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.Sk
 		return nil, nil, fmt.Errorf("getting run context: %w", err)
 	}
 
+	if err := validation.ProcessWithRunContext(config, runCtx); err != nil {
+		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
+	}
+
 	return runCtx, config, nil
 }
 

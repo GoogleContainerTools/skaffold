@@ -17,7 +17,6 @@ limitations under the License.
 package helm
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -77,38 +76,19 @@ func sortKeys(m map[string]string) []string {
 	return s
 }
 
-// binVer returns the version of the helm binary found in PATH. May be cached.
-func (h *Deployer) binVer(ctx context.Context) (semver.Version, error) {
-	// Return the cached version value if non-zero
-	if h.bV.Major != 0 || h.bV.Minor != 0 {
-		return h.bV, nil
+// binVer returns the version of the helm binary found in PATH.
+func binVer() (semver.Version, error) {
+	cmd := exec.Command("helm", "version", "--client")
+	b, err := util.RunCmdOut(cmd)
+	if err != nil {
+		return semver.Version{}, fmt.Errorf("helm version command failed %q: %w", string(b), err)
 	}
-
-	var b bytes.Buffer
-	// Only 3.0.0-beta doesn't support --client
-	if err := h.exec(ctx, &b, false, nil, "version", "--client"); err != nil {
-		return semver.Version{}, fmt.Errorf("helm version command failed %q: %w", b.String(), err)
-	}
-	raw := b.String()
+	raw := string(b)
 	matches := versionRegex.FindStringSubmatch(raw)
 	if len(matches) == 0 {
 		return semver.Version{}, fmt.Errorf("unable to parse output: %q", raw)
 	}
-
-	v, err := semver.ParseTolerant(matches[1])
-	if err != nil {
-		return semver.Version{}, fmt.Errorf("semver make %q: %w", matches[1], err)
-	}
-
-	h.bV = v
-	return h.bV, nil
-}
-
-func (h *Deployer) checkMinVersion(v semver.Version) error {
-	if v.LT(helm3Version) {
-		return minVersionErr()
-	}
-	return nil
+	return semver.ParseTolerant(matches[1])
 }
 
 // imageSetFromConfig calculates the --set-string value from the helm config
@@ -179,7 +159,7 @@ func (h *Deployer) releaseNamespace(r latest.HelmRelease) (string, error) {
 	} else if r.Namespace != "" {
 		namespace, err := util.ExpandEnvTemplate(r.Namespace, nil)
 		if err != nil {
-			return "", userErr("cannot parse the release namespace template", err)
+			return "", fmt.Errorf("cannot parse the release namespace template: %w", err)
 		}
 		return namespace, nil
 	}
@@ -220,17 +200,15 @@ func envVarForImage(imageName string, digest string) map[string]string {
 
 // exec executes the helm command, writing combined stdout/stderr to the provided writer
 func (h *Deployer) exec(ctx context.Context, out io.Writer, useSecrets bool, env []string, args ...string) error {
-	if args[0] != "version" {
-		args = append([]string{"--kube-context", h.kubeContext}, args...)
-		args = append(args, h.Flags.Global...)
+	args = append([]string{"--kube-context", h.kubeContext}, args...)
+	args = append(args, h.Flags.Global...)
 
-		if h.kubeConfig != "" {
-			args = append(args, "--kubeconfig", h.kubeConfig)
-		}
+	if h.kubeConfig != "" {
+		args = append(args, "--kubeconfig", h.kubeConfig)
+	}
 
-		if useSecrets {
-			args = append([]string{"secrets"}, args...)
-		}
+	if useSecrets {
+		args = append([]string{"secrets"}, args...)
 	}
 
 	cmd := exec.CommandContext(ctx, "helm", args...)

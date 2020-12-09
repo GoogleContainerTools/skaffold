@@ -29,6 +29,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -334,6 +335,7 @@ func DevLoopInProgress(i int) {
 
 // DevLoopFailed notifies that a dev loop has failed with an error code
 func DevLoopFailedWithErrorCode(i int, statusCode proto.StatusCode, err error) {
+	instrumentation.AddDevIterationErr(i, statusCode)
 	ai := &proto.ActionableErr{
 		ErrCode: statusCode,
 		Message: err.Error(),

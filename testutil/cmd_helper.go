@@ -25,8 +25,9 @@ import (
 )
 
 type FakeCmd struct {
-	t    *testing.T
-	runs []run
+	t           *testing.T
+	runs        []run
+	timesCalled int
 }
 
 type run struct {
@@ -154,6 +155,7 @@ func (c *FakeCmd) AndRunEnv(command string, env []string) *FakeCmd {
 }
 
 func (c *FakeCmd) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
+	c.timesCalled++
 	command := strings.Join(cmd.Args, " ")
 
 	r, err := c.popRun()
@@ -179,6 +181,7 @@ func (c *FakeCmd) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 }
 
 func (c *FakeCmd) RunCmd(cmd *exec.Cmd) error {
+	c.timesCalled++
 	command := strings.Join(cmd.Args, " ")
 
 	r, err := c.popRun()
@@ -248,4 +251,8 @@ func (c *FakeCmd) assertCmdEnv(requiredEnv, actualEnv []string) {
 			c.t.Errorf("expected env variable with value %q", e)
 		}
 	}
+}
+
+func (c *FakeCmd) TimesCalled() int {
+	return c.timesCalled
 }

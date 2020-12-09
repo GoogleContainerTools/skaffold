@@ -420,7 +420,7 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployer := helm.NewDeployer(&runcontext.RunContext{
+			deployer, err := helm.NewDeployer(&runcontext.RunContext{
 				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
@@ -431,8 +431,9 @@ spec:
 					},
 				},
 			}, nil)
+			t.RequireNoError(err)
 			var b bytes.Buffer
-			err := deployer.Render(context.Background(), &b, test.builds, true, "")
+			err = deployer.Render(context.Background(), &b, test.builds, true, "")
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedOut, b.String())

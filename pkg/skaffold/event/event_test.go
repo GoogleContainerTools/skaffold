@@ -529,7 +529,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.description, func(t *testing.T) {
 			handler.setState(tc.state)
-			DevLoopFailedInPhase(1, tc.phase, errors.New("random error"))
+			DevLoopFailedInPhase(0, tc.phase, errors.New("random error"))
 			wait(t, tc.waitFn)
 		})
 	}
