@@ -86,8 +86,11 @@ func TestCreateNewRunner(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
-				return nil, nil
+				return docker.NewLocalDaemon(&testutil.FakeAPIClient{
+					ErrVersion: true,
+				}, nil, false, nil), nil
 			})
+
 			t.Override(&update.GetLatestAndCurrentVersion, func() (semver.Version, semver.Version, error) {
 				return semver.Version{}, semver.Version{}, nil
 			})
