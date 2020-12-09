@@ -89,16 +89,20 @@ func TestDockerCLIBuild(t *testing.T) {
 				return args, nil
 			})
 			t.Override(&docker.DefaultAuthHelper, stubAuth{})
-			if test.err == nil {
-				t.Override(&util.DefaultExecCommand, testutil.CmdRunEnv(
-					"docker build . --file "+dockerfilePath+" -t tag --force-rm",
-					test.expectedEnv,
-				))
-			} else {
-				t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(
+			var mockCmd *testutil.FakeCmd
+
+			if test.err != nil {
+				mockCmd = testutil.CmdRunErr(
 					"docker build . --file "+dockerfilePath+" -t tag",
 					test.err,
-				))
+				)
+				t.Override(&util.DefaultExecCommand, mockCmd)
+			} else if test.localBuild.UseBuildkit || test.localBuild.UseDockerCLI {
+				mockCmd = testutil.CmdRunEnv(
+					"docker build . --file "+dockerfilePath+" -t tag",
+					test.expectedEnv,
+				)
+				t.Override(&util.DefaultExecCommand, mockCmd)
 			}
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
 
@@ -115,6 +119,9 @@ func TestDockerCLIBuild(t *testing.T) {
 
 			_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "tag")
 			t.CheckError(test.err != nil, err)
+			if mockCmd != nil {
+				t.CheckDeepEqual(1, mockCmd.TimesCalled())
+			}
 		})
 	}
 }
