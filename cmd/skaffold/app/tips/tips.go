@@ -39,16 +39,15 @@ func PrintForInit(out io.Writer, opts config.SkaffoldOptions) {
 
 // PrintUseRunVsTest prints tips on when to use skaffold run vs test.
 func PrintUseRunVsTest(out io.Writer) {
-	printTip(out, "You either need to:")
-	printTip(out, "run [skaffold test] with [--build-artifacts <file-output>] for runnig tests on artifacts from a given file")
-	printTip(out, "or [skaffold run] instead, to let Skaffold build, tag, test, and deploy artifacts.")
+	printTip(out, "You need to:")
+	printTip(out, "run [skaffold test] with [--build-artifacts <file-output>] for runnig tests on artifacts from a given file.")
 }
 
 // PrintUseRunVsDeploy prints tips on when to use skaffold run vs deploy.
 func PrintUseRunVsDeploy(out io.Writer) {
 	printTip(out, "You either need to:")
 	printTip(out, "run [skaffold deploy] with [--images TAG] for each pre-built artifact")
-	printTip(out, "or [skaffold run] instead, to let Skaffold build, tag, test, and deploy artifacts.")
+	printTip(out, "or [skaffold run] instead, to let Skaffold build, tag, and deploy artifacts.")
 }
 
 func printTip(out io.Writer, message string) {
