@@ -80,7 +80,7 @@ func TestGetArtifacts(t *testing.T) {
 			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
 			fromFile:    nil,
 			fromCLI:     nil,
-			expected:    []build.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
+			shouldErr:   true,
 		},
 		{
 			description: "override tag",
