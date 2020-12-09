@@ -1115,6 +1115,7 @@ type DockerArtifact struct {
 	// is configured in the underlying docker daemon. Valid modes are
 	// `host`: use the host's networking stack.
 	// `bridge`: use the bridged network configuration.
+	// `container:<name|id>`: reuse another container's network stack.
 	// `none`: no networking in the container.
 	NetworkMode string `yaml:"network,omitempty"`
 

@@ -812,6 +812,9 @@ For Cancelled Error code, use range 800 to 850.
 | BUILD_UNKNOWN_JIB_PLUGIN_TYPE | 119 | Build error indicating unknown Jib plugin type. Should be one of [maven, gradle] |
 | BUILD_JIB_GRADLE_DEP_ERR | 120 | Build error determining dependency for jib gradle project. |
 | BUILD_JIB_MAVEN_DEP_ERR | 121 | Build error determining dependency for jib gradle project. |
+| INIT_DOCKER_NETWORK_LISTING_CONTAINERS | 122 | Docker build error when listing containers. |
+| INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME | 123 | Docker build error indicating an invalid container name (or id). |
+| INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST | 124 | Docker build error indicating the container referenced does not exists in the docker context used. |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
@@ -910,6 +913,8 @@ Enum for Suggestion codes
 | FIX_CACHE_FROM_ARTIFACT_CONFIG | 109 | Fix `cacheFrom` config for given artifact and try again |
 | FIX_SKAFFOLD_CONFIG_DOCKERFILE | 110 | Fix `dockerfile` config for a given artifact and try again. |
 | FIX_JIB_PLUGIN_CONFIGURATION | 111 | Use a supported Jib plugin type |
+| FIX_DOCKER_NETWORK_CONTAINER_NAME | 112 | Docker build network invalid docker container name (or id). |
+| CHECK_DOCKER_NETWORK_CONTAINER_RUNNING | 113 | Docker build network container not existing in the current context. |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |
 | INSTALL_HELM | 203 | Install helm tool |
