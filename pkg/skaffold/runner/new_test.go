@@ -52,7 +52,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				expected:    &helm.Deployer{},
 			},
 			{
-				description: "helm deployer with less 3.0.0 version",
+				description: "helm deployer with less than 3.0.0 version",
 				cfg:         latest.DeployType{HelmDeploy: &latest.HelmDeploy{}},
 				helmVersion: "2.0.0",
 				shouldErr:   true,
