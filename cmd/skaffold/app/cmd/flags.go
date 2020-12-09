@@ -276,7 +276,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.CustomTag,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "test", "dev", "run", "deploy"},
+		DefinedOn:     []string{"build", "debug", "dev", "run", "deploy"},
 	},
 	{
 		Name:          "minikube-profile",
