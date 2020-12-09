@@ -1129,6 +1129,9 @@ type DockerArtifact struct {
 	// NoCache used to pass in --no-cache to docker build to prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
 
+	// Squash is used to pass in --squash to docker build to squash docker image layers into single layer.
+	Squash bool `yaml:"squash,omitempty"`
+
 	// Secret contains information about a local secret passed to `docker build`,
 	// along with optional destination information.
 	Secret *DockerSecret `yaml:"secret,omitempty"`
