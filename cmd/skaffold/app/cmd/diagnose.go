@@ -22,7 +22,6 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/diagnose"
@@ -41,9 +40,8 @@ func NewCmdDiagnose() *cobra.Command {
 		WithExample("Search for configuration issues and print the effective configuration", "diagnose").
 		WithExample("Print the effective skaffold.yaml configuration for given profile", "diagnose --yaml-only --profile PROFILE").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.BoolVar(&yamlOnly, "yaml-only", false, "Only prints the effective skaffold.yaml configuration")
-		}).
+		WithFlags([]*Flag{
+			{Value: &yamlOnly, Name: "yaml-only", DefValue: false, Usage: "Only prints the effective skaffold.yaml configuration"}}).
 		NoArgs(doDiagnose)
 }
 

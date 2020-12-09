@@ -32,7 +32,8 @@ type Builder interface {
 	WithDescription(description string) Builder
 	WithLongDescription(long string) Builder
 	WithExample(comment, command string) Builder
-	WithFlags(adder func(*pflag.FlagSet)) Builder
+	WithFlagAdder(adder func(*pflag.FlagSet)) Builder
+	WithFlags([]*Flag) Builder
 	WithHouseKeepingMessages() Builder
 	WithCommonFlags() Builder
 	Hidden() Builder
@@ -81,8 +82,20 @@ func (b *builder) WithHouseKeepingMessages() Builder {
 	return b
 }
 
-func (b *builder) WithFlags(adder func(*pflag.FlagSet)) Builder {
+func (b *builder) WithFlagAdder(adder func(*pflag.FlagSet)) Builder {
 	adder(b.cmd.Flags())
+	return b
+}
+
+func (b *builder) WithFlags(flags []*Flag) Builder {
+	for _, f := range flags {
+		fl := f.flag()
+		b.cmd.Flags().AddFlag(fl)
+	}
+	b.cmd.PreRun = func(cmd *cobra.Command, args []string) {
+		ParseFlags(cmd, flags)
+	}
+
 	return b
 }
 

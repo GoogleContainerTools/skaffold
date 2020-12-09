@@ -21,7 +21,6 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
@@ -43,9 +42,9 @@ func NewCmdDeploy() *cobra.Command {
 		WithExample("Build the artifacts and then deploy them", "build -q | skaffold deploy --build-artifacts -").
 		WithExample("Deploy without first rendering the manifests", "deploy --skip-render").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
-			f.BoolVar(&opts.SkipRender, "skip-render", false, "Don't render the manifests, just deploy them")
+		WithFlags([]*Flag{
+			{Value: &preBuiltImages, Name: "images", Shorthand: "i", Usage: "A list of pre-built images to deploy"},
+			{Value: &opts.SkipRender, Name: "skip-render", DefValue: false, Usage: "Don't render the manifests, just deploy them", IsEnum: true},
 		}).
 		WithHouseKeepingMessages().
 		NoArgs(doDeploy)
