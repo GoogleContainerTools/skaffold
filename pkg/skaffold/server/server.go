@@ -116,7 +116,6 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 		if httpErr != nil {
 			errStr += fmt.Sprintf("http callback error: %s\n", httpErr.Error())
 		}
-		fmt.Println("running callback, we got this as our log file: ", opts.EventLogFile)
 		if opts.EventLogFile != "" {
 			logFileErr := event.SaveEventsToFile(opts.EventLogFile)
 			if logFileErr != nil {
