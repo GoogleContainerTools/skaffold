@@ -123,6 +123,14 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
 	},
 	{
+		Name:          "event-log-file",
+		Usage:         "Save Skaffold events to the provided file after skaffold has finished executing",
+		Value:         &opts.EventLogFile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
+	},
+	{
 		Name:          "rpc-port",
 		Usage:         "tcp port to expose event API",
 		Value:         &opts.RPCPort,
