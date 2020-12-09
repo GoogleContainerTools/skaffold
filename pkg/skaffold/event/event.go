@@ -17,10 +17,14 @@ limitations under the License.
 package event
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sync"
 
+	//nolint:golint,staticcheck
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 
@@ -733,4 +737,26 @@ func InititializationFailed(err error) {
 			},
 		},
 	})
+}
+
+// SaveEventsToFile saves the current event log to the filepath provided
+func SaveEventsToFile(fp string) error {
+	handler.logLock.Lock()
+	f, err := os.OpenFile(fp, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return fmt.Errorf("opening %s: %w", fp, err)
+	}
+	defer f.Close()
+	marshaller := jsonpb.Marshaler{}
+	for _, ev := range handler.eventLog {
+		contents := bytes.NewBuffer([]byte{})
+		if err := marshaller.Marshal(contents, &ev); err != nil {
+			return fmt.Errorf("marshalling event: %w", err)
+		}
+		if _, err := f.WriteString(contents.String() + "\n"); err != nil {
+			return fmt.Errorf("writing string: %w", err)
+		}
+	}
+	handler.logLock.Unlock()
+	return nil
 }
