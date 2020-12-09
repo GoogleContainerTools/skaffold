@@ -16,6 +16,7 @@ replace (
 require (
 	4d63.com/tz v1.1.0
 	cloud.google.com/go/storage v1.10.0
+	github.com/AlecAivazis/survey/v2 v2.0.5
 	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.4
