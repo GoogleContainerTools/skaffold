@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -25,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetDeployedArtifacts(t *testing.T) {
+func TestGetArtifacts(t *testing.T) {
 	tests := []struct {
 		description string
 		artifacts   []*latest.Artifact
@@ -99,6 +98,14 @@ func TestGetDeployedArtifacts(t *testing.T) {
 			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
 			customTag:   "test",
 		},
+		{
+			description: "apply tags to no artifacts",
+			artifacts:   []*latest.Artifact{},
+			fromFile:    nil,
+			fromCLI:     nil,
+			expected:    []build.Artifact(nil),
+			customTag:   "test",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -106,9 +113,9 @@ func TestGetDeployedArtifacts(t *testing.T) {
 				t.Override(&opts.CustomTag, test.customTag)
 			}
 
-			deployed, err := getArtifactsToDeploy(ioutil.Discard, test.fromFile, test.fromCLI, test.artifacts)
+			artifacts, err := getArtifacts(test.fromFile, test.fromCLI, test.artifacts)
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deployed)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, artifacts)
 		})
 	}
 }
