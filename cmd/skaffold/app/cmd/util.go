@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -84,4 +86,13 @@ func applyCustomTag(artifacts []build.Artifact) ([]build.Artifact, error) {
 		return result, nil
 	}
 	return artifacts, nil
+}
+
+func validateArtifactTags(artifacts []build.Artifact) (bool, error) {
+	for _, artifact := range artifacts {
+		if artifact.Tag == "" {
+			return false, fmt.Errorf("no tag provided for image [%s]", artifact.ImageName)
+		}
+	}
+	return true, nil
 }
