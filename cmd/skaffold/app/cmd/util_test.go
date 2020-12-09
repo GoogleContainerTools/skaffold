@@ -98,6 +98,14 @@ func TestGetArtifacts(t *testing.T) {
 			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
 			customTag:   "test",
 		},
+		{
+			description: "apply tags to no artifacts",
+			artifacts:   []*latest.Artifact{},
+			fromFile:    nil,
+			fromCLI:     nil,
+			expected:    []build.Artifact(nil),
+			customTag:   "test",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

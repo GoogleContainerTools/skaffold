@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -66,13 +65,4 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 
 		return r.DeployAndLog(ctx, out, buildArtifacts)
 	})
-}
-
-func validateArtifactTags(artifacts []build.Artifact) (bool, error) {
-	for _, artifact := range artifacts {
-		if artifact.Tag == "" {
-			return false, fmt.Errorf("no tag provided for image [%s]", artifact.ImageName)
-		}
-	}
-	return true, nil
 }
