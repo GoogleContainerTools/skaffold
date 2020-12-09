@@ -16,14 +16,14 @@ package cmd
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 // NewCmdTest describes the CLI command to test artifacts.
@@ -43,22 +43,15 @@ func NewCmdTest() *cobra.Command {
 
 func doTest(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		buildArtifacts, err := getBuildArtifactsAndSetTags(out, r, config)
+		_, err := getBuildArtifactsAndSetTags(r, config)
 		if err != nil {
+			tips.PrintUseRunVsTest(out)
 			return err
-		}
-
-		// Check that every image has a non empty tag
-		for _, d := range buildArtifacts {
-			if d.Tag == "" {
-				tips.PrintUseRunVsTest(out)
-				return fmt.Errorf("no tag provided for image [%s]", d.ImageName)
-			}
 		}
 
 		// New test command does nothing for now (Add skaffold test command. #5050)
 		// 1. Prints the command help
 		// 2. Inherits the common flags
-		return errors.New("Executing Test command")
+		return errors.New("executing Test command")
 	})
 }
