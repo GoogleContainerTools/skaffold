@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gogo/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
