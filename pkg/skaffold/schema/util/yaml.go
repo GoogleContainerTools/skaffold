@@ -54,7 +54,7 @@ func UnmarshalClusterVolumes(value *yaml.Node) (volumes []v1.Volume, remaining [
 }
 
 // UnmarshalKanikoArtifact provides a helper function to
-// for a custom unmarshler to deal with
+// for a custom unmarshaller to deal with
 // https://github.com/GoogleContainerTools/skaffold/issues/4175
 func UnmarshalKanikoArtifact(value *yaml.Node) (mounts []v1.VolumeMount, remaining []byte, result error) {
 	kaMap := make(map[string]interface{})

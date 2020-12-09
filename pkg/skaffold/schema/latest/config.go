@@ -1179,13 +1179,13 @@ type JibArtifact struct {
 	BaseImage string `yaml:"fromImage,omitempty"`
 }
 
-// UnmarshalYAML provides a custom unmarshler to deal with
+// UnmarshalYAML provides a custom unmarshaller to deal with
 // https://github.com/GoogleContainerTools/skaffold/issues/4175
 func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
 	// We do this as follows
 	// 1. We zero out the fields in the node that require custom processing
-	// 2. We unmarshall all the non special fields using the aliased type resource
-	//    we use an alias type to avoid recursion caused by invoking this function infinetly
+	// 2. We unmarshal all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinitely
 	// 3. We deserialize the special fields as required.
 	type ClusterDetailsForUnmarshaling ClusterDetails
 
@@ -1207,13 +1207,13 @@ func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
-// UnmarshalYAML provides a custom unmarshler to deal with
+// UnmarshalYAML provides a custom unmarshaller to deal with
 // https://github.com/GoogleContainerTools/skaffold/issues/4175
 func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
 	// We do this as follows
 	// 1. We zero out the fields in the node that require custom processing
-	// 2. We unmarshall all the non special fields using the aliased type resource
-	//    we use an alias type to avoid recursion caused by invoking this function infinetly
+	// 2. We unmarshal all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinitely
 	// 3. We deserialize the special fields as required.
 	type KanikoArtifactForUnmarshaling KanikoArtifact
 
@@ -1235,15 +1235,15 @@ func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
-// MarshalYAML provides a custom marshler to deal with
+// MarshalYAML provides a custom marshaller to deal with
 // https://github.com/GoogleContainerTools/skaffold/issues/4175
 func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	// We do this as follows
 	// 1. We zero out the fields in the node that require custom processing
 	// 2. We marshall all the non special fields using the aliased type resource
-	//    we use an alias type to avoid recursion caused by invoking this function infinetly
+	//    we use an alias type to avoid recursion caused by invoking this function infinitely
 	// 3. We unmarshal to a map
-	// 4. We marshall the special fields to json and unmarhsal to a map
+	// 4. We marshal the special fields to json and unmarshal to a map
 	//    * This leverages the json struct annotations to marshal as expected
 	// 5. We combine the two maps and return
 	type ClusterDetailsForUnmarshaling ClusterDetails
@@ -1295,15 +1295,15 @@ func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	return m, err
 }
 
-// MarshalYAML provides a custom marshler to deal with
+// MarshalYAML provides a custom marshaller to deal with
 // https://github.com/GoogleContainerTools/skaffold/issues/4175
 func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	// We do this as follows
 	// 1. We zero out the fields in the node that require custom processing
-	// 2. We marshall all the non special fields using the aliased type resource
-	//    we use an alias type to avoid recursion caused by invoking this function infinetly
+	// 2. We marshal all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinitely
 	// 3. We unmarshal to a map
-	// 4. We marshall the special fields to json and unmarhsal to a map
+	// 4. We marshal the special fields to json and unmarshal to a map
 	//    * This leverages the json struct annotations to marshal as expected
 	// 5. We combine the two maps and return
 	type KanikoArtifactForUnmarshaling KanikoArtifact

@@ -392,7 +392,7 @@ func TestMarshalConfig(t *testing.T) {
 			// Unmarshal the YAML and make sure it equals the original.
 			// We can't compare the strings because the YAML serializer isn't deterministic.
 			// TestParseConfigAndUpgrade verifies that YAML -> Go works correctly.
-			// This test veries Go -> YAML -> Go returns the original structure. Since we know
+			// This test verifies Go -> YAML -> Go returns the original structure. Since we know
 			// YAML -> Go is working this ensures Go -> YAML is correct.
 			recovered := &latest.SkaffoldConfig{}
 
