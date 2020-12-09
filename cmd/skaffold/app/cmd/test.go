@@ -47,14 +47,10 @@ func doTest(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
 		buildArtifacts, err := getBuildArtifactsAndSetTags(r, config)
 		if err != nil {
-			tips.PrintUseRunVsTest(out)
+			tips.PrintTest(out)
 			return err
 		}
 
-		// New test command does nothing for now (Add skaffold test command. #5050)
-		// 1. Prints the command help
-		// 2. Inherits the common flags
-		// return errors.New("executing Test command")
 		return r.Test(ctx, out, buildArtifacts)
 	})
 }

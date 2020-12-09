@@ -37,8 +37,8 @@ func PrintForInit(out io.Writer, opts config.SkaffoldOptions) {
 	printTip(out, "or [skaffold dev] to enter development mode, with auto-redeploy")
 }
 
-// PrintUseRunVsTest prints tips on when to use skaffold run vs test.
-func PrintUseRunVsTest(out io.Writer) {
+// PrintTest prints tips on when to use skaffold test.
+func PrintTest(out io.Writer) {
 	printTip(out, "You need to:")
 	printTip(out, "run [skaffold test] with [--build-artifacts <file-output>] for runnig tests on artifacts from a given file.")
 }
