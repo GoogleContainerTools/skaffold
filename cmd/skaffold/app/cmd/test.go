@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -46,7 +45,7 @@ func NewCmdTest() *cobra.Command {
 
 func doTest(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		_, err := getBuildArtifactsAndSetTags(r, config)
+		buildArtifacts, err := getBuildArtifactsAndSetTags(r, config)
 		if err != nil {
 			tips.PrintUseRunVsTest(out)
 			return err
@@ -55,6 +54,7 @@ func doTest(ctx context.Context, out io.Writer) error {
 		// New test command does nothing for now (Add skaffold test command. #5050)
 		// 1. Prints the command help
 		// 2. Inherits the common flags
-		return errors.New("executing Test command")
+		// return errors.New("executing Test command")
+		return r.Test(ctx, out, buildArtifacts)
 	})
 }
