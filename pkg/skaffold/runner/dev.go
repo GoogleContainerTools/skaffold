@@ -30,6 +30,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -66,12 +67,15 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 	defer r.listener.LogWatchToUser(out)
 	event.DevLoopInProgress(r.devIteration)
 	defer func() { r.devIteration++ }()
+
+	meterUpdated := false
 	if needsSync {
 		defer func() {
 			r.changeSet.resetSync()
 			r.intents.resetSync()
 		}()
-
+		instrumentation.AddDevIteration("sync")
+		meterUpdated = true
 		for _, s := range r.changeSet.needsResync {
 			fileCount := len(s.Copy) + len(s.Delete)
 			color.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
@@ -94,7 +98,10 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			r.changeSet.resetBuild()
 			r.intents.resetBuild()
 		}()
-
+		if !meterUpdated {
+			instrumentation.AddDevIteration("build")
+			meterUpdated = true
+		}
 		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
@@ -110,6 +117,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		}()
 
 		forwarderManager.Stop()
+		if !meterUpdated {
+			instrumentation.AddDevIteration("deploy")
+		}
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
