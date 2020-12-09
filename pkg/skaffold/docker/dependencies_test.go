@@ -577,7 +577,7 @@ func TestGetDependencies(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := GetDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs, nil)
+			deps, err := GetDependencies(context.Background(), NewBuildConfig(workspace, "test", "Dockerfile", test.buildArgs), nil)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, deps)
@@ -674,7 +674,7 @@ func TestGetDependenciesCached(t *testing.T) {
 			retrieveImgMock: func(_ string, _ Config) (*v1.ConfigFile, error) {
 				return nil, fmt.Errorf("unexpected call")
 			},
-			dependencyCache: map[string]interface{}{"Dockerfile": []string{"random.go"}},
+			dependencyCache: map[string]interface{}{"dummy": []string{"random.go"}},
 			expected:        []string{"random.go"},
 		},
 		{
@@ -682,15 +682,14 @@ func TestGetDependenciesCached(t *testing.T) {
 			retrieveImgMock: func(_ string, _ Config) (*v1.ConfigFile, error) {
 				return &v1.ConfigFile{}, nil
 			},
-			dependencyCache: map[string]interface{}{"Dockerfile": fmt.Errorf("remote manifest fetch")},
+			dependencyCache: map[string]interface{}{"dummy": fmt.Errorf("remote manifest fetch")},
 			shouldErr:       true,
 		},
 		{
 			description:     "with cached results for dockerfile in another app",
 			retrieveImgMock: imageFetcher.fetch,
-			dependencyCache: map[string]interface{}{
-				filepath.Join("app", "Dockerfile"): []string{"random.go"}},
-			expected: []string{"Dockerfile", "server.go"},
+			dependencyCache: map[string]interface{}{"another": []string{"random.go"}},
+			expected:        []string{"Dockerfile", "server.go"},
 		},
 	}
 
@@ -704,11 +703,11 @@ func TestGetDependenciesCached(t *testing.T) {
 			tmpDir.Write("Dockerfile", copyServerGo)
 
 			for k, v := range test.dependencyCache {
-				dependencyCache.Exec(tmpDir.Path(k), func() interface{} {
+				dependencyCache.Exec(k, func() interface{} {
 					return v
 				})
 			}
-			deps, err := GetDependencies(context.Background(), tmpDir.Root(), "Dockerfile", map[string]*string{}, nil)
+			deps, err := GetDependenciesCached(context.Background(), NewBuildConfig(tmpDir.Root(), "dummy", "Dockerfile", map[string]*string{}), nil)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
 		})
 	}

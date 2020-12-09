@@ -136,7 +136,8 @@ func timeToComputeMTimes(deps []string) (time.Duration, error) {
 func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, cfg docker.Config) (int64, error) {
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, a.Workspace, a.DockerArtifact, cfg)
+		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, docker.NewBuildConfig(
+			a.Workspace, a.ImageName, a.DockerArtifact.DockerfilePath, nil), cfg)
 		if err != nil {
 			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return
