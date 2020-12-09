@@ -70,6 +70,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/sys v0.0.0-20201015000850-e3ed0017c211
+	golang.org/x/term v0.0.0-20201117132131-f5c789dd3221
 	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
 	google.golang.org/api v0.34.0
 	google.golang.org/genproto v0.0.0-20201022181438-0ff5f38871d5
