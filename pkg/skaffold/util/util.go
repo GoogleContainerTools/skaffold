@@ -27,7 +27,9 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -340,4 +342,12 @@ func IsSubPath(basepath string, targetpath string) bool {
 
 func hasHiddenPrefix(s string) bool {
 	return strings.HasPrefix(s, hiddenPrefix)
+}
+
+// ShowHumanizeTime returns time in human readable format
+func ShowHumanizeTime(start time.Time) string {
+	if time.Since(start).Seconds() < 1 {
+		return time.Since(start).String() + " ago"
+	}
+	return humanize.Time(start)
 }

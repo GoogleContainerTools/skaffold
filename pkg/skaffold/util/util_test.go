@@ -19,6 +19,7 @@ package util
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/mitchellh/go-homedir"
 
@@ -467,4 +468,31 @@ func TestIsURL(t *testing.T) {
 
 func stringPointer(s string) *string {
 	return &s
+}
+
+func TestShowHumanizeTime(t *testing.T) {
+	currTime := time.Now()
+	tests := []struct {
+		description string
+		value       time.Time
+		expected    string
+	}{
+		{
+			description: "Case for 10 seconds",
+			value:       currTime.Add(-time.Second * 10),
+			expected:    "10 seconds ago",
+		},
+		{
+			description: "Case for a Minute",
+			value:       currTime.Add(-time.Minute * 1),
+			expected:    "1 minute ago",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			humanizedValue := ShowHumanizeTime(test.value)
+
+			t.CheckDeepEqual(test.expected, humanizedValue)
+		})
+	}
 }

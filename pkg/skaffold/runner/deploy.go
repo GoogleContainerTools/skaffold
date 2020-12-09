@@ -22,7 +22,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd/api"
 
@@ -33,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
@@ -158,14 +158,6 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 		return err
 	}
 
-	//Create human readable time string
-	showsTime := humanize.Time(start)
-
-	//Case for when it takes less than a second
-	if time.Since(start).Seconds() < 1 {
-		showsTime = time.Since(start).String() + " ago"
-	}
-
-	color.Default.Fprintln(out, "Deployments stabilized ", showsTime)
+	color.Default.Fprintln(out, "Deployments stabilized ", util.ShowHumanizeTime(start))
 	return nil
 }

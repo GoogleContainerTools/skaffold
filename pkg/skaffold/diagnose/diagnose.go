@@ -23,14 +23,13 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/dustin/go-humanize"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type Config interface {
@@ -116,27 +115,13 @@ func typeOfArtifact(a *latest.Artifact) string {
 func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg docker.Config) (string, []string, error) {
 	start := time.Now()
 	paths, err := build.DependenciesForArtifact(ctx, a, cfg, nil)
-	//Create human readable time string
-	showsTime := humanize.Time(start)
-
-	//Case for when it takes less than a second
-	if time.Since(start).Seconds() < 1 {
-		showsTime = time.Since(start).String() + " ago"
-	}
-	return showsTime, paths, err
+	return util.ShowHumanizeTime(start), paths, err
 }
 
 func timeToConstructSyncMap(a *latest.Artifact, cfg docker.Config) (string, error) {
 	start := time.Now()
 	_, err := sync.SyncMap(a, cfg)
-	//Create human readable time string
-	showsTime := humanize.Time(start)
-
-	//Case for when it takes less than a second
-	if time.Since(start).Seconds() < 1 {
-		showsTime = time.Since(start).String() + " ago"
-	}
-	return showsTime, err
+	return util.ShowHumanizeTime(start), err
 }
 
 func timeToComputeMTimes(deps []string) (string, error) {
@@ -145,14 +130,7 @@ func timeToComputeMTimes(deps []string) (string, error) {
 	if _, err := filemon.Stat(func() ([]string, error) { return deps, nil }); err != nil {
 		return "nil", fmt.Errorf("computing modTimes: %w", err)
 	}
-	//Create human readable time string
-	showsTime := humanize.Time(start)
-
-	//Case for when it takes less than a second
-	if time.Since(start).Seconds() < 1 {
-		showsTime = time.Since(start).String() + " ago"
-	}
-	return showsTime, nil
+	return util.ShowHumanizeTime(start), nil
 }
 
 func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, cfg docker.Config) (int64, error) {

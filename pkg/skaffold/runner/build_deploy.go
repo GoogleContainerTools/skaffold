@@ -23,7 +23,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -31,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // BuildAndTest builds and tests a list of artifacts.
@@ -203,14 +203,8 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 	if showWarning {
 		color.Yellow.Fprintln(out, "Some taggers failed. Rerun with -vdebug for errors.")
 	}
-	//Create human readable time string
-	showsTime := humanize.Time(start)
 
-	//Case for when it takes less than a second
-	if time.Since(start).Seconds() < 1 {
-		showsTime = time.Since(start).String() + " ago"
-	}
-	logrus.Infoln("Tags generated", showsTime)
+	logrus.Infoln("Tags generated", util.ShowHumanizeTime(start))
 	return imageTags, nil
 }
 

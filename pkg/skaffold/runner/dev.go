@@ -23,7 +23,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -35,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -195,14 +195,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_CONFIG_DEP, err)
 		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.ConfigurationFile(), err)
 	}
-	//Create human readable time string
-	showsTime := humanize.Time(start)
 
-	//Case for when it takes less than a second
-	if time.Since(start).Seconds() < 1 {
-		showsTime = time.Since(start).String() + " ago"
-	}
-	logrus.Infoln("List generated ", showsTime)
+	logrus.Infoln("List generated ", util.ShowHumanizeTime(start))
 
 	// Init Sync State
 	if err := sync.Init(ctx, artifacts); err != nil {
