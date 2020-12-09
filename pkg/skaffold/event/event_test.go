@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
