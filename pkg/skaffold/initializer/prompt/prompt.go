@@ -111,25 +111,22 @@ func ConfirmInitOptions(out io.Writer, config *latest.SkaffoldConfig) (bool, err
 	builders := strings.Join(util.ListBuilders(&config.Build), ",")
 	deployers := strings.Join(util.ListDeployers(&config.Deploy), ",")
 
-	var response string
-	prompt := &survey.Select{
-		Message: fmt.Sprintf(`If you choose to continue, skaffold will do the following:
+	fmt.Fprintf(out, `If you choose to continue, skaffold will do the following:
   - Create a skaffold config file for you
   - Build your application using %s
   - Deploy your application to your current kubernetes context using %s
-  
-  Would you like to continue?`, builders, deployers),
-		Options:  []string{"yes", "no"},
-		PageSize: 5,
+
+`, builders, deployers)
+
+	var response bool
+	prompt := &survey.Confirm{
+		Message: "Would you like to continue?",
 	}
 	err := askOne(prompt, &response, nil)
 	if err != nil {
 		return true, err
 	}
 
-	if response == "no" {
-		return true, nil
-	}
-
-	return false, nil
+	// invert response because "no" == done and "yes" == !done
+	return !response, nil
 }

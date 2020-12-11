@@ -31,36 +31,36 @@ func TestConfirmInitOptions(t *testing.T) {
 	tests := []struct {
 		description    string
 		config         *latest.SkaffoldConfig
-		promptResponse string
-		expected       bool
+		promptResponse bool
+		expectedDone   bool
 		shouldErr      bool
 	}{
 		{
 			description:    "yes response",
 			config:         &latest.SkaffoldConfig{},
-			promptResponse: "yes",
-			expected:       false,
+			promptResponse: true,
+			expectedDone:   false,
 			shouldErr:      false,
 		},
 		{
 			description:    "no response",
 			config:         &latest.SkaffoldConfig{},
-			promptResponse: "no",
-			expected:       true,
+			promptResponse: false,
+			expectedDone:   true,
 			shouldErr:      false,
 		},
 		{
 			description:    "error",
 			config:         &latest.SkaffoldConfig{},
-			promptResponse: "no",
-			expected:       true,
+			promptResponse: false,
+			expectedDone:   true,
 			shouldErr:      true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&askOne, func(_ survey.Prompt, response interface{}, _ ...survey.AskOpt) error {
-				r := response.(*string)
+				r := response.(*bool)
 				*r = test.promptResponse
 
 				if test.shouldErr {
@@ -69,8 +69,8 @@ func TestConfirmInitOptions(t *testing.T) {
 				return nil
 			})
 
-			got, err := ConfirmInitOptions(ioutil.Discard, test.config)
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
+			done, err := ConfirmInitOptions(ioutil.Discard, test.config)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDone, done)
 		})
 	}
 }
