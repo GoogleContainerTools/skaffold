@@ -890,7 +890,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm --post-renderer SKAFFOLD-BINARY examples/test -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm --post-renderer SKAFFOLD-BINARY examples/test -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml"}).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig"),
 			helm:      testDeployConfig,
 			builds:    testBuilds,
@@ -938,9 +939,10 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&osExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 
 			deployer, err := NewDeployer(&helmConfig{
-				helm:      test.helm,
-				namespace: test.namespace,
-				force:     test.force,
+				helm:       test.helm,
+				namespace:  test.namespace,
+				force:      test.force,
+				configFile: "test.yaml",
 			}, nil)
 			t.RequireNoError(err)
 
@@ -1413,12 +1415,14 @@ type helmConfig struct {
 	namespace             string
 	force                 bool
 	helm                  latest.HelmDeploy
+	configFile            string
 }
 
-func (c *helmConfig) ForceDeploy() bool        { return c.force }
-func (c *helmConfig) GetKubeConfig() string    { return kubectl.TestKubeConfig }
-func (c *helmConfig) GetKubeContext() string   { return kubectl.TestKubeContext }
-func (c *helmConfig) GetKubeNamespace() string { return c.namespace }
+func (c *helmConfig) ForceDeploy() bool         { return c.force }
+func (c *helmConfig) GetKubeConfig() string     { return kubectl.TestKubeConfig }
+func (c *helmConfig) GetKubeContext() string    { return kubectl.TestKubeContext }
+func (c *helmConfig) GetKubeNamespace() string  { return c.namespace }
+func (c *helmConfig) ConfigurationFile() string { return c.configFile }
 func (c *helmConfig) Pipeline() latest.Pipeline {
 	var pipeline latest.Pipeline
 	pipeline.Deploy.DeployType.HelmDeploy = &c.helm
