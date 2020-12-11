@@ -17,10 +17,9 @@ limitations under the License.
 package prompt
 
 import (
-	"bufio"
+	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 
@@ -60,36 +59,34 @@ func WriteSkaffoldConfig(out io.Writer, pipeline []byte, generatedManifests map[
 		manifestString = ", along with the generated k8s manifests,"
 	}
 
-	reader := bufio.NewReader(os.Stdin)
-confirmLoop:
-	for {
-		fmt.Fprintf(out, "Do you want to write this configuration%s to %s? [y/n]: ", manifestString, filePath)
-
-		response, err := reader.ReadString('\n')
-		if err != nil {
-			return true, fmt.Errorf("reading user confirmation: %w", err)
-		}
-
-		response = strings.ToLower(strings.TrimSpace(response))
-		switch response {
-		case "y", "yes":
-			break confirmLoop
-		case "n", "no":
-			return true, nil
-		}
+	var response bool
+	prompt := &survey.Confirm{
+		Message: fmt.Sprintf("Do you want to write this configuration%s to %s?", manifestString, filePath),
 	}
-	return false, nil
+	err := survey.AskOne(prompt, &response, nil)
+	if err != nil {
+		return true, fmt.Errorf("reading user confirmation: %w", err)
+	}
+
+	return !response, nil
 }
 
 // PortForwardResource prompts the user to give a port to forward the current resource on
 func portForwardResource(out io.Writer, imageName string) (int, error) {
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Fprintf(out, "Select port to forward for %s (leave blank for none): ", imageName)
-
-	response, err := reader.ReadString('\n')
+	var response string
+	prompt := &survey.Question{
+		Prompt: &survey.Input{Message: fmt.Sprintf("Select port to forward for %s (leave blank for none): ", imageName)},
+		Validate: func(val interface{}) error {
+			str := val.(string)
+			if _, err := strconv.Atoi(str); err != nil {
+				return errors.New("Response must be a number, or empty")
+			}
+			return nil
+		},
+	}
+	err := survey.Ask([]*survey.Question{prompt}, &response)
 	if err != nil {
-		return 0, fmt.Errorf("reading user confirmation: %w", err)
+		return 0, fmt.Errorf("reading user input: %w", err)
 	}
 
 	response = strings.ToLower(strings.TrimSpace(response))
