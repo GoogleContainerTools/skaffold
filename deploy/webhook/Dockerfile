@@ -49,7 +49,7 @@ COPY --from=download-kubectl /kubectl /usr/local/bin/
 FROM golang:1.14 as webhook
 WORKDIR /skaffold
 COPY . .
-RUN go build -mod=vendor -o /webhook webhook/webhook.go
+RUN go build -o /webhook webhook/webhook.go
 
 FROM runtime_deps
 COPY --from=webhook /webhook /webhook
