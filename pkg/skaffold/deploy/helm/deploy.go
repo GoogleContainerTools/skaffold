@@ -76,6 +76,7 @@ type Deployer struct {
 	kubeContext string
 	kubeConfig  string
 	namespace   string
+	configFile  string
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
@@ -106,6 +107,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string) (*Deployer, error
 		kubeConfig:  cfg.GetKubeConfig(),
 		namespace:   cfg.GetKubeNamespace(),
 		forceDeploy: cfg.ForceDeploy(),
+		configFile:  cfg.ConfigurationFile(),
 		labels:      labels,
 		bV:          hv,
 		enableDebug: cfg.Mode() == config.RunModes.Debug,
@@ -346,6 +348,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, r latest.He
 		// need to include current environment, specifically for HOME to lookup ~/.kube/config
 		env := util.EnvSliceToMap(util.OSEnviron(), "=")
 		env["SKAFFOLD_CMDLINE"] = shell.Join(cmdLine...)
+		env["SKAFFOLD_FILENAME"] = h.configFile
 		installEnv = util.EnvMapToSlice(env, "=")
 	}
 
