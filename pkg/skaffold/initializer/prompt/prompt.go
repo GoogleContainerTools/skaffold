@@ -34,6 +34,7 @@ import (
 var (
 	BuildConfigFunc         = buildConfig
 	PortForwardResourceFunc = portForwardResource
+	askOne                  = survey.AskOne
 )
 
 func buildConfig(image string, choices []string) (string, error) {
@@ -121,7 +122,7 @@ func ConfirmInitOptions(out io.Writer, config *latest.SkaffoldConfig) (bool, err
 		Options:  []string{"yes", "no"},
 		PageSize: 5,
 	}
-	err := survey.AskOne(prompt, &response, nil)
+	err := askOne(prompt, &response, nil)
 	if err != nil {
 		return true, err
 	}
