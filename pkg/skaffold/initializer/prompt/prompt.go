@@ -25,6 +25,9 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // For testing
@@ -99,4 +102,33 @@ func portForwardResource(out io.Writer, imageName string) (int, error) {
 
 	responseInt, _ := strconv.Atoi(response)
 	return responseInt, nil
+}
+
+// ConfirmInitOptions prompts the user to confirm that they are okay with what skaffold will do if they
+// run with the current config
+func ConfirmInitOptions(out io.Writer, config *latest.SkaffoldConfig) (bool, error) {
+	builders := strings.Join(util.ListBuilders(&config.Build), ",")
+	deployers := strings.Join(util.ListDeployers(&config.Deploy), ",")
+
+	var response string
+	prompt := &survey.Select{
+		Message: fmt.Sprintf(`If you choose to continue, skaffold will do the following:
+  - Create a skaffold config file for you
+  - Build your application using %s
+  - Deploy your application to your current kubernetes context using %s
+  
+  Would you like to continue?`, builders, deployers),
+		Options:  []string{"yes", "no"},
+		PageSize: 5,
+	}
+	err := survey.AskOne(prompt, &response, nil)
+	if err != nil {
+		return true, err
+	}
+
+	if response == "no" {
+		return true, nil
+	}
+
+	return false, nil
 }
