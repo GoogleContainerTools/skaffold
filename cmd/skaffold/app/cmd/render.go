@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -44,12 +43,12 @@ func NewCmdRender() *cobra.Command {
 		WithDescription("[alpha] Perform all image builds, and output rendered Kubernetes manifests").
 		WithExample("Hydrate Kubernetes manifests without building the images, using digest resolved from tag in remote registry ", "render --digest-source=remote").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.BoolVar(&showBuild, "loud", false, "Show the build logs and output")
-			f.VarP(&renderFromBuildOutputFile, "build-artifacts", "a", "File containing build result from a previous 'skaffold build --file-output'")
-			f.BoolVar(&offline, "offline", false, `Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.`)
-			f.StringVar(&renderOutputPath, "output", "", "file to write rendered manifests to")
-			f.StringVar(&opts.DigestSource, "digest-source", "local", "Set to 'local' to build images locally and use digests from built images; Set to 'remote' to resolve the digest of images by tag from the remote registry; Set to 'none' to use tags directly from the Kubernetes manifests")
+		WithFlags([]*Flag{
+			{Value: &showBuild, Name: "loud", DefValue: false, Usage: "Show the build logs and output", IsEnum: true},
+			{Value: &renderFromBuildOutputFile, Name: "build-artifacts", Shorthand: "a", Usage: "File containing build result from a previous 'skaffold build --file-output'"},
+			{Value: &offline, Name: "offline", DefValue: false, Usage: `Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.`, IsEnum: true},
+			{Value: &renderOutputPath, Name: "output", DefValue: "", Usage: "file to write rendered manifests to"},
+			{Value: &opts.DigestSource, Name: "digest-source", DefValue: "local", Usage: "Set to 'local' to build images locally and use digests from built images; Set to 'remote' to resolve the digest of images by tag from the remote registry; Set to 'none' to use tags directly from the Kubernetes manifests", IsEnum: true},
 		}).
 		WithHouseKeepingMessages().
 		NoArgs(doRender)

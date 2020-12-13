@@ -82,6 +82,13 @@ FROM gcr.io/distroless/base
 ADD server.go .
 `
 
+const buildKitDockerfile = `
+# syntax = docker/dockerfile:1-experimental
+FROM golang:1.9.2
+COPY server.go .
+RUN --mount=type=cache,target=/go/pkg/mod go build .
+`
+
 const envTest = `
 FROM busybox
 ENV foo bar
@@ -260,6 +267,12 @@ func TestGetDependencies(t *testing.T) {
 		expected  []string
 		shouldErr bool
 	}{
+		{
+			description: "buildkit dockerfile",
+			dockerfile:  buildKitDockerfile,
+			workspace:   "",
+			expected:    []string{"Dockerfile", "server.go"},
+		},
 		{
 			description: "copy dependency",
 			dockerfile:  copyServerGo,

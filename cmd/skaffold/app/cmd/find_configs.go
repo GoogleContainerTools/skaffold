@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
@@ -41,11 +40,11 @@ var (
 func NewCmdFindConfigs() *cobra.Command {
 	return NewCmd("find-configs").
 		WithDescription("Find in a given directory all skaffold yamls files that are parseable or upgradeable with their versions.").
-		WithFlags(func(f *pflag.FlagSet) {
+		WithFlags([]*Flag{
 			// Default to current directory
-			f.StringVarP(&directory, "directory", "d", ".", "Root directory to lookup the config files.")
+			{Value: &directory, Name: "directory", Shorthand: "d", DefValue: ".", Usage: "Root directory to lookup the config files."},
 			// Output format of this Command
-			f.StringVarP(&format, "output", "o", "table", "Result format, default to table. [(-o|--output=)json|table]")
+			{Value: &format, Name: "output", Shorthand: "o", DefValue: "table", Usage: "Result format, default to table. [(-o|--output=)json|table]"},
 		}).
 		Hidden().
 		NoArgs(doFindConfigs)

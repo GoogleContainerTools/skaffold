@@ -70,7 +70,7 @@ type Initializer interface {
 	// PrintAnalysis writes the project analysis to the provided out stream
 	PrintAnalysis(io.Writer) error
 	// GenerateManifests generates image names and manifests for all unresolved pairs
-	GenerateManifests() (map[GeneratedArtifactInfo][]byte, error)
+	GenerateManifests(io.Writer, bool) (map[GeneratedArtifactInfo][]byte, error)
 }
 
 type emptyBuildInitializer struct {
@@ -88,7 +88,7 @@ func (e *emptyBuildInitializer) PrintAnalysis(io.Writer) error {
 	return nil
 }
 
-func (e *emptyBuildInitializer) GenerateManifests() (map[GeneratedArtifactInfo][]byte, error) {
+func (e *emptyBuildInitializer) GenerateManifests(io.Writer, bool) (map[GeneratedArtifactInfo][]byte, error) {
 	return nil, nil
 }
 
@@ -96,7 +96,7 @@ func NewInitializer(builders []InitBuilder, c config.Config) Initializer {
 	switch {
 	case c.SkipBuild:
 		return &emptyBuildInitializer{}
-	case c.CliArtifacts != nil:
+	case len(c.CliArtifacts) > 0:
 		return &cliBuildInitializer{
 			cliArtifacts:    c.CliArtifacts,
 			builders:        builders,

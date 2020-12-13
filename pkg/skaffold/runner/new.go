@@ -215,7 +215,11 @@ func getDeployer(cfg kubectl.Config, labels map[string]string) (deploy.Deployer,
 	var deployers deploy.DeployerMux
 
 	if d.HelmDeploy != nil {
-		deployers = append(deployers, helm.NewDeployer(cfg, labels))
+		h, err := helm.NewDeployer(cfg, labels)
+		if err != nil {
+			return nil, err
+		}
+		deployers = append(deployers, h)
 	}
 
 	if d.KptDeploy != nil {

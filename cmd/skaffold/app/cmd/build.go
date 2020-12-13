@@ -24,7 +24,6 @@ import (
 	"io/ioutil"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -50,11 +49,11 @@ func NewCmdBuild() *cobra.Command {
 		WithExample("Build the artifacts and then deploy them", "build -q | skaffold deploy --build-artifacts -").
 		WithExample("Print the final image names", "build -q --dry-run").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
-			f.VarP(buildFormatFlag, "output", "o", "Used in conjunction with --quiet flag. "+buildFormatFlag.Usage())
-			f.StringVar(&buildOutputFlag, "file-output", "", "Filename to write build images to")
-			f.BoolVar(&opts.DryRun, "dry-run", false, "Don't build images, just compute the tag for each artifact.")
+		WithFlags([]*Flag{
+			{Value: &quietFlag, Name: "quiet", Shorthand: "q", DefValue: false, Usage: "Suppress the build output and print image built on success. See --output to format output.", IsEnum: true},
+			{Value: buildFormatFlag, Name: "output", Shorthand: "o", Usage: "Used in conjunction with --quiet flag. " + buildFormatFlag.Usage()},
+			{Value: &buildOutputFlag, Name: "file-output", DefValue: "", Usage: "Filename to write build images to"},
+			{Value: &opts.DryRun, Name: "dry-run", DefValue: false, Usage: "Don't build images, just compute the tag for each artifact.", IsEnum: true},
 		}).
 		WithHouseKeepingMessages().
 		NoArgs(doBuild)

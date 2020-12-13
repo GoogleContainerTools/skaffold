@@ -497,6 +497,10 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 		args = append(args, "--no-cache")
 	}
 
+	if a.Squash {
+		args = append(args, "--squash")
+	}
+
 	if a.Secret != nil {
 		secretString := fmt.Sprintf("id=%s", a.Secret.ID)
 		if a.Secret.Source != "" {

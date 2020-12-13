@@ -76,6 +76,7 @@ type Deployer struct {
 	kubeContext string
 	kubeConfig  string
 	namespace   string
+	configFile  string
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
@@ -89,30 +90,33 @@ type Deployer struct {
 	bV semver.Version
 }
 
-// NewDeployer returns a configured Deployer
-func NewDeployer(cfg kubectl.Config, labels map[string]string) *Deployer {
+// NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
+func NewDeployer(cfg kubectl.Config, labels map[string]string) (*Deployer, error) {
+	hv, err := binVer()
+	if err != nil {
+		return nil, versionGetErr(err)
+	}
+
+	if hv.LT(helm3Version) {
+		return nil, minVersionErr()
+	}
+
 	return &Deployer{
 		HelmDeploy:  cfg.Pipeline().Deploy.HelmDeploy,
 		kubeContext: cfg.GetKubeContext(),
 		kubeConfig:  cfg.GetKubeConfig(),
 		namespace:   cfg.GetKubeNamespace(),
 		forceDeploy: cfg.ForceDeploy(),
+		configFile:  cfg.ConfigurationFile(),
 		labels:      labels,
+		bV:          hv,
 		enableDebug: cfg.Mode() == config.RunModes.Debug,
-	}
+	}, nil
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
 func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
-	hv, err := h.binVer(ctx)
-	if err != nil {
-		return nil, versionGetErr(fmt.Errorf(versionErrorString, err))
-	}
-	if err = h.checkMinVersion(hv); err != nil {
-		return nil, err
-	}
-
-	logrus.Infof("Deploying with helm v%s ...", hv)
+	logrus.Infof("Deploying with helm v%s ...", h.bV)
 
 	var dRes []types.Artifact
 	nsMap := map[string]struct{}{}
@@ -120,7 +124,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 
 	// Deploy every release
 	for _, r := range h.Releases {
-		results, err := h.deployRelease(ctx, out, r, builds, valuesSet, hv)
+		results, err := h.deployRelease(ctx, out, r, builds, valuesSet, h.bV)
 		if err != nil {
 			releaseName, _ := util.ExpandEnvTemplate(r.Name, nil)
 			return nil, userErr(fmt.Sprintf("deploying %q", releaseName), err)
@@ -226,14 +230,6 @@ func (h *Deployer) Dependencies() ([]string, error) {
 
 // Cleanup deletes what was deployed by calling Deploy.
 func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
-	hv, err := h.binVer(ctx)
-	if err != nil {
-		return fmt.Errorf(versionErrorString, err)
-	}
-	if err = h.checkMinVersion(hv); err != nil {
-		return err
-	}
-
 	for _, r := range h.Releases {
 		releaseName, err := util.ExpandEnvTemplate(r.Name, nil)
 		if err != nil {
@@ -258,14 +254,6 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 // Render generates the Kubernetes manifests and writes them out
 func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool, filepath string) error {
-	hv, err := h.binVer(ctx)
-	if err != nil {
-		return versionGetErr(err)
-	}
-	if err = h.checkMinVersion(hv); err != nil {
-		return err
-	}
-
 	renderedManifests := new(bytes.Buffer)
 
 	for _, r := range h.Releases {
@@ -336,10 +324,8 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, r latest.He
 
 	var installEnv []string
 	if h.enableDebug {
-		if hv, err := h.binVer(ctx); err != nil {
-			return nil, err
-		} else if hv.LT(helm31Version) {
-			return nil, fmt.Errorf("debug requires at least Helm 3.1 (current: %v)", hv)
+		if h.bV.LT(helm31Version) {
+			return nil, fmt.Errorf("debug requires at least Helm 3.1 (current: %v)", h.bV)
 		}
 		var binary string
 		if binary, err = osExecutable(); err != nil {
@@ -362,6 +348,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, r latest.He
 		// need to include current environment, specifically for HOME to lookup ~/.kube/config
 		env := util.EnvSliceToMap(util.OSEnviron(), "=")
 		env["SKAFFOLD_CMDLINE"] = shell.Join(cmdLine...)
+		env["SKAFFOLD_FILENAME"] = h.configFile
 		installEnv = util.EnvMapToSlice(env, "=")
 	}
 

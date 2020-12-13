@@ -57,7 +57,7 @@ func (c *cliBuildInitializer) PrintAnalysis(out io.Writer) error {
 	return printAnalysis(out, c.enableNewFormat, c.skipBuild, c.artifactInfos, c.builders, nil)
 }
 
-func (c *cliBuildInitializer) GenerateManifests() (map[GeneratedArtifactInfo][]byte, error) {
+func (c *cliBuildInitializer) GenerateManifests(io.Writer, bool) (map[GeneratedArtifactInfo][]byte, error) {
 	return nil, nil
 }
 

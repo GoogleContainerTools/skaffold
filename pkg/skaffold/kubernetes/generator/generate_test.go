@@ -26,11 +26,13 @@ func TestManifestGeneration(t *testing.T) {
 	tests := []struct {
 		description      string
 		images           []string
+		ports            []int
 		expectedManifest string
 	}{
 		{
 			description: "single image",
 			images:      []string{"foo"},
+			ports:       []int{8080},
 			expectedManifest: `apiVersion: v1
 kind: Service
 metadata:
@@ -66,12 +68,48 @@ spec:
         image: foo
 `,
 		},
+		{
+			description: "single image, no port forward",
+			images:      []string{"foo"},
+			ports:       []int{0},
+			expectedManifest: `apiVersion: v1
+kind: Service
+metadata:
+  name: foo
+  labels:
+    app: foo
+spec:
+  clusterIP: None
+  selector:
+    app: foo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foo
+  labels:
+    app: foo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: foo
+  template:
+    metadata:
+      labels:
+        app: foo
+    spec:
+      containers:
+      - name: foo
+        image: foo
+`,
+		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			for _, image := range test.images {
-				manifest, _, err := Generate(image)
+			for i, image := range test.images {
+				manifest, _, err := Generate(image, test.ports[i])
 
 				t.CheckNoError(err)
 				t.CheckDeepEqual(test.expectedManifest, string(manifest))

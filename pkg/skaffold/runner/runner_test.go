@@ -40,6 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -395,6 +396,9 @@ func TestNewForConfig(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
+				"helm version --client", `version.BuildInfo{Version:"v3.0.0"}`).
+				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
 
 			runCtx := &runcontext.RunContext{
 				Cfg: test.pipeline,
