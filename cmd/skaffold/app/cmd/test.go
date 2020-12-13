@@ -47,7 +47,7 @@ func doTest(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
 		buildArtifacts, err := getBuildArtifactsAndSetTags(r, config)
 		if err != nil {
-			tips.PrintTest(out)
+			tips.PrintForTest(out)
 			return err
 		}
 
