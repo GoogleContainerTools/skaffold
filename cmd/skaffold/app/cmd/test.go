@@ -21,7 +21,6 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -34,11 +33,6 @@ func NewCmdTest() *cobra.Command {
 		WithDescription("Test the artifacts").
 		WithExample("Build the artifacts and collect the tags into a file", "build --file-output=tags.json").
 		WithExample("Test those tags", "test --build-artifacts=tags.json").
-		WithExample("Build the artifacts and then test them", "build -q | skaffold test --build-artifacts -").
-		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.VarP(&fromBuildOutputFile, "build-artifacts", "a", "File containing build result from a previous 'skaffold build --file-output'")
-		}).
 		WithHouseKeepingMessages().
 		NoArgs(doTest)
 }
