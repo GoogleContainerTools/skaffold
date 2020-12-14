@@ -458,7 +458,7 @@ var flagRegistry = []Flag{
 		Value:         &fromBuildOutputFile,
 		DefValue:      "",
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"deploy"},
+		DefinedOn:     []string{"test", "deploy"},
 	},
 }
 

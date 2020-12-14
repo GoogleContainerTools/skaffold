@@ -984,6 +984,10 @@ Examples:
   # Test those tags
   skaffold test --build-artifacts=tags.json
 
+Options:
+  -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+
 Usage:
   skaffold test [options]
 
@@ -991,6 +995,10 @@ Use "skaffold options" for a list of global command-line options (applies to all
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
 
 ### skaffold version
 

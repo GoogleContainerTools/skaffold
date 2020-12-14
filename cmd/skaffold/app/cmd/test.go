@@ -33,6 +33,7 @@ func NewCmdTest() *cobra.Command {
 		WithDescription("Test the artifacts").
 		WithExample("Build the artifacts and collect the tags into a file", "build --file-output=tags.json").
 		WithExample("Test those tags", "test --build-artifacts=tags.json").
+		WithCommonFlags().
 		WithHouseKeepingMessages().
 		NoArgs(doTest)
 }
