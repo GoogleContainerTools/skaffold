@@ -34,6 +34,7 @@ var (
 	BuildConfigFunc         = buildConfig
 	PortForwardResourceFunc = portForwardResource
 	askOne                  = survey.AskOne
+	ask                     = survey.Ask
 )
 
 func buildConfig(image string, choices []string) (string, error) {
@@ -67,7 +68,7 @@ func WriteSkaffoldConfig(out io.Writer, pipeline []byte, generatedManifests map[
 	prompt := &survey.Confirm{
 		Message: fmt.Sprintf("Do you want to write this configuration%s to %s?", manifestString, filePath),
 	}
-	err := survey.AskOne(prompt, &response, nil)
+	err := askOne(prompt, &response, nil)
 	if err != nil {
 		return true, fmt.Errorf("reading user confirmation: %w", err)
 	}
@@ -88,7 +89,7 @@ func portForwardResource(out io.Writer, imageName string) (int, error) {
 			return nil
 		},
 	}
-	err := survey.Ask([]*survey.Question{prompt}, &response)
+	err := ask([]*survey.Question{prompt}, &response)
 	if err != nil {
 		return 0, fmt.Errorf("reading user input: %w", err)
 	}
