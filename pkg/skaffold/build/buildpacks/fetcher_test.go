@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	packcfg "github.com/buildpacks/pack/config"
 	"github.com/docker/docker/client"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -30,23 +31,38 @@ import (
 func TestFetcher(t *testing.T) {
 	tests := []struct {
 		description    string
-		pull           bool
+		imageExists    bool
+		pull           packcfg.PullPolicy
 		expectedPulled []string
 	}{
 		{
 			description:    "pull",
-			pull:           true,
+			pull:           packcfg.PullAlways,
+			expectedPulled: []string{"image"},
+		},
+		{
+			description:    "pull-if-not-present but image present",
+			pull:           packcfg.PullIfNotPresent,
+			imageExists:    true,
+			expectedPulled: nil,
+		},
+		{
+			description:    "pull-if-not-present",
+			pull:           packcfg.PullIfNotPresent,
 			expectedPulled: []string{"image"},
 		},
 		{
 			description:    "don't pull",
-			pull:           false,
+			pull:           packcfg.PullNever,
 			expectedPulled: nil,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			api := &testutil.FakeAPIClient{}
+			if test.imageExists {
+				api.Add("image", "sha256:deadbeef")
+			}
 			docker := fakeLocalDaemon(api)
 
 			var out bytes.Buffer

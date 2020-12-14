@@ -27,8 +27,10 @@ import (
 	"github.com/docker/docker/client"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -191,13 +193,14 @@ func TestBuild(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
-			t.Override(&EvalBuildArgs, func(mode config.RunMode, workspace string, a *latest.DockerArtifact) (map[string]*string, error) {
-				return util.EvaluateEnvTemplateMap(a.BuildArgs)
+			t.Override(&EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+				return util.EvaluateEnvTemplateMap(args)
 			})
 			t.SetEnvs(test.env)
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
-			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage", test.mode)
+			opts := BuildOptions{Tag: "finalimage", Mode: test.mode}
+			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, "final-image", test.artifact, opts)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
@@ -251,6 +254,13 @@ func TestImageID(t *testing.T) {
 			imageID, err := localDocker.ImageID(context.Background(), test.ref)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, imageID)
+			if test.shouldErr {
+				if e, ok := err.(sErrors.Error); ok {
+					t.CheckDeepEqual(e.StatusCode(), proto.StatusCode_BUILD_DOCKER_GET_DIGEST_ERR)
+				} else {
+					t.Error("expected to be of type actionable err not found")
+				}
+			}
 		})
 	}
 }
@@ -312,7 +322,13 @@ func TestGetBuildArgs(t *testing.T) {
 			},
 			want: []string{"--no-cache"},
 		},
-
+		{
+			description: "squash",
+			artifact: &latest.DockerArtifact{
+				Squash: true,
+			},
+			want: []string{"--squash"},
+		},
 		{
 			description: "secret with no source",
 			artifact: &latest.DockerArtifact{
@@ -352,6 +368,13 @@ func TestGetBuildArgs(t *testing.T) {
 				},
 			},
 			want: []string{"--secret", "id=mysecret,src=foo.src,dst=foo.dst"},
+		},
+		{
+			description: "ssh with no source",
+			artifact: &latest.DockerArtifact{
+				SSH: "default",
+			},
+			want: []string{"--ssh", "default"},
 		},
 		{
 			description: "all",

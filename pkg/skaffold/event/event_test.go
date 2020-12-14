@@ -19,17 +19,25 @@ package event
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	//nolint:golint,staticcheck
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+var targetPort = proto.IntOrString{Type: 0, IntVal: 2001}
 
 func TestGetLogEvents(t *testing.T) {
 	for step := 0; step < 1000; step++ {
@@ -164,8 +172,14 @@ func TestPortForwarded(t *testing.T) {
 	handler.state = emptyState(latest.Pipeline{}, "test", true, true, true)
 
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] == nil })
-	PortForwarded(8080, 8888, "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
-	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] != nil })
+	PortForwarded(8080, schemautil.FromInt(8888), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
+	wait(t, func() bool {
+		return handler.getState().ForwardedPorts[8080] != nil && handler.getState().ForwardedPorts[8080].RemotePort == 8888
+	})
+
+	wait(t, func() bool { return handler.getState().ForwardedPorts[8081] == nil })
+	PortForwarded(8081, schemautil.FromString("http"), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
+	wait(t, func() bool { return handler.getState().ForwardedPorts[8081] != nil })
 }
 
 func TestStatusCheckEventStarted(t *testing.T) {
@@ -344,6 +358,7 @@ func TestResetStateOnBuild(t *testing.T) {
 				LocalPort:  2000,
 				RemotePort: 2001,
 				PodName:    "test/pod",
+				TargetPort: &targetPort,
 			},
 		},
 		StatusCheckState: &proto.StatusCheckState{Status: Complete},
@@ -379,6 +394,7 @@ func TestResetStateOnDeploy(t *testing.T) {
 				LocalPort:  2000,
 				RemotePort: 2001,
 				PodName:    "test/pod",
+				TargetPort: &targetPort,
 			},
 		},
 		StatusCheckState: &proto.StatusCheckState{Status: Complete},
@@ -422,6 +438,7 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 				LocalPort:  2000,
 				RemotePort: 2001,
 				PodName:    "test/pod",
+				TargetPort: &targetPort,
 			},
 		},
 		StatusCheckState: &proto.StatusCheckState{Status: Complete},
@@ -447,6 +464,7 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 				LocalPort:  2000,
 				RemotePort: 2001,
 				PodName:    "test/pod",
+				TargetPort: &targetPort,
 			},
 		},
 		StatusCheckState: &proto.StatusCheckState{Status: Complete},
@@ -511,8 +529,72 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.description, func(t *testing.T) {
 			handler.setState(tc.state)
-			DevLoopFailedInPhase(1, tc.phase, errors.New("random error"))
+			DevLoopFailedInPhase(0, tc.phase, errors.New("random error"))
 			wait(t, tc.waitFn)
 		})
 	}
+}
+
+func TestSaveEventsToFile(t *testing.T) {
+	f, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatalf("getting temp file: %v", err)
+	}
+	t.Cleanup(func() { os.Remove(f.Name()) })
+	if err := f.Close(); err != nil {
+		t.Fatalf("error closing tmp file: %v", err)
+	}
+
+	// add some events to the event log
+	handler.eventLog = []proto.LogEntry{
+		{
+			Event: &proto.Event{EventType: &proto.Event_BuildEvent{}},
+		}, {
+			Event: &proto.Event{EventType: &proto.Event_DevLoopEvent{}},
+		},
+	}
+
+	// save events to file
+	if err := SaveEventsToFile(f.Name()); err != nil {
+		t.Fatalf("error saving events to file: %v", err)
+	}
+
+	// ensure that the events in the file match the event log
+	contents, err := ioutil.ReadFile(f.Name())
+	if err != nil {
+		t.Fatalf("reading tmp file: %v", err)
+	}
+
+	var logEntries []proto.LogEntry
+	entries := strings.Split(string(contents), "\n")
+	for _, e := range entries {
+		if e == "" {
+			continue
+		}
+		var logEntry proto.LogEntry
+		if err := jsonpb.UnmarshalString(e, &logEntry); err != nil {
+			t.Errorf("error converting http response %s to proto: %s", e, err.Error())
+		}
+		logEntries = append(logEntries, logEntry)
+	}
+
+	buildCompleteEvent, devLoopCompleteEvent := 0, 0
+	for _, entry := range logEntries {
+		t.Log(entry.Event.GetEventType())
+		switch entry.Event.GetEventType().(type) {
+		case *proto.Event_BuildEvent:
+			buildCompleteEvent++
+			t.Logf("build event %d: %v", buildCompleteEvent, entry.Event)
+		case *proto.Event_DevLoopEvent:
+			devLoopCompleteEvent++
+			t.Logf("dev loop event %d: %v", devLoopCompleteEvent, entry.Event)
+		default:
+			t.Logf("unknown event: %v", entry.Event)
+		}
+	}
+
+	// make sure we have exactly 1 build entry and 1 dev loop complete entry
+	testutil.CheckDeepEqual(t, 2, len(logEntries))
+	testutil.CheckDeepEqual(t, 1, buildCompleteEvent)
+	testutil.CheckDeepEqual(t, 1, devLoopCompleteEvent)
 }

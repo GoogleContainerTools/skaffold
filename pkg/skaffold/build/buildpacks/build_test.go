@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/buildpacks/pack"
+	packcfg "github.com/buildpacks/pack/config"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -50,6 +51,7 @@ func TestBuild(t *testing.T) {
 		pushImages      bool
 		shouldErr       bool
 		mode            config.RunMode
+		resolver        ArtifactResolver
 		expectedOptions *pack.BuildOptions
 	}{
 		{
@@ -58,6 +60,7 @@ func TestBuild(t *testing.T) {
 			tag:         "img:tag",
 			mode:        config.RunModes.Debug,
 			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
 			expectedOptions: &pack.BuildOptions{
 				AppPath:  ".",
 				Builder:  "my/builder",
@@ -72,20 +75,23 @@ func TestBuild(t *testing.T) {
 			tag:         "img:tag",
 			mode:        config.RunModes.Build,
 			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
 			expectedOptions: &pack.BuildOptions{
-				AppPath:  ".",
-				Builder:  "my/builder",
-				RunImage: "my/run",
-				NoPull:   true,
-				Env:      nonDebugModeArgs,
-				Image:    "img:latest",
+				AppPath:    ".",
+				Builder:    "my/builder",
+				RunImage:   "my/run",
+				PullPolicy: packcfg.PullNever,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
 			},
 		},
+
 		{
 			description: "success with buildpacks for debug",
 			artifact:    withTrustedBuilder(withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun"))),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
 			mode:        config.RunModes.Debug,
 			expectedOptions: &pack.BuildOptions{
 				AppPath:      ".",
@@ -102,6 +108,7 @@ func TestBuild(t *testing.T) {
 			artifact:    withTrustedBuilder(withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun"))),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
 			mode:        config.RunModes.Build,
 			expectedOptions: &pack.BuildOptions{
 				AppPath:      ".",
@@ -109,7 +116,7 @@ func TestBuild(t *testing.T) {
 				RunImage:     "my/otherRun",
 				Buildpacks:   []string{"my/buildpack", "my/otherBuildpack"},
 				TrustBuilder: true,
-				NoPull:       true,
+				PullPolicy:   packcfg.PullNever,
 				Env:          nonDebugModeArgs,
 				Image:        "img:latest",
 			},
@@ -119,6 +126,7 @@ func TestBuild(t *testing.T) {
 			artifact:    buildpacksArtifact("my/builder2", "my/run2"),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
 			mode:        config.RunModes.Build,
 			files: map[string]string{
 				"project.toml": `[[build.env]]
@@ -147,6 +155,7 @@ version = "1.0"
 			artifact:    withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/builder3", "my/run3")),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
 			files: map[string]string{
 				"project.toml": `[[build.buildpacks]]
 id = "my/ignored"
@@ -167,6 +176,7 @@ id = "my/ignored"
 			tag:         "img:tag",
 			mode:        config.RunModes.Build,
 			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
 			files: map[string]string{
 				"project.toml": `[[build.env]]
 name = "KEY2"
@@ -189,6 +199,7 @@ value = "VALUE2"
 			artifact:    withSync(&latest.Sync{Auto: util.BoolPtr(true)}, buildpacksArtifact("another/builder", "another/run")),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
 			mode:        config.RunModes.Dev,
 			expectedOptions: &pack.BuildOptions{
 				AppPath:  ".",
@@ -205,6 +216,7 @@ value = "VALUE2"
 			artifact:    buildpacksArtifact("my/other-builder", "my/run"),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
 			mode:        config.RunModes.Dev,
 			expectedOptions: &pack.BuildOptions{
 				AppPath:  ".",
@@ -219,6 +231,7 @@ value = "VALUE2"
 			artifact:    buildpacksArtifact("my/builder", "my/run"),
 			tag:         "in valid ref",
 			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
 			shouldErr:   true,
 		},
 		{
@@ -229,6 +242,7 @@ value = "VALUE2"
 			api: &testutil.FakeAPIClient{
 				ErrImagePush: true,
 			},
+			resolver:  mockArtifactResolver{},
 			shouldErr: true,
 		},
 		{
@@ -236,6 +250,7 @@ value = "VALUE2"
 			artifact:    withEnv([]string{"INVALID"}, buildpacksArtifact("my/builder", "my/run")),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
 			shouldErr:   true,
 		},
 		{
@@ -243,6 +258,7 @@ value = "VALUE2"
 			artifact:    buildpacksArtifact("my/builder2", "my/run2"),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{},
 			files: map[string]string{
 				"project.toml": `INVALID`,
 			},
@@ -261,7 +277,7 @@ value = "VALUE2"
 				Add("img:latest", "builtImageID")
 			localDocker := fakeLocalDaemon(test.api)
 
-			builder := NewArtifactBuilder(localDocker, test.pushImages, test.mode)
+			builder := NewArtifactBuilder(localDocker, test.pushImages, test.mode, test.resolver)
 			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag)
 
 			t.CheckError(test.shouldErr, err)
@@ -272,6 +288,144 @@ value = "VALUE2"
 	}
 }
 
+func TestBuildWithArtifactDependencies(t *testing.T) {
+	tests := []struct {
+		description     string
+		artifact        *latest.Artifact
+		tag             string
+		api             *testutil.FakeAPIClient
+		files           map[string]string
+		pushImages      bool
+		shouldErr       bool
+		mode            config.RunMode
+		resolver        ArtifactResolver
+		expectedOptions *pack.BuildOptions
+	}{
+		{
+			description: "custom builder image only with no push",
+			artifact:    withRequiredArtifacts([]*latest.ArtifactDependency{{ImageName: "builder-image", Alias: "BUILDER_IMAGE"}}, buildpacksArtifact("BUILDER_IMAGE", "my/run")),
+			tag:         "img:tag",
+			pushImages:  false,
+			mode:        config.RunModes.Build,
+			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{m: map[string]string{"builder-image": "my/custom-builder"}},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:    ".",
+				Builder:    "my/custom-builder",
+				RunImage:   "my/run",
+				PullPolicy: packcfg.PullIfNotPresent,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
+			},
+		},
+		{
+			description: "custom run image only with no push",
+			artifact:    withRequiredArtifacts([]*latest.ArtifactDependency{{ImageName: "run-image", Alias: "RUN_IMAGE"}}, buildpacksArtifact("my/builder", "RUN_IMAGE")),
+			tag:         "img:tag",
+			pushImages:  false,
+			mode:        config.RunModes.Build,
+			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{m: map[string]string{"run-image": "my/custom-run"}},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:    ".",
+				Builder:    "my/builder",
+				RunImage:   "my/custom-run",
+				PullPolicy: packcfg.PullIfNotPresent,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
+			},
+		},
+		{
+			description: "custom builder image only with push",
+			artifact:    withRequiredArtifacts([]*latest.ArtifactDependency{{ImageName: "builder-image", Alias: "BUILDER_IMAGE"}}, buildpacksArtifact("BUILDER_IMAGE", "my/run")),
+			tag:         "img:tag",
+			pushImages:  true,
+			mode:        config.RunModes.Build,
+			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{m: map[string]string{"builder-image": "my/custom-builder"}},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:    ".",
+				Builder:    "my/custom-builder",
+				RunImage:   "my/run",
+				PullPolicy: packcfg.PullIfNotPresent,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
+			},
+		},
+		{
+			description: "custom run image only with push",
+			artifact:    withRequiredArtifacts([]*latest.ArtifactDependency{{ImageName: "run-image", Alias: "RUN_IMAGE"}}, buildpacksArtifact("my/builder", "RUN_IMAGE")),
+			tag:         "img:tag",
+			pushImages:  true,
+			mode:        config.RunModes.Build,
+			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{m: map[string]string{"run-image": "my/custom-run"}},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:    ".",
+				Builder:    "my/builder",
+				RunImage:   "my/custom-run",
+				PullPolicy: packcfg.PullIfNotPresent,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
+			},
+		},
+		{
+			description: "custom run image and custom builder image with push",
+			artifact:    withRequiredArtifacts([]*latest.ArtifactDependency{{ImageName: "run-image", Alias: "RUN_IMAGE"}, {ImageName: "builder-image", Alias: "BUILDER_IMAGE"}}, buildpacksArtifact("BUILDER_IMAGE", "RUN_IMAGE")),
+			tag:         "img:tag",
+			pushImages:  true,
+			mode:        config.RunModes.Build,
+			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{m: map[string]string{"builder-image": "my/custom-builder", "run-image": "my/custom-run"}},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:    ".",
+				Builder:    "my/custom-builder",
+				RunImage:   "my/custom-run",
+				PullPolicy: packcfg.PullNever,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
+			},
+		},
+		{
+			description: "custom run image and custom builder image with no push",
+			artifact:    withRequiredArtifacts([]*latest.ArtifactDependency{{ImageName: "run-image", Alias: "RUN_IMAGE"}, {ImageName: "builder-image", Alias: "BUILDER_IMAGE"}}, buildpacksArtifact("BUILDER_IMAGE", "RUN_IMAGE")),
+			tag:         "img:tag",
+			pushImages:  false,
+			mode:        config.RunModes.Build,
+			api:         &testutil.FakeAPIClient{},
+			resolver:    mockArtifactResolver{m: map[string]string{"builder-image": "my/custom-builder", "run-image": "my/custom-run"}},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:    ".",
+				Builder:    "my/custom-builder",
+				RunImage:   "my/custom-run",
+				PullPolicy: packcfg.PullNever,
+				Env:        nonDebugModeArgs,
+				Image:      "img:latest",
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().Touch("file").WriteFiles(test.files).Chdir()
+			pack := &fakePack{}
+			t.Override(&runPackBuildFunc, pack.runPack)
+			images.images = map[imageTuple]bool{}
+			test.api.
+				Add(test.artifact.BuildpackArtifact.Builder, "builderImageID").
+				Add(test.artifact.BuildpackArtifact.RunImage, "runImageID").
+				Add("img:latest", "builtImageID")
+			localDocker := fakeLocalDaemon(test.api)
+
+			builder := NewArtifactBuilder(localDocker, test.pushImages, test.mode, test.resolver)
+			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag)
+
+			t.CheckError(test.shouldErr, err)
+			if test.expectedOptions != nil {
+				t.CheckDeepEqual(*test.expectedOptions, pack.Opts)
+			}
+		})
+	}
+}
 func buildpacksArtifact(builder, runImage string) *latest.Artifact {
 	return &latest.Artifact{
 		Workspace: ".",
@@ -302,7 +456,25 @@ func withTrustedBuilder(artifact *latest.Artifact) *latest.Artifact {
 	artifact.BuildpackArtifact.TrustBuilder = true
 	return artifact
 }
+
+func withRequiredArtifacts(deps []*latest.ArtifactDependency, artifact *latest.Artifact) *latest.Artifact {
+	artifact.Dependencies = deps
+	return artifact
+}
+
 func withBuildpacks(buildpacks []string, artifact *latest.Artifact) *latest.Artifact {
 	artifact.BuildpackArtifact.Buildpacks = buildpacks
 	return artifact
+}
+
+type mockArtifactResolver struct {
+	m map[string]string
+}
+
+func (r mockArtifactResolver) GetImageTag(imageName string) (string, bool) {
+	if r.m == nil {
+		return "", false
+	}
+	val, found := r.m[imageName]
+	return val, found
 }

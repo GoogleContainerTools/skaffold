@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
@@ -47,7 +46,7 @@ Tip: To permanently disable the survey prompt, run:
    skaffold config set --survey --global disable-prompt true`, URL)
 
 	// for testing
-	isStdOut     = stdOut
+	isStdOut     = color.IsStdout
 	open         = browser.OpenURL
 	updateConfig = config.UpdateGlobalSurveyPrompted
 )
@@ -81,8 +80,4 @@ func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer) error {
 	// Currently we will only update the global survey taken
 	// When prompting for the survey, we need to use the same field.
 	return config.UpdateGlobalSurveyTaken(s.configFile)
-}
-
-func stdOut(out io.Writer) bool {
-	return out == os.Stdout
 }

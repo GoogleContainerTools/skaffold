@@ -21,7 +21,8 @@ and entrypoints, and more.
 Some language runtimes require additional support files to enable debugging.
 For these languages, a special set of [runtime-specific images](https://github.com/GoogleContainerTools/container-debug-support)
 are configured as _init-containers_ to populate a shared-volume that is mounted into
-each of the appropriate containers.  These images are hosted at `gcr.io/gcp-dev-tools/duct-tape`.
+each of the appropriate containers.  These images are hosted at
+`gcr.io/k8s-skaffold/skaffold-debug-support`.
 
 ### Supported Language Runtimes
 
@@ -302,10 +303,7 @@ The API's _state_ ([gRPC](../references/api/grpc/#skaffoldservice), [REST](../re
 `skaffold debug` requires being able to examine and alter the
 command-line used in the container entrypoint.  This transformation
 will not work with images that use intermediate launch scripts or
-binaries.  For example, `debug` currently does not work with an image produced
-by the Cloud Native Buildpacks builder as it uses a `launcher`
-binary to run commands that are specified in a set of configuration
-files.
+binaries.
 
 ### Supported Deployers
 

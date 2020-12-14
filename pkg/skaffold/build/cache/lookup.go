@@ -31,14 +31,16 @@ import (
 
 func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifacts []*latest.Artifact) []cacheDetails {
 	details := make([]cacheDetails, len(artifacts))
-
+	// Create a new `artifactHasher` on every new dev loop.
+	// This way every artifact hash is calculated at most once in a single dev loop, and recalculated on every dev loop.
+	h := newArtifactHasherFunc(c.artifactGraph, c.lister, c.cfg.Mode())
 	var wg sync.WaitGroup
 	for i := range artifacts {
 		wg.Add(1)
 
 		i := i
 		go func() {
-			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName])
+			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName], h)
 			wg.Done()
 		}()
 	}
@@ -47,8 +49,8 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 	return details
 }
 
-func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string) cacheDetails {
-	hash, err := c.hashForArtifact(ctx, a)
+func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, h artifactHasher) cacheDetails {
+	hash, err := h.hash(ctx, a)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}
@@ -77,7 +79,8 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 	// Check the imageID for the tag
 	idForTag, err := c.client.ImageID(ctx, tag)
 	if err != nil {
-		return failed{err: fmt.Errorf("getting imageID for %s: %v", tag, err)}
+		// Rely on actionable errors thrown from pkg/skaffold/docker.LocalDaemon api.
+		return failed{err: err}
 	}
 
 	// Image exists locally with the same tag

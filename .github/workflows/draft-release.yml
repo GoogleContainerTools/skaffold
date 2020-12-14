@@ -21,8 +21,8 @@ jobs:
         echo Malformed title for PR; failed to extract semVer tag
         return 1
         fi
-        echo ::set-env name=TAG_NAME::"v${t}"
-        echo ::set-env name=RELEASE_NAME::"v${t} Release"
+        echo TAG_NAME="v${t}" >> $GITHUB_ENV
+        echo RELEASE_NAME="v${t} Release" >> $GITHUB_ENV
 
     - name: Create and push Tag
       run: |
@@ -35,7 +35,7 @@ jobs:
       run: |
         curl -Lo $HOME/gsutil.tar.gz https://storage.googleapis.com/pub/gsutil.tar.gz
         tar xfz $HOME/gsutil.tar.gz -C $HOME
-        echo ::add-path::$HOME/gsutil
+        echo "$HOME/gsutil" >> $GITHUB_PATH
 
     - name: Download release artifacts
       run: |

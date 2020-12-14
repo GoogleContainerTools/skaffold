@@ -19,13 +19,11 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -51,11 +49,11 @@ func NewCmdBuild() *cobra.Command {
 		WithExample("Build the artifacts and then deploy them", "build -q | skaffold deploy --build-artifacts -").
 		WithExample("Print the final image names", "build -q --dry-run").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
-			f.VarP(buildFormatFlag, "output", "o", "Used in conjunction with --quiet flag. "+buildFormatFlag.Usage())
-			f.StringVar(&buildOutputFlag, "file-output", "", "Filename to write build images to")
-			f.BoolVar(&opts.DryRun, "dry-run", false, "Don't build images, just compute the tag for each artifact.")
+		WithFlags([]*Flag{
+			{Value: &quietFlag, Name: "quiet", Shorthand: "q", DefValue: false, Usage: "Suppress the build output and print image built on success. See --output to format output.", IsEnum: true},
+			{Value: buildFormatFlag, Name: "output", Shorthand: "o", Usage: "Used in conjunction with --quiet flag. " + buildFormatFlag.Usage()},
+			{Value: &buildOutputFlag, Name: "file-output", DefValue: "", Usage: "Filename to write build images to"},
+			{Value: &opts.DryRun, Name: "dry-run", DefValue: false, Usage: "Don't build images, just compute the tag for each artifact.", IsEnum: true},
 		}).
 		WithHouseKeepingMessages().
 		NoArgs(doBuild)
@@ -68,13 +66,7 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	}
 
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		ar := targetArtifacts(opts, config)
-
-		// TODO: [#4891] Remove this block after implementing proper image cache invalidation for artifacts with dependencies
-		if err := failForArtifactDependenciesWithCacheEnabled(ar, opts.CacheArtifacts); err != nil {
-			return err
-		}
-		bRes, err := r.BuildAndTest(ctx, buildOut, ar)
+		bRes, err := r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
 
 		if quietFlag || buildOutputFlag != "" {
 			cmdOut := flags.BuildOutput{Builds: bRes}
@@ -110,16 +102,4 @@ func targetArtifacts(opts config.SkaffoldOptions, cfg *latest.SkaffoldConfig) []
 	}
 
 	return targetArtifacts
-}
-
-func failForArtifactDependenciesWithCacheEnabled(artifacts []*latest.Artifact, cacheEnabled bool) error {
-	if !cacheEnabled {
-		return nil
-	}
-	for _, a := range artifacts {
-		if len(a.Dependencies) > 0 {
-			return errors.New("defining dependencies between artifacts is not yet supported for `skaffold build` with cache enabled. Run with `--cache-artifacts=false` flag")
-		}
-	}
-	return nil
 }

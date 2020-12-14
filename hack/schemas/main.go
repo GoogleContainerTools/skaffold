@@ -261,6 +261,15 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 			def.Properties[yamlName] = g.newDefinition(field.Names[0].Name, field.Type, field.Doc.Text(), field.Tag.Value)
 			def.AdditionalProperties = false
 		}
+
+	case *ast.SelectorExpr:
+		typeName := tt.Sel.Name
+		if typeName == "IntOrString" {
+			def.AnyOf = []*Definition{
+				{Type: "string"},
+				{Type: "integer"},
+			}
+		}
 	}
 
 	if g.strict && name != "" {

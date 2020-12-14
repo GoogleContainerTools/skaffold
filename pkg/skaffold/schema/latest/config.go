@@ -17,13 +17,16 @@ limitations under the License.
 package latest
 
 import (
+	"encoding/json"
+
 	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2beta9"
+const Version string = "skaffold/v2beta11"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -89,7 +92,7 @@ type PortForwardResource struct {
 	Namespace string `yaml:"namespace,omitempty"`
 
 	// Port is the resource port that will be forwarded.
-	Port int `yaml:"port,omitempty"`
+	Port util.IntOrString `yaml:"port,omitempty"`
 
 	// Address is the local address to bind to. Defaults to the loopback address 127.0.0.1.
 	Address string `yaml:"address,omitempty"`
@@ -148,6 +151,9 @@ type GitTagger struct {
 
 	// Prefix adds a fixed prefix to the tag.
 	Prefix string `yaml:"prefix,omitempty"`
+
+	// IgnoreChanges specifies whether to omit the `-dirty` postfix if there are uncommitted changes.
+	IgnoreChanges bool `yaml:"ignoreChanges,omitempty"`
 }
 
 // EnvTemplateTagger *beta* tags images with a configurable template string.
@@ -1034,11 +1040,11 @@ type KanikoArtifact struct {
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
 	Image string `yaml:"image,omitempty"`
 
-	// DigestFile to to specify a file in the container. This file will receive the digest of a built image.
+	// DigestFile to specify a file in the container. This file will receive the digest of a built image.
 	// This can be used to automatically track the exact image built by kaniko.
 	DigestFile string `yaml:"digestFile,omitempty"`
 
-	// ImageNameWithDigestFile to a file to save the image name with digest of the built image to.
+	// ImageNameWithDigestFile specify a file to save the image name with digest of the built image to.
 	ImageNameWithDigestFile string `yaml:"imageNameWithDigestFile,omitempty"`
 
 	// LogFormat <text|color|json> to set the log format.
@@ -1067,13 +1073,15 @@ type KanikoArtifact struct {
 	SkipTLSVerifyRegistry []string `yaml:"skipTLSVerifyRegistry,omitempty"`
 
 	// Env are environment variables passed to the kaniko pod.
+	// It also accepts environment variables via the go template syntax.
+	// For example: `[{"name": "key1", "value": "value1"}, {"name": "key2", "value": "value2"}, {"name": "key3", "value": "'{{.ENV_VARIABLE}}'"}]`.
 	Env []v1.EnvVar `yaml:"env,omitempty"`
 
 	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
 	// use a remote cache which will speed up builds.
 	Cache *KanikoCache `yaml:"cache,omitempty"`
 
-	// RegistryCertificate is to to provide a certificate for TLS communication with a given registry.
+	// RegistryCertificate is to provide a certificate for TLS communication with a given registry.
 	// my.registry.url: /path/to/the/certificate.cert is the expected format.
 	RegistryCertificate map[string]*string `yaml:"registryCertificate,omitempty"`
 
@@ -1082,7 +1090,8 @@ type KanikoArtifact struct {
 	Label map[string]*string `yaml:"label,omitempty"`
 
 	// BuildArgs are arguments passed to the docker build.
-	// It also accepts environment variables via the go template syntax.
+	// It also accepts environment variables and generated values via the go template syntax.
+	// Exposed generated values: IMAGE_REPO, IMAGE_NAME, IMAGE_TAG.
 	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 
@@ -1109,6 +1118,7 @@ type DockerArtifact struct {
 	// is configured in the underlying docker daemon. Valid modes are
 	// `host`: use the host's networking stack.
 	// `bridge`: use the bridged network configuration.
+	// `container:<name|id>`: reuse another container's network stack.
 	// `none`: no networking in the container.
 	NetworkMode string `yaml:"network,omitempty"`
 
@@ -1119,9 +1129,15 @@ type DockerArtifact struct {
 	// NoCache used to pass in --no-cache to docker build to prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
 
+	// Squash is used to pass in --squash to docker build to squash docker image layers into single layer.
+	Squash bool `yaml:"squash,omitempty"`
+
 	// Secret contains information about a local secret passed to `docker build`,
 	// along with optional destination information.
 	Secret *DockerSecret `yaml:"secret,omitempty"`
+
+	// SSH is used to pass in --ssh to docker build to use SSH agent. Format is "default|<id>[=<socket>|<key>[,<key>]]".
+	SSH string `yaml:"ssh,omitempty"`
 }
 
 // DockerSecret contains information about a local secret passed to `docker build`,
@@ -1165,4 +1181,179 @@ type JibArtifact struct {
 
 	// BaseImage overrides the configured jib base image.
 	BaseImage string `yaml:"fromImage,omitempty"`
+}
+
+// UnmarshalYAML provides a custom unmarshaller to deal with
+// https://github.com/GoogleContainerTools/skaffold/issues/4175
+func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
+	// We do this as follows
+	// 1. We zero out the fields in the node that require custom processing
+	// 2. We unmarshal all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinitely
+	// 3. We deserialize the special fields as required.
+	type ClusterDetailsForUnmarshaling ClusterDetails
+
+	volumes, remaining, err := util.UnmarshalClusterVolumes(value)
+
+	if err != nil {
+		return err
+	}
+
+	// Unmarshal the remaining values
+	aux := (*ClusterDetailsForUnmarshaling)(clusterDetails)
+	err = yaml.Unmarshal(remaining, aux)
+
+	if err != nil {
+		return err
+	}
+
+	clusterDetails.Volumes = volumes
+	return nil
+}
+
+// UnmarshalYAML provides a custom unmarshaller to deal with
+// https://github.com/GoogleContainerTools/skaffold/issues/4175
+func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
+	// We do this as follows
+	// 1. We zero out the fields in the node that require custom processing
+	// 2. We unmarshal all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinitely
+	// 3. We deserialize the special fields as required.
+	type KanikoArtifactForUnmarshaling KanikoArtifact
+
+	mounts, remaining, err := util.UnmarshalKanikoArtifact(value)
+
+	if err != nil {
+		return err
+	}
+
+	// Unmarshal the remaining values
+	aux := (*KanikoArtifactForUnmarshaling)(ka)
+	err = yaml.Unmarshal(remaining, aux)
+
+	if err != nil {
+		return err
+	}
+
+	ka.VolumeMounts = mounts
+	return nil
+}
+
+// MarshalYAML provides a custom marshaller to deal with
+// https://github.com/GoogleContainerTools/skaffold/issues/4175
+func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
+	// We do this as follows
+	// 1. We zero out the fields in the node that require custom processing
+	// 2. We marshall all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinitely
+	// 3. We unmarshal to a map
+	// 4. We marshal the special fields to json and unmarshal to a map
+	//    * This leverages the json struct annotations to marshal as expected
+	// 5. We combine the two maps and return
+	type ClusterDetailsForUnmarshaling ClusterDetails
+
+	// Marshal volumes to a list. Use json because the Kubernetes resources have json annotations.
+	volumes := clusterDetails.Volumes
+
+	j, err := json.Marshal(volumes)
+
+	if err != nil {
+		return err, nil
+	}
+
+	vList := []interface{}{}
+
+	if err := json.Unmarshal(j, &vList); err != nil {
+		return nil, err
+	}
+
+	// Make a deep copy of clusterDetails because we need to zero out volumes and we don't want to modify the
+	// current object.
+	aux := &ClusterDetailsForUnmarshaling{}
+
+	b, err := json.Marshal(clusterDetails)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(b, aux); err != nil {
+		return nil, err
+	}
+
+	aux.Volumes = nil
+
+	marshaled, err := yaml.Marshal(aux)
+
+	if err != nil {
+		return nil, err
+	}
+
+	m := map[string]interface{}{}
+
+	err = yaml.Unmarshal(marshaled, m)
+
+	if len(vList) > 0 {
+		m["volumes"] = vList
+	}
+	return m, err
+}
+
+// MarshalYAML provides a custom marshaller to deal with
+// https://github.com/GoogleContainerTools/skaffold/issues/4175
+func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
+	// We do this as follows
+	// 1. We zero out the fields in the node that require custom processing
+	// 2. We marshal all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinitely
+	// 3. We unmarshal to a map
+	// 4. We marshal the special fields to json and unmarshal to a map
+	//    * This leverages the json struct annotations to marshal as expected
+	// 5. We combine the two maps and return
+	type KanikoArtifactForUnmarshaling KanikoArtifact
+
+	// Marshal volumes to a map. User json because the Kubernetes resources have json annotations.
+	volumeMounts := ka.VolumeMounts
+
+	j, err := json.Marshal(volumeMounts)
+
+	if err != nil {
+		return err, nil
+	}
+
+	vList := []interface{}{}
+
+	if err := json.Unmarshal(j, &vList); err != nil {
+		return nil, err
+	}
+
+	// Make a deep copy of kanikoArtifact because we need to zero out volumeMounts and we don't want to modify the
+	// current object.
+	aux := &KanikoArtifactForUnmarshaling{}
+
+	b, err := json.Marshal(ka)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(b, aux); err != nil {
+		return nil, err
+	}
+	aux.VolumeMounts = nil
+
+	marshaled, err := yaml.Marshal(aux)
+
+	if err != nil {
+		return nil, err
+	}
+
+	m := map[string]interface{}{}
+
+	err = yaml.Unmarshal(marshaled, m)
+
+	if len(vList) > 0 {
+		m["volumeMounts"] = vList
+	}
+	return m, err
 }

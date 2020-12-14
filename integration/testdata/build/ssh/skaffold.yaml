@@ -1,0 +1,10 @@
+apiVersion: skaffold/v2beta11
+kind: Config
+build:
+  local:
+    useBuildkit: true
+    push: false
+  artifacts:
+  - image: ssh
+    docker:
+      ssh: "default"

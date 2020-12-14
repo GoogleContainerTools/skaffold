@@ -82,7 +82,7 @@ func (t *T) CheckNotNil(actual interface{}) {
 }
 
 func isNil(actual interface{}) bool {
-	return actual == nil || (reflect.ValueOf(actual).Kind() == reflect.Ptr && reflect.ValueOf(actual).IsNil())
+	return actual == nil || (reflect.ValueOf(actual).Kind() == reflect.Ptr && reflect.ValueOf(actual).IsNil()) || (reflect.ValueOf(actual).Kind() == reflect.Func && reflect.ValueOf(actual).IsZero())
 }
 
 func (t *T) CheckTrue(actual bool) {
@@ -246,6 +246,40 @@ func CheckDeepEqual(t *testing.T, expected, actual interface{}, opts ...cmp.Opti
 	}
 }
 
+// CheckElementsMatch validates that two given slices contain the same elements
+// while disregarding their order.
+// Elements of both slices have to be comparable by '=='
+func CheckElementsMatch(t *testing.T, expected, actual interface{}) {
+	t.Helper()
+	expectedSlc, err := interfaceSlice(expected)
+	if err != nil {
+		t.Fatalf("error converting `expected` to interface slice: %s", err)
+	}
+	actualSlc, err := interfaceSlice(actual)
+	if err != nil {
+		t.Fatalf("error converting `actual` to interface slice: %s", err)
+	}
+	expectedLen := len(expectedSlc)
+	actualLen := len(actualSlc)
+
+	if expectedLen != actualLen {
+		t.Fatalf("length of the slices differ: Expected %d, but was %d", expectedLen, actualLen)
+	}
+
+	wmap := make(map[interface{}]int)
+	for _, elem := range expectedSlc {
+		wmap[elem]++
+	}
+	for _, elem := range actualSlc {
+		wmap[elem]--
+	}
+	for _, v := range wmap {
+		if v != 0 {
+			t.Fatalf("elements are missing (negative integers) or excess (positive integers): %#v", wmap)
+		}
+	}
+}
+
 func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, actual interface{}, opts ...cmp.Option) {
 	t.Helper()
 	if err := checkErr(shouldErr, err); err != nil {
@@ -279,6 +313,18 @@ func checkErr(shouldErr bool, err error) error {
 		return fmt.Errorf("unexpected error: %s", err)
 	}
 	return nil
+}
+
+func interfaceSlice(slice interface{}) ([]interface{}, error) {
+	s := reflect.ValueOf(slice)
+	if s.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("not a slice")
+	}
+	ret := make([]interface{}, s.Len())
+	for i := 0; i < s.Len(); i++ {
+		ret[i] = s.Index(i).Interface()
+	}
+	return ret, nil
 }
 
 // ServeFile serves a file with http. Returns the url to the file and a teardown

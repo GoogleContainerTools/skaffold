@@ -26,13 +26,20 @@ type Builder struct {
 	localDocker docker.LocalDaemon
 	pushImages  bool
 	mode        config.RunMode
+	artifacts   ArtifactResolver
+}
+
+// ArtifactResolver provides an interface to resolve built artifact tags by image name.
+type ArtifactResolver interface {
+	GetImageTag(imageName string) (string, bool)
 }
 
 // NewArtifactBuilder returns a new buildpack artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool, mode config.RunMode) *Builder {
+func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool, mode config.RunMode, r ArtifactResolver) *Builder {
 	return &Builder{
 		localDocker: localDocker,
 		pushImages:  pushImages,
 		mode:        mode,
+		artifacts:   r,
 	}
 }

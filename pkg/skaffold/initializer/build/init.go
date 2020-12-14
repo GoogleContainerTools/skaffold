@@ -21,19 +21,22 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/generator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 type defaultBuildInitializer struct {
-	builders                   []InitBuilder
-	builderImagePairs          []BuilderImagePair
-	generatedBuilderImagePairs []GeneratedBuilderImagePair
-	unresolvedImages           []string
-	skipBuild                  bool
-	force                      bool
-	enableNewFormat            bool
-	resolveImages              bool
+	builders               []InitBuilder
+	artifactInfos          []ArtifactInfo
+	generatedArtifactInfos []GeneratedArtifactInfo
+	manifests              []*generator.Container
+	unresolvedImages       []string
+	skipBuild              bool
+	force                  bool
+	enableNewFormat        bool
+	resolveImages          bool
 }
 
 func (d *defaultBuildInitializer) ProcessImages(images []string) error {
@@ -52,27 +55,50 @@ func (d *defaultBuildInitializer) ProcessImages(images []string) error {
 	return nil
 }
 
-func (d *defaultBuildInitializer) BuildConfig() latest.BuildConfig {
-	return latest.BuildConfig{
-		Artifacts: Artifacts(d.builderImagePairs),
+func (d *defaultBuildInitializer) BuildConfig() (latest.BuildConfig, []*latest.PortForwardResource) {
+	pf := []*latest.PortForwardResource{}
+
+	for _, manifestInfo := range d.manifests {
+		// Port value is set to 0 if user decides to not port forward service
+		if manifestInfo.Port != 0 {
+			pf = append(pf, &latest.PortForwardResource{
+				Type: "service",
+				Name: manifestInfo.Name,
+				Port: util.FromInt(manifestInfo.Port),
+			})
+		}
 	}
+
+	return latest.BuildConfig{
+		Artifacts: Artifacts(d.artifactInfos),
+	}, pf
 }
 
 func (d *defaultBuildInitializer) PrintAnalysis(out io.Writer) error {
-	return printAnalysis(out, d.enableNewFormat, d.skipBuild, d.builderImagePairs, d.builders, d.unresolvedImages)
+	return printAnalysis(out, d.enableNewFormat, d.skipBuild, d.artifactInfos, d.builders, d.unresolvedImages)
 }
 
-func (d *defaultBuildInitializer) GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error) {
-	generatedManifests := map[GeneratedBuilderImagePair][]byte{}
-	for _, pair := range d.generatedBuilderImagePairs {
-		manifest, err := generator.Generate(pair.ImageName)
+func (d *defaultBuildInitializer) GenerateManifests(out io.Writer, force bool) (map[GeneratedArtifactInfo][]byte, error) {
+	generatedManifests := map[GeneratedArtifactInfo][]byte{}
+	for _, info := range d.generatedArtifactInfos {
+		port := 8080
+		var err error
+		if !force {
+			port, err = prompt.PortForwardResourceFunc(out, info.ImageName)
+			if err != nil {
+				return nil, fmt.Errorf("getting port input: %w", err)
+			}
+		}
+
+		manifest, manifestInfo, err := generator.Generate(info.ImageName, port)
 		if err != nil {
 			return nil, fmt.Errorf("generating kubernetes manifest: %w", err)
 		}
-		generatedManifests[pair] = manifest
-		d.builderImagePairs = append(d.builderImagePairs, pair.BuilderImagePair)
+		generatedManifests[info] = manifest
+		d.manifests = append(d.manifests, manifestInfo)
+		d.artifactInfos = append(d.artifactInfos, info.ArtifactInfo)
 	}
-	d.generatedBuilderImagePairs = nil
+	d.generatedArtifactInfos = nil
 	return generatedManifests, nil
 }
 
@@ -80,8 +106,8 @@ func (d *defaultBuildInitializer) GenerateManifests() (map[GeneratedBuilderImage
 // images match an image in the image list, and returns a list of the matching builder/image pairs. Also
 // separately returns the builder configs and images that didn't have any matches.
 func (d *defaultBuildInitializer) matchBuildersToImages(images []string) {
-	pairs, unresolvedBuilders, unresolvedImages := matchBuildersToImages(d.builders, images)
-	d.builderImagePairs = pairs
+	artifactInfos, unresolvedBuilders, unresolvedImages := matchBuildersToImages(d.builders, images)
+	d.artifactInfos = artifactInfos
 	d.unresolvedImages = unresolvedImages
 	d.builders = unresolvedBuilders
 }

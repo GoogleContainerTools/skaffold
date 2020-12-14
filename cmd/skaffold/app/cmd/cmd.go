@@ -70,7 +70,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 			opts.Command = cmd.Use
 
-			color.SetupColors(out, defaultColor, forceColors)
+			out = color.SetupColors(out, defaultColor, forceColors)
 			cmd.Root().SetOutput(out)
 
 			// Setup logs

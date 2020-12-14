@@ -1,10 +1,12 @@
-apiVersion: skaffold/v2beta9
+apiVersion: skaffold/v2beta11
 kind: Config
 metadata:
   name: hello
 build:
   artifacts:
   - image: skaffold-example
+    docker:
+      dockerfile: Dockerfile
 deploy:
   kubectl:
     manifests:

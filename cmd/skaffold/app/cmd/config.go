@@ -41,7 +41,7 @@ func NewCmdSet() *cobra.Command {
 		WithExample("Mark a registry as insecure", "config set insecure-registries <insecure1.io>").
 		WithExample("Globally set the default image repository", "config set default-repo <myrepo>").
 		WithExample("Disable pushing images for a given Kubernetes context", "config set --kube-context <mycluster> local-cluster true").
-		WithFlags(func(f *pflag.FlagSet) {
+		WithFlagAdder(func(f *pflag.FlagSet) {
 			config.AddCommonFlags(f)
 			config.AddSetUnsetFlags(f)
 		}).
@@ -51,7 +51,7 @@ func NewCmdSet() *cobra.Command {
 func NewCmdUnset() *cobra.Command {
 	return NewCmd("unset").
 		WithDescription("Unset a value in the global Skaffold config").
-		WithFlags(func(f *pflag.FlagSet) {
+		WithFlagAdder(func(f *pflag.FlagSet) {
 			config.AddCommonFlags(f)
 			config.AddSetUnsetFlags(f)
 		}).
@@ -61,7 +61,7 @@ func NewCmdUnset() *cobra.Command {
 func NewCmdList() *cobra.Command {
 	return NewCmd("list").
 		WithDescription("List all values set in the global Skaffold config").
-		WithFlags(func(f *pflag.FlagSet) {
+		WithFlagAdder(func(f *pflag.FlagSet) {
 			config.AddCommonFlags(f)
 			config.AddListFlags(f)
 		}).

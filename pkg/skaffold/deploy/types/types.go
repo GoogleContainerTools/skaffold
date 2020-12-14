@@ -29,6 +29,7 @@ type Config interface {
 	Pipeline() latest.Pipeline
 	GetWorkingDir() string
 	GlobalConfig() string
+	ConfigurationFile() string
 	DefaultRepo() *string
 	SkipRender() bool
 }

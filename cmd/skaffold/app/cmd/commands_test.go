@@ -95,7 +95,7 @@ func TestNewCmdOutput(t *testing.T) {
 }
 
 func TestNewCmdWithFlags(t *testing.T) {
-	cmd := NewCmd("").WithFlags(func(flagSet *pflag.FlagSet) {
+	cmd := NewCmd("").WithFlagAdder(func(flagSet *pflag.FlagSet) {
 		flagSet.Bool("test", false, "usage")
 	}).NoArgs(nil)
 

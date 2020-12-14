@@ -24,6 +24,7 @@ type Builder struct {
 	cfg         docker.Config
 	pushImages  bool
 	skipTests   bool
+	artifacts   ArtifactResolver
 }
 
 type Config interface {
@@ -32,12 +33,18 @@ type Config interface {
 	SkipTests() bool
 }
 
+// ArtifactResolver provides an interface to resolve built artifact tags by image name.
+type ArtifactResolver interface {
+	GetImageTag(imageName string) (string, bool)
+}
+
 // NewArtifactBuilder returns a new customjib artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, cfg docker.Config, pushImages, skipTests bool) *Builder {
+func NewArtifactBuilder(localDocker docker.LocalDaemon, cfg docker.Config, pushImages, skipTests bool, r ArtifactResolver) *Builder {
 	return &Builder{
 		localDocker: localDocker,
 		cfg:         cfg,
 		pushImages:  pushImages,
 		skipTests:   skipTests,
+		artifacts:   r,
 	}
 }

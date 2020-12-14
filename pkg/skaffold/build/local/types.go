@@ -24,9 +24,16 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
+	dockerbuilder "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Builder uses the host docker daemon to build and tag the image.
@@ -47,12 +54,8 @@ type Builder struct {
 	insecureRegistries map[string]bool
 	muted              build.Muted
 	localPruner        *pruner
+	artifactStore      build.ArtifactStore
 }
-
-// external dependencies are wrapped
-// into private functions for testability
-
-var getLocalCluster = config.GetLocalCluster
 
 type Config interface {
 	docker.Config
@@ -60,7 +63,7 @@ type Config interface {
 	Pipeline() latest.Pipeline
 	GlobalConfig() string
 	GetKubeContext() string
-	DetectMinikube() bool
+	GetCluster() config.Cluster
 	SkipTests() bool
 	Mode() config.RunMode
 	NoPruneChildren() bool
@@ -74,19 +77,12 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		return nil, fmt.Errorf("getting docker client: %w", err)
 	}
 
-	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
-	// remove minikubeProfile from here and instead detect it by matching the
-	// kubecontext API Server to minikube profiles
-
-	localCluster, err := getLocalCluster(cfg.GlobalConfig(), cfg.MinikubeProfile(), cfg.DetectMinikube())
-	if err != nil {
-		return nil, fmt.Errorf("getting localCluster: %w", err)
-	}
+	cluster := cfg.GetCluster()
 
 	var pushImages bool
 	if cfg.Pipeline().Build.LocalBuild.Push == nil {
-		pushImages = !localCluster
-		logrus.Debugf("push value not present, defaulting to %t because localCluster is %t", pushImages, localCluster)
+		pushImages = cluster.PushImages
+		logrus.Debugf("push value not present, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
 	} else {
 		pushImages = *cfg.Pipeline().Build.LocalBuild.Push
 	}
@@ -98,7 +94,7 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		cfg:                cfg,
 		kubeContext:        cfg.GetKubeContext(),
 		localDocker:        localDocker,
-		localCluster:       localCluster,
+		localCluster:       cluster.Local,
 		pushImages:         pushImages,
 		tryImportMissing:   tryImportMissing,
 		skipTests:          cfg.SkipTests(),
@@ -109,6 +105,10 @@ func NewBuilder(cfg Config) (*Builder, error) {
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		muted:              cfg.Muted(),
 	}, nil
+}
+
+func (b *Builder) ArtifactStore(store build.ArtifactStore) {
+	b.artifactStore = store
 }
 
 func (b *Builder) PushImages() bool {
@@ -132,4 +132,34 @@ func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	}
 	_, err := b.localDocker.Prune(ctx, toPrune, b.pruneChildren)
 	return err
+}
+
+// artifactBuilder represents a per artifact builder interface
+type artifactBuilder interface {
+	Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error)
+}
+
+// newPerArtifactBuilder returns an instance of `artifactBuilder`
+func newPerArtifactBuilder(b *Builder, a *latest.Artifact) (artifactBuilder, error) {
+	switch {
+	case a.DockerArtifact != nil:
+		return dockerbuilder.NewArtifactBuilder(b.localDocker, b.local.UseDockerCLI, b.local.UseBuildkit, b.pushImages, b.prune, b.cfg.Mode(), b.cfg.GetInsecureRegistries(), b.artifactStore), nil
+
+	case a.BazelArtifact != nil:
+		return bazel.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages), nil
+
+	case a.JibArtifact != nil:
+		return jib.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, b.skipTests, b.artifactStore), nil
+
+	case a.CustomArtifact != nil:
+		// required artifacts as environment variables
+		dependencies := util.EnvPtrMapToSlice(docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true), "=")
+		return custom.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages, append(b.retrieveExtraEnv(), dependencies...)), nil
+
+	case a.BuildpackArtifact != nil:
+		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.mode, b.artifactStore), nil
+
+	default:
+		return nil, fmt.Errorf("unexpected type %q for local artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
+	}
 }

@@ -21,14 +21,20 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
-	"gopkg.in/AlecAivazis/survey.v1"
+	"github.com/AlecAivazis/survey/v2"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // For testing
 var (
-	BuildConfigFunc = buildConfig
+	BuildConfigFunc         = buildConfig
+	PortForwardResourceFunc = portForwardResource
+	askOne                  = survey.AskOne
 )
 
 func buildConfig(image string, choices []string) (string, error) {
@@ -77,4 +83,50 @@ confirmLoop:
 		}
 	}
 	return false, nil
+}
+
+// PortForwardResource prompts the user to give a port to forward the current resource on
+func portForwardResource(out io.Writer, imageName string) (int, error) {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Fprintf(out, "Select port to forward for %s (leave blank for none): ", imageName)
+
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		return 0, fmt.Errorf("reading user confirmation: %w", err)
+	}
+
+	response = strings.ToLower(strings.TrimSpace(response))
+	if response == "" {
+		return 0, nil
+	}
+
+	responseInt, _ := strconv.Atoi(response)
+	return responseInt, nil
+}
+
+// ConfirmInitOptions prompts the user to confirm that they are okay with what skaffold will do if they
+// run with the current config
+func ConfirmInitOptions(out io.Writer, config *latest.SkaffoldConfig) (bool, error) {
+	builders := strings.Join(util.ListBuilders(&config.Build), ",")
+	deployers := strings.Join(util.ListDeployers(&config.Deploy), ",")
+
+	fmt.Fprintf(out, `If you choose to continue, skaffold will do the following:
+  - Create a skaffold config file for you
+  - Build your application using %s
+  - Deploy your application to your current kubernetes context using %s
+
+`, builders, deployers)
+
+	var response bool
+	prompt := &survey.Confirm{
+		Message: "Would you like to continue?",
+	}
+	err := askOne(prompt, &response, nil)
+	if err != nil {
+		return true, err
+	}
+
+	// invert response because "no" == done and "yes" == !done
+	return !response, nil
 }

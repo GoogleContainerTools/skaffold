@@ -17,8 +17,6 @@ limitations under the License.
 package manifest
 
 import (
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -30,7 +28,7 @@ import (
 func (l *ManifestList) GetImages() ([]build.Artifact, error) {
 	s := &imageSaver{}
 	_, err := l.Visit(s)
-	return s.Images, err
+	return s.Images, parseImagesInManifestErr(err)
 }
 
 type imageSaver struct {
@@ -65,7 +63,7 @@ func (l *ManifestList) ReplaceImages(builds []build.Artifact) (ManifestList, err
 
 	updated, err := l.Visit(replacer)
 	if err != nil {
-		return nil, fmt.Errorf("replacing images in manifest: %w", err)
+		return nil, replaceImageErr(err)
 	}
 
 	replacer.Check()
@@ -82,7 +80,8 @@ type imageReplacer struct {
 func newImageReplacer(builds []build.Artifact) *imageReplacer {
 	tagsByImageName := make(map[string]string)
 	for _, build := range builds {
-		tagsByImageName[build.ImageName] = build.Tag
+		imageName := docker.SanitizeImageName(build.ImageName)
+		tagsByImageName[imageName] = build.Tag
 	}
 
 	return &imageReplacer{
@@ -105,12 +104,10 @@ func (r *imageReplacer) Visit(o map[string]interface{}, k string, v interface{})
 		warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
 		return false
 	}
-
 	// Leave images referenced by digest as they are
 	if parsed.Digest != "" {
 		return false
 	}
-
 	if tag, present := r.tagsByImageName[parsed.BaseName]; present {
 		// Apply new image tag
 		r.found[parsed.BaseName] = true

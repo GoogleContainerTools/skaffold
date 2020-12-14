@@ -17,8 +17,6 @@ limitations under the License.
 package manifest
 
 import (
-	"fmt"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 )
 
@@ -48,7 +46,7 @@ func ApplyTransforms(manifests ManifestList, builds []build.Artifact, insecureRe
 	for _, transform := range transforms {
 		manifests, err = transform(manifests, builds, Registries{insecureRegistries, debugHelpersRegistry})
 		if err != nil {
-			return nil, fmt.Errorf("unable to transform manifests: %w", err)
+			return nil, transformManifestErr(err)
 		}
 	}
 	return manifests, nil

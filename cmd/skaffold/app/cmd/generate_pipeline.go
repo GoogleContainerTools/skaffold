@@ -22,7 +22,6 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -38,8 +37,8 @@ func NewCmdGeneratePipeline() *cobra.Command {
 		Hidden().
 		WithDescription("[ALPHA] Generate tekton pipeline from skaffold.yaml").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.StringSliceVar(&configFiles, "config-files", nil, "Select additional files whose artifacts to use when generating pipeline.")
+		WithFlags([]*Flag{
+			{Value: &configFiles, Name: "config-files", DefValue: []string{}, Usage: "Select additional files whose artifacts to use when generating pipeline."},
 		}).
 		NoArgs(doGeneratePipeline)
 }

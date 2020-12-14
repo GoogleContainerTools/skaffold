@@ -19,39 +19,44 @@ package cache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/docker/docker/client"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestLookupLocal(t *testing.T) {
 	tests := []struct {
 		description string
-		hasher      func(context.Context, *latest.Artifact) (string, error)
+		hasher      artifactHasher
 		cache       map[string]ImageDetails
 		api         *testutil.FakeAPIClient
 		expected    cacheDetails
 	}{
 		{
 			description: "miss",
-			hasher:      mockHasher("thehash"),
+			hasher:      mockHasher{"thehash"},
 			api:         &testutil.FakeAPIClient{},
 			cache:       map[string]ImageDetails{},
 			expected:    needsBuilding{hash: "thehash"},
 		},
 		{
 			description: "hash failure",
-			hasher:      failingHasher("BUG"),
+			hasher:      failingHasher{errors.New("BUG")},
 			expected:    failed{err: errors.New("getting hash for artifact \"artifact\": BUG")},
 		},
 		{
 			description: "miss no imageID",
-			hasher:      mockHasher("hash"),
+			hasher:      mockHasher{"hash"},
 			cache: map[string]ImageDetails{
 				"hash": {Digest: "ignored"},
 			},
@@ -59,7 +64,7 @@ func TestLookupLocal(t *testing.T) {
 		},
 		{
 			description: "hit but not found",
-			hasher:      mockHasher("hash"),
+			hasher:      mockHasher{"hash"},
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
@@ -68,18 +73,23 @@ func TestLookupLocal(t *testing.T) {
 		},
 		{
 			description: "hit but not found with error",
-			hasher:      mockHasher("hash"),
+			hasher:      mockHasher{"hash"},
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
 			api: &testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
-			expected: failed{err: errors.New("getting imageID for tag: ")},
+			expected: failed{err: sErrors.NewError(
+				fmt.Errorf("getting imageID for tag: "),
+				proto.ActionableErr{
+					Message: "getting imageID for tag: ",
+					ErrCode: proto.StatusCode_BUILD_DOCKER_GET_DIGEST_ERR,
+				})},
 		},
 		{
 			description: "hit",
-			hasher:      mockHasher("hash"),
+			hasher:      mockHasher{"hash"},
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
@@ -88,7 +98,7 @@ func TestLookupLocal(t *testing.T) {
 		},
 		{
 			description: "hit but different tag",
-			hasher:      mockHasher("hash"),
+			hasher:      mockHasher{"hash"},
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
@@ -97,7 +107,7 @@ func TestLookupLocal(t *testing.T) {
 		},
 		{
 			description: "hit but imageID not found",
-			hasher:      mockHasher("hash"),
+			hasher:      mockHasher{"hash"},
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
@@ -108,11 +118,13 @@ func TestLookupLocal(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			cache := &cache{
-				imagesAreLocal:  true,
-				artifactCache:   test.cache,
-				client:          fakeLocalDaemon(test.api),
-				hashForArtifact: test.hasher,
+				imagesAreLocal: true,
+				artifactCache:  test.cache,
+				client:         fakeLocalDaemon(test.api),
+				cfg:            &mockConfig{mode: config.RunModes.Build},
 			}
+
+			t.Override(&newArtifactHasherFunc, func(_ build.ArtifactGraph, _ DependencyLister, _ config.RunMode) artifactHasher { return test.hasher })
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
 				ImageName: "artifact",
 			}})
@@ -128,26 +140,26 @@ func TestLookupLocal(t *testing.T) {
 func TestLookupRemote(t *testing.T) {
 	tests := []struct {
 		description string
-		hasher      func(context.Context, *latest.Artifact) (string, error)
+		hasher      artifactHasher
 		cache       map[string]ImageDetails
 		api         *testutil.FakeAPIClient
 		expected    cacheDetails
 	}{
 		{
 			description: "miss",
-			hasher:      mockHasher("hash"),
+			hasher:      mockHasher{"hash"},
 			api:         &testutil.FakeAPIClient{ErrImagePull: true},
 			cache:       map[string]ImageDetails{},
 			expected:    needsBuilding{hash: "hash"},
 		},
 		{
 			description: "hash failure",
-			hasher:      failingHasher("BUG"),
+			hasher:      failingHasher{errors.New("BUG")},
 			expected:    failed{err: errors.New("getting hash for artifact \"artifact\": BUG")},
 		},
 		{
 			description: "hit",
-			hasher:      mockHasher("hash"),
+			hasher:      mockHasher{"hash"},
 			cache: map[string]ImageDetails{
 				"hash": {Digest: "digest"},
 			},
@@ -155,7 +167,7 @@ func TestLookupRemote(t *testing.T) {
 		},
 		{
 			description: "hit with different tag",
-			hasher:      mockHasher("hash"),
+			hasher:      mockHasher{"hash"},
 			cache: map[string]ImageDetails{
 				"hash": {Digest: "otherdigest"},
 			},
@@ -163,7 +175,7 @@ func TestLookupRemote(t *testing.T) {
 		},
 		{
 			description: "found locally",
-			hasher:      mockHasher("hash"),
+			hasher:      mockHasher{"hash"},
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
@@ -172,7 +184,7 @@ func TestLookupRemote(t *testing.T) {
 		},
 		{
 			description: "not found",
-			hasher:      mockHasher("hash"),
+			hasher:      mockHasher{"hash"},
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
@@ -194,11 +206,12 @@ func TestLookupRemote(t *testing.T) {
 			})
 
 			cache := &cache{
-				imagesAreLocal:  false,
-				artifactCache:   test.cache,
-				client:          fakeLocalDaemon(test.api),
-				hashForArtifact: test.hasher,
+				imagesAreLocal: false,
+				artifactCache:  test.cache,
+				client:         fakeLocalDaemon(test.api),
+				cfg:            &mockConfig{mode: config.RunModes.Build},
 			}
+			t.Override(&newArtifactHasherFunc, func(_ build.ArtifactGraph, _ DependencyLister, _ config.RunMode) artifactHasher { return test.hasher })
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
 				ImageName: "artifact",
 			}})
@@ -211,16 +224,20 @@ func TestLookupRemote(t *testing.T) {
 	}
 }
 
-func mockHasher(value string) func(context.Context, *latest.Artifact) (string, error) {
-	return func(context.Context, *latest.Artifact) (string, error) {
-		return value, nil
-	}
+type mockHasher struct {
+	val string
 }
 
-func failingHasher(errMessage string) func(context.Context, *latest.Artifact) (string, error) {
-	return func(context.Context, *latest.Artifact) (string, error) {
-		return "", errors.New(errMessage)
-	}
+func (m mockHasher) hash(context.Context, *latest.Artifact) (string, error) {
+	return m.val, nil
+}
+
+type failingHasher struct {
+	err error
+}
+
+func (f failingHasher) hash(context.Context, *latest.Artifact) (string, error) {
+	return "", f.err
 }
 
 func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {

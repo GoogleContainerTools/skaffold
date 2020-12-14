@@ -57,8 +57,16 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 			built:       []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
 			deployed:    []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
 			commands: testutil.
-				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "tag1").
+				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "docker.io/library/tag1").
 				AndRunOut("kind load docker-image --name other-kind tag2", "output: image loaded"),
+		},
+		{
+			description: "no new images",
+			cluster:     "kind",
+			built:       []build.Artifact{{Tag: "tag0"}, {Tag: "docker.io/library/tag1"}, {Tag: "docker.io/tag2"}, {Tag: "gcr.io/test/tag3"}, {Tag: "someregistry.com/tag4"}},
+			deployed:    []build.Artifact{{Tag: "tag0"}, {Tag: "docker.io/library/tag1"}, {Tag: "docker.io/tag2"}, {Tag: "gcr.io/test/tag3"}, {Tag: "someregistry.com/tag4"}},
+			commands: testutil.
+				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "docker.io/library/tag0 docker.io/library/tag1 docker.io/library/tag2 gcr.io/test/tag3 someregistry.com/tag4"),
 		},
 		{
 			description: "inspect error",
@@ -122,8 +130,16 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 			built:       []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
 			deployed:    []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
 			commands: testutil.
-				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "tag1").
+				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "docker.io/library/tag1").
 				AndRunOut("k3d image import --cluster other-k3d tag2", "output: image loaded"),
+		},
+		{
+			description: "no new images",
+			cluster:     "k3d",
+			built:       []build.Artifact{{Tag: "tag0"}, {Tag: "docker.io/library/tag1"}, {Tag: "docker.io/tag2"}, {Tag: "gcr.io/test/tag3"}, {Tag: "someregistry.com/tag4"}},
+			deployed:    []build.Artifact{{Tag: "tag0"}, {Tag: "docker.io/library/tag1"}, {Tag: "docker.io/tag2"}, {Tag: "gcr.io/test/tag3"}, {Tag: "someregistry.com/tag4"}},
+			commands: testutil.
+				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "docker.io/library/tag0 docker.io/library/tag1 docker.io/library/tag2 gcr.io/test/tag3 someregistry.com/tag4"),
 		},
 		{
 			description: "inspect error",

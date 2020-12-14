@@ -40,8 +40,8 @@ func TestBuildDeploy(t *testing.T) {
 	// Parse the Build Output
 	buildArtifacts, err := flags.ParseBuildOutput(outputBytes)
 	failNowIfError(t, err)
-	if len(buildArtifacts.Builds) != 2 {
-		t.Fatalf("expected 2 artifacts to be built, but found %d", len(buildArtifacts.Builds))
+	if len(buildArtifacts.Builds) != 3 {
+		t.Fatalf("expected 3 artifacts to be built, but found %d", len(buildArtifacts.Builds))
 	}
 
 	var webTag, appTag string
@@ -93,7 +93,7 @@ func TestDeployTail(t *testing.T) {
 	ns, _ := SetupNamespace(t)
 
 	// `--default-repo=` is used to cancel the default repo that is set by default.
-	out := skaffold.Deploy("--tail", "--images", "busybox:latest", "--default-repo=").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunBackground(t)
+	out := skaffold.Deploy("--tail", "--images", "busybox:latest", "--default-repo=").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunLive(t)
 
 	WaitForLogs(t, out, "Hello world!")
 }

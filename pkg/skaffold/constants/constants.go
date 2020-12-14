@@ -39,13 +39,14 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultBusyboxImage = "busybox"
+	DefaultBusyboxImage = "gcr.io/k8s-skaffold/skaffold-helpers/busybox"
 
 	// DefaultDebugHelpersRegistry is the default location used for the helper images for `debug`.
-	DefaultDebugHelpersRegistry = "gcr.io/gcp-dev-tools/duct-tape"
+	DefaultDebugHelpersRegistry = "gcr.io/k8s-skaffold/skaffold-debug-support"
 
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"
+	DefaultMetricFile  = "metrics"
 
 	DefaultRPCPort     = 50051
 	DefaultRPCHTTPPort = 50052

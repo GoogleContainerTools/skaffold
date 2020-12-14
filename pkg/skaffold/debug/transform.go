@@ -25,7 +25,7 @@ a _container transformer_ interface. Each transformer implementation should do t
 4. The transform should return metadata to describe the remote connection information.
 
 Certain language runtimes require additional support files to enable remote debugging.
-These support files are provided through a set of support images defined at `gcr.io/gcp-dev-tools/duct-tape/`
+These support files are provided through a set of support images defined at `gcr.io/k8s-skaffold/skaffold-debug-support/`
 and defined at https://github.com/GoogleContainerTools/container-debug-support.
 The appropriate image ID is returned by the language transformer.  These support images
 are configured as initContainers on the pod and are expected to copy the debugging support
@@ -214,7 +214,8 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 	// the set of image IDs required to provide debugging support files
 	requiredSupportImages := make(map[string]bool)
 	for i := range podSpec.Containers {
-		container := &podSpec.Containers[i]
+		container := podSpec.Containers[i] // make a copy and only apply changes on successful transform
+
 		// the usual retriever returns an error for non-build artifacts
 		imageConfig, err := retrieveImageConfiguration(container.Image)
 		if err != nil {
@@ -222,18 +223,18 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		}
 		// requiredImage, if not empty, is the image ID providing the debugging support files
 		// `err != nil` means that the container did not or could not be transformed
-		if configuration, requiredImage, err := transformContainer(container, imageConfig, portAlloc); err == nil {
+		if configuration, requiredImage, err := transformContainer(&container, imageConfig, portAlloc); err == nil {
 			configuration.Artifact = imageConfig.artifact
 			if configuration.WorkingDir == "" {
 				configuration.WorkingDir = imageConfig.workingDir
 			}
 			configurations[container.Name] = configuration
+			podSpec.Containers[i] = container // apply any configuration changes
 			if len(requiredImage) > 0 {
 				logrus.Infof("%q requires debugging support image %q", container.Name, requiredImage)
-				containersRequiringSupport = append(containersRequiringSupport, container)
+				containersRequiringSupport = append(containersRequiringSupport, &podSpec.Containers[i])
 				requiredSupportImages[requiredImage] = true
 			}
-			// todo: add this artifact to the watch list?
 		} else {
 			logrus.Warnf("Image %q not configured for debugging: %v", container.Name, err)
 		}
@@ -251,7 +252,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		// the initContainers are responsible for populating the contents of `/dbg`
 		for imageID := range requiredSupportImages {
 			supportFilesInitContainer := v1.Container{
-				Name:         fmt.Sprintf("install-%s-support", imageID),
+				Name:         fmt.Sprintf("install-%s-debug-support", imageID),
 				Image:        fmt.Sprintf("%s/%s", debugHelpersRegistry, imageID),
 				VolumeMounts: []v1.VolumeMount{supportVolumeMount},
 			}
@@ -332,7 +333,7 @@ func transformContainer(container *v1.Container, config imageConfiguration, port
 	next := func(container *v1.Container, config imageConfiguration) (ContainerDebugConfiguration, string, error) {
 		return performContainerTransform(container, config, portAlloc)
 	}
-	if _, found := config.labels["io.buildpacks.stack.id"]; found && len(config.entrypoint) > 0 && config.entrypoint[0] == "/cnb/lifecycle/launcher" {
+	if isCNBImage(config) {
 		return updateForCNBImage(container, config, next)
 	}
 	return updateForShDashC(container, config, next)
@@ -387,6 +388,7 @@ func isShDashC(cmd, arg string) bool {
 }
 
 func performContainerTransform(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
+	logrus.Tracef("Examining container %q with config %v", container.Name, config)
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
 			return transform.Apply(container, config, portAlloc)

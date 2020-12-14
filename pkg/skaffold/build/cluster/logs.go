@@ -57,7 +57,7 @@ func streamLogs(ctx context.Context, out io.Writer, name string, pods corev1.Pod
 			r, err := pods.GetLogs(name, &v1.PodLogOptions{
 				Follow:    true,
 				Container: kaniko.DefaultContainerName,
-			}).Stream()
+			}).Stream(ctx)
 			if err != nil {
 				logrus.Debugln("unable to get kaniko pod logs:", err)
 				time.Sleep(1 * time.Second)
@@ -89,7 +89,7 @@ func streamLogs(ctx context.Context, out io.Writer, name string, pods corev1.Pod
 		if atomic.LoadInt64(&written) == 0 {
 			r, err := pods.GetLogs(name, &v1.PodLogOptions{
 				Container: kaniko.DefaultContainerName,
-			}).Stream()
+			}).Stream(ctx)
 			if err == nil {
 				io.Copy(out, r)
 			}

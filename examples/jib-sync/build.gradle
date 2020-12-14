@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '2.0.5.RELEASE'
     id 'io.spring.dependency-management' version '1.0.7.RELEASE'
-    id 'com.google.cloud.tools.jib' version '2.6.0'
+    id 'com.google.cloud.tools.jib' version '2.7.0'
 }
 
 repositories {
@@ -20,10 +20,4 @@ dependencies {
   }
 
   testImplementation "org.springframework.boot:spring-boot-starter-test"
-}
-
-jib {
-  from {
-    image = "gcr.io/distroless/java:debug"
-  }
 }

@@ -59,7 +59,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
-	if r.imagesAreLocal && config.IsImageLoadingRequired(r.runCtx.GetKubeContext()) {
+	if r.imagesAreLocal && r.runCtx.Cluster.LoadImages {
 		err := r.loadImagesIntoCluster(ctx, out, artifacts)
 		if err != nil {
 			return err
@@ -73,12 +73,13 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 
 	event.DeployInProgress()
 	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
-	r.hasDeployed = true
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
 		return err
 	}
+
+	r.hasDeployed = true
 
 	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	postStatusCheckFn()

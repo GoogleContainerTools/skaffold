@@ -24,17 +24,16 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // dockerBuildSpec lists the build steps required to build a docker image.
-func (b *Builder) dockerBuildSpec(artifact *latest.DockerArtifact, tag string) (cloudbuild.Build, error) {
-	args, err := b.dockerBuildArgs(artifact, tag)
+func (b *Builder) dockerBuildSpec(a *latest.Artifact, tag string) (cloudbuild.Build, error) {
+	args, err := b.dockerBuildArgs(a, tag, a.Dependencies)
 	if err != nil {
 		return cloudbuild.Build{}, err
 	}
 
-	steps := b.cacheFromSteps(artifact)
+	steps := b.cacheFromSteps(a.DockerArtifact)
 	steps = append(steps, &cloudbuild.BuildStep{
 		Name: b.DockerImage,
 		Args: args,
@@ -62,22 +61,23 @@ func (b *Builder) cacheFromSteps(artifact *latest.DockerArtifact) []*cloudbuild.
 }
 
 // dockerBuildArgs lists the arguments passed to `docker` to build a given image.
-func (b *Builder) dockerBuildArgs(artifact *latest.DockerArtifact, tag string) ([]string, error) {
+func (b *Builder) dockerBuildArgs(a *latest.Artifact, tag string, deps []*latest.ArtifactDependency) ([]string, error) {
+	d := a.DockerArtifact
 	// TODO(nkubala): remove when buildkit is supported in GCB (#4773)
-	if artifact.Secret != nil {
-		return nil, errors.New("docker build secrets not currently supported in GCB builds")
+	if d.Secret != nil || d.SSH != "" {
+		return nil, errors.New("docker build options, secrets and ssh, are not currently supported in GCB builds")
 	}
-	buildArgs, err := util.EvaluateEnvTemplateMap(artifact.BuildArgs)
+	requiredImages := docker.ResolveDependencyImages(deps, b.artifactStore, true)
+	buildArgs, err := docker.EvalBuildArgs(b.cfg.Mode(), a.Workspace, d.DockerfilePath, d.BuildArgs, requiredImages)
 	if err != nil {
 		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
 	}
-
-	ba, err := docker.ToCLIBuildArgs(artifact, buildArgs)
+	ba, err := docker.ToCLIBuildArgs(d, buildArgs)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker build args: %w", err)
 	}
 
-	args := []string{"build", "--tag", tag, "-f", artifact.DockerfilePath}
+	args := []string{"build", "--tag", tag, "-f", d.DockerfilePath}
 	args = append(args, ba...)
 	args = append(args, ".")
 

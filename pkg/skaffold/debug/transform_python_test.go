@@ -271,7 +271,7 @@ func TestTransformManifestPython(t *testing.T) {
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
 					InitContainers: []v1.Container{{
-						Name:         "install-python-support",
+						Name:         "install-python-debug-support",
 						Image:        "HELPERS/python",
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 					}},
@@ -313,7 +313,7 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-python-support",
+								Name:         "install-python-debug-support",
 								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -355,7 +355,7 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-python-support",
+								Name:         "install-python-debug-support",
 								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -397,7 +397,7 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-python-support",
+								Name:         "install-python-debug-support",
 								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -437,7 +437,7 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-python-support",
+								Name:         "install-python-debug-support",
 								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -477,7 +477,7 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-python-support",
+								Name:         "install-python-debug-support",
 								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -519,7 +519,7 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-python-support",
+								Name:         "install-python-debug-support",
 								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
@@ -571,7 +571,7 @@ func TestTransformManifestPython(t *testing.T) {
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},
 							InitContainers: []v1.Container{{
-								Name:         "install-python-support",
+								Name:         "install-python-debug-support",
 								Image:        "HELPERS/python",
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
 							}},

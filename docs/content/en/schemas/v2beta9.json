@@ -1623,8 +1623,8 @@
             "type": "string"
           },
           "type": "object",
-          "description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
-          "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "description": "arguments passed to the docker build. It also accepts environment variables and generated values via the go template syntax. Exposed generated values: IMAGE_REPO, IMAGE_NAME, IMAGE_TAG.",
+          "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables and generated values via the go template syntax. Exposed generated values: IMAGE<em>REPO, IMAGE</em>NAME, IMAGE_TAG.",
           "default": "{}",
           "examples": [
             "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"'{{.ENV_VARIABLE}}'\"}"
@@ -1643,8 +1643,8 @@
         },
         "digestFile": {
           "type": "string",
-          "description": "to to specify a file in the container. This file will receive the digest of a built image. This can be used to automatically track the exact image built by kaniko.",
-          "x-intellij-html-description": "to to specify a file in the container. This file will receive the digest of a built image. This can be used to automatically track the exact image built by kaniko."
+          "description": "to specify a file in the container. This file will receive the digest of a built image. This can be used to automatically track the exact image built by kaniko.",
+          "x-intellij-html-description": "to specify a file in the container. This file will receive the digest of a built image. This can be used to automatically track the exact image built by kaniko."
         },
         "dockerfile": {
           "type": "string",
@@ -1655,9 +1655,12 @@
         "env": {
           "items": {},
           "type": "array",
-          "description": "environment variables passed to the kaniko pod.",
-          "x-intellij-html-description": "environment variables passed to the kaniko pod.",
-          "default": "[]"
+          "description": "environment variables passed to the kaniko pod. It also accepts environment variables via the go template syntax.",
+          "x-intellij-html-description": "environment variables passed to the kaniko pod. It also accepts environment variables via the go template syntax.",
+          "default": "[]",
+          "examples": [
+            "[{\"name\": \"key1\", \"value\": \"value1\"}, {\"name\": \"key2\", \"value\": \"value2\"}, {\"name\": \"key3\", \"value\": \"'{{.ENV_VARIABLE}}'\"}]"
+          ]
         },
         "force": {
           "type": "boolean",
@@ -1672,8 +1675,8 @@
         },
         "imageNameWithDigestFile": {
           "type": "string",
-          "description": "to a file to save the image name with digest of the built image to.",
-          "x-intellij-html-description": "to a file to save the image name with digest of the built image to."
+          "description": "specify a file to save the image name with digest of the built image to.",
+          "x-intellij-html-description": "specify a file to save the image name with digest of the built image to."
         },
         "initImage": {
           "type": "string",
@@ -1737,8 +1740,8 @@
             "type": "string"
           },
           "type": "object",
-          "description": "to to provide a certificate for TLS communication with a given registry. my.registry.url: /path/to/the/certificate.cert is the expected format.",
-          "x-intellij-html-description": "to to provide a certificate for TLS communication with a given registry. my.registry.url: /path/to/the/certificate.cert is the expected format.",
+          "description": "to provide a certificate for TLS communication with a given registry. my.registry.url: /path/to/the/certificate.cert is the expected format.",
+          "x-intellij-html-description": "to provide a certificate for TLS communication with a given registry. my.registry.url: /path/to/the/certificate.cert is the expected format.",
           "default": "{}"
         },
         "registryMirror": {

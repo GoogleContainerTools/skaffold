@@ -41,6 +41,7 @@ type RunContext struct {
 	Namespaces         []string
 	WorkingDir         string
 	InsecureRegistries map[string]bool
+	Cluster            config.Cluster
 }
 
 func (rc *RunContext) GetKubeContext() string                 { return rc.KubeContext }
@@ -48,6 +49,7 @@ func (rc *RunContext) GetNamespaces() []string                { return rc.Namesp
 func (rc *RunContext) Pipeline() latest.Pipeline              { return rc.Cfg }
 func (rc *RunContext) GetInsecureRegistries() map[string]bool { return rc.InsecureRegistries }
 func (rc *RunContext) GetWorkingDir() string                  { return rc.WorkingDir }
+func (rc *RunContext) GetCluster() config.Cluster             { return rc.Cluster }
 
 func (rc *RunContext) AddSkaffoldLabels() bool                   { return rc.Opts.AddSkaffoldLabels }
 func (rc *RunContext) AutoBuild() bool                           { return rc.Opts.AutoBuild }
@@ -67,7 +69,6 @@ func (rc *RunContext) GetKubeConfig() string                     { return rc.Opt
 func (rc *RunContext) GetKubeNamespace() string                  { return rc.Opts.Namespace }
 func (rc *RunContext) GlobalConfig() string                      { return rc.Opts.GlobalConfig }
 func (rc *RunContext) MinikubeProfile() string                   { return rc.Opts.MinikubeProfile }
-func (rc *RunContext) DetectMinikube() bool                      { return rc.Opts.DetectMinikube }
 func (rc *RunContext) Muted() config.Muted                       { return rc.Opts.Muted }
 func (rc *RunContext) NoPruneChildren() bool                     { return rc.Opts.NoPruneChildren }
 func (rc *RunContext) Notification() bool                        { return rc.Opts.Notification }
@@ -114,6 +115,14 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		insecureRegistries[r] = true
 	}
 
+	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
+	// remove minikubeProfile from here and instead detect it by matching the
+	// kubecontext API Server to minikube profiles
+	cluster, err := config.GetCluster(opts.GlobalConfig, opts.MinikubeProfile, opts.DetectMinikube)
+	if err != nil {
+		return nil, fmt.Errorf("getting cluster: %w", err)
+	}
+
 	return &RunContext{
 		Opts:               opts,
 		Cfg:                cfg,
@@ -121,6 +130,7 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		KubeContext:        kubeContext,
 		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
+		Cluster:            cluster,
 	}, nil
 }
 

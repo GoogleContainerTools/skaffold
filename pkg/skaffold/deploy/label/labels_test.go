@@ -17,6 +17,7 @@ limitations under the License.
 package label
 
 import (
+	"context"
 	"testing"
 
 	v1 "k8s.io/api/apps/v1"
@@ -107,10 +108,10 @@ func TestApplyLabels(t *testing.T) {
 			t.Override(&kubernetesclient.DynamicClient, mockDynamicClient(dynClient))
 
 			// Patch labels
-			Apply(test.appliedLabels, []types.Artifact{{Obj: dep}})
+			Apply(context.Background(), test.appliedLabels, []types.Artifact{{Obj: dep}})
 
 			// Check modified value
-			modified, err := dynClient.Resource(schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}).Get("foo", metav1.GetOptions{})
+			modified, err := dynClient.Resource(schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}).Get(context.Background(), "foo", metav1.GetOptions{})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedLabels, modified.GetLabels())
 		})

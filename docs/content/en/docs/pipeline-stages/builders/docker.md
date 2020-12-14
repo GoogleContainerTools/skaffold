@@ -44,6 +44,14 @@ Which is equivalent to:
 
 {{% readfile file="samples/builders/local-full.yaml" %}}
 
+**Artifact dependency**
+
+You can additionally define dependency on other artifacts using the `requires` expression:
+
+{{% readfile file="samples/builders/artifact-dependencies/docker-local.yaml" %}}
+
+The specified alias `IMAGE2` becomes available as a build-arg in the Dockerfile for `image1` and its value automatically set to the image built from `image2`.
+
 ## Dockerfile in-cluster with Kaniko
 
 [Kaniko](https://github.com/GoogleContainerTools/kaniko) is a Google-developed
@@ -61,6 +69,14 @@ To use Kaniko, add build type `kaniko` to the `build` section of
 `skaffold.yaml`. The following options can optionally be configured:
 
 {{< schema root="KanikoArtifact" >}}
+
+**Artifact dependency**
+
+Similar to the local Docker builder, you can define dependency on other artifacts using the `requires` expression:
+
+{{% readfile file="samples/builders/artifact-dependencies/kaniko.yaml" %}}
+
+The specified alias `IMAGE2` becomes available as a build-arg in the Dockerfile for `image1` and its value automatically set to the image built from `image2`.
 
 Since Kaniko builds images directly to a registry, it requires active cluster credentials.
 These credentials are configured in the `cluster` section with the following options:

@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -32,6 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
@@ -56,6 +56,7 @@ type Config interface {
 	GetKubeContext() string
 	MinikubeProfile() string
 	GetInsecureRegistries() map[string]bool
+	Mode() config.RunMode
 }
 
 // NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.
@@ -202,17 +203,6 @@ func getMinikubeDockerEnv(minikubeProfile string) (map[string]string, error) {
 			return nil, fmt.Errorf("unable to parse minikube docker-env keyvalue: %s, line: %s, output: %s", kv, line, string(out))
 		}
 		env[kv[0]] = kv[1]
-	}
-
-	if found, _ := util.DetectWSL(); found {
-		// rewrite Unix path to Windows
-		cmd := exec.Command("wslpath", env["DOCKER_CERT_PATH"])
-		out, err := util.RunCmdOut(cmd)
-		if err == nil {
-			env["DOCKER_CERT_PATH"] = strings.TrimRight(string(out), "\n")
-		} else {
-			return nil, fmt.Errorf("can't run wslpath: %s", err)
-		}
 	}
 
 	return env, nil
