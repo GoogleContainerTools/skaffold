@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
 // ListBuilders returns a list of builder names being used in the given build config.
@@ -42,19 +43,5 @@ func ListDeployers(deploy *latest.DeployConfig) []string {
 		return []string{}
 	}
 
-	results := util.NewStringSet()
-	if deploy.HelmDeploy != nil {
-		results.Insert("helm")
-	}
-	if deploy.KptDeploy != nil {
-		results.Insert("kpt")
-	}
-	if deploy.KubectlDeploy != nil {
-		results.Insert("kubectl")
-	}
-	if deploy.KustomizeDeploy != nil {
-		results.Insert("kustomize")
-	}
-
-	return results.ToList()
+	return yamltags.GetYamlTags(deploy.DeployType)
 }
