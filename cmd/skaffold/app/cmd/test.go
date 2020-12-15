@@ -30,9 +30,9 @@ import (
 // NewCmdTest describes the CLI command to test artifacts.
 func NewCmdTest() *cobra.Command {
 	return NewCmd("test").
-		WithDescription("Test the artifacts").
+		WithDescription("Run tests against your built application images").
 		WithExample("Build the artifacts and collect the tags into a file", "build --file-output=tags.json").
-		WithExample("Test those tags", "test --build-artifacts=tags.json").
+		WithExample("Run test against images previously built by Skaffold into a 'tags.json' file", "test --build-artifacts=tags.json").
 		WithCommonFlags().
 		WithHouseKeepingMessages().
 		NoArgs(doTest)

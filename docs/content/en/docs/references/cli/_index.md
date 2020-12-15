@@ -73,7 +73,7 @@ End-to-end pipelines:
 
 Pipeline building blocks for CI/CD:
   build             Build the artifacts
-  test              Test the artifacts
+  test              Run tests against your built application images
   deploy            Deploy pre-built artifacts
   delete            Delete the deployed application
   render            [alpha] Perform all image builds, and output rendered Kubernetes manifests
@@ -972,7 +972,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 
 ### skaffold test
 
-Test the artifacts
+Run tests against your built application images
 
 ```
 
@@ -981,7 +981,7 @@ Examples:
   # Build the artifacts and collect the tags into a file
   skaffold build --file-output=tags.json
 
-  # Test those tags
+  # Run test against images previously built by Skaffold into a 'tags.json' file
   skaffold test --build-artifacts=tags.json
 
 Options:

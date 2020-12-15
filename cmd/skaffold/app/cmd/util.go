@@ -60,7 +60,7 @@ func mergeBuildArtifacts(fromFile, fromCLI []build.Artifact, artifacts []*latest
 	}
 
 	// Check that every image has a non empty tag
-	if err := ValidateArtifactTags(buildArtifacts); err != nil {
+	if err := validateArtifactTags(buildArtifacts); err != nil {
 		return nil, err
 	}
 
@@ -87,7 +87,7 @@ func applyCustomTag(artifacts []build.Artifact) ([]build.Artifact, error) {
 	return artifacts, nil
 }
 
-func ValidateArtifactTags(artifacts []build.Artifact) error {
+func validateArtifactTags(artifacts []build.Artifact) error {
 	for _, artifact := range artifacts {
 		if artifact.Tag == "" {
 			return fmt.Errorf("no tag provided for image [%s]", artifact.ImageName)
