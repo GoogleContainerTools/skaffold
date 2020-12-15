@@ -1,0 +1,59 @@
+name: PR
+on:
+  pull_request:
+    paths:
+      - "**.go"
+      - "**.yml"
+      - "**.yaml"
+      - "Makefile"
+env:
+  GOPROXY: https://proxy.golang.org
+
+jobs:
+  # Runs before all other jobs
+  # builds the minikube binaries
+  build_master:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.15.5'
+        stable: true
+
+      - name: checkout master
+        uses: actions/checkout@v2
+        with:
+          ref: master
+
+      - name: Download Dependencies
+        run: go mod download
+
+      - name: Build Binaries
+        run: |
+          make
+      - uses: actions/upload-artifact@v1
+        with:
+          name: skaffold_master
+          path: out/
+
+  build_branch:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.15.5'
+          stable: true
+
+      - name: checkout branch
+        uses: actions/checkout@v2
+
+      - name: Download Dependencies
+        run: go mod download
+
+      - name: Build Binaries
+        run: |
+          make
+      - uses: actions/upload-artifact@v1
+        with:
+          name: skaffold_branch
+          path: out/
