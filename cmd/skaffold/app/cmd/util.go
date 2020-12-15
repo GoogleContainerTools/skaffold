@@ -26,23 +26,23 @@ import (
 )
 
 func getBuildArtifactsAndSetTags(r runner.Runner, config *latest.SkaffoldConfig) ([]build.Artifact, error) {
-	buildArtifacts, err := getArtifacts(fromBuildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
+	buildArtifacts, err := mergeBuildArtifacts(fromBuildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
 	if err != nil {
 		return nil, err
 	}
 
-	for i := range buildArtifacts {
-		tag, err := r.ApplyDefaultRepo(buildArtifacts[i].Tag)
+	for _, artifact := range buildArtifacts {
+		tag, err := r.ApplyDefaultRepo(artifact.Tag)
 		if err != nil {
 			return nil, err
 		}
-		buildArtifacts[i].Tag = tag
+		artifact.Tag = tag
 	}
 
 	return buildArtifacts, nil
 }
 
-func getArtifacts(fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func mergeBuildArtifacts(fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var buildArtifacts []build.Artifact
 	for _, artifact := range artifacts {
 		buildArtifacts = append(buildArtifacts, build.Artifact{
@@ -60,8 +60,7 @@ func getArtifacts(fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifa
 	}
 
 	// Check that every image has a non empty tag
-	_, err = TestValidateArtifacts(buildArtifacts)
-	if err != nil {
+	if err := validateArtifactTags(buildArtifacts); err != nil {
 		return nil, err
 	}
 
@@ -88,11 +87,11 @@ func applyCustomTag(artifacts []build.Artifact) ([]build.Artifact, error) {
 	return artifacts, nil
 }
 
-func TestValidateArtifacts(artifacts []build.Artifact) (bool, error) {
+func validateArtifactTags(artifacts []build.Artifact) error {
 	for _, artifact := range artifacts {
 		if artifact.Tag == "" {
-			return false, fmt.Errorf("no tag provided for image [%s]", artifact.ImageName)
+			return fmt.Errorf("no tag provided for image [%s]", artifact.ImageName)
 		}
 	}
-	return true, nil
+	return nil
 }

@@ -94,6 +94,15 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	return bRes, nil
 }
 
+// Test tests a list of already built artifacts.
+func (r *SkaffoldRunner) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	if err := r.tester.Test(ctx, out, artifacts); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
 	// Update which images are logged.

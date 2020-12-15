@@ -30,6 +30,59 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func TestTest(t *testing.T) {
+	tests := []struct {
+		description     string
+		testBench       *TestBench
+		artifacts       []build.Artifact
+		expectedActions []Actions
+		shouldErr       bool
+	}{
+		{
+			description: "test no error",
+			testBench:   &TestBench{},
+			artifacts: []build.Artifact{
+				{ImageName: "img1", Tag: "img1:tag1"},
+				{ImageName: "img2", Tag: "img2:tag2"},
+			},
+			expectedActions: []Actions{{
+				Tested: []string{"img1:tag1", "img2:tag2"},
+			}},
+		},
+		{
+			description:     "no artifacts",
+			testBench:       &TestBench{},
+			artifacts:       []build.Artifact(nil),
+			expectedActions: []Actions{{}},
+		},
+		{
+			description: "missing tag",
+			testBench:   &TestBench{},
+			artifacts:   []build.Artifact{{ImageName: "image1"}},
+			expectedActions: []Actions{{
+				Tested: []string{""},
+			}},
+		},
+		{
+			description:     "test error",
+			testBench:       &TestBench{testErrors: []error{errors.New("")}},
+			expectedActions: []Actions{{}},
+			shouldErr:       true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			runner := createRunner(t, test.testBench, nil)
+
+			err := runner.Test(context.Background(), ioutil.Discard, test.artifacts)
+
+			t.CheckError(test.shouldErr, err)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedActions, test.testBench.Actions())
+		})
+	}
+}
+
 func TestBuildTestDeploy(t *testing.T) {
 	tests := []struct {
 		description     string
