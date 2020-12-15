@@ -69,7 +69,7 @@ func TestInitManifestGeneration(t *testing.T) {
 		{
 			name:                  "hello",
 			dir:                   "testdata/init/hello",
-			args:                  []string{"--XXenableManifestGeneration"},
+			args:                  []string{"--generate-manifests"},
 			expectedManifestPaths: []string{"deployment.yaml"},
 		},
 		// TODO(nkubala): add this back when the --force flag is fixed

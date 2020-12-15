@@ -714,6 +714,7 @@ Options:
       --default-kustomization='': Default Kustomization overlay path (others will be added as profiles)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Force the generation of the Skaffold config
+      --generate-manifests=false: Allows skaffold to try and generate basic kubernetes resources to get your project started
   -k, --kubernetes-manifest=[]: A path or a glob pattern to kubernetes manifests (can be non-existent) to be added to the kubectl deployer (overrides detection of kubernetes manifests). Repeat the flag for multiple entries. E.g.: skaffold init -k pod.yaml -k k8s/*.yml
       --skip-build=false: Skip generating build artifacts in Skaffold config
 
@@ -732,6 +733,7 @@ Env vars:
 * `SKAFFOLD_DEFAULT_KUSTOMIZATION` (same as `--default-kustomization`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
+* `SKAFFOLD_GENERATE_MANIFESTS` (same as `--generate-manifests`)
 * `SKAFFOLD_KUBERNETES_MANIFEST` (same as `--kubernetes-manifest`)
 * `SKAFFOLD_SKIP_BUILD` (same as `--skip-build`)
 
