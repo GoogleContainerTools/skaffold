@@ -31,7 +31,7 @@ jobs:
 
     - name: Skaffold binary version
       run: |
-        echo ::set-env name=SKAFFOLD_VERSION::"$(git log --format="%H" -n 1)"
+        echo SKAFFOLD_VERSION="$(git log --format="%H" -n 1)" >> $GITHUB_ENV
 
     - name: Install Kustomize
       run: |
