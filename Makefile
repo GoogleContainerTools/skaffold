@@ -284,8 +284,9 @@ $(STATIK_FILES): go.mod docs/content/en/schemas/*
 
 .PHONY: benchmark
 benchmark: $(BUILD_DIR)/$(PROJECT)
-	go test -bench=. ./pkg/skaffold/perf/... -dir=$(shell pwd) > $(BUILD_DIR)/cur.benchmark
-	benchstat -delta-test none -html $(BUILD_DIR)/base.benchmark $(BUILD_DIR)/cur.benchmark > $(BUILD_DIR)/benchdelta.html
+	go test -bench=. ./pkg/skaffold/perf/... -dir=$(shell pwd) -binary="out/skaffold" > $(BUILD_DIR)/cur.benchmark
+	go test -bench=. ./pkg/skaffold/perf/... -dir=$(shell pwd) -binary="out/skaffold-release" > $(BUILD_DIR)/release.benchmark
+	benchstat -delta-test none -html $(BUILD_DIR)/release.benchmark $(BUILD_DIR)/cur.benchmark > $(BUILD_DIR)/benchdelta.html
 	open $(BUILD_DIR)/benchdelta.html
 
 
