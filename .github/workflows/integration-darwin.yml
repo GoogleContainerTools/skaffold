@@ -86,10 +86,10 @@ jobs:
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=virtualbox
         eval $(minikube docker-env --profile=minikube)
-        echo ::set-env name=DOCKER_TLS_VERIFY::${DOCKER_TLS_VERIFY}
-        echo ::set-env name=DOCKER_HOST::${DOCKER_HOST}
-        echo ::set-env name=DOCKER_CERT_PATH::${DOCKER_CERT_PATH}
-        echo ::set-env name=MINIKUBE_ACTIVE_DOCKERD::${MINIKUBE_ACTIVE_DOCKERD}
+        echo DOCKER_TLS_VERIFY=${DOCKER_TLS_VERIFY} >> $GITHUB_ENV
+        echo DOCKER_HOST=${DOCKER_HOST} >> $GITHUB_ENV
+        echo DOCKER_CERT_PATH=${DOCKER_CERT_PATH} >> $GITHUB_ENV
+        echo MINIKUBE_ACTIVE_DOCKERD=${MINIKUBE_ACTIVE_DOCKERD} >> $GITHUB_ENV
 
     - name: Install Skaffold release binary
       run: |
