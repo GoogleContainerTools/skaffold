@@ -83,7 +83,7 @@ func portForwardResource(out io.Writer, imageName string) (int, error) {
 		Prompt: &survey.Input{Message: fmt.Sprintf("Select port to forward for %s (leave blank for none): ", imageName)},
 		Validate: func(val interface{}) error {
 			str := val.(string)
-			if _, err := strconv.Atoi(str); err != nil {
+			if _, err := strconv.Atoi(str); err != nil && str != "" {
 				return errors.New("response must be a number, or empty")
 			}
 			return nil

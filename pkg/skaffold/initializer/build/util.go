@@ -17,8 +17,6 @@ limitations under the License.
 package build
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -77,7 +75,6 @@ func Artifacts(artifactInfos []ArtifactInfo) []*latest.Artifact {
 			workspace = filepath.Dir(info.Builder.Path())
 		}
 		if workspace != "." {
-			fmt.Fprintf(os.Stdout, "using non standard workspace: %s\n", workspace)
 			artifact.Workspace = workspace
 		}
 
