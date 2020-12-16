@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/survey"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
@@ -69,6 +70,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			cmd.Root().SilenceUsage = true
 
 			opts.Command = cmd.Use
+			instrumentation.SetCommand(cmd.Use)
 
 			out = color.SetupColors(out, defaultColor, forceColors)
 			cmd.Root().SetOutput(out)
