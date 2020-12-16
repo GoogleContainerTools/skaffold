@@ -66,7 +66,7 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	}
 
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		bRes, err := r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
+		bRes, err := r.Build(ctx, buildOut, targetArtifacts(opts, config))
 
 		if quietFlag || buildOutputFlag != "" {
 			cmdOut := flags.BuildOutput{Builds: bRes}

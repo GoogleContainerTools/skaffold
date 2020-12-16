@@ -49,7 +49,7 @@ type mockRunRunner struct {
 	artifactImageNames []string
 }
 
-func (r *mockRunRunner) BuildAndTest(_ context.Context, _ io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (r *mockRunRunner) Build(_ context.Context, _ io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var result []build.Artifact
 	for _, artifact := range artifacts {
 		imageName := artifact.ImageName

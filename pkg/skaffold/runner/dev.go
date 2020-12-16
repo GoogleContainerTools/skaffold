@@ -103,7 +103,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			instrumentation.AddDevIteration("build")
 			meterUpdated = true
 		}
-		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
+		if _, err := r.Build(ctx, out, r.changeSet.needsRebuild); err != nil {
 			logrus.Warnln("Skipping test due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 			return nil
@@ -199,7 +199,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch test configuration
 	if err := r.monitor.Register(
 		r.tester.TestDependencies,
-		func(filemon.Events) { r.changeSet.needsRedeploy = true },
+		func(filemon.Events) { r.changeSet.needsRetest = true },
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)
 		return fmt.Errorf("watching test files: %w", err)
@@ -232,7 +232,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// First build
-	bRes, err := r.BuildAndTest(ctx, out, artifacts)
+	bRes, err := r.Build(ctx, out, artifacts)
 	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 		return fmt.Errorf("exiting dev mode because first build failed: %w", err)

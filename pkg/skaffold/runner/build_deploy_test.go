@@ -134,7 +134,7 @@ func TestBuildTestDeploy(t *testing.T) {
 			}}
 
 			runner := createRunner(t, test.testBench, nil)
-			bRes, err := runner.BuildAndTest(ctx, ioutil.Discard, artifacts)
+			bRes, err := runner.Build(ctx, ioutil.Discard, artifacts)
 			if err == nil {
 				err = runner.Test(ctx, ioutil.Discard, bRes)
 				if err == nil {
@@ -147,13 +147,13 @@ func TestBuildTestDeploy(t *testing.T) {
 	}
 }
 
-func TestBuildAndTestDryRun(t *testing.T) {
+func TestBuildDryRun(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		testBench := &TestBench{}
 		runner := createRunner(t, testBench, nil)
 		runner.runCtx.Opts.DryRun = true
 
-		bRes, err := runner.BuildAndTest(context.Background(), ioutil.Discard, []*latest.Artifact{
+		bRes, err := runner.Build(context.Background(), ioutil.Discard, []*latest.Artifact{
 			{ImageName: "img1"},
 			{ImageName: "img2"},
 		})
@@ -167,13 +167,13 @@ func TestBuildAndTestDryRun(t *testing.T) {
 	})
 }
 
-func TestBuildAndTestSkipBuild(t *testing.T) {
+func TestBuildSkipBuild(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		testBench := &TestBench{}
 		runner := createRunner(t, testBench, nil)
 		runner.runCtx.Opts.DigestSource = "none"
 
-		bRes, err := runner.BuildAndTest(context.Background(), ioutil.Discard, []*latest.Artifact{
+		bRes, err := runner.Build(context.Background(), ioutil.Discard, []*latest.Artifact{
 			{ImageName: "img1"},
 			{ImageName: "img2"},
 		})
