@@ -45,7 +45,6 @@ import (
 	// import embedded secret for uploading metrics
 	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/secret/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
@@ -104,8 +103,7 @@ func init() {
 	}()
 }
 
-func InitMeter(runCtx *runcontext.RunContext, config *latest.SkaffoldConfig) {
-	meter.Command = runCtx.Opts.Command
+func InitMeterFromConfig(config *latest.SkaffoldConfig) {
 	meter.PlatformType = yamltags.GetYamlTag(config.Build.BuildType)
 	for _, artifact := range config.Pipeline.Build.Artifacts {
 		if _, ok := meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]; ok {
