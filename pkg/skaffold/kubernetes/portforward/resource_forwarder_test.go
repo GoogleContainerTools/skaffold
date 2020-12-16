@@ -121,7 +121,7 @@ func TestStart(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState(latest.Pipeline{}, "", true, true, true)
+			event.InitializeState(latest.Pipeline{}, "", true, true, true, true)
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, test.availablePorts))
 			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latest.PortForwardResource, error) {
 				return test.resources, nil
@@ -263,7 +263,7 @@ func TestUserDefinedResources(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState(latest.Pipeline{}, "", true, true, true)
+			event.InitializeState(latest.Pipeline{}, "", true, true, true, true)
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, []int{8080, 9000}))
 			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latest.PortForwardResource, error) {
 				return []*latest.PortForwardResource{svc}, nil

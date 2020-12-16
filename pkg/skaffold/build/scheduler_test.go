@@ -393,7 +393,7 @@ func initializeEvents() {
 			},
 		},
 	}
-	event.InitializeState(pipe, "temp", true, true, true)
+	event.InitializeState(pipe, "temp", true, true, true, true)
 }
 
 func errorsComparer(a, b error) bool {
