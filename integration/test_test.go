@@ -57,7 +57,6 @@ func TestBuildAndTest(t *testing.T) {
 }
 
 func TestTestWithIncorrectConfig(t *testing.T) {
-
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)

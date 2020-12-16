@@ -701,8 +701,7 @@ anytime a test starts or completes, successfully or not.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| Testers | [TestMetadata.Tester](#proto.TestMetadata.Tester) | repeated |  |
-| cluster | [ClusterType](#proto.ClusterType) |  |  |
+| Testers | [TestMetadata.Tester](#proto.TestMetadata.Tester) | repeated | ClusterType cluster = 2; |
 
 
 

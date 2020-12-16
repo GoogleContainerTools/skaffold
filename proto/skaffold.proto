@@ -56,7 +56,7 @@ message TestMetadata {
         int32 count = 2;
     }
     repeated Tester Testers = 1;
-    ClusterType cluster = 2;
+    // ClusterType cluster = 2;
 }
 
 message DeployMetadata {

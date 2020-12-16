@@ -137,7 +137,7 @@ func setupIntents(runCtx *runcontext.RunContext) (*intents, chan bool) {
 	intentChan := make(chan bool, 1)
 	setupTrigger("build", intents.setBuild, intents.setAutoBuild, intents.getAutoBuild, server.SetBuildCallback, server.SetAutoBuildCallback, intentChan)
 	setupTrigger("sync", intents.setSync, intents.setAutoSync, intents.getAutoSync, server.SetSyncCallback, server.SetAutoSyncCallback, intentChan)
-	setupTrigger("deploy", intents.setDeploy, intents.setAutoTest, intents.getAutoTest, server.SetDeployCallback, server.SetAutoTestCallback, intentChan)
+	setupTrigger("test", intents.setTest, intents.setAutoTest, intents.getAutoTest, server.SetTestCallback, server.SetAutoTestCallback, intentChan)
 	setupTrigger("deploy", intents.setDeploy, intents.setAutoDeploy, intents.getAutoDeploy, server.SetDeployCallback, server.SetAutoDeployCallback, intentChan)
 
 	return intents, intentChan

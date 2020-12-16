@@ -137,7 +137,7 @@ func TestEmptyState(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			handler = &eventHandler{
-				state: emptyState(test.cfg, test.cluster, true, true, true),
+				state: emptyState(test.cfg, test.cluster, true, true, true, true),
 			}
 			metadata := handler.state.Metadata
 			builders := metadata.Build.Builders

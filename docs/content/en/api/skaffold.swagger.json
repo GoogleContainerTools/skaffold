@@ -132,20 +132,6 @@
             "default": "UNKNOWN_CLUSTER_TYPE"
           },
           {
-            "name": "event.metaEvent.metadata.test.cluster",
-            "description": " - UNKNOWN_CLUSTER_TYPE: Could not determine Cluster Type\n - MINIKUBE: Minikube Cluster\n - GKE: GKE cluster\n - OTHER: All Cluster except Minikube and GKE",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "UNKNOWN_CLUSTER_TYPE",
-              "MINIKUBE",
-              "GKE",
-              "OTHER"
-            ],
-            "default": "UNKNOWN_CLUSTER_TYPE"
-          },
-          {
             "name": "event.buildEvent.artifact",
             "in": "query",
             "required": false,
@@ -2971,9 +2957,6 @@
           "items": {
             "$ref": "#/definitions/TestMetadataTester"
           }
-        },
-        "cluster": {
-          "$ref": "#/definitions/protoClusterType"
         }
       }
     },
