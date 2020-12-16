@@ -20,12 +20,14 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/spf13/pflag"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -44,6 +46,17 @@ func TestOfflineExportMetrics(t *testing.T) {
 		Duration:       time.Minute,
 	}
 	validMeterBytes, _ := json.Marshal(validMeter)
+	fs := &testutil.FakeFileSystem{
+		Files: map[string][]byte{
+			"/keys.json": []byte(`{
+				"client_id": "test_id",
+				"client_secret": "test_secret",
+				"project_id": "test_project",
+				"refresh_token": "test_token",
+				"type": "authorized_user"
+			}`),
+		},
+	}
 
 	tests := []struct {
 		name                string
@@ -87,6 +100,7 @@ func TestOfflineExportMetrics(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			t.Override(&isOnline, false)
+			t.Override(&statik.FS, func() (http.FileSystem, error) { return fs, nil })
 			filename := "metrics"
 			tmp := t.NewTempDir()
 			var savedMetrics []skaffoldMeter

@@ -41,7 +41,9 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
-	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/secret/statik" // import embedded secret for uploading metrics
+
+	// import embedded secret for uploading metrics
+	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/secret/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -182,11 +184,10 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 	}
 	p.Stop()
 
-	err = nil
 	if fileExists {
-		err = os.Remove(filename)
+		return os.Remove(filename)
 	}
-	return err
+	return nil
 }
 
 type creds struct {

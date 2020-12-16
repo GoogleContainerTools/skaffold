@@ -14,4 +14,39 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package statik
+package testutil
+
+import (
+	"bytes"
+	"io"
+	"net/http"
+	"os"
+)
+
+type FakeFileSystem struct {
+	Files map[string][]byte
+}
+
+type fakeFile struct {
+	http.File
+	content io.Reader
+}
+
+func (f *FakeFileSystem) Open(name string) (http.File, error) {
+	content, found := f.Files[name]
+	if !found {
+		return nil, os.ErrNotExist
+	}
+
+	return &fakeFile{
+		content: bytes.NewBuffer(content),
+	}, nil
+}
+
+func (f *fakeFile) Read(p []byte) (n int, err error) {
+	return f.content.Read(p)
+}
+
+func (f *fakeFile) Close() error {
+	return nil
+}

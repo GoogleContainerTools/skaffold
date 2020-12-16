@@ -18,45 +18,15 @@ package schema
 
 import (
 	"bytes"
-	"io"
 	"net/http"
-	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-type fakeFileSystem struct {
-	Files map[string][]byte
-}
-
-type fakeFile struct {
-	http.File
-	content io.Reader
-}
-
-func (f *fakeFileSystem) Open(name string) (http.File, error) {
-	content, found := f.Files[name]
-	if !found {
-		return nil, os.ErrNotExist
-	}
-
-	return &fakeFile{
-		content: bytes.NewBuffer(content),
-	}, nil
-}
-
-func (f *fakeFile) Read(p []byte) (n int, err error) {
-	return f.content.Read(p)
-}
-
-func (f *fakeFile) Close() error {
-	return nil
-}
-
 func TestPrint(t *testing.T) {
-	fs := &fakeFileSystem{
+	fs := &testutil.FakeFileSystem{
 		Files: map[string][]byte{
 			"/schemas/v1.json": []byte("{SCHEMA}"),
 		},
