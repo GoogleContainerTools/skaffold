@@ -55,6 +55,7 @@ type SkaffoldOptions struct {
 	StatusCheck           bool
 	AutoBuild             bool
 	AutoSync              bool
+	AutoTest              bool
 	AutoDeploy            bool
 	RenderOnly            bool
 	RenderOutput          string

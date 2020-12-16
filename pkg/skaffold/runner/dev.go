@@ -53,11 +53,12 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		return ErrorConfigurationChanged
 	}
 
-	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
+	buildIntent, testIntent, syncIntent, deployIntent := r.intents.GetIntents()
 	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
 	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
+	needsTest := testIntent && r.changeSet.needsRetest
 	needsDeploy := deployIntent && r.changeSet.needsRedeploy
-	if !needsSync && !needsBuild && !needsDeploy {
+	if !needsSync && !needsBuild && !needsTest && !needsDeploy {
 		return nil
 	}
 
@@ -103,8 +104,25 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			meterUpdated = true
 		}
 		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
-			logrus.Warnln("Skipping deploy due to error:", err)
+			logrus.Warnln("Skipping test due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
+			return nil
+		}
+	}
+
+	if needsTest {
+		event.ResetStateOnTest()
+		defer func() {
+			r.changeSet.resetTest()
+			r.intents.resetTest()
+		}()
+		if !meterUpdated {
+			instrumentation.AddDevIteration("test")
+			meterUpdated = true
+		}
+		if err := r.Test(ctx, out, r.builds); err != nil {
+			logrus.Warnln("Skipping test due to error:", err)
+			event.DevLoopFailedInPhase(r.devIteration, sErrors.Test, err)
 			return nil
 		}
 	}
@@ -218,6 +236,11 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
+	}
+
+	if err := r.Test(ctx, out, bRes); err != nil {
+		event.DevLoopFailedInPhase(r.devIteration, sErrors.Test, err)
+		return fmt.Errorf("exiting dev mode because first test failed: %w", err)
 	}
 
 	logger := r.createLogger(out, bRes)

@@ -48,15 +48,23 @@ var (
 type server struct {
 	buildIntentCallback  func()
 	syncIntentCallback   func()
+	testIntentCallback   func()
 	deployIntentCallback func()
 	autoBuildCallback    func(bool)
 	autoSyncCallback     func(bool)
+	autoTestCallback     func(bool)
 	autoDeployCallback   func(bool)
 }
 
 func SetBuildCallback(callback func()) {
 	if srv != nil {
 		srv.buildIntentCallback = callback
+	}
+}
+
+func SetTestCallback(callback func()) {
+	if srv != nil {
+		srv.testIntentCallback = callback
 	}
 }
 
@@ -75,6 +83,12 @@ func SetSyncCallback(callback func()) {
 func SetAutoBuildCallback(callback func(bool)) {
 	if srv != nil {
 		srv.autoBuildCallback = callback
+	}
+}
+
+func SetAutoTestCallback(callback func(bool)) {
+	if srv != nil {
+		srv.autoTestCallback = callback
 	}
 }
 
@@ -146,10 +160,12 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 	s := grpc.NewServer()
 	srv = &server{
 		buildIntentCallback:  func() {},
+		testIntentCallback:   func() {},
 		deployIntentCallback: func() {},
 		syncIntentCallback:   func() {},
 		autoBuildCallback:    func(bool) {},
 		autoSyncCallback:     func(bool) {},
+		autoTestCallback:     func(bool) {},
 		autoDeployCallback:   func(bool) {},
 	}
 	proto.RegisterSkaffoldServiceServer(s, srv)

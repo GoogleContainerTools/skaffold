@@ -35,7 +35,7 @@ func TestBuildAndTest(t *testing.T) {
 	buildArtifacts, err := flags.ParseBuildOutput(outputBytes)
 	failNowIfError(t, err)
 	if len(buildArtifacts.Builds) != 1 {
-		t.Fatalf("expected 1 artifacts to be built, but found %d", len(buildArtifacts.Builds))
+		t.Fatalf("expected 1 artifact to be built, but found %d", len(buildArtifacts.Builds))
 	}
 
 	var skaffoldExampleTag string
@@ -56,7 +56,7 @@ func TestBuildAndTest(t *testing.T) {
 	skaffold.Test("--build-artifacts", buildOutputFile).InDir("examples/structure-tests").InNs(ns.Name).RunOrFail(t)
 }
 
-func TestTestWithInCorrectConfig(t *testing.T) {
+func TestTestWithIncorrectConfig(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)

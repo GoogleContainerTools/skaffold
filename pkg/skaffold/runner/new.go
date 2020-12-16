@@ -48,7 +48,7 @@ import (
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
-	event.InitializeState(runCtx.Pipeline(), runCtx.GetKubeContext(), runCtx.AutoBuild(), runCtx.AutoDeploy(), runCtx.AutoSync())
+	event.InitializeState(runCtx.Pipeline(), runCtx.GetKubeContext(), runCtx.AutoBuild(), runCtx.AutoTest(), runCtx.AutoDeploy(), runCtx.AutoSync())
 	event.LogMetaEvent()
 	kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
 
@@ -132,11 +132,12 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 }
 
 func setupIntents(runCtx *runcontext.RunContext) (*intents, chan bool) {
-	intents := newIntents(runCtx.AutoBuild(), runCtx.AutoSync(), runCtx.AutoDeploy())
+	intents := newIntents(runCtx.AutoBuild(), runCtx.AutoSync(), runCtx.AutoTest(), runCtx.AutoDeploy())
 
 	intentChan := make(chan bool, 1)
 	setupTrigger("build", intents.setBuild, intents.setAutoBuild, intents.getAutoBuild, server.SetBuildCallback, server.SetAutoBuildCallback, intentChan)
 	setupTrigger("sync", intents.setSync, intents.setAutoSync, intents.getAutoSync, server.SetSyncCallback, server.SetAutoSyncCallback, intentChan)
+	setupTrigger("deploy", intents.setDeploy, intents.setAutoTest, intents.getAutoTest, server.SetDeployCallback, server.SetAutoTestCallback, intentChan)
 	setupTrigger("deploy", intents.setDeploy, intents.setAutoDeploy, intents.getAutoDeploy, server.SetDeployCallback, server.SetAutoDeployCallback, intentChan)
 
 	return intents, intentChan

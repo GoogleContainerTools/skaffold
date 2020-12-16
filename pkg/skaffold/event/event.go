@@ -154,20 +154,25 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(p latest.Pipeline, kubeContext string, autoBuild, autoDeploy, autoSync bool) proto.State {
+func emptyState(p latest.Pipeline, kubeContext string, autoBuild, autoTest, autoDeploy, autoSync bool) proto.State {
 	builds := map[string]string{}
 	for _, a := range p.Build.Artifacts {
 		builds[a.ImageName] = NotStarted
 	}
 	metadata := initializeMetadata(p, kubeContext)
-	return emptyStateWithArtifacts(builds, metadata, autoBuild, autoDeploy, autoSync)
+	return emptyStateWithArtifacts(builds, metadata, autoBuild, autoTest, autoDeploy, autoSync)
 }
 
-func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata, autoBuild, autoDeploy, autoSync bool) proto.State {
+func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata, autoBuild, autoTest, autoDeploy, autoSync bool) proto.State {
 	return proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts:   builds,
 			AutoTrigger: autoBuild,
+			StatusCode:  proto.StatusCode_OK,
+		},
+		TestState: &proto.TestState{
+			Status:      NotStarted,
+			AutoTrigger: autoTest,
 			StatusCode:  proto.StatusCode_OK,
 		},
 		DeployState: &proto.DeployState{
@@ -186,8 +191,8 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-func InitializeState(c latest.Pipeline, kc string, autoBuild, autoDeploy, autoSync bool) {
-	handler.setState(emptyState(c, kc, autoBuild, autoDeploy, autoSync))
+func InitializeState(c latest.Pipeline, kc string, autoBuild, autoTest, autoDeploy, autoSync bool) {
+	handler.setState(emptyState(c, kc, autoBuild, autoTest, autoDeploy, autoSync))
 }
 
 // DeployInProgress notifies that a deployment has been started.
@@ -551,6 +556,21 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 			// logEntry.Err = be.Err
 		default:
 		}
+	case *proto.Event_TestEvent:
+		de := e.TestEvent
+		ev.stateLock.Lock()
+		ev.state.TestState.Status = de.Status
+		ev.stateLock.Unlock()
+		switch de.Status {
+		case InProgress:
+			logEntry.Entry = "Test started"
+		case Complete:
+			logEntry.Entry = "Test completed"
+		case Failed:
+			logEntry.Entry = "Test failed"
+			// logEntry.Err = de.Err
+		default:
+		}
 	case *proto.Event_DeployEvent:
 		de := e.DeployEvent
 		ev.stateLock.Lock()
@@ -659,14 +679,25 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 	ev.logEvent(*logEntry)
 }
 
-// ResetStateOnBuild resets the build, deploy and sync state
+// ResetStateOnBuild resets the build, test, deploy and sync state
 func ResetStateOnBuild() {
 	builds := map[string]string{}
 	for k := range handler.getState().BuildState.Artifacts {
 		builds[k] = NotStarted
 	}
-	autoBuild, autoDeploy, autoSync := handler.getState().BuildState.AutoTrigger, handler.getState().DeployState.AutoTrigger, handler.getState().FileSyncState.AutoTrigger
-	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata, autoBuild, autoDeploy, autoSync)
+	autoBuild, autoTest, autoDeploy, autoSync := handler.getState().BuildState.AutoTrigger, handler.getState().TestState.AutoTrigger, handler.getState().DeployState.AutoTrigger, handler.getState().FileSyncState.AutoTrigger
+	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata, autoBuild, autoTest, autoDeploy, autoSync)
+	handler.setState(newState)
+}
+
+// ResetStateOnTest resets the test, sync and status check state
+func ResetStateOnTest() {
+	newState := handler.getState()
+	newState.TestState.Status = NotStarted
+	newState.TestState.StatusCode = proto.StatusCode_OK
+	// newState.StatusCheckState = emptyStatusCheckState()
+	// newState.ForwardedPorts = map[int32]*proto.PortEvent{}
+	// newState.DebuggingContainers = nil
 	handler.setState(newState)
 }
 
@@ -684,6 +715,12 @@ func ResetStateOnDeploy() {
 func UpdateStateAutoBuildTrigger(t bool) {
 	newState := handler.getState()
 	newState.BuildState.AutoTrigger = t
+	handler.setState(newState)
+}
+
+func UpdateStateAutoTestTrigger(t bool) {
+	newState := handler.getState()
+	newState.TestState.AutoTrigger = t
 	handler.setState(newState)
 }
 

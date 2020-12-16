@@ -21,18 +21,21 @@ import "sync"
 type intents struct {
 	build      bool
 	sync       bool
+	test       bool
 	deploy     bool
 	autoBuild  bool
 	autoSync   bool
+	autoTest   bool
 	autoDeploy bool
 
 	lock sync.Mutex
 }
 
-func newIntents(autoBuild, autoSync, autoDeploy bool) *intents {
+func newIntents(autoBuild, autoSync, autoTest, autoDeploy bool) *intents {
 	i := &intents{
 		autoBuild:  autoBuild,
 		autoSync:   autoSync,
+		autoTest:   autoTest,
 		autoDeploy: autoDeploy,
 	}
 
@@ -48,6 +51,12 @@ func (i *intents) resetBuild() {
 func (i *intents) resetSync() {
 	i.lock.Lock()
 	i.sync = i.autoSync
+	i.lock.Unlock()
+}
+
+func (i *intents) resetTest() {
+	i.lock.Lock()
+	i.test = i.autoTest
 	i.lock.Unlock()
 }
 
@@ -69,6 +78,12 @@ func (i *intents) setSync(val bool) {
 	i.lock.Unlock()
 }
 
+func (i *intents) setTest(val bool) {
+	i.lock.Lock()
+	i.test = val
+	i.lock.Unlock()
+}
+
 func (i *intents) setDeploy(val bool) {
 	i.lock.Lock()
 	i.deploy = val
@@ -85,6 +100,12 @@ func (i *intents) getAutoSync() bool {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	return i.autoSync
+}
+
+func (i *intents) getAutoTest() bool {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	return i.autoTest
 }
 
 func (i *intents) getAutoDeploy() bool {
@@ -105,21 +126,27 @@ func (i *intents) setAutoSync(val bool) {
 	i.lock.Unlock()
 }
 
+func (i *intents) setAutoTest(val bool) {
+	i.lock.Lock()
+	i.autoTest = val
+	i.lock.Unlock()
+}
+
 func (i *intents) setAutoDeploy(val bool) {
 	i.lock.Lock()
 	i.autoDeploy = val
 	i.lock.Unlock()
 }
 
-// returns build, sync, and deploy intents (in that order)
-func (i *intents) GetIntents() (bool, bool, bool) {
+// returns build, sync, test, and deploy intents (in that order)
+func (i *intents) GetIntents() (bool, bool, bool, bool) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
-	return i.build, i.sync, i.deploy
+	return i.build, i.sync, i.test, i.deploy
 }
 
 func (i *intents) IsAnyAutoEnabled() bool {
 	i.lock.Lock()
 	defer i.lock.Unlock()
-	return i.autoBuild || i.autoSync || i.autoDeploy
+	return i.autoBuild || i.autoSync || i.autoTest || i.autoDeploy
 }

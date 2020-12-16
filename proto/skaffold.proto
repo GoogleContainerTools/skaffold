@@ -20,8 +20,9 @@ message Request {
 // `State` represents the current state of the Skaffold components
 message State {
     BuildState buildState = 1;
-    DeployState deployState = 2;
-    reserved 3; // field 3 is obsolete
+    TestState testState = 2;
+    DeployState deployState = 3;
+    // reserved 3; // field 3 is obsolete
     map<int32, PortEvent> forwardedPorts = 4;
     StatusCheckState statusCheckState = 5;
     FileSyncState fileSyncState = 6;
@@ -32,6 +33,7 @@ message State {
 message Metadata {
     BuildMetadata build = 1;
     DeployMetadata deploy = 2;
+    TestMetadata test = 3;
     // Additional key value pairs to describe the build pipeline
     map<string, string> additional = 99;
 }
@@ -46,6 +48,15 @@ message BuildMetadata {
   BuildType type = 3;
   // Additional key value pairs to describe the deploy pipeline
   map<string, string> additional = 99;
+}
+
+message TestMetadata {
+    message Tester {
+        TesterType type = 1;
+        int32 count = 2;
+    }
+    repeated Tester Testers = 1;
+    ClusterType cluster = 2;
 }
 
 message DeployMetadata {
@@ -67,6 +78,13 @@ message BuildState {
     // - `"Complete"`: build succeeded <br>
     // - `"Failed"`: build failed
     map<string, string> artifacts = 1;
+    bool autoTrigger = 2;
+    StatusCode statusCode = 3;
+}
+
+// `TestState` describes the status of the current test
+message TestState {
+    string status = 1;
     bool autoTrigger = 2;
     StatusCode statusCode = 3;
 }
@@ -100,11 +118,12 @@ message FileSyncState {
 }
 
 // `Event` describes an event in the Skaffold process.
-// It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
+// It is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
 message Event {
     oneof event_type {
         MetaEvent metaEvent = 1; // contains general information regarding Skaffold like version info
         BuildEvent buildEvent = 2; // describes if the build status per artifact. Status could be one of "InProgress", "Completed" or "Failed".
+        TestEvent TestEvent = 11; // describes if the test has started, is in progress or is complete.
         DeployEvent deployEvent = 3; // describes if the deployment has started, is in progress or is complete.
         PortEvent portEvent = 4; //  describes each port forwarding event.
         StatusCheckEvent statusCheckEvent = 5; // describes if the Status check has started, is in progress, has succeeded or failed.
@@ -153,6 +172,15 @@ message BuildEvent {
     StatusCode errCode = 4; // Deprecated. Use actionableErr.errCode. status code representing success or failure
     ActionableErr actionableErr = 5; // actionable error message
 
+}
+
+// `TestEvent` represents the status of a test, and is emitted by Skaffold
+// anytime a test starts or completes, successfully or not.
+message TestEvent {
+    string status = 1; // test status oneof: InProgress, Completed, Failed
+    string err = 2; // Deprecated. Use actionableErr.message. error when status is Failed
+    StatusCode errCode = 3; // Deprecated. Use actionableErr.errCode. status code representing success or failure
+    ActionableErr actionableErr = 4; // actionable error message
 }
 
 // `DeployEvent` represents the status of a deployment, and is emitted by Skaffold
@@ -250,7 +278,8 @@ message TriggerState {
 message Intent {
     bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once
     bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once
-    bool deploy = 3; // in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once
+    bool test = 3; // in case skaffold dev is ran with autoTest=false, a test intent enables test once
+    bool deploy = 4; // in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once
 }
 
 // Suggestion defines the action a user needs to recover from an error.
@@ -291,7 +320,7 @@ service SkaffoldService {
         };
     }
 
-    // Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
+    // Allows for a single execution of some or all of the phases (build, sync, test, deploy) in case autoBuild, autoTest, autoDeploy or autoSync are disabled.
     rpc Execute (UserIntentRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
             post: "/v1/execute"
@@ -311,6 +340,14 @@ service SkaffoldService {
     rpc AutoSync (TriggerRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
             put: "/v1/sync/auto_execute"
+            body: "state"
+        };
+    }
+
+    // Allows for enabling or disabling automatic test trigger
+    rpc AutoTest (TriggerRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            put: "/v1/test/auto_execute"
             body: "state"
         };
     }
@@ -363,6 +400,14 @@ enum BuildType {
     LOCAL = 3;
 }
 
+// Enum indicating test tools used
+enum TesterType {
+    // Could not determine Test Type
+    UNKNOWN_TEST_TYPE = 0;
+    // Unit tests
+    UNIT = 1;
+}
+
 // Enum indicating deploy tools used
 enum DeployerType {
     // Could not determine Deployer Type
@@ -389,7 +434,7 @@ enum ClusterType {
 
 // Enum for Status codes
 // These error codes are prepended by Phase Name e.g.
-// BUILD, DEPLOY, STATUSCHECK, DEVINIT
+// BUILD, TEST, DEPLOY, STATUSCHECK, DEVINIT
 // For Success Error codes, use range 200 to 250.
 // For Unknown error codes, use range 500 to 600.
 // For Cancelled Error code, use range 800 to 850.
@@ -404,8 +449,10 @@ enum StatusCode {
     STATUSCHECK_SUCCESS = 200;
     // Build Success
     BUILD_SUCCESS = 201;
+    // Test Success
+    TEST_SUCCESS = 202;
     // Deploy Success
-    DEPLOY_SUCCESS = 202;
+    DEPLOY_SUCCESS = 203;
 
     // Build Errors
 

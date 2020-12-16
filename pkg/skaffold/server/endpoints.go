@@ -72,6 +72,10 @@ func (s *server) AutoBuild(ctx context.Context, request *proto.TriggerRequest) (
 	return executeAutoTrigger("build", request, event.UpdateStateAutoBuildTrigger, event.ResetStateOnBuild, s.autoBuildCallback)
 }
 
+func (s *server) AutoTest(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
+	return executeAutoTrigger("test", request, event.UpdateStateAutoTestTrigger, event.ResetStateOnDeploy, s.autoTestCallback)
+}
+
 func (s *server) AutoDeploy(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
 	return executeAutoTrigger("deploy", request, event.UpdateStateAutoDeployTrigger, event.ResetStateOnDeploy, s.autoDeployCallback)
 }
