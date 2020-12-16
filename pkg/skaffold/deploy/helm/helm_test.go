@@ -466,6 +466,7 @@ func TestHelmDeploy(t *testing.T) {
 	tests := []struct {
 		description      string
 		commands         util.Command
+		env              []string
 		helm             latest.HelmDeploy
 		namespace        string
 		configure        func(*Deployer)
@@ -802,13 +803,21 @@ func TestHelmDeploy(t *testing.T) {
 			builds:    testBuildsFoo,
 		},
 		{
+			description: "deploy and get missing templated release name should fail",
+			commands:    testutil.CmdRunWithOutput("helm version --client", version31),
+			helm:        testDeployWithTemplatedName,
+			builds:      testBuilds,
+			shouldErr:   true,
+		},
+		{
 			description: "deploy and get templated release name",
+			env:         []string{"USER=user"},
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext get all <no value>-skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all user-skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade <no value>-skaffold-helm examples/test -f skaffold-overrides.yaml --set-string image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext get all <no value>-skaffold-helm --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext upgrade user-skaffold-helm examples/test -f skaffold-overrides.yaml --set-string image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all user-skaffold-helm --kubeconfig kubeconfig"),
 			helm:   testDeployWithTemplatedName,
 			builds: testBuilds,
 		},
@@ -933,8 +942,12 @@ func TestHelmDeploy(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			fakeWarner := &warnings.Collect{}
+			env := test.env
+			if env == nil {
+				env = []string{"FOO=FOOBAR"}
+			}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
+			t.Override(&util.OSEnviron, func() []string { return env })
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&osExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 

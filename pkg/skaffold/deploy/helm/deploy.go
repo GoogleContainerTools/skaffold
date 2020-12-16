@@ -124,16 +124,20 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 
 	// Deploy every release
 	for _, r := range h.Releases {
-		results, err := h.deployRelease(ctx, out, r, builds, valuesSet, h.bV)
+		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
 		if err != nil {
-			releaseName, _ := util.ExpandEnvTemplate(r.Name, nil)
+			return nil, userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
+		}
+		results, err := h.deployRelease(ctx, out, releaseName, r, builds, valuesSet, h.bV)
+		if err != nil {
 			return nil, userErr(fmt.Sprintf("deploying %q", releaseName), err)
 		}
 
 		// collect namespaces
 		for _, r := range results {
 			var namespace string
-			namespace, err = util.ExpandEnvTemplate(r.Namespace, nil)
+			// `<no value>` is not allowed within a namespace
+			namespace, err = util.ExpandEnvTemplateOrFail(r.Namespace, nil)
 			if err != nil {
 				return nil, userErr("cannot parse the release namespace template", err)
 			}
@@ -231,7 +235,7 @@ func (h *Deployer) Dependencies() ([]string, error) {
 // Cleanup deletes what was deployed by calling Deploy.
 func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	for _, r := range h.Releases {
-		releaseName, err := util.ExpandEnvTemplate(r.Name, nil)
+		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
 		if err != nil {
 			return fmt.Errorf("cannot parse the release name template: %w", err)
 		}
@@ -307,12 +311,8 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 }
 
 // deployRelease deploys a single release
-func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]types.Artifact, error) {
-	releaseName, err := util.ExpandEnvTemplate(r.Name, nil)
-	if err != nil {
-		return nil, fmt.Errorf("cannot parse the release name template: %w", err)
-	}
-
+func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]types.Artifact, error) {
+	var err error
 	opts := installOpts{
 		releaseName: releaseName,
 		upgrade:     true,
