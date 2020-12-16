@@ -42,7 +42,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 
-	// import embedded secret for uploading metrics
+	//  import embedded secret for uploading metrics
 	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/secret/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -61,7 +61,7 @@ type skaffoldMeter struct {
 	Arch           string
 	PlatformType   string
 	Deployers      []string
-	EnumFlags      map[string]*flag.Flag
+	EnumFlags      map[string]string
 	Builders       map[string]int
 	SyncType       map[string]bool
 	DevIterations  []devIteration
@@ -79,7 +79,7 @@ var (
 	meter = skaffoldMeter{
 		OS:            runtime.GOOS,
 		Arch:          runtime.GOARCH,
-		EnumFlags:     map[string]*flag.Flag{},
+		EnumFlags:     map[string]string{},
 		Builders:      map[string]int{},
 		SyncType:      map[string]bool{},
 		DevIterations: []devIteration{},
@@ -148,7 +148,9 @@ func AddDevIterationErr(i int, errorCode proto.StatusCode) {
 }
 
 func AddFlag(flag *flag.Flag) {
-	meter.EnumFlags[flag.Name] = flag
+	if flag.Changed {
+		meter.EnumFlags[flag.Name] = flag.Value.String()
+	}
 }
 
 func ExportMetrics(exitCode int) error {

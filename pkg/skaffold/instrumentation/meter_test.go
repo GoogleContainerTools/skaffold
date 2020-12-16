@@ -25,12 +25,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spf13/pflag"
-
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+var testKey = `{
+	"client_id": "test_id",
+	"client_secret": "test_secret",
+	"project_id": "test_project",
+	"refresh_token": "test_token",
+	"type": "authorized_user"
+}`
 
 func TestOfflineExportMetrics(t *testing.T) {
 	startTime, _ := time.Parse(time.ANSIC, "Mon Jan 2 15:04:05 -0700 MST 2006")
@@ -41,20 +47,14 @@ func TestOfflineExportMetrics(t *testing.T) {
 		Arch:           "test arch",
 		OS:             "test os",
 		Builders:       map[string]int{"docker": 1, "buildpacks": 1},
-		EnumFlags:      map[string]*pflag.Flag{"test": {Name: "test", Shorthand: "t"}},
+		EnumFlags:      map[string]string{"test": "test_value"},
 		StartTime:      startTime,
 		Duration:       time.Minute,
 	}
 	validMeterBytes, _ := json.Marshal(validMeter)
 	fs := &testutil.FakeFileSystem{
 		Files: map[string][]byte{
-			"/keys.json": []byte(`{
-				"client_id": "test_id",
-				"client_secret": "test_secret",
-				"project_id": "test_project",
-				"refresh_token": "test_token",
-				"type": "authorized_user"
-			}`),
+			"/keys.json": []byte(testKey),
 		},
 	}
 
@@ -83,7 +83,7 @@ func TestOfflineExportMetrics(t *testing.T) {
 				PlatformType: "test platform",
 				Deployers:    []string{"test helm", "test kpt"},
 				SyncType:     map[string]bool{"manual": true},
-				EnumFlags:    map[string]*pflag.Flag{"test_run": {Name: "test_run", Shorthand: "r"}},
+				EnumFlags:    map[string]string{"test_run": "test_run_value"},
 				ErrorCode:    proto.StatusCode_BUILD_CANCELLED,
 				StartTime:    startTime.Add(time.Hour * 24 * 30),
 				Duration:     time.Minute,
@@ -127,6 +127,53 @@ func TestOfflineExportMetrics(t *testing.T) {
 				}
 				t.CheckDeepEqual(expected, actual)
 			}
+		})
+	}
+}
+
+func TestInitCloudMonitoring(t *testing.T) {
+	tests := []struct {
+		name        string
+		fileSystem  *testutil.FakeFileSystem
+		pusherIsNil bool
+		shouldError bool
+	}{
+		{
+			name: "if key present pusher is not nil",
+			fileSystem: &testutil.FakeFileSystem{
+				Files: map[string][]byte{"/keys.json": []byte(testKey)},
+			},
+		},
+		{
+			name: "key not present returns nill err",
+			fileSystem: &testutil.FakeFileSystem{
+				Files: map[string][]byte{},
+			},
+			pusherIsNil: true,
+		},
+		{
+			name: "credentials without project_id returns an error",
+			fileSystem: &testutil.FakeFileSystem{
+				Files: map[string][]byte{
+					"/keys.json": []byte(`{
+						"client_id": "test_id",
+						"client_secret": "test_secret",
+						"refresh_token": "test_token",
+						"type": "authorized_user"
+					}`,
+					)},
+			},
+			shouldError: true,
+			pusherIsNil: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			t.Override(&statik.FS, func() (http.FileSystem, error) { return test.fileSystem, nil })
+
+			p, err := initCloudMonitoringExporterMetrics()
+
+			t.CheckErrorAndDeepEqual(test.shouldError, err, test.pusherIsNil || test.shouldError, p == nil)
 		})
 	}
 }
