@@ -1,2 +1,3 @@
 resources:
-- frontend
+- frontend/deployment.yaml
+- frontend/service.yaml
