@@ -61,7 +61,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				description: "kubectl deployer",
 				cfg:         latest.DeployType{KubectlDeploy: &latest.KubectlDeploy{}},
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
-					Cfg: latest.Pipeline{
+					Pipelines: latest.Pipeline{
 						Deploy: latest.DeployConfig{
 							DeployType: latest.DeployType{
 								KubectlDeploy: &latest.KubectlDeploy{
@@ -76,7 +76,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				description: "kustomize deployer",
 				cfg:         latest.DeployType{KustomizeDeploy: &latest.KustomizeDeploy{}},
 				expected: t.RequireNonNilResult(kustomize.NewDeployer(&runcontext.RunContext{
-					Cfg: latest.Pipeline{
+					Pipelines: latest.Pipeline{
 						Deploy: latest.DeployConfig{
 							DeployType: latest.DeployType{
 								KustomizeDeploy: &latest.KustomizeDeploy{
@@ -115,7 +115,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				}
 
 				deployer, err := getDeployer(&runcontext.RunContext{
-					Cfg: latest.Pipeline{
+					Pipelines: latest.Pipeline{
 						Deploy: latest.DeployConfig{
 							DeployType: test.cfg,
 						},

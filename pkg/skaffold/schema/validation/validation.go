@@ -24,8 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -34,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/docker/docker/api/types"
 )
 
 var (
@@ -43,18 +42,21 @@ var (
 )
 
 // Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
-func Process(config *latest.SkaffoldConfig) error {
-	errs := visitStructs(config, validateYamltags)
-	errs = append(errs, validateImageNames(config.Build.Artifacts)...)
-	errs = append(errs, validateArtifactDependencies(config.Build.Artifacts)...)
-	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
-	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
-	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
-	errs = append(errs, validatePortForwardResources(config.PortForward)...)
-	errs = append(errs, validateJibPluginTypes(config.Build.Artifacts)...)
-	errs = append(errs, validateLogPrefix(config.Deploy.Logs)...)
-	errs = append(errs, validateArtifactTypes(config.Build)...)
-	errs = append(errs, validateTaggingPolicy(config.Build)...)
+func Process(configs []*latest.SkaffoldConfig) error {
+	var errs []error
+	for _, config := range configs {
+		errs = visitStructs(config, validateYamltags)
+		errs = append(errs, validateImageNames(config.Build.Artifacts)...)
+		errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
+		errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
+		errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
+		errs = append(errs, validatePortForwardResources(config.PortForward)...)
+		errs = append(errs, validateJibPluginTypes(config.Build.Artifacts)...)
+		errs = append(errs, validateLogPrefix(config.Deploy.Logs)...)
+		errs = append(errs, validateArtifactTypes(config.Build)...)
+		errs = append(errs, validateTaggingPolicy(config.Build)...)
+	}
+	errs = append(errs, validateArtifactDependencies(configs)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -69,9 +71,9 @@ func Process(config *latest.SkaffoldConfig) error {
 
 // ProcessWithRunContext checks if the Skaffold pipeline is valid when a RunContext is required.
 // It returns all encountered errors as a concatenated string.
-func ProcessWithRunContext(config *latest.SkaffoldConfig, runCtx *runcontext.RunContext) error {
+func ProcessWithRunContext(runCtx *runcontext.RunContext) error {
 	var errs []error
-	errs = append(errs, validateDockerNetworkContainerExists(config.Build.Artifacts, runCtx)...)
+	errs = append(errs, validateDockerNetworkContainerExists(runCtx.Artifacts(), runCtx)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -115,7 +117,11 @@ func validateImageNames(artifacts []*latest.Artifact) (errs []error) {
 	return
 }
 
-func validateArtifactDependencies(artifacts []*latest.Artifact) (errs []error) {
+func validateArtifactDependencies(configs []*latest.SkaffoldConfig) (errs []error) {
+	var artifacts []*latest.Artifact
+	for _, c := range configs {
+		artifacts = append(artifacts, c.Build.Artifacts...)
+	}
 	errs = append(errs, validateUniqueDependencyAliases(artifacts)...)
 	errs = append(errs, validateAcyclicDependencies(artifacts)...)
 	errs = append(errs, validateValidDependencyAliases(artifacts)...)

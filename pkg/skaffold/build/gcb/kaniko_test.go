@@ -363,7 +363,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 			MachineType: "n1-standard-1",
 			Timeout:     "10m",
 		},
-	})
+	}, nil)
 
 	defaultExpectedArgs := []string{
 		"--destination", "gcr.io/nginx",

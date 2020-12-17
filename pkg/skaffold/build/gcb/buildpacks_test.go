@@ -194,7 +194,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 				gcb: latest.GoogleCloudBuild{
 					PackImage: "pack/image",
 				},
-			})
+			}, nil)
 			builder.ArtifactStore(store)
 			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
 			t.CheckError(test.shouldErr, err)

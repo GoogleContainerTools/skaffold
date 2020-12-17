@@ -37,7 +37,7 @@ import (
 type Config interface {
 	docker.Config
 
-	Pipeline() latest.Pipeline
+	TestCases() []*latest.TestCase
 	GetWorkingDir() string
 	Muted() config.Muted
 }
@@ -45,14 +45,14 @@ type Config interface {
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
-func NewTester(cfg Config, imagesAreLocal bool) Tester {
+func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) Tester {
 	localDaemon, err := docker.NewAPIClient(cfg)
 	if err != nil {
 		return nil
 	}
 
 	return FullTester{
-		testCases:      cfg.Pipeline().Test,
+		testCases:      cfg.TestCases(),
 		workingDir:     cfg.GetWorkingDir(),
 		muted:          cfg.Muted(),
 		localDaemon:    localDaemon,
@@ -132,7 +132,9 @@ func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes [
 		return nil
 	}
 
-	if !t.imagesAreLocal {
+	if imageIsLocal, err := t.imagesAreLocal(tc.ImageName); err != nil {
+		return err
+	} else if !imageIsLocal {
 		// The image is remote so we have to pull it locally.
 		// `container-structure-test` currently can't do it:
 		// https://github.com/GoogleContainerTools/container-structure-test/issues/253.

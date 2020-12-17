@@ -57,22 +57,22 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labels map[string]string) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, d *latest.KubectlDeploy) (*Deployer, error) {
 	defaultNamespace := ""
-	if cfg.Pipeline().Deploy.KubectlDeploy.DefaultNamespace != nil {
+	if d.DefaultNamespace != nil {
 		var err error
-		defaultNamespace, err = util.ExpandEnvTemplate(*cfg.Pipeline().Deploy.KubectlDeploy.DefaultNamespace, nil)
+		defaultNamespace, err = util.ExpandEnvTemplate(*d.DefaultNamespace, nil)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &Deployer{
-		KubectlDeploy:      cfg.Pipeline().Deploy.KubectlDeploy,
+		KubectlDeploy:      d,
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
 		defaultRepo:        cfg.DefaultRepo(),
-		kubectl:            NewCLI(cfg, cfg.Pipeline().Deploy.KubectlDeploy.Flags, defaultNamespace),
+		kubectl:            NewCLI(cfg, d.Flags, defaultNamespace),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		skipRender:         cfg.SkipRender(),
 		labels:             labels,

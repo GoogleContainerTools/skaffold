@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func getBuildArtifactsAndSetTags(r runner.Runner, config *latest.SkaffoldConfig) ([]build.Artifact, error) {
-	buildArtifacts, err := getArtifacts(fromBuildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
+func getBuildArtifactsAndSetTags(r runner.Runner, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	buildArtifacts, err := getArtifacts(fromBuildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), artifacts)
 	if err != nil {
 		return nil, err
 	}

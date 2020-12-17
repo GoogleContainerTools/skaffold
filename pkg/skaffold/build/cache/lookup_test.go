@@ -118,10 +118,10 @@ func TestLookupLocal(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			cache := &cache{
-				imagesAreLocal: true,
-				artifactCache:  test.cache,
-				client:         fakeLocalDaemon(test.api),
-				cfg:            &mockConfig{mode: config.RunModes.Build},
+				isLocalImage:  true,
+				artifactCache: test.cache,
+				client:        fakeLocalDaemon(test.api),
+				cfg:           &mockConfig{mode: config.RunModes.Build},
 			}
 
 			t.Override(&newArtifactHasherFunc, func(_ build.ArtifactGraph, _ DependencyLister, _ config.RunMode) artifactHasher { return test.hasher })
@@ -206,10 +206,10 @@ func TestLookupRemote(t *testing.T) {
 			})
 
 			cache := &cache{
-				imagesAreLocal: false,
-				artifactCache:  test.cache,
-				client:         fakeLocalDaemon(test.api),
-				cfg:            &mockConfig{mode: config.RunModes.Build},
+				isLocalImage:  false,
+				artifactCache: test.cache,
+				client:        fakeLocalDaemon(test.api),
+				cfg:           &mockConfig{mode: config.RunModes.Build},
 			}
 			t.Override(&newArtifactHasherFunc, func(_ build.ArtifactGraph, _ DependencyLister, _ config.RunMode) artifactHasher { return test.hasher })
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{

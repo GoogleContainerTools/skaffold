@@ -51,7 +51,7 @@ type FullTester struct {
 	localDaemon    docker.LocalDaemon
 	muted          Muted
 	workingDir     string
-	imagesAreLocal bool
+	imagesAreLocal func(imageName string) (bool, error)
 }
 
 // Runner is the lowest-level test executor in Skaffold, responsible for

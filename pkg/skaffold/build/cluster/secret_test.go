@@ -46,7 +46,7 @@ func TestCreateSecret(t *testing.T) {
 				PullSecretPath: tmpDir.Path("secret.json"),
 				Namespace:      "ns",
 			},
-		})
+		}, nil)
 		t.CheckNoError(err)
 
 		// Should create a secret
@@ -77,7 +77,7 @@ func TestExistingSecretNotFound(t *testing.T) {
 				Timeout:        "20m",
 				PullSecretName: "kaniko-secret",
 			},
-		})
+		}, nil)
 		t.CheckNoError(err)
 
 		// should fail to retrieve an existing secret
@@ -102,7 +102,7 @@ func TestExistingSecret(t *testing.T) {
 				Timeout:        "20m",
 				PullSecretName: "kaniko-secret",
 			},
-		})
+		}, nil)
 		t.CheckNoError(err)
 
 		// should retrieve an existing secret
@@ -123,7 +123,7 @@ func TestSkipSecretCreation(t *testing.T) {
 			cluster: latest.ClusterDetails{
 				Timeout: "20m",
 			},
-		})
+		}, nil)
 		t.CheckNoError(err)
 
 		// should retrieve an existing secret

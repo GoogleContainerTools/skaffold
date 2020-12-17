@@ -38,7 +38,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -67,7 +66,7 @@ type Config interface {
 	kubectl.Config
 
 	GetNamespaces() []string
-	Pipeline() latest.Pipeline
+	StatusCheckDeadlineSeconds() int
 	Muted() config.Muted
 }
 
@@ -90,7 +89,7 @@ func NewStatusChecker(cfg Config, labeller *label.DefaultLabeller) Checker {
 		muteLogs:        cfg.Muted().MuteStatusCheck(),
 		cfg:             cfg,
 		labeller:        labeller,
-		deadlineSeconds: cfg.Pipeline().Deploy.StatusCheckDeadlineSeconds,
+		deadlineSeconds: cfg.StatusCheckDeadlineSeconds(),
 	}
 }
 
@@ -111,7 +110,7 @@ func (s statusChecker) statusCheck(ctx context.Context, out io.Writer) (proto.St
 	deployments := make([]*resource.Deployment, 0)
 	for _, n := range s.cfg.GetNamespaces() {
 		newDeployments, err := getDeployments(ctx, client, n, s.labeller,
-			getDeadline(s.cfg.Pipeline().Deploy.StatusCheckDeadlineSeconds))
+			getDeadline(s.deadlineSeconds))
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
 		}

@@ -35,7 +35,7 @@ func TestRetrieveEnv(t *testing.T) {
 			},
 			Timeout: "2m",
 		},
-	})
+	}, nil)
 	testutil.CheckError(t, false, err)
 
 	actual := builder.retrieveExtraEnv()
@@ -48,7 +48,7 @@ func TestRetrieveEnvMinimal(t *testing.T) {
 		cluster: latest.ClusterDetails{
 			Timeout: "20m",
 		},
-	})
+	}, nil)
 	testutil.CheckError(t, false, err)
 
 	actual := builder.retrieveExtraEnv()

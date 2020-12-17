@@ -72,7 +72,7 @@ func TestNewBuilder(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := NewBuilder(test.cfg)
+			_, err := NewBuilder(test.cfg, nil)
 
 			t.CheckError(test.shouldErr, err)
 		})

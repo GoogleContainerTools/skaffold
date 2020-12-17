@@ -73,7 +73,7 @@ func TestJibMavenBuildSpec(t *testing.T) {
 				gcb: latest.GoogleCloudBuild{
 					MavenImage: "maven:3.6.0",
 				},
-			})
+			}, nil)
 			builder.skipTests = test.skipTests
 			store := mockArtifactStore{
 				"img2": "img2:tag",
@@ -124,7 +124,7 @@ func TestJibGradleBuildSpec(t *testing.T) {
 				gcb: latest.GoogleCloudBuild{
 					GradleImage: "gradle:5.1.1",
 				},
-			})
+			}, nil)
 			builder.skipTests = test.skipTests
 
 			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")

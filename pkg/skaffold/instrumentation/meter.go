@@ -75,17 +75,19 @@ var (
 	skipExport = os.Getenv("SKAFFOLD_EXPORT_METRICS")
 )
 
-func InitMeter(runCtx *runcontext.RunContext, config *latest.SkaffoldConfig) {
+func InitMeter(runCtx *runcontext.RunContext, configs []*latest.SkaffoldConfig) {
 	meter.Command = runCtx.Opts.Command
-	meter.PlatformType = yamltags.GetYamlTag(config.Build.BuildType)
-	for _, artifact := range config.Pipeline.Build.Artifacts {
-		meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)] = true
-		if artifact.Sync != nil {
-			meter.SyncType[yamltags.GetYamlTag(artifact.Sync)] = true
+	meter.PlatformType = yamltags.GetYamlTag(configs[0].Build.BuildType)
+	for _, config := range configs {
+		for _, artifact := range config.Pipeline.Build.Artifacts {
+			meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)] = true
+			if artifact.Sync != nil {
+				meter.SyncType[yamltags.GetYamlTag(artifact.Sync)] = true
+			}
 		}
+		meter.Deployers = append(meter.Deployers, yamltags.GetYamlTags(config.Deploy.DeployType)...)
+		meter.BuildArtifacts += len(config.Pipeline.Build.Artifacts)
 	}
-	meter.Deployers = yamltags.GetYamlTags(config.Deploy.DeployType)
-	meter.BuildArtifacts = len(config.Pipeline.Build.Artifacts)
 }
 
 func SetErrorCode(errorCode proto.StatusCode) {

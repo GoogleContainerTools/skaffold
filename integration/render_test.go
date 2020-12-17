@@ -79,7 +79,7 @@ spec:
 			Chdir()
 		deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 			WorkingDir: ".",
-			Cfg: latest.Pipeline{
+			Pipelines: latest.Pipeline{
 				Deploy: latest.DeployConfig{
 					DeployType: latest.DeployType{
 						KubectlDeploy: &latest.KubectlDeploy{
@@ -234,7 +234,7 @@ spec:
 
 			deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
-				Cfg: latest.Pipeline{
+				Pipelines: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KubectlDeploy: &latest.KubectlDeploy{
@@ -421,7 +421,7 @@ spec:
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			deployer, err := helm.NewDeployer(&runcontext.RunContext{
-				Cfg: latest.Pipeline{
+				Pipelines: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: &latest.HelmDeploy{

@@ -221,7 +221,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 	defaults.Set(cfg)
 
 	runCtx := &runcontext.RunContext{
-		Cfg: cfg.Pipeline,
+		Pipelines: cfg.Pipeline,
 		Opts: config.SkaffoldOptions{
 			Trigger:           "polling",
 			WatchPollInterval: 100,
@@ -401,7 +401,7 @@ func TestNewForConfig(t *testing.T) {
 				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
 
 			runCtx := &runcontext.RunContext{
-				Cfg: test.pipeline,
+				Pipelines: test.pipeline,
 				Opts: config.SkaffoldOptions{
 					Trigger: "polling",
 				},
@@ -497,8 +497,8 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 				},
 			}
 			r, _ := NewForConfig(&runcontext.RunContext{
-				Opts: opts,
-				Cfg:  pipeline,
+				Opts:      opts,
+				Pipelines: pipeline,
 			})
 
 			r.intents.resetBuild()

@@ -46,16 +46,16 @@ type ArtifactCache map[string]ImageDetails
 
 // cache holds any data necessary for accessing the cache
 type cache struct {
-	artifactCache    ArtifactCache
-	artifactGraph    build.ArtifactGraph
-	artifactStore    build.ArtifactStore
-	cacheMutex       sync.RWMutex
-	client           docker.LocalDaemon
-	cfg              Config
-	cacheFile        string
-	imagesAreLocal   bool
-	tryImportMissing bool
-	lister           DependencyLister
+	artifactCache      ArtifactCache
+	artifactGraph      build.ArtifactGraph
+	artifactStore      build.ArtifactStore
+	cacheMutex         sync.RWMutex
+	client             docker.LocalDaemon
+	cfg                Config
+	cacheFile          string
+	isLocalImage       func(imageName string) (bool, error)
+	importMissingImage func(imageName string) (bool, error)
+	lister             DependencyLister
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
@@ -63,14 +63,15 @@ type DependencyLister func(ctx context.Context, artifact *latest.Artifact) ([]st
 
 type Config interface {
 	docker.Config
-
+	Pipeline(imageName string) (*latest.Pipeline, bool)
+	GetCluster() config.Cluster
 	CacheArtifacts() bool
 	CacheFile() string
 	Mode() config.RunMode
 }
 
 // NewCache returns the current state of the cache
-func NewCache(cfg Config, imagesAreLocal bool, tryImportMissing bool, dependencies DependencyLister, graph build.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
+func NewCache(cfg Config, isLocalImage func(imageName string) (bool, error), dependencies DependencyLister, graph build.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
 	if !cfg.CacheArtifacts() {
 		return &noCache{}, nil
 	}
@@ -88,20 +89,29 @@ func NewCache(cfg Config, imagesAreLocal bool, tryImportMissing bool, dependenci
 	}
 
 	client, err := docker.NewAPIClient(cfg)
-	if imagesAreLocal && err != nil {
-		return nil, fmt.Errorf("getting local Docker client: %w", err)
+
+	importMissingImage := func(imageName string) (bool, error) {
+		pipeline, found := cfg.Pipeline(imageName)
+		if !found {
+			return false, fmt.Errorf("unknown pipeline for image %q", imageName)
+		}
+
+		if pipeline.Build.GoogleCloudBuild != nil || pipeline.Build.Cluster != nil {
+			return false, nil
+		}
+		return pipeline.Build.LocalBuild.TryImportMissing, nil
 	}
 
 	return &cache{
-		artifactCache:    artifactCache,
-		artifactGraph:    graph,
-		artifactStore:    store,
-		client:           client,
-		cfg:              cfg,
-		cacheFile:        cacheFile,
-		imagesAreLocal:   imagesAreLocal,
-		tryImportMissing: tryImportMissing,
-		lister:           dependencies,
+		artifactCache:      artifactCache,
+		artifactGraph:      graph,
+		artifactStore:      store,
+		client:             client,
+		cfg:                cfg,
+		cacheFile:          cacheFile,
+		isLocalImage:       isLocalImage,
+		importMissingImage: importMissingImage,
+		lister:             dependencies,
 	}, nil
 }
 

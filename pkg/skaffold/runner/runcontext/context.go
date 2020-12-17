@@ -34,23 +34,76 @@ const (
 )
 
 type RunContext struct {
-	Opts config.SkaffoldOptions
-	Cfg  latest.Pipeline
-
-	KubeContext        string
-	Namespaces         []string
-	WorkingDir         string
-	InsecureRegistries map[string]bool
-	Cluster            config.Cluster
+	Opts                 config.SkaffoldOptions
+	Pipelines            []latest.Pipeline
+	KubeContext          string
+	Namespaces           []string
+	WorkingDir           string
+	InsecureRegistries   map[string]bool
+	Cluster              config.Cluster
+	pipelinesByImageName map[string]*latest.Pipeline
 }
 
-func (rc *RunContext) GetKubeContext() string                 { return rc.KubeContext }
-func (rc *RunContext) GetNamespaces() []string                { return rc.Namespaces }
-func (rc *RunContext) Pipeline() latest.Pipeline              { return rc.Cfg }
-func (rc *RunContext) GetInsecureRegistries() map[string]bool { return rc.InsecureRegistries }
-func (rc *RunContext) GetWorkingDir() string                  { return rc.WorkingDir }
-func (rc *RunContext) GetCluster() config.Cluster             { return rc.Cluster }
+// Pipeline returns the first `latest.Pipeline` that matches the given artifact `imageName`.
+func (rc *RunContext) Pipeline(imageName string) (*latest.Pipeline, bool) {
+	p, found := rc.pipelinesByImageName[imageName]
+	return p, found
+}
 
+func (rc *RunContext) PortForwardResources() []*latest.PortForwardResource {
+	var pf []*latest.PortForwardResource
+	for _, p := range rc.Pipelines {
+		pf = append(pf, p.PortForward...)
+	}
+	return pf
+}
+
+func (rc *RunContext) Artifacts() []*latest.Artifact {
+	var artifacts []*latest.Artifact
+	for _, p := range rc.Pipelines {
+		for _, a := range p.Build.Artifacts {
+			artifacts = append(artifacts, a)
+		}
+	}
+	return artifacts
+}
+
+func (rc *RunContext) Deployers() []latest.DeployType {
+	var deployers []latest.DeployType
+	for _, p := range rc.Pipelines {
+		deployers = append(deployers, p.Deploy.DeployType)
+	}
+	return deployers
+}
+
+func (rc *RunContext) TestCases() []*latest.TestCase {
+	var tests []*latest.TestCase
+	for _, p := range rc.Pipelines {
+		tests = append(tests, p.Test...)
+	}
+	return tests
+}
+
+func (rc *RunContext) StatusCheckDeadlineSeconds() int {
+	c := 0
+	// set the group status check deadline to maximum of any individually specified value
+	for _, p := range rc.Pipelines {
+		if p.Deploy.StatusCheckDeadlineSeconds > c {
+			c = p.Deploy.StatusCheckDeadlineSeconds
+		}
+	}
+	return c
+}
+
+// DefaultPipeline returns the first `latest.Pipeline` it finds.
+func (rc *RunContext) DefaultPipeline() *latest.Pipeline { return &rc.Pipelines[0] }
+
+func (rc *RunContext) GetKubeContext() string                    { return rc.KubeContext }
+func (rc *RunContext) GetNamespaces() []string                   { return rc.Namespaces }
+func (rc *RunContext) GetPipelines() []latest.Pipeline           { return rc.Pipelines }
+func (rc *RunContext) GetInsecureRegistries() map[string]bool    { return rc.InsecureRegistries }
+func (rc *RunContext) GetWorkingDir() string                     { return rc.WorkingDir }
+func (rc *RunContext) GetCluster() config.Cluster                { return rc.Cluster }
 func (rc *RunContext) AddSkaffoldLabels() bool                   { return rc.Opts.AddSkaffoldLabels }
 func (rc *RunContext) AutoBuild() bool                           { return rc.Opts.AutoBuild }
 func (rc *RunContext) AutoDeploy() bool                          { return rc.Opts.AutoDeploy }
@@ -84,7 +137,7 @@ func (rc *RunContext) Trigger() string                           { return rc.Opt
 func (rc *RunContext) WaitForDeletions() config.WaitForDeletions { return rc.Opts.WaitForDeletions }
 func (rc *RunContext) WatchPollInterval() int                    { return rc.Opts.WatchPollInterval }
 
-func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContext, error) {
+func GetRunContext(opts config.SkaffoldOptions, pipelines []latest.Pipeline) (*RunContext, error) {
 	kubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
 		return nil, fmt.Errorf("getting current cluster context: %w", err)
@@ -98,7 +151,7 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		return nil, fmt.Errorf("finding current directory: %w", err)
 	}
 
-	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace, cfg)
+	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace, pipelines)
 	if err != nil {
 		return nil, fmt.Errorf("getting namespace list: %w", err)
 	}
@@ -108,11 +161,21 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 	if err != nil {
 		logrus.Warnf("error retrieving insecure registries from global config: push/pull issues may exist...")
 	}
-	regList := append(opts.InsecureRegistries, cfg.Build.InsecureRegistries...)
+	var regList []string
+	regList = append(regList, opts.InsecureRegistries...)
+	for _, cfg := range pipelines {
+		regList = append(regList, cfg.Build.InsecureRegistries...)
+	}
 	regList = append(regList, cfgRegistries...)
 	insecureRegistries := make(map[string]bool, len(regList))
 	for _, r := range regList {
 		insecureRegistries[r] = true
+	}
+	m := make(map[string]*latest.Pipeline)
+	for _, p := range pipelines {
+		for _, a := range p.Build.Artifacts {
+			m[a.ImageName] = &p
+		}
 	}
 
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
@@ -124,13 +187,14 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 	}
 
 	return &RunContext{
-		Opts:               opts,
-		Cfg:                cfg,
-		WorkingDir:         cwd,
-		KubeContext:        kubeContext,
-		Namespaces:         namespaces,
-		InsecureRegistries: insecureRegistries,
-		Cluster:            cluster,
+		Opts:                 opts,
+		Pipelines:            pipelines,
+		WorkingDir:           cwd,
+		KubeContext:          kubeContext,
+		Namespaces:           namespaces,
+		InsecureRegistries:   insecureRegistries,
+		Cluster:              cluster,
+		pipelinesByImageName: m,
 	}, nil
 }
 

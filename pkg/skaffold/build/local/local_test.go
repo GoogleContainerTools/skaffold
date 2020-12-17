@@ -258,7 +258,7 @@ func TestLocalRun(t *testing.T) {
 					Push:        util.BoolPtr(test.pushImages),
 					Concurrency: &constants.DefaultLocalConcurrency,
 				},
-			})
+			}, nil)
 			t.CheckNoError(err)
 			builder.ArtifactStore(build.NewArtifactStore())
 			res, err := builder.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
@@ -322,7 +322,7 @@ func TestNewBuilder(t *testing.T) {
 			builder, err := NewBuilder(&mockConfig{
 				local:   test.localBuild,
 				cluster: test.cluster,
-			})
+			}, nil)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
@@ -403,7 +403,7 @@ func TestGetArtifactBuilder(t *testing.T) {
 				local: latest.LocalBuild{
 					Concurrency: &constants.DefaultLocalConcurrency,
 				},
-			})
+			}, nil)
 			t.CheckNoError(err)
 			b.ArtifactStore(build.NewArtifactStore())
 

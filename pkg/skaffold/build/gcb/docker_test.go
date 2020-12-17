@@ -150,7 +150,7 @@ func TestDockerBuildSpec(t *testing.T) {
 					MachineType: "n1-standard-1",
 					Timeout:     "10m",
 				},
-			})
+			}, nil)
 			store := mockArtifactStore{
 				"img2": "img2:tag",
 				"img3": "img3:tag",
@@ -179,7 +179,7 @@ func TestPullCacheFrom(t *testing.T) {
 			gcb: latest.GoogleCloudBuild{
 				DockerImage: "docker/docker",
 			},
-		})
+		}, nil)
 		desc, err := builder.dockerBuildSpec(artifact, "nginx2")
 
 		expected := []*cloudbuild.BuildStep{{

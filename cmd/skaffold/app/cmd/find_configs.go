@@ -88,8 +88,8 @@ func findConfigs(directory string) (map[string]string, error) {
 	}
 
 	err := walk.From(directory).When(isYaml).Do(func(path string, _ walk.Dirent) error {
-		if cfg, err := schema.ParseConfig(path); err == nil {
-			pathToVersion[path] = cfg.GetVersion()
+		if cfgs, err := schema.ParseConfig(path); err == nil && len(cfgs) > 0 {
+			pathToVersion[path] = cfgs[0].GetVersion()
 		}
 		return nil
 	})

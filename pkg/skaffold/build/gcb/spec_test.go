@@ -46,7 +46,7 @@ func TestBuildSpecFail(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			builder := NewBuilder(&mockConfig{
 				gcb: latest.GoogleCloudBuild{},
-			})
+			}, nil)
 
 			_, err := builder.buildSpec(test.artifact, "tag", "bucket", "object")
 
