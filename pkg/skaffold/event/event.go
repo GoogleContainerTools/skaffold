@@ -365,6 +365,8 @@ func DevLoopFailedInPhase(iteration int, phase sErrors.Phase, err error) {
 		DevLoopFailedWithErrorCode(iteration, state.StatusCheckState.StatusCode, err)
 	case sErrors.Build:
 		DevLoopFailedWithErrorCode(iteration, state.BuildState.StatusCode, err)
+	case sErrors.Test:
+		DevLoopFailedWithErrorCode(iteration, state.TestState.StatusCode, err)
 	default:
 		ai := sErrors.ActionableErr(phase, err)
 		DevLoopFailedWithErrorCode(iteration, ai.ErrCode, err)
@@ -690,14 +692,11 @@ func ResetStateOnBuild() {
 	handler.setState(newState)
 }
 
-// ResetStateOnTest resets the test, sync and status check state
+// ResetStateOnTest resets the test, sync state
 func ResetStateOnTest() {
 	newState := handler.getState()
 	newState.TestState.Status = NotStarted
 	newState.TestState.StatusCode = proto.StatusCode_OK
-	// newState.StatusCheckState = emptyStatusCheckState()
-	// newState.ForwardedPorts = map[int32]*proto.PortEvent{}
-	// newState.DebuggingContainers = nil
 	handler.setState(newState)
 }
 

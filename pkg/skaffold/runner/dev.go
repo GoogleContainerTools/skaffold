@@ -53,7 +53,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		return ErrorConfigurationChanged
 	}
 
-	buildIntent, testIntent, syncIntent, deployIntent := r.intents.GetIntents()
+	buildIntent, syncIntent, testIntent, deployIntent := r.intents.GetIntents()
 	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
 	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
 	needsTest := testIntent && r.changeSet.needsRetest
@@ -104,7 +104,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			meterUpdated = true
 		}
 		if _, err := r.Build(ctx, out, r.changeSet.needsRebuild); err != nil {
-			logrus.Warnln("Skipping test due to error:", err)
+			logrus.Warnln("Skipping test and deploy due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 			return nil
 		}

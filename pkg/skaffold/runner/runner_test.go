@@ -226,6 +226,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 			Trigger:           "polling",
 			WatchPollInterval: 100,
 			AutoBuild:         true,
+			AutoTest:          true,
 			AutoSync:          true,
 			AutoDeploy:        true,
 		},

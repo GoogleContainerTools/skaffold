@@ -52,6 +52,13 @@ func (s *server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (
 		}()
 	}
 
+	if intent.GetIntent().GetTest() {
+		event.ResetStateOnTest()
+		go func() {
+			s.testIntentCallback()
+		}()
+	}
+
 	if intent.GetIntent().GetDeploy() {
 		event.ResetStateOnDeploy()
 		go func() {
@@ -73,7 +80,7 @@ func (s *server) AutoBuild(ctx context.Context, request *proto.TriggerRequest) (
 }
 
 func (s *server) AutoTest(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
-	return executeAutoTrigger("test", request, event.UpdateStateAutoTestTrigger, event.ResetStateOnDeploy, s.autoTestCallback)
+	return executeAutoTrigger("test", request, event.UpdateStateAutoTestTrigger, event.ResetStateOnTest, s.autoTestCallback)
 }
 
 func (s *server) AutoDeploy(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
