@@ -178,19 +178,16 @@ func TestManualTrigger_LogWatchToUser(t *testing.T) {
 func TestStartTrigger(t *testing.T) {
 	tests := []struct {
 		description string
-		trigger     Trigger
 		mockWatch   func(string, chan<- notify.EventInfo, ...notify.Event) error
 	}{
 		{
 			description: "fsNotify trigger works",
-			trigger:     fsNotify.New(nil, func() bool { return false }, 1),
 			mockWatch: func(string, chan<- notify.EventInfo, ...notify.Event) error {
 				return nil
 			},
 		},
 		{
 			description: "fallback on polling trigger",
-			trigger:     fsNotify.New(nil, func() bool { return false }, 1),
 			mockWatch: func(string, chan<- notify.EventInfo, ...notify.Event) error {
 				return fmt.Errorf("failed to start watch trigger")
 			},
@@ -200,7 +197,8 @@ func TestStartTrigger(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&fsNotify.Watch, test.mockWatch)
-			_, err := StartTrigger(context.Background(), test.trigger)
+			trigger := fsNotify.New(nil, func() bool { return false }, 1)
+			_, err := StartTrigger(context.Background(), trigger)
 			time.Sleep(1 * time.Second)
 			t.CheckNoError(err)
 		})
