@@ -71,8 +71,8 @@ type skaffoldMeter struct {
 }
 
 type devIteration struct {
-	intent    string
-	errorCode proto.StatusCode
+	Intent    string
+	ErrorCode proto.StatusCode
 }
 
 var (
@@ -92,6 +92,7 @@ var (
 	meteredCommands     = util.NewStringSet()
 	doesBuild           = util.NewStringSet()
 	doesDeploy          = util.NewStringSet()
+	initExporter        = initCloudMonitoringExporterMetrics
 	isOnline            bool
 )
 
@@ -113,11 +114,7 @@ func init() {
 func InitMeterFromConfig(config *latest.SkaffoldConfig) {
 	meter.PlatformType = yamltags.GetYamlTag(config.Build.BuildType)
 	for _, artifact := range config.Pipeline.Build.Artifacts {
-		if _, ok := meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]; ok {
-			meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]++
-		} else {
-			meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)] = 1
-		}
+		meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]++
 		if artifact.Sync != nil {
 			meter.SyncType[yamltags.GetYamlTag(artifact.Sync)] = true
 		}
@@ -137,14 +134,14 @@ func SetErrorCode(errorCode proto.StatusCode) {
 }
 
 func AddDevIteration(intent string) {
-	meter.DevIterations = append(meter.DevIterations, devIteration{intent: intent})
+	meter.DevIterations = append(meter.DevIterations, devIteration{Intent: intent})
 }
 
 func AddDevIterationErr(i int, errorCode proto.StatusCode) {
 	if len(meter.DevIterations) == i {
-		meter.DevIterations = append(meter.DevIterations, devIteration{intent: "error"})
+		meter.DevIterations = append(meter.DevIterations, devIteration{Intent: "error"})
 	}
-	meter.DevIterations[i].errorCode = errorCode
+	meter.DevIterations[i].ErrorCode = errorCode
 }
 
 func AddFlag(flag *flag.Flag) {
@@ -170,7 +167,7 @@ func ExportMetrics(exitCode int) error {
 
 func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) error {
 	logrus.Debug("exporting metrics")
-	p, err := initCloudMonitoringExporterMetrics()
+	p, err := initExporter()
 	if p == nil {
 		return err
 	}
@@ -191,11 +188,13 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 		return ioutil.WriteFile(filename, b, 0666)
 	}
 
+	start := time.Now()
 	p.Start()
 	for _, m := range meters {
 		createMetrics(ctx, m)
 	}
 	p.Stop()
+	logrus.Debugf("metrics uploading complete in %s", time.Since(start).String())
 
 	if fileExists {
 		return os.Remove(filename)
@@ -223,8 +222,8 @@ func initCloudMonitoringExporterMetrics() (*push.Controller, error) {
 
 	var c creds
 	err = json.Unmarshal(b, &c)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarsharling metrics credentials: %v", err)
+	if c.ProjectID == "" || err != nil {
+		return nil, fmt.Errorf("no project id found in metrics credentials")
 	}
 
 	formatter := func(desc *metric.Descriptor) string {
@@ -297,14 +296,11 @@ func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, ra
 		counts := make(map[string]map[proto.StatusCode]int)
 
 		for _, iteration := range meter.DevIterations {
-			if _, ok := counts[iteration.intent]; !ok {
-				counts[iteration.intent] = make(map[proto.StatusCode]int)
+			if _, ok := counts[iteration.Intent]; !ok {
+				counts[iteration.Intent] = make(map[proto.StatusCode]int)
 			}
-			m := counts[iteration.intent]
-			if _, ok := m[iteration.errorCode]; !ok {
-				m[iteration.errorCode] = 0
-			}
-			m[iteration.errorCode]++
+			m := counts[iteration.Intent]
+			m[iteration.ErrorCode]++
 		}
 		for intention, errorCounts := range counts {
 			for errorCode, count := range errorCounts {
