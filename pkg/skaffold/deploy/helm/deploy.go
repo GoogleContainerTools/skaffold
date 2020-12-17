@@ -135,14 +135,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 
 		// collect namespaces
 		for _, r := range results {
-			var namespace string
-			// `<no value>` is not allowed within a namespace
-			namespace, err = util.ExpandEnvTemplateOrFail(r.Namespace, nil)
-			if err != nil {
-				return nil, userErr("cannot parse the release namespace template", err)
-			}
-
-			if trimmed := strings.TrimSpace(namespace); trimmed != "" {
+			if trimmed := strings.TrimSpace(r.Namespace); trimmed != "" {
 				nsMap[trimmed] = struct{}{}
 			}
 		}
@@ -165,11 +158,10 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 	}
 
 	// Collect namespaces in a string
-	namespaces := make([]string, 0, len(nsMap))
+	var namespaces []string
 	for ns := range nsMap {
 		namespaces = append(namespaces, ns)
 	}
-
 	return namespaces, nil
 }
 
