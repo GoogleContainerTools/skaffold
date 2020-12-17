@@ -17,17 +17,33 @@ limitations under the License.
 package instrumentation
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"time"
 
+	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
 	"github.com/mitchellh/go-homedir"
+	"github.com/rakyll/statik/fs"
+	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/metric"
+	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/sdk/metric/controller/push"
+	"google.golang.org/api/option"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
+
+	// import embedded secret for uploading metrics
+	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/secret/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -46,7 +62,7 @@ type skaffoldMeter struct {
 	PlatformType   string
 	Deployers      []string
 	EnumFlags      map[string]*flag.Flag
-	Builders       map[string]bool
+	Builders       map[string]int
 	SyncType       map[string]bool
 	DevIterations  []devIteration
 	StartTime      time.Time
@@ -64,7 +80,7 @@ var (
 		OS:            runtime.GOOS,
 		Arch:          runtime.GOARCH,
 		EnumFlags:     map[string]*flag.Flag{},
-		Builders:      map[string]bool{},
+		Builders:      map[string]int{},
 		SyncType:      map[string]bool{},
 		DevIterations: []devIteration{},
 		StartTime:     time.Now(),
@@ -72,14 +88,31 @@ var (
 		ExitCode:      0,
 		ErrorCode:     proto.StatusCode_OK,
 	}
-	skipExport = os.Getenv("SKAFFOLD_EXPORT_METRICS")
+	shouldExportMetrics = os.Getenv("SKAFFOLD_EXPORT_METRICS") == "true"
+	isOnline            bool
 )
+
+func init() {
+	go func() {
+		if shouldExportMetrics {
+			r, err := http.Get("http://clients3.google.com/generate_204")
+			if err == nil {
+				r.Body.Close()
+				isOnline = true
+			}
+		}
+	}()
+}
 
 func InitMeter(runCtx *runcontext.RunContext, config *latest.SkaffoldConfig) {
 	meter.Command = runCtx.Opts.Command
 	meter.PlatformType = yamltags.GetYamlTag(config.Build.BuildType)
 	for _, artifact := range config.Pipeline.Build.Artifacts {
-		meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)] = true
+		if _, ok := meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]; ok {
+			meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]++
+		} else {
+			meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)] = 1
+		}
 		if artifact.Sync != nil {
 			meter.SyncType[yamltags.GetYamlTag(artifact.Sync)] = true
 		}
@@ -108,30 +141,203 @@ func AddFlag(flag *flag.Flag) {
 }
 
 func ExportMetrics(exitCode int) error {
+	if !shouldExportMetrics {
+		return nil
+	}
 	home, err := homedir.Dir()
 	if err != nil {
 		return fmt.Errorf("retrieving home directory: %w", err)
 	}
 	meter.ExitCode = exitCode
 	meter.Duration = time.Since(meter.StartTime)
-	return exportMetrics(filepath.Join(home, constants.DefaultSkaffoldDir, constants.DefaultMetricFile), meter)
+	return exportMetrics(context.Background(),
+		filepath.Join(home, constants.DefaultSkaffoldDir, constants.DefaultMetricFile),
+		meter)
 }
 
-func exportMetrics(filename string, meter skaffoldMeter) error {
-	if skipExport != "true" || meter.Command == "" {
-		return nil
-	}
-	b, err := ioutil.ReadFile(filename)
-	if err != nil && !os.IsNotExist(err) {
+func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) error {
+	logrus.Debug("exporting metrics")
+	p, err := initCloudMonitoringExporterMetrics()
+	if p == nil {
 		return err
 	}
 
+	b, err := ioutil.ReadFile(filename)
+	fileExists := err == nil
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
 	var meters []skaffoldMeter
 	err = json.Unmarshal(b, &meters)
 	if err != nil {
 		meters = []skaffoldMeter{}
 	}
 	meters = append(meters, meter)
-	b, _ = json.Marshal(meters)
-	return ioutil.WriteFile(filename, b, 0666)
+	if !isOnline {
+		b, _ = json.Marshal(meters)
+		return ioutil.WriteFile(filename, b, 0666)
+	}
+
+	p.Start()
+	for _, m := range meters {
+		createMetrics(ctx, m)
+	}
+	p.Stop()
+
+	if fileExists {
+		return os.Remove(filename)
+	}
+	return nil
+}
+
+type creds struct {
+	ProjectID string `json:"project_id"`
+}
+
+func initCloudMonitoringExporterMetrics() (*push.Controller, error) {
+	statikFS, err := statik.FS()
+	if err != nil {
+		return nil, err
+	}
+	b, err := fs.ReadFile(statikFS, "/keys.json")
+	if err != nil {
+		// No keys have been set in this version so do not attempt to write metrics
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var c creds
+	err = json.Unmarshal(b, &c)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarsharling metrics credentials: %v", err)
+	}
+
+	formatter := func(desc *metric.Descriptor) string {
+		return fmt.Sprintf("custom.googleapis.com/skaffold/%s", desc.Name())
+	}
+
+	return mexporter.InstallNewPipeline(
+		[]mexporter.Option{
+			mexporter.WithProjectID(c.ProjectID),
+			mexporter.WithMetricDescriptorTypeFormatter(formatter),
+			mexporter.WithMonitoringClientOptions(option.WithCredentialsJSON(b)),
+			mexporter.WithOnError(func(err error) {
+				logrus.Debugf("Error with metrics: %v", err)
+			}),
+		},
+	)
+}
+
+func createMetrics(ctx context.Context, meter skaffoldMeter) {
+	// There is a minimum 10 second interval that metrics are allowed to upload to Cloud monitoring
+	// A metric is uniquely identified by the metric name and the labels and corresponding values
+	// This random number is used as a label to differentiate the metrics per user so if two users
+	// run `skaffold build` at the same time they will both have their metrics recorded
+	randLabel := label.String("randomizer", strconv.Itoa(rand.Intn(75000)))
+
+	m := global.Meter("skaffold")
+	labels := []label.KeyValue{
+		label.String("version", meter.Version),
+		label.String("os", meter.OS),
+		label.String("arch", meter.Arch),
+		label.String("command", meter.Command),
+		label.String("error", strconv.Itoa(int(meter.ErrorCode))),
+		randLabel,
+	}
+
+	runCounter := metric.Must(m).NewInt64ValueRecorder("launches", metric.WithDescription("Skaffold Invocations"))
+	runCounter.Record(ctx, 1, labels...)
+
+	durationRecorder := metric.Must(m).NewFloat64ValueRecorder("launch/duration",
+		metric.WithDescription("durations of skaffold commands in seconds"))
+	durationRecorder.Record(ctx, meter.Duration.Seconds(), labels...)
+	if meter.Command != "" {
+		commandMetrics(ctx, meter, m, randLabel)
+		doesBuild := map[string]bool{"build": true, "render": true, "dev": true, "debug": true, "run": true}
+		doesDeploy := map[string]bool{"deploy": true, "dev": true, "debug": true, "run": true}
+		if _, ok := doesBuild[meter.Command]; ok {
+			builderMetrics(ctx, meter, m, randLabel)
+		}
+		if _, ok := doesDeploy[meter.Command]; ok {
+			deployerMetrics(ctx, meter, m, randLabel)
+		}
+	}
+
+	if meter.ErrorCode != 0 {
+		errorMetrics(ctx, meter, m, randLabel)
+	}
+}
+
+func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
+	commandCounter := metric.Must(m).NewInt64ValueRecorder(meter.Command,
+		metric.WithDescription(fmt.Sprintf("Number of times %s is used", meter.Command)))
+	labels := []label.KeyValue{
+		label.String("error", strconv.Itoa(int(meter.ErrorCode))),
+		randLabel,
+	}
+	commandCounter.Record(ctx, 1, labels...)
+
+	if meter.Command == "dev" {
+		iterationCounter := metric.Must(m).NewInt64ValueRecorder("dev/iterations",
+			metric.WithDescription("Number of iterations in a dev session"))
+
+		counts := make(map[string]map[proto.StatusCode]int)
+
+		for _, iteration := range meter.DevIterations {
+			if _, ok := counts[iteration.intent]; !ok {
+				counts[iteration.intent] = make(map[proto.StatusCode]int)
+			}
+			m := counts[iteration.intent]
+			if _, ok := m[iteration.errorCode]; !ok {
+				m[iteration.errorCode] = 0
+			}
+			m[iteration.errorCode]++
+		}
+		for intention, errorCounts := range counts {
+			for errorCode, count := range errorCounts {
+				iterationCounter.Record(ctx, int64(count),
+					label.String("intent", intention),
+					label.String("error", strconv.Itoa(int(errorCode))),
+					randLabel)
+			}
+		}
+	}
+}
+
+func deployerMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
+	deployerCounter := metric.Must(m).NewInt64ValueRecorder("deployer", metric.WithDescription("Deployers used"))
+	for _, deployer := range meter.Deployers {
+		deployerCounter.Record(ctx, 1, randLabel, label.String("deployer", deployer))
+	}
+}
+
+func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
+	builderCounter := metric.Must(m).NewInt64ValueRecorder("builders", metric.WithDescription("Builders used"))
+	artifactCounter := metric.Must(m).NewInt64ValueRecorder("artifacts", metric.WithDescription("Number of artifacts used"))
+	for builder, count := range meter.Builders {
+		bLabel := label.String("builder", builder)
+		builderCounter.Record(ctx, 1, bLabel, randLabel)
+		artifactCounter.Record(ctx, int64(count), bLabel, randLabel)
+	}
+}
+
+func errorMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
+	errCounter := metric.Must(m).NewInt64ValueRecorder("errors", metric.WithDescription("Skaffold errors"))
+	errCounter.Record(ctx, 1, label.String("error", strconv.Itoa(int(meter.ErrorCode))), randLabel)
+
+	commandLabel := label.String("command", meter.Command)
+
+	switch meter.ErrorCode {
+	case proto.StatusCode_UNKNOWN_ERROR:
+		unknownErrCounter := metric.Must(m).NewInt64ValueRecorder("errors/unknown", metric.WithDescription("Unknown Skaffold Errors"))
+		unknownErrCounter.Record(ctx, 1, randLabel)
+	case proto.StatusCode_DEPLOY_UNKNOWN:
+		unknownCounter := metric.Must(m).NewInt64ValueRecorder("deploy/unknown", metric.WithDescription("Unknown deploy Skaffold Errors"))
+		unknownCounter.Record(ctx, 1, commandLabel, randLabel)
+	case proto.StatusCode_BUILD_UNKNOWN:
+		unknownCounter := metric.Must(m).NewInt64ValueRecorder("build/unknown", metric.WithDescription("Unknown build Skaffold Errors"))
+		unknownCounter.Record(ctx, 1, commandLabel, randLabel)
+	}
 }

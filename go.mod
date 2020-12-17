@@ -15,8 +15,10 @@ replace (
 
 require (
 	4d63.com/tz v1.1.0
+	cloud.google.com/go v0.72.0 // indirect
 	cloud.google.com/go/storage v1.10.0
 	github.com/AlecAivazis/survey/v2 v2.0.5
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.13.0
 	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.4
@@ -37,7 +39,7 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.3
-	github.com/google/go-cmp v0.5.2
+	github.com/google/go-cmp v0.5.4
 	github.com/google/go-containerregistry v0.1.4
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/martian v2.1.1-0.20190517191504-25dcb96d9e51+incompatible // indirect
@@ -67,15 +69,19 @@ require (
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
+	go.opentelemetry.io/otel v0.13.0
+	go.opentelemetry.io/otel/sdk v0.13.0
 	golang.org/x/mod v0.3.0
-	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
+	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb // indirect
+	golang.org/x/oauth2 v0.0.0-20201109201403-9fd604954f58
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/sys v0.0.0-20201015000850-e3ed0017c211
 	golang.org/x/term v0.0.0-20201117132131-f5c789dd3221
 	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
-	google.golang.org/api v0.34.0
-	google.golang.org/genproto v0.0.0-20201022181438-0ff5f38871d5
-	google.golang.org/grpc v1.33.1
+	google.golang.org/api v0.35.0
+	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto v0.0.0-20201202151023-55d61f90c1ce
+	google.golang.org/grpc v1.33.2
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
