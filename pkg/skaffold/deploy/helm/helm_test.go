@@ -530,7 +530,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testReleaseFOOBARNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --kubeconfig kubeconfig", helmReleaseInfo("skaffold-helm", "testReleaseFOOBARNamespace", validDeployYaml)), // just need a valid KRM object
+				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --kubeconfig kubeconfig", helmReleaseInfo("testReleaseFOOBARNamespace", validDeployYaml)), // just need a valid KRM object
 			helm:               testDeployEnvTemplateNamespacedConfig,
 			builds:             testBuilds,
 			expectedNamespaces: []string{"testReleaseFOOBARNamespace"},
@@ -588,7 +588,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testReleaseFOOBARNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --kubeconfig kubeconfig", helmReleaseInfo("skaffold-helm", "testReleaseFOOBARNamespace", validDeployYaml)), // just need a valid KRM object
+				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --kubeconfig kubeconfig", helmReleaseInfo("testReleaseFOOBARNamespace", validDeployYaml)), // just need a valid KRM object
 			helm:               testDeployEnvTemplateNamespacedConfig,
 			builds:             testBuilds,
 			expectedNamespaces: []string{"testReleaseFOOBARNamespace"},
@@ -926,7 +926,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRunErr("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig", fmt.Errorf("not found")).
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext install skaffold-helm examples/test --namespace testReleaseNamespace --create-namespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig", helmReleaseInfo("skaffold-helm", "testReleaseNamespace", validDeployYaml)), // just need a valid KRM object
+				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig", helmReleaseInfo("testReleaseNamespace", validDeployYaml)), // just need a valid KRM object
 			helm:               testDeployCreateNamespaceConfig,
 			builds:             testBuilds,
 			expectedNamespaces: []string{"testReleaseNamespace"},
@@ -938,7 +938,7 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testReleaseNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig", helmReleaseInfo("skaffold-helm", "testReleaseNamespace", validDeployYaml)), // just need a valid KRM object
+				AndRunWithOutput("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig", helmReleaseInfo("testReleaseNamespace", validDeployYaml)), // just need a valid KRM object
 			helm:               testDeployCreateNamespaceConfig,
 			builds:             testBuilds,
 			expectedNamespaces: []string{"testReleaseNamespace"},
@@ -1450,8 +1450,8 @@ func (c *helmConfig) Pipeline() latest.Pipeline {
 }
 
 // helmReleaseInfo returns the result of `helm --namespace <namespace> get all <name>` with the given KRM manifest.
-func helmReleaseInfo(name, namespace, manifest string) string {
-	return fmt.Sprintf(`NAME: %s
+func helmReleaseInfo(namespace, manifest string) string {
+	return fmt.Sprintf(`NAME: skaffold-helm
 LAST DEPLOYED: Thu Dec 17 15:35:28 2020
 NAMESPACE: %s
 STATUS: deployed
@@ -1466,5 +1466,5 @@ image: skaffold-example:16bb174b9a147d3f574fb5fe967b7f5c873a0150182dbb0f72d1fb2f
 HOOKS:
 MANIFEST:
 ---
-%s`, name, namespace, manifest)
+%s`, namespace, manifest)
 }
