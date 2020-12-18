@@ -39,9 +39,10 @@ Describes all the methods for the Skaffold API
 | GetState | [.google.protobuf.Empty](#google.protobuf.Empty) | [State](#proto.State) | Returns the state of the current Skaffold execution |
 | EventLog | [LogEntry](#proto.LogEntry) stream | [LogEntry](#proto.LogEntry) stream | DEPRECATED. Events should be used instead. TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168) |
 | Events | [.google.protobuf.Empty](#google.protobuf.Empty) | [LogEntry](#proto.LogEntry) stream | Returns all the events of the current Skaffold execution from the start |
-| Execute | [UserIntentRequest](#proto.UserIntentRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled. |
+| Execute | [UserIntentRequest](#proto.UserIntentRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for a single execution of some or all of the phases (build, sync, test, deploy) in case autoBuild, autoTest, autoDeploy or autoSync are disabled. |
 | AutoBuild | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic build trigger |
 | AutoSync | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic sync trigger |
+| AutoTest | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic test trigger |
 | AutoDeploy | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic deploy trigger |
 | Handle | [Event](#proto.Event) | [.google.protobuf.Empty](#google.protobuf.Empty) | EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example. |
 
@@ -298,13 +299,14 @@ anytime a deployment starts or completes, successfully or not.
 <a name="proto.Event"></a>
 #### Event
 `Event` describes an event in the Skaffold process.
-It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
+It is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | metaEvent | [MetaEvent](#proto.MetaEvent) |  | contains general information regarding Skaffold like version info |
 | buildEvent | [BuildEvent](#proto.BuildEvent) |  | describes if the build status per artifact. Status could be one of "InProgress", "Completed" or "Failed". |
+| TestEvent | [TestEvent](#proto.TestEvent) |  | describes if the test has started, is in progress or is complete. |
 | deployEvent | [DeployEvent](#proto.DeployEvent) |  | describes if the deployment has started, is in progress or is complete. |
 | portEvent | [PortEvent](#proto.PortEvent) |  | describes each port forwarding event. |
 | statusCheckEvent | [StatusCheckEvent](#proto.StatusCheckEvent) |  | describes if the Status check has started, is in progress, has succeeded or failed. |
@@ -382,6 +384,7 @@ Intent represents user intents for a given phase.
 | ----- | ---- | ----- | ----------- |
 | build | [bool](#bool) |  | in case skaffold dev is ran with autoBuild=false, a build intent enables building once |
 | sync | [bool](#bool) |  | in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once |
+| test | [bool](#bool) |  | in case skaffold dev is ran with autoTest=false, a test intent enables test once |
 | deploy | [bool](#bool) |  | in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once |
 
 
@@ -431,6 +434,7 @@ LogEntry describes an event and a string description of the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | build | [BuildMetadata](#proto.BuildMetadata) |  |  |
+| test | [TestMetadata](#proto.TestMetadata) |  |  |
 | deploy | [DeployMetadata](#proto.DeployMetadata) |  |  |
 | additional | [Metadata.AdditionalEntry](#proto.Metadata.AdditionalEntry) | repeated | Additional key value pairs to describe the build pipeline |
 
@@ -542,6 +546,7 @@ will be sent with the new status.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | buildState | [BuildState](#proto.BuildState) |  |  |
+| testState | [TestState](#proto.TestState) |  |  |
 | deployState | [DeployState](#proto.DeployState) |  |  |
 | forwardedPorts | [State.ForwardedPortsEntry](#proto.State.ForwardedPortsEntry) | repeated |  |
 | statusCheckState | [StatusCheckState](#proto.StatusCheckState) |  |  |
@@ -670,6 +675,74 @@ Suggestion defines the action a user needs to recover from an error.
 
 
 
+<a name="proto.TestEvent"></a>
+#### TestEvent
+`TestEvent` represents the status of a test, and is emitted by Skaffold
+anytime a test starts or completes, successfully or not.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [string](#string) |  | test status oneof: InProgress, Completed, Failed |
+| err | [string](#string) |  | Deprecated. Use actionableErr.message. error when status is Failed |
+| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
+
+
+
+
+
+
+
+<a name="proto.TestMetadata"></a>
+#### TestMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| Testers | [TestMetadata.Tester](#proto.TestMetadata.Tester) | repeated |  |
+| cluster | [ClusterType](#proto.ClusterType) |  |  |
+
+
+
+
+
+
+
+<a name="proto.TestMetadata.Tester"></a>
+#### TestMetadata.Tester
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [TesterType](#proto.TesterType) |  |  |
+| count | [int32](#int32) |  |  |
+
+
+
+
+
+
+
+<a name="proto.TestState"></a>
+#### TestState
+`TestState` describes the status of the current test
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [string](#string) |  |  |
+| autoTrigger | [bool](#bool) |  |  |
+| statusCode | [StatusCode](#proto.StatusCode) |  |  |
+
+
+
+
+
+
+
 <a name="proto.TriggerRequest"></a>
 #### TriggerRequest
 
@@ -780,7 +853,7 @@ Enum indicating deploy tools used
 ### StatusCode
 Enum for Status codes
 These error codes are prepended by Phase Name e.g.
-BUILD, DEPLOY, STATUSCHECK, DEVINIT
+BUILD, TEST, DEPLOY, STATUSCHECK, DEVINIT
 For Success Error codes, use range 200 to 250.
 For Unknown error codes, use range 500 to 600.
 For Cancelled Error code, use range 800 to 850.
@@ -790,7 +863,8 @@ For Cancelled Error code, use range 800 to 850.
 | OK | 0 | A default status code for events that do not have an associated phase. Typically seen with the DevEndEvent event on success. |
 | STATUSCHECK_SUCCESS | 200 | Status Check Success |
 | BUILD_SUCCESS | 201 | Build Success |
-| DEPLOY_SUCCESS | 202 | Deploy Success |
+| TEST_SUCCESS | 202 | Test Success |
+| DEPLOY_SUCCESS | 203 | Deploy Success |
 | BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
 | BUILD_PROJECT_NOT_FOUND | 102 | Build error due to GCP project not found. |
 | BUILD_DOCKER_DAEMON_NOT_RUNNING | 103 | Docker build error due to docker daemon not running |
@@ -940,6 +1014,18 @@ Enum for Suggestion codes
 | RUN_DOCKER_PULL | 551 | Run Docker pull for the image with v1 manifest and try again. |
 | SET_RENDER_FLAG_OFFLINE_FALSE | 600 | Rerun with correct offline flag value. |
 | OPEN_ISSUE | 900 | Open an issue so this situation can be diagnosed |
+
+
+
+<a name="proto.TesterType"></a>
+
+### TesterType
+Enum indicating test tools used
+
+| Name | Number | Description |
+| ---- |:------:| ----------- |
+| UNKNOWN_TEST_TYPE | 0 | Could not determine Test Type |
+| UNIT | 1 | Unit tests |
 
 
  <!-- end enums -->

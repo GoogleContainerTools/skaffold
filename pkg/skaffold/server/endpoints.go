@@ -80,6 +80,10 @@ func (s *server) AutoSync(ctx context.Context, request *proto.TriggerRequest) (r
 	return executeAutoTrigger("sync", request, event.UpdateStateAutoSyncTrigger, func() {}, s.autoSyncCallback)
 }
 
+func (s *server) AutoTest(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
+	return nil, status.Errorf(codes.Unavailable, "Feature not implemented yet.") // executeAutoTrigger("test", request, event.UpdateStateAutoTestTrigger, event.ResetStateOnTest, s.autoTestCallback)
+}
+
 func executeAutoTrigger(triggerName string, request *proto.TriggerRequest, updateTriggerStateFunc func(bool), resetPhaseStateFunc func(), serverCallback func(bool)) (res *empty.Empty, err error) {
 	res = &empty.Empty{}
 	v, ok := request.GetState().GetVal().(*proto.TriggerState_Enabled)
