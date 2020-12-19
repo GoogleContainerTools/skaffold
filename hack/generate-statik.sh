@@ -18,6 +18,7 @@ set -euo pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+SECRET=${SECRET:-${DIR}/../secrets}
 BIN=${DIR}/bin
 STATIK=${BIN}/statik
 LICENSES=${BIN}/go-licenses
@@ -54,3 +55,8 @@ if ! [[ -f ${STATIK} ]]; then
 fi
 
 ${STATIK} -f -src=${TMP_DIR} -m -dest cmd/skaffold/app/cmd
+
+if [[ -d ${SECRET} ]]; then
+   echo "generating statik for secret"
+   ${STATIK} -f -src=${SECRET} -m -dest cmd/skaffold/app/secret
+fi

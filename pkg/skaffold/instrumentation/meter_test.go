@@ -17,19 +17,22 @@ limitations under the License.
 package instrumentation
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/spf13/pflag"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestExportMetrics(t *testing.T) {
+func TestOfflineExportMetrics(t *testing.T) {
 	startTime, _ := time.Parse(time.ANSIC, "Mon Jan 2 15:04:05 -0700 MST 2006")
 	validMeter := skaffoldMeter{
 		Command:        "build",
@@ -37,12 +40,23 @@ func TestExportMetrics(t *testing.T) {
 		Version:        "vTest.0",
 		Arch:           "test arch",
 		OS:             "test os",
-		Builders:       map[string]bool{"docker": true, "buildpacks": true},
+		Builders:       map[string]int{"docker": 1, "buildpacks": 1},
 		EnumFlags:      map[string]*pflag.Flag{"test": {Name: "test", Shorthand: "t"}},
 		StartTime:      startTime,
 		Duration:       time.Minute,
 	}
 	validMeterBytes, _ := json.Marshal(validMeter)
+	fs := &testutil.FakeFileSystem{
+		Files: map[string][]byte{
+			"/keys.json": []byte(`{
+				"client_id": "test_id",
+				"client_secret": "test_secret",
+				"project_id": "test_project",
+				"refresh_token": "test_token",
+				"type": "authorized_user"
+			}`),
+		},
+	}
 
 	tests := []struct {
 		name                string
@@ -85,7 +99,8 @@ func TestExportMetrics(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			t.Override(&skipExport, "true")
+			t.Override(&isOnline, false)
+			t.Override(&statik.FS, func() (http.FileSystem, error) { return fs, nil })
 			filename := "metrics"
 			tmp := t.NewTempDir()
 			var savedMetrics []skaffoldMeter
@@ -97,7 +112,7 @@ func TestExportMetrics(t *testing.T) {
 					t.Error(err)
 				}
 			}
-			_ = exportMetrics(tmp.Path(filename), test.meter)
+			_ = exportMetrics(context.Background(), tmp.Path(filename), test.meter)
 
 			if test.shouldSkip {
 				_, err := os.Stat(filename)
