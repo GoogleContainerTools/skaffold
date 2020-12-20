@@ -144,6 +144,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			Message: "Pipeline building blocks for CI/CD:",
 			Commands: []*cobra.Command{
 				NewCmdBuild(),
+				NewCmdTest(),
 				NewCmdDeploy(),
 				NewCmdDelete(),
 				NewCmdRender(),

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ func TestGetArtifacts(t *testing.T) {
 				t.Override(&opts.CustomTag, test.customTag)
 			}
 
-			artifacts, err := getArtifacts(test.fromFile, test.fromCLI, test.artifacts)
+			artifacts, err := mergeBuildArtifacts(test.fromFile, test.fromCLI, test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, artifacts)
 		})

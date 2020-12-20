@@ -73,6 +73,7 @@ End-to-end pipelines:
 
 Pipeline building blocks for CI/CD:
   build             Build the artifacts
+  test              Run tests against your built application images
   deploy            Deploy pre-built artifacts
   delete            Delete the deployed application
   render            [alpha] Perform all image builds, and output rendered Kubernetes manifests
@@ -134,7 +135,7 @@ Options:
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
-      --detect-minikube=false: Use heuristics to detect a minikube cluster
+      --detect-minikube=true: Use heuristics to detect a minikube cluster
       --dry-run=false: Don't build images, just compute the tag for each artifact.
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
       --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
@@ -345,7 +346,7 @@ Options:
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
-      --detect-minikube=false: Use heuristics to detect a minikube cluster
+      --detect-minikube=true: Use heuristics to detect a minikube cluster
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
       --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -429,7 +430,7 @@ Delete the deployed application
 Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
-      --detect-minikube=false: Use heuristics to detect a minikube cluster
+      --detect-minikube=true: Use heuristics to detect a minikube cluster
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
@@ -480,7 +481,7 @@ Options:
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
-      --detect-minikube=false: Use heuristics to detect a minikube cluster
+      --detect-minikube=true: Use heuristics to detect a minikube cluster
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
       --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -555,7 +556,7 @@ Options:
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
-      --detect-minikube=false: Use heuristics to detect a minikube cluster
+      --detect-minikube=true: Use heuristics to detect a minikube cluster
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
       --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -714,6 +715,7 @@ Options:
       --default-kustomization='': Default Kustomization overlay path (others will be added as profiles)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Force the generation of the Skaffold config
+      --generate-manifests=false: Allows skaffold to try and generate basic kubernetes resources to get your project started
   -k, --kubernetes-manifest=[]: A path or a glob pattern to kubernetes manifests (can be non-existent) to be added to the kubectl deployer (overrides detection of kubernetes manifests). Repeat the flag for multiple entries. E.g.: skaffold init -k pod.yaml -k k8s/*.yml
       --skip-build=false: Skip generating build artifacts in Skaffold config
 
@@ -732,6 +734,7 @@ Env vars:
 * `SKAFFOLD_DEFAULT_KUSTOMIZATION` (same as `--default-kustomization`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
+* `SKAFFOLD_GENERATE_MANIFESTS` (same as `--generate-manifests`)
 * `SKAFFOLD_KUBERNETES_MANIFEST` (same as `--kubernetes-manifest`)
 * `SKAFFOLD_SKIP_BUILD` (same as `--skip-build`)
 
@@ -818,7 +821,7 @@ Options:
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
-      --detect-minikube=false: Use heuristics to detect a minikube cluster
+      --detect-minikube=true: Use heuristics to detect a minikube cluster
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
       --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -968,6 +971,36 @@ Use "skaffold options" for a list of global command-line options (applies to all
 
 
 ```
+
+### skaffold test
+
+Run tests against your built application images
+
+```
+
+
+Examples:
+  # Build the artifacts and collect the tags into a file
+  skaffold build --file-output=tags.json
+
+  # Run test against images previously built by Skaffold into a 'tags.json' file
+  skaffold test --build-artifacts=tags.json
+
+Options:
+  -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+
+Usage:
+  skaffold test [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+Env vars:
+
+* `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
 
 ### skaffold version
 

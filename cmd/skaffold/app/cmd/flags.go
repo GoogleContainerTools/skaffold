@@ -446,7 +446,7 @@ var flagRegistry = []Flag{
 		Name:          "detect-minikube",
 		Usage:         "Use heuristics to detect a minikube cluster",
 		Value:         &opts.DetectMinikube,
-		DefValue:      false,
+		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
 		IsEnum:        true,
@@ -458,7 +458,7 @@ var flagRegistry = []Flag{
 		Value:         &fromBuildOutputFile,
 		DefValue:      "",
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"deploy"},
+		DefinedOn:     []string{"test", "deploy"},
 	},
 }
 
