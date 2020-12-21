@@ -2691,11 +2691,11 @@
         "buildState": {
           "$ref": "#/definitions/protoBuildState"
         },
-        "testState": {
-          "$ref": "#/definitions/protoTestState"
-        },
         "deployState": {
           "$ref": "#/definitions/protoDeployState"
+        },
+        "testState": {
+          "$ref": "#/definitions/protoTestState"
         },
         "forwardedPorts": {
           "type": "object",

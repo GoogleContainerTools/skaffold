@@ -20,8 +20,9 @@ message Request {
 // `State` represents the current state of the Skaffold components
 message State {
     BuildState buildState = 1;
-    TestState testState = 2;
-    DeployState deployState = 3;
+    DeployState deployState = 2;
+    reserved 3; // field 3 is obsolete
+    TestState testState = 9;
     map<int32, PortEvent> forwardedPorts = 4;
     StatusCheckState statusCheckState = 5;
     FileSyncState fileSyncState = 6;

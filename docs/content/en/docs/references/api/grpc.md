@@ -546,8 +546,8 @@ will be sent with the new status.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | buildState | [BuildState](#proto.BuildState) |  |  |
-| testState | [TestState](#proto.TestState) |  |  |
 | deployState | [DeployState](#proto.DeployState) |  |  |
+| testState | [TestState](#proto.TestState) |  |  |
 | forwardedPorts | [State.ForwardedPortsEntry](#proto.State.ForwardedPortsEntry) | repeated |  |
 | statusCheckState | [StatusCheckState](#proto.StatusCheckState) |  |  |
 | fileSyncState | [FileSyncState](#proto.FileSyncState) |  |  |
