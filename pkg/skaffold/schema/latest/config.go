@@ -629,6 +629,7 @@ type KptApplyOptions struct {
 // HelmRelease describes a helm release to be deployed.
 type HelmRelease struct {
 	// Name is the name of the Helm release.
+	// It accepts environment variables via the go template syntax.
 	Name string `yaml:"name,omitempty" yamltags:"required"`
 
 	// ChartPath is the path to the Helm chart.

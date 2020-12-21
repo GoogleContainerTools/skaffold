@@ -157,7 +157,7 @@ func (h *Deployer) releaseNamespace(r latest.HelmRelease) (string, error) {
 	if h.namespace != "" {
 		return h.namespace, nil
 	} else if r.Namespace != "" {
-		namespace, err := util.ExpandEnvTemplate(r.Namespace, nil)
+		namespace, err := util.ExpandEnvTemplateOrFail(r.Namespace, nil)
 		if err != nil {
 			return "", fmt.Errorf("cannot parse the release namespace template: %w", err)
 		}
