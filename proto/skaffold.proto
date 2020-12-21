@@ -276,8 +276,8 @@ message TriggerState {
 
 // Intent represents user intents for a given phase.
 message Intent {
-    bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once	    bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once
-    bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once	    bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once
+    bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once
+    bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once
     bool deploy = 3; // in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once
     bool test = 4; // in case skaffold dev is ran with autoTest=false, a test intent enables test once
 }
