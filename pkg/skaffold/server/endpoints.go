@@ -81,7 +81,7 @@ func (s *server) AutoSync(ctx context.Context, request *proto.TriggerRequest) (r
 }
 
 func (s *server) AutoTest(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
-	return nil, status.Errorf(codes.Unavailable, "Feature not implemented yet.") // executeAutoTrigger("test", request, event.UpdateStateAutoTestTrigger, event.ResetStateOnTest, s.autoTestCallback)
+	return nil, status.Errorf(codes.Unavailable, "Feature not implemented yet.")
 }
 
 func executeAutoTrigger(triggerName string, request *proto.TriggerRequest, updateTriggerStateFunc func(bool), resetPhaseStateFunc func(), serverCallback func(bool)) (res *empty.Empty, err error) {
