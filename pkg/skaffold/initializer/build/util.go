@@ -75,7 +75,9 @@ func Artifacts(artifactInfos []ArtifactInfo) []*latest.Artifact {
 			workspace = filepath.Dir(info.Builder.Path())
 		}
 		if workspace != "." {
-			artifact.Workspace = workspace
+			fmt.Fprintf(os.Stdout, "using non standard workspace: %s\n", workspace)
+			// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
+			artifact.Workspace = filepath.ToSlash(workspace)
 		}
 
 		artifacts = append(artifacts, artifact)

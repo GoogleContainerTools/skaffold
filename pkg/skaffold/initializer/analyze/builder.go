@@ -79,7 +79,8 @@ func (a *builderAnalyzer) detectBuilders(path string, detectJib bool) ([]build.I
 	if strings.Contains(strings.ToLower(base), "dockerfile") {
 		if docker.Validate(path) {
 			results = append(results, docker.ArtifactConfig{
-				File: path,
+				// Docker expects forward slashes (for Linux containers at least)
+				File: filepath.ToSlash(path),
 			})
 		}
 	}
