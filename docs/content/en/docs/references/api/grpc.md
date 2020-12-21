@@ -382,10 +382,10 @@ Intent represents user intents for a given phase.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| build | [bool](#bool) |  | in case skaffold dev is ran with autoBuild=false, a build intent enables building once |
-| sync | [bool](#bool) |  | in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once |
-| test | [bool](#bool) |  | in case skaffold dev is ran with autoTest=false, a test intent enables test once |
+| build | [bool](#bool) |  | in case skaffold dev is ran with autoBuild=false, a build intent enables building once	 bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once |
+| sync | [bool](#bool) |  | in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once	 bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once |
 | deploy | [bool](#bool) |  | in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once |
+| test | [bool](#bool) |  | in case skaffold dev is ran with autoTest=false, a test intent enables test once |
 
 
 
@@ -434,8 +434,8 @@ LogEntry describes an event and a string description of the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | build | [BuildMetadata](#proto.BuildMetadata) |  |  |
-| test | [TestMetadata](#proto.TestMetadata) |  |  |
 | deploy | [DeployMetadata](#proto.DeployMetadata) |  |  |
+| test | [TestMetadata](#proto.TestMetadata) |  |  |
 | additional | [Metadata.AdditionalEntry](#proto.Metadata.AdditionalEntry) | repeated | Additional key value pairs to describe the build pipeline |
 
 
@@ -863,8 +863,8 @@ For Cancelled Error code, use range 800 to 850.
 | OK | 0 | A default status code for events that do not have an associated phase. Typically seen with the DevEndEvent event on success. |
 | STATUSCHECK_SUCCESS | 200 | Status Check Success |
 | BUILD_SUCCESS | 201 | Build Success |
-| TEST_SUCCESS | 202 | Test Success |
-| DEPLOY_SUCCESS | 203 | Deploy Success |
+| DEPLOY_SUCCESS | 202 | Deploy Success |
+| TEST_SUCCESS | 203 | Test Success |
 | BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
 | BUILD_PROJECT_NOT_FOUND | 102 | Build error due to GCP project not found. |
 | BUILD_DOCKER_DAEMON_NOT_RUNNING | 103 | Docker build error due to docker daemon not running |

@@ -31,8 +31,8 @@ message State {
 
 message Metadata {
     BuildMetadata build = 1;
-    TestMetadata test = 2;
-    DeployMetadata deploy = 3;
+    DeployMetadata deploy = 2;
+    TestMetadata test = 3;
     // Additional key value pairs to describe the build pipeline
     map<string, string> additional = 99;
 }
@@ -275,10 +275,10 @@ message TriggerState {
 
 // Intent represents user intents for a given phase.
 message Intent {
-    bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once
-    bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once
-    bool test = 3; // in case skaffold dev is ran with autoTest=false, a test intent enables test once
-    bool deploy = 4; // in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once
+    bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once	    bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once
+    bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once	    bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once
+    bool deploy = 3; // in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once
+    bool test = 4; // in case skaffold dev is ran with autoTest=false, a test intent enables test once
 }
 
 // Suggestion defines the action a user needs to recover from an error.
@@ -448,10 +448,10 @@ enum StatusCode {
     STATUSCHECK_SUCCESS = 200;
     // Build Success
     BUILD_SUCCESS = 201;
-    // Test Success
-    TEST_SUCCESS = 202;
     // Deploy Success
-    DEPLOY_SUCCESS = 203;
+    DEPLOY_SUCCESS = 202;
+    // Test Success
+    TEST_SUCCESS = 203;
 
     // Build Errors
 
