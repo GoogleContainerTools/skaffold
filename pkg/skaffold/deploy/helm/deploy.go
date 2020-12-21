@@ -261,10 +261,6 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 
 		args = append(args[:1], append([]string{r.Name}, args[1:]...)...)
 
-		for _, vf := range r.ValuesFiles {
-			args = append(args, "--values", vf)
-		}
-
 		params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
 		if err != nil {
 			return err
