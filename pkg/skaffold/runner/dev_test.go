@@ -140,7 +140,6 @@ func TestDevFailFirstCycle(t *testing.T) {
 			artifacts := []*latest.Artifact{{
 				ImageName: "img",
 			}}
-			// runner := createRunner(t, test.testBench).WithMonitor(test.monitor)
 			runner := createRunner(t, test.testBench, test.monitor, artifacts)
 			test.testBench.firstMonitor = test.monitor.Run
 

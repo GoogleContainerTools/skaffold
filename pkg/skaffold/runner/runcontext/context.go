@@ -54,9 +54,9 @@ func (ps Pipelines) All() []latest.Pipeline {
 	return ps.pipelines
 }
 
-// Default returns the first `latest.Pipeline`.
+// Head returns the first `latest.Pipeline`.
 func (ps Pipelines) Head() latest.Pipeline {
-	return ps.pipelines[0] //there always exists atleast one pipeline.
+	return ps.pipelines[0] // there always exists atleast one pipeline.
 }
 
 // Select returns the first `latest.Pipeline` that matches the given artifact `imageName`.

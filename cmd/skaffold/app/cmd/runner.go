@@ -105,6 +105,7 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.
 		configs = append(configs, config)
 	}
 
+	// TODO: Should support per-config kubecontext. Right now we constrain all configs to define the same kubecontext.
 	kubectx.ConfigureKubeConfig(opts.KubeConfig, opts.KubeContext, configs[0].Deploy.KubeContext)
 
 	if err := validation.Process(configs); err != nil {
