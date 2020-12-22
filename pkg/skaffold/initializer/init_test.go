@@ -92,9 +92,9 @@ func TestDoInit(t *testing.T) {
 			},
 		},
 		{
-			name: "windows paths use forward slashes",
+			name:       "windows paths use forward slashes",
 			shouldSkip: func() bool { return runtime.GOOS != "windows" },
-			dir:  `testdata\init\windows`,
+			dir:        `testdata\init\windows`,
 			config: initconfig.Config{
 				Force: true,
 				CliArtifacts: []string{

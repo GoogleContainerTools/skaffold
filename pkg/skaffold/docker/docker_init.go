@@ -53,10 +53,12 @@ func (c ArtifactConfig) Describe() string {
 
 // ArtifactType returns the type of the artifact to be built.
 func (c ArtifactConfig) ArtifactType(workspace string) latest.ArtifactType {
-	// attempt to relativize the path
-	dockerfile, err := filepath.Rel(workspace, c.File)
-	if err != nil {
-		dockerfile = filepath.Base(c.File)
+	dockerfile := filepath.Base(c.File)
+	if workspace != "" {
+		// attempt to relativize the path
+		if rel, err := filepath.Rel(workspace, c.File); err == nil {
+			dockerfile = rel
+		}
 	}
 
 	return latest.ArtifactType{
