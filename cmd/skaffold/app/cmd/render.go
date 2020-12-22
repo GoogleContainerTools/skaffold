@@ -67,7 +67,7 @@ func doRender(ctx context.Context, out io.Writer) error {
 			bRes = renderFromBuildOutputFile.BuildArtifacts()
 		} else {
 			var err error
-			bRes, err = r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
+			bRes, err = r.Build(ctx, buildOut, targetArtifacts(opts, config))
 			if err != nil {
 				return fmt.Errorf("executing build: %w", err)
 			}
