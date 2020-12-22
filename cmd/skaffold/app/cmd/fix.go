@@ -91,7 +91,7 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		if err := ioutil.WriteFile(configFile, newCfg, 0644); err != nil {
 			return fmt.Errorf("writing config file: %w", err)
 		}
-		color.Default.Fprintf(out, "New config at version %s generated and written to %s\n", latest.Version, opts.ConfigurationFile)
+		color.Default.Fprintf(out, "New config at version %s generated and written to %s\n", toVersion, opts.ConfigurationFile)
 	} else {
 		out.Write(newCfg)
 	}
