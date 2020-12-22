@@ -46,7 +46,7 @@ func NewCmdDiagnose() *cobra.Command {
 }
 
 func doDiagnose(ctx context.Context, out io.Writer) error {
-	runCtx, config, err := runContext(opts)
+	runCtx, config, err := runContext(out, opts)
 	if err != nil {
 		return err
 	}

@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -41,8 +42,8 @@ import (
 // For tests
 var createRunner = createNewRunner
 
-func withRunner(ctx context.Context, action func(runner.Runner, *latest.SkaffoldConfig) error) error {
-	runner, config, err := createRunner(opts)
+func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, *latest.SkaffoldConfig) error) error {
+	runner, config, err := createRunner(out, opts)
 	sErrors.SetSkaffoldOptions(opts)
 	if err != nil {
 		return err
@@ -54,8 +55,8 @@ func withRunner(ctx context.Context, action func(runner.Runner, *latest.Skaffold
 }
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
-func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
-	runCtx, config, err := runContext(opts)
+func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+	runCtx, config, err := runContext(out, opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -70,7 +71,7 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 	return runner, config, nil
 }
 
-func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.SkaffoldConfig, error) {
+func runContext(_ io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.SkaffoldConfig, error) {
 	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
 	if err != nil {
 		if os.IsNotExist(errors.Unwrap(err)) {

@@ -39,7 +39,7 @@ func NewCmdTest() *cobra.Command {
 }
 
 func doTest(ctx context.Context, out io.Writer) error {
-	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, config *latest.SkaffoldConfig) error {
 		buildArtifacts, err := getBuildArtifactsAndSetTags(r, config)
 		if err != nil {
 			tips.PrintForTest(out)

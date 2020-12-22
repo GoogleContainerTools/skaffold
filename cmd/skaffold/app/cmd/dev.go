@@ -60,7 +60,7 @@ func runDev(ctx context.Context, out io.Writer) error {
 		case <-ctx.Done():
 			return nil
 		default:
-			err := withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
+			err := withRunner(ctx, out, func(r runner.Runner, config *latest.SkaffoldConfig) error {
 				err := r.Dev(ctx, out, config.Build.Artifacts)
 
 				if r.HasDeployed() {

@@ -58,7 +58,7 @@ func NewCmdFilter() *cobra.Command {
 // runFilter loads the Kubernetes manifests from stdin and applies the debug transformations.
 // Unlike `skaffold debug`, this filtering affects all images and not just the built artifacts.
 func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildArtifacts []build.Artifact) error {
-	return withRunner(ctx, func(r runner.Runner, cfg *latest.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, cfg *latest.SkaffoldConfig) error {
 		manifestList, err := manifest.Load(os.Stdin)
 		if err != nil {
 			return fmt.Errorf("loading manifests: %w", err)
