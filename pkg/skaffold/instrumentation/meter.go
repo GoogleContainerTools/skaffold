@@ -112,7 +112,7 @@ func init() {
 }
 
 func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
-	meter.PlatformType = yamltags.GetYamlTag(configs[0].Build.BuildType)
+	meter.PlatformType = yamltags.GetYamlTag(configs[0].Build.BuildType) // TODO: support multiple build types in events.
 	for _, config := range configs {
 		for _, artifact := range config.Pipeline.Build.Artifacts {
 			meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]++
@@ -120,8 +120,8 @@ func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
 				meter.SyncType[yamltags.GetYamlTag(artifact.Sync)] = true
 			}
 		}
-		meter.Deployers = yamltags.GetYamlTags(config.Deploy.DeployType)
-		meter.BuildArtifacts = len(config.Pipeline.Build.Artifacts)
+		meter.Deployers = append(meter.Deployers, yamltags.GetYamlTags(config.Deploy.DeployType)...)
+		meter.BuildArtifacts += len(config.Pipeline.Build.Artifacts)
 	}
 }
 
