@@ -146,51 +146,48 @@ func IsSkaffoldConfig(file string) bool {
 
 // ParseConfig reads a configuration file.
 func ParseConfig(filename string) ([]util.VersionedConfig, error) {
-	var sl []util.VersionedConfig
-	buffer, err := misc.ReadConfiguration(filename)
+	// TODO: update this function to parse the input as multiple configs
+	buf, err := misc.ReadConfiguration(filename)
 	if err != nil {
 		return nil, fmt.Errorf("read skaffold config: %w", err)
 	}
-	arr := bytes.Split(buffer, []byte("---"))
-	for _, buf := range arr {
-		// This is to quickly check that it's possibly a skaffold.yaml,
-		// without parsing the whole file.
-		if !bytes.Contains(buf, []byte("apiVersion")) {
-			return nil, errors.New("missing apiVersion")
-		}
-
-		apiVersion := &APIVersion{}
-		if err := yaml.Unmarshal(buf, apiVersion); err != nil {
-			return nil, fmt.Errorf("parsing api version: %w", err)
-		}
-
-		factory, present := SchemaVersions.Find(apiVersion.Version)
-		if !present {
-			return nil, fmt.Errorf("unknown api version: %q", apiVersion.Version)
-		}
-
-		// Remove all top-level keys starting with `.` so they can be used as YAML anchors
-		parsed := make(map[string]interface{})
-		if err := yaml.UnmarshalStrict(buf, parsed); err != nil {
-			return nil, fmt.Errorf("unable to parse YAML: %w", err)
-		}
-		for field := range parsed {
-			if strings.HasPrefix(field, ".") {
-				delete(parsed, field)
-			}
-		}
-		buf, err = yaml.Marshal(parsed)
-		if err != nil {
-			return nil, fmt.Errorf("unable to re-marshal YAML without dotted keys: %w", err)
-		}
-
-		cfg := factory()
-		if err := yaml.UnmarshalStrict(buf, cfg); err != nil {
-			return nil, fmt.Errorf("unable to parse config: %w", err)
-		}
-		sl = append(sl, cfg)
+	// This is to quickly check that it's possibly a skaffold.yaml,
+	// without parsing the whole file.
+	if !bytes.Contains(buf, []byte("apiVersion")) {
+		return nil, errors.New("missing apiVersion")
 	}
-	return sl, nil
+
+	apiVersion := &APIVersion{}
+	if err := yaml.Unmarshal(buf, apiVersion); err != nil {
+		return nil, fmt.Errorf("parsing api version: %w", err)
+	}
+
+	factory, present := SchemaVersions.Find(apiVersion.Version)
+	if !present {
+		return nil, fmt.Errorf("unknown api version: %q", apiVersion.Version)
+	}
+
+	// Remove all top-level keys starting with `.` so they can be used as YAML anchors
+	parsed := make(map[string]interface{})
+	if err := yaml.UnmarshalStrict(buf, parsed); err != nil {
+		return nil, fmt.Errorf("unable to parse YAML: %w", err)
+	}
+	for field := range parsed {
+		if strings.HasPrefix(field, ".") {
+			delete(parsed, field)
+		}
+	}
+	buf, err = yaml.Marshal(parsed)
+	if err != nil {
+		return nil, fmt.Errorf("unable to re-marshal YAML without dotted keys: %w", err)
+	}
+
+	cfg := factory()
+	if err := yaml.UnmarshalStrict(buf, cfg); err != nil {
+		return nil, fmt.Errorf("unable to parse config: %w", err)
+	}
+
+	return []util.VersionedConfig{cfg}, nil
 }
 
 // ParseConfigAndUpgrade reads a configuration file and upgrades it to a given version.

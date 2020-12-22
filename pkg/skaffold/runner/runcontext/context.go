@@ -34,73 +34,111 @@ const (
 )
 
 type RunContext struct {
-	Opts                 config.SkaffoldOptions
-	Pipelines            []latest.Pipeline
-	KubeContext          string
-	Namespaces           []string
-	WorkingDir           string
-	InsecureRegistries   map[string]bool
-	Cluster              config.Cluster
-	pipelinesByImageName map[string]*latest.Pipeline
+	Opts               config.SkaffoldOptions
+	Pipelines          Pipelines
+	KubeContext        string
+	Namespaces         []string
+	WorkingDir         string
+	InsecureRegistries map[string]bool
+	Cluster            config.Cluster
 }
 
-// Pipeline returns the first `latest.Pipeline` that matches the given artifact `imageName`.
-func (rc *RunContext) Pipeline(imageName string) (*latest.Pipeline, bool) {
-	p, found := rc.pipelinesByImageName[imageName]
+// Pipelines encapsulates multiple config pipelines
+type Pipelines struct {
+	pipelines            []latest.Pipeline
+	pipelinesByImageName map[string]latest.Pipeline
+}
+
+// All returns all config pipelines.
+func (ps Pipelines) All() []latest.Pipeline {
+	return ps.pipelines
+}
+
+// Default returns the first `latest.Pipeline`.
+func (ps Pipelines) Head() latest.Pipeline {
+	return ps.pipelines[0] //there always exists atleast one pipeline.
+}
+
+// Select returns the first `latest.Pipeline` that matches the given artifact `imageName`.
+func (ps Pipelines) Select(imageName string) (latest.Pipeline, bool) {
+	p, found := ps.pipelinesByImageName[imageName]
 	return p, found
 }
 
-func (rc *RunContext) PortForwardResources() []*latest.PortForwardResource {
+func (ps Pipelines) PortForwardResources() []*latest.PortForwardResource {
 	var pf []*latest.PortForwardResource
-	for _, p := range rc.Pipelines {
+	for _, p := range ps.pipelines {
 		pf = append(pf, p.PortForward...)
 	}
 	return pf
 }
 
-func (rc *RunContext) Artifacts() []*latest.Artifact {
+func (ps Pipelines) Artifacts() []*latest.Artifact {
 	var artifacts []*latest.Artifact
-	for _, p := range rc.Pipelines {
-		for _, a := range p.Build.Artifacts {
-			artifacts = append(artifacts, a)
-		}
+	for _, p := range ps.pipelines {
+		artifacts = append(artifacts, p.Build.Artifacts...)
 	}
 	return artifacts
 }
 
-func (rc *RunContext) Deployers() []latest.DeployType {
+func (ps Pipelines) Deployers() []latest.DeployType {
 	var deployers []latest.DeployType
-	for _, p := range rc.Pipelines {
+	for _, p := range ps.pipelines {
 		deployers = append(deployers, p.Deploy.DeployType)
 	}
 	return deployers
 }
 
-func (rc *RunContext) TestCases() []*latest.TestCase {
+func (ps Pipelines) TestCases() []*latest.TestCase {
 	var tests []*latest.TestCase
-	for _, p := range rc.Pipelines {
+	for _, p := range ps.pipelines {
 		tests = append(tests, p.Test...)
 	}
 	return tests
 }
 
-func (rc *RunContext) StatusCheckDeadlineSeconds() int {
+func (ps Pipelines) StatusCheckDeadlineSeconds() int {
 	c := 0
 	// set the group status check deadline to maximum of any individually specified value
-	for _, p := range rc.Pipelines {
+	for _, p := range ps.pipelines {
 		if p.Deploy.StatusCheckDeadlineSeconds > c {
 			c = p.Deploy.StatusCheckDeadlineSeconds
 		}
 	}
 	return c
 }
+func NewPipelines(pipelines []latest.Pipeline) Pipelines {
+	m := make(map[string]latest.Pipeline)
+	for _, p := range pipelines {
+		for _, a := range p.Build.Artifacts {
+			m[a.ImageName] = p
+		}
+	}
+	return Pipelines{pipelines: pipelines, pipelinesByImageName: m}
+}
 
-// DefaultPipeline returns the first `latest.Pipeline` it finds.
-func (rc *RunContext) DefaultPipeline() *latest.Pipeline { return &rc.Pipelines[0] }
+func (rc *RunContext) Pipeline(imageName string) (latest.Pipeline, bool) {
+	return rc.Pipelines.Select(imageName)
+}
 
+func (rc *RunContext) PortForwardResources() []*latest.PortForwardResource {
+	return rc.Pipelines.PortForwardResources()
+}
+
+func (rc *RunContext) Artifacts() []*latest.Artifact { return rc.Pipelines.Artifacts() }
+
+func (rc *RunContext) Deployers() []latest.DeployType { return rc.Pipelines.Deployers() }
+
+func (rc *RunContext) TestCases() []*latest.TestCase { return rc.Pipelines.TestCases() }
+
+func (rc *RunContext) StatusCheckDeadlineSeconds() int {
+	return rc.Pipelines.StatusCheckDeadlineSeconds()
+}
+
+func (rc *RunContext) DefaultPipeline() latest.Pipeline          { return rc.Pipelines.Head() }
 func (rc *RunContext) GetKubeContext() string                    { return rc.KubeContext }
 func (rc *RunContext) GetNamespaces() []string                   { return rc.Namespaces }
-func (rc *RunContext) GetPipelines() []latest.Pipeline           { return rc.Pipelines }
+func (rc *RunContext) GetPipelines() []latest.Pipeline           { return rc.Pipelines.All() }
 func (rc *RunContext) GetInsecureRegistries() map[string]bool    { return rc.InsecureRegistries }
 func (rc *RunContext) GetWorkingDir() string                     { return rc.WorkingDir }
 func (rc *RunContext) GetCluster() config.Cluster                { return rc.Cluster }
@@ -171,12 +209,7 @@ func GetRunContext(opts config.SkaffoldOptions, pipelines []latest.Pipeline) (*R
 	for _, r := range regList {
 		insecureRegistries[r] = true
 	}
-	m := make(map[string]*latest.Pipeline)
-	for _, p := range pipelines {
-		for _, a := range p.Build.Artifacts {
-			m[a.ImageName] = &p
-		}
-	}
+	ps := NewPipelines(pipelines)
 
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
@@ -187,14 +220,13 @@ func GetRunContext(opts config.SkaffoldOptions, pipelines []latest.Pipeline) (*R
 	}
 
 	return &RunContext{
-		Opts:                 opts,
-		Pipelines:            pipelines,
-		WorkingDir:           cwd,
-		KubeContext:          kubeContext,
-		Namespaces:           namespaces,
-		InsecureRegistries:   insecureRegistries,
-		Cluster:              cluster,
-		pipelinesByImageName: m,
+		Opts:               opts,
+		Pipelines:          ps,
+		WorkingDir:         cwd,
+		KubeContext:        kubeContext,
+		Namespaces:         namespaces,
+		InsecureRegistries: insecureRegistries,
+		Cluster:            cluster,
 	}, nil
 }
 

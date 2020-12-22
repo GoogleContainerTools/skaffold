@@ -445,9 +445,7 @@ func TestNewDeployer(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
 
-			_, err := NewDeployer(&helmConfig{
-				helm: testDeployConfig,
-			}, nil)
+			_, err := NewDeployer(&helmConfig{}, nil, &testDeployConfig)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -939,11 +937,10 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&osExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 
 			deployer, err := NewDeployer(&helmConfig{
-				helm:       test.helm,
 				namespace:  test.namespace,
 				force:      test.force,
 				configFile: "test.yaml",
-			}, nil)
+			}, nil, &test.helm)
 			t.RequireNoError(err)
 
 			if test.configure != nil {
@@ -1018,9 +1015,8 @@ func TestHelmCleanup(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 
 			deployer, err := NewDeployer(&helmConfig{
-				helm:      test.helm,
 				namespace: test.namespace,
-			}, nil)
+			}, nil, &test.helm)
 			t.RequireNoError(err)
 
 			deployer.Cleanup(context.Background(), ioutil.Discard)
@@ -1119,19 +1115,18 @@ func TestHelmDependencies(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Touch(test.files...)
 
-			deployer, err := NewDeployer(&helmConfig{
-				helm: latest.HelmDeploy{
-					Releases: []latest.HelmRelease{{
-						Name:                  "skaffold-helm",
-						ChartPath:             tmpDir.Root(),
-						ValuesFiles:           test.valuesFiles,
-						ArtifactOverrides:     map[string]string{"image": "skaffold-helm"},
-						Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-						SetValues:             map[string]string{"some.key": "somevalue"},
-						SkipBuildDependencies: test.skipBuildDependencies,
-						Remote:                test.remote,
-					}},
-				}}, nil)
+			deployer, err := NewDeployer(&helmConfig{}, nil, &latest.HelmDeploy{
+				Releases: []latest.HelmRelease{{
+					Name:                  "skaffold-helm",
+					ChartPath:             tmpDir.Root(),
+					ValuesFiles:           test.valuesFiles,
+					ArtifactOverrides:     map[string]string{"image": "skaffold-helm"},
+					Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+					SetValues:             map[string]string{"some.key": "somevalue"},
+					SkipBuildDependencies: test.skipBuildDependencies,
+					Remote:                test.remote,
+				}},
+			})
 			t.RequireNoError(err)
 			deps, err := deployer.Dependencies()
 
@@ -1329,9 +1324,8 @@ func TestHelmRender(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
 			deployer, err := NewDeployer(&helmConfig{
-				helm:      test.helm,
 				namespace: test.namespace,
-			}, nil)
+			}, nil, &test.helm)
 			t.RequireNoError(err)
 			err = deployer.Render(context.Background(), ioutil.Discard, test.builds, true, file)
 			t.CheckError(test.shouldErr, err)
@@ -1400,9 +1394,7 @@ func TestGenerateSkaffoldDebugFilter(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
-			h, err := NewDeployer(&helmConfig{
-				helm: testDeployConfig,
-			}, nil)
+			h, err := NewDeployer(&helmConfig{}, nil, &testDeployConfig)
 			t.RequireNoError(err)
 			result := h.generateSkaffoldDebugFilter(test.buildFile)
 			t.CheckDeepEqual(test.result, result)
@@ -1414,7 +1406,6 @@ type helmConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	namespace             string
 	force                 bool
-	helm                  latest.HelmDeploy
 	configFile            string
 }
 
@@ -1423,8 +1414,3 @@ func (c *helmConfig) GetKubeConfig() string     { return kubectl.TestKubeConfig 
 func (c *helmConfig) GetKubeContext() string    { return kubectl.TestKubeContext }
 func (c *helmConfig) GetKubeNamespace() string  { return c.namespace }
 func (c *helmConfig) ConfigurationFile() string { return c.configFile }
-func (c *helmConfig) Pipeline() latest.Pipeline {
-	var pipeline latest.Pipeline
-	pipeline.Deploy.DeployType.HelmDeploy = &c.helm
-	return pipeline
-}

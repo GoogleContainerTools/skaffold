@@ -64,7 +64,7 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 			color.Blue.Fprintln(out, "\nConfiguration")
 		}
 	}
-	buf, err := yaml.Marshal(configs)
+	buf, err := yaml.MarshalWithSeparator(configs)
 	if err != nil {
 		return fmt.Errorf("marshalling configuration: %w", err)
 	}

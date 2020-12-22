@@ -65,8 +65,9 @@ profiles:
 
 		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"))
 		t.CheckNoError(err)
+		t.CheckTrue(len(parsed) > 0)
 
-		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+		skaffoldConfig := parsed[0].(*latest.SkaffoldConfig)
 		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
 			Profiles: []string{"patches"},
 		})
@@ -96,8 +97,9 @@ profiles:
 
 		parsed, err := ParseConfig(tmp.Path("skaffold.yaml"))
 		t.CheckNoError(err)
+		t.CheckTrue(len(parsed) > 0)
 
-		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+		skaffoldConfig := parsed[0].(*latest.SkaffoldConfig)
 		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
 			Profiles: []string{"patches"},
 		})
@@ -788,8 +790,9 @@ profiles:
 
 		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"))
 		t.RequireNoError(err)
+		t.CheckTrue(len(parsed) > 0)
 
-		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+		skaffoldConfig := parsed[0].(*latest.SkaffoldConfig)
 
 		t.CheckDeepEqual(2, len(skaffoldConfig.Profiles))
 		t.CheckDeepEqual("simple1", skaffoldConfig.Profiles[0].Name)

@@ -63,7 +63,8 @@ type DependencyLister func(ctx context.Context, artifact *latest.Artifact) ([]st
 
 type Config interface {
 	docker.Config
-	Pipeline(imageName string) (*latest.Pipeline, bool)
+	Pipeline(imageName string) (latest.Pipeline, bool)
+	GetPipelines() []latest.Pipeline
 	GetCluster() config.Cluster
 	CacheArtifacts() bool
 	CacheFile() string
@@ -89,6 +90,16 @@ func NewCache(cfg Config, isLocalImage func(imageName string) (bool, error), dep
 	}
 
 	client, err := docker.NewAPIClient(cfg)
+	if err != nil {
+		// error only if any pipeline is local.
+		for _, p := range cfg.GetPipelines() {
+			for _, a := range p.Build.Artifacts {
+				if local, _ := isLocalImage(a.ImageName); local {
+					return nil, fmt.Errorf("getting local Docker client: %w", err)
+				}
+			}
+		}
+	}
 
 	importMissingImage := func(imageName string) (bool, error) {
 		pipeline, found := cfg.Pipeline(imageName)

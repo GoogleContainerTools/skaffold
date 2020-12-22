@@ -22,10 +22,10 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
+// BuilderMux encapsulates multiple build configs.
 type BuilderMux struct {
 	builders    []PipelineBuilder
 	byImageName map[string]PipelineBuilder
@@ -33,8 +33,14 @@ type BuilderMux struct {
 	concurrency int
 }
 
-func NewBuilderMux(runCtx *runcontext.RunContext, store ArtifactStore, builder func(p latest.Pipeline) (PipelineBuilder, error)) (Builder, error) {
-	pipelines := runCtx.GetPipelines()
+// Config represents an interface for getting all config pipelines.
+type Config interface {
+	GetPipelines() []latest.Pipeline
+}
+
+// NewBuilderMux returns an implementation of `build.BuilderMux`.
+func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeline) (PipelineBuilder, error)) (Builder, error) {
+	pipelines := cfg.GetPipelines()
 	m := make(map[string]PipelineBuilder)
 	var sl []PipelineBuilder
 	minConcurrency := -1
@@ -62,6 +68,7 @@ func NewBuilderMux(runCtx *runcontext.RunContext, store ArtifactStore, builder f
 	return &BuilderMux{builders: sl, byImageName: m, store: store, concurrency: minConcurrency}, nil
 }
 
+// Build executes the specific image builder for each artifact in the given artifact slice.
 func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error) {
 	m := make(map[PipelineBuilder]bool)
 	for _, a := range artifacts {
@@ -93,6 +100,7 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 	return ar, nil
 }
 
+// Prune removes built images.
 func (b *BuilderMux) Prune(ctx context.Context, writer io.Writer) error {
 	for _, builder := range b.builders {
 		if err := builder.Prune(ctx, writer); err != nil {

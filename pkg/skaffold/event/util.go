@@ -24,7 +24,6 @@ import (
 )
 
 func initializeMetadata(pipelines []latest.Pipeline, kubeContext string) *proto.Metadata {
-
 	artifactCount := 0
 	for _, p := range pipelines {
 		artifactCount += len(p.Build.Artifacts)

@@ -25,9 +25,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
@@ -206,7 +203,7 @@ func (r *SkaffoldRunner) WithMonitor(m filemon.Monitor) *SkaffoldRunner {
 	return r
 }
 
-func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) *SkaffoldRunner {
+func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, artifacts []*latest.Artifact) *SkaffoldRunner {
 	cfg := &latest.SkaffoldConfig{
 		Pipeline: latest.Pipeline{
 			Build: latest.BuildConfig{
@@ -214,14 +211,15 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 					// Use the fastest tagger
 					ShaTagger: &latest.ShaTagger{},
 				},
+				Artifacts: artifacts,
 			},
 			Deploy: latest.DeployConfig{StatusCheckDeadlineSeconds: 60},
 		},
 	}
-	defaults.Set(cfg)
+	defaults.Set(cfg, true)
 
 	runCtx := &runcontext.RunContext{
-		Pipelines: cfg.Pipeline,
+		Pipelines: runcontext.NewPipelines([]latest.Pipeline{cfg.Pipeline}),
 		Opts: config.SkaffoldOptions{
 			Trigger:           "polling",
 			WatchPollInterval: 100,
@@ -261,7 +259,7 @@ func TestNewForConfig(t *testing.T) {
 		pipeline         latest.Pipeline
 		shouldErr        bool
 		cacheArtifacts   bool
-		expectedBuilder  build.Builder
+		expectedBuilder  build.BuilderMux
 		expectedTester   test.Tester
 		expectedDeployer deploy.Deployer
 	}{
@@ -280,7 +278,6 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 			},
-			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
@@ -299,7 +296,6 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 			},
-			expectedBuilder:  &gcb.Builder{},
 			expectedTester:   &test.FullTester{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
@@ -318,7 +314,6 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 			},
-			expectedBuilder:  &cluster.Builder{},
 			expectedTester:   &test.FullTester{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
@@ -343,7 +338,6 @@ func TestNewForConfig(t *testing.T) {
 			description:      "unknown builder and tagger",
 			pipeline:         latest.Pipeline{},
 			shouldErr:        true,
-			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
 			expectedDeployer: &kubectl.Deployer{},
 		},
@@ -362,7 +356,6 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 			},
-			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
 			expectedDeployer: &kubectl.Deployer{},
 			cacheArtifacts:   true,
@@ -384,8 +377,7 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 			},
-			expectedBuilder: &local.Builder{},
-			expectedTester:  &test.FullTester{},
+			expectedTester: &test.FullTester{},
 			expectedDeployer: deploy.DeployerMux([]deploy.Deployer{
 				&helm.Deployer{},
 				&kubectl.Deployer{},
@@ -401,17 +393,18 @@ func TestNewForConfig(t *testing.T) {
 				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
 
 			runCtx := &runcontext.RunContext{
-				Pipelines: test.pipeline,
+				Pipelines: runcontext.NewPipelines([]latest.Pipeline{test.pipeline}),
 				Opts: config.SkaffoldOptions{
 					Trigger: "polling",
 				},
 			}
 
 			cfg, err := NewForConfig(runCtx)
+			t.CheckError(test.shouldErr, err)
 
 			t.CheckError(test.shouldErr, err)
 			if cfg != nil {
-				b, _t, d := WithTimings(test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
+				b, _t, d := WithTimings(&test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
 
 				if test.shouldErr {
 					t.CheckError(true, err)
@@ -498,7 +491,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 			}
 			r, _ := NewForConfig(&runcontext.RunContext{
 				Opts:      opts,
-				Pipelines: pipeline,
+				Pipelines: runcontext.NewPipelines([]latest.Pipeline{pipeline}),
 			})
 
 			r.intents.resetBuild()

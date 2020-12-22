@@ -49,8 +49,8 @@ type LogAggregator struct {
 }
 
 type Config interface {
-	Pipeline(imageName string) (*latest.Pipeline, bool)
-	DefaultPipeline() *latest.Pipeline
+	Pipeline(imageName string) (latest.Pipeline, bool)
+	DefaultPipeline() latest.Pipeline
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
@@ -180,14 +180,14 @@ func (a *LogAggregator) printLogLine(headerColor color.Color, prefix, text strin
 }
 
 func (a *LogAggregator) prefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	var c *latest.Pipeline
+	var c latest.Pipeline
 	var present bool
 	for _, container := range pod.Spec.Containers {
 		if c, present = a.config.Pipeline(stripTag(container.Image)); present {
 			break
 		}
 	}
-	if c == nil {
+	if !present {
 		c = a.config.DefaultPipeline()
 	}
 	switch c.Deploy.Logs.Prefix {

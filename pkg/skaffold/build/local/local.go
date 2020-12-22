@@ -58,6 +58,9 @@ func (b *Builder) PostBuild(ctx context.Context, _ io.Writer) error {
 }
 
 func (b *Builder) Concurrency() int {
+	if b.local.Concurrency == nil {
+		return 0
+	}
 	return *b.local.Concurrency
 }
 

@@ -69,8 +69,8 @@ func (r *mockRunRunner) DeployAndLog(context.Context, io.Writer, []build.Artifac
 func TestBuildImageFlag(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		mockRunner := &mockRunRunner{}
-		t.Override(&createRunner, func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
-			return mockRunner, &latest.SkaffoldConfig{
+		t.Override(&createRunner, func(config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
+			return mockRunner, []*latest.SkaffoldConfig{{
 				Pipeline: latest.Pipeline{
 					Build: latest.BuildConfig{
 						Artifacts: []*latest.Artifact{
@@ -81,7 +81,7 @@ func TestBuildImageFlag(t *testing.T) {
 						},
 					},
 				},
-			}, nil
+			}}, nil
 		})
 		t.Override(&opts, config.SkaffoldOptions{
 			TargetImages: []string{"test"},

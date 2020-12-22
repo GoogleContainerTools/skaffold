@@ -19,6 +19,7 @@ package yaml
 import (
 	"bytes"
 	"io"
+	"reflect"
 
 	yaml "gopkg.in/yaml.v3"
 )
@@ -53,5 +54,30 @@ func Marshal(in interface{}) (out []byte, err error) {
 	if err := encoder.Encode(in); err != nil {
 		return nil, err
 	}
+	return b.Bytes(), nil
+}
+
+// MarshalWithSeparator is same as yaml.Marshal except for slice or array types where each element is encoded individually and separated by "---".
+func MarshalWithSeparator(in interface{}) (out []byte, err error) {
+	var b bytes.Buffer
+	encoder := yaml.NewEncoder(&b)
+	encoder.SetIndent(2)
+
+	switch reflect.TypeOf(in).Kind() {
+	case reflect.Array:
+		fallthrough
+	case reflect.Slice:
+		s := reflect.ValueOf(in)
+		for i := 0; i < s.Len(); i++ {
+			if err := encoder.Encode(s.Index(i).Interface()); err != nil {
+				return nil, err
+			}
+		}
+	default:
+		if err := encoder.Encode(in); err != nil {
+			return nil, err
+		}
+	}
+
 	return b.Bytes(), nil
 }

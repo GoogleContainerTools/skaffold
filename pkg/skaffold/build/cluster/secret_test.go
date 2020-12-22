@@ -39,14 +39,12 @@ func TestCreateSecret(t *testing.T) {
 			return fakeKubernetesclient, nil
 		})
 
-		builder, err := NewBuilder(&mockConfig{
-			cluster: latest.ClusterDetails{
-				Timeout:        "20m",
-				PullSecretName: "kaniko-secret",
-				PullSecretPath: tmpDir.Path("secret.json"),
-				Namespace:      "ns",
-			},
-		}, nil)
+		builder, err := NewBuilder(&mockConfig{}, &latest.ClusterDetails{
+			Timeout:        "20m",
+			PullSecretName: "kaniko-secret",
+			PullSecretPath: tmpDir.Path("secret.json"),
+			Namespace:      "ns",
+		})
 		t.CheckNoError(err)
 
 		// Should create a secret
@@ -72,12 +70,10 @@ func TestExistingSecretNotFound(t *testing.T) {
 			return fake.NewSimpleClientset(), nil
 		})
 
-		builder, err := NewBuilder(&mockConfig{
-			cluster: latest.ClusterDetails{
-				Timeout:        "20m",
-				PullSecretName: "kaniko-secret",
-			},
-		}, nil)
+		builder, err := NewBuilder(&mockConfig{}, &latest.ClusterDetails{
+			Timeout:        "20m",
+			PullSecretName: "kaniko-secret",
+		})
 		t.CheckNoError(err)
 
 		// should fail to retrieve an existing secret
@@ -97,12 +93,10 @@ func TestExistingSecret(t *testing.T) {
 			}), nil
 		})
 
-		builder, err := NewBuilder(&mockConfig{
-			cluster: latest.ClusterDetails{
-				Timeout:        "20m",
-				PullSecretName: "kaniko-secret",
-			},
-		}, nil)
+		builder, err := NewBuilder(&mockConfig{}, &latest.ClusterDetails{
+			Timeout:        "20m",
+			PullSecretName: "kaniko-secret",
+		})
 		t.CheckNoError(err)
 
 		// should retrieve an existing secret
@@ -119,11 +113,9 @@ func TestSkipSecretCreation(t *testing.T) {
 			return nil, nil
 		})
 
-		builder, err := NewBuilder(&mockConfig{
-			cluster: latest.ClusterDetails{
-				Timeout: "20m",
-			},
-		}, nil)
+		builder, err := NewBuilder(&mockConfig{}, &latest.ClusterDetails{
+			Timeout: "20m",
+		})
 		t.CheckNoError(err)
 
 		// should retrieve an existing secret

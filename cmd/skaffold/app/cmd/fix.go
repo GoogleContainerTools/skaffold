@@ -72,18 +72,18 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		return err
 	}
 
-	var cfgs []*latest.SkaffoldConfig
-	for _, cfg := range versionedCfgs {
-		cfgs = append(cfgs, cfg.(*latest.SkaffoldConfig))
-	}
 	// TODO(dgageot): We should be able run validations on any schema version
 	// but that's not the case. They can only run on the latest version for now.
 	if toVersion == latest.Version {
+		var cfgs []*latest.SkaffoldConfig
+		for _, cfg := range versionedCfgs {
+			cfgs = append(cfgs, cfg.(*latest.SkaffoldConfig))
+		}
 		if err := validation.Process(cfgs); err != nil {
 			return fmt.Errorf("validating upgraded config: %w", err)
 		}
 	}
-	newCfg, err := yaml.Marshal(cfgs)
+	newCfg, err := yaml.MarshalWithSeparator(versionedCfgs)
 	if err != nil {
 		return fmt.Errorf("marshaling new config: %w", err)
 	}

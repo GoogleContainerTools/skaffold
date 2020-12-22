@@ -36,13 +36,13 @@ func TestNewBuilder(t *testing.T) {
 		description string
 		shouldErr   bool
 		cfg         Config
+		cluster     *latest.ClusterDetails
 	}{
 		{
 			description: "failed to parse cluster build timeout",
-			cfg: &mockConfig{
-				cluster: latest.ClusterDetails{
-					Timeout: "illegal",
-				},
+			cfg:         &mockConfig{},
+			cluster: &latest.ClusterDetails{
+				Timeout: "illegal",
 			},
 			shouldErr: true,
 		},
@@ -51,10 +51,10 @@ func TestNewBuilder(t *testing.T) {
 			cfg: &mockConfig{
 				kubeContext: kubeContext,
 				namespace:   namespace,
-				cluster: latest.ClusterDetails{
-					Timeout:   "100s",
-					Namespace: "test-ns",
-				},
+			},
+			cluster: &latest.ClusterDetails{
+				Timeout:   "100s",
+				Namespace: "test-ns",
 			},
 		},
 		{
@@ -63,16 +63,16 @@ func TestNewBuilder(t *testing.T) {
 				kubeContext:        kubeContext,
 				namespace:          namespace,
 				insecureRegistries: map[string]bool{"insecure-reg1": true},
-				cluster: latest.ClusterDetails{
-					Timeout:   "100s",
-					Namespace: "test-ns",
-				},
+			},
+			cluster: &latest.ClusterDetails{
+				Timeout:   "100s",
+				Namespace: "test-ns",
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := NewBuilder(test.cfg, nil)
+			_, err := NewBuilder(test.cfg, test.cluster)
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -90,15 +90,9 @@ type mockConfig struct {
 	namespace             string
 	insecureRegistries    map[string]bool
 	runMode               config.RunMode
-	cluster               latest.ClusterDetails
 }
 
 func (c *mockConfig) GetKubeContext() string                 { return c.kubeContext }
 func (c *mockConfig) GetKubeNamespace() string               { return c.namespace }
 func (c *mockConfig) GetInsecureRegistries() map[string]bool { return c.insecureRegistries }
 func (c *mockConfig) Mode() config.RunMode                   { return c.runMode }
-func (c *mockConfig) Pipeline() latest.Pipeline {
-	var pipeline latest.Pipeline
-	pipeline.Build.BuildType.Cluster = &c.cluster
-	return pipeline
-}
