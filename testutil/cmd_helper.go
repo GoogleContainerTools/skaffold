@@ -190,7 +190,7 @@ func (c *FakeCmd) RunCmd(cmd *exec.Cmd) error {
 	}
 
 	if r.command != command {
-		c.t.Errorf("\nexpected: %s\n\ngot: %s", r.command, command)
+		c.t.Errorf("\nwanted: %s\n\n   got: %s", r.command, command)
 	}
 
 	if r.output != nil {

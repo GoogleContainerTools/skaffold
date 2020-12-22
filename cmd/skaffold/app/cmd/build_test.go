@@ -36,7 +36,7 @@ type mockRunner struct {
 	runner.Runner
 }
 
-func (r *mockRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (r *mockRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	out.Write([]byte("Build Completed"))
 	return []build.Artifact{{
 		ImageName: "gcr.io/skaffold/example",

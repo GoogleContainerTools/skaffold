@@ -141,7 +141,7 @@ func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, h
 		logrus.Debugf("Importing artifact %s from local docker", tag)
 	}
 
-	imageID, err := c.client.ImageID(ctx, a.ImageName)
+	imageID, err := c.client.ImageID(ctx, tag)
 	if err != nil {
 		return entry, err
 	}

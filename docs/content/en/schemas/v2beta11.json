@@ -1445,8 +1445,8 @@
         },
         "name": {
           "type": "string",
-          "description": "name of the Helm release.",
-          "x-intellij-html-description": "name of the Helm release."
+          "description": "name of the Helm release. It accepts environment variables via the go template syntax.",
+          "x-intellij-html-description": "name of the Helm release. It accepts environment variables via the go template syntax."
         },
         "namespace": {
           "type": "string",

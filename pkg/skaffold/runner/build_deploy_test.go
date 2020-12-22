@@ -137,7 +137,7 @@ func TestBuildTestDeploy(t *testing.T) {
 			}}
 
 			runner := createRunner(t, test.testBench, nil, artifacts)
-			bRes, err := runner.BuildAndTest(ctx, ioutil.Discard, artifacts)
+			bRes, err := runner.Build(ctx, ioutil.Discard, artifacts)
 			if err == nil {
 				err = runner.DeployAndLog(ctx, ioutil.Discard, bRes)
 			}
@@ -147,7 +147,7 @@ func TestBuildTestDeploy(t *testing.T) {
 	}
 }
 
-func TestBuildAndTestDryRun(t *testing.T) {
+func TestBuildDryRun(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		testBench := &TestBench{}
 		artifacts := []*latest.Artifact{
@@ -157,7 +157,7 @@ func TestBuildAndTestDryRun(t *testing.T) {
 		runner := createRunner(t, testBench, nil, artifacts)
 		runner.runCtx.Opts.DryRun = true
 
-		bRes, err := runner.BuildAndTest(context.Background(), ioutil.Discard, artifacts)
+		bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual([]build.Artifact{
@@ -168,7 +168,7 @@ func TestBuildAndTestDryRun(t *testing.T) {
 	})
 }
 
-func TestBuildAndTestSkipBuild(t *testing.T) {
+func TestBuildSkipBuild(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		testBench := &TestBench{}
 		artifacts := []*latest.Artifact{
@@ -178,7 +178,7 @@ func TestBuildAndTestSkipBuild(t *testing.T) {
 		runner := createRunner(t, testBench, nil, artifacts)
 		runner.runCtx.Opts.DigestSource = "none"
 
-		bRes, err := runner.BuildAndTest(context.Background(), ioutil.Discard, artifacts)
+		bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual([]build.Artifact{}, bRes)
