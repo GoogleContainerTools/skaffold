@@ -65,6 +65,7 @@ type Config interface {
 	docker.Config
 	Pipeline(imageName string) (latest.Pipeline, bool)
 	GetPipelines() []latest.Pipeline
+	DefaultPipeline() latest.Pipeline
 	GetCluster() config.Cluster
 	CacheArtifacts() bool
 	CacheFile() string
@@ -104,7 +105,7 @@ func NewCache(cfg Config, isLocalImage func(imageName string) (bool, error), dep
 	importMissingImage := func(imageName string) (bool, error) {
 		pipeline, found := cfg.Pipeline(imageName)
 		if !found {
-			return false, fmt.Errorf("unknown pipeline for image %q", imageName)
+			pipeline = cfg.DefaultPipeline()
 		}
 
 		if pipeline.Build.GoogleCloudBuild != nil || pipeline.Build.Cluster != nil {

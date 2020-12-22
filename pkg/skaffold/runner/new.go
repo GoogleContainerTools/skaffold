@@ -167,7 +167,7 @@ func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(
 func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error) {
 	pipeline, found := runCtx.Pipeline(imageName)
 	if !found {
-		return false, fmt.Errorf("unknown pipeline for image %q", imageName)
+		pipeline = runCtx.DefaultPipeline()
 	}
 	if pipeline.Build.GoogleCloudBuild != nil || pipeline.Build.Cluster != nil {
 		return false, nil
