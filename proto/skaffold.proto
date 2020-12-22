@@ -178,8 +178,6 @@ message BuildEvent {
 // anytime a test starts or completes, successfully or not.
 message TestEvent {
     string status = 1; // test status oneof: InProgress, Completed, Failed
-    string err = 2; // Deprecated. Use actionableErr.message. error when status is Failed
-    StatusCode errCode = 3; // Deprecated. Use actionableErr.errCode. status code representing success or failure
     ActionableErr actionableErr = 4; // actionable error message
 }
 

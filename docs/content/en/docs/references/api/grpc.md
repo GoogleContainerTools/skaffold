@@ -684,8 +684,6 @@ anytime a test starts or completes, successfully or not.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | test status oneof: InProgress, Completed, Failed |
-| err | [string](#string) |  | Deprecated. Use actionableErr.message. error when status is Failed |
-| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
 | actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
