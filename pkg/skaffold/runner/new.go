@@ -166,7 +166,7 @@ func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(
 }
 
 func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error) {
-	pipeline, found := runCtx.Pipeline(imageName)
+	pipeline, found := runCtx.PipelineForImage(imageName)
 	if !found {
 		pipeline = runCtx.DefaultPipeline()
 	}

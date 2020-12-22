@@ -345,7 +345,7 @@ type mockConfig struct {
 	pipeline              latest.Pipeline
 }
 
-func (c *mockConfig) CacheArtifacts() bool                    { return true }
-func (c *mockConfig) CacheFile() string                       { return c.cacheFile }
-func (c *mockConfig) Mode() config.RunMode                    { return c.mode }
-func (c *mockConfig) Pipeline(string) (latest.Pipeline, bool) { return c.pipeline, true }
+func (c *mockConfig) CacheArtifacts() bool                            { return true }
+func (c *mockConfig) CacheFile() string                               { return c.cacheFile }
+func (c *mockConfig) Mode() config.RunMode                            { return c.mode }
+func (c *mockConfig) PipelineForImage(string) (latest.Pipeline, bool) { return c.pipeline, true }

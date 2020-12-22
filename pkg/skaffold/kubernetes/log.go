@@ -49,7 +49,7 @@ type LogAggregator struct {
 }
 
 type Config interface {
-	Pipeline(imageName string) (latest.Pipeline, bool)
+	PipelineForImage(imageName string) (latest.Pipeline, bool)
 	DefaultPipeline() latest.Pipeline
 }
 
@@ -183,7 +183,7 @@ func (a *LogAggregator) prefix(pod *v1.Pod, container v1.ContainerStatus) string
 	var c latest.Pipeline
 	var present bool
 	for _, container := range pod.Spec.Containers {
-		if c, present = a.config.Pipeline(stripTag(container.Image)); present {
+		if c, present = a.config.PipelineForImage(stripTag(container.Image)); present {
 			break
 		}
 	}

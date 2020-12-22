@@ -42,14 +42,14 @@ type Config interface {
 func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeline) (PipelineBuilder, error)) (*BuilderMux, error) {
 	pipelines := cfg.GetPipelines()
 	m := make(map[string]PipelineBuilder)
-	var sl []PipelineBuilder
+	var pb []PipelineBuilder
 	minConcurrency := -1
 	for _, p := range pipelines {
 		b, err := builder(p)
 		if err != nil {
 			return nil, fmt.Errorf("creating builder: %w", err)
 		}
-		sl = append(sl, b)
+		pb = append(pb, b)
 		for _, a := range p.Build.Artifacts {
 			m[a.ImageName] = b
 		}
@@ -61,11 +61,8 @@ func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeli
 			minConcurrency = concurrency
 		}
 	}
-	if minConcurrency > len(m) {
-		minConcurrency = 0 // if specified concurrency is greater than maximum number of parallel jobs, then just set it to unlimited
-	}
 
-	return &BuilderMux{builders: sl, byImageName: m, store: store, concurrency: minConcurrency}, nil
+	return &BuilderMux{builders: pb, byImageName: m, store: store, concurrency: minConcurrency}, nil
 }
 
 // Build executes the specific image builder for each artifact in the given artifact slice.

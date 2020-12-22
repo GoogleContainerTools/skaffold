@@ -117,7 +117,7 @@ func NewPipelines(pipelines []latest.Pipeline) Pipelines {
 	return Pipelines{pipelines: pipelines, pipelinesByImageName: m}
 }
 
-func (rc *RunContext) Pipeline(imageName string) (latest.Pipeline, bool) {
+func (rc *RunContext) PipelineForImage(imageName string) (latest.Pipeline, bool) {
 	return rc.Pipelines.Select(imageName)
 }
 

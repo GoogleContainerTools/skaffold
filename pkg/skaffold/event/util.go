@@ -35,7 +35,8 @@ func initializeMetadata(pipelines []latest.Pipeline, kubeContext string) *proto.
 		Deploy: &proto.DeployMetadata{},
 	}
 
-	// all pipelines are constrained to have the same build type.
+	// TODO: Event metadata should support multiple build types.
+	// All pipelines are currently constrained to have the same build type.
 	switch {
 	case pipelines[0].Build.LocalBuild != nil:
 		m.Build.Type = proto.BuildType_LOCAL

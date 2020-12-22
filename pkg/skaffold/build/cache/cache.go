@@ -63,7 +63,7 @@ type DependencyLister func(ctx context.Context, artifact *latest.Artifact) ([]st
 
 type Config interface {
 	docker.Config
-	Pipeline(imageName string) (latest.Pipeline, bool)
+	PipelineForImage(imageName string) (latest.Pipeline, bool)
 	GetPipelines() []latest.Pipeline
 	DefaultPipeline() latest.Pipeline
 	GetCluster() config.Cluster
@@ -103,7 +103,7 @@ func NewCache(cfg Config, isLocalImage func(imageName string) (bool, error), dep
 	}
 
 	importMissingImage := func(imageName string) (bool, error) {
-		pipeline, found := cfg.Pipeline(imageName)
+		pipeline, found := cfg.PipelineForImage(imageName)
 		if !found {
 			pipeline = cfg.DefaultPipeline()
 		}

@@ -216,7 +216,7 @@ type mockConfig struct {
 	log latest.LogsConfig
 }
 
-func (c *mockConfig) Pipeline(string) (latest.Pipeline, bool) {
+func (c *mockConfig) PipelineForImage(string) (latest.Pipeline, bool) {
 	var pipeline latest.Pipeline
 	pipeline.Deploy.Logs = c.log
 	return pipeline, true
