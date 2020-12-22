@@ -39,7 +39,7 @@ type Config interface {
 }
 
 // NewBuilderMux returns an implementation of `build.BuilderMux`.
-func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeline) (PipelineBuilder, error)) (Builder, error) {
+func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeline) (PipelineBuilder, error)) (*BuilderMux, error) {
 	pipelines := cfg.GetPipelines()
 	m := make(map[string]PipelineBuilder)
 	var sl []PipelineBuilder

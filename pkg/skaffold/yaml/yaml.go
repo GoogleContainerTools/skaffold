@@ -57,7 +57,7 @@ func Marshal(in interface{}) (out []byte, err error) {
 	return b.Bytes(), nil
 }
 
-// MarshalWithSeparator is same as yaml.Marshal except for slice or array types where each element is encoded individually and separated by "---".
+// MarshalWithSeparator is same as Marshal except for slice or array types where each element is encoded individually and separated by "---".
 func MarshalWithSeparator(in interface{}) (out []byte, err error) {
 	var b bytes.Buffer
 	encoder := yaml.NewEncoder(&b)

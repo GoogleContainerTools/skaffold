@@ -58,7 +58,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	store := build.NewArtifactStore()
-	builder, err := build.NewBuilderMux(runCtx, store, func(p latest.Pipeline) (build.PipelineBuilder, error) {
+	var builder build.Builder
+	builder, err = build.NewBuilderMux(runCtx, store, func(p latest.Pipeline) (build.PipelineBuilder, error) {
 		return getBuilder(runCtx, store, p)
 	})
 	if err != nil {
