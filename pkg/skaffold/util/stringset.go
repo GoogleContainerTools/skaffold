@@ -44,3 +44,8 @@ func (s StringSet) ToList() []string {
 	sort.Strings(res)
 	return res
 }
+
+func (s StringSet) Contains(str string) bool {
+	_, ok := s[str]
+	return ok
+}

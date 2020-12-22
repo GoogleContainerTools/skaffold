@@ -44,7 +44,7 @@ const (
 type Runner interface {
 	Dev(context.Context, io.Writer, []*latest.Artifact) error
 	ApplyDefaultRepo(tag string) (string, error)
-	BuildAndTest(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)
+	Build(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)
 	Test(context.Context, io.Writer, []build.Artifact) error
 	DeployAndLog(context.Context, io.Writer, []build.Artifact) error
 	GeneratePipeline(context.Context, io.Writer, *latest.SkaffoldConfig, []string, string) error

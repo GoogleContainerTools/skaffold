@@ -42,11 +42,11 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 
-	// import embedded secret for uploading metrics
+	//  import embedded secret for uploading metrics
 	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/secret/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 	"github.com/GoogleContainerTools/skaffold/proto"
@@ -61,7 +61,7 @@ type skaffoldMeter struct {
 	Arch           string
 	PlatformType   string
 	Deployers      []string
-	EnumFlags      map[string]*flag.Flag
+	EnumFlags      map[string]string
 	Builders       map[string]int
 	SyncType       map[string]bool
 	DevIterations  []devIteration
@@ -71,15 +71,15 @@ type skaffoldMeter struct {
 }
 
 type devIteration struct {
-	intent    string
-	errorCode proto.StatusCode
+	Intent    string
+	ErrorCode proto.StatusCode
 }
 
 var (
 	meter = skaffoldMeter{
 		OS:            runtime.GOOS,
 		Arch:          runtime.GOARCH,
-		EnumFlags:     map[string]*flag.Flag{},
+		EnumFlags:     map[string]string{},
 		Builders:      map[string]int{},
 		SyncType:      map[string]bool{},
 		DevIterations: []devIteration{},
@@ -89,10 +89,17 @@ var (
 		ErrorCode:     proto.StatusCode_OK,
 	}
 	shouldExportMetrics = os.Getenv("SKAFFOLD_EXPORT_METRICS") == "true"
+	meteredCommands     = util.NewStringSet()
+	doesBuild           = util.NewStringSet()
+	doesDeploy          = util.NewStringSet()
+	initExporter        = initCloudMonitoringExporterMetrics
 	isOnline            bool
 )
 
 func init() {
+	meteredCommands.Insert("build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test")
+	doesBuild.Insert("build", "render", "dev", "debug", "run")
+	doesDeploy.Insert("deploy", "dev", "debug", "run")
 	go func() {
 		if shouldExportMetrics {
 			r, err := http.Get("http://clients3.google.com/generate_204")
@@ -104,15 +111,10 @@ func init() {
 	}()
 }
 
-func InitMeter(runCtx *runcontext.RunContext, config *latest.SkaffoldConfig) {
-	meter.Command = runCtx.Opts.Command
+func InitMeterFromConfig(config *latest.SkaffoldConfig) {
 	meter.PlatformType = yamltags.GetYamlTag(config.Build.BuildType)
 	for _, artifact := range config.Pipeline.Build.Artifacts {
-		if _, ok := meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]; ok {
-			meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]++
-		} else {
-			meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)] = 1
-		}
+		meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]++
 		if artifact.Sync != nil {
 			meter.SyncType[yamltags.GetYamlTag(artifact.Sync)] = true
 		}
@@ -121,27 +123,35 @@ func InitMeter(runCtx *runcontext.RunContext, config *latest.SkaffoldConfig) {
 	meter.BuildArtifacts = len(config.Pipeline.Build.Artifacts)
 }
 
+func SetCommand(cmd string) {
+	if meteredCommands.Contains(cmd) {
+		meter.Command = cmd
+	}
+}
+
 func SetErrorCode(errorCode proto.StatusCode) {
 	meter.ErrorCode = errorCode
 }
 
 func AddDevIteration(intent string) {
-	meter.DevIterations = append(meter.DevIterations, devIteration{intent: intent})
+	meter.DevIterations = append(meter.DevIterations, devIteration{Intent: intent})
 }
 
 func AddDevIterationErr(i int, errorCode proto.StatusCode) {
 	if len(meter.DevIterations) == i {
-		meter.DevIterations = append(meter.DevIterations, devIteration{intent: "error"})
+		meter.DevIterations = append(meter.DevIterations, devIteration{Intent: "error"})
 	}
-	meter.DevIterations[i].errorCode = errorCode
+	meter.DevIterations[i].ErrorCode = errorCode
 }
 
 func AddFlag(flag *flag.Flag) {
-	meter.EnumFlags[flag.Name] = flag
+	if flag.Changed {
+		meter.EnumFlags[flag.Name] = flag.Value.String()
+	}
 }
 
 func ExportMetrics(exitCode int) error {
-	if !shouldExportMetrics {
+	if !shouldExportMetrics || meter.Command == "" {
 		return nil
 	}
 	home, err := homedir.Dir()
@@ -157,7 +167,7 @@ func ExportMetrics(exitCode int) error {
 
 func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) error {
 	logrus.Debug("exporting metrics")
-	p, err := initCloudMonitoringExporterMetrics()
+	p, err := initExporter()
 	if p == nil {
 		return err
 	}
@@ -178,11 +188,13 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 		return ioutil.WriteFile(filename, b, 0666)
 	}
 
+	start := time.Now()
 	p.Start()
 	for _, m := range meters {
 		createMetrics(ctx, m)
 	}
 	p.Stop()
+	logrus.Debugf("metrics uploading complete in %s", time.Since(start).String())
 
 	if fileExists {
 		return os.Remove(filename)
@@ -210,8 +222,8 @@ func initCloudMonitoringExporterMetrics() (*push.Controller, error) {
 
 	var c creds
 	err = json.Unmarshal(b, &c)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarsharling metrics credentials: %v", err)
+	if c.ProjectID == "" || err != nil {
+		return nil, fmt.Errorf("no project id found in metrics credentials")
 	}
 
 	formatter := func(desc *metric.Descriptor) string {
@@ -255,12 +267,10 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 	durationRecorder.Record(ctx, meter.Duration.Seconds(), labels...)
 	if meter.Command != "" {
 		commandMetrics(ctx, meter, m, randLabel)
-		doesBuild := map[string]bool{"build": true, "render": true, "dev": true, "debug": true, "run": true}
-		doesDeploy := map[string]bool{"deploy": true, "dev": true, "debug": true, "run": true}
-		if _, ok := doesBuild[meter.Command]; ok {
+		if doesBuild.Contains(meter.Command) {
 			builderMetrics(ctx, meter, m, randLabel)
 		}
-		if _, ok := doesDeploy[meter.Command]; ok {
+		if doesDeploy.Contains(meter.Command) {
 			deployerMetrics(ctx, meter, m, randLabel)
 		}
 	}
@@ -286,14 +296,11 @@ func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, ra
 		counts := make(map[string]map[proto.StatusCode]int)
 
 		for _, iteration := range meter.DevIterations {
-			if _, ok := counts[iteration.intent]; !ok {
-				counts[iteration.intent] = make(map[proto.StatusCode]int)
+			if _, ok := counts[iteration.Intent]; !ok {
+				counts[iteration.Intent] = make(map[proto.StatusCode]int)
 			}
-			m := counts[iteration.intent]
-			if _, ok := m[iteration.errorCode]; !ok {
-				m[iteration.errorCode] = 0
-			}
-			m[iteration.errorCode]++
+			m := counts[iteration.Intent]
+			m[iteration.ErrorCode]++
 		}
 		for intention, errorCounts := range counts {
 			for errorCode, count := range errorCounts {

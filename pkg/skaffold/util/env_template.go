@@ -38,7 +38,16 @@ func ExpandEnvTemplate(s string, envMap map[string]string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unable to parse template: %q: %w", s, err)
 	}
+	return ExecuteEnvTemplate(tmpl, envMap)
+}
 
+// ExpandEnvTemplateOrFail parses and executes template s with an optional environment map, and errors if a reference cannot be satisfied.
+func ExpandEnvTemplateOrFail(s string, envMap map[string]string) (string, error) {
+	tmpl, err := ParseEnvTemplate(s)
+	if err != nil {
+		return "", fmt.Errorf("unable to parse template: %q: %w", s, err)
+	}
+	tmpl = tmpl.Option("missingkey=error")
 	return ExecuteEnvTemplate(tmpl, envMap)
 }
 
@@ -62,7 +71,7 @@ func ExecuteEnvTemplate(envTemplate *template.Template, customMap map[string]str
 	var buf bytes.Buffer
 	logrus.Debugf("Executing template %v with environment %v", envTemplate, envMap)
 	if err := envTemplate.Execute(&buf, envMap); err != nil {
-		return "", fmt.Errorf("executing template: %w", err)
+		return "", err
 	}
 	return buf.String(), nil
 }
