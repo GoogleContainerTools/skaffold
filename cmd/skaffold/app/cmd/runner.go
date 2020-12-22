@@ -61,7 +61,7 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, []*latest.Skaf
 		return nil, nil, err
 	}
 
-	instrumentation.InitMeter(runCtx, configs)
+	instrumentation.InitMeterFromConfig(configs)
 	runner, err := runner.NewForConfig(runCtx)
 	if err != nil {
 		event.InititializationFailed(err)

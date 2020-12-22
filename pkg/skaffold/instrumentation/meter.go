@@ -45,8 +45,8 @@ import (
 	// import embedded secret for uploading metrics
 	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/secret/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 	"github.com/GoogleContainerTools/skaffold/proto"
@@ -89,10 +89,16 @@ var (
 		ErrorCode:     proto.StatusCode_OK,
 	}
 	shouldExportMetrics = os.Getenv("SKAFFOLD_EXPORT_METRICS") == "true"
+	meteredCommands     = util.NewStringSet()
+	doesBuild           = util.NewStringSet()
+	doesDeploy          = util.NewStringSet()
 	isOnline            bool
 )
 
 func init() {
+	meteredCommands.Insert("build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test")
+	doesBuild.Insert("build", "render", "dev", "debug", "run")
+	doesDeploy.Insert("deploy", "dev", "debug", "run")
 	go func() {
 		if shouldExportMetrics {
 			r, err := http.Get("http://clients3.google.com/generate_204")
@@ -104,9 +110,8 @@ func init() {
 	}()
 }
 
-func InitMeter(runCtx *runcontext.RunContext, configs []*latest.SkaffoldConfig) {
-	meter.Command = runCtx.Opts.Command
-	meter.PlatformType = yamltags.GetYamlTag(configs[0].Build.BuildType)
+func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
+	meter.PlatformType = yamltags.GetYamlTag(configs[0].Build.BuildType) // TODO: support multiple build types
 	for _, config := range configs {
 		for _, artifact := range config.Pipeline.Build.Artifacts {
 			if _, ok := meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]; ok {
@@ -117,9 +122,13 @@ func InitMeter(runCtx *runcontext.RunContext, configs []*latest.SkaffoldConfig) 
 			if artifact.Sync != nil {
 				meter.SyncType[yamltags.GetYamlTag(artifact.Sync)] = true
 			}
-			meter.Deployers = append(meter.Deployers, yamltags.GetYamlTags(config.Deploy.DeployType)...)
-			meter.BuildArtifacts += len(config.Pipeline.Build.Artifacts)
 		}
+	}
+}
+
+func SetCommand(cmd string) {
+	if meteredCommands.Contains(cmd) {
+		meter.Command = cmd
 	}
 }
 
@@ -143,7 +152,7 @@ func AddFlag(flag *flag.Flag) {
 }
 
 func ExportMetrics(exitCode int) error {
-	if !shouldExportMetrics {
+	if !shouldExportMetrics || meter.Command == "" {
 		return nil
 	}
 	home, err := homedir.Dir()
@@ -257,12 +266,10 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 	durationRecorder.Record(ctx, meter.Duration.Seconds(), labels...)
 	if meter.Command != "" {
 		commandMetrics(ctx, meter, m, randLabel)
-		doesBuild := map[string]bool{"build": true, "render": true, "dev": true, "debug": true, "run": true}
-		doesDeploy := map[string]bool{"deploy": true, "dev": true, "debug": true, "run": true}
-		if _, ok := doesBuild[meter.Command]; ok {
+		if doesBuild.Contains(meter.Command) {
 			builderMetrics(ctx, meter, m, randLabel)
 		}
-		if _, ok := doesDeploy[meter.Command]; ok {
+		if doesDeploy.Contains(meter.Command) {
 			deployerMetrics(ctx, meter, m, randLabel)
 		}
 	}
