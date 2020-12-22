@@ -89,6 +89,7 @@ func TestDescribe(t *testing.T) {
 func TestArtifactType(t *testing.T) {
 	tests := []struct {
 		description  string
+		workspace    string
 		config       ArtifactConfig
 		expectedType latest.ArtifactType
 	}{
@@ -110,10 +111,21 @@ func TestArtifactType(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "with workspace",
+			config:      ArtifactConfig{File: filepath.Join("path", "to", "Dockerfile")},
+			workspace:   "path",
+			expectedType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					DockerfilePath: "to/Dockerfile",
+				},
+			},
+		},
+
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			at := test.config.ArtifactType()
+			at := test.config.ArtifactType(test.workspace)
 
 			t.CheckDeepEqual(test.expectedType, at)
 		})

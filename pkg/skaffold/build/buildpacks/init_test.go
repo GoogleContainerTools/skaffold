@@ -149,7 +149,7 @@ func TestArtifactType(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			at := test.config.ArtifactType()
+			at := test.config.ArtifactType("ignored")	// buildpacks doesn't include file references in its artifacts
 
 			t.CheckDeepEqual(test.expectedType, at)
 		})

@@ -98,7 +98,7 @@ func TestDoInit(t *testing.T) {
 			config: initconfig.Config{
 				Force: true,
 				CliArtifacts: []string{
-					`{"builder":"Docker","context":"apps\\web","payload":{"path":"apps\\web\\build\\Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
+					`{"builder":"Docker","context":"apps\\web","payload":{"path":"apps\\web\\build\\Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
 				},
 				Opts: config.SkaffoldOptions{
 					ConfigurationFile: "skaffold.yaml.out",
