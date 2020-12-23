@@ -91,7 +91,7 @@ type Deployer struct {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg kubectl.Config, labels map[string]string) (*Deployer, error) {
+func NewDeployer(cfg kubectl.Config, labels map[string]string, h *latest.HelmDeploy) (*Deployer, error) {
 	hv, err := binVer()
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -102,7 +102,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string) (*Deployer, error
 	}
 
 	return &Deployer{
-		HelmDeploy:  cfg.Pipeline().Deploy.HelmDeploy,
+		HelmDeploy:  h,
 		kubeContext: cfg.GetKubeContext(),
 		kubeConfig:  cfg.GetKubeConfig(),
 		namespace:   cfg.GetKubeNamespace(),

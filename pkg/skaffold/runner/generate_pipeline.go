@@ -29,16 +29,19 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, config *latest.SkaffoldConfig, configPaths []string, fileOut string) error {
+func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, configs []*latest.SkaffoldConfig, configPaths []string, fileOut string) error {
 	// Keep track of files, configs, and profiles. This will be used to know which files to write
 	// profiles to and what flags to add to task commands
-	baseConfig := []*pipeline.ConfigFile{
-		{
+	var baseConfig []*pipeline.ConfigFile
+	for _, config := range configs {
+		cfgFile := &pipeline.ConfigFile{
 			Path:    r.runCtx.ConfigurationFile(),
 			Config:  config,
 			Profile: nil,
-		},
+		}
+		baseConfig = append(baseConfig, cfgFile)
 	}
+
 	configFiles, err := setupConfigFiles(configPaths)
 	if err != nil {
 		return fmt.Errorf("setting up ConfigFiles: %w", err)
@@ -71,21 +74,23 @@ func setupConfigFiles(configPaths []string) ([]*pipeline.ConfigFile, error) {
 	// Read all given config files to read contents into SkaffoldConfig
 	var configFiles []*pipeline.ConfigFile
 	for _, path := range configPaths {
-		parsed, err := schema.ParseConfigAndUpgrade(path, latest.Version)
+		parsedCfgs, err := schema.ParseConfigAndUpgrade(path, latest.Version)
 		if err != nil {
 			return nil, fmt.Errorf("parsing config %q: %w", path, err)
 		}
-		config := parsed.(*latest.SkaffoldConfig)
+		for _, parsedCfg := range parsedCfgs {
+			config := parsedCfg.(*latest.SkaffoldConfig)
 
-		if err := defaults.Set(config); err != nil {
-			return nil, fmt.Errorf("setting default values for extra configs: %w", err)
-		}
+			if err := defaults.Set(config, true); err != nil {
+				return nil, fmt.Errorf("setting default values for extra configs: %w", err)
+			}
 
-		configFile := &pipeline.ConfigFile{
-			Path:   path,
-			Config: config,
+			configFile := &pipeline.ConfigFile{
+				Path:   path,
+				Config: config,
+			}
+			configFiles = append(configFiles, configFile)
 		}
-		configFiles = append(configFiles, configFile)
 	}
 
 	return configFiles, nil

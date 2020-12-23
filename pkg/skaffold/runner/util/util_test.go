@@ -80,7 +80,7 @@ func TestGetAllPodNamespaces(t *testing.T) {
 				}, nil
 			})
 
-			namespaces, err := GetAllPodNamespaces(test.argNamespace, test.cfg)
+			namespaces, err := GetAllPodNamespaces(test.argNamespace, []latest.Pipeline{test.cfg})
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, namespaces)

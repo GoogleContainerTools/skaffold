@@ -40,12 +40,14 @@ const (
 )
 
 // Set makes sure default values are set on a SkaffoldConfig.
-func Set(c *latest.SkaffoldConfig) error {
+func Set(c *latest.SkaffoldConfig, setDefaultDeployer bool) error {
 	defaultToLocalBuild(c)
-	defaultToKubectlDeploy(c)
+	if setDefaultDeployer {
+		defaultToKubectlDeploy(c)
+		setDefaultKubectlManifests(c)
+	}
 	setDefaultTagger(c)
 	setDefaultKustomizePath(c)
-	setDefaultKubectlManifests(c)
 	setDefaultLogsConfig(c)
 
 	for _, a := range c.Build.Artifacts {

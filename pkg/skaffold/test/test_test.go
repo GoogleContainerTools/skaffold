@@ -41,7 +41,7 @@ func TestNoTestDependencies(t *testing.T) {
 		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) { return nil, nil })
 
 		cfg := &mockConfig{}
-		deps, err := NewTester(cfg, true).TestDependencies()
+		deps, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil }).TestDependencies()
 
 		t.CheckNoError(err)
 		t.CheckEmpty(deps)
@@ -60,7 +60,7 @@ func TestTestDependencies(t *testing.T) {
 				{StructureTests: []string{"test3.yaml"}},
 			},
 		}
-		deps, err := NewTester(cfg, true).TestDependencies()
+		deps, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil }).TestDependencies()
 
 		expectedDeps := tmpDir.Paths("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 		t.CheckNoError(err)
@@ -77,7 +77,7 @@ func TestWrongPattern(t *testing.T) {
 			}},
 		}
 
-		tester := NewTester(cfg, true)
+		tester := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
 
 		_, err := tester.TestDependencies()
 		t.CheckError(true, err)
@@ -94,7 +94,7 @@ func TestNoTest(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		cfg := &mockConfig{}
 
-		tester := NewTester(cfg, true)
+		tester := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
 		err := tester.Test(context.Background(), ioutil.Discard, nil)
 
 		t.CheckNoError(err)
@@ -107,7 +107,7 @@ func TestIgnoreDockerNotFound(t *testing.T) {
 			return nil, errors.New("not found")
 		})
 
-		tester := NewTester(&mockConfig{}, true)
+		tester := NewTester(&mockConfig{}, func(imageName string) (bool, error) { return true, nil })
 
 		t.CheckNil(tester)
 	})
@@ -142,7 +142,7 @@ func TestTestSuccess(t *testing.T) {
 		}
 
 		imagesAreLocal := true
-		err := NewTester(cfg, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil }).Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -167,7 +167,7 @@ func TestTestSuccessRemoteImage(t *testing.T) {
 		}
 
 		imagesAreLocal := false
-		err := NewTester(cfg, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil }).Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -192,7 +192,7 @@ func TestTestFailureRemoteImage(t *testing.T) {
 		}
 
 		imagesAreLocal := false
-		err := NewTester(cfg, imagesAreLocal).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil }).Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -219,7 +219,7 @@ func TestTestFailure(t *testing.T) {
 			},
 		}
 
-		err := NewTester(cfg, true).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil }).Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "broken-image",
 			Tag:       "broken-image:tag",
 		}})
@@ -244,7 +244,7 @@ func TestTestMuted(t *testing.T) {
 		}
 
 		var buf bytes.Buffer
-		err := NewTester(cfg, true).Test(context.Background(), &buf, []build.Artifact{{
+		err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil }).Test(context.Background(), &buf, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -265,10 +265,6 @@ type mockConfig struct {
 	muted                 config.Muted
 }
 
-func (c *mockConfig) Muted() config.Muted   { return c.muted }
-func (c *mockConfig) GetWorkingDir() string { return c.workingDir }
-func (c *mockConfig) Pipeline() latest.Pipeline {
-	var pipeline latest.Pipeline
-	pipeline.Test = c.tests
-	return pipeline
-}
+func (c *mockConfig) Muted() config.Muted           { return c.muted }
+func (c *mockConfig) GetWorkingDir() string         { return c.workingDir }
+func (c *mockConfig) TestCases() []*latest.TestCase { return c.tests }

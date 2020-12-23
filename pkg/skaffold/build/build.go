@@ -62,6 +62,26 @@ type Builder interface {
 	Prune(context.Context, io.Writer) error
 }
 
+// PipelineBuilder is an interface for a specific Skaffold config pipeline build type.
+// Current implementations are the `local`, `cluster` and `gcb`
+type PipelineBuilder interface {
+
+	// PreBuild executes any one-time setup required prior to starting any build on this builder
+	PreBuild(ctx context.Context, out io.Writer) error
+
+	// Build returns the `ArtifactBuilder` based on this build pipeline type
+	Build(ctx context.Context, out io.Writer, artifact *latest.Artifact) ArtifactBuilder
+
+	// PostBuild executes any one-time teardown required after all builds on this builder are complete
+	PostBuild(ctx context.Context, out io.Writer) error
+
+	// Concurrency specifies the max number of builds that can run at any one time. If concurrency is 0, then all builds can run in parallel.
+	Concurrency() int
+
+	// Prune removes images built in this pipeline
+	Prune(context.Context, io.Writer) error
+}
+
 type ErrSyncMapNotSupported struct{}
 
 func (ErrSyncMapNotSupported) Error() string {

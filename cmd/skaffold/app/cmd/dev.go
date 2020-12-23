@@ -60,8 +60,12 @@ func runDev(ctx context.Context, out io.Writer) error {
 		case <-ctx.Done():
 			return nil
 		default:
-			err := withRunner(ctx, out, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-				err := r.Dev(ctx, out, config.Build.Artifacts)
+			err := withRunner(ctx, out, func(r runner.Runner, configs []*latest.SkaffoldConfig) error {
+				var artifacts []*latest.Artifact
+				for _, cfg := range configs {
+					artifacts = append(artifacts, cfg.Build.Artifacts...)
+				}
+				err := r.Dev(ctx, out, artifacts)
 
 				if r.HasDeployed() {
 					cleanup = func() {

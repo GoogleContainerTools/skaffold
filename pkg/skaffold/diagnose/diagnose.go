@@ -34,61 +34,62 @@ import (
 type Config interface {
 	docker.Config
 
-	Pipeline() latest.Pipeline
+	GetPipelines() []latest.Pipeline
 }
 
 func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
-	for _, artifact := range cfg.Pipeline().Build.Artifacts {
-		color.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.ImageName)
+	for _, p := range cfg.GetPipelines() {
+		for _, artifact := range p.Build.Artifacts {
+			color.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.ImageName)
 
-		if artifact.DockerArtifact != nil {
-			size, err := sizeOfDockerContext(ctx, artifact, cfg)
+			if artifact.DockerArtifact != nil {
+				size, err := sizeOfDockerContext(ctx, artifact, cfg)
+				if err != nil {
+					return fmt.Errorf("computing the size of the Docker context: %w", err)
+				}
+
+				fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
+			}
+
+			timeDeps1, deps, err := timeToListDependencies(ctx, artifact, cfg)
 			if err != nil {
-				return fmt.Errorf("computing the size of the Docker context: %w", err)
+				return fmt.Errorf("listing artifact dependencies: %w", err)
+			}
+			timeDeps2, _, err := timeToListDependencies(ctx, artifact, cfg)
+			if err != nil {
+				return fmt.Errorf("listing artifact dependencies: %w", err)
 			}
 
-			fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
-		}
+			fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
+			fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
 
-		timeDeps1, deps, err := timeToListDependencies(ctx, artifact, cfg)
-		if err != nil {
-			return fmt.Errorf("listing artifact dependencies: %w", err)
-		}
-		timeDeps2, _, err := timeToListDependencies(ctx, artifact, cfg)
-		if err != nil {
-			return fmt.Errorf("listing artifact dependencies: %w", err)
-		}
-
-		fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
-		fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
-
-		timeSyncMap1, err := timeToConstructSyncMap(artifact, cfg)
-		if err != nil {
-			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
-				return fmt.Errorf("construct artifact dependencies: %w", err)
+			timeSyncMap1, err := timeToConstructSyncMap(artifact, cfg)
+			if err != nil {
+				if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
+					return fmt.Errorf("construct artifact dependencies: %w", err)
+				}
 			}
-		}
-		timeSyncMap2, err := timeToConstructSyncMap(artifact, cfg)
-		if err != nil {
-			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
-				return fmt.Errorf("construct artifact dependencies: %w", err)
+			timeSyncMap2, err := timeToConstructSyncMap(artifact, cfg)
+			if err != nil {
+				if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
+					return fmt.Errorf("construct artifact dependencies: %w", err)
+				}
+			} else {
+				fmt.Fprintf(out, " - Time to construct sync-map: %v (2nd time: %v)\n", timeSyncMap1, timeSyncMap2)
 			}
-		} else {
-			fmt.Fprintf(out, " - Time to construct sync-map: %v (2nd time: %v)\n", timeSyncMap1, timeSyncMap2)
-		}
 
-		timeMTimes1, err := timeToComputeMTimes(deps)
-		if err != nil {
-			return fmt.Errorf("computing modTimes: %w", err)
-		}
-		timeMTimes2, err := timeToComputeMTimes(deps)
-		if err != nil {
-			return fmt.Errorf("computing modTimes: %w", err)
-		}
+			timeMTimes1, err := timeToComputeMTimes(deps)
+			if err != nil {
+				return fmt.Errorf("computing modTimes: %w", err)
+			}
+			timeMTimes2, err := timeToComputeMTimes(deps)
+			if err != nil {
+				return fmt.Errorf("computing modTimes: %w", err)
+			}
 
-		fmt.Fprintf(out, " - Time to compute mTimes on dependencies: %v (2nd time: %v)\n", timeMTimes1, timeMTimes2)
+			fmt.Fprintf(out, " - Time to compute mTimes on dependencies: %v (2nd time: %v)\n", timeMTimes1, timeMTimes2)
+		}
 	}
-
 	return nil
 }
 

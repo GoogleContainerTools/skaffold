@@ -184,10 +184,9 @@ func TestKustomizeDeploy(t *testing.T) {
 					Delay:   0 * time.Second,
 					Max:     10 * time.Second,
 				},
-				kustomize: test.kustomize,
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption,
-				}}}, nil)
+				}}}, nil, &test.kustomize)
 			t.RequireNoError(err)
 			_, err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
@@ -251,10 +250,9 @@ func TestKustomizeCleanup(t *testing.T) {
 
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: tmpDir.Root(),
-				kustomize:  test.kustomize,
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
-			}, nil)
+			}, nil, &test.kustomize)
 			t.RequireNoError(err)
 			err = k.Cleanup(context.Background(), ioutil.Discard)
 
@@ -456,11 +454,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 				tmpDir.Write(path, contents)
 			}
 
-			k, err := NewDeployer(&kustomizeConfig{
-				kustomize: latest.KustomizeDeploy{
-					KustomizePaths: kustomizePaths,
-				},
-			}, nil)
+			k, err := NewDeployer(&kustomizeConfig{}, nil, &latest.KustomizeDeploy{KustomizePaths: kustomizePaths})
 			t.RequireNoError(err)
 
 			deps, err := k.Dependencies()
@@ -703,11 +697,10 @@ spec:
 
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
-				kustomize: latest.KustomizeDeploy{
-					KustomizePaths: kustomizationPaths,
-				},
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: kubectl.TestNamespace}},
-			}, test.labels)
+			}, test.labels, &latest.KustomizeDeploy{
+				KustomizePaths: kustomizationPaths,
+			})
 			t.RequireNoError(err)
 
 			var b bytes.Buffer
@@ -723,7 +716,6 @@ type kustomizeConfig struct {
 	force                 bool
 	workingDir            string
 	waitForDeletions      config.WaitForDeletions
-	kustomize             latest.KustomizeDeploy
 }
 
 func (c *kustomizeConfig) ForceDeploy() bool                         { return c.force }
@@ -731,8 +723,3 @@ func (c *kustomizeConfig) WaitForDeletions() config.WaitForDeletions { return c.
 func (c *kustomizeConfig) WorkingDir() string                        { return c.workingDir }
 func (c *kustomizeConfig) GetKubeContext() string                    { return kubectl.TestKubeContext }
 func (c *kustomizeConfig) GetKubeNamespace() string                  { return c.Opts.Namespace }
-func (c *kustomizeConfig) Pipeline() latest.Pipeline {
-	var pipeline latest.Pipeline
-	pipeline.Deploy.DeployType.KustomizeDeploy = &c.kustomize
-	return pipeline
-}

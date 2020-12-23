@@ -60,14 +60,14 @@ func doRender(ctx context.Context, out io.Writer) error {
 		buildOut = out
 	}
 
-	return withRunner(ctx, out, func(r runner.Runner, config *latest.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, configs []*latest.SkaffoldConfig) error {
 		var bRes []build.Artifact
 
 		if renderFromBuildOutputFile.String() != "" {
 			bRes = renderFromBuildOutputFile.BuildArtifacts()
 		} else {
 			var err error
-			bRes, err = r.Build(ctx, buildOut, targetArtifacts(opts, config))
+			bRes, err = r.Build(ctx, buildOut, targetArtifacts(opts, configs))
 			if err != nil {
 				return fmt.Errorf("executing build: %w", err)
 			}

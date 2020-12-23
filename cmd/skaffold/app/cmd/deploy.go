@@ -51,12 +51,15 @@ func NewCmdDeploy() *cobra.Command {
 }
 
 func doDeploy(ctx context.Context, out io.Writer) error {
-	return withRunner(ctx, out, func(r runner.Runner, config *latest.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, configs []*latest.SkaffoldConfig) error {
 		if opts.SkipRender {
 			return r.DeployAndLog(ctx, out, []build.Artifact{})
 		}
-
-		buildArtifacts, err := getBuildArtifactsAndSetTags(r, config)
+		var artifacts []*latest.Artifact
+		for _, cfg := range configs {
+			artifacts = append(artifacts, cfg.Build.Artifacts...)
+		}
+		buildArtifacts, err := getBuildArtifactsAndSetTags(r, artifacts)
 		if err != nil {
 			tips.PrintUseRunVsDeploy(out)
 			return err
