@@ -48,7 +48,7 @@ func TestNewCmdDebug(t *testing.T) {
 func TestDebugIndependentFromDev(t *testing.T) {
 	mockRunner := &mockDevRunner{}
 	testutil.Run(t, "DevDebug", func(t *testutil.T) {
-		t.Override(&createRunner, func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+		t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
 			return mockRunner, &latest.SkaffoldConfig{}, nil
 		})
 		t.Override(&opts, config.SkaffoldOptions{})

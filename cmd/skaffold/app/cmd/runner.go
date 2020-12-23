@@ -25,9 +25,12 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
+	initConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -71,21 +74,11 @@ func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner,
 	return runner, config, nil
 }
 
-func runContext(_ io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.SkaffoldConfig, error) {
-	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
+func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.SkaffoldConfig, error) {
+	config, err := skaffoldConfig(out, opts)
 	if err != nil {
-		if os.IsNotExist(errors.Unwrap(err)) {
-			return nil, nil, fmt.Errorf("skaffold config file %s not found - check your current working directory, or try running `skaffold init`", opts.ConfigurationFile)
-		}
-
-		// If the error is NOT that the file doesn't exist, then we warn the user
-		// that maybe they are using an outdated version of Skaffold that's unable to read
-		// the configuration.
-		warnIfUpdateIsAvailable()
-		return nil, nil, fmt.Errorf("parsing skaffold config: %w", err)
+		return nil, nil, err
 	}
-
-	config := parsed.(*latest.SkaffoldConfig)
 
 	if err = schema.ApplyProfiles(config, opts); err != nil {
 		return nil, nil, fmt.Errorf("applying profiles: %w", err)
@@ -111,6 +104,31 @@ func runContext(_ io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContex
 	}
 
 	return runCtx, config, nil
+}
+
+// skaffoldConfig will try to parse the given opts.ConfigurationFile. If not found, it will try to automatically generate a config for the user
+func skaffoldConfig(out io.Writer, opts config.SkaffoldOptions) (*latest.SkaffoldConfig, error) {
+	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
+	if err != nil {
+		if os.IsNotExist(errors.Unwrap(err)) {
+			color.Default.Fprintf(out, "Skaffold config file %s not found - Trying to create one for you...\n", opts.ConfigurationFile)
+			config, err := initializer.Transparent(context.Background(), out, initConfig.Config{Opts: opts})
+			if err != nil {
+				return nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: %w", err)
+			}
+
+			return config, nil
+		}
+
+		// If the error is NOT that the file doesn't exist, then we warn the user
+		// that maybe they are using an outdated version of Skaffold that's unable to read
+		// the configuration.
+		warnIfUpdateIsAvailable()
+		return nil, fmt.Errorf("parsing skaffold config: %w", err)
+	}
+
+	config := parsed.(*latest.SkaffoldConfig)
+	return config, nil
 }
 
 func warnIfUpdateIsAvailable() {
