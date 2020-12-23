@@ -1146,6 +1146,11 @@
     },
     "GitTagger": {
       "properties": {
+        "excludedTags": {
+          "type": "string",
+          "description": "if set will be passed to the --exclude flag for the `tags`.",
+          "x-intellij-html-description": "if set will be passed to the --exclude flag for the <code>tags</code>."
+        },
         "ignoreChanges": {
           "type": "boolean",
           "description": "specifies whether to omit the `-dirty` postfix if there are uncommitted changes.",
@@ -1166,6 +1171,7 @@
       "preferredOrder": [
         "variant",
         "prefix",
+        "excludedTags",
         "ignoreChanges"
       ],
       "additionalProperties": false,
