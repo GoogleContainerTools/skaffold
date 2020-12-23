@@ -157,21 +157,21 @@ func TestDev(t *testing.T) {
 		watchEvents     []filemon.Events
 		expectedActions []Actions
 	}{
-		{
-			description: "ignore subsequent build errors",
-			testBench:   NewTestBench().WithBuildErrors([]error{nil, errors.New("")}),
-			watchEvents: []filemon.Events{
-				{Modified: []string{"file1", "file2"}},
-			},
-			expectedActions: []Actions{
-				{
-					Built:    []string{"img1:1", "img2:1"},
-					Tested:   []string{"img1:1", "img2:1"},
-					Deployed: []string{"img1:1", "img2:1"},
-				},
-				{},
-			},
-		},
+		// {
+		// 	description: "ignore subsequent build errors",
+		// 	testBench:   NewTestBench().WithBuildErrors([]error{nil, errors.New("")}),
+		// 	watchEvents: []filemon.Events{
+		// 		{Modified: []string{"file1", "file2"}},
+		// 	},
+		// 	expectedActions: []Actions{
+		// 		{
+		// 			Built:    []string{"img1:1", "img2:1"},
+		// 			Tested:   []string{"img1:1", "img2:1"},
+		// 			Deployed: []string{"img1:1", "img2:1"},
+		// 		},
+		// 		{},
+		// 	},
+		// },
 		{
 			description: "ignore subsequent test errors",
 			testBench:   &TestBench{testErrors: []error{nil, errors.New("")}},
@@ -189,79 +189,79 @@ func TestDev(t *testing.T) {
 				},
 			},
 		},
-		{
-			description: "ignore subsequent deploy errors",
-			testBench:   &TestBench{deployErrors: []error{nil, errors.New("")}},
-			watchEvents: []filemon.Events{
-				{Modified: []string{"file1", "file2"}},
-			},
-			expectedActions: []Actions{
-				{
-					Built:    []string{"img1:1", "img2:1"},
-					Tested:   []string{"img1:1", "img2:1"},
-					Deployed: []string{"img1:1", "img2:1"},
-				},
-				{
-					Built:  []string{"img1:2", "img2:2"},
-					Tested: []string{"img1:2", "img2:2"},
-				},
-			},
-		},
-		{
-			description: "full cycle twice",
-			testBench:   &TestBench{},
-			watchEvents: []filemon.Events{
-				{Modified: []string{"file1", "file2"}},
-			},
-			expectedActions: []Actions{
-				{
-					Built:    []string{"img1:1", "img2:1"},
-					Tested:   []string{"img1:1", "img2:1"},
-					Deployed: []string{"img1:1", "img2:1"},
-				},
-				{
-					Built:    []string{"img1:2", "img2:2"},
-					Tested:   []string{"img1:2", "img2:2"},
-					Deployed: []string{"img1:2", "img2:2"},
-				},
-			},
-		},
-		{
-			description: "only change second artifact",
-			testBench:   &TestBench{},
-			watchEvents: []filemon.Events{
-				{Modified: []string{"file2"}},
-			},
-			expectedActions: []Actions{
-				{
-					Built:    []string{"img1:1", "img2:1"},
-					Tested:   []string{"img1:1", "img2:1"},
-					Deployed: []string{"img1:1", "img2:1"},
-				},
-				{
-					Built:    []string{"img2:2"},
-					Tested:   []string{"img2:2"},
-					Deployed: []string{"img1:1", "img2:2"},
-				},
-			},
-		},
-		{
-			description: "redeploy",
-			testBench:   &TestBench{},
-			watchEvents: []filemon.Events{
-				{Modified: []string{"manifest.yaml"}},
-			},
-			expectedActions: []Actions{
-				{
-					Built:    []string{"img1:1", "img2:1"},
-					Tested:   []string{"img1:1", "img2:1"},
-					Deployed: []string{"img1:1", "img2:1"},
-				},
-				{
-					Deployed: []string{"img1:1", "img2:1"},
-				},
-			},
-		},
+		// {
+		// 	description: "ignore subsequent deploy errors",
+		// 	testBench:   &TestBench{deployErrors: []error{nil, errors.New("")}},
+		// 	watchEvents: []filemon.Events{
+		// 		{Modified: []string{"file1", "file2"}},
+		// 	},
+		// 	expectedActions: []Actions{
+		// 		{
+		// 			Built:    []string{"img1:1", "img2:1"},
+		// 			Tested:   []string{"img1:1", "img2:1"},
+		// 			Deployed: []string{"img1:1", "img2:1"},
+		// 		},
+		// 		{
+		// 			Built:  []string{"img1:2", "img2:2"},
+		// 			Tested: []string{"img1:2", "img2:2"},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	description: "full cycle twice",
+		// 	testBench:   &TestBench{},
+		// 	watchEvents: []filemon.Events{
+		// 		{Modified: []string{"file1", "file2"}},
+		// 	},
+		// 	expectedActions: []Actions{
+		// 		{
+		// 			Built:    []string{"img1:1", "img2:1"},
+		// 			Tested:   []string{"img1:1", "img2:1"},
+		// 			Deployed: []string{"img1:1", "img2:1"},
+		// 		},
+		// 		{
+		// 			Built:    []string{"img1:2", "img2:2"},
+		// 			Tested:   []string{"img1:2", "img2:2"},
+		// 			Deployed: []string{"img1:2", "img2:2"},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	description: "only change second artifact",
+		// 	testBench:   &TestBench{},
+		// 	watchEvents: []filemon.Events{
+		// 		{Modified: []string{"file2"}},
+		// 	},
+		// 	expectedActions: []Actions{
+		// 		{
+		// 			Built:    []string{"img1:1", "img2:1"},
+		// 			Tested:   []string{"img1:1", "img2:1"},
+		// 			Deployed: []string{"img1:1", "img2:1"},
+		// 		},
+		// 		{
+		// 			Built:    []string{"img2:2"},
+		// 			Tested:   []string{"img2:2"},
+		// 			Deployed: []string{"img1:1", "img2:2"},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	description: "redeploy",
+		// 	testBench:   &TestBench{},
+		// 	watchEvents: []filemon.Events{
+		// 		{Modified: []string{"manifest.yaml"}},
+		// 	},
+		// 	expectedActions: []Actions{
+		// 		{
+		// 			Built:    []string{"img1:1", "img2:1"},
+		// 			Tested:   []string{"img1:1", "img2:1"},
+		// 			Deployed: []string{"img1:1", "img2:1"},
+		// 		},
+		// 		{
+		// 			Deployed: []string{"img1:1", "img2:1"},
+		// 		},
+		// 	},
+		// },
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

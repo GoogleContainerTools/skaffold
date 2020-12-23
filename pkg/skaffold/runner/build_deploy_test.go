@@ -139,7 +139,11 @@ func TestBuildTestDeploy(t *testing.T) {
 			runner := createRunner(t, test.testBench, nil, artifacts)
 			bRes, err := runner.Build(ctx, ioutil.Discard, artifacts)
 			if err == nil {
-				err = runner.DeployAndLog(ctx, ioutil.Discard, bRes)
+				err = runner.Test(ctx, ioutil.Discard, bRes)
+				if err == nil {
+
+					err = runner.DeployAndLog(ctx, ioutil.Discard, bRes)
+				}
 			}
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedActions, test.testBench.Actions())

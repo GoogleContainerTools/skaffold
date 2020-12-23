@@ -68,6 +68,8 @@ func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Artifact) error {
 	start := time.Now()
 
+	logrus.Infoln("[Priya_4] - in timings.go. builds is: ", builds)
+
 	err := w.Tester.Test(ctx, out, builds)
 	if err != nil {
 		return err
