@@ -17,35 +17,54 @@ limitations under the License.
 package integration
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestDebug(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
-		description string
-		dir         string
-		args        []string
-		deployments []string
-		pods        []string
+		description   string
+		dir           string
+		config        string
+		args          []string
+		deployments   []string
+		pods          []string
+		ignoreWorkdir bool
 	}{
 		{
 			description: "kubectl",
 			dir:         "testdata/debug",
-			deployments: []string{"jib"},
-			pods:        []string{"nodejs", "npm", "python3", "go"},
+			deployments: []string{"java"},
+			pods:        []string{"nodejs", "npm", "python3", "go", "netcore"},
 		},
 		{
 			description: "kustomize",
-			args:        []string{"--profile", "kustomize"},
 			dir:         "testdata/debug",
-			deployments: []string{"jib"},
-			pods:        []string{"nodejs", "npm", "python3", "go"},
+			args:        []string{"--profile", "kustomize"},
+			deployments: []string{"java"},
+			pods:        []string{"nodejs", "npm", "python3", "go", "netcore"},
+		},
+		{
+			description: "buildpacks",
+			dir:         "testdata/debug",
+			args:        []string{"--profile", "buildpacks"},
+			deployments: []string{"java"},
+			pods:        []string{"nodejs", "npm", "python3", "go", "netcore"},
+		},
+		{
+			description:   "helm",
+			dir:           "examples/helm-deployment",
+			deployments:   []string{"skaffold-helm"},
+			ignoreWorkdir: true, // dockerfile doesn't have a workdir
 		},
 	}
 	for _, test := range tests {
@@ -57,17 +76,62 @@ func TestDebug(t *testing.T) {
 
 			skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 
-			client.WaitForPodsReady(test.pods...)
+			verifyDebugAnnotations := func(annotations map[string]string) {
+				var configs map[string]debug.ContainerDebugConfiguration
+				if anno, found := annotations["debug.cloud.google.com/config"]; !found {
+					t.Errorf("deployment missing debug annotation: %v", annotations)
+				} else if err := json.Unmarshal([]byte(anno), &configs); err != nil {
+					t.Errorf("error unmarshalling debug annotation: %v: %v", anno, err)
+				} else {
+					for k, config := range configs {
+						if !test.ignoreWorkdir && config.WorkingDir == "" {
+							t.Errorf("debug config for %q missing WorkingDir: %v: %v", k, anno, config)
+						}
+						if config.Runtime == "" {
+							t.Errorf("debug config for %q missing Runtime: %v: %v", k, anno, config)
+						}
+					}
+				}
+			}
+
+			for _, podName := range test.pods {
+				pod := client.GetPod(podName)
+
+				annotations := pod.Annotations
+				verifyDebugAnnotations(annotations)
+			}
+
 			for _, depName := range test.deployments {
 				deploy := client.GetDeployment(depName)
 
 				annotations := deploy.Spec.Template.GetAnnotations()
-				if _, found := annotations["debug.cloud.google.com/config"]; !found {
-					t.Errorf("deployment missing debug annotation: %v", annotations)
-				}
+				verifyDebugAnnotations(annotations)
 			}
 		})
 	}
+}
+
+func TestFilterWithDebugging(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	// `filter` currently expects to receive a digested yaml
+	renderedOutput := skaffold.Render().InDir("examples/getting-started").RunOrFailOutput(t)
+
+	testutil.Run(t, "no --build-artifacts should transform all images", func(t *testutil.T) {
+		transformedOutput := skaffold.Filter("--debugging").InDir("examples/getting-started").WithStdin(renderedOutput).RunOrFailOutput(t.T)
+		transformedYaml := string(transformedOutput)
+		if !strings.Contains(transformedYaml, "/dbg/go/bin/dlv") {
+			t.Error("transformed yaml seems to be missing debugging details", transformedYaml)
+		}
+	})
+
+	testutil.Run(t, "--build-artifacts=file should result in specific transforms", func(t *testutil.T) {
+		buildFile := t.TempFile("build.txt", []byte(`{"builds":[{"imageName":"doesnotexist","tag":"doesnotexist:notag"}]}`))
+		transformedOutput := skaffold.Filter("--debugging", "--build-artifacts="+buildFile).InDir("examples/getting-started").WithStdin(renderedOutput).RunOrFailOutput(t.T)
+		transformedYaml := string(transformedOutput)
+		if strings.Contains(transformedYaml, "/dbg/go/bin/dlv") {
+			t.Error("transformed yaml should not include debugging details", transformedYaml)
+		}
+	})
 }
 
 func TestDebugEventsRPC_StatusCheck(t *testing.T) {
@@ -107,7 +171,7 @@ func waitForDebugEvent(t *testing.T, client *NSKubernetesClient, rpcAddr string)
 	for {
 		select {
 		case <-timeout:
-			t.Fatalf("timed out waiting for port debugging event")
+			t.Fatalf("timed out waiting for debugging event")
 		case entry := <-entries:
 			switch entry.Event.GetEventType().(type) {
 			case *proto.Event_DebuggingContainerEvent:

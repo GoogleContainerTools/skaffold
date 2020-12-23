@@ -19,11 +19,18 @@ package cmd
 import (
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+)
+
+var (
+	fromBuildOutputFile flags.BuildOutputFileFlag
 )
 
 // Flag defines a Skaffold CLI flag which contains a list of
@@ -38,18 +45,19 @@ type Flag struct {
 	FlagAddMethod      string
 	DefinedOn          []string
 	Hidden             bool
+	IsEnum             bool
 
 	pflag *pflag.Flag
 }
 
-// FlagRegistry is a list of all Skaffold CLI flags.
+// flagRegistry is a list of all Skaffold CLI flags.
 // When adding a new flag to the registry, please specify the
 // command/commands to which the flag belongs in `DefinedOn` field.
 // If the flag is a global flag, or belongs to all the subcommands,
 /// specify "all"
 // FlagAddMethod is method which defines a flag value with specified
 // name, default value, and usage string. e.g. `StringVar`, `BoolVar`
-var FlagRegistry = []Flag{
+var flagRegistry = []Flag{
 	{
 		Name:          "filename",
 		Shorthand:     "f",
@@ -93,6 +101,7 @@ var FlagRegistry = []Flag{
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "cache-file",
@@ -119,6 +128,15 @@ var FlagRegistry = []Flag{
 			"dev": true,
 		},
 		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
+		IsEnum:        true,
+	},
+	{
+		Name:          "event-log-file",
+		Usage:         "Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true",
+		Value:         &opts.EventLogFile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
 	},
 	{
@@ -153,6 +171,7 @@ var FlagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
+		IsEnum:        true,
 	},
 	{
 		Name:     "tail",
@@ -165,17 +184,16 @@ var FlagRegistry = []Flag{
 		},
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug", "deploy"},
+		IsEnum:        true,
 	},
 	{
-		Name:     "force",
-		Usage:    "Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)",
-		Value:    &opts.Force,
-		DefValue: false,
-		DefValuePerCommand: map[string]interface{}{
-			"dev": true,
-		},
+		Name:          "force",
+		Usage:         "Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!",
+		Value:         &opts.Force,
+		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "skip-tests",
@@ -184,6 +202,7 @@ var FlagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug", "build"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "cleanup",
@@ -192,6 +211,7 @@ var FlagRegistry = []Flag{
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "no-prune",
@@ -200,6 +220,7 @@ var FlagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "no-prune-children",
@@ -208,6 +229,7 @@ var FlagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "port-forward",
@@ -216,6 +238,7 @@ var FlagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "status-check",
@@ -224,6 +247,7 @@ var FlagRegistry = []Flag{
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
+		IsEnum:        true,
 	},
 	{
 		Name:          "render-only",
@@ -232,6 +256,15 @@ var FlagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run"},
+		IsEnum:        true,
+	},
+	{
+		Name:          "render-output",
+		Usage:         "Writes '--render-only' output to the specified file",
+		Value:         &opts.RenderOutput,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"run"},
 	},
 	{
 		Name:          "config",
@@ -248,7 +281,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.KubeContext,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run", "filter"},
 	},
 	{
 		Name:          "kubeconfig",
@@ -256,7 +289,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.KubeConfig,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run", "filter"},
 	},
 	{
 		Name:          "tag",
@@ -265,7 +298,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.CustomTag,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "dev", "run"},
+		DefinedOn:     []string{"build", "debug", "dev", "run", "deploy"},
 	},
 	{
 		Name:          "minikube-profile",
@@ -286,7 +319,164 @@ var FlagRegistry = []Flag{
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose"},
+		IsEnum:        true,
 	},
+	{
+		Name:          "trigger",
+		Usage:         "How is change detection triggered? (polling, notify, or manual)",
+		Value:         &opts.Trigger,
+		DefValue:      "notify",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "debug"},
+		IsEnum:        true,
+	},
+	{
+		Name:     "auto-build",
+		Usage:    "When set to false, builds wait for API request instead of running automatically",
+		Hidden:   true,
+		Value:    &opts.AutoBuild,
+		DefValue: true,
+		DefValuePerCommand: map[string]interface{}{
+			"dev":   true,
+			"debug": false,
+		},
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug"},
+		IsEnum:        true,
+	},
+	{
+		Name:     "auto-sync",
+		Usage:    "When set to false, syncs wait for API request instead of running automatically",
+		Hidden:   true,
+		Value:    &opts.AutoSync,
+		DefValue: true,
+		DefValuePerCommand: map[string]interface{}{
+			"dev":   true,
+			"debug": false,
+		},
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug"},
+		IsEnum:        true,
+	},
+	{
+		Name:     "auto-deploy",
+		Usage:    "When set to false, deploys wait for API request instead of running automatically",
+		Hidden:   true,
+		Value:    &opts.AutoDeploy,
+		DefValue: true,
+		DefValuePerCommand: map[string]interface{}{
+			"dev":   true,
+			"debug": false,
+		},
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug"},
+		IsEnum:        true,
+	},
+	{
+		Name:          "watch-image",
+		Shorthand:     "w",
+		Usage:         "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts",
+		Value:         &opts.TargetImages,
+		DefValue:      []string{},
+		FlagAddMethod: "StringSliceVar",
+		DefinedOn:     []string{"dev", "debug"},
+	},
+	{
+		Name:          "watch-poll-interval",
+		Shorthand:     "i",
+		Usage:         "Interval (in ms) between two checks for file changes",
+		Value:         &opts.WatchPollInterval,
+		DefValue:      1000,
+		FlagAddMethod: "IntVar",
+		DefinedOn:     []string{"dev", "debug"},
+	},
+	{
+		Name:          "add-skaffold-labels",
+		Usage:         "Add Skaffold-specific labels to rendered manifest. If false, custom labels are still applied. Helpful for GitOps model where Skaffold is not the deployer.",
+		Value:         &opts.AddSkaffoldLabels,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"render"},
+		IsEnum:        true,
+	},
+	{
+		Name:          "mute-logs",
+		Usage:         "mute logs for specified stages in pipeline (build, deploy, status-check, none, all)",
+		Value:         &opts.Muted.Phases,
+		DefValue:      []string{},
+		FlagAddMethod: "StringSliceVar",
+		DefinedOn:     []string{"dev", "run", "debug", "build", "deploy"},
+		IsEnum:        true,
+	},
+	{
+		Name:          "wait-for-deletions",
+		Usage:         "Wait for pending deletions to complete before a deployment",
+		Value:         &opts.WaitForDeletions.Enabled,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+		IsEnum:        true,
+	},
+	{
+		Name:          "wait-for-deletions-max",
+		Usage:         "Max duration to wait for pending deletions",
+		Value:         &opts.WaitForDeletions.Max,
+		DefValue:      60 * time.Second,
+		FlagAddMethod: "DurationVar",
+		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+	},
+	{
+		Name:          "wait-for-deletions-delay",
+		Usage:         "Delay between two checks for pending deletions",
+		Value:         &opts.WaitForDeletions.Delay,
+		DefValue:      2 * time.Second,
+		FlagAddMethod: "DurationVar",
+		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+	},
+	{
+		Name:          "build-image",
+		Shorthand:     "b",
+		Usage:         "Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts",
+		Value:         &opts.TargetImages,
+		DefValue:      []string{},
+		FlagAddMethod: "StringSliceVar",
+		DefinedOn:     []string{"build", "run"},
+	},
+	{
+		Name:          "detect-minikube",
+		Usage:         "Use heuristics to detect a minikube cluster",
+		Value:         &opts.DetectMinikube,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+		IsEnum:        true,
+	},
+	{
+		Name:          "build-artifacts",
+		Shorthand:     "a",
+		Usage:         "File containing build result from a previous 'skaffold build --file-output'",
+		Value:         &fromBuildOutputFile,
+		DefValue:      "",
+		FlagAddMethod: "Var",
+		DefinedOn:     []string{"test", "deploy"},
+	},
+}
+
+func methodNameByType(v reflect.Value) string {
+	t := v.Type().Kind()
+	switch t {
+	case reflect.Bool:
+		return "BoolVar"
+	case reflect.String:
+		return "StringVar"
+	case reflect.Slice:
+		return "StringSliceVar"
+	case reflect.Struct:
+		return "Var"
+	case reflect.Ptr:
+		return methodNameByType(reflect.Indirect(v))
+	}
+	return ""
 }
 
 func (fl *Flag) flag() *pflag.Flag {
@@ -294,14 +484,19 @@ func (fl *Flag) flag() *pflag.Flag {
 		return fl.pflag
 	}
 
+	methodName := fl.FlagAddMethod
+	if methodName == "" {
+		methodName = methodNameByType(reflect.ValueOf(fl.Value))
+	}
 	inputs := []interface{}{fl.Value, fl.Name}
-	if fl.FlagAddMethod != "Var" {
+	if methodName != "Var" {
 		inputs = append(inputs, fl.DefValue)
 	}
 	inputs = append(inputs, fl.Usage)
 
 	fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
-	reflect.ValueOf(fs).MethodByName(fl.FlagAddMethod).Call(reflectValueOf(inputs))
+
+	reflect.ValueOf(fs).MethodByName(methodName).Call(reflectValueOf(inputs))
 	f := fs.Lookup(fl.Name)
 	f.Shorthand = fl.Shorthand
 	f.Hidden = fl.Hidden
@@ -318,12 +513,29 @@ func reflectValueOf(values []interface{}) []reflect.Value {
 	return results
 }
 
+func ParseFlags(cmd *cobra.Command, flags []*Flag) {
+	// Update default values.
+	for _, fl := range flags {
+		flag := cmd.Flag(fl.Name)
+		if fl.DefValuePerCommand != nil {
+			if defValue, present := fl.DefValuePerCommand[cmd.Use]; present {
+				if !flag.Changed {
+					flag.Value.Set(fmt.Sprintf("%v", defValue))
+				}
+			}
+		}
+		if fl.IsEnum {
+			instrumentation.AddFlag(flag)
+		}
+	}
+}
+
 // AddFlags adds to the command the common flags that are annotated with the command name.
 func AddFlags(cmd *cobra.Command) {
 	var flagsForCommand []*Flag
 
-	for i := range FlagRegistry {
-		fl := &FlagRegistry[i]
+	for i := range flagRegistry {
+		fl := &flagRegistry[i]
 		if !hasCmdAnnotation(cmd.Use, fl.DefinedOn) {
 			continue
 		}
@@ -335,15 +547,7 @@ func AddFlags(cmd *cobra.Command) {
 
 	// Apply command-specific default values to flags.
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		// Update default values.
-		for _, fl := range flagsForCommand {
-			if defValue, present := fl.DefValuePerCommand[cmd.Use]; present {
-				if flag := cmd.Flag(fl.Name); !flag.Changed {
-					flag.Value.Set(fmt.Sprintf("%v", defValue))
-				}
-			}
-		}
-
+		ParseFlags(cmd, flagsForCommand)
 		// Since PersistentPreRunE replaces the parent's PersistentPreRunE,
 		// make sure we call it, if it is set.
 		if parent := cmd.Parent(); parent != nil {

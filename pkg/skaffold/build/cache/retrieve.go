@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -76,7 +77,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		case needsPushing:
 			color.Green.Fprintln(out, "Found. Pushing")
 			if err := result.Push(ctx, out, c); err != nil {
-				return nil, fmt.Errorf("pushing image: %w", err)
+				return nil, fmt.Errorf("%s: %w", sErrors.PushImageErr, err)
 			}
 
 		default:
@@ -88,7 +89,9 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		}
 
 		// Image is already built
+		c.cacheMutex.RLock()
 		entry := c.artifactCache[result.Hash()]
+		c.cacheMutex.RUnlock()
 		tag := tags[artifact.ImageName]
 
 		var uniqueTag string
@@ -101,7 +104,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		} else {
 			uniqueTag = build.TagWithDigest(tag, entry.Digest)
 		}
-
+		c.artifactStore.Record(artifact, uniqueTag)
 		alreadyBuilt = append(alreadyBuilt, build.Artifact{
 			ImageName: artifact.ImageName,
 			Tag:       uniqueTag,
@@ -146,27 +149,25 @@ func maintainArtifactOrder(built []build.Artifact, artifacts []*latest.Artifact)
 func (c *cache) addArtifacts(ctx context.Context, bRes []build.Artifact, hashByName map[string]string) error {
 	for _, a := range bRes {
 		entry := ImageDetails{}
+		if c.imagesAreLocal {
+			imageID, err := c.client.ImageID(ctx, a.Tag)
+			if err != nil {
+				return err
+			}
 
-		if !c.imagesAreLocal {
+			if imageID != "" {
+				entry.ID = imageID
+			}
+		} else {
 			ref, err := docker.ParseReference(a.Tag)
 			if err != nil {
 				return fmt.Errorf("parsing reference %q: %w", a.Tag, err)
 			}
-
 			entry.Digest = ref.Digest
 		}
-
-		imageID, err := c.client.ImageID(ctx, a.Tag)
-		if err != nil {
-			return err
-		}
-
-		if imageID != "" {
-			entry.ID = imageID
-		}
-
+		c.cacheMutex.Lock()
 		c.artifactCache[hashByName[a.ImageName]] = entry
+		c.cacheMutex.Unlock()
 	}
-
 	return nil
 }

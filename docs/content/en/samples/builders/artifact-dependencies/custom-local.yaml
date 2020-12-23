@@ -1,0 +1,10 @@
+build:
+  artifacts:
+  - image: image1
+    custom:
+      # environment variable $IMG2 set to the built image2
+      buildCommand: docker build --build-arg IMG2 .
+    requires:
+    - image: image2
+      alias: IMG2
+  - image: image2

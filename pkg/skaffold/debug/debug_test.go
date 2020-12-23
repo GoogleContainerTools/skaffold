@@ -17,6 +17,7 @@ limitations under the License.
 package debug
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
@@ -24,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -502,6 +503,88 @@ spec:
   name: myfunction
   image: myfunction`,
 		},
+		{
+			"multiple objects", false,
+			`apiVersion: v1
+kind: Pod
+metadata:
+  name: pod
+spec:
+  containers:
+  - image: gcr.io/k8s-debug/debug-example:latest
+    name: example
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: debug-app
+  template:
+    metadata:
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+`,
+			`apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
+  creationTimestamp: null
+  name: pod
+spec:
+  containers:
+  - env:
+    - name: KEY
+      value: value
+    image: gcr.io/k8s-debug/debug-example:latest
+    name: example
+    ports:
+    - containerPort: 9999
+      name: test
+    resources: {}
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  name: my-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: debug-app
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
+      creationTimestamp: null
+      labels:
+        app: debug-app
+      name: debug-pod
+    spec:
+      containers:
+      - env:
+        - name: KEY
+          value: value
+        image: gcr.io/k8s-debug/debug-example:latest
+        name: example
+        ports:
+        - containerPort: 9999
+          name: test
+        resources: {}
+status: {}`,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -509,7 +592,9 @@ spec:
 				return imageConfiguration{}, nil
 			}
 
-			result, err := applyDebuggingTransforms(kubectl.ManifestList{[]byte(test.in)}, retriever)
+			l, err := manifest.Load(bytes.NewReader([]byte(test.in)))
+			t.CheckError(false, err)
+			result, err := applyDebuggingTransforms(l, retriever, "HELPERS")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, result.String())
 		})
@@ -529,7 +614,7 @@ func TestWorkingDir(t *testing.T) {
 		return imageConfiguration{workingDir: "/a/dir"}, nil
 	}
 
-	result := transformManifest(pod, retriever)
+	result := transformManifest(pod, retriever, "HELPERS")
 	testutil.CheckDeepEqual(t, true, result)
 	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
 	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"workingDir":"/a/dir"`))
@@ -548,7 +633,7 @@ func TestArtifactImage(t *testing.T) {
 		return imageConfiguration{artifact: "gcr.io/random/image"}, nil
 	}
 
-	result := transformManifest(pod, retriever)
+	result := transformManifest(pod, retriever, "HELPERS")
 	testutil.CheckDeepEqual(t, true, result)
 	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
 	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"artifact":"gcr.io/random/image"`))
@@ -570,7 +655,7 @@ func TestTransformPodSpecSkips(t *testing.T) {
 	}
 
 	copy := pod
-	result := transformManifest(&pod, retriever)
+	result := transformManifest(&pod, retriever, "HELPERS")
 	testutil.CheckDeepEqual(t, false, result)
 	testutil.CheckDeepEqual(t, copy, pod) // should be unchanged
 }

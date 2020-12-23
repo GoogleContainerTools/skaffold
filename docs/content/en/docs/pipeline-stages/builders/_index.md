@@ -23,7 +23,7 @@ controls how artifacts are built. To use a specific tool for building
 artifacts, add the value representing the tool and options for using that tool
 to the `build` section.
 
-For a detailed discussion on [Skaffold Configuration]({{< relref "/docs/design/config.md" >}}),
+For detailed per-builder [Skaffold Configuration]({{< relref "/docs/design/config.md" >}}) options,
 see [skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
 ## Local Build

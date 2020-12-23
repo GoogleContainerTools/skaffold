@@ -39,24 +39,14 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.20.0@sha256:f9a4a760166682c7c7aeda3cc263570682e00848ab47737ed8ffcc3abd2da6c3"
-	DefaultKanikoSecretName             = "kaniko-secret"
-	DefaultKanikoTimeout                = "20m"
-	DefaultKanikoContainerName          = "kaniko"
-	DefaultKanikoEmptyDirName           = "kaniko-emptydir"
-	DefaultKanikoEmptyDirMountPath      = "/kaniko/buildcontext"
-	DefaultKanikoCacheDirName           = "kaniko-cache"
-	DefaultKanikoCacheDirMountPath      = "/cache"
-	DefaultKanikoDockerConfigSecretName = "docker-cfg"
-	DefaultKanikoDockerConfigPath       = "/kaniko/.docker"
-	DefaultKanikoSecretMountPath        = "/secret"
+	DefaultBusyboxImage = "gcr.io/k8s-skaffold/skaffold-helpers/busybox"
 
-	DefaultBusyboxImage = "busybox"
-
-	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
+	// DefaultDebugHelpersRegistry is the default location used for the helper images for `debug`.
+	DefaultDebugHelpersRegistry = "gcr.io/k8s-skaffold/skaffold-debug-support"
 
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"
+	DefaultMetricFile  = "metrics"
 
 	DefaultRPCPort     = 50051
 	DefaultRPCHTTPPort = 50052

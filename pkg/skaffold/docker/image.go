@@ -21,12 +21,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
@@ -36,6 +38,8 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -60,7 +64,7 @@ type LocalDaemon interface {
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
-	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error)
+	Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latest.DockerArtifact, opts BuildOptions) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
@@ -70,27 +74,36 @@ type LocalDaemon interface {
 	ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error)
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
-	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error
+	ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error)
+	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
+	DiskUsage(ctx context.Context) (uint64, error)
 	RawClient() client.CommonAPIClient
 }
 
+// BuildOptions provides parameters related to the LocalDaemon build.
+type BuildOptions struct {
+	Tag            string
+	Mode           config.RunMode
+	ExtraBuildArgs map[string]*string
+}
+
 type localDaemon struct {
-	forceRemove        bool
-	insecureRegistries map[string]bool
-	apiClient          client.CommonAPIClient
-	extraEnv           []string
-	imageCache         map[string]*v1.ConfigFile
-	imageCacheLock     sync.Mutex
+	cfg            Config
+	forceRemove    bool
+	apiClient      client.CommonAPIClient
+	extraEnv       []string
+	imageCache     map[string]*v1.ConfigFile
+	imageCacheLock sync.Mutex
 }
 
 // NewLocalDaemon creates a new LocalDaemon.
-func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool, insecureRegistries map[string]bool) LocalDaemon {
+func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool, cfg Config) LocalDaemon {
 	return &localDaemon{
-		apiClient:          apiClient,
-		extraEnv:           extraEnv,
-		forceRemove:        forceRemove,
-		insecureRegistries: insecureRegistries,
-		imageCache:         make(map[string]*v1.ConfigFile),
+		cfg:         cfg,
+		apiClient:   apiClient,
+		extraEnv:    extraEnv,
+		forceRemove: forceRemove,
+		imageCache:  make(map[string]*v1.ConfigFile),
 	}
 }
 
@@ -142,7 +155,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 			return nil, err
 		}
 	} else {
-		cfg, err = RetrieveRemoteConfig(image, l.insecureRegistries)
+		cfg, err = RetrieveRemoteConfig(image, l.cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -153,22 +166,33 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 	return cfg, nil
 }
 
+func (l *localDaemon) CheckCompatible(a *latest.DockerArtifact) error {
+	if a.Secret != nil || a.SSH != "" {
+		return fmt.Errorf("docker build options, secrets and ssh, require BuildKit - set `useBuildkit: true` in your config, or run with `DOCKER_BUILDKIT=1`")
+	}
+	return nil
+}
+
 // Build performs a docker build and returns the imageID.
-func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error) {
+func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latest.DockerArtifact, opts BuildOptions) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
-	// Like `docker build`, we ignore the errors
-	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
-	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
-
-	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
+	if err := l.CheckCompatible(a); err != nil {
+		return "", err
+	}
+	buildArgs, err := EvalBuildArgs(opts.Mode, workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
 
+	// Like `docker build`, we ignore the errors
+	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
+	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs(ctx)
+
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a, l.insecureRegistries)
+		err := CreateDockerTarContext(ctx, buildCtxWriter,
+			NewBuildConfig(workspace, artifact, a.DockerfilePath, buildArgs), l.cfg)
 		if err != nil {
 			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return
@@ -180,7 +204,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
 
 	resp, err := l.apiClient.ImageBuild(ctx, body, types.ImageBuildOptions{
-		Tags:        []string{ref},
+		Tags:        []string{opts.Tag},
 		Dockerfile:  a.DockerfilePath,
 		BuildArgs:   buildArgs,
 		CacheFrom:   a.CacheFrom,
@@ -216,7 +240,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	if imageID == "" {
 		// Maybe this version of Docker doesn't return the digest of the image
 		// that has been built.
-		imageID, err = l.ImageID(ctx, ref)
+		imageID, err = l.ImageID(ctx, opts.Tag)
 		if err != nil {
 			return "", fmt.Errorf("getting digest: %w", err)
 		}
@@ -247,7 +271,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 		RegistryAuth: registryAuth,
 	})
 	if err != nil {
-		return "", fmt.Errorf("could not push image %q: %w", ref, err)
+		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErr, ref, err)
 	}
 	defer rc.Close()
 
@@ -266,13 +290,13 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	}
 
 	if err := streamDockerMessages(out, rc, auxCallback); err != nil {
-		return "", fmt.Errorf("could not push image %q: %w", ref, err)
+		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErr, ref, err)
 	}
 
 	if digest == "" {
 		// Maybe this version of Docker doesn't return the digest of the image
 		// that has been pushed.
-		digest, err = RemoteDigest(ref, l.insecureRegistries)
+		digest, err = RemoteDigest(ref, l.cfg)
 		if err != nil {
 			return "", fmt.Errorf("getting digest: %w", err)
 		}
@@ -311,13 +335,36 @@ func (l *localDaemon) isAlreadyPushed(ctx context.Context, ref, registryAuth str
 
 // Pull pulls an image reference from a registry.
 func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string) error {
-	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
-	if err != nil {
-		return fmt.Errorf("getting auth config for %q: %w", ref, err)
-	}
+	// We first try pulling the image with credentials.  If that fails then retry
+	// without credentials in case the image is public.
 
+	// Set CLOUDSDK_CORE_VERBOSITY to suppress error messages emitted by docker-credential-gcloud
+	// when the user is not authenticated or lacks credentials to pull the given image.  The errors
+	// are irrelevant when the image is public (e.g., `gcr.io/buildpacks/builder:v1`).`
+	// If the image is private, the error from GCR directs the user to the GCR authentication
+	// page which provides steps to rememdy the situation.
+	if v, found := os.LookupEnv("CLOUDSDK_CORE_VERBOSITY"); found {
+		defer os.Setenv("CLOUDSDK_CORE_VERBOSITY", v)
+	} else {
+		defer os.Unsetenv("CLOUDSDK_CORE_VERBOSITY")
+	}
+	os.Setenv("CLOUDSDK_CORE_VERBOSITY", "critical")
+
+	// Eargerly create credentials.
+	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
+	// Let's ignore the error because maybe the image is public
+	// and can be pulled without credentials.
 	rc, err := l.apiClient.ImagePull(ctx, ref, types.ImagePullOptions{
 		RegistryAuth: registryAuth,
+		PrivilegeFunc: func() (string, error) {
+			// The first pull is unauthorized. There are two situations:
+			//   1. if `encodedRegistryAuth()` errored, then `registryAuth == ""` and so we've
+			//     tried an anonymous pull which has failed.  So return the original error from
+			//     `encodedRegistryAuth()`.
+			//   2. If `encodedRegistryAuth()` succeeded (so `err == nil`), then our credential was rejected, so
+			//     return "" to retry as an anonymous pull.
+			return "", err
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("pulling image from repository: %w", err)
@@ -373,7 +420,7 @@ func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 		if client.IsErrNotFound(err) {
 			return "", nil
 		}
-		return "", err
+		return "", localDigestGetErr(ref, err)
 	}
 
 	return image.ID, nil
@@ -399,20 +446,26 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 		}
 		time.Sleep(sleepTime)
 	}
-	return nil, fmt.Errorf("could not remove image after %d retries", retries)
+	return nil, fmt.Errorf("could not remove image %q after %d retries", image, retries)
 }
 
-// GetBuildArgs gives the build args flags for docker build.
-func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
-	var args []string
-
-	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
+func (l *localDaemon) ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error) {
+	return l.apiClient.ImageList(ctx, types.ImageListOptions{
+		Filters: filters.NewArgs(filters.Arg("reference", ref)),
+	})
+}
+func (l *localDaemon) DiskUsage(ctx context.Context) (uint64, error) {
+	usage, err := l.apiClient.DiskUsage(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
+		return 0, err
 	}
+	return uint64(usage.LayersSize), nil
+}
 
+func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) ([]string, error) {
+	var args []string
 	var keys []string
-	for k := range buildArgs {
+	for k := range evaluatedArgs {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
@@ -420,7 +473,7 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	for _, k := range keys {
 		args = append(args, "--build-arg")
 
-		v := buildArgs[k]
+		v := evaluatedArgs[k]
 		if v == nil {
 			args = append(args, k)
 		} else {
@@ -444,51 +497,51 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 		args = append(args, "--no-cache")
 	}
 
+	if a.Squash {
+		args = append(args, "--squash")
+	}
+
+	if a.Secret != nil {
+		secretString := fmt.Sprintf("id=%s", a.Secret.ID)
+		if a.Secret.Source != "" {
+			secretString += ",src=" + a.Secret.Source
+		}
+		if a.Secret.Destination != "" {
+			secretString += ",dst=" + a.Secret.Destination
+		}
+		args = append(args, "--secret", secretString)
+	}
+
+	if a.SSH != "" {
+		args = append(args, "--ssh", a.SSH)
+	}
+
 	return args, nil
 }
 
-// EvaluateBuildArgs evaluates templated build args.
-func EvaluateBuildArgs(args map[string]*string) (map[string]*string, error) {
-	if args == nil {
-		return nil, nil
-	}
-
-	evaluated := map[string]*string{}
-	for k, v := range args {
-		if v == nil {
-			evaluated[k] = nil
-			continue
-		}
-
-		value, err := util.ExpandEnvTemplate(*v, nil)
-		if err != nil {
-			return nil, fmt.Errorf("unable to get value for build arg %q: %w", k, err)
-		}
-
-		evaluated[k] = &value
-	}
-
-	return evaluated, nil
-}
-
-func (l *localDaemon) Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error {
+func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error) {
+	var pruned []string
+	var errRt error
 	for _, id := range images {
 		resp, err := l.ImageRemove(ctx, id, types.ImageRemoveOptions{
 			Force:         true,
 			PruneChildren: pruneChildren,
 		})
-		if err != nil {
-			return fmt.Errorf("pruning images: %w", err)
+		if err == nil {
+			pruned = append(pruned, id)
+		} else if errRt == nil {
+			// save the first error
+			errRt = fmt.Errorf("pruning images: %w", err)
 		}
+
 		for _, r := range resp {
 			if r.Deleted != "" {
-				fmt.Fprintf(out, "deleted image %s\n", r.Deleted)
+				logrus.Debugf("deleted image %s\n", r.Deleted)
 			}
 			if r.Untagged != "" {
-				fmt.Fprintf(out, "untagged image %s\n", r.Untagged)
+				logrus.Debugf("untagged image %s\n", r.Untagged)
 			}
 		}
 	}
-
-	return nil
+	return pruned, errRt
 }

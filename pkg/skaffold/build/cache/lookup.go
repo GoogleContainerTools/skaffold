@@ -19,7 +19,10 @@ package cache
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"sync"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -28,14 +31,16 @@ import (
 
 func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifacts []*latest.Artifact) []cacheDetails {
 	details := make([]cacheDetails, len(artifacts))
-
+	// Create a new `artifactHasher` on every new dev loop.
+	// This way every artifact hash is calculated at most once in a single dev loop, and recalculated on every dev loop.
+	h := newArtifactHasherFunc(c.artifactGraph, c.lister, c.cfg.Mode())
 	var wg sync.WaitGroup
 	for i := range artifacts {
 		wg.Add(1)
 
 		i := i
 		go func() {
-			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName])
+			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName], h)
 			wg.Done()
 		}()
 	}
@@ -44,15 +49,20 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 	return details
 }
 
-func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string) cacheDetails {
-	hash, err := c.hashForArtifact(ctx, a)
+func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, h artifactHasher) cacheDetails {
+	hash, err := h.hash(ctx, a)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}
 
+	c.cacheMutex.RLock()
 	entry, cacheHit := c.artifactCache[hash]
+	c.cacheMutex.RUnlock()
 	if !cacheHit {
-		return needsBuilding{hash: hash}
+		if entry, err = c.tryImport(ctx, tag, hash); err != nil {
+			logrus.Debugf("Could not import artifact from Docker, building instead (%s)", err)
+			return needsBuilding{hash: hash}
+		}
 	}
 
 	if c.imagesAreLocal {
@@ -69,7 +79,8 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 	// Check the imageID for the tag
 	idForTag, err := c.client.ImageID(ctx, tag)
 	if err != nil {
-		return failed{err: fmt.Errorf("getting imageID for %s: %v", tag, err)}
+		// Rely on actionable errors thrown from pkg/skaffold/docker.LocalDaemon api.
+		return failed{err: err}
 	}
 
 	// Image exists locally with the same tag
@@ -86,7 +97,7 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 }
 
 func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageDetails) cacheDetails {
-	if remoteDigest, err := docker.RemoteDigest(tag, c.insecureRegistries); err == nil {
+	if remoteDigest, err := docker.RemoteDigest(tag, c.cfg); err == nil {
 		// Image exists remotely with the same tag and digest
 		if remoteDigest == entry.Digest {
 			return found{hash: hash}
@@ -95,7 +106,7 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 
 	// Image exists remotely with a different tag
 	fqn := tag + "@" + entry.Digest // Actual tag will be ignored but we need the registry and the digest part of it.
-	if remoteDigest, err := docker.RemoteDigest(fqn, c.insecureRegistries); err == nil {
+	if remoteDigest, err := docker.RemoteDigest(fqn, c.cfg); err == nil {
 		if remoteDigest == entry.Digest {
 			return needsRemoteTagging{hash: hash, tag: tag, digest: entry.Digest}
 		}
@@ -107,4 +118,41 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 	}
 
 	return needsBuilding{hash: hash}
+}
+
+func (c *cache) tryImport(ctx context.Context, tag string, hash string) (ImageDetails, error) {
+	if !c.tryImportMissing {
+		return ImageDetails{}, fmt.Errorf("import of missing images disabled")
+	}
+
+	entry := ImageDetails{}
+
+	if !c.client.ImageExists(ctx, tag) {
+		logrus.Debugf("Importing artifact %s from docker registry", tag)
+		err := c.client.Pull(ctx, ioutil.Discard, tag)
+		if err != nil {
+			return entry, err
+		}
+	} else {
+		logrus.Debugf("Importing artifact %s from local docker", tag)
+	}
+
+	imageID, err := c.client.ImageID(ctx, tag)
+	if err != nil {
+		return entry, err
+	}
+
+	if imageID != "" {
+		entry.ID = imageID
+	}
+
+	if digest, err := docker.RemoteDigest(tag, c.cfg); err == nil {
+		logrus.Debugf("Added digest for %s to cache entry", tag)
+		entry.Digest = digest
+	}
+
+	c.cacheMutex.Lock()
+	c.artifactCache[hash] = entry
+	c.cacheMutex.Unlock()
+	return entry, nil
 }

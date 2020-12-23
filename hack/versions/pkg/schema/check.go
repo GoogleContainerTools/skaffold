@@ -20,14 +20,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/diff"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 )
 
 const baseRef = "origin/master"
@@ -90,39 +88,37 @@ func RunSchemaCheckOnChangedFiles() error {
 			continue
 		}
 
-		logrus.Infof("structural changes in latest config, checking on Github if latest is released...")
+		logrus.Warnf("Detected changes to the latest config. Checking on Github if it's released...")
 		latestVersion, isReleased := GetLatestVersion()
 		if !isReleased {
-			color.Green.Fprintf(os.Stdout, "%s is unreleased, it is safe to change it.\n", latestVersion)
+			logrus.Infof("Schema %q is not yet released. Changes are ok.", latestVersion)
 			continue
 		}
-		color.Red.Fprintf(os.Stdout, "%s is released, it should NOT be changed!\n", latestVersion)
+
+		logrus.Errorf("Schema %q is already released. Changing it is not allowed.", latestVersion)
+
+		fmt.Printf("\nWhat should I do?\n-----------------\n")
+		fmt.Printf(" + If this retroactive change is required and is harmless to users, indicate on your PR.\n")
+		fmt.Printf(" + Check if a new unreleased version has been created:\n")
+		fmt.Printf("     - Ensure that your branch is up-to-date with the %q branch.\n", baseRef)
+		fmt.Printf("     - Check for a pending PR to create a new version.\n")
+		fmt.Printf(" + Create a separate PR with just the result of running the 'hack/new_version.sh' script.\n")
+
 		filesInError = append(filesInError, configFile)
 	}
 
-	for _, file := range filesInError {
-		logrus.Errorf(changeDetected(file))
-		changes, err := git.diffWithBaseline(file)
-		if err != nil {
-			logrus.Errorf("failed to get diff: %s", err)
-		}
-		fmt.Print(string(changes))
-	}
-
 	if len(filesInError) > 0 {
+		fmt.Printf("\nInvalid changes:\n----------------\n")
+		for _, file := range filesInError {
+			changes, err := git.diffWithBaseline(file)
+			if err != nil {
+				logrus.Errorf("failed to get diff: %s", err)
+			}
+			fmt.Print(string(changes))
+		}
+
 		return errors.New("structural changes detected")
 	}
 
 	return nil
-}
-
-func changeDetected(configFile string) string {
-	return fmt.Sprintf(`--------
-Structural change detected in a released config: %s
-Please create a new PR first with a new version.
-You can use 'hack/new_version.sh' to generate the new config version.
-If you are running this locally, make sure you have the %s branch up to date!
-Admin rights are required to merge this PR!
---------
-`, configFile, baseRef)
 }

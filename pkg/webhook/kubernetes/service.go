@@ -17,6 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -25,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/labels"
 )
@@ -33,7 +34,7 @@ import (
 // CreateService creates a service for the deployment to bind to
 // and returns the external IP of the service
 func CreateService(pr *github.PullRequestEvent) (*v1.Service, error) {
-	client, err := kubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
@@ -57,7 +58,7 @@ func CreateService(pr *github.PullRequestEvent) (*v1.Service, error) {
 			Selector: selector,
 		},
 	}
-	return client.CoreV1().Services(constants.Namespace).Create(svc)
+	return client.CoreV1().Services(constants.Namespace).Create(context.Background(), svc, metav1.CreateOptions{})
 }
 
 // GetExternalIP polls the service until an external IP is available and returns it
@@ -82,10 +83,10 @@ func serviceName(prNumber int) string {
 }
 
 func getService(svc *v1.Service) (*v1.Service, error) {
-	client, err := kubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
-	return client.CoreV1().Services(svc.Namespace).Get(svc.Name, metav1.GetOptions{})
+	return client.CoreV1().Services(svc.Namespace).Get(context.Background(), svc.Name, metav1.GetOptions{})
 }

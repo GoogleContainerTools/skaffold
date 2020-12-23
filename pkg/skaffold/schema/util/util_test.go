@@ -90,3 +90,40 @@ func TestYamlpatchNodeWhenEmbedded(t *testing.T) {
     localstack: {}
 `, string(out))
 }
+
+func TestFlatMap_UnmarshalYAML(t *testing.T) {
+	y1 := `val1: foo1
+val2: 
+  val3: bar1
+  val4: foo2
+  val5:
+    val6: bar2
+`
+	y2 := `val1: foo1
+val2.val3: bar1
+val2.val4: foo2
+val2.val5.val6: bar2
+`
+
+	f1 := &FlatMap{}
+	f2 := &FlatMap{}
+
+	err := yaml.Unmarshal([]byte(y1), &f1)
+	testutil.CheckError(t, false, err)
+
+	err = yaml.Unmarshal([]byte(y2), &f2)
+	testutil.CheckError(t, false, err)
+
+	testutil.CheckDeepEqual(t, *f1, *f2)
+
+	out, err := yaml.Marshal(struct {
+		M *FlatMap `yaml:"value,omitempty"`
+	}{f1})
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, `value:
+  val1: foo1
+  val2.val3: bar1
+  val2.val4: foo2
+  val2.val5.val6: bar2
+`, string(out))
+}

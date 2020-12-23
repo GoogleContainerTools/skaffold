@@ -4,7 +4,7 @@ metadata:
   name: npm
 spec:
   containers:
-  - name: web
+  - name: npm-web
     image: skaffold-debug-npm
     ports:
     - containerPort: 3000

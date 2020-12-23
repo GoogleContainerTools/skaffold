@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -37,7 +38,16 @@ func ExpandEnvTemplate(s string, envMap map[string]string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unable to parse template: %q: %w", s, err)
 	}
+	return ExecuteEnvTemplate(tmpl, envMap)
+}
 
+// ExpandEnvTemplateOrFail parses and executes template s with an optional environment map, and errors if a reference cannot be satisfied.
+func ExpandEnvTemplateOrFail(s string, envMap map[string]string) (string, error) {
+	tmpl, err := ParseEnvTemplate(s)
+	if err != nil {
+		return "", fmt.Errorf("unable to parse template: %q: %w", s, err)
+	}
+	tmpl = tmpl.Option("missingkey=error")
 	return ExecuteEnvTemplate(tmpl, envMap)
 }
 
@@ -61,7 +71,63 @@ func ExecuteEnvTemplate(envTemplate *template.Template, customMap map[string]str
 	var buf bytes.Buffer
 	logrus.Debugf("Executing template %v with environment %v", envTemplate, envMap)
 	if err := envTemplate.Execute(&buf, envMap); err != nil {
-		return "", fmt.Errorf("executing template: %w", err)
+		return "", err
 	}
 	return buf.String(), nil
+}
+
+// EvaluateEnvTemplateMap parses and executes all map values as templates based on OS environment variables
+func EvaluateEnvTemplateMap(args map[string]*string) (map[string]*string, error) {
+	return EvaluateEnvTemplateMapWithEnv(args, nil)
+}
+
+// EvaluateEnvTemplateMapWithEnv parses and executes all map values as templates based on OS and custom environment variables
+func EvaluateEnvTemplateMapWithEnv(args map[string]*string, env map[string]string) (map[string]*string, error) {
+	if args == nil {
+		return nil, nil
+	}
+
+	evaluated := map[string]*string{}
+	for k, v := range args {
+		if v == nil {
+			evaluated[k] = nil
+			continue
+		}
+
+		value, err := ExpandEnvTemplate(*v, env)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get value for key %q: %w", k, err)
+		}
+
+		evaluated[k] = &value
+	}
+
+	return evaluated, nil
+}
+
+// MapToFlag parses all map values and returns them as `key=value` with the given flag
+// Example: --my-flag key0=value0 --my-flag key1=value1  --my-flag key2=value2
+func MapToFlag(m map[string]*string, flag string) ([]string, error) {
+	kv, err := EvaluateEnvTemplateMap(m)
+	if err != nil {
+		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
+	}
+
+	var keys []string
+	for k := range kv {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var kvFlags []string
+	for _, k := range keys {
+		v := kv[k]
+		if v == nil {
+			kvFlags = append(kvFlags, flag, k)
+		} else {
+			kvFlags = append(kvFlags, flag, fmt.Sprintf("%s=%s", k, *v))
+		}
+	}
+
+	return kvFlags, nil
 }

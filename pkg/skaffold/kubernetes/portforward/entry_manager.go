@@ -32,7 +32,7 @@ var (
 		// TODO priyawadhwa@, change event API to accept ports of type int
 		event.PortForwarded(
 			int32(entry.localPort),
-			int32(entry.resource.Port),
+			entry.resource.Port,
 			entry.podName,
 			entry.containerName,
 			entry.resource.Namespace,
@@ -110,17 +110,19 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 	}
 	b.forwardedResources.Store(entry.key(), entry)
 
-	b.entryForwarder.Forward(ctx, entry)
-
-	color.Green.Fprintln(
-		b.output,
-		fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %d -> address %s port %d",
-			entry.resource.Type,
-			entry.resource.Name,
-			entry.resource.Namespace,
-			entry.resource.Port,
-			entry.resource.Address,
-			entry.localPort))
+	if err := b.entryForwarder.Forward(ctx, entry); err == nil {
+		color.Green.Fprintln(
+			b.output,
+			fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %s -> address %s port %d",
+				entry.resource.Type,
+				entry.resource.Name,
+				entry.resource.Namespace,
+				entry.resource.Port.String(),
+				entry.resource.Address,
+				entry.localPort))
+	} else {
+		color.Red.Fprintln(b.output, err)
+	}
 	portForwardEvent(entry)
 }
 

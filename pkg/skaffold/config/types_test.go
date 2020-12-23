@@ -18,6 +18,7 @@ package config
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -69,6 +70,87 @@ func TestStringOrUndefined(t *testing.T) {
 			cmd.Execute()
 
 			t.CheckDeepEqual(test.expected, flag.value)
+		})
+	}
+}
+
+func TestMuted(t *testing.T) {
+	tests := []struct {
+		phases                  []string
+		expectedMuteBuild       bool
+		expectedMuteTest        bool
+		expectedMuteStatusCheck bool
+		expectedMuteDeploy      bool
+	}{
+		{
+			phases:                  nil,
+			expectedMuteBuild:       false,
+			expectedMuteTest:        false,
+			expectedMuteStatusCheck: false,
+			expectedMuteDeploy:      false,
+		},
+		{
+			phases:                  []string{"build"},
+			expectedMuteBuild:       true,
+			expectedMuteTest:        false,
+			expectedMuteStatusCheck: false,
+			expectedMuteDeploy:      false,
+		},
+		{
+			phases:                  []string{"test"},
+			expectedMuteBuild:       false,
+			expectedMuteTest:        true,
+			expectedMuteStatusCheck: false,
+			expectedMuteDeploy:      false,
+		},
+		{
+			phases:                  []string{"status-check"},
+			expectedMuteBuild:       false,
+			expectedMuteTest:        false,
+			expectedMuteStatusCheck: true,
+			expectedMuteDeploy:      false,
+		},
+		{
+			phases:                  []string{"deploy"},
+			expectedMuteBuild:       false,
+			expectedMuteTest:        false,
+			expectedMuteStatusCheck: false,
+			expectedMuteDeploy:      true,
+		},
+		{
+			phases:                  []string{"build", "test", "status-check", "deploy"},
+			expectedMuteBuild:       true,
+			expectedMuteTest:        true,
+			expectedMuteStatusCheck: true,
+			expectedMuteDeploy:      true,
+		},
+		{
+			phases:                  []string{"all"},
+			expectedMuteBuild:       true,
+			expectedMuteTest:        true,
+			expectedMuteStatusCheck: true,
+			expectedMuteDeploy:      true,
+		},
+		{
+			phases:                  []string{"none"},
+			expectedMuteBuild:       false,
+			expectedMuteTest:        false,
+			expectedMuteStatusCheck: false,
+			expectedMuteDeploy:      false,
+		},
+	}
+	for _, test := range tests {
+		description := strings.Join(test.phases, ",")
+
+		testutil.Run(t, description, func(t *testutil.T) {
+			m := Muted{
+				Phases: test.phases,
+			}
+
+			t.CheckDeepEqual(test.expectedMuteBuild, m.MuteBuild())
+			t.CheckDeepEqual(test.expectedMuteTest, m.MuteTest())
+			t.CheckDeepEqual(test.expectedMuteStatusCheck, m.MuteStatusCheck())
+			t.CheckDeepEqual(test.expectedMuteDeploy, m.MuteDeploy())
 		})
 	}
 }

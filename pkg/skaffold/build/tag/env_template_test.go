@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
+func TestEnvTemplateTagger_GenerateTag(t *testing.T) {
 	tests := []struct {
 		description      string
 		template         string
@@ -99,7 +99,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			c, err := NewEnvTemplateTagger(test.template)
 			t.CheckNoError(err)
 
-			got, err := c.GenerateFullyQualifiedImageName("", test.imageName)
+			got, err := c.GenerateTag(".", test.imageName)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)

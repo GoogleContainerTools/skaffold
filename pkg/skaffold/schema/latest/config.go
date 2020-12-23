@@ -17,13 +17,16 @@ limitations under the License.
 package latest
 
 import (
+	"encoding/json"
+
 	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v2beta5"
+// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+const Version string = "skaffold/v2beta11"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -89,7 +92,7 @@ type PortForwardResource struct {
 	Namespace string `yaml:"namespace,omitempty"`
 
 	// Port is the resource port that will be forwarded.
-	Port int `yaml:"port,omitempty"`
+	Port util.IntOrString `yaml:"port,omitempty"`
 
 	// Address is the local address to bind to. Defaults to the loopback address 127.0.0.1.
 	Address string `yaml:"address,omitempty"`
@@ -128,6 +131,9 @@ type TagPolicy struct {
 
 	// DateTimeTagger *beta* tags images with the build timestamp.
 	DateTimeTagger *DateTimeTagger `yaml:"dateTime,omitempty" yamltags:"oneOf=tag"`
+
+	// CustomTemplateTagger *beta* tags images with a configurable template string *composed of other taggers*.
+	CustomTemplateTagger *CustomTemplateTagger `yaml:"customTemplate,omitempty" yamltags:"oneOf=tag"`
 }
 
 // ShaTagger *beta* tags images with their sha256 digest.
@@ -145,6 +151,9 @@ type GitTagger struct {
 
 	// Prefix adds a fixed prefix to the tag.
 	Prefix string `yaml:"prefix,omitempty"`
+
+	// IgnoreChanges specifies whether to omit the `-dirty` postfix if there are uncommitted changes.
+	IgnoreChanges bool `yaml:"ignoreChanges,omitempty"`
 }
 
 // EnvTemplateTagger *beta* tags images with a configurable template string.
@@ -152,9 +161,8 @@ type EnvTemplateTagger struct {
 	// Template used to produce the image name and tag.
 	// See golang [text/template](https://golang.org/pkg/text/template/).
 	// The template is executed against the current environment,
-	// with those variables injected:
-	//   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.
-	// For example: `{{.RELEASE}}-{{.IMAGE_NAME}}`.
+	// with those variables injected.
+	// For example: `{{.RELEASE}}`.
 	Template string `yaml:"template,omitempty" yamltags:"required"`
 }
 
@@ -169,6 +177,27 @@ type DateTimeTagger struct {
 	// See [Time.LoadLocation](https://golang.org/pkg/time/#Time.LoadLocation).
 	// Defaults to the local timezone.
 	TimeZone string `yaml:"timezone,omitempty"`
+}
+
+// CustomTemplateTagger *beta* tags images with a configurable template string.
+type CustomTemplateTagger struct {
+	// Template used to produce the image name and tag.
+	// See golang [text/template](https://golang.org/pkg/text/template/).
+	// The template is executed against the provided components with those variables injected.
+	// For example: `{{.DATE}}` where DATE references a TaggerComponent.
+	Template string `yaml:"template,omitempty" yamltags:"required"`
+
+	// Components lists TaggerComponents that the template (see field above) can be executed against.
+	Components []TaggerComponent `yaml:"components,omitempty"`
+}
+
+// TaggerComponent *beta* is a component of CustomTemplateTagger.
+type TaggerComponent struct {
+	// Name is an identifier for the component.
+	Name string `yaml:"name,omitempty"`
+
+	// Component is a tagging strategy to be used in CustomTemplateTagger.
+	Component TagPolicy `yaml:",inline" yamltags:"skipTrim"`
 }
 
 // BuildType contains the specific implementation and parameters needed
@@ -193,6 +222,10 @@ type LocalBuild struct {
 	// If not specified, images are pushed only if the current Kubernetes context
 	// connects to a remote cluster.
 	Push *bool `yaml:"push,omitempty"`
+
+	// TryImportMissing whether to attempt to import artifacts from
+	// Docker (either a local or remote registry) if not in the cache.
+	TryImportMissing bool `yaml:"tryImportMissing,omitempty"`
 
 	// UseDockerCLI use `docker` command-line interface instead of Docker Engine APIs.
 	UseDockerCLI bool `yaml:"useDockerCLI,omitempty"`
@@ -273,6 +306,9 @@ type GoogleCloudBuild struct {
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `0`.
 	Concurrency int `yaml:"concurrency,omitempty"`
+
+	// WorkerPool configures a pool of workers to run the build.
+	WorkerPool string `yaml:"workerPool,omitempty"`
 }
 
 // KanikoCache configures Kaniko caching. If a cache is specified, Kaniko will
@@ -284,6 +320,8 @@ type KanikoCache struct {
 	// HostPath specifies a path on the host that is mounted to each pod as read only cache volume containing base images.
 	// If set, must exist on each node and prepopulated with kaniko-warmer.
 	HostPath string `yaml:"hostPath,omitempty"`
+	//TTL Cache timeout in hours.
+	TTL string `yaml:"ttl,omitempty"`
 }
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
@@ -409,6 +447,9 @@ type DeployConfig struct {
 	// KubeContext is the Kubernetes context that Skaffold should deploy to.
 	// For example: `minikube`.
 	KubeContext string `yaml:"kubeContext,omitempty"`
+
+	// Logs configures how container logs are printed as a result of a deployment.
+	Logs LogsConfig `yaml:"logs,omitempty"`
 }
 
 // DeployType contains the specific implementation and parameters needed
@@ -417,6 +458,9 @@ type DeployConfig struct {
 type DeployType struct {
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
+
+	// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
+	KptDeploy *KptDeploy `yaml:"kpt,omitempty"`
 
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
@@ -438,6 +482,9 @@ type KubectlDeploy struct {
 
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
+
+	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
+	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
 }
 
 // KubectlFlags are additional flags passed on the command
@@ -492,11 +539,97 @@ type KustomizeDeploy struct {
 
 	// BuildArgs are additional args passed to `kustomize build`.
 	BuildArgs []string `yaml:"buildArgs,omitempty"`
+
+	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
+	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
+}
+
+// KptDeploy *alpha* uses the `kpt` CLI to manage and deploy manifests.
+type KptDeploy struct {
+	// Dir is the path to the config directory (Required).
+	// By default, the Dir contains the application configurations,
+	// [kustomize config files](https://kubectl.docs.kubernetes.io/pages/examples/kustomize.html)
+	// and [declarative kpt functions](https://googlecontainertools.github.io/kpt/guides/consumer/function/#declarative-run).
+	Dir string `yaml:"dir" yamltags:"required"`
+
+	// Fn adds additional configurations for `kpt fn`.
+	Fn KptFn `yaml:"fn,omitempty"`
+
+	// Live adds additional configurations for `kpt live`.
+	Live KptLive `yaml:"live,omitempty"`
+}
+
+// KptFn adds additional configurations used when calling `kpt fn`.
+type KptFn struct {
+	// FnPath is the directory to discover the declarative kpt functions.
+	// If not provided, kpt deployer uses `kpt.Dir`.
+	FnPath string `yaml:"fnPath,omitempty"`
+
+	// Image is a kpt function image to run the configs imperatively. If provided, kpt.fn.fnPath
+	// will be ignored.
+	Image string `yaml:"image,omitempty"`
+
+	// NetworkName is the docker network name to run the kpt function containers (default "bridge").
+	NetworkName string `yaml:"networkName,omitempty"`
+
+	// GlobalScope sets the global scope for the kpt functions. see `kpt help fn run`.
+	GlobalScope bool `yaml:"globalScope,omitempty"`
+
+	// Network enables network access for the kpt function containers.
+	Network bool `yaml:"network,omitempty"`
+
+	// Mount is a list of storage options to mount to the fn image.
+	Mount []string `yaml:"mount,omitempty"`
+
+	// SinkDir is the directory to where the manipulated resource output is stored.
+	SinkDir string `yaml:"sinkDir,omitempty"`
+}
+
+// KptLive adds additional configurations used when calling `kpt live`.
+type KptLive struct {
+	// Apply sets the kpt inventory directory.
+	Apply KptApplyInventory `yaml:"apply,omitempty"`
+
+	// Options adds additional configurations for `kpt live apply` commands.
+	Options KptApplyOptions `yaml:"options,omitempty"`
+}
+
+// KptApplyInventory sets the kpt inventory directory.
+type KptApplyInventory struct {
+	// Dir is equivalent to the dir in `kpt live apply <dir>`. If not provided,
+	// kpt deployer will create a hidden directory `.kpt-hydrated` to store the manipulated
+	// resource output and the kpt inventory-template.yaml file.
+	Dir string `yaml:"dir,omitempty"`
+
+	// InventoryID *alpha* is the identifier for a group of applied resources.
+	// This value is only needed when the `kpt live` is working on a pre-applied cluster resources.
+	InventoryID string `yaml:"inventoryID,omitempty"`
+
+	// InventoryNamespace *alpha* sets the inventory namespace.
+	InventoryNamespace string `yaml:"inventoryNamespace,omitempty"`
+}
+
+// KptApplyOptions adds additional configurations used when calling `kpt live apply`.
+type KptApplyOptions struct {
+	// PollPeriod sets for the polling period for resource statuses. Default to 2s.
+	PollPeriod string `yaml:"pollPeriod,omitempty"`
+
+	// PrunePropagationPolicy sets the propagation policy for pruning.
+	// Possible settings are Background, Foreground, Orphan.
+	// Default to "Background".
+	PrunePropagationPolicy string `yaml:"prunePropagationPolicy,omitempty"`
+
+	// PruneTimeout sets the time threshold to wait for all pruned resources to be deleted.
+	PruneTimeout string `yaml:"pruneTimeout,omitempty"`
+
+	// ReconcileTimeout sets the time threshold to wait for all resources to reach the current status.
+	ReconcileTimeout string `yaml:"reconcileTimeout,omitempty"`
 }
 
 // HelmRelease describes a helm release to be deployed.
 type HelmRelease struct {
 	// Name is the name of the Helm release.
+	// It accepts environment variables via the go template syntax.
 	Name string `yaml:"name,omitempty" yamltags:"required"`
 
 	// ChartPath is the path to the Helm chart.
@@ -505,10 +638,11 @@ type HelmRelease struct {
 	// ValuesFiles are the paths to the Helm `values` files.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty"`
 
-	// ArtifactOverrides are key value pairs where
-	// key represents the parameter used in `values` file to define a container image and
-	// value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section.
-	ArtifactOverrides map[string]string `yaml:"artifactOverrides,omitempty,omitempty"`
+	// ArtifactOverrides are key value pairs where the
+	// key represents the parameter used in the `--set-string` Helm CLI flag to define a container
+	// image and the value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section.
+	// The resulting command-line is controlled by `ImageStrategy`.
+	ArtifactOverrides util.FlatMap `yaml:"artifactOverrides,omitempty"`
 
 	// Namespace is the Kubernetes namespace.
 	Namespace string `yaml:"namespace,omitempty"`
@@ -518,17 +652,22 @@ type HelmRelease struct {
 
 	// SetValues are key-value pairs.
 	// If present, Skaffold will send `--set` flag to Helm CLI and append all pairs after the flag.
-	SetValues map[string]string `yaml:"setValues,omitempty"`
+	SetValues util.FlatMap `yaml:"setValues,omitempty"`
 
 	// SetValueTemplates are key-value pairs.
 	// If present, Skaffold will try to parse the value part of each key-value pair using
 	// environment variables in the system, then send `--set` flag to Helm CLI and append
 	// all parsed pairs after the flag.
-	SetValueTemplates map[string]string `yaml:"setValueTemplates,omitempty"`
+	SetValueTemplates util.FlatMap `yaml:"setValueTemplates,omitempty"`
 
 	// SetFiles are key-value pairs.
 	// If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.
 	SetFiles map[string]string `yaml:"setFiles,omitempty"`
+
+	// CreateNamespace if `true`, Skaffold will send `--create-namespace` flag to Helm CLI.
+	// `--create-namespace` flag is available in Helm since version 3.2.
+	// Defaults is `false`.
+	CreateNamespace *bool `yaml:"createNamespace,omitempty"`
 
 	// Wait if `true`, Skaffold will send `--wait` flag to Helm CLI.
 	// Defaults to `false`.
@@ -562,7 +701,8 @@ type HelmRelease struct {
 	// Packaged parameters for packaging helm chart (`helm package`).
 	Packaged *HelmPackaged `yaml:"packaged,omitempty"`
 
-	// ImageStrategy adds image configurations to the Helm `values` file.
+	// ImageStrategy controls how an `ArtifactOverrides` entry is
+	// turned into `--set-string` Helm CLI flag or flags.
 	ImageStrategy HelmImageStrategy `yaml:"imageStrategy,omitempty"`
 }
 
@@ -601,6 +741,17 @@ type HelmConventionConfig struct {
 	ExplicitRegistry bool `yaml:"explicitRegistry,omitempty"`
 }
 
+// LogsConfig configures how container logs are printed as a result of a deployment.
+type LogsConfig struct {
+	// Prefix defines the prefix shown on each log line. Valid values are
+	// `container`: prefix logs lines with the name of the container.
+	// `podAndContainer`: prefix logs lines with the names of the pod and of the container.
+	// `auto`: same as `podAndContainer` except that the pod name is skipped if it's the same as the container name.
+	// `none`: don't add a prefix.
+	// Defaults to `auto`.
+	Prefix string `yaml:"prefix,omitempty"`
+}
+
 // Artifact are the items that need to be built, along with the context in which
 // they should be built.
 type Artifact struct {
@@ -620,6 +771,9 @@ type Artifact struct {
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
+
+	// Dependencies describes build artifacts that this artifact depends on.
+	Dependencies []*ArtifactDependency `yaml:"requires,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.
@@ -639,7 +793,7 @@ type Sync struct {
 
 	// Auto delegates discovery of sync rules to the build system.
 	// Only available for jib and buildpacks.
-	Auto *Auto `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
+	Auto *bool `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.
@@ -658,9 +812,6 @@ type SyncRule struct {
 	// For example: `"css/"`
 	Strip string `yaml:"strip,omitempty"`
 }
-
-// Auto cannot be customized.
-type Auto struct{}
 
 // Profile is used to override any `build`, `test` or `deploy` configuration.
 type Profile struct {
@@ -740,6 +891,16 @@ type ArtifactType struct {
 
 	// CustomArtifact *beta* builds images using a custom build script written by the user.
 	CustomArtifact *CustomArtifact `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
+}
+
+// ArtifactDependency describes a specific build dependency for an artifact.
+type ArtifactDependency struct {
+	// ImageName is a reference to an artifact's image name.
+	ImageName string `yaml:"image" yamltags:"required"`
+	// Alias is a token that is replaced with the image reference in the builder definition files.
+	// For example, the `docker` builder will use the alias as a build-arg key.
+	// Defaults to the value of `image`.
+	Alias string `yaml:"alias,omitempty"`
 }
 
 // BuildpackArtifact *alpha* describes an artifact built using [Cloud Native Buildpacks](https://buildpacks.io/).
@@ -822,25 +983,56 @@ type DockerfileDependency struct {
 // KanikoArtifact describes an artifact built from a Dockerfile,
 // with kaniko.
 type KanikoArtifact struct {
-	// AdditionalFlags are additional flags to be passed to Kaniko command line.
-	// See [Kaniko Additional Flags](https://github.com/GoogleContainerTools/kaniko#additional-flags).
-	// Deprecated - instead the named, unique fields should be used, e.g. `buildArgs`, `cache`, `target`.
-	AdditionalFlags []string `yaml:"flags,omitempty"`
+
+	// Cleanup to clean the filesystem at the end of the build.
+	Cleanup bool `yaml:"cleanup,omitempty"`
+
+	// Insecure if you want to push images to a plain HTTP registry.
+	Insecure bool `yaml:"insecure,omitempty"`
+
+	// InsecurePull if you want to pull images from a plain HTTP registry.
+	InsecurePull bool `yaml:"insecurePull,omitempty"`
+
+	// NoPush if you only want to build the image, without pushing to a registry.
+	NoPush bool `yaml:"noPush,omitempty"`
+
+	// Force building outside of a container.
+	Force bool `yaml:"force,omitempty"`
+
+	// LogTimestamp to add timestamps to log format.
+	LogTimestamp bool `yaml:"logTimestamp,omitempty"`
+
+	// Reproducible is used to strip timestamps out of the built image.
+	Reproducible bool `yaml:"reproducible,omitempty"`
+
+	// SingleSnapshot is takes a single snapshot of the filesystem at the end of the build.
+	// So only one layer will be appended to the base image.
+	SingleSnapshot bool `yaml:"singleSnapshot,omitempty"`
+
+	// SkipTLS skips TLS certificate validation when pushing to a registry.
+	SkipTLS bool `yaml:"skipTLS,omitempty"`
+
+	// SkipTLSVerifyPull skips TLS certificate validation when pulling from a registry.
+	SkipTLSVerifyPull bool `yaml:"skipTLSVerifyPull,omitempty"`
+
+	// SkipUnusedStages builds only used stages if defined to true.
+	// Otherwise it builds by default all stages, even the unnecessaries ones until it reaches the target stage / end of Dockerfile.
+	SkipUnusedStages bool `yaml:"skipUnusedStages,omitempty"`
+
+	// UseNewRun to Use the experimental run implementation for detecting changes without requiring file system snapshots.
+	// In some cases, this may improve build performance by 75%.
+	UseNewRun bool `yaml:"useNewRun,omitempty"`
+
+	// WhitelistVarRun is used to ignore `/var/run` when taking image snapshot.
+	// Set it to false to preserve /var/run/* in destination image.
+	WhitelistVarRun bool `yaml:"whitelistVarRun,omitempty"`
 
 	// DockerfilePath locates the Dockerfile relative to workspace.
 	// Defaults to `Dockerfile`.
 	DockerfilePath string `yaml:"dockerfile,omitempty"`
 
-	// Target is the Dockerfile target name to build.
+	// Target is to indicate which build stage is the target build stage.
 	Target string `yaml:"target,omitempty"`
-
-	// BuildArgs are arguments passed to the docker build.
-	// It also accepts environment variables via the go template syntax.
-	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
-	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
-
-	// Env are environment variables passed to the kaniko pod.
-	Env []v1.EnvVar `yaml:"env,omitempty"`
 
 	// InitImage is the image used to run init container which mounts kaniko context.
 	InitImage string `yaml:"initImage,omitempty"`
@@ -849,15 +1041,60 @@ type KanikoArtifact struct {
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
 	Image string `yaml:"image,omitempty"`
 
+	// DigestFile to specify a file in the container. This file will receive the digest of a built image.
+	// This can be used to automatically track the exact image built by kaniko.
+	DigestFile string `yaml:"digestFile,omitempty"`
+
+	// ImageNameWithDigestFile specify a file to save the image name with digest of the built image to.
+	ImageNameWithDigestFile string `yaml:"imageNameWithDigestFile,omitempty"`
+
+	// LogFormat <text|color|json> to set the log format.
+	LogFormat string `yaml:"logFormat,omitempty"`
+
+	// OCILayoutPath is to specify a directory in the container where the OCI image layout of a built image will be placed.
+	// This can be used to automatically track the exact image built by kaniko.
+	OCILayoutPath string `yaml:"ociLayoutPath,omitempty"`
+
+	// RegistryMirror if you want to use a registry mirror instead of default `index.docker.io`.
+	RegistryMirror string `yaml:"registryMirror,omitempty"`
+
+	// SnapshotMode is how Kaniko will snapshot the filesystem.
+	SnapshotMode string `yaml:"snapshotMode,omitempty"`
+
+	// TarPath is path to save the image as a tarball at path instead of pushing the image.
+	TarPath string `yaml:"tarPath,omitempty"`
+
+	// Verbosity <panic|fatal|error|warn|info|debug|trace> to set the logging level.
+	Verbosity string `yaml:"verbosity,omitempty"`
+
+	// InsecureRegistry is to use plain HTTP requests when accessing a registry.
+	InsecureRegistry []string `yaml:"insecureRegistry,omitempty"`
+
+	// SkipTLSVerifyRegistry skips TLS certificate validation when accessing a registry.
+	SkipTLSVerifyRegistry []string `yaml:"skipTLSVerifyRegistry,omitempty"`
+
+	// Env are environment variables passed to the kaniko pod.
+	// It also accepts environment variables via the go template syntax.
+	// For example: `[{"name": "key1", "value": "value1"}, {"name": "key2", "value": "value2"}, {"name": "key3", "value": "'{{.ENV_VARIABLE}}'"}]`.
+	Env []v1.EnvVar `yaml:"env,omitempty"`
+
 	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
 	// use a remote cache which will speed up builds.
 	Cache *KanikoCache `yaml:"cache,omitempty"`
 
-	// Reproducible is used to strip timestamps out of the built image.
-	Reproducible bool `yaml:"reproducible,omitempty"`
+	// RegistryCertificate is to provide a certificate for TLS communication with a given registry.
+	// my.registry.url: /path/to/the/certificate.cert is the expected format.
+	RegistryCertificate map[string]*string `yaml:"registryCertificate,omitempty"`
 
-	// SkipTLS skips TLS verification when pulling and pushing the image.
-	SkipTLS bool `yaml:"skipTLS,omitempty"`
+	// Label key: value to set some metadata to the final image.
+	// This is equivalent as using the LABEL within the Dockerfile.
+	Label map[string]*string `yaml:"label,omitempty"`
+
+	// BuildArgs are arguments passed to the docker build.
+	// It also accepts environment variables and generated values via the go template syntax.
+	// Exposed generated values: IMAGE_REPO, IMAGE_NAME, IMAGE_TAG.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
+	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 
 	// VolumeMounts are volume mounts passed to kaniko pod.
 	VolumeMounts []v1.VolumeMount `yaml:"volumeMounts,omitempty"`
@@ -882,6 +1119,7 @@ type DockerArtifact struct {
 	// is configured in the underlying docker daemon. Valid modes are
 	// `host`: use the host's networking stack.
 	// `bridge`: use the bridged network configuration.
+	// `container:<name|id>`: reuse another container's network stack.
 	// `none`: no networking in the container.
 	NetworkMode string `yaml:"network,omitempty"`
 
@@ -891,6 +1129,29 @@ type DockerArtifact struct {
 
 	// NoCache used to pass in --no-cache to docker build to prevent caching.
 	NoCache bool `yaml:"noCache,omitempty"`
+
+	// Squash is used to pass in --squash to docker build to squash docker image layers into single layer.
+	Squash bool `yaml:"squash,omitempty"`
+
+	// Secret contains information about a local secret passed to `docker build`,
+	// along with optional destination information.
+	Secret *DockerSecret `yaml:"secret,omitempty"`
+
+	// SSH is used to pass in --ssh to docker build to use SSH agent. Format is "default|<id>[=<socket>|<key>[,<key>]]".
+	SSH string `yaml:"ssh,omitempty"`
+}
+
+// DockerSecret contains information about a local secret passed to `docker build`,
+// along with optional destination information.
+type DockerSecret struct {
+	// ID is the id of the secret.
+	ID string `yaml:"id,omitempty" yamltags:"required"`
+
+	// Source is the path to the secret on the host machine.
+	Source string `yaml:"src,omitempty"`
+
+	// Destination is the path in the container to mount the secret.
+	Destination string `yaml:"dst,omitempty"`
 }
 
 // BazelArtifact describes an artifact built with [Bazel](https://bazel.build/).
@@ -918,4 +1179,182 @@ type JibArtifact struct {
 	// `maven`: for Maven.
 	// `gradle`: for Gradle.
 	Type string `yaml:"type,omitempty"`
+
+	// BaseImage overrides the configured jib base image.
+	BaseImage string `yaml:"fromImage,omitempty"`
+}
+
+// UnmarshalYAML provides a custom unmarshaller to deal with
+// https://github.com/GoogleContainerTools/skaffold/issues/4175
+func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
+	// We do this as follows
+	// 1. We zero out the fields in the node that require custom processing
+	// 2. We unmarshal all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinitely
+	// 3. We deserialize the special fields as required.
+	type ClusterDetailsForUnmarshaling ClusterDetails
+
+	volumes, remaining, err := util.UnmarshalClusterVolumes(value)
+
+	if err != nil {
+		return err
+	}
+
+	// Unmarshal the remaining values
+	aux := (*ClusterDetailsForUnmarshaling)(clusterDetails)
+	err = yaml.Unmarshal(remaining, aux)
+
+	if err != nil {
+		return err
+	}
+
+	clusterDetails.Volumes = volumes
+	return nil
+}
+
+// UnmarshalYAML provides a custom unmarshaller to deal with
+// https://github.com/GoogleContainerTools/skaffold/issues/4175
+func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
+	// We do this as follows
+	// 1. We zero out the fields in the node that require custom processing
+	// 2. We unmarshal all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinitely
+	// 3. We deserialize the special fields as required.
+	type KanikoArtifactForUnmarshaling KanikoArtifact
+
+	mounts, remaining, err := util.UnmarshalKanikoArtifact(value)
+
+	if err != nil {
+		return err
+	}
+
+	// Unmarshal the remaining values
+	aux := (*KanikoArtifactForUnmarshaling)(ka)
+	err = yaml.Unmarshal(remaining, aux)
+
+	if err != nil {
+		return err
+	}
+
+	ka.VolumeMounts = mounts
+	return nil
+}
+
+// MarshalYAML provides a custom marshaller to deal with
+// https://github.com/GoogleContainerTools/skaffold/issues/4175
+func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
+	// We do this as follows
+	// 1. We zero out the fields in the node that require custom processing
+	// 2. We marshall all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinitely
+	// 3. We unmarshal to a map
+	// 4. We marshal the special fields to json and unmarshal to a map
+	//    * This leverages the json struct annotations to marshal as expected
+	// 5. We combine the two maps and return
+	type ClusterDetailsForUnmarshaling ClusterDetails
+
+	// Marshal volumes to a list. Use json because the Kubernetes resources have json annotations.
+	volumes := clusterDetails.Volumes
+
+	j, err := json.Marshal(volumes)
+
+	if err != nil {
+		return err, nil
+	}
+
+	vList := []interface{}{}
+
+	if err := json.Unmarshal(j, &vList); err != nil {
+		return nil, err
+	}
+
+	// Make a deep copy of clusterDetails because we need to zero out volumes and we don't want to modify the
+	// current object.
+	aux := &ClusterDetailsForUnmarshaling{}
+
+	b, err := json.Marshal(clusterDetails)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(b, aux); err != nil {
+		return nil, err
+	}
+
+	aux.Volumes = nil
+
+	marshaled, err := yaml.Marshal(aux)
+
+	if err != nil {
+		return nil, err
+	}
+
+	m := map[string]interface{}{}
+
+	err = yaml.Unmarshal(marshaled, m)
+
+	if len(vList) > 0 {
+		m["volumes"] = vList
+	}
+	return m, err
+}
+
+// MarshalYAML provides a custom marshaller to deal with
+// https://github.com/GoogleContainerTools/skaffold/issues/4175
+func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
+	// We do this as follows
+	// 1. We zero out the fields in the node that require custom processing
+	// 2. We marshal all the non special fields using the aliased type resource
+	//    we use an alias type to avoid recursion caused by invoking this function infinitely
+	// 3. We unmarshal to a map
+	// 4. We marshal the special fields to json and unmarshal to a map
+	//    * This leverages the json struct annotations to marshal as expected
+	// 5. We combine the two maps and return
+	type KanikoArtifactForUnmarshaling KanikoArtifact
+
+	// Marshal volumes to a map. User json because the Kubernetes resources have json annotations.
+	volumeMounts := ka.VolumeMounts
+
+	j, err := json.Marshal(volumeMounts)
+
+	if err != nil {
+		return err, nil
+	}
+
+	vList := []interface{}{}
+
+	if err := json.Unmarshal(j, &vList); err != nil {
+		return nil, err
+	}
+
+	// Make a deep copy of kanikoArtifact because we need to zero out volumeMounts and we don't want to modify the
+	// current object.
+	aux := &KanikoArtifactForUnmarshaling{}
+
+	b, err := json.Marshal(ka)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(b, aux); err != nil {
+		return nil, err
+	}
+	aux.VolumeMounts = nil
+
+	marshaled, err := yaml.Marshal(aux)
+
+	if err != nil {
+		return nil, err
+	}
+
+	m := map[string]interface{}{}
+
+	err = yaml.Unmarshal(marshaled, m)
+
+	if len(vList) > 0 {
+		m["volumeMounts"] = vList
+	}
+	return m, err
 }

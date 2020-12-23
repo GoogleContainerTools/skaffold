@@ -1,2 +1,4 @@
 node_modules
 *.swp
+netcore/**/obj
+netcore/**/bin

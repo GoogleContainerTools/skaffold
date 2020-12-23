@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta5
+apiVersion: skaffold/v2beta11
 kind: Config
 build:
   artifacts:
@@ -6,11 +6,21 @@ build:
       context: ./leeroy-web/
       kaniko:
         cache: {}
+      requires:
+      - image: base
+        alias: BASE
     - image: leeroy-app
       context: ./leeroy-app/
       kaniko:
         cache: {}
         target: target_stage
+      requires:
+      - image: base
+        alias: BASE
+    - image: base
+      context: ./base/
+      kaniko:
+        cache: {}
   cluster:
     pullSecretName: e2esecret
 deploy:

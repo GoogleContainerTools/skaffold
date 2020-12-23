@@ -78,6 +78,51 @@ func TestBuildpackBuildSpec(t *testing.T) {
 			},
 		},
 		{
+			description: "custom build image",
+			artifact: &latest.BuildpackArtifact{
+				Builder:           "img2",
+				RunImage:          "run/image",
+				ProjectDescriptor: "project.toml",
+			},
+			expected: cloudbuild.Build{
+				Steps: []*cloudbuild.BuildStep{{
+					Name: "pack/image",
+					Args: []string{"pack", "build", "img", "--builder", "img2:tag", "--run-image", "run/image"},
+				}},
+				Images: []string{"img"},
+			},
+		},
+		{
+			description: "custom run image",
+			artifact: &latest.BuildpackArtifact{
+				Builder:           "otherbuilder",
+				RunImage:          "img3",
+				ProjectDescriptor: "project.toml",
+			},
+			expected: cloudbuild.Build{
+				Steps: []*cloudbuild.BuildStep{{
+					Name: "pack/image",
+					Args: []string{"pack", "build", "img", "--builder", "otherbuilder", "--run-image", "img3:tag"},
+				}},
+				Images: []string{"img"},
+			},
+		},
+		{
+			description: "custom build and run image",
+			artifact: &latest.BuildpackArtifact{
+				Builder:           "img2",
+				RunImage:          "img3",
+				ProjectDescriptor: "project.toml",
+			},
+			expected: cloudbuild.Build{
+				Steps: []*cloudbuild.BuildStep{{
+					Name: "pack/image",
+					Args: []string{"pack", "build", "img", "--builder", "img2:tag", "--run-image", "img3:tag"},
+				}},
+				Images: []string{"img"},
+			},
+		},
+		{
 			description: "invalid env",
 			artifact: &latest.BuildpackArtifact{
 				Builder: "builder",
@@ -135,14 +180,22 @@ func TestBuildpackBuildSpec(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return []string{"BAR=bar"} })
 
 			artifact := &latest.Artifact{
+				ImageName: "img",
 				ArtifactType: latest.ArtifactType{
 					BuildpackArtifact: test.artifact,
 				},
+				Dependencies: []*latest.ArtifactDependency{{ImageName: "img2", Alias: "img2"}, {ImageName: "img3", Alias: "img3"}},
 			}
-
-			builder := newBuilder(latest.GoogleCloudBuild{
-				PackImage: "pack/image",
+			store := mockArtifactStore{
+				"img2": "img2:tag",
+				"img3": "img3:tag",
+			}
+			builder := NewBuilder(&mockConfig{
+				gcb: latest.GoogleCloudBuild{
+					PackImage: "pack/image",
+				},
 			})
+			builder.ArtifactStore(store)
 			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
 			t.CheckError(test.shouldErr, err)
 

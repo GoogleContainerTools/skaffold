@@ -1,0 +1,8 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skaffold-kustomize
+  labels:
+    env: prod
+spec:
+  replicas: 3

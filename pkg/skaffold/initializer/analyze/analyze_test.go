@@ -21,13 +21,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	initconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	initconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+type builder struct {
+	name string
+	path string
+}
 
 func TestAnalyze(t *testing.T) {
 	emptyFile := ""
@@ -41,7 +45,7 @@ func TestAnalyze(t *testing.T) {
 		description       string
 		filesWithContents map[string]string
 		expectedConfigs   []string
-		expectedPaths     []string
+		expectedBuilders  []builder
 		config            initconfig.Config
 		shouldErr         bool
 	}{
@@ -69,12 +73,12 @@ func TestAnalyze(t *testing.T) {
 				"k8pod.yml",
 				"config/test.yaml",
 			},
-			expectedPaths: []string{
-				"Dockerfile",
-				"deploy/Dockerfile",
-				"deploy/Dockerfile.dev",
-				"deploy/dev.Dockerfile",
-				"deploy/test.dockerfile",
+			expectedBuilders: []builder{
+				{name: "Docker", path: "Dockerfile"},
+				{name: "Docker", path: "deploy/Dockerfile"},
+				{name: "Docker", path: "deploy/Dockerfile.dev"},
+				{name: "Docker", path: "deploy/dev.Dockerfile"},
+				{name: "Docker", path: "deploy/test.dockerfile"},
 			},
 			shouldErr: false,
 		},
@@ -103,8 +107,8 @@ func TestAnalyze(t *testing.T) {
 				"k8pod.yml",
 				"config/test.yaml",
 			},
-			expectedPaths: []string{},
-			shouldErr:     false,
+			expectedBuilders: nil,
+			shouldErr:        false,
 		},
 		{
 			description: "should return correct k8 configs and build files",
@@ -129,12 +133,14 @@ func TestAnalyze(t *testing.T) {
 				"k8pod.yml",
 				"config/test.yaml",
 			},
-			expectedPaths: []string{
-				"Dockerfile",
-				"deploy/Dockerfile",
-				"gradle/build.gradle",
-				"maven/pom.xml",
-				"node/package.json",
+			expectedBuilders: []builder{
+				{name: "Docker", path: "Dockerfile"},
+				{name: "Docker", path: "deploy/Dockerfile"},
+				{name: "Jib Gradle Plugin", path: "gradle/build.gradle"},
+				{name: "Buildpacks", path: "gradle/build.gradle"},
+				{name: "Jib Maven Plugin", path: "maven/pom.xml"},
+				{name: "Buildpacks", path: "maven/pom.xml"},
+				{name: "Buildpacks", path: "node/package.json"},
 			},
 			shouldErr: false,
 		},
@@ -160,11 +166,11 @@ func TestAnalyze(t *testing.T) {
 				"k8pod.yml",
 				"config/test.yaml",
 			},
-			expectedPaths: []string{
-				"gradle/build.gradle",
-				"gradle/subproject/Dockerfile",
-				"maven/pom.xml",
-				"maven/asubproject/Dockerfile",
+			expectedBuilders: []builder{
+				{name: "Jib Gradle Plugin", path: "gradle/build.gradle"},
+				{name: "Docker", path: "gradle/subproject/Dockerfile"},
+				{name: "Jib Maven Plugin", path: "maven/pom.xml"},
+				{name: "Docker", path: "maven/asubproject/Dockerfile"},
 			},
 			shouldErr: false,
 		},
@@ -188,10 +194,10 @@ func TestAnalyze(t *testing.T) {
 				"k8pod.yml",
 				"not-ignored-config/test.yaml",
 			},
-			expectedPaths: []string{
-				"Dockerfile",
-				"build.gradle",
-				"pom.xml",
+			expectedBuilders: []builder{
+				{name: "Docker", path: "Dockerfile"},
+				{name: "Jib Gradle Plugin", path: "build.gradle"},
+				{name: "Jib Maven Plugin", path: "pom.xml"},
 			},
 			shouldErr: false,
 		},
@@ -208,8 +214,8 @@ func TestAnalyze(t *testing.T) {
 				EnableJibGradleInit:  false,
 			},
 			expectedConfigs: nil,
-			expectedPaths: []string{
-				"pom.xml",
+			expectedBuilders: []builder{
+				{name: "Jib Maven Plugin", path: "pom.xml"},
 			},
 			shouldErr: false,
 		},
@@ -230,8 +236,46 @@ func TestAnalyze(t *testing.T) {
 			expectedConfigs: []string{
 				"k8pod.yml",
 			},
-			expectedPaths: []string{
-				"Dockerfile",
+			expectedBuilders: []builder{
+				{name: "Docker", path: "Dockerfile"},
+			},
+			shouldErr: false,
+		},
+		{
+			description: "should skip vendor folder",
+			filesWithContents: map[string]string{
+				"Dockerfile":            emptyFile,
+				"vendor/Dockerfile":     emptyFile,
+				"vendor/pom.xml":        emptyFile,
+				"vendor/package.json":   emptyFile,
+				"sub/vendor/Dockerfile": emptyFile,
+			},
+			config: initconfig.Config{
+				Force:                false,
+				EnableBuildpacksInit: true,
+				EnableJibInit:        true,
+			},
+			expectedBuilders: []builder{
+				{name: "Docker", path: "Dockerfile"},
+			},
+			shouldErr: false,
+		},
+		{
+			description: "should skip node_modules folder",
+			filesWithContents: map[string]string{
+				"Dockerfile":                  emptyFile,
+				"node_modules/Dockerfile":     emptyFile,
+				"node_modules/pom.xml":        emptyFile,
+				"node_modules/package.json":   emptyFile,
+				"sub/node_modules/Dockerfile": emptyFile,
+			},
+			config: initconfig.Config{
+				Force:                false,
+				EnableBuildpacksInit: true,
+				EnableJibInit:        true,
+			},
+			expectedBuilders: []builder{
+				{name: "Docker", path: "Dockerfile"},
 			},
 			shouldErr: false,
 		},
@@ -252,8 +296,8 @@ func TestAnalyze(t *testing.T) {
 			expectedConfigs: []string{
 				"k8pod.yml",
 			},
-			expectedPaths: []string{
-				"Dockerfile",
+			expectedBuilders: []builder{
+				{name: "Docker", path: "Dockerfile"},
 			},
 			shouldErr: false,
 		},
@@ -261,9 +305,9 @@ func TestAnalyze(t *testing.T) {
 			description: "should not error when skaffold.config present and force = true",
 			filesWithContents: map[string]string{
 				"skaffold.yaml": `apiVersion: skaffold/v1beta6
-kind: Config
-deploy:
-  kustomize: {}`,
+		kind: Config
+		deploy:
+		  kustomize: {}`,
 				"config/test.yaml":  validK8sManifest,
 				"k8pod.yml":         validK8sManifest,
 				"README":            emptyFile,
@@ -279,9 +323,9 @@ deploy:
 				"k8pod.yml",
 				"config/test.yaml",
 			},
-			expectedPaths: []string{
-				"Dockerfile",
-				"deploy/Dockerfile",
+			expectedBuilders: []builder{
+				{name: "Docker", path: "Dockerfile"},
+				{name: "Docker", path: "deploy/Dockerfile"},
 			},
 			shouldErr: false,
 		},
@@ -306,9 +350,9 @@ deploy:
 					ConfigurationFile: "skaffold.yaml",
 				},
 			},
-			expectedConfigs: nil,
-			expectedPaths:   nil,
-			shouldErr:       true,
+			expectedConfigs:  nil,
+			expectedBuilders: nil,
+			shouldErr:        true,
 		},
 		{
 			description: "should error when skaffold.config present with jib config",
@@ -330,9 +374,9 @@ deploy:
 					ConfigurationFile: "skaffold.yaml",
 				},
 			},
-			expectedConfigs: nil,
-			expectedPaths:   nil,
-			shouldErr:       true,
+			expectedConfigs:  nil,
+			expectedBuilders: nil,
+			shouldErr:        true,
 		},
 	}
 	for _, test := range tests {
@@ -343,7 +387,6 @@ deploy:
 			t.Override(&jib.Validate, fakeValidateJibConfig)
 
 			a := NewAnalyzer(test.config)
-
 			err := a.Analyze(".")
 
 			t.CheckError(test.shouldErr, err)
@@ -353,13 +396,14 @@ deploy:
 
 			t.CheckDeepEqual(test.expectedConfigs, a.Manifests())
 
-			if len(test.expectedPaths) != len(a.Builders()) {
+			if len(test.expectedBuilders) != len(a.Builders()) {
 				t.Fatalf("expected %d builders, got %d: %v",
-					len(test.expectedPaths),
+					len(test.expectedBuilders),
 					len(a.Builders()), a.Builders())
 			}
 			for i := range a.Builders() {
-				t.CheckDeepEqual(test.expectedPaths[i], a.Builders()[i].Path())
+				t.CheckDeepEqual(test.expectedBuilders[i].name, a.Builders()[i].Name())
+				t.CheckDeepEqual(test.expectedBuilders[i].path, a.Builders()[i].Path())
 			}
 		})
 	}

@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+// based on https://cloud.google.com/container-registry/docs/advanced-authentication#linux-macos
 func TestResolve(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("test doesn't work on windows")
@@ -115,7 +116,7 @@ func TestResolve(t *testing.T) {
 			if test.expectAnonymous {
 				t.CheckDeepEqual(&authn.AuthConfig{}, authConfig)
 			} else {
-				t.CheckDeepEqual("TOKEN", authConfig.RegistryToken)
+				t.CheckDeepEqual("TOKEN", authConfig.Password)
 			}
 			t.CheckNoError(err)
 		})

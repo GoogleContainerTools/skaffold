@@ -137,6 +137,28 @@ BEGIN JIB JSON
 				{BuilderName: PluginName(JibMaven), File: "path/to/pom.xml", Project: "project2"},
 			},
 		},
+		{
+			description:  "jib maven pom.atom single module",
+			path:         "path/to/pom.atom",
+			fileContents: "com.google.cloud.tools:jib-maven-plugin",
+			command:      "mvn jib:_skaffold-init -q --batch-mode",
+			stdout: `BEGIN JIB JSON
+{"image":"image","project":"project"}`,
+			expectedConfig: []ArtifactConfig{
+				{BuilderName: PluginName(JibMaven), File: "path/to/pom.atom", Image: "image", Project: "project"},
+			},
+		},
+		{
+			description:  "jib maven pom.scala single module",
+			path:         "path/to/pom.scala",
+			fileContents: `"com.google.cloud.tools" % "jib-maven-plugin"`,
+			command:      "mvn jib:_skaffold-init -q --batch-mode",
+			stdout: `BEGIN JIB JSON
+{"image":"image","project":"project"}`,
+			expectedConfig: []ArtifactConfig{
+				{BuilderName: PluginName(JibMaven), File: "path/to/pom.scala", Image: "image", Project: "project"},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

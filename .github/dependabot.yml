@@ -1,0 +1,58 @@
+version: 2
+updates:
+  - directory: "/examples"
+    package-ecosystem: "npm"
+    schedule:
+      interval: "daily"
+  - directory: "/examples"
+    package-ecosystem: "bundler"
+    schedule:
+      interval: "daily"
+  - directory: "/examples"
+    package-ecosystem: "composer"
+    schedule:
+      interval: "daily"
+  - directory: "/examples"
+    package-ecosystem: "pip"
+    schedule:
+      interval: "daily"
+  - directory: "/examples"
+    package-ecosystem: "maven"
+    schedule:
+      interval: "daily"
+  - directory: "/examples"
+    package-ecosystem: "gradle"
+    schedule:
+      interval: "daily"
+  - directory: "/examples"
+    package-ecosystem: "gomod"
+    schedule:
+      interval: "daily"
+  - directory: "/integration/examples"
+    package-ecosystem: "npm"
+    schedule:
+      interval: "daily"
+  - directory: "/integration/examples"
+    package-ecosystem: "bundler"
+    schedule:
+      interval: "daily"
+  - directory: "/integration/examples"
+    package-ecosystem: "composer"
+    schedule:
+      interval: "daily"
+  - directory: "/integration/examples"
+    package-ecosystem: "pip"
+    schedule:
+      interval: "daily"
+  - directory: "/integration/examples"
+    package-ecosystem: "maven"
+    schedule:
+      interval: "daily"
+  - directory: "/integration/examples"
+    package-ecosystem: "gradle"
+    schedule:
+      interval: "daily"
+  - directory: "/integration/examples"
+    package-ecosystem: "gomod"
+    schedule:
+      interval: "daily"

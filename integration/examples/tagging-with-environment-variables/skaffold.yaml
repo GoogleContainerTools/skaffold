@@ -1,11 +1,11 @@
-apiVersion: skaffold/v2beta5
+apiVersion: skaffold/v2beta11
 kind: Config
 build:
   artifacts:
   - image: skaffold-example
   tagPolicy:
     envTemplate:
-      template: "{{.IMAGE_NAME}}:{{.FOO}}"
+      template: "{{.FOO}}"
 deploy:
   kubectl:
     manifests:

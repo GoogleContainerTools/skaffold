@@ -35,6 +35,10 @@ type Tester interface {
 	TestDependencies() ([]string, error)
 }
 
+type Muted interface {
+	MuteTest() bool
+}
+
 // FullTester serves as a holder for the individual artifact-specific
 // testers. It exists so that the Tester interface can mimic the Builder/Deployer
 // interface, so it can be called in a similar fashion from the Runner, while
@@ -45,6 +49,7 @@ type Tester interface {
 type FullTester struct {
 	testCases      []*latest.TestCase
 	localDaemon    docker.LocalDaemon
+	muted          Muted
 	workingDir     string
 	imagesAreLocal bool
 }

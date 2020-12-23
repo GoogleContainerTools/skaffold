@@ -36,12 +36,13 @@ func NewCmdRun() *cobra.Command {
 		WithExample("Build, test, deploy and tail the logs", "run --tail").
 		WithExample("Run with a given profile", "run -p <profile>").
 		WithCommonFlags().
+		WithHouseKeepingMessages().
 		NoArgs(doRun)
 }
 
 func doRun(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		bRes, err := r.BuildAndTest(ctx, out, config.Build.Artifacts)
+		bRes, err := r.Build(ctx, out, targetArtifacts(opts, config))
 		if err != nil {
 			return fmt.Errorf("failed to build: %w", err)
 		}

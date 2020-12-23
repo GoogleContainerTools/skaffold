@@ -70,11 +70,11 @@ type mockDeployer struct {
 	err bool
 }
 
-func (m *mockDeployer) Deploy(context.Context, io.Writer, []build.Artifact, []deploy.Labeller) *deploy.Result {
+func (m *mockDeployer) Deploy(context.Context, io.Writer, []build.Artifact) ([]string, error) {
 	if m.err {
-		return deploy.NewDeployErrorResult(errors.New("Unable to deploy"))
+		return nil, errors.New("Unable to deploy")
 	}
-	return deploy.NewDeploySuccessResult(nil)
+	return nil, nil
 }
 
 func (m *mockDeployer) Cleanup(context.Context, io.Writer) error {
@@ -219,9 +219,9 @@ func TestTimingsDeploy(t *testing.T) {
 			_, _, deployer := WithTimings(nil, nil, d, false)
 
 			var out bytes.Buffer
-			res := deployer.Deploy(context.Background(), &out, nil, nil)
+			_, err := deployer.Deploy(context.Background(), &out, nil)
 
-			t.CheckError(test.shouldErr, res.GetError())
+			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())
 			t.CheckMatches(test.shouldLog, lastInfoEntry(hook))
 		})

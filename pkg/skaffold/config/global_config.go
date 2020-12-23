@@ -26,12 +26,16 @@ type GlobalConfig struct {
 // ContextConfig is the context-specific config information provided in
 // the global Skaffold config.
 type ContextConfig struct {
-	Kubecontext        string        `yaml:"kube-context,omitempty"`
-	DefaultRepo        string        `yaml:"default-repo,omitempty"`
-	LocalCluster       *bool         `yaml:"local-cluster,omitempty"`
-	InsecureRegistries []string      `yaml:"insecure-registries,omitempty"`
-	UpdateCheck        *bool         `yaml:"update-check,omitempty"`
-	Survey             *SurveyConfig `yaml:"survey,omitempty"`
+	Kubecontext        string   `yaml:"kube-context,omitempty"`
+	DefaultRepo        string   `yaml:"default-repo,omitempty"`
+	LocalCluster       *bool    `yaml:"local-cluster,omitempty"`
+	InsecureRegistries []string `yaml:"insecure-registries,omitempty"`
+	// DebugHelpersRegistry is the registry from which the debug helper images are used.
+	DebugHelpersRegistry string        `yaml:"debug-helpers-registry,omitempty"`
+	UpdateCheck          *bool         `yaml:"update-check,omitempty"`
+	Survey               *SurveyConfig `yaml:"survey,omitempty"`
+	KindDisableLoad      *bool         `yaml:"kind-disable-load,omitempty"`
+	K3dDisableLoad       *bool         `yaml:"k3d-disable-load,omitempty"`
 }
 
 // SurveyConfig is the survey config information

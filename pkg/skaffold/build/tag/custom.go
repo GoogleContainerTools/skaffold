@@ -18,27 +18,17 @@ package tag
 
 import (
 	"errors"
-	"fmt"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 type CustomTag struct {
 	Tag string
 }
 
-func (c *CustomTag) Labels() map[string]string {
-	return map[string]string{
-		constants.Labels.TagPolicy: "custom",
-	}
-}
-
-// GenerateFullyQualifiedImageName tags an image with the custom tag
-func (c *CustomTag) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
-	tag := c.Tag
+// GenerateTag generates a tag using the custom tag.
+func (t *CustomTag) GenerateTag(_, _ string) (string, error) {
+	tag := t.Tag
 	if tag == "" {
 		return "", errors.New("custom tag not provided")
 	}
-
-	return fmt.Sprintf("%s:%s", imageName, tag), nil
+	return tag, nil
 }

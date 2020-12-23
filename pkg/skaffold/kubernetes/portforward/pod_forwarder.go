@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 var (
@@ -93,7 +94,7 @@ func (p *WatchingPodForwarder) Stop() {
 }
 
 func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
-	ownerReference := topLevelOwnerKey(pod, pod.Kind)
+	ownerReference := topLevelOwnerKey(ctx, pod, pod.Kind)
 	for _, c := range pod.Spec.Containers {
 		for _, port := range c.Ports {
 			// get current entry for this container
@@ -101,7 +102,7 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 				Type:      constants.Pod,
 				Name:      pod.Name,
 				Namespace: pod.Namespace,
-				Port:      int(port.ContainerPort),
+				Port:      schemautil.FromInt(int(port.ContainerPort)),
 				Address:   constants.DefaultPortForwardAddress,
 				LocalPort: int(port.ContainerPort),
 			}
@@ -110,7 +111,7 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 			if err != nil {
 				return fmt.Errorf("getting pod forwarding entry: %w", err)
 			}
-			if entry.resource.Port != entry.localPort {
+			if entry.resource.Port.IntVal != entry.localPort {
 				color.Yellow.Fprintf(p.entryManager.output, "Forwarding container %s/%s to local port %d.\n", pod.Name, c.Name, entry.localPort)
 			}
 			if prevEntry, ok := p.entryManager.forwardedResources.Load(entry.key()); ok {
@@ -141,7 +142,7 @@ func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = retrieveAvailablePort(resource.Address, resource.Port, &p.entryManager.forwardedPorts)
+	entry.localPort = retrieveAvailablePort(resource.Address, resource.Port.IntVal, &p.entryManager.forwardedPorts)
 
 	return entry, nil
 }

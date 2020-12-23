@@ -42,7 +42,7 @@ spec:
     env:
     - name: GOOGLE_APPLICATION_CREDENTIALS
       value: /secret/kaniko-secret
-    image: gcr.io/k8s-skaffold/skaffold:test-version
+    image: gcr.io/k8s-skaffold/skaffold:latest
     name: run-build
     resources: {}
     volumeMounts:
@@ -75,7 +75,7 @@ spec:
     command:
     - skaffold
     - deploy
-    image: gcr.io/k8s-skaffold/skaffold:test-version
+    image: gcr.io/k8s-skaffold/skaffold:latest
     name: run-deploy
     resources: {}
     workingDir: /workspace/source

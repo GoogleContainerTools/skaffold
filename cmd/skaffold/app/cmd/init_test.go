@@ -46,8 +46,8 @@ func TestFlagsToConfigVersion(t *testing.T) {
 			shouldErr:  true,
 			expectedConfig: config.Config{
 				ComposeFile:            "",
-				CliArtifacts:           nil,
-				CliKubernetesManifests: nil,
+				CliArtifacts:           []string{},
+				CliKubernetesManifests: []string{},
 				SkipBuild:              false,
 				SkipDeploy:             false,
 				Force:                  false,
@@ -107,8 +107,8 @@ func TestFlagsToConfigVersion(t *testing.T) {
 			},
 			expectedConfig: config.Config{
 				ComposeFile:            "",
-				CliArtifacts:           nil,
-				CliKubernetesManifests: nil,
+				CliArtifacts:           []string{},
+				CliKubernetesManifests: []string{},
 				SkipBuild:              false,
 				SkipDeploy:             false,
 				Force:                  false,
@@ -129,8 +129,8 @@ func TestFlagsToConfigVersion(t *testing.T) {
 			},
 			expectedConfig: config.Config{
 				ComposeFile:            "",
-				CliArtifacts:           nil,
-				CliKubernetesManifests: nil,
+				CliArtifacts:           []string{},
+				CliKubernetesManifests: []string{},
 				SkipBuild:              false,
 				SkipDeploy:             false,
 				Force:                  false,

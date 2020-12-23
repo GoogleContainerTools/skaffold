@@ -30,10 +30,9 @@ import (
 func TestBuildBazel(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.NewTempDir().Mkdir("bin").Chdir()
-		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar").AndRunOut("bazel info bazel-bin", "bin"))
+		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --color=no").AndRunOut("bazel info bazel-bin", "bin"))
 		testutil.CreateFakeImageTar("bazel:app", "bin/app.tar")
 
-		localDocker := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
 		artifact := &latest.Artifact{
 			Workspace: ".",
 			ArtifactType: latest.ArtifactType{
@@ -43,7 +42,7 @@ func TestBuildBazel(t *testing.T) {
 			},
 		}
 
-		builder := NewArtifactBuilder(localDocker, nil, false)
+		builder := NewArtifactBuilder(fakeLocalDaemon(), &mockConfig{}, false)
 		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag")
 
 		t.CheckNoError(err)
@@ -60,7 +59,7 @@ func TestBuildBazelFailInvalidTarget(t *testing.T) {
 			},
 		}
 
-		builder := NewArtifactBuilder(nil, nil, false)
+		builder := NewArtifactBuilder(nil, &mockConfig{}, false)
 		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag")
 
 		t.CheckErrorContains("the bazel build target should end with .tar", err)
@@ -98,3 +97,13 @@ func TestBuildImageTag(t *testing.T) {
 
 	testutil.CheckDeepEqual(t, "bazel:skaffold_example", imageTag)
 }
+
+func fakeLocalDaemon() docker.LocalDaemon {
+	return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
+}
+
+type mockConfig struct {
+	docker.Config
+}
+
+func (c *mockConfig) GetInsecureRegistries() map[string]bool { return nil }

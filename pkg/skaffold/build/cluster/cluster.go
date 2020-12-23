@@ -26,29 +26,33 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Build builds a list of artifacts with Kaniko.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	teardownPullSecret, err := b.setupPullSecret(out)
+	teardownPullSecret, err := b.setupPullSecret(ctx, out)
 	if err != nil {
 		return nil, fmt.Errorf("setting up pull secret: %w", err)
 	}
 	defer teardownPullSecret()
 
 	if b.DockerConfig != nil {
-		teardownDockerConfigSecret, err := b.setupDockerConfigSecret(out)
+		teardownDockerConfigSecret, err := b.setupDockerConfigSecret(ctx, out)
 		if err != nil {
 			return nil, fmt.Errorf("setting up docker config secret: %w", err)
 		}
 		defer teardownDockerConfigSecret()
 	}
 
-	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifact, b.ClusterDetails.Concurrency)
+	builder := build.WithLogFile(b.buildArtifact, b.cfg.Muted())
+	return build.InOrder(ctx, out, tags, artifacts, builder, b.ClusterDetails.Concurrency, b.artifactStore)
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	// TODO: [#4922] Implement required artifact resolution from the `artifactStore`
 	digest, err := b.runBuildForArtifact(ctx, out, artifact, tag)
 	if err != nil {
 		return "", err
@@ -58,12 +62,14 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+	// required artifacts as build-args
+	requiredImages := docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true)
 	switch {
 	case a.KanikoArtifact != nil:
-		return b.buildWithKaniko(ctx, out, a.Workspace, a.KanikoArtifact, tag)
+		return b.buildWithKaniko(ctx, out, a.Workspace, a.ImageName, a.KanikoArtifact, tag, requiredImages)
 
 	case a.CustomArtifact != nil:
-		return custom.NewArtifactBuilder(nil, b.insecureRegistries, true, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
+		return custom.NewArtifactBuilder(nil, b.cfg, true, append(b.retrieveExtraEnv(), util.EnvPtrMapToSlice(requiredImages, "=")...)).Build(ctx, out, a, tag)
 
 	default:
 		return "", fmt.Errorf("unexpected type %q for in-cluster artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
@@ -72,7 +78,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 
 func (b *Builder) retrieveExtraEnv() []string {
 	env := []string{
-		fmt.Sprintf("%s=%s", constants.KubeContext, b.kubeContext),
+		fmt.Sprintf("%s=%s", constants.KubeContext, b.cfg.GetKubeContext()),
 		fmt.Sprintf("%s=%s", constants.Namespace, b.ClusterDetails.Namespace),
 		fmt.Sprintf("%s=%s", constants.PullSecretName, b.ClusterDetails.PullSecretName),
 		fmt.Sprintf("%s=%s", constants.Timeout, b.ClusterDetails.Timeout),

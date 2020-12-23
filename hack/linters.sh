@@ -22,7 +22,6 @@ echo "Running linters..."
 scripts=(
     "hack/boilerplate.sh"
     "hack/gofmt.sh"
-    "hack/pedantic-imports.sh"
     "hack/golangci-lint.sh"
 )
 fail=0

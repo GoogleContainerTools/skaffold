@@ -1,0 +1,74 @@
+apiVersion: skaffold/v2beta11
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+
+  artifacts:
+  - image: image1
+    context: app1
+    custom:
+      buildCommand: ./build.sh
+      dependencies:
+        paths:
+        - "foo"
+    requires:
+    - image: image2 #test that build-arg set to image field when alias field is missing (`ARG image2`)
+
+  - image: image2
+    context: app2
+    docker:
+      noCache: true
+      buildArgs:
+        SLEEP: "1"
+        FAIL: "0"
+    requires:
+    - image: image3
+      alias: IMAGE3 #test that build-arg is set to alias field when present (`ARG IMAGE3`, not `image3`).
+
+  - image: image3
+    context: app3
+    docker:
+      noCache: true
+      buildArgs:
+        SLEEP: "2"
+        FAIL: "0"
+
+  - image: image4
+    context: app4
+    docker:
+      noCache: true
+      buildArgs:
+        SLEEP: "3"
+        FAIL: "0"
+
+deploy:
+  kubectl:
+    manifests:
+    - 'kubernetes/*.yaml'
+
+profiles:
+- name: concurrency-0
+  build:
+    local:
+      concurrency: 0
+- name: concurrency-3
+  build:
+    local:
+      concurrency: 3
+- name: invalid-dependency
+  patches:
+  - op: add
+    path: /build/artifacts/0/requires/0/image
+    value: "image5"
+- name: circular-dependency
+  patches:
+  - op: add
+    path: /build/artifacts/1/requires/0/image
+    value: "image1"
+- name: failed-dependency
+  patches:
+  - path: /build/artifacts/1/docker/buildArgs
+    value:
+      SLEEP: "3"
+      FAIL: "1"

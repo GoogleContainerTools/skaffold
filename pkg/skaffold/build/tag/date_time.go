@@ -21,8 +21,6 @@ import (
 	"time"
 
 	"4d63.com/tz"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 const tagTime = "2006-01-02_15-04-05.999_MST"
@@ -44,28 +42,22 @@ func NewDateTimeTagger(format, timezone string) Tagger {
 	}
 }
 
-func (tagger *dateTimeTagger) Labels() map[string]string {
-	return map[string]string{
-		constants.Labels.TagPolicy: "dateTimeTagger",
-	}
-}
-
-// GenerateFullyQualifiedImageName tags an image with the supplied image name and the current timestamp
-func (tagger *dateTimeTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
+// GenerateTag generates a tag using the current timestamp.
+func (t *dateTimeTagger) GenerateTag(_, _ string) (string, error) {
 	format := tagTime
-	if len(tagger.Format) > 0 {
-		format = tagger.Format
+	if len(t.Format) > 0 {
+		format = t.Format
 	}
 
 	timezone := "Local"
-	if len(tagger.TimeZone) > 0 {
-		timezone = tagger.TimeZone
+	if len(t.TimeZone) > 0 {
+		timezone = t.TimeZone
 	}
 
 	loc, err := tz.LoadLocation(timezone)
 	if err != nil {
-		return "", fmt.Errorf("bad timezone provided: \"%s\", error: %s", timezone, err)
+		return "", fmt.Errorf("bad timezone provided: %q, error: %s", timezone, err)
 	}
 
-	return fmt.Sprintf("%s:%s", imageName, tagger.timeFn().In(loc).Format(format)), nil
+	return t.timeFn().In(loc).Format(format), nil
 }

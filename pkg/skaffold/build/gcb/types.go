@@ -23,8 +23,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -78,24 +79,33 @@ func NewStatusBackoff() *wait.Backoff {
 // Builder builds artifacts with Google Cloud Build.
 type Builder struct {
 	*latest.GoogleCloudBuild
-	skipTests          bool
-	insecureRegistries map[string]bool
+
+	cfg           Config
+	skipTests     bool
+	muted         build.Muted
+	artifactStore build.ArtifactStore
+}
+
+type Config interface {
+	docker.Config
+
+	Pipeline() latest.Pipeline
+	SkipTests() bool
+	Muted() config.Muted
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
-func NewBuilder(runCtx *runcontext.RunContext) *Builder {
+func NewBuilder(cfg Config) *Builder {
 	return &Builder{
-		GoogleCloudBuild:   runCtx.Cfg.Build.GoogleCloudBuild,
-		skipTests:          runCtx.Opts.SkipTests,
-		insecureRegistries: runCtx.InsecureRegistries,
+		GoogleCloudBuild: cfg.Pipeline().Build.GoogleCloudBuild,
+		cfg:              cfg,
+		skipTests:        cfg.SkipTests(),
+		muted:            cfg.Muted(),
 	}
 }
 
-// Labels are labels specific to Google Cloud Build.
-func (b *Builder) Labels() map[string]string {
-	return map[string]string{
-		constants.Labels.Builder: "google-cloud-build",
-	}
+func (b *Builder) ArtifactStore(store build.ArtifactStore) {
+	b.artifactStore = store
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {

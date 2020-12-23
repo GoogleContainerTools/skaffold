@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java
+spec:
+  selector:
+    matchLabels:
+      app: javaweb
+  template:
+    metadata:
+      labels:
+        app: javaweb
+    spec:
+      containers:
+      - name: java-web
+        image: skaffold-debug-java
+        ports:
+        - containerPort: 8080
+        # connect to the JDWP port
+        readinessProbe:
+          exec:
+            command: ["sh", "/workspace/scripts/check-jdwp.sh", "5005"]
+          initialDelaySeconds: 2
+          periodSeconds: 10
+        # connect to the app port
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          failureThreshold: 30
+          periodSeconds: 10

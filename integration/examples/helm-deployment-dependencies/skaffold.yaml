@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta5
+apiVersion: skaffold/v2beta11
 kind: Config
 build:
   tagPolicy:
@@ -16,7 +16,8 @@ deploy:
       skipBuildDependencies: true # Skip helm dep build
       artifactOverrides:
         image: skaffold-helm
-        "skaffold-helm-subchart.image": skaffold-helm
+        skaffold-helm-subchart:
+          image: skaffold-helm
       #recreatePods will pass --recreate-pods to helm upgrade
       #recreatePods: true
       #overrides builds an override values.yaml file to run with the helm deploy
@@ -25,4 +26,5 @@ deploy:
       #   key: someValue
       #setValues get appended to the helm deploy with --set.
       #setValues:
-        #some.key: someValue
+      # some:
+      #   key: someValue

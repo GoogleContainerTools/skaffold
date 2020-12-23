@@ -17,11 +17,16 @@ limitations under the License.
 package yamltags
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"reflect"
 	"strings"
+	"unicode"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
 type fieldSet map[string]struct{}
@@ -30,7 +35,7 @@ type fieldSet map[string]struct{}
 func ValidateStruct(s interface{}) error {
 	parentStruct := reflect.Indirect(reflect.ValueOf(s))
 	t := parentStruct.Type()
-	logrus.Debugf("validating yamltags of struct %s", t.Name())
+	logrus.Tracef("validating yamltags of struct %s", t.Name())
 
 	// Loop through the fields on the struct, looking for tags.
 	for i := 0; i < t.NumField(); i++ {
@@ -57,6 +62,54 @@ func YamlName(field reflect.StructField) string {
 	return field.Name
 }
 
+// GetYamlTag returns the first yaml tag used in the raw yaml text of the given struct
+func GetYamlTag(value interface{}) string {
+	buf, err := yaml.Marshal(value)
+	if err != nil {
+		logrus.Warnf("error marshaling %-v", value)
+		return ""
+	}
+	rawStr := string(buf)
+	i := strings.Index(rawStr, ":")
+	if i == -1 {
+		return ""
+	}
+	return rawStr[:i]
+}
+
+// GetYamlTags returns the tags of the non-nested fields of the given non-nil value
+// If value interface{} is
+// latest.DeployType{HelmDeploy: &HelmDeploy{...}, KustomizeDeploy: &KustomizeDeploy{...}}
+// then this parses that interface as it's raw yaml:
+// 	kubectl:
+//    manifests:
+//    - k8s/*.yaml
+//  kustomize:
+//    paths:
+//    - k8s/
+// and returns ["kubectl", "kustomize"]
+// empty structs (e.g. latest.DeployType{}) when parsed look like "{}"" and so this function returns []
+func GetYamlTags(value interface{}) []string {
+	var tags []string
+
+	buf, err := yaml.Marshal(value)
+	if err != nil {
+		logrus.Warnf("error marshaling %-v", value)
+		return tags
+	}
+
+	r := bufio.NewScanner(bytes.NewBuffer(buf))
+	for r.Scan() {
+		l := r.Text()
+		i := strings.Index(l, ":")
+		if !unicode.IsSpace(rune(l[0])) && l[0] != '-' && i >= 0 {
+			tags = append(tags, l[:i])
+		}
+	}
+
+	return tags
+}
+
 func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value, field reflect.StructField) error {
 	tags := strings.Split(yamltags, ",")
 	for _, tag := range tags {
@@ -71,6 +124,10 @@ func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value,
 			yt = &oneOfTag{
 				Field:  field,
 				Parent: parentStruct,
+			}
+		case "skipTrim":
+			yt = &skipTrimTag{
+				Field: field,
 			}
 		default:
 			logrus.Panicf("unknown yaml tag in %s", yamltags)
@@ -162,6 +219,24 @@ func (oot *oneOfTag) Process(val reflect.Value) error {
 		if !isZeroValue(field) {
 			return fmt.Errorf("only one element in set %s can be set. got %s and %s", oot.setName, otherField, oot.Field.Name)
 		}
+	}
+	return nil
+}
+
+type skipTrimTag struct {
+	Field reflect.StructField
+}
+
+func (tag *skipTrimTag) Load(s []string) error {
+	return nil
+}
+
+func (tag *skipTrimTag) Process(val reflect.Value) error {
+	if isZeroValue(val) {
+		if tags, ok := tag.Field.Tag.Lookup("yaml"); ok {
+			return fmt.Errorf("skipTrim value not set: %s", strings.Split(tags, ",")[0])
+		}
+		return fmt.Errorf("skipTrim value not set: %s", tag.Field.Name)
 	}
 	return nil
 }

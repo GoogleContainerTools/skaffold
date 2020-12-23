@@ -33,10 +33,11 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -46,9 +47,10 @@ type testForwarder struct {
 	forwardedPorts     util.PortSet
 }
 
-func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) {
+func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) error {
 	f.forwardedResources.Store(pfe.key(), pfe)
 	f.forwardedPorts.Set(pfe.localPort)
+	return nil
 }
 
 func (f *testForwarder) Monitor(*portForwardEntry, func()) {}
@@ -85,14 +87,14 @@ func TestStart(t *testing.T) {
 		Type:      constants.Service,
 		Name:      "svc1",
 		Namespace: "default",
-		Port:      8080,
+		Port:      schemautil.FromInt(8080),
 	}
 
 	svc2 := &latest.PortForwardResource{
 		Type:      constants.Service,
 		Name:      "svc2",
 		Namespace: "default",
-		Port:      9000,
+		Port:      schemautil.FromInt(9000),
 	}
 
 	tests := []struct {
@@ -121,7 +123,7 @@ func TestStart(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(latest.Pipeline{}, "", true, true, true)
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, test.availablePorts))
-			t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
+			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latest.PortForwardResource, error) {
 				return test.resources, nil
 			})
 
@@ -157,7 +159,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			resource: latest.PortForwardResource{
 				Type: "service",
 				Name: "serviceName",
-				Port: 8080,
+				Port: schemautil.FromInt(8080),
 			},
 			availablePorts: []int{8080},
 			expected:       newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false),
@@ -167,7 +169,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 				Type:      "deployment",
 				Namespace: "default",
 				Name:      "depName",
-				Port:      8080,
+				Port:      schemautil.FromInt(8080),
 			},
 			forwardedResources: map[string]*portForwardEntry{
 				"deployment-depName-default-8080": {
@@ -175,7 +177,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 						Type:      "deployment",
 						Namespace: "default",
 						Name:      "depName",
-						Port:      8080,
+						Port:      schemautil.FromInt(8080),
 					},
 					localPort: 9000,
 				},
@@ -206,51 +208,87 @@ func TestUserDefinedResources(t *testing.T) {
 	svc := &latest.PortForwardResource{
 		Type:      constants.Service,
 		Name:      "svc1",
-		Namespace: "default",
-		Port:      8080,
+		Namespace: "test",
+		Port:      schemautil.FromInt(8080),
 	}
 
-	pod := &latest.PortForwardResource{
-		Type:      constants.Pod,
-		Name:      "pod",
-		Namespace: "default",
-		Port:      9000,
-	}
-
-	expected := map[string]*portForwardEntry{
-		"service-svc1-default-8080": {
-			resource:  *svc,
-			localPort: 8080,
+	tests := []struct {
+		description       string
+		userResources     []*latest.PortForwardResource
+		namespaces        []string
+		expectedResources []string
+	}{
+		{
+			description: "one service and one user defined pod",
+			userResources: []*latest.PortForwardResource{
+				{Type: constants.Pod, Name: "pod", Namespace: "some", Port: schemautil.FromInt(9000)},
+			},
+			namespaces: []string{"test"},
+			expectedResources: []string{
+				"service-svc1-test-8080",
+				"pod-pod-some-9000",
+			},
 		},
-		"pod-pod-default-9000": {
-			resource:  *pod,
-			localPort: 9000,
+		{
+			userResources: []*latest.PortForwardResource{
+				{Type: constants.Pod, Name: "pod", Port: schemautil.FromInt(9000)},
+			},
+			namespaces: []string{"test"},
+			expectedResources: []string{
+				"service-svc1-test-8080",
+				"pod-pod-test-9000",
+			},
+		},
+		{
+			userResources: []*latest.PortForwardResource{
+				{Type: constants.Pod, Name: "pod", Port: schemautil.FromInt(9000)},
+			},
+			namespaces: []string{"test", "some"},
+			expectedResources: []string{
+				"service-svc1-test-8080",
+			},
+		},
+		{
+			userResources: []*latest.PortForwardResource{
+				{Type: constants.Pod, Name: "pod", Port: schemautil.FromInt(9000)},
+				{Type: constants.Pod, Name: "pod", Namespace: "some", Port: schemautil.FromInt(9001)},
+			},
+			namespaces: []string{"test", "some"},
+			expectedResources: []string{
+				"service-svc1-test-8080",
+				"pod-pod-some-9001",
+			},
 		},
 	}
 
-	testutil.Run(t, "one service and one user defined pod", func(t *testutil.T) {
-		event.InitializeState(latest.Pipeline{}, "", true, true, true)
-		t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, []int{8080, 9000}))
-		t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
-			return []*latest.PortForwardResource{svc}, nil
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			event.InitializeState(latest.Pipeline{}, "", true, true, true)
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, []int{8080, 9000}))
+			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latest.PortForwardResource, error) {
+				return []*latest.PortForwardResource{svc}, nil
+			})
+
+			fakeForwarder := newTestForwarder()
+			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
+
+			rf := NewResourceForwarder(entryManager, test.namespaces, "", test.userResources)
+			if err := rf.Start(context.Background()); err != nil {
+				t.Fatalf("error starting resource forwarder: %v", err)
+			}
+
+			// poll up to 10 seconds for the resources to be forwarded
+			err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
+				return len(test.expectedResources) == fakeForwarder.forwardedResources.Length(), nil
+			})
+			for _, key := range test.expectedResources {
+				t.CheckNotNil(fakeForwarder.forwardedResources.resources[key])
+			}
+			if err != nil {
+				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expectedResources, fakeForwarder.forwardedResources.resources)
+			}
 		})
-
-		fakeForwarder := newTestForwarder()
-		entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
-
-		rf := NewResourceForwarder(entryManager, []string{"test"}, "", []*latest.PortForwardResource{pod})
-		if err := rf.Start(context.Background()); err != nil {
-			t.Fatalf("error starting resource forwarder: %v", err)
-		}
-
-		// poll up to 10 seconds for the resources to be forwarded
-		err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
-			return len(expected) == fakeForwarder.forwardedResources.Length(), nil
-		})
-		if err != nil {
-			t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", expected, fakeForwarder.forwardedResources.resources)
-		}
-	})
+	}
 }
 
 func mockClient(m kubernetes.Interface) func() (kubernetes.Interface, error) {
@@ -275,7 +313,7 @@ func TestRetrieveServices(t *testing.T) {
 						Name:      "svc1",
 						Namespace: "test",
 						Labels: map[string]string{
-							deploy.RunIDLabel: "9876-6789",
+							label.RunIDLabel: "9876-6789",
 						},
 					},
 					Spec: v1.ServiceSpec{Ports: []v1.ServicePort{{Port: 8080}}},
@@ -284,7 +322,7 @@ func TestRetrieveServices(t *testing.T) {
 						Name:      "svc2",
 						Namespace: "test1",
 						Labels: map[string]string{
-							deploy.RunIDLabel: "9876-6789",
+							label.RunIDLabel: "9876-6789",
 						},
 					},
 					Spec: v1.ServiceSpec{Ports: []v1.ServicePort{{Port: 8081}}},
@@ -294,14 +332,14 @@ func TestRetrieveServices(t *testing.T) {
 				Type:      constants.Service,
 				Name:      "svc1",
 				Namespace: "test",
-				Port:      8080,
+				Port:      schemautil.FromInt(8080),
 				Address:   "127.0.0.1",
 				LocalPort: 8080,
 			}, {
 				Type:      constants.Service,
 				Name:      "svc2",
 				Namespace: "test1",
-				Port:      8081,
+				Port:      schemautil.FromInt(8081),
 				Address:   "127.0.0.1",
 				LocalPort: 8081,
 			}},
@@ -314,7 +352,7 @@ func TestRetrieveServices(t *testing.T) {
 						Name:      "svc1",
 						Namespace: "test",
 						Labels: map[string]string{
-							deploy.RunIDLabel: "9876-6789",
+							label.RunIDLabel: "9876-6789",
 						},
 					},
 					Spec: v1.ServiceSpec{Ports: []v1.ServicePort{{Port: 8080}}},
@@ -329,7 +367,7 @@ func TestRetrieveServices(t *testing.T) {
 						Name:      "svc1",
 						Namespace: "test",
 						Labels: map[string]string{
-							deploy.RunIDLabel: "9876-6789",
+							label.RunIDLabel: "9876-6789",
 						},
 					},
 				},
@@ -344,9 +382,9 @@ func TestRetrieveServices(t *testing.T) {
 				objs[i] = s
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
-			t.Override(&kubernetesutil.Client, mockClient(client))
+			t.Override(&kubernetesclient.Client, mockClient(client))
 
-			actual, err := retrieveServiceResources(fmt.Sprintf("%s=9876-6789", deploy.RunIDLabel), test.namespaces)
+			actual, err := retrieveServiceResources(context.Background(), fmt.Sprintf("%s=9876-6789", label.RunIDLabel), test.namespaces)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)

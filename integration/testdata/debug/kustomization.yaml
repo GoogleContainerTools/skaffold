@@ -1,6 +1,7 @@
 resources:
-  - jib/k8s/web.yaml
+  - java/k8s/web.yaml
   - nodejs/k8s/pod.yaml
   - npm/k8s/pod.yaml
   - python3/k8s/pod.yaml
   - go/k8s/pod.yaml
+  - netcore/k8s/pod.yaml

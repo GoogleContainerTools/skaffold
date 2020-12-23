@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -650,7 +650,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				ImageName: "test",
 				Sync: &latest.Sync{
-					Auto: &latest.Auto{},
+					Auto: util.BoolPtr(true),
 				},
 				Workspace: ".",
 			},
@@ -690,7 +690,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				ImageName: "test",
 				Sync: &latest.Sync{
-					Auto: &latest.Auto{},
+					Auto: util.BoolPtr(true),
 				},
 				Workspace: ".",
 			},
@@ -724,7 +724,7 @@ func TestNewSyncItem(t *testing.T) {
 				ImageName: "test",
 				Workspace: ".",
 				Sync: &latest.Sync{
-					Auto: &latest.Auto{},
+					Auto: util.BoolPtr(true),
 				},
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: &latest.JibArtifact{},
@@ -750,14 +750,14 @@ func TestNewSyncItem(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return test.workingDir, nil })
-			t.Override(&SyncMap, func(*latest.Artifact, map[string]bool) (map[string][]string, error) { return test.dependencies, nil })
-			t.Override(&Labels, func(string, map[string]bool) (map[string]string, error) { return test.labels, nil })
+			t.Override(&WorkingDir, func(string, docker.Config) (string, error) { return test.workingDir, nil })
+			t.Override(&SyncMap, func(*latest.Artifact, docker.Config) (map[string][]string, error) { return test.dependencies, nil })
+			t.Override(&Labels, func(string, docker.Config) (map[string]string, error) { return test.labels, nil })
 			t.Override(&jib.GetSyncDiff, func(context.Context, string, *latest.JibArtifact, filemon.Events) (map[string][]string, map[string][]string, error) {
 				return map[string][]string{"file.class": {"/some/file.class"}}, nil, nil
 			})
 
-			actual, err := NewItem(ctx, test.artifact, test.evt, test.builds, nil)
+			actual, err := NewItem(ctx, test.artifact, test.evt, test.builds, &mockConfig{}, 0)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
@@ -862,7 +862,7 @@ var pod = &v1.Pod{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
-			"app.kubernetes.io/managed-by": "skaffold-dirty",
+			"app.kubernetes.io/managed-by": "skaffold",
 		},
 	},
 	Status: v1.PodStatus{
@@ -882,7 +882,7 @@ var nonRunningPod = &v1.Pod{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
-			"app.kubernetes.io/managed-by": "skaffold-dirty",
+			"app.kubernetes.io/managed-by": "skaffold",
 		},
 	},
 	Status: v1.PodStatus{
@@ -958,7 +958,7 @@ func TestPerform(t *testing.T) {
 			cmdRecord := &TestCmdRecorder{err: test.cmdErr}
 
 			t.Override(&util.DefaultExecCommand, cmdRecord)
-			t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
+			t.Override(&client.Client, func() (kubernetes.Interface, error) {
 				return fake.NewSimpleClientset(test.pod), test.clientErr
 			})
 
@@ -1049,7 +1049,7 @@ func TestSyncMap(t *testing.T) {
 
 type fakeImageFetcher struct{}
 
-func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*registryv1.ConfigFile, error) {
+func (f *fakeImageFetcher) fetch(image string, _ docker.Config) (*registryv1.ConfigFile, error) {
 	return &registryv1.ConfigFile{}, nil
 }
 
@@ -1073,18 +1073,18 @@ func TestInit(t *testing.T) {
 		},
 		{
 			description: "sync on, auto on, non-jib",
-			artifact:    &latest.Artifact{Sync: &latest.Sync{Auto: &latest.Auto{}}},
+			artifact:    &latest.Artifact{Sync: &latest.Sync{Auto: util.BoolPtr(true)}},
 			shouldInit:  false,
 		},
 		{
 			description: "sync on, auto on, jib",
-			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: &latest.Auto{}}},
+			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: util.BoolPtr(true)}},
 			shouldInit:  true,
 			initErrors:  false,
 		},
 		{
 			description: "sync on, auto on, jib, init fails",
-			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: &latest.Auto{}}},
+			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: util.BoolPtr(true)}},
 			shouldInit:  true,
 			initErrors:  true,
 		},
@@ -1107,3 +1107,9 @@ func TestInit(t *testing.T) {
 		})
 	}
 }
+
+type mockConfig struct {
+	docker.Config
+}
+
+func (c *mockConfig) GetInsecureRegistries() map[string]bool { return nil }
