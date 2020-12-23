@@ -100,6 +100,7 @@ Env vars:
 
 * `SKAFFOLD_COLOR` (same as `--color`)
 * `SKAFFOLD_INTERACTIVE` (same as `--interactive`)
+* `SKAFFOLD_TIMESTAMPS` (same as `--timestamps`)
 * `SKAFFOLD_UPDATE_CHECK` (same as `--update-check`)
 * `SKAFFOLD_VERBOSITY` (same as `--verbosity`)
 
@@ -747,6 +748,7 @@ The following options can be passed to any command:
 
       --color=34: Specify the default output color in ANSI escape codes
       --interactive=true: Allow user prompts for more information
+      --timestamps=false: Print timestamps in logs.
       --update-check=true: Check for a more recent version of Skaffold
   -v, --verbosity='warning': Log level (debug, info, warn, error, fatal, panic)
 
