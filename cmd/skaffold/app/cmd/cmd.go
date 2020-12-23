@@ -45,7 +45,7 @@ var (
 	forceColors       bool
 	overwrite         bool
 	interactive       bool
-	timestamps   bool
+	timestamps        bool
 	shutdownAPIServer func() error
 )
 
