@@ -23,27 +23,47 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
-func initializeMetadata(p latest.Pipeline, kubeContext string) *proto.Metadata {
+func initializeMetadata(pipelines []latest.Pipeline, kubeContext string) *proto.Metadata {
+	artifactCount := 0
+	for _, p := range pipelines {
+		artifactCount += len(p.Build.Artifacts)
+	}
 	m := &proto.Metadata{
 		Build: &proto.BuildMetadata{
-			NumberOfArtifacts: int32(len(p.Build.Artifacts)),
+			NumberOfArtifacts: int32(artifactCount),
 		},
 		Deploy: &proto.DeployMetadata{},
 	}
 
+	// TODO: Event metadata should support multiple build types.
+	// All pipelines are currently constrained to have the same build type.
 	switch {
-	case p.Build.LocalBuild != nil:
+	case pipelines[0].Build.LocalBuild != nil:
 		m.Build.Type = proto.BuildType_LOCAL
-	case p.Build.GoogleCloudBuild != nil:
+	case pipelines[0].Build.GoogleCloudBuild != nil:
 		m.Build.Type = proto.BuildType_GCB
-	case p.Build.Cluster != nil:
+	case pipelines[0].Build.Cluster != nil:
 		m.Build.Type = proto.BuildType_CLUSTER
 	default:
 		m.Build.Type = proto.BuildType_UNKNOWN_BUILD_TYPE
 	}
 
-	m.Build.Builders = getBuilders(p.Build)
-	m.Deploy = getDeploy(p.Deploy, kubeContext)
+	var builders []*proto.BuildMetadata_ImageBuilder
+	var deployers []*proto.DeployMetadata_Deployer
+	for _, p := range pipelines {
+		builders = append(builders, getBuilders(p.Build)...)
+		deployers = append(deployers, getDeploy(p.Deploy)...)
+	}
+	m.Build.Builders = builders
+
+	if len(deployers) == 0 {
+		m.Deploy = &proto.DeployMetadata{}
+	} else {
+		m.Deploy = &proto.DeployMetadata{
+			Deployers: deployers,
+			Cluster:   getClusterType(kubeContext),
+		}
+	}
 	return m
 }
 
@@ -76,7 +96,7 @@ func getBuilders(b latest.BuildConfig) []*proto.BuildMetadata_ImageBuilder {
 	return builders
 }
 
-func getDeploy(d latest.DeployConfig, c string) *proto.DeployMetadata {
+func getDeploy(d latest.DeployConfig) []*proto.DeployMetadata_Deployer {
 	var deployers []*proto.DeployMetadata_Deployer
 
 	if d.HelmDeploy != nil {
@@ -88,14 +108,7 @@ func getDeploy(d latest.DeployConfig, c string) *proto.DeployMetadata {
 	if d.KustomizeDeploy != nil {
 		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUSTOMIZE, Count: 1})
 	}
-	if len(deployers) == 0 {
-		return &proto.DeployMetadata{}
-	}
-
-	return &proto.DeployMetadata{
-		Deployers: deployers,
-		Cluster:   getClusterType(c),
-	}
+	return deployers
 }
 
 func updateOrAddKey(m map[proto.BuilderType]int, k proto.BuilderType) {

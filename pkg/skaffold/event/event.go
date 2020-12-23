@@ -154,12 +154,14 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(p latest.Pipeline, kubeContext string, autoBuild, autoDeploy, autoSync bool) proto.State {
+func emptyState(pipelines []latest.Pipeline, kubeContext string, autoBuild, autoDeploy, autoSync bool) proto.State {
 	builds := map[string]string{}
-	for _, a := range p.Build.Artifacts {
-		builds[a.ImageName] = NotStarted
+	for _, p := range pipelines {
+		for _, a := range p.Build.Artifacts {
+			builds[a.ImageName] = NotStarted
+		}
 	}
-	metadata := initializeMetadata(p, kubeContext)
+	metadata := initializeMetadata(pipelines, kubeContext)
 	return emptyStateWithArtifacts(builds, metadata, autoBuild, autoDeploy, autoSync)
 }
 
@@ -186,7 +188,7 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-func InitializeState(c latest.Pipeline, kc string, autoBuild, autoDeploy, autoSync bool) {
+func InitializeState(c []latest.Pipeline, kc string, autoBuild, autoDeploy, autoSync bool) {
 	handler.setState(emptyState(c, kc, autoBuild, autoDeploy, autoSync))
 }
 

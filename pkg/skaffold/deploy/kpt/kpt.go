@@ -69,9 +69,9 @@ type Deployer struct {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg types.Config, labels map[string]string) *Deployer {
+func NewDeployer(cfg types.Config, labels map[string]string, d *latest.KptDeploy) *Deployer {
 	return &Deployer{
-		KptDeploy:          cfg.Pipeline().Deploy.KptDeploy,
+		KptDeploy:          d,
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       cfg.GlobalConfig(),

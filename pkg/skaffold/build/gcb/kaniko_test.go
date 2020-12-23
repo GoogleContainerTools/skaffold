@@ -356,13 +356,11 @@ func TestKanikoBuildSpec(t *testing.T) {
 		},
 	}
 
-	builder := NewBuilder(&mockConfig{
-		gcb: latest.GoogleCloudBuild{
-			KanikoImage: "gcr.io/kaniko-project/executor",
-			DiskSizeGb:  100,
-			MachineType: "n1-standard-1",
-			Timeout:     "10m",
-		},
+	builder := NewBuilder(&mockConfig{}, &latest.GoogleCloudBuild{
+		KanikoImage: "gcr.io/kaniko-project/executor",
+		DiskSizeGb:  100,
+		MachineType: "n1-standard-1",
+		Timeout:     "10m",
 	})
 
 	defaultExpectedArgs := []string{

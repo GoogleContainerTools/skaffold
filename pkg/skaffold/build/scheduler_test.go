@@ -385,15 +385,15 @@ func setDependencies(a []*latest.Artifact, d map[int][]int) {
 }
 
 func initializeEvents() {
-	pipe := latest.Pipeline{
+	pipes := []latest.Pipeline{{
 		Deploy: latest.DeployConfig{},
 		Build: latest.BuildConfig{
 			BuildType: latest.BuildType{
 				LocalBuild: &latest.LocalBuild{},
 			},
 		},
-	}
-	event.InitializeState(pipe, "temp", true, true, true)
+	}}
+	event.InitializeState(pipes, "temp", true, true, true)
 }
 
 func errorsComparer(a, b error) bool {
