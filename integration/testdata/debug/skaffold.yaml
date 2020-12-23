@@ -1,9 +1,9 @@
-apiVersion: skaffold/v2beta5
+apiVersion: skaffold/v2beta11
 kind: Config
 build:
   artifacts:
-  - image: skaffold-debug-jib
-    context: jib
+  - image: skaffold-debug-java
+    context: java
     jib:
       args:
       - --no-transfer-progress
@@ -15,20 +15,49 @@ build:
     context: python3
   - image: skaffold-debug-go
     context: go
-    docker:
-      buildArgs:
-        GOGCFLAGS: "-gcflags='all=-N -l'"
+  - image: skaffold-debug-netcore
+    context: netcore
 
 deploy:
   kubectl:
     manifests:
-    - jib/k8s/web.yaml
+    - java/k8s/web.yaml
     - nodejs/k8s/pod.yaml
     - npm/k8s/pod.yaml
     - python3/k8s/pod.yaml
     - go/k8s/pod.yaml
+    - netcore/k8s/pod.yaml
+
 profiles:
-  - name: kustomize
-    deploy:
+- name: kustomize
+  deploy:
       kustomize: {}
       kubectl: {}
+# use GCP Buildpacks to build the individual projects
+- name: buildpacks
+  build:
+    artifacts:
+    - image: skaffold-debug-java
+      context: java
+      buildpacks:
+        builder: "gcr.io/buildpacks/builder:v1"
+    - image: skaffold-debug-npm
+      context: npm
+      buildpacks:
+        builder: "gcr.io/buildpacks/builder:v1"
+    - image: skaffold-debug-nodejs
+      context: nodejs
+      buildpacks:
+        builder: "gcr.io/buildpacks/builder:v1"
+    - image: skaffold-debug-python3
+      context: python3
+      buildpacks:
+        builder: "gcr.io/buildpacks/builder:v1"
+    - image: skaffold-debug-go
+      context: go
+      buildpacks:
+        builder: "gcr.io/buildpacks/builder:v1"
+    - image: skaffold-debug-netcore
+      context: netcore
+      buildpacks:
+        builder: "gcr.io/buildpacks/builder:v1"

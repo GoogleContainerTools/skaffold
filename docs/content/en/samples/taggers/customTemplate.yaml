@@ -1,0 +1,15 @@
+build:
+  tagPolicy:
+    customTemplate:
+      template: "{{.FOO}}_{{.BAR}}"
+      components:
+      - name: FOO
+        dateTime:
+          format: "2006-01-02"
+          timezone: "UTC"
+      - name: BAR
+        gitCommit:
+          variant: AbbrevCommitSha
+  artifacts:
+  - image: gcr.io/k8s-skaffold/example
+  

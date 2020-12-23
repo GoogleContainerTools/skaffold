@@ -73,10 +73,10 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 	if spec == nil {
 		spec = &ptvsdSpec{port: portAlloc(defaultPtvsdPort)}
 		switch {
-		case len(config.entrypoint) > 0 && isLaunchingPython(config.entrypoint):
+		case isLaunchingPython(config.entrypoint):
 			container.Command = rewritePythonCommandLine(config.entrypoint, *spec)
 
-		case len(config.entrypoint) == 0 && len(config.arguments) > 0 && isLaunchingPython(config.arguments):
+		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingPython(config.arguments):
 			container.Args = rewritePythonCommandLine(config.arguments, *spec)
 
 		default:

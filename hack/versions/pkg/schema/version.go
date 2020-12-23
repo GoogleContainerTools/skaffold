@@ -31,7 +31,7 @@ import (
 
 func GetLatestVersion() (string, bool) {
 	current := strings.TrimPrefix(latest.Version, "skaffold/")
-	logrus.Infof("Current Skaffold version: %s", current)
+	logrus.Debugf("Current Skaffold version: %s", current)
 
 	config, err := ioutil.ReadFile("pkg/skaffold/schema/latest/config.go")
 	if err != nil {

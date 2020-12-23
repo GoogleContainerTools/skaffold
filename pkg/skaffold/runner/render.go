@@ -26,19 +26,19 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
-func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []build.Artifact, filepath string) error {
+func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool, filepath string) error {
 	//Fetch the digest and append it to the tag with the format of "tag@digest"
-	if r.runCtx.Opts.DigestSource == remoteDigestSource {
+	if r.runCtx.DigestSource() == remoteDigestSource {
 		for i, a := range builds {
-			digest, err := docker.RemoteDigest(a.Tag, r.runCtx.InsecureRegistries)
+			digest, err := docker.RemoteDigest(a.Tag, r.runCtx)
 			if err != nil {
 				return fmt.Errorf("failed to resolve the digest of %s, render aborted", a.Tag)
 			}
 			builds[i].Tag = build.TagWithDigest(a.Tag, digest)
 		}
 	}
-	if r.runCtx.Opts.DigestSource == noneDigestSource {
+	if r.runCtx.DigestSource() == noneDigestSource {
 		color.Default.Fprintln(out, "--digest-source set to 'none', tags listed in Kubernetes manifests will be used for render")
 	}
-	return r.deployer.Render(ctx, out, builds, r.labellers, filepath)
+	return r.deployer.Render(ctx, out, builds, offline, filepath)
 }

@@ -17,10 +17,12 @@ limitations under the License.
 package integration
 
 import (
+	"io/ioutil"
 	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestRun(t *testing.T) {
@@ -94,14 +96,29 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started"},
 		},
 		{
-			description: "buildpacks",
+			description: "buildpacks Go",
 			dir:         "examples/buildpacks",
+			deployments: []string{"web"},
+		},
+		{
+			description: "buildpacks NodeJS",
+			dir:         "examples/buildpacks-node",
+			deployments: []string{"web"},
+		},
+		{
+			description: "buildpacks Python",
+			dir:         "examples/buildpacks-python",
+			deployments: []string{"web"},
+		},
+		{
+			description: "buildpacks Java",
+			dir:         "examples/buildpacks-java",
 			deployments: []string{"web"},
 		},
 		{
 			description: "kustomize",
 			dir:         "examples/getting-started-kustomize",
-			deployments: []string{"skaffold-kustomize"},
+			deployments: []string{"skaffold-kustomize-dev"},
 		},
 	}
 	for _, test := range tests {
@@ -116,6 +133,34 @@ func TestRun(t *testing.T) {
 			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})
 	}
+}
+
+func TestRunRenderOnly(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	testutil.Run(t, "write rendered manifest to provided filepath", func(tu *testutil.T) {
+		tmpDir := tu.NewTempDir()
+		renderPath := tmpDir.Path("output.yaml")
+
+		test := struct {
+			description string
+			renderPath  string
+			args        []string
+			dir         string
+			pods        []string
+		}{
+			args: []string{"--render-only", "--render-output", renderPath},
+			dir:  "examples/getting-started",
+			pods: []string{"getting-started"},
+		}
+
+		skaffold.Run(test.args...).InDir(test.dir).RunOrFail(t)
+
+		dat, err := ioutil.ReadFile(renderPath)
+		tu.CheckNoError(err)
+
+		tu.CheckMatches("name: getting-started", string(dat))
+	})
 }
 
 func TestRunGCPOnly(t *testing.T) {
@@ -247,7 +292,7 @@ func TestRunTailPod(t *testing.T) {
 
 	ns, _ := SetupNamespace(t)
 
-	out := skaffold.Run("--tail", "-p", "pod").InDir("testdata/hello").InNs(ns.Name).RunBackground(t)
+	out := skaffold.Run("--tail", "-p", "pod").InDir("testdata/hello").InNs(ns.Name).RunLive(t)
 
 	WaitForLogs(t, out,
 		"Hello world! 0",
@@ -261,7 +306,7 @@ func TestRunTailDeployment(t *testing.T) {
 
 	ns, _ := SetupNamespace(t)
 
-	out := skaffold.Run("--tail", "-p", "deployment").InDir("testdata/hello").InNs(ns.Name).RunBackground(t)
+	out := skaffold.Run("--tail", "-p", "deployment").InDir("testdata/hello").InNs(ns.Name).RunLive(t)
 
 	WaitForLogs(t, out,
 		"Hello world! 0",

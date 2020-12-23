@@ -17,19 +17,26 @@ limitations under the License.
 package deploy
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"path/filepath"
+
+	"github.com/sirupsen/logrus"
+
+	pkgkustomize "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // kustomize implements deploymentInitializer for the kustomize deployer.
 type kustomize struct {
-	kustomizations []string
-	images         []string
+	defaultKustomization string
+	kustomizations       []string
+	bases                []string
+	images               []string
 }
 
 // newKustomizeInitializer returns a kustomize config generator.
-func newKustomizeInitializer(kustomizations []string, potentialConfigs []string) *kustomize {
+func newKustomizeInitializer(defaultKustomization string, bases, kustomizations, potentialConfigs []string) *kustomize {
 	var images []string
 	for _, file := range potentialConfigs {
 		imgs, err := kubernetes.ParseImagesFromKubernetesYaml(file)
@@ -38,28 +45,90 @@ func newKustomizeInitializer(kustomizations []string, potentialConfigs []string)
 		}
 	}
 	return &kustomize{
-		images:         images,
-		kustomizations: kustomizations,
+		defaultKustomization: defaultKustomization,
+		images:               images,
+		bases:                bases,
+		kustomizations:       kustomizations,
 	}
 }
 
 // deployConfig implements the Initializer interface and generates
 // a kustomize deployment config.
-func (k *kustomize) DeployConfig() latest.DeployConfig {
+func (k *kustomize) DeployConfig() (latest.DeployConfig, []latest.Profile) {
 	var kustomizeConfig *latest.KustomizeDeploy
-	// if we only have the default path, leave the config empty - it's cleaner
-	if len(k.kustomizations) == 1 && k.kustomizations[0] == deploy.DefaultKustomizePath {
-		kustomizeConfig = &latest.KustomizeDeploy{}
-	} else {
-		kustomizeConfig = &latest.KustomizeDeploy{
-			KustomizePaths: k.kustomizations,
+	var profiles []latest.Profile
+
+	// if there's only one kustomize path, either leave it blank (if it's the default path),
+	// or generate a config with that single path and return it
+	if len(k.kustomizations) == 1 {
+		if k.kustomizations[0] == pkgkustomize.DefaultKustomizePath {
+			kustomizeConfig = &latest.KustomizeDeploy{}
+		} else {
+			kustomizeConfig = &latest.KustomizeDeploy{
+				KustomizePaths: k.kustomizations,
+			}
+		}
+		return latest.DeployConfig{
+			DeployType: latest.DeployType{
+				KustomizeDeploy: kustomizeConfig,
+			},
+		}, nil
+	}
+
+	// if there are multiple paths, generate a config that chooses a default
+	// kustomization based on our heuristic, and creates separate profiles
+	// for all other overlays in the project
+	defaultKustomization := k.defaultKustomization
+	if defaultKustomization == "" {
+		// either choose one that's called "dev", or else the first one that isn't called "prod"
+		dev, prod := -1, -1
+		for i, kustomization := range k.kustomizations {
+			switch filepath.Base(kustomization) {
+			case "dev":
+				dev = i
+			case "prod":
+				prod = i
+			default:
+			}
+		}
+
+		switch {
+		case dev != -1:
+			defaultKustomization = k.kustomizations[dev]
+		case prod == 0:
+			defaultKustomization = k.kustomizations[1]
+		default:
+			defaultKustomization = k.kustomizations[0]
+		}
+		logrus.Warnf("multiple kustomizations found but no default provided - defaulting to %s", defaultKustomization)
+	}
+
+	for _, kustomization := range k.kustomizations {
+		if kustomization == defaultKustomization {
+			kustomizeConfig = &latest.KustomizeDeploy{
+				KustomizePaths: []string{defaultKustomization},
+			}
+		} else {
+			profiles = append(profiles, latest.Profile{
+				Name: filepath.Base(kustomization),
+				Pipeline: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KustomizeDeploy: &latest.KustomizeDeploy{
+								KustomizePaths: []string{kustomization},
+							},
+						},
+					},
+				},
+			})
 		}
 	}
+
 	return latest.DeployConfig{
 		DeployType: latest.DeployType{
 			KustomizeDeploy: kustomizeConfig,
 		},
-	}
+	}, profiles
 }
 
 // GetImages implements the Initializer interface and lists all the
@@ -72,7 +141,7 @@ func (k *kustomize) GetImages() []string {
 // we have at least one manifest before generating a config
 func (k *kustomize) Validate() error {
 	if len(k.images) == 0 {
-		return NoManifest
+		return errors.NoManifestErr{}
 	}
 	return nil
 }

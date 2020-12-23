@@ -26,11 +26,9 @@ import (
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
 type Deployer interface {
-	Labels() map[string]string
-
 	// Deploy should ensure that the build results are deployed to the Kubernetes
-	// cluster.
-	Deploy(context.Context, io.Writer, []build.Artifact, []Labeller) *Result
+	// cluster. Returns the list of impacted namespaces.
+	Deploy(context.Context, io.Writer, []build.Artifact) ([]string, error)
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered
@@ -41,26 +39,5 @@ type Deployer interface {
 
 	// Render generates the Kubernetes manifests replacing the build results and
 	// writes them to the given file path
-	Render(context.Context, io.Writer, []build.Artifact, []Labeller, string) error
-}
-
-type Result struct {
-	err        error
-	namespaces []string
-}
-
-func NewDeployErrorResult(err error) *Result {
-	return &Result{err: err}
-}
-
-func NewDeploySuccessResult(namespaces []string) *Result {
-	return &Result{namespaces: namespaces}
-}
-
-func (d *Result) Namespaces() []string {
-	return d.namespaces
-}
-
-func (d *Result) GetError() error {
-	return d.err
+	Render(context.Context, io.Writer, []build.Artifact, bool, string) error
 }

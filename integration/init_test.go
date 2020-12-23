@@ -17,8 +17,10 @@ limitations under the License.
 package integration
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -67,7 +69,7 @@ func TestInitManifestGeneration(t *testing.T) {
 		{
 			name:                  "hello",
 			dir:                   "testdata/init/hello",
-			args:                  []string{"--XXenableManifestGeneration"},
+			args:                  []string{"--generate-manifests"},
 			expectedManifestPaths: []string{"deployment.yaml"},
 		},
 		// TODO(nkubala): add this back when the --force flag is fixed
@@ -136,4 +138,24 @@ func checkGeneratedManifests(t *testutil.T, dir string, manifestPaths []string) 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(string(expectedOutput), string(output))
 	}
+}
+
+func TestInitFailures(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	testutil.Run(t, "no builder", func(t *testutil.T) {
+		out, err := skaffold.Init().InDir("testdata/init/no-builder").RunWithCombinedOutput(t.T)
+
+		t.CheckContains("please provide at least one build config", string(out))
+		t.CheckDeepEqual(101, exitCode(err))
+	})
+}
+
+func exitCode(err error) int {
+	var exitErr *exec.ExitError
+	if ok := errors.As(err, &exitErr); ok {
+		return exitErr.ExitCode()
+	}
+
+	return 1
 }

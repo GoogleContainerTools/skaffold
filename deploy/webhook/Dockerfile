@@ -38,9 +38,10 @@ RUN chmod +x kubectl
 
 FROM node:10.15.3-stretch as runtime_deps
 ENV FIREBASE_TOOLS_VERSION 7.13.1
-RUN npm install -g firebase-tools@${FIREBASE_TOOLS_VERSION} postcss-cli
+RUN npm install -g firebase-tools@${FIREBASE_TOOLS_VERSION} postcss postcss-cli
 WORKDIR /app/docs
-RUN npm install autoprefixer
+ENV AUTOPREFIXER_VERSION 9.8.6
+RUN npm install autoprefixer@${AUTOPREFIXER_VERSION}
 COPY --from=download-docsy /docsy ./themes/docsy
 COPY --from=download-hugo /hugo /usr/local/bin/
 COPY --from=download-kubectl /kubectl /usr/local/bin/
@@ -48,7 +49,7 @@ COPY --from=download-kubectl /kubectl /usr/local/bin/
 FROM golang:1.14 as webhook
 WORKDIR /skaffold
 COPY . .
-RUN go build -mod=vendor -o /webhook webhook/webhook.go
+RUN go build -o /webhook webhook/webhook.go
 
 FROM runtime_deps
 COPY --from=webhook /webhook /webhook

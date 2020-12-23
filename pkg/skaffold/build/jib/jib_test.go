@@ -22,6 +22,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/docker/docker/client"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -151,9 +154,9 @@ func TestPluginType_IsKnown(t *testing.T) {
 	}{
 		{JibMaven, true},
 		{JibGradle, true},
-		{PluginType(0), false},
-		{PluginType(-1), false},
-		{PluginType(3), false},
+		{PluginType("ant"), false},
+		{PluginType("make"), false},
+		{PluginType(""), false},
 	}
 	for _, test := range tests {
 		testutil.Run(t, string(test.value), func(t *testutil.T) {
@@ -217,4 +220,8 @@ func TestGetProjectKey(t *testing.T) {
 		projectKey := getProjectKey(test.workspace, test.artifact)
 		testutil.CheckDeepEqual(t, test.expected, projectKey)
 	}
+}
+
+func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
+	return docker.NewLocalDaemon(api, nil, false, nil)
 }

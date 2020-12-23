@@ -42,10 +42,6 @@ type MockDeployer struct {
 	renderErr        error
 }
 
-func (m *MockDeployer) Labels() map[string]string {
-	return m.labels
-}
-
 func (m *MockDeployer) Dependencies() ([]string, error) {
 	return m.dependencies, m.dependenciesErr
 }
@@ -79,14 +75,11 @@ func (m *MockDeployer) WithRenderErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []build.Artifact, []Labeller) *Result {
-	return &Result{
-		namespaces: m.deployNamespaces,
-		err:        m.deployErr,
-	}
+func (m *MockDeployer) Deploy(context.Context, io.Writer, []build.Artifact) ([]string, error) {
+	return m.deployNamespaces, m.deployErr
 }
 
-func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []build.Artifact, _ []Labeller, _ string) error {
+func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []build.Artifact, _ bool, _ string) error {
 	w.Write([]byte(m.renderResult))
 	return m.renderErr
 }
@@ -104,40 +97,6 @@ func (m *MockDeployer) WithDependencies(dependencies []string) *MockDeployer {
 func (m *MockDeployer) WithRenderResult(renderResult string) *MockDeployer {
 	m.renderResult = renderResult
 	return m
-}
-
-func TestDeployerMux_Labels(t *testing.T) {
-	tests := []struct {
-		name     string
-		labels1  map[string]string
-		labels2  map[string]string
-		expected map[string]string
-	}{
-		{
-			name:     "disjoint labels",
-			labels1:  map[string]string{"key-a": "val-a"},
-			labels2:  map[string]string{"key-b": "val-b"},
-			expected: map[string]string{"key-a": "val-a", "key-b": "val-b"},
-		},
-		{
-			name:     "last wins for overlapping labels",
-			labels1:  map[string]string{"key": "first"},
-			labels2:  map[string]string{"key": "second"},
-			expected: map[string]string{"key": "second"},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			deployerMux := DeployerMux([]Deployer{
-				NewMockDeployer().WithLabel(test.labels1),
-				NewMockDeployer().WithLabel(test.labels2),
-			})
-
-			actual := deployerMux.Labels()
-			testutil.CheckDeepEqual(t, test.expected, actual)
-		})
-	}
 }
 
 func TestDeployerMux_Deploy(t *testing.T) {
@@ -167,7 +126,7 @@ func TestDeployerMux_Deploy(t *testing.T) {
 			namespaces1: []string{"ns-a"},
 			err1:        fmt.Errorf("failed in first"),
 			namespaces2: []string{"ns-b"},
-			expectedNs:  []string{"ns-a"},
+			expectedNs:  nil,
 			shouldErr:   true,
 		},
 		{
@@ -175,7 +134,7 @@ func TestDeployerMux_Deploy(t *testing.T) {
 			namespaces1: []string{"ns-a"},
 			namespaces2: []string{"ns-b"},
 			err2:        fmt.Errorf("failed in second"),
-			expectedNs:  []string{"ns-b"},
+			expectedNs:  nil,
 			shouldErr:   true,
 		},
 	}
@@ -187,8 +146,9 @@ func TestDeployerMux_Deploy(t *testing.T) {
 				NewMockDeployer().WithDeployNamespaces(test.namespaces2).WithDeployErr(test.err2),
 			})
 
-			result := deployerMux.Deploy(context.Background(), nil, nil, nil)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, result.err, test.expectedNs, result.namespaces)
+			namespaces, err := deployerMux.Deploy(context.Background(), nil, nil)
+
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedNs, namespaces)
 		})
 	}
 }
@@ -284,7 +244,7 @@ func TestDeployerMux_Render(t *testing.T) {
 			})
 
 			buf := &bytes.Buffer{}
-			err := deployerMux.Render(context.Background(), buf, nil, nil, "")
+			err := deployerMux.Render(context.Background(), buf, nil, true, "")
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedRender, buf.String())
 		})
 	}
@@ -300,7 +260,7 @@ func TestDeployerMux_Render(t *testing.T) {
 			NewMockDeployer().WithRenderResult(test.render2).WithRenderErr(test.err2),
 		})
 
-		err := deployerMux.Render(context.Background(), nil, nil, nil, tmpDir.Path("render"))
+		err := deployerMux.Render(context.Background(), nil, nil, true, tmpDir.Path("render"))
 		testutil.CheckError(t, false, err)
 
 		file, _ := os.Open(tmpDir.Path("render"))

@@ -24,6 +24,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -40,13 +42,13 @@ const (
 
 // Runner is responsible for running the skaffold build, test and deploy config.
 type Runner interface {
-	DiagnoseArtifacts(context.Context, io.Writer) error
 	Dev(context.Context, io.Writer, []*latest.Artifact) error
 	ApplyDefaultRepo(tag string) (string, error)
-	BuildAndTest(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)
+	Build(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)
+	Test(context.Context, io.Writer, []build.Artifact) error
 	DeployAndLog(context.Context, io.Writer, []build.Artifact) error
 	GeneratePipeline(context.Context, io.Writer, *latest.SkaffoldConfig, []string, string) error
-	Render(context.Context, io.Writer, []build.Artifact, string) error
+	Render(context.Context, io.Writer, []build.Artifact, bool, string) error
 	Cleanup(context.Context, io.Writer) error
 	Prune(context.Context, io.Writer) error
 	HasDeployed() bool
@@ -63,14 +65,13 @@ type SkaffoldRunner struct {
 	monitor  filemon.Monitor
 	listener Listener
 
-	kubectlCLI      *kubectl.CLI
-	cache           cache.Cache
-	changeSet       changeSet
-	runCtx          *runcontext.RunContext
-	labellers       []deploy.Labeller
-	defaultLabeller *deploy.DefaultLabeller
-	builds          []build.Artifact
-
+	kubectlCLI    *kubectl.CLI
+	cache         cache.Cache
+	changeSet     changeSet
+	runCtx        *runcontext.RunContext
+	labeller      *label.DefaultLabeller
+	builds        []build.Artifact
+	artifactStore build.ArtifactStore
 	// podSelector is used to determine relevant pods for logging and portForwarding
 	podSelector *kubernetes.ImageList
 
@@ -83,7 +84,7 @@ type SkaffoldRunner struct {
 
 // for testing
 var (
-	statusCheck = deploy.StatusCheck
+	newStatusCheck = status.NewStatusChecker
 )
 
 // HasDeployed returns true if this runner has deployed something.

@@ -23,15 +23,15 @@ import (
 )
 
 func (r *SkaffoldRunner) createForwarder(out io.Writer) *portforward.ForwarderManager {
-	if !r.runCtx.Opts.PortForward.Enabled {
+	if !r.runCtx.PortForward() {
 		return nil
 	}
 
 	return portforward.NewForwarderManager(out,
 		r.kubectlCLI,
 		r.podSelector,
-		r.runCtx.Namespaces,
-		r.defaultLabeller.RunIDSelector(),
+		r.runCtx.GetNamespaces(),
+		r.labeller.RunIDSelector(),
 		r.runCtx.Opts.PortForward,
-		r.runCtx.Cfg.PortForward)
+		r.runCtx.Pipeline().PortForward)
 }

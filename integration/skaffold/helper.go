@@ -62,6 +62,11 @@ func Build(args ...string) *RunBuilder {
 	return withDefaults("build", args)
 }
 
+// Test runs `skaffold test` with the given arguments.
+func Test(args ...string) *RunBuilder {
+	return withDefaults("test", args)
+}
+
 // Deploy runs `skaffold deploy` with the given arguments.
 func Deploy(args ...string) *RunBuilder {
 	return withDefaults("deploy", args)
@@ -105,6 +110,16 @@ func Schema(args ...string) *RunBuilder {
 // Credits runs `skaffold credits` with the given arguments.
 func Credits(args ...string) *RunBuilder {
 	return &RunBuilder{command: "credits", args: args}
+}
+
+// Render runs `skaffold render` with the given arguments.
+func Render(args ...string) *RunBuilder {
+	return withDefaults("render", args)
+}
+
+// Filter runs `skaffold filter` with the given arguments.
+func Filter(args ...string) *RunBuilder {
+	return withDefaults("filter", args)
 }
 
 func GeneratePipeline(args ...string) *RunBuilder {
@@ -157,16 +172,39 @@ func (b *RunBuilder) WithProfiles(profiles []string) *RunBuilder {
 	return b
 }
 
-// RunBackground runs the skaffold command in the background.
-func (b *RunBuilder) RunBackground(t *testing.T) io.ReadCloser {
+// RunBackground runs the skaffold command in the background.  The Skaffold output
+// is accumulated and logged on test failure.
+func (b *RunBuilder) RunBackground(t *testing.T) {
 	t.Helper()
+	out := bytes.Buffer{}
+	b.runForked(t, &out)
 
+	t.Cleanup(func() {
+		if t.Failed() {
+			t.Log("Skaffold log:\n", strings.ReplaceAll(out.String(), "\n", "\n> "))
+		}
+	})
+}
+
+// RunLive runs the skaffold command in the background with live output.
+func (b *RunBuilder) RunLive(t *testing.T) io.ReadCloser {
+	t.Helper()
 	pr, pw := io.Pipe()
+	b.runForked(t, pw)
+	t.Cleanup(func() {
+		pr.Close()
+	})
+	return pr
+}
+
+// runForked runs the skaffold command in the background with stdout sent to the provided writer.
+func (b *RunBuilder) runForked(t *testing.T, out io.Writer) {
+	t.Helper()
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cmd := b.cmd(ctx)
-	cmd.Stdout = pw
+	cmd.Stdout = out
 	logrus.Infoln(cmd.Args)
 
 	start := time.Now()
@@ -182,10 +220,7 @@ func (b *RunBuilder) RunBackground(t *testing.T) io.ReadCloser {
 	t.Cleanup(func() {
 		cancel()
 		cmd.Wait()
-		pr.Close()
 	})
-
-	return pr
 }
 
 // RunOrFail runs the skaffold command and fails the test
@@ -269,7 +304,11 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	}
 	args = append(args, b.args...)
 
-	cmd := exec.CommandContext(ctx, "skaffold", args...)
+	skaffoldBinary := "skaffold"
+	if value, found := os.LookupEnv("SKAFFOLD_BINARY"); found {
+		skaffoldBinary = value
+	}
+	cmd := exec.CommandContext(ctx, skaffoldBinary, args...)
 	cmd.Env = append(removeSkaffoldEnvVariables(util.OSEnviron()), b.env...)
 	if b.stdin != nil {
 		cmd.Stdin = bytes.NewReader(b.stdin)

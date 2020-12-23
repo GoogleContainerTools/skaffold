@@ -70,6 +70,19 @@ func GetRestClientConfig() (*restclient.Config, error) {
 	return getRestClientConfig(kubeContext, kubeConfigFile)
 }
 
+// GetClusterInfo returns the Cluster information for the given kubeContext
+func GetClusterInfo(kctx string) (*clientcmdapi.Cluster, error) {
+	rawConfig, err := getCurrentConfig()
+	if err != nil {
+		return nil, err
+	}
+	c, found := rawConfig.Clusters[kctx]
+	if !found {
+		return nil, fmt.Errorf("failed to get cluster info for kubeContext: `%s`", kctx)
+	}
+	return c, nil
+}
+
 func getRestClientConfig(kctx string, kcfg string) (*restclient.Config, error) {
 	logrus.Debugf("getting client config for kubeContext: `%s`", kctx)
 
@@ -78,7 +91,7 @@ func getRestClientConfig(kctx string, kcfg string) (*restclient.Config, error) {
 		return nil, err
 	}
 
-	clientConfig := clientcmd.NewNonInteractiveClientConfig(rawConfig, kctx, &clientcmd.ConfigOverrides{CurrentContext: kctx}, nil)
+	clientConfig := clientcmd.NewNonInteractiveClientConfig(rawConfig, kctx, &clientcmd.ConfigOverrides{CurrentContext: kctx}, clientcmd.NewDefaultClientConfigLoadingRules())
 	restConfig, err := clientConfig.ClientConfig()
 	if kctx == "" && kcfg == "" && clientcmd.IsEmptyConfig(err) {
 		logrus.Debug("no kube-context set and no kubeConfig found, attempting in-cluster config")

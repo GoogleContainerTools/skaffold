@@ -22,9 +22,10 @@ import (
 	"io"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -32,33 +33,41 @@ import (
 type Builder struct {
 	*latest.ClusterDetails
 
-	kubectlcli         *kubectl.CLI
-	kubeContext        string
-	timeout            time.Duration
-	insecureRegistries map[string]bool
+	cfg           Config
+	kubectlcli    *kubectl.CLI
+	mode          config.RunMode
+	timeout       time.Duration
+	artifactStore build.ArtifactStore
+}
+
+type Config interface {
+	kubectl.Config
+	docker.Config
+
+	Pipeline() latest.Pipeline
+	GetKubeContext() string
+	Muted() config.Muted
+	Mode() config.RunMode
 }
 
 // NewBuilder creates a new Builder that builds artifacts on cluster.
-func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
-	timeout, err := time.ParseDuration(runCtx.Cfg.Build.Cluster.Timeout)
+func NewBuilder(cfg Config) (*Builder, error) {
+	timeout, err := time.ParseDuration(cfg.Pipeline().Build.Cluster.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("parsing timeout: %w", err)
 	}
 
 	return &Builder{
-		ClusterDetails:     runCtx.Cfg.Build.Cluster,
-		kubectlcli:         kubectl.NewFromRunContext(runCtx),
-		timeout:            timeout,
-		kubeContext:        runCtx.KubeContext,
-		insecureRegistries: runCtx.InsecureRegistries,
+		ClusterDetails: cfg.Pipeline().Build.Cluster,
+		cfg:            cfg,
+		kubectlcli:     kubectl.NewCLI(cfg, ""),
+		mode:           cfg.Mode(),
+		timeout:        timeout,
 	}, nil
 }
 
-// Labels are labels specific to cluster builder.
-func (b *Builder) Labels() map[string]string {
-	return map[string]string{
-		constants.Labels.Builder: "cluster",
-	}
+func (b *Builder) ArtifactStore(store build.ArtifactStore) {
+	b.artifactStore = store
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {

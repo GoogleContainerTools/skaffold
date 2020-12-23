@@ -69,6 +69,7 @@ is_supported_platform() {
     windows/386) found=0 ;;
     linux/amd64) found=0 ;;
     linux/386) found=0 ;;
+    linux/arm64) found=0 ;;
   esac
   return $found
 }
@@ -242,7 +243,7 @@ untar() {
   esac
 }
 mktmpdir() {
-  test -z "$TMPDIR" && TMPDIR="$(mktemp -d)"
+  test -z "$TMPDIR" && TMPDIR="$(mktemp -d ${TMPDIR:-/tmp}/install_golint.XXXXXX)"
   mkdir -p "${TMPDIR}"
   echo "${TMPDIR}"
 }
@@ -284,7 +285,7 @@ http_download() {
   return 1
 }
 http_copy() {
-  tmp=$(mktemp)
+  tmp=$(mktemp ${TMPDIR:-/tmp}/install_golint.XXXXXX)
   http_download "${tmp}" "$1" "$2" || return 1
   body=$(cat "$tmp")
   rm -f "${tmp}"

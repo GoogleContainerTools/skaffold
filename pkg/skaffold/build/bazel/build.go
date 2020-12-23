@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -41,7 +42,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 	}
 
 	if b.pushImages {
-		return docker.Push(tarPath, tag, b.insecureRegistries)
+		return docker.Push(tarPath, tag, b.cfg)
 	}
 	return b.loadImage(ctx, out, tarPath, a, tag)
 }
@@ -54,6 +55,12 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 	args := []string{"build"}
 	args = append(args, a.BuildArgs...)
 	args = append(args, a.BuildTarget)
+
+	if color.IsColorable(out) {
+		args = append(args, "--color=yes")
+	} else {
+		args = append(args, "--color=no")
+	}
 
 	// FIXME: is it possible to apply b.skipTests?
 	cmd := exec.CommandContext(ctx, "bazel", args...)

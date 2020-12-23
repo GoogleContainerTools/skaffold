@@ -28,13 +28,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
 
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
-	if r.runCtx.Opts.RenderOnly {
-		return r.Render(ctx, out, artifacts, "")
+	if r.runCtx.RenderOnly() {
+		return r.Render(ctx, out, artifacts, false, r.runCtx.RenderOutput())
 	}
 
 	color.Default.Fprintln(out, "Tags used in deployment:")
@@ -57,20 +59,37 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
-	if config.IsImageLoadingRequired(r.runCtx.KubeContext) {
+	if r.imagesAreLocal && r.runCtx.Cluster.LoadImages {
 		err := r.loadImagesIntoCluster(ctx, out, artifacts)
 		if err != nil {
 			return err
 		}
 	}
 
-	deployResult := r.deployer.Deploy(ctx, out, artifacts, r.labellers)
-	r.hasDeployed = true
-	if err := deployResult.GetError(); err != nil {
+	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
+	if err != nil {
 		return err
 	}
-	r.runCtx.UpdateNamespaces(deployResult.Namespaces())
-	return r.performStatusCheck(ctx, out)
+
+	event.DeployInProgress()
+	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
+	postDeployFn()
+	if err != nil {
+		event.DeployFailed(err)
+		return err
+	}
+
+	r.hasDeployed = true
+
+	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
+	postStatusCheckFn()
+	if err != nil {
+		return err
+	}
+	event.DeployComplete()
+	r.runCtx.UpdateNamespaces(namespaces)
+	sErr := r.performStatusCheck(ctx, statusCheckOut)
+	return sErr
 }
 
 func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
@@ -79,7 +98,7 @@ func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Write
 		return err
 	}
 
-	if config.IsKindCluster(r.runCtx.KubeContext) {
+	if config.IsKindCluster(r.runCtx.GetKubeContext()) {
 		kindCluster := config.KindClusterName(currentContext.Cluster)
 
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
@@ -88,7 +107,7 @@ func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Write
 		}
 	}
 
-	if config.IsK3dCluster(r.runCtx.KubeContext) {
+	if config.IsK3dCluster(r.runCtx.GetKubeContext()) {
 		k3dCluster := config.K3dClusterName(currentContext.Cluster)
 
 		// With `k3d`, docker images have to be loaded with the `k3d` CLI.
@@ -106,7 +125,7 @@ func (r *SkaffoldRunner) getCurrentContext() (*api.Context, error) {
 		return nil, fmt.Errorf("unable to get kubernetes config: %w", err)
 	}
 
-	currentContext, present := currentCfg.Contexts[r.runCtx.KubeContext]
+	currentContext, present := currentCfg.Contexts[r.runCtx.GetKubeContext()]
 	if !present {
 		return nil, fmt.Errorf("unable to get current kubernetes context: %w", err)
 	}
@@ -116,7 +135,7 @@ func (r *SkaffoldRunner) getCurrentContext() (*api.Context, error) {
 // failIfClusterIsNotReachable checks that Kubernetes is reachable.
 // This gives a clear early error when the cluster can't be reached.
 func failIfClusterIsNotReachable() error {
-	client, err := kubernetes.Client()
+	client, err := kubernetesclient.Client()
 	if err != nil {
 		return err
 	}
@@ -127,15 +146,15 @@ func failIfClusterIsNotReachable() error {
 
 func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
-	if !r.runCtx.Opts.StatusCheck {
+	if !r.runCtx.StatusCheck() {
 		return nil
 	}
 
 	start := time.Now()
 	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
 
-	err := statusCheck(ctx, r.defaultLabeller, r.runCtx, out)
-	if err != nil {
+	s := newStatusCheck(r.runCtx, r.labeller)
+	if err := s.Check(ctx, out); err != nil {
 		return err
 	}
 

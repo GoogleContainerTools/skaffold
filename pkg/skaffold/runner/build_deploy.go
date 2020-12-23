@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -27,15 +28,19 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// BuildAndTest builds and tests a list of artifacts.
-func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+// Build builds a list of artifacts.
+func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	// Use tags directly from the Kubernetes manifests.
-	if r.runCtx.Opts.DigestSource == noneDigestSource {
+	if r.runCtx.DigestSource() == noneDigestSource {
 		return []build.Artifact{}, nil
+	}
+
+	if err := checkWorkspaces(artifacts); err != nil {
+		return nil, err
 	}
 
 	tags, err := r.imageTags(ctx, out, artifacts)
@@ -44,7 +49,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	}
 
 	// In dry-run mode or with --digest-source  set to 'remote', we don't build anything, just return the tag for each artifact.
-	if r.runCtx.Opts.DryRun || (r.runCtx.Opts.DigestSource == remoteDigestSource) {
+	if r.runCtx.DryRun() || (r.runCtx.DigestSource() == remoteDigestSource) {
 		var bRes []build.Artifact
 		for _, artifact := range artifacts {
 			bRes = append(bRes, build.Artifact{
@@ -68,16 +73,16 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 			return nil, err
 		}
 
-		if !r.runCtx.Opts.SkipTests {
-			if err = r.tester.Test(ctx, out, bRes); err != nil {
-				return nil, err
-			}
-		}
-
 		return bRes, nil
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if !r.runCtx.SkipTests() {
+		if err = r.tester.Test(ctx, out, bRes); err != nil {
+			return nil, err
+		}
 	}
 
 	// Update which images are logged.
@@ -89,6 +94,15 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	return bRes, nil
 }
 
+// Test tests a list of already built artifacts.
+func (r *SkaffoldRunner) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	if err := r.tester.Test(ctx, out, artifacts); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
 	// Update which images are logged.
@@ -97,9 +111,6 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	logger := r.createLogger(out, artifacts)
 	defer logger.Stop()
 
-	forwarderManager := r.createForwarder(out)
-	defer forwarderManager.Stop()
-
 	// Logs should be retrieved up to just before the deploy
 	logger.SetSince(time.Now())
 
@@ -107,6 +118,9 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
 		return err
 	}
+
+	forwarderManager := r.createForwarder(out)
+	defer forwarderManager.Stop()
 
 	if err := forwarderManager.Start(ctx); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
@@ -117,7 +131,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		return fmt.Errorf("starting logger: %w", err)
 	}
 
-	if r.runCtx.Opts.Tail || r.runCtx.Opts.PortForward.Enabled {
+	if r.runCtx.Tail() || r.runCtx.PortForward() {
 		color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
 		<-ctx.Done()
 	}
@@ -139,7 +153,7 @@ type tagErr struct {
 
 // ApplyDefaultRepo applies the default repo to a given image tag.
 func (r *SkaffoldRunner) ApplyDefaultRepo(tag string) (string, error) {
-	return deploy.ApplyDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo.Value(), tag)
+	return deployutil.ApplyDefaultRepo(r.runCtx.GlobalConfig(), r.runCtx.DefaultRepo(), tag)
 }
 
 // imageTags generates tags for a list of artifacts
@@ -154,7 +168,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 		i := i
 		go func() {
-			tag, err := r.tagger.GenerateFullyQualifiedImageName(artifacts[i].Workspace, artifacts[i].ImageName)
+			tag, err := tag.GenerateFullyQualifiedImageName(r.tagger, artifacts[i].Workspace, artifacts[i].ImageName)
 			tagErrs[i] <- tagErr{tag: tag, err: err}
 		}()
 	}
@@ -175,7 +189,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 				logrus.Debugln(t.err)
 				logrus.Debugln("Using a fall-back tagger")
 
-				fallbackTag, err := (&tag.ChecksumTagger{}).GenerateFullyQualifiedImageName(artifact.Workspace, imageName)
+				fallbackTag, err := tag.GenerateFullyQualifiedImageName(&tag.ChecksumTagger{}, artifact.Workspace, imageName)
 				if err != nil {
 					return nil, fmt.Errorf("generating checksum as fall-back tag for %q: %w", imageName, err)
 				}
@@ -200,4 +214,21 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 	logrus.Infoln("Tags generated in", time.Since(start))
 	return imageTags, nil
+}
+
+func checkWorkspaces(artifacts []*latest.Artifact) error {
+	for _, a := range artifacts {
+		if a.Workspace != "" {
+			if info, err := os.Stat(a.Workspace); err != nil {
+				// err could be permission-related
+				if os.IsNotExist(err) {
+					return fmt.Errorf("image %q context %q does not exist", a.ImageName, a.Workspace)
+				}
+				return fmt.Errorf("image %q context %q: %w", a.ImageName, a.Workspace, err)
+			} else if !info.IsDir() {
+				return fmt.Errorf("image %q context %q is not a directory", a.ImageName, a.Workspace)
+			}
+		}
+	}
+	return nil
 }

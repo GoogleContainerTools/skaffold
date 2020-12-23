@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM dockercore/golang-cross:1.13.10 as base
+FROM dockercore/golang-cross:1.13.14 as base
 
 # The base image is not yet available for go 1.14.
 # Let's just replace the Go that's installed with a newer one.

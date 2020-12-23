@@ -21,3 +21,6 @@ For example, to treat any context as local by default:
 ```bash
 skaffold config set --global local-cluster true
 ```
+This will create a global configuration file at `~/.skaffold/config` with `local-cluster` set to `true`.
+
+{{% readfile file="samples/config/globalConfig.yaml" %}}

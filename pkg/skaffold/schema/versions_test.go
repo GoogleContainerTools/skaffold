@@ -20,8 +20,11 @@ import (
 	"fmt"
 	"testing"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/clientcmd/api"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -82,6 +85,23 @@ build:
     kaniko: {}
   cluster: {}
 `
+	kanikoConfigMap = `
+build:
+  artifacts:
+  - image: image1
+    context: ./examples/app1
+    kaniko:
+      volumeMounts:
+      - name: docker-config
+        mountPath: /kaniko/.docker
+  cluster:
+    pullSecretName: "some-secret"
+    volumes:
+    - name: docker-config
+      configMap:
+        name: docker-config
+`
+
 	completeClusterConfig = `
 build:
   artifacts:
@@ -106,6 +126,12 @@ deploy:
 	validStatusCheckConfig = `
 deploy:
   statusCheckDeadlineSeconds: 10
+`
+
+	customLogPrefix = `
+deploy:
+  logs:
+    prefix: none
 `
 )
 
@@ -159,6 +185,29 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 	}{
 		{
 			apiVersion:  latest.Version,
+			description: "Kaniko Volume Mount - ConfigMap",
+			config:      kanikoConfigMap,
+			expected: config(
+				withClusterBuild("some-secret", "/secret", "default", "", "20m",
+					withGitTagger(),
+					withKanikoArtifact(),
+					withKanikoVolumeMount("docker-config", "/kaniko/.docker"),
+					withVolume(v1.Volume{
+						Name: "docker-config",
+						VolumeSource: v1.VolumeSource{
+							ConfigMap: &v1.ConfigMapVolumeSource{
+								LocalObjectReference: v1.LocalObjectReference{
+									Name: "docker-config",
+								},
+							},
+						},
+					})),
+				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
+			),
+		},
+		{
+			apiVersion:  latest.Version,
 			description: "Minimal config",
 			config:      minimalConfig,
 			expected: config(
@@ -166,6 +215,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withGitTagger(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
 			),
 		},
 		{
@@ -177,6 +227,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withGitTagger(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
 			),
 		},
 		{
@@ -189,6 +240,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withDockerArtifact("example", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
 			),
 		},
 		{
@@ -202,6 +254,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
 				),
 				withKubectlDeploy("dep.yaml", "svc.yaml"),
+				withLogsPrefix("container"),
 			),
 		},
 		{
@@ -211,9 +264,10 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			expected: config(
 				withClusterBuild("", "/secret", "default", "", "20m",
 					withGitTagger(),
-					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
+					withKanikoArtifact(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
 			),
 		},
 		{
@@ -224,9 +278,10 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				withClusterBuild("secret-name", "/secret", "nskaniko", "/secret.json", "120m",
 					withGitTagger(),
 					withDockerConfig("config-name", "/kaniko/.docker"),
-					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
+					withKanikoArtifact(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
 			),
 		},
 		{
@@ -263,6 +318,19 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 				withStatusCheckDeadline(10),
+				withLogsPrefix("container"),
+			),
+		},
+		{
+			apiVersion:  latest.Version,
+			description: "custom log prefix",
+			config:      customLogPrefix,
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("none"),
 			),
 		},
 	}
@@ -282,6 +350,55 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			}
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cfg)
+		})
+	}
+}
+
+func TestMarshalConfig(t *testing.T) {
+	tests := []struct {
+		description string
+		config      *latest.SkaffoldConfig
+		shouldErr   bool
+	}{
+		{
+			description: "Kaniko Volume Mount - ConfigMap",
+			config: config(
+				withClusterBuild("some-secret", "/some/secret", "default", "", "20m",
+					withGitTagger(),
+					withKanikoArtifact(),
+					withKanikoVolumeMount("docker-config", "/kaniko/.docker"),
+					withVolume(v1.Volume{
+						Name: "docker-config",
+						VolumeSource: v1.VolumeSource{
+							ConfigMap: &v1.ConfigMapVolumeSource{
+								LocalObjectReference: v1.LocalObjectReference{
+									Name: "docker-config",
+								},
+							},
+						},
+					})),
+				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
+			),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+
+			actual, err := yaml.Marshal(test.config)
+			t.CheckNoError(err)
+
+			// Unmarshal the YAML and make sure it equals the original.
+			// We can't compare the strings because the YAML serializer isn't deterministic.
+			// TestParseConfigAndUpgrade verifies that YAML -> Go works correctly.
+			// This test verifies Go -> YAML -> Go returns the original structure. Since we know
+			// YAML -> Go is working this ensures Go -> YAML is correct.
+			recovered := &latest.SkaffoldConfig{}
+
+			err = yaml.Unmarshal(actual, recovered)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.config, recovered)
 		})
 	}
 }
@@ -311,7 +428,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 			DockerImage: "gcr.io/cloud-builders/docker",
 			MavenImage:  "gcr.io/cloud-builders/mvn",
 			GradleImage: "gcr.io/cloud-builders/gradle",
-			KanikoImage: constants.DefaultKanikoImage,
+			KanikoImage: kaniko.DefaultImage,
 			PackImage:   "gcr.io/k8s-skaffold/pack",
 		}}}
 		for _, op := range ops {
@@ -396,19 +513,43 @@ func withBazelArtifact(image, workspace, target string) func(*latest.BuildConfig
 	}
 }
 
-func withKanikoArtifact(image, workspace, dockerfile string) func(*latest.BuildConfig) {
+func withKanikoArtifact() func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) {
 		cfg.Artifacts = append(cfg.Artifacts, &latest.Artifact{
-			ImageName: image,
-			Workspace: workspace,
+			ImageName: "image1",
+			Workspace: "./examples/app1",
 			ArtifactType: latest.ArtifactType{
 				KanikoArtifact: &latest.KanikoArtifact{
-					DockerfilePath: dockerfile,
+					DockerfilePath: "Dockerfile",
 					InitImage:      constants.DefaultBusyboxImage,
-					Image:          constants.DefaultKanikoImage,
+					Image:          kaniko.DefaultImage,
 				},
 			},
 		})
+	}
+}
+
+// withKanikoVolumeMount appends a volume mount to the latest Kaniko artifact
+func withKanikoVolumeMount(name, mountPath string) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) {
+		if cfg.Artifacts[len(cfg.Artifacts)-1].KanikoArtifact.VolumeMounts == nil {
+			cfg.Artifacts[len(cfg.Artifacts)-1].KanikoArtifact.VolumeMounts = []v1.VolumeMount{}
+		}
+
+		cfg.Artifacts[len(cfg.Artifacts)-1].KanikoArtifact.VolumeMounts = append(
+			cfg.Artifacts[len(cfg.Artifacts)-1].KanikoArtifact.VolumeMounts,
+			v1.VolumeMount{
+				Name:      name,
+				MountPath: mountPath,
+			},
+		)
+	}
+}
+
+// withVolume appends a volume to the cluster
+func withVolume(v v1.Volume) func(*latest.BuildConfig) {
+	return func(cfg *latest.BuildConfig) {
+		cfg.Cluster.Volumes = append(cfg.Cluster.Volumes, v)
 	}
 }
 
@@ -445,6 +586,12 @@ func withPortForward(portForward ...*latest.PortForwardResource) func(*latest.Sk
 func withStatusCheckDeadline(deadline int) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Deploy.StatusCheckDeadlineSeconds = deadline
+	}
+}
+
+func withLogsPrefix(prefix string) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.Deploy.Logs.Prefix = prefix
 	}
 }
 

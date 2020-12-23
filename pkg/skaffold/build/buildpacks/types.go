@@ -16,20 +16,30 @@ limitations under the License.
 
 package buildpacks
 
-import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+)
 
 // Builder is an artifact builder that uses buildpacks
 type Builder struct {
 	localDocker docker.LocalDaemon
 	pushImages  bool
-	devMode     bool
+	mode        config.RunMode
+	artifacts   ArtifactResolver
+}
+
+// ArtifactResolver provides an interface to resolve built artifact tags by image name.
+type ArtifactResolver interface {
+	GetImageTag(imageName string) (string, bool)
 }
 
 // NewArtifactBuilder returns a new buildpack artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages, devMode bool) *Builder {
+func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool, mode config.RunMode, r ArtifactResolver) *Builder {
 	return &Builder{
 		localDocker: localDocker,
 		pushImages:  pushImages,
-		devMode:     devMode,
+		mode:        mode,
+		artifacts:   r,
 	}
 }

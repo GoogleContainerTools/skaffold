@@ -24,7 +24,7 @@ import (
 )
 
 func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []build.Artifact) *kubernetes.LogAggregator {
-	if !r.runCtx.Opts.Tail {
+	if !r.runCtx.Tail() {
 		return nil
 	}
 
@@ -33,5 +33,5 @@ func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []build.Artifact)
 		imageNames = append(imageNames, artifact.Tag)
 	}
 
-	return kubernetes.NewLogAggregator(out, r.kubectlCLI, imageNames, r.podSelector, r.runCtx.Namespaces)
+	return kubernetes.NewLogAggregator(out, r.kubectlCLI, imageNames, r.podSelector, r.runCtx.GetNamespaces(), r.runCtx.Pipeline().Deploy.Logs)
 }

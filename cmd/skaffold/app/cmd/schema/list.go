@@ -18,17 +18,55 @@ package schema
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 )
 
+var OutputType string
+
 // List prints to `out` all supported schema versions.
 func List(_ context.Context, out io.Writer) error {
-	for _, version := range schema.SchemaVersions {
-		fmt.Fprintln(out, version.APIVersion)
+	return list(out, OutputType)
+}
+
+func list(out io.Writer, outputType string) error {
+	switch outputType {
+	case "json":
+		return printJSON(out)
+	case "plain":
+		return printPlain(out)
+	default:
+		return fmt.Errorf(`invalid output type: %q. Must be "plain" or "json"`, outputType)
+	}
+}
+
+type schemaList struct {
+	Versions []string `json:"versions"`
+}
+
+func printJSON(out io.Writer) error {
+	return json.NewEncoder(out).Encode(schemaList{
+		Versions: versions(),
+	})
+}
+
+func printPlain(out io.Writer) error {
+	for _, version := range versions() {
+		fmt.Fprintln(out, version)
 	}
 
 	return nil
+}
+
+func versions() []string {
+	var versions []string
+
+	for _, version := range schema.SchemaVersions {
+		versions = append(versions, version.APIVersion)
+	}
+
+	return versions
 }

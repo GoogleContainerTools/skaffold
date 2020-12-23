@@ -21,7 +21,7 @@ if [ $? -ne 0 ]; then
    exit 1
 fi
 
-temp_file=$(mktemp)
+temp_file=$(mktemp ${TMPDIR:-/tmp}/test-generated-proto.XXXXXX)
 trap 'rm -f -- "$temp_file"' INT TERM HUP EXIT
 docker run --rm gen-proto cat index.md > "$temp_file"
 cmp "$temp_file" docs/content/en/docs/references/api/grpc.md

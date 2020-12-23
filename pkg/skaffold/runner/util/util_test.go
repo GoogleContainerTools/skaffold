@@ -66,7 +66,7 @@ func TestGetAllPodNamespaces(t *testing.T) {
 					},
 				},
 			},
-			expected: []string{"", "ns", "ns2", "ns3"},
+			expected: []string{"ns", "ns2", "ns3"},
 		},
 	}
 	for _, test := range tests {

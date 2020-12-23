@@ -18,11 +18,13 @@ package config
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -263,52 +265,110 @@ func TestIsUpdateCheckEnabled(t *testing.T) {
 	}
 }
 
-func TestIsDefaultLocal(t *testing.T) {
+type fakeClient struct{}
+
+func (fakeClient) IsMinikube(kubeContext string) bool        { return kubeContext == "minikube" }
+func (fakeClient) MinikubeExec(...string) (*exec.Cmd, error) { return nil, nil }
+
+func TestGetCluster(t *testing.T) {
 	tests := []struct {
-		context       string
-		expectedLocal bool
+		description string
+		cfg         *ContextConfig
+		profile     string
+		expected    Cluster
 	}{
-		{context: "kind-other", expectedLocal: true},
-		{context: "kind@kind", expectedLocal: true},
-		{context: "k3d-k3s-default", expectedLocal: true},
-		{context: "docker-for-desktop", expectedLocal: true},
-		{context: "minikube", expectedLocal: true},
-		{context: "docker-desktop", expectedLocal: true},
-		{context: "anything-else", expectedLocal: false},
-		{context: "kind@blah", expectedLocal: false},
-		{context: "other-kind", expectedLocal: false},
-		{context: "not-k3d", expectedLocal: false},
+		{
+			description: "kind",
+			cfg:         &ContextConfig{Kubecontext: "kind-other"},
+			expected:    Cluster{Local: true, LoadImages: true, PushImages: false},
+		},
+		{
+			description: "kind with local-cluster=false",
+			cfg:         &ContextConfig{Kubecontext: "kind-other", LocalCluster: util.BoolPtr(false)},
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
+		},
+		{
+			description: "kind with kind-disable-load=true",
+			cfg:         &ContextConfig{Kubecontext: "kind-other", KindDisableLoad: util.BoolPtr(true)},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: true},
+		},
+		{
+			description: "kind with legacy name",
+			cfg:         &ContextConfig{Kubecontext: "kind@kind"},
+			expected:    Cluster{Local: true, LoadImages: true, PushImages: false},
+		},
+		{
+			description: "k3d",
+			cfg:         &ContextConfig{Kubecontext: "k3d-k3s-default"},
+			expected:    Cluster{Local: true, LoadImages: true, PushImages: false},
+		},
+		{
+			description: "k3d with local-cluster=false",
+			cfg:         &ContextConfig{Kubecontext: "k3d-k3s-default", LocalCluster: util.BoolPtr(false)},
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
+		},
+		{
+			description: "k3d with disable-load=true",
+			cfg:         &ContextConfig{Kubecontext: "k3d-k3s-default", K3dDisableLoad: util.BoolPtr(true)},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: true},
+		},
+		{
+			description: "docker-for-desktop",
+			cfg:         &ContextConfig{Kubecontext: "docker-for-desktop"},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
+		},
+		{
+			description: "minikube",
+			cfg:         &ContextConfig{Kubecontext: "minikube"},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
+		},
+		{
+			description: "docker-desktop",
+			cfg:         &ContextConfig{Kubecontext: "docker-desktop"},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
+		},
+		{
+			description: "generic cluster with local-cluster=true",
+			cfg:         &ContextConfig{Kubecontext: "some-cluster", LocalCluster: util.BoolPtr(true)},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
+		},
+		{
+			description: "generic cluster with minikube profile",
+			cfg:         &ContextConfig{Kubecontext: "some-cluster"},
+			profile:     "someprofile",
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
+		},
+		{
+			description: "generic cluster",
+			cfg:         &ContextConfig{Kubecontext: "anything-else"},
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
+		},
+		{
+			description: "not a legacy kind cluster",
+			cfg:         &ContextConfig{Kubecontext: "kind@blah"},
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
+		},
+		{
+			description: "not a kind cluster",
+			cfg:         &ContextConfig{Kubecontext: "other-kind"},
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
+		},
+		{
+			description: "not a k3d cluster",
+			cfg:         &ContextConfig{Kubecontext: "not-k3d"},
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
+		},
 	}
 	for _, test := range tests {
-		testutil.Run(t, "", func(t *testutil.T) {
-			local := isDefaultLocal(test.context)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
+			t.Override(&cluster.GetClient, func() cluster.Client { return fakeClient{} })
 
-			t.CheckDeepEqual(test.expectedLocal, local)
-		})
-	}
-}
+			cluster, _ := GetCluster("dummyname", test.profile, true)
+			t.CheckDeepEqual(test.expected, cluster)
 
-func TestIsImageLoadingRequired(t *testing.T) {
-	tests := []struct {
-		context                      string
-		expectedImageLoadingRequired bool
-	}{
-		{context: "kind-other", expectedImageLoadingRequired: true},
-		{context: "kind@kind", expectedImageLoadingRequired: true},
-		{context: "k3d-k3s-default", expectedImageLoadingRequired: true},
-		{context: "docker-for-desktop", expectedImageLoadingRequired: false},
-		{context: "minikube", expectedImageLoadingRequired: false},
-		{context: "docker-desktop", expectedImageLoadingRequired: false},
-		{context: "anything-else", expectedImageLoadingRequired: false},
-		{context: "kind@blah", expectedImageLoadingRequired: false},
-		{context: "other-kind", expectedImageLoadingRequired: false},
-		{context: "not-k3d", expectedImageLoadingRequired: false},
-	}
-	for _, test := range tests {
-		testutil.Run(t, "", func(t *testutil.T) {
-			imageLoadingRequired := IsImageLoadingRequired(test.context)
-
-			t.CheckDeepEqual(test.expectedImageLoadingRequired, imageLoadingRequired)
+			cluster, _ = GetCluster("dummyname", test.profile, false)
+			t.CheckDeepEqual(test.expected, cluster)
 		})
 	}
 }
@@ -498,11 +558,11 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			},
 		},
 		{
-			description: "should display prompt when last prompted is before 2 weeks",
+			description: "should display prompt when last prompted is older than 3 months",
 			cfg: &ContextConfig{
 				Survey: &SurveyConfig{
 					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  "2019-01-10T00:00:00Z",
+					LastPrompted:  "2018-09-10T00:00:00Z",
 				},
 			},
 			expected: true,

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,11 @@ package color
 
 import (
 	"bytes"
+	"io"
+	"os"
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func compareText(t *testing.T, expected, actual string) {
@@ -32,8 +36,8 @@ func TestFprintln(t *testing.T) {
 	defer func() { SetupColors(nil, DefaultColorCode, false) }()
 	var b bytes.Buffer
 
-	SetupColors(&b, 0, true)
-	Green.Fprintln(&b, "2", "less", "chars!")
+	cw := SetupColors(&b, 0, true)
+	Green.Fprintln(cw, "2", "less", "chars!")
 
 	compareText(t, "\033[32m2 less chars!\033[0m\n", b.String())
 }
@@ -42,8 +46,8 @@ func TestFprintf(t *testing.T) {
 	defer func() { SetupColors(nil, DefaultColorCode, false) }()
 	var b bytes.Buffer
 
-	SetupColors(&b, 0, true)
-	Green.Fprintf(&b, "It's been %d %s", 1, "week")
+	cw := SetupColors(&b, 0, true)
+	Green.Fprintf(cw, "It's been %d %s", 1, "week")
 
 	compareText(t, "\033[32mIt's been 1 week\033[0m", b.String())
 }
@@ -51,8 +55,8 @@ func TestFprintf(t *testing.T) {
 func TestFprintlnNoTTY(t *testing.T) {
 	var b bytes.Buffer
 
-	SetupColors(&b, 0, false)
-	Green.Fprintln(&b, "2", "less", "chars!")
+	cw := SetupColors(&b, 0, false)
+	Green.Fprintln(cw, "2", "less", "chars!")
 
 	compareText(t, "2 less chars!\n", b.String())
 }
@@ -60,8 +64,8 @@ func TestFprintlnNoTTY(t *testing.T) {
 func TestFprintfNoTTY(t *testing.T) {
 	var b bytes.Buffer
 
-	SetupColors(&b, 0, false)
-	Green.Fprintf(&b, "It's been %d %s", 1, "week")
+	cw := SetupColors(&b, 0, false)
+	Green.Fprintf(cw, "It's been %d %s", 1, "week")
 
 	compareText(t, "It's been 1 week", b.String())
 }
@@ -69,23 +73,79 @@ func TestFprintfNoTTY(t *testing.T) {
 func TestFprintlnDefaultColor(t *testing.T) {
 	var b bytes.Buffer
 
-	SetupColors(&b, 34, true)
-	Default.Fprintln(&b, "2", "less", "chars!")
+	cw := SetupColors(&b, 34, true)
+	Default.Fprintln(cw, "2", "less", "chars!")
 	compareText(t, "\033[34m2 less chars!\033[0m\n", b.String())
 }
 
 func TestFprintlnChangeDefaultToNone(t *testing.T) {
 	var b bytes.Buffer
 
-	SetupColors(&b, 0, true)
-	Default.Fprintln(&b, "2", "less", "chars!")
+	cw := SetupColors(&b, 0, true)
+	Default.Fprintln(cw, "2", "less", "chars!")
 	compareText(t, "2 less chars!\n", b.String())
 }
 
 func TestFprintlnChangeDefaultToUnknown(t *testing.T) {
 	var b bytes.Buffer
 
-	SetupColors(&b, -1, true)
-	Default.Fprintln(&b, "2", "less", "chars!")
+	cw := SetupColors(&b, -1, true)
+	Default.Fprintln(cw, "2", "less", "chars!")
 	compareText(t, "2 less chars!\n", b.String())
+}
+
+func TestIsStdOut(t *testing.T) {
+	tests := []struct {
+		description string
+		out         io.Writer
+		expected    bool
+	}{
+		{
+			description: "std out passed",
+			out:         os.Stdout,
+			expected:    true,
+		},
+		{
+			description: "out nil",
+			out:         nil,
+		},
+		{
+			description: "out bytes buffer",
+			out:         new(bytes.Buffer),
+		},
+		{
+			description: "colorable std out passed",
+			out:         NewWriter(os.Stdout),
+			expected:    true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expected, IsStdout(test.out))
+		})
+	}
+}
+
+func TestGetWriter(t *testing.T) {
+	tests := []struct {
+		description string
+		out         io.Writer
+		expected    io.Writer
+	}{
+		{
+			description: "colorable os.Stdout returns os.Stdout",
+			out:         colorableWriter{os.Stdout},
+			expected:    os.Stdout,
+		},
+		{
+			description: "GetWriter returns original writer if not colorable",
+			out:         os.Stdout,
+			expected:    os.Stdout,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(true, test.expected == GetWriter(test.out))
+		})
+	}
 }

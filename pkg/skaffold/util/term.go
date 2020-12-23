@@ -19,7 +19,7 @@ package util
 import (
 	"io"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 func IsTerminal(w io.Writer) (uintptr, bool) {
@@ -29,7 +29,7 @@ func IsTerminal(w io.Writer) (uintptr, bool) {
 
 	if f, ok := w.(descriptor); ok {
 		termFd := f.Fd()
-		isTerm := terminal.IsTerminal(int(termFd))
+		isTerm := term.IsTerminal(int(termFd))
 		return termFd, isTerm
 	}
 

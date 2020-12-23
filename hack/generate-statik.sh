@@ -18,11 +18,12 @@ set -euo pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+SECRET=${SECRET:-${DIR}/../secrets}
 BIN=${DIR}/bin
 STATIK=${BIN}/statik
 LICENSES=${BIN}/go-licenses
 
-TMP_DIR=$(mktemp -d)
+TMP_DIR=$(mktemp -d ${TMPDIR:-/tmp}/generate-statik.XXXXXX)
 trap "rm -rf $TMP_DIR" EXIT
 
 if [ -x "$(command -v go-licenses)" ]; then
@@ -33,7 +34,7 @@ elif ! [ -x "$(command -v ${LICENSES})" ]; then
     # Also can't be easily installed from a vendor folder because it relies on non-go files
     # from a dependency.
     echo "Installing go-licenses"
-    pushd $(mktemp -d)
+    pushd $(mktemp -d ${TMPDIR:-/tmp}/generate-statik.XXXXXX)
     go mod init tmp; GOBIN=${BIN} go get github.com/google/go-licenses
     popd
 fi
@@ -54,3 +55,8 @@ if ! [[ -f ${STATIK} ]]; then
 fi
 
 ${STATIK} -f -src=${TMP_DIR} -m -dest cmd/skaffold/app/cmd
+
+if [[ -d ${SECRET} ]]; then
+   echo "generating statik for secret"
+   ${STATIK} -f -src=${SECRET} -m -dest cmd/skaffold/app/secret
+fi

@@ -18,40 +18,26 @@ package gcb
 
 import (
 	"fmt"
-	"sort"
 
 	"google.golang.org/api/cloudbuild/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func (b *Builder) kanikoBuildSpec(artifact *latest.KanikoArtifact, tag string) (cloudbuild.Build, error) {
-	buildArgs, err := b.kanikoBuildArgs(artifact)
+func (b *Builder) kanikoBuildSpec(a *latest.Artifact, tag string) (cloudbuild.Build, error) {
+	k := a.KanikoArtifact
+	requiredImages := docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true)
+	// add required artifacts as build args
+	buildArgs, err := docker.EvalBuildArgs(b.cfg.Mode(), a.Workspace, k.DockerfilePath, k.BuildArgs, requiredImages)
+	if err != nil {
+		return cloudbuild.Build{}, fmt.Errorf("unable to evaluate build args: %w", err)
+	}
+	k.BuildArgs = buildArgs
+	kanikoArgs, err := kaniko.Args(k, tag, "")
 	if err != nil {
 		return cloudbuild.Build{}, err
-	}
-
-	kanikoArgs := []string{
-		"--destination", tag,
-		"--dockerfile", artifact.DockerfilePath,
-	}
-	kanikoArgs = append(kanikoArgs, buildArgs...)
-
-	if artifact.Cache != nil {
-		kanikoArgs = append(kanikoArgs, "--cache")
-
-		if artifact.Cache.Repo != "" {
-			kanikoArgs = append(kanikoArgs, "--cache-repo", artifact.Cache.Repo)
-		}
-	}
-
-	if artifact.Reproducible {
-		kanikoArgs = append(kanikoArgs, "--reproducible")
-	}
-
-	if artifact.Target != "" {
-		kanikoArgs = append(kanikoArgs, "--target", artifact.Target)
 	}
 
 	return cloudbuild.Build{
@@ -60,29 +46,4 @@ func (b *Builder) kanikoBuildSpec(artifact *latest.KanikoArtifact, tag string) (
 			Args: kanikoArgs,
 		}},
 	}, nil
-}
-
-func (b *Builder) kanikoBuildArgs(artifact *latest.KanikoArtifact) ([]string, error) {
-	buildArgs, err := docker.EvaluateBuildArgs(artifact.BuildArgs)
-	if err != nil {
-		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
-	}
-
-	var keys []string
-	for k := range buildArgs {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	var buildArgFlags []string
-	for _, k := range keys {
-		v := buildArgs[k]
-		if v == nil {
-			buildArgFlags = append(buildArgFlags, "--build-arg", k)
-		} else {
-			buildArgFlags = append(buildArgFlags, "--build-arg", fmt.Sprintf("%s=%s", k, *v))
-		}
-	}
-
-	return buildArgFlags, nil
 }

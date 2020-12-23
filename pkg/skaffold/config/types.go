@@ -16,6 +16,8 @@ limitations under the License.
 
 package config
 
+import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+
 // StringOrUndefined holds the value of a flag of type `string`,
 // that's by default `undefined`.
 // We use this instead of just `string` to differentiate `undefined`
@@ -42,4 +44,23 @@ func (s *StringOrUndefined) String() string {
 		return ""
 	}
 	return *s.value
+}
+
+// Muted lists phases for which logs are muted.
+type Muted struct {
+	Phases []string
+}
+
+func (m Muted) MuteBuild() bool       { return m.mute("build") }
+func (m Muted) MuteTest() bool        { return m.mute("test") }
+func (m Muted) MuteStatusCheck() bool { return m.mute("status-check") }
+func (m Muted) MuteDeploy() bool      { return m.mute("deploy") }
+func (m Muted) mute(phase string) bool {
+	return util.StrSliceContains(m.Phases, phase) || util.StrSliceContains(m.Phases, "all")
+}
+
+type Cluster struct {
+	Local      bool
+	PushImages bool
+	LoadImages bool
 }

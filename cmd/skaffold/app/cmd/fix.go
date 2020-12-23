@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
@@ -40,9 +39,9 @@ func NewCmdFix() *cobra.Command {
 		WithExample("Update \"skaffold.yaml\" in the current folder to the latest version", "fix").
 		WithExample("Update \"skaffold.yaml\" in the current folder to version \"skaffold/v1\"", "fix --version skaffold/v1").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")
-			f.StringVar(&toVersion, "version", latest.Version, "Target schema version to upgrade to")
+		WithFlags([]*Flag{
+			{Value: &overwrite, Name: "overwrite", DefValue: false, Usage: "Overwrite original config with fixed config"},
+			{Value: &toVersion, Name: "version", DefValue: latest.Version, Usage: "Target schema version to upgrade to"},
 		}).
 		NoArgs(doFix)
 }
@@ -57,8 +56,8 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		return err
 	}
 
-	if cfg.GetVersion() == latest.Version {
-		color.Default.Fprintln(out, "config is already latest version")
+	if cfg.GetVersion() == toVersion {
+		color.Default.Fprintln(out, "config is already version", toVersion)
 		return nil
 	}
 
@@ -67,8 +66,12 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		return err
 	}
 
-	if err := validation.Process(cfg.(*latest.SkaffoldConfig)); err != nil {
-		return fmt.Errorf("validating upgraded config: %w", err)
+	// TODO(dgageot): We should be able run validations on any schema version
+	// but that's not the case. They can only run on the latest version for now.
+	if toVersion == latest.Version {
+		if err := validation.Process(cfg.(*latest.SkaffoldConfig)); err != nil {
+			return fmt.Errorf("validating upgraded config: %w", err)
+		}
 	}
 
 	newCfg, err := yaml.Marshal(cfg)

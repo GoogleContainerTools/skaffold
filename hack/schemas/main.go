@@ -77,8 +77,9 @@ type Definition struct {
 	Examples             []string               `json:"examples,omitempty"`
 	Enum                 []string               `json:"enum,omitempty"`
 
-	inlines []*Definition
-	tags    string
+	inlines  []*Definition
+	tags     string
+	skipTrim bool
 }
 
 func main() {
@@ -238,7 +239,8 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 			if strings.Contains(field.Tag.Value, "inline") {
 				def.PreferredOrder = append(def.PreferredOrder, "<inline>")
 				def.inlines = append(def.inlines, &Definition{
-					Ref: defPrefix + field.Type.(*ast.Ident).Name,
+					Ref:      defPrefix + field.Type.(*ast.Ident).Name,
+					skipTrim: strings.Contains(field.Tag.Value, "skipTrim"),
 				})
 				continue
 			}
@@ -259,11 +261,23 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 			def.Properties[yamlName] = g.newDefinition(field.Names[0].Name, field.Type, field.Doc.Text(), field.Tag.Value)
 			def.AdditionalProperties = false
 		}
+
+	case *ast.SelectorExpr:
+		typeName := tt.Sel.Name
+		if typeName == "IntOrString" {
+			def.AnyOf = []*Definition{
+				{Type: "string"},
+				{Type: "integer"},
+			}
+		}
 	}
 
 	if g.strict && name != "" {
+		if comment == "" {
+			panic(fmt.Sprintf("field %q needs comment (all public fields require comments)", name))
+		}
 		if !strings.HasPrefix(comment, name+" ") {
-			panic(fmt.Sprintf("comment should start with field name on field %s", name))
+			panic(fmt.Sprintf("comment %q should start with field name on field %s", comment, name))
 		}
 	}
 
@@ -354,6 +368,9 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 		}
 
 		for _, inlineStruct := range def.inlines {
+			if inlineStruct.skipTrim {
+				continue
+			}
 			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
 			inlines = append(inlines, ref)
 		}
@@ -435,7 +452,13 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 	}
 
 	for _, ref := range inlines {
-		delete(definitions, ref)
+		existingDef, ok := definitions[ref]
+		if !ok {
+			continue
+		}
+		if !existingDef.skipTrim {
+			delete(definitions, ref)
+		}
 	}
 
 	schema := Schema{

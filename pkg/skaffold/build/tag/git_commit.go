@@ -26,14 +26,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // GitCommit tags an image by the git commit it was built at.
 type GitCommit struct {
-	prefix   string
-	runGitFn func(string) (string, error)
+	prefix        string
+	runGitFn      func(string) (string, error)
+	ignoreChanges bool
 }
 
 var variants = map[string]func(string) (string, error){
@@ -46,42 +46,40 @@ var variants = map[string]func(string) (string, error){
 }
 
 // NewGitCommit creates a new git commit tagger. It fails if the tagger variant is invalid.
-func NewGitCommit(prefix, variant string) (*GitCommit, error) {
+func NewGitCommit(prefix, variant string, ignoreChanges bool) (*GitCommit, error) {
 	runGitFn, found := variants[strings.ToLower(variant)]
 	if !found {
 		return nil, fmt.Errorf("%q is not a valid git tagger variant", variant)
 	}
 
 	return &GitCommit{
-		prefix:   prefix,
-		runGitFn: runGitFn,
+		prefix:        prefix,
+		runGitFn:      runGitFn,
+		ignoreChanges: ignoreChanges,
 	}, nil
 }
 
-// Labels are labels specific to the git tagger.
-func (c *GitCommit) Labels() map[string]string {
-	return map[string]string{
-		constants.Labels.TagPolicy: "git-commit",
-	}
-}
-
-// GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
-func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, imageName string) (string, error) {
-	ref, err := c.runGitFn(workingDir)
+// GenerateTag generates a tag from the git commit.
+func (t *GitCommit) GenerateTag(workingDir, _ string) (string, error) {
+	ref, err := t.runGitFn(workingDir)
 	if err != nil {
 		return "", fmt.Errorf("unable to find git commit: %w", err)
 	}
 
-	changes, err := runGit(workingDir, "status", ".", "--porcelain")
-	if err != nil {
-		return "", fmt.Errorf("getting git status: %w", err)
+	ref = sanitizeTag(ref)
+
+	if !t.ignoreChanges {
+		changes, err := runGit(workingDir, "status", ".", "--porcelain")
+		if err != nil {
+			return "", fmt.Errorf("getting git status: %w", err)
+		}
+
+		if len(changes) > 0 {
+			return fmt.Sprintf("%s%s-dirty", t.prefix, ref), nil
+		}
 	}
 
-	if len(changes) > 0 {
-		return fmt.Sprintf("%s:%s%s-dirty", imageName, c.prefix, ref), nil
-	}
-
-	return fmt.Sprintf("%s:%s%s", imageName, c.prefix, sanitizeTag(ref)), nil
+	return t.prefix + ref, nil
 }
 
 // sanitizeTag takes a git tag and converts it to a docker tag by removing

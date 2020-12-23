@@ -25,8 +25,9 @@ import (
 )
 
 type FakeCmd struct {
-	t    *testing.T
-	runs []run
+	t           *testing.T
+	runs        []run
+	timesCalled int
 }
 
 type run struct {
@@ -123,6 +124,14 @@ func (c *FakeCmd) AndRunWithOutput(command, output string) *FakeCmd {
 	})
 }
 
+func (c *FakeCmd) AndRunInputOut(command string, input string, output string) *FakeCmd {
+	return c.addRun(run{
+		command: command,
+		input:   []byte(input),
+		output:  []byte(output),
+	})
+}
+
 func (c *FakeCmd) AndRunOut(command string, output string) *FakeCmd {
 	return c.addRun(run{
 		command: command,
@@ -146,11 +155,12 @@ func (c *FakeCmd) AndRunEnv(command string, env []string) *FakeCmd {
 }
 
 func (c *FakeCmd) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
+	c.timesCalled++
 	command := strings.Join(cmd.Args, " ")
 
 	r, err := c.popRun()
 	if err != nil {
-		c.t.Fatalf("unable to run RunCmdOut() with command %q", command)
+		c.t.Fatalf("unable to run RunCmdOut() with command %q: %v", command, err)
 	}
 
 	if r.command != command {
@@ -158,6 +168,10 @@ func (c *FakeCmd) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	}
 
 	c.assertCmdEnv(r.env, cmd.Env)
+
+	if err := c.assertInput(cmd, r, command); err != nil {
+		return nil, err
+	}
 
 	if r.output == nil {
 		c.t.Errorf("expected RunCmd(%s) to be called. Got RunCmdOut(%s)", r.command, command)
@@ -167,6 +181,7 @@ func (c *FakeCmd) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 }
 
 func (c *FakeCmd) RunCmd(cmd *exec.Cmd) error {
+	c.timesCalled++
 	command := strings.Join(cmd.Args, " ")
 
 	r, err := c.popRun()
@@ -175,7 +190,7 @@ func (c *FakeCmd) RunCmd(cmd *exec.Cmd) error {
 	}
 
 	if r.command != command {
-		c.t.Errorf("\nexpected: %s\n\ngot: %s", r.command, command)
+		c.t.Errorf("\nwanted: %s\n\n   got: %s", r.command, command)
 	}
 
 	if r.output != nil {
@@ -188,24 +203,35 @@ func (c *FakeCmd) RunCmd(cmd *exec.Cmd) error {
 
 	c.assertCmdEnv(r.env, cmd.Env)
 
-	if r.input != nil {
-		if cmd.Stdin == nil {
-			c.t.Error("expected to run the command with a custom stdin", command)
-		}
-
-		buf, err := ioutil.ReadAll(cmd.Stdin)
-		if err != nil {
-			return err
-		}
-
-		actualInput := string(buf)
-		expectedInput := string(r.input)
-		if actualInput != expectedInput {
-			c.t.Errorf("wrong input. Expected: %s. Got %s", expectedInput, actualInput)
-		}
+	if err := c.assertInput(cmd, r, command); err != nil {
+		return err
 	}
 
 	return r.err
+}
+
+func (c *FakeCmd) assertInput(cmd *exec.Cmd, r *run, command string) error {
+	if r.input == nil {
+		return nil
+	}
+
+	if cmd.Stdin == nil {
+		c.t.Error("expected to run the command with a custom stdin", command)
+		return nil
+	}
+
+	buf, err := ioutil.ReadAll(cmd.Stdin)
+	if err != nil {
+		return err
+	}
+
+	actualInput := string(buf)
+	expectedInput := string(r.input)
+	if actualInput != expectedInput {
+		c.t.Errorf("wrong input. Expected: %s. Got %s", expectedInput, actualInput)
+	}
+
+	return nil
 }
 
 // assertCmdEnv ensures that actualEnv contains all values from requiredEnv
@@ -225,4 +251,8 @@ func (c *FakeCmd) assertCmdEnv(requiredEnv, actualEnv []string) {
 			c.t.Errorf("expected env variable with value %q", e)
 		}
 	}
+}
+
+func (c *FakeCmd) TimesCalled() int {
+	return c.timesCalled
 }

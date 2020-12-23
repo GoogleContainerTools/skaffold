@@ -27,12 +27,6 @@ import (
 // an image we parse out from a Kubernetes manifest
 const NoBuilder = "None (image not built from these sources)"
 
-type Error string
-
-func (e Error) Error() string { return string(e) }
-
-const ErrorNoBuilder = Error("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
-
 // InitBuilder represents a builder that can be chosen by skaffold init.
 type InitBuilder interface {
 	// Name returns the name of the builder.
@@ -53,16 +47,17 @@ type InitBuilder interface {
 	Path() string
 }
 
-// BuilderImagePair defines a builder and the image it builds
-type BuilderImagePair struct {
+// ArtifactInfo defines a builder and the image it builds
+type ArtifactInfo struct {
 	Builder   InitBuilder
 	ImageName string
+	Workspace string
 }
 
-// GeneratedBuilderImagePair pairs a discovered builder with a
+// GeneratedArtifactInfo pairs a discovered builder with a
 // generated image name, and the path to the manifest that should be generated
-type GeneratedBuilderImagePair struct {
-	BuilderImagePair
+type GeneratedArtifactInfo struct {
+	ArtifactInfo
 	ManifestPath string
 }
 
@@ -71,11 +66,11 @@ type Initializer interface {
 	// contained in the initializer with the provided images from the deploy initializer
 	ProcessImages([]string) error
 	// BuildConfig returns the processed build config to be written to the skaffold.yaml
-	BuildConfig() latest.BuildConfig
+	BuildConfig() (latest.BuildConfig, []*latest.PortForwardResource)
 	// PrintAnalysis writes the project analysis to the provided out stream
 	PrintAnalysis(io.Writer) error
 	// GenerateManifests generates image names and manifests for all unresolved pairs
-	GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error)
+	GenerateManifests(io.Writer, bool) (map[GeneratedArtifactInfo][]byte, error)
 }
 
 type emptyBuildInitializer struct {
@@ -85,15 +80,15 @@ func (e *emptyBuildInitializer) ProcessImages([]string) error {
 	return nil
 }
 
-func (e *emptyBuildInitializer) BuildConfig() latest.BuildConfig {
-	return latest.BuildConfig{}
+func (e *emptyBuildInitializer) BuildConfig() (latest.BuildConfig, []*latest.PortForwardResource) {
+	return latest.BuildConfig{}, nil
 }
 
 func (e *emptyBuildInitializer) PrintAnalysis(io.Writer) error {
 	return nil
 }
 
-func (e *emptyBuildInitializer) GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error) {
+func (e *emptyBuildInitializer) GenerateManifests(io.Writer, bool) (map[GeneratedArtifactInfo][]byte, error) {
 	return nil, nil
 }
 
@@ -101,7 +96,7 @@ func NewInitializer(builders []InitBuilder, c config.Config) Initializer {
 	switch {
 	case c.SkipBuild:
 		return &emptyBuildInitializer{}
-	case c.CliArtifacts != nil:
+	case len(c.CliArtifacts) > 0:
 		return &cliBuildInitializer{
 			cliArtifacts:    c.CliArtifacts,
 			builders:        builders,

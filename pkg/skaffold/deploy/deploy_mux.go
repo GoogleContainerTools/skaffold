@@ -20,10 +20,11 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"sort"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // DeployerMux forwards all method calls to the deployers it contains.
@@ -31,62 +32,30 @@ import (
 // it collects the results and returns it in bulk.
 type DeployerMux []Deployer
 
-type unit struct{}
+func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []build.Artifact) ([]string, error) {
+	seenNamespaces := util.NewStringSet()
 
-// stringSet helps to de-duplicate a set of strings.
-type stringSet map[string]unit
-
-func newStringSet() stringSet {
-	return make(map[string]unit)
-}
-
-// insert adds strings to the set.
-func (s stringSet) insert(strings ...string) {
-	for _, item := range strings {
-		s[item] = unit{}
-	}
-}
-
-// toList returns the sorted list of inserted strings.
-func (s stringSet) toList() []string {
-	var res []string
-	for item := range s {
-		res = append(res, item)
-	}
-	sort.Strings(res)
-	return res
-}
-
-func (m DeployerMux) Labels() map[string]string {
-	labels := make(map[string]string)
 	for _, deployer := range m {
-		copyMap(labels, deployer.Labels())
-	}
-	return labels
-}
-
-func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []build.Artifact, ls []Labeller) *Result {
-	seenNamespaces := newStringSet()
-	for _, deployer := range m {
-		result := deployer.Deploy(ctx, w, as, ls)
-		if result.err != nil {
-			return result
+		namespaces, err := deployer.Deploy(ctx, w, as)
+		if err != nil {
+			return nil, err
 		}
-		seenNamespaces.insert(result.Namespaces()...)
+		seenNamespaces.Insert(namespaces...)
 	}
-	return NewDeploySuccessResult(seenNamespaces.toList())
+
+	return seenNamespaces.ToList(), nil
 }
 
 func (m DeployerMux) Dependencies() ([]string, error) {
-	deps := newStringSet()
+	deps := util.NewStringSet()
 	for _, deployer := range m {
 		result, err := deployer.Dependencies()
 		if err != nil {
 			return nil, err
 		}
-		deps.insert(result...)
+		deps.Insert(result...)
 	}
-	return deps.toList(), nil
+	return deps.ToList(), nil
 }
 
 func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer) error {
@@ -98,16 +67,16 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
-func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []build.Artifact, ls []Labeller, filepath string) error {
+func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []build.Artifact, offline bool, filepath string) error {
 	resources, buf := []string{}, &bytes.Buffer{}
 	for _, deployer := range m {
 		buf.Reset()
-		if err := deployer.Render(ctx, buf, as, ls, "" /* never write to files */); err != nil {
+		if err := deployer.Render(ctx, buf, as, offline, "" /* never write to files */); err != nil {
 			return err
 		}
 		resources = append(resources, buf.String())
 	}
 
 	allResources := strings.Join(resources, "\n---\n")
-	return outputRenderedManifests(allResources, filepath, w)
+	return manifest.Write(allResources, filepath, w)
 }

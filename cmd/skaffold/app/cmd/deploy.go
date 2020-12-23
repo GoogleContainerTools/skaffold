@@ -18,11 +18,9 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
@@ -32,8 +30,7 @@ import (
 )
 
 var (
-	buildOutputFile flags.BuildOutputFileFlag
-	preBuiltImages  flags.Images
+	preBuiltImages flags.Images
 )
 
 // NewCmdDeploy describes the CLI command to deploy artifacts.
@@ -43,54 +40,28 @@ func NewCmdDeploy() *cobra.Command {
 		WithExample("Build the artifacts and collect the tags into a file", "build --file-output=tags.json").
 		WithExample("Deploy those tags", "deploy --build-artifacts=tags.json").
 		WithExample("Build the artifacts and then deploy them", "build -q | skaffold deploy --build-artifacts -").
+		WithExample("Deploy without first rendering the manifests", "deploy --skip-render").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
-			f.VarP(&buildOutputFile, "build-artifacts", "a", `Filepath containing build output.
-E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build.out`)
+		WithFlags([]*Flag{
+			{Value: &preBuiltImages, Name: "images", Shorthand: "i", Usage: "A list of pre-built images to deploy"},
+			{Value: &opts.SkipRender, Name: "skip-render", DefValue: false, Usage: "Don't render the manifests, just deploy them", IsEnum: true},
 		}).
+		WithHouseKeepingMessages().
 		NoArgs(doDeploy)
 }
 
 func doDeploy(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		deployed, err := getArtifactsToDeploy(out, buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
+		if opts.SkipRender {
+			return r.DeployAndLog(ctx, out, []build.Artifact{})
+		}
+
+		buildArtifacts, err := getBuildArtifactsAndSetTags(r, config)
 		if err != nil {
+			tips.PrintUseRunVsDeploy(out)
 			return err
 		}
 
-		for i := range deployed {
-			tag, err := r.ApplyDefaultRepo(deployed[i].Tag)
-			if err != nil {
-				return err
-			}
-
-			deployed[i].Tag = tag
-		}
-
-		return r.DeployAndLog(ctx, out, deployed)
+		return r.DeployAndLog(ctx, out, buildArtifacts)
 	})
-}
-
-func getArtifactsToDeploy(out io.Writer, fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	var deployed []build.Artifact
-	for _, artifact := range artifacts {
-		deployed = append(deployed, build.Artifact{
-			ImageName: artifact.ImageName,
-		})
-	}
-
-	// Tags provided by file take precedence over those provided on the command line
-	deployed = build.MergeWithPreviousBuilds(fromCLI, deployed)
-	deployed = build.MergeWithPreviousBuilds(fromFile, deployed)
-
-	// Check that every image has a non empty tag
-	for _, d := range deployed {
-		if d.Tag == "" {
-			tips.PrintUseRunVsDeploy(out)
-			return nil, fmt.Errorf("no tag provided for image [%s]", d.ImageName)
-		}
-	}
-
-	return deployed, nil
 }

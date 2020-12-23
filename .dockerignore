@@ -1,0 +1,4 @@
+# Local executables might be for OS other than Linux, so don't sync
+/hack/bin
+
+/out

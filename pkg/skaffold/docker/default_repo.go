@@ -19,13 +19,18 @@ package docker
 import (
 	"regexp"
 	"strings"
+
+	"github.com/docker/distribution/reference"
 )
 
 const maxLength = 255
 
 var (
 	escapeRegex = regexp.MustCompile(`[/._:@]`)
-	prefixRegex = regexp.MustCompile(`(.*\.)?gcr.io/[a-zA-Z0-9-_]+/?`)
+	// gcpProjectIDRegex matches a GCP Project ID as according to console.cloud.google.com.
+	gcpProjectIDRegex = `[a-z][a-z0-9-]{4,28}[a-z0-9]`
+	// prefixRegex is used to match a GCR or AR reference, which must have a project ID.
+	prefixRegex = regexp.MustCompile(`^` + reference.DomainRegexp.String() + `/` + gcpProjectIDRegex + `/?`)
 )
 
 func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, error) {
@@ -50,21 +55,25 @@ func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, e
 }
 
 func replace(defaultRepo string, baseImage string) string {
+	if strings.HasPrefix(baseImage, defaultRepo) {
+		return baseImage
+	}
 	originalPrefix := prefixRegex.FindString(baseImage)
 	defaultRepoPrefix := prefixRegex.FindString(defaultRepo)
-	if originalPrefix != "" && defaultRepoPrefix != "" {
+	if registrySupportsMultiLevelRepos(defaultRepoPrefix) {
 		// prefixes match
 		if originalPrefix == defaultRepoPrefix {
 			return defaultRepo + "/" + baseImage[len(originalPrefix):]
-		}
-		if strings.HasPrefix(baseImage, defaultRepo) {
-			return baseImage
 		}
 		// prefixes don't match, concatenate and truncate
 		return truncate(defaultRepo + "/" + baseImage)
 	}
 
 	return truncate(defaultRepo + "/" + escapeRegex.ReplaceAllString(baseImage, "_"))
+}
+
+func registrySupportsMultiLevelRepos(repo string) bool {
+	return strings.Contains(repo, "gcr.io") || strings.Contains(repo, "-docker.pkg.dev")
 }
 
 func truncate(image string) string {

@@ -59,3 +59,57 @@ func TestStripTags(t *testing.T) {
 		})
 	}
 }
+
+func TestSetImageTag(t *testing.T) {
+	tests := []struct {
+		description   string
+		image         string
+		tag           string
+		expectedImage string
+		shouldErr     bool
+	}{
+		{
+			description:   "image with tag",
+			image:         "gcr.io/foo/bar:latest",
+			tag:           "test-1",
+			expectedImage: "gcr.io/foo/bar:test-1",
+		},
+		{
+			description:   "image with tag and digest",
+			image:         "gcr.io/foo/bar:latest@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc",
+			tag:           "test-2",
+			expectedImage: "gcr.io/foo/bar:test-2@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc",
+		},
+		{
+			description:   "image without tag and digest",
+			image:         "gcr.io/foo/bar",
+			tag:           "test-3",
+			expectedImage: "gcr.io/foo/bar:test-3",
+		},
+		{
+			description:   "empty tag",
+			image:         "gcr.io/foo/bar:test-4",
+			expectedImage: "gcr.io/foo/bar",
+		},
+		{
+			description:   "image with digest",
+			image:         "gcr.io/foo/bar@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc",
+			tag:           "test-5",
+			expectedImage: "gcr.io/foo/bar:test-5@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc",
+		},
+		{
+			description: "invalid reference",
+			image:       "!!invalid!!",
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Parallel()
+
+			image, err := SetImageTag(test.image, test.tag)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedImage, image)
+		})
+	}
+}

@@ -18,19 +18,14 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -42,7 +37,22 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	}
 	defer b.localDocker.Close()
 
-	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifact, *b.cfg.Concurrency)
+	if b.prune {
+		b.localPruner.asynchronousCleanupOldImages(ctx, artifacts)
+	}
+
+	builder := build.WithLogFile(b.buildArtifact, b.muted)
+	rt, err := build.InOrder(ctx, out, tags, artifacts, builder, *b.local.Concurrency, b.artifactStore)
+
+	if b.prune {
+		if b.mode == config.RunModes.Build {
+			b.localPruner.synchronousCleanupOldImages(ctx, artifacts)
+		} else {
+			b.localPruner.asynchronousCleanupOldImages(ctx, artifacts)
+		}
+	}
+
+	return rt, err
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
@@ -84,25 +94,11 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *lat
 		}
 	}
 
-	switch {
-	case a.DockerArtifact != nil:
-		return b.buildDocker(ctx, out, a, tag)
-
-	case a.BazelArtifact != nil:
-		return bazel.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages).Build(ctx, out, a, tag)
-
-	case a.JibArtifact != nil:
-		return jib.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.skipTests).Build(ctx, out, a, tag)
-
-	case a.CustomArtifact != nil:
-		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, a, tag)
-
-	case a.BuildpackArtifact != nil:
-		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.devMode).Build(ctx, out, a, tag)
-
-	default:
-		return "", fmt.Errorf("unexpected type %q for local artifact:\n%s", misc.ArtifactType(a), misc.FormatArtifact(a))
+	builder, err := newPerArtifactBuilder(b, a)
+	if err != nil {
+		return "", err
 	}
+	return builder.Build(ctx, out, a, tag)
 }
 
 func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, error) {
@@ -111,4 +107,8 @@ func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, err
 		return "", err
 	}
 	return insp.ID, nil
+}
+
+func (b *Builder) retrieveExtraEnv() []string {
+	return b.localDocker.ExtraEnv()
 }

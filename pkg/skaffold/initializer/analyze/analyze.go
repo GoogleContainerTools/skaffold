@@ -43,6 +43,7 @@ type ProjectAnalysis struct {
 	configAnalyzer    *skaffoldConfigAnalyzer
 	kubeAnalyzer      *kubeAnalyzer
 	kustomizeAnalyzer *kustomizeAnalyzer
+	helmAnalyzer      *helmAnalyzer
 	builderAnalyzer   *builderAnalyzer
 	maxFileSize       int64
 }
@@ -59,10 +60,19 @@ func (a *ProjectAnalysis) KustomizePaths() []string {
 	return a.kustomizeAnalyzer.kustomizePaths
 }
 
+func (a *ProjectAnalysis) KustomizeBases() []string {
+	return a.kustomizeAnalyzer.bases
+}
+
+func (a *ProjectAnalysis) ChartPaths() []string {
+	return a.helmAnalyzer.chartPaths
+}
+
 func (a *ProjectAnalysis) analyzers() []analyzer {
 	return []analyzer{
 		a.kubeAnalyzer,
 		a.kustomizeAnalyzer,
+		a.helmAnalyzer,
 		a.configAnalyzer,
 		a.builderAnalyzer,
 	}
@@ -73,6 +83,7 @@ func NewAnalyzer(c config.Config) *ProjectAnalysis {
 	return &ProjectAnalysis{
 		kubeAnalyzer:      &kubeAnalyzer{},
 		kustomizeAnalyzer: &kustomizeAnalyzer{},
+		helmAnalyzer:      &helmAnalyzer{},
 		builderAnalyzer: &builderAnalyzer{
 			findBuilders:         !c.SkipBuild,
 			enableJibInit:        c.EnableJibInit,
@@ -110,11 +121,17 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 
 	// Traverse files
 	for _, file := range dirents {
-		if util.IsHiddenFile(file.Name()) || util.IsHiddenDir(file.Name()) {
+		name := file.Name()
+
+		if file.IsDir() {
+			if util.IsHiddenDir(name) || skipFolder(name) {
+				continue
+			}
+		} else if util.IsHiddenFile(name) {
 			continue
 		}
 
-		filePath := filepath.Join(dir, file.Name())
+		filePath := filepath.Join(dir, name)
 
 		// If we found a directory, keep track of it until we've gone through all the files first
 		if file.IsDir() {
@@ -156,4 +173,8 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 	}
 
 	return nil
+}
+
+func skipFolder(name string) bool {
+	return name == "vendor" || name == "node_modules"
 }

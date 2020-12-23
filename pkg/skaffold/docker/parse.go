@@ -19,6 +19,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -26,11 +27,12 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
+	"github.com/moby/buildkit/frontend/dockerfile/instructions"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -63,7 +65,7 @@ var (
 	RetrieveImage = retrieveImage
 )
 
-func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]fromTo, error) {
+func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, cfg Config) ([]fromTo, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
 		return nil, err
@@ -75,18 +77,23 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 		return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
 	}
 
+	// instructions.Parse will check for malformed Dockerfile
+	if _, _, err := instructions.Parse(res.AST); err != nil {
+		return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
+	}
+
 	dockerfileLines := res.AST.Children
 
 	if err := expandBuildArgs(dockerfileLines, buildArgs); err != nil {
 		return nil, fmt.Errorf("putting build arguments: %w", err)
 	}
 
-	dockerfileLinesWithOnbuild, err := expandOnbuildInstructions(dockerfileLines, insecureRegistries)
+	dockerfileLinesWithOnbuild, err := expandOnbuildInstructions(dockerfileLines, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	cpCmds, err := extractCopyCommands(dockerfileLinesWithOnbuild, onlyLastImage, insecureRegistries)
+	cpCmds, err := extractCopyCommands(dockerfileLinesWithOnbuild, onlyLastImage, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("listing copied files: %w", err)
 	}
@@ -94,8 +101,27 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 	return expandSrcGlobPatterns(workspace, cpCmds)
 }
 
+// filterUnusedBuildArgs removes entries from the build arguments map that are not found in the dockerfile
+func filterUnusedBuildArgs(dockerFile io.Reader, buildArgs map[string]*string) (map[string]*string, error) {
+	res, err := parser.Parse(dockerFile)
+	if err != nil {
+		return nil, fmt.Errorf("parsing dockerfile: %w", err)
+	}
+	m := make(map[string]*string)
+	for _, n := range res.AST.Children {
+		if n.Value != command.Arg {
+			continue
+		}
+		k := strings.SplitN(n.Next.Value, "=", 2)[0]
+		if v, ok := buildArgs[k]; ok {
+			m[k] = v
+		}
+	}
+	return m, nil
+}
+
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
-	args, err := EvaluateBuildArgs(buildArgs)
+	args, err := util.EvaluateEnvTemplateMap(buildArgs)
 	if err != nil {
 		return fmt.Errorf("unable to evaluate build args: %w", err)
 	}
@@ -173,7 +199,7 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, e
 	return fts, nil
 }
 
-func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegistries map[string]bool) ([]*copyCommand, error) {
+func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, cfg Config) ([]*copyCommand, error) {
 	stages := map[string]bool{
 		"scratch": true,
 	}
@@ -187,6 +213,11 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegis
 		switch node.Value {
 		case command.From:
 			from := fromInstruction(node)
+			if from.image == "" {
+				// some build args like artifact dependencies are not available until the first build sequence has completed.
+				// skip check if there are unavailable images
+				continue
+			}
 			if from.as != "" {
 				// Stage names are case insensitive
 				stages[strings.ToLower(from.as)] = true
@@ -195,17 +226,16 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegis
 			// If `from` references a previous stage, then the `workdir`
 			// was already changed.
 			if !stages[strings.ToLower(from.image)] {
-				img, err := RetrieveImage(from.image, insecureRegistries)
-				if err != nil {
+				img, err := RetrieveImage(from.image, cfg)
+				if err == nil {
+					workdir = img.Config.WorkingDir
+				} else if _, ok := sErrors.IsOldImageManifestProblem(err); !ok {
 					return nil, err
 				}
-
-				workdir = img.Config.WorkingDir
 				if workdir == "" {
 					workdir = "/"
 				}
 			}
-
 			if onlyLastImage {
 				copied = nil
 			}
@@ -252,6 +282,9 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 
 		paths = append(paths, path)
 	}
+	if len(paths) == 0 {
+		return nil, fmt.Errorf("invalid dockerfile instruction: %q", value.Original)
+	}
 
 	// All paths are sources except the last one
 	var srcs []string
@@ -276,7 +309,7 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 	}, nil
 }
 
-func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[string]bool) ([]*parser.Node, error) {
+func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node, error) {
 	onbuildNodesCache := map[string][]*parser.Node{
 		"scratch": nil,
 	}
@@ -290,12 +323,20 @@ func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[stri
 			expandedNodes = append(expandedNodes, nodes[n:m+1]...)
 			n = m + 1
 
+			if from.image == "" {
+				// some build args like artifact dependencies are not available until the first build sequence has completed.
+				// skip check if there are unavailable images
+				continue
+			}
+
 			var onbuildNodes []*parser.Node
 			if ons, found := onbuildNodesCache[strings.ToLower(from.image)]; found {
 				onbuildNodes = ons
-			} else if ons, err := parseOnbuild(from.image, insecureRegistries); err == nil {
+			} else if ons, err := parseOnbuild(from.image, cfg); err == nil {
 				onbuildNodes = ons
-			} else {
+			} else if warnMsg, ok := sErrors.IsOldImageManifestProblem(err); ok && warnMsg != "" {
+				logrus.Warn(warnMsg)
+			} else if !ok {
 				return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
 			}
 
@@ -311,11 +352,11 @@ func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[stri
 	return expandedNodes, nil
 }
 
-func parseOnbuild(image string, insecureRegistries map[string]bool) ([]*parser.Node, error) {
+func parseOnbuild(image string, cfg Config) ([]*parser.Node, error) {
 	logrus.Tracef("Checking base image %s for ONBUILD triggers.", image)
 
 	// Image names are case SENSITIVE
-	img, err := RetrieveImage(image, insecureRegistries)
+	img, err := RetrieveImage(image, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving image %q: %w", image, err)
 	}
@@ -359,11 +400,8 @@ func unquote(v string) string {
 	return unquoted
 }
 
-func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {
-	// TODO: use the proper RunContext
-	localDaemon, err := NewAPIClient(&runcontext.RunContext{
-		InsecureRegistries: insecureRegistries,
-	})
+func retrieveImage(image string, cfg Config) (*v1.ConfigFile, error) {
+	localDaemon, err := NewAPIClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker client: %w", err)
 	}

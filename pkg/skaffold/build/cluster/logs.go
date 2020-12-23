@@ -29,7 +29,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 )
 
 // logLevel makes sure kaniko logs at least at Info level and at most Debug level (trace doesn't work with Kaniko)
@@ -56,8 +56,8 @@ func streamLogs(ctx context.Context, out io.Writer, name string, pods corev1.Pod
 		for atomic.LoadInt32(&retry) == 1 {
 			r, err := pods.GetLogs(name, &v1.PodLogOptions{
 				Follow:    true,
-				Container: constants.DefaultKanikoContainerName,
-			}).Stream()
+				Container: kaniko.DefaultContainerName,
+			}).Stream(ctx)
 			if err != nil {
 				logrus.Debugln("unable to get kaniko pod logs:", err)
 				time.Sleep(1 * time.Second)
@@ -88,8 +88,8 @@ func streamLogs(ctx context.Context, out io.Writer, name string, pods corev1.Pod
 		// get latest logs if pod was terminated before logs have been streamed
 		if atomic.LoadInt64(&written) == 0 {
 			r, err := pods.GetLogs(name, &v1.PodLogOptions{
-				Container: constants.DefaultKanikoContainerName,
-			}).Stream()
+				Container: kaniko.DefaultContainerName,
+			}).Stream(ctx)
 			if err == nil {
 				io.Copy(out, r)
 			}

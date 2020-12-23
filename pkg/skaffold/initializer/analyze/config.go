@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 )
 
@@ -41,7 +42,8 @@ func (a *skaffoldConfigAnalyzer) analyzeFile(filePath string) error {
 	if !sameFiles {
 		return nil
 	}
-	return fmt.Errorf("pre-existing %s found (you may continue with --force)", filePath)
+
+	return errors.PreExistingConfigErr{Path: filePath}
 }
 
 func sameFiles(a, b string) (bool, error) {

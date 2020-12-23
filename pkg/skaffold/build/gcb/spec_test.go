@@ -19,7 +19,6 @@ package gcb
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -45,7 +44,9 @@ func TestBuildSpecFail(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			builder := newBuilder(latest.GoogleCloudBuild{})
+			builder := NewBuilder(&mockConfig{
+				gcb: latest.GoogleCloudBuild{},
+			})
 
 			_, err := builder.buildSpec(test.artifact, "tag", "bucket", "object")
 
@@ -54,15 +55,13 @@ func TestBuildSpecFail(t *testing.T) {
 	}
 }
 
-func newBuilder(gcb latest.GoogleCloudBuild) *Builder {
-	return NewBuilder(&runcontext.RunContext{
-		Opts: config.SkaffoldOptions{},
-		Cfg: latest.Pipeline{
-			Build: latest.BuildConfig{
-				BuildType: latest.BuildType{
-					GoogleCloudBuild: &gcb,
-				},
-			},
-		},
-	})
+type mockConfig struct {
+	runcontext.RunContext // Embedded to provide the default values.
+	gcb                   latest.GoogleCloudBuild
+}
+
+func (c *mockConfig) Pipeline() latest.Pipeline {
+	var pipeline latest.Pipeline
+	pipeline.Build.BuildType.GoogleCloudBuild = &c.gcb
+	return pipeline
 }

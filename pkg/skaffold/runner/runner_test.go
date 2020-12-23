@@ -25,16 +25,22 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -90,7 +96,6 @@ func (t *TestBench) WithTestErrors(testErrors []error) *TestBench {
 	return t
 }
 
-func (t *TestBench) Labels() map[string]string                        { return map[string]string{} }
 func (t *TestBench) TestDependencies() ([]string, error)              { return nil, nil }
 func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
 func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
@@ -150,20 +155,20 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []build.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ []deploy.Labeller) *deploy.Result {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact) ([]string, error) {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
 		if err != nil {
-			return deploy.NewDeployErrorResult(err)
+			return nil, err
 		}
 	}
 
 	t.currentActions.Deployed = findTags(artifacts)
-	return deploy.NewDeploySuccessResult(t.namespaces)
+	return t.namespaces, nil
 }
 
-func (t *TestBench) Render(context.Context, io.Writer, []build.Artifact, []deploy.Labeller, string) error {
+func (t *TestBench) Render(context.Context, io.Writer, []build.Artifact, bool, string) error {
 	return nil
 }
 
@@ -277,7 +282,45 @@ func TestNewForConfig(t *testing.T) {
 			},
 			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
-			expectedDeployer: &deploy.KubectlDeployer{},
+			expectedDeployer: &kubectl.Deployer{},
+		},
+		{
+			description: "gcb config",
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						GoogleCloudBuild: &latest.GoogleCloudBuild{},
+					},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
+					},
+				},
+			},
+			expectedBuilder:  &gcb.Builder{},
+			expectedTester:   &test.FullTester{},
+			expectedDeployer: &kubectl.Deployer{},
+		},
+		{
+			description: "cluster builder config",
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						Cluster: &latest.ClusterDetails{Timeout: "100s"},
+					},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
+					},
+				},
+			},
+			expectedBuilder:  &cluster.Builder{},
+			expectedTester:   &test.FullTester{},
+			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
 			description: "bad tagger config",
@@ -302,7 +345,7 @@ func TestNewForConfig(t *testing.T) {
 			shouldErr:        true,
 			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
-			expectedDeployer: &deploy.KubectlDeployer{},
+			expectedDeployer: &kubectl.Deployer{},
 		},
 		{
 			description: "no artifacts, cache",
@@ -321,7 +364,7 @@ func TestNewForConfig(t *testing.T) {
 			},
 			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
-			expectedDeployer: &deploy.KubectlDeployer{},
+			expectedDeployer: &kubectl.Deployer{},
 			cacheArtifacts:   true,
 		},
 		{
@@ -344,15 +387,18 @@ func TestNewForConfig(t *testing.T) {
 			expectedBuilder: &local.Builder{},
 			expectedTester:  &test.FullTester{},
 			expectedDeployer: deploy.DeployerMux([]deploy.Deployer{
-				&deploy.HelmDeployer{},
-				&deploy.KubectlDeployer{},
-				&deploy.KustomizeDeployer{},
+				&helm.Deployer{},
+				&kubectl.Deployer{},
+				&kustomize.Deployer{},
 			}),
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
+				"helm version --client", `version.BuildInfo{Version:"v3.0.0"}`).
+				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
 
 			runCtx := &runcontext.RunContext{
 				Cfg: test.pipeline,

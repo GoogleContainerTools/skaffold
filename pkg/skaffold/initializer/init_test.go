@@ -19,6 +19,7 @@ package initializer
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -33,16 +34,18 @@ import (
 
 func TestDoInit(t *testing.T) {
 	tests := []struct {
-		name      string
-		dir       string
-		config    initconfig.Config
-		shouldErr bool
+		name             string
+		dir              string
+		config           initconfig.Config
+		expectedError    string
+		expectedExitCode int
 	}{
 		//TODO: mocked kompose test
 		{
 			name: "getting-started",
 			dir:  "testdata/init/hello",
 			config: initconfig.Config{
+				Force: true,
 				Opts: config.SkaffoldOptions{
 					ConfigurationFile: "skaffold.yaml.out",
 				},
@@ -52,6 +55,7 @@ func TestDoInit(t *testing.T) {
 			name: "ignore existing tags",
 			dir:  "testdata/init/ignore-tags",
 			config: initconfig.Config{
+				Force: true,
 				Opts: config.SkaffoldOptions{
 					ConfigurationFile: "skaffold.yaml.out",
 				},
@@ -61,6 +65,7 @@ func TestDoInit(t *testing.T) {
 			name: "microservices (backwards compatibility)",
 			dir:  "testdata/init/microservices",
 			config: initconfig.Config{
+				Force: true,
 				CliArtifacts: []string{
 					"leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app",
 					"leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web",
@@ -74,6 +79,7 @@ func TestDoInit(t *testing.T) {
 			name: "microservices",
 			dir:  "testdata/init/microservices",
 			config: initconfig.Config{
+				Force: true,
 				CliArtifacts: []string{
 					`{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
 					`{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
@@ -87,6 +93,7 @@ func TestDoInit(t *testing.T) {
 			name: "CLI artifacts + manifest placeholders",
 			dir:  "testdata/init/allcli",
 			config: initconfig.Config{
+				Force: true,
 				CliArtifacts: []string{
 					`{"builder":"Docker","payload":{"path":"Dockerfile"},"image":"passed-in-artifact"}`,
 				},
@@ -103,6 +110,7 @@ func TestDoInit(t *testing.T) {
 			name: "CLI artifacts but no manifests",
 			dir:  "testdata/init/allcli",
 			config: initconfig.Config{
+				Force: true,
 				CliArtifacts: []string{
 					`{"builder":"Docker","payload":{"path":"Dockerfile"},"image":"passed-in-artifact"}`,
 				},
@@ -110,13 +118,14 @@ func TestDoInit(t *testing.T) {
 					ConfigurationFile: "skaffold.yaml.out",
 				},
 			},
-			shouldErr: true,
+			expectedError:    "one or more valid Kubernetes manifests are required to run skaffold",
+			expectedExitCode: 102,
 		},
 		{
 			name: "error writing config file",
 			dir:  "testdata/init/microservices",
-
 			config: initconfig.Config{
+				Force: true,
 				CliArtifacts: []string{
 					`{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
 					`{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
@@ -126,38 +135,92 @@ func TestDoInit(t *testing.T) {
 					ConfigurationFile: ".",
 				},
 			},
-			shouldErr: true,
+			expectedError:    "writing config to file: open .: is a directory",
+			expectedExitCode: 1,
+		},
+		{
+			name: "error no builders",
+			dir:  "testdata/init/no-builder",
+			config: initconfig.Config{
+				Force: true,
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+			expectedError:    "please provide at least one build config",
+			expectedExitCode: 101,
 		},
 		{
 			name: "error no manifests",
 			dir:  "testdata/init/hello-no-manifest",
-
 			config: initconfig.Config{
+				Force: true,
 				Opts: config.SkaffoldOptions{
 					ConfigurationFile: "skaffold.yaml.out",
 				},
 			},
-			shouldErr: true,
+			expectedError:    "one or more valid Kubernetes manifests are required to run skaffold",
+			expectedExitCode: 102,
+		},
+		{
+			name: "existing config",
+			dir:  "testdata/init/hello",
+			config: initconfig.Config{
+				Force: false,
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml",
+				},
+			},
+			expectedError:    "pre-existing skaffold.yaml found",
+			expectedExitCode: 103,
+		},
+		{
+			name: "builder/image ambiguity",
+			dir:  "testdata/init/microservices",
+			config: initconfig.Config{
+				Force: true,
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+			expectedError:    "unable to automatically resolve builder/image pairs",
+			expectedExitCode: 104,
 		},
 		{
 			name: "kustomize",
 			dir:  "testdata/init/getting-started-kustomize",
-
+			config: initconfig.Config{
+				Force: true,
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+		},
+		{
+			name: "helm fails",
+			dir:  "testdata/init/helm-deployment",
 			config: initconfig.Config{
 				Opts: config.SkaffoldOptions{
 					ConfigurationFile: "skaffold.yaml.out",
 				},
 			},
+			expectedError: `Projects set up to deploy with helm must be manually configured.
+
+See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed guide on setting your project up with skaffold.`,
+			expectedExitCode: 1,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			t.Chdir(test.dir)
-			// we still need as a "no-prompt" mode
-			test.config.Force = true
+
 			err := DoInit(context.TODO(), os.Stdout, test.config)
-			t.CheckError(test.shouldErr, err)
-			if !test.shouldErr {
+
+			if test.expectedError != "" {
+				t.CheckErrorContains(test.expectedError, err)
+				t.CheckDeepEqual(exitCode(err), test.expectedExitCode)
+			} else {
+				t.CheckNoError(err)
 				checkGeneratedConfig(t, ".")
 			}
 		})
@@ -246,4 +309,17 @@ func checkGeneratedConfig(t *testutil.T, dir string) {
 	output, err := schema.ParseConfig(filepath.Join(dir, "skaffold.yaml.out"))
 	t.CheckNoError(err)
 	t.CheckDeepEqual(expectedOutput, output)
+}
+
+type ExitCoder interface {
+	ExitCode() int
+}
+
+func exitCode(err error) int {
+	var exitErr ExitCoder
+	if ok := errors.As(err, &exitErr); ok {
+		return exitErr.ExitCode()
+	}
+
+	return 1
 }

@@ -20,7 +20,9 @@ import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 
 // Config contains all the parameters for the initializer package
 type Config struct {
+	BuildpacksBuilder        string
 	ComposeFile              string
+	DefaultKustomization     string
 	CliArtifacts             []string
 	CliKubernetesManifests   []string
 	SkipBuild                bool
@@ -32,7 +34,6 @@ type Config struct {
 	EnableBuildpacksInit     bool
 	EnableNewInitFormat      bool
 	EnableManifestGeneration bool
-	BuildpacksBuilder        string
 	Opts                     config.SkaffoldOptions
 	MaxFileSize              int64
 }

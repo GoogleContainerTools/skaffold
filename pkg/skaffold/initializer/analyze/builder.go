@@ -60,15 +60,17 @@ func (a *builderAnalyzer) exitDir(dir string) {
 // configs. Also returns a boolean marking search completion for subdirectories (true = subdirectories should
 // continue to be searched, false = subdirectories should not be searched for more builders)
 func (a *builderAnalyzer) detectBuilders(path string, detectJib bool) ([]build.InitBuilder, bool) {
+	var results []build.InitBuilder
+	searchSubDirectories := true
+
 	// TODO: Remove backwards compatibility if statement (not entire block)
 	if a.enableJibInit && detectJib {
 		// Check for jib
 		if builders := jib.Validate(path, a.enableJibGradleInit); builders != nil {
-			results := make([]build.InitBuilder, len(builders))
 			for i := range builders {
-				results[i] = builders[i]
+				results = append(results, builders[i])
 			}
-			return results, false
+			searchSubDirectories = false
 		}
 	}
 
@@ -76,8 +78,9 @@ func (a *builderAnalyzer) detectBuilders(path string, detectJib bool) ([]build.I
 	base := filepath.Base(path)
 	if strings.Contains(strings.ToLower(base), "dockerfile") {
 		if docker.Validate(path) {
-			results := []build.InitBuilder{docker.ArtifactConfig{File: path}}
-			return results, true
+			results = append(results, docker.ArtifactConfig{
+				File: path,
+			})
 		}
 	}
 
@@ -85,15 +88,12 @@ func (a *builderAnalyzer) detectBuilders(path string, detectJib bool) ([]build.I
 	if a.enableBuildpacksInit {
 		// Check for buildpacks
 		if buildpacks.Validate(path) {
-			results := []build.InitBuilder{buildpacks.ArtifactConfig{
+			results = append(results, buildpacks.ArtifactConfig{
 				File:    path,
 				Builder: a.buildpacksBuilder,
-			}}
-			return results, true
+			})
 		}
 	}
 
-	// TODO: Check for more builders
-
-	return nil, true
+	return results, searchSubDirectories
 }

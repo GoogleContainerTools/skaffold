@@ -22,11 +22,10 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -148,16 +147,6 @@ func IsURL(s string) bool {
 	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }
 
-func Download(url string) ([]byte, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	return ioutil.ReadAll(resp.Body)
-}
-
 // VerifyOrCreateFile checks if a file exists at the given path,
 // and if not, creates all parent directories and creates the file.
 func VerifyOrCreateFile(path string) error {
@@ -202,6 +191,42 @@ func Expand(text, key, value string) string {
 	}
 
 	return text
+}
+
+// EnvMapToSlice converts map of (string,string) to string slice
+func EnvMapToSlice(m map[string]string, separator string) []string {
+	var sl []string
+	for k, v := range m {
+		sl = append(sl, fmt.Sprintf("%s%s%s", k, separator, v))
+	}
+	sort.Strings(sl)
+	return sl
+}
+
+// EnvPtrMapToSlice converts map of (string,*string) to string slice
+func EnvPtrMapToSlice(m map[string]*string, separator string) []string {
+	var sl []string
+	for k, v := range m {
+		if v == nil {
+			sl = append(sl, k)
+			continue
+		}
+		sl = append(sl, fmt.Sprintf("%s%s%s", k, separator, *v))
+	}
+	sort.Strings(sl)
+	return sl
+}
+
+// EnvSliceToMap converts a string slice into a map of (string,string) using the given separator
+func EnvSliceToMap(slice []string, separator string) map[string]string {
+	m := make(map[string]string, len(slice))
+	for _, e := range slice {
+		// Toss any keys without a value
+		if v := strings.SplitN(e, separator, 2); len(v) == 2 {
+			m[v[0]] = v[1]
+		}
+	}
+	return m
 }
 
 func isAlphaNum(c uint8) bool {
@@ -302,6 +327,15 @@ func IsHiddenDir(filename string) bool {
 // File is hidden if it starts with prefix "."
 func IsHiddenFile(filename string) bool {
 	return hasHiddenPrefix(filename)
+}
+
+// IsSubPath return true if targetpath is sub-path of basepath; doesn't check for symlinks
+func IsSubPath(basepath string, targetpath string) bool {
+	rel, err := filepath.Rel(basepath, targetpath)
+	if err != nil {
+		return false
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator))
 }
 
 func hasHiddenPrefix(s string) bool {

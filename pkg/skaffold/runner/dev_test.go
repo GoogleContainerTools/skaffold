@@ -26,8 +26,9 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -135,7 +136,7 @@ func TestDevFailFirstCycle(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&kubernetes.Client, mockK8sClient)
+			t.Override(&client.Client, mockK8sClient)
 
 			// runner := createRunner(t, test.testBench).WithMonitor(test.monitor)
 			runner := createRunner(t, test.testBench, test.monitor)
@@ -266,7 +267,7 @@ func TestDev(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&kubernetes.Client, mockK8sClient)
+			t.Override(&client.Client, mockK8sClient)
 			test.testBench.cycles = len(test.watchEvents)
 
 			runner := createRunner(t, test.testBench, &TestMonitor{
@@ -277,6 +278,141 @@ func TestDev(t *testing.T) {
 			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
 				{ImageName: "img1"},
 				{ImageName: "img2"},
+			})
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())
+		})
+	}
+}
+
+func TestDev_WithDependencies(t *testing.T) {
+	tests := []struct {
+		description     string
+		testBench       *TestBench
+		watchEvents     []filemon.Events
+		expectedActions []Actions
+	}{
+		{
+			description: "ignore subsequent build errors",
+			testBench:   NewTestBench().WithBuildErrors([]error{nil, errors.New("")}),
+			watchEvents: []filemon.Events{
+				{Modified: []string{"file1"}},
+			},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{},
+			},
+		},
+		{
+			description: "ignore subsequent test errors",
+			testBench:   &TestBench{testErrors: []error{nil, errors.New("")}},
+			watchEvents: []filemon.Events{
+				{Modified: []string{"file1"}},
+			},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Built: []string{"img1:2", "img2:2"},
+				},
+			},
+		},
+		{
+			description: "ignore subsequent deploy errors",
+			testBench:   &TestBench{deployErrors: []error{nil, errors.New("")}},
+			watchEvents: []filemon.Events{
+				{Modified: []string{"file1"}},
+			},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Built:  []string{"img1:2", "img2:2"},
+					Tested: []string{"img1:2", "img2:2"},
+				},
+			},
+		},
+		{
+			description: "full cycle twice",
+			testBench:   &TestBench{},
+			watchEvents: []filemon.Events{
+				{Modified: []string{"file1"}},
+			},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Built:    []string{"img1:2", "img2:2"},
+					Tested:   []string{"img1:2", "img2:2"},
+					Deployed: []string{"img1:2", "img2:2"},
+				},
+			},
+		},
+		{
+			description: "only change first artifact (should redeploy dependent artifact also)",
+			testBench:   &TestBench{},
+			watchEvents: []filemon.Events{
+				{Modified: []string{"file1"}},
+			},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Built:    []string{"img1:2", "img2:2"},
+					Tested:   []string{"img1:2", "img2:2"},
+					Deployed: []string{"img1:2", "img2:2"},
+				},
+			},
+		},
+		{
+			description: "redeploy",
+			testBench:   &TestBench{},
+			watchEvents: []filemon.Events{
+				{Modified: []string{"manifest.yaml"}},
+			},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&client.Client, mockK8sClient)
+			test.testBench.cycles = len(test.watchEvents)
+
+			runner := createRunner(t, test.testBench, &TestMonitor{
+				events:    test.watchEvents,
+				testBench: test.testBench,
+			})
+
+			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
+				{ImageName: "img1"},
+				{ImageName: "img2", Dependencies: []*latest.ArtifactDependency{{ImageName: "img1"}}},
 			})
 
 			t.CheckNoError(err)
@@ -352,11 +488,11 @@ func TestDevSync(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var actualFileSyncEventCalls fileSyncEventCalls
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&kubernetes.Client, mockK8sClient)
+			t.Override(&client.Client, mockK8sClient)
 			t.Override(&fileSyncInProgress, func(int, string) { actualFileSyncEventCalls.InProgress++ })
 			t.Override(&fileSyncFailed, func(int, string, error) { actualFileSyncEventCalls.Failed++ })
 			t.Override(&fileSyncSucceeded, func(int, string) { actualFileSyncEventCalls.Succeeded++ })
-			t.Override(&sync.WorkingDir, func(string, map[string]bool) (string, error) { return "/", nil })
+			t.Override(&sync.WorkingDir, func(string, docker.Config) (string, error) { return "/", nil })
 			test.testBench.cycles = len(test.watchEvents)
 
 			runner := createRunner(t, test.testBench, &TestMonitor{
@@ -370,6 +506,98 @@ func TestDevSync(t *testing.T) {
 					Sync: &latest.Sync{
 						Manual: []*latest.SyncRule{{Src: "file1", Dest: "file1"}},
 					},
+				},
+				{
+					ImageName: "img2",
+				},
+			})
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())
+			t.CheckDeepEqual(test.expectedFileSyncEventCalls, actualFileSyncEventCalls)
+		})
+	}
+}
+
+func TestDevSync_WithDependencies(t *testing.T) {
+	type fileSyncEventCalls struct {
+		InProgress int
+		Failed     int
+		Succeeded  int
+	}
+
+	tests := []struct {
+		description                string
+		testBench                  *TestBench
+		watchEvents                []filemon.Events
+		expectedActions            []Actions
+		expectedFileSyncEventCalls fileSyncEventCalls
+	}{
+		{
+			description: "sync works for dependent artifact",
+			testBench:   &TestBench{},
+			watchEvents: []filemon.Events{
+				{Modified: []string{"file1"}},
+			},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Synced: []string{"img1:1"},
+				},
+			},
+			expectedFileSyncEventCalls: fileSyncEventCalls{
+				InProgress: 1,
+				Failed:     0,
+				Succeeded:  1,
+			},
+		},
+		{
+			description: "sync for required artifact is ignored; rather rebuilt along with dependent artifacts",
+			testBench:   &TestBench{},
+			watchEvents: []filemon.Events{
+				{Modified: []string{"file2"}},
+			},
+			expectedActions: []Actions{
+				{
+					Built:    []string{"img1:1", "img2:1"},
+					Tested:   []string{"img1:1", "img2:1"},
+					Deployed: []string{"img1:1", "img2:1"},
+				},
+				{
+					Built:    []string{"img2:2", "img1:2"},
+					Tested:   []string{"img2:2", "img1:2"},
+					Deployed: []string{"img1:2", "img2:2"},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			var actualFileSyncEventCalls fileSyncEventCalls
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&client.Client, mockK8sClient)
+			t.Override(&fileSyncInProgress, func(int, string) { actualFileSyncEventCalls.InProgress++ })
+			t.Override(&fileSyncFailed, func(int, string, error) { actualFileSyncEventCalls.Failed++ })
+			t.Override(&fileSyncSucceeded, func(int, string) { actualFileSyncEventCalls.Succeeded++ })
+			t.Override(&sync.WorkingDir, func(string, docker.Config) (string, error) { return "/", nil })
+			test.testBench.cycles = len(test.watchEvents)
+
+			runner := createRunner(t, test.testBench, &TestMonitor{
+				events:    test.watchEvents,
+				testBench: test.testBench,
+			})
+
+			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
+				{
+					ImageName: "img1",
+					Sync: &latest.Sync{
+						Manual: []*latest.SyncRule{{Src: "file1", Dest: "file1"}},
+					},
+					Dependencies: []*latest.ArtifactDependency{{ImageName: "img2"}},
 				},
 				{
 					ImageName: "img2",

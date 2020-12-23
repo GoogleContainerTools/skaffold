@@ -22,11 +22,9 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/diagnose"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -42,32 +40,34 @@ func NewCmdDiagnose() *cobra.Command {
 		WithExample("Search for configuration issues and print the effective configuration", "diagnose").
 		WithExample("Print the effective skaffold.yaml configuration for given profile", "diagnose --yaml-only --profile PROFILE").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.BoolVar(&yamlOnly, "yaml-only", false, "Only prints the effective skaffold.yaml configuration")
-		}).
+		WithFlags([]*Flag{
+			{Value: &yamlOnly, Name: "yaml-only", DefValue: false, Usage: "Only prints the effective skaffold.yaml configuration"}}).
 		NoArgs(doDiagnose)
 }
 
 func doDiagnose(ctx context.Context, out io.Writer) error {
-	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		if !yamlOnly {
-			fmt.Fprintln(out, "Skaffold version:", version.Get().GitCommit)
-			fmt.Fprintln(out, "Configuration version:", config.APIVersion)
-			fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
+	runCtx, config, err := runContext(opts)
+	if err != nil {
+		return err
+	}
 
-			if err := r.DiagnoseArtifacts(ctx, out); err != nil {
-				return fmt.Errorf("running diagnostic on artifacts: %w", err)
-			}
+	if !yamlOnly {
+		fmt.Fprintln(out, "Skaffold version:", version.Get().GitCommit)
+		fmt.Fprintln(out, "Configuration version:", config.APIVersion)
+		fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
 
-			color.Blue.Fprintln(out, "\nConfiguration")
+		if err := diagnose.CheckArtifacts(ctx, runCtx, out); err != nil {
+			return fmt.Errorf("running diagnostic on artifacts: %w", err)
 		}
 
-		buf, err := yaml.Marshal(config)
-		if err != nil {
-			return fmt.Errorf("marshalling configuration: %w", err)
-		}
-		out.Write(buf)
+		color.Blue.Fprintln(out, "\nConfiguration")
+	}
 
-		return nil
-	})
+	buf, err := yaml.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("marshalling configuration: %w", err)
+	}
+	out.Write(buf)
+
+	return nil
 }

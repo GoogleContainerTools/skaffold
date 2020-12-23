@@ -1,0 +1,3 @@
+[[build.env]]
+name = "GOOGLE_ENTRYPOINT"
+value = "npm start"

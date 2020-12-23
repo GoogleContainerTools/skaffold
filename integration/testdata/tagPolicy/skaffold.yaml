@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta5
+apiVersion: skaffold/v2beta11
 kind: Config
 build:
   artifacts:
@@ -27,5 +27,5 @@ profiles:
   build:
     tagPolicy:
       envTemplate:
-        template: "{{.IMAGE_NAME}}:tag"
+        template: "tag"
 - name: args

@@ -23,26 +23,28 @@ import (
 	"github.com/spf13/cobra"
 
 	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 )
 
+// for tests
+var doDebug = runDebug
+
 // NewCmdDebug describes the CLI command to run a pipeline in debug mode.
+// Unlike `dev`, `debug` defaults `auto-build` and `auto-deploy` to `false`.
 func NewCmdDebug() *cobra.Command {
 	return NewCmd("debug").
 		WithDescription("[beta] Run a pipeline in debug mode").
 		WithLongDescription("Similar to `dev`, but configures the pipeline for debugging.").
 		WithCommonFlags().
-		NoArgs(doDebug)
+		WithHouseKeepingMessages().
+		NoArgs(func(ctx context.Context, out io.Writer) error {
+			return doDebug(ctx, out)
+		})
 }
 
-func doDebug(ctx context.Context, out io.Writer) error {
-	// HACK: disable watcher to prevent redeploying changed containers during debugging
-	// TODO: enable file-sync but avoid redeploys of artifacts being debugged
-	if len(opts.TargetImages) == 0 {
-		opts.TargetImages = []string{"none"}
-	}
+func runDebug(ctx context.Context, out io.Writer) error {
 	opts.PortForward.ForwardPods = true
-	deploy.AddManifestTransform(debugging.ApplyDebuggingTransforms)
+	manifest.AddTransform(debugging.ApplyDebuggingTransforms)
 
 	return doDev(ctx, out)
 }

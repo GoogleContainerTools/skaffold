@@ -19,19 +19,23 @@ package analyze
 import (
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 )
 
 // kustomizeAnalyzer is a Visitor during the directory analysis that finds kustomize files
 type kustomizeAnalyzer struct {
 	directoryAnalyzer
+
+	bases          []string
 	kustomizePaths []string
 }
 
-func (k *kustomizeAnalyzer) analyzeFile(filePath string) error {
-	if !schema.IsSkaffoldConfig(filePath) && deploy.IsKustomizationPath(filePath) {
-		k.kustomizePaths = append(k.kustomizePaths, filepath.Dir(filePath))
+func (k *kustomizeAnalyzer) analyzeFile(path string) error {
+	switch {
+	case deploy.IsKustomizationBase(path):
+		k.bases = append(k.bases, filepath.Dir(path))
+	case deploy.IsKustomizationPath(path):
+		k.kustomizePaths = append(k.kustomizePaths, filepath.Dir(path))
 	}
 	return nil
 }

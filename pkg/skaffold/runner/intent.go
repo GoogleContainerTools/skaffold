@@ -117,3 +117,9 @@ func (i *intents) GetIntents() (bool, bool, bool) {
 	defer i.lock.Unlock()
 	return i.build, i.sync, i.deploy
 }
+
+func (i *intents) IsAnyAutoEnabled() bool {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	return i.autoBuild || i.autoSync || i.autoDeploy
+}

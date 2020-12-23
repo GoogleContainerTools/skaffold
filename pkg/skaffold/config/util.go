@@ -28,6 +28,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -37,8 +38,6 @@ import (
 const (
 	defaultConfigDir  = ".skaffold"
 	defaultConfigFile = "config"
-	tenDays           = time.Hour * 24 * 10
-	threeMonths       = time.Hour * 24 * 90
 )
 
 var (
@@ -73,6 +72,9 @@ func readConfigFileCached(filename string) (*GlobalConfig, error) {
 			return
 		}
 		configFile, configFileErr = ReadConfigFileNoCache(filenameOrDefault)
+		if configFileErr == nil {
+			logrus.Infof("Loaded Skaffold defaults from %q", filenameOrDefault)
+		}
 	})
 	return configFile, configFileErr
 }
@@ -161,28 +163,10 @@ func GetDefaultRepo(configFile string, cliValue *string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
+	if cfg.DefaultRepo != "" {
+		logrus.Infof("Using default-repo=%s from config", cfg.DefaultRepo)
+	}
 	return cfg.DefaultRepo, nil
-}
-
-func GetLocalCluster(configFile string, minikubeProfile string) (bool, error) {
-	if minikubeProfile != "" {
-		return true, nil
-	}
-	cfg, err := GetConfigForCurrentKubectx(configFile)
-	if err != nil {
-		return false, err
-	}
-	// when set, the local-cluster config takes precedence
-	if cfg.LocalCluster != nil {
-		return *cfg.LocalCluster, nil
-	}
-
-	config, err := kubectx.CurrentConfig()
-	if err != nil {
-		return true, err
-	}
-	return isDefaultLocal(config.CurrentContext), nil
 }
 
 func GetInsecureRegistries(configFile string) ([]string, error) {
@@ -190,23 +174,70 @@ func GetInsecureRegistries(configFile string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	if len(cfg.InsecureRegistries) > 0 {
+		logrus.Infof("Using insecure-registries=%v from config", cfg.InsecureRegistries)
+	}
 	return cfg.InsecureRegistries, nil
 }
 
-func isDefaultLocal(kubeContext string) bool {
-	if kubeContext == constants.DefaultMinikubeContext ||
-		kubeContext == constants.DefaultDockerForDesktopContext ||
-		kubeContext == constants.DefaultDockerDesktopContext {
-		return true
+func GetDebugHelpersRegistry(configFile string) (string, error) {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		return "", err
 	}
 
-	return IsKindCluster(kubeContext) || IsK3dCluster(kubeContext)
+	if cfg.DebugHelpersRegistry != "" {
+		logrus.Infof("Using debug-helpers-registry=%s from config", cfg.DebugHelpersRegistry)
+		return cfg.DebugHelpersRegistry, nil
+	}
+	return constants.DefaultDebugHelpersRegistry, nil
 }
 
-// IsImageLoadingRequired checks if the cluster requires loading images into it
-func IsImageLoadingRequired(kubeContext string) bool {
-	return IsKindCluster(kubeContext) || IsK3dCluster(kubeContext)
+func GetCluster(configFile string, minikubeProfile string, detectMinikube bool) (Cluster, error) {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		return Cluster{}, err
+	}
+
+	kubeContext := cfg.Kubecontext
+	isKindCluster, isK3dCluster := IsKindCluster(kubeContext), IsK3dCluster(kubeContext)
+
+	var local bool
+	switch {
+	case minikubeProfile != "":
+		local = true
+
+	case cfg.LocalCluster != nil:
+		logrus.Infof("Using local-cluster=%t from config", *cfg.LocalCluster)
+		local = *cfg.LocalCluster
+
+	case kubeContext == constants.DefaultMinikubeContext ||
+		kubeContext == constants.DefaultDockerForDesktopContext ||
+		kubeContext == constants.DefaultDockerDesktopContext ||
+		isKindCluster || isK3dCluster:
+		local = true
+
+	case detectMinikube:
+		local = cluster.GetClient().IsMinikube(kubeContext)
+
+	default:
+		local = false
+	}
+
+	kindDisableLoad := cfg.KindDisableLoad != nil && *cfg.KindDisableLoad
+	k3dDisableLoad := cfg.K3dDisableLoad != nil && *cfg.K3dDisableLoad
+
+	// load images for local kind/k3d cluster unless explicitly disabled
+	loadImages := local && ((isKindCluster && !kindDisableLoad) || (isK3dCluster && !k3dDisableLoad))
+
+	// push images for remote cluster or local kind/k3d cluster with image loading disabled
+	pushImages := !local || (isKindCluster && kindDisableLoad) || (isK3dCluster && k3dDisableLoad)
+
+	return Cluster{
+		Local:      local,
+		LoadImages: loadImages,
+		PushImages: pushImages,
+	}, nil
 }
 
 // IsKindCluster checks that the given `kubeContext` is talking to `kind`.
@@ -290,13 +321,13 @@ func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
 	if cfg == nil || cfg.Survey == nil {
 		return false
 	}
-	return lessThan(cfg.Survey.LastTaken, threeMonths) || lessThan(cfg.Survey.LastPrompted, tenDays)
+	return lessThan(cfg.Survey.LastTaken, 365*24*time.Hour) || lessThan(cfg.Survey.LastPrompted, 60*24*time.Hour)
 }
 
 func lessThan(date string, duration time.Duration) bool {
 	t, err := time.Parse(time.RFC3339, date)
 	if err != nil {
-		logrus.Debugf("could not parse data %s", date)
+		logrus.Debugf("could not parse date %q", date)
 		return false
 	}
 	return current().Sub(t) < duration

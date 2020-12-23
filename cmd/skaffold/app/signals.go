@@ -26,6 +26,7 @@ import (
 func catchCtrlC(cancel context.CancelFunc) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals,
+		os.Interrupt,
 		syscall.SIGTERM,
 		syscall.SIGINT,
 		syscall.SIGPIPE,

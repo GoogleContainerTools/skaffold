@@ -30,6 +30,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -66,12 +67,15 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 	defer r.listener.LogWatchToUser(out)
 	event.DevLoopInProgress(r.devIteration)
 	defer func() { r.devIteration++ }()
+
+	meterUpdated := false
 	if needsSync {
 		defer func() {
 			r.changeSet.resetSync()
 			r.intents.resetSync()
 		}()
-
+		instrumentation.AddDevIteration("sync")
+		meterUpdated = true
 		for _, s := range r.changeSet.needsResync {
 			fileCount := len(s.Copy) + len(s.Delete)
 			color.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
@@ -94,8 +98,11 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			r.changeSet.resetBuild()
 			r.intents.resetBuild()
 		}()
-
-		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
+		if !meterUpdated {
+			instrumentation.AddDevIteration("build")
+			meterUpdated = true
+		}
+		if _, err := r.Build(ctx, out, r.changeSet.needsRebuild); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 			return nil
@@ -110,6 +117,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		}()
 
 		forwarderManager.Stop()
+		if !meterUpdated {
+			instrumentation.AddDevIteration("deploy")
+		}
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
@@ -129,7 +139,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	event.DevLoopInProgress(r.devIteration)
 	defer func() { r.devIteration++ }()
-
+	g := getTransposeGraph(artifacts)
 	// Watch artifacts
 	start := time.Now()
 	color.Default.Fprintln(out, "Listing files to watch...")
@@ -148,17 +158,17 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		default:
 			if err := r.monitor.Register(
 				func() ([]string, error) {
-					return build.DependenciesForArtifact(ctx, artifact, r.runCtx.InsecureRegistries)
+					return build.DependenciesForArtifact(ctx, artifact, r.runCtx, r.artifactStore)
 				},
 				func(e filemon.Events) {
-					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx.InsecureRegistries)
+					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx, len(g[artifact.ImageName]))
 					switch {
 					case err != nil:
 						logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
 					case s != nil:
 						r.changeSet.AddResync(s)
 					default:
-						r.changeSet.AddRebuild(artifact)
+						addRebuild(g, artifact, r.changeSet.AddRebuild, r.runCtx.Opts.IsTargetImage)
 					}
 				},
 			); err != nil {
@@ -188,11 +198,11 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Watch Skaffold configuration
 	if err := r.monitor.Register(
-		func() ([]string, error) { return []string{r.runCtx.Opts.ConfigurationFile}, nil },
+		func() ([]string, error) { return []string{r.runCtx.ConfigurationFile()}, nil },
 		func(filemon.Events) { r.changeSet.needsReload = true },
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_CONFIG_DEP, err)
-		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.Opts.ConfigurationFile, err)
+		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.ConfigurationFile(), err)
 	}
 
 	logrus.Infoln("List generated in", time.Since(start))
@@ -204,7 +214,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// First build
-	bRes, err := r.BuildAndTest(ctx, out, artifacts)
+	bRes, err := r.Build(ctx, out, artifacts)
 	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
@@ -212,9 +222,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	logger := r.createLogger(out, bRes)
 	defer logger.Stop()
-
-	forwarderManager := r.createForwarder(out)
-	defer forwarderManager.Stop()
 
 	debugContainerManager := r.createContainerManager()
 	defer debugContainerManager.Stop()
@@ -227,6 +234,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
+
+	forwarderManager := r.createForwarder(out)
+	defer forwarderManager.Stop()
 
 	if err := forwarderManager.Start(ctx); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
@@ -245,4 +255,28 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	return r.listener.WatchForChanges(ctx, out, func() error {
 		return r.doDev(ctx, out, logger, forwarderManager)
 	})
+}
+
+// graph represents the artifact graph
+type graph map[string][]*latest.Artifact
+
+// getTransposeGraph builds the transpose of the graph represented by the artifacts slice, with edges directed from required artifact to the dependent artifact.
+func getTransposeGraph(artifacts []*latest.Artifact) graph {
+	g := make(map[string][]*latest.Artifact)
+	for _, a := range artifacts {
+		for _, d := range a.Dependencies {
+			g[d.ImageName] = append(g[d.ImageName], a)
+		}
+	}
+	return g
+}
+
+// addRebuild runs the `rebuild` function for all target artifacts in the transitive closure on the source `artifact` in graph `g`.
+func addRebuild(g graph, artifact *latest.Artifact, rebuild func(*latest.Artifact), isTarget func(*latest.Artifact) bool) {
+	if isTarget(artifact) {
+		rebuild(artifact)
+	}
+	for _, a := range g[artifact.ImageName] {
+		addRebuild(g, a, rebuild, isTarget)
+	}
 }

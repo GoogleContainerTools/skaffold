@@ -29,8 +29,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
@@ -49,26 +49,26 @@ var (
 )
 
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
-func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool) (kubectl.ManifestList, error) {
+func ApplyDebuggingTransforms(l manifest.ManifestList, builds []build.Artifact, registries manifest.Registries) (manifest.ManifestList, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	retriever := func(image string) (imageConfiguration, error) {
 		if artifact := findArtifact(image, builds); artifact != nil {
-			return retrieveImageConfiguration(ctx, artifact, insecureRegistries)
+			return retrieveImageConfiguration(ctx, artifact, registries.InsecureRegistries)
 		}
 		return imageConfiguration{}, fmt.Errorf("no build artifact for %q", image)
 	}
-	return applyDebuggingTransforms(l, retriever)
+	return applyDebuggingTransforms(l, retriever, registries.DebugHelpersRegistry)
 }
 
-func applyDebuggingTransforms(l kubectl.ManifestList, retriever configurationRetriever) (kubectl.ManifestList, error) {
-	var updated kubectl.ManifestList
+func applyDebuggingTransforms(l manifest.ManifestList, retriever configurationRetriever, debugHelpersRegistry string) (manifest.ManifestList, error) {
+	var updated manifest.ManifestList
 	for _, manifest := range l {
 		obj, _, err := decodeFromYaml(manifest, nil, nil)
 		if err != nil {
 			logrus.Debugf("Unable to interpret manifest for debugging: %v\n", err)
-		} else if transformManifest(obj, retriever) {
+		} else if transformManifest(obj, retriever, debugHelpersRegistry) {
 			manifest, err = encodeAsYaml(obj)
 			if err != nil {
 				return nil, fmt.Errorf("marshalling yaml: %w", err)
@@ -83,8 +83,13 @@ func applyDebuggingTransforms(l kubectl.ManifestList, retriever configurationRet
 	return updated, nil
 }
 
-// findArtifact finds the corresponding artifact for the given image
+// findArtifact finds the corresponding artifact for the given image.
+// If `builds` is empty, then treat all `image` images as a build artifact.
 func findArtifact(image string, builds []build.Artifact) *build.Artifact {
+	if len(builds) == 0 {
+		logrus.Debugf("No build artifacts specified: using image as-is %q", image)
+		return &build.Artifact{ImageName: image, Tag: image}
+	}
 	for _, artifact := range builds {
 		if image == artifact.ImageName || image == artifact.Tag {
 			logrus.Debugf("Found artifact for image %q", image)

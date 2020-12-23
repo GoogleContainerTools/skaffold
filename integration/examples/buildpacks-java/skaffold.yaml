@@ -1,0 +1,13 @@
+apiVersion: skaffold/v2beta11
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-buildpacks
+    buildpacks:
+      builder: "gcr.io/buildpacks/builder:v1"
+      env:
+      - GOOGLE_RUNTIME_VERSION=8
+profiles:
+- name: gcb
+  build:
+    googleCloudBuild: {}

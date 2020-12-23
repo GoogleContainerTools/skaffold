@@ -17,6 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -24,6 +25,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 )
 
 type PodWatcher interface {
@@ -66,7 +69,7 @@ func (w *podWatcher) Start() (func(), error) {
 		}
 	}
 
-	kubeclient, err := Client()
+	kubeclient, err := client.Client()
 	if err != nil {
 		return func() {}, fmt.Errorf("getting k8s client: %w", err)
 	}
@@ -74,7 +77,7 @@ func (w *podWatcher) Start() (func(), error) {
 	var forever int64 = 3600 * 24 * 365 * 100
 
 	for _, ns := range w.namespaces {
-		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(metav1.ListOptions{
+		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(context.Background(), metav1.ListOptions{
 			TimeoutSeconds: &forever,
 		})
 		if err != nil {

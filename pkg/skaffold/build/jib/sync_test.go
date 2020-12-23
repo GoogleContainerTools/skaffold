@@ -283,8 +283,8 @@ func TestGetSyncDiff_directChecksUpdateFileTime(testing *testing.T) {
 		updatedFileTime := getFileTime(directFile, testing)
 
 		_, _, err := GetSyncDiff(ctx, workspace, artifact, filemon.Events{Modified: []string{directFile}})
-		t.CheckError(false, err)
 
+		t.CheckNoError(err)
 		t.CheckDeepEqual(SyncMap{directFile: SyncEntry{directTarget, updatedFileTime, true}}, syncLists[pk])
 	})
 }

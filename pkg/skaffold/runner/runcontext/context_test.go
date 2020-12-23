@@ -24,46 +24,69 @@ import (
 
 func TestRunContext_UpdateNamespaces(t *testing.T) {
 	tests := []struct {
-		description string
-		runContext  *RunContext
-		namespaces  []string
-		expected    []string
+		description   string
+		oldNamespaces []string
+		newNamespaces []string
+		expected      []string
 	}{
 		{
-			description: "update namespace when not present in runContext",
-			runContext:  &RunContext{Namespaces: []string{"test"}},
-			namespaces:  []string{"another"},
-			expected:    []string{"another", "test"},
+			description:   "update namespace when not present in runContext",
+			oldNamespaces: []string{"test"},
+			newNamespaces: []string{"another"},
+			expected:      []string{"another", "test"},
 		},
 		{
-			description: "update namespace with duplicates should not return duplicate",
-			runContext:  &RunContext{Namespaces: []string{"test", "foo"}},
-			namespaces:  []string{"another", "foo", "another"},
-			expected:    []string{"another", "foo", "test"},
+			description:   "update namespace with duplicates should not return duplicate",
+			oldNamespaces: []string{"test", "foo"},
+			newNamespaces: []string{"another", "foo", "another"},
+			expected:      []string{"another", "foo", "test"},
 		},
 		{
-			description: "update namespaces when namespaces is empty",
-			runContext:  &RunContext{Namespaces: []string{"test", "foo"}},
-			namespaces:  []string{},
-			expected:    []string{"test", "foo"},
+			description:   "update namespaces when namespaces is empty",
+			oldNamespaces: []string{"test", "foo"},
+			newNamespaces: []string{},
+			expected:      []string{"test", "foo"},
 		},
 		{
-			description: "update namespaces when runcontext namespaces is empty",
-			runContext:  &RunContext{Namespaces: []string{}},
-			namespaces:  []string{"test", "another"},
-			expected:    []string{"another", "test"},
+			description:   "update namespaces when runcontext namespaces is empty",
+			oldNamespaces: []string{},
+			newNamespaces: []string{"test", "another"},
+			expected:      []string{"another", "test"},
 		},
 		{
-			description: "update namespaces when both namespaces and runcontext namespaces is empty",
-			runContext:  &RunContext{Namespaces: []string{}},
-			namespaces:  []string{},
-			expected:    []string{},
+			description:   "update namespaces when both namespaces and runcontext namespaces is empty",
+			oldNamespaces: []string{},
+			newNamespaces: []string{},
+			expected:      []string{},
+		},
+		{
+			description:   "update namespace when runcontext namespace has an empty string",
+			oldNamespaces: []string{""},
+			newNamespaces: []string{"another"},
+			expected:      []string{"another"},
+		},
+		{
+			description:   "update namespace when namespace is empty string",
+			oldNamespaces: []string{"test"},
+			newNamespaces: []string{""},
+			expected:      []string{"test"},
+		},
+		{
+			description:   "update namespace when namespace is empty string and runContext is empty",
+			oldNamespaces: []string{},
+			newNamespaces: []string{""},
+			expected:      []string{},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			test.runContext.UpdateNamespaces(test.namespaces)
-			t.CheckDeepEqual(test.expected, test.runContext.Namespaces)
+			runCtx := &RunContext{
+				Namespaces: test.oldNamespaces,
+			}
+
+			runCtx.UpdateNamespaces(test.newNamespaces)
+
+			t.CheckDeepEqual(test.expected, runCtx.Namespaces)
 		})
 	}
 }

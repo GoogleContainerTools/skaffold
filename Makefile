@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+GOPATH ?= $(shell go env GOPATH)
 GOOS ?= $(shell go env GOOS)
-GOARCH ?= amd64
+GOARCH ?= $(shell go env GOARCH)
 BUILD_DIR ?= ./out
 ORG = github.com/GoogleContainerTools
 PROJECT = skaffold
@@ -22,6 +23,8 @@ GSC_BUILD_PATH ?= gs://$(RELEASE_BUCKET)/builds/$(COMMIT)
 GSC_BUILD_LATEST ?= gs://$(RELEASE_BUCKET)/builds/latest
 GSC_RELEASE_PATH ?= gs://$(RELEASE_BUCKET)/releases/$(VERSION)
 GSC_RELEASE_LATEST ?= gs://$(RELEASE_BUCKET)/releases/latest
+KIND_NODE ?= kindest/node:v1.13.12@sha256:214476f1514e47fe3f6f54d0f9e24cfb1e4cda449529791286c7161b7f9c08e7
+K3D_NODE ?= rancher/k3s:v1.18.6-k3s1@sha256:a835d76608a2503af8b681bb5888499d7c3456902f6853c8c1031f4a884715ca
 
 GCP_ONLY ?= false
 GCP_PROJECT ?= k8s-skaffold
@@ -32,13 +35,13 @@ SUPPORTED_PLATFORMS = linux-amd64 darwin-amd64 windows-amd64.exe linux-arm64
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 SKAFFOLD_TEST_PACKAGES = ./pkg/skaffold/... ./cmd/... ./hack/... ./pkg/webhook/...
-GO_FILES = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./pkg/diag/*")
+GO_FILES = $(shell find . -type f -name '*.go' -not -path "./pkg/diag/*")
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
 
 ifeq "$(strip $(VERSION))" ""
- override VERSION = $(shell git describe --always --tags --dirty)
+	override VERSION = $(shell git describe --always --tags --dirty)
 endif
 
 LDFLAGS_linux = -static
@@ -59,14 +62,17 @@ GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
 GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
 GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
-STATIK_FILES = cmd/skaffold/app/cmd/statik/statik.go
+ifneq "$(strip $(LOCAL))" "true"
+	override STATIK_FILES =  cmd/skaffold/app/cmd/statik/statik.go
+endif
 
-# Build for local development.
+# when build for local development (`LOCAL=true make install` can skip license check)
 $(BUILD_DIR)/$(PROJECT): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -o $@ $(BUILD_PACKAGE)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -gcflags="all=-N -l" -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -o $@ $(BUILD_PACKAGE)
 
 .PHONY: install
 install: $(BUILD_DIR)/$(PROJECT)
+	mkdir -p $(GOPATH)/bin
 	cp $(BUILD_DIR)/$(PROJECT) $(GOPATH)/bin/$(PROJECT)
 
 .PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
@@ -185,6 +191,8 @@ skaffold-builder:
 .PHONY: integration-in-kind
 integration-in-kind: skaffold-builder
 	echo '{}' > /tmp/docker-config
+	docker pull $(KIND_NODE)
+	docker network inspect kind >/dev/null 2>&1 || docker network create kind
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.gradle:/root/.gradle \
@@ -194,10 +202,33 @@ integration-in-kind: skaffold-builder
 		-e KUBECONFIG=/tmp/kind-config \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
+		--network kind \
+		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		sh -eu -c ' \
+			if ! kind get clusters | grep -q kind; then \
+			  trap "kind delete cluster" 0 1 2 15; \
+			  TERM=dumb kind create cluster --image=$(KIND_NODE); \
+			fi; \
+			kind get kubeconfig --internal > /tmp/kind-config; \
+			make integration \
+		'
+
+.PHONY: integration-in-k3d
+integration-in-k3d: skaffold-builder
+	echo '{}' > /tmp/docker-config
+	docker pull $(K3D_NODE)
+	docker run --rm \
+		--network="host" \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.gradle:/root/.gradle \
+		-v $(HOME)/.cache:/root/.cache \
+		-v /tmp/docker-config:/root/.docker/config.json \
+		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
+		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
+		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -c ' \
-			kind get clusters | grep -q kind || TERM=dumb kind create cluster --image=kindest/node:v1.13.12@sha256:ad1dd06aca2b85601f882ba1df4fdc03d5a57b304652d0e81476580310ba6289; \
-			kind get kubeconfig --internal > /tmp/kind-config; \
+			k3d cluster list | grep -q k3s-default || TERM=dumb k3d cluster create --image=$(K3D_NODE); \
 			make integration \
 		'
 

@@ -25,12 +25,12 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/google/go-containerregistry/pkg/name"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/random"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -106,6 +106,7 @@ func TestBuild(t *testing.T) {
 		workspace     string
 		artifact      *latest.DockerArtifact
 		expected      types.ImageBuildOptions
+		mode          config.RunMode
 		shouldErr     bool
 		expectedError string
 	}{
@@ -118,6 +119,7 @@ func TestBuild(t *testing.T) {
 				Tags:        []string{"finalimage"},
 				AuthConfigs: allAuthConfig,
 			},
+			mode: config.RunModes.Dev,
 		},
 		{
 			description: "build with options",
@@ -138,6 +140,7 @@ func TestBuild(t *testing.T) {
 				NetworkMode: "None",
 				NoCache:     true,
 			},
+			mode: config.RunModes.Dev,
 			expected: types.ImageBuildOptions{
 				Tags:       []string{"finalimage"},
 				Dockerfile: "Dockerfile",
@@ -158,6 +161,7 @@ func TestBuild(t *testing.T) {
 			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
+			mode:          config.RunModes.Dev,
 			workspace:     ".",
 			artifact:      &latest.DockerArtifact{},
 			shouldErr:     true,
@@ -169,6 +173,7 @@ func TestBuild(t *testing.T) {
 				ErrStream: true,
 			},
 			workspace:     ".",
+			mode:          config.RunModes.Dev,
 			artifact:      &latest.DockerArtifact{},
 			shouldErr:     true,
 			expectedError: "unable to stream build output",
@@ -180,6 +185,7 @@ func TestBuild(t *testing.T) {
 					"key": util.StringPtr("{{INVALID"),
 				},
 			},
+			mode:          config.RunModes.Dev,
 			shouldErr:     true,
 			expectedError: `function "INVALID" not defined`,
 		},
@@ -187,10 +193,14 @@ func TestBuild(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
+			t.Override(&EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+				return util.EvaluateEnvTemplateMap(args)
+			})
 			t.SetEnvs(test.env)
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
-			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage")
+			opts := BuildOptions{Tag: "finalimage", Mode: test.mode}
+			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, "final-image", test.artifact, opts)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
@@ -244,6 +254,13 @@ func TestImageID(t *testing.T) {
 			imageID, err := localDocker.ImageID(context.Background(), test.ref)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, imageID)
+			if test.shouldErr {
+				if e, ok := err.(sErrors.Error); ok {
+					t.CheckDeepEqual(e.StatusCode(), proto.StatusCode_BUILD_DOCKER_GET_DIGEST_ERR)
+				} else {
+					t.Error("expected to be of type actionable err not found")
+				}
+			}
 		})
 	}
 }
@@ -306,6 +323,60 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--no-cache"},
 		},
 		{
+			description: "squash",
+			artifact: &latest.DockerArtifact{
+				Squash: true,
+			},
+			want: []string{"--squash"},
+		},
+		{
+			description: "secret with no source",
+			artifact: &latest.DockerArtifact{
+				Secret: &latest.DockerSecret{
+					ID: "mysecret",
+				},
+			},
+			want: []string{"--secret", "id=mysecret"},
+		},
+		{
+			description: "secret with source",
+			artifact: &latest.DockerArtifact{
+				Secret: &latest.DockerSecret{
+					ID:     "mysecret",
+					Source: "foo.src",
+				},
+			},
+			want: []string{"--secret", "id=mysecret,src=foo.src"},
+		},
+		{
+			description: "secret with destination",
+			artifact: &latest.DockerArtifact{
+				Secret: &latest.DockerSecret{
+					ID:          "mysecret",
+					Destination: "foo.dst",
+				},
+			},
+			want: []string{"--secret", "id=mysecret,dst=foo.dst"},
+		},
+		{
+			description: "secret with source and destination",
+			artifact: &latest.DockerArtifact{
+				Secret: &latest.DockerSecret{
+					ID:          "mysecret",
+					Source:      "foo.src",
+					Destination: "foo.dst",
+				},
+			},
+			want: []string{"--secret", "id=mysecret,src=foo.src,dst=foo.dst"},
+		},
+		{
+			description: "ssh with no source",
+			artifact: &latest.DockerArtifact{
+				SSH: "default",
+			},
+			want: []string{"--ssh", "default"},
+		},
+		{
 			description: "all",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
@@ -321,8 +392,13 @@ func TestGetBuildArgs(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.env })
+			args, err := util.EvaluateEnvTemplateMap(test.artifact.BuildArgs)
+			t.CheckError(test.shouldErr, err)
+			if test.shouldErr {
+				return
+			}
 
-			result, err := GetBuildArgs(test.artifact)
+			result, err := ToCLIBuildArgs(test.artifact, args)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
@@ -364,65 +440,6 @@ func TestImageExists(t *testing.T) {
 			actual := localDocker.ImageExists(context.Background(), test.image)
 
 			t.CheckDeepEqual(test.expected, actual)
-		})
-	}
-}
-
-func TestInsecureRegistry(t *testing.T) {
-	tests := []struct {
-		description        string
-		image              string
-		insecureRegistries map[string]bool
-		insecure           bool
-		shouldErr          bool
-	}{
-		{
-			description:        "secure image",
-			image:              "gcr.io/secure/image",
-			insecureRegistries: map[string]bool{},
-		},
-		{
-			description: "insecure image",
-			image:       "my.insecure.registry/image",
-			insecureRegistries: map[string]bool{
-				"my.insecure.registry": true,
-			},
-			insecure: true,
-		},
-		{
-			description: "insecure image not provided by user",
-			image:       "my.insecure.registry/image",
-			insecure:    true,
-			shouldErr:   true,
-		},
-		{
-			description: "secure image provided in insecure registries list",
-			image:       "gcr.io/secure/image",
-			insecureRegistries: map[string]bool{
-				"gcr.io": true,
-			},
-			shouldErr: true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			called := false // variable to make sure we've called our getInsecureRegistry function
-
-			t.Override(&getInsecureRegistryImpl, func(string) (name.Reference, error) {
-				called = true
-				return name.Tag{}, nil
-			})
-			t.Override(&getRemoteImageImpl, func(name.Reference) (v1.Image, error) {
-				return random.Image(0, 0)
-			})
-
-			_, err := remoteImage(test.image, test.insecureRegistries)
-
-			t.CheckNoError(err)
-			if !test.shouldErr {
-				t.CheckFalse(test.insecure && !called)
-				t.CheckFalse(!test.insecure && called)
-			}
 		})
 	}
 }

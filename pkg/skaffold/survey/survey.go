@@ -20,30 +20,33 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
 
 const (
-	Prompt = `Help improve Skaffold! Take a 10-second anonymous survey by running
-   skaffold survey`
+	Prompt = `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey'
+`
 
 	URL = "https://forms.gle/BMTbGQXLWSdn7vEs6"
 )
 
 var (
 	Form = fmt.Sprintf(`Thank you for offering your feedback on Skaffold! Understanding your experiences and opinions helps us make Skaffold better for you and other users.
-   Our survey can be found here: %s
 
-To permanently disable the survey prompt, run:
+Skaffold will now attempt to open the survey in your default web browser. You may also manually open it using this link:
+
+%s
+
+Tip: To permanently disable the survey prompt, run:
    skaffold config set --survey --global disable-prompt true`, URL)
 
 	// for testing
-	isStdOut     = stdOut
+	isStdOut     = color.IsStdout
 	open         = browser.OpenURL
 	updateConfig = config.UpdateGlobalSurveyPrompted
 )
@@ -60,7 +63,7 @@ func New(configFile string) *Runner {
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {
 	if isStdOut(out) {
-		fmt.Fprintln(out, Prompt)
+		color.Green.Fprintf(out, Prompt)
 	}
 	return updateConfig(s.configFile)
 }
@@ -77,8 +80,4 @@ func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer) error {
 	// Currently we will only update the global survey taken
 	// When prompting for the survey, we need to use the same field.
 	return config.UpdateGlobalSurveyTaken(s.configFile)
-}
-
-func stdOut(out io.Writer) bool {
-	return out == os.Stdout
 }
