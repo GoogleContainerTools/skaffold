@@ -556,6 +556,20 @@ func TestActivatedProfiles(t *testing.T) {
 			},
 			expected: []string{"activated", "also-activated", "regex-activated", "regex-activated-two", "regex-activated-substring-match"},
 		}, {
+			description: "Profile with multiple valid activations",
+			envs:        map[string]string{"KEY": "VALUE"},
+			opts: cfg.SkaffoldOptions{
+				ProfileAutoActivation: true,
+				Command:               "dev",
+				Profiles:              []string{"activated", "also-activated"},
+			},
+			profiles: []latest.Profile{
+				{Name: "activated", Activation: []latest.Activation{{Env: "KEY=VALUE"}, {Command: "dev"}}},
+				{Name: "not-activated", Activation: []latest.Activation{{Env: "KEY=OTHER"}}},
+				{Name: "also-activated", Activation: []latest.Activation{{Env: "KEY=!OTHER"}}},
+			},
+			expected: []string{"activated", "also-activated"},
+		}, {
 			description: "Invalid env variable",
 			envs:        map[string]string{"KEY": "VALUE"},
 			opts: cfg.SkaffoldOptions{
