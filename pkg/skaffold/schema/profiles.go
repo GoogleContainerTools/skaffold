@@ -105,6 +105,7 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]s
 						contextSpecificProfiles = append(contextSpecificProfiles, profile.Name)
 					}
 					activated = append(activated, profile.Name)
+					break
 				}
 			}
 		}
@@ -113,7 +114,7 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]s
 	for _, profile := range opts.Profiles {
 		if strings.HasPrefix(profile, "-") {
 			activated = removeValue(activated, strings.TrimPrefix(profile, "-"))
-		} else {
+		} else if !skutil.StrSliceContains(activated, profile) {
 			activated = append(activated, profile)
 		}
 	}
