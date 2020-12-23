@@ -178,7 +178,7 @@ message BuildEvent {
 // anytime a test starts or completes, successfully or not.
 message TestEvent {
     string status = 1; // test status oneof: InProgress, Completed, Failed
-    ActionableErr actionableErr = 4; // actionable error message
+    ActionableErr actionableErr = 2; // actionable error message
 }
 
 // `DeployEvent` represents the status of a deployment, and is emitted by Skaffold
