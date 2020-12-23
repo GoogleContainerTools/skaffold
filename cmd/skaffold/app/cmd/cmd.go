@@ -44,6 +44,7 @@ var (
 	forceColors  bool
 	defaultColor int
 	overwrite    bool
+	timestamps   bool
 )
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
@@ -69,7 +70,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			cmd.Root().SetOutput(out)
 
 			// Setup logs
-			if err := setUpLogs(err, v); err != nil {
+			if err := setUpLogs(err, v, timestamps); err != nil {
 				return err
 			}
 
@@ -168,7 +169,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.DefaultColorCode), "Specify the default output color in ANSI escape codes")
 	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
 	rootCmd.PersistentFlags().MarkHidden("force-colors")
-
+	rootCmd.PersistentFlags().BoolVar(&timestamps, "timestamps", false, "Print timestamp in skaffold logs.")
 	setFlagsFromEnvVariables(rootCmd)
 
 	return rootCmd
@@ -235,13 +236,16 @@ func FlagToEnvVarName(f *pflag.Flag) string {
 	return fmt.Sprintf("SKAFFOLD_%s", strings.Replace(strings.ToUpper(f.Name), "-", "_", -1))
 }
 
-func setUpLogs(stdErr io.Writer, level string) error {
+func setUpLogs(stdErr io.Writer, level string, timestamp bool) error {
 	logrus.SetOutput(stdErr)
 	lvl, err := logrus.ParseLevel(level)
 	if err != nil {
 		return fmt.Errorf("parsing log level: %w", err)
 	}
 	logrus.SetLevel(lvl)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: timestamp,
+	})
 	return nil
 }
 
