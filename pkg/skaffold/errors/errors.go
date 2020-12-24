@@ -30,7 +30,6 @@ const (
 	// These are phases in a Skaffolld
 	Init        = Phase("Init")
 	Build       = Phase("Build")
-	Test        = Phase("Test")
 	Deploy      = Phase("Deploy")
 	StatusCheck = Phase("StatusCheck")
 	FileSync    = Phase("FileSync")

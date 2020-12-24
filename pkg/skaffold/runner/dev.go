@@ -102,20 +102,10 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			instrumentation.AddDevIteration("build")
 			meterUpdated = true
 		}
-		bRes, err := r.Build(ctx, out, r.changeSet.needsRebuild)
-		if err != nil {
-			logrus.Warnln("Skipping test and deploy due to error:", err)
+		if _, err := r.Build(ctx, out, r.changeSet.needsRebuild); err != nil {
+			logrus.Warnln("Skipping deploy due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 			return nil
-		}
-		if !r.runCtx.SkipTests() {
-			logrus.Infoln("[Priya_1] - in dev.go. bRes is: ", bRes)
-			if err = r.Test(ctx, out, bRes); err != nil {
-				logrus.Infoln("[Priya_1.1] - in dev.go. err is: ", err)
-				logrus.Warnln("Skipping deploy due to error:", err)
-				event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
-				return err
-			}
 		}
 	}
 
@@ -228,12 +218,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
-	}
-	if !r.runCtx.SkipTests() {
-		if err = r.Test(ctx, out, bRes); err != nil {
-			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
-			return fmt.Errorf("exiting dev mode because test failed: %w", err)
-		}
 	}
 
 	logger := r.createLogger(out, bRes)

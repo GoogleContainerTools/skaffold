@@ -27,7 +27,6 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/sirupsen/logrus"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
@@ -338,7 +337,6 @@ func DevLoopInProgress(i int) {
 
 // DevLoopFailed notifies that a dev loop has failed with an error code
 func DevLoopFailedWithErrorCode(i int, statusCode proto.StatusCode, err error) {
-	logrus.Infoln("[Priya_3.1] - in event.go. err is: ", err)
 	instrumentation.AddDevIterationErr(i, statusCode)
 	ai := &proto.ActionableErr{
 		ErrCode: statusCode,
@@ -352,7 +350,6 @@ func DevLoopFailedWithErrorCode(i int, statusCode proto.StatusCode, err error) {
 
 // DevLoopFailed notifies that a dev loop has failed in a given phase
 func DevLoopFailedInPhase(iteration int, phase sErrors.Phase, err error) {
-	logrus.Infoln("[Priya_3] - in event.go. phase is: ", phase)
 	state := handler.getState()
 	switch phase {
 	case sErrors.Deploy:
