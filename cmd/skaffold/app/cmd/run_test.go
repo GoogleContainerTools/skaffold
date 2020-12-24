@@ -62,6 +62,10 @@ func (r *mockRunRunner) Build(_ context.Context, _ io.Writer, artifacts []*lates
 	return result, nil
 }
 
+func (r *mockRunRunner) Test(context.Context, io.Writer, []build.Artifact) error {
+	return nil
+}
+
 func (r *mockRunRunner) DeployAndLog(context.Context, io.Writer, []build.Artifact) error {
 	return nil
 }
