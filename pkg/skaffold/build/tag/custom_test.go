@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -42,8 +43,13 @@ func TestCustomTag_GenerateTag(t *testing.T) {
 			shouldErr:   true,
 		},
 	}
+
+	testImage := &latest.Artifact{
+		ImageName: "test",
+	}
+
 	for _, test := range tests {
-		tag, err := test.c.GenerateTag(".", "test")
+		tag, err := test.c.GenerateTag(".", testImage)
 		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, tag)
 	}
 }

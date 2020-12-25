@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"testing"
 	"time"
 
@@ -111,7 +112,11 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return env })
 
-			tag, err := GenerateFullyQualifiedImageName(test.tagger, ".", test.imageName)
+			testImage := &latest.Artifact{
+				ImageName: test.imageName,
+			}
+
+			tag, err := GenerateFullyQualifiedImageName(test.tagger, ".", testImage)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, tag)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})

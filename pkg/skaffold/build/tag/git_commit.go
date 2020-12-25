@@ -19,6 +19,7 @@ package tag
 import (
 	"bytes"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -60,7 +61,7 @@ func NewGitCommit(prefix, variant string, ignoreChanges bool) (*GitCommit, error
 }
 
 // GenerateTag generates a tag from the git commit.
-func (t *GitCommit) GenerateTag(workingDir, _ string) (string, error) {
+func (t *GitCommit) GenerateTag(workingDir string, _ *latest.Artifact) (string, error) {
 	ref, err := t.runGitFn(workingDir)
 	if err != nil {
 		return "", fmt.Errorf("unable to find git commit: %w", err)

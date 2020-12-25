@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -93,13 +94,17 @@ func TestEnvTemplateTagger_GenerateTag(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			fakeWarner := &warnings.Collect{}
+			testImage := &latest.Artifact{
+				ImageName: test.imageName,
+			}
+
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return test.env })
 
 			c, err := NewEnvTemplateTagger(test.template)
 			t.CheckNoError(err)
 
-			got, err := c.GenerateTag(".", test.imageName)
+			got, err := c.GenerateTag(".", testImage)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)

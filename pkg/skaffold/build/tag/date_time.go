@@ -18,6 +18,7 @@ package tag
 
 import (
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"time"
 
 	"4d63.com/tz"
@@ -43,7 +44,7 @@ func NewDateTimeTagger(format, timezone string) Tagger {
 }
 
 // GenerateTag generates a tag using the current timestamp.
-func (t *dateTimeTagger) GenerateTag(_, _ string) (string, error) {
+func (t *dateTimeTagger) GenerateTag(_ string, image *latest.Artifact) (string, error) {
 	format := tagTime
 	if len(t.Format) > 0 {
 		format = t.Format

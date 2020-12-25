@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"testing"
 	"time"
 
@@ -68,7 +69,11 @@ func TestDateTime_GenerateTag(t *testing.T) {
 				timeFn:   func() time.Time { return test.buildTime },
 			}
 
-			tag, err := c.GenerateTag(".", "test")
+			testImage := &latest.Artifact{
+				ImageName: "test",
+			}
+
+			tag, err := c.GenerateTag(".", testImage)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, tag)
 		})

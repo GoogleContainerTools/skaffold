@@ -17,6 +17,7 @@ limitations under the License.
 package tag
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -25,21 +26,30 @@ import (
 func TestSha256_GenerateTag(t *testing.T) {
 	c := &ChecksumTagger{}
 
-	tag, err := c.GenerateTag(".", "img:tag")
+	testImage := &latest.Artifact{
+		ImageName: "img:tag",
+	}
+
+	tag, err := c.GenerateTag(".", testImage)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "", tag)
 
-	tag, err = c.GenerateTag(".", "img")
+	testImage.ImageName = "img"
+	tag, err = c.GenerateTag(".", testImage)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "latest", tag)
 
-	tag, err = c.GenerateTag(".", "registry.example.com:8080/img:tag")
+	testImage.ImageName = "registry.example.com:8080/img:tag"
+	tag, err = c.GenerateTag(".", testImage)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "", tag)
 
-	tag, err = c.GenerateTag(".", "registry.example.com:8080/img")
+	testImage.ImageName = "registry.example.com:8080/img"
+	tag, err = c.GenerateTag(".", testImage)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "latest", tag)
 
-	tag, err = c.GenerateTag(".", "registry.example.com/img")
+	testImage.ImageName = "registry.example.com/img"
+	tag, err = c.GenerateTag(".", testImage)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "latest", tag)
 
-	tag, err = c.GenerateTag(".", "registry.example.com:8080:garbage")
+	testImage.ImageName = "registry.example.com:8080:garbage"
+	tag, err = c.GenerateTag(".", testImage)
 	testutil.CheckErrorAndDeepEqual(t, true, err, "", tag)
 }
