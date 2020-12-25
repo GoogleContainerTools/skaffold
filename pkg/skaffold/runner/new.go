@@ -19,6 +19,7 @@ package runner
 import (
 	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 
 	"github.com/sirupsen/logrus"
 
@@ -51,13 +52,13 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	event.InitializeState(runCtx.Pipeline(), runCtx.GetKubeContext(), runCtx.AutoBuild(), runCtx.AutoDeploy(), runCtx.AutoSync())
 	event.LogMetaEvent()
 	kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
+	store := build.NewArtifactStore()
 
-	tagger, err := getTagger(runCtx)
+	tagger, err := getTagger(runCtx, store)
 	if err != nil {
 		return nil, fmt.Errorf("creating tagger: %w", err)
 	}
 
-	store := build.NewArtifactStore()
 	builder, imagesAreLocal, err := getBuilder(runCtx, store)
 	if err != nil {
 		return nil, fmt.Errorf("creating builder: %w", err)
@@ -250,7 +251,7 @@ func getDeployer(cfg kubectl.Config, labels map[string]string) (deploy.Deployer,
 	return deployers, nil
 }
 
-func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {
+func getTagger(runCtx *runcontext.RunContext, store docker.ArtifactResolver) (tag.Tagger, error) {
 	t := runCtx.Pipeline().Build.TagPolicy
 
 	switch {
@@ -279,7 +280,27 @@ func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {
 		}
 
 		return tag.NewCustomTemplateTagger(t.CustomTemplateTagger.Template, components)
+	case t.InputDigest != nil:
+		graph := build.ToArtifactGraph(runCtx.Pipeline().Build.Artifacts)
 
+		depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+			dependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx, store)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, dep := range graph.Dependencies(artifact) {
+				srcDep, err2 := build.DependenciesForArtifact(ctx, dep, runCtx, store)
+				if err2 != nil {
+					return nil, err2
+				}
+				dependencies = append(dependencies, srcDep...)
+			}
+
+			return dependencies, nil
+		}
+
+		return tag.NewInputDigestTagger(depLister)
 	default:
 		return nil, fmt.Errorf("unknown tagger for strategy %+v", t)
 	}

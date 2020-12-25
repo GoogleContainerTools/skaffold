@@ -134,10 +134,16 @@ type TagPolicy struct {
 
 	// CustomTemplateTagger *beta* tags images with a configurable template string *composed of other taggers*.
 	CustomTemplateTagger *CustomTemplateTagger `yaml:"customTemplate,omitempty" yamltags:"oneOf=tag"`
+
+	// InputDigest *beta* tags images with their sha256 digest of their content.
+	InputDigest *ShaTagger `yaml:"inputDigest,omitempty" yamltags:"oneOf=tag"`
 }
 
 // ShaTagger *beta* tags images with their sha256 digest.
 type ShaTagger struct{}
+
+// InputDigest *beta* tags hashes the image content.
+type InputDigest struct{}
 
 // GitTagger *beta* tags images with the git tag or commit of the artifact's workspace.
 type GitTagger struct {

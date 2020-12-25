@@ -1554,6 +1554,10 @@
       "description": "describes a helm release to be deployed.",
       "x-intellij-html-description": "describes a helm release to be deployed."
     },
+    "InputDigest": {
+      "description": "*beta* tags hashes the image content.",
+      "x-intellij-html-description": "<em>beta</em> tags hashes the image content."
+    },
     "JSONPatch": {
       "required": [
         "path"
@@ -2655,6 +2659,11 @@
           "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",
           "x-intellij-html-description": "<em>beta</em> tags images with the git tag or commit of the artifact's workspace."
         },
+        "inputDigest": {
+          "$ref": "#/definitions/ShaTagger",
+          "description": "*beta* tags images with their sha256 digest of their content.",
+          "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest of their content."
+        },
         "sha256": {
           "$ref": "#/definitions/ShaTagger",
           "description": "*beta* tags images with their sha256 digest.",
@@ -2666,7 +2675,8 @@
         "sha256",
         "envTemplate",
         "dateTime",
-        "customTemplate"
+        "customTemplate",
+        "inputDigest"
       ],
       "additionalProperties": false,
       "description": "contains all the configuration for the tagging step.",
@@ -2779,6 +2789,25 @@
           "preferredOrder": [
             "name",
             "customTemplate"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "inputDigest": {
+              "$ref": "#/definitions/ShaTagger",
+              "description": "*beta* tags images with their sha256 digest of their content.",
+              "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest of their content."
+            },
+            "name": {
+              "type": "string",
+              "description": "an identifier for the component.",
+              "x-intellij-html-description": "an identifier for the component."
+            }
+          },
+          "preferredOrder": [
+            "name",
+            "inputDigest"
           ],
           "additionalProperties": false
         }
