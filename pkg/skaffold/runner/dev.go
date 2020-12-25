@@ -102,10 +102,18 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			instrumentation.AddDevIteration("build")
 			meterUpdated = true
 		}
-		if _, err := r.Build(ctx, out, r.changeSet.needsRebuild); err != nil {
-			logrus.Warnln("Skipping deploy due to error:", err)
+		bRes, err := r.Build(ctx, out, r.changeSet.needsRebuild)
+		if err != nil {
+			logrus.Warnln("Skipping test and deploy due to build error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 			return nil
+		}
+		if !r.runCtx.SkipTests() {
+			if err = r.Test(ctx, out, bRes); err != nil {
+				logrus.Warnln("Skipping deploy due to test error:", err)
+				event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
+				return nil
+			}
 		}
 	}
 
@@ -134,7 +142,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 	return nil
 }
 
-// Dev watches for changes and runs the skaffold build and deploy
+// Dev watches for changes and runs the skaffold build, test and deploy
 // config until interrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	event.DevLoopInProgress(r.devIteration)
@@ -218,6 +226,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
+	}
+	if !r.runCtx.SkipTests() {
+		if err = r.Test(ctx, out, bRes); err != nil {
+			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
+			return fmt.Errorf("exiting dev mode because test failed after first build: %w", err)
+		}
 	}
 
 	logger := r.createLogger(out, bRes)
