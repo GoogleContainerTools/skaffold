@@ -167,7 +167,7 @@ func waitForDebugEvent(t *testing.T, client *NSKubernetesClient, rpcAddr string)
 
 	_, entries := apiEvents(t, rpcAddr)
 
-	timeout := time.After(1 * time.Minute)
+	timeout := time.After(5 * time.Minute)
 	for {
 		select {
 		case <-timeout:
