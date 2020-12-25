@@ -180,7 +180,7 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 
 	logrus.Infoln("Waiting for pods", podNames, "to be ready")
 
-	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancelTimeout := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancelTimeout()
 
 	pods := k.Pods()
