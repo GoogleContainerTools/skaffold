@@ -688,6 +688,10 @@ type HelmRelease struct {
 	// Remote specifies whether the chart path is remote, or exists on the host filesystem.
 	Remote bool `yaml:"remote,omitempty"`
 
+	// Repository is the remote location of the Helm chart.
+	// If present, Skaffold will add the registry.
+	Repository HelmRepository `yaml:"repository,omitempty"`
+
 	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
 	// Default is `true` when helm chart is local (`remote: false`).
 	// Default is `false` if `remote: true`.
@@ -704,6 +708,15 @@ type HelmRelease struct {
 	// ImageStrategy controls how an `ArtifactOverrides` entry is
 	// turned into `--set-string` Helm CLI flag or flags.
 	ImageStrategy HelmImageStrategy `yaml:"imageStrategy,omitempty"`
+}
+
+// HelmRepository a remote chart repository.
+type HelmRepository struct {
+	// Name is the local alias of the repository.
+	Name string `yaml:"name,omitempty"`
+
+	// URL the endpoint of the repository.
+	URL string `yaml:"url,omitempty"`
 }
 
 // HelmPackaged parameters for packaging helm chart (`helm package`).

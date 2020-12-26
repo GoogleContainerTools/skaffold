@@ -128,6 +128,12 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 		if err != nil {
 			return nil, userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
 		}
+
+		err = h.addRepository(ctx, out, r.Repository)
+		if err != nil {
+			return nil, userErr(fmt.Sprintf("cannot add repository: %q", r.Repository.URL), err)
+		}
+
 		results, err := h.deployRelease(ctx, out, releaseName, r, builds, valuesSet, h.bV)
 		if err != nil {
 			return nil, userErr(fmt.Sprintf("deploying %q", releaseName), err)
@@ -296,6 +302,19 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 	}
 
 	return manifest.Write(renderedManifests.String(), filepath, out)
+}
+
+// addRepository adds a remote repository to the Helm cache
+func (h *Deployer) addRepository(ctx context.Context, out io.Writer, repo latest.HelmRepository) error {
+	if repo.URL == "" || repo.Name == "" {
+		return nil
+	}
+
+	if err := h.exec(ctx, out, false, nil, "repo", "add", repo.Name, repo.URL); err != nil {
+		return userErr("adding helm repository", err)
+	}
+
+	return nil
 }
 
 // deployRelease deploys a single release
