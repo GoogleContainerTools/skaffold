@@ -158,6 +158,6 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 		return err
 	}
 
-	color.Default.Fprintln(out, "Deployments stabilized ", util.ShowHumanizeTime(start))
+	color.Default.Fprintln(out, "Deployments stabilized in", util.ShowHumanizeTime(start))
 	return nil
 }

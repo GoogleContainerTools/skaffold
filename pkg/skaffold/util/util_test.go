@@ -472,27 +472,28 @@ func stringPointer(s string) *string {
 
 func TestShowHumanizeTime(t *testing.T) {
 	currTime := time.Now()
+	duration1, _ := time.ParseDuration("1h58m30.918273645s")
+	duration2, _ := time.ParseDuration("5.23494327s")
 	tests := []struct {
 		description string
 		value       time.Time
 		expected    string
 	}{
 		{
-			description: "Case for 10 seconds",
-			value:       currTime.Add(-time.Second * 10),
-			expected:    "10 seconds ago",
+			description: "Case for 1h58m30.918273645s",
+			value:       currTime.Add(-duration1),
+			expected:    "1 hour 58 minutes 30.918 seconds",
 		},
 		{
-			description: "Case for a Minute",
-			value:       currTime.Add(-time.Minute * 1),
-			expected:    "1 minute ago",
+			description: "Case for 5.23494327s",
+			value:       currTime.Add(-duration2),
+			expected:    "5.235 seconds",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			humanizedValue := ShowHumanizeTime(test.value)
-
-			t.CheckDeepEqual(test.expected, humanizedValue)
+			t.CheckMatches(test.expected, humanizedValue)
 		})
 	}
 }

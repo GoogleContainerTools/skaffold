@@ -29,7 +29,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -346,8 +345,25 @@ func hasHiddenPrefix(s string) bool {
 
 // ShowHumanizeTime returns time in human readable format
 func ShowHumanizeTime(start time.Time) string {
+	shortTime := time.Since(start).Truncate(time.Millisecond)
+	longTine := shortTime.String()
+	out := time.Time{}.Add(shortTime)
+
 	if time.Since(start).Seconds() < 1 {
-		return time.Since(start).String() + " ago"
+		return time.Since(start).String()
 	}
-	return humanize.Time(start)
+
+	longTine = strings.ReplaceAll(longTine, "h", " hour ")
+	longTine = strings.ReplaceAll(longTine, "m", " minute ")
+	longTine = strings.ReplaceAll(longTine, "s", " second")
+	if out.Hour() > 1 {
+		longTine = strings.ReplaceAll(longTine, "hour", "hours")
+	}
+	if out.Minute() > 1 {
+		longTine = strings.ReplaceAll(longTine, "minute", "minutes")
+	}
+	if out.Second() > 1 {
+		longTine = strings.ReplaceAll(longTine, "second", "seconds")
+	}
+	return longTine
 }

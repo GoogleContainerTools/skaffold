@@ -196,7 +196,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.ConfigurationFile(), err)
 	}
 
-	logrus.Infoln("List generated ", util.ShowHumanizeTime(start))
+	logrus.Infoln("List generated in", util.ShowHumanizeTime(start))
 
 	// Init Sync State
 	if err := sync.Init(ctx, artifacts); err != nil {
