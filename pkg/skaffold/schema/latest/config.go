@@ -685,9 +685,6 @@ type HelmRelease struct {
 	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
 
-	// Remote specifies whether the chart path is remote, or exists on the host filesystem.
-	Remote bool `yaml:"remote,omitempty"`
-
 	// Repository is the remote location of the Helm chart.
 	// If present, Skaffold will add the registry.
 	Repository HelmRepository `yaml:"repository,omitempty"`

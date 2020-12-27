@@ -179,7 +179,7 @@ func (h *Deployer) Dependencies() ([]string, error) {
 		r := release
 		deps = append(deps, r.ValuesFiles...)
 
-		if r.Remote {
+		if r.Repository.URL != "" {
 			// chart path is only a dependency if it exists on the local filesystem
 			continue
 		}
@@ -304,10 +304,14 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 	return manifest.Write(renderedManifests.String(), filepath, out)
 }
 
-// addRepository adds a remote repository to the Helm cache
+// addRepository adds a remote repository to the Helm cache. Skips when no url is set on the HelmRepository.
 func (h *Deployer) addRepository(ctx context.Context, out io.Writer, repo latest.HelmRepository) error {
-	if repo.URL == "" || repo.Name == "" {
+	if repo.URL == "" {
 		return nil
+	}
+
+	if repo.Name == "" {
+		return fmt.Errorf("a repository url of %s is set but no name", repo.URL)
 	}
 
 	if err := h.exec(ctx, out, false, nil, "repo", "add", repo.Name, repo.URL); err != nil {
@@ -373,14 +377,14 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		if r.UpgradeOnChange != nil && !*r.UpgradeOnChange {
 			logrus.Infof("Release %s already installed...", releaseName)
 			return []types.Artifact{}, nil
-		} else if r.UpgradeOnChange == nil && r.Remote {
+		} else if r.UpgradeOnChange == nil && r.Repository.URL != "" {
 			logrus.Infof("Release %s not upgraded as it is remote...", releaseName)
 			return []types.Artifact{}, nil
 		}
 	}
 
 	// Only build local dependencies, but allow a user to skip them.
-	if !r.SkipBuildDependencies && !r.Remote {
+	if !r.SkipBuildDependencies && r.Repository.URL == "" {
 		logrus.Infof("Building helm dependencies...")
 
 		if err := h.exec(ctx, out, false, nil, "dep", "build", r.ChartPath); err != nil {

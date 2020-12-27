@@ -1468,11 +1468,10 @@
           "x-intellij-html-description": "if <code>true</code>, Skaffold will send <code>--recreate-pods</code> flag to Helm CLI when upgrading a new version of a chart in subsequent dev loop deploy.",
           "default": "false"
         },
-        "remote": {
-          "type": "boolean",
-          "description": "specifies whether the chart path is remote, or exists on the host filesystem.",
-          "x-intellij-html-description": "specifies whether the chart path is remote, or exists on the host filesystem.",
-          "default": "false"
+        "repository": {
+          "$ref": "#/definitions/HelmRepository",
+          "description": "remote location of the Helm chart. If present, Skaffold will add the registry.",
+          "x-intellij-html-description": "remote location of the Helm chart. If present, Skaffold will add the registry."
         },
         "setFiles": {
           "additionalProperties": {
@@ -1544,7 +1543,7 @@
         "recreatePods",
         "skipBuildDependencies",
         "useHelmSecrets",
-        "remote",
+        "repository",
         "upgradeOnChange",
         "overrides",
         "packaged",
@@ -1553,6 +1552,27 @@
       "additionalProperties": false,
       "description": "describes a helm release to be deployed.",
       "x-intellij-html-description": "describes a helm release to be deployed."
+    },
+    "HelmRepository": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "local alias of the repository.",
+          "x-intellij-html-description": "local alias of the repository."
+        },
+        "url": {
+          "type": "string",
+          "description": "the endpoint of the repository.",
+          "x-intellij-html-description": "the endpoint of the repository."
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "url"
+      ],
+      "additionalProperties": false,
+      "description": "a remote chart repository.",
+      "x-intellij-html-description": "a remote chart repository."
     },
     "JSONPatch": {
       "required": [

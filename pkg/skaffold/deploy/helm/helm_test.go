@@ -245,25 +245,6 @@ var testDeployWithTemplatedName = latest.HelmDeploy{
 	},
 }
 
-var testDeploySkipBuildDependencies = latest.HelmDeploy{
-	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "stable/chartmuseum",
-		ArtifactOverrides: map[string]string{
-			"image.tag": "skaffold-helm",
-		},
-		SkipBuildDependencies: true,
-	}},
-}
-
-var testDeployRemoteChart = latest.HelmDeploy{
-	Releases: []latest.HelmRelease{{
-		Name:                  "skaffold-helm-remote",
-		ChartPath:             "stable/chartmuseum",
-		SkipBuildDependencies: false,
-	}},
-}
-
 var testDeployRepositoryChartSkipBuildDependencies = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name: "skaffold-helm",
@@ -273,9 +254,6 @@ var testDeployRepositoryChartSkipBuildDependencies = latest.HelmDeploy{
 		},
 		ChartPath:             "stable/chartmuseum",
 		SkipBuildDependencies: true,
-		ArtifactOverrides: map[string]string{
-			"image.tag": "skaffold-helm",
-		},
 	}},
 }
 
@@ -291,18 +269,13 @@ var testDeployRepositoryChart = latest.HelmDeploy{
 	}},
 }
 
-var testDeployRemoteRepositoryChart = latest.HelmDeploy{
+var testDeployRepositoryChartNoName = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name: "skaffold-helm",
 		Repository: latest.HelmRepository{
-			Name: "stable",
-			URL:  "https://charts.helm.sh/stable",
+			URL: "https://charts.helm.sh/stable",
 		},
-		ChartPath:             "stable/chartmuseum",
-		SkipBuildDependencies: true,
-		ArtifactOverrides: map[string]string{
-			"image.tag": "skaffold-helm",
-		},
+		ChartPath: "stable/chartmuseum",
 	}},
 }
 
@@ -691,38 +664,6 @@ func TestHelmDeploy(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "deploy success remote chart with skipBuildDependencies",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm stable/chartmuseum --set-string image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig"),
-			helm:   testDeploySkipBuildDependencies,
-			builds: testBuilds,
-		},
-		{
-			description: "deploy success with remote chart from repository with skipBuildDependencies",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext repo add stable https://charts.helm.sh/stable --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm stable/chartmuseum --set-string image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig"),
-			helm:   testDeployRemoteRepositoryChart,
-			builds: testBuilds,
-		},
-		{
-			description: "deploy error remote chart without skipBuildDependencies from chart repository",
-			commands: testutil.
-				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext repo add stable https://charts.helm.sh/stable --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
-				AndRunErr("helm --kube-context kubecontext dep build stable/chartmuseum --kubeconfig kubeconfig", fmt.Errorf("building helm dependencies")),
-			helm:      testDeployRepositoryChart,
-			builds:    testBuilds,
-			shouldErr: true,
-		},
-		{
 			description: "deploy success when `upgradeOnChange: false` and does not upgrade",
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
@@ -730,12 +671,39 @@ func TestHelmDeploy(t *testing.T) {
 			helm: testDeployUpgradeOnChange,
 		},
 		{
-			description: "deploy error remote chart without skipBuildDependencies",
+			description: "deploy success with remote chart from repository with skipBuildDependencies",
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext get all skaffold-helm-remote --kubeconfig kubeconfig").
-				AndRunErr("helm --kube-context kubecontext dep build stable/chartmuseum --kubeconfig kubeconfig", fmt.Errorf("building helm dependencies")),
-			helm:      testDeployRemoteChart,
+				AndRun("helm --kube-context kubecontext repo add stable https://charts.helm.sh/stable --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig"),
+			helm:   testDeployRepositoryChartSkipBuildDependencies,
+			builds: testBuilds,
+			expectedWarnings: []string{
+				"See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml",
+				"image [docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184] is not used.",
+				"image [skaffold-helm] is used instead.",
+			},
+		},
+		{
+			description: "deploy remote chart without skipBuildDependencies still skips dependencies",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext repo add stable https://charts.helm.sh/stable --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig"),
+			helm:   testDeployRepositoryChart,
+			builds: testBuilds,
+			expectedWarnings: []string{
+				"See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml",
+				"image [docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184] is not used.",
+				"image [skaffold-helm] is used instead.",
+			},
+		},
+		{
+			description: "deploy remote chart without a repository name",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext repo add stable https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+			helm:      testDeployRepositoryChartNoName,
 			builds:    testBuilds,
 			shouldErr: true,
 		},
@@ -1145,7 +1113,7 @@ func TestHelmDependencies(t *testing.T) {
 		files                 []string
 		valuesFiles           []string
 		skipBuildDependencies bool
-		remote                bool
+		repository            map[string]string
 		expected              func(folder *testutil.TempDir) []string
 	}{
 		{
@@ -1186,7 +1154,7 @@ func TestHelmDependencies(t *testing.T) {
 			description:           "no deps for remote chart path",
 			skipBuildDependencies: false,
 			files:                 []string{"Chart.yaml"},
-			remote:                true,
+			repository:            map[string]string{"name": "stable", "url": "https://helm.sh/stable"},
 			expected: func(folder *testutil.TempDir) []string {
 				return nil
 			},
@@ -1208,7 +1176,7 @@ func TestHelmDependencies(t *testing.T) {
 					Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 					SetValues:             map[string]string{"some.key": "somevalue"},
 					SkipBuildDependencies: test.skipBuildDependencies,
-					Remote:                test.remote,
+					Repository:            latest.HelmRepository{Name: test.repository["name"], URL: test.repository["url"]},
 				}},
 			})
 			t.RequireNoError(err)
