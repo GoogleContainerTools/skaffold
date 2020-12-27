@@ -346,24 +346,24 @@ func hasHiddenPrefix(s string) bool {
 // ShowHumanizeTime returns time in human readable format
 func ShowHumanizeTime(start time.Time) string {
 	shortTime := time.Since(start).Truncate(time.Millisecond)
-	longTine := shortTime.String()
+	longTime := shortTime.String()
 	out := time.Time{}.Add(shortTime)
 
 	if time.Since(start).Seconds() < 1 {
 		return time.Since(start).String()
 	}
 
-	longTine = strings.ReplaceAll(longTine, "h", " hour ")
-	longTine = strings.ReplaceAll(longTine, "m", " minute ")
-	longTine = strings.ReplaceAll(longTine, "s", " second")
+	longTime = strings.ReplaceAll(longTime, "h", " hour ")
+	longTime = strings.ReplaceAll(longTime, "m", " minute ")
+	longTime = strings.ReplaceAll(longTime, "s", " second")
 	if out.Hour() > 1 {
-		longTine = strings.ReplaceAll(longTine, "hour", "hours")
+		longTime = strings.ReplaceAll(longTime, "hour", "hours")
 	}
 	if out.Minute() > 1 {
-		longTine = strings.ReplaceAll(longTine, "minute", "minutes")
+		longTime = strings.ReplaceAll(longTime, "minute", "minutes")
 	}
 	if out.Second() > 1 {
-		longTine = strings.ReplaceAll(longTine, "second", "seconds")
+		longTime = strings.ReplaceAll(longTime, "second", "seconds")
 	}
-	return longTine
+	return longTime
 }
