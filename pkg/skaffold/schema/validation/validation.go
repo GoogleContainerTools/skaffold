@@ -17,16 +17,23 @@ limitations under the License.
 package validation
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/docker/docker/api/types"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 var (
@@ -36,23 +43,42 @@ var (
 )
 
 // Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
-func Process(config *latest.SkaffoldConfig) error {
-	errs := visitStructs(config, validateYamltags)
-	errs = append(errs, validateImageNames(config.Build.Artifacts)...)
-	errs = append(errs, validateArtifactDependencies(config.Build.Artifacts)...)
-	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
-	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
-	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
-	errs = append(errs, validatePortForwardResources(config.PortForward)...)
-	errs = append(errs, validateJibPluginTypes(config.Build.Artifacts)...)
-	errs = append(errs, validateLogPrefix(config.Deploy.Logs)...)
-	errs = append(errs, validateArtifactTypes(config.Build)...)
-	errs = append(errs, validateTaggingPolicy(config.Build)...)
+func Process(configs []*latest.SkaffoldConfig) error {
+	var errs []error
+	for _, config := range configs {
+		errs = visitStructs(config, validateYamltags)
+		errs = append(errs, validateImageNames(config.Build.Artifacts)...)
+		errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
+		errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
+		errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
+		errs = append(errs, validatePortForwardResources(config.PortForward)...)
+		errs = append(errs, validateJibPluginTypes(config.Build.Artifacts)...)
+		errs = append(errs, validateLogPrefix(config.Deploy.Logs)...)
+		errs = append(errs, validateArtifactTypes(config.Build)...)
+		errs = append(errs, validateTaggingPolicy(config.Build)...)
+	}
+	errs = append(errs, validateArtifactDependencies(configs)...)
 
 	if len(errs) == 0 {
 		return nil
 	}
 
+	var messages []string
+	for _, err := range errs {
+		messages = append(messages, err.Error())
+	}
+	return fmt.Errorf(strings.Join(messages, " | "))
+}
+
+// ProcessWithRunContext checks if the Skaffold pipeline is valid when a RunContext is required.
+// It returns all encountered errors as a concatenated string.
+func ProcessWithRunContext(runCtx *runcontext.RunContext) error {
+	var errs []error
+	errs = append(errs, validateDockerNetworkContainerExists(runCtx.Artifacts(), runCtx)...)
+
+	if len(errs) == 0 {
+		return nil
+	}
 	var messages []string
 	for _, err := range errs {
 		messages = append(messages, err.Error())
@@ -92,7 +118,11 @@ func validateImageNames(artifacts []*latest.Artifact) (errs []error) {
 	return
 }
 
-func validateArtifactDependencies(artifacts []*latest.Artifact) (errs []error) {
+func validateArtifactDependencies(configs []*latest.SkaffoldConfig) (errs []error) {
+	var artifacts []*latest.Artifact
+	for _, c := range configs {
+		artifacts = append(artifacts, c.Build.Artifacts...)
+	}
 	errs = append(errs, validateUniqueDependencyAliases(artifacts)...)
 	errs = append(errs, validateAcyclicDependencies(artifacts)...)
 	errs = append(errs, validateValidDependencyAliases(artifacts)...)
@@ -179,7 +209,7 @@ func validateUniqueDependencyAliases(artifacts []*latest.Artifact) (errs []error
 	return
 }
 
-// validateDockerNetworkMode makes sure that networkMode is one of `bridge`, `none`, or `host` if set.
+// validateDockerNetworkMode makes sure that networkMode is one of `bridge`, `none`, `container:<name|id>`, or `host` if set.
 func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 	for _, a := range artifacts {
 		if a.DockerArtifact == nil || a.DockerArtifact.NetworkMode == "" {
@@ -189,9 +219,90 @@ func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 		if mode == "none" || mode == "bridge" || mode == "host" {
 			continue
 		}
-		errs = append(errs, fmt.Errorf("artifact %s has invalid networkMode '%s'", a.ImageName, mode))
+		containerRegExp := regexp.MustCompile("^container:[a-zA-Z0-9][a-zA-Z0-9_.-]*$")
+		if containerRegExp.MatchString(mode) {
+			continue
+		}
+
+		errMsg := fmt.Sprintf("artifact %s has invalid networkMode '%s'", a.ImageName, mode)
+		errs = append(errs, sErrors.NewError(fmt.Errorf(errMsg),
+			proto.ActionableErr{
+				Message: errMsg,
+				ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME,
+				Suggestions: []*proto.Suggestion{
+					{
+						SuggestionCode: proto.SuggestionCode_FIX_DOCKER_NETWORK_CONTAINER_NAME,
+						Action:         "Please fix the docker network container name and try again",
+					},
+				},
+			}))
 	}
 	return
+}
+
+// Validates that a Docker Container with a Network Mode "container:<id|name>" points to an actually running container
+func validateDockerNetworkContainerExists(artifacts []*latest.Artifact, runCtx docker.Config) []error {
+	var errs []error
+	apiClient, err := docker.NewAPIClient(runCtx)
+	if err != nil {
+		errs = append(errs, err)
+		return errs
+	}
+
+	client := apiClient.RawClient()
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
+	defer cancel()
+
+	for _, a := range artifacts {
+		if a.DockerArtifact == nil || a.DockerArtifact.NetworkMode == "" {
+			continue
+		}
+		mode := strings.ToLower(a.DockerArtifact.NetworkMode)
+		prefix := "container:"
+		if strings.HasPrefix(mode, prefix) {
+			id := strings.TrimPrefix(mode, prefix)
+			containers, err := client.ContainerList(ctx, types.ContainerListOptions{})
+			if err != nil {
+				errs = append(errs, sErrors.NewError(err,
+					proto.ActionableErr{
+						Message: "error retrieving docker containers list",
+						ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_LISTING_CONTAINERS,
+						Suggestions: []*proto.Suggestion{
+							{
+								SuggestionCode: proto.SuggestionCode_CHECK_DOCKER_RUNNING,
+								Action:         "Please check docker is running and try again",
+							},
+						},
+					}))
+				return errs
+			}
+			for _, c := range containers {
+				// Comparing ID seeking for <id>
+				if c.ID == id {
+					return errs
+				}
+				for _, name := range c.Names {
+					// c.Names come in form "/<name>"
+					if name == "/"+id {
+						return errs
+					}
+				}
+			}
+			errMsg := fmt.Sprintf("container '%s' not found, required by image '%s' for docker network stack sharing", id, a.ImageName)
+			errs = append(errs, sErrors.NewError(fmt.Errorf(errMsg),
+				proto.ActionableErr{
+					Message: errMsg,
+					ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST,
+					Suggestions: []*proto.Suggestion{
+						{
+							SuggestionCode: proto.SuggestionCode_CHECK_DOCKER_NETWORK_CONTAINER_RUNNING,
+							Action:         "Please fix the docker network container name and try again.",
+						},
+					},
+				}))
+		}
+	}
+	return errs
 }
 
 // validateCustomDependencies makes sure that dependencies.ignore is only used in conjunction with dependencies.paths

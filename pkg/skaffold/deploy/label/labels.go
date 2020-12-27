@@ -17,6 +17,7 @@ limitations under the License.
 package label
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -42,7 +43,7 @@ const (
 )
 
 // Apply applies all provided labels to the created Kubernetes resources
-func Apply(labels map[string]string, results []deploy.Artifact) error {
+func Apply(ctx context.Context, labels map[string]string, results []deploy.Artifact) error {
 	if len(labels) == 0 {
 		return nil
 	}
@@ -61,7 +62,7 @@ func Apply(labels map[string]string, results []deploy.Artifact) error {
 	for _, res := range results {
 		err = nil
 		for i := 0; i < tries; i++ {
-			if err = updateRuntimeObject(dynClient, client.Discovery(), labels, res); err == nil {
+			if err = updateRuntimeObject(ctx, dynClient, client.Discovery(), labels, res); err == nil {
 				break
 			}
 			time.Sleep(sleeptime)
@@ -83,7 +84,7 @@ func addLabels(labels map[string]string, accessor metav1.Object) {
 	accessor.SetLabels(kv)
 }
 
-func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInterface, labels map[string]string, res deploy.Artifact) error {
+func updateRuntimeObject(ctx context.Context, client dynamic.Interface, disco discovery.DiscoveryInterface, labels map[string]string, res deploy.Artifact) error {
 	originalJSON, _ := json.Marshal(res.Obj)
 	modifiedObj := res.Obj.DeepCopyObject()
 	accessor, err := meta.Accessor(modifiedObj)
@@ -116,12 +117,12 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 		}
 
 		logrus.Debugln("Patching", name, "in namespace", ns)
-		if _, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
+		if _, err := client.Resource(gvr).Namespace(ns).Patch(ctx, name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
 			return fmt.Errorf("patching resource %s/%q: %w", ns, name, err)
 		}
 	} else {
 		logrus.Debugln("Patching", name)
-		if _, err := client.Resource(gvr).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
+		if _, err := client.Resource(gvr).Patch(ctx, name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
 			return fmt.Errorf("patching resource %q: %w", name, err)
 		}
 	}

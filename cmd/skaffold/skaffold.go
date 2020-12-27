@@ -25,6 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 )
 
 type ExitCoder interface {
@@ -32,14 +33,19 @@ type ExitCoder interface {
 }
 
 func main() {
+	var code int
 	if err := app.Run(os.Stdout, os.Stderr); err != nil {
 		if errors.Is(err, context.Canceled) {
 			logrus.Debugln("ignore error since context is cancelled:", err)
 		} else {
 			color.Red.Fprintln(os.Stderr, err)
-			os.Exit(exitCode(err))
+			code = exitCode(err)
 		}
 	}
+	if err := instrumentation.ExportMetrics(code); err != nil {
+		logrus.Debugf("error exporting metrics %v", err)
+	}
+	os.Exit(code)
 }
 
 func exitCode(err error) int {

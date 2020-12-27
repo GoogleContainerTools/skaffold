@@ -65,7 +65,9 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, h ar
 		}
 	}
 
-	if c.imagesAreLocal {
+	if isLocal, err := c.isLocalImage(a.ImageName); err != nil {
+		return failed{err}
+	} else if isLocal {
 		return c.lookupLocal(ctx, hash, tag, entry)
 	}
 	return c.lookupRemote(ctx, hash, tag, entry)
@@ -121,11 +123,13 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 }
 
 func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, hash string) (ImageDetails, error) {
-	if !c.tryImportMissing {
+	entry := ImageDetails{}
+
+	if importMissing, err := c.importMissingImage(a.ImageName); err != nil {
+		return entry, err
+	} else if !importMissing {
 		return ImageDetails{}, fmt.Errorf("import of missing images disabled")
 	}
-
-	entry := ImageDetails{}
 
 	if !c.client.ImageExists(ctx, tag) {
 		logrus.Debugf("Importing artifact %s from docker registry", tag)
@@ -137,7 +141,7 @@ func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, h
 		logrus.Debugf("Importing artifact %s from local docker", tag)
 	}
 
-	imageID, err := c.client.ImageID(ctx, a.ImageName)
+	imageID, err := c.client.ImageID(ctx, tag)
 	if err != nil {
 		return entry, err
 	}

@@ -88,7 +88,7 @@ func TestSetDefaults(t *testing.T) {
 		},
 	}
 
-	err := Set(cfg)
+	err := Set(cfg, true)
 
 	testutil.CheckError(t, false, err)
 
@@ -173,7 +173,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 				},
 			},
 		}
-		err := Set(cfg)
+		err := Set(cfg, true)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("ns", cfg.Build.Cluster.Namespace)
@@ -197,7 +197,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 				},
 			},
 		}
-		err = Set(cfg)
+		err = Set(cfg, true)
 
 		t.CheckNoError(err)
 
@@ -218,13 +218,13 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 			},
 		}
 
-		err = Set(cfg)
+		err = Set(cfg, true)
 		t.CheckNoError(err)
 		t.CheckDeepEqual(path, cfg.Build.Cluster.PullSecretMountPath)
 
 		// default docker config
 		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{}
-		err = Set(cfg)
+		err = Set(cfg, true)
 
 		t.CheckNoError(err)
 
@@ -232,7 +232,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{
 			Path: "/path",
 		}
-		err = Set(cfg)
+		err = Set(cfg, true)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("/path", cfg.Build.Cluster.DockerConfig.Path)
@@ -241,7 +241,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{
 			SecretName: "secret",
 		}
-		err = Set(cfg)
+		err = Set(cfg, true)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("secret", cfg.Build.Cluster.DockerConfig.SecretName)
@@ -270,7 +270,7 @@ func TestCustomBuildWithCluster(t *testing.T) {
 		},
 	}
 
-	err := Set(cfg)
+	err := Set(cfg, true)
 
 	testutil.CheckError(t, false, err)
 	testutil.CheckDeepEqual(t, (*latest.KanikoArtifact)(nil), cfg.Build.Artifacts[0].KanikoArtifact)
@@ -290,7 +290,7 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 		},
 	}
 
-	err := Set(cfg)
+	err := Set(cfg, true)
 
 	testutil.CheckError(t, false, err)
 	testutil.CheckDeepEqual(t, defaultCloudBuildDockerImage, cfg.Build.GoogleCloudBuild.DockerImage)
@@ -302,7 +302,7 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 func TestSetDefaultsOnLocalBuild(t *testing.T) {
 	cfg := &latest.SkaffoldConfig{}
 
-	err := Set(cfg)
+	err := Set(cfg, true)
 
 	testutil.CheckError(t, false, err)
 	testutil.CheckDeepEqual(t, 1, *cfg.Build.LocalBuild.Concurrency)
@@ -324,7 +324,7 @@ func TestSetPortForwardLocalPort(t *testing.T) {
 			},
 		},
 	}
-	err := Set(cfg)
+	err := Set(cfg, true)
 	testutil.CheckError(t, false, err)
 	testutil.CheckDeepEqual(t, 8080, cfg.PortForward[0].LocalPort)
 	testutil.CheckDeepEqual(t, 9000, cfg.PortForward[1].LocalPort)
@@ -344,7 +344,7 @@ func TestSetDefaultPortForwardAddress(t *testing.T) {
 			},
 		},
 	}
-	err := Set(cfg)
+	err := Set(cfg, true)
 	testutil.CheckError(t, false, err)
 	testutil.CheckDeepEqual(t, "0.0.0.0", cfg.PortForward[0].Address)
 	testutil.CheckDeepEqual(t, constants.DefaultPortForwardAddress, cfg.PortForward[1].Address)
@@ -383,7 +383,7 @@ func TestSetLogsConfig(t *testing.T) {
 				},
 			}
 
-			err := Set(&cfg)
+			err := Set(&cfg, true)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, cfg.Deploy.Logs)

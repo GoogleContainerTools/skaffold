@@ -89,15 +89,14 @@ type Builder struct {
 type Config interface {
 	docker.Config
 
-	Pipeline() latest.Pipeline
 	SkipTests() bool
 	Muted() config.Muted
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
-func NewBuilder(cfg Config) *Builder {
+func NewBuilder(cfg Config, buildCfg *latest.GoogleCloudBuild) *Builder {
 	return &Builder{
-		GoogleCloudBuild: cfg.Pipeline().Build.GoogleCloudBuild,
+		GoogleCloudBuild: buildCfg,
 		cfg:              cfg,
 		skipTests:        cfg.SkipTests(),
 		muted:            cfg.Muted(),

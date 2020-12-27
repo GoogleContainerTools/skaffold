@@ -48,28 +48,28 @@ import (
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
-	event.InitializeState(runCtx.Pipeline(), runCtx.GetKubeContext(), runCtx.AutoBuild(), runCtx.AutoDeploy(), runCtx.AutoSync())
+	event.InitializeState(runCtx.GetPipelines(), runCtx.GetKubeContext(), runCtx.AutoBuild(), runCtx.AutoDeploy(), runCtx.AutoSync())
 	event.LogMetaEvent()
 	kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
 
-	tagger, err := getTagger(runCtx)
+	tagger, err := tag.NewTaggerMux(runCtx)
 	if err != nil {
 		return nil, fmt.Errorf("creating tagger: %w", err)
 	}
 
 	store := build.NewArtifactStore()
-	builder, imagesAreLocal, err := getBuilder(runCtx, store)
+	var builder build.Builder
+	builder, err = build.NewBuilderMux(runCtx, store, func(p latest.Pipeline) (build.PipelineBuilder, error) {
+		return getBuilder(runCtx, store, p)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("creating builder: %w", err)
 	}
-
-	tryImportMissing := false
-	if localBuilder, ok := builder.(*local.Builder); ok {
-		tryImportMissing = localBuilder.TryImportMissing()
+	isLocalImage := func(imageName string) (bool, error) {
+		return isImageLocal(runCtx, imageName)
 	}
-
 	labeller := label.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels())
-	tester := getTester(runCtx, imagesAreLocal)
+	tester := getTester(runCtx, isLocalImage)
 	syncer := getSyncer(runCtx)
 	var deployer deploy.Deployer
 	deployer, err = getDeployer(runCtx, labeller.Labels())
@@ -90,8 +90,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return append(buildDependencies, testDependencies...), nil
 	}
 
-	graph := build.ToArtifactGraph(runCtx.Pipeline().Build.Artifacts)
-	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, tryImportMissing, depLister, graph, store)
+	graph := build.ToArtifactGraph(runCtx.Artifacts())
+	artifactCache, err := cache.NewCache(runCtx, isLocalImage, depLister, graph, store)
 	if err != nil {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
@@ -120,14 +120,14 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 			Trigger:    trigger,
 			intentChan: intentChan,
 		},
-		artifactStore:  store,
-		kubectlCLI:     kubectlCLI,
-		labeller:       labeller,
-		podSelector:    kubernetes.NewImageList(),
-		cache:          artifactCache,
-		runCtx:         runCtx,
-		intents:        intents,
-		imagesAreLocal: imagesAreLocal,
+		artifactStore: store,
+		kubectlCLI:    kubectlCLI,
+		labeller:      labeller,
+		podSelector:   kubernetes.NewImageList(),
+		cache:         artifactCache,
+		runCtx:        runCtx,
+		intents:       intents,
+		isLocalImage:  isLocalImage,
 	}, nil
 }
 
@@ -165,153 +165,103 @@ func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(
 	})
 }
 
-// getBuilder creates a builder from a given RunContext.
-// Returns that builder, a bool to indicate that images are local
-// (ie don't need to be pushed) and an error.
-func getBuilder(runCtx *runcontext.RunContext, store build.ArtifactStore) (build.Builder, bool, error) {
-	b := runCtx.Pipeline().Build
+func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error) {
+	pipeline, found := runCtx.PipelineForImage(imageName)
+	if !found {
+		pipeline = runCtx.DefaultPipeline()
+	}
+	if pipeline.Build.GoogleCloudBuild != nil || pipeline.Build.Cluster != nil {
+		return false, nil
+	}
 
+	cl := runCtx.GetCluster()
+	var pushImages bool
+	if pipeline.Build.LocalBuild.Push == nil {
+		pushImages = cl.PushImages
+		logrus.Debugf("push value not present, defaulting to %t because cluster.PushImages is %t", pushImages, cl.PushImages)
+	} else {
+		pushImages = *pipeline.Build.LocalBuild.Push
+	}
+	return !pushImages, nil
+}
+
+// getBuilder creates a builder from a given RunContext and build pipeline type.
+func getBuilder(runCtx *runcontext.RunContext, store build.ArtifactStore, p latest.Pipeline) (build.PipelineBuilder, error) {
 	switch {
-	case b.LocalBuild != nil:
+	case p.Build.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
-		builder, err := local.NewBuilder(runCtx)
+		builder, err := local.NewBuilder(runCtx, p.Build.LocalBuild)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		builder.ArtifactStore(store)
-		return builder, !builder.PushImages(), nil
+		return builder, nil
 
-	case b.GoogleCloudBuild != nil:
+	case p.Build.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
-		builder := gcb.NewBuilder(runCtx)
+		builder := gcb.NewBuilder(runCtx, p.Build.GoogleCloudBuild)
 		builder.ArtifactStore(store)
-		return builder, false, nil
+		return builder, nil
 
-	case b.Cluster != nil:
+	case p.Build.Cluster != nil:
 		logrus.Debugln("Using builder: cluster")
-		builder, err := cluster.NewBuilder(runCtx)
+		builder, err := cluster.NewBuilder(runCtx, p.Build.Cluster)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		builder.ArtifactStore(store)
-		return builder, false, err
+		return builder, err
 
 	default:
-		return nil, false, fmt.Errorf("unknown builder for config %+v", b)
+		return nil, fmt.Errorf("unknown builder for config %+v", p.Build)
 	}
 }
 
-func getTester(cfg test.Config, imagesAreLocal bool) test.Tester {
-	return test.NewTester(cfg, imagesAreLocal)
+func getTester(cfg test.Config, isLocalImage func(imageName string) (bool, error)) test.Tester {
+	return test.NewTester(cfg, isLocalImage)
 }
 
 func getSyncer(cfg sync.Config) sync.Syncer {
 	return sync.NewSyncer(cfg)
 }
 
-func getDeployer(cfg kubectl.Config, labels map[string]string) (deploy.Deployer, error) {
-	d := cfg.Pipeline().Deploy
+func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deploy.Deployer, error) {
+	deployerCfg := runCtx.Deployers()
 
 	var deployers deploy.DeployerMux
-
-	if d.HelmDeploy != nil {
-		deployers = append(deployers, helm.NewDeployer(cfg, labels))
-	}
-
-	if d.KptDeploy != nil {
-		deployers = append(deployers, kpt.NewDeployer(cfg, labels))
-	}
-
-	if d.KubectlDeploy != nil {
-		deployer, err := kubectl.NewDeployer(cfg, labels)
-		if err != nil {
-			return nil, err
+	for _, d := range deployerCfg {
+		if d.HelmDeploy != nil {
+			h, err := helm.NewDeployer(runCtx, labels, d.HelmDeploy)
+			if err != nil {
+				return nil, err
+			}
+			deployers = append(deployers, h)
 		}
-		deployers = append(deployers, deployer)
-	}
 
-	if d.KustomizeDeploy != nil {
-		deployer, err := kustomize.NewDeployer(cfg, labels)
-		if err != nil {
-			return nil, err
+		if d.KptDeploy != nil {
+			deployers = append(deployers, kpt.NewDeployer(runCtx, labels, d.KptDeploy))
 		}
-		deployers = append(deployers, deployer)
-	}
 
+		if d.KubectlDeploy != nil {
+			deployer, err := kubectl.NewDeployer(runCtx, labels, d.KubectlDeploy)
+			if err != nil {
+				return nil, err
+			}
+			deployers = append(deployers, deployer)
+		}
+
+		if d.KustomizeDeploy != nil {
+			deployer, err := kustomize.NewDeployer(runCtx, labels, d.KustomizeDeploy)
+			if err != nil {
+				return nil, err
+			}
+			deployers = append(deployers, deployer)
+		}
+	}
 	// avoid muxing overhead when only a single deployer is configured
 	if len(deployers) == 1 {
 		return deployers[0], nil
 	}
 
 	return deployers, nil
-}
-
-func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {
-	t := runCtx.Pipeline().Build.TagPolicy
-
-	switch {
-	case runCtx.CustomTag() != "":
-		return &tag.CustomTag{
-			Tag: runCtx.CustomTag(),
-		}, nil
-
-	case t.EnvTemplateTagger != nil:
-		return tag.NewEnvTemplateTagger(t.EnvTemplateTagger.Template)
-
-	case t.ShaTagger != nil:
-		return &tag.ChecksumTagger{}, nil
-
-	case t.GitTagger != nil:
-		return tag.NewGitCommit(t.GitTagger.Prefix, t.GitTagger.Variant)
-
-	case t.DateTimeTagger != nil:
-		return tag.NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil
-
-	case t.CustomTemplateTagger != nil:
-		components, err := CreateComponents(t.CustomTemplateTagger)
-
-		if err != nil {
-			return nil, fmt.Errorf("creating components: %w", err)
-		}
-
-		return tag.NewCustomTemplateTagger(t.CustomTemplateTagger.Template, components)
-
-	default:
-		return nil, fmt.Errorf("unknown tagger for strategy %+v", t)
-	}
-}
-
-// CreateComponents creates a map of taggers for CustomTemplateTagger
-func CreateComponents(t *latest.CustomTemplateTagger) (map[string]tag.Tagger, error) {
-	components := map[string]tag.Tagger{}
-
-	for _, taggerComponent := range t.Components {
-		name, c := taggerComponent.Name, taggerComponent.Component
-
-		if _, ok := components[name]; ok {
-			return nil, fmt.Errorf("multiple components with name %s", name)
-		}
-
-		switch {
-		case c.EnvTemplateTagger != nil:
-			components[name], _ = tag.NewEnvTemplateTagger(c.EnvTemplateTagger.Template)
-
-		case c.ShaTagger != nil:
-			components[name] = &tag.ChecksumTagger{}
-
-		case c.GitTagger != nil:
-			components[name], _ = tag.NewGitCommit(c.GitTagger.Prefix, c.GitTagger.Variant)
-
-		case c.DateTimeTagger != nil:
-			components[name] = tag.NewDateTimeTagger(c.DateTimeTagger.Format, c.DateTimeTagger.TimeZone)
-
-		case c.CustomTemplateTagger != nil:
-			return nil, fmt.Errorf("nested customTemplate components are not supported in skaffold (%s)", name)
-
-		default:
-			return nil, fmt.Errorf("unknown component for custom template: %s %+v", name, c)
-		}
-	}
-
-	return components, nil
 }

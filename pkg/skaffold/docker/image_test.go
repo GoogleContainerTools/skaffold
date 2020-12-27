@@ -200,7 +200,7 @@ func TestBuild(t *testing.T) {
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
 			opts := BuildOptions{Tag: "finalimage", Mode: test.mode}
-			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, opts)
+			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, "final-image", test.artifact, opts)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
@@ -322,7 +322,13 @@ func TestGetBuildArgs(t *testing.T) {
 			},
 			want: []string{"--no-cache"},
 		},
-
+		{
+			description: "squash",
+			artifact: &latest.DockerArtifact{
+				Squash: true,
+			},
+			want: []string{"--squash"},
+		},
 		{
 			description: "secret with no source",
 			artifact: &latest.DockerArtifact{

@@ -37,7 +37,7 @@ import (
 type LogAggregator struct {
 	output      io.Writer
 	kubectlcli  *kubectl.CLI
-	config      latest.LogsConfig
+	config      Config
 	podWatcher  PodWatcher
 	colorPicker ColorPicker
 
@@ -48,8 +48,13 @@ type LogAggregator struct {
 	outputLock        sync.Mutex
 }
 
+type Config interface {
+	PipelineForImage(imageName string) (latest.Pipeline, bool)
+	DefaultPipeline() latest.Pipeline
+}
+
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector PodSelector, namespaces []string, config latest.LogsConfig) *LogAggregator {
+func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector PodSelector, namespaces []string, config Config) *LogAggregator {
 	return &LogAggregator{
 		output:      out,
 		kubectlcli:  cli,
@@ -175,7 +180,17 @@ func (a *LogAggregator) printLogLine(headerColor color.Color, prefix, text strin
 }
 
 func (a *LogAggregator) prefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	switch a.config.Prefix {
+	var c latest.Pipeline
+	var present bool
+	for _, container := range pod.Spec.Containers {
+		if c, present = a.config.PipelineForImage(stripTag(container.Image)); present {
+			break
+		}
+	}
+	if !present {
+		c = a.config.DefaultPipeline()
+	}
+	switch c.Deploy.Logs.Prefix {
 	case "auto":
 		if pod.Name != container.Name {
 			return podAndContainerPrefix(pod, container)
@@ -188,7 +203,7 @@ func (a *LogAggregator) prefix(pod *v1.Pod, container v1.ContainerStatus) string
 	case "none":
 		return ""
 	default:
-		panic("unsupported prefix: " + a.config.Prefix)
+		panic("unsupported prefix: " + c.Deploy.Logs.Prefix)
 	}
 }
 

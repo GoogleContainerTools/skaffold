@@ -17,6 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -76,7 +77,7 @@ func (w *podWatcher) Start() (func(), error) {
 	var forever int64 = 3600 * 24 * 365 * 100
 
 	for _, ns := range w.namespaces {
-		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(metav1.ListOptions{
+		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(context.Background(), metav1.ListOptions{
 			TimeoutSeconds: &forever,
 		})
 		if err != nil {

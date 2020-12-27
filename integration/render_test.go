@@ -79,7 +79,7 @@ spec:
 			Chdir()
 		deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 			WorkingDir: ".",
-			Cfg: latest.Pipeline{
+			Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
 				Deploy: latest.DeployConfig{
 					DeployType: latest.DeployType{
 						KubectlDeploy: &latest.KubectlDeploy{
@@ -87,8 +87,10 @@ spec:
 						},
 					},
 				},
-			},
-		}, nil)
+			}}),
+		}, nil, &latest.KubectlDeploy{
+			Manifests: []string{"deployment.yaml"},
+		})
 		t.RequireNoError(err)
 		var b bytes.Buffer
 		err = deployer.Render(context.Background(), &b, test.builds, false, test.renderPath)
@@ -234,7 +236,7 @@ spec:
 
 			deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
-				Cfg: latest.Pipeline{
+				Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KubectlDeploy: &latest.KubectlDeploy{
@@ -242,11 +244,13 @@ spec:
 							},
 						},
 					},
-				},
+				}}),
 				Opts: config.SkaffoldOptions{
 					AddSkaffoldLabels: true,
 				},
-			}, nil)
+			}, nil, &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
+			})
 			t.RequireNoError(err)
 			var b bytes.Buffer
 			err = deployer.Render(context.Background(), &b, test.builds, false, "")
@@ -420,8 +424,8 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployer := helm.NewDeployer(&runcontext.RunContext{
-				Cfg: latest.Pipeline{
+			deployer, err := helm.NewDeployer(&runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines([]latest.Pipeline{{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							HelmDeploy: &latest.HelmDeploy{
@@ -429,10 +433,13 @@ spec:
 							},
 						},
 					},
-				},
-			}, nil)
+				}}),
+			}, nil, &latest.HelmDeploy{
+				Releases: test.helmReleases,
+			})
+			t.RequireNoError(err)
 			var b bytes.Buffer
-			err := deployer.Render(context.Background(), &b, test.builds, true, "")
+			err = deployer.Render(context.Background(), &b, test.builds, true, "")
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedOut, b.String())

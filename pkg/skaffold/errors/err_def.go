@@ -53,6 +53,7 @@ func (e ErrDef) Suggestions() []*proto.Suggestion {
 	return e.ae.Suggestions
 }
 
+// NewError creates an actionable error message preserving the actual error.
 func NewError(err error, ae proto.ActionableErr) ErrDef {
 	return ErrDef{
 		err: err,
@@ -60,8 +61,16 @@ func NewError(err error, ae proto.ActionableErr) ErrDef {
 	}
 }
 
+// NewError creates an actionable error message.
 func NewErrorWithStatusCode(ae proto.ActionableErr) ErrDef {
 	return ErrDef{
 		ae: ae,
 	}
+}
+
+func IsSkaffoldErr(err error) bool {
+	if _, ok := err.(Error); ok {
+		return true
+	}
+	return false
 }

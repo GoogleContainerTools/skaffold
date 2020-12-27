@@ -99,7 +99,9 @@ func TestRunPortForwardByPortName(t *testing.T) {
 // and tests that the pod eventually comes up at the same port again.
 func TestDevPortForwardDeletePod(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	t.Skip("Flakey on Travis with k3d and kind")
+
+	// pre-build images to avoid tripping the 1-minute timeout in getLocalPortFromPortForwardEvent()
+	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
 
 	ns, _ := SetupNamespace(t)
 

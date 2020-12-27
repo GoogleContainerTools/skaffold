@@ -17,11 +17,16 @@ limitations under the License.
 package validation
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -82,7 +87,7 @@ func TestValidateSchema(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := Process(test.cfg)
+			err := Process([]*latest.SkaffoldConfig{test.cfg})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -295,6 +300,74 @@ func TestValidateNetworkMode(t *testing.T) {
 			},
 		},
 		{
+			description: "empty container's network stack",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:",
+						},
+					},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "wrong container's network stack '-not-valid'",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:-not-valid",
+						},
+					},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "wrong container's network stack 'fussball'",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:fußball",
+						},
+					},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "container's network stack 'unique'",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:unique",
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "container's network stack 'unique-id.123'",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:unique-id.123",
+						},
+					},
+				},
+			},
+		},
+		{
 			description: "none",
 			artifacts: []*latest.Artifact{
 				{
@@ -354,13 +427,131 @@ func TestValidateNetworkMode(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				&latest.SkaffoldConfig{
+				[]*latest.SkaffoldConfig{{
 					Pipeline: latest.Pipeline{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
-				})
+				}})
+
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
+type fakeCommonAPIClient struct {
+	client.CommonAPIClient
+	expectedResponse []types.Container
+}
+
+func (f fakeCommonAPIClient) ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error) {
+	return f.expectedResponse, nil
+}
+
+func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
+	tests := []struct {
+		description    string
+		artifacts      []*latest.Artifact
+		clientResponse []types.Container
+		shouldErr      bool
+	}{
+		{
+			description: "no running containers",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:foo",
+						},
+					},
+				},
+			},
+			clientResponse: []types.Container{},
+			shouldErr:      true,
+		},
+		{
+			description: "not matching running containers",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:foo",
+						},
+					},
+				},
+			},
+			clientResponse: []types.Container{
+				{
+					ID:    "not-foo",
+					Names: []string{"/bar"},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "existing running container referenced by id",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:foo",
+						},
+					},
+				},
+			},
+			clientResponse: []types.Container{
+				{
+					ID: "foo",
+				},
+			},
+		},
+		{
+			description: "existing running container referenced by name",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/container",
+					ArtifactType: latest.ArtifactType{
+						DockerArtifact: &latest.DockerArtifact{
+							NetworkMode: "Container:foo",
+						},
+					},
+				},
+			},
+			clientResponse: []types.Container{
+				{
+					ID:    "no-foo",
+					Names: []string{"/foo"},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// disable yamltags validation
+			t.Override(&validateYamltags, func(interface{}) error { return nil })
+			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+				fakeClient := &fakeCommonAPIClient{
+					CommonAPIClient: &testutil.FakeAPIClient{
+						ErrVersion: true,
+					},
+					expectedResponse: test.clientResponse,
+				}
+				return docker.NewLocalDaemon(fakeClient, nil, false, nil), nil
+			})
+
+			err := ProcessWithRunContext(&runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines([]latest.Pipeline{
+					{
+						Build: latest.BuildConfig{
+							Artifacts: test.artifacts,
+						},
+					},
+				}),
+			})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -458,13 +649,13 @@ func TestValidateSyncRules(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				&latest.SkaffoldConfig{
+				[]*latest.SkaffoldConfig{{
 					Pipeline: latest.Pipeline{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
-				})
+				}})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -603,13 +794,13 @@ func TestValidateImageNames(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				&latest.SkaffoldConfig{
+				[]*latest.SkaffoldConfig{{
 					Pipeline: latest.Pipeline{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
-				})
+				}})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -706,13 +897,13 @@ func TestValidateJibPluginType(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				&latest.SkaffoldConfig{
+				[]*latest.SkaffoldConfig{{
 					Pipeline: latest.Pipeline{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
-				})
+				}})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -738,7 +929,7 @@ func TestValidateLogsConfig(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				&latest.SkaffoldConfig{
+				[]*latest.SkaffoldConfig{{
 					Pipeline: latest.Pipeline{
 						Deploy: latest.DeployConfig{
 							Logs: latest.LogsConfig{
@@ -746,7 +937,7 @@ func TestValidateLogsConfig(t *testing.T) {
 							},
 						},
 					},
-				})
+				}})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -849,19 +1040,27 @@ func setDependencies(a []*latest.Artifact, d map[int][]int) {
 }
 
 func TestValidateUniqueDependencyAliases(t *testing.T) {
-	artifacts := []*latest.Artifact{
+	cfgs := []*latest.SkaffoldConfig{
 		{
-			ImageName: "artifact1",
-			Dependencies: []*latest.ArtifactDependency{
-				{Alias: "alias2", ImageName: "artifact2a"},
-				{Alias: "alias2", ImageName: "artifact2b"},
-			},
-		},
-		{
-			ImageName: "artifact2",
-			Dependencies: []*latest.ArtifactDependency{
-				{Alias: "alias1", ImageName: "artifact1"},
-				{Alias: "alias2", ImageName: "artifact1"},
+			Pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					Artifacts: []*latest.Artifact{
+						{
+							ImageName: "artifact1",
+							Dependencies: []*latest.ArtifactDependency{
+								{Alias: "alias2", ImageName: "artifact2a"},
+								{Alias: "alias2", ImageName: "artifact2b"},
+							},
+						},
+						{
+							ImageName: "artifact2",
+							Dependencies: []*latest.ArtifactDependency{
+								{Alias: "alias1", ImageName: "artifact1"},
+								{Alias: "alias2", ImageName: "artifact1"},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -869,53 +1068,61 @@ func TestValidateUniqueDependencyAliases(t *testing.T) {
 		fmt.Errorf(`invalid build dependency for artifact "artifact1": alias "alias2" repeated`),
 		fmt.Errorf(`unknown build dependency "artifact2a" for artifact "artifact1"`),
 	}
-	errs := validateArtifactDependencies(artifacts)
+	errs := validateArtifactDependencies(cfgs)
 	testutil.CheckDeepEqual(t, expected, errs, cmp.Comparer(errorsComparer))
 }
 
 func TestValidateValidDependencyAliases(t *testing.T) {
-	artifacts := []*latest.Artifact{
+	cfgs := []*latest.SkaffoldConfig{
 		{
-			ImageName: "artifact1",
-		},
-		{
-			ImageName: "artifact2",
-			ArtifactType: latest.ArtifactType{
-				DockerArtifact: &latest.DockerArtifact{},
-			},
-			Dependencies: []*latest.ArtifactDependency{
-				{Alias: "ARTIFACT_1", ImageName: "artifact1"},
-				{Alias: "1_ARTIFACT", ImageName: "artifact1"},
-			},
-		},
-		{
-			ImageName: "artifact3",
-			ArtifactType: latest.ArtifactType{
-				DockerArtifact: &latest.DockerArtifact{},
-			},
-			Dependencies: []*latest.ArtifactDependency{
-				{Alias: "artifact!", ImageName: "artifact1"},
-				{Alias: "artifact#1", ImageName: "artifact1"},
-			},
-		},
-		{
-			ImageName: "artifact4",
-			ArtifactType: latest.ArtifactType{
-				CustomArtifact: &latest.CustomArtifact{},
-			},
-			Dependencies: []*latest.ArtifactDependency{
-				{Alias: "alias1", ImageName: "artifact1"},
-				{Alias: "alias2", ImageName: "artifact2"},
-			},
-		},
-		{
-			ImageName: "artifact5",
-			ArtifactType: latest.ArtifactType{
-				BuildpackArtifact: &latest.BuildpackArtifact{},
-			},
-			Dependencies: []*latest.ArtifactDependency{
-				{Alias: "artifact!", ImageName: "artifact1"},
-				{Alias: "artifact#1", ImageName: "artifact1"},
+			Pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					Artifacts: []*latest.Artifact{
+						{
+							ImageName: "artifact1",
+						},
+						{
+							ImageName: "artifact2",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{},
+							},
+							Dependencies: []*latest.ArtifactDependency{
+								{Alias: "ARTIFACT_1", ImageName: "artifact1"},
+								{Alias: "1_ARTIFACT", ImageName: "artifact1"},
+							},
+						},
+						{
+							ImageName: "artifact3",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{},
+							},
+							Dependencies: []*latest.ArtifactDependency{
+								{Alias: "artifact!", ImageName: "artifact1"},
+								{Alias: "artifact#1", ImageName: "artifact1"},
+							},
+						},
+						{
+							ImageName: "artifact4",
+							ArtifactType: latest.ArtifactType{
+								CustomArtifact: &latest.CustomArtifact{},
+							},
+							Dependencies: []*latest.ArtifactDependency{
+								{Alias: "alias1", ImageName: "artifact1"},
+								{Alias: "alias2", ImageName: "artifact2"},
+							},
+						},
+						{
+							ImageName: "artifact5",
+							ArtifactType: latest.ArtifactType{
+								BuildpackArtifact: &latest.BuildpackArtifact{},
+							},
+							Dependencies: []*latest.ArtifactDependency{
+								{Alias: "artifact!", ImageName: "artifact1"},
+								{Alias: "artifact#1", ImageName: "artifact1"},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -924,7 +1131,7 @@ func TestValidateValidDependencyAliases(t *testing.T) {
 		fmt.Errorf(`invalid build dependency for artifact "artifact3": alias "artifact!" doesn't match required pattern %q`, dependencyAliasPattern),
 		fmt.Errorf(`invalid build dependency for artifact "artifact3": alias "artifact#1" doesn't match required pattern %q`, dependencyAliasPattern),
 	}
-	errs := validateArtifactDependencies(artifacts)
+	errs := validateArtifactDependencies(cfgs)
 	testutil.CheckDeepEqual(t, expected, errs, cmp.Comparer(errorsComparer))
 }
 
@@ -979,11 +1186,11 @@ func TestValidateTaggingPolicy(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				&latest.SkaffoldConfig{
+				[]*latest.SkaffoldConfig{{
 					Pipeline: latest.Pipeline{
 						Build: test.cfg,
 					},
-				})
+				}})
 
 			t.CheckError(test.shouldErr, err)
 		})

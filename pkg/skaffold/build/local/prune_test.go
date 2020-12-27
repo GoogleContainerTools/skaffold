@@ -21,7 +21,6 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -183,26 +182,10 @@ func TestCollectPruneImages(t *testing.T) {
 			}), true)
 
 			res := pruner.collectImagesToPrune(
-				context.Background(), artifacts(test.imagesToBuild...))
+				context.Background(), test.imagesToBuild)
 			sort.Strings(test.expectedToPrune)
 			sort.Strings(res)
 			t.CheckDeepEqual(res, test.expectedToPrune)
 		})
-	}
-}
-func artifacts(images ...string) []*latest.Artifact {
-	rt := make([]*latest.Artifact, 0)
-	for _, image := range images {
-		rt = append(rt, a(image))
-	}
-	return rt
-}
-
-func a(name string) *latest.Artifact {
-	return &latest.Artifact{
-		ImageName: name,
-		ArtifactType: latest.ArtifactType{
-			DockerArtifact: &latest.DockerArtifact{},
-		},
 	}
 }

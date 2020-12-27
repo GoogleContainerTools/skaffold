@@ -32,7 +32,7 @@ jobs:
 
     - name: Skaffold binary version
       run: |
-        echo ::set-env name=SKAFFOLD_VERSION::"$(git log --format="%H" -n 1)"
+        echo SKAFFOLD_VERSION="$(git log --format="%H" -n 1)" >> $GITHUB_ENV
 
     - name: Install Kustomize
       run: |
@@ -58,7 +58,7 @@ jobs:
         wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${{ matrix.gcloud_sdk_version }}-darwin-x86_64.tar.gz
         tar -xvf gcloud.tar.gz -C ${HOME}
         CLOUDSDK_PYTHON="python2.7" ${HOME}/google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
-        echo ::add-path::${HOME}/google-cloud-sdk/bin
+        echo "${HOME}/google-cloud-sdk/bin" >> $GITHUB_PATH
 
     - name: Install Kubectl
       run: |
@@ -86,10 +86,10 @@ jobs:
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=virtualbox
         eval $(minikube docker-env --profile=minikube)
-        echo ::set-env name=DOCKER_TLS_VERIFY::${DOCKER_TLS_VERIFY}
-        echo ::set-env name=DOCKER_HOST::${DOCKER_HOST}
-        echo ::set-env name=DOCKER_CERT_PATH::${DOCKER_CERT_PATH}
-        echo ::set-env name=MINIKUBE_ACTIVE_DOCKERD::${MINIKUBE_ACTIVE_DOCKERD}
+        echo DOCKER_TLS_VERIFY=${DOCKER_TLS_VERIFY} >> $GITHUB_ENV
+        echo DOCKER_HOST=${DOCKER_HOST} >> $GITHUB_ENV
+        echo DOCKER_CERT_PATH=${DOCKER_CERT_PATH} >> $GITHUB_ENV
+        echo MINIKUBE_ACTIVE_DOCKERD=${MINIKUBE_ACTIVE_DOCKERD} >> $GITHUB_ENV
 
     - name: Install Skaffold release binary
       run: |

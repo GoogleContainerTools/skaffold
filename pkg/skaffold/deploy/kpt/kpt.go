@@ -38,7 +38,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
-	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -70,9 +69,9 @@ type Deployer struct {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg types.Config, labels map[string]string) *Deployer {
+func NewDeployer(cfg types.Config, labels map[string]string, d *latest.KptDeploy) *Deployer {
 	return &Deployer{
-		KptDeploy:          cfg.Pipeline().Deploy.KptDeploy,
+		KptDeploy:          d,
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       cfg.GlobalConfig(),
@@ -174,7 +173,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 // Dependencies returns a list of files that the deployer depends on. This does NOT include applyDir.
 // In dev mode, a redeploy will be triggered if one of these files is updated.
 func (k *Deployer) Dependencies() ([]string, error) {
-	deps := deployutil.NewStringSet()
+	deps := util.NewStringSet()
 
 	// Add the app configuration manifests. It may already include kpt functions and kustomize
 	// config files.

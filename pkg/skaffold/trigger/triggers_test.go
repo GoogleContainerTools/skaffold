@@ -27,6 +27,7 @@ import (
 	"github.com/rjeczalik/notify"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	fsNotify "github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger/fsnotify"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -50,14 +51,9 @@ func TestNewTrigger(t *testing.T) {
 			description:       "notify trigger",
 			trigger:           "notify",
 			watchPollInterval: 1,
-			expected: &fsNotifyTrigger{
-				Interval: 1 * time.Millisecond,
-				workspaces: map[string]struct{}{
-					"../workspace":            {},
-					"../some/other/workspace": {},
-				},
-				watchFunc: notify.Watch,
-			},
+			expected: fsNotify.New(map[string]struct{}{
+				"../workspace":            {},
+				"../some/other/workspace": {}}, nil, 1),
 		},
 		{
 			description: "manual trigger",
@@ -86,7 +82,7 @@ func TestNewTrigger(t *testing.T) {
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
-				t.CheckDeepEqual(test.expected, got, cmp.AllowUnexported(fsNotifyTrigger{}), cmp.Comparer(ignoreFuncComparer), cmp.AllowUnexported(manualTrigger{}), cmp.AllowUnexported(pollTrigger{}))
+				t.CheckDeepEqual(test.expected, got, cmp.AllowUnexported(fsNotify.Trigger{}), cmp.Comparer(ignoreFuncComparer), cmp.AllowUnexported(manualTrigger{}), cmp.AllowUnexported(pollTrigger{}))
 			}
 		})
 	}
@@ -141,45 +137,6 @@ func TestPollTrigger_LogWatchToUser(t *testing.T) {
 	}
 }
 
-func TestNotifyTrigger_Debounce(t *testing.T) {
-	trigger := &fsNotifyTrigger{}
-	got, want := trigger.Debounce(), false
-	testutil.CheckDeepEqual(t, want, got)
-}
-
-func TestNotifyTrigger_LogWatchToUser(t *testing.T) {
-	tests := []struct {
-		description string
-		isActive    bool
-		expected    string
-	}{
-		{
-			description: "active notify trigger",
-			isActive:    true,
-			expected:    "Watching for changes...\n",
-		},
-		{
-			description: "inactive notify trigger",
-			isActive:    false,
-			expected:    "Not watching for changes...\n",
-		},
-	}
-	for _, test := range tests {
-		out := new(bytes.Buffer)
-
-		trigger := &fsNotifyTrigger{
-			Interval: 10,
-			isActive: func() bool {
-				return test.isActive
-			},
-		}
-		trigger.LogWatchToUser(out)
-
-		got, want := out.String(), test.expected
-		testutil.CheckDeepEqual(t, want, got)
-	}
-}
-
 func TestManualTrigger_Debounce(t *testing.T) {
 	trigger := &manualTrigger{}
 	got, want := trigger.Debounce(), false
@@ -221,35 +178,27 @@ func TestManualTrigger_LogWatchToUser(t *testing.T) {
 func TestStartTrigger(t *testing.T) {
 	tests := []struct {
 		description string
-		trigger     Trigger
+		mockWatch   func(string, chan<- notify.EventInfo, ...notify.Event) error
 	}{
 		{
 			description: "fsNotify trigger works",
-			trigger: &fsNotifyTrigger{
-				Interval:   200 * time.Millisecond,
-				workspaces: nil,
-				isActive:   func() bool { return false },
-				watchFunc: func(string, chan<- notify.EventInfo, ...notify.Event) error {
-					return nil
-				},
+			mockWatch: func(string, chan<- notify.EventInfo, ...notify.Event) error {
+				return nil
 			},
 		},
 		{
 			description: "fallback on polling trigger",
-			trigger: &fsNotifyTrigger{
-				Interval:   200 * time.Millisecond,
-				workspaces: nil,
-				isActive:   func() bool { return false },
-				watchFunc: func(string, chan<- notify.EventInfo, ...notify.Event) error {
-					return fmt.Errorf("failed to start watch trigger")
-				},
+			mockWatch: func(string, chan<- notify.EventInfo, ...notify.Event) error {
+				return fmt.Errorf("failed to start watch trigger")
 			},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := StartTrigger(context.Background(), test.trigger)
+			t.Override(&fsNotify.Watch, test.mockWatch)
+			trigger := fsNotify.New(nil, func() bool { return false }, 1)
+			_, err := StartTrigger(context.Background(), trigger)
 			time.Sleep(1 * time.Second)
 			t.CheckNoError(err)
 		})
@@ -262,10 +211,6 @@ type mockConfig struct {
 	artifacts         []*latest.Artifact
 }
 
-func (c *mockConfig) Trigger() string        { return c.trigger }
-func (c *mockConfig) WatchPollInterval() int { return c.watchPollInterval }
-func (c *mockConfig) Pipeline() latest.Pipeline {
-	var pipeline latest.Pipeline
-	pipeline.Build.Artifacts = c.artifacts
-	return pipeline
-}
+func (c *mockConfig) Trigger() string               { return c.trigger }
+func (c *mockConfig) WatchPollInterval() int        { return c.watchPollInterval }
+func (c *mockConfig) Artifacts() []*latest.Artifact { return c.artifacts }

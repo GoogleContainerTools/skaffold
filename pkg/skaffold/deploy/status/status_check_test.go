@@ -220,7 +220,7 @@ func TestGetDeployments(t *testing.T) {
 				objs[i] = dep
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
-			actual, err := getDeployments(client, "test", labeller, 200*time.Second)
+			actual, err := getDeployments(context.Background(), client, "test", labeller, 200*time.Second)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
 				cmp.AllowUnexported(resource.Deployment{}, resource.Status{}),
 				cmpopts.IgnoreInterfaces(struct{ diag.Diagnose }{}))
@@ -293,7 +293,7 @@ func TestGetDeployStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
+			event.InitializeState([]latest.Pipeline{{}}, "test", true, true, true)
 			errCode, err := getSkaffoldDeployStatus(test.counter, test.deployments)
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
@@ -370,7 +370,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			out := new(bytes.Buffer)
 			rc := newCounter(10)
 			rc.pending = test.pending
-			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
+			event.InitializeState([]latest.Pipeline{{}}, "test", true, true, true)
 			r := withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), test.ae)
 			// report status once and set it changed to false.
 			r.ReportSinceLastUpdated(false)
@@ -460,7 +460,7 @@ func TestPrintStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
+			event.InitializeState([]latest.Pipeline{{}}, "test", true, true, true)
 			checker := statusChecker{labeller: labeller}
 			actual := checker.printStatus(test.rs, out)
 			t.CheckDeepEqual(test.expectedOut, out.String())
@@ -591,7 +591,7 @@ func TestPollDeployment(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.command)
 			t.Override(&defaultPollPeriodInMilliseconds, 100)
-			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
+			event.InitializeState([]latest.Pipeline{{}}, "test", true, true, true)
 			mockVal := mockValidator{runs: test.runs}
 			dep := test.dep.WithValidator(mockVal)
 

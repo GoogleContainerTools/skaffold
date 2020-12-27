@@ -26,9 +26,10 @@ import (
 type Config interface {
 	docker.Config
 
-	Pipeline() latest.Pipeline
+	GetPipelines() []latest.Pipeline
 	GetWorkingDir() string
 	GlobalConfig() string
+	ConfigurationFile() string
 	DefaultRepo() *string
 	SkipRender() bool
 }

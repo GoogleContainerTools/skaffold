@@ -47,7 +47,16 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 		fmt.Fprintln(out, artifact.Tag)
 	}
 
-	if r.imagesAreLocal && len(artifacts) > 0 {
+	var localImages []build.Artifact
+	for _, a := range artifacts {
+		if isLocal, err := r.isLocalImage(a.ImageName); err != nil {
+			return err
+		} else if isLocal {
+			localImages = append(localImages, a)
+		}
+	}
+
+	if len(localImages) > 0 {
 		logrus.Debugln(`Local images can't be referenced by digest.
 They are tagged and referenced by a unique, local only, tag instead.
 See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
@@ -60,8 +69,8 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
-	if r.imagesAreLocal && r.runCtx.Cluster.LoadImages {
-		err := r.loadImagesIntoCluster(ctx, out, artifacts)
+	if len(localImages) > 0 && r.runCtx.Cluster.LoadImages {
+		err := r.loadImagesIntoCluster(ctx, out, localImages)
 		if err != nil {
 			return err
 		}
@@ -74,12 +83,13 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 
 	event.DeployInProgress()
 	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
-	r.hasDeployed = true
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
 		return err
 	}
+
+	r.hasDeployed = true
 
 	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	postStatusCheckFn()

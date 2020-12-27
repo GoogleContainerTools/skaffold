@@ -292,7 +292,7 @@ func TestRunTailPod(t *testing.T) {
 
 	ns, _ := SetupNamespace(t)
 
-	out := skaffold.Run("--tail", "-p", "pod").InDir("testdata/hello").InNs(ns.Name).RunBackground(t)
+	out := skaffold.Run("--tail", "-p", "pod").InDir("testdata/hello").InNs(ns.Name).RunLive(t)
 
 	WaitForLogs(t, out,
 		"Hello world! 0",
@@ -306,7 +306,7 @@ func TestRunTailDeployment(t *testing.T) {
 
 	ns, _ := SetupNamespace(t)
 
-	out := skaffold.Run("--tail", "-p", "deployment").InDir("testdata/hello").InNs(ns.Name).RunBackground(t)
+	out := skaffold.Run("--tail", "-p", "deployment").InDir("testdata/hello").InNs(ns.Name).RunLive(t)
 
 	WaitForLogs(t, out,
 		"Hello world! 0",

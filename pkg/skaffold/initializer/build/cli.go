@@ -47,17 +47,17 @@ func (c *cliBuildInitializer) ProcessImages(images []string) error {
 	return nil
 }
 
-func (c *cliBuildInitializer) BuildConfig() latest.BuildConfig {
+func (c *cliBuildInitializer) BuildConfig() (latest.BuildConfig, []*latest.PortForwardResource) {
 	return latest.BuildConfig{
 		Artifacts: Artifacts(c.artifactInfos),
-	}
+	}, nil
 }
 
 func (c *cliBuildInitializer) PrintAnalysis(out io.Writer) error {
 	return printAnalysis(out, c.enableNewFormat, c.skipBuild, c.artifactInfos, c.builders, nil)
 }
 
-func (c *cliBuildInitializer) GenerateManifests() (map[GeneratedArtifactInfo][]byte, error) {
+func (c *cliBuildInitializer) GenerateManifests(io.Writer, bool) (map[GeneratedArtifactInfo][]byte, error) {
 	return nil, nil
 }
 

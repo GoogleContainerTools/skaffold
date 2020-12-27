@@ -42,6 +42,7 @@ type WaitForDeletions struct {
 type SkaffoldOptions struct {
 	ConfigurationFile     string
 	GlobalConfig          string
+	EventLogFile          string
 	Cleanup               bool
 	Notification          bool
 	Tail                  bool

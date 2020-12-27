@@ -27,7 +27,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 const (
@@ -68,7 +67,7 @@ func (p *pruner) listImages(ctx context.Context, name string) ([]types.ImageSumm
 	return imgs, nil
 }
 
-func (p *pruner) cleanup(ctx context.Context, sync bool, artifacts []*latest.Artifact) {
+func (p *pruner) cleanup(ctx context.Context, sync bool, artifacts []string) {
 	toPrune := p.collectImagesToPrune(ctx, artifacts)
 	if len(toPrune) == 0 {
 		return
@@ -89,11 +88,11 @@ func (p *pruner) cleanup(ctx context.Context, sync bool, artifacts []*latest.Art
 	}
 }
 
-func (p *pruner) asynchronousCleanupOldImages(ctx context.Context, artifacts []*latest.Artifact) {
+func (p *pruner) asynchronousCleanupOldImages(ctx context.Context, artifacts []string) {
 	p.cleanup(ctx, false /*async*/, artifacts)
 }
 
-func (p *pruner) synchronousCleanupOldImages(ctx context.Context, artifacts []*latest.Artifact) {
+func (p *pruner) synchronousCleanupOldImages(ctx context.Context, artifacts []string) {
 	p.cleanup(ctx, true /*sync*/, artifacts)
 }
 
@@ -148,21 +147,21 @@ func (p *pruner) runPrune(ctx context.Context, ids []string) error {
 	return nil
 }
 
-func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []*latest.Artifact) []string {
+func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []string) []string {
 	// in case we're trying to build multiple images with the same ref in the same pipeline
 	imgNameCount := make(map[string]int)
 	for _, a := range artifacts {
-		imgNameCount[a.ImageName]++
+		imgNameCount[a]++
 	}
 	imgProcessed := make(map[string]struct{})
 	var rt []string
 	for _, a := range artifacts {
-		if _, ok := imgProcessed[a.ImageName]; ok {
+		if _, ok := imgProcessed[a]; ok {
 			continue
 		}
-		imgProcessed[a.ImageName] = struct{}{}
+		imgProcessed[a] = struct{}{}
 
-		imgs, err := p.listImages(ctx, a.ImageName)
+		imgs, err := p.listImages(ctx, a)
 		if err != nil {
 			switch err {
 			case context.Canceled, context.DeadlineExceeded:
@@ -171,7 +170,7 @@ func (p *pruner) collectImagesToPrune(ctx context.Context, artifacts []*latest.A
 			logrus.Warnf("failed to list images: %v", err)
 			continue
 		}
-		for i := imgNameCount[a.ImageName]; i < len(imgs); i++ {
+		for i := imgNameCount[a]; i < len(imgs); i++ {
 			rt = append(rt, imgs[i].ID)
 		}
 	}

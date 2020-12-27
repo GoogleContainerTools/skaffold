@@ -45,7 +45,7 @@ func Write(manifests string, output string, manifestOut io.Writer) error {
 	case strings.HasPrefix(output, gcsPrefix):
 		tempDir, err := ioutil.TempDir("", manifestsStagingFolder)
 		if err != nil {
-			return fmt.Errorf("failed to create the tmp directory: %w", err)
+			return writeErr(fmt.Errorf("failed to create the tmp directory: %w", err))
 		}
 		defer os.RemoveAll(tempDir)
 		tempFile := filepath.Join(tempDir, renderedManifestsStagingFile)
@@ -54,7 +54,7 @@ func Write(manifests string, output string, manifestOut io.Writer) error {
 		}
 		gcs := util.Gsutil{}
 		if err := gcs.Copy(context.Background(), tempFile, output, false); err != nil {
-			return fmt.Errorf("failed to copy rendered manifests to GCS: %w", err)
+			return writeErr(fmt.Errorf("failed to copy rendered manifests to GCS: %w", err))
 		}
 		return nil
 	default:

@@ -61,13 +61,13 @@ func (s stubBuildInitializer) PrintAnalysis(io.Writer) error {
 	panic("no sir")
 }
 
-func (s stubBuildInitializer) BuildConfig() latest.BuildConfig {
+func (s stubBuildInitializer) BuildConfig() (latest.BuildConfig, []*latest.PortForwardResource) {
 	return latest.BuildConfig{
 		Artifacts: build.Artifacts(s.artifactInfos),
-	}
+	}, nil
 }
 
-func (s stubBuildInitializer) GenerateManifests() (map[build.GeneratedArtifactInfo][]byte, error) {
+func (s stubBuildInitializer) GenerateManifests(io.Writer, bool) (map[build.GeneratedArtifactInfo][]byte, error) {
 	panic("no thank you")
 }
 

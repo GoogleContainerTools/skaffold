@@ -38,27 +38,27 @@ type Builder struct {
 	mode          config.RunMode
 	timeout       time.Duration
 	artifactStore build.ArtifactStore
+	teardownFunc  []func()
 }
 
 type Config interface {
 	kubectl.Config
 	docker.Config
 
-	Pipeline() latest.Pipeline
 	GetKubeContext() string
 	Muted() config.Muted
 	Mode() config.RunMode
 }
 
 // NewBuilder creates a new Builder that builds artifacts on cluster.
-func NewBuilder(cfg Config) (*Builder, error) {
-	timeout, err := time.ParseDuration(cfg.Pipeline().Build.Cluster.Timeout)
+func NewBuilder(cfg Config, buildCfg *latest.ClusterDetails) (*Builder, error) {
+	timeout, err := time.ParseDuration(buildCfg.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("parsing timeout: %w", err)
 	}
 
 	return &Builder{
-		ClusterDetails: cfg.Pipeline().Build.Cluster,
+		ClusterDetails: buildCfg,
 		cfg:            cfg,
 		kubectlcli:     kubectl.NewCLI(cfg, ""),
 		mode:           cfg.Mode(),

@@ -21,7 +21,6 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
@@ -54,28 +53,21 @@ func NewCmdInit() *cobra.Command {
 	return NewCmd("init").
 		WithDescription("[alpha] Generate configuration for deploying an application").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in Skaffold config")
-			f.BoolVar(&skipDeploy, "skip-deploy", false, "Skip generating deploy stanza in Skaffold config")
-			f.MarkHidden("skip-deploy")
-			f.BoolVar(&force, "force", false, "Force the generation of the Skaffold config")
-			f.StringVar(&composeFile, "compose-file", "", "Initialize from a docker-compose file")
-			f.StringVar(&defaultKustomization, "default-kustomization", "", "Default Kustomization overlay path (others will be added as profiles)")
-			f.StringArrayVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited Dockerfile/image pair, or JSON string, to generate build artifact\n(example: --artifact='{\"builder\":\"Docker\",\"payload\":{\"path\":\"/web/Dockerfile.web\"},\"image\":\"gcr.io/web-project/image\"}')")
-			f.StringArrayVarP(&cliKubernetesManifests, "kubernetes-manifest", "k", nil, "A path or a glob pattern to kubernetes manifests (can be non-existent) to be added to the kubectl deployer (overrides detection of kubernetes manifests). Repeat the flag for multiple entries. E.g.: skaffold init -k pod.yaml -k k8s/*.yml")
-			f.BoolVar(&analyze, "analyze", false, "Print all discoverable Dockerfiles and images in JSON format to stdout")
-			f.BoolVar(&enableNewInitFormat, "XXenableNewInitFormat", false, "")
-			f.MarkHidden("XXenableNewInitFormat")
-			f.BoolVar(&enableJibInit, "XXenableJibInit", false, "")
-			f.MarkHidden("XXenableJibInit")
-			f.BoolVar(&enableJibGradleInit, "XXenableJibGradleInit", false, "")
-			f.MarkHidden("XXenableJibGradleInit")
-			f.BoolVar(&enableBuildpacksInit, "XXenableBuildpacksInit", false, "")
-			f.MarkHidden("XXenableBuildpacksInit")
-			f.StringVar(&buildpacksBuilder, "XXdefaultBuildpacksBuilder", "gcr.io/buildpacks/builder:v1", "")
-			f.MarkHidden("XXdefaultBuildpacksBuilder")
-			f.BoolVar(&enableManifestGeneration, "XXenableManifestGeneration", false, "")
-			f.MarkHidden("XXenableManifestGeneration")
+		WithFlags([]*Flag{
+			{Value: &skipBuild, Name: "skip-build", DefValue: false, Usage: "Skip generating build artifacts in Skaffold config", IsEnum: true},
+			{Value: &skipDeploy, Name: "skip-deploy", DefValue: false, Usage: "Skip generating deploy stanza in Skaffold config", Hidden: true, IsEnum: true},
+			{Value: &force, Name: "force", DefValue: false, Usage: "Force the generation of the Skaffold config", IsEnum: true},
+			{Value: &composeFile, Name: "compose-file", DefValue: "", Usage: "Initialize from a docker-compose file"},
+			{Value: &defaultKustomization, Name: "default-kustomization", DefValue: "", Usage: "Default Kustomization overlay path (others will be added as profiles)"},
+			{Value: &cliArtifacts, Name: "artifact", Shorthand: "a", DefValue: []string{}, Usage: "'='-delimited Dockerfile/image pair, or JSON string, to generate build artifact\n(example: --artifact='{\"builder\":\"Docker\",\"payload\":{\"path\":\"/web/Dockerfile.web\"},\"image\":\"gcr.io/web-project/image\"}')"},
+			{Value: &cliKubernetesManifests, Name: "kubernetes-manifest", Shorthand: "k", DefValue: []string{}, Usage: "A path or a glob pattern to kubernetes manifests (can be non-existent) to be added to the kubectl deployer (overrides detection of kubernetes manifests). Repeat the flag for multiple entries. E.g.: skaffold init -k pod.yaml -k k8s/*.yml"},
+			{Value: &analyze, Name: "analyze", DefValue: false, Usage: "Print all discoverable Dockerfiles and images in JSON format to stdout", IsEnum: true},
+			{Value: &enableNewInitFormat, Name: "XXenableNewInitFormat", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
+			{Value: &enableJibInit, Name: "XXenableJibInit", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
+			{Value: &enableJibGradleInit, Name: "XXenableJibGradleInit", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
+			{Value: &enableBuildpacksInit, Name: "XXenableBuildpacksInit", DefValue: false, Usage: "", Hidden: true, IsEnum: true},
+			{Value: &buildpacksBuilder, Name: "XXdefaultBuildpacksBuilder", DefValue: "gcr.io/buildpacks/builder:v1", Usage: "", Hidden: true},
+			{Value: &enableManifestGeneration, Name: "generate-manifests", DefValue: false, Usage: "Allows skaffold to try and generate basic kubernetes resources to get your project started", IsEnum: true},
 		}).
 		NoArgs(doInit)
 }

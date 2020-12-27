@@ -17,8 +17,6 @@ limitations under the License.
 package manifest
 
 import (
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -30,7 +28,7 @@ import (
 func (l *ManifestList) GetImages() ([]build.Artifact, error) {
 	s := &imageSaver{}
 	_, err := l.Visit(s)
-	return s.Images, err
+	return s.Images, parseImagesInManifestErr(err)
 }
 
 type imageSaver struct {
@@ -65,7 +63,7 @@ func (l *ManifestList) ReplaceImages(builds []build.Artifact) (ManifestList, err
 
 	updated, err := l.Visit(replacer)
 	if err != nil {
-		return nil, fmt.Errorf("replacing images in manifest: %w", err)
+		return nil, replaceImageErr(err)
 	}
 
 	replacer.Check()
@@ -121,7 +119,7 @@ func (r *imageReplacer) Visit(o map[string]interface{}, k string, v interface{})
 func (r *imageReplacer) Check() {
 	for imageName := range r.tagsByImageName {
 		if !r.found[imageName] {
-			warnings.Printf("image [%s] is not used by the deployment", imageName)
+			logrus.Debugf("image [%s] is not used by the current deployment", imageName)
 		}
 	}
 }

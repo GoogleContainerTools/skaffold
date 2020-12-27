@@ -22,16 +22,15 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"time"
 
-	"github.com/rjeczalik/notify"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	fsNotify "github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger/fsnotify"
 )
 
 // Trigger describes a mechanism that triggers the watch.
@@ -42,8 +41,8 @@ type Trigger interface {
 }
 
 type Config interface {
-	Pipeline() latest.Pipeline
 	Trigger() string
+	Artifacts() []*latest.Artifact
 	WatchPollInterval() int
 }
 
@@ -66,17 +65,12 @@ func NewTrigger(cfg Config, isActive func() bool) (Trigger, error) {
 	}
 }
 
-func newFSNotifyTrigger(cfg Config, isActive func() bool) *fsNotifyTrigger {
+func newFSNotifyTrigger(cfg Config, isActive func() bool) Trigger {
 	workspaces := map[string]struct{}{}
-	for _, a := range cfg.Pipeline().Build.Artifacts {
+	for _, a := range cfg.Artifacts() {
 		workspaces[a.Workspace] = struct{}{}
 	}
-	return &fsNotifyTrigger{
-		Interval:   time.Duration(cfg.WatchPollInterval()) * time.Millisecond,
-		workspaces: workspaces,
-		isActive:   isActive,
-		watchFunc:  notify.Watch,
-	}
+	return fsNotify.New(workspaces, isActive, cfg.WatchPollInterval())
 }
 
 // pollTrigger watches for changes on a given interval of time.
@@ -175,88 +169,6 @@ func (t *manualTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	return trigger, nil
 }
 
-// notifyTrigger watches for changes with fsnotify
-type fsNotifyTrigger struct {
-	Interval   time.Duration
-	workspaces map[string]struct{}
-	isActive   func() bool
-	watchFunc  func(path string, c chan<- notify.EventInfo, events ...notify.Event) error
-}
-
-// Debounce tells the watcher to not debounce rapid sequence of changes.
-func (t *fsNotifyTrigger) Debounce() bool {
-	// This trigger has built-in debouncing.
-	return false
-}
-
-func (t *fsNotifyTrigger) LogWatchToUser(out io.Writer) {
-	if t.isActive() {
-		color.Yellow.Fprintln(out, "Watching for changes...")
-	} else {
-		color.Yellow.Fprintln(out, "Not watching for changes...")
-	}
-}
-
-// Start listening for file system changes
-func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
-	c := make(chan notify.EventInfo, 100)
-
-	// Workaround https://github.com/rjeczalik/notify/issues/96
-	wd, err := RealWorkDir()
-	if err != nil {
-		return nil, err
-	}
-
-	// Watch current directory recursively
-	if err := t.watchFunc(filepath.Join(wd, "..."), c, notify.All); err != nil {
-		return nil, err
-	}
-
-	// Watch all workspaces recursively
-	for w := range t.workspaces {
-		if w == "." {
-			continue
-		}
-
-		if err := t.watchFunc(filepath.Join(wd, w, "..."), c, notify.All); err != nil {
-			return nil, err
-		}
-	}
-
-	// Since the file watcher runs in a separate go routine
-	// and can take some time to start, it can lose the very first change.
-	// As a mitigation, we act as if a change was detected.
-	go func() { c <- nil }()
-
-	trigger := make(chan bool)
-	go func() {
-		timer := time.NewTimer(1<<63 - 1) // Forever
-
-		for {
-			select {
-			case e := <-c:
-
-				// Ignore detected changes if not active
-				if !t.isActive() {
-					continue
-				}
-				logrus.Debugln("Change detected", e)
-
-				// Wait t.interval before triggering.
-				// This way, rapid stream of events will be grouped.
-				timer.Reset(t.Interval)
-			case <-timer.C:
-				trigger <- true
-			case <-ctx.Done():
-				timer.Stop()
-				return
-			}
-		}
-	}()
-
-	return trigger, nil
-}
-
 // StartTrigger attempts to start a trigger.
 // It will attempt to start as a polling trigger if it tried unsuccessfully to start a notify trigger.
 func StartTrigger(ctx context.Context, t Trigger) (<-chan bool, error) {
@@ -264,12 +176,12 @@ func StartTrigger(ctx context.Context, t Trigger) (<-chan bool, error) {
 	if err == nil {
 		return ret, err
 	}
-	if notifyTrigger, ok := t.(*fsNotifyTrigger); ok {
+	if fsnotify, ok := t.(*fsNotify.Trigger); ok {
 		logrus.Debugln("Couldn't start notify trigger. Falling back to a polling trigger")
 
 		t = &pollTrigger{
-			Interval: notifyTrigger.Interval,
-			isActive: notifyTrigger.isActive,
+			Interval: fsnotify.Interval,
+			isActive: fsnotify.IsActive(),
 		}
 		ret, err = t.Start(ctx)
 	}

@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
@@ -114,6 +115,12 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 		}
 		if httpErr != nil {
 			errStr += fmt.Sprintf("http callback error: %s\n", httpErr.Error())
+		}
+		if opts.EventLogFile != "" {
+			logFileErr := event.SaveEventsToFile(opts.EventLogFile)
+			if logFileErr != nil {
+				errStr += fmt.Sprintf("event log file error: %s\n", logFileErr.Error())
+			}
 		}
 		return errors.New(errStr)
 	}

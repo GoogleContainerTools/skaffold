@@ -44,9 +44,7 @@ func TestBuildSpecFail(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			builder := NewBuilder(&mockConfig{
-				gcb: latest.GoogleCloudBuild{},
-			})
+			builder := NewBuilder(&mockConfig{}, &latest.GoogleCloudBuild{})
 
 			_, err := builder.buildSpec(test.artifact, "tag", "bucket", "object")
 
@@ -57,11 +55,4 @@ func TestBuildSpecFail(t *testing.T) {
 
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
-	gcb                   latest.GoogleCloudBuild
-}
-
-func (c *mockConfig) Pipeline() latest.Pipeline {
-	var pipeline latest.Pipeline
-	pipeline.Build.BuildType.GoogleCloudBuild = &c.gcb
-	return pipeline
 }

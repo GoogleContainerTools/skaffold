@@ -22,7 +22,6 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/diagnose"
@@ -41,31 +40,31 @@ func NewCmdDiagnose() *cobra.Command {
 		WithExample("Search for configuration issues and print the effective configuration", "diagnose").
 		WithExample("Print the effective skaffold.yaml configuration for given profile", "diagnose --yaml-only --profile PROFILE").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.BoolVar(&yamlOnly, "yaml-only", false, "Only prints the effective skaffold.yaml configuration")
-		}).
+		WithFlags([]*Flag{
+			{Value: &yamlOnly, Name: "yaml-only", DefValue: false, Usage: "Only prints the effective skaffold.yaml configuration"}}).
 		NoArgs(doDiagnose)
 }
 
 func doDiagnose(ctx context.Context, out io.Writer) error {
-	runCtx, config, err := runContext(opts)
+	runCtx, configs, err := runContext(opts)
 	if err != nil {
 		return err
 	}
 
-	if !yamlOnly {
-		fmt.Fprintln(out, "Skaffold version:", version.Get().GitCommit)
-		fmt.Fprintln(out, "Configuration version:", config.APIVersion)
-		fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
+	for _, config := range configs {
+		if !yamlOnly {
+			fmt.Fprintln(out, "Skaffold version:", version.Get().GitCommit)
+			fmt.Fprintln(out, "Configuration version:", config.APIVersion)
+			fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
 
-		if err := diagnose.CheckArtifacts(ctx, runCtx, out); err != nil {
-			return fmt.Errorf("running diagnostic on artifacts: %w", err)
+			if err := diagnose.CheckArtifacts(ctx, runCtx, out); err != nil {
+				return fmt.Errorf("running diagnostic on artifacts: %w", err)
+			}
+
+			color.Blue.Fprintln(out, "\nConfiguration")
 		}
-
-		color.Blue.Fprintln(out, "\nConfiguration")
 	}
-
-	buf, err := yaml.Marshal(config)
+	buf, err := yaml.MarshalWithSeparator(configs)
 	if err != nil {
 		return fmt.Errorf("marshalling configuration: %w", err)
 	}

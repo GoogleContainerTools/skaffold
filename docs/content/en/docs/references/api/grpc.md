@@ -812,6 +812,9 @@ For Cancelled Error code, use range 800 to 850.
 | BUILD_UNKNOWN_JIB_PLUGIN_TYPE | 119 | Build error indicating unknown Jib plugin type. Should be one of [maven, gradle] |
 | BUILD_JIB_GRADLE_DEP_ERR | 120 | Build error determining dependency for jib gradle project. |
 | BUILD_JIB_MAVEN_DEP_ERR | 121 | Build error determining dependency for jib gradle project. |
+| INIT_DOCKER_NETWORK_LISTING_CONTAINERS | 122 | Docker build error when listing containers. |
+| INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME | 123 | Docker build error indicating an invalid container name (or id). |
+| INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST | 124 | Docker build error indicating the container referenced does not exists in the docker context used. |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
@@ -866,6 +869,27 @@ For Cancelled Error code, use range 800 to 850.
 | INIT_CREATE_WATCH_TRIGGER_ERROR | 908 | Skaffold encountered an error when configuring file watching |
 | INIT_CREATE_ARTIFACT_DEP_ERROR | 909 | Skaffold encountered an error when evaluating artifact dependencies |
 | DEPLOY_CLUSTER_CONNECTION_ERR | 1001 | Unable to connect to cluster |
+| DEPLOY_DEBUG_HELPER_RETRIEVE_ERR | 1002 | Could not retrieve debug helpers. |
+| DEPLOY_CLEANUP_ERR | 1003 | Deploy clean up error |
+| DEPLOY_HELM_APPLY_LABELS | 1004 | Unable to apply helm labels. |
+| DEPLOY_HELM_USER_ERR | 1005 | Deploy error due to user deploy config for helm deployer |
+| DEPLOY_NO_MATCHING_BUILD | 1006 | Helm error when no build result is found of value specified in helm `artifactOverrides` |
+| DEPLOY_HELM_VERSION_ERR | 1007 | Unable to get helm client version |
+| DEPLOY_HELM_MIN_VERSION_ERR | 1008 | Helm version not supported. |
+| DEPLOY_KUBECTL_VERSION_ERR | 1109 | Unable to retrieve kubectl version |
+| DEPLOY_KUBECTL_OFFLINE_MODE_ERR | 1010 | User specified offline mode for rendering but remote manifests presents. |
+| DEPLOY_ERR_WAITING_FOR_DELETION | 1011 | Error waiting for previous version deletion before next version is active. |
+| DEPLOY_READ_MANIFEST_ERR | 1012 | Error reading manifests |
+| DEPLOY_READ_REMOTE_MANIFEST_ERR | 1013 | Error reading remote manifests |
+| DEPLOY_LIST_MANIFEST_ERR | 1014 | Errors listing manifests |
+| DEPLOY_KUBECTL_USER_ERR | 1015 | Deploy error due to user deploy config for kubectl deployer |
+| DEPLOY_KUSTOMIZE_USER_ERR | 1016 | Deploy error due to user deploy config for kustomize deployer |
+| DEPLOY_REPLACE_IMAGE_ERR | 1017 | Error replacing a built artifact in the manifests |
+| DEPLOY_TRANSFORM_MANIFEST_ERR | 1018 | Error transforming a manifest during skaffold debug |
+| DEPLOY_SET_LABEL_ERR | 1019 | Error setting user specified additional labels. |
+| DEPLOY_MANIFEST_WRITE_ERR | 1020 | Error writing hydrated kubernetes manifests. |
+| DEPLOY_PARSE_MANIFEST_IMAGES_ERR | 1021 | Error getting images from a kubernetes manifest. |
+| DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE | 1022 | Helm config `createNamespace` not available |
 
 
 
@@ -889,8 +913,16 @@ Enum for Suggestion codes
 | FIX_CACHE_FROM_ARTIFACT_CONFIG | 109 | Fix `cacheFrom` config for given artifact and try again |
 | FIX_SKAFFOLD_CONFIG_DOCKERFILE | 110 | Fix `dockerfile` config for a given artifact and try again. |
 | FIX_JIB_PLUGIN_CONFIGURATION | 111 | Use a supported Jib plugin type |
+| FIX_DOCKER_NETWORK_CONTAINER_NAME | 112 | Docker build network invalid docker container name (or id). |
+| CHECK_DOCKER_NETWORK_CONTAINER_RUNNING | 113 | Docker build network container not existing in the current context. |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |
+| INSTALL_HELM | 203 | Install helm tool |
+| UPGRADE_HELM | 204 | Upgrade helm tool |
+| FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES | 205 | Fix helm `releases.artifactOverrides` config to match with `build.artiofacts` |
+| UPGRADE_HELM32 | 206 | Upgrade helm version to v3.2.0 and higher. |
+| FIX_SKAFFOLD_CONFIG_HELM_CREATE_NAMESPACE | 207 | Set `releases.createNamespace` to false. |
+| INSTALL_KUBECTL | 220 | Install kubectl tool |
 | CHECK_CONTAINER_LOGS | 301 | Container run error |
 | CHECK_READINESS_PROBE | 302 | Pod Health check error |
 | CHECK_CONTAINER_IMAGE | 303 | Check Container image |
@@ -906,6 +938,7 @@ Enum for Suggestion codes
 | START_MINIKUBE | 501 | Minikube is stopped: use `minikube start` |
 | UNPAUSE_MINIKUBE | 502 | Minikube is paused: use `minikube unpause` |
 | RUN_DOCKER_PULL | 551 | Run Docker pull for the image with v1 manifest and try again. |
+| SET_RENDER_FLAG_OFFLINE_FALSE | 600 | Rerun with correct offline flag value. |
 | OPEN_ISSUE | 900 | Open an issue so this situation can be diagnosed |
 
 

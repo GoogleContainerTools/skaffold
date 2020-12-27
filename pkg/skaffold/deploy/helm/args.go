@@ -17,7 +17,6 @@ limitations under the License.
 package helm
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -112,7 +111,7 @@ func getArgs(releaseName string, namespace string) []string {
 }
 
 // installArgs calculates the correct arguments to "helm install"
-func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool, o installOpts) ([]string, error) {
+func (h *Deployer) installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool, o installOpts) ([]string, error) {
 	var args []string
 	if o.upgrade {
 		args = append(args, "upgrade", o.releaseName)
@@ -155,14 +154,14 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 
 	if r.CreateNamespace != nil && *r.CreateNamespace && !o.upgrade {
 		if o.helmVersion.LT(helm32Version) {
-			return nil, errors.New("the createNamespace option is not available in the current Helm version. Update Helm to version 3.2 or higher")
+			return nil, createNamespaceErr(h.bV.String())
 		}
 		args = append(args, "--create-namespace")
 	}
 
 	params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
 	if err != nil {
-		return nil, fmt.Errorf("matching build results to chart values: %w", err)
+		return nil, err
 	}
 
 	if len(r.Overrides.Values) != 0 {

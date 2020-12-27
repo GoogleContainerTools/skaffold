@@ -93,7 +93,7 @@ func TestDeployTail(t *testing.T) {
 	ns, _ := SetupNamespace(t)
 
 	// `--default-repo=` is used to cancel the default repo that is set by default.
-	out := skaffold.Deploy("--tail", "--images", "busybox:latest", "--default-repo=").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunBackground(t)
+	out := skaffold.Deploy("--tail", "--images", "busybox:latest", "--default-repo=").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunLive(t)
 
 	WaitForLogs(t, out, "Hello world!")
 }

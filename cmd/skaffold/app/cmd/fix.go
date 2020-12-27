@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
@@ -40,9 +39,9 @@ func NewCmdFix() *cobra.Command {
 		WithExample("Update \"skaffold.yaml\" in the current folder to the latest version", "fix").
 		WithExample("Update \"skaffold.yaml\" in the current folder to version \"skaffold/v1\"", "fix --version skaffold/v1").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")
-			f.StringVar(&toVersion, "version", latest.Version, "Target schema version to upgrade to")
+		WithFlags([]*Flag{
+			{Value: &overwrite, Name: "overwrite", DefValue: false, Usage: "Overwrite original config with fixed config"},
+			{Value: &toVersion, Name: "version", DefValue: latest.Version, Usage: "Target schema version to upgrade to"},
 		}).
 		NoArgs(doFix)
 }
@@ -52,17 +51,23 @@ func doFix(_ context.Context, out io.Writer) error {
 }
 
 func fix(out io.Writer, configFile string, toVersion string, overwrite bool) error {
-	cfg, err := schema.ParseConfig(configFile)
+	parsedCfgs, err := schema.ParseConfig(configFile)
 	if err != nil {
 		return err
 	}
-
-	if cfg.GetVersion() == toVersion {
+	needsUpdate := false
+	for _, cfg := range parsedCfgs {
+		if cfg.GetVersion() != toVersion {
+			needsUpdate = true
+			break
+		}
+	}
+	if !needsUpdate {
 		color.Default.Fprintln(out, "config is already version", toVersion)
 		return nil
 	}
 
-	cfg, err = schema.ParseConfigAndUpgrade(configFile, toVersion)
+	versionedCfgs, err := schema.ParseConfigAndUpgrade(configFile, toVersion)
 	if err != nil {
 		return err
 	}
@@ -70,21 +75,23 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 	// TODO(dgageot): We should be able run validations on any schema version
 	// but that's not the case. They can only run on the latest version for now.
 	if toVersion == latest.Version {
-		if err := validation.Process(cfg.(*latest.SkaffoldConfig)); err != nil {
+		var cfgs []*latest.SkaffoldConfig
+		for _, cfg := range versionedCfgs {
+			cfgs = append(cfgs, cfg.(*latest.SkaffoldConfig))
+		}
+		if err := validation.Process(cfgs); err != nil {
 			return fmt.Errorf("validating upgraded config: %w", err)
 		}
 	}
-
-	newCfg, err := yaml.Marshal(cfg)
+	newCfg, err := yaml.MarshalWithSeparator(versionedCfgs)
 	if err != nil {
 		return fmt.Errorf("marshaling new config: %w", err)
 	}
-
 	if overwrite {
 		if err := ioutil.WriteFile(configFile, newCfg, 0644); err != nil {
 			return fmt.Errorf("writing config file: %w", err)
 		}
-		color.Default.Fprintf(out, "New config at version %s generated and written to %s\n", cfg.GetVersion(), opts.ConfigurationFile)
+		color.Default.Fprintf(out, "New config at version %s generated and written to %s\n", toVersion, opts.ConfigurationFile)
 	} else {
 		out.Write(newCfg)
 	}

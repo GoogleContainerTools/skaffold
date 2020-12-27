@@ -24,7 +24,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -32,23 +31,33 @@ import (
 )
 
 // Build builds a list of artifacts with Kaniko.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	teardownPullSecret, err := b.setupPullSecret(out)
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Artifact) build.ArtifactBuilder {
+	builder := build.WithLogFile(b.buildArtifact, b.cfg.Muted())
+	return builder
+}
+
+func (b *Builder) PreBuild(ctx context.Context, out io.Writer) error {
+	teardownPullSecret, err := b.setupPullSecret(ctx, out)
 	if err != nil {
-		return nil, fmt.Errorf("setting up pull secret: %w", err)
+		return fmt.Errorf("setting up pull secret: %w", err)
 	}
-	defer teardownPullSecret()
+	b.teardownFunc = append(b.teardownFunc, teardownPullSecret)
 
 	if b.DockerConfig != nil {
-		teardownDockerConfigSecret, err := b.setupDockerConfigSecret(out)
+		teardownDockerConfigSecret, err := b.setupDockerConfigSecret(ctx, out)
 		if err != nil {
-			return nil, fmt.Errorf("setting up docker config secret: %w", err)
+			return fmt.Errorf("setting up docker config secret: %w", err)
 		}
-		defer teardownDockerConfigSecret()
+		b.teardownFunc = append(b.teardownFunc, teardownDockerConfigSecret)
 	}
+	return nil
+}
 
-	builder := build.WithLogFile(b.buildArtifact, b.cfg.Muted())
-	return build.InOrder(ctx, out, tags, artifacts, builder, b.ClusterDetails.Concurrency, b.artifactStore)
+func (b *Builder) PostBuild(_ context.Context, _ io.Writer) error {
+	for _, f := range b.teardownFunc {
+		f()
+	}
+	return nil
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
@@ -61,12 +70,16 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 	return build.TagWithDigest(tag, digest), nil
 }
 
+func (b *Builder) Concurrency() int {
+	return b.ClusterDetails.Concurrency
+}
+
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
 	// required artifacts as build-args
 	requiredImages := docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true)
 	switch {
 	case a.KanikoArtifact != nil:
-		return b.buildWithKaniko(ctx, out, a.Workspace, a.KanikoArtifact, tag, requiredImages)
+		return b.buildWithKaniko(ctx, out, a.Workspace, a.ImageName, a.KanikoArtifact, tag, requiredImages)
 
 	case a.CustomArtifact != nil:
 		return custom.NewArtifactBuilder(nil, b.cfg, true, append(b.retrieveExtraEnv(), util.EnvPtrMapToSlice(requiredImages, "=")...)).Build(ctx, out, a, tag)

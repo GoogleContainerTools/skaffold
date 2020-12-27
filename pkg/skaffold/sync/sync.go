@@ -285,7 +285,7 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 
 	numSynced := 0
 	for _, ns := range namespaces {
-		pods, err := client.CoreV1().Pods(ns).List(metav1.ListOptions{})
+		pods, err := client.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return fmt.Errorf("getting pods for namespace %q: %w", ns, err)
 		}

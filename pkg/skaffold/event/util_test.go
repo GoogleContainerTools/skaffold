@@ -124,9 +124,7 @@ func TestEmptyState(t *testing.T) {
 			},
 			cluster: "some-private",
 			expected: &proto.Metadata{
-				Build: &proto.BuildMetadata{
-					Builders: []*proto.BuildMetadata_ImageBuilder{},
-				},
+				Build: &proto.BuildMetadata{},
 				Deploy: &proto.DeployMetadata{
 					Cluster:   proto.ClusterType_OTHER,
 					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
@@ -137,7 +135,7 @@ func TestEmptyState(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			handler = &eventHandler{
-				state: emptyState(test.cfg, test.cluster, true, true, true),
+				state: emptyState([]latest.Pipeline{test.cfg}, test.cluster, true, true, true),
 			}
 			metadata := handler.state.Metadata
 			builders := metadata.Build.Builders

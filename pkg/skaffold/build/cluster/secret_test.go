@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"context"
 	"io/ioutil"
 	"testing"
 
@@ -38,29 +39,27 @@ func TestCreateSecret(t *testing.T) {
 			return fakeKubernetesclient, nil
 		})
 
-		builder, err := NewBuilder(&mockConfig{
-			cluster: latest.ClusterDetails{
-				Timeout:        "20m",
-				PullSecretName: "kaniko-secret",
-				PullSecretPath: tmpDir.Path("secret.json"),
-				Namespace:      "ns",
-			},
+		builder, err := NewBuilder(&mockConfig{}, &latest.ClusterDetails{
+			Timeout:        "20m",
+			PullSecretName: "kaniko-secret",
+			PullSecretPath: tmpDir.Path("secret.json"),
+			Namespace:      "ns",
 		})
 		t.CheckNoError(err)
 
 		// Should create a secret
-		cleanup, err := builder.setupPullSecret(ioutil.Discard)
+		cleanup, err := builder.setupPullSecret(context.Background(), ioutil.Discard)
 		t.CheckNoError(err)
 
 		// Check that the secret was created
-		secret, err := fakeKubernetesclient.CoreV1().Secrets("ns").Get("kaniko-secret", metav1.GetOptions{})
+		secret, err := fakeKubernetesclient.CoreV1().Secrets("ns").Get(context.Background(), "kaniko-secret", metav1.GetOptions{})
 		t.CheckNoError(err)
 		t.CheckDeepEqual("kaniko-secret", secret.GetName())
 		t.CheckDeepEqual("skaffold-kaniko", secret.GetLabels()["skaffold-kaniko"])
 
 		// Check that the secret can be deleted
 		cleanup()
-		_, err = fakeKubernetesclient.CoreV1().Secrets("ns").Get("kaniko-secret", metav1.GetOptions{})
+		_, err = fakeKubernetesclient.CoreV1().Secrets("ns").Get(context.Background(), "kaniko-secret", metav1.GetOptions{})
 		t.CheckError(true, err)
 	})
 }
@@ -71,16 +70,14 @@ func TestExistingSecretNotFound(t *testing.T) {
 			return fake.NewSimpleClientset(), nil
 		})
 
-		builder, err := NewBuilder(&mockConfig{
-			cluster: latest.ClusterDetails{
-				Timeout:        "20m",
-				PullSecretName: "kaniko-secret",
-			},
+		builder, err := NewBuilder(&mockConfig{}, &latest.ClusterDetails{
+			Timeout:        "20m",
+			PullSecretName: "kaniko-secret",
 		})
 		t.CheckNoError(err)
 
 		// should fail to retrieve an existing secret
-		_, err = builder.setupPullSecret(ioutil.Discard)
+		_, err = builder.setupPullSecret(context.Background(), ioutil.Discard)
 
 		t.CheckErrorContains("secret kaniko-secret does not exist. No path specified to create it", err)
 	})
@@ -96,16 +93,14 @@ func TestExistingSecret(t *testing.T) {
 			}), nil
 		})
 
-		builder, err := NewBuilder(&mockConfig{
-			cluster: latest.ClusterDetails{
-				Timeout:        "20m",
-				PullSecretName: "kaniko-secret",
-			},
+		builder, err := NewBuilder(&mockConfig{}, &latest.ClusterDetails{
+			Timeout:        "20m",
+			PullSecretName: "kaniko-secret",
 		})
 		t.CheckNoError(err)
 
 		// should retrieve an existing secret
-		cleanup, err := builder.setupPullSecret(ioutil.Discard)
+		cleanup, err := builder.setupPullSecret(context.Background(), ioutil.Discard)
 		cleanup()
 
 		t.CheckNoError(err)
@@ -118,15 +113,13 @@ func TestSkipSecretCreation(t *testing.T) {
 			return nil, nil
 		})
 
-		builder, err := NewBuilder(&mockConfig{
-			cluster: latest.ClusterDetails{
-				Timeout: "20m",
-			},
+		builder, err := NewBuilder(&mockConfig{}, &latest.ClusterDetails{
+			Timeout: "20m",
 		})
 		t.CheckNoError(err)
 
 		// should retrieve an existing secret
-		cleanup, err := builder.setupPullSecret(ioutil.Discard)
+		cleanup, err := builder.setupPullSecret(context.Background(), ioutil.Discard)
 		cleanup()
 
 		t.CheckNoError(err)

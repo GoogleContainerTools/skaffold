@@ -33,8 +33,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-// BuildAndTest builds and tests a list of artifacts.
-func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+// Build builds a list of artifacts.
+func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	// Use tags directly from the Kubernetes manifests.
 	if r.runCtx.DigestSource() == noneDigestSource {
 		return []build.Artifact{}, nil
@@ -93,6 +93,15 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
 
 	return bRes, nil
+}
+
+// Test tests a list of already built artifacts.
+func (r *SkaffoldRunner) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	if err := r.tester.Test(ctx, out, artifacts); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.

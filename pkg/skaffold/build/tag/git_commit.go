@@ -31,8 +31,9 @@ import (
 
 // GitCommit tags an image by the git commit it was built at.
 type GitCommit struct {
-	prefix   string
-	runGitFn func(string) (string, error)
+	prefix        string
+	runGitFn      func(string) (string, error)
+	ignoreChanges bool
 }
 
 var variants = map[string]func(string) (string, error){
@@ -45,15 +46,16 @@ var variants = map[string]func(string) (string, error){
 }
 
 // NewGitCommit creates a new git commit tagger. It fails if the tagger variant is invalid.
-func NewGitCommit(prefix, variant string) (*GitCommit, error) {
+func NewGitCommit(prefix, variant string, ignoreChanges bool) (*GitCommit, error) {
 	runGitFn, found := variants[strings.ToLower(variant)]
 	if !found {
 		return nil, fmt.Errorf("%q is not a valid git tagger variant", variant)
 	}
 
 	return &GitCommit{
-		prefix:   prefix,
-		runGitFn: runGitFn,
+		prefix:        prefix,
+		runGitFn:      runGitFn,
+		ignoreChanges: ignoreChanges,
 	}, nil
 }
 
@@ -64,15 +66,17 @@ func (t *GitCommit) GenerateTag(workingDir, _ string) (string, error) {
 		return "", fmt.Errorf("unable to find git commit: %w", err)
 	}
 
-	changes, err := runGit(workingDir, "status", ".", "--porcelain")
-	if err != nil {
-		return "", fmt.Errorf("getting git status: %w", err)
-	}
-
 	ref = sanitizeTag(ref)
 
-	if len(changes) > 0 {
-		return fmt.Sprintf("%s%s-dirty", t.prefix, ref), nil
+	if !t.ignoreChanges {
+		changes, err := runGit(workingDir, "status", ".", "--porcelain")
+		if err != nil {
+			return "", fmt.Errorf("getting git status: %w", err)
+		}
+
+		if len(changes) > 0 {
+			return fmt.Sprintf("%s%s-dirty", t.prefix, ref), nil
+		}
 	}
 
 	return t.prefix + ref, nil

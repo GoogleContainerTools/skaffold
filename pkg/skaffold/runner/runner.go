@@ -44,9 +44,10 @@ const (
 type Runner interface {
 	Dev(context.Context, io.Writer, []*latest.Artifact) error
 	ApplyDefaultRepo(tag string) (string, error)
-	BuildAndTest(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)
+	Build(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)
+	Test(context.Context, io.Writer, []build.Artifact) error
 	DeployAndLog(context.Context, io.Writer, []build.Artifact) error
-	GeneratePipeline(context.Context, io.Writer, *latest.SkaffoldConfig, []string, string) error
+	GeneratePipeline(context.Context, io.Writer, []*latest.SkaffoldConfig, []string, string) error
 	Render(context.Context, io.Writer, []build.Artifact, bool, string) error
 	Cleanup(context.Context, io.Writer) error
 	Prune(context.Context, io.Writer) error
@@ -74,11 +75,11 @@ type SkaffoldRunner struct {
 	// podSelector is used to determine relevant pods for logging and portForwarding
 	podSelector *kubernetes.ImageList
 
-	imagesAreLocal bool
-	hasBuilt       bool
-	hasDeployed    bool
-	intents        *intents
-	devIteration   int
+	isLocalImage func(imageName string) (bool, error)
+	hasBuilt     bool
+	hasDeployed  bool
+	intents      *intents
+	devIteration int
 }
 
 // for testing

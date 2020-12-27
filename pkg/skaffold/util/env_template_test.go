@@ -79,6 +79,43 @@ func TestEnvTemplate_ExecuteEnvTemplate(t *testing.T) {
 	}
 }
 
+func TestEnvTemplate_ExpandEnvTemplateOrFail(t *testing.T) {
+	tests := []struct {
+		description string
+		template    string
+		customMap   map[string]string
+		env         []string
+		option      string
+		want        string
+		shouldErr   bool
+	}{
+		{
+			description: "env and custom precedence",
+			template:    "{{.MY_NAME}}-{{.FROM_ENV}}:latest",
+			env:         []string{"FROM_ENV=FOO", "MY_NAME=BAR"},
+			customMap: map[string]string{
+				"FOO":     "foo",
+				"MY_NAME": "from_custom",
+			},
+			want: "from_custom-FOO:latest",
+		},
+		{
+			description: "variable does not exist",
+			template:    "{{.DOES_NOT_EXIST}}",
+			option:      "missingkey=error",
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&OSEnviron, func() []string { return test.env })
+			got, err := ExpandEnvTemplateOrFail(test.template, test.customMap)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, got)
+		})
+	}
+}
+
 func TestMapToFlag(t *testing.T) {
 	foo := "foo"
 	bar := "bar"
