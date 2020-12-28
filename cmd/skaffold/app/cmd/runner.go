@@ -108,7 +108,7 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.
 		if opts.ConfigurationFile == "-" {
 			basePath, _ = os.Getwd()
 		} else {
-			basePath = filepath.Base(opts.ConfigurationFile)
+			basePath = filepath.Dir(opts.ConfigurationFile)
 		}
 
 		if err := yamltags.SetAbsFilePaths(config, basePath); err != nil {
