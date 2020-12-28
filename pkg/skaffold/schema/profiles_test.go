@@ -65,8 +65,9 @@ profiles:
 
 		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"))
 		t.CheckNoError(err)
+		t.CheckTrue(len(parsed) > 0)
 
-		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+		skaffoldConfig := parsed[0].(*latest.SkaffoldConfig)
 		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
 			Profiles: []string{"patches"},
 		})
@@ -96,8 +97,9 @@ profiles:
 
 		parsed, err := ParseConfig(tmp.Path("skaffold.yaml"))
 		t.CheckNoError(err)
+		t.CheckTrue(len(parsed) > 0)
 
-		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+		skaffoldConfig := parsed[0].(*latest.SkaffoldConfig)
 		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
 			Profiles: []string{"patches"},
 		})
@@ -556,6 +558,20 @@ func TestActivatedProfiles(t *testing.T) {
 			},
 			expected: []string{"activated", "also-activated", "regex-activated", "regex-activated-two", "regex-activated-substring-match"},
 		}, {
+			description: "Profile with multiple valid activations",
+			envs:        map[string]string{"KEY": "VALUE"},
+			opts: cfg.SkaffoldOptions{
+				ProfileAutoActivation: true,
+				Command:               "dev",
+				Profiles:              []string{"activated", "also-activated"},
+			},
+			profiles: []latest.Profile{
+				{Name: "activated", Activation: []latest.Activation{{Env: "KEY=VALUE"}, {Command: "dev"}}},
+				{Name: "not-activated", Activation: []latest.Activation{{Env: "KEY=OTHER"}}},
+				{Name: "also-activated", Activation: []latest.Activation{{Env: "KEY=!OTHER"}}},
+			},
+			expected: []string{"activated", "also-activated"},
+		}, {
 			description: "Invalid env variable",
 			envs:        map[string]string{"KEY": "VALUE"},
 			opts: cfg.SkaffoldOptions{
@@ -788,8 +804,9 @@ profiles:
 
 		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"))
 		t.RequireNoError(err)
+		t.CheckTrue(len(parsed) > 0)
 
-		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+		skaffoldConfig := parsed[0].(*latest.SkaffoldConfig)
 
 		t.CheckDeepEqual(2, len(skaffoldConfig.Profiles))
 		t.CheckDeepEqual("simple1", skaffoldConfig.Profiles[0].Name)

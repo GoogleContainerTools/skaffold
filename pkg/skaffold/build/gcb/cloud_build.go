@@ -34,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -45,9 +44,21 @@ import (
 )
 
 // Build builds a list of artifacts with Google Cloud Build.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Artifact) build.ArtifactBuilder {
 	builder := build.WithLogFile(b.buildArtifactWithCloudBuild, b.muted)
-	return build.InOrder(ctx, out, tags, artifacts, builder, b.GoogleCloudBuild.Concurrency, b.artifactStore)
+	return builder
+}
+
+func (b *Builder) PreBuild(_ context.Context, _ io.Writer) error {
+	return nil
+}
+
+func (b *Builder) PostBuild(_ context.Context, _ io.Writer) error {
+	return nil
+}
+
+func (b *Builder) Concurrency() int {
+	return b.GoogleCloudBuild.Concurrency
 }
 
 func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {

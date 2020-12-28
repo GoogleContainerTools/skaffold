@@ -132,7 +132,6 @@ spec:
 		t.CheckDeepEqual(expected.String(), resultManifest.String())
 		t.CheckDeepEqual([]string{
 			"Couldn't parse image [not valid]: invalid reference format",
-			"image [skaffold/unused] is not used by the deployment",
 		}, fakeWarner.Warnings)
 	})
 }

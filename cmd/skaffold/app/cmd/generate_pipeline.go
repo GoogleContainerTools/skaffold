@@ -44,8 +44,8 @@ func NewCmdGeneratePipeline() *cobra.Command {
 }
 
 func doGeneratePipeline(ctx context.Context, out io.Writer) error {
-	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		if err := r.GeneratePipeline(ctx, out, config, configFiles, "pipeline.yaml"); err != nil {
+	return withRunner(ctx, func(r runner.Runner, configs []*latest.SkaffoldConfig) error {
+		if err := r.GeneratePipeline(ctx, out, configs, configFiles, "pipeline.yaml"); err != nil {
 			return fmt.Errorf("generating : %w", err)
 		}
 		color.Default.Fprintln(out, "Pipeline config written to pipeline.yaml!")

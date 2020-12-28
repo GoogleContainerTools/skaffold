@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	dockerbuilder "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -56,9 +55,9 @@ func TestLocalRun(t *testing.T) {
 	tests := []struct {
 		description      string
 		api              *testutil.FakeAPIClient
-		tags             tag.ImageTags
-		artifacts        []*latest.Artifact
-		expected         []build.Artifact
+		tag              string
+		artifact         *latest.Artifact
+		expected         string
 		expectedWarnings []string
 		expectedPushed   map[string]string
 		pushImages       bool
@@ -66,29 +65,26 @@ func TestLocalRun(t *testing.T) {
 	}{
 		{
 			description: "single build (local)",
-			artifacts: []*latest.Artifact{{
+			artifact: &latest.Artifact{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{},
-				}},
+				},
 			},
-			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			tag:        "gcr.io/test/image:tag",
 			api:        &testutil.FakeAPIClient{},
 			pushImages: false,
-			expected: []build.Artifact{{
-				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:1",
-			}},
+			expected:   "gcr.io/test/image:1",
 		},
 		{
 			description: "error getting image digest",
-			artifacts: []*latest.Artifact{{
+			artifact: &latest.Artifact{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{},
-				}},
+				},
 			},
-			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			tag: "gcr.io/test/image:tag",
 			api: &testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
@@ -96,32 +92,29 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "single build (remote)",
-			artifacts: []*latest.Artifact{{
+			artifact: &latest.Artifact{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{},
-				}},
+				},
 			},
-			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			tag:        "gcr.io/test/image:tag",
 			api:        &testutil.FakeAPIClient{},
 			pushImages: true,
-			expected: []build.Artifact{{
-				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:tag@sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165",
-			}},
+			expected:   "gcr.io/test/image:tag@sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165",
 			expectedPushed: map[string]string{
 				"gcr.io/test/image:tag": "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165",
 			},
 		},
 		{
 			description: "error build",
-			artifacts: []*latest.Artifact{{
+			artifact: &latest.Artifact{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{},
-				}},
+				},
 			},
-			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			tag: "gcr.io/test/image:tag",
 			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
@@ -129,13 +122,13 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "Don't push on build error",
-			artifacts: []*latest.Artifact{{
+			artifact: &latest.Artifact{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{},
-				}},
+				},
 			},
-			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			tag:        "gcr.io/test/image:tag",
 			pushImages: true,
 			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
@@ -144,89 +137,80 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "unknown artifact type",
-			artifacts:   []*latest.Artifact{{}},
+			artifact:    &latest.Artifact{},
 			api:         &testutil.FakeAPIClient{},
 			shouldErr:   true,
 		},
 		{
 			description: "cache-from images already pulled",
-			artifacts: []*latest.Artifact{{
+			artifact: &latest.Artifact{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
 						CacheFrom: []string{"pull1", "pull2"},
 					},
-				}},
+				},
 			},
-			api:  (&testutil.FakeAPIClient{}).Add("pull1", "imageID1").Add("pull2", "imageID2"),
-			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			expected: []build.Artifact{{
-				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:1",
-			}},
+			api:      (&testutil.FakeAPIClient{}).Add("pull1", "imageID1").Add("pull2", "imageID2"),
+			tag:      "gcr.io/test/image:tag",
+			expected: "gcr.io/test/image:1",
 		},
 		{
 			description: "pull cache-from images",
-			artifacts: []*latest.Artifact{{
+			artifact: &latest.Artifact{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
 						CacheFrom: []string{"pull1", "pull2"},
 					},
-				}},
+				},
 			},
-			api:  (&testutil.FakeAPIClient{}).Add("pull1", "imageid").Add("pull2", "anotherimageid"),
-			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			expected: []build.Artifact{{
-				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:1",
-			}},
+			api:      (&testutil.FakeAPIClient{}).Add("pull1", "imageid").Add("pull2", "anotherimageid"),
+			tag:      "gcr.io/test/image:tag",
+			expected: "gcr.io/test/image:1",
 		},
 		{
 			description: "ignore cache-from pull error",
-			artifacts: []*latest.Artifact{{
+			artifact: &latest.Artifact{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
 						CacheFrom: []string{"pull1"},
 					},
-				}},
+				},
 			},
 			api: (&testutil.FakeAPIClient{
 				ErrImagePull: true,
 			}).Add("pull1", ""),
-			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			expected: []build.Artifact{{
-				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:1",
-			}},
+			tag:              "gcr.io/test/image:tag",
+			expected:         "gcr.io/test/image:1",
 			expectedWarnings: []string{"cacheFrom image couldn't be pulled: pull1\n"},
 		},
 		{
 			description: "error checking cache-from image",
-			artifacts: []*latest.Artifact{{
+			artifact: &latest.Artifact{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
 						CacheFrom: []string{"pull"},
 					},
-				}},
+				},
 			},
 			api: &testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
-			tags:      tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			tag:       "gcr.io/test/image:tag",
 			shouldErr: true,
 		},
 		{
 			description: "fail fast docker not found",
-			artifacts: []*latest.Artifact{{
+			artifact: &latest.Artifact{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{},
-				}},
+				},
 			},
-			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			tag: "gcr.io/test/image:tag",
 			api: &testutil.FakeAPIClient{
 				ErrVersion: true,
 			},
@@ -245,24 +229,23 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
 				return args, nil
 			})
-			event.InitializeState(latest.Pipeline{
+			event.InitializeState([]latest.Pipeline{{
 				Deploy: latest.DeployConfig{},
 				Build: latest.BuildConfig{
 					BuildType: latest.BuildType{
 						LocalBuild: &latest.LocalBuild{},
 					},
-				}}, "", true, true, true)
+				}}}, "", true, true, true)
 
-			builder, err := NewBuilder(&mockConfig{
-				local: latest.LocalBuild{
+			builder, err := NewBuilder(&mockConfig{},
+				&latest.LocalBuild{
 					Push:        util.BoolPtr(test.pushImages),
 					Concurrency: &constants.DefaultLocalConcurrency,
-				},
-			})
+				})
 			t.CheckNoError(err)
 			builder.ArtifactStore(build.NewArtifactStore())
-			res, err := builder.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
-
+			ab := builder.Build(context.Background(), ioutil.Discard, test.artifact)
+			res, err := ab(context.Background(), ioutil.Discard, test.artifact, test.tag)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed())
@@ -322,7 +305,7 @@ func TestNewBuilder(t *testing.T) {
 			builder, err := NewBuilder(&mockConfig{
 				local:   test.localBuild,
 				cluster: test.cluster,
-			})
+			}, &test.localBuild)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
@@ -399,11 +382,7 @@ func TestGetArtifactBuilder(t *testing.T) {
 				return args, nil
 			})
 
-			b, err := NewBuilder(&mockConfig{
-				local: latest.LocalBuild{
-					Concurrency: &constants.DefaultLocalConcurrency,
-				},
-			})
+			b, err := NewBuilder(&mockConfig{}, &latest.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency})
 			t.CheckNoError(err)
 			b.ArtifactStore(build.NewArtifactStore())
 
@@ -435,12 +414,6 @@ type mockConfig struct {
 	local                 latest.LocalBuild
 	mode                  config.RunMode
 	cluster               config.Cluster
-}
-
-func (c *mockConfig) Pipeline() latest.Pipeline {
-	var pipeline latest.Pipeline
-	pipeline.Build.BuildType.LocalBuild = &c.local
-	return pipeline
 }
 
 func (c *mockConfig) Mode() config.RunMode {

@@ -23,7 +23,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -31,28 +30,38 @@ import (
 
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
-func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact) build.ArtifactBuilder {
+	if b.prune {
+		b.localPruner.asynchronousCleanupOldImages(ctx, []string{a.ImageName})
+	}
+	builder := build.WithLogFile(b.buildArtifact, b.muted)
+	return builder
+}
+
+func (b *Builder) PreBuild(_ context.Context, out io.Writer) error {
 	if b.localCluster {
 		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
 	}
+	return nil
+}
+
+func (b *Builder) PostBuild(ctx context.Context, _ io.Writer) error {
 	defer b.localDocker.Close()
-
-	if b.prune {
-		b.localPruner.asynchronousCleanupOldImages(ctx, artifacts)
-	}
-
-	builder := build.WithLogFile(b.buildArtifact, b.muted)
-	rt, err := build.InOrder(ctx, out, tags, artifacts, builder, *b.local.Concurrency, b.artifactStore)
-
 	if b.prune {
 		if b.mode == config.RunModes.Build {
-			b.localPruner.synchronousCleanupOldImages(ctx, artifacts)
+			b.localPruner.synchronousCleanupOldImages(ctx, b.builtImages)
 		} else {
-			b.localPruner.asynchronousCleanupOldImages(ctx, artifacts)
+			b.localPruner.asynchronousCleanupOldImages(ctx, b.builtImages)
 		}
 	}
+	return nil
+}
 
-	return rt, err
+func (b *Builder) Concurrency() int {
+	if b.local.Concurrency == nil {
+		return 0
+	}
+	return *b.local.Concurrency
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {

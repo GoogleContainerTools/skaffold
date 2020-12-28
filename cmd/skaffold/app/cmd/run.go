@@ -41,8 +41,8 @@ func NewCmdRun() *cobra.Command {
 }
 
 func doRun(ctx context.Context, out io.Writer) error {
-	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		bRes, err := r.Build(ctx, out, targetArtifacts(opts, config))
+	return withRunner(ctx, func(r runner.Runner, configs []*latest.SkaffoldConfig) error {
+		bRes, err := r.Build(ctx, out, targetArtifacts(opts, configs))
 		if err != nil {
 			return fmt.Errorf("failed to build: %w", err)
 		}

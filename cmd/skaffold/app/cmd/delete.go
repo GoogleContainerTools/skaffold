@@ -35,7 +35,7 @@ func NewCmdDelete() *cobra.Command {
 }
 
 func doDelete(ctx context.Context, out io.Writer) error {
-	return withRunner(ctx, func(r runner.Runner, _ *latest.SkaffoldConfig) error {
+	return withRunner(ctx, func(r runner.Runner, _ []*latest.SkaffoldConfig) error {
 		return r.Cleanup(ctx, out)
 	})
 }

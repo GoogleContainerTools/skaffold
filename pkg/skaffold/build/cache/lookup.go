@@ -59,13 +59,15 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, h ar
 	entry, cacheHit := c.artifactCache[hash]
 	c.cacheMutex.RUnlock()
 	if !cacheHit {
-		if entry, err = c.tryImport(ctx, tag, hash); err != nil {
+		if entry, err = c.tryImport(ctx, a, tag, hash); err != nil {
 			logrus.Debugf("Could not import artifact from Docker, building instead (%s)", err)
 			return needsBuilding{hash: hash}
 		}
 	}
 
-	if c.imagesAreLocal {
+	if isLocal, err := c.isLocalImage(a.ImageName); err != nil {
+		return failed{err}
+	} else if isLocal {
 		return c.lookupLocal(ctx, hash, tag, entry)
 	}
 	return c.lookupRemote(ctx, hash, tag, entry)
@@ -120,12 +122,14 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 	return needsBuilding{hash: hash}
 }
 
-func (c *cache) tryImport(ctx context.Context, tag string, hash string) (ImageDetails, error) {
-	if !c.tryImportMissing {
+func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, hash string) (ImageDetails, error) {
+	entry := ImageDetails{}
+
+	if importMissing, err := c.importMissingImage(a.ImageName); err != nil {
+		return entry, err
+	} else if !importMissing {
 		return ImageDetails{}, fmt.Errorf("import of missing images disabled")
 	}
-
-	entry := ImageDetails{}
 
 	if !c.client.ImageExists(ctx, tag) {
 		logrus.Debugf("Importing artifact %s from docker registry", tag)

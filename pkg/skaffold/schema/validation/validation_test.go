@@ -87,7 +87,7 @@ func TestValidateSchema(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := Process(test.cfg)
+			err := Process([]*latest.SkaffoldConfig{test.cfg})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -427,13 +427,13 @@ func TestValidateNetworkMode(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				&latest.SkaffoldConfig{
+				[]*latest.SkaffoldConfig{{
 					Pipeline: latest.Pipeline{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
-				})
+				}})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -543,14 +543,15 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 				return docker.NewLocalDaemon(fakeClient, nil, false, nil), nil
 			})
 
-			err := ProcessWithRunContext(
-				&latest.SkaffoldConfig{
-					Pipeline: latest.Pipeline{
+			err := ProcessWithRunContext(&runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines([]latest.Pipeline{
+					{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
-				}, &runcontext.RunContext{})
+				}),
+			})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -648,13 +649,13 @@ func TestValidateSyncRules(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				&latest.SkaffoldConfig{
+				[]*latest.SkaffoldConfig{{
 					Pipeline: latest.Pipeline{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
-				})
+				}})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -793,13 +794,13 @@ func TestValidateImageNames(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				&latest.SkaffoldConfig{
+				[]*latest.SkaffoldConfig{{
 					Pipeline: latest.Pipeline{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
-				})
+				}})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -896,13 +897,13 @@ func TestValidateJibPluginType(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				&latest.SkaffoldConfig{
+				[]*latest.SkaffoldConfig{{
 					Pipeline: latest.Pipeline{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
-				})
+				}})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -928,7 +929,7 @@ func TestValidateLogsConfig(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				&latest.SkaffoldConfig{
+				[]*latest.SkaffoldConfig{{
 					Pipeline: latest.Pipeline{
 						Deploy: latest.DeployConfig{
 							Logs: latest.LogsConfig{
@@ -936,7 +937,7 @@ func TestValidateLogsConfig(t *testing.T) {
 							},
 						},
 					},
-				})
+				}})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -1039,19 +1040,27 @@ func setDependencies(a []*latest.Artifact, d map[int][]int) {
 }
 
 func TestValidateUniqueDependencyAliases(t *testing.T) {
-	artifacts := []*latest.Artifact{
+	cfgs := []*latest.SkaffoldConfig{
 		{
-			ImageName: "artifact1",
-			Dependencies: []*latest.ArtifactDependency{
-				{Alias: "alias2", ImageName: "artifact2a"},
-				{Alias: "alias2", ImageName: "artifact2b"},
-			},
-		},
-		{
-			ImageName: "artifact2",
-			Dependencies: []*latest.ArtifactDependency{
-				{Alias: "alias1", ImageName: "artifact1"},
-				{Alias: "alias2", ImageName: "artifact1"},
+			Pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					Artifacts: []*latest.Artifact{
+						{
+							ImageName: "artifact1",
+							Dependencies: []*latest.ArtifactDependency{
+								{Alias: "alias2", ImageName: "artifact2a"},
+								{Alias: "alias2", ImageName: "artifact2b"},
+							},
+						},
+						{
+							ImageName: "artifact2",
+							Dependencies: []*latest.ArtifactDependency{
+								{Alias: "alias1", ImageName: "artifact1"},
+								{Alias: "alias2", ImageName: "artifact1"},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -1059,53 +1068,61 @@ func TestValidateUniqueDependencyAliases(t *testing.T) {
 		fmt.Errorf(`invalid build dependency for artifact "artifact1": alias "alias2" repeated`),
 		fmt.Errorf(`unknown build dependency "artifact2a" for artifact "artifact1"`),
 	}
-	errs := validateArtifactDependencies(artifacts)
+	errs := validateArtifactDependencies(cfgs)
 	testutil.CheckDeepEqual(t, expected, errs, cmp.Comparer(errorsComparer))
 }
 
 func TestValidateValidDependencyAliases(t *testing.T) {
-	artifacts := []*latest.Artifact{
+	cfgs := []*latest.SkaffoldConfig{
 		{
-			ImageName: "artifact1",
-		},
-		{
-			ImageName: "artifact2",
-			ArtifactType: latest.ArtifactType{
-				DockerArtifact: &latest.DockerArtifact{},
-			},
-			Dependencies: []*latest.ArtifactDependency{
-				{Alias: "ARTIFACT_1", ImageName: "artifact1"},
-				{Alias: "1_ARTIFACT", ImageName: "artifact1"},
-			},
-		},
-		{
-			ImageName: "artifact3",
-			ArtifactType: latest.ArtifactType{
-				DockerArtifact: &latest.DockerArtifact{},
-			},
-			Dependencies: []*latest.ArtifactDependency{
-				{Alias: "artifact!", ImageName: "artifact1"},
-				{Alias: "artifact#1", ImageName: "artifact1"},
-			},
-		},
-		{
-			ImageName: "artifact4",
-			ArtifactType: latest.ArtifactType{
-				CustomArtifact: &latest.CustomArtifact{},
-			},
-			Dependencies: []*latest.ArtifactDependency{
-				{Alias: "alias1", ImageName: "artifact1"},
-				{Alias: "alias2", ImageName: "artifact2"},
-			},
-		},
-		{
-			ImageName: "artifact5",
-			ArtifactType: latest.ArtifactType{
-				BuildpackArtifact: &latest.BuildpackArtifact{},
-			},
-			Dependencies: []*latest.ArtifactDependency{
-				{Alias: "artifact!", ImageName: "artifact1"},
-				{Alias: "artifact#1", ImageName: "artifact1"},
+			Pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					Artifacts: []*latest.Artifact{
+						{
+							ImageName: "artifact1",
+						},
+						{
+							ImageName: "artifact2",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{},
+							},
+							Dependencies: []*latest.ArtifactDependency{
+								{Alias: "ARTIFACT_1", ImageName: "artifact1"},
+								{Alias: "1_ARTIFACT", ImageName: "artifact1"},
+							},
+						},
+						{
+							ImageName: "artifact3",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{},
+							},
+							Dependencies: []*latest.ArtifactDependency{
+								{Alias: "artifact!", ImageName: "artifact1"},
+								{Alias: "artifact#1", ImageName: "artifact1"},
+							},
+						},
+						{
+							ImageName: "artifact4",
+							ArtifactType: latest.ArtifactType{
+								CustomArtifact: &latest.CustomArtifact{},
+							},
+							Dependencies: []*latest.ArtifactDependency{
+								{Alias: "alias1", ImageName: "artifact1"},
+								{Alias: "alias2", ImageName: "artifact2"},
+							},
+						},
+						{
+							ImageName: "artifact5",
+							ArtifactType: latest.ArtifactType{
+								BuildpackArtifact: &latest.BuildpackArtifact{},
+							},
+							Dependencies: []*latest.ArtifactDependency{
+								{Alias: "artifact!", ImageName: "artifact1"},
+								{Alias: "artifact#1", ImageName: "artifact1"},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -1114,7 +1131,7 @@ func TestValidateValidDependencyAliases(t *testing.T) {
 		fmt.Errorf(`invalid build dependency for artifact "artifact3": alias "artifact!" doesn't match required pattern %q`, dependencyAliasPattern),
 		fmt.Errorf(`invalid build dependency for artifact "artifact3": alias "artifact#1" doesn't match required pattern %q`, dependencyAliasPattern),
 	}
-	errs := validateArtifactDependencies(artifacts)
+	errs := validateArtifactDependencies(cfgs)
 	testutil.CheckDeepEqual(t, expected, errs, cmp.Comparer(errorsComparer))
 }
 
@@ -1169,11 +1186,11 @@ func TestValidateTaggingPolicy(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				&latest.SkaffoldConfig{
+				[]*latest.SkaffoldConfig{{
 					Pipeline: latest.Pipeline{
 						Build: test.cfg,
 					},
-				})
+				}})
 
 			t.CheckError(test.shouldErr, err)
 		})

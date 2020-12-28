@@ -211,10 +211,6 @@ type mockConfig struct {
 	artifacts         []*latest.Artifact
 }
 
-func (c *mockConfig) Trigger() string        { return c.trigger }
-func (c *mockConfig) WatchPollInterval() int { return c.watchPollInterval }
-func (c *mockConfig) Pipeline() latest.Pipeline {
-	var pipeline latest.Pipeline
-	pipeline.Build.Artifacts = c.artifacts
-	return pipeline
-}
+func (c *mockConfig) Trigger() string               { return c.trigger }
+func (c *mockConfig) WatchPollInterval() int        { return c.watchPollInterval }
+func (c *mockConfig) Artifacts() []*latest.Artifact { return c.artifacts }
