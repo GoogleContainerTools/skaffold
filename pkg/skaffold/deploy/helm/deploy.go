@@ -20,7 +20,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -122,6 +121,15 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 	var dRes []types.Artifact
 	nsMap := map[string]struct{}{}
 	valuesSet := map[string]bool{}
+	reposSet := map[string]bool{}
+
+	for _, repo := range h.Repositories {
+		if err := h.addRepository(ctx, out, repo); err != nil {
+			return nil, fmt.Errorf("failed to add repository %q %q", repo.Name, repo.URL)
+		}
+
+		reposSet[repo.Name] = true
+	}
 
 	// Deploy every release
 	for _, r := range h.Releases {
@@ -130,9 +138,12 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 			return nil, userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
 		}
 
-		err = h.addRepository(ctx, out, r)
-		if err != nil {
-			return nil, userErr(fmt.Sprintf("cannot add repository %q", r.Repository), err)
+		if r.Repository != "" {
+			if !reposSet[r.Repository] {
+				return nil, userErr("checking repository registration", fmt.Errorf("repository %q not registered", r.Repository))
+			}
+
+			r.ChartPath = fmt.Sprintf("%s/%s", r.Repository, r.ChartPath)
 		}
 
 		results, err := h.deployRelease(ctx, out, releaseName, r, builds, valuesSet, h.bV)
@@ -305,22 +316,10 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 	return manifest.Write(renderedManifests.String(), filepath, out)
 }
 
-// addRepository adds a remote repository to the Helm cache. Finds alias from the chart path.
-func (h *Deployer) addRepository(ctx context.Context, out io.Writer, release latest.HelmRelease) error {
-	repo := release.Repository
-
-	if repo == "" {
-		return nil
-	}
-
-	alias := release.RepositoryAlias()
-
-	if alias == "" {
-		return errors.New("chartPath requires an alias")
-	}
-
-	if err := h.exec(ctx, out, false, nil, "repo", "add", alias, repo); err != nil {
-		return userErr("adding helm repository", err)
+// addRepositories adds the repository to workstation helm cache using `helm repo` add cli command.
+func (h *Deployer) addRepository(ctx context.Context, out io.Writer, repo latest.HelmRepository) error {
+	if err := h.exec(ctx, out, false, nil, "repo", "add", repo.Name, repo.URL); err != nil {
+		return userErr("helm repo add", err)
 	}
 
 	return nil

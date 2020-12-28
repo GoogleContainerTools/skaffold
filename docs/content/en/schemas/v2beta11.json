@@ -1298,9 +1298,18 @@
           "type": "array",
           "description": "a list of Helm releases.",
           "x-intellij-html-description": "a list of Helm releases."
+        },
+        "repositories": {
+          "items": {
+            "$ref": "#/definitions/HelmRepository"
+          },
+          "type": "array",
+          "description": "a list of Helm repositories to add to the workstation.",
+          "x-intellij-html-description": "a list of Helm repositories to add to the workstation."
         }
       },
       "preferredOrder": [
+        "repositories",
         "releases",
         "flags"
       ],
@@ -1470,8 +1479,8 @@
         },
         "repository": {
           "type": "string",
-          "description": "remote location of the Helm chart. If present, Skaffold will add the registry under the alias of chartPath.",
-          "x-intellij-html-description": "remote location of the Helm chart. If present, Skaffold will add the registry under the alias of chartPath."
+          "description": "remote location of the Helm chart. The chartPath should not included the alias to the repository. The alias is appended before calling the Helm CLI. Must be present in the Skaffold helm repositories list to be deployable.",
+          "x-intellij-html-description": "remote location of the Helm chart. The chartPath should not included the alias to the repository. The alias is appended before calling the Helm CLI. Must be present in the Skaffold helm repositories list to be deployable."
         },
         "setFiles": {
           "additionalProperties": {
@@ -1552,6 +1561,31 @@
       "additionalProperties": false,
       "description": "describes a helm release to be deployed.",
       "x-intellij-html-description": "describes a helm release to be deployed."
+    },
+    "HelmRepository": {
+      "required": [
+        "name",
+        "url"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "the alias of the chart repository.",
+          "x-intellij-html-description": "the alias of the chart repository."
+        },
+        "url": {
+          "type": "string",
+          "description": "the endpoint of the chart repository.",
+          "x-intellij-html-description": "the endpoint of the chart repository."
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "url"
+      ],
+      "additionalProperties": false,
+      "description": "parameters for adding a helm repository (`helm add repo`).",
+      "x-intellij-html-description": "parameters for adding a helm repository (<code>helm add repo</code>)."
     },
     "JSONPatch": {
       "required": [

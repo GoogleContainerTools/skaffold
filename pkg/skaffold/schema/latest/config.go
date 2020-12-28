@@ -18,7 +18,6 @@ package latest
 
 import (
 	"encoding/json"
-	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
@@ -508,6 +507,9 @@ type KubectlFlags struct {
 
 // HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 type HelmDeploy struct {
+	// Repositories is a list of Helm repositories to add to the workstation.
+	Repositories []HelmRepository `yaml:"repositories,omitempty"`
+
 	// Releases is a list of Helm releases.
 	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
 
@@ -687,7 +689,8 @@ type HelmRelease struct {
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
 
 	// Repository is the remote location of the Helm chart.
-	// If present, Skaffold will add the registry under the alias of chartPath.
+	// The chartPath should not included the alias to the repository. The alias is appended before calling the Helm CLI.
+	// Must be present in the Skaffold helm repositories list to be deployable.
 	Repository string `yaml:"repository,omitempty"`
 
 	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
@@ -706,6 +709,15 @@ type HelmRelease struct {
 	// ImageStrategy controls how an `ArtifactOverrides` entry is
 	// turned into `--set-string` Helm CLI flag or flags.
 	ImageStrategy HelmImageStrategy `yaml:"imageStrategy,omitempty"`
+}
+
+// HelmRepository parameters for adding a helm repository (`helm add repo`).
+type HelmRepository struct {
+	// Name the alias of the chart repository.
+	Name string `yaml:"name,omitempty" yamltags:"required"`
+
+	// URL the endpoint of the chart repository.
+	URL string `yaml:"url,omitempty" yamltags:"required"`
 }
 
 // HelmPackaged parameters for packaging helm chart (`helm package`).
@@ -1359,17 +1371,4 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 		m["volumeMounts"] = vList
 	}
 	return m, err
-}
-
-// RepositoryAlias responds with name of the chart repository alias or empty string.
-func (h *HelmRelease) RepositoryAlias() string {
-	chartNameSegments := strings.Split(h.ChartPath, "/")
-
-	if len(chartNameSegments) < 2 {
-		return ""
-	}
-
-	alias := chartNameSegments[0]
-
-	return alias
 }
