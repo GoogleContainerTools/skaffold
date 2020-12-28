@@ -19,6 +19,7 @@ package tag
 import (
 	"fmt"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -71,6 +72,10 @@ func getTagger(runCtx *runcontext.RunContext, t *latest.TagPolicy) (Tagger, erro
 
 	case t.DateTimeTagger != nil:
 		return NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil
+
+	case t.InputDigest != nil:
+		graph := dep.ToArtifactGraph(runCtx.Artifacts())
+		return NewInputDigestTagger(runCtx, graph)
 
 	case t.CustomTemplateTagger != nil:
 		components, err := CreateComponents(t.CustomTemplateTagger)
