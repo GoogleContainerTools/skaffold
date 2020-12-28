@@ -51,15 +51,18 @@ func setAbsFilePaths(config interface{}, base string) []error {
 		for i := 0; i < t.NumField(); i++ {
 			f := t.Field(i)
 			v := parentStruct.Field(i)
+			if !v.CanInterface() {
+				return errs
+			}
 			if filepathTagExists(f) {
 				switch v.Interface().(type) {
 				case string:
 					path := v.String()
 					if path == "" {
-						return nil
+						return errs
 					}
 					if filepath.IsAbs(path) {
-						return nil
+						return errs
 					}
 					v.SetString(filepath.Join(base, path))
 					logrus.Tracef("setting absolute path for config field %q", f.Name)
@@ -79,7 +82,7 @@ func setAbsFilePaths(config interface{}, base string) []error {
 				default:
 					return []error{fmt.Errorf("yaml tag `filepath` needs struct field %q to be string or string slice", f.Name)}
 				}
-				return nil
+				return errs
 			}
 
 			if v.Kind() != reflect.Ptr {
@@ -96,6 +99,9 @@ func setAbsFilePaths(config interface{}, base string) []error {
 			elem := parentStruct.Index(i)
 			if elem.Kind() != reflect.Ptr {
 				elem = elem.Addr()
+			}
+			if !elem.CanInterface() {
+				continue
 			}
 			if elemErrs := setAbsFilePaths(elem.Interface(), base); elemErrs != nil {
 				errs = append(errs, elemErrs...)
