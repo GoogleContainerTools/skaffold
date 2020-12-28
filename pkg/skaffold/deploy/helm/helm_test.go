@@ -247,11 +247,8 @@ var testDeployWithTemplatedName = latest.HelmDeploy{
 
 var testDeployRepositoryChartSkipBuildDependencies = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name: "skaffold-helm",
-		Repository: latest.HelmRepository{
-			Name: "stable",
-			URL:  "https://charts.helm.sh/stable",
-		},
+		Name:                  "skaffold-helm",
+		Repository:            "https://charts.helm.sh/stable",
 		ChartPath:             "stable/chartmuseum",
 		SkipBuildDependencies: true,
 	}},
@@ -259,23 +256,18 @@ var testDeployRepositoryChartSkipBuildDependencies = latest.HelmDeploy{
 
 var testDeployRepositoryChart = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name: "skaffold-helm",
-		Repository: latest.HelmRepository{
-			Name: "stable",
-			URL:  "https://charts.helm.sh/stable",
-		},
+		Name:                  "skaffold-helm",
+		Repository:            "https://charts.helm.sh/stable",
 		ChartPath:             "stable/chartmuseum",
 		SkipBuildDependencies: false,
 	}},
 }
 
-var testDeployRepositoryChartNoName = latest.HelmDeploy{
+var testDeployRepositoryChartNoAlias = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name: "skaffold-helm",
-		Repository: latest.HelmRepository{
-			URL: "https://charts.helm.sh/stable",
-		},
-		ChartPath: "stable/chartmuseum",
+		Name:       "skaffold-helm",
+		Repository: "https://charts.helm.sh/stable",
+		ChartPath:  "chartmuseum",
 	}},
 }
 
@@ -699,11 +691,11 @@ func TestHelmDeploy(t *testing.T) {
 			},
 		},
 		{
-			description: "deploy remote chart without a repository name",
+			description: "deploy remote chart without an alias in the chart path",
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
-				AndRun("helm --kube-context kubecontext repo add stable https://charts.helm.sh/stable --kubeconfig kubeconfig"),
-			helm:      testDeployRepositoryChartNoName,
+				AndRunErr("helm --kube-context kubecontext repo add https://charts.helm.sh/stable --kubeconfig kubeconfig", fmt.Errorf("no alias")),
+			helm:      testDeployRepositoryChartNoAlias,
 			builds:    testBuilds,
 			shouldErr: true,
 		},
@@ -1113,7 +1105,7 @@ func TestHelmDependencies(t *testing.T) {
 		files                 []string
 		valuesFiles           []string
 		skipBuildDependencies bool
-		repository            map[string]string
+		repository            string
 		expected              func(folder *testutil.TempDir) []string
 	}{
 		{
@@ -1154,7 +1146,7 @@ func TestHelmDependencies(t *testing.T) {
 			description:           "no deps for remote chart path",
 			skipBuildDependencies: false,
 			files:                 []string{"Chart.yaml"},
-			repository:            map[string]string{"name": "stable", "url": "https://helm.sh/stable"},
+			repository:            "https://helm.sh/stable",
 			expected: func(folder *testutil.TempDir) []string {
 				return nil
 			},
@@ -1176,7 +1168,7 @@ func TestHelmDependencies(t *testing.T) {
 					Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 					SetValues:             map[string]string{"some.key": "somevalue"},
 					SkipBuildDependencies: test.skipBuildDependencies,
-					Repository:            latest.HelmRepository{Name: test.repository["name"], URL: test.repository["url"]},
+					Repository:            test.repository,
 				}},
 			})
 			t.RequireNoError(err)

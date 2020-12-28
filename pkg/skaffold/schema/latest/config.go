@@ -18,6 +18,7 @@ package latest
 
 import (
 	"encoding/json"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
@@ -686,8 +687,8 @@ type HelmRelease struct {
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
 
 	// Repository is the remote location of the Helm chart.
-	// If present, Skaffold will add the registry.
-	Repository HelmRepository `yaml:"repository,omitempty"`
+	// If present, Skaffold will add the registry under the alias of chartPath.
+	Repository string `yaml:"repository,omitempty"`
 
 	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
 	// Default is `true` when helm chart is local (`remote: false`).
@@ -705,15 +706,6 @@ type HelmRelease struct {
 	// ImageStrategy controls how an `ArtifactOverrides` entry is
 	// turned into `--set-string` Helm CLI flag or flags.
 	ImageStrategy HelmImageStrategy `yaml:"imageStrategy,omitempty"`
-}
-
-// HelmRepository a remote chart repository.
-type HelmRepository struct {
-	// Name is the local alias of the repository.
-	Name string `yaml:"name,omitempty"`
-
-	// URL the endpoint of the repository.
-	URL string `yaml:"url,omitempty"`
 }
 
 // HelmPackaged parameters for packaging helm chart (`helm package`).
@@ -1367,4 +1359,17 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 		m["volumeMounts"] = vList
 	}
 	return m, err
+}
+
+// RepositoryAlias responds with name of the chart repository alias or empty string.
+func (h *HelmRelease) RepositoryAlias() string {
+	chartNameSegments := strings.Split(h.ChartPath, "/")
+
+	if len(chartNameSegments) < 2 {
+		return ""
+	}
+
+	alias := chartNameSegments[0]
+
+	return alias
 }

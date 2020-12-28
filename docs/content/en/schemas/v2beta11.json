@@ -1469,9 +1469,9 @@
           "default": "false"
         },
         "repository": {
-          "$ref": "#/definitions/HelmRepository",
-          "description": "remote location of the Helm chart. If present, Skaffold will add the registry.",
-          "x-intellij-html-description": "remote location of the Helm chart. If present, Skaffold will add the registry."
+          "type": "string",
+          "description": "remote location of the Helm chart. If present, Skaffold will add the registry under the alias of chartPath.",
+          "x-intellij-html-description": "remote location of the Helm chart. If present, Skaffold will add the registry under the alias of chartPath."
         },
         "setFiles": {
           "additionalProperties": {
@@ -1552,27 +1552,6 @@
       "additionalProperties": false,
       "description": "describes a helm release to be deployed.",
       "x-intellij-html-description": "describes a helm release to be deployed."
-    },
-    "HelmRepository": {
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "local alias of the repository.",
-          "x-intellij-html-description": "local alias of the repository."
-        },
-        "url": {
-          "type": "string",
-          "description": "the endpoint of the repository.",
-          "x-intellij-html-description": "the endpoint of the repository."
-        }
-      },
-      "preferredOrder": [
-        "name",
-        "url"
-      ],
-      "additionalProperties": false,
-      "description": "a remote chart repository.",
-      "x-intellij-html-description": "a remote chart repository."
     },
     "JSONPatch": {
       "required": [

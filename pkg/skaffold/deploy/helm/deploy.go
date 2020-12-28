@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -129,9 +130,9 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 			return nil, userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
 		}
 
-		err = h.addRepository(ctx, out, r.Repository)
+		err = h.addRepository(ctx, out, r)
 		if err != nil {
-			return nil, userErr(fmt.Sprintf("cannot add repository: %q", r.Repository.URL), err)
+			return nil, userErr(fmt.Sprintf("cannot add repository %q", r.Repository), err)
 		}
 
 		results, err := h.deployRelease(ctx, out, releaseName, r, builds, valuesSet, h.bV)
@@ -179,7 +180,7 @@ func (h *Deployer) Dependencies() ([]string, error) {
 		r := release
 		deps = append(deps, r.ValuesFiles...)
 
-		if r.Repository.URL != "" {
+		if r.Repository != "" {
 			// chart path is only a dependency if it exists on the local filesystem
 			continue
 		}
@@ -304,17 +305,21 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 	return manifest.Write(renderedManifests.String(), filepath, out)
 }
 
-// addRepository adds a remote repository to the Helm cache. Skips when no url is set on the HelmRepository.
-func (h *Deployer) addRepository(ctx context.Context, out io.Writer, repo latest.HelmRepository) error {
-	if repo.URL == "" {
+// addRepository adds a remote repository to the Helm cache. Finds alias from the chart path.
+func (h *Deployer) addRepository(ctx context.Context, out io.Writer, release latest.HelmRelease) error {
+	repo := release.Repository
+
+	if repo == "" {
 		return nil
 	}
 
-	if repo.Name == "" {
-		return fmt.Errorf("a repository url of %s is set but no name", repo.URL)
+	alias := release.RepositoryAlias()
+
+	if alias == "" {
+		return errors.New("chartPath requires an alias")
 	}
 
-	if err := h.exec(ctx, out, false, nil, "repo", "add", repo.Name, repo.URL); err != nil {
+	if err := h.exec(ctx, out, false, nil, "repo", "add", alias, repo); err != nil {
 		return userErr("adding helm repository", err)
 	}
 
@@ -377,14 +382,14 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		if r.UpgradeOnChange != nil && !*r.UpgradeOnChange {
 			logrus.Infof("Release %s already installed...", releaseName)
 			return []types.Artifact{}, nil
-		} else if r.UpgradeOnChange == nil && r.Repository.URL != "" {
+		} else if r.UpgradeOnChange == nil && r.Repository != "" {
 			logrus.Infof("Release %s not upgraded as it is remote...", releaseName)
 			return []types.Artifact{}, nil
 		}
 	}
 
 	// Only build local dependencies, but allow a user to skip them.
-	if !r.SkipBuildDependencies && r.Repository.URL == "" {
+	if !r.SkipBuildDependencies && r.Repository == "" {
 		logrus.Infof("Building helm dependencies...")
 
 		if err := h.exec(ctx, out, false, nil, "dep", "build", r.ChartPath); err != nil {
