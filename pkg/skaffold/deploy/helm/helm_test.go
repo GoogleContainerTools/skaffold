@@ -19,6 +19,12 @@ package helm
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
+	"testing"
+
+	"github.com/mitchellh/go-homedir"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -27,10 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/mitchellh/go-homedir"
-	"io/ioutil"
-	"path/filepath"
-	"testing"
 )
 
 var testBuilds = []dep.Artifact{{

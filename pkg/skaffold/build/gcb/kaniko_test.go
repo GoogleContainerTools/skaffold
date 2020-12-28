@@ -17,6 +17,10 @@ limitations under the License.
 package gcb
 
 import (
+	"testing"
+
+	"google.golang.org/api/cloudbuild/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -24,8 +28,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"google.golang.org/api/cloudbuild/v1"
-	"testing"
 )
 
 func TestKanikoBuildSpec(t *testing.T) {

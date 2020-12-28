@@ -18,9 +18,9 @@ package build
 
 import (
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 

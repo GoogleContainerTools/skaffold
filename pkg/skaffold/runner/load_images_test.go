@@ -19,10 +19,10 @@ package runner
 import (
 	"context"
 	"errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"

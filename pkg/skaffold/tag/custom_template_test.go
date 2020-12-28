@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -103,7 +104,10 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 
 			t.CheckNoError(err)
 
-			tag, err := c.GenerateTag(".", "test")
+			image := &latest.Artifact{
+				ImageName: "test",
+			}
+			tag, err := c.GenerateTag(".", image)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, tag)
 		})

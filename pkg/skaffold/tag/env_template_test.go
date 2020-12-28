@@ -19,6 +19,7 @@ package tag
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -99,7 +100,11 @@ func TestEnvTemplateTagger_GenerateTag(t *testing.T) {
 			c, err := NewEnvTemplateTagger(test.template)
 			t.CheckNoError(err)
 
-			got, err := c.GenerateTag(".", test.imageName)
+			image := &latest.Artifact{
+				ImageName: test.imageName,
+			}
+
+			got, err := c.GenerateTag(".", image)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
