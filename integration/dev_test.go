@@ -244,7 +244,7 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 }
 
 func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace string) (string, int) {
-	timeout := time.After(5 * time.Minute)
+	timeout := time.After(1 * time.Minute)
 	for {
 		select {
 		case <-timeout:
