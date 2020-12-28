@@ -46,17 +46,19 @@ func NewInputDigestTagger(cfg docker.Config, ag dep.ArtifactGraph) (Tagger, erro
 	}, nil
 }
 
+var getDependenciesForArtifacet = dep.DependenciesForArtifact
+
 func (t *inputDigestTagger) GenerateTag(_ string, image *latest.Artifact) (string, error) {
 	var inputs []string
 	ctx := context.Background()
-	srcFies, err := dep.DependenciesForArtifact(ctx, image, t.cfg, nil)
+	srcFies, err := getDependenciesForArtifacet(ctx, image, t.cfg, nil)
 
 	if err != nil {
 		return "", err
 	}
 
 	for _, dkrDep := range t.ag.Dependencies(image) {
-		srcOfDep, err := dep.DependenciesForArtifact(ctx, dkrDep, t.cfg, nil)
+		srcOfDep, err := getDependenciesForArtifacet(ctx, dkrDep, t.cfg, nil)
 		if err != nil {
 			return "", err
 		}

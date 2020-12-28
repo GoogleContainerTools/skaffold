@@ -14,7 +14,7 @@
 GOPATH ?= $(shell go env GOPATH)
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
-BUILD_DIR ?= /home/piotrszybicki/work/cube
+BUILD_DIR ?= ./out
 ORG = github.com/GoogleContainerTools
 PROJECT = skaffold
 REPOPATH ?= $(ORG)/$(PROJECT)
