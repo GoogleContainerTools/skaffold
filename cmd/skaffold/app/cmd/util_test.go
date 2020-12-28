@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -30,9 +30,9 @@ func TestGetArtifacts(t *testing.T) {
 	tests := []struct {
 		description string
 		artifacts   []*latest.Artifact
-		fromFile    []build.Artifact
-		fromCLI     []build.Artifact
-		expected    []build.Artifact
+		fromFile    []dep.Artifact
+		fromCLI     []dep.Artifact
+		expected    []dep.Artifact
 		customTag   string
 		shouldErr   bool
 	}{
@@ -41,41 +41,41 @@ func TestGetArtifacts(t *testing.T) {
 			artifacts:   nil,
 			fromFile:    nil,
 			fromCLI:     nil,
-			expected:    []build.Artifact(nil),
+			expected:    []dep.Artifact(nil),
 		},
 		{
 			description: "from file",
 			artifacts:   []*latest.Artifact{{ImageName: "image"}},
-			fromFile:    []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			fromFile:    []dep.Artifact{{ImageName: "image", Tag: "image:tag"}},
 			fromCLI:     nil,
-			expected:    []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			expected:    []dep.Artifact{{ImageName: "image", Tag: "image:tag"}},
 		},
 		{
 			description: "from CLI",
 			artifacts:   []*latest.Artifact{{ImageName: "image"}},
 			fromFile:    nil,
-			fromCLI:     []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
-			expected:    []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			fromCLI:     []dep.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			expected:    []dep.Artifact{{ImageName: "image", Tag: "image:tag"}},
 		},
 		{
 			description: "one from file, one from CLI",
 			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			fromFile:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}},
-			fromCLI:     []build.Artifact{{ImageName: "image2", Tag: "image2:tag"}},
-			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
+			fromFile:    []dep.Artifact{{ImageName: "image1", Tag: "image1:tag"}},
+			fromCLI:     []dep.Artifact{{ImageName: "image2", Tag: "image2:tag"}},
+			expected:    []dep.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
 		},
 		{
 			description: "file takes precedence on CLI",
 			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			fromFile:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
-			fromCLI:     []build.Artifact{{ImageName: "image1", Tag: "image1:ignored"}},
-			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
+			fromFile:    []dep.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
+			fromCLI:     []dep.Artifact{{ImageName: "image1", Tag: "image1:ignored"}},
+			expected:    []dep.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
 		},
 		{
 			description: "provide tag for non-artifact",
 			artifacts:   []*latest.Artifact{},
-			fromCLI:     []build.Artifact{{ImageName: "busybox", Tag: "busybox:v1"}},
-			expected:    []build.Artifact{{ImageName: "busybox", Tag: "busybox:v1"}},
+			fromCLI:     []dep.Artifact{{ImageName: "busybox", Tag: "busybox:v1"}},
+			expected:    []dep.Artifact{{ImageName: "busybox", Tag: "busybox:v1"}},
 		},
 		{
 			description: "missing tag",
@@ -87,9 +87,9 @@ func TestGetArtifacts(t *testing.T) {
 		{
 			description: "override tag",
 			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			fromFile:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}},
-			fromCLI:     []build.Artifact{{ImageName: "image2", Tag: "image2:tag"}},
-			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
+			fromFile:    []dep.Artifact{{ImageName: "image1", Tag: "image1:tag"}},
+			fromCLI:     []dep.Artifact{{ImageName: "image2", Tag: "image2:tag"}},
+			expected:    []dep.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
 			customTag:   "test",
 		},
 		{
@@ -97,7 +97,7 @@ func TestGetArtifacts(t *testing.T) {
 			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
 			fromFile:    nil,
 			fromCLI:     nil,
-			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
+			expected:    []dep.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
 			customTag:   "test",
 		},
 		{
@@ -105,7 +105,7 @@ func TestGetArtifacts(t *testing.T) {
 			artifacts:   []*latest.Artifact{},
 			fromFile:    nil,
 			fromCLI:     nil,
-			expected:    []build.Artifact(nil),
+			expected:    []dep.Artifact(nil),
 			customTag:   "test",
 		},
 	}

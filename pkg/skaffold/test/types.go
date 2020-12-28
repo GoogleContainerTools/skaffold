@@ -20,7 +20,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 )
 
 // Tester is the top level test executor in Skaffold.
@@ -28,7 +28,7 @@ import (
 // each of which contains one or more TestRunners which implements
 // a single test run.
 type Tester interface {
-	Test(context.Context, io.Writer, []build.Artifact) error
+	Test(context.Context, io.Writer, []dep.Artifact) error
 
 	TestDependencies() ([]string, error)
 }
@@ -54,7 +54,7 @@ type FullTester struct {
 // running a single test on a single artifact image and returning its result.
 // Any new test type should implement this interface.
 type runner interface {
-	Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error
+	Test(ctx context.Context, out io.Writer, bRes []dep.Artifact) error
 
 	TestDependencies() ([]string, error)
 }

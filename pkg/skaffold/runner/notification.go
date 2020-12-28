@@ -19,9 +19,9 @@ package runner
 import (
 	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 )
 
@@ -41,7 +41,7 @@ type withNotification struct {
 	deploy.Deployer
 }
 
-func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []dep.Artifact) ([]string, error) {
 	ns, err := w.Deployer.Deploy(ctx, out, builds)
 	if err != nil {
 		fmt.Fprint(out, terminalBell)

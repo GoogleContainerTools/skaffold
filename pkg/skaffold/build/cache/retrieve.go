@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -33,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildAndTest BuildAndTestFn) ([]build.Artifact, error) {
+func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildAndTest BuildAndTestFn) ([]dep.Artifact, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -53,7 +54,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 	hashByName := make(map[string]string)
 	var needToBuild []*latest.Artifact
-	var alreadyBuilt []build.Artifact
+	var alreadyBuilt []dep.Artifact
 	for i, artifact := range artifacts {
 		color.Default.Fprintf(out, " - %s: ", artifact.ImageName)
 
@@ -114,7 +115,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			uniqueTag = build.TagWithDigest(tag, entry.Digest)
 		}
 		c.artifactStore.Record(artifact, uniqueTag)
-		alreadyBuilt = append(alreadyBuilt, build.Artifact{
+		alreadyBuilt = append(alreadyBuilt, dep.Artifact{
 			ImageName: artifact.ImageName,
 			Tag:       uniqueTag,
 		})
@@ -140,13 +141,13 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	return maintainArtifactOrder(append(bRes, alreadyBuilt...), artifacts), err
 }
 
-func maintainArtifactOrder(built []build.Artifact, artifacts []*latest.Artifact) []build.Artifact {
-	byName := make(map[string]build.Artifact)
+func maintainArtifactOrder(built []dep.Artifact, artifacts []*latest.Artifact) []dep.Artifact {
+	byName := make(map[string]dep.Artifact)
 	for _, build := range built {
 		byName[build.ImageName] = build
 	}
 
-	var ordered []build.Artifact
+	var ordered []dep.Artifact
 
 	for _, artifact := range artifacts {
 		ordered = append(ordered, byName[artifact.ImageName])
@@ -155,7 +156,7 @@ func maintainArtifactOrder(built []build.Artifact, artifacts []*latest.Artifact)
 	return ordered
 }
 
-func (c *cache) addArtifacts(ctx context.Context, bRes []build.Artifact, hashByName map[string]string) error {
+func (c *cache) addArtifacts(ctx context.Context, bRes []dep.Artifact, hashByName map[string]string) error {
 	for _, a := range bRes {
 		entry := ImageDetails{}
 		isLocal, err := c.isLocalImage(a.ImageName)

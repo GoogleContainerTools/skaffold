@@ -27,7 +27,7 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/status"
@@ -77,7 +77,7 @@ func TestDeploy(t *testing.T) {
 			runner.runCtx.Opts.StatusCheck = test.statusCheck
 			out := new(bytes.Buffer)
 
-			err := runner.Deploy(context.Background(), out, []build.Artifact{
+			err := runner.Deploy(context.Background(), out, []dep.Artifact{
 				{ImageName: "img1", Tag: "img1:tag1"},
 				{ImageName: "img2", Tag: "img2:tag2"},
 			})
@@ -126,7 +126,7 @@ func TestDeployNamespace(t *testing.T) {
 			runner := createRunner(t, test.testBench, nil, []*latest.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}, nil)
 			runner.runCtx.Namespaces = test.Namespaces
 
-			runner.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+			runner.Deploy(context.Background(), ioutil.Discard, []dep.Artifact{
 				{ImageName: "img1", Tag: "img1:tag1"},
 				{ImageName: "img2", Tag: "img2:tag2"},
 			})
@@ -153,7 +153,7 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 			kubectlCLI: kubectl.NewCLI(runCtx, ""),
 			deployer:   deployer,
 		}
-		var builds []build.Artifact
+		var builds []dep.Artifact
 
 		err = r.Deploy(context.Background(), ioutil.Discard, builds)
 

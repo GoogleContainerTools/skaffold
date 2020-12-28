@@ -27,7 +27,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -57,7 +57,7 @@ spec:
 func TestKpt_Deploy(t *testing.T) {
 	tests := []struct {
 		description    string
-		builds         []build.Artifact
+		builds         []dep.Artifact
 		kpt            latest.KptDeploy
 		kustomizations map[string]string
 		commands       util.Command
@@ -473,7 +473,7 @@ spec:
 
 	tests := []struct {
 		description    string
-		builds         []build.Artifact
+		builds         []dep.Artifact
 		labels         map[string]string
 		kpt            latest.KptDeploy
 		commands       util.Command
@@ -483,7 +483,7 @@ spec:
 	}{
 		{
 			description: "no fnPath or image specified",
-			builds: []build.Artifact{
+			builds: []dep.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
 					Tag:       "gcr.io/project/image1:tag1",
@@ -508,7 +508,7 @@ spec:
 		},
 		{
 			description: "fnPath specified, multiple resources, and labels",
-			builds: []build.Artifact{
+			builds: []dep.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
 					Tag:       "gcr.io/project/image1:tag1",
@@ -553,7 +553,7 @@ spec:
 		},
 		{
 			description: "fn image specified, multiple images in resource",
-			builds: []build.Artifact{
+			builds: []dep.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
 					Tag:       "gcr.io/project/image1:tag1",
@@ -585,7 +585,7 @@ spec:
 		},
 		{
 			description: "empty output from pipeline",
-			builds: []build.Artifact{
+			builds: []dep.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
 					Tag:       "gcr.io/project/image1:tag1",
@@ -618,7 +618,7 @@ spec:
 		},
 		{
 			description: "kustomization render",
-			builds: []build.Artifact{
+			builds: []dep.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
 					Tag:       "gcr.io/project/image1:tag1",
@@ -668,7 +668,7 @@ spec:
 		},
 		{
 			description: "kustomize build fails (invalid kustomization config)",
-			builds: []build.Artifact{
+			builds: []dep.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
 					Tag:       "gcr.io/project/image1:tag1",

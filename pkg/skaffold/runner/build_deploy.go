@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -34,10 +35,10 @@ import (
 )
 
 // Build builds a list of artifacts.
-func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]dep.Artifact, error) {
 	// Use tags directly from the Kubernetes manifests.
 	if r.runCtx.DigestSource() == noneDigestSource {
-		return []build.Artifact{}, nil
+		return []dep.Artifact{}, nil
 	}
 
 	if err := checkWorkspaces(artifacts); err != nil {
@@ -49,12 +50,11 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 		return nil, err
 	}
 
-	// In dry-run mode or with --digest-source  set to 'remote' or 'tag', we don't build anything, just return the tag for each artifact.
-	if r.runCtx.DryRun() || (r.runCtx.DigestSource() == remoteDigestSource) ||
-		(r.runCtx.DigestSource() == tagDigestSource) {
-		var bRes []build.Artifact
+	// In dry-run mode or with --digest-source  set to 'remote', we don't build anything, just return the tag for each artifact.
+	if r.runCtx.DryRun() || (r.runCtx.DigestSource() == remoteDigestSource) {
+		var bRes []dep.Artifact
 		for _, artifact := range artifacts {
-			bRes = append(bRes, build.Artifact{
+			bRes = append(bRes, dep.Artifact{
 				ImageName: artifact.ImageName,
 				Tag:       tags[artifact.ImageName],
 			})
@@ -63,7 +63,7 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 		return bRes, nil
 	}
 
-	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]dep.Artifact, error) {
 		if len(artifacts) == 0 {
 			return nil, nil
 		}
@@ -91,7 +91,7 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 }
 
 // Test tests a list of already built artifacts.
-func (r *SkaffoldRunner) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+func (r *SkaffoldRunner) Test(ctx context.Context, out io.Writer, artifacts []dep.Artifact) error {
 	if err := r.tester.Test(ctx, out, artifacts); err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (r *SkaffoldRunner) Test(ctx context.Context, out io.Writer, artifacts []bu
 }
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
-func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []dep.Artifact) error {
 	// Update which images are logged.
 	r.addTagsToPodSelector(artifacts)
 
@@ -135,7 +135,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 }
 
 // Update which images are logged.
-func (r *SkaffoldRunner) addTagsToPodSelector(artifacts []build.Artifact) {
+func (r *SkaffoldRunner) addTagsToPodSelector(artifacts []dep.Artifact) {
 	for _, artifact := range artifacts {
 		r.podSelector.Add(artifact.Tag)
 	}

@@ -25,7 +25,7 @@ import (
 
 	"github.com/docker/docker/client"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -125,7 +125,7 @@ func TestLookupLocal(t *testing.T) {
 				cfg:                &mockConfig{mode: config.RunModes.Build},
 			}
 
-			t.Override(&newArtifactHasherFunc, func(_ build.ArtifactGraph, _ DependencyLister, _ config.RunMode) artifactHasher { return test.hasher })
+			t.Override(&newArtifactHasherFunc, func(_ dep.ArtifactGraph, _ DependencyLister, _ config.RunMode) artifactHasher { return test.hasher })
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
 				ImageName: "artifact",
 			}})
@@ -213,7 +213,7 @@ func TestLookupRemote(t *testing.T) {
 				client:             fakeLocalDaemon(test.api),
 				cfg:                &mockConfig{mode: config.RunModes.Build},
 			}
-			t.Override(&newArtifactHasherFunc, func(_ build.ArtifactGraph, _ DependencyLister, _ config.RunMode) artifactHasher { return test.hasher })
+			t.Override(&newArtifactHasherFunc, func(_ dep.ArtifactGraph, _ DependencyLister, _ config.RunMode) artifactHasher { return test.hasher })
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
 				ImageName: "artifact",
 			}})

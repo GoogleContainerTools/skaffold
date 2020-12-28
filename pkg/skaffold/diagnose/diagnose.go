@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -116,8 +117,8 @@ func typeOfArtifact(a *latest.Artifact) string {
 
 func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg Config) (string, []string, error) {
 	start := time.Now()
-	graph := build.ToArtifactGraph(cfg.Artifacts())
-	sourceDependencies := build.NewTransitiveSourceDependenciesCache(cfg, nil, graph)
+	graph := dep.ToArtifactGraph(cfg.Artifacts())
+	sourceDependencies := dep.NewTransitiveSourceDependenciesCache(cfg, nil, graph)
 	paths, err := sourceDependencies.ResolveForArtifact(ctx, a)
 	return util.ShowHumanizeTime(time.Since(start)), paths, err
 }

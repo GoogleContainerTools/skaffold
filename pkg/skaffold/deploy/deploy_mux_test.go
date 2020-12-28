@@ -25,7 +25,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -75,11 +75,11 @@ func (m *MockDeployer) WithRenderErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []build.Artifact) ([]string, error) {
+func (m *MockDeployer) Deploy(context.Context, io.Writer, []dep.Artifact) ([]string, error) {
 	return m.deployNamespaces, m.deployErr
 }
 
-func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []build.Artifact, _ bool, _ string) error {
+func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []dep.Artifact, _ bool, _ string) error {
 	w.Write([]byte(m.renderResult))
 	return m.renderErr
 }

@@ -17,17 +17,15 @@ limitations under the License.
 package gcb
 
 import (
-	"testing"
-
-	"google.golang.org/api/cloudbuild/v1"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"google.golang.org/api/cloudbuild/v1"
+	"testing"
 )
 
 func TestKanikoBuildSpec(t *testing.T) {
@@ -427,6 +425,6 @@ type mockArtifactStore map[string]string
 
 func (m mockArtifactStore) GetImageTag(imageName string) (string, bool) { return m[imageName], true }
 func (m mockArtifactStore) Record(a *latest.Artifact, tag string)       { m[a.ImageName] = tag }
-func (m mockArtifactStore) GetArtifacts([]*latest.Artifact) ([]build.Artifact, error) {
+func (m mockArtifactStore) GetArtifacts([]*latest.Artifact) ([]dep.Artifact, error) {
 	return nil, nil
 }

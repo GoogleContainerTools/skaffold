@@ -17,13 +17,13 @@ limitations under the License.
 package runner
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
 
-func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []build.Artifact) *kubernetes.LogAggregator {
+func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []dep.Artifact) *kubernetes.LogAggregator {
 	if !r.runCtx.Tail() {
 		return nil
 	}

@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -51,12 +51,12 @@ type mockRunRunner struct {
 	artifactImageNames []string
 }
 
-func (r *mockRunRunner) Build(_ context.Context, _ io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	var result []build.Artifact
+func (r *mockRunRunner) Build(_ context.Context, _ io.Writer, artifacts []*latest.Artifact) ([]dep.Artifact, error) {
+	var result []dep.Artifact
 	for _, artifact := range artifacts {
 		imageName := artifact.ImageName
 		r.artifactImageNames = append(r.artifactImageNames, imageName)
-		result = append(result, build.Artifact{
+		result = append(result, dep.Artifact{
 			ImageName: imageName,
 		})
 	}
@@ -64,12 +64,12 @@ func (r *mockRunRunner) Build(_ context.Context, _ io.Writer, artifacts []*lates
 	return result, nil
 }
 
-func (r *mockRunRunner) Test(context.Context, io.Writer, []build.Artifact) error {
+func (r *mockRunRunner) Test(context.Context, io.Writer, []dep.Artifact) error {
 	r.testRan = true
 	return nil
 }
 
-func (r *mockRunRunner) DeployAndLog(context.Context, io.Writer, []build.Artifact) error {
+func (r *mockRunRunner) DeployAndLog(context.Context, io.Writer, []dep.Artifact) error {
 	r.deployRan = true
 	return nil
 }

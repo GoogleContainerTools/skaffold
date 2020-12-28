@@ -27,7 +27,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -177,7 +177,7 @@ type mockDeployer struct {
 	shouldErr bool
 }
 
-func (fd *mockDeployer) Deploy(ctx context.Context, out io.Writer, _ []build.Artifact) ([]string, error) {
+func (fd *mockDeployer) Deploy(ctx context.Context, out io.Writer, _ []dep.Artifact) ([]string, error) {
 	if fd.shouldErr {
 		fmt.Fprintln(out, " - failed to deploy")
 		return nil, errors.New("failed to deploy")
@@ -193,7 +193,7 @@ type mockStatusChecker struct {
 	shouldErr bool
 }
 
-func (fd *mockStatusChecker) Deploy(ctx context.Context, out io.Writer, _ []build.Artifact) ([]string, error) {
+func (fd *mockStatusChecker) Deploy(ctx context.Context, out io.Writer, _ []dep.Artifact) ([]string, error) {
 	if fd.shouldErr {
 		fmt.Fprintln(out, " - deployment/leeroy-app failed. could not pull image")
 		return nil, errors.New("- deployment/leeroy-app failed. could not pull image")

@@ -24,7 +24,7 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -35,7 +35,7 @@ func TestTest(t *testing.T) {
 		description     string
 		testBench       *TestBench
 		cfg             []*latest.Artifact
-		artifacts       []build.Artifact
+		artifacts       []dep.Artifact
 		expectedActions []Actions
 		shouldErr       bool
 	}{
@@ -43,7 +43,7 @@ func TestTest(t *testing.T) {
 			description: "test no error",
 			testBench:   &TestBench{},
 			cfg:         []*latest.Artifact{{ImageName: "img1"}, {ImageName: "img2"}},
-			artifacts: []build.Artifact{
+			artifacts: []dep.Artifact{
 				{ImageName: "img1", Tag: "img1:tag1"},
 				{ImageName: "img2", Tag: "img2:tag2"},
 			},
@@ -54,14 +54,14 @@ func TestTest(t *testing.T) {
 		{
 			description:     "no artifacts",
 			testBench:       &TestBench{},
-			artifacts:       []build.Artifact(nil),
+			artifacts:       []dep.Artifact(nil),
 			expectedActions: []Actions{{}},
 		},
 		{
 			description: "missing tag",
 			testBench:   &TestBench{},
 			cfg:         []*latest.Artifact{{ImageName: "image1"}},
-			artifacts:   []build.Artifact{{ImageName: "image1"}},
+			artifacts:   []dep.Artifact{{ImageName: "image1"}},
 			expectedActions: []Actions{{
 				Tested: []string{""},
 			}},
@@ -163,7 +163,7 @@ func TestBuildDryRun(t *testing.T) {
 		bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual([]build.Artifact{
+		t.CheckDeepEqual([]dep.Artifact{
 			{ImageName: "img1", Tag: "img1:latest"},
 			{ImageName: "img2", Tag: "img2:latest"}}, bRes)
 		// Nothing was built, tested or deployed
@@ -184,7 +184,7 @@ func TestBuildSkipBuild(t *testing.T) {
 		bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual([]build.Artifact{}, bRes)
+		t.CheckDeepEqual([]dep.Artifact{}, bRes)
 		// Nothing was built, tested or deployed
 		t.CheckDeepEqual([]Actions{{}}, testBench.Actions())
 	})

@@ -27,6 +27,7 @@ import (
 	logrustest "github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
@@ -39,7 +40,7 @@ type mockBuilder struct {
 	err bool
 }
 
-func (m *mockBuilder) Build(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact) ([]build.Artifact, error) {
+func (m *mockBuilder) Build(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact) ([]dep.Artifact, error) {
 	if m.err {
 		return nil, errors.New("Unable to build")
 	}
@@ -58,7 +59,7 @@ type mockTester struct {
 	err bool
 }
 
-func (m *mockTester) Test(context.Context, io.Writer, []build.Artifact) error {
+func (m *mockTester) Test(context.Context, io.Writer, []dep.Artifact) error {
 	if m.err {
 		return errors.New("Unable to test")
 	}
@@ -70,7 +71,7 @@ type mockDeployer struct {
 	err bool
 }
 
-func (m *mockDeployer) Deploy(context.Context, io.Writer, []build.Artifact) ([]string, error) {
+func (m *mockDeployer) Deploy(context.Context, io.Writer, []dep.Artifact) ([]string, error) {
 	if m.err {
 		return nil, errors.New("Unable to deploy")
 	}

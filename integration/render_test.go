@@ -29,7 +29,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
@@ -43,13 +43,13 @@ func TestKubectlRenderOutput(t *testing.T) {
 
 	test := struct {
 		description string
-		builds      []build.Artifact
+		builds      []dep.Artifact
 		renderPath  string
 		input       string
 		expectedOut string
 	}{
 		description: "write rendered manifest to provided filepath",
-		builds: []build.Artifact{
+		builds: []dep.Artifact{
 			{
 				ImageName: "gcr.io/k8s-skaffold/skaffold",
 				Tag:       "gcr.io/k8s-skaffold/skaffold:test",
@@ -108,13 +108,13 @@ func TestKubectlRender(t *testing.T) {
 
 	tests := []struct {
 		description string
-		builds      []build.Artifact
+		builds      []dep.Artifact
 		input       string
 		expectedOut string
 	}{
 		{
 			description: "normal render",
-			builds: []build.Artifact{
+			builds: []dep.Artifact{
 				{
 					ImageName: "gcr.io/k8s-skaffold/skaffold",
 					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
@@ -142,7 +142,7 @@ spec:
 		},
 		{
 			description: "two artifacts",
-			builds: []build.Artifact{
+			builds: []dep.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
 					Tag:       "gcr.io/project/image1:tag1",
@@ -178,7 +178,7 @@ spec:
 		},
 		{
 			description: "two artifacts, combined manifests",
-			builds: []build.Artifact{
+			builds: []dep.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
 					Tag:       "gcr.io/project/image1:tag1",
@@ -266,13 +266,13 @@ func TestHelmRender(t *testing.T) {
 
 	tests := []struct {
 		description  string
-		builds       []build.Artifact
+		builds       []dep.Artifact
 		helmReleases []latest.HelmRelease
 		expectedOut  string
 	}{
 		{
 			description: "Bare bones render",
-			builds: []build.Artifact{
+			builds: []dep.Artifact{
 				{
 					ImageName: "gke-loadbalancer",
 					Tag:       "gke-loadbalancer:test",
@@ -330,7 +330,7 @@ spec:
 		},
 		{
 			description: "A more complex template",
-			builds: []build.Artifact{
+			builds: []dep.Artifact{
 				{
 					ImageName: "gcr.io/k8s-skaffold/skaffold-helm",
 					Tag:       "gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenslettersandnumbers",

@@ -27,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -40,7 +40,7 @@ func TestKubectlDeploy(t *testing.T) {
 	tests := []struct {
 		description                 string
 		kubectl                     latest.KubectlDeploy
-		builds                      []build.Artifact
+		builds                      []dep.Artifact
 		commands                    util.Command
 		shouldErr                   bool
 		forceDeploy                 bool
@@ -67,7 +67,7 @@ func TestKubectlDeploy(t *testing.T) {
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml --validate=false", DeploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --validate=false"),
-			builds: []build.Artifact{{
+			builds: []dep.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
 			}},
@@ -83,7 +83,7 @@ func TestKubectlDeploy(t *testing.T) {
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
-			builds: []build.Artifact{{
+			builds: []dep.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
 			}},
@@ -100,7 +100,7 @@ func TestKubectlDeploy(t *testing.T) {
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
-			builds: []build.Artifact{{
+			builds: []dep.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
 			}},
@@ -116,7 +116,7 @@ func TestKubectlDeploy(t *testing.T) {
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run=client -oyaml -f deployment.yaml", DeploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
-			builds: []build.Artifact{{
+			builds: []dep.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
 			}},
@@ -133,7 +133,7 @@ func TestKubectlDeploy(t *testing.T) {
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace2 create --dry-run=client -oyaml -f deployment.yaml", DeploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace2 get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace2 apply -f -"),
-			builds: []build.Artifact{{
+			builds: []dep.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
 			}},
@@ -151,7 +151,7 @@ func TestKubectlDeploy(t *testing.T) {
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace2 create --dry-run=client -oyaml -f deployment.yaml", DeploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace2 get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace2 apply -f -"),
-			builds: []build.Artifact{{
+			builds: []dep.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
 			}},
@@ -171,7 +171,7 @@ func TestKubectlDeploy(t *testing.T) {
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml -f http://remote.yaml", DeploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
-			builds: []build.Artifact{{
+			builds: []dep.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
 			}},
@@ -187,7 +187,7 @@ func TestKubectlDeploy(t *testing.T) {
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -f -", fmt.Errorf("")),
-			builds: []build.Artifact{{
+			builds: []dep.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
 			}},
@@ -209,7 +209,7 @@ func TestKubectlDeploy(t *testing.T) {
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create -v=0 --dry-run -oyaml -f deployment.yaml", DeploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -v=0 -f - --ignore-not-found -ojson", DeploymentWebYAMLv1, "").
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -v=0 --overwrite=true -f -", fmt.Errorf("")),
-			builds: []build.Artifact{{
+			builds: []dep.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
 			}},
@@ -400,21 +400,21 @@ func TestKubectlRedeploy(t *testing.T) {
 		t.RequireNoError(err)
 
 		// Deploy one manifest
-		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []dep.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
 		})
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
-		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []dep.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
 		})
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
-		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []dep.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
 		})
@@ -464,7 +464,7 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 		t.RequireNoError(err)
 
 		var out bytes.Buffer
-		_, err = deployer.Deploy(context.Background(), &out, []build.Artifact{
+		_, err = deployer.Deploy(context.Background(), &out, []dep.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 		})
 
@@ -500,7 +500,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 		}, nil, &latest.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}})
 		t.RequireNoError(err)
 
-		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []dep.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 		})
 
@@ -572,13 +572,13 @@ func TestDependencies(t *testing.T) {
 func TestKubectlRender(t *testing.T) {
 	tests := []struct {
 		description string
-		builds      []build.Artifact
+		builds      []dep.Artifact
 		input       string
 		expected    string
 	}{
 		{
 			description: "normal render",
-			builds: []build.Artifact{
+			builds: []dep.Artifact{
 				{
 					ImageName: "gcr.io/k8s-skaffold/skaffold",
 					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
@@ -605,7 +605,7 @@ spec:
 		},
 		{
 			description: "two artifacts",
-			builds: []build.Artifact{
+			builds: []dep.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
 					Tag:       "gcr.io/project/image1:tag1",

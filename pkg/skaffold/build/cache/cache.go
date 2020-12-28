@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -47,7 +48,7 @@ type ArtifactCache map[string]ImageDetails
 // cache holds any data necessary for accessing the cache
 type cache struct {
 	artifactCache      ArtifactCache
-	artifactGraph      build.ArtifactGraph
+	artifactGraph      dep.ArtifactGraph
 	artifactStore      build.ArtifactStore
 	cacheMutex         sync.RWMutex
 	client             docker.LocalDaemon
@@ -73,7 +74,7 @@ type Config interface {
 }
 
 // NewCache returns the current state of the cache
-func NewCache(cfg Config, isLocalImage func(imageName string) (bool, error), dependencies DependencyLister, graph build.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
+func NewCache(cfg Config, isLocalImage func(imageName string) (bool, error), dependencies DependencyLister, graph dep.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
 	if !cfg.CacheArtifacts() {
 		return &noCache{}, nil
 	}

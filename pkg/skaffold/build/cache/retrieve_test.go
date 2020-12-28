@@ -26,6 +26,7 @@ import (
 	"github.com/docker/docker/api/types"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -48,7 +49,7 @@ type mockArtifactStore map[string]string
 
 func (m mockArtifactStore) GetImageTag(imageName string) (string, bool) { return m[imageName], true }
 func (m mockArtifactStore) Record(a *latest.Artifact, tag string)       { m[a.ImageName] = tag }
-func (m mockArtifactStore) GetArtifacts([]*latest.Artifact) ([]build.Artifact, error) {
+func (m mockArtifactStore) GetArtifacts([]*latest.Artifact) ([]dep.Artifact, error) {
 	return nil, nil
 }
 
@@ -59,8 +60,8 @@ type mockBuilder struct {
 	store        build.ArtifactStore
 }
 
-func (b *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	var built []build.Artifact
+func (b *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]dep.Artifact, error) {
+	var built []dep.Artifact
 
 	for _, artifact := range artifacts {
 		b.built = append(b.built, artifact)
@@ -77,12 +78,12 @@ func (b *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTa
 				return nil, err
 			}
 
-			built = append(built, build.Artifact{
+			built = append(built, dep.Artifact{
 				ImageName: artifact.ImageName,
 				Tag:       build.TagWithDigest(tag, digest),
 			})
 		} else {
-			built = append(built, build.Artifact{
+			built = append(built, dep.Artifact{
 				ImageName: artifact.ImageName,
 				Tag:       tag,
 			})
@@ -141,7 +142,7 @@ func TestCacheBuildLocal(t *testing.T) {
 			cacheFile: tmpDir.Path("cache"),
 		}
 		store := make(mockArtifactStore)
-		artifactCache, err := NewCache(cfg, func(imageName string) (bool, error) { return true, nil }, deps, build.ToArtifactGraph(artifacts), store)
+		artifactCache, err := NewCache(cfg, func(imageName string) (bool, error) { return true, nil }, deps, dep.ToArtifactGraph(artifacts), store)
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -237,7 +238,7 @@ func TestCacheBuildRemote(t *testing.T) {
 			pipeline:  latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{TryImportMissing: false}}}},
 			cacheFile: tmpDir.Path("cache"),
 		}
-		artifactCache, err := NewCache(cfg, func(imageName string) (bool, error) { return false, nil }, deps, build.ToArtifactGraph(artifacts), make(mockArtifactStore))
+		artifactCache, err := NewCache(cfg, func(imageName string) (bool, error) { return false, nil }, deps, dep.ToArtifactGraph(artifacts), make(mockArtifactStore))
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -322,7 +323,7 @@ func TestCacheFindMissing(t *testing.T) {
 			pipeline:  latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{TryImportMissing: true}}}},
 			cacheFile: tmpDir.Path("cache"),
 		}
-		artifactCache, err := NewCache(cfg, func(imageName string) (bool, error) { return false, nil }, deps, build.ToArtifactGraph(artifacts), make(mockArtifactStore))
+		artifactCache, err := NewCache(cfg, func(imageName string) (bool, error) { return false, nil }, deps, dep.ToArtifactGraph(artifacts), make(mockArtifactStore))
 		t.CheckNoError(err)
 
 		// Because the artifacts are in the docker registry, we expect them to be imported correctly.
