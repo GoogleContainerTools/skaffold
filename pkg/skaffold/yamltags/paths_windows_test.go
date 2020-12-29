@@ -37,30 +37,30 @@ func TestSetAbsFilePaths(t *testing.T) {
 					Build: latest.BuildConfig{
 						Artifacts: []*latest.Artifact{
 							{ImageName: "foo1", Workspace: "foo"},
-							{ImageName: "foo2", Workspace: `C:\\a\foo`},
+							{ImageName: "foo2", Workspace: `C:\a\foo`},
 						},
 					},
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KptDeploy:     &latest.KptDeploy{Dir: "."},
-							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{`foo\*`, `C:\\a\foo\*`}},
+							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{`foo\*`, `C:\a\foo\*`}},
 						},
 					},
 				},
 			},
-			base: `C:\\a\b`,
+			base: `C:\a\b`,
 			expected: &latest.SkaffoldConfig{
 				Pipeline: latest.Pipeline{
 					Build: latest.BuildConfig{
 						Artifacts: []*latest.Artifact{
-							{ImageName: "foo1", Workspace: `C:\\a\b\foo`},
-							{ImageName: "foo2", Workspace: `C:\\a\foo`},
+							{ImageName: "foo1", Workspace: `C:\a\b\foo`},
+							{ImageName: "foo2", Workspace: `C:\a\foo`},
 						},
 					},
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
-							KptDeploy:     &latest.KptDeploy{Dir: `C:\\a\b`},
-							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{`C:\\a\b\foo\*`, `C:\\a\foo\*`}},
+							KptDeploy:     &latest.KptDeploy{Dir: `C:\a\b`},
+							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{`C:\a\b\foo\*`, `C:\a\foo\*`}},
 						},
 					},
 				},
