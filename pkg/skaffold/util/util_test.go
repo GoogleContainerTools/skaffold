@@ -482,18 +482,18 @@ func TestShowHumanizeTime(t *testing.T) {
 		{
 			description: "Case for 1h58m30.918273645s",
 			value:       currTime.Add(-duration1),
-			expected:    "1 hour 58 minutes 30.9",
+			expected:    "1 hour 58 minutes 30.918 seconds",
 		},
 		{
 			description: "Case for 5.23494327s",
 			value:       currTime.Add(-duration2),
-			expected:    "5.2",
+			expected:    "5.235 seconds",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			humanizedValue := ShowHumanizeTime(test.value)
-			t.CheckMatches(test.expected, humanizedValue)
+			t.CheckDeepEqual(test.expected, humanizedValue)
 		})
 	}
 }
