@@ -1,0 +1,49 @@
+{
+  "product": "skaffold",
+  "company": "Google",
+  "license": "../../LICENSE",
+  "upgrade-code": "41137530-0334-40af-9088-dd946657dd01",
+  "files": {
+    "guid": "507b0333-b1c3-4c9f-a4f0-2425cd5b9176",
+    "items": [
+      "../../out/skaffold.exe"
+    ]
+  },
+  "directories": [
+  ],
+  "env": {
+    "guid": "413fa49f-614f-4af4-a00b-f5f4ea9b1ff2",
+    "vars": [
+      {
+        "name": "PATH",
+        "value": "[INSTALLDIR]",
+        "permanent": "no",
+        "system": "no",
+        "action": "set",
+        "part": "last"
+      }
+    ]
+  },
+  "shortcuts": {
+    "guid": "923eee34-9ef5-492a-90ce-87cfd318ee45",
+    "items": [
+      {
+        "name": "skaffold",
+        "description": "Repeatable kubernetes development",
+        "target": "[INSTALLDIR]\\skaffold.exe",
+        "wdir": "INSTALLDIR",
+        "arguments": "",
+        "icon": ""
+      }
+    ]
+  },
+  "hooks": [
+    {"when": "install", "command": "setx path \"%path%;[INSTALLDIR]\""},
+    {"when": "uninstall", "command": "setx path \"%path:[INSTALLDIR];=%\""}
+  ],
+  "choco": {
+    "description": "Fast. Repeatable. Simple. Local Kubernetes Development",
+    "project-url": "https://github.com/GoogleContainerTools/skaffold",
+    "license-url": "https://github.com/GoogleContainerTools/skaffold/blob/master/LICENSE"
+  }
+}

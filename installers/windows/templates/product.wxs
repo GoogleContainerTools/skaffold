@@ -1,0 +1,139 @@
+<?xml version="1.0"?>
+
+<?if $(sys.BUILDARCH)="x86"?>
+    <?define Program_Files="ProgramFilesFolder"?>
+<?elseif $(sys.BUILDARCH)="x64"?>
+    <?define Program_Files="ProgramFiles64Folder"?>
+<?else?>
+    <?error Unsupported value of sys.BUILDARCH=$(sys.BUILDARCH)?>
+<?endif?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+   <Product Id="*" UpgradeCode="{{.UpgradeCode}}"
+            Name="{{.Product}}"
+            Version="{{.VersionOk}}"
+            Manufacturer="{{.Company}}"
+            Language="1033">
+
+      <Package InstallerVersion="200" Compressed="yes" Comments="Windows Installer Package" InstallScope="perMachine"/>
+
+      <Media Id="1" Cabinet="product.cab" EmbedCab="yes"/>
+
+      <Upgrade Id="{{.UpgradeCode}}">
+         <UpgradeVersion Minimum="{{.VersionOk}}" OnlyDetect="yes" Property="NEWERVERSIONDETECTED"/>
+         <UpgradeVersion Minimum="0.0.0" Maximum="{{.VersionOk}}" IncludeMinimum="yes" IncludeMaximum="no"
+                         Property="OLDERVERSIONBEINGUPGRADED"/>
+      </Upgrade>
+      <Condition Message="A newer version of this software is already installed.">NOT NEWERVERSIONDETECTED</Condition>
+
+      <Directory Id="TARGETDIR" Name="SourceDir">
+
+         <Directory Id="$(var.Program_Files)">
+            <Directory Id="INSTALLDIR" Name="{{.Product}}">
+               {{if gt (.Files.Items | len) 0}}
+               <Component Id="ApplicationFiles" Guid="{{.Files.GUID}}">
+                  {{range $i, $e := .Files.Items}}
+                    <File Id="ApplicationFile{{$i}}" Source="{{$e}}"/>
+                  {{end}}
+               </Component>
+               {{end}}
+               {{if gt (.Directories | len) 0}}
+               {{range $i, $e := .Directories}}
+               <Directory Id="APPDIR{{$i}}" Name="{{$e}}" />
+               {{end}}
+               {{end}}
+            </Directory>
+         </Directory>
+
+         {{if gt (.Env.Vars | len) 0}}
+         <Component Id="ENVS" Guid="{{.Env.GUID}}">
+          {{range $i, $e := .Env.Vars}}
+          <Environment Id="ENV{{$i}}"
+            Name="{{$e.Name}}"
+            Value="{{$e.Value}}"
+            Permanent="{{$e.Permanent}}"
+            Part="{{$e.Part}}"
+            Action="{{$e.Action}}"
+            System="{{$e.System}}" />
+          {{end}}
+        </Component>
+        {{end}}
+
+         {{if gt (.Shortcuts.Items | len) 0}}
+         <Directory Id="ProgramMenuFolder">
+            <Directory Id="ProgramMenuSubfolder" Name="{{.Product}}">
+               <Component Id="ApplicationShortcuts" Guid="{{.Shortcuts.GUID}}">
+               {{range $i, $e := .Shortcuts.Items}}
+                  <Shortcut Id="ApplicationShortcut{{$i}}"
+                        Name="{{$e.Name}}"
+                        Description="{{$e.Description}}"
+                        Target="{{$e.Target}}"
+                        WorkingDirectory="{{$e.WDir}}"
+                        {{if gt ($e.Arguments | len) 0}}
+                        Arguments="{{$e.Arguments}}"
+                        {{end}}
+                        >
+                        {{if gt ($e.Icon | len) 0}}
+                        <Icon Id="Icon{{$i}}" SourceFile="{{$e.Icon}}" />
+                        {{end}}
+                  </Shortcut>
+                  <RegistryValue Root="HKCU"
+                    Key="Software\{{$.Company}}\{{$.Product}}"
+                    Name="installed{{$i}}"
+                    Type="integer" Value="1" KeyPath="yes"/>
+                {{end}}
+                <RemoveFolder Id="ProgramMenuSubfolder" On="uninstall"/>
+               </Component>
+            </Directory>
+         </Directory>
+         {{end}}
+
+      </Directory>
+
+      {{range $i, $e := .InstallHooks}}
+      <SetProperty Id="CustomInstallExec{{$i}}" Value="{{$e.CookedCommand}}" Before="CustomInstallExec{{$i}}" Sequence="execute"/>
+      <CustomAction Id="CustomInstallExec{{$i}}" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="check" Impersonate="no"/>
+      {{end}}
+      {{range $i, $e := .UninstallHooks}}
+      <SetProperty Id="CustomUninstallExec{{$i}}" Value="{{$e.CookedCommand}}" Before="CustomUninstallExec{{$i}}" Sequence="execute"/>
+      <CustomAction Id="CustomUninstallExec{{$i}}" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="check" Impersonate="no"/>
+      {{end}}
+      <InstallExecuteSequence>
+         <RemoveExistingProducts After="InstallValidate"/>
+         {{range $i, $e := .InstallHooks}}
+         <Custom Action="CustomInstallExec{{$i}}" After="{{if eq $i 0}}InstallFiles{{else}}CustomInstallExec{{dec $i}}{{end}}">NOT Installed AND NOT REMOVE</Custom>
+         {{end}}
+         {{range $i, $e := .UninstallHooks}}
+         <Custom Action="CustomUninstallExec{{$i}}" After="{{if eq $i 0}}InstallInitialize{{else}}CustomUninstallExec{{dec $i}}{{end}}">REMOVE ~= "ALL"</Custom>
+         {{end}}
+      </InstallExecuteSequence>
+
+      <Feature Id="DefaultFeature" Level="1">
+         {{if gt (.Env.Vars | len) 0}}
+         <ComponentRef Id="ENVS"/>
+         {{end}}
+         {{if gt (.Files.Items | len) 0}}
+         <ComponentRef Id="ApplicationFiles"/>
+         {{end}}
+         {{if gt (.Shortcuts.Items | len) 0}}
+         <ComponentRef Id="ApplicationShortcuts"/>
+         {{end}}
+         {{range $i, $e := .Directories}}
+         <ComponentGroupRef Id="AppFiles{{$i}}" />
+         {{end}}
+      </Feature>
+
+      <UI>
+         <!-- Define the installer UI -->
+         <UIRef Id="WixUI_HK" />
+      </UI>
+
+      <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+
+      <!-- this should help to propagate env var changes -->
+      <CustomActionRef Id="WixBroadcastEnvironmentChange" />
+
+   </Product>
+
+</Wix>
