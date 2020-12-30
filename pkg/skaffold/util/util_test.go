@@ -475,25 +475,38 @@ func TestShowHumanizeTime(t *testing.T) {
 	duration1, _ := time.ParseDuration("1h58m30.918273645s")
 	duration2, _ := time.ParseDuration("5.23494327s")
 	tests := []struct {
-		description string
-		value       time.Time
-		expected    string
+		description  string
+		value        time.Time
+		expected     string
+		expectedUp   string
+		expectedDown string
 	}{
 		{
-			description: "Case for 1h58m30.918273645s",
-			value:       currTime.Add(-duration1),
-			expected:    "1 hour 58 minutes 30.918 seconds",
+			description:  "Case for 1h58m30.918273645s",
+			value:        currTime.Add(-duration1),
+			expected:     "1 hour 58 minutes 30.918 seconds",
+			expectedUp:   "1 hour 58 minutes 30.919 seconds",
+			expectedDown: "1 hour 58 minutes 30.917 seconds",
 		},
 		{
-			description: "Case for 5.23494327s",
-			value:       currTime.Add(-duration2),
-			expected:    "5.235 seconds",
+			description:  "Case for 5.23494327s",
+			value:        currTime.Add(-duration2),
+			expected:     "5.235 seconds",
+			expectedUp:   "5.236 seconds",
+			expectedDown: "5.234 seconds",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			humanizedValue := ShowHumanizeTime(test.value)
-			t.CheckDeepEqual(test.expected, humanizedValue)
+			switch humanizedValue {
+			case test.expectedUp:
+				t.CheckDeepEqual(test.expectedUp, humanizedValue)
+			case test.expectedDown:
+				t.CheckDeepEqual(test.expectedDown, humanizedValue)
+			default:
+				t.CheckDeepEqual(test.expected, humanizedValue)
+			}
 		})
 	}
 }
