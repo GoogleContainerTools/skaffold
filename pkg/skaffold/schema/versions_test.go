@@ -187,7 +187,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
-			apiVersion: []string{latest.Version},
+			apiVersion:  []string{latest.Version},
 			description: "Kaniko Volume Mount - ConfigMap",
 			config:      []string{kanikoConfigMap},
 			expected: []util.VersionedConfig{config(
