@@ -157,7 +157,7 @@ func ParseConfig(filename string) ([]util.VersionedConfig, error) {
 	}
 	buf, err = removeYamlAnchors(buf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to re-marshal YAML without dotted keys: %w", err)
 	}
 	return parseConfig(buf, factory)
 }
@@ -275,8 +275,12 @@ func removeYamlAnchors(buf []byte) ([]byte, error) {
 		}
 		err = encoder.Encode(parsed)
 		if err != nil {
-			return nil, fmt.Errorf("unable to re-marshal YAML without dotted keys: %w", err)
+			return nil, err
 		}
+	}
+	err := encoder.Close()
+	if err != nil {
+		return nil, err
 	}
 	return out.Bytes(), nil
 }
