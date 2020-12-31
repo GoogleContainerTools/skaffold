@@ -61,7 +61,7 @@ func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 	if err != nil {
 		return nil, err
 	}
-	logrus.Infoln("Build completed in", util.ShowHumanizeTime(start))
+	logrus.Infoln("Build completed in", util.ShowHumanizeTime(time.Since(start)))
 	return bRes, nil
 }
 
@@ -72,7 +72,7 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Art
 	if err != nil {
 		return err
 	}
-	logrus.Infoln("Test completed in", util.ShowHumanizeTime(start))
+	logrus.Infoln("Test completed in", util.ShowHumanizeTime(time.Since(start)))
 	return nil
 }
 
@@ -84,7 +84,7 @@ func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.A
 	if err != nil {
 		return nil, err
 	}
-	logrus.Infoln("Deploy completed in", util.ShowHumanizeTime(start))
+	logrus.Infoln("Deploy completed in", util.ShowHumanizeTime(time.Since(start)))
 	return ns, err
 }
 
@@ -96,7 +96,7 @@ func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	logrus.Infoln("Cleanup completed in", util.ShowHumanizeTime(start))
+	logrus.Infoln("Cleanup completed in", util.ShowHumanizeTime(time.Since(start)))
 	return nil
 }
 
@@ -108,6 +108,6 @@ func (w withTimings) Prune(ctx context.Context, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	logrus.Infoln("Image prune completed in", util.ShowHumanizeTime(start))
+	logrus.Infoln("Image prune completed in", util.ShowHumanizeTime(time.Since(start)))
 	return nil
 }

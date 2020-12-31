@@ -213,7 +213,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 		color.Yellow.Fprintln(out, "Some taggers failed. Rerun with -vdebug for errors.")
 	}
 
-	logrus.Infoln("Tags generated in", util.ShowHumanizeTime(start))
+	logrus.Infoln("Tags generated in", util.ShowHumanizeTime(time.Since(start)))
 	return imageTags, nil
 }
 

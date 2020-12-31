@@ -116,13 +116,13 @@ func typeOfArtifact(a *latest.Artifact) string {
 func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg docker.Config) (string, []string, error) {
 	start := time.Now()
 	paths, err := build.DependenciesForArtifact(ctx, a, cfg, nil)
-	return util.ShowHumanizeTime(start), paths, err
+	return util.ShowHumanizeTime(time.Since(start)), paths, err
 }
 
 func timeToConstructSyncMap(a *latest.Artifact, cfg docker.Config) (string, error) {
 	start := time.Now()
 	_, err := sync.SyncMap(a, cfg)
-	return util.ShowHumanizeTime(start), err
+	return util.ShowHumanizeTime(time.Since(start)), err
 }
 
 func timeToComputeMTimes(deps []string) (string, error) {
@@ -131,7 +131,7 @@ func timeToComputeMTimes(deps []string) (string, error) {
 	if _, err := filemon.Stat(func() ([]string, error) { return deps, nil }); err != nil {
 		return "nil", fmt.Errorf("computing modTimes: %w", err)
 	}
-	return util.ShowHumanizeTime(start), nil
+	return util.ShowHumanizeTime(time.Since(start)), nil
 }
 
 func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, cfg docker.Config) (int64, error) {
