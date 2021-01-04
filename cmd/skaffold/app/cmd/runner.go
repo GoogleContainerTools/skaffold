@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 
@@ -38,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
+	skutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
@@ -103,15 +103,12 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.
 		if err := defaults.Set(config, setDefaultDeployer); err != nil {
 			return nil, nil, fmt.Errorf("setting default values: %w", err)
 		}
-
-		var basePath string
-		if opts.ConfigurationFile == "-" {
-			basePath, _ = os.Getwd()
-		} else {
-			basePath = filepath.Dir(opts.ConfigurationFile)
+		f, err := skutil.NewConfigFile(opts.ConfigurationFile)
+		if err != nil {
+			return nil, nil, err
 		}
 
-		if err := yamltags.SetAbsFilePaths(config, basePath); err != nil {
+		if err := yamltags.SetAbsFilePaths(config, f.Dir()); err != nil {
 			return nil, nil, fmt.Errorf("setting absolute filepaths: %w", err)
 		}
 		pipelines = append(pipelines, config.Pipeline)

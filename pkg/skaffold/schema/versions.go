@@ -65,7 +65,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta7"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta8"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta9"
-	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	skutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -147,7 +147,11 @@ func IsSkaffoldConfig(file string) bool {
 // ParseConfig reads a configuration file.
 func ParseConfig(filename string) ([]util.VersionedConfig, error) {
 	// TODO: update this function to parse the input as multiple configs
-	buf, err := misc.ReadConfiguration(filename)
+	f, err := skutil.NewConfigFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	buf, err := f.Read()
 	if err != nil {
 		return nil, fmt.Errorf("read skaffold config: %w", err)
 	}

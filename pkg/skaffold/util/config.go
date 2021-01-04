@@ -20,38 +20,77 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 )
 
-// ReadConfiguration reads a `skaffold.yaml` configuration and
-// returns its content.
-func ReadConfiguration(filename string) ([]byte, error) {
+// ConfigFile represents a `skaffold.yaml` configuration file
+type ConfigFile interface {
+	Read() ([]byte, error)
+	Dir() string
+}
+
+type urlConfig struct {
+	url string
+}
+
+func (c *urlConfig) Read() ([]byte, error) {
+	return Download(c.url)
+}
+
+func (c *urlConfig) Dir() string {
+	wd, _ := os.Getwd()
+	return wd
+}
+
+type fileConfig struct {
+	path string
+}
+
+func (c *fileConfig) Read() ([]byte, error) {
+	return ioutil.ReadFile(c.path)
+}
+
+func (c *fileConfig) Dir() string {
+	return filepath.Dir(c.path)
+}
+
+type stdinConfig struct{}
+
+func (c *stdinConfig) Read() ([]byte, error) {
+	return ioutil.ReadAll(os.Stdin)
+}
+
+func (c *stdinConfig) Dir() string {
+	wd, _ := os.Getwd()
+	return wd
+}
+
+func NewConfigFile(filename string) (ConfigFile, error) {
 	switch {
 	case filename == "":
 		return nil, errors.New("filename not specified")
-	case filename == "-":
-		return ioutil.ReadAll(os.Stdin)
 	case IsURL(filename):
-		return Download(filename)
+		return &urlConfig{url: filename}, nil
+	case filename == "-":
+		return &stdinConfig{}, nil
 	default:
-		contents, err := ioutil.ReadFile(filename)
-		if err != nil {
+		if _, err := os.Stat(filename); err != nil {
 			// If the config file is the default `skaffold.yaml`,
 			// then we also try to read `skaffold.yml`.
-			if filename == "skaffold.yaml" {
+			if filepath.Base(filename) == "skaffold.yaml" {
 				logrus.Infof("Could not open skaffold.yaml: \"%s\"", err)
 				logrus.Infof("Trying to read from skaffold.yml instead")
-				contents, errIgnored := ioutil.ReadFile("skaffold.yml")
-				if errIgnored != nil {
-					// Return original error because it's the one that matters
+				filename = filepath.Join(filepath.Dir(filename), "skaffold.yml")
+				if _, err := os.Stat(filename); err != nil {
 					return nil, err
 				}
-
-				return contents, nil
+				return &fileConfig{path: filename}, nil
 			}
+			return nil, err
 		}
 
-		return contents, err
+		return &fileConfig{path: filename}, nil
 	}
 }

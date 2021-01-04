@@ -28,11 +28,12 @@ func TestReadConfiguration(t *testing.T) {
 		t.NewTempDir().
 			Write("skaffold.yaml", "some yaml").
 			Chdir()
-
-		content, err := ReadConfiguration("skaffold.yaml")
-
+		f, err := NewConfigFile("skaffold.yaml")
+		t.CheckNoError(err)
+		content, err := f.Read()
 		t.CheckNoError(err)
 		t.CheckDeepEqual([]byte("some yaml"), content)
+		t.CheckDeepEqual(f.Dir(), ".")
 	})
 }
 
@@ -43,16 +44,17 @@ func TestReadConfigurationFallback(t *testing.T) {
 			Write("skaffold.yml", "some yaml").
 			Chdir()
 
-		content, err := ReadConfiguration("skaffold.yaml")
-
+		f, err := NewConfigFile("skaffold.yaml")
+		t.CheckNoError(err)
+		content, err := f.Read()
 		t.CheckNoError(err)
 		t.CheckDeepEqual([]byte("some yaml"), content)
+		t.CheckDeepEqual(f.Dir(), ".")
 	})
 }
 
 func TestReadConfigurationNotFound(t *testing.T) {
-	_, err := ReadConfiguration("unknown-config-file.yaml")
-
+	_, err := NewConfigFile("unknown-config-file.yaml")
 	testutil.CheckError(t, true, err)
 	if !os.IsNotExist(err) {
 		t.Error("error should say that file doesn't exist")
@@ -61,8 +63,9 @@ func TestReadConfigurationNotFound(t *testing.T) {
 
 func TestReadConfigurationRemote(t *testing.T) {
 	remoteFile := testutil.ServeFile(t, []byte("remote file"))
-
-	content, err := ReadConfiguration(remoteFile)
+	f, err := NewConfigFile(remoteFile)
+	testutil.CheckError(t, false, err)
+	content, err := f.Read()
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, []byte("remote file"), content)
 }
