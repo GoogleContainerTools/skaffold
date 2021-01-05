@@ -28,7 +28,7 @@ Currently, image artifacts in a project are handled by Skaffold individually. We
 We plan to provide pre- and post-stage hooks in Skaffold. This will allow users to extend the different stages of the Skaffold pipeline past their normal lifecycle, to provide more flexibility and extensibility in Skaffold workflows.
 
 ### Buildpacks - P1
-CNCF Buildpacks allow for zero-configuration container image builds. We're already working to provide first-class support for buildpacks in Skaffold, as we continue to ensure that Skaffold provides the best source-to-deployment development experience.
+Cloud Native Buildpacks allow for zero-configuration container image builds. We're already working to provide first-class support for buildpacks in Skaffold, as we continue to ensure that Skaffold provides the best source-to-deployment development experience.
 
 ### Kubernetes Manifest Generation - P1
 Another very important part of the source-to-deploy getting started experience in particular is removing the configuration burden from the user. We'll add simple Kubernetes manifest generation into `skaffold init`, giving users a pathway through Skaffold to directly migrate their existing applications over to Kubernetes.
