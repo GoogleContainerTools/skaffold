@@ -36,7 +36,7 @@ import (
 func TestDoInit(t *testing.T) {
 	tests := []struct {
 		name             string
-		shouldSkip       func() bool
+		shouldSkip       bool
 		dir              string
 		config           initconfig.Config
 		expectedError    string
@@ -93,7 +93,7 @@ func TestDoInit(t *testing.T) {
 		},
 		{
 			name:       "windows paths use forward slashes",
-			shouldSkip: func() bool { return runtime.GOOS != "windows" },
+			shouldSkip: runtime.GOOS != "windows",
 			dir:        `testdata\init\windows`,
 			config: initconfig.Config{
 				Force: true,
@@ -228,7 +228,7 @@ See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed gui
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			if test.shouldSkip != nil && test.shouldSkip() {
+			if test.shouldSkip {
 				t.Logf("Skipped test %q", test.name)
 				return
 			}

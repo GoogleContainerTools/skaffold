@@ -75,7 +75,7 @@ func Artifacts(artifactInfos []ArtifactInfo) []*latest.Artifact {
 		}
 
 		if workspace != "." {
-			// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
+			// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filepaths
 			artifact.Workspace = filepath.ToSlash(workspace)
 		}
 

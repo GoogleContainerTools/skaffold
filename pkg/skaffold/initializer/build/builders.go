@@ -37,6 +37,7 @@ type InitBuilder interface {
 	Describe() string
 
 	// ArtifactType returns the type of the artifact to be built.  Paths should be relative to the workspace.
+	// To make skaffold.yaml more portable across OS-es we should always generate /-delimited filepaths.
 	ArtifactType(workspace string) latest.ArtifactType
 
 	// ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured.
