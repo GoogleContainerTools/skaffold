@@ -15,7 +15,7 @@ _integration_test: &integration_test
   os: linux
   language: minimal
   before_install:
-    - echo -e "\033[0;34m# Docker engine config file \033[0m"; cat /etc/docker/daemon.json
+    - echo -e "\033[0;34m# Docker engine config file \033[0m"; sudo cat /etc/docker/daemon.json
     # Skip integration tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
     - git diff --name-only "$TRAVIS_BRANCH"... | grep -v '^docs/' || travis_terminate 0
   cache:
