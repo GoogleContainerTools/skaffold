@@ -17,6 +17,7 @@ _integration_test: &integration_test
   before_install:
     - echo -e "\033[0;34m# Docker engine config file \033[0m"; sudo cat /etc/docker/daemon.json
     - echo 'Is alpine:3.10 in registry-1.travis-ci.com:'; curl -I https://registry-1.travis-ci.com/v2/library/alpine/manifests/3.10
+    - echo 'Is golang:1.12.9-alpine3.10 in registry-1.travis-ci.com:'; curl -I https://registry-1.travis-ci.com/v2/library/golang/manifests/1.12.9-alpine3.10
     # Skip integration tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
     - git diff --name-only "$TRAVIS_BRANCH"... | grep -v '^docs/' || travis_terminate 0
   cache:
@@ -36,38 +37,38 @@ _upgrade_docker: &upgrade_docker
 
 jobs:
   include:
-    - os: linux
-      name: "linters"
-      script:
-        - make linters
-    - os: linux
-      name: "checks"
-      script:
-        - make checks
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-    - os: linux
-      name: "Linux unit"
-      script:
-        - make coverage
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-    - os: osx
-      name: "OSX unit"
-      script:
-        - make quicktest
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-    - os: windows
-      name: "Windows unit"
-      script:
-        - go test -short -timeout 60s ./...
-      cache:
-        directories:
-          - C:\\Users\\travis\\AppData\\Local\\go-build
+#    - os: linux
+#      name: "linters"
+#      script:
+#        - make linters
+#    - os: linux
+#      name: "checks"
+#      script:
+#        - make checks
+#      cache:
+#        directories:
+#          - $HOME/.cache/go-build
+#    - os: linux
+#      name: "Linux unit"
+#      script:
+#        - make coverage
+#      cache:
+#        directories:
+#          - $HOME/.cache/go-build
+#    - os: osx
+#      name: "OSX unit"
+#      script:
+#        - make quicktest
+#      cache:
+#        directories:
+#          - $HOME/.cache/go-build
+#    - os: windows
+#      name: "Windows unit"
+#      script:
+#        - go test -short -timeout 60s ./...
+#      cache:
+#        directories:
+#          - C:\\Users\\travis\\AppData\\Local\\go-build
     - name: "kind integration partition 0"
       <<: *integration_test
       script:
@@ -76,14 +77,14 @@ jobs:
       <<: *integration_test
       script:
         - env IT_PARTITION=1 make integration-in-kind
-    - name: "kind integration partition 2"
-      <<: *integration_test
-      script:
-        - env IT_PARTITION=2 make integration-in-kind
-    - name: "kind integration partition 3"
-      <<: *integration_test
-      script:
-        - env IT_PARTITION=3 make integration-in-kind
+#    - name: "kind integration partition 2"
+#      <<: *integration_test
+#      script:
+#        - env IT_PARTITION=2 make integration-in-kind
+#    - name: "kind integration partition 3"
+#      <<: *integration_test
+#      script:
+#        - env IT_PARTITION=3 make integration-in-kind
     - name: "k3d integration partition 0"
       <<: *integration_test
       <<: *upgrade_docker
@@ -94,27 +95,27 @@ jobs:
       <<: *upgrade_docker
       script:
         - env IT_PARTITION=1 make integration-in-k3d
-    - name: "k3d integration partition 2"
-      <<: *integration_test
-      <<: *upgrade_docker
-      script:
-        - env IT_PARTITION=2 make integration-in-k3d
-    - name: "k3d integration partition 3"
-      <<: *integration_test
-      <<: *upgrade_docker
-      script:
-        - env IT_PARTITION=3 make integration-in-k3d
-    - os: linux
-      name: "diag/Linux unit"
-      script:
-        - make -f Makefile.diag coverage
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-    - os: osx
-      name: "diag/OSX unit"
-      script:
-        - make -f Makefile.diag test
-      cache:
-        directories:
-          - $HOME/.cache/go-build
+#    - name: "k3d integration partition 2"
+#      <<: *integration_test
+#      <<: *upgrade_docker
+#      script:
+#        - env IT_PARTITION=2 make integration-in-k3d
+#    - name: "k3d integration partition 3"
+#      <<: *integration_test
+#      <<: *upgrade_docker
+#      script:
+#        - env IT_PARTITION=3 make integration-in-k3d
+#    - os: linux
+#      name: "diag/Linux unit"
+#      script:
+#        - make -f Makefile.diag coverage
+#      cache:
+#        directories:
+#          - $HOME/.cache/go-build
+#    - os: osx
+#      name: "diag/OSX unit"
+#      script:
+#        - make -f Makefile.diag test
+#      cache:
+#        directories:
+#          - $HOME/.cache/go-build
