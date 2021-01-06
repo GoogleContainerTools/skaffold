@@ -37,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
+	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
@@ -102,7 +103,7 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.
 		if err := defaults.Set(config, setDefaultDeployer); err != nil {
 			return nil, nil, fmt.Errorf("setting default values: %w", err)
 		}
-		cwd, err := os.Getwd()
+		cwd, err := pkgutil.RealWorkDir()
 		if err != nil {
 			return nil, nil, err
 		}
