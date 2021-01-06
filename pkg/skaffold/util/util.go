@@ -97,13 +97,11 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 	var set orderedFileSet
 
 	for _, p := range paths {
-		if filepath.IsAbs(p) {
-			// This is a absolute file reference
-			set.Add(p)
-			continue
+		path := p
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(workingDir, path)
 		}
 
-		path := filepath.Join(workingDir, p)
 		if _, err := os.Stat(path); err == nil {
 			// This is a file reference, so just add it
 			set.Add(path)
