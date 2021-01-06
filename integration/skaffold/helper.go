@@ -178,7 +178,6 @@ func (b *RunBuilder) RunBackground(t *testing.T) {
 	t.Helper()
 	out := bytes.Buffer{}
 	b.runForked(t, &out)
-	t.Fail()
 
 	t.Cleanup(func() {
 		if t.Failed() {

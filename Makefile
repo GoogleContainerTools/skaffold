@@ -207,8 +207,6 @@ integration-in-kind: skaffold-builder
 		sh -eu -c ' \
 			docker system info; \
 			echo -----; \
-			cat /etc/docker/daemon.json || echo 'not found'; \
-			echo -----; \
 			if ! kind get clusters | grep -q kind; then \
 			  trap "kind delete cluster" 0 1 2 15; \
 			  TERM=dumb kind create cluster --image=$(KIND_NODE); \
@@ -232,6 +230,8 @@ integration-in-k3d: skaffold-builder
 		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -c ' \
+			docker system info; \
+			echo -----; \
 			k3d cluster list | grep -q k3s-default || TERM=dumb k3d cluster create --image=$(K3D_NODE); \
 			make integration \
 		'
