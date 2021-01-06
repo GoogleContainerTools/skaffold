@@ -288,19 +288,19 @@ func assertResponseFromPort(t *testing.T, address string, port int, expected str
 			client := http.Client{Timeout: 1 * time.Second}
 			resp, err := client.Get(url)
 			if err != nil {
-				t.Logf("[retriable error]: %v", err)
+				t.Logf("[retryable error]: %v", err)
 				continue
 			}
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				t.Logf("[retriable error] reading response: %v", err)
+				t.Logf("[retryable error] reading response: %v", err)
 				continue
 			}
 			if string(body) == expected {
 				return
 			}
-			t.Logf("[retriable error] didn't get expected response from port. got: %s, expected: %s", string(body), expected)
+			t.Logf("[retryable error] didn't get expected response from port. got: %s, expected: %s", string(body), expected)
 		}
 	}
 }
