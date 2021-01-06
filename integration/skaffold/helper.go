@@ -178,10 +178,21 @@ func (b *RunBuilder) RunBackground(t *testing.T) {
 	t.Helper()
 	out := bytes.Buffer{}
 	b.runForked(t, &out)
+	t.Fail()
 
 	t.Cleanup(func() {
 		if t.Failed() {
-			t.Log("Skaffold log:\n", strings.ReplaceAll(out.String(), "\n", "\n> "))
+			t.Log("Skaffold log:\n> ", strings.ReplaceAll(out.String(), "\n", "\n> "))
+
+			out := bytes.Buffer{}
+			cmd := exec.Command("kubectl", "describe", "nodes")
+			cmd.Stdout = &out
+
+			if err := cmd.Run(); err != nil {
+				t.Fatalf("kubectl describe nodes: failed %v", err)
+			} else {
+				t.Log("kubectl describe nodes:\n> ", strings.ReplaceAll(out.String(), "\n", "\n> "))
+			}
 		}
 	})
 }

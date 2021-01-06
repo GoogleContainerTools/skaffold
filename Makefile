@@ -205,6 +205,10 @@ integration-in-kind: skaffold-builder
 		--network kind \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -eu -c ' \
+			cat /etc/docker/daemon.json; \
+			echo -----; \
+			docker system info; \
+			echo -----; \
 			if ! kind get clusters | grep -q kind; then \
 			  trap "kind delete cluster" 0 1 2 15; \
 			  TERM=dumb kind create cluster --image=$(KIND_NODE); \
