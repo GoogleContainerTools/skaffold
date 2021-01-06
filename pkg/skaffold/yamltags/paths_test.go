@@ -72,7 +72,7 @@ func TestSetAbsFilePaths(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := SetAbsFilePaths(test.config, test.base)
+			err := MakeFilePathsAbsolute(test.config, test.base)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, test.config)
 		})

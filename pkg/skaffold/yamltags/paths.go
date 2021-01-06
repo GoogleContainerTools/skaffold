@@ -25,9 +25,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SetAbsFilePaths recursively sets all fields marked with the yamltag `filepath` to absolute paths
-func SetAbsFilePaths(s interface{}, base string) error {
-	errs := setAbsFilePaths(s, base)
+// MakeFilePathsAbsolute recursively sets all fields marked with the yamltag `filepath` to absolute paths
+func MakeFilePathsAbsolute(s interface{}, base string) error {
+	errs := makeFilePathsAbsolute(s, base)
 	if len(errs) == 0 {
 		return nil
 	}
@@ -38,7 +38,7 @@ func SetAbsFilePaths(s interface{}, base string) error {
 	return fmt.Errorf(strings.Join(messages, " | "))
 }
 
-func setAbsFilePaths(config interface{}, base string) []error {
+func makeFilePathsAbsolute(config interface{}, base string) []error {
 	if config == nil {
 		return nil
 	}
@@ -88,7 +88,7 @@ func setAbsFilePaths(config interface{}, base string) []error {
 			if v.Kind() != reflect.Ptr {
 				v = v.Addr()
 			}
-			if elemErrs := setAbsFilePaths(v.Interface(), base); elemErrs != nil {
+			if elemErrs := makeFilePathsAbsolute(v.Interface(), base); elemErrs != nil {
 				errs = append(errs, elemErrs...)
 			}
 		}
@@ -103,7 +103,7 @@ func setAbsFilePaths(config interface{}, base string) []error {
 			if !elem.CanInterface() {
 				continue
 			}
-			if elemErrs := setAbsFilePaths(elem.Interface(), base); elemErrs != nil {
+			if elemErrs := makeFilePathsAbsolute(elem.Interface(), base); elemErrs != nil {
 				errs = append(errs, elemErrs...)
 			}
 		}
