@@ -137,10 +137,11 @@ func TestCacheBuildLocal(t *testing.T) {
 
 		// Create cache
 		cfg := &mockConfig{
+			pipeline:  latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{TryImportMissing: false}}}},
 			cacheFile: tmpDir.Path("cache"),
 		}
 		store := make(mockArtifactStore)
-		artifactCache, err := NewCache(cfg, true, false, deps, build.ToArtifactGraph(artifacts), store)
+		artifactCache, err := NewCache(cfg, func(imageName string) (bool, error) { return true, nil }, deps, build.ToArtifactGraph(artifacts), store)
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -233,9 +234,10 @@ func TestCacheBuildRemote(t *testing.T) {
 
 		// Create cache
 		cfg := &mockConfig{
+			pipeline:  latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{TryImportMissing: false}}}},
 			cacheFile: tmpDir.Path("cache"),
 		}
-		artifactCache, err := NewCache(cfg, false, false, deps, build.ToArtifactGraph(artifacts), make(mockArtifactStore))
+		artifactCache, err := NewCache(cfg, func(imageName string) (bool, error) { return false, nil }, deps, build.ToArtifactGraph(artifacts), make(mockArtifactStore))
 		t.CheckNoError(err)
 
 		// First build: Need to build both artifacts
@@ -317,9 +319,10 @@ func TestCacheFindMissing(t *testing.T) {
 
 		// Create cache
 		cfg := &mockConfig{
+			pipeline:  latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{TryImportMissing: true}}}},
 			cacheFile: tmpDir.Path("cache"),
 		}
-		artifactCache, err := NewCache(cfg, false, true, deps, build.ToArtifactGraph(artifacts), make(mockArtifactStore))
+		artifactCache, err := NewCache(cfg, func(imageName string) (bool, error) { return false, nil }, deps, build.ToArtifactGraph(artifacts), make(mockArtifactStore))
 		t.CheckNoError(err)
 
 		// Because the artifacts are in the docker registry, we expect them to be imported correctly.
@@ -339,8 +342,10 @@ type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	cacheFile             string
 	mode                  config.RunMode
+	pipeline              latest.Pipeline
 }
 
-func (c *mockConfig) CacheArtifacts() bool { return true }
-func (c *mockConfig) CacheFile() string    { return c.cacheFile }
-func (c *mockConfig) Mode() config.RunMode { return c.mode }
+func (c *mockConfig) CacheArtifacts() bool                            { return true }
+func (c *mockConfig) CacheFile() string                               { return c.cacheFile }
+func (c *mockConfig) Mode() config.RunMode                            { return c.mode }
+func (c *mockConfig) PipelineForImage(string) (latest.Pipeline, bool) { return c.pipeline, true }

@@ -65,8 +65,8 @@ func doBuild(ctx context.Context, out io.Writer) error {
 		buildOut = ioutil.Discard
 	}
 
-	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		bRes, err := r.Build(ctx, buildOut, targetArtifacts(opts, config))
+	return withRunner(ctx, func(r runner.Runner, configs []*latest.SkaffoldConfig) error {
+		bRes, err := r.Build(ctx, buildOut, targetArtifacts(opts, configs))
 
 		if quietFlag || buildOutputFlag != "" {
 			cmdOut := flags.BuildOutput{Builds: bRes}
@@ -92,14 +92,14 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	})
 }
 
-func targetArtifacts(opts config.SkaffoldOptions, cfg *latest.SkaffoldConfig) []*latest.Artifact {
+func targetArtifacts(opts config.SkaffoldOptions, configs []*latest.SkaffoldConfig) []*latest.Artifact {
 	var targetArtifacts []*latest.Artifact
-
-	for _, artifact := range cfg.Build.Artifacts {
-		if opts.IsTargetImage(artifact) {
-			targetArtifacts = append(targetArtifacts, artifact)
+	for _, cfg := range configs {
+		for _, artifact := range cfg.Build.Artifacts {
+			if opts.IsTargetImage(artifact) {
+				targetArtifacts = append(targetArtifacts, artifact)
+			}
 		}
 	}
-
 	return targetArtifacts
 }

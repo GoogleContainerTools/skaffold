@@ -100,22 +100,22 @@ type Deployer struct {
 	useKubectlKustomize bool
 }
 
-func NewDeployer(cfg kubectl.Config, labels map[string]string) (*Deployer, error) {
+func NewDeployer(cfg kubectl.Config, labels map[string]string, d *latest.KustomizeDeploy) (*Deployer, error) {
 	defaultNamespace := ""
-	if cfg.Pipeline().Deploy.KustomizeDeploy.DefaultNamespace != nil {
+	if d.DefaultNamespace != nil {
 		var err error
-		defaultNamespace, err = util.ExpandEnvTemplate(*cfg.Pipeline().Deploy.KustomizeDeploy.DefaultNamespace, nil)
+		defaultNamespace, err = util.ExpandEnvTemplate(*d.DefaultNamespace, nil)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	kubectl := kubectl.NewCLI(cfg, cfg.Pipeline().Deploy.KustomizeDeploy.Flags, defaultNamespace)
+	kubectl := kubectl.NewCLI(cfg, d.Flags, defaultNamespace)
 	// if user has kustomize binary, prioritize that over kubectl kustomize
 	useKubectlKustomize := !kustomizeBinaryCheck() && kubectlVersionCheck(kubectl)
 
 	return &Deployer{
-		KustomizeDeploy:     cfg.Pipeline().Deploy.KustomizeDeploy,
+		KustomizeDeploy:     d,
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),
 		globalConfig:        cfg.GlobalConfig(),

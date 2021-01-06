@@ -60,7 +60,6 @@ type Builder struct {
 type Config interface {
 	docker.Config
 
-	Pipeline() latest.Pipeline
 	GlobalConfig() string
 	GetKubeContext() string
 	GetCluster() config.Cluster
@@ -71,7 +70,7 @@ type Config interface {
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(cfg Config) (*Builder, error) {
+func NewBuilder(cfg Config, buildCfg *latest.LocalBuild) (*Builder, error) {
 	localDocker, err := docker.NewAPIClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker client: %w", err)
@@ -80,17 +79,17 @@ func NewBuilder(cfg Config) (*Builder, error) {
 	cluster := cfg.GetCluster()
 
 	var pushImages bool
-	if cfg.Pipeline().Build.LocalBuild.Push == nil {
+	if buildCfg.Push == nil {
 		pushImages = cluster.PushImages
 		logrus.Debugf("push value not present, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
 	} else {
-		pushImages = *cfg.Pipeline().Build.LocalBuild.Push
+		pushImages = *buildCfg.Push
 	}
 
-	tryImportMissing := cfg.Pipeline().Build.LocalBuild.TryImportMissing
+	tryImportMissing := buildCfg.TryImportMissing
 
 	return &Builder{
-		local:              *cfg.Pipeline().Build.LocalBuild,
+		local:              *buildCfg,
 		cfg:                cfg,
 		kubeContext:        cfg.GetKubeContext(),
 		localDocker:        localDocker,
@@ -111,16 +110,8 @@ func (b *Builder) ArtifactStore(store build.ArtifactStore) {
 	b.artifactStore = store
 }
 
-func (b *Builder) PushImages() bool {
-	return b.pushImages
-}
-
-func (b *Builder) TryImportMissing() bool {
-	return b.tryImportMissing
-}
-
 // Prune uses the docker API client to remove all images built with Skaffold
-func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
+func (b *Builder) Prune(ctx context.Context, _ io.Writer) error {
 	var toPrune []string
 	seen := make(map[string]bool)
 

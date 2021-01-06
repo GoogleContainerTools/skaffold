@@ -137,14 +137,13 @@ func TestDevFailFirstCycle(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
-
-			// runner := createRunner(t, test.testBench).WithMonitor(test.monitor)
-			runner := createRunner(t, test.testBench, test.monitor)
+			artifacts := []*latest.Artifact{{
+				ImageName: "img",
+			}}
+			runner := createRunner(t, test.testBench, test.monitor, artifacts)
 			test.testBench.firstMonitor = test.monitor.Run
 
-			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{{
-				ImageName: "img",
-			}})
+			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
 
 			t.CheckErrorAndDeepEqual(true, err, test.expectedActions, test.testBench.Actions())
 		})
@@ -269,16 +268,16 @@ func TestDev(t *testing.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
 			test.testBench.cycles = len(test.watchEvents)
-
+			artifacts := []*latest.Artifact{
+				{ImageName: "img1"},
+				{ImageName: "img2"},
+			}
 			runner := createRunner(t, test.testBench, &TestMonitor{
 				events:    test.watchEvents,
 				testBench: test.testBench,
-			})
+			}, artifacts)
 
-			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
-				{ImageName: "img1"},
-				{ImageName: "img2"},
-			})
+			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())
@@ -404,16 +403,16 @@ func TestDev_WithDependencies(t *testing.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
 			test.testBench.cycles = len(test.watchEvents)
-
+			artifacts := []*latest.Artifact{
+				{ImageName: "img1"},
+				{ImageName: "img2", Dependencies: []*latest.ArtifactDependency{{ImageName: "img1"}}},
+			}
 			runner := createRunner(t, test.testBench, &TestMonitor{
 				events:    test.watchEvents,
 				testBench: test.testBench,
-			})
+			}, artifacts)
 
-			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
-				{ImageName: "img1"},
-				{ImageName: "img2", Dependencies: []*latest.ArtifactDependency{{ImageName: "img1"}}},
-			})
+			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())
@@ -494,13 +493,7 @@ func TestDevSync(t *testing.T) {
 			t.Override(&fileSyncSucceeded, func(int, string) { actualFileSyncEventCalls.Succeeded++ })
 			t.Override(&sync.WorkingDir, func(string, docker.Config) (string, error) { return "/", nil })
 			test.testBench.cycles = len(test.watchEvents)
-
-			runner := createRunner(t, test.testBench, &TestMonitor{
-				events:    test.watchEvents,
-				testBench: test.testBench,
-			})
-
-			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
+			artifacts := []*latest.Artifact{
 				{
 					ImageName: "img1",
 					Sync: &latest.Sync{
@@ -510,7 +503,13 @@ func TestDevSync(t *testing.T) {
 				{
 					ImageName: "img2",
 				},
-			})
+			}
+			runner := createRunner(t, test.testBench, &TestMonitor{
+				events:    test.watchEvents,
+				testBench: test.testBench,
+			}, artifacts)
+
+			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())
@@ -585,13 +584,7 @@ func TestDevSync_WithDependencies(t *testing.T) {
 			t.Override(&fileSyncSucceeded, func(int, string) { actualFileSyncEventCalls.Succeeded++ })
 			t.Override(&sync.WorkingDir, func(string, docker.Config) (string, error) { return "/", nil })
 			test.testBench.cycles = len(test.watchEvents)
-
-			runner := createRunner(t, test.testBench, &TestMonitor{
-				events:    test.watchEvents,
-				testBench: test.testBench,
-			})
-
-			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
+			artifacts := []*latest.Artifact{
 				{
 					ImageName: "img1",
 					Sync: &latest.Sync{
@@ -602,7 +595,13 @@ func TestDevSync_WithDependencies(t *testing.T) {
 				{
 					ImageName: "img2",
 				},
-			})
+			}
+			runner := createRunner(t, test.testBench, &TestMonitor{
+				events:    test.watchEvents,
+				testBench: test.testBench,
+			}, artifacts)
+
+			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())

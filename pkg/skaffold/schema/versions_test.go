@@ -342,14 +342,15 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config))
 
 			cfg, err := ParseConfigAndUpgrade(tmpDir.Path("skaffold.yaml"), latest.Version)
-			if cfg != nil {
-				config := cfg.(*latest.SkaffoldConfig)
-				err := defaults.Set(config)
-
+			var expected util.VersionedConfig
+			if len(cfg) > 0 {
+				config := cfg[0].(*latest.SkaffoldConfig)
+				err := defaults.Set(config, true)
 				t.CheckNoError(err)
+				expected = config
 			}
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cfg)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, expected)
 		})
 	}
 }

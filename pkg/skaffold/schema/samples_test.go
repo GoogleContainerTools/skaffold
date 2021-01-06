@@ -75,13 +75,16 @@ func TestParseSamples(t *testing.T) {
 
 func checkSkaffoldConfig(t *testutil.T, yaml []byte) {
 	configFile := t.TempFile("skaffold.yaml", yaml)
-	cfg, err := ParseConfigAndUpgrade(configFile, latest.Version)
+	parsed, err := ParseConfigAndUpgrade(configFile, latest.Version)
 	t.CheckNoError(err)
-
-	err = defaults.Set(cfg.(*latest.SkaffoldConfig))
-	t.CheckNoError(err)
-
-	err = validation.Process(cfg.(*latest.SkaffoldConfig))
+	var cfgs []*latest.SkaffoldConfig
+	for _, p := range parsed {
+		cfg := p.(*latest.SkaffoldConfig)
+		err = defaults.Set(cfg, true)
+		t.CheckNoError(err)
+		cfgs = append(cfgs, cfg)
+	}
+	err = validation.Process(cfgs)
 	t.CheckNoError(err)
 }
 

@@ -41,8 +41,8 @@ type Trigger interface {
 }
 
 type Config interface {
-	Pipeline() latest.Pipeline
 	Trigger() string
+	Artifacts() []*latest.Artifact
 	WatchPollInterval() int
 }
 
@@ -67,7 +67,7 @@ func NewTrigger(cfg Config, isActive func() bool) (Trigger, error) {
 
 func newFSNotifyTrigger(cfg Config, isActive func() bool) Trigger {
 	workspaces := map[string]struct{}{}
-	for _, a := range cfg.Pipeline().Build.Artifacts {
+	for _, a := range cfg.Artifacts() {
 		workspaces[a.Workspace] = struct{}{}
 	}
 	return fsNotify.New(workspaces, isActive, cfg.WatchPollInterval())

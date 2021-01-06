@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 )
@@ -41,7 +42,7 @@ import (
 // For tests
 var createRunner = createNewRunner
 
-func withRunner(ctx context.Context, action func(runner.Runner, *latest.SkaffoldConfig) error) error {
+func withRunner(ctx context.Context, action func(runner.Runner, []*latest.SkaffoldConfig) error) error {
 	runner, config, err := createRunner(opts)
 	sErrors.SetSkaffoldOptions(opts)
 	if err != nil {
@@ -54,23 +55,23 @@ func withRunner(ctx context.Context, action func(runner.Runner, *latest.Skaffold
 }
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
-func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
-	runCtx, config, err := runContext(opts)
+func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
+	runCtx, configs, err := runContext(opts)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	instrumentation.InitMeterFromConfig(config)
+	instrumentation.InitMeterFromConfig(configs)
 	runner, err := runner.NewForConfig(runCtx)
 	if err != nil {
 		event.InititializationFailed(err)
 		return nil, nil, fmt.Errorf("creating runner: %w", err)
 	}
 
-	return runner, config, nil
+	return runner, configs, nil
 }
 
-func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.SkaffoldConfig, error) {
+func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.SkaffoldConfig, error) {
 	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
 	if err != nil {
 		if os.IsNotExist(errors.Unwrap(err)) {
@@ -84,32 +85,53 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, *latest.Sk
 		return nil, nil, fmt.Errorf("parsing skaffold config: %w", err)
 	}
 
-	config := parsed.(*latest.SkaffoldConfig)
-
-	if err = schema.ApplyProfiles(config, opts); err != nil {
-		return nil, nil, fmt.Errorf("applying profiles: %w", err)
+	if len(parsed) == 0 {
+		return nil, nil, fmt.Errorf("skaffold config file %s is empty", opts.ConfigurationFile)
 	}
 
-	kubectx.ConfigureKubeConfig(opts.KubeConfig, opts.KubeContext, config.Deploy.KubeContext)
+	setDefaultDeployer := setDefaultDeployer(parsed)
+	var pipelines []latest.Pipeline
+	var configs []*latest.SkaffoldConfig
+	for _, cfg := range parsed {
+		config := cfg.(*latest.SkaffoldConfig)
 
-	if err := defaults.Set(config); err != nil {
-		return nil, nil, fmt.Errorf("setting default values: %w", err)
+		if err = schema.ApplyProfiles(config, opts); err != nil {
+			return nil, nil, fmt.Errorf("applying profiles: %w", err)
+		}
+		if err := defaults.Set(config, setDefaultDeployer); err != nil {
+			return nil, nil, fmt.Errorf("setting default values: %w", err)
+		}
+		pipelines = append(pipelines, config.Pipeline)
+		configs = append(configs, config)
 	}
 
-	if err := validation.Process(config); err != nil {
+	// TODO: Should support per-config kubecontext. Right now we constrain all configs to define the same kubecontext.
+	kubectx.ConfigureKubeConfig(opts.KubeConfig, opts.KubeContext, configs[0].Deploy.KubeContext)
+
+	if err := validation.Process(configs); err != nil {
 		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
 	}
 
-	runCtx, err := runcontext.GetRunContext(opts, config.Pipeline)
+	runCtx, err := runcontext.GetRunContext(opts, pipelines)
 	if err != nil {
 		return nil, nil, fmt.Errorf("getting run context: %w", err)
 	}
 
-	if err := validation.ProcessWithRunContext(config, runCtx); err != nil {
+	if err := validation.ProcessWithRunContext(runCtx); err != nil {
 		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
 	}
 
-	return runCtx, config, nil
+	return runCtx, configs, nil
+}
+
+func setDefaultDeployer(configs []util.VersionedConfig) bool {
+	// set the default deployer only if no deployer is explicitly specified in any config
+	for _, cfg := range configs {
+		if cfg.(*latest.SkaffoldConfig).Deploy.DeployType != (latest.DeployType{}) {
+			return false
+		}
+	}
+	return true
 }
 
 func warnIfUpdateIsAvailable() {

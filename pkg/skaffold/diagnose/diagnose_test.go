@@ -101,7 +101,7 @@ type mockConfig struct {
 	artifacts             []*latest.Artifact
 }
 
-func (c *mockConfig) Pipeline() latest.Pipeline {
+func (c *mockConfig) PipelineForImage() latest.Pipeline {
 	var pipeline latest.Pipeline
 	pipeline.Build.Artifacts = c.artifacts
 	return pipeline

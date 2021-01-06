@@ -220,9 +220,7 @@ func TestKpt_Deploy(t *testing.T) {
 
 			tmpDir.WriteFiles(test.kustomizations)
 
-			k := NewDeployer(&kptConfig{
-				kpt: test.kpt,
-			}, nil)
+			k := NewDeployer(&kptConfig{}, nil, &test.kpt)
 
 			if k.Live.Apply.Dir == "valid_path" {
 				// 0755 is a permission setting where the owner can read, write, and execute.
@@ -362,9 +360,7 @@ func TestKpt_Dependencies(t *testing.T) {
 			tmpDir.WriteFiles(test.createFiles)
 			tmpDir.WriteFiles(test.kustomizations)
 
-			k := NewDeployer(&kptConfig{
-				kpt: test.kpt,
-			}, nil)
+			k := NewDeployer(&kptConfig{}, nil, &test.kpt)
 
 			res, err := k.Dependencies()
 
@@ -417,14 +413,13 @@ func TestKpt_Cleanup(t *testing.T) {
 
 			k := NewDeployer(&kptConfig{
 				workingDir: ".",
-				kpt: latest.KptDeploy{
-					Live: latest.KptLive{
-						Apply: latest.KptApplyInventory{
-							Dir: test.applyDir,
-						},
+			}, nil, &latest.KptDeploy{
+				Live: latest.KptLive{
+					Apply: latest.KptApplyInventory{
+						Dir: test.applyDir,
 					},
 				},
-			}, nil)
+			})
 
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
@@ -774,8 +769,7 @@ spec:
 
 			k := NewDeployer(&kptConfig{
 				workingDir: ".",
-				kpt:        test.kpt,
-			}, test.labels)
+			}, test.labels, &test.kpt)
 
 			var b bytes.Buffer
 			err := k.Render(context.Background(), &b, test.builds, true, "")
@@ -849,10 +843,9 @@ func TestKpt_GetApplyDir(t *testing.T) {
 
 			k := NewDeployer(&kptConfig{
 				workingDir: ".",
-				kpt: latest.KptDeploy{
-					Live: test.live,
-				},
-			}, nil)
+			}, nil, &latest.KptDeploy{
+				Live: test.live,
+			})
 
 			applyDir, err := k.getApplyDir(context.Background())
 
@@ -1009,7 +1002,7 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k := NewDeployer(&kptConfig{}, nil)
+			k := NewDeployer(&kptConfig{}, nil, nil)
 			actualManifest, err := k.excludeKptFn(test.manifests)
 			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
 		})
@@ -1136,14 +1129,8 @@ func TestVersionCheck(t *testing.T) {
 type kptConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	workingDir            string
-	kpt                   latest.KptDeploy
 }
 
 func (c *kptConfig) WorkingDir() string       { return c.workingDir }
 func (c *kptConfig) GetKubeContext() string   { return kubectl.TestKubeContext }
 func (c *kptConfig) GetKubeNamespace() string { return kubectl.TestNamespace }
-func (c *kptConfig) Pipeline() latest.Pipeline {
-	var pipeline latest.Pipeline
-	pipeline.Deploy.DeployType.KptDeploy = &c.kpt
-	return pipeline
-}

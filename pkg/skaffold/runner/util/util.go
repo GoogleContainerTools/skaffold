@@ -28,7 +28,7 @@ import (
 // + The namespace passed on the command line
 // + Current kube context's namespace
 // + Namespaces referenced in Helm releases
-func GetAllPodNamespaces(configNamespace string, cfg latest.Pipeline) ([]string, error) {
+func GetAllPodNamespaces(configNamespace string, pipelines []latest.Pipeline) ([]string, error) {
 	nsMap := make(map[string]bool)
 
 	if configNamespace == "" {
@@ -49,7 +49,7 @@ func GetAllPodNamespaces(configNamespace string, cfg latest.Pipeline) ([]string,
 	}
 
 	// Set additional namespaces each helm release referenced
-	for _, namespace := range collectHelmReleasesNamespaces(cfg) {
+	for _, namespace := range collectHelmReleasesNamespaces(pipelines) {
 		nsMap[namespace] = true
 	}
 
@@ -63,16 +63,16 @@ func GetAllPodNamespaces(configNamespace string, cfg latest.Pipeline) ([]string,
 	return namespaces, nil
 }
 
-func collectHelmReleasesNamespaces(cfg latest.Pipeline) []string {
+func collectHelmReleasesNamespaces(pipelines []latest.Pipeline) []string {
 	var namespaces []string
-
-	if cfg.Deploy.HelmDeploy != nil {
-		for _, release := range cfg.Deploy.HelmDeploy.Releases {
-			if release.Namespace != "" {
-				namespaces = append(namespaces, release.Namespace)
+	for _, cfg := range pipelines {
+		if cfg.Deploy.HelmDeploy != nil {
+			for _, release := range cfg.Deploy.HelmDeploy.Releases {
+				if release.Namespace != "" {
+					namespaces = append(namespaces, release.Namespace)
+				}
 			}
 		}
 	}
-
 	return namespaces
 }
