@@ -108,6 +108,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 			return nil
 		}
+		// TODO(modali): Add skipTest boolean to Tester itself to avoid this check.
 		if !r.runCtx.SkipTests() {
 			if err = r.Test(ctx, out, bRes); err != nil {
 				logrus.Warnln("Skipping deploy due to test error:", err)
