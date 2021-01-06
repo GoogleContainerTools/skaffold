@@ -37,8 +37,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
-	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
 // For tests
@@ -102,14 +100,6 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.
 		}
 		if err := defaults.Set(config, setDefaultDeployer); err != nil {
 			return nil, nil, fmt.Errorf("setting default values: %w", err)
-		}
-		cwd, err := pkgutil.RealWorkDir()
-		if err != nil {
-			return nil, nil, err
-		}
-		// base for relative paths in the `skaffold.yaml` is the cwd and not the config dir
-		if err := yamltags.SetAbsFilePaths(config, cwd); err != nil {
-			return nil, nil, fmt.Errorf("setting absolute filepaths: %w", err)
 		}
 		pipelines = append(pipelines, config.Pipeline)
 		configs = append(configs, config)
