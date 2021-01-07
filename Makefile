@@ -190,9 +190,10 @@ skaffold-builder:
 
 .PHONY: integration-in-kind
 integration-in-kind: skaffold-builder
+	grep . /sys/class/net/*/mtu
 	echo '{}' > /tmp/docker-config
 	docker pull $(KIND_NODE)
-	docker network inspect kind >/dev/null 2>&1 || docker network create kind
+	docker network inspect kind || docker network create kind
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.gradle:/root/.gradle \
@@ -207,6 +208,8 @@ integration-in-kind: skaffold-builder
 		sh -eu -c ' \
 			docker system info; \
 			echo -----; \
+			grep . /sys/class/net/*/mtu ; \
+			echo -----; \
 			if ! kind get clusters | grep -q kind; then \
 			  trap "kind delete cluster" 0 1 2 15; \
 			  TERM=dumb kind create cluster --image=$(KIND_NODE); \
@@ -217,6 +220,7 @@ integration-in-kind: skaffold-builder
 
 .PHONY: integration-in-k3d
 integration-in-k3d: skaffold-builder
+	grep . /sys/class/net/*/mtu
 	echo '{}' > /tmp/docker-config
 	docker pull $(K3D_NODE)
 	docker run --rm \
@@ -231,6 +235,8 @@ integration-in-k3d: skaffold-builder
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -c ' \
 			docker system info; \
+			echo -----; \
+			grep . /sys/class/net/*/mtu ; \
 			echo -----; \
 			k3d cluster list | grep -q k3s-default || TERM=dumb k3d cluster create --image=$(K3D_NODE); \
 			make integration \
