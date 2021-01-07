@@ -22,12 +22,12 @@ message State {
     BuildState buildState = 1;
     DeployState deployState = 2;
     reserved 3; // field 3 is obsolete
-    TestState testState = 9;
     map<int32, PortEvent> forwardedPorts = 4;
     StatusCheckState statusCheckState = 5;
     FileSyncState fileSyncState = 6;
     repeated DebuggingContainerEvent debuggingContainers = 7;
     Metadata metadata = 8;
+    TestState testState = 9;
 }
 
 message Metadata {
@@ -123,7 +123,6 @@ message Event {
     oneof event_type {
         MetaEvent metaEvent = 1; // contains general information regarding Skaffold like version info
         BuildEvent buildEvent = 2; // describes if the build status per artifact. Status could be one of "InProgress", "Completed" or "Failed".
-        TestEvent TestEvent = 11; // describes if the test has started, is in progress or is complete.
         DeployEvent deployEvent = 3; // describes if the deployment has started, is in progress or is complete.
         PortEvent portEvent = 4; //  describes each port forwarding event.
         StatusCheckEvent statusCheckEvent = 5; // describes if the Status check has started, is in progress, has succeeded or failed.
@@ -132,6 +131,7 @@ message Event {
         DebuggingContainerEvent debuggingContainerEvent = 8; // describes the appearance or disappearance of a debugging container
         DevLoopEvent devLoopEvent = 9; // describes a start and end of a dev loop.
         TerminationEvent terminationEvent = 10; // describes a skaffold termination event
+        TestEvent TestEvent = 11; // describes if the test has started, is in progress or is complete.
     }
 }
 
@@ -343,12 +343,12 @@ service SkaffoldService {
     }
 
     // Allows for enabling or disabling automatic test trigger
-    rpc AutoTest (TriggerRequest) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            put: "/v1/test/auto_execute"
-            body: "state"
-        };
-    }
+//    rpc AutoTest (TriggerRequest) returns (google.protobuf.Empty) {
+//        option (google.api.http) = {
+//            put: "/v1/test/auto_execute"
+//            body: "state"
+//        };
+//    }
 
     // Allows for enabling or disabling automatic deploy trigger
     rpc AutoDeploy (TriggerRequest) returns (google.protobuf.Empty) {

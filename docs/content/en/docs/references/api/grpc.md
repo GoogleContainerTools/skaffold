@@ -42,7 +42,6 @@ Describes all the methods for the Skaffold API
 | Execute | [UserIntentRequest](#proto.UserIntentRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for a single execution of some or all of the phases (build, sync, test, deploy) in case autoBuild, autoTest, autoDeploy or autoSync are disabled. |
 | AutoBuild | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic build trigger |
 | AutoSync | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic sync trigger |
-| AutoTest | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic test trigger |
 | AutoDeploy | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic deploy trigger |
 | Handle | [Event](#proto.Event) | [.google.protobuf.Empty](#google.protobuf.Empty) | EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example. |
 
@@ -306,7 +305,6 @@ It is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusChe
 | ----- | ---- | ----- | ----------- |
 | metaEvent | [MetaEvent](#proto.MetaEvent) |  | contains general information regarding Skaffold like version info |
 | buildEvent | [BuildEvent](#proto.BuildEvent) |  | describes if the build status per artifact. Status could be one of "InProgress", "Completed" or "Failed". |
-| TestEvent | [TestEvent](#proto.TestEvent) |  | describes if the test has started, is in progress or is complete. |
 | deployEvent | [DeployEvent](#proto.DeployEvent) |  | describes if the deployment has started, is in progress or is complete. |
 | portEvent | [PortEvent](#proto.PortEvent) |  | describes each port forwarding event. |
 | statusCheckEvent | [StatusCheckEvent](#proto.StatusCheckEvent) |  | describes if the Status check has started, is in progress, has succeeded or failed. |
@@ -315,6 +313,7 @@ It is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusChe
 | debuggingContainerEvent | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) |  | describes the appearance or disappearance of a debugging container |
 | devLoopEvent | [DevLoopEvent](#proto.DevLoopEvent) |  | describes a start and end of a dev loop. |
 | terminationEvent | [TerminationEvent](#proto.TerminationEvent) |  | describes a skaffold termination event |
+| TestEvent | [TestEvent](#proto.TestEvent) |  | describes if the test has started, is in progress or is complete. |
 
 
 
@@ -547,12 +546,12 @@ will be sent with the new status.
 | ----- | ---- | ----- | ----------- |
 | buildState | [BuildState](#proto.BuildState) |  |  |
 | deployState | [DeployState](#proto.DeployState) |  |  |
-| testState | [TestState](#proto.TestState) |  |  |
 | forwardedPorts | [State.ForwardedPortsEntry](#proto.State.ForwardedPortsEntry) | repeated |  |
 | statusCheckState | [StatusCheckState](#proto.StatusCheckState) |  |  |
 | fileSyncState | [FileSyncState](#proto.FileSyncState) |  |  |
 | debuggingContainers | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) | repeated |  |
 | metadata | [Metadata](#proto.Metadata) |  |  |
+| testState | [TestState](#proto.TestState) |  |  |
 
 
 
