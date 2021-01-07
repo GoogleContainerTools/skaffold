@@ -277,7 +277,6 @@ message Intent {
     bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once
     bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once
     bool deploy = 3; // in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once
-    bool test = 4; // in case skaffold dev is ran with autoTest=false, a test intent enables test once
 }
 
 // Suggestion defines the action a user needs to recover from an error.
@@ -318,7 +317,7 @@ service SkaffoldService {
         };
     }
 
-    // Allows for a single execution of some or all of the phases (build, sync, test, deploy) in case autoBuild, autoTest, autoDeploy or autoSync are disabled.
+    // Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
     rpc Execute (UserIntentRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
             post: "/v1/execute"
@@ -341,14 +340,6 @@ service SkaffoldService {
             body: "state"
         };
     }
-
-    // Allows for enabling or disabling automatic test trigger
-//    rpc AutoTest (TriggerRequest) returns (google.protobuf.Empty) {
-//        option (google.api.http) = {
-//            put: "/v1/test/auto_execute"
-//            body: "state"
-//        };
-//    }
 
     // Allows for enabling or disabling automatic deploy trigger
     rpc AutoDeploy (TriggerRequest) returns (google.protobuf.Empty) {

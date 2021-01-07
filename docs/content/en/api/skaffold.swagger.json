@@ -1973,7 +1973,7 @@
     },
     "/v1/execute": {
       "post": {
-        "summary": "Allows for a single execution of some or all of the phases (build, sync, test, deploy) in case autoBuild, autoTest, autoDeploy or autoSync are disabled.",
+        "summary": "Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.",
         "operationId": "Execute",
         "responses": {
           "200": {
@@ -2415,10 +2415,6 @@
           "format": "boolean"
         },
         "deploy": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "test": {
           "type": "boolean",
           "format": "boolean"
         }
