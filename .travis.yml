@@ -21,7 +21,7 @@ _integration_test: &integration_test
     - echo 'Interface MTUs:'; grep . /sys/class/net/*/mtu
     - sudo service docker restart
     - echo 'Interface MTUs:'; grep . /sys/class/net/*/mtu
-    - cat /etc/systemd/system/docker.service
+    - find /etc/systemd -name docker.service | while read f; do echo "== $f"; cat $f; done
     - ps ax | grep docker
     # Skip integration tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
     - git diff --name-only "$TRAVIS_BRANCH"... | grep -v '^docs/' || travis_terminate 0
