@@ -18,6 +18,7 @@ package validation
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -58,7 +59,7 @@ func Process(configs []*latest.SkaffoldConfig) error {
 		errs = append(errs, validateTaggingPolicy(config.Build)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
-
+	errs = append(errs, validateSingleKubeContext(configs)...)
 	if len(errs) == 0 {
 		return nil
 	}
@@ -455,5 +456,18 @@ func validateLogPrefix(lc latest.LogsConfig) []error {
 		return []error{fmt.Errorf("invalid log prefix '%s'. Valid values are 'auto', 'container', 'podAndContainer' or 'none'", lc.Prefix)}
 	}
 
+	return nil
+}
+
+func validateSingleKubeContext(configs []*latest.SkaffoldConfig) []error {
+	if len(configs) < 2 {
+		return nil
+	}
+	k := configs[0].Deploy.KubeContext
+	for _, c := range configs {
+		if c.Deploy.KubeContext != k {
+			return []error{errors.New("all configs should have the same value for `deploy.kubeContext`")}
+		}
+	}
 	return nil
 }

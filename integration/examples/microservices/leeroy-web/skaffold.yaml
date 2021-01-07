@@ -1,0 +1,19 @@
+apiVersion: skaffold/v2beta11
+kind: Config
+requires:
+- path: ../base
+build:
+  artifacts:
+  - image: leeroy-web
+    requires:
+    - image: base
+      alias: BASE
+deploy:
+  kubectl:
+    manifests:
+    - kubernetes/*
+portForward:
+- resourceType: deployment
+  resourceName: leeroy-web
+  port: 8080
+  localPort: 9000

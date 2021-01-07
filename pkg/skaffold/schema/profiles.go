@@ -34,28 +34,27 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
-// ApplyProfiles returns configuration modified by the application
-// of a list of profiles.
-func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
+// ApplyProfiles modifies the input skaffold configuration by the application
+// of a list of profiles, and returns the list of applied profiles.
+func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions, namedProfiles []string) ([]string, error) {
 	byName := profilesByName(c.Profiles)
 
-	profiles, contextSpecificProfiles, err := activatedProfiles(c.Profiles, opts)
+	profiles, contextSpecificProfiles, err := activatedProfiles(c.Profiles, opts, namedProfiles)
 	if err != nil {
-		return fmt.Errorf("finding auto-activated profiles: %w", err)
+		return nil, fmt.Errorf("finding auto-activated profiles: %w", err)
 	}
-
 	for _, name := range profiles {
 		profile, present := byName[name]
 		if !present {
-			return fmt.Errorf("couldn't find profile %s", name)
+			return nil, fmt.Errorf("couldn't find profile %s", name)
 		}
 
 		if err := applyProfile(c, profile); err != nil {
-			return fmt.Errorf("applying profile %q: %w", name, err)
+			return nil, fmt.Errorf("applying profile %q: %w", name, err)
 		}
 	}
 
-	return checkKubeContextConsistency(contextSpecificProfiles, opts.KubeContext, c.Deploy.KubeContext)
+	return profiles, checkKubeContextConsistency(contextSpecificProfiles, opts.KubeContext, c.Deploy.KubeContext)
 }
 
 func checkKubeContextConsistency(contextSpecificProfiles []string, cliContext, effectiveContext string) error {
@@ -80,7 +79,7 @@ func checkKubeContextConsistency(contextSpecificProfiles []string, cliContext, e
 
 // activatedProfiles returns the activated profiles and activated profiles which are kube-context specific.
 // The latter matters for error reporting when the effective kube-context changes.
-func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, []string, error) {
+func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions, namedProfiles []string) ([]string, []string, error) {
 	var activated []string
 	var contextSpecificProfiles []string
 
@@ -111,7 +110,7 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]s
 		}
 	}
 
-	for _, profile := range opts.Profiles {
+	for _, profile := range namedProfiles {
 		if strings.HasPrefix(profile, "-") {
 			activated = removeValue(activated, strings.TrimPrefix(profile, "-"))
 		} else if !skutil.StrSliceContains(activated, profile) {

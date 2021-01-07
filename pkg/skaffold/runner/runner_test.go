@@ -216,8 +216,8 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 			Deploy: latest.DeployConfig{StatusCheckDeadlineSeconds: 60},
 		},
 	}
-	defaults.Set(cfg, true)
-
+	defaults.Set(cfg)
+	defaults.SetDefaultDeployer(cfg)
 	runCtx := &runcontext.RunContext{
 		Pipelines: runcontext.NewPipelines([]latest.Pipeline{cfg.Pipeline}),
 		Opts: config.SkaffoldOptions{
