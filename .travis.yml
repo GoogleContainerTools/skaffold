@@ -19,6 +19,8 @@ _integration_test: &integration_test
     - echo 'Is alpine:3.10 in registry-1.travis-ci.com:'; curl -I https://registry-1.travis-ci.com/v2/library/alpine/manifests/3.10
     - echo 'Is golang:1.12.9-alpine3.10 in registry-1.travis-ci.com:'; curl -I https://registry-1.travis-ci.com/v2/library/golang/manifests/1.12.9-alpine3.10
     - echo 'Interface MTUs:'; grep . /sys/class/net/*/mtu
+    - sudo service docker restart
+    - echo 'Interface MTUs:'; grep . /sys/class/net/*/mtu
     # Skip integration tests for `docs`-only changes (only works for PR-based dev workflows like Skaffold's).
     - git diff --name-only "$TRAVIS_BRANCH"... | grep -v '^docs/' || travis_terminate 0
   cache:
