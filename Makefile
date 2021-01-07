@@ -193,7 +193,8 @@ integration-in-kind: skaffold-builder
 	grep . /sys/class/net/*/mtu
 	echo '{}' > /tmp/docker-config
 	docker pull $(KIND_NODE)
-	docker network inspect kind || docker network create kind
+	# custom docker networks are created with mtu 1500 (https://github.com/moby/moby/issues/34981#issuecomment-343616165)
+	docker network inspect kind >/dev/null 2>&1 || docker network create kind -o 'com.docker.network.driver.mtu=1450'
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.gradle:/root/.gradle \
