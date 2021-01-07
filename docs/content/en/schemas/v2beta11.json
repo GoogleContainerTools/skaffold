@@ -790,6 +790,43 @@
       "description": "*beta* describes how to do an on-cluster build.",
       "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
     },
+    "ConfigDependency": {
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "activeProfiles": {
+          "items": {
+            "$ref": "#/definitions/ProfileDependency"
+          },
+          "type": "array",
+          "description": "describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.",
+          "x-intellij-html-description": "describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config."
+        },
+        "configs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "describes the names of the required configs.",
+          "x-intellij-html-description": "describes the names of the required configs.",
+          "default": "[]"
+        },
+        "path": {
+          "type": "string",
+          "description": "describes the path to the file containing the required configs.",
+          "x-intellij-html-description": "describes the path to the file containing the required configs."
+        }
+      },
+      "preferredOrder": [
+        "configs",
+        "path",
+        "activeProfiles"
+      ],
+      "additionalProperties": false,
+      "description": "describes a dependency on another skaffold configuration.",
+      "x-intellij-html-description": "describes a dependency on another skaffold configuration."
+    },
     "CustomArtifact": {
       "properties": {
         "buildCommand": {
@@ -2412,6 +2449,34 @@
       "description": "used to override any `build`, `test` or `deploy` configuration.",
       "x-intellij-html-description": "used to override any <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
     },
+    "ProfileDependency": {
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "activatedBy": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "describes a list of profiles in the current config that when activated will also activate the named profile in the dependency config. If empty then the named profile is always activated.",
+          "x-intellij-html-description": "describes a list of profiles in the current config that when activated will also activate the named profile in the dependency config. If empty then the named profile is always activated.",
+          "default": "[]"
+        },
+        "name": {
+          "type": "string",
+          "description": "describes name of the profile to activate in the dependency config. It should exist in the dependency config.",
+          "x-intellij-html-description": "describes name of the profile to activate in the dependency config. It should exist in the dependency config."
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "activatedBy"
+      ],
+      "additionalProperties": false,
+      "description": "describes a mapping from referenced config profiles to the current config profiles. If the current config is activated with a profile in this mapping then the dependency configs are also activated with the corresponding mapped profiles.",
+      "x-intellij-html-description": "describes a mapping from referenced config profiles to the current config profiles. If the current config is activated with a profile in this mapping then the dependency configs are also activated with the corresponding mapped profiles."
+    },
     "ResourceRequirement": {
       "properties": {
         "cpu": {
@@ -2535,6 +2600,14 @@
           "description": "*beta* can override be used to `build`, `test` or `deploy` configuration.",
           "x-intellij-html-description": "<em>beta</em> can override be used to <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
         },
+        "requires": {
+          "items": {
+            "$ref": "#/definitions/ConfigDependency"
+          },
+          "type": "array",
+          "description": "describes a list of other required configs for the current config.",
+          "x-intellij-html-description": "describes a list of other required configs for the current config."
+        },
         "test": {
           "items": {
             "$ref": "#/definitions/TestCase"
@@ -2548,6 +2621,7 @@
         "apiVersion",
         "kind",
         "metadata",
+        "requires",
         "build",
         "test",
         "deploy",

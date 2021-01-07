@@ -77,8 +77,13 @@ type Pipeline struct {
 
 // ConfigDependency describes a dependency on another skaffold configuration.
 type ConfigDependency struct {
-	Names          []string            `yaml:"configs,omitempty"`
-	Path           string              `yaml:"path" yamltags:"required,filepath"`
+	// Names describes the names of the required configs.
+	Names []string `yaml:"configs,omitempty"`
+
+	// Path describes the path to the file containing the required configs.
+	Path string `yaml:"path" yamltags:"required,filepath"`
+
+	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
 	ActiveProfiles []ProfileDependency `yaml:"activeProfiles,omitempty"`
 }
 
