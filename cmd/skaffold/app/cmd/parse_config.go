@@ -112,11 +112,11 @@ func getConfigs(configFile string, configSelection []string, profileSelection []
 			// check that this config was not previously referenced with a different set of active profiles.
 			if previous, found := appliedProfiles[key]; found {
 				if previous != expected {
-					configId := fmt.Sprintf("index %d", i)
+					configID := fmt.Sprintf("index %d", i)
 					if config.Metadata.Name != "" {
-						configId = config.Metadata.Name
+						configID = config.Metadata.Name
 					}
-					return nil, fmt.Errorf("skaffold config %s from file %s imported multiple times with different profiles", configId, configFile)
+					return nil, fmt.Errorf("skaffold config %s from file %s imported multiple times with different profiles", configID, configFile)
 				}
 				continue
 			}
@@ -151,6 +151,9 @@ func getConfigs(configFile string, configSelection []string, profileSelection []
 				path = filepath.Join(path, "skaffold.yaml")
 			}
 			depConfigs, err := getConfigs(path, d.Names, depProfiles, opts, appliedProfiles, required, true, configNameToFile)
+			if err != nil {
+				return nil, err
+			}
 			configs = append(configs, depConfigs...)
 		}
 	}
