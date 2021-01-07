@@ -120,6 +120,11 @@ func skaffoldConfig(out io.Writer, opts config.SkaffoldOptions) ([]*latest.Skaff
 			if err != nil {
 				return nil, nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: %w", err)
 			}
+			if config == nil {
+				return nil, nil, fmt.Errorf("user not continuing")
+			}
+
+			defaults.Set(config, true)
 
 			return []*latest.SkaffoldConfig{config}, []latest.Pipeline{config.Pipeline}, nil
 		}
