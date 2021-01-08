@@ -208,11 +208,12 @@ integration-in-kind: skaffold-builder
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		sh -eu -c ' \
-			grep . /sys/class/net/*/mtu; \
+		sh -eux -c ' \
+			grep . /sys/class/net/*/mtu; echo -----; cat /proc/net/route; echo -----; \
 			if ! kind get clusters | grep -q kind; then \
 			  trap "kind delete cluster" 0 1 2 15; \
-			  TERM=dumb kind create cluster --image=$(KIND_NODE); \
+			  sh hack/generate-kind-registries-yaml > /tmp/kind-registries.yaml; \
+			  TERM=dumb kind create cluster --image=$(KIND_NODE) --config /tmp/kind-registries.yaml; \
 			fi; \
 			kind get kubeconfig --internal > /tmp/kind-config; \
 			make integration \
@@ -237,12 +238,14 @@ integration-in-k3d: skaffold-builder
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		sh -c ' \
-			grep . /sys/class/net/*/mtu; \
+		sh -eux -c ' \
+			grep . /sys/class/net/*/mtu; echo -----; cat /proc/net/route; echo -----; \
 			if ! k3d cluster list | grep -q k3s-default; then \
-			  docker network inspect k3d; \
 			  trap "k3d cluster delete" 0 1 2 15; \
-			  TERM=dumb k3d cluster create --network k3d --image=$(K3D_NODE); \
+			  sh hack/generate-k3d-registries-yaml > /tmp/k3d-registries.yaml; \
+			  cat /tmp/k3d-registries.yaml; \
+			  TERM=dumb k3d cluster create --network k3d --image=$(K3D_NODE) \
+			     --volume /tmp/k3d-registries.yaml:/etc/rancher/k3s/registries.yaml; \
 			fi; \
 			make integration \
 		'
