@@ -242,8 +242,7 @@ integration-in-k3d: skaffold-builder
 			if ! k3d cluster list | grep -q k3s-default; then \
 			  docker network inspect k3d; \
 			  trap "k3d cluster delete" 0 1 2 15; \
-			  TERM=dumb k3d cluster create --network k3d --image=$(K3D_NODE) \
-			     --volume .travisci/k3d-registries.yaml:/etc/rancher/k3s/registries.yaml; \
+			  TERM=dumb k3d cluster create --network k3d --image=$(K3D_NODE); \
 			fi; \
 			make integration \
 		'
