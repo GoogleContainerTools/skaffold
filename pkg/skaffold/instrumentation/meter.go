@@ -123,12 +123,12 @@ var (
 		ExitCode:      0,
 		ErrorCode:     proto.StatusCode_OK,
 	}
-	shouldExportMetrics = os.Getenv("SKAFFOLD_EXPORT_METRICS") == "true"
 	meteredCommands     = util.NewStringSet()
 	doesBuild           = util.NewStringSet()
 	doesDeploy          = util.NewStringSet()
 	initExporter        = initCloudMonitoringExporterMetrics
 	isOnline            bool
+	shouldExportMetrics bool
 )
 
 func init() {
