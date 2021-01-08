@@ -209,6 +209,7 @@ integration-in-kind: skaffold-builder
 		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -eu -c ' \
+			grep . /sys/class/net/*/mtu; \
 			if ! kind get clusters | grep -q kind; then \
 			  trap "kind delete cluster" 0 1 2 15; \
 			  TERM=dumb kind create cluster --image=$(KIND_NODE); \
@@ -237,7 +238,13 @@ integration-in-k3d: skaffold-builder
 		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -c ' \
-			k3d cluster list | grep -q k3s-default || TERM=dumb k3d cluster create --network k3d --image=$(K3D_NODE); \
+			grep . /sys/class/net/*/mtu; \
+			if ! k3d cluster list | grep -q k3s-default; then \
+			  docker network inspect k3d; \
+			  trap "k3d cluster delete" 0 1 2 15; \
+			  TERM=dumb k3d cluster create --network k3d --image=$(K3D_NODE) \
+			     --volume .travisci/k3d-registries.yaml:/etc/rancher/k3s/registries.yaml; \
+			fi; \
 			make integration \
 		'
 
