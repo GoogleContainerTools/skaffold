@@ -182,24 +182,6 @@ func (b *RunBuilder) RunBackground(t *testing.T) {
 	t.Cleanup(func() {
 		if t.Failed() {
 			t.Log("Skaffold log:\n> ", strings.ReplaceAll(out.String(), "\n", "\n> "))
-			diagnostics := [][]string{
-				{"ps", "ax"},
-				{"kubectl", "cluster-info", "dump"},
-				{"kubectl", "describe", "nodes"},
-				{"df", "-h"},
-				{"sh", "-c", `docker ps --format '{{.ID}} {{.Names}}' | while read id name; do echo === docker: $id $name ===; docker exec $id df -h; echo; docker exec $id ps; echo; docker logs $id; done`},
-			}
-			for _, cmdline := range diagnostics {
-				out := bytes.Buffer{}
-				cmd := exec.Command(cmdline[0], cmdline[1:]...)
-				cmd.Stdout = &out
-
-				if err := cmd.Run(); err != nil {
-					t.Fatalf("%q: failed %v", cmdline, err)
-				} else {
-					t.Log(cmdline, ":\n>", strings.ReplaceAll(out.String(), "\n", "\n> "))
-				}
-			}
 		}
 	})
 }
