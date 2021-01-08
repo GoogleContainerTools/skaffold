@@ -1,3 +1,3 @@
 #!/bin/sh
 # Create a k3s/k3d registries.yaml to use the docker daemon's configured registry-mirrors.
-docker system info --format '{{printf "mirrors:\n"}}{{range $reg, $config := .RegistryConfig.IndexConfigs}}{{if $config.Mirrors}}{{printf "  %q:\n    endpoint: %q\n" $reg $config.Mirrors}}{{end}}{{end}}'
+docker system info --format '{{printf "mirrors:\n"}}{{range $reg, $config := .RegistryConfig.IndexConfigs}}{{if $config.Mirrors}}{{printf "  %s:\n    endpoint:\n" $reg}}{{range $config.Mirrors}}{{printf "      - %q\n" .}}{{end}}{{end}}{{end}}'

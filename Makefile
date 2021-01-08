@@ -242,10 +242,7 @@ integration-in-k3d: skaffold-builder
 			grep . /sys/class/net/*/mtu; echo -----; cat /proc/net/route; echo -----; \
 			if ! k3d cluster list | grep -q k3s-default; then \
 			  trap "k3d cluster delete" 0 1 2 15; \
-			  sh hack/generate-k3d-registries-yaml > /tmp/k3d-registries.yaml; \
-			  cat /tmp/k3d-registries.yaml; \
-			  TERM=dumb k3d cluster create --network k3d --image=$(K3D_NODE) \
-			     --volume /tmp/k3d-registries.yaml:/etc/rancher/k3s/registries.yaml; \
+			  TERM=dumb k3d cluster create --network k3d --image=$(K3D_NODE) ; \
 			fi; \
 			make integration \
 		'
