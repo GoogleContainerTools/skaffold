@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -79,11 +78,9 @@ func (r *SkaffoldRunner) loadImages(ctx context.Context, out io.Writer, artifact
 		}
 
 		cmd := createCmd(artifact.Tag)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := util.RunCmd(cmd); err != nil {
+		if output, err := util.RunCmdOut(cmd); err != nil {
 			color.Red.Fprintln(out, "Failed")
-			return fmt.Errorf("unable to load image %q into cluster: %w", artifact.Tag, err)
+			return fmt.Errorf("unable to load image %q into cluster: %w, %s", artifact.Tag, err, output)
 		}
 
 		color.Green.Fprintln(out, "Loaded")
