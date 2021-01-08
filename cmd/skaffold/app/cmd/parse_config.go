@@ -98,31 +98,29 @@ func getConfigs(configFile string, configSelection []string, profileSelection []
 		if err := defaults.Set(config); err != nil {
 			return nil, fmt.Errorf("setting default values: %w", err)
 		}
-		// convert relative filepaths to absolute for all configs that are not in invoked explicitly. This avoids maintaining multiple root directory information since the dependency skaffold configs would have their own root directory.
+		// convert relative file paths to absolute for all configs that are not in invoked explicitly. This avoids maintaining multiple root directory information since the dependency skaffold configs would have their own root directory.
 		if isDependencyConfig {
 			if err := yamltags.MakeFilePathsAbsolute(config, filepath.Dir(configFile)); err != nil {
 				return nil, fmt.Errorf("setting absolute filepaths: %w", err)
 			}
 		}
 
-		if required {
-			sort.Strings(profiles)
-			key := fmt.Sprintf("%s:%d", configFile, i)
-			expected := strings.Join(profiles, ",")
-			// check that this config was not previously referenced with a different set of active profiles.
-			if previous, found := appliedProfiles[key]; found {
-				if previous != expected {
-					configID := fmt.Sprintf("index %d", i)
-					if config.Metadata.Name != "" {
-						configID = config.Metadata.Name
-					}
-					return nil, fmt.Errorf("skaffold config %s from file %s imported multiple times with different profiles", configID, configFile)
+		sort.Strings(profiles)
+		key := fmt.Sprintf("%s:%d:%t", configFile, i, required)
+		expected := strings.Join(profiles, ",")
+		// check that this config was not previously referenced with a different set of active profiles.
+		// including `required` in the key implies that we search this dependency tree once for a possible match of required named configs, but also again if the current config is itself required which makes all subsequent configs also required.
+		if previous, found := appliedProfiles[key]; found {
+			if previous != expected {
+				configID := fmt.Sprintf("index %d", i)
+				if config.Metadata.Name != "" {
+					configID = config.Metadata.Name
 				}
-				continue
+				return nil, fmt.Errorf("skaffold config %s from file %s imported multiple times with different profiles", configID, configFile)
 			}
-			appliedProfiles[key] = expected
-			configs = append(configs, config)
+			continue
 		}
+		appliedProfiles[key] = expected
 
 		for _, d := range config.Dependencies {
 			var depProfiles []string
@@ -155,6 +153,10 @@ func getConfigs(configFile string, configSelection []string, profileSelection []
 				return nil, err
 			}
 			configs = append(configs, depConfigs...)
+		}
+
+		if required {
+			configs = append(configs, config)
 		}
 	}
 	return configs, nil
