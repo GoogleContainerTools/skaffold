@@ -54,6 +54,9 @@ func Marshal(in interface{}) (out []byte, err error) {
 	if err := encoder.Encode(in); err != nil {
 		return nil, err
 	}
+	if err = encoder.Close(); err != nil {
+		return nil, err
+	}
 	return b.Bytes(), nil
 }
 
@@ -78,6 +81,8 @@ func MarshalWithSeparator(in interface{}) (out []byte, err error) {
 			return nil, err
 		}
 	}
-
+	if err = encoder.Close(); err != nil {
+		return nil, err
+	}
 	return b.Bytes(), nil
 }
