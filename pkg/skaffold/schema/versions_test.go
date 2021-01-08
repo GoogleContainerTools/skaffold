@@ -254,7 +254,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				withGoogleCloudBuild("ID",
 					withShaTagger(),
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
-					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
+					withBazelArtifact(),
 				),
 				withKubectlDeploy("dep.yaml", "svc.yaml"),
 				withLogsPrefix("container"),
@@ -268,7 +268,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				withGoogleCloudBuild("ID",
 					withShaTagger(),
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
-					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
+					withBazelArtifact(),
 				),
 				withKubectlDeploy("dep.yaml", "svc.yaml"),
 				withLogsPrefix("container"),
@@ -276,13 +276,35 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 		},
 		{
 			apiVersion:  []string{latest.Version, latest.Version},
-			description: "Multiple complete config",
+			description: "Multiple complete config with same API versions",
 			config:      []string{completeConfig, completeClusterConfig},
 			expected: []util.VersionedConfig{config(
 				withGoogleCloudBuild("ID",
 					withShaTagger(),
 					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
-					withBazelArtifact("image2", "./examples/app2", "//:example.tar"),
+					withBazelArtifact(),
+				),
+				withKubectlDeploy("dep.yaml", "svc.yaml"),
+				withLogsPrefix("container"),
+			), config(
+				withClusterBuild("secret-name", "/secret", "nskaniko", "/secret.json", "120m",
+					withGitTagger(),
+					withDockerConfig("config-name", "/kaniko/.docker"),
+					withKanikoArtifact(),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withLogsPrefix("container"),
+			)},
+		},
+		{
+			apiVersion:  []string{latest.Version, v2beta8.Version},
+			description: "Multiple complete config with different API versions",
+			config:      []string{completeConfig, completeClusterConfig},
+			expected: []util.VersionedConfig{config(
+				withGoogleCloudBuild("ID",
+					withShaTagger(),
+					withDockerArtifact("image1", "./examples/app1", "Dockerfile.dev"),
+					withBazelArtifact(),
 				),
 				withKubectlDeploy("dep.yaml", "svc.yaml"),
 				withLogsPrefix("container"),
@@ -339,12 +361,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			apiVersion:  []string{""},
 			description: "ApiVersion not specified",
 			config:      []string{minimalConfig},
-			shouldErr:   true,
-		},
-		{
-			apiVersion:  []string{latest.Version, v2beta8.Version},
-			description: "ApiVersion mismatch",
-			config:      []string{simpleConfig, simpleConfig},
 			shouldErr:   true,
 		},
 		{
@@ -551,14 +567,14 @@ func withDockerArtifact(image, workspace, dockerfile string) func(*latest.BuildC
 	}
 }
 
-func withBazelArtifact(image, workspace, target string) func(*latest.BuildConfig) {
+func withBazelArtifact() func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) {
 		cfg.Artifacts = append(cfg.Artifacts, &latest.Artifact{
-			ImageName: image,
-			Workspace: workspace,
+			ImageName: "image2",
+			Workspace: "./examples/app2",
 			ArtifactType: latest.ArtifactType{
 				BazelArtifact: &latest.BazelArtifact{
-					BuildTarget: target,
+					BuildTarget: "//:example.tar",
 				},
 			},
 		})

@@ -151,7 +151,7 @@ func ParseConfig(filename string) ([]util.VersionedConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read skaffold config: %w", err)
 	}
-	factory, err := configFactoryFromAPIVersion(buf)
+	factories, err := configFactoryFromAPIVersion(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func ParseConfig(filename string) ([]util.VersionedConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to re-marshal YAML without dotted keys: %w", err)
 	}
-	return parseConfig(buf, factory)
+	return parseConfig(buf, factories)
 }
 
 // ParseConfigAndUpgrade reads a configuration file and upgrades it to a given version.
@@ -211,14 +211,14 @@ func ParseConfigAndUpgrade(filename, toVersion string) ([]util.VersionedConfig, 
 }
 
 // configFactoryFromAPIVersion checks that all configs in the input stream have the same API version, and returns a function to create a config with that API version.
-func configFactoryFromAPIVersion(buf []byte) (func() util.VersionedConfig, error) {
+func configFactoryFromAPIVersion(buf []byte) ([]func() util.VersionedConfig, error) {
 	// This is to quickly check that it's possibly a skaffold.yaml,
 	// without parsing the whole file.
 	if !bytes.Contains(buf, []byte("apiVersion")) {
 		return nil, errors.New("missing apiVersion")
 	}
 
-	var cfgVersions []APIVersion
+	var factories []func() util.VersionedConfig
 	b := bytes.NewReader(buf)
 	decoder := yaml.NewDecoder(b)
 	for {
@@ -230,25 +230,13 @@ func configFactoryFromAPIVersion(buf []byte) (func() util.VersionedConfig, error
 		if err != nil {
 			return nil, fmt.Errorf("parsing api version: %w", err)
 		}
-		cfgVersions = append(cfgVersions, v)
-	}
-
-	if len(cfgVersions) == 0 {
-		return nil, errors.New("invalid config")
-	}
-	apiVersion := cfgVersions[0].Version
-
-	for _, v := range cfgVersions {
-		if v.Version != apiVersion {
-			return nil, errors.New("multiple config versions detected in the same file")
+		factory, present := SchemaVersions.Find(v.Version)
+		if !present {
+			return nil, fmt.Errorf("unknown api version: %q", v.Version)
 		}
+		factories = append(factories, factory)
 	}
-
-	factory, present := SchemaVersions.Find(apiVersion)
-	if !present {
-		return nil, fmt.Errorf("unknown api version: %q", apiVersion)
-	}
-	return factory, nil
+	return factories, nil
 }
 
 // removeYamlAnchors removes all top-level keys starting with `.` from the input stream so they can be used as YAML anchors
@@ -285,13 +273,13 @@ func removeYamlAnchors(buf []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func parseConfig(buf []byte, factory func() util.VersionedConfig) ([]util.VersionedConfig, error) {
+func parseConfig(buf []byte, factories []func() util.VersionedConfig) ([]util.VersionedConfig, error) {
 	b := bytes.NewReader(buf)
 	decoder := yaml.NewDecoder(b)
 	decoder.KnownFields(true)
 	var cfgs []util.VersionedConfig
-	for {
-		cfg := factory()
+	for index := 0; index < len(factories); index++ {
+		cfg := factories[index]()
 		err := decoder.Decode(cfg)
 		if err == io.EOF {
 			break
