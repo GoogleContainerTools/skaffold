@@ -34,38 +34,38 @@ _upgrade_docker: &upgrade_docker
 
 jobs:
   include:
-    - os: linux
-      name: "linters"
-      script:
-        - make linters
-    - os: linux
-      name: "checks"
-      script:
-        - make checks
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-    - os: linux
-      name: "Linux unit"
-      script:
-        - make coverage
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-    - os: osx
-      name: "OSX unit"
-      script:
-        - make quicktest
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-    - os: windows
-      name: "Windows unit"
-      script:
-        - go test -short -timeout 60s ./...
-      cache:
-        directories:
-          - C:\\Users\\travis\\AppData\\Local\\go-build
+#    - os: linux
+#      name: "linters"
+#      script:
+#        - make linters
+#    - os: linux
+#      name: "checks"
+#      script:
+#        - make checks
+#      cache:
+#        directories:
+#          - $HOME/.cache/go-build
+#    - os: linux
+#      name: "Linux unit"
+#      script:
+#        - make coverage
+#      cache:
+#        directories:
+#          - $HOME/.cache/go-build
+#    - os: osx
+#      name: "OSX unit"
+#      script:
+#        - make quicktest
+#      cache:
+#        directories:
+#          - $HOME/.cache/go-build
+#    - os: windows
+#      name: "Windows unit"
+#      script:
+#        - go test -short -timeout 60s ./...
+#      cache:
+#        directories:
+#          - C:\\Users\\travis\\AppData\\Local\\go-build
     - name: "kind integration partition 0"
       <<: *integration_test
       script:
@@ -102,17 +102,17 @@ jobs:
       <<: *upgrade_docker
       script:
         - env IT_PARTITION=3 make integration-in-k3d
-    - os: linux
-      name: "diag/Linux unit"
-      script:
-        - make -f Makefile.diag coverage
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-    - os: osx
-      name: "diag/OSX unit"
-      script:
-        - make -f Makefile.diag test
-      cache:
-        directories:
-          - $HOME/.cache/go-build
+#    - os: linux
+#      name: "diag/Linux unit"
+#      script:
+#        - make -f Makefile.diag coverage
+#      cache:
+#        directories:
+#          - $HOME/.cache/go-build
+#    - os: osx
+#      name: "diag/OSX unit"
+#      script:
+#        - make -f Makefile.diag test
+#      cache:
+#        directories:
+#          - $HOME/.cache/go-build
