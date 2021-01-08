@@ -197,7 +197,7 @@ func (b *RunBuilder) RunBackground(t *testing.T) {
 				output, err := cmd.CombinedOutput()
 				text := "(no output)"
 				if len(output) > 0 {
-					text = strings.ReplaceAll("\n> "+out.String(), "\n", "\n> ")
+					text = strings.ReplaceAll("\n> "+output.String(), "\n", "\n> ")
 				}
 				if err != nil {
 					t.Fatal(cmdline, " failed: ", err, text)
