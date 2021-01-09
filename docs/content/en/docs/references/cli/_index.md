@@ -134,6 +134,7 @@ Options:
   -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
+      --cfg=[]: Filter Skaffold configs to only the provided values
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -169,6 +170,7 @@ Env vars:
 * `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
+* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
@@ -344,6 +346,7 @@ Env vars:
 Options:
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
+      --cfg=[]: Filter Skaffold configs to only the provided values
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
@@ -388,6 +391,7 @@ Env vars:
 
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
+* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
@@ -429,6 +433,7 @@ Delete the deployed application
 
 
 Options:
+      --cfg=[]: Filter Skaffold configs to only the provided values
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -448,6 +453,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
@@ -480,6 +486,7 @@ Examples:
 
 Options:
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+      --cfg=[]: Filter Skaffold configs to only the provided values
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -517,6 +524,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
+* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
@@ -554,6 +562,7 @@ Run a pipeline in development mode
 Options:
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
+      --cfg=[]: Filter Skaffold configs to only the provided values
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
@@ -599,6 +608,7 @@ Env vars:
 
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
+* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
@@ -648,6 +658,7 @@ Examples:
   skaffold diagnose --yaml-only --profile PROFILE
 
 Options:
+      --cfg=[]: Filter Skaffold configs to only the provided values
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
@@ -663,6 +674,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
@@ -684,6 +696,7 @@ Examples:
   skaffold fix --version skaffold/v1
 
 Options:
+      --cfg=[]: Filter Skaffold configs to only the provided values
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --overwrite=false: Overwrite original config with fixed config
       --version='skaffold/v2beta11': Target schema version to upgrade to
@@ -697,6 +710,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_OVERWRITE` (same as `--overwrite`)
 * `SKAFFOLD_VERSION` (same as `--version`)
@@ -712,6 +726,7 @@ Options:
       --analyze=false: Print all discoverable Dockerfiles and images in JSON format to stdout
   -a, --artifact=[]: '='-delimited Dockerfile/image pair, or JSON string, to generate build artifact
 (example: --artifact='{"builder":"Docker","payload":{"path":"/web/Dockerfile.web"},"image":"gcr.io/web-project/image"}')
+      --cfg=[]: Filter Skaffold configs to only the provided values
       --compose-file='': Initialize from a docker-compose file
       --default-kustomization='': Default Kustomization overlay path (others will be added as profiles)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -731,6 +746,7 @@ Env vars:
 
 * `SKAFFOLD_ANALYZE` (same as `--analyze`)
 * `SKAFFOLD_ARTIFACT` (same as `--artifact`)
+* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_COMPOSE_FILE` (same as `--compose-file`)
 * `SKAFFOLD_DEFAULT_KUSTOMIZATION` (same as `--default-kustomization`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
@@ -769,6 +785,7 @@ Examples:
 Options:
       --add-skaffold-labels=true: Add Skaffold-specific labels to rendered manifest. If false, custom labels are still applied. Helpful for GitOps model where Skaffold is not the deployer.
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+      --cfg=[]: Filter Skaffold configs to only the provided values
   -d, --default-repo='': Default repository value (overrides global config)
       --digest-source='local': Set to 'local' to build images locally and use digests from built images; Set to 'remote' to resolve the digest of images by tag from the remote registry; Set to 'none' to use tags directly from the Kubernetes manifests
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -791,6 +808,7 @@ Env vars:
 
 * `SKAFFOLD_ADD_SKAFFOLD_LABELS` (same as `--add-skaffold-labels`)
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
+* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
@@ -820,6 +838,7 @@ Options:
   -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
+      --cfg=[]: Filter Skaffold configs to only the provided values
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
@@ -864,6 +883,7 @@ Env vars:
 * `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
+* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
@@ -990,6 +1010,7 @@ Examples:
 
 Options:
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+      --cfg=[]: Filter Skaffold configs to only the provided values
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
 
 Usage:
@@ -1002,6 +1023,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
+* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 
 ### skaffold version

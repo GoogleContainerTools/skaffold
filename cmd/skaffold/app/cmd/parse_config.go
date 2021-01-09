@@ -38,8 +38,8 @@ func getAllConfigs(opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, error
 		return nil, err
 	}
 	if len(cfgs) == 0 {
-		if len(opts.Configuration) > 0 {
-			return nil, fmt.Errorf("did not find any configs matching selection %v", opts.Configuration)
+		if len(opts.ConfigurationFilter) > 0 {
+			return nil, fmt.Errorf("did not find any configs matching selection %v", opts.ConfigurationFilter)
 		}
 		return nil, fmt.Errorf("failed to get any valid configs from %s", opts.ConfigurationFile)
 	}
@@ -89,7 +89,7 @@ func getConfigs(configFile string, configSelection []string, profileSelection []
 
 		// if config names are explicitly specified via the configuration flag, then need to include the dependency tree of configs starting at that named config.
 		// `requiredConfigs` specifies if we are already in the dependency-tree of a required config, so all selected configs are required even if they are not explicitly named va the configuration flag.
-		required := requiredConfigs || len(opts.Configuration) == 0 || util.StrSliceContains(opts.Configuration, config.Metadata.Name)
+		required := requiredConfigs || len(opts.ConfigurationFilter) == 0 || util.StrSliceContains(opts.ConfigurationFilter, config.Metadata.Name)
 
 		profiles, err := schema.ApplyProfiles(config, opts, profileSelection)
 		if err != nil {
@@ -136,19 +136,22 @@ func getConfigs(configFile string, configSelection []string, profileSelection []
 					}
 				}
 			}
-
-			fi, err := os.Stat(d.Path)
+			path := d.Path
+			if path == "" {
+				// empty path means configs in the same file
+				path = configFile
+			}
+			fi, err := os.Stat(path)
 			if err != nil {
 				if os.IsNotExist(errors.Unwrap(err)) {
 					return nil, fmt.Errorf("could not find skaffold config %s that is referenced as a dependency in config %s", d.Path, configFile)
 				}
 				return nil, fmt.Errorf("parsing dependencies for skaffold config %s: %w", configFile, err)
 			}
-			path := d.Path
 			if fi.IsDir() {
 				path = filepath.Join(path, "skaffold.yaml")
 			}
-			depConfigs, err := getConfigs(path, d.Names, depProfiles, opts, appliedProfiles, required, true, configNameToFile)
+			depConfigs, err := getConfigs(path, d.Names, depProfiles, opts, appliedProfiles, required, path != configFile, configNameToFile)
 			if err != nil {
 				return nil, err
 			}

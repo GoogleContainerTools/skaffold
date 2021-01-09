@@ -41,7 +41,7 @@ type WaitForDeletions struct {
 // in the config file itself
 type SkaffoldOptions struct {
 	ConfigurationFile     string
-	Configuration         []string
+	ConfigurationFilter   []string
 	GlobalConfig          string
 	EventLogFile          string
 	Cleanup               bool

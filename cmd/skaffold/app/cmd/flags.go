@@ -68,6 +68,14 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"all"},
 	},
 	{
+		Name:          "cfg",
+		Usage:         "Filter Skaffold configs to only the provided values",
+		Value:         &opts.ConfigurationFilter,
+		DefValue:      []string{},
+		FlagAddMethod: "StringSliceVar",
+		DefinedOn:     []string{"all"},
+	},
+	{
 		Name:          "profile",
 		Shorthand:     "p",
 		Usage:         "Activate profiles by name (prefixed with `-` to disable a profile)",

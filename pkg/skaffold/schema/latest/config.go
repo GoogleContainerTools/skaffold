@@ -81,7 +81,7 @@ type ConfigDependency struct {
 	Names []string `yaml:"configs,omitempty"`
 
 	// Path describes the path to the file containing the required configs.
-	Path string `yaml:"path" yamltags:"required,filepath"`
+	Path string `yaml:"path" yamltags:"filepath"`
 
 	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
 	ActiveProfiles []ProfileDependency `yaml:"activeProfiles,omitempty"`

@@ -791,9 +791,6 @@
       "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
     },
     "ConfigDependency": {
-      "required": [
-        "path"
-      ],
       "properties": {
         "activeProfiles": {
           "items": {
