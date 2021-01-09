@@ -53,6 +53,8 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions, namedProf
 			return nil, fmt.Errorf("applying profile %q: %w", name, err)
 		}
 	}
+	// Remove the Profiles field from the returned config
+	c.Profiles = nil
 
 	return profiles, checkKubeContextConsistency(contextSpecificProfiles, opts.KubeContext, c.Deploy.KubeContext)
 }
@@ -197,9 +199,6 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 		merged := overlayProfileField(name, configV.FieldByName(name).Interface(), profileV.FieldByName(name).Interface())
 		mergedV.FieldByName(name).Set(reflect.ValueOf(merged))
 	}
-
-	// Remove the Profiles field from the returned config
-	config.Profiles = nil
 
 	if len(profile.Patches) == 0 {
 		return nil
