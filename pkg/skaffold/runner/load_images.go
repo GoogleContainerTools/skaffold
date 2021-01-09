@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/docker/distribution/reference"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -81,10 +82,13 @@ func (r *SkaffoldRunner) loadImages(ctx context.Context, out io.Writer, artifact
 		cmd := createCmd(artifact.Tag)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+		logrus.Info("About to execute: ", cmd.Args)
 		if err := cmd.Run(); err != nil {
+			logrus.Error("Error: ", cmd.Args, ": ", err)
 			color.Red.Fprintln(out, "Failed")
 			return fmt.Errorf("unable to load image %q into cluster: %w", artifact.Tag, err)
 		}
+		logrus.Info("Finished: ", cmd.Args)
 
 		color.Green.Fprintln(out, "Loaded")
 	}

@@ -186,10 +186,11 @@ func (b *RunBuilder) RunBackground(t *testing.T) {
 				{"ps", "ax"},
 				{"sh", "-c", "grep . /sys/class/net/*/mtu"},
 				{"cat", "/proc/net/route"},
-				{"kubectl", "cluster-info", "dump"},
-				{"kubectl", "describe", "nodes"},
 				{"df", "-h"},
+				{"kubectl", "get", "events", "--all-namespaces"},
+				{"kubectl", "describe", "nodes"},
 				{"sh", "-c", `docker ps --format '{{.ID}} {{.Names}}' | while read id name; do echo === docker: $id $name ===; docker exec $id df -h; echo; docker exec $id ps; echo; docker logs $id; done`},
+				{"kubectl", "cluster-info", "dump"},
 			}
 			for _, cmdline := range diagnostics {
 				cmd := exec.Command(cmdline[0], cmdline[1:]...)
