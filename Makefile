@@ -210,6 +210,7 @@ integration-in-kind: skaffold-builder
 			if ! kind get clusters | grep -q kind; then \
 			  trap "kind delete cluster" 0 1 2 15; \
 			  sh hack/generate-kind-registries-yaml > /tmp/kind-registries.yaml; \
+			  cat /tmp/kind-registries.yaml; \
 			  TERM=dumb kind create cluster --config /tmp/kind-registries.yaml; \
 			fi; \
 			kind get kubeconfig --internal > /tmp/kind-config; \
@@ -238,7 +239,10 @@ integration-in-k3d: skaffold-builder
 			grep . /sys/class/net/*/mtu; echo -----; cat /proc/net/route; echo -----; \
 			if ! k3d cluster list | grep -q k3s-default; then \
 			  trap "k3d cluster delete" 0 1 2 15; \
-			  TERM=dumb k3d cluster create --network k3d; \
+			  sh hack/generate-k3d-registries-yaml > /tmp/k3d-registries.yaml; \
+			  cat /tmp/k3d-registries.yaml; \
+			  TERM=dumb k3d cluster create --network k3d \
+			    --volume /tmp/k3d-registries.yaml:/etc/rancher/k3s/registries.yaml; \
 			fi; \
 			make integration \
 		'
