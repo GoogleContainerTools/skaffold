@@ -1,5 +1,7 @@
 apiVersion: skaffold/v2beta11
 kind: Config
+metadata:
+  name: app-config
 requires:
 - path: ../base
 build:

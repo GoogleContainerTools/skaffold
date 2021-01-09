@@ -53,4 +53,8 @@ Now, from the `multi-config-microservices` directory, again run:
 skaffold dev
 ```
 
-The two applications should be built and deployed like before.
+The two applications should be built and deployed like before but in the same Skaffold session. If you want to go back to iterating on the applications individually you can simply pass in the `cfg` flag with the `metadata.name` value of the config that you want to activate.
+
+```bash
+skaffold dev --cfg app-config
+```
