@@ -53,8 +53,26 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions, namedProf
 			return nil, fmt.Errorf("applying profile %q: %w", name, err)
 		}
 	}
-	// Remove the Profiles field from the returned config
-	c.Profiles = nil
+
+	// remove profiles section for run modes where profiles are already merged into the main pipeline
+	switch opts.Mode() {
+	case cfg.RunModes.Build:
+		fallthrough
+	case cfg.RunModes.Dev:
+		fallthrough
+	case cfg.RunModes.Deploy:
+		fallthrough
+	case cfg.RunModes.Debug:
+		fallthrough
+	case cfg.RunModes.Render:
+		fallthrough
+	case cfg.RunModes.Run:
+		fallthrough
+	case cfg.RunModes.Diagnose:
+		fallthrough
+	case cfg.RunModes.Delete:
+		c.Profiles = nil
+	}
 
 	return profiles, checkKubeContextConsistency(contextSpecificProfiles, opts.KubeContext, c.Deploy.KubeContext)
 }

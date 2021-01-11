@@ -333,6 +333,7 @@ requires:
 			}
 
 			cfgs, err := getAllConfigs(config.SkaffoldOptions{
+				Command:             "dev",
 				ConfigurationFile:   test.documents[0].path,
 				ConfigurationFilter: test.configFilter,
 				Profiles:            test.profiles,
