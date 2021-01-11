@@ -456,6 +456,9 @@ type DeployConfig struct {
 // for the deploy step. All three deployer types can be used at the same
 // time for hybrid workflows.
 type DeployType struct {
+	// DockerDeploy uses the `docker` CLI to create application containers in Docker.
+	DockerDeploy *DockerDeploy `yaml:"docker,omitempty"`
+
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
 
@@ -468,6 +471,12 @@ type DeployType struct {
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty"`
+}
+
+// DockerDeploy uses the `docker` CLI to create application containers in Docker.
+type DockerDeploy struct {
+	// UseCompose tells skaffold whether or not to deploy using `docker-compose`.
+	UseCompose bool `yaml:"useCompose,omitempty"`
 }
 
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
