@@ -2825,10 +2825,6 @@
         "status": {
           "type": "string"
         },
-        "autoTrigger": {
-          "type": "boolean",
-          "format": "boolean"
-        },
         "statusCode": {
           "$ref": "#/definitions/protoStatusCode"
         }

@@ -85,8 +85,7 @@ message BuildState {
 // `TestState` describes the status of the current test
 message TestState {
     string status = 1;
-    bool autoTrigger = 2;
-    StatusCode statusCode = 3;
+    StatusCode statusCode = 2;
 }
 
 // `DeployState` describes the status of the current deploy

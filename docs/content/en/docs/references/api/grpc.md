@@ -730,7 +730,6 @@ anytime a test starts or completes, successfully or not.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
-| autoTrigger | [bool](#bool) |  |  |
 | statusCode | [StatusCode](#proto.StatusCode) |  |  |
 
 
