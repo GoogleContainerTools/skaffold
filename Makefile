@@ -242,7 +242,7 @@ integration-in-k3d: skaffold-builder
 			  sh hack/generate-k3d-registries-yaml > /tmp/k3d-registries.yaml; \
 			  cat /tmp/k3d-registries.yaml; \
 			  TERM=dumb k3d cluster create --network k3d \
-			    --volume /tmp/k3d-registries.yaml:/etc/rancher/k3s/registries.yaml; \
+			    --volume /tmp/k3d-registries.yaml:/etc/rancher/k3s/registries.yaml --verbose; \
 			fi; \
 			make integration \
 		'
