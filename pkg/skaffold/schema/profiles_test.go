@@ -486,6 +486,7 @@ func TestApplyProfiles(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			setupFakeKubeConfig(t, api.Config{CurrentContext: "prod-context"})
 			_, err := ApplyProfiles(test.config, cfg.SkaffoldOptions{
+				Command:               "dev",
 				KubeContext:           test.kubeContextCli,
 				ProfileAutoActivation: test.profileAutoActivationCli,
 			}, []string{test.profile})
