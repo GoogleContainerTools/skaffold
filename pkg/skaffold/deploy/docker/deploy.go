@@ -18,8 +18,11 @@ package docker
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"io"
+	"os"
+
+	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
@@ -28,7 +31,8 @@ import (
 )
 
 type Deployer struct {
-	client dockerutil.LocalDaemon
+	client             dockerutil.LocalDaemon
+	deployedContainers []string
 }
 
 type Config interface {
@@ -46,18 +50,32 @@ func NewDeployer(cfg Config, labels map[string]string, d *latest.DockerDeploy) (
 }
 
 func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
-	// TODO(nkubala): implement
-	return nil, errors.New("not implemented")
+	for _, b := range builds {
+		id, err := d.client.Run(ctx, out, b.Tag)
+		if err != nil {
+			return nil, errors.Wrap(err, "creating container in local docker")
+		}
+		fmt.Fprintf(os.Stdout, "container %s created from image %s\n", id, b.Tag)
+		d.deployedContainers = append(d.deployedContainers, id)
+	}
+
+	return nil, nil
 }
 
 func (d *Deployer) Dependencies() ([]string, error) {
-	// TODO(nkubala): implement
-	return nil, errors.New("not implemented")
+	// noop since there is no deploy config
+	// TODO(nkubala): add docker-compose.yml here?
+	return nil, nil
 }
 
-func (d *Deployer) Cleanup(context.Context, io.Writer) error {
-	// TODO(nkubala): implement
-	return errors.New("not implemented")
+func (d *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+	// stop, remove, prune?
+	for _, id := range d.deployedContainers {
+		if err := d.client.Delete(ctx, out, id); err != nil {
+			return errors.Wrap(err, "cleaning up deployed container")
+		}
+	}
+	return nil
 }
 
 func (d *Deployer) Render(context.Context, io.Writer, []build.Artifact, bool, string) error {
