@@ -13,4 +13,4 @@ profiles:
   activation:
     - env: MAGIC_VAR=1337
     - kubeContext: minikube
-      command: dev
+    - command: dev
