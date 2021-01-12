@@ -7,10 +7,6 @@ go_import_path: /skaffold
 git:
   submodules: false
 
-branches:
-  only:
-    - master
-
 _integration_test: &integration_test
   os: linux
   language: minimal
