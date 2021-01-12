@@ -18,6 +18,7 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -73,7 +74,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	tester := getTester(runCtx, isLocalImage)
 	syncer := getSyncer(runCtx)
 	var deployer deploy.Deployer
-	deployer, err = getDeployer(runCtx, labeller.Labels())
+	var local bool
+	deployer, local, err = getDeployer(runCtx, labeller.Labels())
 	if err != nil {
 		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
@@ -129,6 +131,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		runCtx:        runCtx,
 		intents:       intents,
 		isLocalImage:  isLocalImage,
+		localDeploy:   local,
 	}, nil
 }
 
@@ -226,50 +229,60 @@ func getSyncer(cfg sync.Config) sync.Syncer {
 	return sync.NewSyncer(cfg)
 }
 
-func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deploy.Deployer, error) {
+func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deploy.Deployer, bool, error) {
 	deployerCfg := runCtx.Deployers()
+	localDeploy := false
+	remoteDeploy := false
 
 	var deployers deploy.DeployerMux
 	for _, d := range deployerCfg {
 		if d.DockerDeploy != nil {
+			localDeploy = true
 			d, err := docker.NewDeployer(runCtx, labels, d.DockerDeploy)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 			deployers = append(deployers, d)
 		}
 		if d.HelmDeploy != nil {
+			remoteDeploy = true
 			h, err := helm.NewDeployer(runCtx, labels, d.HelmDeploy)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 			deployers = append(deployers, h)
 		}
 
 		if d.KptDeploy != nil {
+			remoteDeploy = true
 			deployers = append(deployers, kpt.NewDeployer(runCtx, labels, d.KptDeploy))
 		}
 
 		if d.KubectlDeploy != nil {
+			remoteDeploy = true
 			deployer, err := kubectl.NewDeployer(runCtx, labels, d.KubectlDeploy)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 			deployers = append(deployers, deployer)
 		}
 
 		if d.KustomizeDeploy != nil {
+			remoteDeploy = true
 			deployer, err := kustomize.NewDeployer(runCtx, labels, d.KustomizeDeploy)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 			deployers = append(deployers, deployer)
 		}
 	}
+	if localDeploy && remoteDeploy {
+		return nil, false, errors.New("docker deployment not supported alongside cluster deployments.")
+	}
 	// avoid muxing overhead when only a single deployer is configured
 	if len(deployers) == 1 {
-		return deployers[0], nil
+		return deployers[0], localDeploy, nil
 	}
 
-	return deployers, nil
+	return deployers, localDeploy, nil
 }

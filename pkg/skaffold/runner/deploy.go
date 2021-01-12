@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -61,11 +62,14 @@ They are tagged and referenced by a unique, local only, tag instead.
 See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
-	// Check that the cluster is reachable.
-	// This gives a better error message when the cluster can't
-	// be reached.
-	if err := failIfClusterIsNotReachable(); err != nil {
-		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	if !r.localDeploy {
+		fmt.Fprintf(os.Stdout, "checking if cluster is reachable\n")
+		// Check that the cluster is reachable.
+		// This gives a better error message when the cluster can't
+		// be reached.
+		if err := failIfClusterIsNotReachable(); err != nil {
+			return fmt.Errorf("unable to connect to Kubernetes: %w", err)
+		}
 	}
 
 	if len(localImages) > 0 && r.runCtx.Cluster.LoadImages {
@@ -97,6 +101,10 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 	event.DeployComplete()
 	r.runCtx.UpdateNamespaces(namespaces)
+	// TODO(nkubala): implement status checking for docker deployments using ContainerWait
+	if r.localDeploy {
+		return nil
+	}
 	sErr := r.performStatusCheck(ctx, statusCheckOut)
 	return sErr
 }
