@@ -1,0 +1,27 @@
+
+services:
+  app:
+    image: leeroy-app
+    build:
+      context: leeroy-app
+      args:
+        BASE: base
+    links:
+      - web
+    depends_on:
+      - base
+  web:
+    image: leeroy-web
+    build:
+      context: leeroy-web
+      args:
+        BASE: base
+    ports:
+      - "8080:9000"
+    depends_on:
+      - base
+  base:
+    image: base
+    build: base
+    entrypoint: "sh -c"
+    command: "exit 0"

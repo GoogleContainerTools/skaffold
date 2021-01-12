@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
@@ -230,6 +231,13 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deplo
 
 	var deployers deploy.DeployerMux
 	for _, d := range deployerCfg {
+		if d.DockerDeploy != nil {
+			d, err := docker.NewDeployer(runCtx, labels, d.DockerDeploy)
+			if err != nil {
+				return nil, err
+			}
+			deployers = append(deployers, d)
+		}
 		if d.HelmDeploy != nil {
 			h, err := helm.NewDeployer(runCtx, labels, d.HelmDeploy)
 			if err != nil {
