@@ -218,8 +218,10 @@ integration-in-kind: skaffold-builder
 .PHONY: integration-in-k3d
 integration-in-k3d: skaffold-builder
 	echo '{}' > /tmp/docker-config
+	# pre-pull image to avoid very odd hang seen in tests when Skaffold uses `k3d image import` to load images
+	docker pull rancher/k3d-tools:v3.4.0
 	# Custom docker networks are created with mtu 1500 (https://github.com/moby/moby/issues/34981#issuecomment-343616165)
-	# so pull out the MTU from the default network. 
+	# so pull out the MTU from the default network.
 	# Instruct k3d to use this specific network.
 	docker network inspect k3d >/dev/null 2>&1 || ( \
 		MTU=`docker network inspect bridge --format '{{index .Options "com.docker.network.driver.mtu"}}'` ; \
