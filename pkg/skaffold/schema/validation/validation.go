@@ -387,6 +387,7 @@ func validateSyncRules(artifacts []*latest.Artifact) []error {
 func validatePortForwardResources(pfrs []*latest.PortForwardResource) []error {
 	var errs []error
 	validResourceTypes := map[string]struct{}{
+		"container":             {},
 		"pod":                   {},
 		"deployment":            {},
 		"service":               {},
