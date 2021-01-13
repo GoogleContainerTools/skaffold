@@ -189,8 +189,14 @@ skaffold-builder:
 .PHONY: integration-in-kind
 integration-in-kind: skaffold-builder
 	echo '{}' > /tmp/docker-config
-	docker network inspect kind >/dev/null 2>&1 || docker network create kind
+	# Custom docker networks are created with mtu 1500 (https://github.com/moby/moby/issues/34981#issuecomment-343616165)
+	# so pull out the MTU from the default network.
+	# Kind's kindnet attempts to configure its mtu from the default # bridge (eth0 device).
+	docker network inspect kind >/dev/null 2>&1 || ( \
+		MTU=`docker network inspect bridge --format '{{index .Options "com.docker.network.driver.mtu"}}'` ; \
+		docker network create kind -o "com.docker.network.driver.mtu=$$MTU" )
 	docker run --rm \
+		--network kind \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.gradle:/root/.gradle \
 		-v $(HOME)/.cache:/root/.cache \
@@ -199,7 +205,6 @@ integration-in-kind: skaffold-builder
 		-e KUBECONFIG=/tmp/kind-config \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
-		--network kind \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -eu -c ' \
 			if ! kind get clusters | grep -q kind; then \
@@ -213,6 +218,13 @@ integration-in-kind: skaffold-builder
 .PHONY: integration-in-k3d
 integration-in-k3d: skaffold-builder
 	echo '{}' > /tmp/docker-config
+	# Custom docker networks are created with mtu 1500 (https://github.com/moby/moby/issues/34981#issuecomment-343616165)
+	# so pull out the MTU from the default network. 
+	# Instruct k3d to use this specific network.
+	docker network inspect k3d >/dev/null 2>&1 || ( \
+		MTU=`docker network inspect bridge --format '{{index .Options "com.docker.network.driver.mtu"}}'` ; \
+		docker network create k3d -o "com.docker.network.driver.mtu=$$MTU" )
+	# instruct k3d to attach its containers to a specific network
 	docker run --rm \
 		--network="host" \
 		-v /var/run/docker.sock:/var/run/docker.sock \
@@ -223,8 +235,11 @@ integration-in-k3d: skaffold-builder
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		sh -c ' \
-			k3d cluster list | grep -q k3s-default || TERM=dumb k3d cluster create; \
+		sh -eu -c ' \
+			if ! k3d cluster list | grep -q k3s-default; then \
+			  trap "k3d cluster delete" 0 1 2 15; \
+			  TERM=dumb k3d cluster create --network k3d; \
+			fi; \
 			make integration \
 		'
 
