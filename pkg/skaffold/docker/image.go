@@ -36,6 +36,7 @@ import (
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/streamformatter"
+	"github.com/docker/go-connections/nat"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sirupsen/logrus"
 
@@ -69,7 +70,7 @@ type LocalDaemon interface {
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
-	Run(ctx context.Context, out io.Writer, ref string) (string, error)
+	Run(ctx context.Context, out io.Writer, name, ref, network string, pf []*latest.PortForwardResource) (string, error)
 	Delete(ctx context.Context, out io.Writer, id string) error
 	Tag(ctx context.Context, image, ref string) error
 	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
@@ -80,6 +81,8 @@ type LocalDaemon interface {
 	ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error)
 	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
 	DiskUsage(ctx context.Context) (uint64, error)
+	NetworkCreate(ctx context.Context, name string) error
+	NetworkRemove(ctx context.Context, name string) error
 	RawClient() client.CommonAPIClient
 }
 
@@ -408,11 +411,21 @@ func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) erro
 }
 
 // Run creates a container from a given image reference, and returns then container ID.
-func (l *localDaemon) Run(ctx context.Context, out io.Writer, ref string) (string, error) {
-	cfg := &container.Config{
-		Image: ref,
+func (l *localDaemon) Run(ctx context.Context, out io.Writer, name, ref, network string, pf []*latest.PortForwardResource) (string, error) {
+	ports, bindings, err := getPorts(pf)
+	if err != nil {
+		return "", fmt.Errorf("defining docker port forward: %w", err)
 	}
-	c, err := l.apiClient.ContainerCreate(ctx, cfg, nil, nil, nil, "")
+	cfg := &container.Config{
+		Image:        ref,
+		ExposedPorts: ports,
+	}
+
+	hCfg := &container.HostConfig{
+		NetworkMode:  container.NetworkMode(network),
+		PortBindings: bindings,
+	}
+	c, err := l.apiClient.ContainerCreate(ctx, cfg, hCfg, nil, nil, name)
 	if err != nil {
 		return "", err
 	}
@@ -420,6 +433,37 @@ func (l *localDaemon) Run(ctx context.Context, out io.Writer, ref string) (strin
 		return "", err
 	}
 	return c.ID, nil
+}
+
+func getPorts(pf []*latest.PortForwardResource) (nat.PortSet, nat.PortMap, error) {
+	s := make(nat.PortSet)
+	m := make(nat.PortMap)
+	for _, p := range pf {
+		port, err := nat.NewPort("tcp", p.Port.String())
+		if err != nil {
+			return nil, nil, err
+		}
+		s[port] = struct{}{}
+		m[port] = []nat.PortBinding{
+			{HostIP: p.Address, HostPort: fmt.Sprintf("%d", p.LocalPort)},
+		}
+	}
+	return s, m, nil
+}
+
+func (l *localDaemon) NetworkCreate(ctx context.Context, name string) error {
+	r, err := l.apiClient.NetworkCreate(ctx, name, types.NetworkCreate{})
+	if err != nil {
+		return err
+	}
+	if r.Warning != "" {
+		logrus.Warnln(r.Warning)
+	}
+	return nil
+}
+
+func (l *localDaemon) NetworkRemove(ctx context.Context, name string) error {
+	return l.apiClient.NetworkRemove(ctx, name)
 }
 
 // Tag adds a tag to an image.

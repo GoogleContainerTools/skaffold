@@ -8,3 +8,4 @@ build:
 deploy:
   docker:
     useCompose: false
+    images: [skaffold-example]

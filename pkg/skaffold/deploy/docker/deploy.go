@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/pkg/errors"
 
@@ -28,30 +29,60 @@ import (
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	dockerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type Deployer struct {
+	cfg                *latest.DockerDeploy
 	client             dockerutil.LocalDaemon
 	deployedContainers []string
+	pf                 []*latest.PortForwardResource
+	network            string
+	once               sync.Once
 }
 
 type Config interface {
 	deploy.Config
 }
 
-func NewDeployer(cfg Config, labels map[string]string, d *latest.DockerDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, d *latest.DockerDeploy, resources []*latest.PortForwardResource) (*Deployer, error) {
 	client, err := dockerutil.NewAPIClient(cfg)
+	var pf []*latest.PortForwardResource
+	for _, r := range resources {
+		if r.Type == "Container" {
+			pf = append(pf, r)
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
 	return &Deployer{
-		client: client,
+		cfg:     d,
+		client:  client,
+		pf:      pf,
+		network: "skaffold-network",
 	}, nil
 }
 
 func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+	var err error
+	d.once.Do(func() {
+		err = d.client.NetworkCreate(ctx, d.network)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("creating skaffold network %s: %w", d.network, err)
+	}
 	for _, b := range builds {
-		id, err := d.client.Run(ctx, out, b.Tag)
+		if !util.StrSliceContains(d.cfg.Images, b.ImageName) {
+			continue
+		}
+		var pf []*latest.PortForwardResource
+		for _, r := range d.pf {
+			if r.Name == b.ImageName {
+				pf = append(pf, r)
+			}
+		}
+		id, err := d.client.Run(ctx, out, b.ImageName, b.Tag, d.network, pf)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating container in local docker")
 		}
@@ -75,7 +106,9 @@ func (d *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 			return errors.Wrap(err, "cleaning up deployed container")
 		}
 	}
-	return nil
+
+	err := d.client.NetworkRemove(ctx, d.network)
+	return errors.Wrap(err, "cleaning up skaffold created network")
 }
 
 func (d *Deployer) Render(context.Context, io.Writer, []build.Artifact, bool, string) error {

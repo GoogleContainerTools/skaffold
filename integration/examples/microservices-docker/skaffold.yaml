@@ -1,6 +1,8 @@
 apiVersion: skaffold/v2beta11
 kind: Config
 build:
+  local:
+    push: false
   artifacts:
     - image: leeroy-web
       context: leeroy-web
@@ -16,13 +18,14 @@ build:
       context: base
 deploy:
   docker:
-    name: microservices
+    useCompose: false
+    images: [leeroy-web, leeroy-app]
 portForward:
-  - resourceType: deployment
+  - resourceType: Container
     resourceName: leeroy-web
     port: 8080
     localPort: 9000
-  - resourceType: deployment
+  - resourceType: Container
     resourceName: leeroy-app
-    port: http
+    port: 50051
     localPort: 9001

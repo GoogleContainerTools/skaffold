@@ -238,7 +238,7 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deplo
 	for _, d := range deployerCfg {
 		if d.DockerDeploy != nil {
 			localDeploy = true
-			d, err := docker.NewDeployer(runCtx, labels, d.DockerDeploy)
+			d, err := docker.NewDeployer(runCtx, labels, d.DockerDeploy, runCtx.PortForwardResources())
 			if err != nil {
 				return nil, false, err
 			}

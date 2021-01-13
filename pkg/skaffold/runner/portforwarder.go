@@ -20,11 +20,21 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 func (r *SkaffoldRunner) createForwarder(out io.Writer) *portforward.ForwarderManager {
 	if !r.runCtx.PortForward() {
 		return nil
+	}
+	pfr := r.runCtx.PortForwardResources()
+	var k8sRequests []*latest.PortForwardResource
+	for _, p := range pfr {
+		// container type port forward requests are handled during deploy itself.
+		if p.Type == "Container" {
+			continue
+		}
+		k8sRequests = append(k8sRequests, p)
 	}
 
 	return portforward.NewForwarderManager(out,
@@ -33,5 +43,5 @@ func (r *SkaffoldRunner) createForwarder(out io.Writer) *portforward.ForwarderMa
 		r.runCtx.GetNamespaces(),
 		r.labeller.RunIDSelector(),
 		r.runCtx.Opts.PortForward,
-		r.runCtx.PortForwardResources())
+		k8sRequests)
 }
