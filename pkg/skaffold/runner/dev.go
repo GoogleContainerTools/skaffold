@@ -235,7 +235,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
-	logger := r.createLogger(out, bRes)
+	logger, err := r.createLogger(out, bRes)
+	if err != nil {
+		return err
+	}
 	defer logger.Stop()
 
 	debugContainerManager := r.createContainerManager()

@@ -17,7 +17,6 @@ limitations under the License.
 package kubernetes
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -30,6 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	logutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -163,19 +163,8 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 
 	headerColor := a.colorPicker.Pick(pod)
 	prefix := a.prefix(pod, container)
-	if err := a.streamRequest(ctx, headerColor, prefix, tr); err != nil {
+	if err := logutil.StreamRequest(ctx, a.output, headerColor, prefix, make(chan bool), &a.outputLock, a.IsMuted, tr); err != nil {
 		logrus.Errorf("streaming request %s", err)
-	}
-}
-
-func (a *LogAggregator) printLogLine(headerColor color.Color, prefix, text string) {
-	if !a.IsMuted() {
-		a.outputLock.Lock()
-
-		headerColor.Fprintf(a.output, "%s ", prefix)
-		fmt.Fprint(a.output, text)
-
-		a.outputLock.Unlock()
 	}
 }
 
@@ -220,28 +209,6 @@ func containerPrefix(container v1.ContainerStatus) string {
 
 func podAndContainerPrefix(pod *v1.Pod, container v1.ContainerStatus) string {
 	return fmt.Sprintf("[%s %s]", pod.Name, container.Name)
-}
-
-func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Color, prefix string, rc io.Reader) error {
-	r := bufio.NewReader(rc)
-	for {
-		select {
-		case <-ctx.Done():
-			logrus.Infof("%s interrupted", prefix)
-			return nil
-		default:
-			// Read up to newline
-			line, err := r.ReadString('\n')
-			if err == io.EOF {
-				return nil
-			}
-			if err != nil {
-				return fmt.Errorf("reading bytes from log stream: %w", err)
-			}
-
-			a.printLogLine(headerColor, prefix, line)
-		}
-	}
 }
 
 // Mute mutes the logs.

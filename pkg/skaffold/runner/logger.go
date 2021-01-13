@@ -25,9 +25,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 )
 
-func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []build.Artifact) log.Logger {
+func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []build.Artifact) (log.Logger, error) {
 	if !r.runCtx.Tail() {
-		return nil
+		return nil, nil
 	}
 
 	var imageNames []string
@@ -36,8 +36,8 @@ func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []build.Artifact)
 	}
 
 	if r.localDeploy {
-		return docker.NewLogger()
+		return docker.NewLogger(out, r.containerTracker, r.runCtx)
 	}
 
-	return kubernetes.NewLogAggregator(out, r.kubectlCLI, imageNames, r.podSelector, r.runCtx.GetNamespaces(), r.runCtx)
+	return kubernetes.NewLogAggregator(out, r.kubectlCLI, imageNames, r.podSelector, r.runCtx.GetNamespaces(), r.runCtx), nil
 }

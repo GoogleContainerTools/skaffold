@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -72,8 +73,11 @@ type SkaffoldRunner struct {
 	labeller      *label.DefaultLabeller
 	builds        []build.Artifact
 	artifactStore build.ArtifactStore
-	// podSelector is used to determine relevant pods for logging and portForwarding
-	podSelector *kubernetes.ImageList
+
+	// imageList tracks images built by skaffold.
+	// It is used to determine relevant pods for logging and portForwarding
+	podSelector      *kubernetes.ImageList
+	containerTracker *docker.ContainerTracker
 
 	isLocalImage func(imageName string) (bool, error)
 	hasBuilt     bool
