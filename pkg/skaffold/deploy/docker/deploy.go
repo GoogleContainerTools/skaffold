@@ -24,6 +24,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
@@ -35,8 +36,8 @@ import (
 type Deployer struct {
 	cfg                *latest.DockerDeploy
 	client             dockerutil.LocalDaemon
-	deployedContainers []string
-	pf                 []*latest.PortForwardResource
+	deployedContainers map[string]string                        // imageName -> containerID
+	pf                 map[string][]*latest.PortForwardResource // imageName -> port forward resources
 	network            string
 	once               sync.Once
 }
@@ -56,11 +57,18 @@ func NewDeployer(cfg Config, labels map[string]string, d *latest.DockerDeploy, r
 	if err != nil {
 		return nil, err
 	}
+	pf := make(map[string][]*latest.PortForwardResource)
+	for _, r := range resources {
+		if r.Type == "Container" {
+			pf[r.Name] = append(pf[r.Name], r)
+		}
+	}
 	return &Deployer{
-		cfg:     d,
-		client:  client,
-		pf:      pf,
-		network: "skaffold-network",
+		cfg:                d,
+		client:             client,
+		pf:                 pf,
+		deployedContainers: make(map[string]string),
+		network:            "skaffold-network",
 	}, nil
 }
 
@@ -76,18 +84,19 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 		if !util.StrSliceContains(d.cfg.Images, b.ImageName) {
 			continue
 		}
-		var pf []*latest.PortForwardResource
-		for _, r := range d.pf {
-			if r.Name == b.ImageName {
-				pf = append(pf, r)
+		if containerID, found := d.deployedContainers[b.ImageName]; found {
+			logrus.Debugf("removing old container %s for image %s", containerID, b.ImageName)
+			if err := d.client.Delete(ctx, out, containerID); err != nil {
+				return nil, fmt.Errorf("failed to remove old container %s for image %s: %w", containerID, b.ImageName, err)
 			}
 		}
-		id, err := d.client.Run(ctx, out, b.ImageName, b.Tag, d.network, pf)
+
+		id, err := d.client.Run(ctx, out, b.ImageName, b.Tag, d.network, d.pf[b.ImageName])
 		if err != nil {
 			return nil, errors.Wrap(err, "creating container in local docker")
 		}
 		fmt.Fprintf(os.Stdout, "container %s created from image %s\n", id, b.Tag)
-		d.deployedContainers = append(d.deployedContainers, id)
+		d.deployedContainers[b.ImageName] = id
 	}
 
 	return nil, nil
