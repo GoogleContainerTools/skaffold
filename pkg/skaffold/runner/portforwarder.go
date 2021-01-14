@@ -37,6 +37,10 @@ func (r *SkaffoldRunner) createForwarder(out io.Writer) *portforward.ForwarderMa
 		k8sRequests = append(k8sRequests, p)
 	}
 
+	if len(k8sRequests) == 0 {
+		return nil
+	}
+
 	return portforward.NewForwarderManager(out,
 		r.kubectlCLI,
 		r.podSelector,
