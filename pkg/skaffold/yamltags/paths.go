@@ -114,15 +114,9 @@ func makeFilePathsAbsolute(config interface{}, base string) []error {
 }
 
 func filepathTagExists(f reflect.StructField) bool {
-	yamltags, ok := f.Tag.Lookup("yamltags")
+	t, ok := f.Tag.Lookup("skaffold")
 	if !ok {
 		return false
 	}
-	tags := strings.Split(yamltags, ",")
-	for _, t := range tags {
-		if t == "filepath" {
-			return true
-		}
-	}
-	return false
+	return t == "filepath"
 }
