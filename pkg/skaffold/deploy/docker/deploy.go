@@ -48,12 +48,6 @@ type Config interface {
 
 func NewDeployer(cfg Config, labels map[string]string, d *latest.DockerDeploy, resources []*latest.PortForwardResource) (*Deployer, error) {
 	client, err := dockerutil.NewAPIClient(cfg)
-	var pf []*latest.PortForwardResource
-	for _, r := range resources {
-		if r.Type == "Container" {
-			pf = append(pf, r)
-		}
-	}
 	if err != nil {
 		return nil, err
 	}
