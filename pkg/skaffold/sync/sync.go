@@ -99,7 +99,7 @@ func syncItem(a *latest.Artifact, tag string, e filemon.Events, syncRules []*lat
 		return nil, nil
 	}
 
-	return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
+	return &Item{Artifact: a.ImageName, Image: tag, Copy: toCopy, Delete: toDelete}, nil
 }
 
 func inferredSyncItem(a *latest.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
@@ -143,7 +143,7 @@ func inferredSyncItem(a *latest.Artifact, tag string, e filemon.Events, cfg dock
 		}
 	}
 
-	return &Item{Image: tag, Copy: toCopy}, nil
+	return &Item{Artifact: a.ImageName, Image: tag, Copy: toCopy}, nil
 }
 
 func syncMapForArtifact(a *latest.Artifact, cfg docker.Config) (map[string][]string, error) {
@@ -186,7 +186,7 @@ func autoSyncItem(ctx context.Context, a *latest.Artifact, tag string, e filemon
 			// do a rebuild
 			return nil, nil
 		}
-		return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
+		return &Item{Artifact: a.ImageName, Image: tag, Copy: toCopy, Delete: toDelete}, nil
 
 	default:
 		// TODO: this error does appear a little late in the build, perhaps it could surface at first run, rather than first sync?

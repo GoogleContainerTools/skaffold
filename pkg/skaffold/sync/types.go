@@ -21,14 +21,17 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type syncMap map[string][]string
 
 type Item struct {
-	Image  string
-	Copy   map[string][]string
-	Delete map[string][]string
+	Image    string
+	Artifact string
+	Copy     map[string][]string
+	Delete   map[string][]string
 }
 
 type Syncer interface {
@@ -44,11 +47,36 @@ type Config interface {
 	kubectl.Config
 
 	GetNamespaces() []string
+	Deployers() []latest.DeployType
+}
+
+type SyncerMux struct {
+	standaloneContainers []string
+	cs                   *containerSyncer
+	ps                   *podSyncer
+}
+
+func (m *SyncerMux) Sync(ctx context.Context, i *Item) error {
+	if util.StrSliceContains(m.standaloneContainers, i.Artifact) {
+		return m.cs.Sync(ctx, i)
+	}
+	return m.ps.Sync(ctx, i)
 }
 
 func NewSyncer(cfg Config) Syncer {
-	return &podSyncer{
-		kubectl:    pkgkubectl.NewCLI(cfg, ""),
-		namespaces: cfg.GetNamespaces(),
+	mux := &SyncerMux{
+		cs: &containerSyncer{},
+		ps: &podSyncer{
+			kubectl:    pkgkubectl.NewCLI(cfg, ""),
+			namespaces: cfg.GetNamespaces(),
+		},
 	}
+
+	for _, d := range cfg.Deployers() {
+		if d.DockerDeploy != nil {
+			mux.standaloneContainers = append(mux.standaloneContainers, d.DockerDeploy.Images...)
+		}
+	}
+
+	return mux
 }
