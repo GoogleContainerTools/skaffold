@@ -209,7 +209,9 @@ integration-in-kind: skaffold-builder
 		sh -eu -c ' \
 			if ! kind get clusters | grep -q kind; then \
 			  trap "kind delete cluster" 0 1 2 15; \
-			  TERM=dumb kind create cluster; \
+			  sh hack/generate-kind-registries-yaml > /tmp/kind-registries.yaml; \
+			  cat /tmp/kind-registries.yaml; \
+			  TERM=dumb kind create cluster --config /tmp/kind-registries.yaml; \
 			fi; \
 			kind get kubeconfig --internal > /tmp/kind-config; \
 			make integration \
