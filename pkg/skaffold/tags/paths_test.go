@@ -1,3 +1,5 @@
+// +build !windows
+
 /*
 Copyright 2020 The Skaffold Authors
 
@@ -14,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package yamltags
+package tags
 
 import (
 	"testing"
@@ -36,31 +38,31 @@ func TestSetAbsFilePaths(t *testing.T) {
 				Pipeline: latest.Pipeline{
 					Build: latest.BuildConfig{
 						Artifacts: []*latest.Artifact{
-							{ImageName: "foo1", Workspace: "foo"},
-							{ImageName: "foo2", Workspace: `C:\a\foo`},
+							{ImageName: "foo1", Workspace: "./foo"},
+							{ImageName: "foo2", Workspace: "/a/foo"},
 						},
 					},
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KptDeploy:     &latest.KptDeploy{Dir: "."},
-							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{`foo\*`, `C:\a\foo\*`}},
+							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{"foo/*", "/a/foo/*"}},
 						},
 					},
 				},
 			},
-			base: `C:\a\b`,
+			base: "/a/b",
 			expected: &latest.SkaffoldConfig{
 				Pipeline: latest.Pipeline{
 					Build: latest.BuildConfig{
 						Artifacts: []*latest.Artifact{
-							{ImageName: "foo1", Workspace: `C:\a\b\foo`},
-							{ImageName: "foo2", Workspace: `C:\a\foo`},
+							{ImageName: "foo1", Workspace: "/a/b/foo"},
+							{ImageName: "foo2", Workspace: "/a/foo"},
 						},
 					},
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
-							KptDeploy:     &latest.KptDeploy{Dir: `C:\a\b`},
-							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{`C:\a\b\foo\*`, `C:\a\foo\*`}},
+							KptDeploy:     &latest.KptDeploy{Dir: "/a/b"},
+							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{"/a/b/foo/*", "/a/foo/*"}},
 						},
 					},
 				},
