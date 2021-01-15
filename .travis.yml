@@ -13,6 +13,12 @@ branches:
 git:
   submodules: false
 
+install:
+  # enable MTU path discovery
+  - if [ $TRAVIS_OS_NAME = linux ]; then
+      sudo sysctl -w net.ipv4.tcp_mtu_probing=1;
+    fi
+
 _integration_test: &integration_test
   os: linux
   language: minimal
