@@ -66,6 +66,7 @@ type LocalDaemon interface {
 	Close() error
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
+	ContainerLogs(ctx context.Context, out io.Writer, id string /* stopper chan bool, */, muter chan bool) (io.ReadCloser, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
 	Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latest.DockerArtifact, opts BuildOptions) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
@@ -142,6 +143,10 @@ func (l *localDaemon) Close() error {
 // ServerVersion retrieves the version information from the server.
 func (l *localDaemon) ServerVersion(ctx context.Context) (types.Version, error) {
 	return l.apiClient.ServerVersion(ctx)
+}
+
+func (l *localDaemon) ContainerLogs(ctx context.Context, out io.Writer, id string, muter chan bool) (io.ReadCloser, error) {
+	return l.apiClient.ContainerLogs(ctx, id, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
 }
 
 // ConfigFile retrieves and caches image configurations.
@@ -398,8 +403,9 @@ func (l *localDaemon) Load(ctx context.Context, out io.Writer, input io.Reader, 
 
 // Delete stops, removes, and prunes a running container
 func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) error {
+	// TODO(nkubala): do we always need to stop containers here? seems like no
 	if err := l.apiClient.ContainerStop(ctx, id, nil); err != nil {
-		return fmt.Errorf("stopping running container: %w", err)
+		logrus.Warnf("unable to stop running container: %w", err)
 	}
 	if err := l.apiClient.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
 		return fmt.Errorf("removing stopped container: %w", err)

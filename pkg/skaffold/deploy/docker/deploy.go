@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -42,13 +41,14 @@ type Deployer struct {
 	network            string
 	once               sync.Once
 	debugAdapter       debug.Adapter
+	tracker            *ContainerTracker
 }
 
 type Config interface {
 	deploy.Config
 }
 
-func NewDeployer(cfg Config, labels map[string]string, d *latest.DockerDeploy, resources []*latest.PortForwardResource) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, d *latest.DockerDeploy, resources []*latest.PortForwardResource, tracker *ContainerTracker) (*Deployer, error) {
 	client, err := dockerutil.NewAPIClient(cfg)
 	if err != nil {
 		return nil, err
@@ -67,6 +67,7 @@ func NewDeployer(cfg Config, labels map[string]string, d *latest.DockerDeploy, r
 		deployedContainers: make(map[string]string),
 		network:            "skaffold-network",
 		debugAdapter:       debug.NewAdapter(cfg.GlobalConfig(), cfg.GetInsecureRegistries()),
+		tracker:            tracker,
 	}, nil
 }
 
@@ -78,6 +79,7 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 	if err != nil {
 		return nil, fmt.Errorf("creating skaffold network %s: %w", d.network, err)
 	}
+	d.tracker.Reset() // this stops the current log streams so we can open new ones
 	for _, b := range builds {
 		if !util.StrSliceContains(d.cfg.Images, b.ImageName) {
 			continue
@@ -93,8 +95,8 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 		if err != nil {
 			return nil, errors.Wrap(err, "creating container in local docker")
 		}
-		fmt.Fprintf(os.Stdout, "container %s created from image %s\n", id, b.Tag)
 		d.deployedContainers[b.ImageName] = id
+		d.tracker.Add(b.Tag, id)
 	}
 
 	return nil, nil
