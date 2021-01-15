@@ -102,7 +102,10 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	// Update which images are logged.
 	r.addTagsToPodSelector(artifacts)
 
-	logger := r.createLogger(out, artifacts)
+	logger, err := r.createLogger(out, artifacts)
+	if err != nil {
+		return err
+	}
 	defer logger.Stop()
 
 	// Logs should be retrieved up to just before the deploy

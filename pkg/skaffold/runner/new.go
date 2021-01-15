@@ -59,6 +59,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating tagger: %w", err)
 	}
 
+	tracker := docker.NewContainerTracker()
+
 	store := build.NewArtifactStore()
 	var builder build.Builder
 	builder, err = build.NewBuilderMux(runCtx, store, func(p latest.Pipeline) (build.PipelineBuilder, error) {
@@ -75,7 +77,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	syncer := getSyncer(runCtx)
 	var deployer deploy.Deployer
 	var local bool
-	deployer, local, err = getDeployer(runCtx, labeller.Labels())
+	deployer, local, err = getDeployer(runCtx, labeller.Labels(), tracker)
 	if err != nil {
 		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
@@ -123,15 +125,16 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 			Trigger:    trigger,
 			intentChan: intentChan,
 		},
-		artifactStore: store,
-		kubectlCLI:    kubectlCLI,
-		labeller:      labeller,
-		podSelector:   kubernetes.NewImageList(),
-		cache:         artifactCache,
-		runCtx:        runCtx,
-		intents:       intents,
-		isLocalImage:  isLocalImage,
-		localDeploy:   local,
+		artifactStore:    store,
+		kubectlCLI:       kubectlCLI,
+		labeller:         labeller,
+		podSelector:      kubernetes.NewImageList(),
+		containerTracker: tracker,
+		cache:            artifactCache,
+		runCtx:           runCtx,
+		intents:          intents,
+		isLocalImage:     isLocalImage,
+		localDeploy:      local,
 	}, nil
 }
 
@@ -229,7 +232,7 @@ func getSyncer(cfg sync.Config) sync.Syncer {
 	return sync.NewSyncer(cfg)
 }
 
-func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deploy.Deployer, bool, error) {
+func getDeployer(runCtx *runcontext.RunContext, labels map[string]string, tracker *docker.ContainerTracker) (deploy.Deployer, bool, error) {
 	deployerCfg := runCtx.Deployers()
 	localDeploy := false
 	remoteDeploy := false
@@ -238,7 +241,7 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deplo
 	for _, d := range deployerCfg {
 		if d.DockerDeploy != nil {
 			localDeploy = true
-			d, err := docker.NewDeployer(runCtx, labels, d.DockerDeploy, runCtx.PortForwardResources())
+			d, err := docker.NewDeployer(runCtx, labels, d.DockerDeploy, runCtx.PortForwardResources(), tracker)
 			if err != nil {
 				return nil, false, err
 			}

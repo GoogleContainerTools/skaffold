@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -40,13 +39,14 @@ type Deployer struct {
 	pf                 map[string][]*latest.PortForwardResource // imageName -> port forward resources
 	network            string
 	once               sync.Once
+	tracker            *ContainerTracker
 }
 
 type Config interface {
 	deploy.Config
 }
 
-func NewDeployer(cfg Config, labels map[string]string, d *latest.DockerDeploy, resources []*latest.PortForwardResource) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, d *latest.DockerDeploy, resources []*latest.PortForwardResource, tracker *ContainerTracker) (*Deployer, error) {
 	client, err := dockerutil.NewAPIClient(cfg)
 	if err != nil {
 		return nil, err
@@ -63,6 +63,7 @@ func NewDeployer(cfg Config, labels map[string]string, d *latest.DockerDeploy, r
 		pf:                 pf,
 		deployedContainers: make(map[string]string),
 		network:            "skaffold-network",
+		tracker:            tracker,
 	}, nil
 }
 
@@ -74,6 +75,7 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 	if err != nil {
 		return nil, fmt.Errorf("creating skaffold network %s: %w", d.network, err)
 	}
+	d.tracker.Reset() // this stops the current log streams so we can open new ones
 	for _, b := range builds {
 		if !util.StrSliceContains(d.cfg.Images, b.ImageName) {
 			continue
@@ -89,8 +91,8 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 		if err != nil {
 			return nil, errors.Wrap(err, "creating container in local docker")
 		}
-		fmt.Fprintf(os.Stdout, "container %s created from image %s\n", id, b.Tag)
 		d.deployedContainers[b.ImageName] = id
+		d.tracker.Add(b.Tag, id)
 	}
 
 	return nil, nil
@@ -104,7 +106,7 @@ func (d *Deployer) Dependencies() ([]string, error) {
 
 func (d *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	// stop, remove, prune?
-	for _, id := range d.deployedContainers {
+	for id, _ := range d.tracker.containers {
 		if err := d.client.Delete(ctx, out, id); err != nil {
 			return errors.Wrap(err, "cleaning up deployed container")
 		}
