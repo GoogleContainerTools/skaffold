@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // For testing
@@ -74,7 +75,7 @@ func (t *Trigger) Start(ctx context.Context) (<-chan bool, error) {
 	c := make(chan notify.EventInfo, 100)
 
 	// Workaround https://github.com/rjeczalik/notify/issues/96
-	wd, err := RealWorkDir()
+	wd, err := util.RealWorkDir()
 	if err != nil {
 		return nil, err
 	}
