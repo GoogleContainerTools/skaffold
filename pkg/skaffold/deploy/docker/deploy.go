@@ -106,7 +106,7 @@ func (d *Deployer) Dependencies() ([]string, error) {
 
 func (d *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 	// stop, remove, prune?
-	for id, _ := range d.tracker.containers {
+	for _, id := range d.deployedContainers {
 		if err := d.client.Delete(ctx, out, id); err != nil {
 			return errors.Wrap(err, "cleaning up deployed container")
 		}
