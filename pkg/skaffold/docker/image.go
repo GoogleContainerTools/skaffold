@@ -39,6 +39,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/sirupsen/logrus"
+	k8sv1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -70,7 +71,7 @@ type LocalDaemon interface {
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
-	Run(ctx context.Context, out io.Writer, name, ref, network string, pf []*latest.PortForwardResource) (string, error)
+	Run(ctx context.Context, out io.Writer, name, ref, network string, pf []*latest.PortForwardResource, container k8sv1.Container, initContainers []k8sv1.Container) (string, error)
 	Delete(ctx context.Context, out io.Writer, id string) error
 	Tag(ctx context.Context, image, ref string) error
 	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
@@ -411,31 +412,74 @@ func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) erro
 }
 
 // Run creates a container from a given image reference, and returns then container ID.
-func (l *localDaemon) Run(ctx context.Context, out io.Writer, name, ref, network string, pf []*latest.PortForwardResource) (string, error) {
-	ports, bindings, err := getPorts(pf)
+func (l *localDaemon) Run(ctx context.Context, out io.Writer, name, ref, network string, pf []*latest.PortForwardResource, cr k8sv1.Container, initCr []k8sv1.Container) (string, error) {
+	var volFrom []string
+	for _, c := range initCr {
+		if len(c.VolumeMounts) > 0 {
+			volFrom = append(volFrom, c.Name)
+		}
+		if err := l.Pull(ctx, out, c.Image); err != nil {
+			return "", err
+		}
+		if _, err := l.run(ctx, out, network, nil, nil, c, nil, true); err != nil {
+			return "", err
+		}
+	}
+
+	return l.run(ctx, out, network, pf, cr.Ports, cr, volFrom, false)
+}
+
+func (l *localDaemon) run(ctx context.Context, out io.Writer, network string, pf []*latest.PortForwardResource, crp []k8sv1.ContainerPort, cr k8sv1.Container, volFrom []string, wait bool) (string, error) {
+	ports, bindings, err := getPorts(pf, crp)
 	if err != nil {
 		return "", fmt.Errorf("defining docker port forward: %w", err)
 	}
+	var mount map[string]struct{}
+	if len(cr.VolumeMounts) > 0 {
+		mount = make(map[string]struct{})
+	}
+	for _, m := range cr.VolumeMounts {
+		mount[m.MountPath] = struct{}{}
+	}
 	cfg := &container.Config{
-		Image:        ref,
 		ExposedPorts: ports,
+		Tty:          cr.TTY,
+		OpenStdin:    cr.Stdin,
+		StdinOnce:    cr.StdinOnce,
+		Env:          toSlice(cr.Env),
+		Entrypoint:   cr.Command,
+		Image:        cr.Image,
+		Volumes:      mount,
+		WorkingDir:   cr.WorkingDir,
 	}
 
 	hCfg := &container.HostConfig{
 		NetworkMode:  container.NetworkMode(network),
 		PortBindings: bindings,
+		VolumesFrom:  volFrom,
 	}
-	c, err := l.apiClient.ContainerCreate(ctx, cfg, hCfg, nil, nil, name)
+	c, err := l.apiClient.ContainerCreate(ctx, cfg, hCfg, nil, nil, cr.Name)
 	if err != nil {
 		return "", err
 	}
 	if err := l.apiClient.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
 		return "", err
 	}
+	if wait {
+		l.apiClient.ContainerWait(ctx, c.ID, container.WaitConditionNotRunning)
+	}
 	return c.ID, nil
 }
 
-func getPorts(pf []*latest.PortForwardResource) (nat.PortSet, nat.PortMap, error) {
+func toSlice(env []k8sv1.EnvVar) []string {
+	var sl []string
+	for _, e := range env {
+		sl = append(sl, fmt.Sprintf("%s=%s", e.Name, e.Value))
+	}
+	return sl
+}
+
+func getPorts(pf []*latest.PortForwardResource, crp []k8sv1.ContainerPort) (nat.PortSet, nat.PortMap, error) {
 	s := make(nat.PortSet)
 	m := make(nat.PortMap)
 	for _, p := range pf {
@@ -448,10 +492,28 @@ func getPorts(pf []*latest.PortForwardResource) (nat.PortSet, nat.PortMap, error
 			{HostIP: p.Address, HostPort: fmt.Sprintf("%d", p.LocalPort)},
 		}
 	}
+
+	for _, p := range crp {
+		port, err := nat.NewPort(strings.ToLower(string(p.Protocol)), fmt.Sprintf("%d", p.ContainerPort))
+		if err != nil {
+			return nil, nil, err
+		}
+		s[port] = struct{}{}
+		m[port] = []nat.PortBinding{
+			{HostIP: p.HostIP, HostPort: fmt.Sprintf("%d", p.ContainerPort)},
+		}
+	}
 	return s, m, nil
 }
 
 func (l *localDaemon) NetworkCreate(ctx context.Context, name string) error {
+	nr, err := l.apiClient.NetworkList(ctx, types.NetworkListOptions{})
+	for _, network := range nr {
+		if network.Name == name {
+			return nil
+		}
+	}
+
 	r, err := l.apiClient.NetworkCreate(ctx, name, types.NetworkCreate{})
 	if err != nil {
 		return err

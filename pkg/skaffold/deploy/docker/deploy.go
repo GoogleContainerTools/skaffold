@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	dockerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -40,6 +41,7 @@ type Deployer struct {
 	pf                 map[string][]*latest.PortForwardResource // imageName -> port forward resources
 	network            string
 	once               sync.Once
+	debugAdapter       debug.Adapter
 }
 
 type Config interface {
@@ -57,12 +59,14 @@ func NewDeployer(cfg Config, labels map[string]string, d *latest.DockerDeploy, r
 			pf[r.Name] = append(pf[r.Name], r)
 		}
 	}
+
 	return &Deployer{
 		cfg:                d,
 		client:             client,
 		pf:                 pf,
 		deployedContainers: make(map[string]string),
 		network:            "skaffold-network",
+		debugAdapter:       debug.NewAdapter(cfg.GlobalConfig(), cfg.GetInsecureRegistries()),
 	}, nil
 }
 
@@ -84,8 +88,8 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 				return nil, fmt.Errorf("failed to remove old container %s for image %s: %w", containerID, b.ImageName, err)
 			}
 		}
-
-		id, err := d.client.Run(ctx, out, b.ImageName, b.Tag, d.network, d.pf[b.ImageName])
+		container, initContainers, err := d.debugAdapter.Transform(b.Tag, b.ImageName, builds)
+		id, err := d.client.Run(ctx, out, b.ImageName, b.Tag, d.network, d.pf[b.ImageName], container, initContainers)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating container in local docker")
 		}
