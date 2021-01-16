@@ -18,7 +18,7 @@ install:
   # bump fs.file-max to workaround rancher/k3d#407
   - if [ $TRAVIS_OS_NAME = linux ]; then
       sudo sysctl -w net.ipv4.tcp_mtu_probing=1;
-      sudo sysctl -w fs.file-max=1000000;
+      sudo sysctl -w fs.file-max=2000000;
       sudo sysctl -p;
     fi
 
