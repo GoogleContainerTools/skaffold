@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package yamltags
+package tags
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// MakeFilePathsAbsolute recursively sets all fields marked with the yamltag `filepath` to absolute paths
+// MakeFilePathsAbsolute recursively sets all fields marked with the tag `filepath` to absolute paths
 func MakeFilePathsAbsolute(s interface{}, base string) error {
 	errs := makeFilePathsAbsolute(s, base)
 	if len(errs) == 0 {
@@ -114,15 +114,9 @@ func makeFilePathsAbsolute(config interface{}, base string) []error {
 }
 
 func filepathTagExists(f reflect.StructField) bool {
-	yamltags, ok := f.Tag.Lookup("yamltags")
+	t, ok := f.Tag.Lookup("skaffold")
 	if !ok {
 		return false
 	}
-	tags := strings.Split(yamltags, ",")
-	for _, t := range tags {
-		if t == "filepath" {
-			return true
-		}
-	}
-	return false
+	return t == "filepath"
 }

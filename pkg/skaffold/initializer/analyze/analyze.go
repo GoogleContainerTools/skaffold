@@ -152,7 +152,7 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 			}
 		}
 
-		// to make skaffold.yaml more portable across OS-es we should always generate / based filePaths
+		// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
 		filePath = strings.ReplaceAll(filePath, string(os.PathSeparator), "/")
 		for _, analyzer := range a.analyzers() {
 			if err := analyzer.analyzeFile(filePath); err != nil {

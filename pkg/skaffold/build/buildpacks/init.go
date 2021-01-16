@@ -49,7 +49,7 @@ func (c ArtifactConfig) Describe() string {
 }
 
 // ArtifactType returns the type of the artifact to be built.
-func (c ArtifactConfig) ArtifactType() latest.ArtifactType {
+func (c ArtifactConfig) ArtifactType(_ string) latest.ArtifactType {
 	return latest.ArtifactType{
 		BuildpackArtifact: &latest.BuildpackArtifact{
 			Builder: c.Builder,

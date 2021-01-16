@@ -194,5 +194,5 @@ When `skaffold init` fails, it exits with an code that depends on the error:
 | ---- | --- |
 | 101 | No build configuration could be found |
 | 102 | No k8s manifest could be found or generated |
-| 102 | An existing skaffold.yaml was found |
+| 103 | An existing skaffold.yaml was found |
 | 104 | Couldn't match builder with image names automatically |

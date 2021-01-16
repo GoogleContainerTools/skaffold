@@ -28,8 +28,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
 func getAllConfigs(opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, error) {
@@ -100,7 +100,7 @@ func getConfigs(configFile string, configSelection []string, profileSelection []
 		}
 		// convert relative file paths to absolute for all configs that are not in invoked explicitly. This avoids maintaining multiple root directory information since the dependency skaffold configs would have their own root directory.
 		if isDependencyConfig {
-			if err := yamltags.MakeFilePathsAbsolute(config, filepath.Dir(configFile)); err != nil {
+			if err := tags.MakeFilePathsAbsolute(config, filepath.Dir(configFile)); err != nil {
 				return nil, fmt.Errorf("setting absolute filepaths: %w", err)
 			}
 		}

@@ -4,12 +4,14 @@ language: go
 go: "1.15.x"
 go_import_path: /skaffold
 
+# skip release branches and version tags
+branches:
+  except:
+    - /^release\/.*/
+    - /^v\d+\..*$/
+
 git:
   submodules: false
-
-branches:
-  only:
-    - master
 
 _integration_test: &integration_test
   os: linux

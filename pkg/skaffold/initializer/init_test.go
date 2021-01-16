@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -35,6 +36,7 @@ import (
 func TestDoInit(t *testing.T) {
 	tests := []struct {
 		name             string
+		shouldSkip       bool
 		dir              string
 		config           initconfig.Config
 		expectedError    string
@@ -83,6 +85,20 @@ func TestDoInit(t *testing.T) {
 				CliArtifacts: []string{
 					`{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
 					`{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
+				},
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+		},
+		{
+			name:       "windows paths use forward slashes",
+			shouldSkip: runtime.GOOS != "windows",
+			dir:        `testdata\init\windows`,
+			config: initconfig.Config{
+				Force: true,
+				CliArtifacts: []string{
+					`{"builder":"Docker","context":"apps\\web","payload":{"path":"apps\\web\\build\\Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
 				},
 				Opts: config.SkaffoldOptions{
 					ConfigurationFile: "skaffold.yaml.out",
@@ -212,6 +228,10 @@ See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed gui
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
+			if test.shouldSkip {
+				t.Logf("Skipped test %q", test.name)
+				return
+			}
 			t.Chdir(test.dir)
 
 			err := DoInit(context.TODO(), os.Stdout, test.config)
