@@ -215,6 +215,7 @@ integration-in-kind: skaffold-builder
 .PHONY: integration-in-k3d
 integration-in-k3d: skaffold-builder
 	echo '{}' > /tmp/docker-config
+	docker pull rancher/k3d-tools:v3.4.0
 	docker run --rm \
 		--network="host" \
 		-v /var/run/docker.sock:/var/run/docker.sock \
