@@ -341,6 +341,8 @@ Env vars:
 
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
@@ -364,14 +366,12 @@ Options:
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
-      --skip-confirmation=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
-      --try-transparent-init=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
       --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
@@ -387,6 +387,8 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
@@ -410,14 +412,12 @@ Env vars:
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
-* `SKAFFOLD_SKIP_CONFIRMATION` (same as `--skip-confirmation`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_TRIGGER` (same as `--trigger`)
-* `SKAFFOLD_TRY_TRANSPARENT_INIT` (same as `--try-transparent-init`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
@@ -555,6 +555,8 @@ Run a pipeline in development mode
 
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
@@ -579,14 +581,12 @@ Options:
       --render-only=false: Print rendered Kubernetes manifests instead of deploying them
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
-      --skip-confirmation=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
-      --try-transparent-init=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
       --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
@@ -602,6 +602,8 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
@@ -626,14 +628,12 @@ Env vars:
 * `SKAFFOLD_RENDER_ONLY` (same as `--render-only`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
-* `SKAFFOLD_SKIP_CONFIRMATION` (same as `--skip-confirmation`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_TRIGGER` (same as `--trigger`)
-* `SKAFFOLD_TRY_TRANSPARENT_INIT` (same as `--try-transparent-init`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)
@@ -823,6 +823,8 @@ Examples:
   skaffold run -p <profile>
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
   -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
@@ -849,13 +851,11 @@ Options:
       --render-output='': Writes '--render-only' output to the specified file
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
-      --skip-confirmation=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
-      --try-transparent-init=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
       --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
@@ -869,6 +869,8 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
@@ -895,13 +897,11 @@ Env vars:
 * `SKAFFOLD_RENDER_OUTPUT` (same as `--render-output`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
-* `SKAFFOLD_SKIP_CONFIRMATION` (same as `--skip-confirmation`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
-* `SKAFFOLD_TRY_TRANSPARENT_INIT` (same as `--try-transparent-init`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS` (same as `--wait-for-deletions`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_DELAY` (same as `--wait-for-deletions-delay`)
 * `SKAFFOLD_WAIT_FOR_DELETIONS_MAX` (same as `--wait-for-deletions-max`)

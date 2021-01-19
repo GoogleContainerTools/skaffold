@@ -461,20 +461,22 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"test", "deploy"},
 	},
 	{
-		Name:          "try-transparent-init",
+		Name:          "auto-create-config",
 		Usage:         "If true, skaffold will try to create a config for the user's run if it doesn't find one",
-		Value:         &opts.TryTransparentInit,
+		Value:         &opts.AutoCreateConfig,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"debug", "dev", "run"},
+		IsEnum:        true,
 	},
 	{
-		Name:          "skip-confirmation",
+		Name:          "assume-yes",
 		Usage:         "If true, skaffold will skip yes/no confirmation from the user and default to yes",
-		Value:         &opts.SkipConfirmation,
+		Value:         &opts.AssumeYes,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"debug", "dev", "run"},
+		IsEnum:        true,
 	},
 }
 

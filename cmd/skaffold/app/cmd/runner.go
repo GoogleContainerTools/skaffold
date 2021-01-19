@@ -115,14 +115,14 @@ func skaffoldConfig(out io.Writer, opts config.SkaffoldOptions) ([]*latest.Skaff
 	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
 	if err != nil {
 		if os.IsNotExist(errors.Unwrap(err)) {
-			if opts.TryTransparentInit && initializer.ValidCmd(opts) {
+			if opts.AutoCreateConfig && initializer.ValidCmd(opts) {
 				color.Default.Fprintf(out, "Skaffold config file %s not found - Trying to create one for you...\n", opts.ConfigurationFile)
 				config, err := initializer.Transparent(context.Background(), out, initConfig.Config{Opts: opts})
 				if err != nil {
 					return nil, nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: %w", err)
 				}
 				if config == nil {
-					return nil, nil, fmt.Errorf("user not continuing")
+					return nil, nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: action cancelled by user")
 				}
 
 				defaults.Set(config, true)

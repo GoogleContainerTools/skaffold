@@ -57,6 +57,8 @@ type SkaffoldOptions struct {
 	AutoSync              bool
 	AutoDeploy            bool
 	RenderOnly            bool
+	AutoCreateConfig      bool
+	AssumeYes             bool
 	RenderOutput          string
 	ProfileAutoActivation bool
 	DryRun                bool
@@ -87,9 +89,6 @@ type SkaffoldOptions struct {
 	Command            string
 	RPCPort            int
 	RPCHTTPPort        int
-
-	TryTransparentInit bool
-	SkipConfirmation   bool
 
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the

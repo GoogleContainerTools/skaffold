@@ -55,7 +55,7 @@ func Transparent(ctx context.Context, out io.Writer, c initConfig.Config) (*late
 	}
 
 	// Prompt the user with information about what will happen if they continue with this config.
-	if !c.Opts.SkipConfirmation {
+	if !c.Opts.AssumeYes {
 		if done, err := confirmInitOptions(out, newConfig); done {
 			return nil, err
 		}
