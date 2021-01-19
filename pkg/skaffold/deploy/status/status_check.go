@@ -42,7 +42,7 @@ import (
 )
 
 var (
-	defaultStatusCheckDeadline = 2 * time.Minute
+	defaultStatusCheckDeadline = 10 * time.Minute
 
 	// Poll period for checking set to 1 second
 	defaultPollPeriodInMilliseconds = 1000
