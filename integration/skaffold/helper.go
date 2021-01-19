@@ -214,7 +214,7 @@ func (b *RunBuilder) runForked(t *testing.T, out io.Writer) {
 
 	go func() {
 		cmd.Wait()
-		logrus.Infoln("Ran in", time.Since(start))
+		logrus.Infoln("Ran in", util.ShowHumanizeTime(time.Since(start)))
 	}()
 
 	t.Cleanup(func() {
@@ -240,8 +240,7 @@ func (b *RunBuilder) Run(t *testing.T) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
-
-	logrus.Infoln("Ran in", time.Since(start))
+	logrus.Infoln("Ran in", util.ShowHumanizeTime(time.Since(start)))
 	return nil
 }
 
@@ -258,8 +257,7 @@ func (b *RunBuilder) RunWithCombinedOutput(t *testing.T) ([]byte, error) {
 	if err != nil {
 		return out, fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
-
-	logrus.Infoln("Ran in", time.Since(start))
+	logrus.Infoln("Ran in", util.ShowHumanizeTime(time.Since(start)))
 	return out, nil
 }
 
@@ -281,8 +279,7 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 		}
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
 	}
-
-	logrus.Infoln("Ran in", time.Since(start))
+	logrus.Infoln("Ran in", util.ShowHumanizeTime(time.Since(start)))
 	return out
 }
 
