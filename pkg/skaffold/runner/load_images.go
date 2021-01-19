@@ -86,7 +86,7 @@ func (r *SkaffoldRunner) loadImages(ctx context.Context, out io.Writer, artifact
 		color.Green.Fprintln(out, "Loaded")
 	}
 
-	color.Default.Fprintln(out, "Images loaded in", time.Since(start))
+	color.Default.Fprintln(out, "Images loaded in", util.ShowHumanizeTime(time.Since(start)))
 	return nil
 }
 

@@ -79,7 +79,7 @@ func (d *defaultBuildInitializer) resolveBuilderImagesForcefully() error {
 }
 
 func builderRank(builder InitBuilder) int {
-	a := builder.ArtifactType()
+	a := builder.ArtifactType("")
 	switch {
 	case a.DockerArtifact != nil:
 		return 1

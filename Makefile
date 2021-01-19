@@ -23,8 +23,6 @@ GSC_BUILD_PATH ?= gs://$(RELEASE_BUCKET)/builds/$(COMMIT)
 GSC_BUILD_LATEST ?= gs://$(RELEASE_BUCKET)/builds/latest
 GSC_RELEASE_PATH ?= gs://$(RELEASE_BUCKET)/releases/$(VERSION)
 GSC_RELEASE_LATEST ?= gs://$(RELEASE_BUCKET)/releases/latest
-KIND_NODE ?= kindest/node:v1.13.12@sha256:214476f1514e47fe3f6f54d0f9e24cfb1e4cda449529791286c7161b7f9c08e7
-K3D_NODE ?= rancher/k3s:v1.18.6-k3s1@sha256:a835d76608a2503af8b681bb5888499d7c3456902f6853c8c1031f4a884715ca
 
 GCP_ONLY ?= false
 GCP_PROJECT ?= k8s-skaffold
@@ -191,7 +189,6 @@ skaffold-builder:
 .PHONY: integration-in-kind
 integration-in-kind: skaffold-builder
 	echo '{}' > /tmp/docker-config
-	docker pull $(KIND_NODE)
 	docker network inspect kind >/dev/null 2>&1 || docker network create kind
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
@@ -207,7 +204,9 @@ integration-in-kind: skaffold-builder
 		sh -eu -c ' \
 			if ! kind get clusters | grep -q kind; then \
 			  trap "kind delete cluster" 0 1 2 15; \
-			  TERM=dumb kind create cluster --image=$(KIND_NODE); \
+			  sh hack/generate-kind-config.sh > /tmp/kind-config.yaml; \
+			  cat /tmp/kind-config.yaml; \
+			  TERM=dumb kind create cluster --config /tmp/kind-config.yaml; \
 			fi; \
 			kind get kubeconfig --internal > /tmp/kind-config; \
 			make integration \
@@ -216,7 +215,7 @@ integration-in-kind: skaffold-builder
 .PHONY: integration-in-k3d
 integration-in-k3d: skaffold-builder
 	echo '{}' > /tmp/docker-config
-	docker pull $(K3D_NODE)
+	docker pull rancher/k3d-tools:v3.4.0
 	docker run --rm \
 		--network="host" \
 		-v /var/run/docker.sock:/var/run/docker.sock \
@@ -228,7 +227,7 @@ integration-in-k3d: skaffold-builder
 		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -c ' \
-			k3d cluster list | grep -q k3s-default || TERM=dumb k3d cluster create --image=$(K3D_NODE); \
+			k3d cluster list | grep -q k3s-default || TERM=dumb k3d cluster create; \
 			make integration \
 		'
 

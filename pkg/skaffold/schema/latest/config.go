@@ -475,7 +475,7 @@ type DeployType struct {
 type KubectlDeploy struct {
 	// Manifests lists the Kubernetes yaml or json manifests.
 	// Defaults to `["k8s/*.yaml"]`.
-	Manifests []string `yaml:"manifests,omitempty"`
+	Manifests []string `yaml:"manifests,omitempty" skaffold:"filepath"`
 
 	// RemoteManifests lists Kubernetes manifests in remote clusters.
 	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
@@ -532,7 +532,7 @@ type HelmDeployFlags struct {
 type KustomizeDeploy struct {
 	// KustomizePaths is the path to Kustomization files.
 	// Defaults to `["."]`.
-	KustomizePaths []string `yaml:"paths,omitempty"`
+	KustomizePaths []string `yaml:"paths,omitempty" skaffold:"filepath"`
 
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
@@ -550,7 +550,7 @@ type KptDeploy struct {
 	// By default, the Dir contains the application configurations,
 	// [kustomize config files](https://kubectl.docs.kubernetes.io/pages/examples/kustomize.html)
 	// and [declarative kpt functions](https://googlecontainertools.github.io/kpt/guides/consumer/function/#declarative-run).
-	Dir string `yaml:"dir" yamltags:"required"`
+	Dir string `yaml:"dir" yamltags:"required" skaffold:"filepath"`
 
 	// Fn adds additional configurations for `kpt fn`.
 	Fn KptFn `yaml:"fn,omitempty"`
@@ -563,7 +563,7 @@ type KptDeploy struct {
 type KptFn struct {
 	// FnPath is the directory to discover the declarative kpt functions.
 	// If not provided, kpt deployer uses `kpt.Dir`.
-	FnPath string `yaml:"fnPath,omitempty"`
+	FnPath string `yaml:"fnPath,omitempty" skaffold:"filepath"`
 
 	// Image is a kpt function image to run the configs imperatively. If provided, kpt.fn.fnPath
 	// will be ignored.
@@ -582,7 +582,7 @@ type KptFn struct {
 	Mount []string `yaml:"mount,omitempty"`
 
 	// SinkDir is the directory to where the manipulated resource output is stored.
-	SinkDir string `yaml:"sinkDir,omitempty"`
+	SinkDir string `yaml:"sinkDir,omitempty" skaffold:"filepath"`
 }
 
 // KptLive adds additional configurations used when calling `kpt live`.
@@ -633,10 +633,10 @@ type HelmRelease struct {
 	Name string `yaml:"name,omitempty" yamltags:"required"`
 
 	// ChartPath is the path to the Helm chart.
-	ChartPath string `yaml:"chartPath,omitempty" yamltags:"required"`
+	ChartPath string `yaml:"chartPath,omitempty" yamltags:"required" skaffold:"filepath"`
 
 	// ValuesFiles are the paths to the Helm `values` files.
-	ValuesFiles []string `yaml:"valuesFiles,omitempty"`
+	ValuesFiles []string `yaml:"valuesFiles,omitempty" skaffold:"filepath"`
 
 	// ArtifactOverrides are key value pairs where the
 	// key represents the parameter used in the `--set-string` Helm CLI flag to define a container
@@ -761,7 +761,7 @@ type Artifact struct {
 
 	// Workspace is the directory containing the artifact's sources.
 	// Defaults to `.`.
-	Workspace string `yaml:"context,omitempty"`
+	Workspace string `yaml:"context,omitempty" skaffold:"filepath"`
 
 	// Sync *beta* lists local files synced to pods instead
 	// of triggering an image build when modified.

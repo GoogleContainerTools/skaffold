@@ -1,4 +1,6 @@
-# Copyright 2019 The Skaffold Authors All rights reserved.
+#!/bin/sh
+
+# Copyright 2019 The Skaffold Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,12 +14,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This base image has to be updated manually after running `make build_deps`
-FROM gcr.io/k8s-skaffold/build_deps:99947454c311d61d348a3dbb14ed5cfd9b69de61 as builder
-WORKDIR /skaffold
-COPY . .
-
-FROM builder as release
-ARG VERSION
-RUN make clean out/skaffold VERSION=$VERSION && mv out/skaffold /usr/bin/skaffold
-RUN skaffold credits -d /THIRD_PARTY_NOTICES
+# Create a kind configuration to use the docker daemon's configured registry-mirrors.
+docker system info --format '{{printf "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\ncontainerdConfigPatches:\n"}}{{range $reg, $config := .RegistryConfig.IndexConfigs}}{{if $config.Mirrors}}{{printf "- |-\n  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"%s\"]\n    endpoint = %q\n" $reg $config.Mirrors}}{{end}}{{end}}'
