@@ -115,18 +115,22 @@ func skaffoldConfig(out io.Writer, opts config.SkaffoldOptions) ([]*latest.Skaff
 	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
 	if err != nil {
 		if os.IsNotExist(errors.Unwrap(err)) {
-			color.Default.Fprintf(out, "Skaffold config file %s not found - Trying to create one for you...\n", opts.ConfigurationFile)
-			config, err := initializer.Transparent(context.Background(), out, initConfig.Config{Opts: opts})
-			if err != nil {
-				return nil, nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: %w", err)
-			}
-			if config == nil {
-				return nil, nil, fmt.Errorf("user not continuing")
+			if opts.TryTransparentInit && initializer.ValidCmd(opts) {
+				color.Default.Fprintf(out, "Skaffold config file %s not found - Trying to create one for you...\n", opts.ConfigurationFile)
+				config, err := initializer.Transparent(context.Background(), out, initConfig.Config{Opts: opts})
+				if err != nil {
+					return nil, nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: %w", err)
+				}
+				if config == nil {
+					return nil, nil, fmt.Errorf("user not continuing")
+				}
+
+				defaults.Set(config, true)
+
+				return []*latest.SkaffoldConfig{config}, []latest.Pipeline{config.Pipeline}, nil
 			}
 
-			defaults.Set(config, true)
-
-			return []*latest.SkaffoldConfig{config}, []latest.Pipeline{config.Pipeline}, nil
+			return nil, nil, fmt.Errorf("skaffold config file %s not found - check your current working directory, or try running `skaffold init`", opts.ConfigurationFile)
 		}
 
 		// If the error is NOT that the file doesn't exist, then we warn the user

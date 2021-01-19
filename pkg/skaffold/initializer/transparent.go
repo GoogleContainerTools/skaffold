@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	initConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -54,8 +55,10 @@ func Transparent(ctx context.Context, out io.Writer, c initConfig.Config) (*late
 	}
 
 	// Prompt the user with information about what will happen if they continue with this config.
-	if done, err := confirmInitOptions(out, newConfig); done {
-		return nil, err
+	if !c.Opts.SkipConfirmation {
+		if done, err := confirmInitOptions(out, newConfig); done {
+			return nil, err
+		}
 	}
 
 	if err := WriteData(out, c, newConfig, newManifests); err != nil {
@@ -63,4 +66,16 @@ func Transparent(ctx context.Context, out io.Writer, c initConfig.Config) (*late
 	}
 
 	return newConfig, nil
+}
+
+// Returns true if transparent init should run on the given opts.Command, false otherwise
+func ValidCmd(opts config.SkaffoldOptions) bool {
+	valid := map[string]struct{}{
+		"debug": {},
+		"dev":   {},
+		"run":   {},
+	}
+	_, ok := valid[opts.Command]
+
+	return ok
 }

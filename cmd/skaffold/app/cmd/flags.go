@@ -460,6 +460,22 @@ var flagRegistry = []Flag{
 		FlagAddMethod: "Var",
 		DefinedOn:     []string{"test", "deploy"},
 	},
+	{
+		Name:          "try-transparent-init",
+		Usage:         "If true, skaffold will try to create a config for the user's run if it doesn't find one",
+		Value:         &opts.TryTransparentInit,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"debug", "dev", "run"},
+	},
+	{
+		Name:          "skip-confirmation",
+		Usage:         "If true, skaffold will skip yes/no confirmation from the user and default to yes",
+		Value:         &opts.SkipConfirmation,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"debug", "dev", "run"},
+	},
 }
 
 func methodNameByType(v reflect.Value) string {
