@@ -81,7 +81,7 @@ type ConfigDependency struct {
 	Names []string `yaml:"configs,omitempty"`
 
 	// Path describes the path to the file containing the required configs.
-	Path string `yaml:"path" yamltags:"filepath"`
+	Path string `yaml:"path" skaffold:"filepath"`
 
 	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
 	ActiveProfiles []ProfileDependency `yaml:"activeProfiles,omitempty"`
@@ -575,7 +575,7 @@ type KptDeploy struct {
 	// By default, the Dir contains the application configurations,
 	// [kustomize config files](https://kubectl.docs.kubernetes.io/pages/examples/kustomize.html)
 	// and [declarative kpt functions](https://googlecontainertools.github.io/kpt/guides/consumer/function/#declarative-run).
-	Dir string `yaml:"dir" yamltags:"required,filepath" skaffold:"filepath"`
+	Dir string `yaml:"dir" yamltags:"required" skaffold:"filepath"`
 
 	// Fn adds additional configurations for `kpt fn`.
 	Fn KptFn `yaml:"fn,omitempty"`
@@ -658,7 +658,7 @@ type HelmRelease struct {
 	Name string `yaml:"name,omitempty" yamltags:"required"`
 
 	// ChartPath is the path to the Helm chart.
-	ChartPath string `yaml:"chartPath,omitempty" yamltags:"required,filepath" skaffold:"filepath"`
+	ChartPath string `yaml:"chartPath,omitempty" yamltags:"required" skaffold:"filepath"`
 
 	// ValuesFiles are the paths to the Helm `values` files.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty" skaffold:"filepath"`

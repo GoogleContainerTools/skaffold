@@ -129,9 +129,6 @@ func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value,
 			yt = &skipTrimTag{
 				Field: field,
 			}
-		case "filepath":
-			// filepath tag is processed separately in pkg/skaffold/yamltags/paths.go
-			return nil
 		default:
 			logrus.Panicf("unknown yaml tag in %s", yamltags)
 		}

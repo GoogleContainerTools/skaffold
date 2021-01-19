@@ -1,4 +1,4 @@
-### Example: µSvcs with Skaffold
+### Example: Multiple configs µSvcs with Skaffold
 
 In this example:
 
