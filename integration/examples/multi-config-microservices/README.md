@@ -37,7 +37,7 @@ leeroooooy app!
 
 These are two independently managed instances of Skaffold running on the `leeroy-app` and `leeroy-web` applications. Hitting `Ctrl + C` on each should kill the process and clean up the deployments.
 
-Inorder to iterate on both apps together we reference them as **required** configs in the `multi-config-microservices/skaffold.yaml` file.
+In order to iterate on both apps together we reference them as **required** configs in the `multi-config-microservices/skaffold.yaml` file.
 
 ```yaml
 apiVersion: skaffold/v2beta11
