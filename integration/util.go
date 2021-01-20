@@ -255,7 +255,7 @@ func (k *NSKubernetesClient) GetDeployment(depName string) *appsv1.Deployment {
 // WaitForDeploymentsToStabilize waits for a list of deployments to become stable.
 func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 	k.t.Helper()
-	k.waitForDeploymentsToStabilizeWithTimeout(60*time.Second, depNames...)
+	k.waitForDeploymentsToStabilizeWithTimeout(2*time.Minute, depNames...)
 }
 
 func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout time.Duration, depNames ...string) {
@@ -313,15 +313,16 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 // debug is used to print all the details about pods or deployments
 func (k *NSKubernetesClient) debug(entities string) {
 	cmd := exec.Command("kubectl", "-n", k.ns, "get", entities, "-oyaml")
+	logrus.Warnln(cmd.Args)
 	out, _ := cmd.CombinedOutput()
 
-	logrus.Warnln(cmd.Args)
 	// Use fmt.Println, not logrus, for prettier output
 	fmt.Println(string(out))
 }
 
 func (k *NSKubernetesClient) printDiskFreeSpace() {
 	cmd := exec.Command("df", "-h")
+	logrus.Warnln(cmd.Args)
 	out, _ := cmd.CombinedOutput()
 	fmt.Println(string(out))
 }
