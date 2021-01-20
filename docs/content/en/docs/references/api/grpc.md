@@ -692,13 +692,12 @@ anytime a test starts or completes, successfully or not.
 
 <a name="proto.TestMetadata"></a>
 #### TestMetadata
-
+TestMetadata describes the test pipeline
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | Testers | [TestMetadata.Tester](#proto.TestMetadata.Tester) | repeated |  |
-| cluster | [ClusterType](#proto.ClusterType) |  |  |
 
 
 
@@ -724,13 +723,13 @@ anytime a test starts or completes, successfully or not.
 
 <a name="proto.TestState"></a>
 #### TestState
-`TestState` describes the status of the current test
+`TestState` describes the current state of the test
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [string](#string) |  |  |
-| statusCode | [StatusCode](#proto.StatusCode) |  |  |
+| status | [string](#string) |  | Status of the current test |
+| statusCode | [StatusCode](#proto.StatusCode) |  | Teststate status code |
 
 
 
@@ -916,6 +915,7 @@ For Cancelled Error code, use range 800 to 850.
 | CLEANUP_UNKNOWN | 508 | Cleanup failed due to unknown reason |
 | INIT_UNKNOWN | 510 | Initialization of the Skaffold session failed due to unknown reason(s) |
 | BUILD_DOCKER_UNKNOWN | 511 | Build failed due to docker unknown error |
+| TEST_UNKNOWN | 512 | Test failed due to unknown reason |
 | SYNC_INIT_ERROR | 601 | File Sync Initialize failure |
 | DEVINIT_REGISTER_BUILD_DEPS | 701 | Failed to configure watcher for build dependencies in dev loop |
 | DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
@@ -1021,6 +1021,7 @@ Enum indicating test tools used
 | ---- |:------:| ----------- |
 | UNKNOWN_TEST_TYPE | 0 | Could not determine Test Type |
 | UNIT | 1 | Unit tests |
+| CONTAINER_STRUCTURE_TEST | 2 | Container Structure tests |
 
 
  <!-- end enums -->

@@ -50,13 +50,13 @@ message BuildMetadata {
   map<string, string> additional = 99;
 }
 
+// TestMetadata describes the test pipeline
 message TestMetadata {
     message Tester {
         TesterType type = 1;
         int32 count = 2;
     }
     repeated Tester Testers = 1;
-    ClusterType cluster = 2;
 }
 
 message DeployMetadata {
@@ -82,9 +82,11 @@ message BuildState {
     StatusCode statusCode = 3;
 }
 
-// `TestState` describes the status of the current test
+// `TestState` describes the current state of the test
 message TestState {
+    // Status of the current test
     string status = 1;
+    // Teststate status code
     StatusCode statusCode = 2;
 }
 
@@ -394,6 +396,8 @@ enum TesterType {
     UNKNOWN_TEST_TYPE = 0;
     // Unit tests
     UNIT = 1;
+    // Container Structure tests
+    CONTAINER_STRUCTURE_TEST = 2;
 }
 
 // Enum indicating deploy tools used
@@ -572,6 +576,8 @@ enum StatusCode {
     INIT_UNKNOWN = 510 ;
     // Build failed due to docker unknown error
     BUILD_DOCKER_UNKNOWN = 511;
+    // Test failed due to unknown reason
+    TEST_UNKNOWN= 512;
 
 
     // FILE_SYNC Failures
@@ -675,6 +681,10 @@ enum StatusCode {
     DEPLOY_PARSE_MANIFEST_IMAGES_ERR = 1021;
     // Helm config `createNamespace` not available
     DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE = 1022;
+
+    // Test Errors
+
+    // TEST_UNKNOWN_ERROR = 1101;
 }
 
 // Enum for Suggestion codes
