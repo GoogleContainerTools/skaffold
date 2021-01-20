@@ -17,8 +17,8 @@ limitations under the License.
 package util
 
 import (
+	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os/exec"
 
 	"github.com/sirupsen/logrus"
@@ -70,46 +70,32 @@ type Commander struct{}
 // RunCmdOut runs an exec.Command and returns the stdout and error.
 func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	logrus.Debugf("Running command: %s", cmd.Args)
-	stdoutPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, err
-	}
 
-	stderrPipe, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, err
-	}
+	stdout := bytes.Buffer{}
+	cmd.Stdout = &stdout
+	stderr := bytes.Buffer{}
+	cmd.Stderr = &stderr
 
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("starting command %v: %w", cmd, err)
 	}
 
-	stdout, err := ioutil.ReadAll(stdoutPipe)
-	if err != nil {
-		return nil, err
-	}
-
-	stderr, err := ioutil.ReadAll(stderrPipe)
-	if err != nil {
-		return nil, err
-	}
-
 	if err := cmd.Wait(); err != nil {
-		return stdout, &cmdError{
+		return stdout.Bytes(), &cmdError{
 			args:   cmd.Args,
-			stdout: stdout,
-			stderr: stderr,
+			stdout: stdout.Bytes(),
+			stderr: stderr.Bytes(),
 			cause:  err,
 		}
 	}
 
-	if len(stderr) > 0 {
-		logrus.Debugf("Command output: [%s], stderr: %s", stdout, stderr)
+	if stderr.Len() > 0 {
+		logrus.Debugf("Command output: [%s], stderr: %s", stdout.String(), stderr.String())
 	} else {
-		logrus.Debugf("Command output: [%s]", stdout)
+		logrus.Debugf("Command output: [%s]", stdout.String())
 	}
 
-	return stdout, nil
+	return stdout.Bytes(), nil
 }
 
 // RunCmd runs an exec.Command.
