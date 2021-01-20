@@ -20,13 +20,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
+	initConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -42,8 +46,8 @@ import (
 // For tests
 var createRunner = createNewRunner
 
-func withRunner(ctx context.Context, action func(runner.Runner, []*latest.SkaffoldConfig) error) error {
-	runner, config, err := createRunner(opts)
+func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, []*latest.SkaffoldConfig) error) error {
+	runner, config, err := createRunner(out, opts)
 	sErrors.SetSkaffoldOptions(opts)
 	if err != nil {
 		return err
@@ -55,8 +59,8 @@ func withRunner(ctx context.Context, action func(runner.Runner, []*latest.Skaffo
 }
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
-func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
-	runCtx, configs, err := runContext(opts)
+func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
+	runCtx, configs, err := runContext(out, opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -71,10 +75,61 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, []*latest.Skaf
 	return runner, configs, nil
 }
 
-func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.SkaffoldConfig, error) {
+func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.SkaffoldConfig, error) {
+	configs, pipelines, err := skaffoldConfig(out, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// TODO: Should support per-config kubecontext. Right now we constrain all configs to define the same kubecontext.
+	kubectx.ConfigureKubeConfig(opts.KubeConfig, opts.KubeContext, configs[0].Deploy.KubeContext)
+
+	if err := validation.Process(configs); err != nil {
+		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
+	}
+
+	runCtx, err := runcontext.GetRunContext(opts, pipelines)
+	if err != nil {
+		return nil, nil, fmt.Errorf("getting run context: %w", err)
+	}
+
+	if err := validation.ProcessWithRunContext(runCtx); err != nil {
+		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
+	}
+
+	return runCtx, configs, nil
+}
+
+func setDefaultDeployer(configs []util.VersionedConfig) bool {
+	// set the default deployer only if no deployer is explicitly specified in any config
+	for _, cfg := range configs {
+		if cfg.(*latest.SkaffoldConfig).Deploy.DeployType != (latest.DeployType{}) {
+			return false
+		}
+	}
+	return true
+}
+
+// skaffoldConfig will try to parse the given opts.ConfigurationFile. If not found, it will try to automatically generate a config for the user
+func skaffoldConfig(out io.Writer, opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, []latest.Pipeline, error) {
 	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
 	if err != nil {
 		if os.IsNotExist(errors.Unwrap(err)) {
+			if opts.AutoCreateConfig && initializer.ValidCmd(opts) {
+				color.Default.Fprintf(out, "Skaffold config file %s not found - Trying to create one for you...\n", opts.ConfigurationFile)
+				config, err := initializer.Transparent(context.Background(), out, initConfig.Config{Opts: opts})
+				if err != nil {
+					return nil, nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: %w", err)
+				}
+				if config == nil {
+					return nil, nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: action cancelled by user")
+				}
+
+				defaults.Set(config, true)
+
+				return []*latest.SkaffoldConfig{config}, []latest.Pipeline{config.Pipeline}, nil
+			}
+
 			return nil, nil, fmt.Errorf("skaffold config file %s not found - check your current working directory, or try running `skaffold init`", opts.ConfigurationFile)
 		}
 
@@ -105,33 +160,7 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.
 		configs = append(configs, config)
 	}
 
-	// TODO: Should support per-config kubecontext. Right now we constrain all configs to define the same kubecontext.
-	kubectx.ConfigureKubeConfig(opts.KubeConfig, opts.KubeContext, configs[0].Deploy.KubeContext)
-
-	if err := validation.Process(configs); err != nil {
-		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
-	}
-
-	runCtx, err := runcontext.GetRunContext(opts, pipelines)
-	if err != nil {
-		return nil, nil, fmt.Errorf("getting run context: %w", err)
-	}
-
-	if err := validation.ProcessWithRunContext(runCtx); err != nil {
-		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
-	}
-
-	return runCtx, configs, nil
-}
-
-func setDefaultDeployer(configs []util.VersionedConfig) bool {
-	// set the default deployer only if no deployer is explicitly specified in any config
-	for _, cfg := range configs {
-		if cfg.(*latest.SkaffoldConfig).Deploy.DeployType != (latest.DeployType{}) {
-			return false
-		}
-	}
-	return true
+	return configs, pipelines, nil
 }
 
 func warnIfUpdateIsAvailable() {

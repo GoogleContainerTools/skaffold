@@ -57,6 +57,8 @@ type SkaffoldOptions struct {
 	AutoSync              bool
 	AutoDeploy            bool
 	RenderOnly            bool
+	AutoCreateConfig      bool
+	AssumeYes             bool
 	RenderOutput          string
 	ProfileAutoActivation bool
 	DryRun                bool

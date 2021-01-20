@@ -460,6 +460,24 @@ var flagRegistry = []Flag{
 		FlagAddMethod: "Var",
 		DefinedOn:     []string{"test", "deploy"},
 	},
+	{
+		Name:          "auto-create-config",
+		Usage:         "If true, skaffold will try to create a config for the user's run if it doesn't find one",
+		Value:         &opts.AutoCreateConfig,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"debug", "dev", "run"},
+		IsEnum:        true,
+	},
+	{
+		Name:          "assume-yes",
+		Usage:         "If true, skaffold will skip yes/no confirmation from the user and default to yes",
+		Value:         &opts.AssumeYes,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"debug", "dev", "run"},
+		IsEnum:        true,
+	},
 }
 
 func methodNameByType(v reflect.Value) string {

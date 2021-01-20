@@ -95,7 +95,7 @@ func TestDoDev(t *testing.T) {
 				hasDeployed: test.hasDeployed,
 				errDev:      context.Canceled,
 			}
-			t.Override(&createRunner, func(config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
+			t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
 				return mockRunner, []*latest.SkaffoldConfig{{}}, nil
 			})
 			t.Override(&opts, config.SkaffoldOptions{
@@ -145,7 +145,7 @@ func TestDevConfigChange(t *testing.T) {
 	testutil.Run(t, "test config change", func(t *testutil.T) {
 		mockRunner := &mockConfigChangeRunner{}
 
-		t.Override(&createRunner, func(config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
+		t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
 			return mockRunner, []*latest.SkaffoldConfig{{}}, nil
 		})
 		t.Override(&opts, config.SkaffoldOptions{
