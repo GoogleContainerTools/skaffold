@@ -22,7 +22,7 @@
         <version>${jib.maven-plugin-version}</version>
         <configuration>
           <from>
-            <image>openjdk</image> <!-- has jdb -->
+            <image>gcr.io/google-appengine/openjdk:8</image> <!-- has jdb -->
           </from>
           <container>
             <jvmFlags>
