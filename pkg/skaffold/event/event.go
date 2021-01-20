@@ -654,10 +654,7 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 		case Failed:
 			logEntry.Entry = fmt.Sprintf("Update failed with error code %v", de.Err.ErrCode)
 		}
-	default:
-		return
 	}
-
 	ev.logEvent(*logEntry)
 }
 
@@ -739,6 +736,7 @@ func InititializationFailed(err error) {
 			},
 		},
 	})
+	handler.handle(nil)
 }
 
 // SaveEventsToFile saves the current event log to the filepath provided

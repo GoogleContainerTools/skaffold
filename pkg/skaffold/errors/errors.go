@@ -17,6 +17,7 @@ limitations under the License.
 package errors
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -107,12 +108,13 @@ func IsOldImageManifestProblem(err error) (string, bool) {
 }
 
 func getErrorCodeFromError(phase Phase, err error) (proto.StatusCode, []*proto.Suggestion) {
-	if t, ok := err.(Error); ok {
+	uErr := errors.Unwrap(err)
+	if t, ok := uErr.(Error); ok {
 		return t.StatusCode(), t.Suggestions()
 	}
 	if problems, ok := allErrors[phase]; ok {
 		for _, v := range problems {
-			if v.regexp.MatchString(err.Error()) {
+			if v.regexp.MatchString(uErr.Error()) {
 				return v.errCode, v.suggestion(skaffoldOpts)
 			}
 		}
