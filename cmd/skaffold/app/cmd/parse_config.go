@@ -32,8 +32,22 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+type configOpts struct {
+	// path to the `skaffold.yaml` file
+	file string
+	// names of configs to select from this file.
+	selection []string
+	// list of profiles to apply to the selection
+	profiles []string
+	// is this a required config.
+	isRequired bool
+	// is this config resolved as a dependency as opposed to being set explicitly (via the `-f` flag)
+	isDependency bool
+}
+
 func getAllConfigs(opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, error) {
-	cfgs, err := getConfigs(opts.ConfigurationFile, nil, opts.Profiles, opts, make(map[string]string), false, false, make(map[string]string))
+	cOpts := configOpts{file: opts.ConfigurationFile, selection: nil, profiles: opts.Profiles, isRequired: false, isDependency: false}
+	cfgs, err := getConfigs(cOpts, opts, make(map[string]string), make(map[string]string))
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +60,8 @@ func getAllConfigs(opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, error
 	return cfgs, nil
 }
 
-func getConfigs(configFile string, configSelection []string, profileSelection []string, opts config.SkaffoldOptions, appliedProfiles map[string]string, requiredConfigs bool, isDependencyConfig bool, configNameToFile map[string]string) ([]*latest.SkaffoldConfig, error) {
+func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, appliedProfiles map[string]string, configNameToFile map[string]string) ([]*latest.SkaffoldConfig, error) {
+	configFile := cfgOpts.file
 	parsed, err := schema.ParseConfigAndUpgrade(configFile, latest.Version)
 	if err != nil {
 		return nil, err
@@ -76,23 +91,23 @@ func getConfigs(configFile string, configSelection []string, profileSelection []
 		}
 
 		// configSelection specifies the exact required configs in this file. Empty configSelection means that all configs are required.
-		if len(configSelection) > 0 && !util.StrSliceContains(configSelection, config.Metadata.Name) {
+		if len(cfgOpts.selection) > 0 && !util.StrSliceContains(cfgOpts.selection, config.Metadata.Name) {
 			continue
 		}
 
 		// if config names are explicitly specified via the configuration flag, we need to include the dependency tree of configs starting at that named config.
 		// `requiredConfigs` specifies if we are already in the dependency-tree of a required config, so all selected configs are required even if they are not explicitly named via the configuration flag.
-		required := requiredConfigs || len(opts.ConfigurationFilter) == 0 || util.StrSliceContains(opts.ConfigurationFilter, config.Metadata.Name)
+		required := cfgOpts.isRequired || len(opts.ConfigurationFilter) == 0 || util.StrSliceContains(opts.ConfigurationFilter, config.Metadata.Name)
 
-		profiles, err := schema.ApplyProfiles(config, opts, profileSelection)
+		profiles, err := schema.ApplyProfiles(config, opts, cfgOpts.profiles)
 		if err != nil {
 			return nil, fmt.Errorf("applying profiles: %w", err)
 		}
 		if err := defaults.Set(config); err != nil {
 			return nil, fmt.Errorf("setting default values: %w", err)
 		}
-		// convert relative file paths to absolute for all configs that are not in invoked explicitly. This avoids maintaining multiple root directory information since the dependency skaffold configs would have their own root directory.
-		if isDependencyConfig {
+		// convert relative file paths to absolute for all configs that are not invoked explicitly. This avoids maintaining multiple root directory information since the dependency skaffold configs would have their own root directory.
+		if cfgOpts.isDependency {
 			if err := tags.MakeFilePathsAbsolute(config, filepath.Dir(configFile)); err != nil {
 				return nil, fmt.Errorf("setting absolute filepaths: %w", err)
 			}
@@ -144,7 +159,7 @@ func getConfigs(configFile string, configSelection []string, profileSelection []
 			if fi.IsDir() {
 				path = filepath.Join(path, "skaffold.yaml")
 			}
-			depConfigs, err := getConfigs(path, d.Names, depProfiles, opts, appliedProfiles, required, path != configFile, configNameToFile)
+			depConfigs, err := getConfigs(configOpts{file: path, selection: d.Names, profiles: depProfiles, isRequired: required, isDependency: path != configFile}, opts, appliedProfiles, configNameToFile)
 			if err != nil {
 				return nil, err
 			}
