@@ -532,7 +532,7 @@ func (ev *eventHandler) handle(event *proto.Event) {
 			event: event,
 			ts:    t,
 		}
-		if _, ok :=event.GetEventType().(*proto.Event_TerminationEvent); ok {
+		if _, ok := event.GetEventType().(*proto.Event_TerminationEvent); ok {
 			// close the event channel indicating there are no more events to all the
 			// receivers
 			close(ev.eventChan)
