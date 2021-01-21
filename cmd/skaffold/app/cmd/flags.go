@@ -68,8 +68,9 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"all"},
 	},
 	{
-		Name:          "cfg",
-		Usage:         "Filter Skaffold configs to only the provided values",
+		Name:          "module",
+		Shorthand:     "m",
+		Usage:         "Filter Skaffold configs to only the provided named modules",
 		Value:         &opts.ConfigurationFilter,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",

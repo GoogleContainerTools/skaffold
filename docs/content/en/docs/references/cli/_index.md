@@ -134,7 +134,6 @@ Options:
   -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
-      --cfg=[]: Filter Skaffold configs to only the provided values
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -146,6 +145,7 @@ Options:
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -n, --namespace='': Run deployments in the specified namespace
   -o, --output={{json .}}: Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput
@@ -170,7 +170,6 @@ Env vars:
 * `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
-* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
@@ -182,6 +181,7 @@ Env vars:
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 * `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
+* `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_MUTE_LOGS` (same as `--mute-logs`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
@@ -348,7 +348,6 @@ Options:
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
-      --cfg=[]: Filter Skaffold configs to only the provided values
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
@@ -361,6 +360,7 @@ Options:
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
@@ -395,7 +395,6 @@ Env vars:
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
-* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
@@ -408,6 +407,7 @@ Env vars:
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 * `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_LABEL` (same as `--label`)
+* `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_MUTE_LOGS` (same as `--mute-logs`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
@@ -437,13 +437,13 @@ Delete the deployed application
 
 
 Options:
-      --cfg=[]: Filter Skaffold configs to only the provided values
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
   -n, --namespace='': Run deployments in the specified namespace
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
@@ -457,13 +457,13 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
-* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 * `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
+* `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
@@ -490,7 +490,6 @@ Examples:
 
 Options:
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
-      --cfg=[]: Filter Skaffold configs to only the provided values
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -502,6 +501,7 @@ Options:
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -n, --namespace='': Run deployments in the specified namespace
       --port-forward=false: Port-forward exposed container ports within pods
@@ -528,7 +528,6 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
-* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
@@ -540,6 +539,7 @@ Env vars:
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 * `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_LABEL` (same as `--label`)
+* `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_MUTE_LOGS` (same as `--mute-logs`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
@@ -568,7 +568,6 @@ Options:
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
-      --cfg=[]: Filter Skaffold configs to only the provided values
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
@@ -581,6 +580,7 @@ Options:
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
@@ -616,7 +616,6 @@ Env vars:
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
-* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
@@ -629,6 +628,7 @@ Env vars:
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 * `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_LABEL` (same as `--label`)
+* `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_MUTE_LOGS` (same as `--mute-logs`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
@@ -666,9 +666,9 @@ Examples:
   skaffold diagnose --yaml-only --profile PROFILE
 
 Options:
-      --cfg=[]: Filter Skaffold configs to only the provided values
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --yaml-only=false: Only prints the effective skaffold.yaml configuration
@@ -682,9 +682,9 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
-* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_YAML_ONLY` (same as `--yaml-only`)
@@ -704,8 +704,8 @@ Examples:
   skaffold fix --version skaffold/v1
 
 Options:
-      --cfg=[]: Filter Skaffold configs to only the provided values
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --overwrite=false: Overwrite original config with fixed config
       --version='skaffold/v2beta11': Target schema version to upgrade to
 
@@ -718,8 +718,8 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
-* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_OVERWRITE` (same as `--overwrite`)
 * `SKAFFOLD_VERSION` (same as `--version`)
 
@@ -734,13 +734,13 @@ Options:
       --analyze=false: Print all discoverable Dockerfiles and images in JSON format to stdout
   -a, --artifact=[]: '='-delimited Dockerfile/image pair, or JSON string, to generate build artifact
 (example: --artifact='{"builder":"Docker","payload":{"path":"/web/Dockerfile.web"},"image":"gcr.io/web-project/image"}')
-      --cfg=[]: Filter Skaffold configs to only the provided values
       --compose-file='': Initialize from a docker-compose file
       --default-kustomization='': Default Kustomization overlay path (others will be added as profiles)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Force the generation of the Skaffold config
       --generate-manifests=false: Allows skaffold to try and generate basic kubernetes resources to get your project started
   -k, --kubernetes-manifest=[]: A path or a glob pattern to kubernetes manifests (can be non-existent) to be added to the kubectl deployer (overrides detection of kubernetes manifests). Repeat the flag for multiple entries. E.g.: skaffold init -k pod.yaml -k k8s/*.yml
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --skip-build=false: Skip generating build artifacts in Skaffold config
 
 Usage:
@@ -754,13 +754,13 @@ Env vars:
 
 * `SKAFFOLD_ANALYZE` (same as `--analyze`)
 * `SKAFFOLD_ARTIFACT` (same as `--artifact`)
-* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_COMPOSE_FILE` (same as `--compose-file`)
 * `SKAFFOLD_DEFAULT_KUSTOMIZATION` (same as `--default-kustomization`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_GENERATE_MANIFESTS` (same as `--generate-manifests`)
 * `SKAFFOLD_KUBERNETES_MANIFEST` (same as `--kubernetes-manifest`)
+* `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_SKIP_BUILD` (same as `--skip-build`)
 
 ### skaffold options
@@ -793,12 +793,12 @@ Examples:
 Options:
       --add-skaffold-labels=true: Add Skaffold-specific labels to rendered manifest. If false, custom labels are still applied. Helpful for GitOps model where Skaffold is not the deployer.
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
-      --cfg=[]: Filter Skaffold configs to only the provided values
   -d, --default-repo='': Default repository value (overrides global config)
       --digest-source='local': Set to 'local' to build images locally and use digests from built images; Set to 'remote' to resolve the digest of images by tag from the remote registry; Set to 'none' to use tags directly from the Kubernetes manifests
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
       --loud=false: Show the build logs and output
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
   -n, --namespace='': Run deployments in the specified namespace
       --offline=false: Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.
       --output='': file to write rendered manifests to
@@ -816,12 +816,12 @@ Env vars:
 
 * `SKAFFOLD_ADD_SKAFFOLD_LABELS` (same as `--add-skaffold-labels`)
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
-* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_LOUD` (same as `--loud`)
+* `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_OFFLINE` (same as `--offline`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
@@ -848,7 +848,6 @@ Options:
   -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
-      --cfg=[]: Filter Skaffold configs to only the provided values
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
@@ -861,6 +860,7 @@ Options:
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
@@ -895,7 +895,6 @@ Env vars:
 * `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
-* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
@@ -908,6 +907,7 @@ Env vars:
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 * `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_LABEL` (same as `--label`)
+* `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_MUTE_LOGS` (same as `--mute-logs`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
@@ -1022,8 +1022,8 @@ Examples:
 
 Options:
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
-      --cfg=[]: Filter Skaffold configs to only the provided values
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
 
 Usage:
   skaffold test [options]
@@ -1035,8 +1035,8 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
-* `SKAFFOLD_CFG` (same as `--cfg`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_MODULE` (same as `--module`)
 
 ### skaffold version
 
