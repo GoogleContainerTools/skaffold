@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -301,6 +302,32 @@ requires:
 				createCfg("cfg21", "image21", "doc2", nil),
 				createCfg("cfg11", "image11", "doc1", []latest.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
 			},
+		},
+		{
+			description:  "named config not found",
+			configFilter: []string{"cfg3"},
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
+requires:
+  - path: doc1
+    configs: [cfg10]
+`}, {name: "cfg01", requiresStanza: `
+requires:
+  - path: doc1
+    configs: [cfg11]
+`}}},
+				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: `
+requires:
+  - path: ../doc2
+    configs: [cfg21]
+`}, {name: "cfg11", requiresStanza: `
+requires:
+  - path: ../doc2
+    configs: [cfg21]
+`}}},
+				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
+			},
+			err: errors.New("did not find any configs matching selection [cfg3]"),
 		},
 	}
 
