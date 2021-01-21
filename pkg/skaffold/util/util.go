@@ -27,6 +27,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -338,4 +339,29 @@ func IsSubPath(basepath string, targetpath string) bool {
 
 func hasHiddenPrefix(s string) bool {
 	return strings.HasPrefix(s, hiddenPrefix)
+}
+
+// ShowHumanizeTime returns time in human readable format
+func ShowHumanizeTime(start time.Duration) string {
+	shortTime := start.Truncate(time.Millisecond)
+	longTime := shortTime.String()
+	out := time.Time{}.Add(shortTime)
+
+	if start.Seconds() < 1 {
+		return start.String()
+	}
+
+	longTime = strings.ReplaceAll(longTime, "h", " hour ")
+	longTime = strings.ReplaceAll(longTime, "m", " minute ")
+	longTime = strings.ReplaceAll(longTime, "s", " second")
+	if out.Hour() > 1 {
+		longTime = strings.ReplaceAll(longTime, "hour", "hours")
+	}
+	if out.Minute() > 1 {
+		longTime = strings.ReplaceAll(longTime, "minute", "minutes")
+	}
+	if out.Second() > 1 {
+		longTime = strings.ReplaceAll(longTime, "second", "seconds")
+	}
+	return longTime
 }

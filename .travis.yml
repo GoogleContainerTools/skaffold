@@ -13,6 +13,15 @@ branches:
 git:
   submodules: false
 
+install:
+  # enable tcp_mtu_probing=1 to enable MTU path discovery when ICMP blackhole detected
+  # bump fs.file-max to workaround rancher/k3d#407
+  - if [ $TRAVIS_OS_NAME = linux ]; then
+      sudo sysctl -w net.ipv4.tcp_mtu_probing=1;
+      sudo sysctl -w fs.file-max=2000000;
+      sudo sysctl -p;
+    fi
+
 _integration_test: &integration_test
   os: linux
   language: minimal

@@ -48,21 +48,14 @@ func getAllConfigs(opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, error
 
 func getConfigs(configFile string, configSelection []string, profileSelection []string, opts config.SkaffoldOptions, appliedProfiles map[string]string, requiredConfigs bool, isDependencyConfig bool, configNameToFile map[string]string) ([]*latest.SkaffoldConfig, error) {
 	parsed, err := schema.ParseConfigAndUpgrade(configFile, latest.Version)
+	if err != nil {
+		return nil, err
+	}
+
 	if !filepath.IsAbs(configFile) {
 		cwd, _ := util.RealWorkDir()
 		// convert `configFile` to absolute value as it's used as a map key in several places.
 		configFile = filepath.Join(cwd, configFile)
-	}
-	if err != nil {
-		if os.IsNotExist(errors.Unwrap(err)) {
-			return nil, fmt.Errorf("skaffold config file %s not found - check your current working directory, or try running `skaffold init`", configFile)
-		}
-
-		// If the error is NOT that the file doesn't exist, then we warn the user
-		// that maybe they are using an outdated version of Skaffold that's unable to read
-		// the configuration.
-		warnIfUpdateIsAvailable()
-		return nil, fmt.Errorf("parsing skaffold config: %w", err)
 	}
 
 	if len(parsed) == 0 {

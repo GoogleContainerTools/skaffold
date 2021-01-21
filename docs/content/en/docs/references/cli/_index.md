@@ -344,6 +344,8 @@ Env vars:
 
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cfg=[]: Filter Skaffold configs to only the provided values
@@ -389,6 +391,8 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CFG` (same as `--cfg`)
@@ -560,6 +564,8 @@ Run a pipeline in development mode
 
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cfg=[]: Filter Skaffold configs to only the provided values
@@ -606,6 +612,8 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CFG` (same as `--cfg`)
@@ -835,6 +843,8 @@ Examples:
   skaffold run -p <profile>
 
 Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
   -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
@@ -880,6 +890,8 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)

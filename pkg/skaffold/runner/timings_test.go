@@ -94,7 +94,7 @@ func TestTimingsBuild(t *testing.T) {
 		{
 			description:  "build success",
 			shouldOutput: "",
-			shouldLog:    "Build complete in .+$",
+			shouldLog:    "Build completed in .+$",
 			shouldErr:    false,
 		},
 		{
@@ -130,7 +130,7 @@ func TestTimingsPrune(t *testing.T) {
 		{
 			description:  "test success",
 			shouldOutput: "(?m)^Pruning images...\n",
-			shouldLog:    "Image prune complete in .+$",
+			shouldLog:    "Image prune completed in .+$",
 			shouldErr:    false,
 		},
 		{
@@ -166,7 +166,7 @@ func TestTimingsTest(t *testing.T) {
 		{
 			description:  "test success",
 			shouldOutput: "",
-			shouldLog:    "Test complete in .+$",
+			shouldLog:    "Test completed in .+$",
 			shouldErr:    false,
 		},
 		{
@@ -202,7 +202,7 @@ func TestTimingsDeploy(t *testing.T) {
 		{
 			description:  "prune success",
 			shouldOutput: "(?m)^Starting deploy...\n",
-			shouldLog:    "Deploy complete in .+$",
+			shouldLog:    "Deploy completed in .+$",
 			shouldErr:    false,
 		},
 		{
@@ -238,7 +238,7 @@ func TestTimingsCleanup(t *testing.T) {
 		{
 			description:  "cleanup success",
 			shouldOutput: "(?m)^Cleaning up...\n",
-			shouldLog:    "Cleanup complete in .+$",
+			shouldLog:    "Cleanup completed in .+$",
 			shouldErr:    false,
 		},
 		{

@@ -18,13 +18,19 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
+	initConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -38,8 +44,8 @@ import (
 // For tests
 var createRunner = createNewRunner
 
-func withRunner(ctx context.Context, action func(runner.Runner, []*latest.SkaffoldConfig) error) error {
-	runner, config, err := createRunner(opts)
+func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, []*latest.SkaffoldConfig) error) error {
+	runner, config, err := createRunner(out, opts)
 	sErrors.SetSkaffoldOptions(opts)
 	if err != nil {
 		return err
@@ -51,8 +57,8 @@ func withRunner(ctx context.Context, action func(runner.Runner, []*latest.Skaffo
 }
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
-func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
-	runCtx, configs, err := runContext(opts)
+func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
+	runCtx, configs, err := runContext(out, opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -67,8 +73,8 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, []*latest.Skaf
 	return runner, configs, nil
 }
 
-func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.SkaffoldConfig, error) {
-	configs, err := getAllConfigs(opts)
+func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.SkaffoldConfig, error) {
+	configs, err := withFallbackConfig(out, opts, getAllConfigs)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -95,6 +101,38 @@ func runContext(opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.
 	}
 
 	return runCtx, configs, nil
+}
+
+// withFallbackConfig will try to automatically generate a config if root `skaffold.yaml` file does not exist.
+func withFallbackConfig(out io.Writer, opts config.SkaffoldOptions, getCfgs func(opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, error)) ([]*latest.SkaffoldConfig, error) {
+	configs, err := getCfgs(opts)
+	if err == nil {
+		return configs, nil
+	}
+	if os.IsNotExist(errors.Unwrap(err)) {
+		if opts.AutoCreateConfig && initializer.ValidCmd(opts) {
+			color.Default.Fprintf(out, "Skaffold config file %s not found - Trying to create one for you...\n", opts.ConfigurationFile)
+			config, err := initializer.Transparent(context.Background(), out, initConfig.Config{Opts: opts})
+			if err != nil {
+				return nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: %w", err)
+			}
+			if config == nil {
+				return nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: action cancelled by user")
+			}
+
+			defaults.Set(config)
+
+			return []*latest.SkaffoldConfig{config}, nil
+		}
+
+		return nil, fmt.Errorf("skaffold config file %s not found - check your current working directory, or try running `skaffold init`", opts.ConfigurationFile)
+	}
+
+	// If the error is NOT that the file doesn't exist, then we warn the user
+	// that maybe they are using an outdated version of Skaffold that's unable to read
+	// the configuration.
+	warnIfUpdateIsAvailable()
+	return nil, fmt.Errorf("parsing skaffold config: %w", err)
 }
 
 func setDefaultDeployer(configs []*latest.SkaffoldConfig) {

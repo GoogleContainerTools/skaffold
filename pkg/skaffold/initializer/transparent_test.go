@@ -178,3 +178,32 @@ See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed gui
 		})
 	}
 }
+
+func TestValidCmd(t *testing.T) {
+	tests := []struct {
+		name     string
+		cmd      string
+		expected bool
+	}{
+		{
+			name:     "valid string",
+			cmd:      "dev",
+			expected: true,
+		},
+		{
+			name:     "invalid",
+			cmd:      "build",
+			expected: false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			config := config.SkaffoldOptions{
+				Command: test.cmd,
+			}
+			valid := ValidCmd(config)
+
+			t.CheckDeepEqual(test.expected, valid)
+		})
+	}
+}

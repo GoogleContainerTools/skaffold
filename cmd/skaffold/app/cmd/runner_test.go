@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"testing"
 
 	"github.com/blang/semver"
@@ -98,7 +99,7 @@ func TestCreateNewRunner(t *testing.T) {
 				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, test.config)).
 				Chdir()
 
-			_, _, err := createNewRunner(test.options)
+			_, _, err := createNewRunner(ioutil.Discard, test.options)
 
 			t.CheckError(test.shouldErr, err)
 			if test.expectedError != "" {

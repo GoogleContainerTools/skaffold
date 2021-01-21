@@ -205,7 +205,7 @@ func (b *RunBuilder) runForked(t *testing.T, out io.Writer) {
 
 	cmd := b.cmd(ctx)
 	cmd.Stdout = out
-	logrus.Infoln(cmd.Args)
+	logrus.Infof("Running %s in %s", cmd.Args, cmd.Dir)
 
 	start := time.Now()
 	if err := cmd.Start(); err != nil {
@@ -214,7 +214,7 @@ func (b *RunBuilder) runForked(t *testing.T, out io.Writer) {
 
 	go func() {
 		cmd.Wait()
-		logrus.Infoln("Ran in", time.Since(start))
+		logrus.Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
 	}()
 
 	t.Cleanup(func() {
@@ -234,14 +234,13 @@ func (b *RunBuilder) Run(t *testing.T) error {
 	t.Helper()
 
 	cmd := b.cmd(context.Background())
-	logrus.Infoln(cmd.Args)
+	logrus.Infof("Running %s in %s", cmd.Args, cmd.Dir)
 
 	start := time.Now()
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
-
-	logrus.Infoln("Ran in", time.Since(start))
+	logrus.Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
 	return nil
 }
 
@@ -251,15 +250,14 @@ func (b *RunBuilder) RunWithCombinedOutput(t *testing.T) ([]byte, error) {
 
 	cmd := b.cmd(context.Background())
 	cmd.Stdout, cmd.Stderr = nil, nil
-	logrus.Infoln(cmd.Args)
+	logrus.Infof("Running %s in %s", cmd.Args, cmd.Dir)
 
 	start := time.Now()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return out, fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
-
-	logrus.Infoln("Ran in", time.Since(start))
+	logrus.Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
 	return out, nil
 }
 
@@ -271,7 +269,7 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 
 	cmd := b.cmd(context.Background())
 	cmd.Stdout, cmd.Stderr = nil, nil
-	logrus.Infoln(cmd.Args)
+	logrus.Infof("Running %s in %s", cmd.Args, cmd.Dir)
 
 	start := time.Now()
 	out, err := cmd.Output()
@@ -281,8 +279,7 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 		}
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
 	}
-
-	logrus.Infoln("Ran in", time.Since(start))
+	logrus.Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
 	return out
 }
 
