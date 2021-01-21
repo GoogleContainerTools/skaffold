@@ -56,21 +56,7 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions, namedProf
 
 	// remove profiles section for run modes where profiles are already merged into the main pipeline
 	switch opts.Mode() {
-	case cfg.RunModes.Build:
-		fallthrough
-	case cfg.RunModes.Dev:
-		fallthrough
-	case cfg.RunModes.Deploy:
-		fallthrough
-	case cfg.RunModes.Debug:
-		fallthrough
-	case cfg.RunModes.Render:
-		fallthrough
-	case cfg.RunModes.Run:
-		fallthrough
-	case cfg.RunModes.Diagnose:
-		fallthrough
-	case cfg.RunModes.Delete:
+	case cfg.RunModes.Build, cfg.RunModes.Dev, cfg.RunModes.Deploy, cfg.RunModes.Debug, cfg.RunModes.Render, cfg.RunModes.Run, cfg.RunModes.Diagnose, cfg.RunModes.Delete:
 		c.Profiles = nil
 	}
 
