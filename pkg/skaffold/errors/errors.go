@@ -108,7 +108,12 @@ func IsOldImageManifestProblem(err error) (string, bool) {
 }
 
 func getErrorCodeFromError(phase Phase, err error) (proto.StatusCode, []*proto.Suggestion) {
-	uErr := errors.Unwrap(err)
+	uErr := func(err error) error {
+		if e := errors.Unwrap(err); e != nil {
+			return e
+		}
+		return err
+	}(err)
 	if t, ok := uErr.(Error); ok {
 		return t.StatusCode(), t.Suggestions()
 	}
