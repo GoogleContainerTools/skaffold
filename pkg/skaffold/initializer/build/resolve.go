@@ -155,7 +155,7 @@ func getGeneratedBuilderPair(b InitBuilder) GeneratedArtifactInfo {
 
 func sanitizeImageName(imageName string) string {
 	// Replace unsupported characters with `_`
-	sanitized := regexp.MustCompile(`[^a-zA-Z0-9-._]`).ReplaceAllString(imageName, `-`)
+	sanitized := regexp.MustCompile(`[^a-zA-Z0-9-_]`).ReplaceAllString(imageName, `-`)
 
 	// Truncate to 128 characters
 	if len(sanitized) > 128 {
