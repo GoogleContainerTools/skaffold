@@ -80,7 +80,7 @@ func getConfigs(configFile string, configSelection []string, profileSelection []
 			continue
 		}
 
-		// if config names are explicitly specified via the configuration flag, then need to include the dependency tree of configs starting at that named config.
+		// if config names are explicitly specified via the configuration flag, we need to include the dependency tree of configs starting at that named config.
 		// `requiredConfigs` specifies if we are already in the dependency-tree of a required config, so all selected configs are required even if they are not explicitly named va the configuration flag.
 		required := requiredConfigs || len(opts.ConfigurationFilter) == 0 || util.StrSliceContains(opts.ConfigurationFilter, config.Metadata.Name)
 
