@@ -56,12 +56,11 @@ func newHandler() *eventHandler {
 	}
 	go func() {
 		for {
-			ev, isNotClosed := <-h.eventChan
-			if isNotClosed {
-				h.handleExec(ev)
-			} else {
+			ev, open := <-h.eventChan
+			if !open {
 				break
 			}
+			h.handleExec(ev)
 		}
 	}()
 	return h
