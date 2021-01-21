@@ -108,18 +108,14 @@ func IsOldImageManifestProblem(err error) (string, bool) {
 }
 
 func getErrorCodeFromError(phase Phase, err error) (proto.StatusCode, []*proto.Suggestion) {
-	uErr := func(err error) error {
-		if e := errors.Unwrap(err); e != nil {
-			return e
-		}
-		return err
-	}(err)
-	if t, ok := uErr.(Error); ok {
-		return t.StatusCode(), t.Suggestions()
+	var sErr Error
+	if errors.As(err, &sErr) {
+		return sErr.StatusCode(), sErr.Suggestions()
 	}
+
 	if problems, ok := allErrors[phase]; ok {
 		for _, v := range problems {
-			if v.regexp.MatchString(uErr.Error()) {
+			if v.regexp.MatchString(err.Error()) {
 				return v.errCode, v.suggestion(skaffoldOpts)
 			}
 		}

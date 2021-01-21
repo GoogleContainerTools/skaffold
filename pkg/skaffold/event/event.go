@@ -56,8 +56,12 @@ func newHandler() *eventHandler {
 	}
 	go func() {
 		for {
-			ev := <-h.eventChan
-			h.handleExec(ev)
+			ev, isNotClosed := <-h.eventChan
+			if isNotClosed {
+				h.handleExec(ev)
+			} else {
+				break
+			}
 		}
 	}()
 	return h
@@ -528,6 +532,12 @@ func (ev *eventHandler) handle(event *proto.Event) {
 			event: event,
 			ts:    t,
 		}
+		switch event.GetEventType().(type) {
+		case *proto.Event_TerminationEvent:
+			// close the event channel indicating there are no more events to all the
+			// receivers
+			close(ev.eventChan)
+		}
 	}(ptypes.TimestampNow())
 }
 
@@ -736,7 +746,6 @@ func InititializationFailed(err error) {
 			},
 		},
 	})
-	handler.handle(nil)
 }
 
 // SaveEventsToFile saves the current event log to the filepath provided
