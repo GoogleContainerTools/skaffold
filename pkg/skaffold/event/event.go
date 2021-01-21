@@ -56,7 +56,10 @@ func newHandler() *eventHandler {
 	}
 	go func() {
 		for {
-			ev := <-h.eventChan
+			ev, open := <-h.eventChan
+			if !open {
+				break
+			}
 			h.handleExec(ev)
 		}
 	}()
@@ -528,6 +531,11 @@ func (ev *eventHandler) handle(event *proto.Event) {
 			event: event,
 			ts:    t,
 		}
+		if _, ok := event.GetEventType().(*proto.Event_TerminationEvent); ok {
+			// close the event channel indicating there are no more events to all the
+			// receivers
+			close(ev.eventChan)
+		}
 	}(ptypes.TimestampNow())
 }
 
@@ -654,10 +662,7 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 		case Failed:
 			logEntry.Entry = fmt.Sprintf("Update failed with error code %v", de.Err.ErrCode)
 		}
-	default:
-		return
 	}
-
 	ev.logEvent(*logEntry)
 }
 
