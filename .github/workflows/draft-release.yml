@@ -14,7 +14,7 @@ jobs:
     - name: Check commit message
       id: check-commit-message
       run: |
-        str="${{ github.event.head_commit.message }}"
+        str='${{ github.event.head_commit.message }}'
         regex="^release\s*:\s*(v[0-9]+\.[0-9]+\.[0-9]+|[0-9]+\.[0-9]+\.[0-9]+)\s*$"
         if [[ "$str" =~ $regex ]]; then
         echo "::set-output name=applicable::true"
