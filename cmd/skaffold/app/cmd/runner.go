@@ -35,10 +35,8 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 )
@@ -76,9 +74,14 @@ func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner,
 }
 
 func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.SkaffoldConfig, error) {
-	configs, pipelines, err := skaffoldConfig(out, opts)
+	configs, err := withFallbackConfig(out, opts, getAllConfigs)
 	if err != nil {
 		return nil, nil, err
+	}
+	setDefaultDeployer(configs)
+	var pipelines []latest.Pipeline
+	for _, cfg := range configs {
+		pipelines = append(pipelines, cfg.Pipeline)
 	}
 
 	// TODO: Should support per-config kubecontext. Right now we constrain all configs to define the same kubecontext.
@@ -100,67 +103,45 @@ func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunCont
 	return runCtx, configs, nil
 }
 
-func setDefaultDeployer(configs []util.VersionedConfig) bool {
-	// set the default deployer only if no deployer is explicitly specified in any config
-	for _, cfg := range configs {
-		if cfg.(*latest.SkaffoldConfig).Deploy.DeployType != (latest.DeployType{}) {
-			return false
-		}
+// withFallbackConfig will try to automatically generate a config if root `skaffold.yaml` file does not exist.
+func withFallbackConfig(out io.Writer, opts config.SkaffoldOptions, getCfgs func(opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, error)) ([]*latest.SkaffoldConfig, error) {
+	configs, err := getCfgs(opts)
+	if err == nil {
+		return configs, nil
 	}
-	return true
-}
-
-// skaffoldConfig will try to parse the given opts.ConfigurationFile. If not found, it will try to automatically generate a config for the user
-func skaffoldConfig(out io.Writer, opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, []latest.Pipeline, error) {
-	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
-	if err != nil {
-		if os.IsNotExist(errors.Unwrap(err)) {
-			if opts.AutoCreateConfig && initializer.ValidCmd(opts) {
-				color.Default.Fprintf(out, "Skaffold config file %s not found - Trying to create one for you...\n", opts.ConfigurationFile)
-				config, err := initializer.Transparent(context.Background(), out, initConfig.Config{Opts: opts})
-				if err != nil {
-					return nil, nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: %w", err)
-				}
-				if config == nil {
-					return nil, nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: action cancelled by user")
-				}
-
-				defaults.Set(config, true)
-
-				return []*latest.SkaffoldConfig{config}, []latest.Pipeline{config.Pipeline}, nil
+	if os.IsNotExist(errors.Unwrap(err)) {
+		if opts.AutoCreateConfig && initializer.ValidCmd(opts) {
+			color.Default.Fprintf(out, "Skaffold config file %s not found - Trying to create one for you...\n", opts.ConfigurationFile)
+			config, err := initializer.Transparent(context.Background(), out, initConfig.Config{Opts: opts})
+			if err != nil {
+				return nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: %w", err)
+			}
+			if config == nil {
+				return nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: action cancelled by user")
 			}
 
-			return nil, nil, fmt.Errorf("skaffold config file %s not found - check your current working directory, or try running `skaffold init`", opts.ConfigurationFile)
+			defaults.Set(config)
+
+			return []*latest.SkaffoldConfig{config}, nil
 		}
 
-		// If the error is NOT that the file doesn't exist, then we warn the user
-		// that maybe they are using an outdated version of Skaffold that's unable to read
-		// the configuration.
-		warnIfUpdateIsAvailable()
-		return nil, nil, fmt.Errorf("parsing skaffold config: %w", err)
+		return nil, fmt.Errorf("skaffold config file %s not found - check your current working directory, or try running `skaffold init`", opts.ConfigurationFile)
 	}
 
-	if len(parsed) == 0 {
-		return nil, nil, fmt.Errorf("skaffold config file %s is empty", opts.ConfigurationFile)
+	// If the error is NOT that the file doesn't exist, then we warn the user
+	// that maybe they are using an outdated version of Skaffold that's unable to read
+	// the configuration.
+	warnIfUpdateIsAvailable()
+	return nil, fmt.Errorf("parsing skaffold config: %w", err)
+}
+
+func setDefaultDeployer(configs []*latest.SkaffoldConfig) {
+	// do not set a default deployer in a multi-config application.
+	if len(configs) > 1 {
+		return
 	}
-
-	setDefaultDeployer := setDefaultDeployer(parsed)
-	var pipelines []latest.Pipeline
-	var configs []*latest.SkaffoldConfig
-	for _, cfg := range parsed {
-		config := cfg.(*latest.SkaffoldConfig)
-
-		if err = schema.ApplyProfiles(config, opts); err != nil {
-			return nil, nil, fmt.Errorf("applying profiles: %w", err)
-		}
-		if err := defaults.Set(config, setDefaultDeployer); err != nil {
-			return nil, nil, fmt.Errorf("setting default values: %w", err)
-		}
-		pipelines = append(pipelines, config.Pipeline)
-		configs = append(configs, config)
-	}
-
-	return configs, pipelines, nil
+	// there always exists at least one config
+	defaults.SetDefaultDeployer(configs[0])
 }
 
 func warnIfUpdateIsAvailable() {

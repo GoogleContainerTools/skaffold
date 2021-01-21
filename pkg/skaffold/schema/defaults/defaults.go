@@ -40,12 +40,8 @@ const (
 )
 
 // Set makes sure default values are set on a SkaffoldConfig.
-func Set(c *latest.SkaffoldConfig, setDefaultDeployer bool) error {
+func Set(c *latest.SkaffoldConfig) error {
 	defaultToLocalBuild(c)
-	if setDefaultDeployer {
-		defaultToKubectlDeploy(c)
-		setDefaultKubectlManifests(c)
-	}
 	setDefaultTagger(c)
 	setDefaultKustomizePath(c)
 	setDefaultLogsConfig(c)
@@ -106,6 +102,12 @@ func Set(c *latest.SkaffoldConfig, setDefaultDeployer bool) error {
 	}
 
 	return nil
+}
+
+// SetDefaultDeployer adds a default kubectl deploy configuration.
+func SetDefaultDeployer(c *latest.SkaffoldConfig) {
+	defaultToKubectlDeploy(c)
+	setDefaultKubectlManifests(c)
 }
 
 func defaultToLocalBuild(c *latest.SkaffoldConfig) {

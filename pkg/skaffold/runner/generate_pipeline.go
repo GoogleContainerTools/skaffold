@@ -81,10 +81,10 @@ func setupConfigFiles(configPaths []string) ([]*pipeline.ConfigFile, error) {
 		for _, parsedCfg := range parsedCfgs {
 			config := parsedCfg.(*latest.SkaffoldConfig)
 
-			if err := defaults.Set(config, true); err != nil {
+			if err := defaults.Set(config); err != nil {
 				return nil, fmt.Errorf("setting default values for extra configs: %w", err)
 			}
-
+			defaults.SetDefaultDeployer(config)
 			configFile := &pipeline.ConfigFile{
 				Path:   path,
 				Config: config,

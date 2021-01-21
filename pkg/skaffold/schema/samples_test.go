@@ -80,7 +80,8 @@ func checkSkaffoldConfig(t *testutil.T, yaml []byte) {
 	var cfgs []*latest.SkaffoldConfig
 	for _, p := range parsed {
 		cfg := p.(*latest.SkaffoldConfig)
-		err = defaults.Set(cfg, true)
+		err = defaults.Set(cfg)
+		defaults.SetDefaultDeployer(cfg)
 		t.CheckNoError(err)
 		cfgs = append(cfgs, cfg)
 	}

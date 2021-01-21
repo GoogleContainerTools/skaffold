@@ -44,6 +44,9 @@ type SkaffoldConfig struct {
 	// Metadata holds additional information about the config.
 	Metadata Metadata `yaml:"metadata,omitempty"`
 
+	// Dependencies describes a list of other required configs for the current config.
+	Dependencies []ConfigDependency `yaml:"requires,omitempty"`
+
 	// Pipeline defines the Build/Test/Deploy phases.
 	Pipeline `yaml:",inline"`
 
@@ -70,6 +73,28 @@ type Pipeline struct {
 
 	// PortForward describes user defined resources to port-forward.
 	PortForward []*PortForwardResource `yaml:"portForward,omitempty"`
+}
+
+// ConfigDependency describes a dependency on another skaffold configuration.
+type ConfigDependency struct {
+	// Names describes the names of the required configs.
+	Names []string `yaml:"configs,omitempty"`
+
+	// Path describes the path to the file containing the required configs.
+	Path string `yaml:"path" skaffold:"filepath"`
+
+	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
+	ActiveProfiles []ProfileDependency `yaml:"activeProfiles,omitempty"`
+}
+
+// ProfileDependency describes a mapping from referenced config profiles to the current config profiles.
+// If the current config is activated with a profile in this mapping then the dependency configs are also activated with the corresponding mapped profiles.
+type ProfileDependency struct {
+	// Name describes name of the profile to activate in the dependency config. It should exist in the dependency config.
+	Name string `yaml:"name" yamltags:"required"`
+
+	// ActivatedBy describes a list of profiles in the current config that when activated will also activate the named profile in the dependency config. If empty then the named profile is always activated.
+	ActivatedBy []string `yaml:"activatedBy,omitempty"`
 }
 
 func (c *SkaffoldConfig) GetVersion() string {

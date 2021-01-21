@@ -18,6 +18,7 @@ package validation
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -1070,6 +1071,76 @@ func TestValidateUniqueDependencyAliases(t *testing.T) {
 	}
 	errs := validateArtifactDependencies(cfgs)
 	testutil.CheckDeepEqual(t, expected, errs, cmp.Comparer(errorsComparer))
+}
+
+func TestValidateSingleKubeContext(t *testing.T) {
+	tests := []struct {
+		description string
+		configs     []*latest.SkaffoldConfig
+		err         []error
+	}{
+		{
+			description: "different kubeContext specified",
+			configs: []*latest.SkaffoldConfig{
+				{
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							KubeContext: "",
+						},
+					},
+				},
+				{
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							KubeContext: "foo",
+						},
+					},
+				},
+			},
+			err: []error{errors.New("all configs should have the same value for `deploy.kubeContext`")},
+		},
+		{
+			description: "same kubeContext specified",
+			configs: []*latest.SkaffoldConfig{
+				{
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							KubeContext: "foo",
+						},
+					},
+				},
+				{
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							KubeContext: "foo",
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "no kubeContext specified",
+			configs: []*latest.SkaffoldConfig{
+				{
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{},
+					},
+				},
+				{
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			errs := validateSingleKubeContext(test.configs)
+			t.CheckDeepEqual(test.err, errs, cmp.Comparer(errorsComparer))
+		})
+	}
 }
 
 func TestValidateValidDependencyAliases(t *testing.T) {
