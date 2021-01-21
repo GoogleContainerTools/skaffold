@@ -97,6 +97,12 @@ func init() {
 	meteredCommands.Insert("build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test")
 	doesBuild.Insert("build", "render", "dev", "debug", "run")
 	doesDeploy.Insert("deploy", "dev", "debug", "run")
+}
+
+// SetOnlineStatus issues a GET request to see if the user is online.
+// http://clients3.google.com/generate_204 is a well-known URL that returns an empty page and HTTP status 204
+// More info can be found here: https://www.chromium.org/chromium-os/chromiumos-design-docs/network-portal-detection
+func SetOnlineStatus() {
 	go func() {
 		if shouldExportMetrics {
 			r, err := http.Get("http://clients3.google.com/generate_204")
