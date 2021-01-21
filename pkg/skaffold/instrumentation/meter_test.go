@@ -76,7 +76,7 @@ func TestExportMetrics(t *testing.T) {
 	devBuildBytes, _ := json.Marshal([]skaffoldMeter{buildMeter, devMeter})
 	fs := &testutil.FakeFileSystem{
 		Files: map[string][]byte{
-			"/keys.json": []byte(testKey),
+			"/secret/keys.json": []byte(testKey),
 		},
 	}
 
@@ -179,7 +179,7 @@ func TestInitCloudMonitoring(t *testing.T) {
 		{
 			name: "if key present pusher is not nil",
 			fileSystem: &testutil.FakeFileSystem{
-				Files: map[string][]byte{"/keys.json": []byte(testKey)},
+				Files: map[string][]byte{"/secret/keys.json": []byte(testKey)},
 			},
 		},
 		{
@@ -193,7 +193,7 @@ func TestInitCloudMonitoring(t *testing.T) {
 			name: "credentials without project_id returns an error",
 			fileSystem: &testutil.FakeFileSystem{
 				Files: map[string][]byte{
-					"/keys.json": []byte(`{
+					"/secret/keys.json": []byte(`{
 						"client_id": "test_id",
 						"client_secret": "test_secret",
 						"refresh_token": "test_token",

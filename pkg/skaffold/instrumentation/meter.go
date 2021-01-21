@@ -41,9 +41,6 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
-
-	//  import embedded secret for uploading metrics
-	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/secret/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -213,7 +210,7 @@ func initCloudMonitoringExporterMetrics() (*push.Controller, error) {
 	if err != nil {
 		return nil, err
 	}
-	b, err := fs.ReadFile(statikFS, "/keys.json")
+	b, err := fs.ReadFile(statikFS, "/secret/keys.json")
 	if err != nil {
 		// No keys have been set in this version so do not attempt to write metrics
 		if os.IsNotExist(err) {
