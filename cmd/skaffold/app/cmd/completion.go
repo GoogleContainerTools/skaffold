@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -62,7 +63,7 @@ func NewCmdCompletion() *cobra.Command {
 		Use: "completion SHELL",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
-				return fmt.Errorf("requires 1 arg, found %d", len(args))
+				return fmt.Errorf("missing shell: %s", strings.Join(cmd.ValidArgs, ", "))
 			}
 			return cobra.OnlyValidArgs(cmd, args)
 		},
