@@ -271,7 +271,9 @@ func TestValidateNetworkMode(t *testing.T) {
 				{
 					ImageName: "image/bazel",
 					ArtifactType: latest.ArtifactType{
-						BazelArtifact: &latest.BazelArtifact{},
+						BazelArtifact: &latest.BazelArtifact{
+							BuildTarget: "//:skaffold_example.tar",
+						},
 					},
 				},
 			},
@@ -424,11 +426,10 @@ func TestValidateNetworkMode(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			// disable yamltags validation
-			t.Override(&validateYamltags, func(interface{}) error { return nil })
-
 			err := Process(
 				[]*latest.SkaffoldConfig{{
+					APIVersion: latest.Version,
+					Kind:       "Config",
 					Pipeline: latest.Pipeline{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
@@ -532,8 +533,6 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			// disable yamltags validation
-			t.Override(&validateYamltags, func(interface{}) error { return nil })
 			t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
 				fakeClient := &fakeCommonAPIClient{
 					CommonAPIClient: &testutil.FakeAPIClient{
@@ -646,11 +645,10 @@ func TestValidateSyncRules(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			// disable yamltags validation
-			t.Override(&validateYamltags, func(interface{}) error { return nil })
-
 			err := Process(
 				[]*latest.SkaffoldConfig{{
+					APIVersion: latest.Version,
+					Kind:       "Config",
 					Pipeline: latest.Pipeline{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
@@ -791,11 +789,10 @@ func TestValidateImageNames(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			// disable yamltags validation
-			t.Override(&validateYamltags, func(interface{}) error { return nil })
-
 			err := Process(
 				[]*latest.SkaffoldConfig{{
+					APIVersion: latest.Version,
+					Kind:       "Config",
 					Pipeline: latest.Pipeline{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
@@ -894,11 +891,10 @@ func TestValidateJibPluginType(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			// disable yamltags validation
-			t.Override(&validateYamltags, func(interface{}) error { return nil })
-
 			err := Process(
 				[]*latest.SkaffoldConfig{{
+					APIVersion: latest.Version,
+					Kind:       "Config",
 					Pipeline: latest.Pipeline{
 						Build: latest.BuildConfig{
 							Artifacts: test.artifacts,
@@ -926,11 +922,10 @@ func TestValidateLogsConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.prefix, func(t *testutil.T) {
-			// disable yamltags validation
-			t.Override(&validateYamltags, func(interface{}) error { return nil })
-
 			err := Process(
 				[]*latest.SkaffoldConfig{{
+					APIVersion: latest.Version,
+					Kind:       "Config",
 					Pipeline: latest.Pipeline{
 						Deploy: latest.DeployConfig{
 							Logs: latest.LogsConfig{
@@ -1253,11 +1248,10 @@ func TestValidateTaggingPolicy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			// disable yamltags validation
-			t.Override(&validateYamltags, func(interface{}) error { return nil })
-
 			err := Process(
 				[]*latest.SkaffoldConfig{{
+					APIVersion: latest.Version,
+					Kind:       "Config",
 					Pipeline: latest.Pipeline{
 						Build: test.cfg,
 					},
