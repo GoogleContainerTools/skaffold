@@ -40,63 +40,40 @@ type Doc struct {
 }
 
 type Definition struct {
-	Items                *Definition            `json:"items,omitempty"`
-	Properties           map[string]*Definition `json:"properties,omitempty"`
-	AdditionalProperties interface{}            `json:"additionalProperties,omitempty"`
-	Description          string                 `json:"description,omitempty"`
-	HTMLDescription      string                 `json:"x-intellij-html-description,omitempty"`
-
-	inlines []*Definition
+	Items           *Definition            `json:"items,omitempty"`
+	Properties      map[string]*Definition `json:"properties,omitempty"`
+	Description     string                 `json:"description,omitempty"`
+	HTMLDescription string                 `json:"x-intellij-html-description,omitempty"`
 }
 
 func main() {
 	if len(os.Args) < 4 {
 		panic(fmt.Errorf("not enough arguments"))
 	}
-	if _, err := generateJSON(".", os.Args[2], os.Args[3], false); err != nil {
+	if err := generateJSON(".", os.Args[2], os.Args[3], false); err != nil {
 		panic(err)
 	}
 }
 
-type sameErr struct {
-	same bool
-	err  error
-}
-
-func generateJSON(root, input, output string, dryRun bool) (bool, error) {
+func generateJSON(root, input, output string, dryRun bool) error {
 	buf, err := generate(filepath.Join(root, input))
 	if err != nil {
-		return false, fmt.Errorf("unable to generate json with comments for %s %v", input, err)
+		return fmt.Errorf("unable to generate json with comments for %s %v", input, err)
 	}
-
-	var current []byte
-	if _, err := os.Stat(output); err == nil {
-		var err error
-		current, err = ioutil.ReadFile(output)
-		if err != nil {
-			return false, fmt.Errorf("unable to read existing json for %s %v", output, err)
-		}
-	} else if !os.IsNotExist(err) {
-		return false, fmt.Errorf("unable to check that file exists %q: %w", output, err)
-	}
-
-	current = bytes.Replace(current, []byte("\r\n"), []byte("\n"), -1)
 
 	if !dryRun {
 		if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
-			return false, fmt.Errorf("unable to write json %q: %w", output, err)
+			return fmt.Errorf("unable to write json %q: %w", output, err)
 		}
 	}
 
-	same := string(current) == string(buf)
-	return same, nil
+	return nil
 }
 
 func newDefinition(name string, t ast.Expr, comment string) *Definition {
 	def := &Definition{}
-
-	switch tt := t.(type) {
-	case *ast.StructType:
+	tt, ok := t.(*ast.StructType)
+	if ok {
 		for _, field := range tt.Fields.List {
 			name := string(camelSepRegex.ReplaceAll([]byte(field.Names[0].Name), []byte("$1 $2")))
 			if def.Properties == nil {
@@ -104,7 +81,6 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 			}
 
 			def.Properties[name] = newDefinition(name, field.Type, field.Doc.Text())
-			def.AdditionalProperties = false
 		}
 	}
 

@@ -1,0 +1,94 @@
+{
+  "definitions": {
+    "creds": {
+      "properties": {
+        "Project ID": {
+          "description": "ProjectID is the id of the gcp project which to upload metrics to.",
+          "x-intellij-html-description": "<p>ProjectID is the id of the gcp project which to upload metrics to.</p>"
+        }
+      },
+      "description": "contains the gcp project id.",
+      "x-intellij-html-description": "<p>contains the gcp project id.</p>"
+    },
+    "devIteration": {
+      "properties": {
+        "Error Code": {
+          "description": "ErrorCode is the error that may have occurred during the (sync/build/deploy).",
+          "x-intellij-html-description": "<p>ErrorCode is the error that may have occurred during the (sync/build/deploy).</p>"
+        },
+        "Intent": {
+          "description": "cause of initiating the dev iteration (sync, build, deploy).",
+          "x-intellij-html-description": "<p>cause of initiating the dev iteration (sync, build, deploy).</p>"
+        }
+      },
+      "description": "describes how an iteration and started and if an error happened.",
+      "x-intellij-html-description": "<p>describes how an iteration and started and if an error happened.</p>"
+    },
+    "skaffoldMeter": {
+      "properties": {
+        "Arch": {
+          "description": "The architecture running skaffold as returned from runtime.GOARCH.",
+          "x-intellij-html-description": "<p>The architecture running skaffold as returned from runtime.GOARCH.</p>"
+        },
+        "Build Artifacts": {
+          "description": "BuildArtifacts The number of artifacts built in the current execution as defined in skaffold.yaml.",
+          "x-intellij-html-description": "<p>BuildArtifacts The number of artifacts built in the current execution as defined in skaffold.yaml.</p>"
+        },
+        "Builders": {
+          "description": "All the builders used to build the artifacts built.",
+          "x-intellij-html-description": "<p>All the builders used to build the artifacts built.</p>"
+        },
+        "Command": {
+          "description": "The command that is used to execute skaffold `dev, build, render, run, etc.`.",
+          "x-intellij-html-description": "<p>The command that is used to execute skaffold <code>dev, build, render, run, etc.</code>.</p>"
+        },
+        "Deployers": {
+          "description": "All the deployers used in the skaffold execution.",
+          "x-intellij-html-description": "<p>All the deployers used in the skaffold execution.</p>"
+        },
+        "Dev Iterations": {
+          "description": "DevIterations The error results of the various dev iterations and the reasons they were triggered. The triggers can be one sync, build or deploy.",
+          "x-intellij-html-description": "<p>DevIterations The error results of the various dev iterations and the reasons they were triggered. The triggers can be one sync, build or deploy.</p>"
+        },
+        "Duration": {
+          "description": "of skaffold instance.",
+          "x-intellij-html-description": "<p>of skaffold instance.</p>"
+        },
+        "Enum Flags": {
+          "description": "EnumFlags Any flags passed into Skaffld that have a pre-defined list of valid values e.g. `'–cache-artifacts=false', '–mute-logs=[\"build\", \"deploy\"]'`.",
+          "x-intellij-html-description": "<p>EnumFlags Any flags passed into Skaffld that have a pre-defined list of valid values e.g. <code>'–cache-artifacts=false', '–mute-logs=[&quot;build&quot;, &quot;deploy&quot;]'</code>.</p>"
+        },
+        "Error Code": {
+          "description": "ErrorCode Skaffold reports [error codes](/docs/references/api/grpc/#statuscode) and these are monitored in order to determine the most frequent errors.",
+          "x-intellij-html-description": "<p>ErrorCode Skaffold reports <a href=\"/docs/references/api/grpc/#statuscode\">error codes</a> and these are monitored in order to determine the most frequent errors.</p>"
+        },
+        "Exit Code": {
+          "description": "ExitCode The exit code returned by skaffold at the end of execution.",
+          "x-intellij-html-description": "<p>ExitCode The exit code returned by skaffold at the end of execution.</p>"
+        },
+        "OS": {
+          "description": "The OS running skaffold as returned from runtime.GOOS.",
+          "x-intellij-html-description": "<p>The OS running skaffold as returned from runtime.GOOS.</p>"
+        },
+        "Platform Type": {
+          "description": "PlatformType Where skaffold is deploying to (sync, build, or google cloud build).",
+          "x-intellij-html-description": "<p>PlatformType Where skaffold is deploying to (sync, build, or google cloud build).</p>"
+        },
+        "Start Time": {
+          "description": "StartTime the start time of the skaffold program, used to track how long skaffold took to finish executing.",
+          "x-intellij-html-description": "<p>StartTime the start time of the skaffold program, used to track how long skaffold took to finish executing.</p>"
+        },
+        "Sync Type": {
+          "description": "SyncType The sync type used in the build configuration: infer, auto, and/or manual.",
+          "x-intellij-html-description": "<p>SyncType The sync type used in the build configuration: infer, auto, and/or manual.</p>"
+        },
+        "Version": {
+          "description": "The version of skaffold being used \"v1.18.0, v1.19.1, etc.\".",
+          "x-intellij-html-description": "<p>The version of skaffold being used &quot;v1.18.0, v1.19.1, etc.&quot;.</p>"
+        }
+      },
+      "description": "describes the data used to determine operational metrics.",
+      "x-intellij-html-description": "<p>describes the data used to determine operational metrics.</p>"
+    }
+  }
+}

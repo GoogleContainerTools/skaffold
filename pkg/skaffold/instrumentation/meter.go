@@ -105,7 +105,7 @@ type devIteration struct {
 	// Intent is the cause of initiating the dev iteration (sync, build, deploy).
 	Intent string
 
-	// ErrorCode is the error that may have occured during the (sync/build/deploy).
+	// ErrorCode is the error that may have occurred during the (sync/build/deploy).
 	ErrorCode proto.StatusCode
 }
 
