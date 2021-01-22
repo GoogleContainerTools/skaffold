@@ -177,6 +177,98 @@ func TestValidateStructInvalidSyntax(t *testing.T) {
 	testutil.CheckError(t, true, err)
 }
 
+type enumStringStruct struct {
+	ABC string `yamltags:"enum=a=b=c"`
+}
+
+type enumNoPossibleValues struct {
+	Impossible string `yamltags:"enum"`
+}
+
+type enumNumberStruct struct {
+	Number int `yamltags:"enum=0=1=2"`
+}
+
+func TestValidateStructEnum(t *testing.T) {
+	type args struct {
+		s interface{}
+	}
+
+	tests := []struct {
+		description string
+		args        args
+		shouldErr   bool
+		errContains []string
+	}{
+		{
+			description: "empty value",
+			args: args{
+				s: &enumStringStruct{},
+			},
+			shouldErr: false,
+		},
+		{
+			description: "valid value",
+			args: args{
+				s: &enumStringStruct{
+					ABC: "a",
+				},
+			},
+			shouldErr: false,
+		},
+		{
+			description: "case-mismatched value",
+			args: args{
+				s: &enumStringStruct{
+					ABC: "A",
+				},
+			},
+			shouldErr: false,
+		},
+		{
+			description: "invalid value",
+			args: args{
+				s: &enumStringStruct{
+					ABC: "d",
+				},
+			},
+			shouldErr: true,
+			// "enum", field, value
+			errContains: []string{"enum", "ABC", "d"},
+		},
+		{
+			description: "no possible values",
+			args: args{
+				s: &enumNoPossibleValues{},
+			},
+			shouldErr: true,
+			// "enum", field
+			errContains: []string{"enum", "Impossible"},
+		},
+		{
+			description: "not a string field",
+			args: args{
+				s: &enumNumberStruct{},
+			},
+			shouldErr: true,
+			// "enum", field, type
+			errContains: []string{"enum", "Number", "int"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			err := ValidateStruct(test.args.s)
+			if len(test.errContains) == 0 || !test.shouldErr {
+				t.CheckError(test.shouldErr, err)
+			} else {
+				for _, errText := range test.errContains {
+					t.CheckErrorContains(errText, err)
+				}
+			}
+		})
+	}
+}
+
 func TestIsZeroValue(t *testing.T) {
 	testutil.CheckDeepEqual(t, true, isZeroValue(reflect.ValueOf(0)))
 	testutil.CheckDeepEqual(t, true, isZeroValue(reflect.ValueOf(nil)))

@@ -39,7 +39,7 @@ type SkaffoldConfig struct {
 	APIVersion string `yaml:"apiVersion" yamltags:"required"`
 
 	// Kind is always `Config`. Defaults to `Config`.
-	Kind string `yaml:"kind" yamltags:"required"`
+	Kind string `yaml:"kind" yamltags:"required,enum=Config"`
 
 	// Metadata holds additional information about the config.
 	Metadata Metadata `yaml:"metadata,omitempty"`
@@ -172,7 +172,7 @@ type GitTagger struct {
 	// `AbbrevCommitSha`: use the abbreviated git commit sha.
 	// `TreeSha`: use the full tree hash of the artifact workingdir.
 	// `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.
-	Variant string `yaml:"variant,omitempty"`
+	Variant string `yaml:"variant,omitempty" yamltags:"enum=Tags=CommitSha=AbbrevCommitSha=TreeSha=AbbrevTreeSha"`
 
 	// Prefix adds a fixed prefix to the tag.
 	Prefix string `yaml:"prefix,omitempty"`
@@ -861,7 +861,7 @@ type Profile struct {
 type JSONPatch struct {
 	// Op is the operation carried by the patch: `add`, `remove`, `replace`, `move`, `copy` or `test`.
 	// Defaults to `replace`.
-	Op string `yaml:"op,omitempty"`
+	Op string `yaml:"op,omitempty" yamltags:"enum=add=remove=replace=move=copy=test"`
 
 	// Path is the position in the yaml where the operation takes place.
 	// For example, this targets the `dockerfile` of the first artifact built.
@@ -1203,7 +1203,7 @@ type JibArtifact struct {
 	// Type the Jib builder type; normally determined automatically. Valid types are
 	// `maven`: for Maven.
 	// `gradle`: for Gradle.
-	Type string `yaml:"type,omitempty"`
+	Type string `yaml:"type,omitempty" yamltags:"enum=maven=gradle"`
 
 	// BaseImage overrides the configured jib base image.
 	BaseImage string `yaml:"fromImage,omitempty"`

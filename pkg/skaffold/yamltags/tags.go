@@ -129,6 +129,10 @@ func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value,
 			yt = &skipTrimTag{
 				Field: field,
 			}
+		case "enum":
+			yt = &enumTag{
+				Field: field,
+			}
 		default:
 			logrus.Panicf("unknown yaml tag in %s", yamltags)
 		}
@@ -245,4 +249,38 @@ func isZeroValue(val reflect.Value) bool {
 
 func init() {
 	allOneOfs = make(map[string]map[string]fieldSet)
+}
+
+type enumTag struct {
+	Field  reflect.StructField
+	values []string
+}
+
+func (tag *enumTag) Load(s []string) error {
+	if tag.Field.Type.Kind() != reflect.String {
+		return fmt.Errorf("enum only applies to strings, not %s: %s", tag.Field.Type.Kind().String(), YamlName(tag.Field))
+	}
+
+	if len(s) == 1 {
+		return fmt.Errorf("enum values not set: %s", YamlName(tag.Field))
+	}
+	tag.values = s[1:]
+	return nil
+}
+
+func (tag *enumTag) Process(val reflect.Value) error {
+	if isZeroValue(val) {
+		// Required will check this, otherwise up to the implementation
+		// to default to a sensible value
+		return nil
+	}
+
+	value := val.String()
+	for _, allowedValue := range tag.values {
+		if strings.EqualFold(value, allowedValue) {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("invalid enum value in %s: %s", YamlName(tag.Field), value)
 }
