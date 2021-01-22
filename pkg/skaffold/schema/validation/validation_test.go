@@ -80,8 +80,8 @@ func TestValidateSchema(t *testing.T) {
 		{
 			description: "minimal config",
 			cfg: &latest.SkaffoldConfig{
-				APIVersion: "foo",
-				Kind:       "bar",
+				APIVersion: latest.Version,
+				Kind:       "Config",
 			},
 			shouldErr: false,
 		},
