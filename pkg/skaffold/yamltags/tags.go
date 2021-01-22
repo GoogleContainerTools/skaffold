@@ -157,10 +157,7 @@ func (rt *requiredTag) Load(s []string) error {
 
 func (rt *requiredTag) Process(val reflect.Value) error {
 	if isZeroValue(val) {
-		if tags, ok := rt.Field.Tag.Lookup("yaml"); ok {
-			return fmt.Errorf("required value not set: %s", strings.Split(tags, ",")[0])
-		}
-		return fmt.Errorf("required value not set: %s", rt.Field.Name)
+		return fmt.Errorf("required value not set: %s", YamlName(rt.Field))
 	}
 	return nil
 }
@@ -233,10 +230,7 @@ func (tag *skipTrimTag) Load(s []string) error {
 
 func (tag *skipTrimTag) Process(val reflect.Value) error {
 	if isZeroValue(val) {
-		if tags, ok := tag.Field.Tag.Lookup("yaml"); ok {
-			return fmt.Errorf("skipTrim value not set: %s", strings.Split(tags, ",")[0])
-		}
-		return fmt.Errorf("skipTrim value not set: %s", tag.Field.Name)
+		return fmt.Errorf("skipTrim value not set: %s", YamlName(tag.Field))
 	}
 	return nil
 }
