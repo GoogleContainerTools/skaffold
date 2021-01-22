@@ -112,6 +112,7 @@ func TestApplyProfiles(t *testing.T) {
 		kubeContextCli           string
 		profileAutoActivationCli bool
 		shouldErr                bool
+		errShouldContain         []string
 	}{
 		{
 			description: "unknown profile",
@@ -293,7 +294,29 @@ func TestApplyProfiles(t *testing.T) {
 					}},
 				}),
 			),
-			shouldErr: true,
+			shouldErr:        true,
+			errShouldContain: []string{"/unknown"},
+		},
+		{
+			description:              "invalid patch op",
+			profile:                  "profile",
+			profileAutoActivationCli: true,
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Patches: []latest.JSONPatch{{
+						Path: "/build/artifacts/0/docker/dockerfile",
+						Op:   "delete",
+					}},
+				}),
+			),
+			shouldErr:        true,
+			errShouldContain: []string{"op", "delete"},
 		},
 		{
 			description:              "add test case",
@@ -492,7 +515,13 @@ func TestApplyProfiles(t *testing.T) {
 			}, []string{test.profile})
 
 			if test.shouldErr {
-				t.CheckError(test.shouldErr, err)
+				if test.errShouldContain == nil {
+					t.CheckError(test.shouldErr, err)
+				} else {
+					for _, shouldContain := range test.errShouldContain {
+						t.CheckErrorContains(shouldContain, err)
+					}
+				}
 			} else {
 				t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, test.config)
 			}
