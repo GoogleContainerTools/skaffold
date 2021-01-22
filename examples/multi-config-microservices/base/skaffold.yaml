@@ -1,4 +1,5 @@
 apiVersion: skaffold/v2beta11
 kind: Config
-deploy:
-  kustomize: {}
+build:
+  artifacts:
+  - image: base
