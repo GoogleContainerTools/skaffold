@@ -577,7 +577,7 @@ enum StatusCode {
     // Build failed due to docker unknown error
     BUILD_DOCKER_UNKNOWN = 511;
     // Test failed due to unknown reason
-    TEST_UNKNOWN= 512;
+    TEST_UNKNOWN = 512;
 
 
     // FILE_SYNC Failures
@@ -684,7 +684,7 @@ enum StatusCode {
 
     // Test Errors
 
-    // TEST_UNKNOWN_ERROR = 1101;
+    TEST_UNKNOWN_ERROR = 1101;
 }
 
 // Enum for Suggestion codes
