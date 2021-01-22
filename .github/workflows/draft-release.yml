@@ -15,7 +15,7 @@ jobs:
       id: check-commit-message
       run: |
         str='${{ github.event.head_commit.message }}'
-        regex="^release\s*:\s*(v[0-9]+\.[0-9]+\.[0-9]+|[0-9]+\.[0-9]+\.[0-9]+)\s*$"
+        regex="^release\s*:\s*(v[0-9]+\.[0-9]+\.[0-9]+|[0-9]+\.[0-9]+\.[0-9]+)"
         if [[ "$str" =~ $regex ]]; then
         echo "::set-output name=applicable::true"
         echo This is a release commit.
