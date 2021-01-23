@@ -41,9 +41,6 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
-
-	//  import embedded secret for uploading metrics
-	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/secret/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -100,6 +97,12 @@ func init() {
 	meteredCommands.Insert("build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test")
 	doesBuild.Insert("build", "render", "dev", "debug", "run")
 	doesDeploy.Insert("deploy", "dev", "debug", "run")
+}
+
+// SetOnlineStatus issues a GET request to see if the user is online.
+// http://clients3.google.com/generate_204 is a well-known URL that returns an empty page and HTTP status 204
+// More info can be found here: https://www.chromium.org/chromium-os/chromiumos-design-docs/network-portal-detection
+func SetOnlineStatus() {
 	go func() {
 		if shouldExportMetrics {
 			r, err := http.Get("http://clients3.google.com/generate_204")
@@ -213,7 +216,7 @@ func initCloudMonitoringExporterMetrics() (*push.Controller, error) {
 	if err != nil {
 		return nil, err
 	}
-	b, err := fs.ReadFile(statikFS, "/keys.json")
+	b, err := fs.ReadFile(statikFS, "/secret/keys.json")
 	if err != nil {
 		// No keys have been set in this version so do not attempt to write metrics
 		if os.IsNotExist(err) {

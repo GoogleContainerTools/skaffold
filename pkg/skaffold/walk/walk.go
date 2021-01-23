@@ -18,6 +18,8 @@ package walk
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/karrick/godirwalk"
 )
@@ -53,6 +55,7 @@ type Builder interface {
 	MustDo(Action)
 	AppendPaths(*[]string) error
 	CollectPaths() ([]string, error)
+	CollectPathsGrouped(depth int) (map[string][]string, error)
 }
 
 type builder struct {
@@ -99,6 +102,12 @@ func (w *builder) CollectPaths() ([]string, error) {
 	var paths []string
 	err := w.Do(appendPaths(&paths))
 	return paths, err
+}
+
+func (w *builder) CollectPathsGrouped(depth int) (map[string][]string, error) {
+	m := make(map[string][]string)
+	err := w.Do(groupPaths(m, w.dir, depth))
+	return m, err
 }
 
 func (w *builder) Do(action Action) error {
@@ -167,6 +176,19 @@ func and(p1, p2 Predicate) Predicate {
 func appendPaths(values *[]string) Action {
 	return func(path string, _ Dirent) error {
 		*values = append(*values, path)
+		return nil
+	}
+}
+
+func groupPaths(m map[string][]string, base string, depth int) Action {
+	return func(path string, _ Dirent) error {
+		rel, err := filepath.Rel(base, path)
+		if err != nil {
+			return err
+		}
+		relSplit := strings.Split(rel, string(filepath.Separator))
+		key := filepath.Join(relSplit[:depth]...)
+		m[key] = append(m[key], path)
 		return nil
 	}
 }

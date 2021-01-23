@@ -41,6 +41,7 @@ type WaitForDeletions struct {
 // in the config file itself
 type SkaffoldOptions struct {
 	ConfigurationFile     string
+	ConfigurationFilter   []string
 	GlobalConfig          string
 	EventLogFile          string
 	Cleanup               bool
@@ -57,6 +58,8 @@ type SkaffoldOptions struct {
 	AutoSync              bool
 	AutoDeploy            bool
 	RenderOnly            bool
+	AutoCreateConfig      bool
+	AssumeYes             bool
 	RenderOutput          string
 	ProfileAutoActivation bool
 	DryRun                bool
@@ -99,19 +102,23 @@ type SkaffoldOptions struct {
 type RunMode string
 
 var RunModes = struct {
-	Build  RunMode
-	Dev    RunMode
-	Debug  RunMode
-	Run    RunMode
-	Deploy RunMode
-	Render RunMode
+	Build    RunMode
+	Dev      RunMode
+	Debug    RunMode
+	Run      RunMode
+	Deploy   RunMode
+	Render   RunMode
+	Delete   RunMode
+	Diagnose RunMode
 }{
-	Build:  "build",
-	Dev:    "dev",
-	Debug:  "debug",
-	Run:    "run",
-	Deploy: "deploy",
-	Render: "render",
+	Build:    "build",
+	Dev:      "dev",
+	Debug:    "debug",
+	Run:      "run",
+	Deploy:   "deploy",
+	Render:   "render",
+	Delete:   "delete",
+	Diagnose: "diagnose",
 }
 
 // Prune returns true iff the user did NOT specify the --no-prune flag,

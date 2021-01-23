@@ -54,9 +54,9 @@ if ! [[ -f ${STATIK} ]]; then
     popd
 fi
 
-${STATIK} -f -src=${TMP_DIR} -m -dest cmd/skaffold/app/cmd
-
 if [[ -d ${SECRET} ]]; then
    echo "generating statik for secret"
-   ${STATIK} -f -src=${SECRET} -m -dest cmd/skaffold/app/secret
+   cp -R ${SECRET} "${TMP_DIR}/secret"
 fi
+
+${STATIK} -f -src=${TMP_DIR} -m -dest cmd/skaffold/app/cmd

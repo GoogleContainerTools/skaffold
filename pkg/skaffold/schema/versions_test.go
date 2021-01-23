@@ -404,7 +404,8 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 
 			cfgs, err := ParseConfigAndUpgrade(tmpDir.Path("skaffold.yaml"), latest.Version)
 			for _, cfg := range cfgs {
-				err := defaults.Set(cfg.(*latest.SkaffoldConfig), true)
+				err := defaults.Set(cfg.(*latest.SkaffoldConfig))
+				defaults.SetDefaultDeployer(cfg.(*latest.SkaffoldConfig))
 				t.CheckNoError(err)
 			}
 

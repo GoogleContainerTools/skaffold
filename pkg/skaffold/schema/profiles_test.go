@@ -68,11 +68,9 @@ profiles:
 		t.CheckTrue(len(parsed) > 0)
 
 		skaffoldConfig := parsed[0].(*latest.SkaffoldConfig)
-		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
-			Profiles: []string{"patches"},
-		})
-
+		activated, err := ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{}, []string{"patches"})
 		t.CheckNoError(err)
+		t.CheckDeepEqual([]string{"patches"}, activated)
 		t.CheckDeepEqual("replacement", skaffoldConfig.Build.Artifacts[0].ImageName)
 		t.CheckDeepEqual("Dockerfile.DEV", skaffoldConfig.Build.Artifacts[0].DockerArtifact.DockerfilePath)
 		t.CheckDeepEqual("Dockerfile.second", skaffoldConfig.Build.Artifacts[1].DockerArtifact.DockerfilePath)
@@ -100,10 +98,7 @@ profiles:
 		t.CheckTrue(len(parsed) > 0)
 
 		skaffoldConfig := parsed[0].(*latest.SkaffoldConfig)
-		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
-			Profiles: []string{"patches"},
-		})
-
+		_, err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{}, []string{"patches"})
 		t.CheckErrorAndDeepEqual(true, err, `applying profile "patches": invalid path: /build/artifacts/0/image/`, err.Error())
 	})
 }
@@ -490,11 +485,11 @@ func TestApplyProfiles(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			setupFakeKubeConfig(t, api.Config{CurrentContext: "prod-context"})
-			err := ApplyProfiles(test.config, cfg.SkaffoldOptions{
-				Profiles:              []string{test.profile},
+			_, err := ApplyProfiles(test.config, cfg.SkaffoldOptions{
+				Command:               "dev",
 				KubeContext:           test.kubeContextCli,
 				ProfileAutoActivation: test.profileAutoActivationCli,
-			})
+			}, []string{test.profile})
 
 			if test.shouldErr {
 				t.CheckError(test.shouldErr, err)
@@ -767,7 +762,7 @@ func TestActivatedProfiles(t *testing.T) {
 			t.SetEnvs(test.envs)
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "prod-context"})
 
-			activated, _, err := activatedProfiles(test.profiles, test.opts)
+			activated, _, err := activatedProfiles(test.profiles, test.opts, test.opts.Profiles)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, activated)
 		})
@@ -814,11 +809,9 @@ profiles:
 		t.CheckDeepEqual("simple2", skaffoldConfig.Profiles[1].Name)
 		t.CheckDeepEqual([]latest.Activation{{Env: "ABC=common"}, {Env: "ABC=2"}}, skaffoldConfig.Profiles[1].Activation)
 
-		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
-			Profiles: []string{"simple1"},
-		})
+		applied, err := ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{}, []string{"simple1"})
 		t.CheckNoError(err)
-
+		t.CheckDeepEqual([]string{"simple1"}, applied)
 		t.CheckDeepEqual(1, len(skaffoldConfig.Build.Artifacts))
 		t.CheckDeepEqual(latest.Artifact{ImageName: "simpleimage1"}, *skaffoldConfig.Build.Artifacts[0])
 	})

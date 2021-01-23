@@ -1,3 +1,109 @@
+# v1.18.0 Release - 01/21/2021
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.18.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.18.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.18.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.18.0`
+
+Note: This release comes with a new config version, `v2beta11`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* Skaffold now supports providing multiple configuration files in a single session. This enables logical grouping of build artifacts and deployment configurations into modules, which can be individually selected for iteration during a dev session while still performing one time deployment of other modules alongside. For more information and documentation, see [our design document](tinyurl.com/skaffold-multi-configs).
+* Skaffold now provides a standalone command `skaffold test` for running supported test implementations outside of a dev session.
+
+New Features:
+* Config dependencies [#5217](https://github.com/GoogleContainerTools/skaffold/pull/5217)
+* Create nsis installer script [#5233](https://github.com/GoogleContainerTools/skaffold/pull/5233)
+* Add transparent init [#5186](https://github.com/GoogleContainerTools/skaffold/pull/5186)
+* Add go tag `filepath` that converts marked fields to absolute paths [#5205](https://github.com/GoogleContainerTools/skaffold/pull/5205)
+* Allow multiple configs in single skaffold.yaml [#5199](https://github.com/GoogleContainerTools/skaffold/pull/5199)
+* Add flag that prints timestamps in skaffold logs. [#5181](https://github.com/GoogleContainerTools/skaffold/pull/5181)
+* Enable multi config support in Skaffold [#5160](https://github.com/GoogleContainerTools/skaffold/pull/5160)
+* Adding new test command [#5118](https://github.com/GoogleContainerTools/skaffold/pull/5118)
+* add transparent init function [#5155](https://github.com/GoogleContainerTools/skaffold/pull/5155)
+* Add flag to save events to a file [#5125](https://github.com/GoogleContainerTools/skaffold/pull/5125)
+
+
+Fixes:
+* group all configs in each example project prior to validation test. [#5274](https://github.com/GoogleContainerTools/skaffold/pull/5274)
+* Fix race condition when running tests for pkg/skaffold/instrumentation [#5267](https://github.com/GoogleContainerTools/skaffold/pull/5267)
+* fix termination event not being sent [#5258](https://github.com/GoogleContainerTools/skaffold/pull/5258)
+* Fix statik directory structure [#5250](https://github.com/GoogleContainerTools/skaffold/pull/5250)
+* Fix test timeout failures in TestDebug/helm [#5252](https://github.com/GoogleContainerTools/skaffold/pull/5252)
+* Configure maven connection pool TTL to avoid connection resets from stale connections [#5251](https://github.com/GoogleContainerTools/skaffold/pull/5251)
+* Avoid possible hang in util.RunCmdOut by using byte buffers instead of pipes [#5220](https://github.com/GoogleContainerTools/skaffold/pull/5220)
+* Enable MTU path discovery on Linux and setup registry-mirrors for kind [#5237](https://github.com/GoogleContainerTools/skaffold/pull/5237)
+* Ensure init generates /-delimted paths [#5177](https://github.com/GoogleContainerTools/skaffold/pull/5177)
+* Modify Travis directive restricting builds to master [#5219](https://github.com/GoogleContainerTools/skaffold/pull/5219)
+* Set meter.Command before an error could occur with createNewRunner [#5168](https://github.com/GoogleContainerTools/skaffold/pull/5168)
+* Fix port forward [#5225](https://github.com/GoogleContainerTools/skaffold/pull/5225)
+* yaml encoders should be flushed. [#5196](https://github.com/GoogleContainerTools/skaffold/pull/5196)
+* fix: lookup image id with tag rather than name during tryImport [#5165](https://github.com/GoogleContainerTools/skaffold/pull/5165)
+* Profile with multiple activations should be processed only once. [#5182](https://github.com/GoogleContainerTools/skaffold/pull/5182)
+* Fail Helm deployments early with missing templated values [#5158](https://github.com/GoogleContainerTools/skaffold/pull/5158)
+* Fix `skaffold debug` for helm charts with skaffold config file other than default `skaffold.yaml` [#5138](https://github.com/GoogleContainerTools/skaffold/pull/5138)
+
+
+Updates and Refactors:
+* Configure Maven Wagon HTTP to retry on errors to successful connections [#5268](https://github.com/GoogleContainerTools/skaffold/pull/5268)
+* Use gcr.io/google-appengine/openjdk:8 to avoid toomanyrequests [#5256](https://github.com/GoogleContainerTools/skaffold/pull/5256)
+* change default status check timeout to 10 minutes [#5247](https://github.com/GoogleContainerTools/skaffold/pull/5247)
+* Include commands and directory in run output [#5254](https://github.com/GoogleContainerTools/skaffold/pull/5254)
+* Embed metrics credentials and upload metrics if they are present [#5157](https://github.com/GoogleContainerTools/skaffold/pull/5157)
+* write metrics to file [#5135](https://github.com/GoogleContainerTools/skaffold/pull/5135)
+* Capture Errors and dev iterations metrics [#5105](https://github.com/GoogleContainerTools/skaffold/pull/5105)
+* Update jib to 2.7.1 [#5223](https://github.com/GoogleContainerTools/skaffold/pull/5223)
+* Create a custom unmarshler for Volumes and VolumeMounts to fix #4175 [#5039](https://github.com/GoogleContainerTools/skaffold/pull/5039)
+* Render uses Helm templated values-file [#5170](https://github.com/GoogleContainerTools/skaffold/pull/5170)
+* enable `detect-minikube` by default. [#5154](https://github.com/GoogleContainerTools/skaffold/pull/5154)
+* Unhide XXenableManifestGeneration for skaffold init, remove unnecessary print line [#5152](https://github.com/GoogleContainerTools/skaffold/pull/5152)
+* issue #5076 Skaffold support for docker build '--squash' flag  [#5078](https://github.com/GoogleContainerTools/skaffold/pull/5078)
+* remove wsl detection logic [#5124](https://github.com/GoogleContainerTools/skaffold/pull/5124)
+* enabling using another container's network stack on build process [#5088](https://github.com/GoogleContainerTools/skaffold/pull/5088)
+
+
+Docs, Test, and Release Updates:
+* Add more unit tests for creating metrics, fix bug related to unmarshalling flags [#5169](https://github.com/GoogleContainerTools/skaffold/pull/5169)
+* Release automation changes [#5203](https://github.com/GoogleContainerTools/skaffold/pull/5203)
+* some fixes on documents [#5211](https://github.com/GoogleContainerTools/skaffold/pull/5211)
+* [doc] fix profile activation sample [#5222](https://github.com/GoogleContainerTools/skaffold/pull/5222)
+* Update boilerplate.py year check. [#5212](https://github.com/GoogleContainerTools/skaffold/pull/5212)
+* CNCF Buildpacks => Cloud Native Buildpacks [#5202](https://github.com/GoogleContainerTools/skaffold/pull/5202)
+* [KPT CODELAB] (3/3) kpt deployment & pruning [#5028](https://github.com/GoogleContainerTools/skaffold/pull/5028)
+* update AlecAivazis/survey to v2 [#5129](https://github.com/GoogleContainerTools/skaffold/pull/5129)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Andrey Shlykov
+- Appu
+- Brian de Alwis
+- Chanseok Oh
+- Chulki Lee
+- Gaurav
+- Gunadhya
+- Isaac Duarte
+- Jakob Schmutz
+- Jeff Wu
+- Jeremy Lewi
+- Mario Fernández
+- Marlon Gamez
+- Nick Kubala
+- Priya Modali
+- Saeid Bostandoust
+- Tejal Desai
+- Yuwen Ma
+- Zbigniew Mandziejewicz
+- mblottiere
+- priyawadhwa
+- rpunia7
+
 # v1.17.2 Release - 12/08/2020
 **Linux**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.17.2/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
