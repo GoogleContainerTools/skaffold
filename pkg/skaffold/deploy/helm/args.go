@@ -40,6 +40,7 @@ type installOpts struct {
 	force        bool
 	helmVersion  semver.Version
 	postRenderer string
+	repo         string
 }
 
 // constructOverrideArgs creates the command line arguments for overrides
@@ -133,6 +134,11 @@ func (h *Deployer) installArgs(r latest.HelmRelease, builds []build.Artifact, va
 	if o.postRenderer != "" {
 		args = append(args, "--post-renderer")
 		args = append(args, o.postRenderer)
+	}
+
+	if o.repo != "" {
+		args = append(args, "--repo")
+		args = append(args, o.repo)
 	}
 
 	// There are 2 strategies:
