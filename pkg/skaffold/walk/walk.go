@@ -18,6 +18,7 @@ package walk
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -49,6 +50,7 @@ type Builder interface {
 	WhenIsDir() Builder
 	WhenIsFile() Builder
 	WhenHasName(string) Builder
+	WhenNameMatches(string) Builder
 
 	// Actions
 	Do(Action) error
@@ -92,6 +94,10 @@ func (w *builder) WhenIsDir() Builder {
 
 func (w *builder) WhenHasName(name string) Builder {
 	return w.When(hasName(name))
+}
+
+func (w *builder) WhenNameMatches(glob string) Builder {
+	return w.When(nameMatches(glob))
 }
 
 func (w *builder) AppendPaths(values *[]string) error {
@@ -149,6 +155,12 @@ func (w *builder) MustDo(action Action) {
 func hasName(name string) Predicate {
 	return func(_ string, info Dirent) (bool, error) {
 		return info.Name() == name, nil
+	}
+}
+
+func nameMatches(glob string) Predicate {
+	return func(_ string, info Dirent) (bool, error) {
+		return path.Match(glob, info.Name())
 	}
 }
 
