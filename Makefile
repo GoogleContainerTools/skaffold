@@ -29,7 +29,7 @@ GCP_PROJECT ?= k8s-skaffold
 GKE_CLUSTER_NAME ?= integration-tests
 GKE_ZONE ?= us-central1-a
 
-SUPPORTED_PLATFORMS = linux-amd64 darwin-amd64 windows-amd64.exe linux-arm64
+SUPPORTED_PLATFORMS = linux-amd64 darwin-amd64 windows-amd64.exe linux-arm64 darwin-arm64
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 SKAFFOLD_TEST_PACKAGES = ./pkg/skaffold/... ./cmd/... ./hack/... ./pkg/webhook/...
@@ -42,23 +42,24 @@ ifeq "$(strip $(VERSION))" ""
 	override VERSION = $(shell git describe --always --tags --dirty)
 endif
 
-LDFLAGS_linux = -static
-LDFLAGS_darwin =
-LDFLAGS_windows =
-
-GO_BUILD_TAGS_linux = "osusergo netgo static_build release"
-GO_BUILD_TAGS_darwin = "release"
-GO_BUILD_TAGS_windows = "release"
-
 GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitCommit=$(COMMIT)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTreeState=$(if $(shell git status --porcelain),dirty,clean)
 GO_LDFLAGS += -s -w
 
-GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
-GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
-GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
+GO_BUILD_TAGS_linux = osusergo netgo static_build release
+LDFLAGS_linux = -static
+
+GO_BUILD_TAGS_windows = release
+
+# darwin/arm64 requires Go 1.16beta1 or later; dockercore/golang-cross
+# doesn't have a recent macOS toolchain so disable CGO and use
+# github.com/rjeczalik/notify's kqueue support. 
+GO_VERSION_darwin_arm64 = 1.16beta1
+CGO_ENABLED_darwin_arm64 = 0
+GO_BUILD_TAGS_darwin_arm64 = kqueue
+GO_BUILD_TAGS_darwin = release
 
 ifneq "$(strip $(LOCAL))" "true"
 	override STATIK_FILES =  cmd/skaffold/app/cmd/statik/statik.go
@@ -66,7 +67,7 @@ endif
 
 # when build for local development (`LOCAL=true make install` can skip license check)
 $(BUILD_DIR)/$(PROJECT): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -gcflags="all=-N -l" -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -o $@ $(BUILD_PACKAGE)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -gcflags="all=-N -l" -tags "$(GO_BUILD_TAGS_$(GOOS))" -ldflags "$(GO_LDFLAGS_$(GOOS))" -o $@ $(BUILD_PACKAGE)
 
 .PHONY: install
 install: $(BUILD_DIR)/$(PROJECT)
@@ -81,14 +82,18 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 $(BUILD_DIR)/$(PROJECT)-%: $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross/Dockerfile
 	$(eval os = $(firstword $(subst -, ,$*)))
 	$(eval arch = $(lastword $(subst -, ,$(subst .exe,,$*))))
-	$(eval ldflags = $(GO_LDFLAGS_$(os)))
-	$(eval tags = $(GO_BUILD_TAGS_$(os)))
+	$(eval ldflags = $(LDFLAGS_$(os)))
+	$(eval tags = $(GO_BUILD_TAGS_$(os)) $(GO_BUILD_TAGS_$(os)_$(arch)))
+	$(eval cgoenabled = $(CGO_ENABLED_$(os)_$(arch)))
+	$(eval goversion = $(GO_VERSION_$(os)_$(arch)))
 
 	docker build \
-		--build-arg GOOS=$(os) \
-		--build-arg GOARCH=$(arch) \
-		--build-arg TAGS=$(tags) \
-		--build-arg LDFLAGS=$(ldflags) \
+		--build-arg GOOS="$(os)" \
+		--build-arg GOARCH="$(arch)" \
+		--build-arg TAGS="$(tags)" \
+		--build-arg LDFLAGS="$(GO_LDFLAGS) $(patsubst %,-extldflags \"%\",$(ldflags))" \
+		$(patsubst %,--build-arg CGO_ENABLED="%",$(cgoenabled)) \
+		$(patsubst %,--build-arg GO_VERSION="%",$(goversion)) \
 		-f deploy/cross/Dockerfile \
 		-t skaffold/cross \
 		.
@@ -96,6 +101,9 @@ $(BUILD_DIR)/$(PROJECT)-%: $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross
 	docker run --rm skaffold/cross cat /build/skaffold > $@
 	shasum -a 256 $@ | tee $@.sha256
 	file $@ || true
+
+$(BUILD_DIR)/$(PROJECT)-darwin: $(BUILD_DIR)/$(PROJECT)-darwin-amd64 $(BUILD_DIR)/$(PROJECT)-darwin-arm64
+	go run github.com/randall77/makefat $@ $^
 
 .PHONY: $(BUILD_DIR)/VERSION
 $(BUILD_DIR)/VERSION: $(BUILD_DIR)
