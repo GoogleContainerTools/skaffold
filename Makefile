@@ -66,7 +66,10 @@ endif
 
 # when build for local development (`LOCAL=true make install` can skip license check)
 $(BUILD_DIR)/$(PROJECT): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -gcflags="all=-N -l" -tags "$(GO_BUILD_TAGS_$(GOOS))" -ldflags "$(GO_LDFLAGS_$(GOOS))" -o $@ $(BUILD_PACKAGE)
+	$(eval ldflags = $(GO_LDFLAGS) $(patsubst %,-extldflags \"%\",$(LDFLAGS_$(GOOS))))
+	$(eval tags = $(GO_BUILD_TAGS_$(GOOS)) $(GO_BUILD_TAGS_$(GOOS)_$(GOARCH)))
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 \
+	    go build -gcflags="all=-N -l" -tags "$(tags)" -ldflags "$(ldflags)" -o $@ $(BUILD_PACKAGE)
 
 .PHONY: install
 install: $(BUILD_DIR)/$(PROJECT)
@@ -81,7 +84,7 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 $(BUILD_DIR)/$(PROJECT)-%: $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross/Dockerfile
 	$(eval os = $(firstword $(subst -, ,$*)))
 	$(eval arch = $(lastword $(subst -, ,$(subst .exe,,$*))))
-	$(eval ldflags = $(LDFLAGS_$(os)))
+	$(eval ldflags = $(GO_LDFLAGS) $(patsubst %,-extldflags \"%\",$(LDFLAGS_$(os))))
 	$(eval tags = $(GO_BUILD_TAGS_$(os)) $(GO_BUILD_TAGS_$(os)_$(arch)))
 	$(eval cgoenabled = $(CGO_ENABLED_$(os)_$(arch)))
 	$(eval goversion = $(GO_VERSION_$(os)_$(arch)))
@@ -90,7 +93,7 @@ $(BUILD_DIR)/$(PROJECT)-%: $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross
 		--build-arg GOOS="$(os)" \
 		--build-arg GOARCH="$(arch)" \
 		--build-arg TAGS="$(tags)" \
-		--build-arg LDFLAGS="$(GO_LDFLAGS) $(patsubst %,-extldflags \"%\",$(ldflags))" \
+		--build-arg LDFLAGS="$(ldflags)" \
 		$(patsubst %,--build-arg CGO_ENABLED="%",$(cgoenabled)) \
 		$(patsubst %,--build-arg GO_VERSION="%",$(goversion)) \
 		-f deploy/cross/Dockerfile \
