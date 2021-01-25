@@ -76,13 +76,13 @@ func main() {
 	hackschema.UpdateVersionComment(path("latest", "config.go"), false)
 
 	// Update skaffold.yaml in integration tests
-	walk.From("integration").WhenNameContains("skaffold").WhenHasExt("yaml").MustDo(func(path string, _ walk.Dirent) error {
+	walk.From("integration").WhenNameContains("skaffold").WhenHasExt(".yaml").MustDo(func(path string, _ walk.Dirent) error {
 		sed(path, current, next)
 		return nil
 	})
 
 	// Update skaffold.yaml in init tests
-	walk.From("pkg/skaffold/initializer/testdata").WhenNameContains("skaffold").WhenHasExt("yaml").MustDo(func(path string, _ walk.Dirent) error {
+	walk.From("pkg/skaffold/initializer/testdata").WhenNameContains("skaffold").WhenHasExt(".yaml").MustDo(func(path string, _ walk.Dirent) error {
 		sed(path, current, next)
 		return nil
 	})
