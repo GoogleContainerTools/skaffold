@@ -57,16 +57,17 @@ type skaffoldMeter struct {
 	// BuildArtifacts The number of artifacts built in the current execution as defined in skaffold.yaml.
 	BuildArtifacts int
 
-	// Command The command that is used to execute skaffold `dev, build, render, run, etc.`.
+	// Command The command that is used to execute skaffold `dev, build, render, run, etc.`
+	// without any command line arguments.
 	Command string
 
 	// Version The version of skaffold being used "v1.18.0, v1.19.1, etc.".
 	Version string
 
-	// OS The OS running skaffold as returned from runtime.GOOS.
+	// OS The OS running skaffold e.g. windows, linux, darwin, etc.
 	OS string
 
-	// Arch The architecture running skaffold as returned from runtime.GOARCH.
+	// Arch The architecture running skaffold e.g. amd64, arm64, etc.
 	Arch string
 
 	// PlatformType Where skaffold is deploying to (sync, build, or google cloud build).
@@ -75,11 +76,11 @@ type skaffoldMeter struct {
 	// Deployers All the deployers used in the skaffold execution.
 	Deployers []string
 
-	// EnumFlags Any flags passed into Skaffld that have a pre-defined list of
+	// EnumFlags Enum values for flags passed into Skaffold that have a pre-defined list of
 	// valid values e.g. `'–cache-artifacts=false', '–mute-logs=["build", "deploy"]'`.
 	EnumFlags map[string]string
 
-	// Builders All the builders used to build the artifacts built.
+	// Builders Enum values for all the builders used to build the artifacts built.
 	Builders map[string]int
 
 	// SyncType The sync type used in the build configuration: infer, auto, and/or manual.
@@ -92,7 +93,7 @@ type skaffoldMeter struct {
 	// StartTime the start time of the skaffold program, used to track how long skaffold took to finish executing.
 	StartTime time.Time
 
-	// Duration of skaffold instance.
+	// Duration The duration it took for skaffold to finish executing in milliseconds.
 	Duration time.Duration
 
 	// ErrorCode Skaffold reports [error codes](/docs/references/api/grpc/#statuscode)

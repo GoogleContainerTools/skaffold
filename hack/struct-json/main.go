@@ -84,18 +84,19 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 		}
 	}
 
+	ogName := strings.ReplaceAll(name, " ", "")
 	if name != "" {
 		if comment == "" {
 			panic(fmt.Sprintf("field %q needs comment (all public fields require comments)", name))
 		}
-		if !strings.HasPrefix(comment, strings.ReplaceAll(name, " ", "")+" ") {
+		if !strings.HasPrefix(comment, ogName+" ") {
 			panic(fmt.Sprintf("comment %q should start with field name on field %s", comment, name))
 		}
 	}
 
 	description := strings.TrimSpace(strings.Replace(comment, "\n", " ", -1))
 	// Remove type prefix
-	description = regexp.MustCompile("^"+name+" (\\*.*\\* )?((is (the )?)|(are (the )?)|(lists ))?").ReplaceAllString(description, "$1")
+	description = regexp.MustCompile("^"+ogName+" (\\*.*\\* )?((is (the )?)|(are (the )?)|(lists ))?").ReplaceAllString(description, "$1")
 
 	if name != "" {
 		if description == "" {
