@@ -58,7 +58,6 @@ GO_BUILD_TAGS_windows = release
 # github.com/rjeczalik/notify's kqueue support. 
 GO_VERSION_darwin_arm64 = 1.16beta1
 CGO_ENABLED_darwin_arm64 = 0
-GO_BUILD_TAGS_darwin_arm64 = kqueue
 GO_BUILD_TAGS_darwin = release
 
 ifneq "$(strip $(LOCAL))" "true"
