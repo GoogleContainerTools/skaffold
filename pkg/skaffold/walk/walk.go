@@ -49,6 +49,7 @@ type Builder interface {
 	WhenIsDir() Builder
 	WhenIsFile() Builder
 	WhenHasName(string) Builder
+	WhenHasExt(string) Builder
 	WhenNameContains(...string) Builder
 
 	// Actions
@@ -93,6 +94,10 @@ func (w *builder) WhenIsDir() Builder {
 
 func (w *builder) WhenHasName(name string) Builder {
 	return w.When(hasName(name))
+}
+
+func (w *builder) WhenHasExt(ext string) Builder {
+	return w.When(hasExt(ext))
 }
 
 func (w *builder) WhenNameContains(substr ...string) Builder {
@@ -154,6 +159,12 @@ func (w *builder) MustDo(action Action) {
 func hasName(name string) Predicate {
 	return func(_ string, info Dirent) (bool, error) {
 		return info.Name() == name, nil
+	}
+}
+
+func hasExt(ext string) Predicate {
+	return func(_ string, info Dirent) (bool, error) {
+		return filepath.Ext(info.Name()) == ext, nil
 	}
 }
 
