@@ -276,6 +276,11 @@ build-docs-preview:
 generate-schemas:
 	go run hack/schemas/main.go
 
+# telemetry generation
+.PHONY: generate-schemas
+generate-telemetry-json:
+	go run hack/struct-json/main.go -- pkg/skaffold/instrumentation/meter.go docs/content/en/docs/resources/telemetry/metrics.json
+
 # static files
 
 $(STATIK_FILES): go.mod docs/content/en/schemas/*
