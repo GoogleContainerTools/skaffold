@@ -18,6 +18,7 @@ package walk
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -49,8 +50,7 @@ type Builder interface {
 	WhenIsDir() Builder
 	WhenIsFile() Builder
 	WhenHasName(string) Builder
-	WhenHasExt(string) Builder
-	WhenNameContains(...string) Builder
+	WhenNameMatches(string) Builder
 
 	// Actions
 	Do(Action) error
@@ -96,12 +96,8 @@ func (w *builder) WhenHasName(name string) Builder {
 	return w.When(hasName(name))
 }
 
-func (w *builder) WhenHasExt(ext string) Builder {
-	return w.When(hasExt(ext))
-}
-
-func (w *builder) WhenNameContains(substr ...string) Builder {
-	return w.When(nameContains(substr...))
+func (w *builder) WhenNameMatches(glob string) Builder {
+	return w.When(nameMatches(glob))
 }
 
 func (w *builder) AppendPaths(values *[]string) error {
@@ -162,21 +158,9 @@ func hasName(name string) Predicate {
 	}
 }
 
-func hasExt(ext string) Predicate {
+func nameMatches(glob string) Predicate {
 	return func(_ string, info Dirent) (bool, error) {
-		return filepath.Ext(info.Name()) == ext, nil
-	}
-}
-
-func nameContains(substrs ...string) Predicate {
-	return func(_ string, info Dirent) (bool, error) {
-		for _, substr := range substrs {
-			if !strings.Contains(info.Name(), substr) {
-				return false, nil
-			}
-		}
-
-		return true, nil
+		return path.Match(glob, info.Name())
 	}
 }
 
