@@ -49,6 +49,7 @@ type Builder interface {
 	WhenIsDir() Builder
 	WhenIsFile() Builder
 	WhenHasName(string) Builder
+	WhenNameContains(...string) Builder
 
 	// Actions
 	Do(Action) error
@@ -92,6 +93,10 @@ func (w *builder) WhenIsDir() Builder {
 
 func (w *builder) WhenHasName(name string) Builder {
 	return w.When(hasName(name))
+}
+
+func (w *builder) WhenNameContains(substr ...string) Builder {
+	return w.When(nameContains(substr...))
 }
 
 func (w *builder) AppendPaths(values *[]string) error {
@@ -149,6 +154,18 @@ func (w *builder) MustDo(action Action) {
 func hasName(name string) Predicate {
 	return func(_ string, info Dirent) (bool, error) {
 		return info.Name() == name, nil
+	}
+}
+
+func nameContains(substrs ...string) Predicate {
+	return func(_ string, info Dirent) (bool, error) {
+		for _, substr := range substrs {
+			if !strings.Contains(info.Name(), substr) {
+				return false, nil
+			}
+		}
+
+		return true, nil
 	}
 }
 
