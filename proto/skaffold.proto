@@ -681,10 +681,6 @@ enum StatusCode {
     DEPLOY_PARSE_MANIFEST_IMAGES_ERR = 1021;
     // Helm config `createNamespace` not available
     DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE = 1022;
-
-    // Test Errors
-
-    TEST_UNKNOWN_ERROR = 1101;
 }
 
 // Enum for Suggestion codes
