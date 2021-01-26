@@ -18,29 +18,76 @@ package instrumentation
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestDisplaySurveyForm(t *testing.T) {
+func TestShouldDisplayMetricsPrompt(t *testing.T) {
 	tests := []struct {
-		description string
-		mockStdOut  bool
-		expected    string
+		name     string
+		config   *config.ContextConfig
+		expected bool
+		err      error
 	}{
 		{
-			description: "std out",
-			mockStdOut:  true,
-			expected:    Prompt,
+			name:     "empty config",
+			config:   &config.ContextConfig{},
+			expected: true,
 		},
 		{
-			description: "not std out",
+			name:     "nil config",
+			expected: true,
+		},
+		{
+			name: "not nil error",
+			err:  fmt.Errorf("test error getting config"),
+		},
+		{
+			name:     "config without collect-metrics",
+			config:   &config.ContextConfig{DefaultRepo: "test-repo"},
+			expected: true,
+		},
+		{
+			name:   "collect-metrics false",
+			config: &config.ContextConfig{CollectMetrics: boolP(false)},
+		},
+		{
+			name:   "collect-metrics true",
+			config: &config.ContextConfig{CollectMetrics: boolP(true)},
 		},
 	}
 	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			mock := func(string) (*config.ContextConfig, error) { return test.config, test.err }
+			t.Override(&getConfig, mock)
+			t.Override(&setStatus, func() {})
+			actual := ShouldDisplayMetricsPrompt(test.name)
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+func TestDisplayMetricsPrompt(t *testing.T) {
+	tests := []struct {
+		name       string
+		mockStdOut bool
+		expected   string
+	}{
+		{
+			name:       "std out",
+			mockStdOut: true,
+			expected:   Prompt,
+		},
+		{
+			name: "not std out",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
 			mock := func(io.Writer) bool { return test.mockStdOut }
 			t.Override(&isStdOut, mock)
 			t.Override(&updateConfig, func(_ string, _ bool) error { return nil })
@@ -50,3 +97,5 @@ func TestDisplaySurveyForm(t *testing.T) {
 		})
 	}
 }
+
+func boolP(b bool) *bool { return &b }

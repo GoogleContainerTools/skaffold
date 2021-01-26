@@ -33,10 +33,12 @@ var (
 	// for testing
 	isStdOut     = color.IsStdout
 	updateConfig = config.UpdateGlobalCollectMetrics
+	getConfig    = config.GetConfigForCurrentKubectx
+	setStatus    = SetOnlineStatus
 )
 
 func ShouldDisplayMetricsPrompt(configfile string) bool {
-	cfg, err := config.GetConfigForCurrentKubectx(configfile)
+	cfg, err := getConfig(configfile)
 	if err != nil {
 		return false
 	}
@@ -44,7 +46,7 @@ func ShouldDisplayMetricsPrompt(configfile string) bool {
 		return true
 	}
 	shouldExportMetrics = *cfg.CollectMetrics
-	SetOnlineStatus()
+	setStatus()
 	return false
 }
 
