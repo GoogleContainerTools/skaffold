@@ -41,9 +41,6 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
-
-	//  import embedded secret for uploading metrics
-	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/secret/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -52,26 +49,64 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
+// skaffoldMeter describes the data used to determine operational metrics.
 type skaffoldMeter struct {
-	ExitCode       int
+	// ExitCode The exit code returned by skaffold at the end of execution.
+	ExitCode int
+
+	// BuildArtifacts The number of artifacts built in the current execution as defined in skaffold.yaml.
 	BuildArtifacts int
-	Command        string
-	Version        string
-	OS             string
-	Arch           string
-	PlatformType   string
-	Deployers      []string
-	EnumFlags      map[string]string
-	Builders       map[string]int
-	SyncType       map[string]bool
-	DevIterations  []devIteration
-	StartTime      time.Time
-	Duration       time.Duration
-	ErrorCode      proto.StatusCode
+
+	// Command The command that is used to execute skaffold `dev, build, render, run, etc.`
+	// without any command line arguments.
+	Command string
+
+	// Version The version of skaffold being used "v1.18.0, v1.19.1, etc.".
+	Version string
+
+	// OS The OS running skaffold e.g. windows, linux, darwin, etc.
+	OS string
+
+	// Arch The architecture running skaffold e.g. amd64, arm64, etc.
+	Arch string
+
+	// PlatformType Where skaffold is deploying to (sync, build, or google cloud build).
+	PlatformType string
+
+	// Deployers All the deployers used in the skaffold execution.
+	Deployers []string
+
+	// EnumFlags Enum values for flags passed into Skaffold that have a pre-defined list of
+	// valid values e.g. `'–cache-artifacts=false', '–mute-logs=["build", "deploy"]'`.
+	EnumFlags map[string]string
+
+	// Builders Enum values for all the builders used to build the artifacts built.
+	Builders map[string]int
+
+	// SyncType The sync type used in the build configuration: infer, auto, and/or manual.
+	SyncType map[string]bool
+
+	// DevIterations The error results of the various dev iterations and the
+	// reasons they were triggered. The triggers can be one sync, build or deploy.
+	DevIterations []devIteration
+
+	// StartTime the start time of the skaffold program, used to track how long skaffold took to finish executing.
+	StartTime time.Time
+
+	// Duration The duration it took for skaffold to finish executing in milliseconds.
+	Duration time.Duration
+
+	// ErrorCode Skaffold reports [error codes](/docs/references/api/grpc/#statuscode)
+	// and these are monitored in order to determine the most frequent errors.
+	ErrorCode proto.StatusCode
 }
 
+// devIteration describes how an iteration and started and if an error happened.
 type devIteration struct {
-	Intent    string
+	// Intent is the cause of initiating the dev iteration (sync, build, deploy).
+	Intent string
+
+	// ErrorCode is the error that may have occurred during the (sync/build/deploy).
 	ErrorCode proto.StatusCode
 }
 
@@ -100,6 +135,12 @@ func init() {
 	meteredCommands.Insert("build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test")
 	doesBuild.Insert("build", "render", "dev", "debug", "run")
 	doesDeploy.Insert("deploy", "dev", "debug", "run")
+}
+
+// SetOnlineStatus issues a GET request to see if the user is online.
+// http://clients3.google.com/generate_204 is a well-known URL that returns an empty page and HTTP status 204
+// More info can be found here: https://www.chromium.org/chromium-os/chromiumos-design-docs/network-portal-detection
+func SetOnlineStatus() {
 	go func() {
 		if shouldExportMetrics {
 			r, err := http.Get("http://clients3.google.com/generate_204")
@@ -204,7 +245,9 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 	return nil
 }
 
+// creds contains the gcp project id.
 type creds struct {
+	// ProjectID is the id of the gcp project which to upload metrics to.
 	ProjectID string `json:"project_id"`
 }
 
@@ -213,7 +256,7 @@ func initCloudMonitoringExporterMetrics() (*push.Controller, error) {
 	if err != nil {
 		return nil, err
 	}
-	b, err := fs.ReadFile(statikFS, "/keys.json")
+	b, err := fs.ReadFile(statikFS, "/secret/keys.json")
 	if err != nil {
 		// No keys have been set in this version so do not attempt to write metrics
 		if os.IsNotExist(err) {

@@ -53,6 +53,8 @@ skaffold init --XXenableJibInit
 ## Deploy Config Initialization
 `skaffold init` support bootstrapping projects set up to deploy with [`kubectl`]({{<relref "/docs/pipeline-stages/deployers#deploying-with-kubectl" >}})
 or [`kustomize`]({{<relref "/docs/pipeline-stages/deployers#deploying-with-kubectl" >}}).
+
+### kubectl
 For projects deploying straight through `kubectl`, Skaffold will walk through all the `yaml` files in your project and find valid Kubernetes manifest files.
 
 These files will be added to `deploy` config in `skaffold.yaml`.
@@ -65,21 +67,22 @@ deploy:
     - leeroy-web/kubernetes/deployment.yaml
 ```
 
+### kustomize
 For projects deploying with `kustomize`, Skaffold will scan your project and look for `kustomization.yaml`s as well as Kubernetes manifests.
 It will attempt to infer the project structure based on the recommended project structure from the Kustomize project: thus, 
 **it is highly recommended to match your project structure to the recommended base/ and overlay/ structure from Kustomize!**
 
 This generally looks like this:
 
-```
-app/      <- application source code, along with build configuration
+```yaml
+app/      # application source code, along with build configuration
   main.go
   Dockerfile
 ...
-base/     <- base deploy configuration
+base/     # base deploy configuration
   kustomization.yaml
   deployment.yaml
-overlays/ <- one or more nested directories, each with modified environment configuration
+overlays/ # one or more nested directories, each with modified environment configuration
   dev/
     deployment.yaml
     kustomization.yaml
@@ -194,5 +197,5 @@ When `skaffold init` fails, it exits with an code that depends on the error:
 | ---- | --- |
 | 101 | No build configuration could be found |
 | 102 | No k8s manifest could be found or generated |
-| 102 | An existing skaffold.yaml was found |
+| 103 | An existing skaffold.yaml was found |
 | 104 | Couldn't match builder with image names automatically |

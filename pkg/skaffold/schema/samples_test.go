@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
@@ -43,6 +44,7 @@ var (
 // Skaffold configuration.
 func TestParseExamples(t *testing.T) {
 	parseConfigFiles(t, "../../../examples")
+	parseConfigFiles(t, "../../../integration/examples")
 	parseConfigFiles(t, "../../../integration/testdata/regressions")
 }
 
@@ -80,7 +82,8 @@ func checkSkaffoldConfig(t *testutil.T, yaml []byte) {
 	var cfgs []*latest.SkaffoldConfig
 	for _, p := range parsed {
 		cfg := p.(*latest.SkaffoldConfig)
-		err = defaults.Set(cfg, true)
+		err = defaults.Set(cfg)
+		defaults.SetDefaultDeployer(cfg)
 		t.CheckNoError(err)
 		cfgs = append(cfgs, cfg)
 	}
@@ -89,23 +92,24 @@ func checkSkaffoldConfig(t *testutil.T, yaml []byte) {
 }
 
 func parseConfigFiles(t *testing.T, root string) {
-	paths, err := walk.From(root).WhenHasName("skaffold.yaml").CollectPaths()
+	groupedPaths, err := walk.From(root).WhenHasName("skaffold.yaml").CollectPathsGrouped(1)
 	if err != nil {
 		t.Fatalf("unable to list skaffold configuration files in %q", root)
 	}
 
-	if len(paths) == 0 {
+	if len(groupedPaths) == 0 {
 		t.Fatalf("did not find skaffold configuration files in %q", root)
 	}
-
-	for _, path := range paths {
-		name := filepath.Base(filepath.Dir(path))
-
+	for base, paths := range groupedPaths {
+		name := filepath.Base(base)
 		testutil.Run(t, name, func(t *testutil.T) {
-			buf, err := ioutil.ReadFile(path)
-			t.CheckNoError(err)
-
-			checkSkaffoldConfig(t, buf)
+			var data []string
+			for _, path := range paths {
+				buf, err := ioutil.ReadFile(path)
+				t.CheckNoError(err)
+				data = append(data, string(buf))
+			}
+			checkSkaffoldConfig(t, []byte(strings.Join(data, "\n---\n")))
 		})
 	}
 }

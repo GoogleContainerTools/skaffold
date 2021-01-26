@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Build builds a list of artifacts.
@@ -77,12 +78,6 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 	})
 	if err != nil {
 		return nil, err
-	}
-
-	if !r.runCtx.SkipTests() {
-		if err = r.tester.Test(ctx, out, bRes); err != nil {
-			return nil, err
-		}
 	}
 
 	// Update which images are logged.
@@ -212,7 +207,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 		color.Yellow.Fprintln(out, "Some taggers failed. Rerun with -vdebug for errors.")
 	}
 
-	logrus.Infoln("Tags generated in", time.Since(start))
+	logrus.Infoln("Tags generated in", util.ShowHumanizeTime(time.Since(start)))
 	return imageTags, nil
 }
 

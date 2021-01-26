@@ -1,11 +1,29 @@
 name: create draft release
 
 on:
-  pull_request:
-    types: [closed]
+  push:
+    branches:
+    - master
 jobs:
-  build:
-    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'draft-release')
+  check:
+    name: Check if release commit
+    runs-on: ubuntu-latest
+    outputs:
+      applicable: ${{ steps.check-commit-message.outputs.applicable }}
+    steps:
+    - name: Check commit message
+      id: check-commit-message
+      run: |
+        str='${{ github.event.head_commit.message }}'
+        regex="^release\s*:\s*(v[0-9]+\.[0-9]+\.[0-9]+|[0-9]+\.[0-9]+\.[0-9]+)"
+        if [[ "$str" =~ $regex ]]; then
+        echo "::set-output name=applicable::true"
+        echo This is a release commit.
+        fi
+
+  release:
+    needs: check
+    if: needs.check.outputs.applicable == 'true'
     name: Create Tag and Draft Release
     runs-on: ubuntu-latest
     steps:
@@ -16,9 +34,9 @@ jobs:
 
     - name: Calculate Tag and release names
       run: |
-        t=$(echo ${{ github.event.pull_request.title }} | sed -ne 's/.*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')
+        t=$(echo ${{ github.event.head_commit.message }} | sed -ne 's/.*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')
         if [ -z "$t" ]; then
-        echo Malformed title for PR; failed to extract semVer tag
+        echo Malformed commit message; failed to extract semVer tag
         return 1
         fi
         echo TAG_NAME="v${t}" >> $GITHUB_ENV

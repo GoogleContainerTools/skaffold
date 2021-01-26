@@ -199,6 +199,7 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 			k.printDiskFreeSpace()
 			//k.debug("nodes")
 			k.debug("pods")
+			k.logs("pod", podNames)
 			k.t.Fatalf("Timed out waiting for pods %v ready in namespace %s", podNames, k.ns)
 
 		case event := <-w.ResultChan():
@@ -255,7 +256,7 @@ func (k *NSKubernetesClient) GetDeployment(depName string) *appsv1.Deployment {
 // WaitForDeploymentsToStabilize waits for a list of deployments to become stable.
 func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 	k.t.Helper()
-	k.waitForDeploymentsToStabilizeWithTimeout(60*time.Second, depNames...)
+	k.waitForDeploymentsToStabilizeWithTimeout(2*time.Minute, depNames...)
 }
 
 func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout time.Duration, depNames ...string) {
@@ -285,6 +286,7 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 			//k.debug("nodes")
 			k.debug("deployments.apps")
 			k.debug("pods")
+			k.logs("deployment.app", depNames)
 			k.t.Fatalf("Timed out waiting for deployments %v to stabilize in namespace %s", depNames, k.ns)
 
 		case event := <-w.ResultChan():
@@ -313,17 +315,26 @@ func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout ti
 // debug is used to print all the details about pods or deployments
 func (k *NSKubernetesClient) debug(entities string) {
 	cmd := exec.Command("kubectl", "-n", k.ns, "get", entities, "-oyaml")
-	out, _ := cmd.CombinedOutput()
-
 	logrus.Warnln(cmd.Args)
-	// Use fmt.Println, not logrus, for prettier output
-	fmt.Println(string(out))
+	out, _ := cmd.CombinedOutput()
+	fmt.Println(string(out)) // Use fmt.Println, not logrus, for prettier output
 }
 
 func (k *NSKubernetesClient) printDiskFreeSpace() {
 	cmd := exec.Command("df", "-h")
+	logrus.Warnln(cmd.Args)
 	out, _ := cmd.CombinedOutput()
 	fmt.Println(string(out))
+}
+
+// logs is used to print the logs of a resource
+func (k *NSKubernetesClient) logs(entity string, names []string) {
+	for _, n := range names {
+		cmd := exec.Command("kubectl", "-n", k.ns, "logs", entity+"/"+n)
+		logrus.Warnln(cmd.Args)
+		out, _ := cmd.CombinedOutput()
+		fmt.Println(string(out)) // Use fmt.Println, not logrus, for prettier output
+	}
 }
 
 // ExternalIP waits for the external IP aof a given service.

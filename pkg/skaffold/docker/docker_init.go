@@ -52,12 +52,19 @@ func (c ArtifactConfig) Describe() string {
 }
 
 // ArtifactType returns the type of the artifact to be built.
-func (c ArtifactConfig) ArtifactType() latest.ArtifactType {
+func (c ArtifactConfig) ArtifactType(workspace string) latest.ArtifactType {
 	dockerfile := filepath.Base(c.File)
+	if workspace != "" {
+		// attempt to relativize the path
+		if rel, err := filepath.Rel(workspace, c.File); err == nil {
+			dockerfile = rel
+		}
+	}
 
 	return latest.ArtifactType{
 		DockerArtifact: &latest.DockerArtifact{
-			DockerfilePath: dockerfile,
+			// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
+			DockerfilePath: filepath.ToSlash(dockerfile),
 		},
 	}
 }

@@ -19,6 +19,7 @@ package util
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/mitchellh/go-homedir"
 
@@ -467,4 +468,37 @@ func TestIsURL(t *testing.T) {
 
 func stringPointer(s string) *string {
 	return &s
+}
+
+func TestShowHumanizeTime(t *testing.T) {
+	duration1, err := time.ParseDuration("1h58m30.918273645s")
+	if err != nil {
+		t.Errorf("%s", err)
+	}
+	duration2, err := time.ParseDuration("5.23494327s")
+	if err != nil {
+		t.Errorf("%s", err)
+	}
+	tests := []struct {
+		description string
+		value       time.Duration
+		expected    string
+	}{
+		{
+			description: "Case for 1h58m30.918273645s",
+			value:       duration1,
+			expected:    "1 hour 58 minutes 30.918 seconds",
+		},
+		{
+			description: "Case for 5.23494327s",
+			value:       duration2,
+			expected:    "5.234 seconds",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			humanizedValue := ShowHumanizeTime(test.value)
+			t.CheckDeepEqual(test.expected, humanizedValue)
+		})
+	}
 }

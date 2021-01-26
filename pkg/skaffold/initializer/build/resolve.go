@@ -79,7 +79,7 @@ func (d *defaultBuildInitializer) resolveBuilderImagesForcefully() error {
 }
 
 func builderRank(builder InitBuilder) int {
-	a := builder.ArtifactType()
+	a := builder.ArtifactType("")
 	switch {
 	case a.DockerArtifact != nil:
 		return 1
@@ -155,7 +155,7 @@ func getGeneratedBuilderPair(b InitBuilder) GeneratedArtifactInfo {
 
 func sanitizeImageName(imageName string) string {
 	// Replace unsupported characters with `_`
-	sanitized := regexp.MustCompile(`[^a-zA-Z0-9-._]`).ReplaceAllString(imageName, `-`)
+	sanitized := regexp.MustCompile(`[^a-zA-Z0-9-_]`).ReplaceAllString(imageName, `-`)
 
 	// Truncate to 128 characters
 	if len(sanitized) > 128 {

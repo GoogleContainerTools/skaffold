@@ -60,7 +60,7 @@ func doRender(ctx context.Context, out io.Writer) error {
 		buildOut = out
 	}
 
-	return withRunner(ctx, func(r runner.Runner, configs []*latest.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, configs []*latest.SkaffoldConfig) error {
 		var bRes []build.Artifact
 
 		if renderFromBuildOutputFile.String() != "" {

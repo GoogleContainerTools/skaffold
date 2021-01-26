@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type Config interface {
@@ -112,26 +113,25 @@ func typeOfArtifact(a *latest.Artifact) string {
 	}
 }
 
-func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg docker.Config) (time.Duration, []string, error) {
+func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg docker.Config) (string, []string, error) {
 	start := time.Now()
 	paths, err := build.DependenciesForArtifact(ctx, a, cfg, nil)
-	return time.Since(start), paths, err
+	return util.ShowHumanizeTime(time.Since(start)), paths, err
 }
 
-func timeToConstructSyncMap(a *latest.Artifact, cfg docker.Config) (time.Duration, error) {
+func timeToConstructSyncMap(a *latest.Artifact, cfg docker.Config) (string, error) {
 	start := time.Now()
 	_, err := sync.SyncMap(a, cfg)
-	return time.Since(start), err
+	return util.ShowHumanizeTime(time.Since(start)), err
 }
 
-func timeToComputeMTimes(deps []string) (time.Duration, error) {
+func timeToComputeMTimes(deps []string) (string, error) {
 	start := time.Now()
 
 	if _, err := filemon.Stat(func() ([]string, error) { return deps, nil }); err != nil {
-		return 0, fmt.Errorf("computing modTimes: %w", err)
+		return "nil", fmt.Errorf("computing modTimes: %w", err)
 	}
-
-	return time.Since(start), nil
+	return util.ShowHumanizeTime(time.Since(start)), nil
 }
 
 func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, cfg docker.Config) (int64, error) {

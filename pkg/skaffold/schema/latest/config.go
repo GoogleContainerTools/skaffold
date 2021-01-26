@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
 const Version string = "skaffold/v2beta11"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
@@ -43,6 +43,9 @@ type SkaffoldConfig struct {
 
 	// Metadata holds additional information about the config.
 	Metadata Metadata `yaml:"metadata,omitempty"`
+
+	// Dependencies describes a list of other required configs for the current config.
+	Dependencies []ConfigDependency `yaml:"requires,omitempty"`
 
 	// Pipeline defines the Build/Test/Deploy phases.
 	Pipeline `yaml:",inline"`
@@ -70,6 +73,28 @@ type Pipeline struct {
 
 	// PortForward describes user defined resources to port-forward.
 	PortForward []*PortForwardResource `yaml:"portForward,omitempty"`
+}
+
+// ConfigDependency describes a dependency on another skaffold configuration.
+type ConfigDependency struct {
+	// Names describes the names of the required configs.
+	Names []string `yaml:"configs,omitempty"`
+
+	// Path describes the path to the file containing the required configs.
+	Path string `yaml:"path" skaffold:"filepath"`
+
+	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
+	ActiveProfiles []ProfileDependency `yaml:"activeProfiles,omitempty"`
+}
+
+// ProfileDependency describes a mapping from referenced config profiles to the current config profiles.
+// If the current config is activated with a profile in this mapping then the dependency configs are also activated with the corresponding mapped profiles.
+type ProfileDependency struct {
+	// Name describes name of the profile to activate in the dependency config. It should exist in the dependency config.
+	Name string `yaml:"name" yamltags:"required"`
+
+	// ActivatedBy describes a list of profiles in the current config that when activated will also activate the named profile in the dependency config. If empty then the named profile is always activated.
+	ActivatedBy []string `yaml:"activatedBy,omitempty"`
 }
 
 func (c *SkaffoldConfig) GetVersion() string {
@@ -475,7 +500,7 @@ type DeployType struct {
 type KubectlDeploy struct {
 	// Manifests lists the Kubernetes yaml or json manifests.
 	// Defaults to `["k8s/*.yaml"]`.
-	Manifests []string `yaml:"manifests,omitempty"`
+	Manifests []string `yaml:"manifests,omitempty" skaffold:"filepath"`
 
 	// RemoteManifests lists Kubernetes manifests in remote clusters.
 	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
@@ -532,7 +557,7 @@ type HelmDeployFlags struct {
 type KustomizeDeploy struct {
 	// KustomizePaths is the path to Kustomization files.
 	// Defaults to `["."]`.
-	KustomizePaths []string `yaml:"paths,omitempty"`
+	KustomizePaths []string `yaml:"paths,omitempty" skaffold:"filepath"`
 
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
@@ -550,7 +575,7 @@ type KptDeploy struct {
 	// By default, the Dir contains the application configurations,
 	// [kustomize config files](https://kubectl.docs.kubernetes.io/pages/examples/kustomize.html)
 	// and [declarative kpt functions](https://googlecontainertools.github.io/kpt/guides/consumer/function/#declarative-run).
-	Dir string `yaml:"dir" yamltags:"required"`
+	Dir string `yaml:"dir" yamltags:"required" skaffold:"filepath"`
 
 	// Fn adds additional configurations for `kpt fn`.
 	Fn KptFn `yaml:"fn,omitempty"`
@@ -563,7 +588,7 @@ type KptDeploy struct {
 type KptFn struct {
 	// FnPath is the directory to discover the declarative kpt functions.
 	// If not provided, kpt deployer uses `kpt.Dir`.
-	FnPath string `yaml:"fnPath,omitempty"`
+	FnPath string `yaml:"fnPath,omitempty" skaffold:"filepath"`
 
 	// Image is a kpt function image to run the configs imperatively. If provided, kpt.fn.fnPath
 	// will be ignored.
@@ -582,7 +607,7 @@ type KptFn struct {
 	Mount []string `yaml:"mount,omitempty"`
 
 	// SinkDir is the directory to where the manipulated resource output is stored.
-	SinkDir string `yaml:"sinkDir,omitempty"`
+	SinkDir string `yaml:"sinkDir,omitempty" skaffold:"filepath"`
 }
 
 // KptLive adds additional configurations used when calling `kpt live`.
@@ -633,10 +658,10 @@ type HelmRelease struct {
 	Name string `yaml:"name,omitempty" yamltags:"required"`
 
 	// ChartPath is the path to the Helm chart.
-	ChartPath string `yaml:"chartPath,omitempty" yamltags:"required"`
+	ChartPath string `yaml:"chartPath,omitempty" yamltags:"required" skaffold:"filepath"`
 
 	// ValuesFiles are the paths to the Helm `values` files.
-	ValuesFiles []string `yaml:"valuesFiles,omitempty"`
+	ValuesFiles []string `yaml:"valuesFiles,omitempty" skaffold:"filepath"`
 
 	// ArtifactOverrides are key value pairs where the
 	// key represents the parameter used in the `--set-string` Helm CLI flag to define a container
@@ -761,7 +786,7 @@ type Artifact struct {
 
 	// Workspace is the directory containing the artifact's sources.
 	// Defaults to `.`.
-	Workspace string `yaml:"context,omitempty"`
+	Workspace string `yaml:"context,omitempty" skaffold:"filepath"`
 
 	// Sync *beta* lists local files synced to pods instead
 	// of triggering an image build when modified.

@@ -79,7 +79,7 @@ func TestResolveBuilderImages(t *testing.T) {
 				{
 					ArtifactInfo: ArtifactInfo{
 						Builder:   jib.ArtifactConfig{BuilderName: "Jib Maven Plugin", File: "pom.xml", Project: "project"},
-						ImageName: "pom.xml-image",
+						ImageName: "pom-xml-image",
 					},
 					ManifestPath: "deployment.yaml",
 				},
