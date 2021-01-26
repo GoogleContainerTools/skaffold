@@ -97,7 +97,8 @@ When overlay directories are found, these will be listed in the generated Skaffo
 
 *Note: order is guaranteed, since Skaffold's directory parsing is always deterministic.*
 
-## `--generate-manifests` Flag {{< maturity "init.generate_manifests" >}}
+## `--generate-manifests` Flag 
+{{< maturity "init.generate_manifests" >}}
 `skaffold init` allows for use of a `--generate-manifests` flag, which will try to generate basic kubernetes manifests for a user's project to help get things up and running. 
 
 If bringing a project to skaffold that has no kubernetes manifests yet, it may be helpful to run `skaffold init` with this flag.
