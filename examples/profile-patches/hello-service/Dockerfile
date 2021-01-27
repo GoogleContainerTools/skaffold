@@ -1,4 +1,4 @@
-FROM golang:1.12.9-alpine3.10 as builder
+FROM golang:1.15 as builder
 COPY main.go .
 # `skaffold debug` sets SKAFFOLD_GO_GCFLAGS to disable compiler optimizations
 ARG SKAFFOLD_GO_GCFLAGS
