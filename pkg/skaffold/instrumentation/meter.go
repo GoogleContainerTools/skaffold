@@ -51,29 +51,29 @@ import (
 
 // skaffoldMeter describes the data used to determine operational metrics.
 type skaffoldMeter struct {
-	// ExitCode The exit code returned by skaffold at the end of execution.
+	// ExitCode Exit code returned by Skaffold at the end of execution.
 	ExitCode int
 
-	// BuildArtifacts The number of artifacts built in the current execution as defined in skaffold.yaml.
+	// BuildArtifacts Number of artifacts built in the current execution as defined in skaffold.yaml.
 	BuildArtifacts int
 
-	// Command The command that is used to execute skaffold `dev, build, render, run, etc.`
-	// without any command line arguments.
+	// Command Command that is used to execute skaffold `dev, build, render, run, etc.`
+	// without any command-line arguments.
 	Command string
 
-	// Version The version of skaffold being used "v1.18.0, v1.19.1, etc.".
+	// Version Version of Skaffold being used "v1.18.0, v1.19.1, etc.".
 	Version string
 
-	// OS The OS running skaffold e.g. windows, linux, darwin, etc.
+	// OS OS running Skaffold e.g. Windows, Linux, Darwin, etc.
 	OS string
 
-	// Arch The architecture running skaffold e.g. amd64, arm64, etc.
+	// Arch Architecture running Skaffold e.g. amd64, arm64, etc.
 	Arch string
 
-	// PlatformType Where skaffold is deploying to (sync, build, or google cloud build).
+	// PlatformType Where Skaffold is deploying to (sync, build, or Google Cloud Build).
 	PlatformType string
 
-	// Deployers All the deployers used in the skaffold execution.
+	// Deployers All the deployers used in the Skaffold execution.
 	Deployers []string
 
 	// EnumFlags Enum values for flags passed into Skaffold that have a pre-defined list of
@@ -83,17 +83,17 @@ type skaffoldMeter struct {
 	// Builders Enum values for all the builders used to build the artifacts built.
 	Builders map[string]int
 
-	// SyncType The sync type used in the build configuration: infer, auto, and/or manual.
+	// SyncType Sync type used in the build configuration: infer, auto, and/or manual.
 	SyncType map[string]bool
 
-	// DevIterations The error results of the various dev iterations and the
-	// reasons they were triggered. The triggers can be one sync, build or deploy.
+	// DevIterations Error results of the various dev iterations and the
+	// reasons they were triggered. The triggers can be one of sync, build, or deploy.
 	DevIterations []devIteration
 
-	// StartTime the start time of the skaffold program, used to track how long skaffold took to finish executing.
+	// StartTime Start time of the Skaffold program, used to track how long Skaffold took to finish executing.
 	StartTime time.Time
 
-	// Duration The duration it took for skaffold to finish executing in milliseconds.
+	// Duration Time Skaffold took to finish executing in milliseconds.
 	Duration time.Duration
 
 	// ErrorCode Skaffold reports [error codes](/docs/references/api/grpc/#statuscode)
@@ -245,9 +245,9 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 	return nil
 }
 
-// creds contains the gcp project id.
+// creds contains the Google Cloud project ID.
 type creds struct {
-	// ProjectID is the id of the gcp project which to upload metrics to.
+	// ProjectID is the ID of the Google Cloud project to upload metrics to.
 	ProjectID string `json:"project_id"`
 }
 
