@@ -125,7 +125,12 @@ func (d *defaultBuildInitializer) resolveBuilderImagesInteractively() error {
 	}
 	if len(choices) > 0 {
 		// TODO(nkubala): should we ask user if they want to generate here?
-		for _, choice := range choices {
+		chosen, err := prompt.ChooseBuilders(choices)
+		if err != nil {
+			return err
+		}
+
+		for _, choice := range chosen {
 			d.generatedArtifactInfos = append(d.generatedArtifactInfos, getGeneratedBuilderPair(choiceMap[choice]))
 		}
 	}
