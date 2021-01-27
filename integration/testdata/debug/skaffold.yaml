@@ -30,9 +30,11 @@ deploy:
 
 profiles:
 - name: kustomize
+  patches:
+  - op: remove
+    path: /deploy/kubectl
   deploy:
-      kustomize: {}
-      kubectl: {}
+    kustomize: {}
 # use GCP Buildpacks to build the individual projects
 - name: buildpacks
   build:
