@@ -5,6 +5,7 @@ weight: 20
 menu:
   main:
     weight: 20
+no_list: true
 ---
 
 Skaffold is a command line tool that facilitates continuous development for
