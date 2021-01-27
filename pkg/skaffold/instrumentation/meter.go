@@ -251,6 +251,12 @@ type creds struct {
 	ProjectID string `json:"project_id"`
 }
 
+type errHandler struct{}
+
+func (h errHandler) Handle(err error) {
+	logrus.Debugf("Error with metrics: %v", err)
+}
+
 func initCloudMonitoringExporterMetrics() (*push.Controller, error) {
 	statikFS, err := statik.FS()
 	if err != nil {
@@ -275,6 +281,7 @@ func initCloudMonitoringExporterMetrics() (*push.Controller, error) {
 		return fmt.Sprintf("custom.googleapis.com/skaffold/%s", desc.Name())
 	}
 
+	global.SetErrorHandler(errHandler{})
 	return mexporter.InstallNewPipeline(
 		[]mexporter.Option{
 			mexporter.WithProjectID(c.ProjectID),
