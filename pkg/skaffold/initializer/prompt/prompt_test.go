@@ -75,6 +75,54 @@ func TestWriteSkaffoldConfig(t *testing.T) {
 	}
 }
 
+func TestChooseBuilders(t *testing.T) {
+	tests := []struct {
+		description    string
+		choices        []string
+		promptResponse []string
+		expected       []string
+		shouldErr      bool
+	}{
+		{
+			description:    "couple chosen",
+			choices:        []string{"a", "b", "c"},
+			promptResponse: []string{"a", "c"},
+			expected:       []string{"a", "c"},
+			shouldErr:      false,
+		},
+		{
+			description:    "none chosen",
+			choices:        []string{"a", "b", "c"},
+			promptResponse: []string{},
+			expected:       []string{},
+			shouldErr:      false,
+		},
+		{
+			description:    "error",
+			choices:        []string{"a", "b", "c"},
+			promptResponse: []string{"a", "b"},
+			expected:       []string{},
+			shouldErr:      true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&askOne, func(_ survey.Prompt, response interface{}, _ ...survey.AskOpt) error {
+				r := response.(*[]string)
+				*r = test.promptResponse
+
+				if test.shouldErr {
+					return errors.New("error")
+				}
+				return nil
+			})
+
+			chosen, err := ChooseBuildersFunc(test.choices)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, chosen)
+		})
+	}
+}
+
 func TestPortForwardResource(t *testing.T) {
 	tests := []struct {
 		description    string
