@@ -16,7 +16,7 @@ From release v1.19.0, skaffold will collect anonymized Skaffold usage data.
 
 You are **opted-in** by default and you can opt-out at any time with the skaffold config command. 
 
-Learn more on what data is reported [here](https://skaffold-latest.firebaseapp.com/docs/resources/telemetry/#example)
+Learn more on what data is reported [here](https://skaffold.dev/docs/resources/telemetry/#example)
 and [how to disable usage collection](https://skaffold.dev/docs/resources/telemetry)
 
 Note: This is a small release with few improvements to `skaffold init` and skaffold documentation.
