@@ -124,8 +124,12 @@ func (d *defaultBuildInitializer) resolveBuilderImagesInteractively() error {
 		d.unresolvedImages = util.RemoveFromSlice(d.unresolvedImages, image)
 	}
 	if len(choices) > 0 {
-		// TODO(nkubala): should we ask user if they want to generate here?
-		for _, choice := range choices {
+		chosen, err := prompt.ChooseBuildersFunc(choices)
+		if err != nil {
+			return err
+		}
+
+		for _, choice := range chosen {
 			d.generatedArtifactInfos = append(d.generatedArtifactInfos, getGeneratedBuilderPair(choiceMap[choice]))
 		}
 	}
