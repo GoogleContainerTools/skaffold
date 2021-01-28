@@ -120,6 +120,24 @@ func TestInitKustomize(t *testing.T) {
 	})
 }
 
+func TestInitWithCLIArtifact(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	testutil.Run(t, "init with cli artifact", func(t *testutil.T) {
+		dir := "testdata/init/hello-with-manifest"
+		ns, _ := SetupNamespace(t.T)
+
+		initArgs := append([]string{"--force"},
+			`--artifact={"builder":"Docker","payload":{"path":"../hello/Dockerfile"},"image":"dockerfile-image"}`)
+		skaffold.Init(initArgs...).InDir(dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
+
+		checkGeneratedConfig(t, dir)
+
+		// Make sure the skaffold yaml is ok
+		skaffold.Run().InDir(dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
+	})
+}
+
 func checkGeneratedConfig(t *testutil.T, dir string) {
 	expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml"))
 	t.CheckNoError(err)
