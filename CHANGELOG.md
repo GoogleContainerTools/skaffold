@@ -1,3 +1,32 @@
+# v1.19.0 Release - 01/28/2021
+
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.19.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.19.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.19.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.19.0`
+
+From release v1.19.0, skaffold will now collect anonymized Skaffold usage data. 
+Learn more at https://skaffold.dev/docs/resources/telemetry/
+
+Note: This is a small release with few improvements to `skaffold init` and skaffold documentation.
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Brian de Alwis
+- Isaac Duarte
+- Jeff Wu
+- Marlon Gamez
+- Medya Ghazizadeh
+- Priya Modali
+- Sangeetha A
+
 # v1.18.0 Release - 01/21/2021
 **Linux**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.18.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
