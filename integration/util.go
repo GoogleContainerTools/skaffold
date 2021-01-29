@@ -248,6 +248,10 @@ func (k *NSKubernetesClient) waitForPods(podReady func(*v1.Pod) bool, podNames .
 			if len(waiting) > 0 {
 				logrus.Infof("Still waiting for pods %v", waiting)
 				break waitLoop
+			} else if l := len(w.ResultChan()); l > 0 {
+				// carry on when there are pending messages in case a new pod has been created
+				logrus.Infof("%d pending pod update messages", l)
+				break waitLoop
 			}
 			return
 		}
