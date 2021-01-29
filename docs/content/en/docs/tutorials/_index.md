@@ -27,3 +27,4 @@ Take a look at our other guides:
 |--------------------|
 | [Custom Build Script]({{< relref "/docs/tutorials/custom-builder" >}}) |
 | [Build Artifact Dependencies]({{< relref "/docs/tutorials/artifact-dependencies" >}}) |
+| [Config Dependencies]({{< relref "/docs/tutorials/config-dependencies" >}}) |
