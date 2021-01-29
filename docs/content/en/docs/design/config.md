@@ -40,7 +40,7 @@ metadata:
 build:
   # build definition
 deploy:
-  #deploy definition
+  # deploy definition
 
 ---
 
@@ -51,7 +51,7 @@ metadata:
 build:
   # build definition
 deploy:
-  #deploy definition
+  # deploy definition
 ```
 
 Configurations `cfg1` and `cfg2` from the above file can be imported as dependencies in your current config, via:
@@ -65,7 +65,7 @@ requires:
 build:
   # build definition
 deploy:
-  #deploy definition
+  # deploy definition
 ```
 
 If the `configs` list isn't defined then it imports all the configs defined in the file pointed by `path`. Additionally, if the `path` to the configuration isn't defined it assumes that all the required configs are defined in the same file as the current config.
