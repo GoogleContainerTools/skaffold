@@ -14,3 +14,8 @@ weight: 20
     Anchors can be defined by having top-level keys starting with a dot, e.g. <code>.common_stuff: &alias_name</code>.
     You can then reuse the value using <code>*alias_name</code>.
 </p>
+
+<h3>Organizing multiple configurations</h3>
+<p>
+    Multiple configurations can define dependencies on each other to construct an arbitrarily nested tree of project component dependencies. Management of multiple configurations can be simplified by grouping them together in the same file (separated by --- in YAML).
+</p>
