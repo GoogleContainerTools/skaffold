@@ -43,6 +43,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
+const (
+	FlagsPrefix = "flags/"
+)
+
 func ExportMetrics(exitCode int) error {
 	if !shouldExportMetrics || meter.Command == "" {
 		return nil
@@ -173,7 +177,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 
 func flagMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
 	for k, v := range meter.EnumFlags {
-		flagCounter := metric.Must(m).NewInt64ValueRecorder("flags/"+strings.ReplaceAll(k, "-", "_"),
+		flagCounter := metric.Must(m).NewInt64ValueRecorder(FlagsPrefix+strings.ReplaceAll(k, "-", "_"),
 			metric.WithDescription(fmt.Sprintf("Flag metric for %s", k)))
 		labels := []label.KeyValue{
 			label.String("command", meter.Command),
