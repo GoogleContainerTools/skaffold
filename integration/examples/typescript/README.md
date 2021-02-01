@@ -1,6 +1,6 @@
 ### Example: TypeScript + Node.js with hot-reload
 
-Seeks to be functionally identical to the [Node.js](./nodejs) example, except with TypeScript.
+Seeks to be functionally identical to the [Node.js](../nodejs) example, except with TypeScript.
 
 Swaps [nodemon](https://nodemon.io/) for [tsc-watch](https://github.com/gilamran/tsc-watch#the-nodemon-for-typescript)
 
