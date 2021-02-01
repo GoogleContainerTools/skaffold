@@ -28,9 +28,6 @@ import (
 	"time"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rakyll/statik/fs"
 	"github.com/sirupsen/logrus"
@@ -39,6 +36,10 @@ import (
 	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/sdk/metric/controller/push"
 	"google.golang.org/api/option"
+
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 func ExportMetrics(exitCode int) error {

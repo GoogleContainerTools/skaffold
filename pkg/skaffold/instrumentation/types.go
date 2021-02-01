@@ -19,8 +19,9 @@ package instrumentation
 import (
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 // skaffoldMeter describes the data used to determine operational metrics.
