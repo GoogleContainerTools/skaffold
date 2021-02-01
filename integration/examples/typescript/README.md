@@ -17,5 +17,3 @@ skaffold dev
     * `tsc-watch` will restart the application
 * Make some changes to `package.json`:
     * The full build/push/deploy process will be triggered, fetching dependencies from `npm`
-
-
