@@ -212,10 +212,12 @@ func deployerMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, r
 func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
 	builderCounter := metric.Must(m).NewInt64ValueRecorder("builders", metric.WithDescription("Builders used"))
 	artifactCounter := metric.Must(m).NewInt64ValueRecorder("artifacts", metric.WithDescription("Number of artifacts used"))
+	dependenciesCounter := metric.Must(m).NewInt64ValueRecorder("artifact-dependencies", metric.WithDescription("Number of artifacts with dependencies"))
 	for builder, count := range meter.Builders {
 		bLabel := label.String("builder", builder)
 		builderCounter.Record(ctx, 1, bLabel, randLabel)
 		artifactCounter.Record(ctx, int64(count), bLabel, randLabel)
+		dependenciesCounter.Record(ctx, int64(meter.BuildDependencies[builder]), bLabel, randLabel)
 	}
 }
 

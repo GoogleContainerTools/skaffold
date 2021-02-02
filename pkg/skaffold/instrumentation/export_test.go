@@ -47,31 +47,33 @@ var testKey = `{
 func TestExportMetrics(t *testing.T) {
 	startTime, _ := time.Parse(time.ANSIC, "Mon Jan 2 15:04:05 -0700 MST 2006")
 	buildMeter := skaffoldMeter{
-		Command:        "build",
-		BuildArtifacts: 5,
-		Version:        "vTest.0",
-		Arch:           "test arch",
-		OS:             "test os",
-		Deployers:      []string{"test kubectl"},
-		Builders:       map[string]int{"docker": 1, "buildpacks": 1},
-		EnumFlags:      map[string]string{"test": "test_value"},
-		StartTime:      startTime,
-		Duration:       time.Minute,
+		Command:           "build",
+		BuildArtifacts:    5,
+		Version:           "vTest.0",
+		Arch:              "test arch",
+		OS:                "test os",
+		Deployers:         []string{"test kubectl"},
+		Builders:          map[string]int{"docker": 1, "buildpacks": 1},
+		BuildDependencies: map[string]int{"docker": 1},
+		EnumFlags:         map[string]string{"test": "test_value"},
+		StartTime:         startTime,
+		Duration:          time.Minute,
 	}
 	devMeter := skaffoldMeter{
-		Command:       "dev",
-		Version:       "vTest.1",
-		Arch:          "test arch 2",
-		OS:            "test os 2",
-		PlatformType:  "test platform",
-		Deployers:     []string{"test helm", "test kpt"},
-		SyncType:      map[string]bool{"manual": true},
-		EnumFlags:     map[string]string{"test_run": "test_run_value"},
-		Builders:      map[string]int{"kustomize": 3, "buildpacks": 2},
-		DevIterations: []devIteration{{"sync", 0}, {"build", 400}, {"build", 0}, {"sync", 200}, {"deploy", 0}},
-		ErrorCode:     proto.StatusCode_BUILD_CANCELLED,
-		StartTime:     startTime.Add(time.Hour * 24 * 30),
-		Duration:      time.Minute * 2,
+		Command:           "dev",
+		Version:           "vTest.1",
+		Arch:              "test arch 2",
+		OS:                "test os 2",
+		PlatformType:      "test platform",
+		Deployers:         []string{"test helm", "test kpt"},
+		SyncType:          map[string]bool{"manual": true},
+		EnumFlags:         map[string]string{"test_run": "test_run_value"},
+		Builders:          map[string]int{"kustomize": 3, "buildpacks": 2},
+		BuildDependencies: map[string]int{"docker": 1},
+		DevIterations:     []devIteration{{"sync", 0}, {"build", 400}, {"build", 0}, {"sync", 200}, {"deploy", 0}},
+		ErrorCode:         proto.StatusCode_BUILD_CANCELLED,
+		StartTime:         startTime.Add(time.Hour * 24 * 30),
+		Duration:          time.Minute * 2,
 	}
 	devBuildBytes, _ := json.Marshal([]skaffoldMeter{buildMeter, devMeter})
 	fs := &testutil.FakeFileSystem{
@@ -224,6 +226,7 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 	commandCount := make(map[interface{}]int)
 	errorCount := make(map[interface{}]int)
 	builders := make(map[interface{}]int)
+	buildDeps := make(map[interface{}]int)
 	devIterations := make(map[interface{}]int)
 	deployers := make(map[interface{}]int)
 
@@ -241,6 +244,9 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		if doesBuild.Contains(meter.Command) {
 			for k, v := range meter.Builders {
 				builders[k] += v
+			}
+			for k, v := range meter.BuildDependencies {
+				buildDeps[k] += v
 			}
 		}
 		if meter.Command == "dev" {
@@ -273,6 +279,8 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 			durationCount[fmt.Sprintf("%s:%f", l.Labels["command"], l.value().(float64))]--
 		case "artifacts":
 			builders[l.Labels["builder"]] -= int(l.value().(float64)) - 1
+		case "artifact-dependencies":
+			buildDeps[l.Labels["builder"]] -= int(l.value().(float64)) - 1
 		case "builders":
 			builders[l.Labels["builder"]]--
 		case "deployer":

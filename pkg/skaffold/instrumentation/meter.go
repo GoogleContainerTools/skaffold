@@ -32,16 +32,17 @@ import (
 
 var (
 	meter = skaffoldMeter{
-		OS:            runtime.GOOS,
-		Arch:          runtime.GOARCH,
-		EnumFlags:     map[string]string{},
-		Builders:      map[string]int{},
-		SyncType:      map[string]bool{},
-		DevIterations: []devIteration{},
-		StartTime:     time.Now(),
-		Version:       version.Get().Version,
-		ExitCode:      0,
-		ErrorCode:     proto.StatusCode_OK,
+		OS:                runtime.GOOS,
+		Arch:              runtime.GOARCH,
+		EnumFlags:         map[string]string{},
+		Builders:          map[string]int{},
+		BuildDependencies: map[string]int{},
+		SyncType:          map[string]bool{},
+		DevIterations:     []devIteration{},
+		StartTime:         time.Now(),
+		Version:           version.Get().Version,
+		ExitCode:          0,
+		ErrorCode:         proto.StatusCode_OK,
 	}
 	meteredCommands     = util.NewStringSet()
 	doesBuild           = util.NewStringSet()
@@ -77,6 +78,9 @@ func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
 	for _, config := range configs {
 		for _, artifact := range config.Pipeline.Build.Artifacts {
 			meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]++
+			if len(artifact.Dependencies) > 0 {
+				meter.BuildDependencies[yamltags.GetYamlTag(artifact.ArtifactType)]++
+			}
 			if artifact.Sync != nil {
 				meter.SyncType[yamltags.GetYamlTag(artifact.Sync)] = true
 			}
