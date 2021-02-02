@@ -104,9 +104,6 @@ $(BUILD_DIR)/$(PROJECT)-%: $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross
 	shasum -a 256 $@ | tee $@.sha256
 	file $@ || true
 
-$(BUILD_DIR)/$(PROJECT)-darwin: $(BUILD_DIR)/$(PROJECT)-darwin-amd64 $(BUILD_DIR)/$(PROJECT)-darwin-arm64
-	go run github.com/randall77/makefat $@ $^
-
 .PHONY: $(BUILD_DIR)/VERSION
 $(BUILD_DIR)/VERSION: $(BUILD_DIR)
 	@ echo $(VERSION) > $@
