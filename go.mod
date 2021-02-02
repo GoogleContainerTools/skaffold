@@ -17,7 +17,7 @@ require (
 	4d63.com/tz v1.1.0
 	cloud.google.com/go v0.72.0 // indirect
 	cloud.google.com/go/storage v1.10.0
-	github.com/AlecAivazis/survey/v2 v2.0.5
+	github.com/AlecAivazis/survey/v2 v2.2.7
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.13.0
 	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/blang/semver v3.5.1+incompatible
@@ -83,7 +83,6 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20201202151023-55d61f90c1ce
 	google.golang.org/grpc v1.33.2
-	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	k8s.io/api v0.19.4

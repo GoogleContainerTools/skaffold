@@ -7,19 +7,17 @@ aliases: [/docs/metrics]
 
 <script type="module" src="main.js"></script>
 
-To help improve the quality of this product, we collect anonymized usage data from Skaffold.
+To help prioritize features and work on improving Skaffold, we collect anonymized Skaffold usage data.
+Usage data does not include any argument values or personal information.
 
-You will be *opted-in* by default and you can opt-out anytime via a `skaffold config` command
-
-Usage data does not include argument values, or any personal information.
-
-In order to disable sending usage data, run the following command after you have installed skaffold:
+You are *opted-in* by default and you can opt-out at any time with the `skaffold config` command.
+In order to disable sending usage data, run the following command after you have installed Skaffold:
 
 ```bash
 skaffold config set --global collect-metrics false
 ```
 
-The breakdown of data we collect is as follows
+The breakdown of data we collect is as follows:
 <ul id="metrics-list"></ul>
 
 #### Example
@@ -27,7 +25,7 @@ The breakdown of data we collect is as follows
 skaffold dev -v trace --port-forward --cache-artifacts=false --filename=./skaffold.yaml
 ```
 Running the above in the [microservices example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices)
-after a couple of builds/deploys results in the following metrics being collected
+after a couple of builds/deploys results in the following metrics being collected:
 ```json
 [{
     "ExitCode": 0,

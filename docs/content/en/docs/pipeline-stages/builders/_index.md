@@ -4,6 +4,7 @@ linkTitle: "Build"
 weight: 10
 featureId: build
 aliases: [/docs/how-tos/builders]
+no_list: true
 ---
 
 Skaffold supports different tools for building images:

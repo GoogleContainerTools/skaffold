@@ -2,6 +2,7 @@
 title: "References"
 linkTitle: "References"
 weight: 100
+no_list: true
 ---
 
 | Skaffold References  |

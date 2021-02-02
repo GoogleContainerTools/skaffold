@@ -1,4 +1,4 @@
-FROM golang:1.12 as builder
+FROM golang:1.15 as builder
 
 COPY app.go .
 ARG SKAFFOLD_GO_GCFLAGS
