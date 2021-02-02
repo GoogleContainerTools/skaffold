@@ -279,7 +279,7 @@ generate-schemas:
 # telemetry generation
 .PHONY: generate-schemas
 generate-telemetry-json:
-	go run hack/struct-json/main.go -- pkg/skaffold/instrumentation/meter.go docs/content/en/docs/resources/telemetry/metrics.json
+	go run hack/struct-json/main.go -- pkg/skaffold/instrumentation/types.go docs/content/en/docs/resources/telemetry/metrics.json
 
 # static files
 
