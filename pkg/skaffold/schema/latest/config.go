@@ -450,11 +450,14 @@ type ResourceRequirement struct {
 	ResourceStorage string `yaml:"resourceStorage,omitempty"`
 }
 
-// TestCase is a list of structure tests to run on images that Skaffold builds.
+// TestCase is a list of tests to run on images that Skaffold builds.
 type TestCase struct {
 	// ImageName is the artifact on which to run those tests.
 	// For example: `gcr.io/k8s-skaffold/example`.
 	ImageName string `yaml:"image" yamltags:"required"`
+
+	// CustomTests runs a custom test script provided by the user.
+	CustomTests []CustomTest `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
 
 	// StructureTests lists the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
 	// to run on that artifact.
@@ -974,6 +977,18 @@ type CustomArtifact struct {
 	// BuildCommand is the command executed to build the image.
 	BuildCommand string `yaml:"buildCommand,omitempty"`
 	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
+	Dependencies *CustomDependencies `yaml:"dependencies,omitempty"`
+}
+
+// CustomTest describes the custom test script provided by the user
+type CustomTest struct {
+	// Script is the script command to be executed.
+	Script string `yaml:"script,omitempty"`
+
+	// Timeout sets the wait time for skaffold for the script to complete.
+	Timeout string `yaml:"timeout,omitempty"`
+
+	// Dependencies are the file dependencies that skaffold should watch for re-running the script.
 	Dependencies *CustomDependencies `yaml:"dependencies,omitempty"`
 }
 
