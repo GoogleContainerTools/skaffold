@@ -58,6 +58,9 @@ type skaffoldMeter struct {
 	// Builders Enum values for all the builders used to build the artifacts built.
 	Builders map[string]int
 
+	// BuildDependencies Enum values for all the builders using build dependencies.
+	BuildDependencies map[string]int
+
 	// SyncType Sync type used in the build configuration: infer, auto, and/or manual.
 	SyncType map[string]bool
 
