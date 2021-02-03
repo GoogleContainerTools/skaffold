@@ -200,7 +200,7 @@ func GetCluster(configFile string, minikubeProfile string, detectMinikube bool) 
 	}
 
 	kubeContext := cfg.Kubecontext
-	isKindCluster, isK3dCluster := IsKindCluster(kubeContext), IsK3dCluster(kubeContext)
+	isKindCluster, isK3dCluster, isMicrok8sCluster := IsKindCluster(kubeContext), IsK3dCluster(kubeContext), IsMicrok8sCluster(kubeContext)
 
 	var local bool
 	switch {
@@ -226,12 +226,14 @@ func GetCluster(configFile string, minikubeProfile string, detectMinikube bool) 
 
 	kindDisableLoad := cfg.KindDisableLoad != nil && *cfg.KindDisableLoad
 	k3dDisableLoad := cfg.K3dDisableLoad != nil && *cfg.K3dDisableLoad
+	microk8sDisableLoad := cfg.Microk8sDisableLoad != nil && *cfg.Microk8sDisableLoad
 
-	// load images for local kind/k3d cluster unless explicitly disabled
-	loadImages := local && ((isKindCluster && !kindDisableLoad) || (isK3dCluster && !k3dDisableLoad))
 
-	// push images for remote cluster or local kind/k3d cluster with image loading disabled
-	pushImages := !local || (isKindCluster && kindDisableLoad) || (isK3dCluster && k3dDisableLoad)
+	// load images for local kind/k3d/microk8s cluster unless explicitly disabled
+	loadImages := local && ((isKindCluster && !kindDisableLoad) || (isK3dCluster && !k3dDisableLoad) || (isMicrok8sCluster && !microk8sDisableLoad))
+
+	// push images for remote cluster or local kind/k3d/microk8s cluster with image loading disabled
+	pushImages := !local || (isKindCluster && kindDisableLoad) || (isK3dCluster && k3dDisableLoad) || (isMicrok8sCluster && microk8sDisableLoad)
 
 	return Cluster{
 		Local:      local,
@@ -295,6 +297,12 @@ func K3dClusterName(clusterName string) string {
 	}
 	return clusterName
 }
+
+// IsMicrok8sCluster checks that the given `kubeContext` is talking to `microk8s`.
+func IsMicrok8sCluster(kubeContext string) bool {
+  return strings.HasPrefix(kubeContext, "microk8s-")
+}
+	
 
 func IsUpdateCheckEnabled(configfile string) bool {
 	cfg, err := GetConfigForCurrentKubectx(configfile)

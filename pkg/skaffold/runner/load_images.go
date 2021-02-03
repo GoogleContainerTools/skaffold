@@ -48,6 +48,15 @@ func (r *SkaffoldRunner) loadImagesInK3dNodes(ctx context.Context, out io.Writer
 	})
 }
 
+// loadImagesInMicrok8sNodes loads artifact images into every node of a microk8s cluster.
+func (r *SkaffoldRunner) loadImagesInMicrok8sNodes(ctx context.Context, out io.Writer, k8sCluster string, artifacts []build.Artifact) error {
+	color.Default.Fprintln(out, "Loading images into microk8s cluster nodes...")
+	return r.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
+		// first pass -- not confident -- import is looking for a file
+		return exec.CommandContext(ctx, "microk8s", "ctr", "image", "import", "--cluster", k8sCluster, tag) // note --cluster isn't valid 
+	})
+}
+
 func (r *SkaffoldRunner) loadImages(ctx context.Context, out io.Writer, artifacts []build.Artifact, createCmd func(tag string) *exec.Cmd) error {
 	start := time.Now()
 

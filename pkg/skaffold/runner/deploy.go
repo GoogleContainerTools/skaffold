@@ -126,6 +126,15 @@ func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Write
 		}
 	}
 
+	if config.IsMicrok8sCluster(r.runCtx.GetKubeContext()) {
+		microk8sCluster := config.Microk8sClusterName(currentContext.Cluster)
+
+		// With `microk8s`, docker images have to be loaded with the `microk8s` CLI.
+		if err := r.loadImagesInMicrok8sNodes(ctx, out, microk8sCluster, artifacts); err != nil {
+			return fmt.Errorf("loading images into microk8s nodes: %w", err)
+		}
+	}
+	
 	return nil
 }
 
