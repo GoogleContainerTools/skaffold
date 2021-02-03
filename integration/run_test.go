@@ -59,6 +59,11 @@ func TestRun(t *testing.T) {
 			deployments: []string{"leeroy-app", "leeroy-web"},
 		},
 		{
+			description: "multi-config-microservices",
+			dir:         "examples/multi-config-microservices",
+			deployments: []string{"leeroy-app", "leeroy-web"},
+		},
+		{
 			description: "envTagger",
 			dir:         "examples/tagging-with-environment-variables",
 			pods:        []string{"getting-started"},
