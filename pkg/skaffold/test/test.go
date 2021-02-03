@@ -113,19 +113,28 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifa
 
 func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
 	for _, test := range t.testCases {
-		if err := t.runStructureTests(ctx, out, bRes, test); err != nil {
-			return fmt.Errorf("running structure tests: %w", err)
+		if len(test.CustomTests) != 0 {
+			if err := t.runCustomTests(ctx, out, bRes, test); err != nil {
+				return fmt.Errorf("running custom tests: %w", err)
+			}
+		}
+		if len(test.StructureTests) != 0 {
+			if err := t.runStructureTests(ctx, out, bRes, test); err != nil {
+				return fmt.Errorf("running structure tests: %w", err)
+			}
 		}
 	}
 
 	return nil
 }
 
-func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact, tc *latest.TestCase) error {
-	if len(tc.StructureTests) == 0 {
-		return nil
-	}
+func (t FullTester) runCustomTests(ctx context.Context, out io.Writer, bRes []build.Artifact, tc *latest.TestCase) error {
+	// Not implemented yet
+	color.Red.Fprintln(out, "Custom tests not implemented yet...")
+	return fmt.Errorf("custom tests not implemented yet")
+}
 
+func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact, tc *latest.TestCase) error {
 	fqn, found := resolveArtifactImageTag(tc.ImageName, bRes)
 	if !found {
 		logrus.Debugln("Skipping tests for", tc.ImageName, "since it wasn't built")
