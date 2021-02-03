@@ -1,0 +1,25 @@
+apiVersion: skaffold/v2beta11
+kind: Config
+
+build:
+  artifacts:
+  - image: node-typescript-example
+    context: backend
+
+profiles:
+  - name: dev
+    activation:
+      - command: dev
+    build:
+      artifacts:
+      - image: node-typescript-example
+        context: backend
+        docker:
+          buildArgs:
+            ENV: development
+        sync:
+          manual:
+          # Sync all the TypeScript files that are in the src folder
+          # with the container src folder
+          - src: 'src/**/*.ts'
+            dest: .
