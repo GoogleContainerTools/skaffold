@@ -980,24 +980,38 @@ type CustomArtifact struct {
 	Dependencies *CustomDependencies `yaml:"dependencies,omitempty"`
 }
 
-// CustomTest describes the custom test script provided by the user
-type CustomTest struct {
-	// Script is the script command to be executed.
-	Script string `yaml:"script,omitempty"`
-
-	// Timeout sets the wait time for skaffold for the script to complete.
-	Timeout string `yaml:"timeout,omitempty"`
-
-	// Dependencies are the file dependencies that skaffold should watch for re-running the script.
-	Dependencies *CustomDependencies `yaml:"dependencies,omitempty"`
-}
-
 // CustomDependencies *beta* is used to specify dependencies for an artifact built by a custom build script.
 // Either `dockerfile` or `paths` should be specified for file watching to work as expected.
 type CustomDependencies struct {
 	// Dockerfile should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies.
 	Dockerfile *DockerfileDependency `yaml:"dockerfile,omitempty" yamltags:"oneOf=dependency"`
 
+	// Command represents a custom command that skaffold executes to obtain dependencies. The output of this command *must* be a valid JSON array.
+	Command string `yaml:"command,omitempty" yamltags:"oneOf=dependency"`
+
+	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
+	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
+
+	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
+	// Will only work in conjunction with `paths`.
+	Ignore []string `yaml:"ignore,omitempty"`
+}
+
+// CustomTest describes the custom test script provided by the user
+type CustomTest struct {
+	// Command is the custom command to be executed.
+	Command string `yaml:"command,omitempty"`
+
+	// Timeout sets the wait time for skaffold for the script to complete.
+	Timeout string `yaml:"timeout,omitempty"`
+
+	// Dependencies are the file dependencies that skaffold should watch for re-running the script.
+	Dependencies *CustomTestDependencies `yaml:"dependencies,omitempty"`
+}
+
+// CustomDependencies *beta* is used to specify dependencies for an artifact built by a custom build script.
+// Either `dockerfile` or `paths` should be specified for file watching to work as expected.
+type CustomTestDependencies struct {
 	// Command represents a custom command that skaffold executes to obtain dependencies. The output of this command *must* be a valid JSON array.
 	Command string `yaml:"command,omitempty" yamltags:"oneOf=dependency"`
 
