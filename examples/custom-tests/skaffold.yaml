@@ -1,0 +1,31 @@
+apiVersion: skaffold/v2beta11
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-example
+test:
+  - image: skaffold-example
+    custom:
+      - command: ./test/gotest.sh
+        timeout: 300 #in seconds - 5mins
+        dependencies:
+          paths:
+          - "**.go"
+    structureTests:
+      - ./test/*
+deploy:
+  kubectl:
+    manifests:
+      - k8s-*
+profiles:
+  - name: test
+    test:
+      - image: skaffold-example
+        custom:
+          - command: ./test/gotest.sh
+            timeout: 300 #in seconds - 5mins
+            dependencies:
+              paths:
+              - "**.go"
+        structureTests:
+          - ./test/profile_structure_test.yaml
