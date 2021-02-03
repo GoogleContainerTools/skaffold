@@ -226,8 +226,16 @@ integration-in-k3d: skaffold-builder
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		sh -c ' \
-			k3d cluster list | grep -q k3s-default || TERM=dumb k3d cluster create; \
+		sh -eu -c ' \
+			if ! k3d cluster list | grep -q k3s-default; then \
+			  trap "k3d cluster delete" 0 1 2 15; \
+			  mkdir -p /tmp/k3d; \
+			  sh hack/generate-k3d-registries.sh > /tmp/k3d/registries.yaml; \
+			  cat /tmp/k3d/registries.yaml; \
+			  TERM=dumb k3d cluster create --verbose \
+			      --network k3d \
+			      --volume /tmp/k3d:/etc/rancher/k3s; \
+			fi; \
 			make integration \
 		'
 
