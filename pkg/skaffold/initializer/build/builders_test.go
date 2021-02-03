@@ -79,7 +79,7 @@ func TestResolveBuilderImages(t *testing.T) {
 				{
 					ArtifactInfo: ArtifactInfo{
 						Builder:   jib.ArtifactConfig{BuilderName: "Jib Maven Plugin", File: "pom.xml", Project: "project"},
-						ImageName: "pom.xml-image",
+						ImageName: "pom-xml-image",
 					},
 					ManifestPath: "deployment.yaml",
 				},
@@ -139,6 +139,9 @@ func TestResolveBuilderImages(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&prompt.ChooseBuildersFunc, func(choices []string) ([]string, error) {
+				return choices, nil
+			})
 			// Overrides prompt.BuildConfigFunc to choose first option rather than using the interactive menu
 			t.Override(&prompt.BuildConfigFunc, func(image string, choices []string) (string, error) {
 				if !test.shouldMakeChoice {

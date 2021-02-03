@@ -208,6 +208,12 @@
     "maturity": "alpha",
     "description": "skaffold init recognizes k8s manifest and the image names in them"
   },
+  "init.generate_manifests": {
+    "area": "Init",
+    "feature": "generate manifests",
+    "maturity": "alpha",
+    "description": "skaffold init will try to generate kubernetes manifests for your project"
+  },
   "insecure_registry": {
     "dev": "x",
     "build": "x",

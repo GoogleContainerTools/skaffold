@@ -55,7 +55,7 @@ profiles:
 
 func createCfg(name string, imageName string, workspace string, requires []latest.ConfigDependency) *latest.SkaffoldConfig {
 	return &latest.SkaffoldConfig{
-		APIVersion:   "skaffold/v2beta11",
+		APIVersion:   latest.Version,
 		Kind:         "Config",
 		Dependencies: requires,
 		Metadata:     latest.Metadata{Name: name},

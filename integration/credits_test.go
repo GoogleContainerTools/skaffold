@@ -39,3 +39,20 @@ func TestCredits(t *testing.T) {
 		t.CheckContains("Apache License", string(content))
 	})
 }
+
+func TestCreditsDir(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	testutil.Run(t, "credits", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().Chdir()
+		tmpDir.Mkdir("test/skaffold-credits")
+
+		out, err := skaffold.Credits("-d", "test/skaffold-credits/credits").RunWithCombinedOutput(t.T)
+		t.CheckNoError(err)
+		t.CheckContains("Successfully exported third party notices", string(out))
+
+		content, err := ioutil.ReadFile(tmpDir.Path("test/skaffold-credits/credits/github.com/docker/docker/LICENSE"))
+		t.CheckNoError(err)
+		t.CheckContains("Apache License", string(content))
+	})
+}

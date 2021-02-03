@@ -3,6 +3,7 @@ title: "Skaffold Pipeline Stages"
 linkTitle: "Skaffold Pipeline Stages"
 weight: 40
 aliases: [/docs/concepts/pipeline]
+no_list: true
 ---
 
 Skaffold features a five-stage workflow:

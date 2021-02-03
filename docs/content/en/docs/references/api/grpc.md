@@ -298,7 +298,7 @@ anytime a deployment starts or completes, successfully or not.
 <a name="proto.Event"></a>
 #### Event
 `Event` describes an event in the Skaffold process.
-It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
+It is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
 
 
 | Field | Type | Label | Description |
@@ -313,6 +313,7 @@ It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, Re
 | debuggingContainerEvent | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) |  | describes the appearance or disappearance of a debugging container |
 | devLoopEvent | [DevLoopEvent](#proto.DevLoopEvent) |  | describes a start and end of a dev loop. |
 | terminationEvent | [TerminationEvent](#proto.TerminationEvent) |  | describes a skaffold termination event |
+| TestEvent | [TestEvent](#proto.TestEvent) |  | describes if the test has started, is in progress or is complete. |
 
 
 
@@ -432,6 +433,7 @@ LogEntry describes an event and a string description of the event.
 | ----- | ---- | ----- | ----------- |
 | build | [BuildMetadata](#proto.BuildMetadata) |  |  |
 | deploy | [DeployMetadata](#proto.DeployMetadata) |  |  |
+| test | [TestMetadata](#proto.TestMetadata) |  |  |
 | additional | [Metadata.AdditionalEntry](#proto.Metadata.AdditionalEntry) | repeated | Additional key value pairs to describe the build pipeline |
 
 
@@ -548,6 +550,7 @@ will be sent with the new status.
 | fileSyncState | [FileSyncState](#proto.FileSyncState) |  |  |
 | debuggingContainers | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) | repeated |  |
 | metadata | [Metadata](#proto.Metadata) |  |  |
+| testState | [TestState](#proto.TestState) |  |  |
 
 
 
@@ -670,6 +673,70 @@ Suggestion defines the action a user needs to recover from an error.
 
 
 
+<a name="proto.TestEvent"></a>
+#### TestEvent
+`TestEvent` represents the status of a test, and is emitted by Skaffold
+anytime a test starts or completes, successfully or not.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [string](#string) |  | test status oneof: InProgress, Completed, Failed |
+| actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
+
+
+
+
+
+
+
+<a name="proto.TestMetadata"></a>
+#### TestMetadata
+TestMetadata describes the test pipeline
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| Testers | [TestMetadata.Tester](#proto.TestMetadata.Tester) | repeated |  |
+
+
+
+
+
+
+
+<a name="proto.TestMetadata.Tester"></a>
+#### TestMetadata.Tester
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [TesterType](#proto.TesterType) |  |  |
+| count | [int32](#int32) |  |  |
+
+
+
+
+
+
+
+<a name="proto.TestState"></a>
+#### TestState
+`TestState` describes the current state of the test
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [string](#string) |  | Status of the current test |
+| statusCode | [StatusCode](#proto.StatusCode) |  | Teststate status code |
+
+
+
+
+
+
+
 <a name="proto.TriggerRequest"></a>
 #### TriggerRequest
 
@@ -780,7 +847,7 @@ Enum indicating deploy tools used
 ### StatusCode
 Enum for Status codes
 These error codes are prepended by Phase Name e.g.
-BUILD, DEPLOY, STATUSCHECK, DEVINIT
+BUILD, TEST, DEPLOY, STATUSCHECK, DEVINIT
 For Success Error codes, use range 200 to 250.
 For Unknown error codes, use range 500 to 600.
 For Cancelled Error code, use range 800 to 850.
@@ -791,6 +858,7 @@ For Cancelled Error code, use range 800 to 850.
 | STATUSCHECK_SUCCESS | 200 | Status Check Success |
 | BUILD_SUCCESS | 201 | Build Success |
 | DEPLOY_SUCCESS | 202 | Deploy Success |
+| TEST_SUCCESS | 203 | Test Success |
 | BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
 | BUILD_PROJECT_NOT_FOUND | 102 | Build error due to GCP project not found. |
 | BUILD_DOCKER_DAEMON_NOT_RUNNING | 103 | Docker build error due to docker daemon not running |
@@ -847,6 +915,7 @@ For Cancelled Error code, use range 800 to 850.
 | CLEANUP_UNKNOWN | 508 | Cleanup failed due to unknown reason |
 | INIT_UNKNOWN | 510 | Initialization of the Skaffold session failed due to unknown reason(s) |
 | BUILD_DOCKER_UNKNOWN | 511 | Build failed due to docker unknown error |
+| TEST_UNKNOWN | 512 | Test failed due to unknown reason |
 | SYNC_INIT_ERROR | 601 | File Sync Initialize failure |
 | DEVINIT_REGISTER_BUILD_DEPS | 701 | Failed to configure watcher for build dependencies in dev loop |
 | DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
@@ -940,6 +1009,19 @@ Enum for Suggestion codes
 | RUN_DOCKER_PULL | 551 | Run Docker pull for the image with v1 manifest and try again. |
 | SET_RENDER_FLAG_OFFLINE_FALSE | 600 | Rerun with correct offline flag value. |
 | OPEN_ISSUE | 900 | Open an issue so this situation can be diagnosed |
+
+
+
+<a name="proto.TesterType"></a>
+
+### TesterType
+Enum indicating test tools used
+
+| Name | Number | Description |
+| ---- |:------:| ----------- |
+| UNKNOWN_TEST_TYPE | 0 | Could not determine Test Type |
+| UNIT | 1 | Unit tests |
+| CONTAINER_STRUCTURE_TEST | 2 | Container Structure tests |
 
 
  <!-- end enums -->

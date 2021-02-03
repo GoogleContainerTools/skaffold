@@ -4,6 +4,7 @@ linkTitle: "Deploy"
 weight: 10
 featureId: deploy
 aliases: [/docs/how-tos/deployers]
+no_list: true
 ---
 
 When Skaffold deploys your application, it goes through these steps:
