@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -53,11 +54,11 @@ func TestShouldDisplayMetricsPrompt(t *testing.T) {
 		},
 		{
 			name:   "collect-metrics false",
-			config: &config.ContextConfig{CollectMetrics: boolP(false)},
+			config: &config.ContextConfig{CollectMetrics: util.BoolPtr(false)},
 		},
 		{
 			name:   "collect-metrics true",
-			config: &config.ContextConfig{CollectMetrics: boolP(true)},
+			config: &config.ContextConfig{CollectMetrics: util.BoolPtr(true)},
 		},
 	}
 	for _, test := range tests {
@@ -97,5 +98,3 @@ func TestDisplayMetricsPrompt(t *testing.T) {
 		})
 	}
 }
-
-func boolP(b bool) *bool { return &b }
