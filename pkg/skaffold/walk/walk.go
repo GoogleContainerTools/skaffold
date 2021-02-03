@@ -18,6 +18,9 @@ package walk
 
 import (
 	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/karrick/godirwalk"
 )
@@ -47,12 +50,14 @@ type Builder interface {
 	WhenIsDir() Builder
 	WhenIsFile() Builder
 	WhenHasName(string) Builder
+	WhenNameMatches(string) Builder
 
 	// Actions
 	Do(Action) error
 	MustDo(Action)
 	AppendPaths(*[]string) error
 	CollectPaths() ([]string, error)
+	CollectPathsGrouped(depth int) (map[string][]string, error)
 }
 
 type builder struct {
@@ -91,6 +96,10 @@ func (w *builder) WhenHasName(name string) Builder {
 	return w.When(hasName(name))
 }
 
+func (w *builder) WhenNameMatches(glob string) Builder {
+	return w.When(nameMatches(glob))
+}
+
 func (w *builder) AppendPaths(values *[]string) error {
 	return w.Do(appendPaths(values))
 }
@@ -99,6 +108,12 @@ func (w *builder) CollectPaths() ([]string, error) {
 	var paths []string
 	err := w.Do(appendPaths(&paths))
 	return paths, err
+}
+
+func (w *builder) CollectPathsGrouped(depth int) (map[string][]string, error) {
+	m := make(map[string][]string)
+	err := w.Do(groupPaths(m, w.dir, depth))
+	return m, err
 }
 
 func (w *builder) Do(action Action) error {
@@ -143,6 +158,12 @@ func hasName(name string) Predicate {
 	}
 }
 
+func nameMatches(glob string) Predicate {
+	return func(_ string, info Dirent) (bool, error) {
+		return path.Match(glob, info.Name())
+	}
+}
+
 func isDir(_ string, info Dirent) (bool, error) {
 	return info.IsDir(), nil
 }
@@ -167,6 +188,19 @@ func and(p1, p2 Predicate) Predicate {
 func appendPaths(values *[]string) Action {
 	return func(path string, _ Dirent) error {
 		*values = append(*values, path)
+		return nil
+	}
+}
+
+func groupPaths(m map[string][]string, base string, depth int) Action {
+	return func(path string, _ Dirent) error {
+		rel, err := filepath.Rel(base, path)
+		if err != nil {
+			return err
+		}
+		relSplit := strings.Split(rel, string(filepath.Separator))
+		key := filepath.Join(relSplit[:depth]...)
+		m[key] = append(m[key], path)
 		return nil
 	}
 }

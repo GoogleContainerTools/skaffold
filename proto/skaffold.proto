@@ -27,11 +27,13 @@ message State {
     FileSyncState fileSyncState = 6;
     repeated DebuggingContainerEvent debuggingContainers = 7;
     Metadata metadata = 8;
+    TestState testState = 9;
 }
 
 message Metadata {
     BuildMetadata build = 1;
     DeployMetadata deploy = 2;
+    TestMetadata test = 3;
     // Additional key value pairs to describe the build pipeline
     map<string, string> additional = 99;
 }
@@ -46,6 +48,15 @@ message BuildMetadata {
   BuildType type = 3;
   // Additional key value pairs to describe the deploy pipeline
   map<string, string> additional = 99;
+}
+
+// TestMetadata describes the test pipeline
+message TestMetadata {
+    message Tester {
+        TesterType type = 1;
+        int32 count = 2;
+    }
+    repeated Tester Testers = 1;
 }
 
 message DeployMetadata {
@@ -69,6 +80,14 @@ message BuildState {
     map<string, string> artifacts = 1;
     bool autoTrigger = 2;
     StatusCode statusCode = 3;
+}
+
+// `TestState` describes the current state of the test
+message TestState {
+    // Status of the current test
+    string status = 1;
+    // Teststate status code
+    StatusCode statusCode = 2;
 }
 
 // `DeployState` describes the status of the current deploy
@@ -100,7 +119,7 @@ message FileSyncState {
 }
 
 // `Event` describes an event in the Skaffold process.
-// It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
+// It is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
 message Event {
     oneof event_type {
         MetaEvent metaEvent = 1; // contains general information regarding Skaffold like version info
@@ -113,6 +132,7 @@ message Event {
         DebuggingContainerEvent debuggingContainerEvent = 8; // describes the appearance or disappearance of a debugging container
         DevLoopEvent devLoopEvent = 9; // describes a start and end of a dev loop.
         TerminationEvent terminationEvent = 10; // describes a skaffold termination event
+        TestEvent TestEvent = 11; // describes if the test has started, is in progress or is complete.
     }
 }
 
@@ -153,6 +173,13 @@ message BuildEvent {
     StatusCode errCode = 4; // Deprecated. Use actionableErr.errCode. status code representing success or failure
     ActionableErr actionableErr = 5; // actionable error message
 
+}
+
+// `TestEvent` represents the status of a test, and is emitted by Skaffold
+// anytime a test starts or completes, successfully or not.
+message TestEvent {
+    string status = 1; // test status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 2; // actionable error message
 }
 
 // `DeployEvent` represents the status of a deployment, and is emitted by Skaffold
@@ -363,6 +390,16 @@ enum BuildType {
     LOCAL = 3;
 }
 
+// Enum indicating test tools used
+enum TesterType {
+    // Could not determine Test Type
+    UNKNOWN_TEST_TYPE = 0;
+    // Unit tests
+    UNIT = 1;
+    // Container Structure tests
+    CONTAINER_STRUCTURE_TEST = 2;
+}
+
 // Enum indicating deploy tools used
 enum DeployerType {
     // Could not determine Deployer Type
@@ -389,7 +426,7 @@ enum ClusterType {
 
 // Enum for Status codes
 // These error codes are prepended by Phase Name e.g.
-// BUILD, DEPLOY, STATUSCHECK, DEVINIT
+// BUILD, TEST, DEPLOY, STATUSCHECK, DEVINIT
 // For Success Error codes, use range 200 to 250.
 // For Unknown error codes, use range 500 to 600.
 // For Cancelled Error code, use range 800 to 850.
@@ -406,6 +443,8 @@ enum StatusCode {
     BUILD_SUCCESS = 201;
     // Deploy Success
     DEPLOY_SUCCESS = 202;
+    // Test Success
+    TEST_SUCCESS = 203;
 
     // Build Errors
 
@@ -537,6 +576,8 @@ enum StatusCode {
     INIT_UNKNOWN = 510 ;
     // Build failed due to docker unknown error
     BUILD_DOCKER_UNKNOWN = 511;
+    // Test failed due to unknown reason
+    TEST_UNKNOWN = 512;
 
 
     // FILE_SYNC Failures

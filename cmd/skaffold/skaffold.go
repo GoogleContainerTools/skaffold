@@ -33,7 +33,6 @@ type ExitCoder interface {
 }
 
 func main() {
-	instrumentation.SetOnlineStatus()
 	var code int
 	if err := app.Run(os.Stdout, os.Stderr); err != nil {
 		if errors.Is(err, context.Canceled) {

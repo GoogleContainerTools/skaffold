@@ -36,6 +36,7 @@ type ContextConfig struct {
 	Survey               *SurveyConfig `yaml:"survey,omitempty"`
 	KindDisableLoad      *bool         `yaml:"kind-disable-load,omitempty"`
 	K3dDisableLoad       *bool         `yaml:"k3d-disable-load,omitempty"`
+	CollectMetrics       *bool         `yaml:"collect-metrics,omitempty"`
 }
 
 // SurveyConfig is the survey config information

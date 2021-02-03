@@ -14,7 +14,7 @@
 
 # Download Docsy theme for Hugo
 FROM alpine:3.10 as download-docsy
-ENV DOCSY_VERSION a7141a2eac26cb598b707cab87d224f9105c315d
+ENV DOCSY_VERSION 3c4280bae0db96cb272ddc4b4959b2beef9299af
 ENV DOCSY_URL https://github.com/google/docsy.git
 RUN apk add --no-cache git
 WORKDIR /docsy

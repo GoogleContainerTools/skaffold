@@ -25,6 +25,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/rakyll/statik/fs"
 
@@ -41,7 +42,7 @@ func Export(ctx context.Context, out io.Writer) error {
 	}
 
 	if err := fs.Walk(statikFS, "/skaffold-credits", func(filePath string, fileInfo os.FileInfo, err error) error {
-		newPath := path.Join(Path, "..", filePath)
+		newPath := path.Join(Path, strings.Replace(filePath, "skaffold-credits", "", 1))
 		if fileInfo.IsDir() {
 			err := os.Mkdir(newPath, 0755)
 			if err != nil && !os.IsExist(err) {
