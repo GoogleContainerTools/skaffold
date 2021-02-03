@@ -169,17 +169,29 @@ func (k *NSKubernetesClient) CreateSecretFrom(ns, name string) {
 
 // WaitForPodsReady waits for a list of pods to become ready.
 func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
-	k.WaitForPodsInPhase(v1.PodRunning, podNames...)
+	f := func(pod *v1.Pod) bool {
+		for _, cond := range pod.Status.Conditions {
+			if cond.Type == v1.PodReady && cond.Status == v1.ConditionTrue {
+				return true
+			}
+		}
+		return false
+	}
+	result := k.waitForPods(f, podNames...)
+	logrus.Infof("Pods marked as ready: %v", result)
 }
 
-// WaitForPodsInPhase waits for a list of pods to become ready.
+// WaitForPodsInPhase waits for a list of pods to reach the given phase.
 func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNames ...string) {
-	if len(podNames) == 0 {
-		return
+	f := func(pod *v1.Pod) bool {
+		return pod.Status.Phase == expectedPhase
 	}
+	result := k.waitForPods(f, podNames...)
+	logrus.Infof("Pods in phase %q: %v", expectedPhase, result)
+}
 
-	logrus.Infoln("Waiting for pods", podNames, "to be ready")
-
+// waitForPods waits for a list of pods to become ready.
+func (k *NSKubernetesClient) waitForPods(podReady func(*v1.Pod) bool, podNames ...string) (podsReady map[string]bool) {
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelTimeout()
 
@@ -190,7 +202,14 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 	}
 	defer w.Stop()
 
-	phases := map[string]v1.PodPhase{}
+	waitForAllPods := len(podNames) == 0
+	if waitForAllPods {
+		logrus.Infof("Waiting for all pods in namespace %q to be ready", k.ns)
+	} else {
+		logrus.Infoln("Waiting for pods", podNames, "to be ready")
+	}
+
+	podsReady = map[string]bool{}
 
 	for {
 	waitLoop:
@@ -200,14 +219,13 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 			//k.debug("nodes")
 			k.debug("pods")
 			k.logs("pod", podNames)
-			k.t.Fatalf("Timed out waiting for pods %v ready in namespace %s", podNames, k.ns)
+			k.t.Fatalf("Timed out waiting for pods %v in namespace %q", podNames, k.ns)
 
 		case event := <-w.ResultChan():
 			if event.Object == nil {
 				return
 			}
 			pod := event.Object.(*v1.Pod)
-			logrus.Infoln("Pod", pod.Name, "is", pod.Status.Phase)
 			if pod.Status.Phase == v1.PodFailed {
 				logs, err := pods.GetLogs(pod.Name, &v1.PodLogOptions{}).DoRaw(ctx)
 				if err != nil {
@@ -215,15 +233,26 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 				}
 				k.t.Fatalf("pod %s failed. Logs:\n %s", pod.Name, logs)
 			}
-			phases[pod.Name] = pod.Status.Phase
 
+			if _, found := podsReady[pod.Name]; !found && waitForAllPods {
+				podNames = append(podNames, pod.Name)
+			}
+			podsReady[pod.Name] = podReady(pod)
+
+			var waiting []string
 			for _, podName := range podNames {
-				if phases[podName] != expectedPhase {
-					break waitLoop
+				if !podsReady[podName] {
+					waiting = append(waiting, podName)
 				}
 			}
-
-			logrus.Infoln("Pods", podNames, "ready")
+			if len(waiting) > 0 {
+				logrus.Infof("Still waiting for pods %v", waiting)
+				break waitLoop
+			} else if l := len(w.ResultChan()); l > 0 {
+				// carry on when there are pending messages in case a new pod has been created
+				logrus.Infof("%d pending pod update messages", l)
+				break waitLoop
+			}
 			return
 		}
 	}
