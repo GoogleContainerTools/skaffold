@@ -42,10 +42,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
-const (
-	FlagsPrefix = "flags/"
-)
-
 func ExportMetrics(exitCode int) error {
 	if !shouldExportMetrics || meter.Command == "" {
 		return nil

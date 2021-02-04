@@ -243,7 +243,7 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		errorCount[meter.ErrorCode]++
 
 		for k, v := range meter.EnumFlags {
-			n := FlagsPrefix + strings.ReplaceAll(k, "-", "_")
+			n := strings.ReplaceAll(k, "-", "_")
 			enumFlags[n+":"+v]++
 		}
 
@@ -301,7 +301,7 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 			enumFlags[l.Labels["flag_name"]+":"+l.Labels["value"]]--
 		default:
 			switch {
-			case meteredCommands.Contains(l.Name):
+			case MeteredCommands.Contains(l.Name):
 				commandCount[l.Name]--
 			default:
 				t.Error("unexpected metric with name", l.Name)
