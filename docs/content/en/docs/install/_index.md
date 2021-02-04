@@ -24,7 +24,7 @@ The latest **stable** binaries can be found here:
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-arm64
 
-Simply download it and add it to your `PATH`. Or, copy+paste this command in your terminal:
+Simply download the appropriate binary and add it to your `PATH`. Or, copy+paste this command in your terminal:
 
 ```bash
 # For Linux AMD64
@@ -56,12 +56,12 @@ sudo install skaffold /usr/local/bin/
 
 {{% tab "MACOS" %}}
 
-The latest **stable** binary can be found here:
+The latest **stable** binaries can be found here:
 
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-arm64
 
-Simply download it and add it to your `PATH`. Or, copy+paste this command in your terminal:
+Simply download the appropriate binary and add it to your `PATH`. Or, copy+paste this command in your terminal:
 
 ```bash
 # For macOS on AMD64
