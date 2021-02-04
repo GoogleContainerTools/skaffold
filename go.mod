@@ -60,7 +60,7 @@ require (
 	github.com/opencontainers/runc v1.0.0-rc92 // indirect
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/rakyll/statik v0.1.7
-	github.com/rjeczalik/notify v0.9.2
+	github.com/rjeczalik/notify v0.9.3-0.20201210012515-e2a77dcc14cf
 	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/segmentio/textio v1.2.0
 	github.com/sirupsen/logrus v1.7.0
