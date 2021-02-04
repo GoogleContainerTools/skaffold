@@ -25,7 +25,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
@@ -176,12 +175,12 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 }
 
 func flagMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
+	flagCounter := metric.Must(m).NewInt64ValueRecorder("flags", metric.WithDescription("Tracks usage of enum flags"))
 	for k, v := range meter.EnumFlags {
-		flagCounter := metric.Must(m).NewInt64ValueRecorder(FlagsPrefix+strings.ReplaceAll(k, "-", "_"),
-			metric.WithDescription(fmt.Sprintf("Flag metric for %s", k)))
 		labels := []label.KeyValue{
+			label.String("flag_name", k),
+			label.String("flag_value", v),
 			label.String("command", meter.Command),
-			label.String("value", v),
 			label.String("error", strconv.Itoa(int(meter.ErrorCode))),
 			randLabel,
 		}

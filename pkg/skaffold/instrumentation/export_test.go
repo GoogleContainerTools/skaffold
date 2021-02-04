@@ -297,12 +297,12 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		case "errors":
 			e, _ := strconv.Atoi(l.Labels["error"])
 			errorCount[proto.StatusCode(e)]--
+		case "flags":
+			enumFlags[l.Labels["flag_name"]+":"+l.Labels["value"]]--
 		default:
 			switch {
 			case meteredCommands.Contains(l.Name):
 				commandCount[l.Name]--
-			case strings.HasPrefix(l.Name, "flags/"):
-				enumFlags[l.Name+":"+l.Labels["value"]]--
 			default:
 				t.Error("unexpected metric with name", l.Name)
 			}
