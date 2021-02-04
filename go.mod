@@ -60,15 +60,13 @@ require (
 	github.com/opencontainers/runc v1.0.0-rc92 // indirect
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/rakyll/statik v0.1.7
-	github.com/ramya-rao-a/go-outline v0.0.0-20200117021646-2a048b4510eb // indirect
-	github.com/rjeczalik/notify v0.9.2
+	github.com/rjeczalik/notify v0.9.3-0.20201210012515-e2a77dcc14cf
 	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/segmentio/textio v1.2.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
-	github.com/uudashr/gopkgs/v2 v2.1.2 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.opentelemetry.io/otel v0.13.0
 	go.opentelemetry.io/otel/exporters/stdout v0.13.0

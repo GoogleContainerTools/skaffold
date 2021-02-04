@@ -24,6 +24,10 @@
       "description": "describes how an iteration and started and if an error happened.",
       "x-intellij-html-description": "<p>describes how an iteration and started and if an error happened.</p>"
     },
+    "errHandler": {
+      "description": "prints errors to logrus.",
+      "x-intellij-html-description": "<p>prints errors to logrus.</p>"
+    },
     "skaffoldMeter": {
       "properties": {
         "Arch": {
@@ -33,6 +37,10 @@
         "Build Artifacts": {
           "description": "Number of artifacts built in the current execution as defined in skaffold.yaml.",
           "x-intellij-html-description": "<p>Number of artifacts built in the current execution as defined in skaffold.yaml.</p>"
+        },
+        "Build Dependencies": {
+          "description": "Enum values for all the builders using build dependencies.",
+          "x-intellij-html-description": "<p>Enum values for all the builders using build dependencies.</p>"
         },
         "Builders": {
           "description": "Enum values for all the builders used to build the artifacts built.",
