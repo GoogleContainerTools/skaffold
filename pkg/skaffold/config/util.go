@@ -303,6 +303,13 @@ func IsMicrok8sCluster(kubeContext string) bool {
   return strings.HasPrefix(kubeContext, "microk8s-")
 }
 	
+// Microk8sClusterName returns the internal name of a microk8s cluster.
+func Microk8sClusterName(clusterName string) string {
+	if strings.HasPrefix(clusterName, "microk8s-") {
+		return strings.TrimPrefix(clusterName, "microk8s-")
+	}
+	return clusterName
+}
 
 func IsUpdateCheckEnabled(configfile string) bool {
 	cfg, err := GetConfigForCurrentKubectx(configfile)
