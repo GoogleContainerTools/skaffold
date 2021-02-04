@@ -343,9 +343,16 @@ Env vars:
 ```
 
 
+Examples:
+  # Launch with port-forwarding
+  skaffold debug --port-forward
+
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto-build=true: When set to false, builds wait for API request instead of running automatically
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
+      --auto-deploy=true: When set to false, deploys wait for API request instead of running automatically
+      --auto-sync=true: When set to false, syncs wait for API request instead of running automatically
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
@@ -392,7 +399,10 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO_BUILD` (same as `--auto-build`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
+* `SKAFFOLD_AUTO_DEPLOY` (same as `--auto-deploy`)
+* `SKAFFOLD_AUTO_SYNC` (same as `--auto-sync`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
@@ -565,7 +575,10 @@ Run a pipeline in development mode
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto-build=true: When set to false, builds wait for API request instead of running automatically
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
+      --auto-deploy=true: When set to false, deploys wait for API request instead of running automatically
+      --auto-sync=true: When set to false, syncs wait for API request instead of running automatically
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
@@ -613,7 +626,10 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO_BUILD` (same as `--auto-build`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
+* `SKAFFOLD_AUTO_DEPLOY` (same as `--auto-deploy`)
+* `SKAFFOLD_AUTO_SYNC` (same as `--auto-sync`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
