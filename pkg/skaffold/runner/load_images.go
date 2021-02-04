@@ -53,7 +53,7 @@ func (r *SkaffoldRunner) loadImagesInMicrok8sNodes(ctx context.Context, out io.W
 	color.Default.Fprintln(out, "Loading images into microk8s cluster nodes...")
 	return r.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
 		// first pass -- not confident -- import is looking for a file
-		return exec.CommandContext(ctx, "microk8s", "ctr", "image", "import", "--cluster", k8sCluster, tag) // note --cluster isn't valid 
+		return exec.CommandContext(ctx, "microk8s", "ctr", "image", "import", "--cluster", k8sCluster, tag) // note --cluster isn't valid
 	})
 }
 

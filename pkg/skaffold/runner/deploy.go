@@ -134,7 +134,7 @@ func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Write
 			return fmt.Errorf("loading images into microk8s nodes: %w", err)
 		}
 	}
-	
+
 	return nil
 }
 

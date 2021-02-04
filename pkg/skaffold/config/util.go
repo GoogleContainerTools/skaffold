@@ -228,7 +228,6 @@ func GetCluster(configFile string, minikubeProfile string, detectMinikube bool) 
 	k3dDisableLoad := cfg.K3dDisableLoad != nil && *cfg.K3dDisableLoad
 	microk8sDisableLoad := cfg.Microk8sDisableLoad != nil && *cfg.Microk8sDisableLoad
 
-
 	// load images for local kind/k3d/microk8s cluster unless explicitly disabled
 	loadImages := local && ((isKindCluster && !kindDisableLoad) || (isK3dCluster && !k3dDisableLoad) || (isMicrok8sCluster && !microk8sDisableLoad))
 
@@ -300,9 +299,9 @@ func K3dClusterName(clusterName string) string {
 
 // IsMicrok8sCluster checks that the given `kubeContext` is talking to `microk8s`.
 func IsMicrok8sCluster(kubeContext string) bool {
-  return strings.HasPrefix(kubeContext, "microk8s-")
+	return strings.HasPrefix(kubeContext, "microk8s-")
 }
-	
+
 // Microk8sClusterName returns the internal name of a microk8s cluster.
 func Microk8sClusterName(clusterName string) string {
 	if strings.HasPrefix(clusterName, "microk8s-") {
