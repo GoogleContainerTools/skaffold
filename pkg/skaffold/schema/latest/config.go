@@ -457,7 +457,7 @@ type TestCase struct {
 	ImageName string `yaml:"image" yamltags:"required"`
 
 	// CustomTests runs a custom test script provided by the user.
-	CustomTests []CustomTest `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
+	CustomTests []CustomTest `yaml:"custom,omitempty"`
 
 	// StructureTests lists the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
 	// to run on that artifact.
@@ -1009,16 +1009,16 @@ type CustomTest struct {
 	Dependencies *CustomTestDependencies `yaml:"dependencies,omitempty"`
 }
 
-// CustomDependencies *beta* is used to specify dependencies for an artifact built by a custom build script.
-// Either `dockerfile` or `paths` should be specified for file watching to work as expected.
+// CustomTestDependencies is used to specify dependencies for custom test script.
+// `paths` should be specified for file watching to work as expected.
 type CustomTestDependencies struct {
 	// Command represents a custom command that skaffold executes to obtain dependencies. The output of this command *must* be a valid JSON array.
 	Command string `yaml:"command,omitempty" yamltags:"oneOf=dependency"`
 
-	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
+	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to retest and perform file synchronization.
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 
-	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
+	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both retest and file synchronization.
 	// Will only work in conjunction with `paths`.
 	Ignore []string `yaml:"ignore,omitempty"`
 }
