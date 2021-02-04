@@ -75,7 +75,22 @@ func TestExportMetrics(t *testing.T) {
 		StartTime:         startTime.Add(time.Hour * 24 * 30),
 		Duration:          time.Minute * 2,
 	}
-	devBuildBytes, _ := json.Marshal([]skaffoldMeter{buildMeter, devMeter})
+	debugMeter := skaffoldMeter{
+		Command:       "debug",
+		Version:       "vTest.2",
+		Arch:          "test arch 1",
+		OS:            "test os 2",
+		PlatformType:  "test platform",
+		Deployers:     []string{"test helm", "test kpt"},
+		SyncType:      map[string]bool{"manual": true, "sync": true},
+		EnumFlags:     map[string]string{"test_run": "test_run_value"},
+		Builders:      map[string]int{"jib": 3, "buildpacks": 2},
+		DevIterations: []devIteration{{"build", 104}, {"build", 0}, {"sync", 0}, {"deploy", 1014}},
+		ErrorCode:     proto.StatusCode_BUILD_CANCELLED,
+		StartTime:     startTime.Add(time.Hour * 24 * 10),
+		Duration:      time.Minute * 4,
+	}
+	metersBytes, _ := json.Marshal([]skaffoldMeter{buildMeter, devMeter, debugMeter})
 	fs := &testutil.FakeFileSystem{
 		Files: map[string][]byte{
 			"/secret/keys.json": []byte(testKey),
@@ -96,7 +111,7 @@ func TestExportMetrics(t *testing.T) {
 		{
 			name:         "meter is appended to previously saved metrics",
 			meter:        devMeter,
-			savedMetrics: devBuildBytes,
+			savedMetrics: metersBytes,
 		},
 		{
 			name:                "meter does not re-save invalid metrics",
@@ -115,9 +130,14 @@ func TestExportMetrics(t *testing.T) {
 			isOnline: true,
 		},
 		{
+			name:     "test creating debug otel metrics",
+			meter:    debugMeter,
+			isOnline: true,
+		},
+		{
 			name:         "test otel metrics include offline metrics",
 			meter:        devMeter,
-			savedMetrics: devBuildBytes,
+			savedMetrics: metersBytes,
 			isOnline:     true,
 		},
 	}
@@ -257,7 +277,7 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 				buildDeps[k] += v
 			}
 		}
-		if meter.Command == "dev" {
+		if meter.Command == "dev" || meter.Command == "debug" {
 			for _, devI := range meter.DevIterations {
 				devIterations[devI]++
 			}
@@ -294,7 +314,7 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 			builders[l.Labels["builder"]]--
 		case "deployer":
 			deployers[l.Labels["deployer"]]--
-		case "dev/iterations":
+		case "dev/iterations", "debug/iterations":
 			e, _ := strconv.Atoi(l.Labels["error"])
 			devIterations[devIteration{l.Labels["intent"], proto.StatusCode(e)}]--
 		case "errors":

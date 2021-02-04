@@ -199,9 +199,9 @@ func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, ra
 	}
 	commandCounter.Record(ctx, 1, labels...)
 
-	if meter.Command == "dev" {
-		iterationCounter := metric.Must(m).NewInt64ValueRecorder("dev/iterations",
-			metric.WithDescription("Number of iterations in a dev session"))
+	if meter.Command == "dev" || meter.Command == "debug" {
+		iterationCounter := metric.Must(m).NewInt64ValueRecorder(fmt.Sprintf("%s/iterations", meter.Command),
+			metric.WithDescription(fmt.Sprintf("Number of iterations in a %s session", meter.Command)))
 
 		counts := make(map[string]map[proto.StatusCode]int)
 
