@@ -79,7 +79,7 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64
 https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-arm64
 
 ```bash
-# For macOS on amd64
+# For macOS on AMD64
 curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64 && \
 sudo install skaffold /usr/local/bin/
 
