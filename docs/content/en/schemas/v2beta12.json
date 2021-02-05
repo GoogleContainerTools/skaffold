@@ -809,6 +809,11 @@
           "x-intellij-html-description": "describes the names of the required configs.",
           "default": "[]"
         },
+        "git": {
+          "$ref": "#/definitions/GitInfo",
+          "description": "describes a remote git repository containing the required configs.",
+          "x-intellij-html-description": "describes a remote git repository containing the required configs."
+        },
         "path": {
           "type": "string",
           "description": "describes the path to the file containing the required configs.",
@@ -818,6 +823,7 @@
       "preferredOrder": [
         "configs",
         "path",
+        "git",
         "activeProfiles"
       ],
       "additionalProperties": false,
@@ -1177,6 +1183,36 @@
       "additionalProperties": false,
       "description": "*beta* tags images with a configurable template string.",
       "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string."
+    },
+    "GitInfo": {
+      "required": [
+        "repo"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "relative path from the repo root to the skaffold configuration file. eg. `getting-started/skaffold.yaml`.",
+          "x-intellij-html-description": "relative path from the repo root to the skaffold configuration file. eg. <code>getting-started/skaffold.yaml</code>."
+        },
+        "ref": {
+          "type": "string",
+          "description": "git ref the package should be cloned from. eg. `master` or `main`.",
+          "x-intellij-html-description": "git ref the package should be cloned from. eg. <code>master</code> or <code>main</code>."
+        },
+        "repo": {
+          "type": "string",
+          "description": "git repository the package should be cloned from.  e.g. `https://github.com/GoogleContainerTools/skaffold.git`.",
+          "x-intellij-html-description": "git repository the package should be cloned from.  e.g. <code>https://github.com/GoogleContainerTools/skaffold.git</code>."
+        }
+      },
+      "preferredOrder": [
+        "repo",
+        "path",
+        "ref"
+      ],
+      "additionalProperties": false,
+      "description": "contains information on the origin of skaffold configurations cloned from a git repository.",
+      "x-intellij-html-description": "contains information on the origin of skaffold configurations cloned from a git repository."
     },
     "GitTagger": {
       "properties": {
