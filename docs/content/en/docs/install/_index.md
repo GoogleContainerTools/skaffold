@@ -24,17 +24,18 @@ The latest **stable** binaries can be found here:
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-arm64
 
-Simply download the appropriate binary and add it to your `PATH`. Or, copy+paste this command in your terminal:
+Simply download the appropriate binary and add it to your `PATH`. Or, copy+paste one of the following commands in your terminal:
 
 ```bash
 # For Linux AMD64
 curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
 sudo install skaffold /usr/local/bin/
+```
 
+```bash
 # For Linux ARM64
 curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-arm && \
 sudo install skaffold /usr/local/bin/
-```
 ```
 
 We also release a **bleeding edge** build, built from the latest commit:
@@ -46,7 +47,9 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-arm64
 # For Linux on AMD64
 curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64 && \
 sudo install skaffold /usr/local/bin/
+```
 
+```bash
 # For Linux on ARM64
 curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-arm64 && \
 sudo install skaffold /usr/local/bin/
@@ -61,13 +64,15 @@ The latest **stable** binaries can be found here:
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-arm64
 
-Simply download the appropriate binary and add it to your `PATH`. Or, copy+paste this command in your terminal:
+Simply download the appropriate binary and add it to your `PATH`. Or, copy+paste one of the following commands in your terminal:
 
 ```bash
 # For macOS on AMD64
 curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64 && \
 sudo install skaffold /usr/local/bin/
+```
 
+```bash
 # For macOS on ARM64
 curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64 && \
 sudo install skaffold /usr/local/bin/
@@ -82,7 +87,9 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-arm64
 # For macOS on AMD64
 curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64 && \
 sudo install skaffold /usr/local/bin/
+```
 
+```bash
 # For macOS on ARM64
 curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64 && \
 sudo install skaffold /usr/local/bin/
