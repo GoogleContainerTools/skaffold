@@ -45,7 +45,7 @@ type skaffoldMeter struct {
 	// Arch Architecture running Skaffold e.g. amd64, arm64, etc.
 	Arch string
 
-	// PlatformType Where Skaffold is deploying to (sync, build, or Google Cloud Build).
+	// PlatformType Where Skaffold is deploying to (local, cluster, or Google Cloud Build).
 	PlatformType string
 
 	// Deployers All the deployers used in the Skaffold execution.

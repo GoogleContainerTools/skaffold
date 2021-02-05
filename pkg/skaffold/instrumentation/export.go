@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
@@ -40,6 +41,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto"
+)
+
+const (
+	FlagsPrefix = "flags/"
 )
 
 func ExportMetrics(exitCode int) error {
@@ -145,6 +150,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		label.String("arch", meter.Arch),
 		label.String("command", meter.Command),
 		label.String("error", strconv.Itoa(int(meter.ErrorCode))),
+		label.String("platform_type", meter.PlatformType),
 		randLabel,
 	}
 
@@ -156,6 +162,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 	durationRecorder.Record(ctx, meter.Duration.Seconds(), labels...)
 	if meter.Command != "" {
 		commandMetrics(ctx, meter, m, randLabel)
+		flagMetrics(ctx, meter, m, randLabel)
 		if doesBuild.Contains(meter.Command) {
 			builderMetrics(ctx, meter, m, randLabel)
 		}
@@ -166,6 +173,20 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 
 	if meter.ErrorCode != 0 {
 		errorMetrics(ctx, meter, m, randLabel)
+	}
+}
+
+func flagMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
+	for k, v := range meter.EnumFlags {
+		flagCounter := metric.Must(m).NewInt64ValueRecorder(FlagsPrefix+strings.ReplaceAll(k, "-", "_"),
+			metric.WithDescription(fmt.Sprintf("Flag metric for %s", k)))
+		labels := []label.KeyValue{
+			label.String("command", meter.Command),
+			label.String("value", v),
+			label.String("error", strconv.Itoa(int(meter.ErrorCode))),
+			randLabel,
+		}
+		flagCounter.Record(ctx, 1, labels...)
 	}
 }
 
