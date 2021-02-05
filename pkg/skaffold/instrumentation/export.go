@@ -150,6 +150,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		label.String("arch", meter.Arch),
 		label.String("command", meter.Command),
 		label.String("error", strconv.Itoa(int(meter.ErrorCode))),
+		label.String("platform_type", meter.PlatformType),
 		randLabel,
 	}
 
