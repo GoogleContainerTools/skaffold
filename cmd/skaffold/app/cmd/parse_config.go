@@ -182,7 +182,7 @@ func processEachDependency(d latest.ConfigDependency, fPath string, required boo
 	fi, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(errors.Unwrap(err)) {
-			return nil, fmt.Errorf("could not find skaffold config %s that is referenced as a dependency in config %s", d.Path, fPath)
+			return nil, fmt.Errorf("could not find skaffold config %s that is referenced as a dependency in config %s", path, fPath)
 		}
 		return nil, fmt.Errorf("parsing dependencies for skaffold config %s: %w", fPath, err)
 	}
