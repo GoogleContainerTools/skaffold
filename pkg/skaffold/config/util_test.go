@@ -313,6 +313,21 @@ func TestGetCluster(t *testing.T) {
 			expected:    Cluster{Local: true, LoadImages: false, PushImages: true},
 		},
 		{
+			description: "microk8s",
+			cfg:         &ContextConfig{Kubecontext: "microk8s-default"},
+			expected:    Cluster{Local: true, LoadImages: true, PushImages: false},
+		},
+		{
+			description: "microk8s with local-cluster=false",
+			cfg:         &ContextConfig{Kubecontext: "microk8s-default", LocalCluster: util.BoolPtr(false)},
+			expected:    Cluster{Local: false, LoadImages: false, PushImages: true},
+		},
+		{
+			description: "microk8s with disable-load=true",
+			cfg:         &ContextConfig{Kubecontext: "microk8s-default", K3dDisableLoad: util.BoolPtr(true)},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: true},
+		},
+		{
 			description: "docker-for-desktop",
 			cfg:         &ContextConfig{Kubecontext: "docker-for-desktop"},
 			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
