@@ -214,7 +214,7 @@ func GetCluster(configFile string, minikubeProfile string, detectMinikube bool) 
 	case kubeContext == constants.DefaultMinikubeContext ||
 		kubeContext == constants.DefaultDockerForDesktopContext ||
 		kubeContext == constants.DefaultDockerDesktopContext ||
-		isKindCluster || isK3dCluster:
+		isKindCluster || isK3dCluster || isMicrok8sCluster:
 		local = true
 
 	case detectMinikube:

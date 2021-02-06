@@ -466,6 +466,43 @@ func TestK3dClusterName(t *testing.T) {
 	}
 }
 
+func TestIsMicrok8sCluster(t *testing.T) {
+	tests := []struct {
+		context            string
+		expectedIsMicrok8s bool
+	}{
+		{context: "microk8s-default", expectedIsMicrok8s: true},
+		{context: "microk8s-other", expectedIsMicrok8s: true},
+		{context: "kind-kind", expectedIsMicrok8s: false},
+		{context: "docker-for-desktop", expectedIsMicrok8s: false},
+		{context: "not-microk8s", expectedIsMicrok8s: false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			isK3d := IsMicrok8sCluster(test.context)
+
+			t.CheckDeepEqual(test.expectedIsMicrok8s, isK3d)
+		})
+	}
+}
+
+func TestMicrok8sClusterName(t *testing.T) {
+	tests := []struct {
+		kubeCluster  string
+		expectedName string
+	}{
+		{kubeCluster: "microk8s-default", expectedName: "default"},
+		{kubeCluster: "microk8s-other", expectedName: "other"},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			microk8sCluster := Microk8sClusterName(test.kubeCluster)
+
+			t.CheckDeepEqual(test.expectedName, microk8sCluster)
+		})
+	}
+}
+
 func TestIsSurveyPromptDisabled(t *testing.T) {
 	tests := []struct {
 		description string
