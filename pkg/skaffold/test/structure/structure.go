@@ -49,6 +49,22 @@ func (tr *Runner) Test(ctx context.Context, out io.Writer, image string) error {
 	return nil
 }
 
+// // TestDependencies returns the watch dependencies to the runner.
+// func (t FullTester) TestDependencies() ([]string, error) {
+// 	var deps []string
+
+// 	for _, test := range t.testCases {
+// 		files, err := util.ExpandPathsGlob(t.workingDir, test.StructureTests)
+// 		if err != nil {
+// 			return nil, fmt.Errorf("expanding test file paths: %w", err)
+// 		}
+
+// 		deps = append(deps, files...)
+// 	}
+
+// 	return deps, nil
+// }
+
 // env returns a merged environment of the current process environment and any extra environment.
 // This ensures that the correct docker environment configuration is passed to container-structure-test,
 // for example when running on minikube.
