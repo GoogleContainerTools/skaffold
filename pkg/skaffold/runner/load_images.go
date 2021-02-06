@@ -52,8 +52,15 @@ func (r *SkaffoldRunner) loadImagesInK3dNodes(ctx context.Context, out io.Writer
 func (r *SkaffoldRunner) loadImagesInMicrok8sNodes(ctx context.Context, out io.Writer, k8sCluster string, artifacts []build.Artifact) error {
 	color.Default.Fprintln(out, "Loading images into microk8s cluster nodes...")
 	return r.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
-		// first pass -- not confident -- import is looking for a file
-		return exec.CommandContext(ctx, "microk8s", "ctr", "image", "import", "--cluster", k8sCluster, tag) // note --cluster isn't valid
+		// Note: needs multipass installed and a vm of name 'microk8s-vm' -- how to ensure?
+
+		// 1. build the image
+		// docker save image-name | multipass transfer - microk8s-vm:image-name.tar
+		exec.CommandContext(ctx, "docker", "save", "image-name", "|", "multipass", "transfer", "-", "microk8s-vm:image-name.tar")
+
+		// 2. load into microk8s
+		// microk8s ctr image import image-name.tar
+		return exec.CommandContext(ctx, "microk8s", "ctr", "image", "import", "image-name.tar", tag) // note --cluster isn't valid
 	})
 }
 
