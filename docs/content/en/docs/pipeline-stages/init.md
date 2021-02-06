@@ -53,6 +53,8 @@ skaffold init --XXenableJibInit
 ## Deploy Config Initialization
 `skaffold init` support bootstrapping projects set up to deploy with [`kubectl`]({{<relref "/docs/pipeline-stages/deployers#deploying-with-kubectl" >}})
 or [`kustomize`]({{<relref "/docs/pipeline-stages/deployers#deploying-with-kubectl" >}}).
+
+### kubectl
 For projects deploying straight through `kubectl`, Skaffold will walk through all the `yaml` files in your project and find valid Kubernetes manifest files.
 
 These files will be added to `deploy` config in `skaffold.yaml`.
@@ -65,21 +67,22 @@ deploy:
     - leeroy-web/kubernetes/deployment.yaml
 ```
 
+### kustomize
 For projects deploying with `kustomize`, Skaffold will scan your project and look for `kustomization.yaml`s as well as Kubernetes manifests.
 It will attempt to infer the project structure based on the recommended project structure from the Kustomize project: thus, 
 **it is highly recommended to match your project structure to the recommended base/ and overlay/ structure from Kustomize!**
 
 This generally looks like this:
 
-```
-app/      <- application source code, along with build configuration
+```yaml
+app/      # application source code, along with build configuration
   main.go
   Dockerfile
 ...
-base/     <- base deploy configuration
+base/     # base deploy configuration
   kustomization.yaml
   deployment.yaml
-overlays/ <- one or more nested directories, each with modified environment configuration
+overlays/ # one or more nested directories, each with modified environment configuration
   dev/
     deployment.yaml
     kustomization.yaml
@@ -93,6 +96,13 @@ When overlay directories are found, these will be listed in the generated Skaffo
 2) If none present, the **first** overlay that isn't named `prod`
 
 *Note: order is guaranteed, since Skaffold's directory parsing is always deterministic.*
+
+## `--generate-manifests` Flag 
+{{< maturity "init.generate_manifests" >}}
+`skaffold init` allows for use of a `--generate-manifests` flag, which will try to generate basic kubernetes manifests for a user's project to help get things up and running. 
+
+If bringing a project to skaffold that has no kubernetes manifests yet, it may be helpful to run `skaffold init` with this flag.
+
 
 ## `--force` Flag
 `skaffold init` allows for use of a `--force` flag, which removes the prompts from vanilla `skaffold init`, and allows skaffold to make a best effort attempt to automatically generate a config for your project.

@@ -389,6 +389,26 @@ func UpdateGlobalSurveyPrompted(configFile string) error {
 	return err
 }
 
+func UpdateGlobalCollectMetrics(configFile string, collectMetrics bool) error {
+	configFile, err := ResolveConfigFile(configFile)
+	if err != nil {
+		return err
+	}
+	fullConfig, err := ReadConfigFile(configFile)
+	if err != nil {
+		return err
+	}
+	if fullConfig.Global == nil {
+		fullConfig.Global = &ContextConfig{}
+	}
+	fullConfig.Global.CollectMetrics = &collectMetrics
+	err = WriteFullConfig(configFile, fullConfig)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 func WriteFullConfig(configFile string, cfg *GlobalConfig) error {
 	contents, err := yaml.Marshal(cfg)
 	if err != nil {

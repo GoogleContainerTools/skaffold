@@ -124,8 +124,12 @@ func (d *defaultBuildInitializer) resolveBuilderImagesInteractively() error {
 		d.unresolvedImages = util.RemoveFromSlice(d.unresolvedImages, image)
 	}
 	if len(choices) > 0 {
-		// TODO(nkubala): should we ask user if they want to generate here?
-		for _, choice := range choices {
+		chosen, err := prompt.ChooseBuildersFunc(choices)
+		if err != nil {
+			return err
+		}
+
+		for _, choice := range chosen {
 			d.generatedArtifactInfos = append(d.generatedArtifactInfos, getGeneratedBuilderPair(choiceMap[choice]))
 		}
 	}
@@ -155,7 +159,7 @@ func getGeneratedBuilderPair(b InitBuilder) GeneratedArtifactInfo {
 
 func sanitizeImageName(imageName string) string {
 	// Replace unsupported characters with `_`
-	sanitized := regexp.MustCompile(`[^a-zA-Z0-9-._]`).ReplaceAllString(imageName, `-`)
+	sanitized := regexp.MustCompile(`[^a-zA-Z0-9-_]`).ReplaceAllString(imageName, `-`)
 
 	// Truncate to 128 characters
 	if len(sanitized) > 128 {

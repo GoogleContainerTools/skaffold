@@ -2,6 +2,7 @@
 title: "Resources"
 linkTitle: "Resources"
 weight: 130
+no_list: true
 ---
 
 ## 2020 Roadmap

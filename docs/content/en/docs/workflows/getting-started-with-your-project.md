@@ -2,6 +2,7 @@
 title: "Getting Started With Your Project"
 linkTitle: "Getting Started With Your Project"
 weight: 10
+no_list: true
 ---
 
 Skaffold requires a `skaffold.yaml`, but - for supported projects - Skaffold can generate a simple config for you that you can get started with. To configure Skaffold for your application you can run [`skaffold init`]({{<relref "docs/references/cli#skaffold-init" >}}).

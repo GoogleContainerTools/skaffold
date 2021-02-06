@@ -9,7 +9,13 @@ aliases: [/docs/how-tos/debug]
 `skaffold debug` acts like `skaffold dev`, but it configures containers in pods
 for debugging as required for each container's runtime technology.
 The associated debugging ports are exposed and labelled so that they can be port-forwarded to the
-local machine.  IDEs can use Skaffold's events to automatically configure debug sessions.
+local machine.  IDEs like [Google's Cloud Code extensions](https://cloud.google.com/code) use Skaffold's events
+to automatically configure debug sessions.
+
+One notable difference from `skaffold dev` is that `debug` disables image rebuilding and
+syncing as it leads to users accidentally terminating debugging sessions by saving file changes.
+These behaviours can be re-enabled with the `--auto-build`, `--auto-deploy`, and `--auto-sync`
+flags.
 
 ## How It Works
 
@@ -22,7 +28,8 @@ Some language runtimes require additional support files to enable debugging.
 For these languages, a special set of [runtime-specific images](https://github.com/GoogleContainerTools/container-debug-support)
 are configured as _init-containers_ to populate a shared-volume that is mounted into
 each of the appropriate containers.  These images are hosted at
-`gcr.io/k8s-skaffold/skaffold-debug-support`.
+`gcr.io/k8s-skaffold/skaffold-debug-support`; alternative locations can be
+specified in [Skaffold's global configuration]({{< relref "/docs/design/global-config.md" >}}).
 
 ### Supported Language Runtimes
 
@@ -45,10 +52,12 @@ In order to configure your appliction for debugging, your app must be:
     environment variables](https://godoc.org/runtime) in the container, such as `GODEBUG`, `GOGC`, `GOMAXPROCS`,
     or `GOTRACEBACK`. `GOTRACEBACK=single` is the default setting for Go, and `GOTRACEBACK=all` is a 
     generally useful configuration.
-  - Built with the `-gcflags='all=-N -l'` options to disable optimizations.
+  - Built with the `-gcflags='all=-N -l'` options to disable optimizations and inlining.
     Debugging can be confusing otherwise due to seemingly-random
     execution jumps from statement reordering and inlining.
     Skaffold [_Profiles_]({{< relref "/docs/environment/profiles.md" >}}) are a useful option.
+    Note that the `golang:NN-alpine` container images do not include a C compiler which is required
+    for `-gcflags='all=-N -l'`.
 
 Note for users of [VS Code's debug adapter for Go](https://github.com/Microsoft/vscode-go): the debug adapter
 may require configuring both the _local_ and _remote_ source path prefixes via the `cwd` and `remotePath` properties.
