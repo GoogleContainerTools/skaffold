@@ -3,7 +3,7 @@ module github.com/GoogleContainerTools/skaffold
 go 1.15
 
 replace (
-	github.com/containerd/containerd => github.com/containerd/containerd v1.3.4
+	github.com/containerd/containerd => github.com/containerd/containerd v1.4.1
 
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
 	github.com/tektoncd/pipeline => github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
