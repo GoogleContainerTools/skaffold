@@ -14,14 +14,14 @@ It's highly suggested that you only run this example on a local, private cluster
 From this directory, run:
 
 ```bash
-skaffold dev
+skaffold dev --port-forward
 ```
 
 Now, in a different terminal, hit the `leeroy-web` endpoint
 
 ```bash
-$ curl $(minikube service leeroy-web --url)
-leeroooooy app!
+$ curl localhost:9000
+leeroooooy app!!
 ```
 Hitting `Ctrl + C` on the first terminal should kill the process and clean up the deployments.
 
