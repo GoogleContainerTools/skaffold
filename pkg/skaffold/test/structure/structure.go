@@ -30,10 +30,15 @@ import (
 
 // Test is the entrypoint for running structure tests
 func (tr *Runner) Test(ctx context.Context, out io.Writer, image string) error {
-	logrus.Infof("Running structure tests for files %v", tr.testFiles)
+	files, err := util.ExpandPathsGlob(tr.testWorkingDir, tr.structureTests)
+	if err != nil {
+		return fmt.Errorf("expanding test file paths: %w", err)
+	}
+
+	logrus.Infof("Running structure tests for files %v", files)
 
 	args := []string{"test", "-v", "warn", "--image", image}
-	for _, f := range tr.testFiles {
+	for _, f := range files {
 		args = append(args, "--config", f)
 	}
 
@@ -48,22 +53,6 @@ func (tr *Runner) Test(ctx context.Context, out io.Writer, image string) error {
 
 	return nil
 }
-
-// // TestDependencies returns the watch dependencies to the runner.
-// func (t FullTester) TestDependencies() ([]string, error) {
-// 	var deps []string
-
-// 	for _, test := range t.testCases {
-// 		files, err := util.ExpandPathsGlob(t.workingDir, test.StructureTests)
-// 		if err != nil {
-// 			return nil, fmt.Errorf("expanding test file paths: %w", err)
-// 		}
-
-// 		deps = append(deps, files...)
-// 	}
-
-// 	return deps, nil
-// }
 
 // env returns a merged environment of the current process environment and any extra environment.
 // This ensures that the correct docker environment configuration is passed to container-structure-test,

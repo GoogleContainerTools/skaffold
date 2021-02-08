@@ -27,18 +27,21 @@ import (
 
 func TestNewRunner(t *testing.T) {
 	const (
-		imageName         = "foo.io/baz"
-		structureTestName = "foo.testcase"
+		imageName = "foo.io/baz"
 	)
 
 	testutil.Run(t, "", func(t *testutil.T) {
 		extraEnv := []string{"SOME=env_var", "OTHER=env_value"}
-		t.Override(&util.DefaultExecCommand, testutil.CmdRunEnv(
-			"container-structure-test test -v warn --image "+imageName+" --config "+structureTestName,
-			extraEnv,
-		))
 
-		testRunner := NewRunner([]string{structureTestName}, extraEnv)
+		tmpDir := t.NewTempDir().Touch("test.yaml")
+		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image "+imageName+" --config "+tmpDir.Path("test.yaml")))
+
+		workingDir := tmpDir.Root()
+		structureTests := []string{"test.yaml"}
+
+		println("Inside test.")
+
+		testRunner := NewRunner(structureTests, workingDir, extraEnv)
 		err := testRunner.Test(context.Background(), ioutil.Discard, imageName)
 		t.CheckNoError(err)
 	})
