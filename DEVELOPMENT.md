@@ -123,7 +123,15 @@ e.g In this example [PR](https://github.com/GoogleContainerTools/skaffold/pull/5
    ```
    The `INIT` in this case stands for skaffold `INIT` phase which includes, parsing of skaffold config and creating a skaffold runner. 
    The other valid phases are `BUILD`, `DEPLOY`, `STATUSCHECK`. Complete list [here](https://skaffold.dev/docs/references/api/grpc/#statuscode)
-2. The contributor then used these error codes when creating an error in their [proposed code change](https://github.com/GoogleContainerTools/skaffold/pull/5088/files#diff-3fc5246574bf7367a232c6d682b22a4e22795d52eb1c81fe2c27ff052939d507R220).
+2. Run `hack/generate_proto.sh`. These will generate go code and structs for the newly added proto fields.
+   ```shell script
+    git status
+	   modified:   docs/content/en/api/skaffold.swagger.json
+	   modified:   docs/content/en/docs/references/api/grpc.md
+	   modified:   proto/skaffold.pb.go
+	   modified:   proto/skaffold.proto
+   ```
+3. The contributor then used these error codes when creating an error in their [proposed code change](https://github.com/GoogleContainerTools/skaffold/pull/5088/files#diff-3fc5246574bf7367a232c6d682b22a4e22795d52eb1c81fe2c27ff052939d507R220).
    They used the constructor `sErrors.NewError` in [pkg/skaffold/errors](https://github.com/GoogleContainerTools/skaffold/blob/54466ff6983e9fcf977d6e549119b4c1c4dc9e2b/pkg/skaffold/errors/err_def.go#L57) to inantiate an object of struct `ErrDef`. 
    `ErrDef` implements the golang `error` interface.
    ```
