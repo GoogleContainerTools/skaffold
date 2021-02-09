@@ -34,8 +34,10 @@ var doDebug = runDebug
 func NewCmdDebug() *cobra.Command {
 	return NewCmd("debug").
 		WithDescription("[beta] Run a pipeline in debug mode").
-		WithLongDescription("Similar to `dev`, but configures the pipeline for debugging.").
+		WithLongDescription("Similar to `dev`, but configures the pipeline for debugging. "+
+			"Auto-build and sync is disabled by default to prevent accidentally tearing down debug sessions.").
 		WithCommonFlags().
+		WithExample("Launch with port-forwarding", "debug --port-forward").
 		WithHouseKeepingMessages().
 		NoArgs(func(ctx context.Context, out io.Writer) error {
 			return doDebug(ctx, out)

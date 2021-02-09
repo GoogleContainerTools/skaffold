@@ -342,7 +342,6 @@ var flagRegistry = []Flag{
 	{
 		Name:     "auto-build",
 		Usage:    "When set to false, builds wait for API request instead of running automatically",
-		Hidden:   true,
 		Value:    &opts.AutoBuild,
 		DefValue: true,
 		DefValuePerCommand: map[string]interface{}{
@@ -356,7 +355,6 @@ var flagRegistry = []Flag{
 	{
 		Name:     "auto-sync",
 		Usage:    "When set to false, syncs wait for API request instead of running automatically",
-		Hidden:   true,
 		Value:    &opts.AutoSync,
 		DefValue: true,
 		DefValuePerCommand: map[string]interface{}{
@@ -370,7 +368,6 @@ var flagRegistry = []Flag{
 	{
 		Name:     "auto-deploy",
 		Usage:    "When set to false, deploys wait for API request instead of running automatically",
-		Hidden:   true,
 		Value:    &opts.AutoDeploy,
 		DefValue: true,
 		DefValuePerCommand: map[string]interface{}{
