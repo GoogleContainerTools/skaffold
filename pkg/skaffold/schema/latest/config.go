@@ -456,7 +456,7 @@ type TestCase struct {
 	// For example: `gcr.io/k8s-skaffold/example`.
 	ImageName string `yaml:"image" yamltags:"required"`
 
-	// CustomTests runs a custom test script provided by the user.
+	// CustomTests runs a set of custom test commands provided by the user.
 	CustomTests []CustomTest `yaml:"custom,omitempty"`
 
 	// StructureTests lists the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
@@ -997,19 +997,20 @@ type CustomDependencies struct {
 	Ignore []string `yaml:"ignore,omitempty"`
 }
 
-// CustomTest describes the custom test script provided by the user
+// CustomTest describes the custom test command provided by the user
 type CustomTest struct {
 	// Command is the custom command to be executed.
 	Command string `yaml:"command,omitempty"`
 
-	// Timeout sets the wait time for skaffold for the script to complete.
+	// Timeout is the amount of time (in seconds) that skaffold will wait for the command to complete.
+	// Defaults to 20 minutes (`20m`).
 	Timeout string `yaml:"timeout,omitempty"`
 
-	// Dependencies are the file dependencies that skaffold should watch for re-running the script.
+	// Dependencies are the file dependencies that skaffold should watch for re-running the command.
 	Dependencies *CustomTestDependencies `yaml:"dependencies,omitempty"`
 }
 
-// CustomTestDependencies is used to specify dependencies for custom test script.
+// CustomTestDependencies is used to specify dependencies for custom test command.
 // `paths` should be specified for file watching to work as expected.
 type CustomTestDependencies struct {
 	// Command represents a custom command that skaffold executes to obtain dependencies. The output of this command *must* be a valid JSON array.
