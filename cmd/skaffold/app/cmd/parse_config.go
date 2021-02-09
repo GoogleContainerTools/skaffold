@@ -170,7 +170,7 @@ func processEachDependency(d latest.ConfigDependency, fPath string, required boo
 	if d.GitRepo != nil {
 		cachePath, err := cacheRepo(*d.GitRepo, opts, r)
 		if err != nil {
-			return nil, fmt.Errorf("cacheing remote dependency %s: %w", d.GitRepo, err)
+			return nil, fmt.Errorf("caching remote dependency %s: %w", d.GitRepo, err)
 		}
 		path = cachePath
 	}
