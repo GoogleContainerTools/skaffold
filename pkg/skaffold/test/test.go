@@ -67,7 +67,6 @@ func (t FullTester) TestDependencies() ([]string, error) {
 	for _, test := range t.testCases {
 		files, err := util.ExpandPathsGlob(t.workingDir, test.StructureTests)
 		if err != nil {
-			// return nil, fmt.Errorf("expanding test file paths: %w", err)
 			return nil, expandingFilePathsErr(err)
 		}
 
@@ -140,14 +139,12 @@ func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes [
 		// `container-structure-test` currently can't do it:
 		// https://github.com/GoogleContainerTools/container-structure-test/issues/253.
 		if err := t.localDaemon.Pull(ctx, out, fqn); err != nil {
-			// return fmt.Errorf("unable to docker pull image %q: %w", fqn, err)
 			return dockerPullImageErr(fqn, err)
 		}
 	}
 
 	files, err := util.ExpandPathsGlob(t.workingDir, tc.StructureTests)
 	if err != nil {
-		// return fmt.Errorf("expanding test file paths: %w", err)
 		return expandingFilePathsErr(err)
 	}
 

@@ -23,15 +23,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
-// func expandingFilePathsErr(err error) error {
-// 	return sErrors.NewError(err,
-// 		proto.ActionableErr{
-// 			Message: fmt.Sprintf("expanding test file paths: %s", err),
-// 			ErrCode: proto.StatusCode_TEST_USER_CONFIG_ERR,
-// 		},
-// 	)
-// }
-
 func containerStructureTestErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
