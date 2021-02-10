@@ -104,6 +104,7 @@ func TestSyncRepo(t *testing.T) {
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
 				{cmd: "git fetch origin master"},
+				{cmd: "git diff --name-only --ignore-submodules HEAD"},
 				{cmd: "git diff --name-only --ignore-submodules origin/master..."},
 				{cmd: "git reset --hard origin/master"},
 			},
@@ -128,12 +129,24 @@ func TestSyncRepo(t *testing.T) {
 			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
 		},
 		{
-			description: "existing dirty repo with sync on fails",
+			description: "existing repo with uncommitted changes and sync on fails",
 			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
 				{cmd: "git fetch origin master"},
+				{cmd: "git diff --name-only --ignore-submodules HEAD", out: "pkg/foo\npkg/bar"},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "existing repo with unpushed commits and sync on fails",
+			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
+			existing:    true,
+			cmds: []cmdResponse{
+				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git fetch origin master"},
+				{cmd: "git diff --name-only --ignore-submodules HEAD"},
 				{cmd: "git diff --name-only --ignore-submodules origin/master...", out: "pkg/foo\npkg/bar"},
 				{cmd: "git reset --hard origin/master"},
 			},
@@ -150,13 +163,25 @@ func TestSyncRepo(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "existing repo update fails on diff",
+			description: "existing repo update fails on diff remote",
 			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
 				{cmd: "git fetch origin master"},
+				{cmd: "git diff --name-only --ignore-submodules HEAD"},
 				{cmd: "git diff --name-only --ignore-submodules origin/master...", err: errors.New("error")},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "existing repo update fails on diff working dir",
+			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			existing:    true,
+			cmds: []cmdResponse{
+				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git fetch origin master"},
+				{cmd: "git diff --name-only --ignore-submodules HEAD", err: errors.New("error")},
 			},
 			shouldErr: true,
 		},
@@ -167,6 +192,7 @@ func TestSyncRepo(t *testing.T) {
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
 				{cmd: "git fetch origin master"},
+				{cmd: "git diff --name-only --ignore-submodules HEAD"},
 				{cmd: "git diff --name-only --ignore-submodules origin/master..."},
 				{cmd: "git reset --hard origin/master", err: errors.New("error")},
 			},
