@@ -3,8 +3,6 @@ module github.com/GoogleContainerTools/skaffold
 go 1.15
 
 replace (
-	github.com/containerd/containerd => github.com/containerd/containerd v1.3.4
-
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
 	github.com/tektoncd/pipeline => github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
 
@@ -19,20 +17,17 @@ require (
 	cloud.google.com/go/storage v1.10.0
 	github.com/AlecAivazis/survey/v2 v2.2.7
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.13.0
-	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.4
 	github.com/buildpacks/imgutil v0.0.0-20201022190551-6525b8cdcdd0
 	github.com/buildpacks/lifecycle v0.9.3
 	github.com/buildpacks/pack v0.15.2-0.20201119222735-f85ce4770ba9
 	github.com/cenkalti/backoff/v4 v4.0.2
-	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
 	github.com/docker/cli v20.10.0-beta1.0.20201117192004-5cc239616494+incompatible
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v20.10.0-beta1.0.20201110211921-af34b94a78a1+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-metrics v0.0.1 // indirect
-	github.com/docker/libtrust v0.0.0-20150114040149-fa567046d9b1 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.0.0
@@ -42,9 +37,7 @@ require (
 	github.com/google/go-cmp v0.5.4
 	github.com/google/go-containerregistry v0.1.4
 	github.com/google/go-github v17.0.0+incompatible
-	github.com/google/martian v2.1.1-0.20190517191504-25dcb96d9e51+incompatible // indirect
 	github.com/google/uuid v1.1.2
-	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.14.8
 	github.com/heroku/color v0.0.6
 	github.com/imdario/mergo v0.3.9
@@ -57,10 +50,9 @@ require (
 	github.com/moby/buildkit v0.8.0
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.1
-	github.com/opencontainers/runc v1.0.0-rc92 // indirect
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/rakyll/statik v0.1.7
-	github.com/rjeczalik/notify v0.9.2
+	github.com/rjeczalik/notify v0.9.3-0.20201210012515-e2a77dcc14cf
 	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/segmentio/textio v1.2.0
 	github.com/sirupsen/logrus v1.7.0
@@ -71,14 +63,12 @@ require (
 	go.opentelemetry.io/otel v0.13.0
 	go.opentelemetry.io/otel/exporters/stdout v0.13.0
 	go.opentelemetry.io/otel/sdk v0.13.0
-	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
 	golang.org/x/mod v0.3.0
 	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb // indirect
 	golang.org/x/oauth2 v0.0.0-20201109201403-9fd604954f58
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/sys v0.0.0-20201015000850-e3ed0017c211
 	golang.org/x/term v0.0.0-20201117132131-f5c789dd3221
-	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
 	google.golang.org/api v0.35.0
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20201202151023-55d61f90c1ce

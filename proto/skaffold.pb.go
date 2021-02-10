@@ -215,12 +215,12 @@ func (ClusterType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_4f2d38e344f9dbf5, []int{4}
 }
 
-// Enum for Status codes
+// Enum for Status codes<br>
 // These error codes are prepended by Phase Name e.g.
-// BUILD, TEST, DEPLOY, STATUSCHECK, DEVINIT
-// For Success Error codes, use range 200 to 250.
-// For Unknown error codes, use range 500 to 600.
-// For Cancelled Error code, use range 800 to 850.
+// INIT, BUILD, TEST, DEPLOY, STATUSCHECK, DEVINIT<br>
+// For Success Error codes, use range 200 to 250.<br>
+// For Unknown error codes, use range 500 to 600.<br>
+// For Cancelled Error code, use range 800 to 850.<br>
 type StatusCode int32
 
 const (
