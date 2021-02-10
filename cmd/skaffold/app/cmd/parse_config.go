@@ -24,6 +24,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/git"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
@@ -46,15 +48,20 @@ type configOpts struct {
 	isDependency bool
 }
 
+// record captures the state of referenced configs.
 type record struct {
 	appliedProfiles  map[string]string      // config -> list of applied profiles
 	configNameToFile map[string]string      // configName -> file path
 	cachedRepos      map[string]interface{} // git repo -> cache path or error
 }
 
+func newRecord() *record {
+	return &record{appliedProfiles: make(map[string]string), configNameToFile: make(map[string]string), cachedRepos: make(map[string]interface{})}
+}
+
 func getAllConfigs(opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, error) {
 	cOpts := configOpts{file: opts.ConfigurationFile, selection: nil, profiles: opts.Profiles, isRequired: false, isDependency: false}
-	cfgs, err := getConfigs(cOpts, opts, &record{appliedProfiles: make(map[string]string), configNameToFile: make(map[string]string), cachedRepos: make(map[string]interface{})})
+	cfgs, err := getConfigs(cOpts, opts, newRecord())
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +205,7 @@ func processEachDependency(d latest.ConfigDependency, fPath string, required boo
 
 // cacheRepo downloads the referenced git repository to skaffold's cache if required and returns the path to the target configuration file in that repository.
 func cacheRepo(g latest.GitInfo, opts config.SkaffoldOptions, r *record) (string, error) {
-	key := fmt.Sprintf("%s:%s", g.Repo, g.Ref)
+	key := fmt.Sprintf("%s@%s", g.Repo, g.Ref)
 	if p, found := r.cachedRepos[key]; found {
 		switch v := p.(type) {
 		case string:
@@ -206,7 +213,8 @@ func cacheRepo(g latest.GitInfo, opts config.SkaffoldOptions, r *record) (string
 		case error:
 			return "", v
 		default:
-			return "", fmt.Errorf("unable to check download status of repo %s at ref %s", g.Repo, g.Ref)
+			logrus.Fatalf("unable to check download status of repo %s at ref %s", g.Repo, g.Ref)
+			return "", nil
 		}
 	} else {
 		p, err := git.SyncRepo(g, opts)

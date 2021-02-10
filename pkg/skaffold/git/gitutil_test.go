@@ -64,7 +64,7 @@ func TestDefaultRef(t *testing.T) {
 			} else {
 				f = f.AndRunOut("git ls-remote https://github.com/foo.git main", "")
 			}
-			t.Override(&searchGitPath, func() (string, error) { return "git", nil })
+			t.Override(&findGit, func() (string, error) { return "git", nil })
 			t.Override(&util.DefaultExecCommand, f)
 			ref, err := defaultRef("https://github.com/foo.git")
 			t.CheckErrorAndDeepEqual(test.err != nil, err, test.expected, ref)
@@ -215,7 +215,7 @@ func TestSyncRepo(t *testing.T) {
 					f = f.AndRunOutErr(v.cmd, v.out, v.err)
 				}
 			}
-			t.Override(&searchGitPath, func() (string, error) { return "git", nil })
+			t.Override(&findGit, func() (string, error) { return "git", nil })
 			t.Override(&util.DefaultExecCommand, f)
 			path, err := syncRepo(test.g, opts)
 			var expected string

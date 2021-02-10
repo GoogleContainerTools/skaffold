@@ -92,7 +92,7 @@ type GitInfo struct {
 
 // ConfigDependency describes a dependency on another skaffold configuration.
 type ConfigDependency struct {
-	// Names describes the names of the required configs.
+	// Names includes specific named configs within the file path. If empty, then all configs in the file are included.
 	Names []string `yaml:"configs,omitempty"`
 
 	// Path describes the path to the file containing the required configs.

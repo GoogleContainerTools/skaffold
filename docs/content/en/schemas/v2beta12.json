@@ -805,8 +805,8 @@
             "type": "string"
           },
           "type": "array",
-          "description": "describes the names of the required configs.",
-          "x-intellij-html-description": "describes the names of the required configs.",
+          "description": "includes specific named configs within the file path. If empty, then all configs in the file are included.",
+          "x-intellij-html-description": "includes specific named configs within the file path. If empty, then all configs in the file are included.",
           "default": "[]"
         },
         "git": {

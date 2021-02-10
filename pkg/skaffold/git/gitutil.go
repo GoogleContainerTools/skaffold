@@ -1,18 +1,18 @@
-/*
-Copyright 2021 The Skaffold Authors
+// code modified from https://github.com/GoogleContainerTools/kpt/blob/master/internal/gitutil/gitutil.go
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package git
 
@@ -34,11 +34,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-// code adapted from https://github.com/GoogleContainerTools/kpt/blob/master/internal/gitutil/gitutil.go
-
 // SyncRepo syncs the target git repository with skaffold's local cache and returns the path to the repository root directory.
 var SyncRepo = syncRepo
-var searchGitPath = func() (string, error) { return exec.LookPath("git") }
+var findGit = func() (string, error) { return exec.LookPath("git") }
 
 // defaultRef returns the default ref as "master" if master branch exists in
 // remote repository, falls back to "main" if master branch doesn't exist
@@ -63,7 +61,7 @@ func defaultRef(repo string) (string, error) {
 
 // BranchExists checks if branch is present in the input repo
 func branchExists(repo, branch string) (bool, error) {
-	gitProgram, err := searchGitPath()
+	gitProgram, err := findGit()
 	if err != nil {
 		return false, err
 	}
@@ -182,7 +180,7 @@ type gitCmd struct {
 // Run runs a git command.
 // Omit the 'git' part of the command.
 func (g *gitCmd) Run(args ...string) ([]byte, error) {
-	p, err := searchGitPath()
+	p, err := findGit()
 	if err != nil {
 		return nil, fmt.Errorf("no 'git' program on path: %w", err)
 	}
