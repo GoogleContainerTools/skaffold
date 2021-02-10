@@ -103,6 +103,58 @@ For more details behind the logic of config changes see [the Skaffold config man
 
 We build the API directly through gRPC, which gets translated into REST API through a reverse proxy gateway library. If you make changes to the [proto/skaffold.proto](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/skaffold.proto) file you can run `./hack/generate-proto.sh` to generate the equivalent Go code. 
 
+## Adding actionable error messages to code.
+Skaffold has a built-in framework to provide actionable error messages for user to help bootstrap skaffold errors.
+
+Also, [v1.19.0](https://github.com/GoogleContainerTools/skaffold/releases/tag/v1.19.0) onwards, skaffold is collecting failure error codes to help the team get more insights into common failure scenarios.
+
+To take advantage of this framework, contributors can simply use the [`ErrDef`](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/errors/err_def.go#L32) struct to throw meaningful actionable error messages and 
+improve user experience.
+
+e.g In this example [PR](https://github.com/GoogleContainerTools/skaffold/pull/5273), 
+1. The contributor created 3 distinct error codes in [skaffold.proto](https://github.com/GoogleContainerTools/skaffold/pull/5088/files#diff-3883fe4549a47ae73a7a3a0afc00896b197d5ba8570906ba423769cf5a93a26f)
+   ```
+    // Docker build error when listing containers.
+    INIT_DOCKER_NETWORK_LISTING_CONTAINERS = 122;
+    // Docker build error indicating an invalid container name (or id).
+    INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME = 123;
+    // Docker build error indicating the container referenced does not exists in the docker context used.
+    INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST = 124
+   ```
+   The `INIT` in this case stands for skaffold `INIT` phase which includes, parsing of skaffold config and creating a skaffold runner. 
+   The other valid phases are `BUILD`, `DEPLOY`, `STATUSCHECK`. Complete list [here](https://skaffold.dev/docs/references/api/grpc/#statuscode)
+2. Run `hack/generate_proto.sh`. These will generate go code and structs for the newly added proto fields.
+   ```shell script
+    git status
+	   modified:   docs/content/en/api/skaffold.swagger.json
+	   modified:   docs/content/en/docs/references/api/grpc.md
+	   modified:   proto/skaffold.pb.go
+	   modified:   proto/skaffold.proto
+   ```
+3. The contributor then used these error codes when creating an error in their [proposed code change](https://github.com/GoogleContainerTools/skaffold/pull/5088/files#diff-3fc5246574bf7367a232c6d682b22a4e22795d52eb1c81fe2c27ff052939d507R220).
+   They used the constructor `sErrors.NewError` in [pkg/skaffold/errors](https://github.com/GoogleContainerTools/skaffold/blob/54466ff6983e9fcf977d6e549119b4c1c4dc9e2b/pkg/skaffold/errors/err_def.go#L57) to inantiate an object of struct `ErrDef`. 
+   `ErrDef` implements the golang `error` interface.
+   ```
+    err :=  sErrors.NewError(fmt.Errorf(errMsg), 
+      proto.ActionableErr{
+	    Message: errMsg,
+	    ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME,
+		  Suggestions: []*proto.Suggestion{
+	  	    {
+			  SuggestionCode: proto.SuggestionCode_FIX_DOCKER_NETWORK_CONTAINER_NAME,
+			  Action:         "Please fix the docker network container name and try again",
+		    },
+		  },
+	  }))
+   ```
+
+With above two changes, skaffold will now show a meaning full error message when this error condition is met. 
+```shell script
+skaffold dev 
+invalid skaffold config: container 'does-not-exits' not found, required by image 'skaffold-example' for docker network stack sharing.
+Please fix the docker network container name and try again.
+```
+
 ## Building skaffold
 
 To build with your local changes you have two options:

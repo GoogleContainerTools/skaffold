@@ -148,7 +148,8 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		label.String("os", meter.OS),
 		label.String("arch", meter.Arch),
 		label.String("command", meter.Command),
-		label.String("error", strconv.Itoa(int(meter.ErrorCode))),
+		label.String("error", meter.ErrorCode.String()),
+		label.String("platform_type", meter.PlatformType),
 		randLabel,
 	}
 
@@ -181,7 +182,8 @@ func flagMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randL
 			label.String("flag_name", k),
 			label.String("flag_value", v),
 			label.String("command", meter.Command),
-			label.String("error", strconv.Itoa(int(meter.ErrorCode))),
+			label.String("value", v),
+			label.String("error", meter.ErrorCode.String()),
 			randLabel,
 		}
 		flagCounter.Record(ctx, 1, labels...)
@@ -192,7 +194,7 @@ func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, ra
 	commandCounter := metric.Must(m).NewInt64ValueRecorder(meter.Command,
 		metric.WithDescription(fmt.Sprintf("Number of times %s is used", meter.Command)))
 	labels := []label.KeyValue{
-		label.String("error", strconv.Itoa(int(meter.ErrorCode))),
+		label.String("error", meter.ErrorCode.String()),
 		randLabel,
 	}
 	commandCounter.Record(ctx, 1, labels...)
@@ -214,7 +216,7 @@ func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, ra
 			for errorCode, count := range errorCounts {
 				iterationCounter.Record(ctx, int64(count),
 					label.String("intent", intention),
-					label.String("error", strconv.Itoa(int(errorCode))),
+					label.String("error", errorCode.String()),
 					randLabel)
 			}
 		}
@@ -242,7 +244,7 @@ func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, ra
 
 func errorMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
 	errCounter := metric.Must(m).NewInt64ValueRecorder("errors", metric.WithDescription("Skaffold errors"))
-	errCounter.Record(ctx, 1, label.String("error", strconv.Itoa(int(meter.ErrorCode))), randLabel)
+	errCounter.Record(ctx, 1, label.String("error", meter.ErrorCode.String()), randLabel)
 
 	commandLabel := label.String("command", meter.Command)
 
