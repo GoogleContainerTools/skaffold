@@ -130,7 +130,6 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Ar
 			}
 		}
 
-		// if fqn, err := t.getImage(ctx, out, bRes, test); err != nil {
 		if err := t.runStructureTests(ctx, out, fqn, test); err != nil {
 			return fmt.Errorf("running structure tests: %w", err)
 		}
@@ -138,28 +137,6 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Ar
 
 	return nil
 }
-
-// func (t FullTester) getImage(ctx context.Context, out io.Writer, bRes []build.Artifact, tc *latest.TestCase) (string, error) {
-
-// 	fqn, found := resolveArtifactImageTag(tc.ImageName, bRes)
-// 	if !found {
-// 		logrus.Debugln("Skipping tests for", tc.ImageName, "since it wasn't built")
-// 		return "", nil
-// 	}
-
-// 	if imageIsLocal, err := t.imagesAreLocal(tc.ImageName); err != nil {
-// 		return "", err
-// 	} else if !imageIsLocal {
-// 		// The image is remote so we have to pull it locally.
-// 		// `container-structure-test` currently can't do it:
-// 		// https://github.com/GoogleContainerTools/container-structure-test/issues/253.
-// 		if err := t.localDaemon.Pull(ctx, out, fqn); err != nil {
-// 			return "", fmt.Errorf("unable to docker pull image %q: %w", fqn, err)
-// 		}
-// 	}
-
-// 	return fqn, nil
-// }
 
 func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, fqn string, tc *latest.TestCase) error {
 	runner := structure.NewRunner(tc.StructureTests, t.workingDir, t.localDaemon.ExtraEnv())
