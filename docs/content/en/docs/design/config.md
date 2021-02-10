@@ -69,18 +69,18 @@ deploy:
 ```
 
 If the `configs` list isn't defined then it imports all the configs defined in the file pointed by `path`. Additionally, if the `path` to the configuration isn't defined it assumes that all the required configs are defined in the same file as the current config.
-### Remote config dependency [Under Development]
+
+### Remote config dependency
 
 The required skaffold config can live in a remote git repository:
 
 ```yaml
-apiVersion: skaffold/v2beta11
+apiVersion: skaffold/v2beta12
 kind: Config
 requires:
   - configs: ["cfg1", "cfg2"]
     git:
-      provider: github.com
-      repo: GoogleContainerTools/skaffold
+      repo: http://github.com/GoogleContainerTools/skaffold.git
       path: getting-started/skaffold.yaml
       ref: master
 ```
@@ -92,7 +92,7 @@ The remote config gets treated like a local config after substituting the path w
   
 ### Profile Activation in required configs
 
-Additionally the `activeProfiles`  stanza can define the profiles to be activated in the required configs, via:
+Additionally the `activeProfiles` stanza can define the profiles to be activated in the required configs, via:
 
 ```yaml
 apiVersion: skaffold/v2beta11

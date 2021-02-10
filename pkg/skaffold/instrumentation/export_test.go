@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -261,7 +260,7 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		durationCount[fmt.Sprintf("%s:%f", meter.Command, meter.Duration.Seconds())]++
 		archCount[meter.Arch]++
 		commandCount[meter.Command]++
-		errorCount[meter.ErrorCode]++
+		errorCount[meter.ErrorCode.String()]++
 		platform[meter.PlatformType]++
 
 		for k, v := range meter.EnumFlags {
@@ -300,9 +299,9 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 			osCount[l.Labels["os"]]--
 			versionCount[l.Labels["version"]]--
 			platform[l.Labels["platform_type"]]--
-			e, _ := strconv.Atoi(l.Labels["error"])
-			if e == int(proto.StatusCode_OK) {
-				errorCount[proto.StatusCode(e)]--
+			e := l.Labels["error"]
+			if e == proto.StatusCode_OK.String() {
+				errorCount[e]--
 			}
 		case "launch/duration":
 			durationCount[fmt.Sprintf("%s:%f", l.Labels["command"], l.value().(float64))]--
@@ -315,11 +314,11 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		case "deployer":
 			deployers[l.Labels["deployer"]]--
 		case "dev/iterations", "debug/iterations":
-			e, _ := strconv.Atoi(l.Labels["error"])
-			devIterations[devIteration{l.Labels["intent"], proto.StatusCode(e)}]--
+			e := l.Labels["error"]
+			devIterations[devIteration{l.Labels["intent"], proto.StatusCode(proto.StatusCode_value[e])}]--
 		case "errors":
-			e, _ := strconv.Atoi(l.Labels["error"])
-			errorCount[proto.StatusCode(e)]--
+			e := l.Labels["error"]
+			errorCount[e]--
 		default:
 			switch {
 			case meteredCommands.Contains(l.Name):

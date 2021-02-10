@@ -121,6 +121,14 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "build", "run", "debug"},
 	},
 	{
+		Name:          "remote-cache-dir",
+		Usage:         "Specify the location of the git repositories cache (default $HOME/.skaffold/repos)",
+		Value:         &opts.RepoCacheDir,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"all"},
+	},
+	{
 		Name:          "insecure-registry",
 		Usage:         "Target registries for built images which are not secure",
 		Value:         &opts.InsecureRegistries,
