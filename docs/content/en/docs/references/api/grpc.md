@@ -959,6 +959,9 @@ For Cancelled Error code, use range 800 to 850.<br>
 | DEPLOY_MANIFEST_WRITE_ERR | 1020 | Error writing hydrated kubernetes manifests. |
 | DEPLOY_PARSE_MANIFEST_IMAGES_ERR | 1021 | Error getting images from a kubernetes manifest. |
 | DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE | 1022 | Helm config `createNamespace` not available |
+| TEST_USER_CONFIG_ERR | 1101 | Error expanding paths |
+| TEST_CST_USER_ERR | 1102 | Error running container-structure-test |
+| TEST_IMG_PULL_ERR | 1103 | Unable to docker pull image |
 
 
 
