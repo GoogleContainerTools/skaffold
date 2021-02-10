@@ -85,6 +85,9 @@ type GitInfo struct {
 
 	// Ref is the git ref the package should be cloned from. eg. `master` or `main`.
 	Ref string `yaml:"ref,omitempty"`
+
+	// Sync when set to `true` will reset the cached repository to the latest commit from remote on every run. To use the cached repository with uncommitted changes or unpushed commits, it needs to be set to `false`.
+	Sync *bool `yaml:"sync,omitempty"`
 }
 
 // ConfigDependency describes a dependency on another skaffold configuration.

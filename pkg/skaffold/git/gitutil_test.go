@@ -76,7 +76,7 @@ func TestSyncRepo(t *testing.T) {
 	tests := []struct {
 		description string
 		g           latest.GitInfo
-		cmds        map[string]error
+		cmds        []cmdResponse
 		existing    bool
 		shouldErr   bool
 		expected    string
@@ -84,16 +84,16 @@ func TestSyncRepo(t *testing.T) {
 		{
 			description: "first time repo clone succeeds",
 			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
-			cmds: map[string]error{
-				"git clone http://github.com/foo.git iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1": nil,
+			cmds: []cmdResponse{
+				{cmd: "git clone http://github.com/foo.git iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1"},
 			},
 			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
 		},
 		{
 			description: "first time repo clone fails",
 			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
-			cmds: map[string]error{
-				"git clone http://github.com/foo.git iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1": errors.New("error"),
+			cmds: []cmdResponse{
+				{cmd: "git clone http://github.com/foo.git iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1", err: errors.New("error")},
 			},
 			shouldErr: true,
 		},
@@ -101,18 +101,62 @@ func TestSyncRepo(t *testing.T) {
 			description: "existing repo update succeeds",
 			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			existing:    true,
-			cmds: map[string]error{
-				"git fetch origin master":        nil,
-				"git reset --hard origin/master": nil,
+			cmds: []cmdResponse{
+				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git fetch origin master"},
+				{cmd: "git diff --name-only --ignore-submodules origin/master..."},
+				{cmd: "git reset --hard origin/master"},
 			},
 			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
+		},
+		{
+			description: "existing repo update fails on remote check",
+			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			existing:    true,
+			cmds: []cmdResponse{
+				{cmd: "git remote -v", err: errors.New("error")},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "existing dirty repo with sync off succeeds",
+			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(false)},
+			existing:    true,
+			cmds: []cmdResponse{
+				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+			},
+			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
+		},
+		{
+			description: "existing dirty repo with sync on fails",
+			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
+			existing:    true,
+			cmds: []cmdResponse{
+				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git fetch origin master"},
+				{cmd: "git diff --name-only --ignore-submodules origin/master...", out: "pkg/foo\npkg/bar"},
+				{cmd: "git reset --hard origin/master"},
+			},
+			shouldErr: true,
 		},
 		{
 			description: "existing repo update fails on fetch",
 			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			existing:    true,
-			cmds: map[string]error{
-				"git fetch origin master": errors.New("error"),
+			cmds: []cmdResponse{
+				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git fetch origin master", err: errors.New("error")},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "existing repo update fails on diff",
+			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			existing:    true,
+			cmds: []cmdResponse{
+				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git fetch origin master"},
+				{cmd: "git diff --name-only --ignore-submodules origin/master...", err: errors.New("error")},
 			},
 			shouldErr: true,
 		},
@@ -120,9 +164,11 @@ func TestSyncRepo(t *testing.T) {
 			description: "existing repo update fails on reset",
 			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			existing:    true,
-			cmds: map[string]error{
-				"git fetch origin master":        nil,
-				"git reset --hard origin/master": errors.New("error"),
+			cmds: []cmdResponse{
+				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git fetch origin master"},
+				{cmd: "git diff --name-only --ignore-submodules origin/master..."},
+				{cmd: "git reset --hard origin/master", err: errors.New("error")},
 			},
 			shouldErr: true,
 		},
@@ -136,11 +182,11 @@ func TestSyncRepo(t *testing.T) {
 			}
 			opts := config.SkaffoldOptions{RepoCacheDir: td.Root()}
 			var f *testutil.FakeCmd
-			for k, v := range test.cmds {
+			for _, v := range test.cmds {
 				if f == nil {
-					f = testutil.CmdRunErr(k, v)
+					f = testutil.CmdRunOutErr(v.cmd, v.out, v.err)
 				} else {
-					f = f.AndRunErr(k, v)
+					f = f.AndRunOutErr(v.cmd, v.out, v.err)
 				}
 			}
 			t.Override(&searchGitPath, func() (string, error) { return "git", nil })
@@ -153,4 +199,10 @@ func TestSyncRepo(t *testing.T) {
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, expected, path)
 		})
 	}
+}
+
+type cmdResponse struct {
+	cmd string
+	out string
+	err error
 }

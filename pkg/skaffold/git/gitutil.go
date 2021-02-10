@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -131,16 +130,43 @@ func syncRepo(g latest.GitInfo, opts config.SkaffoldOptions) (string, error) {
 	}
 	repoCacheDir := filepath.Join(skaffoldCacheDir, hash)
 	if _, err := os.Stat(repoCacheDir); os.IsNotExist(err) {
-		if err := r.Run("clone", g.Repo, hash, "--branch", ref, "--depth", "1"); err != nil {
+		if _, err := r.Run("clone", g.Repo, hash, "--branch", ref, "--depth", "1"); err != nil {
 			return "", fmt.Errorf("failed to clone repo: %w", err)
 		}
 	} else {
 		r.Dir = repoCacheDir
-		// reset the repo state
-		if err = r.Run("fetch", "origin", ref); err != nil {
+		// check remote is defined
+		if remotes, err := r.Run("remote", "-v"); err != nil {
+			return "", fmt.Errorf("failed to clone repo %s: trouble checking repository remote; run 'git clone <REPO>; stat <DIR/SUBDIR>' to verify credentials: %w", g.Repo, err)
+		} else if len(remotes) == 0 {
+			return "", fmt.Errorf("failed to clone repo %s: remote not set for existing clone", g.Repo)
+		}
+
+		// if sync property is false, then skip fetching latest from remote and resetting the branch.
+		if g.Sync != nil && !*g.Sync {
+			return repoCacheDir, nil
+		}
+
+		if _, err = r.Run("fetch", "origin", ref); err != nil {
 			return "", fmt.Errorf("failed to clone repo %s: unable to find any matching refs %s; run 'git clone <REPO>; stat <DIR/SUBDIR>' to verify credentials: %w", g.Repo, ref, err)
 		}
-		if err := r.Run("reset", "--hard", "origin/"+ref); err != nil {
+
+		// check if the downloaded repo has uncommitted changes.
+		if changes, err := r.Run("diff", "--name-only", "--ignore-submodules", "HEAD"); err != nil {
+			return "", fmt.Errorf("failed to clone repo %s: unable to check for uncommitted changes; run 'git clone <REPO>; stat <DIR/SUBDIR>' to verify credentials: %w", g.Repo, err)
+		} else if len(changes) > 0 {
+			return "", fmt.Errorf("failed to clone repo %s: there are uncommitted changes in the target directory %s; either set the repository `sync` property to false in the skaffold config, or manually commit and sync changes to remote, or revert the local changes", g.Repo, repoCacheDir)
+		}
+
+		// check if the downloaded repo has unpushed commits.
+		if changes, err := r.Run("diff", "--name-only", "--ignore-submodules", fmt.Sprintf("origin/%s...", ref)); err != nil {
+			return "", fmt.Errorf("failed to clone repo %s: unable to check for unpushed commits; run 'git clone <REPO>; stat <DIR/SUBDIR>' to verify credentials: %w", g.Repo, err)
+		} else if len(changes) > 0 {
+			return "", fmt.Errorf("failed to clone repo %s: there are unpushed commits in the target directory %s; either set the repository `sync` property to false in the skaffold config, or manually push commits to remote, or reset the local commits", g.Repo, repoCacheDir)
+		}
+
+		// reset the repo state
+		if _, err := r.Run("reset", "--hard", fmt.Sprintf("origin/%s", ref)); err != nil {
 			return "", fmt.Errorf("failed to clone repo %s: trouble resetting branch to origin/%s; run 'git clone <REPO>; stat <DIR/SUBDIR>' to verify credentials: %w", g.Repo, ref, err)
 		}
 	}
@@ -155,16 +181,13 @@ type gitCmd struct {
 
 // Run runs a git command.
 // Omit the 'git' part of the command.
-func (g *gitCmd) Run(args ...string) error {
+func (g *gitCmd) Run(args ...string) ([]byte, error) {
 	p, err := searchGitPath()
 	if err != nil {
-		return fmt.Errorf("no 'git' program on path: %w", err)
+		return nil, fmt.Errorf("no 'git' program on path: %w", err)
 	}
 
 	cmd := exec.Command(p, args...)
 	cmd.Dir = g.Dir
-	w := logrus.StandardLogger().WriterLevel(logrus.DebugLevel)
-	cmd.Stdout = w
-	cmd.Stderr = w
-	return util.RunCmd(cmd)
+	return util.RunCmdOut(cmd)
 }
