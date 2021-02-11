@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/structure"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type Config interface {
@@ -65,12 +64,13 @@ func (t FullTester) TestDependencies() ([]string, error) {
 	var deps []string
 
 	for _, test := range t.testCases {
-		files, err := util.ExpandPathsGlob(t.workingDir, test.StructureTests)
-		if err != nil {
-			return nil, expandingFilePathsErr(err)
+		if len(test.StructureTests) != 0 {
+			files, err := structure.TestDependencies(t.workingDir, test.StructureTests)
+			if err != nil {
+				return nil, err
+			}
+			deps = append(deps, files...)
 		}
-
-		deps = append(deps, files...)
 	}
 
 	return deps, nil
@@ -126,12 +126,14 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Ar
 			// `container-structure-test` currently can't do it:
 			// https://github.com/GoogleContainerTools/container-structure-test/issues/253.
 			if err := t.localDaemon.Pull(ctx, out, fqn); err != nil {
-				return fmt.Errorf("unable to docker pull image %q: %w", fqn, err)
+				return dockerPullImageErr(fqn, err)
 			}
 		}
 
-		if err := t.runStructureTests(ctx, out, fqn, test); err != nil {
-			return fmt.Errorf("running structure tests: %w", err)
+		if len(test.StructureTests) != 0 {
+			if err := t.runStructureTests(ctx, out, fqn, test); err != nil {
+				return fmt.Errorf("running structure tests: %w", err)
+			}
 		}
 	}
 

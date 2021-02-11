@@ -17,26 +17,15 @@ limitations under the License.
 package structure
 
 import (
-	"fmt"
-
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func containerStructureTestErr(err error) error {
-	return sErrors.NewError(err,
-		proto.ActionableErr{
-			Message: fmt.Sprintf("running container-structure-test: %s", err),
-			ErrCode: proto.StatusCode_TEST_CST_USER_ERR,
-		},
-	)
-}
+// TestDependencies returns dependencies listed for the structure tests
+func TestDependencies(workingDir string, paths []string) ([]string, error) {
+	files, err := util.ExpandPathsGlob(workingDir, paths)
+	if err != nil {
+		return nil, expandingFilePathsErr(err)
+	}
 
-func expandingFilePathsErr(err error) error {
-	return sErrors.NewError(err,
-		proto.ActionableErr{
-			Message: fmt.Sprintf("expanding test file paths: %s", err),
-			ErrCode: proto.StatusCode_TEST_USER_CONFIG_ERR,
-		},
-	)
+	return files, nil
 }

@@ -39,8 +39,6 @@ func TestNewRunner(t *testing.T) {
 		workingDir := tmpDir.Root()
 		structureTests := []string{"test.yaml"}
 
-		println("Inside test.")
-
 		testRunner := NewRunner(structureTests, workingDir, extraEnv)
 		err := testRunner.Test(context.Background(), ioutil.Discard, imageName)
 		t.CheckNoError(err)

@@ -29,9 +29,9 @@ import (
 
 // Test is the entrypoint for running structure tests
 func (tr *Runner) Test(ctx context.Context, out io.Writer, image string) error {
-	files, err := util.ExpandPathsGlob(tr.testWorkingDir, tr.structureTests)
+	files, err := TestDependencies(tr.testWorkingDir, tr.structureTests)
 	if err != nil {
-		return fmt.Errorf("expanding test file paths: %w", err)
+		return err
 	}
 
 	logrus.Infof("Running structure tests for files %v", files)
