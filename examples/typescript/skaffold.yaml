@@ -3,7 +3,7 @@ kind: Config
 
 build:
   artifacts:
-  - image: node-example
+  - image: node-typescript-example
     context: backend
 
 profiles:
@@ -12,14 +12,14 @@ profiles:
       - command: dev
     build:
       artifacts:
-      - image: node-example
+      - image: node-typescript-example
         context: backend
         docker:
           buildArgs:
             ENV: development
         sync:
           manual:
-          # Sync all the javascript files that are in the src folder
+          # Sync all the TypeScript files that are in the src folder
           # with the container src folder
-          - src: 'src/**/*.js'
+          - src: 'src/**/*.ts'
             dest: .
