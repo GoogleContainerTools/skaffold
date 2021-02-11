@@ -96,10 +96,10 @@ type ConfigDependency struct {
 	Names []string `yaml:"configs,omitempty"`
 
 	// Path describes the path to the file containing the required configs.
-	Path string `yaml:"path" skaffold:"filepath" yamltags:"oneOf=paths"`
+	Path string `yaml:"path,omitempty" skaffold:"filepath" yamltags:"oneOf=paths"`
 
 	// GitRepo describes a remote git repository containing the required configs.
-	GitRepo *GitInfo `yaml:"git" yamltags:"oneOf=paths"`
+	GitRepo *GitInfo `yaml:"git,omitempty" yamltags:"oneOf=paths"`
 
 	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
 	ActiveProfiles []ProfileDependency `yaml:"activeProfiles,omitempty"`

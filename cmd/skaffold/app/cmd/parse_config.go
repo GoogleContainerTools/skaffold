@@ -90,6 +90,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 	if len(parsed) == 0 {
 		return nil, fmt.Errorf("skaffold config file %s is empty", opts.ConfigurationFile)
 	}
+	logrus.Debugf("parsed %d configs from configuration file %s", len(parsed), cfgOpts.file)
 
 	var configs []*latest.SkaffoldConfig
 	for i, cfg := range parsed {
@@ -144,7 +145,8 @@ func processEachConfig(config *latest.SkaffoldConfig, cfgOpts configOpts, opts c
 
 	var configs []*latest.SkaffoldConfig
 	for _, d := range config.Dependencies {
-		depConfigs, err := processEachDependency(d, cfgOpts.file, required, profiles, opts, r)
+		newOpts := configOpts{file: cfgOpts.file, profiles: filterActiveProfiles(d, profiles), isRequired: required, isDependency: cfgOpts.isDependency}
+		depConfigs, err := processEachDependency(d, newOpts, opts, r)
 		if err != nil {
 			return nil, err
 		}
@@ -157,8 +159,8 @@ func processEachConfig(config *latest.SkaffoldConfig, cfgOpts configOpts, opts c
 	return configs, nil
 }
 
-// processEachDependency parses a config dependency with the calculated set of activated profiles.
-func processEachDependency(d latest.ConfigDependency, fPath string, required bool, profiles []string, opts config.SkaffoldOptions, r *record) ([]*latest.SkaffoldConfig, error) {
+// filterActiveProfiles selects the set of profiles to activate in the dependency config based on the current set of active profiles.
+func filterActiveProfiles(d latest.ConfigDependency, profiles []string) []string {
 	var depProfiles []string
 	for _, ap := range d.ActiveProfiles {
 		if len(ap.ActivatedBy) == 0 {
@@ -172,6 +174,11 @@ func processEachDependency(d latest.ConfigDependency, fPath string, required boo
 			}
 		}
 	}
+	return depProfiles
+}
+
+// processEachDependency parses a config dependency with the calculated set of activated profiles.
+func processEachDependency(d latest.ConfigDependency, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*latest.SkaffoldConfig, error) {
 	path := d.Path
 
 	if d.GitRepo != nil {
@@ -184,19 +191,22 @@ func processEachDependency(d latest.ConfigDependency, fPath string, required boo
 
 	if path == "" {
 		// empty path means configs in the same file
-		path = fPath
+		path = cfgOpts.file
 	}
 	fi, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(errors.Unwrap(err)) {
-			return nil, fmt.Errorf("could not find skaffold config %s that is referenced as a dependency in config %s", path, fPath)
+			return nil, fmt.Errorf("could not find skaffold config %s that is referenced as a dependency in config %s", path, cfgOpts.file)
 		}
-		return nil, fmt.Errorf("parsing dependencies for skaffold config %s: %w", fPath, err)
+		return nil, fmt.Errorf("parsing dependencies for skaffold config %s: %w", cfgOpts.file, err)
 	}
 	if fi.IsDir() {
 		path = filepath.Join(path, "skaffold.yaml")
 	}
-	depConfigs, err := getConfigs(configOpts{file: path, selection: d.Names, profiles: depProfiles, isRequired: required, isDependency: path != fPath}, opts, r)
+	cfgOpts.isDependency = cfgOpts.isDependency || path != cfgOpts.file
+	cfgOpts.file = path
+	cfgOpts.selection = d.Names
+	depConfigs, err := getConfigs(cfgOpts, opts, r)
 	if err != nil {
 		return nil, err
 	}
