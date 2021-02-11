@@ -172,6 +172,24 @@ requires:
 			},
 		},
 		{
+			description: "dependencies in same file",
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
+requires:
+  - path: doc1
+`}}},
+				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: `
+requires:
+  - configs: [cfg11]
+`}, {name: "cfg11", requiresStanza: ""}}},
+			},
+			expected: []*latest.SkaffoldConfig{
+				createCfg("cfg11", "image11", "doc1", nil),
+				createCfg("cfg10", "image10", "doc1", []latest.ConfigDependency{{Names: []string{"cfg11"}}}),
+				createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1"}}),
+			},
+		},
+		{
 			description: "looped dependencies",
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
