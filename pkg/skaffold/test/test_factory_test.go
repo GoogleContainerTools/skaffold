@@ -197,7 +197,7 @@ func TestTestFailureRemoteImage(t *testing.T) {
 			Tag:       "image:tag",
 		}})
 
-		t.CheckErrorContains(`unable to docker pull image "image:tag"`, err)
+		t.CheckErrorContains(`unable to docker pull image image:tag`, err)
 	})
 }
 

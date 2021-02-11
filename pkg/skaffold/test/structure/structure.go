@@ -18,7 +18,6 @@ package structure
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -48,7 +47,7 @@ func (tr *Runner) Test(ctx context.Context, out io.Writer, image string) error {
 	cmd.Env = tr.env()
 
 	if err := util.RunCmd(cmd); err != nil {
-		return fmt.Errorf("running container-structure-test: %w", err)
+		return containerStructureTestErr(err)
 	}
 
 	return nil

@@ -67,7 +67,7 @@ func (t FullTester) TestDependencies() ([]string, error) {
 	for _, test := range t.testCases {
 		files, err := util.ExpandPathsGlob(t.workingDir, test.StructureTests)
 		if err != nil {
-			return nil, fmt.Errorf("expanding test file paths: %w", err)
+			return nil, expandingFilePathsErr(err)
 		}
 
 		deps = append(deps, files...)

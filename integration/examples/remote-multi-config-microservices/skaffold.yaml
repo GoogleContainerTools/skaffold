@@ -1,0 +1,11 @@
+apiVersion: skaffold/v2beta12
+kind: Config
+requires:
+- git:
+    repo: https://github.com/GoogleContainerTools/skaffold
+    path: examples/multi-config-microservices/leeroy-app
+    sync: false
+- git:
+    repo: https://github.com/GoogleContainerTools/skaffold
+    path: examples/multi-config-microservices/leeroy-web
+    sync: false
