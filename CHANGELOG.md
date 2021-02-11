@@ -1,3 +1,66 @@
+# v1.20.0 Release - 02/11/2021
+
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.20.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.20.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.20.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.20.0`
+
+Note: This release comes with a new config version, `v2beta12`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* Skaffold now supports defining remote git dependencies in the project configuration!
+
+New Features:
+* Implement defining remote git dependencies in the skaffold configuration. [#5361](https://github.com/GoogleContainerTools/skaffold/pull/5361)
+
+Fixes:
+* Fix absolute path substitution in configs imported as dependencies. [#5389](https://github.com/GoogleContainerTools/skaffold/pull/5389)
+* Update dependencies to fix `getCPUInfo` error on darwin/arm64 [#5351](https://github.com/GoogleContainerTools/skaffold/pull/5351)
+* Configure k3d to use registry-mirrors [#5344](https://github.com/GoogleContainerTools/skaffold/pull/5344)
+* fix pulling secrets in cloudbuild release for latest builds [#5328](https://github.com/GoogleContainerTools/skaffold/pull/5328)
+
+Updates and Refactors:
+* Add error codes for test failures [#5385](https://github.com/GoogleContainerTools/skaffold/pull/5385)
+* use status code string in error label [#5350](https://github.com/GoogleContainerTools/skaffold/pull/5350)
+* track the platform type at the launch level [#5353](https://github.com/GoogleContainerTools/skaffold/pull/5353)
+* Unhide --auto-{build,deploy,sync} and update debug notes [#5347](https://github.com/GoogleContainerTools/skaffold/pull/5347)
+* Update telemetry prompt links [#5346](https://github.com/GoogleContainerTools/skaffold/pull/5346)
+* export metrics related to user enum flags [#5322](https://github.com/GoogleContainerTools/skaffold/pull/5322)
+* add `build-dependencies` metric [#5330](https://github.com/GoogleContainerTools/skaffold/pull/5330)
+* Add prompt for users to pick manifests to generate during `skaffold init --generate-manifests` [#5312](https://github.com/GoogleContainerTools/skaffold/pull/5312)
+
+Docs, Test, and Release Updates:
+* Document steps to use sErrors.ErrDef class to provide actionable error messages [#5375](https://github.com/GoogleContainerTools/skaffold/pull/5375)
+* Update docs with darwin/arm64 binaries [#5287](https://github.com/GoogleContainerTools/skaffold/pull/5287)
+* Update release to build darwin/arm64 binary [#5286](https://github.com/GoogleContainerTools/skaffold/pull/5286)
+* TypeScript support for the existing Node.js example [#5325](https://github.com/GoogleContainerTools/skaffold/pull/5325)
+* Fix example `multi-config-microservices` broken due to missed runtime image update [#5337](https://github.com/GoogleContainerTools/skaffold/pull/5337)
+* Make integration.WaitForPodsReady use pod `Ready` condition [#5308](https://github.com/GoogleContainerTools/skaffold/pull/5308)
+* refactor instrumentation package [#5324](https://github.com/GoogleContainerTools/skaffold/pull/5324)
+* add integration test for `skaffold init --artifact` [#5319](https://github.com/GoogleContainerTools/skaffold/pull/5319)
+* add docs for `config dependencies` feature [#5321](https://github.com/GoogleContainerTools/skaffold/pull/5321)
+* Update language runtime image versions [#5307](https://github.com/GoogleContainerTools/skaffold/pull/5307)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Alex Ashley
+- Brian de Alwis
+- Gaurav
+- Isaac Duarte
+- Marlon Gamez
+- Nick Kubala
+- Pat
+- Priya Modali
+- Tejal Desai
+
+
 # v1.19.0 Release - 01/28/2021
 
 **Linux**
