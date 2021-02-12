@@ -19,9 +19,9 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.13.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.4
-	github.com/buildpacks/imgutil v0.0.0-20201022190551-6525b8cdcdd0
-	github.com/buildpacks/lifecycle v0.9.3
-	github.com/buildpacks/pack v0.15.2-0.20201119222735-f85ce4770ba9
+	github.com/buildpacks/imgutil v0.0.0-20201211223552-8581300fe2b2
+	github.com/buildpacks/lifecycle v0.10.2
+	github.com/buildpacks/pack v0.17.0
 	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/docker/cli v20.10.0-beta1.0.20201117192004-5cc239616494+incompatible
 	github.com/docker/distribution v2.7.1+incompatible
@@ -35,7 +35,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.3
 	github.com/google/go-cmp v0.5.4
-	github.com/google/go-containerregistry v0.1.4
+	github.com/google/go-containerregistry v0.4.0
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/uuid v1.1.2
 	github.com/grpc-ecosystem/grpc-gateway v1.14.8
@@ -63,10 +63,10 @@ require (
 	go.opentelemetry.io/otel v0.13.0
 	go.opentelemetry.io/otel/exporters/stdout v0.13.0
 	go.opentelemetry.io/otel/sdk v0.13.0
-	golang.org/x/mod v0.3.0
+	golang.org/x/mod v0.4.1
 	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb // indirect
 	golang.org/x/oauth2 v0.0.0-20201109201403-9fd604954f58
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	golang.org/x/sys v0.0.0-20201015000850-e3ed0017c211
 	golang.org/x/term v0.0.0-20201117132131-f5c789dd3221
 	google.golang.org/api v0.35.0
