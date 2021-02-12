@@ -40,3 +40,12 @@ func expandingFilePathsErr(err error) error {
 		},
 	)
 }
+
+func dockerPullImageErr(fqn string, err error) (string, error) {
+	return "", sErrors.NewError(err,
+		proto.ActionableErr{
+			Message: fmt.Sprintf("unable to docker pull image %s: %s", fqn, err),
+			ErrCode: proto.StatusCode_TEST_IMG_PULL_ERR,
+		},
+	)
+}

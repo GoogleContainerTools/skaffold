@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -32,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/structure"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -120,6 +122,11 @@ func TestTestSuccess(t *testing.T) {
 		t.Override(&util.DefaultExecCommand, testutil.
 			CmdRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("tests/test1.yaml")+" --config "+tmpDir.Path("tests/test2.yaml")).
 			AndRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test3.yaml")))
+
+		t.Override(&structure.GetImagefn, func(context.Context, io.Writer, string, []build.Artifact, docker.LocalDaemon,
+			func(string) (bool, error)) (string, error) {
+			return "image:tag", nil
+		})
 
 		cfg := &mockConfig{
 			workingDir: tmpDir.Root(),

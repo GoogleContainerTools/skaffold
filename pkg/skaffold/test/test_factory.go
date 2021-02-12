@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -113,25 +111,8 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifa
 
 func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
 	for _, test := range t.testCases {
-		fqn, found := resolveArtifactImageTag(test.ImageName, bRes)
-		if !found {
-			logrus.Debugln("Skipping tests for", test.ImageName, "since it wasn't built")
-			return nil
-		}
-
-		if imageIsLocal, err := t.imagesAreLocal(test.ImageName); err != nil {
-			return err
-		} else if !imageIsLocal {
-			// The image is remote so we have to pull it locally.
-			// `container-structure-test` currently can't do it:
-			// https://github.com/GoogleContainerTools/container-structure-test/issues/253.
-			if err := t.localDaemon.Pull(ctx, out, fqn); err != nil {
-				return dockerPullImageErr(fqn, err)
-			}
-		}
-
 		if len(test.StructureTests) != 0 {
-			if err := t.runStructureTests(ctx, out, fqn, test); err != nil {
+			if err := t.runStructureTests(ctx, out, test, bRes); err != nil {
 				return fmt.Errorf("running structure tests: %w", err)
 			}
 		}
@@ -140,18 +121,13 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Ar
 	return nil
 }
 
-func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, fqn string, tc *latest.TestCase) error {
+func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, tc *latest.TestCase, bRes []build.Artifact) error {
+
+	fqn, err := structure.GetImagefn(ctx, out, tc.ImageName, bRes, t.localDaemon, t.imagesAreLocal)
+	if err != nil {
+		return err
+	}
 	runner := structure.NewRunner(tc.StructureTests, t.workingDir, t.localDaemon.ExtraEnv())
 
 	return runner.Test(ctx, out, fqn)
-}
-
-func resolveArtifactImageTag(imageName string, bRes []build.Artifact) (string, bool) {
-	for _, res := range bRes {
-		if imageName == res.ImageName {
-			return res.Tag, true
-		}
-	}
-
-	return "", false
 }
