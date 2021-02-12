@@ -125,5 +125,4 @@ func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, tc *la
 	runner := structure.NewRunner(tc.StructureTests, t.workingDir, t.localDaemon, t.imagesAreLocal)
 
 	return runner.Test(ctx, out, tc.ImageName, bRes)
-
 }
