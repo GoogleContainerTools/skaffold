@@ -26,8 +26,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
-var GetImagefn = GetImage
-var ResolveArtifactImageTagfn = resolveArtifactImageTag
+// var GetImagefn = GetImage
+// var ResolveArtifactImageTagfn = resolveArtifactImageTag
 
 // GetImage downloads the image for container-structure-test
 func GetImage(ctx context.Context, out io.Writer, imageName string, bRes []build.Artifact, localDaemon docker.LocalDaemon,
