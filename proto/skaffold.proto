@@ -681,6 +681,15 @@ enum StatusCode {
     DEPLOY_PARSE_MANIFEST_IMAGES_ERR = 1021;
     // Helm config `createNamespace` not available
     DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE = 1022;
+
+    // Test errors
+
+    // Error expanding paths
+    TEST_USER_CONFIG_ERR = 1101;
+    // Error running container-structure-test
+    TEST_CST_USER_ERR = 1102;
+    // Unable to docker pull image
+    TEST_IMG_PULL_ERR = 1103;
 }
 
 // Enum for Suggestion codes
