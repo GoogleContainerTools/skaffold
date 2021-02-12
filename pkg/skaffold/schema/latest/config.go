@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
 const Version string = "skaffold/v2beta12"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
@@ -96,10 +96,10 @@ type ConfigDependency struct {
 	Names []string `yaml:"configs,omitempty"`
 
 	// Path describes the path to the file containing the required configs.
-	Path string `yaml:"path" skaffold:"filepath" yamltags:"oneOf=paths"`
+	Path string `yaml:"path,omitempty" skaffold:"filepath" yamltags:"oneOf=paths"`
 
 	// GitRepo describes a remote git repository containing the required configs.
-	GitRepo *GitInfo `yaml:"git" yamltags:"oneOf=paths"`
+	GitRepo *GitInfo `yaml:"git,omitempty" yamltags:"oneOf=paths"`
 
 	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
 	ActiveProfiles []ProfileDependency `yaml:"activeProfiles,omitempty"`
