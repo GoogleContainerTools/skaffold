@@ -16,17 +16,22 @@ limitations under the License.
 
 package structure
 
+import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+
 type Runner struct {
 	structureTests []string
 	testWorkingDir string
-	extraEnv       []string
+	localDaemon    docker.LocalDaemon
+	imagesAreLocal func(imageName string) (bool, error)
 }
 
 // NewRunner creates a new structure.Runner.
-func NewRunner(tc []string, workingDir string, extraEnv []string) *Runner {
+func NewRunner(tc []string, workingDir string, localDaemon docker.LocalDaemon,
+	imagesAreLocal func(imageName string) (bool, error)) *Runner {
 	return &Runner{
 		structureTests: tc,
 		testWorkingDir: workingDir,
-		extraEnv:       extraEnv,
+		localDaemon:    localDaemon,
+		imagesAreLocal: imagesAreLocal,
 	}
 }

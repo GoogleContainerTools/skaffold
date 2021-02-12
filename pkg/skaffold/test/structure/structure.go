@@ -24,11 +24,20 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Test is the entrypoint for running structure tests
-func (tr *Runner) Test(ctx context.Context, out io.Writer, image string) error {
+func (tr *Runner) Test(ctx context.Context, out io.Writer, imageName string, bRes []build.Artifact) error {
+	fqn, err := getImage(ctx, out, imageName, bRes, tr.localDaemon, tr.imagesAreLocal)
+	if err != nil {
+		return err
+	}
+	if fqn == "" {
+		return nil
+	}
+
 	files, err := TestDependencies(tr.testWorkingDir, tr.structureTests)
 	if err != nil {
 		return err
@@ -36,7 +45,7 @@ func (tr *Runner) Test(ctx context.Context, out io.Writer, image string) error {
 
 	logrus.Infof("Running structure tests for files %v", files)
 
-	args := []string{"test", "-v", "warn", "--image", image}
+	args := []string{"test", "-v", "warn", "--image", fqn}
 	for _, f := range files {
 		args = append(args, "--config", f)
 	}
@@ -57,12 +66,13 @@ func (tr *Runner) Test(ctx context.Context, out io.Writer, image string) error {
 // This ensures that the correct docker environment configuration is passed to container-structure-test,
 // for example when running on minikube.
 func (tr *Runner) env() []string {
-	if tr.extraEnv == nil {
+	extraEnv := tr.localDaemon.ExtraEnv()
+	if extraEnv == nil {
 		return nil
 	}
 
 	parentEnv := os.Environ()
-	mergedEnv := make([]string, len(parentEnv), len(parentEnv)+len(tr.extraEnv))
+	mergedEnv := make([]string, len(parentEnv), len(parentEnv)+len(extraEnv))
 	copy(mergedEnv, parentEnv)
-	return append(mergedEnv, tr.extraEnv...)
+	return append(mergedEnv, extraEnv...)
 }
