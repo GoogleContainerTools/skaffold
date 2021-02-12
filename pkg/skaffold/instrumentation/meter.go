@@ -44,7 +44,7 @@ var (
 		ExitCode:          0,
 		ErrorCode:         proto.StatusCode_OK,
 	}
-	meteredCommands     = util.NewStringSet()
+	MeteredCommands     = util.NewStringSet()
 	doesBuild           = util.NewStringSet()
 	doesDeploy          = util.NewStringSet()
 	initExporter        = initCloudMonitoringExporterMetrics
@@ -53,7 +53,7 @@ var (
 )
 
 func init() {
-	meteredCommands.Insert("build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test")
+	MeteredCommands.Insert("build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test")
 	doesBuild.Insert("build", "render", "dev", "debug", "run")
 	doesDeploy.Insert("deploy", "dev", "debug", "run")
 }
@@ -91,7 +91,7 @@ func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
 }
 
 func SetCommand(cmd string) {
-	if meteredCommands.Contains(cmd) {
+	if MeteredCommands.Contains(cmd) {
 		meter.Command = cmd
 	}
 }
