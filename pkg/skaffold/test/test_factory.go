@@ -122,7 +122,6 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Ar
 }
 
 func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, tc *latest.TestCase, bRes []build.Artifact) error {
-
 	fqn, err := structure.GetImagefn(ctx, out, tc.ImageName, bRes, t.localDaemon, t.imagesAreLocal)
 	if err != nil {
 		return err
