@@ -152,6 +152,7 @@ Options:
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
   -q, --quiet=false: Suppress the build output and print image built on success. See --output to format output.
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
@@ -188,6 +189,7 @@ Env vars:
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_QUIET` (same as `--quiet`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
@@ -343,9 +345,16 @@ Env vars:
 ```
 
 
+Examples:
+  # Launch with port-forwarding
+  skaffold debug --port-forward
+
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto-build=true: When set to false, builds wait for API request instead of running automatically
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
+      --auto-deploy=true: When set to false, deploys wait for API request instead of running automatically
+      --auto-sync=true: When set to false, syncs wait for API request instead of running automatically
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
@@ -368,6 +377,7 @@ Options:
       --port-forward=false: Port-forward exposed container ports within pods
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
@@ -392,7 +402,10 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO_BUILD` (same as `--auto-build`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
+* `SKAFFOLD_AUTO_DEPLOY` (same as `--auto-deploy`)
+* `SKAFFOLD_AUTO_SYNC` (same as `--auto-sync`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
@@ -415,6 +428,7 @@ Env vars:
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
@@ -447,6 +461,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
 
 Usage:
   skaffold delete [options]
@@ -467,6 +482,7 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 
 ### skaffold deploy
 
@@ -507,6 +523,7 @@ Options:
       --port-forward=false: Port-forward exposed container ports within pods
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-render=false: Don't render the manifests, just deploy them
@@ -545,6 +562,7 @@ Env vars:
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_RENDER` (same as `--skip-render`)
@@ -565,7 +583,10 @@ Run a pipeline in development mode
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto-build=true: When set to false, builds wait for API request instead of running automatically
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
+      --auto-deploy=true: When set to false, deploys wait for API request instead of running automatically
+      --auto-sync=true: When set to false, syncs wait for API request instead of running automatically
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
@@ -588,6 +609,7 @@ Options:
       --port-forward=false: Port-forward exposed container ports within pods
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --render-only=false: Print rendered Kubernetes manifests instead of deploying them
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -613,7 +635,10 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO_BUILD` (same as `--auto-build`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
+* `SKAFFOLD_AUTO_DEPLOY` (same as `--auto-deploy`)
+* `SKAFFOLD_AUTO_SYNC` (same as `--auto-sync`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
@@ -636,6 +661,7 @@ Env vars:
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RENDER_ONLY` (same as `--render-only`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
@@ -671,6 +697,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --yaml-only=false: Only prints the effective skaffold.yaml configuration
 
 Usage:
@@ -687,6 +714,7 @@ Env vars:
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_YAML_ONLY` (same as `--yaml-only`)
 
 ### skaffold fix
@@ -707,7 +735,8 @@ Options:
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --overwrite=false: Overwrite original config with fixed config
-      --version='skaffold/v2beta11': Target schema version to upgrade to
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
+      --version='skaffold/v2beta12': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -721,6 +750,7 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_OVERWRITE` (same as `--overwrite`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_VERSION` (same as `--version`)
 
 ### skaffold init
@@ -741,6 +771,7 @@ Options:
       --generate-manifests=false: Allows skaffold to try and generate basic kubernetes resources to get your project started
   -k, --kubernetes-manifest=[]: A path or a glob pattern to kubernetes manifests (can be non-existent) to be added to the kubectl deployer (overrides detection of kubernetes manifests). Repeat the flag for multiple entries. E.g.: skaffold init -k pod.yaml -k k8s/*.yml
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --skip-build=false: Skip generating build artifacts in Skaffold config
 
 Usage:
@@ -761,6 +792,7 @@ Env vars:
 * `SKAFFOLD_GENERATE_MANIFESTS` (same as `--generate-manifests`)
 * `SKAFFOLD_KUBERNETES_MANIFEST` (same as `--kubernetes-manifest`)
 * `SKAFFOLD_MODULE` (same as `--module`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_SKIP_BUILD` (same as `--skip-build`)
 
 ### skaffold options
@@ -804,6 +836,7 @@ Options:
       --output='': file to write rendered manifests to
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
 
 Usage:
   skaffold render [options]
@@ -827,6 +860,7 @@ Env vars:
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 
 ### skaffold run
 
@@ -868,6 +902,7 @@ Options:
       --port-forward=false: Port-forward exposed container ports within pods
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --render-only=false: Print rendered Kubernetes manifests instead of deploying them
       --render-output='': Writes '--render-only' output to the specified file
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
@@ -915,6 +950,7 @@ Env vars:
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RENDER_ONLY` (same as `--render-only`)
 * `SKAFFOLD_RENDER_OUTPUT` (same as `--render-output`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
@@ -1024,6 +1060,7 @@ Options:
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
 
 Usage:
   skaffold test [options]
@@ -1037,6 +1074,7 @@ Env vars:
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 
 ### skaffold version
 

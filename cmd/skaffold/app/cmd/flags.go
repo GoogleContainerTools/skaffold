@@ -121,6 +121,14 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "build", "run", "debug"},
 	},
 	{
+		Name:          "remote-cache-dir",
+		Usage:         "Specify the location of the git repositories cache (default $HOME/.skaffold/repos)",
+		Value:         &opts.RepoCacheDir,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"all"},
+	},
+	{
 		Name:          "insecure-registry",
 		Usage:         "Target registries for built images which are not secure",
 		Value:         &opts.InsecureRegistries,
@@ -342,7 +350,6 @@ var flagRegistry = []Flag{
 	{
 		Name:     "auto-build",
 		Usage:    "When set to false, builds wait for API request instead of running automatically",
-		Hidden:   true,
 		Value:    &opts.AutoBuild,
 		DefValue: true,
 		DefValuePerCommand: map[string]interface{}{
@@ -356,7 +363,6 @@ var flagRegistry = []Flag{
 	{
 		Name:     "auto-sync",
 		Usage:    "When set to false, syncs wait for API request instead of running automatically",
-		Hidden:   true,
 		Value:    &opts.AutoSync,
 		DefValue: true,
 		DefValuePerCommand: map[string]interface{}{
@@ -370,7 +376,6 @@ var flagRegistry = []Flag{
 	{
 		Name:     "auto-deploy",
 		Usage:    "When set to false, deploys wait for API request instead of running automatically",
-		Hidden:   true,
 		Value:    &opts.AutoDeploy,
 		DefValue: true,
 		DefValuePerCommand: map[string]interface{}{
