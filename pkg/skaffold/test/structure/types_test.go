@@ -22,8 +22,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/docker/docker/client"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -81,10 +79,6 @@ func TestIgnoreDockerNotFound(t *testing.T) {
 
 		t.CheckNil(testRunner)
 	})
-}
-
-func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
-	return docker.NewLocalDaemon(api, nil, false, nil)
 }
 
 type mockConfig struct {
