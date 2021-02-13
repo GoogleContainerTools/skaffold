@@ -23,4 +23,4 @@ set -e
 
 echo "go test $@"
 
-go run ./test/main.go $@
+go run basic.go $@

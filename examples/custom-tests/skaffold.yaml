@@ -10,7 +10,7 @@ test:
         timeout: 300 #in seconds - 5mins
         dependencies:
           paths:
-          - "**.go"
+          - "*_test.go"
     structureTests:
       - ./test/*
 deploy:
@@ -26,6 +26,6 @@ profiles:
             timeout: 300 #in seconds - 5mins
             dependencies:
               paths:
-              - "**.go"
+              - "*_test.go"
         structureTests:
           - ./test/profile_structure_test.yaml

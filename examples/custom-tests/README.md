@@ -2,9 +2,9 @@
 
 This example shows how to run
 [custom tests]
-on newly built images in your skaffold dev loop. Tests are associated with single
-artifacts. Tests are configured in
-your `skaffold.yaml` in the `test` stanza, e.g.
+on newly built images in the skaffold dev loop. 
+
+Custom tests are associated with single image artifacts. When test dependencies change, no build will happen but tests would get re-run. Tests are configured in the `skaffold.yaml` in the `test` stanza, e.g.
 
 ```yaml
 test:
@@ -20,6 +20,6 @@ profiles:
   - name: test
     test:
       - image: skaffold-example
-        Custom:
+        custom:
         - command: <command>
 ```
