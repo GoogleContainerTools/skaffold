@@ -16,7 +16,19 @@ limitations under the License.
 
 package structure
 
-import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+)
+
+type Config interface {
+	docker.Config
+
+	TestCases() []*latest.TestCase
+	GetWorkingDir() string
+	Muted() config.Muted
+}
 
 type Runner struct {
 	structureTests []string
@@ -26,11 +38,16 @@ type Runner struct {
 }
 
 // NewRunner creates a new structure.Runner.
-func NewRunner(tc []string, workingDir string, localDaemon docker.LocalDaemon,
+func NewRunner(cfg Config, tc []string,
 	imagesAreLocal func(imageName string) (bool, error)) *Runner {
+	localDaemon, err := docker.NewAPIClient(cfg)
+	if err != nil {
+		return nil
+	}
+
 	return &Runner{
 		structureTests: tc,
-		testWorkingDir: workingDir,
+		testWorkingDir: cfg.GetWorkingDir(),
 		localDaemon:    localDaemon,
 		imagesAreLocal: imagesAreLocal,
 	}

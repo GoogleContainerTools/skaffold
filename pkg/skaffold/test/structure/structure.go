@@ -30,7 +30,7 @@ import (
 
 // Test is the entrypoint for running structure tests
 func (tr *Runner) Test(ctx context.Context, out io.Writer, imageName string, bRes []build.Artifact) error {
-	fqn, err := getImage(ctx, out, imageName, bRes, tr.localDaemon, tr.imagesAreLocal)
+	fqn, err := tr.getImage(ctx, out, imageName, bRes, tr.imagesAreLocal)
 	if err != nil {
 		return err
 	}

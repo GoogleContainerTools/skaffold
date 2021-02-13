@@ -21,7 +21,6 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -47,10 +46,9 @@ type Muted interface {
 // FullTester should always be the ONLY implementation of the Tester interface;
 // newly added testing implementations should implement the Runner interface.
 type FullTester struct {
+	cfg            Config
 	testCases      []*latest.TestCase
-	localDaemon    docker.LocalDaemon
 	muted          Muted
-	workingDir     string
 	imagesAreLocal func(imageName string) (bool, error)
 }
 

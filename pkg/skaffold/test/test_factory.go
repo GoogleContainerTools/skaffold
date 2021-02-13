@@ -43,16 +43,10 @@ type Config interface {
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
 func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) Tester {
-	localDaemon, err := docker.NewAPIClient(cfg)
-	if err != nil {
-		return nil
-	}
-
 	return FullTester{
+		cfg:            cfg,
 		testCases:      cfg.TestCases(),
-		workingDir:     cfg.GetWorkingDir(),
 		muted:          cfg.Muted(),
-		localDaemon:    localDaemon,
 		imagesAreLocal: imagesAreLocal,
 	}
 }
@@ -75,10 +69,10 @@ func (t FullTester) TestDependencies() ([]string, error) {
 	return deps, nil
 }
 
-func (t FullTester) getRunners(tc *latest.TestCase) TesterMux {
-	var runners TesterMux
+func (t FullTester) getRunners(tc *latest.TestCase) []Runner {
+	var runners []Runner
 
-	newRunner := structure.NewRunner(tc.StructureTests, t.workingDir, t.localDaemon, t.imagesAreLocal)
+	newRunner := structure.NewRunner(t.cfg, tc.StructureTests, t.imagesAreLocal)
 	runners = append(runners, newRunner)
 
 	return runners
@@ -132,7 +126,7 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Ar
 }
 
 func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, tc *latest.TestCase, bRes []build.Artifact) error {
-	runner := structure.NewRunner(tc.StructureTests, t.workingDir, t.localDaemon, t.imagesAreLocal)
+	runner := structure.NewRunner(t.cfg, tc.StructureTests, t.imagesAreLocal)
 
 	return runner.Test(ctx, out, tc.ImageName, bRes)
 }

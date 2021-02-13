@@ -23,11 +23,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
-// GetImage downloads the image for container-structure-test
-func getImage(ctx context.Context, out io.Writer, imageName string, bRes []build.Artifact, localDaemon docker.LocalDaemon,
+// getImage downloads the image for container-structure-test
+func (tr *Runner) getImage(ctx context.Context, out io.Writer, imageName string, bRes []build.Artifact,
 	imagesAreLocal func(imageName string) (bool, error)) (string, error) {
 	fqn, found := resolveArtifactImageTag(imageName, bRes)
 	if !found {
@@ -41,7 +40,7 @@ func getImage(ctx context.Context, out io.Writer, imageName string, bRes []build
 		// The image is remote so we have to pull it locally.
 		// `container-structure-test` currently can't do it:
 		// https://github.com/GoogleContainerTools/container-structure-test/issues/253.
-		if err := localDaemon.Pull(ctx, out, fqn); err != nil {
+		if err := tr.localDaemon.Pull(ctx, out, fqn); err != nil {
 			return dockerPullImageErr(fqn, err)
 		}
 	}

@@ -18,13 +18,17 @@ package structure
 
 import (
 	"context"
+	"errors"
 	"io/ioutil"
 	"testing"
 
 	"github.com/docker/docker/client"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -38,12 +42,17 @@ func TestNewRunner(t *testing.T) {
 		tmpDir := t.NewTempDir().Touch("test.yaml")
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image "+imageName+" --config "+tmpDir.Path("test.yaml")))
 
-		workingDir := tmpDir.Root()
+		cfg := &mockConfig{
+			workingDir: tmpDir.Root(),
+			tests: []*latest.TestCase{{
+				ImageName:      "image",
+				StructureTests: []string{"test.yaml"},
+			}},
+		}
+
 		structureTests := []string{"test.yaml"}
 
-		localDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{ErrImagePull: true})
-
-		testRunner := NewRunner(structureTests, workingDir, localDaemon, func(imageName string) (bool, error) { return true, nil })
+		testRunner := NewRunner(cfg, structureTests, func(imageName string) (bool, error) { return true, nil })
 		err := testRunner.Test(context.Background(), ioutil.Discard, imageName, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
@@ -52,6 +61,39 @@ func TestNewRunner(t *testing.T) {
 	})
 }
 
+func TestIgnoreDockerNotFound(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().Touch("test.yaml")
+		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
+			return nil, errors.New("not found")
+		})
+
+		cfg := &mockConfig{
+			workingDir: tmpDir.Root(),
+			tests: []*latest.TestCase{{
+				ImageName:      "image",
+				StructureTests: []string{"test.yaml"},
+			}},
+		}
+
+		structureTests := []string{"test.yaml"}
+		testRunner := NewRunner(cfg, structureTests, func(imageName string) (bool, error) { return true, nil })
+
+		t.CheckNil(testRunner)
+	})
+}
+
 func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
 	return docker.NewLocalDaemon(api, nil, false, nil)
 }
+
+type mockConfig struct {
+	runcontext.RunContext // Embedded to provide the default values.
+	workingDir            string
+	tests                 []*latest.TestCase
+	muted                 config.Muted
+}
+
+func (c *mockConfig) Muted() config.Muted           { return c.muted }
+func (c *mockConfig) GetWorkingDir() string         { return c.workingDir }
+func (c *mockConfig) TestCases() []*latest.TestCase { return c.tests }
