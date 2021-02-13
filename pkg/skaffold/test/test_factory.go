@@ -62,16 +62,26 @@ func (t FullTester) TestDependencies() ([]string, error) {
 	var deps []string
 
 	for _, test := range t.testCases {
-		if len(test.StructureTests) != 0 {
-			files, err := structure.TestDependencies(t.workingDir, test.StructureTests)
+		testRunners := t.getRunners(test)
+		for _, tester := range testRunners {
+			result, err := tester.TestDependencies()
 			if err != nil {
 				return nil, err
 			}
-			deps = append(deps, files...)
+			deps = append(deps, result...)
 		}
 	}
 
 	return deps, nil
+}
+
+func (t FullTester) getRunners(tc *latest.TestCase) TesterMux {
+	var runners TesterMux
+
+	newRunner := structure.NewRunner(tc.StructureTests, t.workingDir, t.localDaemon, t.imagesAreLocal)
+	runners = append(runners, newRunner)
+
+	return runners
 }
 
 // Test is the top level testing execution call. It serves as the

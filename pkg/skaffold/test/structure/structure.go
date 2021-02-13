@@ -38,7 +38,7 @@ func (tr *Runner) Test(ctx context.Context, out io.Writer, imageName string, bRe
 		return nil
 	}
 
-	files, err := TestDependencies(tr.testWorkingDir, tr.structureTests)
+	files, err := tr.TestDependencies()
 	if err != nil {
 		return err
 	}

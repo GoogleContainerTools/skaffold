@@ -20,9 +20,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-// TestDependencies returns dependencies listed for the structure tests
-func TestDependencies(workingDir string, paths []string) ([]string, error) {
-	files, err := util.ExpandPathsGlob(workingDir, paths)
+// Dependencies returns dependencies listed for the structure tests
+func (tr *Runner) TestDependencies() ([]string, error) {
+	files, err := util.ExpandPathsGlob(tr.testWorkingDir, tr.structureTests)
 	if err != nil {
 		return nil, expandingFilePathsErr(err)
 	}

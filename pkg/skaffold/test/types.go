@@ -58,5 +58,7 @@ type FullTester struct {
 // running a single test on a single artifact image and returning its result.
 // Any new test type should implement this interface.
 type Runner interface {
-	Test(ctx context.Context, out io.Writer, image string) error
+	Test(ctx context.Context, out io.Writer, image string, bRes []build.Artifact) error
+
+	TestDependencies() ([]string, error)
 }
