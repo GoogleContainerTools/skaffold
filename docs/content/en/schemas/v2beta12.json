@@ -1508,6 +1508,11 @@
           "x-intellij-html-description": "specifies whether the chart path is remote, or exists on the host filesystem.",
           "default": "false"
         },
+        "repo": {
+          "type": "string",
+          "description": "specifies the helm repository for remote charts. If present, Skaffold will send `--repo` Helm CLI flag or flags.",
+          "x-intellij-html-description": "specifies the helm repository for remote charts. If present, Skaffold will send <code>--repo</code> Helm CLI flag or flags."
+        },
         "setFiles": {
           "additionalProperties": {
             "type": "string"
@@ -1579,6 +1584,7 @@
         "skipBuildDependencies",
         "useHelmSecrets",
         "remote",
+        "repo",
         "upgradeOnChange",
         "overrides",
         "packaged",
