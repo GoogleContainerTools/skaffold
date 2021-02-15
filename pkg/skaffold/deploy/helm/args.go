@@ -136,11 +136,6 @@ func (h *Deployer) installArgs(r latest.HelmRelease, builds []build.Artifact, va
 		args = append(args, o.postRenderer)
 	}
 
-	if o.repo != "" {
-		args = append(args, "--repo")
-		args = append(args, o.repo)
-	}
-
 	// There are 2 strategies:
 	// 1) Deploy chart directly from filesystem path or from repository
 	//    (like stable/kubernetes-dashboard). Version only applies to a
@@ -156,6 +151,11 @@ func (h *Deployer) installArgs(r latest.HelmRelease, builds []build.Artifact, va
 
 	if o.namespace != "" {
 		args = append(args, "--namespace", o.namespace)
+	}
+
+	if o.repo != "" {
+		args = append(args, "--repo")
+		args = append(args, o.repo)
 	}
 
 	if r.CreateNamespace != nil && *r.CreateNamespace && !o.upgrade {
