@@ -805,9 +805,14 @@
             "type": "string"
           },
           "type": "array",
-          "description": "describes the names of the required configs.",
-          "x-intellij-html-description": "describes the names of the required configs.",
+          "description": "includes specific named configs within the file path. If empty, then all configs in the file are included.",
+          "x-intellij-html-description": "includes specific named configs within the file path. If empty, then all configs in the file are included.",
           "default": "[]"
+        },
+        "git": {
+          "$ref": "#/definitions/GitInfo",
+          "description": "describes a remote git repository containing the required configs.",
+          "x-intellij-html-description": "describes a remote git repository containing the required configs."
         },
         "path": {
           "type": "string",
@@ -818,6 +823,7 @@
       "preferredOrder": [
         "configs",
         "path",
+        "git",
         "activeProfiles"
       ],
       "additionalProperties": false,
@@ -1177,6 +1183,42 @@
       "additionalProperties": false,
       "description": "*beta* tags images with a configurable template string.",
       "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string."
+    },
+    "GitInfo": {
+      "required": [
+        "repo"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "relative path from the repo root to the skaffold configuration file. eg. `getting-started/skaffold.yaml`.",
+          "x-intellij-html-description": "relative path from the repo root to the skaffold configuration file. eg. <code>getting-started/skaffold.yaml</code>."
+        },
+        "ref": {
+          "type": "string",
+          "description": "git ref the package should be cloned from. eg. `master` or `main`.",
+          "x-intellij-html-description": "git ref the package should be cloned from. eg. <code>master</code> or <code>main</code>."
+        },
+        "repo": {
+          "type": "string",
+          "description": "git repository the package should be cloned from.  e.g. `https://github.com/GoogleContainerTools/skaffold.git`.",
+          "x-intellij-html-description": "git repository the package should be cloned from.  e.g. <code>https://github.com/GoogleContainerTools/skaffold.git</code>."
+        },
+        "sync": {
+          "type": "boolean",
+          "description": "when set to `true` will reset the cached repository to the latest commit from remote on every run. To use the cached repository with uncommitted changes or unpushed commits, it needs to be set to `false`.",
+          "x-intellij-html-description": "when set to <code>true</code> will reset the cached repository to the latest commit from remote on every run. To use the cached repository with uncommitted changes or unpushed commits, it needs to be set to <code>false</code>."
+        }
+      },
+      "preferredOrder": [
+        "repo",
+        "path",
+        "ref",
+        "sync"
+      ],
+      "additionalProperties": false,
+      "description": "contains information on the origin of skaffold configurations cloned from a git repository.",
+      "x-intellij-html-description": "contains information on the origin of skaffold configurations cloned from a git repository."
     },
     "GitTagger": {
       "properties": {

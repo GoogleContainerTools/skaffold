@@ -845,12 +845,12 @@ Enum indicating deploy tools used
 <a name="proto.StatusCode"></a>
 
 ### StatusCode
-Enum for Status codes
+Enum for Status codes<br>
 These error codes are prepended by Phase Name e.g.
-BUILD, TEST, DEPLOY, STATUSCHECK, DEVINIT
-For Success Error codes, use range 200 to 250.
-For Unknown error codes, use range 500 to 600.
-For Cancelled Error code, use range 800 to 850.
+INIT, BUILD, TEST, DEPLOY, STATUSCHECK, DEVINIT<br>
+For Success Error codes, use range 200 to 250.<br>
+For Unknown error codes, use range 500 to 600.<br>
+For Cancelled Error code, use range 800 to 850.<br>
 
 | Name | Number | Description |
 | ---- |:------:| ----------- |
@@ -959,6 +959,9 @@ For Cancelled Error code, use range 800 to 850.
 | DEPLOY_MANIFEST_WRITE_ERR | 1020 | Error writing hydrated kubernetes manifests. |
 | DEPLOY_PARSE_MANIFEST_IMAGES_ERR | 1021 | Error getting images from a kubernetes manifest. |
 | DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE | 1022 | Helm config `createNamespace` not available |
+| TEST_USER_CONFIG_ERR | 1101 | Error expanding paths |
+| TEST_CST_USER_ERR | 1102 | Error running container-structure-test |
+| TEST_IMG_PULL_ERR | 1103 | Unable to docker pull image |
 
 
 

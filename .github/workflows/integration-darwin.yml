@@ -99,4 +99,6 @@ jobs:
     - name: Run integration tests
       env:
         TOKEN: ${{ secrets.TOKEN }}
-      run: IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
+      run: |
+        skaffold config set --global collect-metrics false
+        IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
