@@ -731,6 +731,10 @@ type HelmRelease struct {
 	// Remote specifies whether the chart path is remote, or exists on the host filesystem.
 	Remote bool `yaml:"remote,omitempty"`
 
+	// Repo specifies the helm repository for remote charts.
+	// If present, Skaffold will send `--repo` Helm CLI flag or flags.
+	Repo string `yaml:"repo,omitempty"`
+
 	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
 	// Default is `true` when helm chart is local (`remote: false`).
 	// Default is `false` if `remote: true`.
