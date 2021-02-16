@@ -19,7 +19,7 @@ package errors
 import (
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 type Error interface {
