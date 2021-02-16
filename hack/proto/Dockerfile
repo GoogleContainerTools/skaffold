@@ -32,8 +32,8 @@ RUN go get \
     github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.9.1 \
     github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.3.2
 
-WORKDIR /proto
-COPY skaffold.proto markdown.tmpl ./
+WORKDIR /proto/v1
+COPY v1/skaffold.proto v1/markdown.tmpl ./
 RUN protoc \
   -I . \
   -I /protoc/include  \
@@ -51,6 +51,6 @@ RUN jq 'walk(if type == "object" and has("title") then .description = ([.title, 
 # Compare the proto files with the existing proto files
 FROM generate-files AS compare
 WORKDIR /compare
-COPY *.go ./
-COPY --from=generate-files /proto/index.md ./
-CMD cmp /proto/skaffold.pb.go skaffold.pb.go && cmp /proto/skaffold.pb.gw.go skaffold.pb.gw.go
+COPY v1/*.go ./
+COPY --from=generate-files /proto/v1/index.md ./
+CMD cmp /proto/v1/skaffold.pb.go skaffold.pb.go && cmp /proto/v1/skaffold.pb.gw.go skaffold.pb.gw.go
