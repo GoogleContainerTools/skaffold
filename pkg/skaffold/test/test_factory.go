@@ -115,18 +115,13 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifa
 
 func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
 	for _, test := range t.testCases {
-		if len(test.StructureTests) != 0 {
-			if err := t.runStructureTests(ctx, out, test, bRes); err != nil {
+		testRunners := t.getRunners(test)
+		for _, tester := range testRunners {
+			if err := tester.Test(ctx, out, test.ImageName, bRes); err != nil {
 				return fmt.Errorf("running structure tests: %w", err)
 			}
 		}
 	}
 
 	return nil
-}
-
-func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, tc *latest.TestCase, bRes []build.Artifact) error {
-	runner := structure.NewRunner(t.cfg, tc.StructureTests, t.imagesAreLocal)
-
-	return runner.Test(ctx, out, tc.ImageName, bRes)
 }
