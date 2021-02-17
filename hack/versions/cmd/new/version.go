@@ -116,17 +116,19 @@ func readNextVersion(current string) string {
 	var new string
 	if len(os.Args) <= 1 {
 		proposal := bumpVersion(current)
-		color.Red.Fprintf(os.Stdout, "Please enter new version (e.g. %s): ", proposal)
+		color.Red.Fprintf(os.Stdout, "Please enter new version (default: %s): ", proposal)
 		reader := bufio.NewReader(os.Stdin)
-		if line, err := reader.ReadString('\n'); err == nil {
+		if line, err := reader.ReadString('\n'); err != nil {
+			logrus.Fatalf("error reading input: %s", err)
+		} else if line != "" {
 			new = line
 		} else {
-			logrus.Fatalf("error reading input: %s", err)
+			new = proposal
 		}
 	} else {
 		new = os.Args[1]
 	}
-	return strings.TrimSuffix(new, "\n")
+	return strings.TrimSpace(new)
 }
 
 // bumpVersion increments a KRM-style version string (v1 -> v2alpha1, v2beta11 -> v2beta12).
