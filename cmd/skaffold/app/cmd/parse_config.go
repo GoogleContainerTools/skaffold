@@ -92,6 +92,19 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 	}
 	logrus.Debugf("parsed %d configs from configuration file %s", len(parsed), cfgOpts.file)
 
+	// validate that config names are unique if specified
+	seen := make(map[string]bool)
+	for _, cfg := range parsed {
+		cfgName := cfg.(*latest.SkaffoldConfig).Metadata.Name
+		if cfgName == "" {
+			continue
+		}
+		if seen[cfgName] {
+			return nil, fmt.Errorf("multiple skaffold configs named %q found in file %q", cfgName, cfgOpts.file)
+		}
+		seen[cfgName] = true
+	}
+
 	var configs []*latest.SkaffoldConfig
 	for i, cfg := range parsed {
 		config := cfg.(*latest.SkaffoldConfig)
@@ -104,22 +117,16 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 	return configs, nil
 }
 
-// processEachConfig processes each parsed config by applying profiles and recursively processing it's dependencies
+// processEachConfig processes each parsed config by applying profiles and recursively processing its dependencies.
+// The `index` parameter specifies the index of the current config in its `skaffold.yaml` file. We use the `index` instead of the config `metadata.name` property to uniquely identify each config since not all configs define `name`.
 func processEachConfig(config *latest.SkaffoldConfig, cfgOpts configOpts, opts config.SkaffoldOptions, r *record, index int) ([]*latest.SkaffoldConfig, error) {
 	// check that the same config name isn't repeated in multiple files.
 	if config.Metadata.Name != "" {
-		prev, found := r.configNameToFile[config.Metadata.Name]
-		if found {
-			sl := strings.SplitN(prev, "@", 2) // map value is always formatted as `file_name@config_index`
-			prevConfig, prevIndex := sl[0], sl[1]
-			if prevConfig != cfgOpts.file {
-				return nil, fmt.Errorf("skaffold config named %q found in multiple files: %q and %q", config.Metadata.Name, prevConfig, cfgOpts.file)
-			}
-			if prevIndex != fmt.Sprint(index) {
-				return nil, fmt.Errorf("multiple skaffold configs named %q found in file %q", config.Metadata.Name, cfgOpts.file)
-			}
+		prevConfig, found := r.configNameToFile[config.Metadata.Name]
+		if found && prevConfig != cfgOpts.file {
+			return nil, fmt.Errorf("skaffold config named %q found in multiple files: %q and %q", config.Metadata.Name, prevConfig, cfgOpts.file)
 		}
-		r.configNameToFile[config.Metadata.Name] = fmt.Sprintf("%s@%d", cfgOpts.file, index)
+		r.configNameToFile[config.Metadata.Name] = cfgOpts.file
 	}
 
 	// configSelection specifies the exact required configs in this file. Empty configSelection means that all configs are required.
