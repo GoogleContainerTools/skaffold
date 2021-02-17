@@ -81,7 +81,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 		return nil, err
 	}
 
-	if !filepath.IsAbs(cfgOpts.file) {
+	if !util.IsURL(cfgOpts.file) && !filepath.IsAbs(cfgOpts.file) {
 		cwd, _ := util.RealWorkDir()
 		// convert `file` path to absolute value as it's used as a map key in several places.
 		cfgOpts.file = filepath.Join(cwd, cfgOpts.file)
@@ -108,11 +108,18 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 func processEachConfig(config *latest.SkaffoldConfig, cfgOpts configOpts, opts config.SkaffoldOptions, r *record, index int) ([]*latest.SkaffoldConfig, error) {
 	// check that the same config name isn't repeated in multiple files.
 	if config.Metadata.Name != "" {
-		prevConfig, found := r.configNameToFile[config.Metadata.Name]
-		if found && prevConfig != cfgOpts.file {
-			return nil, fmt.Errorf("skaffold config named %q found in multiple files: %q and %q", config.Metadata.Name, prevConfig, cfgOpts.file)
+		prev, found := r.configNameToFile[config.Metadata.Name]
+		if found {
+			sl := strings.SplitN(prev, "@", 2) // map value is always formatted as `file_name@config_index`
+			prevConfig, prevIndex := sl[0], sl[1]
+			if prevConfig != cfgOpts.file {
+				return nil, fmt.Errorf("skaffold config named %q found in multiple files: %q and %q", config.Metadata.Name, prevConfig, cfgOpts.file)
+			}
+			if prevIndex != fmt.Sprint(index) {
+				return nil, fmt.Errorf("multiple skaffold configs named %q found in file %q", config.Metadata.Name, cfgOpts.file)
+			}
 		}
-		r.configNameToFile[config.Metadata.Name] = cfgOpts.file
+		r.configNameToFile[config.Metadata.Name] = fmt.Sprintf("%s@%d", cfgOpts.file, index)
 	}
 
 	// configSelection specifies the exact required configs in this file. Empty configSelection means that all configs are required.
@@ -193,15 +200,17 @@ func processEachDependency(d latest.ConfigDependency, cfgOpts configOpts, opts c
 		// empty path means configs in the same file
 		path = cfgOpts.file
 	}
-	fi, err := os.Stat(path)
-	if err != nil {
-		if os.IsNotExist(errors.Unwrap(err)) {
-			return nil, fmt.Errorf("could not find skaffold config %s that is referenced as a dependency in config %s", path, cfgOpts.file)
+	if !util.IsURL(path) {
+		fi, err := os.Stat(path)
+		if err != nil {
+			if os.IsNotExist(errors.Unwrap(err)) {
+				return nil, fmt.Errorf("could not find skaffold config %s that is referenced as a dependency in config %s", path, cfgOpts.file)
+			}
+			return nil, fmt.Errorf("parsing dependencies for skaffold config %s: %w", cfgOpts.file, err)
 		}
-		return nil, fmt.Errorf("parsing dependencies for skaffold config %s: %w", cfgOpts.file, err)
-	}
-	if fi.IsDir() {
-		path = filepath.Join(path, "skaffold.yaml")
+		if fi.IsDir() {
+			path = filepath.Join(path, "skaffold.yaml")
+		}
 	}
 	cfgOpts.isDependency = cfgOpts.isDependency || path != cfgOpts.file
 	cfgOpts.file = path

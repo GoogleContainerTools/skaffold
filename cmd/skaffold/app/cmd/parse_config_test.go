@@ -90,7 +90,7 @@ func TestGetAllConfigs(t *testing.T) {
 		documents    []document
 		configFilter []string
 		profiles     []string
-		err          error
+		err          string
 		expected     []*latest.SkaffoldConfig
 	}{
 		{
@@ -346,7 +346,30 @@ requires:
 `}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			err: errors.New("did not find any configs matching selection [cfg3]"),
+			err: "did not find any configs matching selection [cfg3]",
+		},
+		{
+			description: "duplicate config names across multiple configs",
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
+requires:
+  - path: doc1
+    configs: [cfg10]
+`}, {name: "cfg01", requiresStanza: `
+requires:
+  - path: doc1
+    configs: [cfg11]
+`}}},
+				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10"}, {name: "cfg11"}, {name: "cfg00"}}},
+			},
+			err: `skaffold config named "cfg00" found in multiple files: "WORK_DIR/skaffold.yaml" and "WORK_DIR/doc1/skaffold.yaml"`,
+		},
+		{
+			description: "duplicate config names in main config",
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00"}, {name: "cfg00"}}},
+			},
+			err: `multiple skaffold configs named "cfg00" found in file "WORK_DIR/skaffold.yaml"`,
 		},
 		{
 			description: "remote dependencies",
@@ -394,7 +417,7 @@ requires:
 				tmpDir.Write(d.path, strings.Join(cfgs, "\n---\n"))
 			}
 			tmpDir.Chdir()
-
+			wd, _ := util.RealWorkDir()
 			for _, c := range test.expected {
 				dir := c.Build.Artifacts[0].Workspace
 				// in this test setup artifact workspace also denotes the config directory and no dependent config is in the root directory.
@@ -402,7 +425,6 @@ requires:
 					continue
 				}
 				// only for dependent configs update the expected path values to absolute.
-				wd, _ := util.RealWorkDir()
 				c.Build.Artifacts[0].Workspace = filepath.Join(wd, dir)
 				for i := range c.Dependencies {
 					if c.Dependencies[i].Path == "" {
@@ -419,8 +441,11 @@ requires:
 				Profiles:            test.profiles,
 			})
 
-			t.CheckDeepEqual(test.err, err, cmp.Comparer(errorsComparer))
-			t.CheckErrorAndDeepEqual(test.err != nil, err, test.expected, cfgs)
+			if test.err != "" {
+				t.CheckDeepEqual(errors.New(strings.ReplaceAll(test.err, "WORK_DIR", wd)), err, cmp.Comparer(errorsComparer))
+			} else {
+				t.CheckDeepEqual(test.expected, cfgs)
+			}
 		})
 	}
 }
