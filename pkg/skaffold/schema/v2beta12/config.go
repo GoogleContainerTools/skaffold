@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v2beta12
 
 import (
 	"encoding/json"
@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2beta13"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v2beta12"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -730,10 +730,6 @@ type HelmRelease struct {
 
 	// Remote specifies whether the chart path is remote, or exists on the host filesystem.
 	Remote bool `yaml:"remote,omitempty"`
-
-	// Repo specifies the helm repository for remote charts.
-	// If present, Skaffold will send `--repo` Helm CLI flag or flags.
-	Repo string `yaml:"repo,omitempty"`
 
 	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
 	// Default is `true` when helm chart is local (`remote: false`).
