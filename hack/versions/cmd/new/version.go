@@ -47,6 +47,8 @@ func main() {
 		logrus.Fatalf("There is no need to create a new version, %s is still not released", current)
 	}
 
+	next := readNextVersion(current)
+
 	makeSchemaDir(current)
 
 	// Create a package for current version
@@ -55,8 +57,6 @@ func main() {
 		sed(path(current, info.Name()), "package latest", "package "+current)
 		return nil
 	})
-
-	next := readNextVersion(current)
 
 	// Create code to upgrade from current to new
 	cp(path(prev, "upgrade.go"), path(current, "upgrade.go"))
