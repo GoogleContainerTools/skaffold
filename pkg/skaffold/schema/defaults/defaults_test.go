@@ -17,7 +17,6 @@ limitations under the License.
 package defaults
 
 import (
-	"fmt"
 	"testing"
 
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -352,7 +351,6 @@ func TestSetPortForwardOnEmptyPortForwardResource(t *testing.T) {
 		},
 	}
 	err := Set(cfg)
-	fmt.Println(err.Error())
 	SetDefaultDeployer(cfg)
 	testutil.CheckError(t, true, err)
 }

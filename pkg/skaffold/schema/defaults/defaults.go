@@ -363,9 +363,6 @@ func currentNamespace() (string, error) {
 }
 
 func setDefaultLocalPort(pf *latest.PortForwardResource) {
-	if pf == nil {
-		logrus.Debugf("PortFoward resource is nil")
-	}
 	if pf.LocalPort == 0 {
 		if pf.Port.Type == schemautil.Int {
 			pf.LocalPort = pf.Port.IntVal
