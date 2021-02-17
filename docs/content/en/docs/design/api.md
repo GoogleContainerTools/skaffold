@@ -61,7 +61,7 @@ The skaffold gRPC server is not compatible with HTTPS, so connections need to be
 ```golang
 import (
   "log"
-  pb "github.com/GoogleContainerTools/skaffold/proto"
+  pb "github.com/GoogleContainerTools/skaffold/proto/v1"
   "google.golang.org/grpc"
 )
 

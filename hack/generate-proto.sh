@@ -17,8 +17,8 @@
 set -e
 
 docker build -t gen-proto -f hack/proto/Dockerfile --target generate-files proto
-docker run --rm gen-proto cat skaffold.pb.go > proto/skaffold.pb.go
-docker run --rm gen-proto cat skaffold.pb.gw.go > proto/skaffold.pb.gw.go
+docker run --rm gen-proto cat skaffold.pb.go > proto/v1/skaffold.pb.go
+docker run --rm gen-proto cat skaffold.pb.gw.go > proto/v1/skaffold.pb.gw.go
 docker run --rm gen-proto cat index.md > docs/content/en/docs/references/api/grpc.md
 docker run --rm gen-proto cat skaffold.swagger.json > docs/content/en/api/skaffold.swagger.json
 

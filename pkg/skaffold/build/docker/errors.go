@@ -24,7 +24,7 @@ import (
 	"github.com/docker/docker/pkg/jsonmessage"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 // newBuildError turns Docker-specific errors into actionable errors.
