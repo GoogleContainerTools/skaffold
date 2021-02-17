@@ -96,7 +96,10 @@ func Set(c *latest.SkaffoldConfig) error {
 		return err
 	}
 
-	for _, pf := range c.PortForward {
+	for i, pf := range c.PortForward {
+		if pf == nil {
+			return fmt.Errorf("Config's portForward[%d] is empty, Please check if it has valid values", i)
+		}
 		setDefaultLocalPort(pf)
 		setDefaultAddress(pf)
 	}
@@ -360,6 +363,9 @@ func currentNamespace() (string, error) {
 }
 
 func setDefaultLocalPort(pf *latest.PortForwardResource) {
+	if pf == nil {
+		logrus.Debugf("PortFoward resource is nil")
+	}
 	if pf.LocalPort == 0 {
 		if pf.Port.Type == schemautil.Int {
 			pf.LocalPort = pf.Port.IntVal
