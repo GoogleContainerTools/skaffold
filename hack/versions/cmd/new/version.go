@@ -48,6 +48,7 @@ func main() {
 	}
 
 	next := readNextVersion(current)
+	logrus.Infof("Next Skaffold version: %s", next)
 
 	makeSchemaDir(current)
 
