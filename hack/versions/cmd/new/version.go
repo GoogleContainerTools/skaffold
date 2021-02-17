@@ -116,15 +116,13 @@ func makeSchemaDir(new string) {
 func readNextVersion(current string) string {
 	var new string
 	if len(os.Args) <= 1 {
-		proposal := bumpVersion(current)
-		color.Red.Fprintf(os.Stdout, "Please enter new version (default: %s): ", proposal)
+		new = bumpVersion(current)
+		color.Red.Fprintf(os.Stdout, "Please enter new version (default: %s): ", new)
 		reader := bufio.NewReader(os.Stdin)
 		if line, err := reader.ReadString('\n'); err != nil {
 			logrus.Fatalf("error reading input: %s", err)
-		} else if line != "" {
+		} else if strings.TrimSpace(line) != "" {
 			new = line
-		} else {
-			new = proposal
 		}
 	} else {
 		new = os.Args[1]
