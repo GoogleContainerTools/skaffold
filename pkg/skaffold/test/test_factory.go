@@ -109,7 +109,11 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Ar
 func getRunner(cfg Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latest.TestCase) []runner {
 	var runners []runner
 	for _, tc := range tcs {
-		runners = append(runners, structure.New(cfg, cfg.GetWorkingDir(), tc, imagesAreLocal))
+		structureRunner := structure.New(cfg, cfg.GetWorkingDir(), tc, imagesAreLocal)
+		if structureRunner == nil {
+			return nil
+		}
+		runners = append(runners, structureRunner)
 	}
 	return runners
 }
