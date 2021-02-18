@@ -30,10 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-type Config interface {
-	docker.Config
-}
-
 type Runner struct {
 	structureTests []string
 	image          string
@@ -43,7 +39,7 @@ type Runner struct {
 }
 
 // New creates a new structure.Runner.
-func New(cfg Config, wd string, tc *latest.TestCase, imagesAreLocal func(imageName string) (bool, error)) *Runner {
+func New(cfg docker.Config, wd string, tc *latest.TestCase, imagesAreLocal func(imageName string) (bool, error)) *Runner {
 	localDaemon, err := docker.NewAPIClient(cfg)
 	if err != nil {
 		return nil
