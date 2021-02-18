@@ -210,7 +210,7 @@ func processEachDependency(d latest.ConfigDependency, cfgOpts configOpts, opts c
 	if !util.IsURL(path) {
 		fi, err := os.Stat(path)
 		if err != nil {
-			if os.IsNotExist(errors.Unwrap(err)) {
+			if errors.Is(err, os.ErrNotExist) {
 				return nil, fmt.Errorf("could not find skaffold config %s that is referenced as a dependency in config %s", path, cfgOpts.file)
 			}
 			return nil, fmt.Errorf("parsing dependencies for skaffold config %s: %w", cfgOpts.file, err)
