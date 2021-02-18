@@ -44,44 +44,28 @@ type Config interface {
 // to run all specified tests.
 func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) Tester {
 	return FullTester{
-		cfg:            cfg,
-		testCases:      cfg.TestCases(),
-		muted:          cfg.Muted(),
-		imagesAreLocal: imagesAreLocal,
+		runners: getRunners(cfg, imagesAreLocal, cfg.TestCases()),
+		muted:   cfg.Muted(),
 	}
 }
 
 // TestDependencies returns the watch dependencies to the runner.
 func (t FullTester) TestDependencies() ([]string, error) {
 	var deps []string
-
-	for _, test := range t.testCases {
-		testRunners := t.getRunners(test)
-		for _, tester := range testRunners {
-			result, err := tester.TestDependencies()
-			if err != nil {
-				return nil, err
-			}
-			deps = append(deps, result...)
+	for _, tester := range t.runners {
+		result, err := tester.TestDependencies()
+		if err != nil {
+			return nil, err
 		}
+		deps = append(deps, result...)
 	}
-
 	return deps, nil
-}
-
-func (t FullTester) getRunners(tc *latest.TestCase) []Runner {
-	var runners []Runner
-
-	newRunner := structure.NewRunner(t.cfg, tc.StructureTests, t.imagesAreLocal)
-	runners = append(runners, newRunner)
-
-	return runners
 }
 
 // Test is the top level testing execution call. It serves as the
 // entrypoint to all individual tests.
 func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
-	if len(t.testCases) == 0 {
+	if len(t.runners) == 0 {
 		return nil
 	}
 
@@ -114,14 +98,18 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifa
 }
 
 func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
-	for _, test := range t.testCases {
-		testRunners := t.getRunners(test)
-		for _, tester := range testRunners {
-			if err := tester.Test(ctx, out, test.ImageName, bRes); err != nil {
-				return fmt.Errorf("running structure tests: %w", err)
-			}
+	for _, tester := range t.runners {
+		if err := tester.Test(ctx, out, bRes); err != nil {
+			return fmt.Errorf("running tests: %w", err)
 		}
 	}
-
 	return nil
+}
+
+func getRunners(cfg Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latest.TestCase) []runner {
+	var runners []runner
+	for _, tc := range tcs {
+		runners = append(runners, structure.New(cfg, cfg.GetWorkingDir(), tc, imagesAreLocal))
+	}
+	return runners
 }

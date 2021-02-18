@@ -21,7 +21,6 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // Tester is the top level test executor in Skaffold.
@@ -40,23 +39,22 @@ type Muted interface {
 
 // FullTester serves as a holder for the individual artifact-specific
 // testers. It exists so that the Tester interface can mimic the Builder/Deployer
-// interface, so it can be called in a similar fashion from the Runner, while
+// interface, so it can be called in a similar fashion from the runner, while
 // the FullTester actually handles the work.
 
 // FullTester should always be the ONLY implementation of the Tester interface;
-// newly added testing implementations should implement the Runner interface.
+// newly added testing implementations should implement the runner interface.
 type FullTester struct {
-	cfg            Config
-	testCases      []*latest.TestCase
-	muted          Muted
-	imagesAreLocal func(imageName string) (bool, error)
+	runners []runner
+	muted   Muted
+	// imagesAreLocal func(imageName string) (bool, error)
 }
 
-// Runner is the lowest-level test executor in Skaffold, responsible for
+// runner is the lowest-level test executor in Skaffold, responsible for
 // running a single test on a single artifact image and returning its result.
 // Any new test type should implement this interface.
-type Runner interface {
-	Test(ctx context.Context, out io.Writer, image string, bRes []build.Artifact) error
+type runner interface {
+	Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error
 
 	TestDependencies() ([]string, error)
 }

@@ -33,7 +33,7 @@ import (
 
 func TestNewRunner(t *testing.T) {
 	const (
-		imageName = "foo.io/baz"
+		imageName = "image:tag"
 	)
 
 	testutil.Run(t, "", func(t *testutil.T) {
@@ -48,10 +48,13 @@ func TestNewRunner(t *testing.T) {
 			}},
 		}
 
-		structureTests := []string{"test.yaml"}
+		testCase := &latest.TestCase{
+			ImageName:      "image",
+			StructureTests: []string{"test.yaml"},
+		}
 
-		testRunner := NewRunner(cfg, structureTests, func(imageName string) (bool, error) { return true, nil })
-		err := testRunner.Test(context.Background(), ioutil.Discard, imageName, []build.Artifact{{
+		testRunner := New(cfg, cfg.workingDir, testCase, func(imageName string) (bool, error) { return true, nil })
+		err := testRunner.Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -74,8 +77,14 @@ func TestIgnoreDockerNotFound(t *testing.T) {
 			}},
 		}
 
-		structureTests := []string{"test.yaml"}
-		testRunner := NewRunner(cfg, structureTests, func(imageName string) (bool, error) { return true, nil })
+		// structureTests := []string{"test.yaml"}
+
+		testCase := &latest.TestCase{
+			ImageName:      "image",
+			StructureTests: []string{"test.yaml"},
+		}
+
+		testRunner := New(cfg, cfg.workingDir, testCase, func(imageName string) (bool, error) { return true, nil })
 
 		t.CheckNil(testRunner)
 	})
