@@ -219,6 +219,9 @@ func processEachDependency(d latest.ConfigDependency, cfgOpts configOpts, opts c
 			path = filepath.Join(path, "skaffold.yaml")
 		}
 	}
+
+	// if the current and previous configuration files are the same, then current config should be treated as a dependency config if the previous config was also a dependency config.
+	// Otherwise the current config is always a dependency config if the file path is different than the previous.
 	cfgOpts.isDependency = cfgOpts.isDependency || path != cfgOpts.file
 	cfgOpts.file = path
 	cfgOpts.selection = d.Names
