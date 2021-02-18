@@ -362,14 +362,14 @@ requires:
 `}}},
 				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10"}, {name: "cfg11"}, {name: "cfg00"}}},
 			},
-			err: `skaffold config named "cfg00" found in multiple files: "WORK_DIR/skaffold.yaml" and "WORK_DIR/doc1/skaffold.yaml"`,
+			err: fmt.Sprintf(`skaffold config named "cfg00" found in multiple files: %q and %q`,filepath.Join("WORK_DIR", "skaffold.yaml"), filepath.Join("WORK_DIR", "doc1", "skaffold.yaml")),
 		},
 		{
 			description: "duplicate config names in main config",
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00"}, {name: "cfg00"}}},
 			},
-			err: `multiple skaffold configs named "cfg00" found in file "WORK_DIR/skaffold.yaml"`,
+			err: fmt.Sprintf(`multiple skaffold configs named "cfg00" found in file %q`, filepath.Join("WORK_DIR", "skaffold.yaml")),
 		},
 		{
 			description: "remote dependencies",
