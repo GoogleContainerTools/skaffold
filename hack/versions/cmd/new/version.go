@@ -18,10 +18,12 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -45,6 +47,9 @@ func main() {
 		logrus.Fatalf("There is no need to create a new version, %s is still not released", current)
 	}
 
+	next := readNextVersion(current)
+	logrus.Infof("Next Skaffold version: %s", next)
+
 	makeSchemaDir(current)
 
 	// Create a package for current version
@@ -53,8 +58,6 @@ func main() {
 		sed(path(current, info.Name()), "package latest", "package "+current)
 		return nil
 	})
-
-	next := readNextVersion()
 
 	// Create code to upgrade from current to new
 	cp(path(prev, "upgrade.go"), path(current, "upgrade.go"))
@@ -110,20 +113,37 @@ func makeSchemaDir(new string) {
 	}
 }
 
-func readNextVersion() string {
+func readNextVersion(current string) string {
 	var new string
 	if len(os.Args) <= 1 {
-		color.Red.Fprintln(os.Stdout, "Please enter new version (e.g. v1beta15): ")
+		new = bumpVersion(current)
+		color.Red.Fprintf(os.Stdout, "Please enter new version (default: %s): ", new)
 		reader := bufio.NewReader(os.Stdin)
-		if line, err := reader.ReadString('\n'); err == nil {
-			new = line
-		} else {
+		if line, err := reader.ReadString('\n'); err != nil {
 			logrus.Fatalf("error reading input: %s", err)
+		} else if strings.TrimSpace(line) != "" {
+			new = line
 		}
 	} else {
 		new = os.Args[1]
 	}
-	return strings.TrimSuffix(new, "\n")
+	return strings.TrimSpace(new)
+}
+
+// bumpVersion increments a KRM-style version string (v1 -> v2alpha1, v2beta11 -> v2beta12).
+func bumpVersion(version string) string {
+	// turn a released version into next alpha (v1 -> v2alpha1)
+	if m := regexp.MustCompile(`^v([0-9]+)$`).FindStringSubmatch(version); len(m) > 0 {
+		i, _ := strconv.Atoi(m[1])
+		return fmt.Sprintf("v%dalpha1", i+1)
+	}
+	// bump alpha/beta version by 1 (v1beta2 -> v1beta2)
+	if m := regexp.MustCompile(`^(v[0-9]+(?:alpha|beta))([0-9]+)$`).FindStringSubmatch(version); len(m) > 0 {
+		i, _ := strconv.Atoi(m[2])
+		return fmt.Sprintf("%s%d", m[1], i+1)
+	}
+	logrus.Warnf("Unrecognized version string: %s", version)
+	return version
 }
 
 func path(elem ...string) string {
