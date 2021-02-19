@@ -39,10 +39,10 @@ type Runner struct {
 }
 
 // New creates a new structure.Runner.
-func New(cfg docker.Config, wd string, tc *latest.TestCase, imagesAreLocal func(imageName string) (bool, error)) *Runner {
+func New(cfg docker.Config, wd string, tc *latest.TestCase, imagesAreLocal func(imageName string) (bool, error)) (*Runner, error) {
 	localDaemon, err := docker.NewAPIClient(cfg)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	return &Runner{
 		structureTests: tc.StructureTests,
@@ -50,7 +50,7 @@ func New(cfg docker.Config, wd string, tc *latest.TestCase, imagesAreLocal func(
 		testWorkingDir: wd,
 		localDaemon:    localDaemon,
 		imagesAreLocal: imagesAreLocal,
-	}
+	}, nil
 }
 
 // Test is the entrypoint for running structure tests
