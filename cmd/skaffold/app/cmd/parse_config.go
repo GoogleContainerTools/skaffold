@@ -81,7 +81,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 		return nil, err
 	}
 
-	if !filepath.IsAbs(cfgOpts.file) {
+	if !util.IsURL(cfgOpts.file) && !filepath.IsAbs(cfgOpts.file) {
 		cwd, _ := util.RealWorkDir()
 		// convert `file` path to absolute value as it's used as a map key in several places.
 		cfgOpts.file = filepath.Join(cwd, cfgOpts.file)
@@ -91,6 +91,19 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 		return nil, fmt.Errorf("skaffold config file %s is empty", opts.ConfigurationFile)
 	}
 	logrus.Debugf("parsed %d configs from configuration file %s", len(parsed), cfgOpts.file)
+
+	// validate that config names are unique if specified
+	seen := make(map[string]bool)
+	for _, cfg := range parsed {
+		cfgName := cfg.(*latest.SkaffoldConfig).Metadata.Name
+		if cfgName == "" {
+			continue
+		}
+		if seen[cfgName] {
+			return nil, fmt.Errorf("multiple skaffold configs named %q found in file %q", cfgName, cfgOpts.file)
+		}
+		seen[cfgName] = true
+	}
 
 	var configs []*latest.SkaffoldConfig
 	for i, cfg := range parsed {
@@ -104,7 +117,8 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 	return configs, nil
 }
 
-// processEachConfig processes each parsed config by applying profiles and recursively processing it's dependencies
+// processEachConfig processes each parsed config by applying profiles and recursively processing its dependencies.
+// The `index` parameter specifies the index of the current config in its `skaffold.yaml` file. We use the `index` instead of the config `metadata.name` property to uniquely identify each config since not all configs define `name`.
 func processEachConfig(config *latest.SkaffoldConfig, cfgOpts configOpts, opts config.SkaffoldOptions, r *record, index int) ([]*latest.SkaffoldConfig, error) {
 	// check that the same config name isn't repeated in multiple files.
 	if config.Metadata.Name != "" {
@@ -193,16 +207,21 @@ func processEachDependency(d latest.ConfigDependency, cfgOpts configOpts, opts c
 		// empty path means configs in the same file
 		path = cfgOpts.file
 	}
-	fi, err := os.Stat(path)
-	if err != nil {
-		if os.IsNotExist(errors.Unwrap(err)) {
-			return nil, fmt.Errorf("could not find skaffold config %s that is referenced as a dependency in config %s", path, cfgOpts.file)
+	if !util.IsURL(path) {
+		fi, err := os.Stat(path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return nil, fmt.Errorf("could not find skaffold config %s that is referenced as a dependency in config %s", path, cfgOpts.file)
+			}
+			return nil, fmt.Errorf("parsing dependencies for skaffold config %s: %w", cfgOpts.file, err)
 		}
-		return nil, fmt.Errorf("parsing dependencies for skaffold config %s: %w", cfgOpts.file, err)
+		if fi.IsDir() {
+			path = filepath.Join(path, "skaffold.yaml")
+		}
 	}
-	if fi.IsDir() {
-		path = filepath.Join(path, "skaffold.yaml")
-	}
+
+	// if the current and previous configuration files are the same, then current config should be treated as a dependency config if the previous config was also a dependency config.
+	// Otherwise the current config is always a dependency config if the file path is different than the previous.
 	cfgOpts.isDependency = cfgOpts.isDependency || path != cfgOpts.file
 	cfgOpts.file = path
 	cfgOpts.selection = d.Names

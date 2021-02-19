@@ -17,13 +17,10 @@ limitations under the License.
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/git"
@@ -85,12 +82,13 @@ type mockCfg struct {
 }
 
 func TestGetAllConfigs(t *testing.T) {
+	// TODO: Modify test to check actual error codes for failure test cases, after fixing https://github.com/GoogleContainerTools/skaffold/issues/5412
 	tests := []struct {
 		description  string
 		documents    []document
 		configFilter []string
 		profiles     []string
-		err          error
+		shouldErr    bool
 		expected     []*latest.SkaffoldConfig
 	}{
 		{
@@ -346,7 +344,30 @@ requires:
 `}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			err: errors.New("did not find any configs matching selection [cfg3]"),
+			shouldErr: true,
+		},
+		{
+			description: "duplicate config names across multiple configs",
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
+requires:
+  - path: doc1
+    configs: [cfg10]
+`}, {name: "cfg01", requiresStanza: `
+requires:
+  - path: doc1
+    configs: [cfg11]
+`}}},
+				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10"}, {name: "cfg11"}, {name: "cfg00"}}},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "duplicate config names in main config",
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00"}, {name: "cfg00"}}},
+			},
+			shouldErr: true,
 		},
 		{
 			description: "remote dependencies",
@@ -394,7 +415,6 @@ requires:
 				tmpDir.Write(d.path, strings.Join(cfgs, "\n---\n"))
 			}
 			tmpDir.Chdir()
-
 			for _, c := range test.expected {
 				dir := c.Build.Artifacts[0].Workspace
 				// in this test setup artifact workspace also denotes the config directory and no dependent config is in the root directory.
@@ -419,18 +439,7 @@ requires:
 				Profiles:            test.profiles,
 			})
 
-			t.CheckDeepEqual(test.err, err, cmp.Comparer(errorsComparer))
-			t.CheckErrorAndDeepEqual(test.err != nil, err, test.expected, cfgs)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cfgs)
 		})
 	}
-}
-
-func errorsComparer(a, b error) bool {
-	if a == nil && b == nil {
-		return true
-	}
-	if a == nil || b == nil {
-		return false
-	}
-	return a.Error() == b.Error()
 }
