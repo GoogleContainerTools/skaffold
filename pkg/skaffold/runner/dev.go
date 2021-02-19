@@ -154,6 +154,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	start := time.Now()
 	color.Default.Fprintln(out, "Listing files to watch...")
 
+	dependenciesCache := make(map[*latest.Artifact][]string)
+
 	for i := range artifacts {
 		artifact := artifacts[i]
 		if !r.runCtx.Opts.IsTargetImage(artifact) {
@@ -168,7 +170,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		default:
 			if err := r.monitor.Register(
 				func() ([]string, error) {
-					return build.DependenciesForArtifactRecursive(ctx, artifacts, artifact, r.runCtx, r.artifactStore)
+					return build.DependenciesForArtifactRecursive(ctx, artifacts, artifact, r.runCtx, r.artifactStore, dependenciesCache)
 				},
 				func(e filemon.Events) {
 					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx, len(g[artifact.ImageName]))
