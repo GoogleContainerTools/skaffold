@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -31,7 +29,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/structure"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type Config interface {
@@ -45,41 +42,36 @@ type Config interface {
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
-func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) Tester {
-	localDaemon, err := docker.NewAPIClient(cfg)
+func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) (Tester, error) {
+	runner, err := getRunner(cfg, imagesAreLocal, cfg.TestCases())
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	return FullTester{
-		testCases:      cfg.TestCases(),
-		workingDir:     cfg.GetWorkingDir(),
-		muted:          cfg.Muted(),
-		localDaemon:    localDaemon,
-		imagesAreLocal: imagesAreLocal,
-	}
+		// runners: getRunner(cfg, imagesAreLocal, cfg.TestCases()),
+		runners: runner,
+		muted:   cfg.Muted(),
+	}, nil
 }
 
 // TestDependencies returns the watch dependencies to the runner.
 func (t FullTester) TestDependencies() ([]string, error) {
 	var deps []string
-
-	for _, test := range t.testCases {
-		files, err := util.ExpandPathsGlob(t.workingDir, test.StructureTests)
+	for _, tester := range t.runners {
+		result, err := tester.TestDependencies()
 		if err != nil {
-			return nil, expandingFilePathsErr(err)
+			return nil, err
 		}
-
-		deps = append(deps, files...)
+		deps = append(deps, result...)
 	}
-
 	return deps, nil
 }
 
 // Test is the top level testing execution call. It serves as the
 // entrypoint to all individual tests.
 func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
-	if len(t.testCases) == 0 {
+	if len(t.runners) == 0 {
 		return nil
 	}
 
@@ -112,53 +104,22 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifa
 }
 
 func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
-	for _, test := range t.testCases {
-		if err := t.runStructureTests(ctx, out, bRes, test); err != nil {
-			return fmt.Errorf("running structure tests: %w", err)
+	for _, tester := range t.runners {
+		if err := tester.Test(ctx, out, bRes); err != nil {
+			return fmt.Errorf("running tests: %w", err)
 		}
 	}
-
 	return nil
 }
 
-func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact, tc *latest.TestCase) error {
-	if len(tc.StructureTests) == 0 {
-		return nil
-	}
-
-	fqn, found := resolveArtifactImageTag(tc.ImageName, bRes)
-	if !found {
-		logrus.Debugln("Skipping tests for", tc.ImageName, "since it wasn't built")
-		return nil
-	}
-
-	if imageIsLocal, err := t.imagesAreLocal(tc.ImageName); err != nil {
-		return err
-	} else if !imageIsLocal {
-		// The image is remote so we have to pull it locally.
-		// `container-structure-test` currently can't do it:
-		// https://github.com/GoogleContainerTools/container-structure-test/issues/253.
-		if err := t.localDaemon.Pull(ctx, out, fqn); err != nil {
-			return dockerPullImageErr(fqn, err)
+func getRunner(cfg Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latest.TestCase) ([]runner, error) {
+	var runners []runner
+	for _, tc := range tcs {
+		structureRunner, err := structure.New(cfg, cfg.GetWorkingDir(), tc, imagesAreLocal)
+		if err != nil {
+			return nil, err
 		}
+		runners = append(runners, structureRunner)
 	}
-
-	files, err := util.ExpandPathsGlob(t.workingDir, tc.StructureTests)
-	if err != nil {
-		return expandingFilePathsErr(err)
-	}
-
-	runner := structure.NewRunner(files, t.localDaemon.ExtraEnv())
-
-	return runner.Test(ctx, out, fqn)
-}
-
-func resolveArtifactImageTag(imageName string, bRes []build.Artifact) (string, bool) {
-	for _, res := range bRes {
-		if imageName == res.ImageName {
-			return res.Tag, true
-		}
-	}
-
-	return "", false
+	return runners, nil
 }

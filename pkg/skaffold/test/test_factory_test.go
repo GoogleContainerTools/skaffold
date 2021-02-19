@@ -41,8 +41,9 @@ func TestNoTestDependencies(t *testing.T) {
 		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) { return nil, nil })
 
 		cfg := &mockConfig{}
-		deps, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil }).TestDependencies()
-
+		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		t.CheckNoError(err)
+		deps, err := tester.TestDependencies()
 		t.CheckNoError(err)
 		t.CheckEmpty(deps)
 	})
@@ -60,7 +61,10 @@ func TestTestDependencies(t *testing.T) {
 				{StructureTests: []string{"test3.yaml"}},
 			},
 		}
-		deps, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil }).TestDependencies()
+
+		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		t.CheckNoError(err)
+		deps, err := tester.TestDependencies()
 
 		expectedDeps := tmpDir.Paths("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 		t.CheckNoError(err)
@@ -77,9 +81,10 @@ func TestWrongPattern(t *testing.T) {
 			}},
 		}
 
-		tester := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		t.CheckNoError(err)
 
-		_, err := tester.TestDependencies()
+		_, err = tester.TestDependencies()
 		t.CheckError(true, err)
 
 		err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
@@ -94,22 +99,12 @@ func TestNoTest(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		cfg := &mockConfig{}
 
-		tester := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
-		err := tester.Test(context.Background(), ioutil.Discard, nil)
+		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		t.CheckNoError(err)
+
+		err = tester.Test(context.Background(), ioutil.Discard, nil)
 
 		t.CheckNoError(err)
-	})
-}
-
-func TestIgnoreDockerNotFound(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&docker.NewAPIClient, func(docker.Config) (docker.LocalDaemon, error) {
-			return nil, errors.New("not found")
-		})
-
-		tester := NewTester(&mockConfig{}, func(imageName string) (bool, error) { return true, nil })
-
-		t.CheckNil(tester)
 	})
 }
 
@@ -142,11 +137,12 @@ func TestTestSuccess(t *testing.T) {
 		}
 
 		imagesAreLocal := true
-		err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil }).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil })
+		t.CheckNoError(err)
+		err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
-
 		t.CheckNoError(err)
 	})
 }
@@ -167,7 +163,10 @@ func TestTestSuccessRemoteImage(t *testing.T) {
 		}
 
 		imagesAreLocal := false
-		err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil }).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil })
+		t.CheckNoError(err)
+
+		err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -192,7 +191,10 @@ func TestTestFailureRemoteImage(t *testing.T) {
 		}
 
 		imagesAreLocal := false
-		err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil }).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil })
+		t.CheckNoError(err)
+
+		err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -219,7 +221,10 @@ func TestTestFailure(t *testing.T) {
 			},
 		}
 
-		err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil }).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		t.CheckNoError(err)
+
+		err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "broken-image",
 			Tag:       "broken-image:tag",
 		}})
@@ -244,7 +249,10 @@ func TestTestMuted(t *testing.T) {
 		}
 
 		var buf bytes.Buffer
-		err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil }).Test(context.Background(), &buf, []build.Artifact{{
+		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		t.CheckNoError(err)
+
+		err = tester.Test(context.Background(), &buf, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})

@@ -69,7 +69,10 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return isImageLocal(runCtx, imageName)
 	}
 	labeller := label.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels())
-	tester := getTester(runCtx, isLocalImage)
+	tester, err := getTester(runCtx, isLocalImage)
+	if err != nil {
+		return nil, fmt.Errorf("creating tester: %w", err)
+	}
 	syncer := getSyncer(runCtx)
 	var deployer deploy.Deployer
 	deployer, err = getDeployer(runCtx, labeller.Labels())
@@ -217,8 +220,13 @@ func getBuilder(runCtx *runcontext.RunContext, store build.ArtifactStore, p late
 	}
 }
 
-func getTester(cfg test.Config, isLocalImage func(imageName string) (bool, error)) test.Tester {
-	return test.NewTester(cfg, isLocalImage)
+func getTester(cfg test.Config, isLocalImage func(imageName string) (bool, error)) (test.Tester, error) {
+	tester, err := test.NewTester(cfg, isLocalImage)
+	if err != nil {
+		return nil, err
+	}
+
+	return tester, nil
 }
 
 func getSyncer(cfg sync.Config) sync.Syncer {
