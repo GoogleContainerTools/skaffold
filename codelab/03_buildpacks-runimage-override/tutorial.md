@@ -39,7 +39,7 @@ minikube start
 
 CNB run and build images require some additional metadata to identify the _Stack ID_ and user/group accounts to be used.  A [_stack_](https://buildpacks.io/docs/concepts/components/stack/) is a specification or contract.  For example, the `io.buildpacks.stacks.bionic` stack defines that it provides the same packages as installed on Ubuntu 18.04.
 
-We add a base artifact with a single <walkthrough-editor-open-file filePath="base/Dockerfile">Dockerfile</walkthrough-editor-open-file> that defines the required metadata, and reference this as an <walkthrough-editor-select-line filePath="skaffold.yaml" startLine="6" startCharacterOffset="4" endLine="8" endCharacterOffset="0">artifact</walkthrough-editor-select-line> called `base` in our `skaffold.yaml`.
+We add a base artifact with a single <walkthrough-editor-open-file filePath="base/Dockerfile">Dockerfile</walkthrough-editor-open-file> that defines the required metadata, and reference this as an <walkthrough-editor-select-line filePath="skaffold.yaml" startLine="4" startCharacterOffset="4" endLine="6" endCharacterOffset="0">artifact</walkthrough-editor-select-line> called `base` in our `skaffold.yaml`.
 
 Next we'll use this artifact as the run image for a sample Buildpacks app.
 
@@ -82,5 +82,4 @@ Hello, Buildpacks!
 All done!
 
 You now know how to use Buildpacks with custom run images and use Skaffold to tie the loop together.
-
 
