@@ -98,7 +98,7 @@ func Set(c *latest.SkaffoldConfig) error {
 
 	for i, pf := range c.PortForward {
 		if pf == nil {
-			return fmt.Errorf("Config's portForward[%d] is empty, Please check if it has valid values", i)
+			return fmt.Errorf("config's portForward[%d] is empty, Please check if it has valid values", i)
 		}
 		setDefaultLocalPort(pf)
 		setDefaultAddress(pf)
