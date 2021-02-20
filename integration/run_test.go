@@ -28,6 +28,8 @@ import (
 func TestRun(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
+	// Note: `custom-buildx` is not included as it depends on having a
+	// `skaffold-builder` builder configured and a registry to push to.
 	tests := []struct {
 		description string
 		dir         string

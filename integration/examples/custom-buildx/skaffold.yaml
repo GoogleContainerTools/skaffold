@@ -1,0 +1,29 @@
+apiVersion: skaffold/v2beta11
+kind: Config
+
+build:
+  # Note that building for multiple platforms requires pushing to a registry,
+  # as the Docker Daemon cannot load multi-platform images.
+  local:
+    push: true
+  artifacts:
+  - image: skaffold-examples-buildx
+    custom:
+      # This buildCommand depends on a `docker buildx` builder to have been created
+      # with the name `skaffold-builder`:
+      #   $ docker buildx create --name skaffold-builder --platform linux/amd64,linux/arm64
+      #   $ skaffold build
+      buildCommand: '
+        docker buildx build
+          --builder skaffold-builder
+          --platform ${PLATFORMS:-linux/arm64,linux/amd64}
+          --tag $IMAGE
+          $(if [ "$PUSH_IMAGE" = true ]; then echo --push; else echo --load; fi)
+          "$BUILD_CONTEXT"
+        '
+      dependencies:
+        paths:
+        - "go.mod"
+        - "**.go"
+  tagPolicy:
+    sha256: {}
