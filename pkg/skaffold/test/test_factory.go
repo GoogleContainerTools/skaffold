@@ -44,13 +44,12 @@ type Config interface {
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
 func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) (Tester, error) {
-	runner, err := getRunner(cfg, imagesAreLocal, cfg.TestCases())
+	runner, err := getRunners(cfg, imagesAreLocal, cfg.TestCases())
 	if err != nil {
 		return nil, err
 	}
 
 	return FullTester{
-		// runners: getRunner(cfg, imagesAreLocal, cfg.TestCases()),
 		runners: runner,
 		muted:   cfg.Muted(),
 	}, nil
@@ -113,7 +112,7 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Ar
 	return nil
 }
 
-func getRunner(cfg Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latest.TestCase) ([]runner, error) {
+func getRunners(cfg Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latest.TestCase) ([]runner, error) {
 	var runners []runner
 	for _, tc := range tcs {
 		if len(tc.StructureTests) != 0 {
