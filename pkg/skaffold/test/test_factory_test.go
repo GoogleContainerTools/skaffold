@@ -81,16 +81,7 @@ func TestWrongPattern(t *testing.T) {
 			}},
 		}
 
-		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
-		t.CheckNoError(err)
-
-		_, err = tester.TestDependencies()
-		t.CheckError(true, err)
-
-		err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
-			ImageName: "image",
-			Tag:       "image:tag",
-		}})
+		_, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckError(true, err)
 	})
 }

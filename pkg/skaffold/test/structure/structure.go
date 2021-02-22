@@ -35,6 +35,7 @@ type Runner struct {
 	structureTests []string
 	image          string
 	testWorkingDir string
+	files          []string
 	localDaemon    docker.LocalDaemon
 	imagesAreLocal func(imageName string) (bool, error)
 }
@@ -45,10 +46,17 @@ func New(cfg docker.Config, wd string, tc *latest.TestCase, imagesAreLocal func(
 	if err != nil {
 		return nil, err
 	}
+
+	files, err := getFiles(wd, tc.StructureTests)
+	if err != nil {
+		return nil, expandingFilePathsErr(err)
+	}
+
 	return &Runner{
 		structureTests: tc.StructureTests,
 		image:          tc.ImageName,
 		testWorkingDir: wd,
+		files:          files,
 		localDaemon:    localDaemon,
 		imagesAreLocal: imagesAreLocal,
 	}, nil
@@ -71,15 +79,10 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, bRes []
 		return nil
 	}
 
-	files, err := cst.TestDependencies()
-	if err != nil {
-		return err
-	}
-
-	logrus.Infof("Running structure tests for files %v", files)
+	logrus.Infof("Running structure tests for files %v", cst.files)
 
 	args := []string{"test", "-v", "warn", "--image", fqn}
-	for _, f := range files {
+	for _, f := range cst.files {
 		args = append(args, "--config", f)
 	}
 
@@ -97,12 +100,7 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, bRes []
 
 // TestDependencies returns dependencies listed for the structure tests
 func (cst *Runner) TestDependencies() ([]string, error) {
-	files, err := util.ExpandPathsGlob(cst.testWorkingDir, cst.structureTests)
-	if err != nil {
-		return nil, expandingFilePathsErr(err)
-	}
-
-	return files, nil
+	return cst.files, nil
 }
 
 // env returns a merged environment of the current process environment and any extra environment.
@@ -150,4 +148,13 @@ func resolveArtifactImageTag(imageName string, bRes []build.Artifact) (string, b
 	}
 
 	return "", false
+}
+
+func getFiles(path string, files []string) ([]string, error) {
+	files, err := util.ExpandPathsGlob(path, files)
+	if err != nil {
+		return nil, expandingFilePathsErr(err)
+	}
+
+	return files, nil
 }
