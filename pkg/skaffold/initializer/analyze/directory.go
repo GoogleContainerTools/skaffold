@@ -32,5 +32,5 @@ func (a *directoryAnalyzer) enterDir(dir string) {
 }
 
 func (a *directoryAnalyzer) exitDir(_ string) {
-	//pass
+	// pass
 }

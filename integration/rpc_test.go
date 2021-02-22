@@ -144,7 +144,7 @@ func TestEventLogHTTP(t *testing.T) {
 		endpoint    string
 	}{
 		{
-			//TODO deprecate (https://github.com/GoogleContainerTools/skaffold/issues/3168)
+			// TODO deprecate (https://github.com/GoogleContainerTools/skaffold/issues/3168)
 			description: "/v1/event_log",
 			endpoint:    "/v1/event_log",
 		},

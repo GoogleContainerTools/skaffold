@@ -172,7 +172,7 @@ func addFileToTar(root string, src string, dst string, tw *tar.Writer, hm header
 
 // Code copied from https://github.com/moby/moby/blob/master/pkg/archive/archive_windows.go
 func chmodTarEntry(perm os.FileMode) os.FileMode {
-	//perm &= 0755 // this 0-ed out tar flags (like link, regular file, directory marker etc.)
+	// perm &= 0755 // this 0-ed out tar flags (like link, regular file, directory marker etc.)
 	permPart := perm & os.ModePerm
 	noPermPart := perm &^ os.ModePerm
 	// Add the x bit: make everything +x from windows
