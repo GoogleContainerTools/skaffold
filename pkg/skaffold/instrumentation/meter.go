@@ -94,7 +94,7 @@ func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
 		meter.BuildArtifacts += len(config.Pipeline.Build.Artifacts)
 	}
 	meter.PlatformType = strings.Join(platforms, ":")
-	meter.ConfigCount = uint32(len(configs))
+	meter.ConfigCount = len(configs)
 }
 
 func SetCommand(cmd string) {
