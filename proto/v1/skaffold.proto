@@ -690,6 +690,22 @@ enum StatusCode {
     TEST_CST_USER_ERR = 1102;
     // Unable to docker pull image
     TEST_IMG_PULL_ERR = 1103;
+    // Error running custom test
+    TEST_CT_USER_ERR = 1104;
+    // Unable to parse test command
+    TEST_CT_CMD_PARSE_ERR = 1105;
+    // Error retrieving timeout
+    TEST_CT_CMD_TIMEOUT_READ_ERR = 1106;
+    // Error starting cmd run
+    TEST_CT_CMD_RUN_ERR = 1107;
+    // Command timed out
+    TEST_CT_CMD_TIMEDOUT_ERR = 1108;
+    // Command returned non-zero exit code
+    TEST_CT_CMD_NON_ZERO_EXIT_ERR = 1110;
+    // Error getting dependencies from command
+    TEST_CT_DEPS_CMD_ERR = 1111;
+    // Unmarshalling dependency output error
+    TEST_CT_DEPS_UNMARSHALL_ERR = 1112;
 }
 
 // Enum for Suggestion codes
