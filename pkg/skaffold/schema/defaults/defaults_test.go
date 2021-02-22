@@ -351,7 +351,6 @@ func TestSetPortForwardOnEmptyPortForwardResource(t *testing.T) {
 		},
 	}
 	err := Set(cfg)
-	SetDefaultDeployer(cfg)
 	testutil.CheckError(t, true, err)
 }
 
