@@ -19,7 +19,6 @@ package custom
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -60,27 +59,26 @@ func New(cfg docker.Config, wd string, ct latest.CustomTest) (*Runner, error) {
 // Test is the entrypoint for running custom tests
 func (ct *Runner) Test(ctx context.Context, out io.Writer, _ []build.Artifact) error {
 	if msg, err := ct.runCustomCommand(ctx, out); msg == "" {
-		return fmt.Errorf("Running custom test command: %w", err)
+		return cutomTestErr(err)
 	}
 
 	return nil
 }
 
 func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) (string, error) {
-	// t latest.CustomTest
 	test := ct.customTest
 
 	// Expand command
 	command, err := util.ExpandEnvTemplate(test.Command, nil)
 	if err != nil {
-		return "", fmt.Errorf("unable to parse test command %q: %w", test.Command, err)
+		return "", parsingTestCommandErr(test.Command, err)
 	}
 
 	if len(test.TimeoutSeconds) != 0 {
 		// Create a new context wiht timeout
 		timeout, err := strconv.Atoi(test.TimeoutSeconds)
 		if err != nil {
-			return "error retrieving timeout", err
+			return "", retrievingTimeoutErr(err)
 		}
 
 		newCtx, cancel := context.WithTimeout(ctx, (time.Duration(timeout))*(time.Second))
@@ -101,28 +99,21 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) (string, 
 	cmd.Env = ct.env()
 
 	if err := cmd.Run(); err != nil {
-		return "error starting cmd", err
+		return "", runCmdErr(err)
 	}
 
 	// check the context error to see if the timeout was executed.
 	if ctx.Err() == context.DeadlineExceeded {
-		return "Command timed out", nil
+		return "", commandExecutionTimedoutErr(err)
 	}
 
 	// If there's no context error, we know the command completed (or errored).
 	if err != nil {
-		return "Command returned Non-zero exit code", err
+		return "", commandNonZeroExitErr(err)
 	}
 
 	return "", misc.HandleGracefulTermination(ctx, cmd)
 }
-
-// // TestDependencies returns dependencies listed for a custom test
-// func (tr *Runner) TestDependencies() ([]string, error) {
-// 	var deps []string
-
-// 	return deps, nil
-// }
 
 // env returns a merged environment of the current process environment and any extra environment.
 func (ct *Runner) env() []string {
@@ -147,11 +138,11 @@ func (ct *Runner) TestDependencies() ([]string, error) {
 		cmd := exec.CommandContext(context.Background(), split[0], split[1:]...)
 		output, err := util.RunCmdOut(cmd)
 		if err != nil {
-			return nil, fmt.Errorf("getting dependencies from command: %q: %w", test.Dependencies.Command, err)
+			return nil, gettingDependenciesCommandErr(test.Dependencies.Command, err)
 		}
 		var deps []string
 		if err := json.Unmarshal(output, &deps); err != nil {
-			return nil, fmt.Errorf("unmarshalling dependency output into string array: %w", err)
+			return nil, dependencyOutputUnmarshallErr(err)
 		}
 		return deps, nil
 
