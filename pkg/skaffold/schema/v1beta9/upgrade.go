@@ -88,7 +88,7 @@ func convertSyncRules(artifacts []*Artifact) [][]*next.SyncRule {
 			case strings.Contains(src, "***"):
 				dest, strip := simplify(dest, strings.Split(src, "***")[0])
 				syncRule = &next.SyncRule{
-					Src:   strings.Replace(src, "***", "**", -1),
+					Src:   strings.ReplaceAll(src, "***", "**"),
 					Dest:  dest,
 					Strip: strip,
 				}

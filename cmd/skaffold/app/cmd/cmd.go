@@ -249,7 +249,7 @@ func setFlagsFromEnvVariables(rootCmd *cobra.Command) {
 }
 
 func FlagToEnvVarName(f *pflag.Flag) string {
-	return fmt.Sprintf("SKAFFOLD_%s", strings.Replace(strings.ToUpper(f.Name), "-", "_", -1))
+	return fmt.Sprintf("SKAFFOLD_%s", strings.ReplaceAll(strings.ToUpper(f.Name), "-", "_"))
 }
 
 func setUpLogs(stdErr io.Writer, level string, timestamp bool) error {
