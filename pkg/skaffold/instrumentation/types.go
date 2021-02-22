@@ -45,7 +45,10 @@ type skaffoldMeter struct {
 	// Arch Architecture running Skaffold e.g. amd64, arm64, etc.
 	Arch string
 
-	// PlatformType Where Skaffold is deploying to (local, cluster, or Google Cloud Build).
+	// ConfigCount is the number of parsed skaffold configurations in the current session.
+	ConfigCount uint32
+
+	// PlatformType Where Skaffold is building artifacts (local, cluster, Google Cloud Build, or a combination of them).
 	PlatformType string
 
 	// Deployers All the deployers used in the Skaffold execution.
