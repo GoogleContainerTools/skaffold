@@ -81,18 +81,17 @@ func TestWrongPattern(t *testing.T) {
 			}},
 		}
 
-		_, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
-		// t.CheckNoError(err)
+		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
+		t.CheckNoError(err)
+
+		_, err = tester.TestDependencies()
 		t.CheckError(true, err)
 
-		// _, err = tester.TestDependencies()
-		// t.CheckError(true, err)
-
-		// err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
-		// 	ImageName: "image",
-		// 	Tag:       "image:tag",
-		// }})
-		// t.CheckError(true, err)
+		err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
+			ImageName: "image",
+			Tag:       "image:tag",
+		}})
+		t.CheckError(true, err)
 	})
 }
 
