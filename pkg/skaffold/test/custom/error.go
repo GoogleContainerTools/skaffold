@@ -80,7 +80,7 @@ func commandNonZeroExitErr(err error) error {
 func gettingDependenciesCommandErr(command string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: fmt.Sprintf("getting dependencies from command: %s: %s", test.Dependencies.Command, err),
+			Message: fmt.Sprintf("getting dependencies from command: %s: %s", command, err),
 			ErrCode: proto.StatusCode_TEST_CT_DEPS_CMD_ERR,
 		},
 	)
