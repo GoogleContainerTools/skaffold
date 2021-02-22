@@ -1018,7 +1018,7 @@ type CustomDependencies struct {
 // CustomTest describes the custom test command provided by the user
 type CustomTest struct {
 	// Command is the custom command to be executed.
-	Command string `yaml:"command,required"`
+	Command string `yaml:"command" yamltags:"required"`
 
 	// TimeoutSeconds sets the wait time for skaffold for the command to complete.
 	TimeoutSeconds string `yaml:"timeout,omitempty"`
