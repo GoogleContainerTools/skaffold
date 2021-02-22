@@ -100,6 +100,11 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, bRes []
 
 // TestDependencies returns dependencies listed for the structure tests
 func (cst *Runner) TestDependencies() ([]string, error) {
+	files, err := getFiles(cst.testWorkingDir, cst.structureTests)
+	if err != nil {
+		return nil, expandingFilePathsErr(err)
+	}
+	cst.files = files
 	return cst.files, nil
 }
 
