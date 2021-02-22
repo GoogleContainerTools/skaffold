@@ -34,7 +34,7 @@ sudo install skaffold /usr/local/bin/
 
 ```bash
 # For Linux ARM64
-curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-arm && \
+curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-arm64 && \
 sudo install skaffold /usr/local/bin/
 ```
 
