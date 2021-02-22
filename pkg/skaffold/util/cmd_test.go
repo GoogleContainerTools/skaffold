@@ -65,7 +65,7 @@ func TestHelperProcess(*testing.T) {
 		os.Exit(2)
 	}
 
-	defer os.Exit(0)
+	os.Exit(0)
 }
 
 func TestCmd_RunCmdOut(t *testing.T) {
