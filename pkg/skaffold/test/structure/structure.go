@@ -18,6 +18,7 @@ package structure
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -53,8 +54,15 @@ func New(cfg docker.Config, wd string, tc *latest.TestCase, imagesAreLocal func(
 	}, nil
 }
 
-// Test is the entrypoint for running structure tests
+/// Test is the entrypoint for running structure tests
 func (cst *Runner) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
+	if err := cst.runStructureTests(ctx, out, bRes); err != nil {
+		return containerStructureTestErr(err)
+	}
+	return nil
+}
+
+func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
 	fqn, err := cst.getImage(ctx, out, cst.image, bRes, cst.imagesAreLocal)
 	if err != nil {
 		return err
@@ -81,13 +89,13 @@ func (cst *Runner) Test(ctx context.Context, out io.Writer, bRes []build.Artifac
 	cmd.Env = cst.env()
 
 	if err := util.RunCmd(cmd); err != nil {
-		return containerStructureTestErr(err)
+		return fmt.Errorf("error running ontainer-structure-test command: %w", err)
 	}
 
 	return nil
 }
 
-// Dependencies returns dependencies listed for the structure tests
+// TestDependencies returns dependencies listed for the structure tests
 func (cst *Runner) TestDependencies() ([]string, error) {
 	files, err := util.ExpandPathsGlob(cst.testWorkingDir, cst.structureTests)
 	if err != nil {
