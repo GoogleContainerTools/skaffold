@@ -92,7 +92,7 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, bRes []
 	cmd.Env = cst.env()
 
 	if err := util.RunCmd(cmd); err != nil {
-		return fmt.Errorf("error running ontainer-structure-test command: %w", err)
+		return fmt.Errorf("error running container-structure-test command: %w", err)
 	}
 
 	return nil
