@@ -468,11 +468,14 @@ type ResourceRequirement struct {
 	ResourceStorage string `yaml:"resourceStorage,omitempty"`
 }
 
-// TestCase is a list of structure tests to run on images that Skaffold builds.
+// TestCase is a list of tests to run on images that Skaffold builds.
 type TestCase struct {
 	// ImageName is the artifact on which to run those tests.
 	// For example: `gcr.io/k8s-skaffold/example`.
 	ImageName string `yaml:"image" yamltags:"required"`
+
+	// CustomTests runs a custom test command provided by the user.
+	CustomTests []CustomTest `yaml:"custom,omitempty"`
 
 	// StructureTests lists the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
 	// to run on that artifact.
@@ -1008,6 +1011,32 @@ type CustomDependencies struct {
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 
 	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
+	// Will only work in conjunction with `paths`.
+	Ignore []string `yaml:"ignore,omitempty"`
+}
+
+// CustomTest describes the custom test command provided by the user
+type CustomTest struct {
+	// Command is the custom command to be executed.
+	Command string `yaml:"command,required"`
+
+	// TimeoutSeconds sets the wait time for skaffold for the command to complete.
+	TimeoutSeconds string `yaml:"timeout,omitempty"`
+
+	// Dependencies are the file dependencies that skaffold should watch for re-running the command.
+	Dependencies *CustomTestDependencies `yaml:"dependencies,omitempty"`
+}
+
+// CustomTestDependencies is used to specify dependencies for custom test command.
+// `paths` should be specified for file watching to work as expected.
+type CustomTestDependencies struct {
+	// Command represents a custom command that skaffold executes to obtain dependencies. The output of this command *must* be a valid JSON array.
+	Command string `yaml:"command,omitempty" yamltags:"oneOf=dependency"`
+
+	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to retest and perform file synchronization.
+	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
+
+	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both retest and file synchronization.
 	// Will only work in conjunction with `paths`.
 	Ignore []string `yaml:"ignore,omitempty"`
 }
