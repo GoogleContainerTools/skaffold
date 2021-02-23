@@ -92,8 +92,8 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		pfe.terminationLock.Unlock()
 
 		if !isPortFree(util.Loopback, pfe.localPort) {
-			//assuming that Skaffold brokered ports don't overlap, this has to be an external process that started
-			//since the dev loop kicked off. We are notifying the user in the hope that they can fix it
+			// Assuming that Skaffold brokered ports don't overlap, this has to be an external process that started
+			// since the dev loop kicked off. We are notifying the user in the hope that they can fix it
 			color.Red.Fprintf(k.out, "failed to port forward %v, port %d is taken, retrying...\n", pfe, pfe.localPort)
 			notifiedUser = true
 			time.Sleep(waitPortNotFree)
@@ -120,20 +120,20 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 				logrus.Debugf("couldn't start %v due to context cancellation", pfe)
 				return
 			}
-			//retry on exit at Start()
+			// Retry on exit at Start()
 			logrus.Debugf("error starting port forwarding %v: %s, output: %s", pfe, err, buf.String())
 			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 
-		//kill kubectl on port forwarding error logs
+		// Kill kubectl on port forwarding error logs
 		go k.monitorLogs(ctx, &buf, cmd, pfe, errChan)
 		if err := cmd.Wait(); err != nil {
 			if ctx.Err() == context.Canceled {
 				logrus.Debugf("terminated %v due to context cancellation", pfe)
 				return
 			}
-			//to make sure that the log monitor gets cleared up
+			// To make sure that the log monitor gets cleared up
 			cancel()
 
 			s := buf.String()

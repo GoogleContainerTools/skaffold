@@ -54,7 +54,7 @@ func New(cfg docker.Config, wd string, tc *latest.TestCase, imagesAreLocal func(
 	}, nil
 }
 
-/// Test is the entrypoint for running structure tests
+// Test is the entrypoint for running structure tests
 func (cst *Runner) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
 	if err := cst.runStructureTests(ctx, out, bRes); err != nil {
 		return containerStructureTestErr(err)

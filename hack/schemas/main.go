@@ -159,7 +159,7 @@ func generateSchema(root string, dryRun bool, version schema.Version) (bool, err
 		return false, fmt.Errorf("unable to check that file exists %q: %w", output, err)
 	}
 
-	current = bytes.Replace(current, []byte("\r\n"), []byte("\n"), -1)
+	current = bytes.ReplaceAll(current, []byte("\r\n"), []byte("\n"))
 
 	if !dryRun {
 		if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
@@ -172,7 +172,7 @@ func generateSchema(root string, dryRun bool, version schema.Version) (bool, err
 }
 
 func yamlFieldName(field *ast.Field) string {
-	tag := strings.Replace(field.Tag.Value, "`", "", -1)
+	tag := strings.ReplaceAll(field.Tag.Value, "`", "")
 	tags := reflect.StructTag(tag)
 	yamlTag := tags.Get("yaml")
 
@@ -292,7 +292,7 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 		}
 	}
 
-	description := strings.TrimSpace(strings.Replace(comment, "\n", " ", -1))
+	description := strings.TrimSpace(strings.ReplaceAll(comment, "\n", " "))
 
 	// Extract default value
 	if m := regexpDefaults.FindStringSubmatch(description); m != nil {

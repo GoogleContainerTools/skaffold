@@ -149,7 +149,7 @@ func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(
 	setIntent(getAutoTrigger())
 	// give the server a callback to set the intent value when a user request is received
 	singleTriggerCallback(func() {
-		if !getAutoTrigger() { //if auto trigger is disabled, we're in manual mode
+		if !getAutoTrigger() { // if auto trigger is disabled, we're in manual mode
 			logrus.Debugf("%s intent received, calling back to runner", triggerName)
 			c <- true
 			setIntent(true)
