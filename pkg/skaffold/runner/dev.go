@@ -154,7 +154,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	start := time.Now()
 	color.Default.Fprintln(out, "Listing files to watch...")
 
-	dependenciesCache := make(map[*latest.Artifact][]string)
+	dependenciesCache := make(map[string][]string)
 
 	for i := range artifacts {
 		artifact := artifacts[i]
@@ -272,6 +272,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	event.DevLoopComplete(0)
 	return r.listener.WatchForChanges(ctx, out, func() error {
 		return r.doDev(ctx, out, logger, forwarderManager)
+	}, func() error {
+		dependenciesCache = make(map[string][]string)
+		return nil
 	})
 }
 

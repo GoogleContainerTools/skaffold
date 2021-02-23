@@ -29,7 +29,7 @@ import (
 )
 
 type Listener interface {
-	WatchForChanges(context.Context, io.Writer, func() error) error
+	WatchForChanges(context.Context, io.Writer, func() error, func() error) error
 	LogWatchToUser(io.Writer)
 }
 
@@ -45,7 +45,7 @@ func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
 
 // WatchForChanges listens to a trigger, and when one is received, computes file changes and
 // conditionally runs the dev loop.
-func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, devLoop func() error) error {
+func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, devLoop func() error, preRun func() error) error {
 	ctxTrigger, cancelTrigger := context.WithCancel(ctx)
 	defer cancelTrigger()
 	trigger, err := trigger.StartTrigger(ctxTrigger, l.Trigger)
@@ -54,6 +54,7 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 	}
 
 	// exit if file monitor fails the first time
+	preRun()
 	if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
 		return fmt.Errorf("failed to monitor files: %w", err)
 	}
@@ -65,10 +66,12 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 		case <-ctx.Done():
 			return nil
 		case <-l.intentChan:
+			preRun()
 			if err := l.do(devLoop); err != nil {
 				return err
 			}
 		case <-trigger:
+			preRun()
 			if err := l.do(devLoop); err != nil {
 				return err
 			}

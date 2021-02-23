@@ -30,16 +30,16 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func DependenciesForArtifactRecursive(ctx context.Context, artifacts []*latest.Artifact, artifact *latest.Artifact, cfg docker.Config, r docker.ArtifactResolver, dependenciesCache map[*latest.Artifact][]string) ([]string, error) {
+func DependenciesForArtifactRecursive(ctx context.Context, artifacts []*latest.Artifact, artifact *latest.Artifact, cfg docker.Config, r docker.ArtifactResolver, dependenciesCache map[string][]string) ([]string, error) {
 	var err error = nil
 	var paths []string
 
-	if depsCached, ok := dependenciesCache[artifact]; ok {
+	if depsCached, ok := dependenciesCache[artifact.ImageName]; ok {
 		paths = depsCached
 	} else {
 		paths, err = DependenciesForArtifact(ctx, artifact, cfg, r)
 		if err == nil {
-			dependenciesCache[artifact] = paths
+			dependenciesCache[artifact.ImageName] = paths
 		}
 	}
 	for _, img := range artifact.Dependencies {
