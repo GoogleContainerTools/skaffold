@@ -236,15 +236,14 @@ message PortForwardEvent {
     string id = 1; // id of the subtask which will be used in SkaffoldLog
     string task_id = 2; // id of the task of skaffold that this event came from
     int32 localPort = 3; // local port for forwarded resource
-    int32 remotePort = 4; // Deprecated. Uses targetPort.intVal.
-    string podName = 5; // pod name if port forwarded resourceType is Pod
-    string containerName = 6; // container name if specified in the kubernetes spec
-    string namespace = 7; // the namespace of the resource to port forward.
-    string portName = 8;
-    string resourceType = 9; // resource type e.g. "pod", "service".
-    string resourceName = 10; // name of the resource to forward.
-    string address = 11; // address on which to bind
-    IntOrString targetPort = 12; // target port is the resource port that will be forwarded.
+    string podName = 4; // pod name if port forwarded resourceType is Pod
+    string containerName = 5; // container name if specified in the kubernetes spec
+    string namespace = 6; // the namespace of the resource to port forward.
+    string portName = 7;
+    string resourceType = 8; // resource type e.g. "pod", "service".
+    string resourceName = 9; // name of the resource to forward.
+    string address = 10; // address on which to bind
+    IntOrString targetPort = 11; // target port is the resource port that will be forwarded.
 }
 
 // FileSyncEvent describes the sync status.
@@ -254,9 +253,7 @@ message FileSyncEvent {
     int32 fileCount = 3; // number of files synced
     string image = 4; // the container image to which files are sycned.
     string status = 5; // status of file sync. one of: Not Started, In progress, Succeeded, Failed.
-    string err = 6; // Deprecated. Use actionableErr.message. error in case of status failed.
-    StatusCode errCode = 7; //// Deprecated. Use actionableErr.errCode. status code representing success or failure
-    ActionableErr actionableErr = 8; // actionable error message
+    ActionableErr actionableErr = 6; // actionable error message
 }
 
 // DebuggingContainerEvent is raised when a debugging container is started or terminated
