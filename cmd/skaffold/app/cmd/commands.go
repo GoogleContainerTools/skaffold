@@ -89,7 +89,7 @@ func (b *builder) WithFlagAdder(adder func(*pflag.FlagSet)) Builder {
 
 func (b *builder) WithFlags(flags []*Flag) Builder {
 	for _, f := range flags {
-		fl := f.flag()
+		fl := f.flag(b.cmd.Use)
 		b.cmd.Flags().AddFlag(fl)
 	}
 	b.cmd.PreRun = func(cmd *cobra.Command, args []string) {

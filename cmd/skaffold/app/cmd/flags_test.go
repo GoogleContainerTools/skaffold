@@ -75,3 +75,47 @@ func TestAddFlagsSmoke(t *testing.T) {
 		})
 	}
 }
+
+func TestMakeFlag(t *testing.T) {
+	var v string
+	f := Flag{
+		Name:          "flag",
+		Shorthand:     "f",
+		Value:         &v,
+		Hidden:        true,
+		FlagAddMethod: "StringVar",
+		DefValue:      "default",
+		DefValuePerCommand: map[string]interface{}{
+			"debug": "dbg",
+			"build": "bld",
+		},
+		NoOptDefVal: "nooptdefval",
+	}
+
+	testutil.Run(t, "just default value", func(t *testutil.T) {
+		test := f.flag("test")
+		t.CheckDeepEqual("flag", test.Name)
+		t.CheckDeepEqual("f", test.Shorthand)
+		t.CheckDeepEqual(true, test.Hidden)
+		t.CheckDeepEqual("default", test.DefValue)
+		t.CheckDeepEqual("nooptdefval", test.NoOptDefVal)
+	})
+
+	testutil.Run(t, "default value for debug", func(t *testutil.T) {
+		debug := f.flag("debug")
+		t.CheckDeepEqual("flag", debug.Name)
+		t.CheckDeepEqual("f", debug.Shorthand)
+		t.CheckDeepEqual(true, debug.Hidden)
+		t.CheckDeepEqual("dbg", debug.DefValue)
+		t.CheckDeepEqual("nooptdefval", debug.NoOptDefVal)
+	})
+
+	testutil.Run(t, "default value for build", func(t *testutil.T) {
+		build := f.flag("build")
+		t.CheckDeepEqual("flag", build.Name)
+		t.CheckDeepEqual("f", build.Shorthand)
+		t.CheckDeepEqual(true, build.Hidden)
+		t.CheckDeepEqual("bld", build.DefValue)
+		t.CheckDeepEqual("nooptdefval", build.NoOptDefVal)
+	})
+}
