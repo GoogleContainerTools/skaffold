@@ -43,7 +43,7 @@ func TestNewRunner(t *testing.T) {
 				ImageName:      "image",
 				StructureTests: []string{"test.yaml"},
 				CustomTests: []latest.CustomTest{{
-					Command:        "./build.sh",
+					Command:        "./test.sh",
 					TimeoutSeconds: "10",
 					Dependencies: &latest.CustomTestDependencies{
 						Command: "echo [\"file1\",\"file2\",\"file3\"]",

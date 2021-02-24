@@ -19,6 +19,7 @@ package custom
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -26,6 +27,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
@@ -58,27 +63,30 @@ func New(cfg docker.Config, wd string, ct latest.CustomTest) (*Runner, error) {
 
 // Test is the entrypoint for running custom tests
 func (ct *Runner) Test(ctx context.Context, out io.Writer, _ []build.Artifact) error {
-	if msg, err := ct.runCustomCommand(ctx, out); msg == "" {
-		return cutomTestErr(err)
+	if err := ct.runCustomCommand(ctx, out); err != nil {
+		return fmt.Errorf("running custom test command: %w", err)
 	}
 
 	return nil
 }
 
-func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) (string, error) {
+func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
 	test := ct.customTest
 
 	// Expand command
 	command, err := util.ExpandEnvTemplate(test.Command, nil)
 	if err != nil {
-		return "", parsingTestCommandErr(test.Command, err)
+		return fmt.Errorf("unable to parse test command %q: %w", test.Command, err)
 	}
 
+	logrus.Infof("Running custom test command %s", command)
+	color.Default.Fprintln(out, "Running custom test command: ", command)
+
 	if len(test.TimeoutSeconds) != 0 {
-		// Create a new context wiht timeout
+		// Create a new context with timeout
 		timeout, err := strconv.Atoi(test.TimeoutSeconds)
 		if err != nil {
-			return "", retrievingTimeoutErr(err)
+			return fmt.Errorf("error retrieving timeout: %w", err)
 		}
 
 		newCtx, cancel := context.WithTimeout(ctx, (time.Duration(timeout))*(time.Second))
@@ -99,20 +107,19 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) (string, 
 	cmd.Env = ct.env()
 
 	if err := cmd.Run(); err != nil {
-		return "", runCmdErr(err)
-	}
-
-	// check the context error to see if the timeout was executed.
-	if ctx.Err() == context.DeadlineExceeded {
-		return "", commandExecutionTimedoutErr(err)
+		// check the context error to see if the timeout was executed.
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("command timed out: %w", ctx.Err())
+		}
+		return fmt.Errorf("error running cmd: %w", err)
 	}
 
 	// If there's no context error, we know the command completed (or errored).
 	if err != nil {
-		return "", commandNonZeroExitErr(err)
+		return fmt.Errorf("Command returned Non-zero exit code: %w", err)
 	}
 
-	return "", misc.HandleGracefulTermination(ctx, cmd)
+	return misc.HandleGracefulTermination(ctx, cmd)
 }
 
 // env returns a merged environment of the current process environment and any extra environment.
@@ -138,11 +145,11 @@ func (ct *Runner) TestDependencies() ([]string, error) {
 		cmd := exec.CommandContext(context.Background(), split[0], split[1:]...)
 		output, err := util.RunCmdOut(cmd)
 		if err != nil {
-			return nil, gettingDependenciesCommandErr(test.Dependencies.Command, err)
+			return nil, fmt.Errorf("getting dependencies from command: %q: %w", test.Dependencies.Command, err)
 		}
 		var deps []string
 		if err := json.Unmarshal(output, &deps); err != nil {
-			return nil, dependencyOutputUnmarshallErr(err)
+			return nil, fmt.Errorf("unmarshalling dependency output into string array: %w", err)
 		}
 		return deps, nil
 

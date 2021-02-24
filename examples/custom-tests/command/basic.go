@@ -14,36 +14,26 @@ limitations under the License.
 package main
 
 import (
-	"crypto/rand"
 	"fmt"
-	"math/big"
+	"math/rand"
+	"time"
 )
 
-func IntMin(a *big.Int, b *big.Int) (*big.Int, bool) {
-	cmp := a.Cmp(b)
-
-	switch cmp {
-	case 1:
-		return b, false
-	case -1:
-		return a, false
-	case 0:
-		return big.NewInt(0), true
-	default:
-		break
+func IntMin(a, b int) int {
+	if a < b {
+		return a
 	}
-
-	return nil, false
+	return b
 }
 
 func main() {
-	x, _ := rand.Int(rand.Reader, big.NewInt(100))
-	y, _ := rand.Int(rand.Reader, big.NewInt(100))
+	rand.Seed(time.Now().UnixNano())
+	x := rand.Intn(100)
 
-	min, ok := IntMin(x, y)
-	if ok {
-		fmt.Println(x, " and ", y, " are equal")
-	} else if min != nil {
-		fmt.Println("Min of ", x, " and ", y, " is: ", min)
-	}
+	rand.Seed(time.Now().UnixNano())
+	y := rand.Intn(100)
+
+	min := IntMin(x, y)
+	fmt.Println("Min of ", x, " and ", y, " is: ", min)
+	// os.Exit(3)
 }
