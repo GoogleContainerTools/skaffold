@@ -205,7 +205,7 @@ func refreshDependencyList(files *filesLists, cmd exec.Cmd) error {
 		return errors.New("failed to get Jib dependencies")
 	}
 
-	line := bytes.Replace(matches[1], []byte(`\`), []byte(`\\`), -1)
+	line := bytes.ReplaceAll(matches[1], []byte(`\`), []byte(`\\`))
 	return json.Unmarshal(line, &files)
 }
 

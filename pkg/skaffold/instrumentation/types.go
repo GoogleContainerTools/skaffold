@@ -26,6 +26,9 @@ import (
 
 // skaffoldMeter describes the data used to determine operational metrics.
 type skaffoldMeter struct {
+	// ConfigCount is the number of parsed skaffold configurations in the current session.
+	ConfigCount int
+
 	// ExitCode Exit code returned by Skaffold at the end of execution.
 	ExitCode int
 
@@ -45,7 +48,7 @@ type skaffoldMeter struct {
 	// Arch Architecture running Skaffold e.g. amd64, arm64, etc.
 	Arch string
 
-	// PlatformType Where Skaffold is deploying to (local, cluster, or Google Cloud Build).
+	// PlatformType Where Skaffold is building artifacts (local, cluster, Google Cloud Build, or a combination of them).
 	PlatformType string
 
 	// Deployers All the deployers used in the Skaffold execution.

@@ -133,7 +133,7 @@ func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
 	var results []ArtifactConfig
 	for _, match := range matches {
 		// Escape windows path separators
-		line := bytes.Replace(match[1], []byte(`\`), []byte(`\\`), -1)
+		line := bytes.ReplaceAll(match[1], []byte(`\`), []byte(`\\`))
 		parsedJSON := jibJSON{}
 		if err := json.Unmarshal(line, &parsedJSON); err != nil {
 			logrus.Warnf("failed to parse jib json: %s", err.Error())

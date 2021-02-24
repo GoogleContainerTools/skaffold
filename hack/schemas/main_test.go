@@ -63,7 +63,7 @@ func TestGenerators(t *testing.T) {
 			expected, err := ioutil.ReadFile(expectedOutput)
 			t.CheckNoError(err)
 
-			expected = bytes.Replace(expected, []byte("\r\n"), []byte("\n"), -1)
+			expected = bytes.ReplaceAll(expected, []byte("\r\n"), []byte("\n"))
 
 			schemaLoader := gojsonschema.NewBytesLoader(actual)
 			_, err = gojsonschema.NewSchema(schemaLoader)

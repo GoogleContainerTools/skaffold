@@ -19,6 +19,7 @@ package instrumentation
 import (
 	"net/http"
 	"runtime"
+	"strings"
 	"time"
 
 	flag "github.com/spf13/pflag"
@@ -74,8 +75,12 @@ func SetOnlineStatus() {
 }
 
 func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
-	meter.PlatformType = yamltags.GetYamlTag(configs[0].Build.BuildType) // TODO: support multiple build types in events.
+	var platforms []string
 	for _, config := range configs {
+		pl := yamltags.GetYamlTag(config.Build.BuildType)
+		if !util.StrSliceContains(platforms, pl) {
+			platforms = append(platforms, pl)
+		}
 		for _, artifact := range config.Pipeline.Build.Artifacts {
 			meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]++
 			if len(artifact.Dependencies) > 0 {
@@ -88,6 +93,8 @@ func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
 		meter.Deployers = append(meter.Deployers, yamltags.GetYamlTags(config.Deploy.DeployType)...)
 		meter.BuildArtifacts += len(config.Pipeline.Build.Artifacts)
 	}
+	meter.PlatformType = strings.Join(platforms, ":")
+	meter.ConfigCount = len(configs)
 }
 
 func SetCommand(cmd string) {

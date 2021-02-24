@@ -300,5 +300,5 @@ func getFileTime(file string, t *testing.T) time.Time {
 
 // for paths that contain "\", they must be escaped in json strings
 func escapeBackslashes(path string) string {
-	return strings.Replace(path, `\`, `\\`, -1)
+	return strings.ReplaceAll(path, `\`, `\\`)
 }

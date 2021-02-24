@@ -314,7 +314,7 @@ type KanikoCache struct {
 	// HostPath specifies a path on the host that is mounted to each pod as read only cache volume containing base images.
 	// If set, must exist on each node and prepopulated with kaniko-warmer.
 	HostPath string `yaml:"hostPath,omitempty"`
-	//TTL Cache timeout in hours.
+	// TTL Cache timeout in hours.
 	TTL string `yaml:"ttl,omitempty"`
 }
 

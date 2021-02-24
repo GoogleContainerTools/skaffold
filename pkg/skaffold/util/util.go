@@ -176,7 +176,7 @@ func RemoveFromSlice(s []string, target string) []string {
 // Expand replaces placeholders for a given key with a given value.
 // It supports the ${key} and the $key syntax.
 func Expand(text, key, value string) string {
-	text = strings.Replace(text, "${"+key+"}", value, -1)
+	text = strings.ReplaceAll(text, "${"+key+"}", value)
 
 	indices := regexp.MustCompile(`\$`+key).FindAllStringIndex(text, -1)
 

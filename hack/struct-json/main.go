@@ -94,7 +94,7 @@ func newDefinition(name string, t ast.Expr, comment string) *Definition {
 		}
 	}
 
-	description := strings.TrimSpace(strings.Replace(comment, "\n", " ", -1))
+	description := strings.TrimSpace(strings.ReplaceAll(comment, "\n", " "))
 	// Remove type prefix
 	description = regexp.MustCompile("^"+ogName+" (\\*.*\\* )?((is (the )?)|(are (the )?)|(lists ))?").ReplaceAllString(description, "$1")
 

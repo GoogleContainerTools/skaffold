@@ -54,7 +54,7 @@ type Flag struct {
 // When adding a new flag to the registry, please specify the
 // command/commands to which the flag belongs in `DefinedOn` field.
 // If the flag is a global flag, or belongs to all the subcommands,
-/// specify "all"
+// specify "all"
 // FlagAddMethod is method which defines a flag value with specified
 // name, default value, and usage string. e.g. `StringVar`, `BoolVar`
 var flagRegistry = []Flag{

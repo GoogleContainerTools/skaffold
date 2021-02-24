@@ -315,7 +315,7 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 		return nil, 0, err
 	}
 
-	newContents := strings.Replace(string(original), target, replacement, -1)
+	newContents := strings.ReplaceAll(string(original), target, replacement)
 
 	err = ioutil.WriteFile(filepath, []byte(newContents), 0)
 

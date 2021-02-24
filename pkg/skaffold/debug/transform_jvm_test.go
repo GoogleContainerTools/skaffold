@@ -280,9 +280,9 @@ func TestTransformManifestJVM(t *testing.T) {
 						}}}}},
 			true,
 			&appsv1.Deployment{
-				//ObjectMeta: metav1.ObjectMeta{
+				// ObjectMeta: metav1.ObjectMeta{
 				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
-				//},
+				// },
 				Spec: appsv1.DeploymentSpec{
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
@@ -312,9 +312,9 @@ func TestTransformManifestJVM(t *testing.T) {
 						}}}}},
 			true,
 			&appsv1.ReplicaSet{
-				//ObjectMeta: metav1.ObjectMeta{
+				// ObjectMeta: metav1.ObjectMeta{
 				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
-				//},
+				// },
 				Spec: appsv1.ReplicaSetSpec{
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
@@ -344,9 +344,9 @@ func TestTransformManifestJVM(t *testing.T) {
 						}}}}},
 			true,
 			&appsv1.StatefulSet{
-				//ObjectMeta: metav1.ObjectMeta{
+				// ObjectMeta: metav1.ObjectMeta{
 				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
-				//},
+				// },
 				Spec: appsv1.StatefulSetSpec{
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
@@ -375,9 +375,9 @@ func TestTransformManifestJVM(t *testing.T) {
 						}}}}},
 			true,
 			&appsv1.DaemonSet{
-				//ObjectMeta: metav1.ObjectMeta{
+				// ObjectMeta: metav1.ObjectMeta{
 				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
-				//},
+				// },
 				Spec: appsv1.DaemonSetSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
@@ -405,9 +405,9 @@ func TestTransformManifestJVM(t *testing.T) {
 						}}}}},
 			true,
 			&batchv1.Job{
-				//ObjectMeta: metav1.ObjectMeta{
+				// ObjectMeta: metav1.ObjectMeta{
 				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
-				//},
+				// },
 				Spec: batchv1.JobSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
@@ -436,9 +436,9 @@ func TestTransformManifestJVM(t *testing.T) {
 						}}}}},
 			true,
 			&v1.ReplicationController{
-				//ObjectMeta: metav1.ObjectMeta{
+				// ObjectMeta: metav1.ObjectMeta{
 				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
-				//},
+				// },
 				Spec: v1.ReplicationControllerSpec{
 					Replicas: int32p(1),
 					Template: &v1.PodTemplateSpec{

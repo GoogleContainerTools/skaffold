@@ -1,4 +1,4 @@
-# Improve taggers
+1# Improve taggers
 
 * Author(s): David Gageot (@dgageot)
 * Date: 4 September 2019
@@ -63,6 +63,17 @@ Here are some rules about how tagging currently works:
    such tagger by computing the digest of the whole workspace. We should instead compute
    the digest of the artifact's dependencies, including the artifact's configuration. This
    is exactly what the caching mechanism currently does.
+ + An `userGenerated` is added. This is for special cases where the user can pass command 
+   that will execute and output the tag for a given image. It will make some room for integration
+   with maven, gradel, bazel (and probably other build tools) that can fallow more precisely 
+   dependency graph of a given executable. With time these plugins could become integrated 
+   into a skaffold code base. Or at least be officially supported. It is also important to note 
+   that this is a more complicated case. If a plugin model is to be adopted the tagger configuration 
+   can't happen on a global level. Because different images will use different plugins. Even a simple
+   projects will have (as an example) react and java docker images. And those will use different 
+   methods for tag generation. So, the artifact object has be extended, to allow overriding of the 
+   global tagger with a custom one. For now, it will be a bash command that can only output a 
+   singe string that will becomes image's tag.
  + `envTemplate` learns how to replace `{{.DIGEST}}` with a digest of the artifact's
     inputs as computed by the `inputDigest` tagger.
  + **No matter the tagger, Skaffold will keep on using immutable references in manifests**.
