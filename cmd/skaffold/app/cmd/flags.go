@@ -138,7 +138,7 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:     "enable-rpc",
-		Usage:    "Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)",
+		Usage:    "Enable gRPC for exposing Skaffold events",
 		Value:    &opts.EnableRPC,
 		DefValue: false,
 		DefValuePerCommand: map[string]interface{}{
@@ -193,7 +193,7 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:     "tail",
-		Usage:    "Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)",
+		Usage:    "Stream logs from deployed objects",
 		Value:    &opts.Tail,
 		DefValue: false,
 		DefValuePerCommand: map[string]interface{}{
