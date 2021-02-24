@@ -47,7 +47,7 @@ $ cd skaffold/examples/custom-buildx
 
 Take a look at the [skaffold.yaml](skaffold.yaml), which uses a
 _custom builder_ to invoke `docker buildx` to containerize source
-code. 
+code.
 For more information about custom builders, see the Skaffold custom
 builder [documentation](https://skaffold.dev/docs/how-tos/builders/#custom-build-script-run-locally).
 Note that Skaffold builders are different from Docker Buildx builders.
