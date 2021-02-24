@@ -73,8 +73,8 @@ message BuildState {
     // A map of `artifact name -> build-state`.
     // Artifact name is defined in the `skaffold.yaml`.
     // The `build-state` can be: <br>
-    // - `"Not started"`: not yet started <br>
-    // - `"In progress"`: build started <br>
+    // - `"NotStarted"`: not yet started <br>
+    // - `"InProgress"`: build started <br>
     // - `"Complete"`: build succeeded <br>
     // - `"Failed"`: build failed
     map<string, string> artifacts = 1;
@@ -102,8 +102,8 @@ message StatusCheckState {
     string status = 1;
     // A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name.
     // The `status-check-state` can be <br>
-    // - `"Not started"`: indicates that `status-check` has just started. <br>
-    // - `"In progress"`: InProgress is sent after every resource check is complete. <br>
+    // - `"NotStarted"`: indicates that `status-check` has just started. <br>
+    // - `"InProgress"`: InProgress is sent after every resource check is complete. <br>
     // - `"Succeeded"`:
     // - `"Failed"`:
     map<string, string> resources = 2;
@@ -145,7 +145,7 @@ message TerminationEvent {
 // `DevLoopEvent` marks the start and end of a dev loop.
 message DevLoopEvent {
     int32 iteration = 1; // dev loop iteration. 0 represents initialization loop.
-    string status = 2; // dev loop status oneof: In Progress, Completed, Failed
+    string status = 2; // dev loop status oneof: InProgress, Completed, Failed
     ActionableErr err = 3; // actionable error message
 }
 
@@ -252,7 +252,7 @@ message FileSyncEvent {
     string task_id = 2; // id of the task of skaffold that this event came from
     int32 fileCount = 3; // number of files synced
     string image = 4; // the container image to which files are sycned.
-    string status = 5; // status of file sync. one of: Not Started, In progress, Succeeded, Failed.
+    string status = 5; // status of file sync. one of: Not Started, InProgress, Succeeded, Failed.
     ActionableErr actionableErr = 6; // actionable error message
 }
 
