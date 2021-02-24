@@ -142,7 +142,8 @@ var flagRegistry = []Flag{
 		Value:    &opts.EnableRPC,
 		DefValue: false,
 		DefValuePerCommand: map[string]interface{}{
-			"dev": true,
+			"dev":   true,
+			"debug": true,
 		},
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
