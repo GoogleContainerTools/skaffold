@@ -103,6 +103,20 @@ func resultPair(deps interface{}) ([]string, error) {
 	}
 }
 
+func deduplicateSlice(slice []string) []string {
+	keys := make(map[string]bool)
+	deduplicated := []string{}
+
+	for _, item := range slice {
+		if _, value := keys[item]; !value {
+			keys[item] = true
+			deduplicated = append(deduplicated, item)
+		}
+	}
+
+	return deduplicated
+}
+
 func getDependencies(workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) interface{} {
 	// If the Dockerfile doesn't exist, we can't compute the dependency.
 	// But since we know the Dockerfile is a dependency, let's return a list
@@ -127,7 +141,7 @@ func getDependencies(workspace string, dockerfilePath string, absDockerfilePath 
 		deps = append(deps, ft.from)
 	}
 
-	files, err := WalkWorkspace(workspace, excludes, deps)
+	files, err := WalkWorkspace(workspace, excludes, deduplicateSlice(deps))
 	if err != nil {
 		return fmt.Errorf("walking workspace: %w", err)
 	}
