@@ -39,7 +39,6 @@ import (
 
 type Runner struct {
 	customTest     latest.CustomTest
-	image          string
 	testWorkingDir string
 	localDaemon    docker.LocalDaemon
 }

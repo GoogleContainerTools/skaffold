@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -69,5 +68,4 @@ type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	workingDir            string
 	tests                 []*latest.TestCase
-	muted                 config.Muted
 }

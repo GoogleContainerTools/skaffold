@@ -130,7 +130,6 @@ func getRunner(cfg Config, imagesAreLocal func(imageName string) (bool, error), 
 			}
 			runners = append(runners, customRunner)
 		}
-
 	}
 	return runners, nil
 }
