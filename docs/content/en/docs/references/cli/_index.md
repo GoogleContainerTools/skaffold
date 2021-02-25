@@ -138,7 +138,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
       --dry-run=false: Don't build images, just compute the tag for each artifact.
-      --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
+      --enable-rpc=false: Enable gRPC for exposing Skaffold events
       --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
       --file-output='': Filename to write build images to
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -351,17 +351,17 @@ Examples:
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-      --auto-build=true: When set to false, builds wait for API request instead of running automatically
+      --auto-build=false: When set to false, builds wait for API request instead of running automatically
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
-      --auto-deploy=true: When set to false, deploys wait for API request instead of running automatically
-      --auto-sync=true: When set to false, syncs wait for API request instead of running automatically
+      --auto-deploy=false: When set to false, deploys wait for API request instead of running automatically
+      --auto-sync=false: When set to false, syncs wait for API request instead of running automatically
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
+      --enable-rpc=true: Enable gRPC for exposing Skaffold events
       --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
@@ -383,7 +383,7 @@ Options:
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
+      --tail=true: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
@@ -509,7 +509,7 @@ Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
+      --enable-rpc=false: Enable gRPC for exposing Skaffold events
       --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
@@ -529,7 +529,7 @@ Options:
       --skip-render=false: Don't render the manifests, just deploy them
       --status-check=true: Wait for deployed resources to stabilize
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
+      --tail=false: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
@@ -593,7 +593,7 @@ Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
+      --enable-rpc=true: Enable gRPC for exposing Skaffold events
       --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
@@ -616,7 +616,7 @@ Options:
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
+      --tail=true: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
@@ -886,7 +886,7 @@ Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
+      --enable-rpc=false: Enable gRPC for exposing Skaffold events
       --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
@@ -910,7 +910,7 @@ Options:
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
+      --tail=false: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
       --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
       --wait-for-deletions-delay=2s: Delay between two checks for pending deletions

@@ -35,6 +35,7 @@ var (
 
 // Flag defines a Skaffold CLI flag which contains a list of
 // subcommands the flag belongs to in `DefinedOn` field.
+// See https://pkg.go.dev/github.com/spf13/pflag#Flag
 type Flag struct {
 	Name               string
 	Shorthand          string
@@ -42,12 +43,11 @@ type Flag struct {
 	Value              interface{}
 	DefValue           interface{}
 	DefValuePerCommand map[string]interface{}
+	NoOptDefVal        string
 	FlagAddMethod      string
 	DefinedOn          []string
 	Hidden             bool
 	IsEnum             bool
-
-	pflag *pflag.Flag
 }
 
 // flagRegistry is a list of all Skaffold CLI flags.
@@ -138,11 +138,12 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:     "enable-rpc",
-		Usage:    "Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)",
+		Usage:    "Enable gRPC for exposing Skaffold events",
 		Value:    &opts.EnableRPC,
 		DefValue: false,
 		DefValuePerCommand: map[string]interface{}{
-			"dev": true,
+			"dev":   true,
+			"debug": true,
 		},
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
@@ -192,7 +193,7 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:     "tail",
-		Usage:    "Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)",
+		Usage:    "Stream logs from deployed objects",
 		Value:    &opts.Tail,
 		DefValue: false,
 		DefValuePerCommand: map[string]interface{}{
@@ -511,18 +512,18 @@ func methodNameByType(v reflect.Value) string {
 	return ""
 }
 
-func (fl *Flag) flag() *pflag.Flag {
-	if fl.pflag != nil {
-		return fl.pflag
-	}
-
+func (fl *Flag) flag(cmdName string) *pflag.Flag {
 	methodName := fl.FlagAddMethod
 	if methodName == "" {
 		methodName = methodNameByType(reflect.ValueOf(fl.Value))
 	}
 	inputs := []interface{}{fl.Value, fl.Name}
 	if methodName != "Var" {
-		inputs = append(inputs, fl.DefValue)
+		if d, found := fl.DefValuePerCommand[cmdName]; found {
+			inputs = append(inputs, d)
+		} else {
+			inputs = append(inputs, fl.DefValue)
+		}
 	}
 	inputs = append(inputs, fl.Usage)
 
@@ -530,10 +531,12 @@ func (fl *Flag) flag() *pflag.Flag {
 
 	reflect.ValueOf(fs).MethodByName(methodName).Call(reflectValueOf(inputs))
 	f := fs.Lookup(fl.Name)
+	if len(fl.NoOptDefVal) > 0 {
+		// f.NoOptDefVal may be set depending on value type
+		f.NoOptDefVal = fl.NoOptDefVal
+	}
 	f.Shorthand = fl.Shorthand
 	f.Hidden = fl.Hidden
-
-	fl.pflag = f
 	return f
 }
 
@@ -572,7 +575,7 @@ func AddFlags(cmd *cobra.Command) {
 			continue
 		}
 
-		cmd.Flags().AddFlag(fl.flag())
+		cmd.Flags().AddFlag(fl.flag(cmd.Use))
 
 		flagsForCommand = append(flagsForCommand, fl)
 	}
