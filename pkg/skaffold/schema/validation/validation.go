@@ -45,10 +45,9 @@ var (
 
 // Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
 func Process(configs []*latest.SkaffoldConfig) error {
-	var errs []error
+	var errs = validateImageNames(configs)
 	for _, config := range configs {
-		errs = visitStructs(config, validateYamltags)
-		errs = append(errs, validateImageNames(config.Build.Artifacts)...)
+		errs = append(errs, visitStructs(config, validateYamltags)...)
 		errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
 		errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
 		errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
@@ -98,22 +97,31 @@ func validateTaggingPolicy(bc latest.BuildConfig) (errs []error) {
 	return
 }
 
-// validateImageNames makes sure the artifact image names are valid base names,
+// validateImageNames makes sure the artifact image names are unique and valid base names,
 // without tags nor digests.
-func validateImageNames(artifacts []*latest.Artifact) (errs []error) {
-	for _, a := range artifacts {
-		parsed, err := docker.ParseReference(a.ImageName)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("invalid imageName '%s': %v", a.ImageName, err))
-			continue
-		}
+func validateImageNames(configs []*latest.SkaffoldConfig) (errs []error) {
+	seen := make(map[string]bool)
+	for _, c := range configs {
+		for _, a := range c.Build.Artifacts {
+			if seen[a.ImageName] {
+				errs = append(errs, fmt.Errorf("duplicate imageName '%s': artifact image name need to be unique across all configurations", a.ImageName))
+				continue
+			}
 
-		if parsed.Tag != "" {
-			errs = append(errs, fmt.Errorf("invalid imageName '%s': no tag should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))
-		}
+			seen[a.ImageName] = true
+			parsed, err := docker.ParseReference(a.ImageName)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("invalid imageName '%s': %v", a.ImageName, err))
+				continue
+			}
 
-		if parsed.Digest != "" {
-			errs = append(errs, fmt.Errorf("invalid imageName '%s': no digest should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))
+			if parsed.Tag != "" {
+				errs = append(errs, fmt.Errorf("invalid imageName '%s': no tag should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))
+			}
+
+			if parsed.Digest != "" {
+				errs = append(errs, fmt.Errorf("invalid imageName '%s': no digest should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))
+			}
 		}
 	}
 	return
