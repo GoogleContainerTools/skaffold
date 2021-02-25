@@ -939,8 +939,8 @@
         },
         "timeout": {
           "type": "integer",
-          "description": "sets the wait time for skaffold for the command to complete.",
-          "x-intellij-html-description": "sets the wait time for skaffold for the command to complete."
+          "description": "sets the wait time for skaffold for the command to complete. There is no default timeout. If not set, Skaffold will wait for the command to complete. '0' value indicates wait until completion.",
+          "x-intellij-html-description": "sets the wait time for skaffold for the command to complete. There is no default timeout. If not set, Skaffold will wait for the command to complete. '0' value indicates wait until completion."
         }
       },
       "preferredOrder": [
