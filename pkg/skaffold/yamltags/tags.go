@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"unicode"
 
 	"github.com/sirupsen/logrus"
 
@@ -76,7 +77,7 @@ func GetYamlTag(value interface{}) string {
 
 // GetYamlTags returns the first `yaml` tag value for each non-nested field of the given non-nil config parameter
 // For example if config is `latest.DeployType{HelmDeploy: &HelmDeploy{...}, KustomizeDeploy: &KustomizeDeploy{...}}`
-// then it returns `["kubectl", "kustomize"]`
+// then it returns `["helm", "kustomize"]`
 func GetYamlTags(config interface{}) []string {
 	var tags []string
 	if config == nil {
@@ -90,7 +91,7 @@ func GetYamlTags(config interface{}) []string {
 		if v.Kind() == reflect.Ptr && v.IsNil() { // exclude ptr fields not explicitly defined in the configuration
 			continue
 		}
-		tag, _ := firstYamlTagValue(f) // ignore fields that don't have a yaml tag
+		tag := firstYamlKey(f)
 		if tag != "" {
 			tags = append(tags, tag)
 		}
@@ -98,16 +99,27 @@ func GetYamlTags(config interface{}) []string {
 	return tags
 }
 
-func firstYamlTagValue(f reflect.StructField) (string, error) {
+func firstYamlKey(f reflect.StructField) string {
 	t, ok := f.Tag.Lookup("yaml")
 	if !ok {
-		return "", fmt.Errorf("field %s does not define a yaml tag", f.Name)
+		return lowerCaseFirst(f.Name)
 	}
 	tags := strings.Split(t, ",")
-	if len(tags) == 0 {
-		return "", nil
+	for i := 1; i < len(tags); i++ { // return empty string if it contains yaml flag `inline`
+		if tags[i] == "inline" {
+			return ""
+		}
 	}
-	return tags[0], nil
+	if len(tags) == 0 || tags[0] == "" {
+		return lowerCaseFirst(f.Name)
+	}
+	return tags[0]
+}
+
+func lowerCaseFirst(s string) string {
+	r := []rune(s)
+	r[0] = unicode.ToLower(r[0])
+	return string(r)
 }
 
 func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value, field reflect.StructField) error {

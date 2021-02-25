@@ -284,6 +284,27 @@ func TestGetYamlTags(t *testing.T) {
 			expectedTags: []string{"a"},
 		},
 		{
+			name: "no yaml tag",
+			yaml: struct {
+				Foo string
+			}{Foo: "bar"},
+			expectedTags: []string{"foo"},
+		},
+		{
+			name: "yaml flag `inline`",
+			yaml: struct {
+				Foo string `yaml:",inline"`
+			}{Foo: "bar"},
+			expectedTags: nil,
+		},
+		{
+			name: "empty yaml key",
+			yaml: struct {
+				Foo string `yaml:",omitempty"`
+			}{Foo: "bar"},
+			expectedTags: []string{"foo"},
+		},
+		{
 			name: "array fields are not included",
 			yaml: struct {
 				List []abc `yaml:"abcs"`
