@@ -7,7 +7,7 @@ import (
 
 func main() {
 	for {
-		fmt.Println("Hello world!")
+		fmt.Printf("hello multi platform, I am %s-%s\n", runtime.GOOS, runtime.GOARCH) 
 
 		time.Sleep(time.Second * 1)
 	}
