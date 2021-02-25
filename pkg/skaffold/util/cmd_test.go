@@ -38,7 +38,6 @@ func TestHelperProcess(*testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}
-	defer os.Exit(0)
 
 	args := os.Args
 	for len(args) > 0 {
@@ -65,6 +64,8 @@ func TestHelperProcess(*testing.T) {
 		fmt.Fprintf(os.Stderr, "Unknown command %q\n", cmd)
 		os.Exit(2)
 	}
+
+	os.Exit(0)
 }
 
 func TestCmd_RunCmdOut(t *testing.T) {

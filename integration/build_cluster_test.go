@@ -55,7 +55,7 @@ func TestBuildKanikoWithExplicitRepo(t *testing.T) {
 	skaffold.Build().WithRepo("").InDir("testdata/kaniko-explicit-repo").RunOrFail(t)
 }
 
-//see integration/testdata/README.md for details
+// see integration/testdata/README.md for details
 func TestBuildInCluster(t *testing.T) {
 	MarkIntegrationTest(t, NeedsGcp)
 

@@ -296,6 +296,11 @@ generate-schemas:
 generate-telemetry-json:
 	go run hack/struct-json/main.go -- pkg/skaffold/instrumentation/types.go docs/content/en/docs/resources/telemetry/metrics.json
 
+# dashboards
+.PHONY: generate-flags-dashboard
+flags-dashboard:
+	go run hack/patch-dashboard/main.go $(GCP_PROJECT)
+
 # static files
 
 $(STATIK_FILES): go.mod docs/content/en/schemas/*

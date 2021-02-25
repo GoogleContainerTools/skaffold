@@ -34,7 +34,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -144,7 +144,7 @@ func TestEventLogHTTP(t *testing.T) {
 		endpoint    string
 	}{
 		{
-			//TODO deprecate (https://github.com/GoogleContainerTools/skaffold/issues/3168)
+			// TODO deprecate (https://github.com/GoogleContainerTools/skaffold/issues/3168)
 			description: "/v1/event_log",
 			endpoint:    "/v1/event_log",
 		},

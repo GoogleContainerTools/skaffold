@@ -17,15 +17,13 @@ limitations under the License.
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/git"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -33,7 +31,7 @@ import (
 
 const (
 	template = `
-apiVersion: skaffold/v2beta11
+apiVersion: %s
 kind: Config
 metadata:
   name: %s
@@ -84,12 +82,13 @@ type mockCfg struct {
 }
 
 func TestGetAllConfigs(t *testing.T) {
+	// TODO: Modify test to check actual error codes for failure test cases, after fixing https://github.com/GoogleContainerTools/skaffold/issues/5412
 	tests := []struct {
 		description  string
 		documents    []document
 		configFilter []string
 		profiles     []string
-		err          error
+		shouldErr    bool
 		expected     []*latest.SkaffoldConfig
 	}{
 		{
@@ -168,6 +167,24 @@ requires:
 				createCfg("cfg01", "image01", ".", nil),
 				createCfg("cfg21", "image21", "doc2", nil),
 				createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Names: []string{"cfg01"}}, {Path: "doc2", Names: []string{"cfg21"}}}),
+			},
+		},
+		{
+			description: "dependencies in same file",
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
+requires:
+  - path: doc1
+`}}},
+				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: `
+requires:
+  - configs: [cfg11]
+`}, {name: "cfg11", requiresStanza: ""}}},
+			},
+			expected: []*latest.SkaffoldConfig{
+				createCfg("cfg11", "image11", "doc1", nil),
+				createCfg("cfg10", "image10", "doc1", []latest.ConfigDependency{{Names: []string{"cfg11"}}}),
+				createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1"}}),
 			},
 		},
 		{
@@ -327,7 +344,61 @@ requires:
 `}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			err: errors.New("did not find any configs matching selection [cfg3]"),
+			shouldErr: true,
+		},
+		{
+			description: "duplicate config names across multiple configs",
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
+requires:
+  - path: doc1
+    configs: [cfg10]
+`}, {name: "cfg01", requiresStanza: `
+requires:
+  - path: doc1
+    configs: [cfg11]
+`}}},
+				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10"}, {name: "cfg11"}, {name: "cfg00"}}},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "duplicate config names in main config",
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00"}, {name: "cfg00"}}},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "remote dependencies",
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
+requires:
+  - path: doc1
+`}, {name: "cfg01", requiresStanza: ""}}},
+				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: `
+requires:
+  - git:
+      repo: doc2
+      path: skaffold.yaml
+      ref: main
+    configs: [cfg21]
+`}, {name: "cfg11", requiresStanza: `
+requires:
+  - git:
+      repo: doc2
+      ref: main
+    configs: [cfg21]
+`}}},
+				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
+			},
+			expected: []*latest.SkaffoldConfig{
+				createCfg("cfg21", "image21", "doc2", nil),
+				createCfg("cfg10", "image10", "doc1", []latest.ConfigDependency{{GitRepo: &latest.GitInfo{Repo: "doc2", Path: "skaffold.yaml", Ref: "main"}, Names: []string{"cfg21"}}}),
+				createCfg("cfg11", "image11", "doc1", []latest.ConfigDependency{{GitRepo: &latest.GitInfo{Repo: "doc2", Ref: "main"}, Names: []string{"cfg21"}}}),
+				createCfg("cfg00", "image00", ".", []latest.ConfigDependency{{Path: "doc1"}}),
+				createCfg("cfg01", "image01", ".", nil),
+			},
 		},
 	}
 
@@ -338,13 +409,12 @@ requires:
 				var cfgs []string
 				for j, c := range d.configs {
 					id := fmt.Sprintf("%d%d", i, j)
-					s := fmt.Sprintf(template, c.name, c.requiresStanza, id, id, id)
+					s := fmt.Sprintf(template, latest.Version, c.name, c.requiresStanza, id, id, id)
 					cfgs = append(cfgs, s)
 				}
 				tmpDir.Write(d.path, strings.Join(cfgs, "\n---\n"))
 			}
 			tmpDir.Chdir()
-
 			for _, c := range test.expected {
 				dir := c.Build.Artifacts[0].Workspace
 				// in this test setup artifact workspace also denotes the config directory and no dependent config is in the root directory.
@@ -355,10 +425,13 @@ requires:
 				wd, _ := util.RealWorkDir()
 				c.Build.Artifacts[0].Workspace = filepath.Join(wd, dir)
 				for i := range c.Dependencies {
+					if c.Dependencies[i].Path == "" {
+						continue
+					}
 					c.Dependencies[i].Path = filepath.Join(wd, dir, c.Dependencies[i].Path)
 				}
 			}
-
+			t.Override(&git.SyncRepo, func(g latest.GitInfo, _ config.SkaffoldOptions) (string, error) { return g.Repo, nil })
 			cfgs, err := getAllConfigs(config.SkaffoldOptions{
 				Command:             "dev",
 				ConfigurationFile:   test.documents[0].path,
@@ -366,18 +439,7 @@ requires:
 				Profiles:            test.profiles,
 			})
 
-			t.CheckDeepEqual(test.err, err, cmp.Comparer(errorsComparer))
-			t.CheckErrorAndDeepEqual(test.err != nil, err, test.expected, cfgs)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cfgs)
 		})
 	}
-}
-
-func errorsComparer(a, b error) bool {
-	if a == nil && b == nil {
-		return true
-	}
-	if a == nil || b == nil {
-		return false
-	}
-	return a.Error() == b.Error()
 }

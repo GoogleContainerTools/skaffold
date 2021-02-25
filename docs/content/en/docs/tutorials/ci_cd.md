@@ -48,7 +48,7 @@ If you are using helm as your deployer, you might want to use the helm image str
 
 ## Step 4: Plugins (optional)
 
-If you want to do some kind of processing before deployment like decrypting the secrets in the CI/CD pipeline, skaffold also supports plugins like [Helm Secrets](https://github.com/zendesk/helm-secrets/). So, if you would like to deploy secrets that have been encrypted using KMS or any other mechanism supported by [SOPS](https://github.com/mozilla/sops](https://github.com/mozilla/sops) you can actually set **useHelmSecrets** option to true and skaffold will handle everything automatically for you.
+If you want to do some kind of processing before deployment like decrypting the secrets in the CI/CD pipeline, skaffold also supports plugins like [Helm Secrets](https://github.com/zendesk/helm-secrets/). So, if you would like to deploy secrets that have been encrypted using KMS or any other mechanism supported by [SOPS](https://github.com/mozilla/sops) you can actually set **useHelmSecrets** option to true and skaffold will handle everything automatically for you.
 
 ## Step 5: The `skaffold.yaml` file
 

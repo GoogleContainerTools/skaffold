@@ -17,8 +17,11 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/moby/buildkit/frontend/dockerfile/parser"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -104,6 +107,40 @@ ARG bar2`,
 			r := strings.NewReader(test.dockerfile)
 			got, _ := filterUnusedBuildArgs(r, test.buildArgs)
 			t.CheckDeepEqual(test.expected, got)
+		})
+	}
+}
+
+func TestValidateParsedDockerfile(t *testing.T) {
+	tests := []struct {
+		description string
+		dockerfile  string
+		shouldErr   bool
+	}{
+		{
+			description: "valid Dockerfile",
+			dockerfile:  `FROM foo`,
+		},
+		{
+			description: "invalid Dockerfile",
+			dockerfile:  `BAR foo`,
+			shouldErr:   true,
+		},
+		{
+			description: "explicit syntax directive",
+			dockerfile: `# syntax = foo/bar
+
+			[package]
+			name = "foo"
+			version = "0.1.0"`,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			res, err := parser.Parse(bytes.NewReader([]byte(test.dockerfile)))
+			t.CheckNoError(err)
+			err = validateParsedDockerfile(bytes.NewReader([]byte(test.dockerfile)), res)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }

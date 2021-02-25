@@ -19,6 +19,7 @@ package instrumentation
 import (
 	"net/http"
 	"runtime"
+	"strings"
 	"time"
 
 	flag "github.com/spf13/pflag"
@@ -27,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
-	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 var (
@@ -44,7 +45,7 @@ var (
 		ExitCode:          0,
 		ErrorCode:         proto.StatusCode_OK,
 	}
-	meteredCommands     = util.NewStringSet()
+	MeteredCommands     = util.NewStringSet()
 	doesBuild           = util.NewStringSet()
 	doesDeploy          = util.NewStringSet()
 	initExporter        = initCloudMonitoringExporterMetrics
@@ -53,7 +54,7 @@ var (
 )
 
 func init() {
-	meteredCommands.Insert("build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test")
+	MeteredCommands.Insert("build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test")
 	doesBuild.Insert("build", "render", "dev", "debug", "run")
 	doesDeploy.Insert("deploy", "dev", "debug", "run")
 }
@@ -74,8 +75,12 @@ func SetOnlineStatus() {
 }
 
 func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
-	meter.PlatformType = yamltags.GetYamlTag(configs[0].Build.BuildType) // TODO: support multiple build types in events.
+	var platforms []string
 	for _, config := range configs {
+		pl := yamltags.GetYamlTag(config.Build.BuildType)
+		if !util.StrSliceContains(platforms, pl) {
+			platforms = append(platforms, pl)
+		}
 		for _, artifact := range config.Pipeline.Build.Artifacts {
 			meter.Builders[yamltags.GetYamlTag(artifact.ArtifactType)]++
 			if len(artifact.Dependencies) > 0 {
@@ -88,10 +93,12 @@ func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
 		meter.Deployers = append(meter.Deployers, yamltags.GetYamlTags(config.Deploy.DeployType)...)
 		meter.BuildArtifacts += len(config.Pipeline.Build.Artifacts)
 	}
+	meter.PlatformType = strings.Join(platforms, ":")
+	meter.ConfigCount = len(configs)
 }
 
 func SetCommand(cmd string) {
-	if meteredCommands.Contains(cmd) {
+	if MeteredCommands.Contains(cmd) {
 		meter.Command = cmd
 	}
 }

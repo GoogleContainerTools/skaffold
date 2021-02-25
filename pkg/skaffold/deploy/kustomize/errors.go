@@ -18,7 +18,7 @@ package kustomize
 
 import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 func userErr(err error) error {

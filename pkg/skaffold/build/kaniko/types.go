@@ -79,7 +79,7 @@ const (
 	VerbosityFlag = "--verbosity"
 	// WhitelistVarRunFlag additional flag
 	WhitelistVarRunFlag = "--whitelist-var-run"
-	//DefaultImage is image used by the Kaniko pod by default
+	// DefaultImage is image used by the Kaniko pod by default
 	DefaultImage = "gcr.io/kaniko-project/executor:latest"
 	// DefaultSecretName for kaniko pod
 	DefaultSecretName = "kaniko-secret"

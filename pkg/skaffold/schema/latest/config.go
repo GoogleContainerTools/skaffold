@@ -26,7 +26,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2beta12"
+const Version string = "skaffold/v2beta13"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -75,13 +75,31 @@ type Pipeline struct {
 	PortForward []*PortForwardResource `yaml:"portForward,omitempty"`
 }
 
+// GitInfo contains information on the origin of skaffold configurations cloned from a git repository.
+type GitInfo struct {
+	// Repo is the git repository the package should be cloned from.  e.g. `https://github.com/GoogleContainerTools/skaffold.git`.
+	Repo string `yaml:"repo" yamltags:"required"`
+
+	// Path is the relative path from the repo root to the skaffold configuration file. eg. `getting-started/skaffold.yaml`.
+	Path string `yaml:"path,omitempty"`
+
+	// Ref is the git ref the package should be cloned from. eg. `master` or `main`.
+	Ref string `yaml:"ref,omitempty"`
+
+	// Sync when set to `true` will reset the cached repository to the latest commit from remote on every run. To use the cached repository with uncommitted changes or unpushed commits, it needs to be set to `false`.
+	Sync *bool `yaml:"sync,omitempty"`
+}
+
 // ConfigDependency describes a dependency on another skaffold configuration.
 type ConfigDependency struct {
-	// Names describes the names of the required configs.
+	// Names includes specific named configs within the file path. If empty, then all configs in the file are included.
 	Names []string `yaml:"configs,omitempty"`
 
 	// Path describes the path to the file containing the required configs.
-	Path string `yaml:"path" skaffold:"filepath"`
+	Path string `yaml:"path,omitempty" skaffold:"filepath" yamltags:"oneOf=paths"`
+
+	// GitRepo describes a remote git repository containing the required configs.
+	GitRepo *GitInfo `yaml:"git,omitempty" yamltags:"oneOf=paths"`
 
 	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
 	ActiveProfiles []ProfileDependency `yaml:"activeProfiles,omitempty"`
@@ -345,7 +363,7 @@ type KanikoCache struct {
 	// HostPath specifies a path on the host that is mounted to each pod as read only cache volume containing base images.
 	// If set, must exist on each node and prepopulated with kaniko-warmer.
 	HostPath string `yaml:"hostPath,omitempty"`
-	//TTL Cache timeout in hours.
+	// TTL Cache timeout in hours.
 	TTL string `yaml:"ttl,omitempty"`
 }
 

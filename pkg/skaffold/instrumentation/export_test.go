@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -32,7 +31,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/controller/push"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
-	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -52,6 +51,7 @@ func TestExportMetrics(t *testing.T) {
 		Version:           "vTest.0",
 		Arch:              "test arch",
 		OS:                "test os",
+		ConfigCount:       1,
 		Deployers:         []string{"test kubectl"},
 		Builders:          map[string]int{"docker": 1, "buildpacks": 1},
 		BuildDependencies: map[string]int{"docker": 1},
@@ -64,7 +64,8 @@ func TestExportMetrics(t *testing.T) {
 		Version:           "vTest.1",
 		Arch:              "test arch 2",
 		OS:                "test os 2",
-		PlatformType:      "test platform",
+		ConfigCount:       2,
+		PlatformType:      "test platform 1:test platform 2",
 		Deployers:         []string{"test helm", "test kpt"},
 		SyncType:          map[string]bool{"manual": true},
 		EnumFlags:         map[string]string{"test_run": "test_run_value"},
@@ -75,7 +76,23 @@ func TestExportMetrics(t *testing.T) {
 		StartTime:         startTime.Add(time.Hour * 24 * 30),
 		Duration:          time.Minute * 2,
 	}
-	devBuildBytes, _ := json.Marshal([]skaffoldMeter{buildMeter, devMeter})
+	debugMeter := skaffoldMeter{
+		Command:       "debug",
+		Version:       "vTest.2",
+		Arch:          "test arch 1",
+		OS:            "test os 2",
+		ConfigCount:   2,
+		PlatformType:  "test platform",
+		Deployers:     []string{"test helm", "test kpt"},
+		SyncType:      map[string]bool{"manual": true, "sync": true},
+		EnumFlags:     map[string]string{"test_run": "test_run_value"},
+		Builders:      map[string]int{"jib": 3, "buildpacks": 2},
+		DevIterations: []devIteration{{"build", 104}, {"build", 0}, {"sync", 0}, {"deploy", 1014}},
+		ErrorCode:     proto.StatusCode_BUILD_CANCELLED,
+		StartTime:     startTime.Add(time.Hour * 24 * 10),
+		Duration:      time.Minute * 4,
+	}
+	metersBytes, _ := json.Marshal([]skaffoldMeter{buildMeter, devMeter, debugMeter})
 	fs := &testutil.FakeFileSystem{
 		Files: map[string][]byte{
 			"/secret/keys.json": []byte(testKey),
@@ -96,7 +113,7 @@ func TestExportMetrics(t *testing.T) {
 		{
 			name:         "meter is appended to previously saved metrics",
 			meter:        devMeter,
-			savedMetrics: devBuildBytes,
+			savedMetrics: metersBytes,
 		},
 		{
 			name:                "meter does not re-save invalid metrics",
@@ -115,9 +132,14 @@ func TestExportMetrics(t *testing.T) {
 			isOnline: true,
 		},
 		{
+			name:     "test creating debug otel metrics",
+			meter:    debugMeter,
+			isOnline: true,
+		},
+		{
 			name:         "test otel metrics include offline metrics",
 			meter:        devMeter,
-			savedMetrics: devBuildBytes,
+			savedMetrics: metersBytes,
 			isOnline:     true,
 		},
 	}
@@ -241,11 +263,11 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		durationCount[fmt.Sprintf("%s:%f", meter.Command, meter.Duration.Seconds())]++
 		archCount[meter.Arch]++
 		commandCount[meter.Command]++
-		errorCount[meter.ErrorCode]++
+		errorCount[meter.ErrorCode.String()]++
 		platform[meter.PlatformType]++
 
 		for k, v := range meter.EnumFlags {
-			n := FlagsPrefix + strings.ReplaceAll(k, "-", "_")
+			n := strings.ReplaceAll(k, "-", "_")
 			enumFlags[n+":"+v]++
 		}
 
@@ -257,7 +279,7 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 				buildDeps[k] += v
 			}
 		}
-		if meter.Command == "dev" {
+		if meter.Command == "dev" || meter.Command == "debug" {
 			for _, devI := range meter.DevIterations {
 				devIterations[devI]++
 			}
@@ -280,9 +302,9 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 			osCount[l.Labels["os"]]--
 			versionCount[l.Labels["version"]]--
 			platform[l.Labels["platform_type"]]--
-			e, _ := strconv.Atoi(l.Labels["error"])
-			if e == int(proto.StatusCode_OK) {
-				errorCount[proto.StatusCode(e)]--
+			e := l.Labels["error"]
+			if e == proto.StatusCode_OK.String() {
+				errorCount[e]--
 			}
 		case "launch/duration":
 			durationCount[fmt.Sprintf("%s:%f", l.Labels["command"], l.value().(float64))]--
@@ -294,18 +316,18 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 			builders[l.Labels["builder"]]--
 		case "deployer":
 			deployers[l.Labels["deployer"]]--
-		case "dev/iterations":
-			e, _ := strconv.Atoi(l.Labels["error"])
-			devIterations[devIteration{l.Labels["intent"], proto.StatusCode(e)}]--
+		case "dev/iterations", "debug/iterations":
+			e := l.Labels["error"]
+			devIterations[devIteration{l.Labels["intent"], proto.StatusCode(proto.StatusCode_value[e])}]--
 		case "errors":
-			e, _ := strconv.Atoi(l.Labels["error"])
-			errorCount[proto.StatusCode(e)]--
+			e := l.Labels["error"]
+			errorCount[e]--
+		case "flags":
+			enumFlags[l.Labels["flag_name"]+":"+l.Labels["value"]]--
 		default:
 			switch {
-			case meteredCommands.Contains(l.Name):
+			case MeteredCommands.Contains(l.Name):
 				commandCount[l.Name]--
-			case strings.HasPrefix(l.Name, "flags/"):
-				enumFlags[l.Name+":"+l.Labels["value"]]--
 			default:
 				t.Error("unexpected metric with name", l.Name)
 			}

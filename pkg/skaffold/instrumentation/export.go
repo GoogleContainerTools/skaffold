@@ -25,7 +25,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
@@ -40,11 +39,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/proto"
-)
-
-const (
-	FlagsPrefix = "flags/"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 func ExportMetrics(exitCode int) error {
@@ -149,8 +144,9 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		label.String("os", meter.OS),
 		label.String("arch", meter.Arch),
 		label.String("command", meter.Command),
-		label.String("error", strconv.Itoa(int(meter.ErrorCode))),
+		label.String("error", meter.ErrorCode.String()),
 		label.String("platform_type", meter.PlatformType),
+		label.Int("config_count", meter.ConfigCount),
 		randLabel,
 	}
 
@@ -177,13 +173,14 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 }
 
 func flagMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
+	flagCounter := metric.Must(m).NewInt64ValueRecorder("flags", metric.WithDescription("Tracks usage of enum flags"))
 	for k, v := range meter.EnumFlags {
-		flagCounter := metric.Must(m).NewInt64ValueRecorder(FlagsPrefix+strings.ReplaceAll(k, "-", "_"),
-			metric.WithDescription(fmt.Sprintf("Flag metric for %s", k)))
 		labels := []label.KeyValue{
+			label.String("flag_name", k),
+			label.String("flag_value", v),
 			label.String("command", meter.Command),
 			label.String("value", v),
-			label.String("error", strconv.Itoa(int(meter.ErrorCode))),
+			label.String("error", meter.ErrorCode.String()),
 			randLabel,
 		}
 		flagCounter.Record(ctx, 1, labels...)
@@ -194,14 +191,14 @@ func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, ra
 	commandCounter := metric.Must(m).NewInt64ValueRecorder(meter.Command,
 		metric.WithDescription(fmt.Sprintf("Number of times %s is used", meter.Command)))
 	labels := []label.KeyValue{
-		label.String("error", strconv.Itoa(int(meter.ErrorCode))),
+		label.String("error", meter.ErrorCode.String()),
 		randLabel,
 	}
 	commandCounter.Record(ctx, 1, labels...)
 
-	if meter.Command == "dev" {
-		iterationCounter := metric.Must(m).NewInt64ValueRecorder("dev/iterations",
-			metric.WithDescription("Number of iterations in a dev session"))
+	if meter.Command == "dev" || meter.Command == "debug" {
+		iterationCounter := metric.Must(m).NewInt64ValueRecorder(fmt.Sprintf("%s/iterations", meter.Command),
+			metric.WithDescription(fmt.Sprintf("Number of iterations in a %s session", meter.Command)))
 
 		counts := make(map[string]map[proto.StatusCode]int)
 
@@ -216,7 +213,7 @@ func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, ra
 			for errorCode, count := range errorCounts {
 				iterationCounter.Record(ctx, int64(count),
 					label.String("intent", intention),
-					label.String("error", strconv.Itoa(int(errorCode))),
+					label.String("error", errorCode.String()),
 					randLabel)
 			}
 		}
@@ -244,7 +241,7 @@ func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, ra
 
 func errorMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
 	errCounter := metric.Must(m).NewInt64ValueRecorder("errors", metric.WithDescription("Skaffold errors"))
-	errCounter.Record(ctx, 1, label.String("error", strconv.Itoa(int(meter.ErrorCode))), randLabel)
+	errCounter.Record(ctx, 1, label.String("error", meter.ErrorCode.String()), randLabel)
 
 	commandLabel := label.String("command", meter.Command)
 

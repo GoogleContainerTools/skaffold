@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -315,7 +315,7 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 		return nil, 0, err
 	}
 
-	newContents := strings.Replace(string(original), target, replacement, -1)
+	newContents := strings.ReplaceAll(string(original), target, replacement)
 
 	err = ioutil.WriteFile(filepath, []byte(newContents), 0)
 

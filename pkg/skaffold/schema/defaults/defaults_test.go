@@ -341,6 +341,19 @@ func TestSetPortForwardLocalPort(t *testing.T) {
 	testutil.CheckDeepEqual(t, 9000, cfg.PortForward[1].LocalPort)
 }
 
+func TestSetPortForwardOnEmptyPortForwardResource(t *testing.T) {
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{},
+			PortForward: []*latest.PortForwardResource{
+				nil,
+			},
+		},
+	}
+	err := Set(cfg)
+	testutil.CheckError(t, true, err)
+}
+
 func TestSetDefaultPortForwardAddress(t *testing.T) {
 	cfg := &latest.SkaffoldConfig{
 		Pipeline: latest.Pipeline{

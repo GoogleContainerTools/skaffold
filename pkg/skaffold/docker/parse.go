@@ -17,9 +17,11 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -27,6 +29,7 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
+	"github.com/moby/buildkit/frontend/dockerfile/dockerfile2llb"
 	"github.com/moby/buildkit/frontend/dockerfile/instructions"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
@@ -66,19 +69,17 @@ var (
 )
 
 func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, cfg Config) ([]fromTo, error) {
-	f, err := os.Open(absDockerfilePath)
+	r, err := ioutil.ReadFile(absDockerfilePath)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
 
-	res, err := parser.Parse(f)
+	res, err := parser.Parse(bytes.NewReader(r))
 	if err != nil {
 		return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
 	}
 
-	// instructions.Parse will check for malformed Dockerfile
-	if _, _, err := instructions.Parse(res.AST); err != nil {
+	if err := validateParsedDockerfile(bytes.NewReader(r), res); err != nil {
 		return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
 	}
 
@@ -424,4 +425,14 @@ func resolveDir(cwd, targetDir string) string {
 		return path.Clean(targetDir)
 	}
 	return path.Clean(path.Join(cwd, targetDir))
+}
+
+func validateParsedDockerfile(r io.Reader, res *parser.Result) error {
+	// skip validation for dockerfiles using explicit `syntax` directive
+	if _, _, _, usesSyntax := dockerfile2llb.DetectSyntax(r); usesSyntax {
+		return nil
+	}
+	// instructions.Parse will check for malformed Dockerfile
+	_, _, err := instructions.Parse(res.AST)
+	return err
 }
