@@ -474,7 +474,7 @@ type TestCase struct {
 	// For example: `gcr.io/k8s-skaffold/example`.
 	ImageName string `yaml:"image" yamltags:"required"`
 
-	// CustomTests runs a custom test command provided by the user.
+	// CustomTests lists the set of custom tests to run after an artifact is built.
 	CustomTests []CustomTest `yaml:"custom,omitempty"`
 
 	// StructureTests lists the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
@@ -1016,6 +1016,7 @@ type CustomDependencies struct {
 }
 
 // CustomTest describes the custom test command provided by the user.
+// Custom tests are run after an image build whenever build or test dependencies are changed.
 type CustomTest struct {
 	// Command is the custom command to be executed.
 	Command string `yaml:"command" yamltags:"required"`
@@ -1025,7 +1026,7 @@ type CustomTest struct {
 	// command to complete. '0' value indicates wait until completion.
 	TimeoutSeconds int `yaml:"timeout,omitempty"`
 
-	// Dependencies are the file dependencies that skaffold should watch for re-running the command.
+	// Dependencies are additional test-specific file dependencies; changes to these files will re-run this test.
 	Dependencies *CustomTestDependencies `yaml:"dependencies,omitempty"`
 }
 
@@ -1036,6 +1037,7 @@ type CustomTestDependencies struct {
 	Command string `yaml:"command,omitempty" yamltags:"oneOf=dependency"`
 
 	// Paths should be set to the file dependencies for this command, so that the skaffold file watcher knows when to retest and perform file synchronization.
+	// For example: `["src/test/**"]`
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 
 	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both retest and file synchronization.

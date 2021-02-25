@@ -934,8 +934,8 @@
         },
         "dependencies": {
           "$ref": "#/definitions/CustomTestDependencies",
-          "description": "file dependencies that skaffold should watch for re-running the command.",
-          "x-intellij-html-description": "file dependencies that skaffold should watch for re-running the command."
+          "description": "additional test-specific file dependencies; changes to these files will re-run this test.",
+          "x-intellij-html-description": "additional test-specific file dependencies; changes to these files will re-run this test."
         },
         "timeout": {
           "type": "integer",
@@ -949,8 +949,8 @@
         "dependencies"
       ],
       "additionalProperties": false,
-      "description": "describes the custom test command provided by the user.",
-      "x-intellij-html-description": "describes the custom test command provided by the user."
+      "description": "describes the custom test command provided by the user. Custom tests are run after an image build whenever build or test dependencies are changed.",
+      "x-intellij-html-description": "describes the custom test command provided by the user. Custom tests are run after an image build whenever build or test dependencies are changed."
     },
     "CustomTestDependencies": {
       "properties": {
@@ -975,7 +975,10 @@
           "type": "array",
           "description": "should be set to the file dependencies for this command, so that the skaffold file watcher knows when to retest and perform file synchronization.",
           "x-intellij-html-description": "should be set to the file dependencies for this command, so that the skaffold file watcher knows when to retest and perform file synchronization.",
-          "default": "[]"
+          "default": "[]",
+          "examples": [
+            "[\"src/test/**\"]"
+          ]
         }
       },
       "preferredOrder": [
@@ -2974,8 +2977,8 @@
             "$ref": "#/definitions/CustomTest"
           },
           "type": "array",
-          "description": "runs a custom test command provided by the user.",
-          "x-intellij-html-description": "runs a custom test command provided by the user."
+          "description": "the set of custom tests to run after an artifact is built.",
+          "x-intellij-html-description": "the set of custom tests to run after an artifact is built."
         },
         "image": {
           "type": "string",

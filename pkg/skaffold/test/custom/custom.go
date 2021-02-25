@@ -80,14 +80,13 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
 	color.Default.Fprintln(out, "Custom test timeout is set to: ", test.TimeoutSeconds)
 
 	if test.TimeoutSeconds > 0 {
-		newCtx, cancel := context.WithTimeout(ctx, (time.Duration(test.TimeoutSeconds))*(time.Second))
+		newCtx, cancel := context.WithTimeout(ctx, time.Duration(test.TimeoutSeconds)*time.Second)
 		defer cancel()
 		ctx = newCtx
 	}
 
 	var cmd *exec.Cmd
-	// We evaluate the command with a shell so that it can contain
-	// env variables.
+	// We evaluate the command with a shell so that it can contain env variables.
 	if runtime.GOOS == "windows" {
 		cmd = exec.CommandContext(ctx, "cmd.exe", "/C", command)
 	} else {

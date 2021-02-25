@@ -16,17 +16,11 @@
 
 set -e
 
-# This script runs go test with a better output:
-# - It prints the failures in RED
-# - It recaps the failures at the end
-# - It lists the 20 slowest tests
-
 echo "go custom test $@"
 
 i=0
 while true 
 do
-    go clean 
     go run ./command/basic.go
 
     i=$(($i + 5))   
