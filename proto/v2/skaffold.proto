@@ -21,13 +21,12 @@ message Request {
 message State {
     BuildState buildState = 1;
     DeployState deployState = 2;
-    reserved 3; // field 3 is obsolete
-    map<int32, PortEvent> forwardedPorts = 4;
-    StatusCheckState statusCheckState = 5;
-    FileSyncState fileSyncState = 6;
-    repeated DebuggingContainerEvent debuggingContainers = 7;
-    Metadata metadata = 8;
-    TestState testState = 9;
+    map<int32, PortEvent> forwardedPorts = 3;
+    StatusCheckState statusCheckState = 4;
+    FileSyncState fileSyncState = 5;
+    repeated DebuggingContainerEvent debuggingContainers = 6;
+    Metadata metadata = 7;
+    TestState testState = 8;
 }
 
 message Metadata {
