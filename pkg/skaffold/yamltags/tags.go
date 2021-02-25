@@ -75,10 +75,10 @@ func GetYamlTag(value interface{}) string {
 	return rawStr[:i]
 }
 
-// GetYamlTags returns the first `yaml` tag value for each non-nested field of the given non-nil config parameter
+// GetYamlKeys returns the yaml key for each non-nested field of the given non-nil config parameter
 // For example if config is `latest.DeployType{HelmDeploy: &HelmDeploy{...}, KustomizeDeploy: &KustomizeDeploy{...}}`
 // then it returns `["helm", "kustomize"]`
-func GetYamlTags(config interface{}) []string {
+func GetYamlKeys(config interface{}) []string {
 	var tags []string
 	if config == nil {
 		return tags
@@ -91,7 +91,7 @@ func GetYamlTags(config interface{}) []string {
 		if v.Kind() == reflect.Ptr && v.IsNil() { // exclude ptr fields not explicitly defined in the configuration
 			continue
 		}
-		tag := firstYamlKey(f)
+		tag := getYamlKey(f)
 		if tag != "" {
 			tags = append(tags, tag)
 		}
@@ -99,7 +99,7 @@ func GetYamlTags(config interface{}) []string {
 	return tags
 }
 
-func firstYamlKey(f reflect.StructField) string {
+func getYamlKey(f reflect.StructField) string {
 	t, ok := f.Tag.Lookup("yaml")
 	if !ok {
 		return lowerCaseFirst(f.Name)

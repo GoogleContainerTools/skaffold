@@ -43,5 +43,5 @@ func ListDeployers(deploy *latest.DeployConfig) []string {
 		return []string{}
 	}
 
-	return yamltags.GetYamlTags(deploy.DeployType)
+	return yamltags.GetYamlKeys(deploy.DeployType)
 }

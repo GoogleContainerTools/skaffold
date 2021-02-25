@@ -315,7 +315,7 @@ func TestGetYamlTags(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			t.CheckDeepEqual(test.expectedTags, GetYamlTags(test.yaml))
+			t.CheckDeepEqual(test.expectedTags, GetYamlKeys(test.yaml))
 		})
 	}
 }
