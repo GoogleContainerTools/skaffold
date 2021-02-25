@@ -2,7 +2,11 @@ FROM golang:1.16-alpine as builder
 COPY main.go .
 # `skaffold debug` sets SKAFFOLD_GO_GCFLAGS to disable compiler optimizations
 ARG SKAFFOLD_GO_GCFLAGS
-RUN go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o /app main.go
+FROM --platform=$BUILDPLATFORM golang:alpine AS build                                                                       
+                                                                       
+ARG TARGETOS                                                                                                                
+ARG TARGETARCH                                                                                                                                                                                          
+RUN GOOS=$TARGETOS GOARCH=$TARGETARCH  go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o /app main.go 
 
 FROM alpine:3
 # Define GOTRACEBACK to mark this container as using the Go language runtime
