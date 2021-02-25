@@ -3,7 +3,8 @@ kind: Config
 
 build:
   # Note that building for multiple platforms requires pushing to a registry,
-  # as the Docker Daemon cannot load multi-platform images.
+  # as the Docker Daemon cannot load multi-platform images.  You will need to
+  # run with `--default-repo`.
   local:
     push: true
   artifacts:

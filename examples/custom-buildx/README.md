@@ -21,8 +21,8 @@ requires pushing images to a container registry such as
 #### Tutorial
 
 This tutorial will demonstrate how Skaffold can build a simple
-_Hello World_ Go application with `docker buildx` and deploy it to
-a Kubernetes cluster.
+_Hello World_ Go application for linux/amd64 and linux/arm64 using
+`docker buildx` and deploy it to a Kubernetes cluster.
 
 ##### Step 1: Configure _Docker Buildx_
 
@@ -64,14 +64,8 @@ With this command, Skaffold will build the artifact with `docker buildx`
 and deploy the application to Kubernetes.  You should be able to
 see *Hello, World!* printed every second in the Skaffold logs.
 
-If Skaffold fails with a message like the following, then Skaffold is
-attempting to load the multi-platform images into the Docker Daemon,
-is pushing the images
-to a registry instead.
-```
-error: failed to solve: rpc error: code = Unknown desc = docker exporter does not currently support exporting manifest lists
-exiting dev mode because first build failed: building custom artifact: exit status 1
-```
+We need to use `--default-repo` to push to a repository as Docker does
+not support loading multi-platform images with the same name.
 
 #### Cleanup
 
