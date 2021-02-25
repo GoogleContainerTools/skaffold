@@ -58,11 +58,8 @@ func makeFilePathsAbsolute(config interface{}, base string) []error {
 				switch v.Interface().(type) {
 				case string:
 					path := v.String()
-					if path == "" {
-						return errs
-					}
-					if filepath.IsAbs(path) {
-						return errs
+					if path == "" || filepath.IsAbs(path) {
+						continue
 					}
 					v.SetString(filepath.Join(base, path))
 					logrus.Tracef("setting absolute path for config field %q", f.Name)
@@ -70,10 +67,7 @@ func makeFilePathsAbsolute(config interface{}, base string) []error {
 					for i := 0; i < v.Len(); i++ {
 						elem := v.Index(i)
 						path := elem.String()
-						if path == "" {
-							continue
-						}
-						if filepath.IsAbs(path) {
+						if path == "" || filepath.IsAbs(path) {
 							continue
 						}
 						elem.SetString(filepath.Join(base, path))
@@ -82,7 +76,7 @@ func makeFilePathsAbsolute(config interface{}, base string) []error {
 				default:
 					return []error{fmt.Errorf("yaml tag `filepath` needs struct field %q to be string or string slice", f.Name)}
 				}
-				return errs
+				continue
 			}
 
 			if v.Kind() != reflect.Ptr {
