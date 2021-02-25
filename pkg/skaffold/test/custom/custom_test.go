@@ -24,18 +24,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestNewRunner(t *testing.T) {
-	const (
-		imageName = "foo.io/baz"
-	)
-
-	testutil.Run(t, "", func(t *testutil.T) {
+func TestNewCustomTestRunner(t *testing.T) {
+	testutil.Run(t, "Testing new custom test runner", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("test.yaml")
-		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image "+imageName+" --config "+tmpDir.Path("test.yaml")))
 
 		cfg := &mockConfig{
 			workingDir: tmpDir.Root(),
@@ -43,8 +37,8 @@ func TestNewRunner(t *testing.T) {
 				ImageName:      "image",
 				StructureTests: []string{"test.yaml"},
 				CustomTests: []latest.CustomTest{{
-					Command:        "./test.sh",
-					TimeoutSeconds: "10",
+					Command:        "echo Running Custom Test command1.",
+					TimeoutSeconds: 10,
 					Dependencies: &latest.CustomTestDependencies{
 						Command: "echo [\"file1\",\"file2\",\"file3\"]",
 						Paths:   []string{"**"},
@@ -55,8 +49,8 @@ func TestNewRunner(t *testing.T) {
 		}
 
 		custom := latest.CustomTest{
-			Command:        "./test.sh",
-			TimeoutSeconds: "10",
+			Command:        "echo Running Custom Test command.",
+			TimeoutSeconds: 10,
 			Dependencies: &latest.CustomTestDependencies{
 				Command: "echo [\"file1\",\"file2\",\"file3\"]",
 				Paths:   []string{"**"},

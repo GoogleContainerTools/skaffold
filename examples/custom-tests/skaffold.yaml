@@ -11,21 +11,7 @@ test:
         dependencies:
           paths:
           - "./command/*_test.go"
-    structureTests:
-      - ./test/*
 deploy:
   kubectl:
     manifests:
       - k8s-*
-profiles:
-  - name: test
-    test:
-      - image: skaffold-example
-        custom:
-          - command: ./command/test.sh
-            timeout: 300 #in seconds - 5mins
-            dependencies:
-              paths:
-              - "./command/*_test.go"
-        structureTests:
-          - ./test/profile_structure_test.yaml

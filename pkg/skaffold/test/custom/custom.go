@@ -24,17 +24,14 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -81,15 +78,10 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
 
 	logrus.Infof("Running custom test command %s", command)
 	color.Default.Fprintln(out, "Running custom test command: ", command)
+	color.Default.Fprintln(out, "Custom test timeout is set to: ", test.TimeoutSeconds)
 
-	if len(test.TimeoutSeconds) != 0 {
-		// Create a new context with timeout
-		timeout, err := strconv.Atoi(test.TimeoutSeconds)
-		if err != nil {
-			return fmt.Errorf("error retrieving timeout: %w", err)
-		}
-
-		newCtx, cancel := context.WithTimeout(ctx, (time.Duration(timeout))*(time.Second))
+	if test.TimeoutSeconds > 0 {
+		newCtx, cancel := context.WithTimeout(ctx, (time.Duration(test.TimeoutSeconds))*(time.Second))
 		defer cancel()
 		ctx = newCtx
 	}
@@ -102,24 +94,35 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
 	} else {
 		cmd = exec.CommandContext(ctx, "sh", "-c", command)
 	}
+
 	cmd.Stdout = out
 	cmd.Stderr = out
 	cmd.Env = ct.env()
 
-	if err := cmd.Run(); err != nil {
-		// check the context error to see if the timeout was executed.
-		if ctx.Err() == context.DeadlineExceeded {
-			return fmt.Errorf("command timed out: %w", ctx.Err())
-		}
+	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("error running cmd: %w", err)
 	}
 
-	// If there's no context error, we know the command completed (or errored).
-	if err != nil {
-		return fmt.Errorf("Command returned Non-zero exit code: %w", err)
+	if err := cmd.Wait(); err != nil {
+		if e, ok := err.(*exec.ExitError); ok {
+			// If the process exited by itself, just return the error
+			if e.Exited() {
+				return e
+			}
+			// If the context is done, it has been killed by the exec.Command
+			select {
+			case <-ctx.Done():
+				if ctx.Err() == context.DeadlineExceeded {
+					fmt.Println("Command timed out")
+				}
+				return ctx.Err()
+			default:
+				return e
+			}
+		}
+		return err
 	}
-
-	return misc.HandleGracefulTermination(ctx, cmd)
+	return nil
 }
 
 // env returns a merged environment of the current process environment and any extra environment.

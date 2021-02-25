@@ -1021,7 +1021,7 @@ type CustomTest struct {
 	Command string `yaml:"command" yamltags:"required"`
 
 	// TimeoutSeconds sets the wait time for skaffold for the command to complete.
-	TimeoutSeconds string `yaml:"timeout,omitempty"`
+	TimeoutSeconds int `yaml:"timeout,omitempty"`
 
 	// Dependencies are the file dependencies that skaffold should watch for re-running the command.
 	Dependencies *CustomTestDependencies `yaml:"dependencies,omitempty"`

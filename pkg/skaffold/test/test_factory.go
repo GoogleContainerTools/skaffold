@@ -50,7 +50,6 @@ func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) 
 	}
 
 	return FullTester{
-		// runners: getRunner(cfg, imagesAreLocal, cfg.TestCases()),
 		runners: runner,
 		muted:   cfg.Muted(),
 	}, nil
@@ -123,15 +122,15 @@ func getRunner(cfg Config, imagesAreLocal func(imageName string) (bool, error), 
 			}
 			runners = append(runners, structureRunner)
 		}
-		if len(tc.CustomTests) != 0 {
-			for _, customTest := range tc.CustomTests {
-				customRunner, err := custom.New(cfg, cfg.GetWorkingDir(), customTest)
-				if err != nil {
-					return nil, err
-				}
-				runners = append(runners, customRunner)
+
+		for _, customTest := range tc.CustomTests {
+			customRunner, err := custom.New(cfg, cfg.GetWorkingDir(), customTest)
+			if err != nil {
+				return nil, err
 			}
+			runners = append(runners, customRunner)
 		}
+
 	}
 	return runners, nil
 }

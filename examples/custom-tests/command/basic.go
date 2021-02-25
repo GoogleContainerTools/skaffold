@@ -35,5 +35,4 @@ func main() {
 
 	min := IntMin(x, y)
 	fmt.Println("Min of ", x, " and ", y, " is: ", min)
-	// os.Exit(3)
 }
