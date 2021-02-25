@@ -17,12 +17,9 @@ limitations under the License.
 package yamltags
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"reflect"
 	"strings"
-	"unicode"
 
 	"github.com/sirupsen/logrus"
 
@@ -77,37 +74,40 @@ func GetYamlTag(value interface{}) string {
 	return rawStr[:i]
 }
 
-// GetYamlTags returns the tags of the non-nested fields of the given non-nil value
-// If value interface{} is
-// latest.DeployType{HelmDeploy: &HelmDeploy{...}, KustomizeDeploy: &KustomizeDeploy{...}}
-// then this parses that interface as it's raw yaml:
-// 	kubectl:
-//    manifests:
-//    - k8s/*.yaml
-//  kustomize:
-//    paths:
-//    - k8s/
-// and returns ["kubectl", "kustomize"]
-// empty structs (e.g. latest.DeployType{}) when parsed look like "{}"" and so this function returns []
-func GetYamlTags(value interface{}) []string {
+// GetYamlTags returns the first `yaml` tag value for each non-nested field of the given non-nil config parameter
+// For example if config is `latest.DeployType{HelmDeploy: &HelmDeploy{...}, KustomizeDeploy: &KustomizeDeploy{...}}`
+// then it returns `["kubectl", "kustomize"]`
+func GetYamlTags(config interface{}) []string {
 	var tags []string
-
-	buf, err := yaml.Marshal(value)
-	if err != nil {
-		logrus.Warnf("error marshaling %-v", value)
+	if config == nil {
 		return tags
 	}
-
-	r := bufio.NewScanner(bytes.NewBuffer(buf))
-	for r.Scan() {
-		l := r.Text()
-		i := strings.Index(l, ":")
-		if !unicode.IsSpace(rune(l[0])) && l[0] != '-' && i >= 0 {
-			tags = append(tags, l[:i])
+	st := reflect.Indirect(reflect.ValueOf(config))
+	t := st.Type()
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		v := st.Field(i)
+		if v.Kind() == reflect.Ptr && v.IsNil() { // exclude ptr fields not explicitly defined in the configuration
+			continue
+		}
+		tag, _ := firstYamlTagValue(f) // ignore fields that don't have a yaml tag
+		if tag != "" {
+			tags = append(tags, tag)
 		}
 	}
-
 	return tags
+}
+
+func firstYamlTagValue(f reflect.StructField) (string, error) {
+	t, ok := f.Tag.Lookup("yaml")
+	if !ok {
+		return "", fmt.Errorf("field %s does not define a yaml tag", f.Name)
+	}
+	tags := strings.Split(t, ",")
+	if len(tags) == 0 {
+		return "", nil
+	}
+	return tags[0], nil
 }
 
 func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value, field reflect.StructField) error {

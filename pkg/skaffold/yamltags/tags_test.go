@@ -277,8 +277,10 @@ func TestGetYamlTags(t *testing.T) {
 			expectedTags: []string{"c"},
 		},
 		{
-			name:         "non-pointer fields are returned in empty struct",
-			yaml:         struct{ A string }{},
+			name: "non-pointer fields are returned in empty struct",
+			yaml: struct {
+				A string `yaml:"a"`
+			}{},
 			expectedTags: []string{"a"},
 		},
 		{
