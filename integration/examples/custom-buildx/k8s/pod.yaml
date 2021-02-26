@@ -13,6 +13,8 @@ spec:
   #     kubernetes.io/os: linux
 
   # Node affinity is more flexible and may represent several possible conditions.
+  # Here we tell Kubernetes that we support both linux/arm64 and linux/amd64 but
+  # we prefer linux/arm64 if available.
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -24,6 +26,13 @@ spec:
             - key: kubernetes.io/arch
               operator: In
               values: [amd64,arm64] # this example builds linux/{amd64,arm64} images
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/arch
+              operator: In
+              values: [arm64]
 
   containers:
   - name: getting-started
