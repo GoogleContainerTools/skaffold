@@ -243,7 +243,7 @@ func TestGetYamlTag(t *testing.T) {
 	}
 }
 
-func TestGetYamlTags(t *testing.T) {
+func TestGetYamlKeys(t *testing.T) {
 	a := "it's A"
 	b := "it's B"
 	c := "it's C"
