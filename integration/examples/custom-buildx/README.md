@@ -6,7 +6,7 @@ platforms.
 
 This example shows how `docker buildx` can be used as a
 Skaffold _custom builder_ to create container images for
-for two different platforms: linux/arm64 and linux/amd64.
+for two different platforms: `linux/arm64` and `linux/amd64`.
 
 #### Before you begin
 
@@ -47,10 +47,17 @@ $ cd skaffold/examples/custom-buildx
 
 Take a look at the [skaffold.yaml](skaffold.yaml), which uses a
 _custom builder_ to invoke `docker buildx` to containerize source
-code.
+code for two platforms.
 For more information about custom builders, see the Skaffold custom
 builder [documentation](https://skaffold.dev/docs/how-tos/builders/#custom-build-script-run-locally).
-Note that Skaffold builders are different from Docker Buildx builders.
+Note that Skaffold builders are different from `docker buildx` builders.
+
+Next look at the Kubernetes [pod descriptor](k8s/pod.yaml) and notice
+the use of _node affinities_ to instruct Kubernetes to scheduler the workload
+on nodes running either `linux/arm64` or `linux/amd64`.  It is important
+to realize that Kubernetes does not examine the referenced container images
+to determine the possible platforms.
+
 
 ##### Step 3: Build and deploy the example
 

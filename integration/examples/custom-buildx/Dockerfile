@@ -1,6 +1,8 @@
-# If using a cross-platform language toolchain like Go, then `--platform=$BUILDPLATFORM`
-# will result in a speed-up as the build will proceed on the native architecture rather
-# than emulation.
+# As Go supports cross-compilation, `--platform=$BUILDPLATFORM`
+# results in a dramatic speed-up as the build runs natively
+# instead of using emulation.
+# BUILD{PLATFORM,OS,ARCH} are set to your docker engine's platform
+# TARGET{PLATFORM,OS,ARCH} are set to the desired platform
 FROM --platform=$BUILDPLATFORM golang:alpine AS builder
 
 COPY main.go .
