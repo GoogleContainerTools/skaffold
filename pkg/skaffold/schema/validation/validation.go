@@ -120,7 +120,7 @@ func validateImageNames(configs []*latest.SkaffoldConfig) (errs []error) {
 			}
 
 			if parsed.Digest != "" {
-				errs = append(errs, fmt.Errorf("invalid imageName '%s': no digest should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))
+				errs = append(errs, fmt.Errorf("invalid image %q: no digest should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))
 			}
 		}
 	}
