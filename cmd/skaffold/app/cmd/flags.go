@@ -257,7 +257,7 @@ var flagRegistry = []Flag{
 		DefValuePerCommand: map[string]interface{}{
 			"debug": []string{"user", "debug"},
 		},
-		NoOptDefVal:   "user,services",
+		NoOptDefVal:   "compat", // use the settings for prior to port-forward refactor
 		FlagAddMethod: "StringSliceVar",
 		DefinedOn:     []string{"dev", "run", "deploy", "debug"},
 		IsEnum:        true,

@@ -40,19 +40,28 @@ type ForwarderManager struct {
 }
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
-func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string, label string, options config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
-	logrus.Warnf(">>> port-forwarding for %+v", options)
+func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string, label string, runMode string, options config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
+	logrus.Warnf(">>> port-forwarding for mode %s %+v", runMode, options)
 	entryManager := NewEntryManager(out, NewKubectlForwarder(out, cli))
 
 	var forwarders []Forwarder
 	var forwardUser, forwardDebug, forwardServices, forwardPods bool
+
 	for _, o := range options.Modes {
 		switch o {
 		case "none", "false":
 			return nil
-		case "true":
-			forwardUser = true
-			forwardServices = true
+		case "compat":
+			// "default" is the `--port-forward` mode
+			switch runMode {
+			case "debug":
+				forwardDebug = true
+				forwardPods = true
+				fallthrough
+			default:
+				forwardUser = true
+				forwardServices = true
+			}
 		case "user":
 			forwardUser = true
 		case "services":
