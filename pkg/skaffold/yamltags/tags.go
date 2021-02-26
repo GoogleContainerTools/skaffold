@@ -100,6 +100,9 @@ func GetYamlKeys(config interface{}) []string {
 }
 
 func getYamlKey(f reflect.StructField) string {
+	if f.PkgPath != "" { // field is unexported
+		return ""
+	}
 	t, ok := f.Tag.Lookup("yaml")
 	if !ok {
 		return lowerCaseFirst(f.Name)

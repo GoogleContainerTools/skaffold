@@ -286,9 +286,16 @@ func TestGetYamlTags(t *testing.T) {
 		{
 			name: "no yaml tag",
 			yaml: struct {
-				Foo string
-			}{Foo: "bar"},
-			expectedTags: []string{"foo"},
+				FooBar string
+			}{FooBar: "bar"},
+			expectedTags: []string{"fooBar"},
+		},
+		{
+			name: "unexported field",
+			yaml: struct {
+				fooBar string
+			}{fooBar: "bar"},
+			expectedTags: nil,
 		},
 		{
 			name: "yaml flag `inline`",
