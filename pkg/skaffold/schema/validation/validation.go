@@ -104,7 +104,7 @@ func validateImageNames(configs []*latest.SkaffoldConfig) (errs []error) {
 	for _, c := range configs {
 		for _, a := range c.Build.Artifacts {
 			if seen[a.ImageName] {
-				errs = append(errs, fmt.Errorf("duplicate imageName '%s': artifact image name need to be unique across all configurations", a.ImageName))
+				errs = append(errs, fmt.Errorf("found duplicate images %q: artifact image names must be unique across all configurations", a.ImageName))
 				continue
 			}
 
