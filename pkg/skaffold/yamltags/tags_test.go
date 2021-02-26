@@ -243,7 +243,7 @@ func TestGetYamlTag(t *testing.T) {
 	}
 }
 
-func TestGetYamlTags(t *testing.T) {
+func TestGetYamlKeys(t *testing.T) {
 	a := "it's A"
 	b := "it's B"
 	c := "it's C"
@@ -277,9 +277,39 @@ func TestGetYamlTags(t *testing.T) {
 			expectedTags: []string{"c"},
 		},
 		{
-			name:         "non-pointer fields are returned in empty struct",
-			yaml:         struct{ A string }{},
+			name: "non-pointer fields are returned in empty struct",
+			yaml: struct {
+				A string `yaml:"a"`
+			}{},
 			expectedTags: []string{"a"},
+		},
+		{
+			name: "no yaml tag",
+			yaml: struct {
+				FooBar string
+			}{FooBar: "bar"},
+			expectedTags: []string{"fooBar"},
+		},
+		{
+			name: "unexported field",
+			yaml: struct {
+				fooBar string
+			}{fooBar: "bar"},
+			expectedTags: nil,
+		},
+		{
+			name: "yaml flag `inline`",
+			yaml: struct {
+				Foo string `yaml:",inline"`
+			}{Foo: "bar"},
+			expectedTags: nil,
+		},
+		{
+			name: "empty yaml key",
+			yaml: struct {
+				Foo string `yaml:",omitempty"`
+			}{Foo: "bar"},
+			expectedTags: []string{"foo"},
 		},
 		{
 			name: "array fields are not included",
@@ -292,7 +322,7 @@ func TestGetYamlTags(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			t.CheckDeepEqual(test.expectedTags, GetYamlTags(test.yaml))
+			t.CheckDeepEqual(test.expectedTags, GetYamlKeys(test.yaml))
 		})
 	}
 }
