@@ -111,7 +111,7 @@ func validateImageNames(configs []*latest.SkaffoldConfig) (errs []error) {
 			seen[a.ImageName] = true
 			parsed, err := docker.ParseReference(a.ImageName)
 			if err != nil {
-				errs = append(errs, fmt.Errorf("invalid imageName '%s': %v", a.ImageName, err))
+				errs = append(errs, fmt.Errorf("invalid image %q: %w", a.ImageName, err))
 				continue
 			}
 
