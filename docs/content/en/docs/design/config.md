@@ -6,11 +6,7 @@ aliases: [/docs/concepts/config]
 ---
 
 You can configure Skaffold with the Skaffold configuration file,
-`skaffold.yaml`. The configuration file should be placed in the root of your
-project directory; when you run the `skaffold` command, Skaffold will try to
-read the configuration file from the current directory.
-
-`skaffold.yaml` consists of several different components:
+`skaffold.yaml`.  The configuration file consists of several different components:
 
 | Component  | Description |
 | ---------- | ------------|
@@ -24,6 +20,43 @@ read the configuration file from the current directory.
 | `requires`|  Specifies a list of other skaffold configurations to import into the current config |
 
 You can [learn more]({{< relref "/docs/references/yaml" >}}) about the syntax of `skaffold.yaml`.
+
+Skaffold normally expects to find the configuration file as
+`skaffold.yaml` in the current directory, but the location can be
+overridden with the `--filename` flag.
+
+### File resolution
+
+The Skaffold configuration file often references other files and
+directories.  These files and directories are usually referenced
+relative to the current directory _and not to the location of
+the Skaffold configuration file_.  There is one important exception:
+files referenced from a build artifact definition are resolved
+relative to the build artifact's _context_ directory.
+
+In the following config file, the `Dockerfile` for building `app`
+is resolved relative to the `frontend` directory (i.e., `frontend/Dockerfile`),
+whereas the the Helm chart's location and its values-files are
+relative to the current directory in `helm/project`.
+```yaml
+apiVersion: skaffold/v2beta11
+kind: Config
+build:
+  artifacts:
+  - image: app
+    context: frontend
+    docker:
+      dockerfile: "Dockerfile"
+deploy:
+  helm:
+    releases:
+    - name: project
+      chartPath: helm/project
+      valuesFiles:
+      - "helm/project/dev-values.yaml"
+      artifactOverrides:
+        image: app
+```
 
 ## Configuration dependencies
 
