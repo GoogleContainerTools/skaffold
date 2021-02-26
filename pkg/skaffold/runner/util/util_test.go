@@ -42,7 +42,7 @@ func TestGetAllPodNamespaces(t *testing.T) {
 		{
 			description:    "kube context's namespace",
 			currentContext: "prod-context",
-			expected:       []string{"prod"},
+			expected:       []string{"", "prod"},
 		},
 		{
 			description:    "default namespace",

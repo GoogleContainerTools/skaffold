@@ -38,11 +38,13 @@ func GetAllPodNamespaces(configNamespace string, pipelines []latest.Pipeline) ([
 			return nil, fmt.Errorf("getting k8s configuration: %w", err)
 		}
 
+		// The empty string is here to ensure that the File Sync feature
+		// works with multi-namespace environments
+		nsMap[""] = true
+
 		context, ok := config.Contexts[config.CurrentContext]
 		if ok {
 			nsMap[context.Namespace] = true
-		} else {
-			nsMap[""] = true
 		}
 	} else {
 		nsMap[configNamespace] = true
