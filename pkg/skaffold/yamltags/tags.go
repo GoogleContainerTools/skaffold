@@ -17,8 +17,6 @@ limitations under the License.
 package yamltags
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"reflect"
 	"strings"
@@ -77,37 +75,54 @@ func GetYamlTag(value interface{}) string {
 	return rawStr[:i]
 }
 
-// GetYamlTags returns the tags of the non-nested fields of the given non-nil value
-// If value interface{} is
-// latest.DeployType{HelmDeploy: &HelmDeploy{...}, KustomizeDeploy: &KustomizeDeploy{...}}
-// then this parses that interface as it's raw yaml:
-// 	kubectl:
-//    manifests:
-//    - k8s/*.yaml
-//  kustomize:
-//    paths:
-//    - k8s/
-// and returns ["kubectl", "kustomize"]
-// empty structs (e.g. latest.DeployType{}) when parsed look like "{}"" and so this function returns []
-func GetYamlTags(value interface{}) []string {
+// GetYamlKeys returns the yaml key for each non-nested field of the given non-nil config parameter
+// For example if config is `latest.DeployType{HelmDeploy: &HelmDeploy{...}, KustomizeDeploy: &KustomizeDeploy{...}}`
+// then it returns `["helm", "kustomize"]`
+func GetYamlKeys(config interface{}) []string {
 	var tags []string
-
-	buf, err := yaml.Marshal(value)
-	if err != nil {
-		logrus.Warnf("error marshaling %-v", value)
+	if config == nil {
 		return tags
 	}
-
-	r := bufio.NewScanner(bytes.NewBuffer(buf))
-	for r.Scan() {
-		l := r.Text()
-		i := strings.Index(l, ":")
-		if !unicode.IsSpace(rune(l[0])) && l[0] != '-' && i >= 0 {
-			tags = append(tags, l[:i])
+	st := reflect.Indirect(reflect.ValueOf(config))
+	t := st.Type()
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		v := st.Field(i)
+		if v.Kind() == reflect.Ptr && v.IsNil() { // exclude ptr fields not explicitly defined in the configuration
+			continue
+		}
+		tag := getYamlKey(f)
+		if tag != "" {
+			tags = append(tags, tag)
 		}
 	}
-
 	return tags
+}
+
+func getYamlKey(f reflect.StructField) string {
+	if f.PkgPath != "" { // field is unexported
+		return ""
+	}
+	t, ok := f.Tag.Lookup("yaml")
+	if !ok {
+		return lowerCaseFirst(f.Name)
+	}
+	tags := strings.Split(t, ",")
+	for i := 1; i < len(tags); i++ { // return empty string if it contains yaml flag `inline`
+		if tags[i] == "inline" {
+			return ""
+		}
+	}
+	if len(tags) == 0 || tags[0] == "" {
+		return lowerCaseFirst(f.Name)
+	}
+	return tags[0]
+}
+
+func lowerCaseFirst(s string) string {
+	r := []rune(s)
+	r[0] = unicode.ToLower(r[0])
+	return string(r)
 }
 
 func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value, field reflect.StructField) error {

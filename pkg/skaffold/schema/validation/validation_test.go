@@ -768,6 +768,15 @@ func TestValidateImageNames(t *testing.T) {
 			shouldErr: false,
 		},
 		{
+			description: "duplicates",
+			artifacts: []*latest.Artifact{{
+				ImageName: "img",
+			}, {
+				ImageName: "img",
+			}},
+			shouldErr: true,
+		},
+		{
 			description: "shouldn't have a tag",
 			artifacts: []*latest.Artifact{{
 				ImageName: "img:tag",

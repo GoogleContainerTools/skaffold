@@ -90,7 +90,7 @@ func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
 				meter.SyncType[yamltags.GetYamlTag(artifact.Sync)] = true
 			}
 		}
-		meter.Deployers = append(meter.Deployers, yamltags.GetYamlTags(config.Deploy.DeployType)...)
+		meter.Deployers = append(meter.Deployers, yamltags.GetYamlKeys(config.Deploy.DeployType)...)
 		meter.BuildArtifacts += len(config.Pipeline.Build.Artifacts)
 	}
 	meter.PlatformType = strings.Join(platforms, ":")
