@@ -11,8 +11,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Note: This is an example from `Go by Example` site (https://gobyexample.com/testing)
-
 package main
 
 import (
@@ -20,31 +18,35 @@ import (
 	"testing"
 )
 
-func TestIntMinBasic(t *testing.T) {
-	ans := IntMin(2, -2)
-	if ans != -2 {
-		t.Errorf("IntMin(2, -2) = %d; want -2", ans)
+func TestMinIntBasic(tb *testing.T) {
+	fmt.Println("Running Basic test.")
+	min := MinInt(5, -5)
+	if min != -5 {
+		tb.Errorf("MinInt(5, -5) returned %d; expecting -5", min)
 	}
 }
 
-func TestIntMinTableDriven(t *testing.T) {
+func TestMinIntTableDriven(tdt *testing.T) {
 	var tests = []struct {
-		a, b int
+		x, y int
 		want int
 	}{
-		{0, 1, 0},
+		{0, 0, 0},
 		{1, 0, 0},
-		{2, -2, -2},
+		{0, 1, 0},
 		{0, -1, -1},
 		{-1, 0, -1},
+		{-2, -5, -5},
+		{-5, -2, -5},
 	}
 
-	for _, tt := range tests {
-		testname := fmt.Sprintf("%d,%d", tt.a, tt.b)
-		t.Run(testname, func(t *testing.T) {
-			ans := IntMin(tt.a, tt.b)
-			if ans != tt.want {
-				t.Errorf("got %d, want %d", ans, tt.want)
+	fmt.Println("Running Table driven test.")
+	for _, t := range tests {
+		testname := fmt.Sprintf("TestMinInt(): %d,%d", t.x, t.y)
+		tdt.Run(testname, func(tdt *testing.T) {
+			min := MinInt(t.x, t.y)
+			if min != t.want {
+				tdt.Errorf("MinInt(%d, %d) returned %d; expecting %d", t.x, t.y, min, t.want)
 			}
 		})
 	}

@@ -6,11 +6,11 @@ build:
 test:
   - image: skaffold-example
     custom:
-      - command: ./command/test.sh
+      - command: ./test.sh
         timeout: 60 #in seconds
         dependencies:
           paths:
-          -  "**/*_test.go"
+          -  "*_test.go"
 deploy:
   kubectl:
     manifests:

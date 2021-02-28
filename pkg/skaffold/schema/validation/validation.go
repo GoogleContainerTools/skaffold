@@ -57,6 +57,7 @@ func Process(configs []*latest.SkaffoldConfig) error {
 		errs = append(errs, validateLogPrefix(config.Deploy.Logs)...)
 		errs = append(errs, validateArtifactTypes(config.Build)...)
 		errs = append(errs, validateTaggingPolicy(config.Build)...)
+		errs = append(errs, validateCustomTest(config.Test)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
 	errs = append(errs, validateSingleKubeContext(configs)...)
@@ -470,4 +471,28 @@ func validateSingleKubeContext(configs []*latest.SkaffoldConfig) []error {
 		}
 	}
 	return nil
+}
+
+// validateCustomTest
+// - makes sure that command is not empty
+// - makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
+func validateCustomTest(tcs []*latest.TestCase) (errs []error) {
+	for _, tc := range tcs {
+		for _, ct := range tc.CustomTests {
+			if ct.Command == "" {
+				errs = append(errs, fmt.Errorf("command is empty. CustomTest should have a valid command"))
+			}
+
+			if ct.Dependencies == nil {
+				continue
+			}
+			if ct.Dependencies.Command != "" && ct.Dependencies.Paths != nil {
+				errs = append(errs, fmt.Errorf("dependencies can be either Command or Paths, but not both"))
+			}
+			if ct.Dependencies.Paths == nil || ct.Dependencies.Ignore != nil {
+				errs = append(errs, fmt.Errorf("customTest has invalid dependencies; dependencies.ignore can only be used in conjunction with dependencies.paths"))
+			}
+		}
+	}
+	return
 }

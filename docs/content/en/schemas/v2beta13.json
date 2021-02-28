@@ -929,8 +929,8 @@
       "properties": {
         "command": {
           "type": "string",
-          "description": "custom command to be executed.",
-          "x-intellij-html-description": "custom command to be executed."
+          "description": "custom command to be executed.  If the command exits with a non-zero return code, the test will be considered to have failed.",
+          "x-intellij-html-description": "custom command to be executed.  If the command exits with a non-zero return code, the test will be considered to have failed."
         },
         "dependencies": {
           "$ref": "#/definitions/CustomTestDependencies",
@@ -939,8 +939,8 @@
         },
         "timeout": {
           "type": "integer",
-          "description": "sets the wait time for skaffold for the command to complete. There is no default timeout. If not set, Skaffold will wait for the command to complete. '0' value indicates wait until completion.",
-          "x-intellij-html-description": "sets the wait time for skaffold for the command to complete. There is no default timeout. If not set, Skaffold will wait for the command to complete. '0' value indicates wait until completion."
+          "description": "sets the wait time for skaffold for the command to complete. If unset or 0, Skaffold will wait until the command completes.",
+          "x-intellij-html-description": "sets the wait time for skaffold for the command to complete. If unset or 0, Skaffold will wait until the command completes."
         }
       },
       "preferredOrder": [

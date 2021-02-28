@@ -1018,12 +1018,12 @@ type CustomDependencies struct {
 // CustomTest describes the custom test command provided by the user.
 // Custom tests are run after an image build whenever build or test dependencies are changed.
 type CustomTest struct {
-	// Command is the custom command to be executed.
+	// Command is the custom command to be executed.  If the command exits with a non-zero return
+	// code, the test will be considered to have failed.
 	Command string `yaml:"command" yamltags:"required"`
 
 	// TimeoutSeconds sets the wait time for skaffold for the command to complete.
-	// There is no default timeout. If not set, Skaffold will wait for the
-	// command to complete. '0' value indicates wait until completion.
+	// If unset or 0, Skaffold will wait until the command completes.
 	TimeoutSeconds int `yaml:"timeout,omitempty"`
 
 	// Dependencies are additional test-specific file dependencies; changes to these files will re-run this test.

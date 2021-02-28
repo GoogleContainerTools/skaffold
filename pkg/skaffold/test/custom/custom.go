@@ -75,11 +75,11 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
 		return fmt.Errorf("unable to parse test command %q: %w", test.Command, err)
 	}
 
-	logrus.Infof("Running custom test command %s", command)
-	color.Default.Fprintln(out, "Running custom test command: ", command)
-	color.Default.Fprintln(out, "Custom test timeout is set to: ", test.TimeoutSeconds)
-
-	if test.TimeoutSeconds > 0 {
+	logrus.Infof("Running custom test command %q", command)
+	if test.TimeoutSeconds <= 0 {
+		color.Default.Fprintf(out, "Running custom test command: %q\n", command)
+	} else {
+		color.Default.Fprintf(out, "Running custom test command: %q with timeout %d s\n", command, test.TimeoutSeconds)
 		newCtx, cancel := context.WithTimeout(ctx, time.Duration(test.TimeoutSeconds)*time.Second)
 		defer cancel()
 		ctx = newCtx
@@ -98,7 +98,7 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
 	cmd.Env = ct.env()
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("error running cmd: %w", err)
+		return fmt.Errorf("error running cmd: %w, output: %v", err, out)
 	}
 
 	if err := cmd.Wait(); err != nil {

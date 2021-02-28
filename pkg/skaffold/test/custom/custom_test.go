@@ -30,23 +30,6 @@ func TestNewCustomTestRunner(t *testing.T) {
 	testutil.Run(t, "Testing new custom test runner", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("test.yaml")
 
-		cfg := &mockConfig{
-			workingDir: tmpDir.Root(),
-			tests: []*latest.TestCase{{
-				ImageName:      "image",
-				StructureTests: []string{"test.yaml"},
-				CustomTests: []latest.CustomTest{{
-					Command:        "echo Running Custom Test command1.",
-					TimeoutSeconds: 10,
-					Dependencies: &latest.CustomTestDependencies{
-						Command: "echo [\"file1\",\"file2\",\"file3\"]",
-						Paths:   []string{"**"},
-						Ignore:  []string{"b*"},
-					},
-				}},
-			}},
-		}
-
 		custom := latest.CustomTest{
 			Command:        "echo Running Custom Test command.",
 			TimeoutSeconds: 10,
@@ -55,6 +38,15 @@ func TestNewCustomTestRunner(t *testing.T) {
 				Paths:   []string{"**"},
 				Ignore:  []string{"b*"},
 			},
+		}
+
+		cfg := &mockConfig{
+			workingDir: tmpDir.Root(),
+			tests: []*latest.TestCase{{
+				ImageName:      "image",
+				StructureTests: []string{"test.yaml"},
+				CustomTests:    []latest.CustomTest{custom},
+			}},
 		}
 
 		testRunner, err := New(cfg, cfg.workingDir, custom)

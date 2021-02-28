@@ -18,12 +18,4 @@ set -e
 
 echo "go custom test $@"
 
-i=0
-while true 
-do
-    go run ./command/basic.go
-
-    i=$(($i + 5))   
-    sleep 5
-    echo "Elapsed time: $i seconds"
-done 
+go test .
