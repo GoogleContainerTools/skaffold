@@ -67,11 +67,11 @@ func TestCustomCommandError(t *testing.T) {
 		{
 			description: "Non zero exit",
 			custom: latest.CustomTest{
-				Command:        "exit -1",
+				Command:        "exit 20",
 				TimeoutSeconds: 10,
 			},
 			shouldErr:     true,
-			expectedError: "exit status 255",
+			expectedError: "exit status 20",
 		},
 		{
 			description: "Command timed out",
