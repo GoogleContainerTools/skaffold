@@ -199,6 +199,51 @@ func transformManifest(obj runtime.Object, retrieveImageConfiguration configurat
 // transformPodSpec attempts to configure a podspec for debugging.
 // Returns true if changed, false otherwise.
 func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieveImageConfiguration configurationRetriever, debugHelpersRegistry string) bool {
+	containers := rewriteContainers(metadata, podSpec, retrieveImageConfiguration, debugHelpersRegistry)
+	timeouts := rewriteProbes(metadata, podSpec) // must rewriteProbes after
+	return containers || timeouts
+}
+
+// rewriteProbes rewrites k8s probes to expand timeouts to 10 minutes to allow debugging local probes.
+func rewriteProbes(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec) bool {
+	annotation, found := metadata.Annotations[DebugConfigAnnotation]
+	if !found {
+		logrus.Warn("no debug config found")
+		return false
+	}
+	var config map[string]ContainerDebugConfiguration
+	if err := json.Unmarshal([]byte(annotation), &config); err != nil {
+		logrus.Warn("error unmarshalling config", err)
+		return false
+	}
+
+	changed := false
+	var minTimeout int32 = 10 * 60 // make it configurable?
+	for i := range podSpec.Containers {
+		c := &podSpec.Containers[i]
+		// only affect containers listed in debug-config
+		if _, found := config[c.Name]; found {
+			lp := rewriteHttpGetProbe(c.LivenessProbe, minTimeout)
+			rp := rewriteHttpGetProbe(c.ReadinessProbe, minTimeout)
+			sp := rewriteHttpGetProbe(c.StartupProbe, minTimeout)
+			if lp || rp || sp {
+				logrus.Infof("Updated probe timeouts for %s/%s", metadata.Name, c.Name)
+			}
+			changed = changed || lp || rp || sp
+		}
+	}
+	return changed
+}
+
+func rewriteHttpGetProbe(probe *v1.Probe, minTimeout int32) bool {
+	if probe == nil || probe.HTTPGet == nil || minTimeout < probe.TimeoutSeconds {
+		return false
+	}
+	probe.TimeoutSeconds = minTimeout
+	return true
+}
+
+func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieveImageConfiguration configurationRetriever, debugHelpersRegistry string) bool {
 	// skip annotated podspecs — allows users to customize their own image
 	if _, found := metadata.Annotations[DebugConfigAnnotation]; found {
 		return false

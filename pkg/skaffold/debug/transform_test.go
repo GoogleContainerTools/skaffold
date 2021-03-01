@@ -27,6 +27,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -331,4 +332,63 @@ func TestUpdateForShDashC(t *testing.T) {
 			t.CheckDeepEqual(test.expected, container)
 		})
 	}
+}
+
+func TestRewriteHttpGetProbe(t *testing.T) {
+	const minTimeout int32 = 10 * 60
+	tests := []struct {
+		description string
+		input       v1.Probe
+		changed     bool
+		expected    v1.Probe
+	}{
+		{
+			description: "non-http probe should be skipped",
+			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 10},
+			changed:     false,
+		},
+		{
+			description: "http probe with big timeout should be skipped",
+			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 100 * 60},
+			changed:     false,
+		},
+		{
+			description: "http probe with no timeout",
+			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}},
+			changed:     true,
+			expected:    v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: minTimeout},
+		},
+		{
+			description: "http probe with small timeout",
+			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 60},
+			changed:     true,
+			expected:    v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: minTimeout},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			p := test.input
+			if rewriteHttpGetProbe(&p, minTimeout) {
+				t.CheckDeepEqual(test.expected, p)
+			} else {
+				t.CheckDeepEqual(test.input, p) // should not have changed
+			}
+		})
+	}
+}
+
+// TestRewriteProbes verifies that rewriteProbes skips podspecs that have a
+// `debug.cloud.google.com/config` annotation.
+func TestRewriteProbes(t *testing.T) {
+	pod := v1.Pod{
+		TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+		ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/config": `{"name1":{"runtime":"test"}}`}},
+		Spec: v1.PodSpec{Containers: []v1.Container{{
+			Name:          "name1",
+			Image:         "image1",
+			LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}}
+
+	result := rewriteProbes(&pod.ObjectMeta, &pod.Spec)
+	testutil.CheckDeepEqual(t, true, result)
+	testutil.CheckDeepEqual(t, int32(10*60), pod.Spec.Containers[0].LivenessProbe.TimeoutSeconds)
 }

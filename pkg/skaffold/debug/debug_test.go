@@ -639,9 +639,9 @@ func TestArtifactImage(t *testing.T) {
 	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"artifact":"gcr.io/random/image"`))
 }
 
-// TestTransformPodSpecSkips verifies that transformPodSpec skips podspecs that have a
+// TestSkipAnnotatedPodSpec verifies that transformPodSpec skips podspecs that have a
 // `debug.cloud.google.com/config` annotation.
-func TestTransformPodSpecSkips(t *testing.T) {
+func TestSkipAnnotatedPodSpec(t *testing.T) {
 	defer func(c []containerTransformer) { containerTransforms = c }(containerTransforms)
 	containerTransforms = append(containerTransforms, testTransformer{})
 
