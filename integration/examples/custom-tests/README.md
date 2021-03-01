@@ -9,7 +9,7 @@ test:
     - image: skaffold-example
       custom:
       - command: <command>
-        timeout: <timeout in seconds>
+        timeoutSeconds: <timeout in seconds>
         dependencies: <dependencies for this command>
           paths: <file dependencies>
           - <paths glob>
@@ -25,7 +25,7 @@ profiles:
     - image: skaffold-example
       custom:
         - command: <command>
-          timeout: <timeout in seconds>
+          timeoutSeconds: <timeout in seconds>
           dependencies: <dependencies for this command>
             paths: <file dependencies>
             - <paths glob>

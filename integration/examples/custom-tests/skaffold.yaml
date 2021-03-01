@@ -7,7 +7,7 @@ test:
   - image: skaffold-example
     custom:
       - command: ./test.sh
-        timeout: 60 #in seconds
+        timeoutSeconds: 60 #in seconds
         dependencies:
           paths:
           -  "*_test.go"

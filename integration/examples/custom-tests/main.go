@@ -28,11 +28,12 @@ func MinInt(a, b int) int {
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	x := rand.Intn(100)
+	for {
+		x := rand.Intn(100)
+		y := rand.Intn(100)
 
-	rand.Seed(time.Now().UnixNano())
-	y := rand.Intn(100)
-
-	min := MinInt(x, y)
-	fmt.Println("Min of ", x, " and ", y, " is: ", min)
+		min := MinInt(x, y)
+		fmt.Println("Min of ", x, " and ", y, " is: ", min)
+		time.Sleep(time.Second * 1)
+	}
 }

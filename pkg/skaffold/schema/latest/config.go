@@ -1024,7 +1024,7 @@ type CustomTest struct {
 
 	// TimeoutSeconds sets the wait time for skaffold for the command to complete.
 	// If unset or 0, Skaffold will wait until the command completes.
-	TimeoutSeconds int `yaml:"timeout,omitempty"`
+	TimeoutSeconds int `yaml:"timeoutSeconds,omitempty"`
 
 	// Dependencies are additional test-specific file dependencies; changes to these files will re-run this test.
 	Dependencies *CustomTestDependencies `yaml:"dependencies,omitempty"`

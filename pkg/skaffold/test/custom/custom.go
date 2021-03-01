@@ -97,11 +97,7 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
 	cmd.Stderr = out
 	cmd.Env = ct.env()
 
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("error running cmd: %w, output: %v", err, out)
-	}
-
-	if err := cmd.Wait(); err != nil {
+	if err := util.RunCmd(cmd); err != nil {
 		if e, ok := err.(*exec.ExitError); ok {
 			// If the process exited by itself, just return the error
 			if e.Exited() {

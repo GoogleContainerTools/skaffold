@@ -937,7 +937,7 @@
           "description": "additional test-specific file dependencies; changes to these files will re-run this test.",
           "x-intellij-html-description": "additional test-specific file dependencies; changes to these files will re-run this test."
         },
-        "timeout": {
+        "timeoutSeconds": {
           "type": "integer",
           "description": "sets the wait time for skaffold for the command to complete. If unset or 0, Skaffold will wait until the command completes.",
           "x-intellij-html-description": "sets the wait time for skaffold for the command to complete. If unset or 0, Skaffold will wait until the command completes."
@@ -945,7 +945,7 @@
       },
       "preferredOrder": [
         "command",
-        "timeout",
+        "timeoutSeconds",
         "dependencies"
       ],
       "additionalProperties": false,
