@@ -19,6 +19,7 @@ package custom
 import (
 	"context"
 	"io/ioutil"
+	"runtime"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -67,8 +68,7 @@ func TestCustomCommandError(t *testing.T) {
 		{
 			description: "Non zero exit",
 			custom: latest.CustomTest{
-				Command:        "exit 20",
-				TimeoutSeconds: 10,
+				Command: "exit 20",
 			},
 			shouldErr:     true,
 			expectedError: "exit status 20",
@@ -86,6 +86,10 @@ func TestCustomCommandError(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, "Testing new custom test runner", func(t *testutil.T) {
 			tmpDir := t.NewTempDir().Touch("test.yaml")
+
+			if runtime.GOOS == "windows" {
+				test.expectedError = "exit status"
+			}
 
 			cfg := &mockConfig{
 				workingDir: tmpDir.Root(),
