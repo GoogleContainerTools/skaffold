@@ -52,8 +52,60 @@ func TestNewCustomTestRunner(t *testing.T) {
 		testRunner, err := New(cfg, cfg.workingDir, custom)
 		t.CheckNoError(err)
 		err = testRunner.Test(context.Background(), ioutil.Discard, nil)
+
 		t.CheckNoError(err)
 	})
+}
+
+func TestCustomCommandError(t *testing.T) {
+	tests := []struct {
+		description   string
+		custom        latest.CustomTest
+		shouldErr     bool
+		expectedError string
+	}{
+		{
+			description: "Non zero exit",
+			custom: latest.CustomTest{
+				Command:        "exit -1",
+				TimeoutSeconds: 10,
+			},
+			shouldErr:     true,
+			expectedError: "exit status 255",
+		},
+		{
+			description: "Command timed out",
+			custom: latest.CustomTest{
+				Command:        "sleep 20",
+				TimeoutSeconds: 2,
+			},
+			shouldErr:     true,
+			expectedError: "context deadline exceeded",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "Testing new custom test runner", func(t *testutil.T) {
+			tmpDir := t.NewTempDir().Touch("test.yaml")
+
+			cfg := &mockConfig{
+				workingDir: tmpDir.Root(),
+				tests: []*latest.TestCase{{
+					ImageName:      "image",
+					StructureTests: []string{"test.yaml"},
+					CustomTests:    []latest.CustomTest{test.custom},
+				}},
+			}
+
+			testRunner, err := New(cfg, cfg.workingDir, test.custom)
+			t.CheckNoError(err)
+			err = testRunner.Test(context.Background(), ioutil.Discard, nil)
+
+			t.CheckError(test.shouldErr, err)
+			if test.expectedError != "" {
+				t.CheckErrorContains(test.expectedError, err)
+			}
+		})
+	}
 }
 
 type mockConfig struct {
