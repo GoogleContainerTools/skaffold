@@ -1276,3 +1276,63 @@ func TestValidateTaggingPolicy(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateCustomTest(t *testing.T) {
+	tests := []struct {
+		description    string
+		command        string
+		dependencies   *latest.CustomTestDependencies
+		expectedErrors int
+	}{
+		{
+			description: "no errors",
+			command:     "echo Hello!",
+			dependencies: &latest.CustomTestDependencies{
+				Paths:  []string{"somepath"},
+				Ignore: []string{"anotherpath"},
+			},
+		}, {
+			description: "empty command",
+			command:     "",
+			dependencies: &latest.CustomTestDependencies{
+				Paths:  []string{"somepath"},
+				Ignore: []string{"anotherpath"},
+			},
+			expectedErrors: 1,
+		}, {
+			description: "ignore either path or command",
+			command:     "echo Hello!",
+			dependencies: &latest.CustomTestDependencies{
+				Command: "bazel query deps",
+				Paths:   []string{"somepath"},
+			},
+			expectedErrors: 1,
+		}, {
+			description: "ignore in conjunction with command",
+			command:     "echo Hello!",
+			dependencies: &latest.CustomTestDependencies{
+				Command: "bazel query deps",
+				Ignore:  []string{"ignoreme"},
+			},
+			expectedErrors: 1,
+		}, {
+			command:      "echo Hello!",
+			description:  "nil dependencies",
+			dependencies: nil,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			testCase := &latest.TestCase{
+				ImageName: "image",
+				CustomTests: []latest.CustomTest{{
+					Command:      test.command,
+					Dependencies: test.dependencies,
+				}},
+			}
+
+			errs := validateCustomTest([]*latest.TestCase{testCase})
+			t.CheckDeepEqual(test.expectedErrors, len(errs))
+		})
+	}
+}

@@ -35,6 +35,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+const Windows string = "windows"
+
 type Runner struct {
 	customTest     latest.CustomTest
 	testWorkingDir string
@@ -42,7 +44,6 @@ type Runner struct {
 
 // New creates a new custom.Runner.
 func New(cfg docker.Config, wd string, ct latest.CustomTest) (*Runner, error) {
-
 	return &Runner{
 		customTest:     ct,
 		testWorkingDir: wd,
@@ -79,7 +80,7 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
 
 	var cmd *exec.Cmd
 	// We evaluate the command with a shell so that it can contain env variables.
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == Windows {
 		cmd = exec.CommandContext(ctx, "cmd.exe", "/C", command)
 	} else {
 		cmd = exec.CommandContext(ctx, "sh", "-c", command)
@@ -118,7 +119,7 @@ func (ct *Runner) TestDependencies() ([]string, error) {
 	case test.Dependencies.Command != "":
 		var cmd *exec.Cmd
 		// We evaluate the command with a shell so that it can contain env variables.
-		if runtime.GOOS == "windows" {
+		if runtime.GOOS == Windows {
 			cmd = exec.CommandContext(context.Background(), "cmd.exe", "/C", test.Dependencies.Command)
 		} else {
 			cmd = exec.CommandContext(context.Background(), "sh", "-c", test.Dependencies.Command)

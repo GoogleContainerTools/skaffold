@@ -89,7 +89,7 @@ func TestCustomCommandError(t *testing.T) {
 		testutil.Run(t, "Testing new custom test runner", func(t *testutil.T) {
 			tmpDir := t.NewTempDir().Touch("test.yaml")
 
-			if runtime.GOOS == "windows" {
+			if runtime.GOOS == Windows {
 				test.expectedError = "exit status"
 			}
 
@@ -134,7 +134,7 @@ func TestTestDependenciesCommand(t *testing.T) {
 			}},
 		}
 
-		if runtime.GOOS == "windows" {
+		if runtime.GOOS == Windows {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
 				"cmd.exe /C echo [\"file1\",\"file2\",\"file3\"]",
 				"[\"file1\",\"file2\",\"file3\"]",

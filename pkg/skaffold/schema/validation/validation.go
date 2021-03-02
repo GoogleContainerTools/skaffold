@@ -488,7 +488,8 @@ func validateCustomTest(tcs []*latest.TestCase) (errs []error) {
 	for _, tc := range tcs {
 		for _, ct := range tc.CustomTests {
 			if ct.Command == "" {
-				errs = append(errs, fmt.Errorf("custom test command must not be empty"))
+				errs = append(errs, fmt.Errorf("custom test command must not be empty;"))
+				return
 			}
 
 			if ct.Dependencies == nil {
@@ -497,7 +498,7 @@ func validateCustomTest(tcs []*latest.TestCase) (errs []error) {
 			if ct.Dependencies.Command != "" && ct.Dependencies.Paths != nil {
 				errs = append(errs, fmt.Errorf("dependencies can use either command or paths, but not both"))
 			}
-			if ct.Dependencies.Paths == nil || ct.Dependencies.Ignore != nil {
+			if ct.Dependencies.Paths == nil && ct.Dependencies.Ignore != nil {
 				errs = append(errs, fmt.Errorf("customTest has invalid dependencies; dependencies.ignore can only be used in conjunction with dependencies.paths"))
 			}
 		}
