@@ -21,10 +21,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -40,20 +38,14 @@ import (
 type Runner struct {
 	customTest     latest.CustomTest
 	testWorkingDir string
-	localDaemon    docker.LocalDaemon
 }
 
 // New creates a new custom.Runner.
 func New(cfg docker.Config, wd string, ct latest.CustomTest) (*Runner, error) {
-	localDaemon, err := docker.NewAPIClient(cfg)
-	if err != nil {
-		return nil, err
-	}
 
 	return &Runner{
 		customTest:     ct,
 		testWorkingDir: wd,
-		localDaemon:    localDaemon,
 	}, nil
 }
 
@@ -95,7 +87,6 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
 
 	cmd.Stdout = out
 	cmd.Stderr = out
-	cmd.Env = ct.env()
 
 	if err := util.RunCmd(cmd); err != nil {
 		if e, ok := err.(*exec.ExitError); ok {
@@ -107,7 +98,7 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
 			select {
 			case <-ctx.Done():
 				if ctx.Err() == context.DeadlineExceeded {
-					fmt.Println("Command timed out")
+					color.Default.Fprintf(out, "command timed out")
 				}
 				return ctx.Err()
 			default:
@@ -119,27 +110,20 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-// env returns a merged environment of the current process environment and any extra environment.
-func (ct *Runner) env() []string {
-	extraEnv := ct.localDaemon.ExtraEnv()
-	if extraEnv == nil {
-		return nil
-	}
-
-	parentEnv := os.Environ()
-	mergedEnv := make([]string, len(parentEnv), len(parentEnv)+len(extraEnv))
-	copy(mergedEnv, parentEnv)
-	return append(mergedEnv, extraEnv...)
-}
-
 // TestDependencies returns dependencies listed for a custom test
 func (ct *Runner) TestDependencies() ([]string, error) {
 	test := ct.customTest
 
 	switch {
 	case test.Dependencies.Command != "":
-		split := strings.Split(test.Dependencies.Command, " ")
-		cmd := exec.CommandContext(context.Background(), split[0], split[1:]...)
+		var cmd *exec.Cmd
+		// We evaluate the command with a shell so that it can contain env variables.
+		if runtime.GOOS == "windows" {
+			cmd = exec.CommandContext(context.Background(), "cmd.exe", "/C", test.Dependencies.Command)
+		} else {
+			cmd = exec.CommandContext(context.Background(), "sh", "-c", test.Dependencies.Command)
+		}
+
 		output, err := util.RunCmdOut(cmd)
 		if err != nil {
 			return nil, fmt.Errorf("getting dependencies from command: %q: %w", test.Dependencies.Command, err)

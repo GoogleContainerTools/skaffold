@@ -1038,11 +1038,11 @@ type CustomTestDependencies struct {
 
 	// Paths should be set to the file dependencies for this command, so that the skaffold file watcher knows when to retest and perform file synchronization.
 	// For example: `["src/test/**"]`
-	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
+	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency" skaffold:"filepath"`
 
 	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both retest and file synchronization.
 	// Will only work in conjunction with `paths`.
-	Ignore []string `yaml:"ignore,omitempty"`
+	Ignore []string `yaml:"ignore,omitempty" skaffold:"filepath"`
 }
 
 // DockerfileDependency *beta* is used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile.

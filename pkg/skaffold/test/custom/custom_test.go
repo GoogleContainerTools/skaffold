@@ -19,11 +19,13 @@ package custom
 import (
 	"context"
 	"io/ioutil"
+	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -108,6 +110,117 @@ func TestCustomCommandError(t *testing.T) {
 			if test.expectedError != "" {
 				t.CheckErrorContains(test.expectedError, err)
 			}
+		})
+	}
+}
+
+func TestTestDependenciesCommand(t *testing.T) {
+	testutil.Run(t, "Testing new custom test runner", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().Touch("test.yaml")
+
+		custom := latest.CustomTest{
+			Command: "echo Hello!",
+			Dependencies: &latest.CustomTestDependencies{
+				Command: "echo [\"file1\",\"file2\",\"file3\"]",
+			},
+		}
+
+		cfg := &mockConfig{
+			workingDir: tmpDir.Root(),
+			tests: []*latest.TestCase{{
+				ImageName:      "image",
+				StructureTests: []string{"test.yaml"},
+				CustomTests:    []latest.CustomTest{custom},
+			}},
+		}
+
+		if runtime.GOOS == "windows" {
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+				"cmd.exe /C echo [\"file1\",\"file2\",\"file3\"]",
+				"[\"file1\",\"file2\",\"file3\"]",
+			))
+		} else {
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+				"sh -c echo [\"file1\",\"file2\",\"file3\"]",
+				"[\"file1\",\"file2\",\"file3\"]",
+			))
+		}
+
+		expected := []string{"file1", "file2", "file3"}
+		testRunner, err := New(cfg, cfg.workingDir, custom)
+		t.CheckNoError(err)
+		deps, err := testRunner.TestDependencies()
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(expected, deps)
+	})
+}
+
+func TestTestDependenciesPaths(t *testing.T) {
+	tests := []struct {
+		description string
+		ignore      []string
+		paths       []string
+		expected    []string
+		shouldErr   bool
+	}{
+		{
+			description: "watch everything",
+			paths:       []string{"."},
+			expected:    []string{"bar", filepath.FromSlash("baz/file"), "foo"},
+		},
+		{
+			description: "watch nothing",
+		},
+		{
+			description: "ignore some paths",
+			paths:       []string{"."},
+			ignore:      []string{"b*"},
+			expected:    []string{"foo"},
+		},
+		{
+			description: "glob",
+			paths:       []string{"**"},
+			expected:    []string{"bar", filepath.FromSlash("baz/file"), "foo"},
+		},
+		{
+			description: "error",
+			paths:       []string{"unknown"},
+			shouldErr:   true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// Directory structure:
+			//   foo
+			//   bar
+			// - baz
+			//     file
+			tmpDir := t.NewTempDir().
+				Touch("foo", "bar", "baz/file")
+
+			custom := latest.CustomTest{
+				Command: "echo Hello!",
+				Dependencies: &latest.CustomTestDependencies{
+					Paths:  test.paths,
+					Ignore: test.ignore,
+				},
+			}
+
+			cfg := &mockConfig{
+				workingDir: tmpDir.Root(),
+				tests: []*latest.TestCase{{
+					ImageName:      "image",
+					StructureTests: []string{"test.yaml"},
+					CustomTests:    []latest.CustomTest{custom},
+				}},
+			}
+
+			testRunner, err := New(cfg, cfg.workingDir, custom)
+			t.CheckNoError(err)
+			deps, err := testRunner.TestDependencies()
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
 		})
 	}
 }
