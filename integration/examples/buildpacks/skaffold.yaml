@@ -7,6 +7,10 @@ build:
       builder: "gcr.io/buildpacks/builder:v1"
       env:
       - GOPROXY={{.GOPROXY}}
+deploy:
+  kubectl:
+    manifests:
+      - k8s/*
 profiles:
 - name: gcb
   build:

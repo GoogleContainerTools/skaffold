@@ -5,3 +5,7 @@ build:
   - image: skaffold-bazel
     bazel:
       target: //:skaffold_example.tar
+deploy:
+  kubectl:
+    manifests:
+      - k8s/*

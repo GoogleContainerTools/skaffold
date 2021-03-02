@@ -4,7 +4,10 @@ build:
   artifacts:
   - image: skaffold-jib-gradle
     jib: {}
-
+deploy:
+  kubectl:
+    manifests:
+      - k8s/*
 # optional profile to run the jib build on Google Cloud Build
 profiles:
   - name: gcb

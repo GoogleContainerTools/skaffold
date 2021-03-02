@@ -6,7 +6,10 @@ build:
     jib:
       args:
       - --no-transfer-progress
-
+deploy:
+  kubectl:
+    manifests:
+      - k8s/*
 profiles:
   # optional profile to run the jib build on Google Cloud Build
   - name: gcb

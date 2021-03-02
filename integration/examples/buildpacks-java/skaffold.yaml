@@ -7,6 +7,10 @@ build:
       builder: "gcr.io/buildpacks/builder:v1"
       env:
       - GOOGLE_RUNTIME_VERSION=8
+deploy:
+  kubectl:
+    manifests:
+      - k8s/*
 profiles:
 - name: gcb
   build:

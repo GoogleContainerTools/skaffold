@@ -17,11 +17,16 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -142,7 +147,37 @@ func TestRun(t *testing.T) {
 
 			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})
+
+		wd, _ := util.RealWorkDir()
+		// test again by importing test project as a local dependency in a temp configuration file.
+		testutil.Run(t, fmt.Sprintf("%s as a dependency", test.description), func(t *testutil.T) {
+			profiles, profileDeps := activeProfiles(test.args)
+			cfg := latest.SkaffoldConfig{APIVersion: latest.Version, Kind: "Config", Profiles: profiles, Dependencies: []latest.ConfigDependency{{Path: filepath.Join(wd, test.dir), ActiveProfiles: profileDeps}}}
+			data, err := yaml.Marshal(cfg)
+			t.CheckNoError(err)
+			tmpDir := t.NewTempDir().Write("skaffold.yaml", string(data))
+			ns, client := SetupNamespace(t.T)
+			skaffold.Run(test.args...).InDir(tmpDir.Root()).InNs(ns.Name).WithEnv(test.env).RunOrFail(t.T)
+
+			client.WaitForPodsReady(test.pods...)
+			client.WaitForDeploymentsToStabilize(test.deployments...)
+
+			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t.T)
+		})
 	}
+}
+
+func activeProfiles(args []string) ([]latest.Profile, []latest.ProfileDependency) {
+	var profiles []latest.Profile
+	var profileDeps []latest.ProfileDependency
+	for i := 0; i < len(args)-1; i++ {
+		if args[i] == "-p" || args[i] == "--profile" {
+			profiles = append(profiles, latest.Profile{Name: args[i+1]})
+			profileDeps = append(profileDeps, latest.ProfileDependency{Name: args[i+1]})
+			i++
+		}
+	}
+	return profiles, profileDeps
 }
 
 func TestRunRenderOnly(t *testing.T) {
