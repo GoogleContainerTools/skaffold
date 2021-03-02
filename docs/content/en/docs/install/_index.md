@@ -133,7 +133,8 @@ This package is not maintained by the Skaffold team.
 {{< alert title="Caution" >}}
 
 Chocolatey's installation mechanism interferes with <kbd>Ctrl</kbd><kbd>C</kbd> handling
-and prevents Skaffold from cleaning up deployments.  This cannot be fixed by Skaffold.
+and [prevents Skaffold from cleaning up deployments](https://github.com/GoogleContainerTools/skaffold/issues/4815).
+This cannot be fixed by Skaffold.
 For more information about this defect see
 [chocolatey/shimgen#32](https://github.com/chocolatey/shimgen/issues/32).
 
