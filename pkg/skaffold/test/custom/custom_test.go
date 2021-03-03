@@ -18,8 +18,7 @@ package custom
 
 import (
 	"context"
-	"errors"
-	"io"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"runtime"
@@ -33,6 +32,11 @@ import (
 
 func TestNewCustomTestRunner(t *testing.T) {
 	testutil.Run(t, "Testing new custom test runner", func(t *testutil.T) {
+		if runtime.GOOS == Windows {
+			t.Override(&util.DefaultExecCommand, testutil.CmdRun("cmd.exe /C echo Running Custom Test command."))
+		} else {
+			t.Override(&util.DefaultExecCommand, testutil.CmdRun("sh -c echo Running Custom Test command."))
+		}
 		tmpDir := t.NewTempDir().Touch("test.yaml")
 
 		custom := latest.CustomTest{
@@ -62,18 +66,22 @@ func TestNewCustomTestRunner(t *testing.T) {
 
 func TestCustomCommandError(t *testing.T) {
 	tests := []struct {
-		description   string
-		custom        latest.CustomTest
-		shouldErr     bool
-		expectedError string
+		description        string
+		custom             latest.CustomTest
+		shouldErr          bool
+		expectedCmd        string
+		expectedWindowsCmd string
+		expectedError      string
 	}{
 		{
 			description: "Non zero exit",
 			custom: latest.CustomTest{
 				Command: "exit 20",
 			},
-			shouldErr:     true,
-			expectedError: "exit status 20",
+			shouldErr:          true,
+			expectedCmd:        "sh -c exit 20",
+			expectedWindowsCmd: "cmd.exe /C exit 20",
+			expectedError:      "exit status 20",
 		},
 		{
 			description: "Command timed out",
@@ -81,17 +89,20 @@ func TestCustomCommandError(t *testing.T) {
 				Command:        "sleep 20",
 				TimeoutSeconds: 2,
 			},
-			shouldErr:     true,
-			expectedError: "context deadline exceeded",
+			shouldErr:          true,
+			expectedCmd:        "sh -c sleep 20",
+			expectedWindowsCmd: "cmd.exe /C exit 20",
+			expectedError:      "context deadline exceeded",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, "Testing new custom test runner", func(t *testutil.T) {
 			tmpDir := t.NewTempDir().Touch("test.yaml")
+			command := test.expectedCmd
 			if runtime.GOOS == Windows {
-				test.expectedError = "exit status"
+				command = test.expectedWindowsCmd
 			}
-			t.Override(&doRunCustomCommand, func(context.Context, io.Writer, latest.CustomTest) error { return errors.New(test.expectedError) })
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(command, fmt.Errorf(test.expectedError)))
 
 			cfg := &mockConfig{
 				workingDir: tmpDir.Root(),

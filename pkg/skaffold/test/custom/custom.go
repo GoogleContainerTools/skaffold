@@ -71,7 +71,7 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 		color.Default.Fprintf(out, "Running custom test command: %q\n", command)
 	} else {
 		color.Default.Fprintf(out, "Running custom test command: %q with timeout %d s\n", command, test.TimeoutSeconds)
-		newCtx, cancel := context.WithTimeout(ctx, time.Duration(test.TimeoutSeconds)*time.Second)
+		newCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		defer cancel()
 		ctx = newCtx
 	}
