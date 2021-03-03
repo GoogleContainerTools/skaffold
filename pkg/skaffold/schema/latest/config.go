@@ -675,8 +675,11 @@ type HelmRelease struct {
 	// It accepts environment variables via the go template syntax.
 	Name string `yaml:"name,omitempty" yamltags:"required"`
 
-	// ChartPath is the path to the Helm chart.
-	ChartPath string `yaml:"chartPath,omitempty" yamltags:"required" skaffold:"filepath"`
+	// LocalChartPath is the local path to the packaged Helm chart or the unpacked Helm chart directory.
+	LocalChartPath string `yaml:"localChartPath,omitempty" yamltags:"oneOf=chartSource" skaffold:"filepath"`
+
+	// RemoteChartPath is the path to the remote Helm chart reference or URL.
+	RemoteChartPath string `yaml:"remoteChartPath,omitempty" yamltags:"oneOf=chartSource"`
 
 	// ValuesFiles are the paths to the Helm `values` files.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty" skaffold:"filepath"`
@@ -727,9 +730,6 @@ type HelmRelease struct {
 
 	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
-
-	// Remote specifies whether the chart path is remote, or exists on the host filesystem.
-	Remote bool `yaml:"remote,omitempty"`
 
 	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
 	// Default is `true` when helm chart is local (`remote: false`).

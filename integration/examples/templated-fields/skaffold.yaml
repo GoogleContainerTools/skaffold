@@ -16,7 +16,7 @@ deploy:
   helm:
     releases:
       - name: skaffold-templated
-        chartPath: charts
+        localChartPath: charts
         artifactOverrides:
           image: skaffold-templated
         setValueTemplates:

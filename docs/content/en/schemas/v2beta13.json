@@ -1496,18 +1496,12 @@
     },
     "HelmRelease": {
       "required": [
-        "name",
-        "chartPath"
+        "name"
       ],
       "properties": {
         "artifactOverrides": {
           "description": "key value pairs where the key represents the parameter used in the `--set-string` Helm CLI flag to define a container image and the value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section. The resulting command-line is controlled by `ImageStrategy`.",
           "x-intellij-html-description": "key value pairs where the key represents the parameter used in the <code>--set-string</code> Helm CLI flag to define a container image and the value corresponds to artifact i.e. <code>ImageName</code> defined in <code>Build.Artifacts</code> section. The resulting command-line is controlled by <code>ImageStrategy</code>."
-        },
-        "chartPath": {
-          "type": "string",
-          "description": "path to the Helm chart.",
-          "x-intellij-html-description": "path to the Helm chart."
         },
         "createNamespace": {
           "type": "boolean",
@@ -1518,6 +1512,11 @@
           "$ref": "#/definitions/HelmImageStrategy",
           "description": "controls how an `ArtifactOverrides` entry is turned into `--set-string` Helm CLI flag or flags.",
           "x-intellij-html-description": "controls how an <code>ArtifactOverrides</code> entry is turned into <code>--set-string</code> Helm CLI flag or flags."
+        },
+        "localChartPath": {
+          "type": "string",
+          "description": "local path to the packaged Helm chart or the unpacked Helm chart directory.",
+          "x-intellij-html-description": "local path to the packaged Helm chart or the unpacked Helm chart directory."
         },
         "name": {
           "type": "string",
@@ -1544,11 +1543,10 @@
           "x-intellij-html-description": "if <code>true</code>, Skaffold will send <code>--recreate-pods</code> flag to Helm CLI when upgrading a new version of a chart in subsequent dev loop deploy.",
           "default": "false"
         },
-        "remote": {
-          "type": "boolean",
-          "description": "specifies whether the chart path is remote, or exists on the host filesystem.",
-          "x-intellij-html-description": "specifies whether the chart path is remote, or exists on the host filesystem.",
-          "default": "false"
+        "remoteChartPath": {
+          "type": "string",
+          "description": "path to the remote Helm chart reference or URL.",
+          "x-intellij-html-description": "path to the remote Helm chart reference or URL."
         },
         "setFiles": {
           "additionalProperties": {
@@ -1607,7 +1605,8 @@
       },
       "preferredOrder": [
         "name",
-        "chartPath",
+        "localChartPath",
+        "remoteChartPath",
         "valuesFiles",
         "artifactOverrides",
         "namespace",
@@ -1620,7 +1619,6 @@
         "recreatePods",
         "skipBuildDependencies",
         "useHelmSecrets",
-        "remote",
         "upgradeOnChange",
         "overrides",
         "packaged",

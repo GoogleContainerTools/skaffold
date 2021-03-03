@@ -24,9 +24,9 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v2beta12 to v2beta13
-// 1. No additions:
-// 2. No removals
-// 3. Updates:
+// 1. Additions: `HelmRelease.RemoteChartPath`
+// 2. Removals: `HelmRelease.Remote`
+// 3. Updates: Rename `HelmRelease.ChartPath` to `HelmRelease.LocalChartPath`
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
@@ -36,6 +36,18 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	return &newConfig, err
 }
 
-func upgradeOnePipeline(_, _ interface{}) error {
+func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldDeploy := &oldPipeline.(*Pipeline).Deploy
+	if oldDeploy.HelmDeploy == nil {
+		return nil
+	}
+	newDeploy := &newPipeline.(*next.Pipeline).Deploy
+	for i, r := range oldDeploy.HelmDeploy.Releases {
+		if r.Remote {
+			newDeploy.HelmDeploy.Releases[i].RemoteChartPath = r.ChartPath
+		} else {
+			newDeploy.HelmDeploy.Releases[i].LocalChartPath = r.ChartPath
+		}
+	}
 	return nil
 }
