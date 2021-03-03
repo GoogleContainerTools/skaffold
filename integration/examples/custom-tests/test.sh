@@ -18,4 +18,4 @@ set -e
 
 echo "go custom test $@"
 
-go test .
+go clean -testcache && go test .

@@ -25,8 +25,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -34,6 +32,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
+
+// for tests
+var doRunCustomCommand = runCustomCommand
 
 const Windows string = "windows"
 
@@ -52,23 +53,20 @@ func New(cfg docker.Config, wd string, ct latest.CustomTest) (*Runner, error) {
 
 // Test is the entrypoint for running custom tests
 func (ct *Runner) Test(ctx context.Context, out io.Writer, _ []build.Artifact) error {
-	if err := ct.runCustomCommand(ctx, out); err != nil {
+	if err := doRunCustomCommand(ctx, out, ct.customTest); err != nil {
 		return fmt.Errorf("running custom test command: %w", err)
 	}
 
 	return nil
 }
 
-func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
-	test := ct.customTest
-
+func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest) error {
 	// Expand command
 	command, err := util.ExpandEnvTemplate(test.Command, nil)
 	if err != nil {
 		return fmt.Errorf("unable to parse test command %q: %w", test.Command, err)
 	}
 
-	logrus.Infof("Running custom test command %q", command)
 	if test.TimeoutSeconds <= 0 {
 		color.Default.Fprintf(out, "Running custom test command: %q\n", command)
 	} else {
@@ -93,13 +91,16 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
 		if e, ok := err.(*exec.ExitError); ok {
 			// If the process exited by itself, just return the error
 			if e.Exited() {
-				return e
+				color.Red.Fprintf(out, "Command finished with non-0 exit code.\n")
+				return fmt.Errorf("command finished with non-0 exit code: %w", e)
 			}
 			// If the context is done, it has been killed by the exec.Command
 			select {
 			case <-ctx.Done():
 				if ctx.Err() == context.DeadlineExceeded {
-					color.Default.Fprintf(out, "command timed out")
+					color.Red.Fprintf(out, "Command timed out\n")
+				} else if ctx.Err() == context.Canceled {
+					color.Red.Fprintf(out, "Command cancelled\n")
 				}
 				return ctx.Err()
 			default:
@@ -108,6 +109,8 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer) error {
 		}
 		return err
 	}
+	color.Green.Fprintf(out, "Command finished successfully\n")
+
 	return nil
 }
 

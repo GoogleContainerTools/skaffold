@@ -1300,7 +1300,7 @@ func TestValidateCustomTest(t *testing.T) {
 			},
 			expectedErrors: 1,
 		}, {
-			description: "ignore either path or command",
+			description: "use both path and command",
 			command:     "echo Hello!",
 			dependencies: &latest.CustomTestDependencies{
 				Command: "bazel query deps",

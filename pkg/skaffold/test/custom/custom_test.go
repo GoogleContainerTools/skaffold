@@ -18,6 +18,8 @@ package custom
 
 import (
 	"context"
+	"errors"
+	"io"
 	"io/ioutil"
 	"path/filepath"
 	"runtime"
@@ -37,18 +39,16 @@ func TestNewCustomTestRunner(t *testing.T) {
 			Command:        "echo Running Custom Test command.",
 			TimeoutSeconds: 10,
 			Dependencies: &latest.CustomTestDependencies{
-				Command: "echo [\"file1\",\"file2\",\"file3\"]",
-				Paths:   []string{"**"},
-				Ignore:  []string{"b*"},
+				Paths:  []string{"**"},
+				Ignore: []string{"b*"},
 			},
 		}
 
 		cfg := &mockConfig{
 			workingDir: tmpDir.Root(),
 			tests: []*latest.TestCase{{
-				ImageName:      "image",
-				StructureTests: []string{"test.yaml"},
-				CustomTests:    []latest.CustomTest{custom},
+				ImageName:   "image",
+				CustomTests: []latest.CustomTest{custom},
 			}},
 		}
 
@@ -88,17 +88,16 @@ func TestCustomCommandError(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, "Testing new custom test runner", func(t *testutil.T) {
 			tmpDir := t.NewTempDir().Touch("test.yaml")
-
 			if runtime.GOOS == Windows {
 				test.expectedError = "exit status"
 			}
+			t.Override(&doRunCustomCommand, func(context.Context, io.Writer, latest.CustomTest) error { return errors.New(test.expectedError) })
 
 			cfg := &mockConfig{
 				workingDir: tmpDir.Root(),
 				tests: []*latest.TestCase{{
-					ImageName:      "image",
-					StructureTests: []string{"test.yaml"},
-					CustomTests:    []latest.CustomTest{test.custom},
+					ImageName:   "image",
+					CustomTests: []latest.CustomTest{test.custom},
 				}},
 			}
 
@@ -128,9 +127,8 @@ func TestTestDependenciesCommand(t *testing.T) {
 		cfg := &mockConfig{
 			workingDir: tmpDir.Root(),
 			tests: []*latest.TestCase{{
-				ImageName:      "image",
-				StructureTests: []string{"test.yaml"},
-				CustomTests:    []latest.CustomTest{custom},
+				ImageName:   "image",
+				CustomTests: []latest.CustomTest{custom},
 			}},
 		}
 
@@ -210,9 +208,8 @@ func TestTestDependenciesPaths(t *testing.T) {
 			cfg := &mockConfig{
 				workingDir: tmpDir.Root(),
 				tests: []*latest.TestCase{{
-					ImageName:      "image",
-					StructureTests: []string{"test.yaml"},
-					CustomTests:    []latest.CustomTest{custom},
+					ImageName:   "image",
+					CustomTests: []latest.CustomTest{custom},
 				}},
 			}
 
