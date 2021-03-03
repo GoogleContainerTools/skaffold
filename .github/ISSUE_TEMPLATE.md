@@ -9,8 +9,9 @@
 
 ### Information
 
-- Skaffold version: version...
-- Operating system: ...
+- Skaffold version: <!-- run `skaffold version` -->
+- Operating system: <!-- name and version -->
+- Installed via: <!-- skaffold.dev | Google Cloud SDK | Cloud Code | Chocolatey | Snap | Homebrew | ...-->
 - Contents of skaffold.yaml:
 
 ```yaml
@@ -22,3 +23,8 @@
 1. a clonable repository with the sample skaffold project
 2. `skaffold <command>`
 3. ...
+
+<!--
+The logs from `skaffold ... -vdebug` can be very helpful.
+Please remove or elide any confidential information.
+-->
