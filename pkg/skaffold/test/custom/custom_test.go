@@ -91,7 +91,7 @@ func TestCustomCommandError(t *testing.T) {
 			},
 			shouldErr:          true,
 			expectedCmd:        "sh -c sleep 20",
-			expectedWindowsCmd: "cmd.exe /C exit 20",
+			expectedWindowsCmd: "cmd.exe /C sleep 20",
 			expectedError:      "context deadline exceeded",
 		},
 	}
