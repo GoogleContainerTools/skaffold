@@ -236,20 +236,20 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
-	logger := r.createLogger(out, bRes)
-	defer logger.Stop()
-
-	debugContainerManager := r.createContainerManager()
-	defer debugContainerManager.Stop()
-
 	// Logs should be retrieved up to just before the deploy
-	logger.SetSince(time.Now())
-
+	deployTime := time.Now()
 	// First deploy
 	if err := r.Deploy(ctx, out, r.builds); err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
+
+	logger := r.createLogger(out, bRes)
+	defer logger.Stop()
+	logger.SetSince(deployTime)
+
+	debugContainerManager := r.createContainerManager()
+	defer debugContainerManager.Stop()
 
 	forwarderManager := r.createForwarder(out)
 	defer forwarderManager.Stop()
