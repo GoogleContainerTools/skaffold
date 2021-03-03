@@ -253,13 +253,7 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 	renderedManifests := new(bytes.Buffer)
 
 	for _, r := range h.Releases {
-		var chartPath string
-		if r.LocalChartPath != "" {
-			chartPath = r.LocalChartPath
-		} else {
-			chartPath = r.RemoteChartPath
-		}
-		args := []string{"template", chartPath}
+		args := []string{"template", chartSource(r)}
 
 		args = append(args[:1], append([]string{r.Name}, args[1:]...)...)
 
@@ -307,18 +301,12 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 // deployRelease deploys a single release
 func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]types.Artifact, error) {
 	var err error
-	var chartPath string
-	if r.LocalChartPath != "" {
-		chartPath = r.LocalChartPath
-	} else {
-		chartPath = r.RemoteChartPath
-	}
 	opts := installOpts{
 		releaseName: releaseName,
 		upgrade:     true,
 		flags:       h.Flags.Upgrade,
 		force:       h.forceDeploy,
-		chartPath:   chartPath,
+		chartPath:   chartSource(r),
 		helmVersion: helmVersion,
 	}
 
@@ -491,4 +479,11 @@ func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (stri
 	}
 
 	return output[idx:], nil
+}
+
+func chartSource(r latest.HelmRelease) string {
+	if r.RemoteChartPath != "" {
+		return r.RemoteChartPath
+	}
+	return r.LocalChartPath
 }
