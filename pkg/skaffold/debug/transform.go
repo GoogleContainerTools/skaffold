@@ -223,9 +223,9 @@ func rewriteProbes(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec) bool {
 		c := &podSpec.Containers[i]
 		// only affect containers listed in debug-config
 		if _, found := config[c.Name]; found {
-			lp := rewriteHttpGetProbe(c.LivenessProbe, minTimeout)
-			rp := rewriteHttpGetProbe(c.ReadinessProbe, minTimeout)
-			sp := rewriteHttpGetProbe(c.StartupProbe, minTimeout)
+			lp := rewriteHTTPGetProbe(c.LivenessProbe, minTimeout)
+			rp := rewriteHTTPGetProbe(c.ReadinessProbe, minTimeout)
+			sp := rewriteHTTPGetProbe(c.StartupProbe, minTimeout)
 			if lp || rp || sp {
 				logrus.Infof("Updated probe timeouts for %s/%s", metadata.Name, c.Name)
 			}
@@ -235,7 +235,7 @@ func rewriteProbes(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec) bool {
 	return changed
 }
 
-func rewriteHttpGetProbe(probe *v1.Probe, minTimeout int32) bool {
+func rewriteHTTPGetProbe(probe *v1.Probe, minTimeout int32) bool {
 	if probe == nil || probe.HTTPGet == nil || minTimeout < probe.TimeoutSeconds {
 		return false
 	}

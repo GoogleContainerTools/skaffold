@@ -334,7 +334,7 @@ func TestUpdateForShDashC(t *testing.T) {
 	}
 }
 
-func TestRewriteHttpGetProbe(t *testing.T) {
+func TestRewriteHTTPGetProbe(t *testing.T) {
 	const minTimeout int32 = 10 * 60
 	tests := []struct {
 		description string
@@ -368,7 +368,7 @@ func TestRewriteHttpGetProbe(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			p := test.input
-			if rewriteHttpGetProbe(&p, minTimeout) {
+			if rewriteHTTPGetProbe(&p, minTimeout) {
 				t.CheckDeepEqual(test.expected, p)
 			} else {
 				t.CheckDeepEqual(test.input, p) // should not have changed
