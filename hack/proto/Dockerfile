@@ -32,18 +32,31 @@ RUN go get \
     github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.9.1 \
     github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.3.2
 
-WORKDIR /proto/v1
-COPY v1/skaffold.proto v1/markdown.tmpl ./
+# Generate proto files for common enums
+WORKDIR /proto/enums
+COPY enums/enums.proto enums/markdown.tmpl ./
 RUN protoc \
   -I . \
+  --go_out=plugins=grpc:. \
+  --doc_out=. \
+  --doc_opt=./markdown.tmpl,enums.md \
+  *.proto
+
+# Generate proto files for v1 API
+WORKDIR /proto
+COPY v1/skaffold.proto v1/markdown.tmpl v1/
+RUN protoc \
+  -I . \
+  -I enums/ \
   -I /protoc/include  \
   -I /grpc-gateway/third_party/googleapis \
   --grpc-gateway_out=logtostderr=true:. \
   --go_out=plugins=grpc:. \
-  --doc_out=. \
-  --doc_opt=./markdown.tmpl,index.md \
+  --doc_out=v1/ \
+  --doc_opt=v1/markdown.tmpl,v1/index.md \
   --swagger_out=logtostderr=true:. \
-  *.proto
+  v1/*.proto
+RUN cat enums/enums.md >> v1/index.md
 
 # this is a hack - seemingly grpc-gateway-swagger-gen is sometimes generating titles when they should be descriptions
 RUN jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' skaffold.swagger.json | sponge skaffold.swagger.json
