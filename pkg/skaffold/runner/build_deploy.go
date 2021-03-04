@@ -49,8 +49,9 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 		return nil, err
 	}
 
-	// In dry-run mode or with --digest-source  set to 'remote', we don't build anything, just return the tag for each artifact.
-	if r.runCtx.DryRun() || (r.runCtx.DigestSource() == remoteDigestSource) {
+	// In dry-run mode or with --digest-source  set to 'remote' or 'tag', we don't build anything, just return the tag for each artifact.
+	if r.runCtx.DryRun() || (r.runCtx.DigestSource() == remoteDigestSource) ||
+		(r.runCtx.DigestSource() == tagDigestSource) {
 		var bRes []build.Artifact
 		for _, artifact := range artifacts {
 			bRes = append(bRes, build.Artifact{
