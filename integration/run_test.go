@@ -52,6 +52,11 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started"},
 		},
 		{
+			description: "custom-tests",
+			dir:         "examples/custom-tests",
+			pods:        []string{"custom-test"},
+		},
+		{
 			description: "microservices",
 			dir:         "examples/microservices",
 			// See https://github.com/GoogleContainerTools/skaffold/issues/2372
