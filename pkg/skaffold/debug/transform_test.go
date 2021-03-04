@@ -335,40 +335,44 @@ func TestUpdateForShDashC(t *testing.T) {
 }
 
 func TestRewriteHTTPGetProbe(t *testing.T) {
-	const minTimeout int32 = 10 * 60
 	tests := []struct {
 		description string
 		input       v1.Probe
+		minTimeout  int32
 		changed     bool
 		expected    v1.Probe
 	}{
 		{
 			description: "non-http probe should be skipped",
 			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 10},
+			minTimeout:  20,
 			changed:     false,
 		},
 		{
 			description: "http probe with big timeout should be skipped",
 			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 100 * 60},
+			minTimeout:  20,
 			changed:     false,
 		},
 		{
 			description: "http probe with no timeout",
 			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}},
+			minTimeout:  20,
 			changed:     true,
-			expected:    v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: minTimeout},
+			expected:    v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 20},
 		},
 		{
 			description: "http probe with small timeout",
 			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 60},
+			minTimeout:  100,
 			changed:     true,
-			expected:    v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: minTimeout},
+			expected:    v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 100},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			p := test.input
-			if rewriteHTTPGetProbe(&p, minTimeout) {
+			if rewriteHTTPGetProbe(&p, test.minTimeout) {
 				t.CheckDeepEqual(test.expected, p)
 			} else {
 				t.CheckDeepEqual(test.input, p) // should not have changed
