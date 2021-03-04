@@ -2,14 +2,20 @@ apiVersion: skaffold/v2beta13
 kind: Config
 build:
   artifacts:
-  - image: skaffold-example
+  - image: custom-test-example
 test:
-  - image: skaffold-example
+  - image: custom-test-example
     custom:
       - command: ./test.sh
         timeoutSeconds: 60
         dependencies:
           paths:
+          -  "*_test.go"
+      - command: echo Hello world!!
+        timeoutSeconds: 60
+        dependencies:
+          paths:
+          -  "./test.sh"
           -  "*_test.go"
 deploy:
   kubectl:
