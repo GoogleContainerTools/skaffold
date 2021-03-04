@@ -17,7 +17,7 @@ limitations under the License.
 package errors
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -31,7 +31,7 @@ var knownInitProblems = []problem{
 		regexp:      re(".*The control plane node must be running for this command.*"),
 		errCode:     proto.StatusCode_INIT_MINIKUBE_NOT_RUNNING_ERROR,
 		description: func(error) string { return "minikube is probably not running" },
-		suggestion: func(config.SkaffoldOptions) []*proto.Suggestion {
+		suggestion: func(runcontext.RunContext) []*proto.Suggestion {
 			return []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_START_MINIKUBE,
 				Action:         `Try running "minikube start"`,

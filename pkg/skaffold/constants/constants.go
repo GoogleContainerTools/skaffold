@@ -51,12 +51,13 @@ const (
 	DefaultRPCPort     = 50051
 	DefaultRPCHTTPPort = 50052
 
-	DefaultPortForwardNamespace = "default"
-	DefaultPortForwardAddress   = "127.0.0.1"
+	DefaultPortForwardAddress = "127.0.0.1"
 
 	DefaultProjectDescriptor = "project.toml"
 
 	LeeroyAppResponse = "leeroooooy app!!\n"
+
+	GithubIssueLink = "https://github.com/GoogleContainerTools/skaffold/issues/new"
 )
 
 var (
