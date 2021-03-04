@@ -21,15 +21,15 @@ RUN wget -O protoc.zip https://github.com/google/protobuf/releases/download/v${P
 RUN unzip protoc.zip
 
 WORKDIR /grpc-gateway
-RUN wget -q -O- https://github.com/grpc-ecosystem/grpc-gateway/tarball/v1.9.1 | tar --strip-components 1 -zx
+RUN wget -q -O- https://github.com/grpc-ecosystem/grpc-gateway/tarball/v1.16.0 | tar --strip-components 1 -zx
 
 WORKDIR /tmp
 ENV GOPROXY=https://proxy.golang.org
 ENV GO111MODULE=on
 RUN go get \
-    github.com/golang/protobuf/protoc-gen-go@v1.3.2 \
-    github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.9.1 \
-    github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.9.1 \
+    github.com/golang/protobuf/protoc-gen-go@v1.3.3 \
+    github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.16.0 \
+    github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.16.0 \
     github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.3.2
 
 # Generate proto files for common enums
@@ -37,6 +37,8 @@ WORKDIR /proto/enums
 COPY enums/enums.proto enums/markdown.tmpl ./
 RUN protoc \
   -I . \
+  -I /grpc-gateway/third_party/googleapis \
+  --grpc-gateway_out=logtostderr=true:. \
   --go_out=plugins=grpc:. \
   --doc_out=. \
   --doc_opt=./markdown.tmpl,enums.md \
@@ -56,10 +58,10 @@ RUN protoc \
   --doc_opt=v1/markdown.tmpl,v1/index.md \
   --swagger_out=logtostderr=true:. \
   v1/*.proto
-RUN cat enums/enums.md >> v1/index.md
 
 # this is a hack - seemingly grpc-gateway-swagger-gen is sometimes generating titles when they should be descriptions
-RUN jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' skaffold.swagger.json | sponge skaffold.swagger.json
+RUN jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' v1/skaffold.swagger.json | sponge v1/skaffold.swagger.json
+RUN cat enums/enums.md >> v1/index.md
 
 # Compare the proto files with the existing proto files
 FROM generate-files AS compare
