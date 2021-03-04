@@ -54,7 +54,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "custom-tests",
 			dir:         "examples/custom-tests",
-			pods:        []string{"getting-started"},
+			pods:        []string{"custom-test"},
 		},
 		{
 			description: "microservices",
