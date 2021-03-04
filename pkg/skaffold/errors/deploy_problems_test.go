@@ -37,7 +37,7 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 			isMinikube:  true,
 			expected: []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
-				Action: "Check if minikube is running using `minikube status` command and try again.",
+				Action:         "Check if minikube is running using `minikube status` command and try again.",
 			}},
 		},
 		{

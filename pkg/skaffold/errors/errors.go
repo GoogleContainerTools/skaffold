@@ -22,6 +22,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -36,12 +37,12 @@ const (
 	FileSync    = Phase("FileSync")
 	DevInit     = Phase("DevInit")
 	Cleanup     = Phase("Cleanup")
-
-	// Report issue text
-	reportIssueText = "If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error"
 )
 
 var (
+	// Report issue text
+	reportIssueText = fmt.Sprintf("If above error is unexpected, please open an issue %s to report this error", constants.GithubIssueLink)
+
 	setRunContextOnce sync.Once
 	runCtx            runcontext.RunContext
 
