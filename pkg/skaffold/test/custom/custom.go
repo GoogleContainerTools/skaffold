@@ -118,28 +118,32 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 // TestDependencies returns dependencies listed for a custom test
 func (ct *Runner) TestDependencies() ([]string, error) {
 	test := ct.customTest
+	// var set orderedFileSet
 
-	switch {
-	case test.Dependencies.Command != "":
-		var cmd *exec.Cmd
-		// We evaluate the command with a shell so that it can contain env variables.
-		if runtime.GOOS == Windows {
-			cmd = exec.CommandContext(context.Background(), "cmd.exe", "/C", test.Dependencies.Command)
-		} else {
-			cmd = exec.CommandContext(context.Background(), "sh", "-c", test.Dependencies.Command)
-		}
+	if test.Dependencies != nil {
+		switch {
+		case test.Dependencies.Command != "":
+			var cmd *exec.Cmd
+			// We evaluate the command with a shell so that it can contain env variables.
+			if runtime.GOOS == Windows {
+				cmd = exec.CommandContext(context.Background(), "cmd.exe", "/C", test.Dependencies.Command)
+			} else {
+				cmd = exec.CommandContext(context.Background(), "sh", "-c", test.Dependencies.Command)
+			}
 
-		output, err := util.RunCmdOut(cmd)
-		if err != nil {
-			return nil, fmt.Errorf("getting dependencies from command: %q: %w", test.Dependencies.Command, err)
-		}
-		var deps []string
-		if err := json.Unmarshal(output, &deps); err != nil {
-			return nil, fmt.Errorf("unmarshalling dependency output into string array: %w", err)
-		}
-		return deps, nil
+			output, err := util.RunCmdOut(cmd)
+			if err != nil {
+				return nil, fmt.Errorf("getting dependencies from command: %q: %w", test.Dependencies.Command, err)
+			}
+			var deps []string
+			if err := json.Unmarshal(output, &deps); err != nil {
+				return nil, fmt.Errorf("unmarshalling dependency output into string array: %w", err)
+			}
+			return deps, nil
 
-	default:
-		return list.Files(ct.testWorkingDir, test.Dependencies.Paths, test.Dependencies.Ignore)
+		case test.Dependencies.Paths != nil:
+			return list.Files(ct.testWorkingDir, test.Dependencies.Paths, test.Dependencies.Ignore)
+		}
 	}
+	return nil, nil
 }
