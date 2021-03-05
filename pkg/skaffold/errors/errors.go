@@ -37,12 +37,12 @@ const (
 	FileSync    = Phase("FileSync")
 	DevInit     = Phase("DevInit")
 	Cleanup     = Phase("Cleanup")
+
+	// Report issue text
+	reportIssueText = "If above error is unexpected, please open an issue " + constants.GithubIssueLink + " to report this error"
 )
 
 var (
-	// Report issue text
-	reportIssueText = fmt.Sprintf("If above error is unexpected, please open an issue %s to report this error", constants.GithubIssueLink)
-
 	setRunContextOnce sync.Once
 	runCtx            runcontext.RunContext
 
