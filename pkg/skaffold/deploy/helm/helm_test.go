@@ -89,6 +89,21 @@ var testDeployEnvTemplateNamespacedConfig = latest.HelmDeploy{
 	}},
 }
 
+var testDeployConfigRemoteRepo = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+		ArtifactOverrides: map[string]string{
+			"image": "skaffold-helm",
+		},
+		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+		SetValues: map[string]string{
+			"some.key": "somevalue",
+		},
+		Repo: "https://charts.helm.sh/stable",
+	}},
+}
+
 var testDeployConfigTemplated = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:           "skaffold-helm",
@@ -591,6 +606,17 @@ func TestHelmDeploy(t *testing.T) {
 			helm:               testDeployEnvTemplateNamespacedConfig,
 			builds:             testBuilds,
 			expectedNamespaces: []string{"testReleaseFOOBARNamespace"},
+		},
+		{
+			description: "helm3.1 deploy with repo success",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --repo https://charts.helm.sh/stable -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig"),
+			helm:   testDeployConfigRemoteRepo,
+			builds: testBuilds,
 		},
 		{
 			description: "helm3.1 namespaced context deploy success",

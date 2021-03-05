@@ -308,6 +308,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		force:       h.forceDeploy,
 		chartPath:   chartSource(r),
 		helmVersion: helmVersion,
+		repo:        r.Repo,
 	}
 
 	var installEnv []string

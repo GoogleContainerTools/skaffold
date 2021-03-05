@@ -113,7 +113,7 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 	if err := b.entryForwarder.Forward(ctx, entry); err == nil {
 		color.Green.Fprintln(
 			b.output,
-			fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %s -> address %s port %d",
+			fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %s -> %s:%d",
 				entry.resource.Type,
 				entry.resource.Name,
 				entry.resource.Namespace,
