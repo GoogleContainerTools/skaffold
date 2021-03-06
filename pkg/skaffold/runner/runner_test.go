@@ -427,6 +427,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 		autoDeploy           bool
 		expectedBuildIntent  bool
 		expectedSyncIntent   bool
+		expectdTestIntent    bool
 		expectedDeployIntent bool
 	}{
 		{
@@ -436,6 +437,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 			autoDeploy:           true,
 			expectedBuildIntent:  true,
 			expectedSyncIntent:   true,
+			expectedTestIntent:   true,
 			expectedDeployIntent: true,
 		},
 		{
@@ -445,6 +447,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 			autoDeploy:           true,
 			expectedBuildIntent:  false,
 			expectedSyncIntent:   true,
+			expectedTestIntent:   true,
 			expectedDeployIntent: true,
 		},
 		{
@@ -454,6 +457,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 			autoDeploy:           false,
 			expectedBuildIntent:  true,
 			expectedSyncIntent:   true,
+			expectedTestIntent:   false,
 			expectedDeployIntent: false,
 		},
 		{
@@ -463,6 +467,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 			autoDeploy:           true,
 			expectedBuildIntent:  true,
 			expectedSyncIntent:   false,
+			expectedTestIntent:   true,
 			expectedDeployIntent: true,
 		},
 	}
@@ -500,6 +505,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 
 			t.CheckDeepEqual(test.expectedBuildIntent, r.intents.build)
 			t.CheckDeepEqual(test.expectedSyncIntent, r.intents.sync)
+			t.CheckDeepEqual(test.expectedTestIntent, r.intents.sync)
 			t.CheckDeepEqual(test.expectedDeployIntent, r.intents.deploy)
 		})
 	}

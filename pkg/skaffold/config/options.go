@@ -56,6 +56,7 @@ type SkaffoldOptions struct {
 	StatusCheck           bool
 	AutoBuild             bool
 	AutoSync              bool
+	AutoTest              bool
 	AutoDeploy            bool
 	RenderOnly            bool
 	AutoCreateConfig      bool
@@ -106,6 +107,7 @@ var RunModes = struct {
 	Dev      RunMode
 	Debug    RunMode
 	Run      RunMode
+	Test     RunMode
 	Deploy   RunMode
 	Render   RunMode
 	Delete   RunMode
@@ -115,6 +117,7 @@ var RunModes = struct {
 	Dev:      "dev",
 	Debug:    "debug",
 	Run:      "run",
+	Test:     "test",
 	Deploy:   "deploy",
 	Render:   "render",
 	Delete:   "delete",

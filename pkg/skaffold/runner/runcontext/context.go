@@ -144,6 +144,7 @@ func (rc *RunContext) GetWorkingDir() string                     { return rc.Wor
 func (rc *RunContext) GetCluster() config.Cluster                { return rc.Cluster }
 func (rc *RunContext) AddSkaffoldLabels() bool                   { return rc.Opts.AddSkaffoldLabels }
 func (rc *RunContext) AutoBuild() bool                           { return rc.Opts.AutoBuild }
+func (rc *RunContext) AutoTest() bool                            { return rc.Opts.AutoTest }
 func (rc *RunContext) AutoDeploy() bool                          { return rc.Opts.AutoDeploy }
 func (rc *RunContext) AutoSync() bool                            { return rc.Opts.AutoSync }
 func (rc *RunContext) CacheArtifacts() bool                      { return rc.Opts.CacheArtifacts }

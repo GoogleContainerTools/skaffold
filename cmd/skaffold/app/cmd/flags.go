@@ -375,6 +375,19 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
+		Name:     "auto-test",
+		Usage:    "When set to false, deploys wait for API request instead of running automatically",
+		Value:    &opts.AutoTest,
+		DefValue: true,
+		DefValuePerCommand: map[string]interface{}{
+			"dev":   true,
+			"debug": false,
+		},
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug"},
+		IsEnum:        true,
+	},
+	{
 		Name:     "auto-deploy",
 		Usage:    "When set to false, deploys wait for API request instead of running automatically",
 		Value:    &opts.AutoDeploy,

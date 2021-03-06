@@ -54,11 +54,12 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		return ErrorConfigurationChanged
 	}
 
-	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
+	buildIntent, syncIntent, testIntent, deployIntent := r.intents.GetIntents()
 	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
 	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
+	needsTest := testIntent && r.changeSet.needsRetest
 	needsDeploy := deployIntent && r.changeSet.needsRedeploy
-	if !needsSync && !needsBuild && !needsDeploy {
+	if !needsSync && !needsBuild && !needsTest && !needsDeploy {
 		return nil
 	}
 
@@ -116,6 +117,27 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 				event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 				return nil
 			}
+		}
+	}
+
+	if needsTest {
+		event.ResetStateOnTest()
+		defer func() {
+			r.changeSet.resetTest()
+			r.intents.resetTest()
+		}()
+
+		forwarderManager.Stop()
+		if !meterUpdated {
+			instrumentation.AddDevIteration("test")
+		}
+		if err := r.Test(ctx, out, r.builds); err != nil {
+			logrus.Warnln("Skipping test due to error:", err)
+			event.DevLoopFailedInPhase(r.devIteration, sErrors.Test, err)
+			return nil
+		}
+		if err := forwarderManager.Start(ctx); err != nil {
+			logrus.Warnln("Port forwarding failed:", err)
 		}
 	}
 
@@ -191,7 +213,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch test configuration
 	if err := r.monitor.Register(
 		r.tester.TestDependencies,
-		func(filemon.Events) { r.changeSet.needsRedeploy = true },
+		func(filemon.Events) { r.changeSet.needsRetest = true },
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)
 		return fmt.Errorf("watching test files: %w", err)
