@@ -108,7 +108,6 @@ func TestRun(t *testing.T) {
 		{
 			description: "custom builder",
 			dir:         "examples/custom",
-			args:        []string{"-cache-artifacts=false"},
 			pods:        []string{"getting-started"},
 		},
 		{
