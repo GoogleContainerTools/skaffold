@@ -91,8 +91,8 @@ var testDeployEnvTemplateNamespacedConfig = latest.HelmDeploy{
 
 var testDeployConfigRemoteRepo = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
+		Name:           "skaffold-helm",
+		LocalChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
 			"image": "skaffold-helm",
 		},

@@ -1692,7 +1692,6 @@
         "recreatePods",
         "skipBuildDependencies",
         "useHelmSecrets",
-        "remote",
         "repo",
         "upgradeOnChange",
         "overrides",
