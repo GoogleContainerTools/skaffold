@@ -19,7 +19,6 @@ package custom
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os/exec"
 	"runtime"
@@ -54,7 +53,7 @@ func New(cfg docker.Config, wd string, ct latest.CustomTest) (*Runner, error) {
 // Test is the entrypoint for running custom tests
 func (ct *Runner) Test(ctx context.Context, out io.Writer, _ []build.Artifact) error {
 	if err := doRunCustomCommand(ctx, out, ct.customTest); err != nil {
-		return fmt.Errorf("running custom test command: %w", err)
+		return cutomTestErr(err)
 	}
 
 	return nil
@@ -64,7 +63,7 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 	// Expand command
 	command, err := util.ExpandEnvTemplate(test.Command, nil)
 	if err != nil {
-		return fmt.Errorf("unable to parse test command %q: %w", test.Command, err)
+		return parsingTestCommandErr(test.Command, err)
 	}
 
 	if test.TimeoutSeconds <= 0 {
@@ -93,7 +92,7 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 			// If the process exited by itself, just return the error
 			if e.Exited() {
 				color.Red.Fprintf(out, "Command finished with non-0 exit code.\n")
-				return fmt.Errorf("command finished with non-0 exit code: %w", e)
+				return commandNonZeroExitErr(err)
 			}
 			// If the context is done, it has been killed by the exec.Command
 			select {
@@ -103,12 +102,12 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 				} else if ctx.Err() == context.Canceled {
 					color.Red.Fprintf(out, "Command cancelled\n")
 				}
-				return ctx.Err()
+				return commandExecutionCancelledOrTimedoutErr(ctx.Err())
 			default:
-				return e
+				return commandExited(e)
 			}
 		}
-		return err
+		return runCmdErr(err)
 	}
 	color.Green.Fprintf(out, "Command finished successfully\n")
 
@@ -118,7 +117,6 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 // TestDependencies returns dependencies listed for a custom test
 func (ct *Runner) TestDependencies() ([]string, error) {
 	test := ct.customTest
-	// var set orderedFileSet
 
 	if test.Dependencies != nil {
 		switch {
@@ -133,11 +131,11 @@ func (ct *Runner) TestDependencies() ([]string, error) {
 
 			output, err := util.RunCmdOut(cmd)
 			if err != nil {
-				return nil, fmt.Errorf("getting dependencies from command: %q: %w", test.Dependencies.Command, err)
+				return nil, gettingDependenciesCommandErr(test.Dependencies.Command, err)
 			}
 			var deps []string
 			if err := json.Unmarshal(output, &deps); err != nil {
-				return nil, fmt.Errorf("unmarshalling dependency output into string array: %w", err)
+				return nil, dependencyOutputUnmarshallErr(err)
 			}
 			return deps, nil
 
