@@ -25,8 +25,8 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -36,9 +36,9 @@ type mockRunner struct {
 	runner.Runner
 }
 
-func (r *mockRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]dep.Artifact, error) {
+func (r *mockRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 	out.Write([]byte("Build Completed"))
-	return []dep.Artifact{{
+	return []graph.Artifact{{
 		ImageName: "gcr.io/skaffold/example",
 		Tag:       "test",
 	}}, nil

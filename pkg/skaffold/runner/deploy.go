@@ -25,17 +25,17 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []dep.Artifact) error {
+func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
 	if r.runCtx.RenderOnly() {
 		return r.Render(ctx, out, artifacts, false, r.runCtx.RenderOutput())
 	}
@@ -47,7 +47,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 		fmt.Fprintln(out, artifact.Tag)
 	}
 
-	var localImages []dep.Artifact
+	var localImages []graph.Artifact
 	for _, a := range artifacts {
 		if isLocal, err := r.isLocalImage(a.ImageName); err != nil {
 			return err
@@ -102,7 +102,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	return sErr
 }
 
-func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Writer, artifacts []dep.Artifact) error {
+func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
 	currentContext, err := r.getCurrentContext()
 	if err != nil {
 		return err

@@ -25,16 +25,16 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildAndTest BuildAndTestFn) ([]dep.Artifact, error) {
+func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildAndTest BuildAndTestFn) ([]graph.Artifact, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -54,7 +54,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 	hashByName := make(map[string]string)
 	var needToBuild []*latest.Artifact
-	var alreadyBuilt []dep.Artifact
+	var alreadyBuilt []graph.Artifact
 	for i, artifact := range artifacts {
 		color.Default.Fprintf(out, " - %s: ", artifact.ImageName)
 
@@ -115,7 +115,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			uniqueTag = build.TagWithDigest(tag, entry.Digest)
 		}
 		c.artifactStore.Record(artifact, uniqueTag)
-		alreadyBuilt = append(alreadyBuilt, dep.Artifact{
+		alreadyBuilt = append(alreadyBuilt, graph.Artifact{
 			ImageName: artifact.ImageName,
 			Tag:       uniqueTag,
 		})
@@ -141,13 +141,13 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	return maintainArtifactOrder(append(bRes, alreadyBuilt...), artifacts), err
 }
 
-func maintainArtifactOrder(built []dep.Artifact, artifacts []*latest.Artifact) []dep.Artifact {
-	byName := make(map[string]dep.Artifact)
+func maintainArtifactOrder(built []graph.Artifact, artifacts []*latest.Artifact) []graph.Artifact {
+	byName := make(map[string]graph.Artifact)
 	for _, build := range built {
 		byName[build.ImageName] = build
 	}
 
-	var ordered []dep.Artifact
+	var ordered []graph.Artifact
 
 	for _, artifact := range artifacts {
 		ordered = append(ordered, byName[artifact.ImageName])
@@ -156,7 +156,7 @@ func maintainArtifactOrder(built []dep.Artifact, artifacts []*latest.Artifact) [
 	return ordered
 }
 
-func (c *cache) addArtifacts(ctx context.Context, bRes []dep.Artifact, hashByName map[string]string) error {
+func (c *cache) addArtifacts(ctx context.Context, bRes []graph.Artifact, hashByName map[string]string) error {
 	for _, a := range bRes {
 		entry := ImageDetails{}
 		isLocal, err := c.isLocalImage(a.ImageName)

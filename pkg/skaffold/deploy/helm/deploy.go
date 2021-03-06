@@ -35,7 +35,6 @@ import (
 	shell "github.com/kballard/go-shellquote"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -43,6 +42,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -115,7 +115,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, h *latest.HelmDep
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
-func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []dep.Artifact) ([]string, error) {
+func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
 	logrus.Infof("Deploying with helm v%s ...", h.bV)
 
 	var dRes []types.Artifact
@@ -249,7 +249,7 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 // Render generates the Kubernetes manifests and writes them out
-func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []dep.Artifact, offline bool, filepath string) error {
+func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
 	renderedManifests := new(bytes.Buffer)
 
 	for _, r := range h.Releases {
@@ -299,7 +299,7 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []dep.Artif
 }
 
 // deployRelease deploys a single release
-func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latest.HelmRelease, builds []dep.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]types.Artifact, error) {
+func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latest.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]types.Artifact, error) {
 	var err error
 	opts := installOpts{
 		releaseName: releaseName,

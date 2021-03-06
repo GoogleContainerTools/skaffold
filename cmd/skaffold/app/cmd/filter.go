@@ -25,9 +25,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -57,7 +57,7 @@ func NewCmdFilter() *cobra.Command {
 
 // runFilter loads the Kubernetes manifests from stdin and applies the debug transformations.
 // Unlike `skaffold debug`, this filtering affects all images and not just the built artifacts.
-func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildArtifacts []dep.Artifact) error {
+func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildArtifacts []graph.Artifact) error {
 	return withRunner(ctx, out, func(r runner.Runner, configs []*latest.SkaffoldConfig) error {
 		manifestList, err := manifest.Load(os.Stdin)
 		if err != nil {

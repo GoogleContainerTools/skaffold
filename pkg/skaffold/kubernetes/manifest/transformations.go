@@ -17,7 +17,7 @@ limitations under the License.
 package manifest
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 )
 
 type Registries struct {
@@ -25,7 +25,7 @@ type Registries struct {
 	DebugHelpersRegistry string
 }
 
-type Transform func(l ManifestList, builds []dep.Artifact, registries Registries) (ManifestList, error)
+type Transform func(l ManifestList, builds []graph.Artifact, registries Registries) (ManifestList, error)
 
 // Transforms are applied to manifests
 var transforms []Transform
@@ -41,7 +41,7 @@ func GetTransforms() []Transform {
 }
 
 // ApplyTransforms applies all manifests transforms to the provided manifests.
-func ApplyTransforms(manifests ManifestList, builds []dep.Artifact, insecureRegistries map[string]bool, debugHelpersRegistry string) (ManifestList, error) {
+func ApplyTransforms(manifests ManifestList, builds []graph.Artifact, insecureRegistries map[string]bool, debugHelpersRegistry string) (ManifestList, error) {
 	var err error
 	for _, transform := range transforms {
 		manifests, err = transform(manifests, builds, Registries{insecureRegistries, debugHelpersRegistry})

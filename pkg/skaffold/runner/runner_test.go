@@ -25,13 +25,13 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -104,7 +104,7 @@ func (t *TestBench) enterNewCycle() {
 	t.currentActions = Actions{}
 }
 
-func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artifacts []*latest.Artifact) ([]dep.Artifact, error) {
+func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 	if len(t.buildErrors) > 0 {
 		err := t.buildErrors[0]
 		t.buildErrors = t.buildErrors[1:]
@@ -115,9 +115,9 @@ func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artif
 
 	t.tag++
 
-	var builds []dep.Artifact
+	var builds []graph.Artifact
 	for _, artifact := range artifacts {
-		builds = append(builds, dep.Artifact{
+		builds = append(builds, graph.Artifact{
 			ImageName: artifact.ImageName,
 			Tag:       fmt.Sprintf("%s:%d", artifact.ImageName, t.tag),
 		})
@@ -140,7 +140,7 @@ func (t *TestBench) Sync(_ context.Context, item *sync.Item) error {
 	return nil
 }
 
-func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []dep.Artifact) error {
+func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []graph.Artifact) error {
 	if len(t.testErrors) > 0 {
 		err := t.testErrors[0]
 		t.testErrors = t.testErrors[1:]
@@ -153,7 +153,7 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []dep.Artifac
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []dep.Artifact) ([]string, error) {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact) ([]string, error) {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
@@ -166,7 +166,7 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []dep.Artif
 	return t.namespaces, nil
 }
 
-func (t *TestBench) Render(context.Context, io.Writer, []dep.Artifact, bool, string) error {
+func (t *TestBench) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
 	return nil
 }
 
@@ -191,7 +191,7 @@ func (t *TestBench) WatchForChanges(ctx context.Context, out io.Writer, doDev fu
 
 func (t *TestBench) LogWatchToUser(_ io.Writer) {}
 
-func findTags(artifacts []dep.Artifact) []string {
+func findTags(artifacts []graph.Artifact) []string {
 	var tags []string
 	for _, artifact := range artifacts {
 		tags = append(tags, artifact.Tag)

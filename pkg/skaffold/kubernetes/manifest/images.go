@@ -19,20 +19,20 @@ package manifest
 import (
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 // GetImages gathers a map of base image names to the image with its tag
-func (l *ManifestList) GetImages() ([]dep.Artifact, error) {
+func (l *ManifestList) GetImages() ([]graph.Artifact, error) {
 	s := &imageSaver{}
 	_, err := l.Visit(s)
 	return s.Images, parseImagesInManifestErr(err)
 }
 
 type imageSaver struct {
-	Images []dep.Artifact
+	Images []graph.Artifact
 }
 
 func (is *imageSaver) Visit(o map[string]interface{}, k string, v interface{}) bool {
@@ -50,7 +50,7 @@ func (is *imageSaver) Visit(o map[string]interface{}, k string, v interface{}) b
 		return false
 	}
 
-	is.Images = append(is.Images, dep.Artifact{
+	is.Images = append(is.Images, graph.Artifact{
 		Tag:       image,
 		ImageName: parsed.BaseName,
 	})
@@ -58,7 +58,7 @@ func (is *imageSaver) Visit(o map[string]interface{}, k string, v interface{}) b
 }
 
 // ReplaceImages replaces image names in a list of manifests.
-func (l *ManifestList) ReplaceImages(builds []dep.Artifact) (ManifestList, error) {
+func (l *ManifestList) ReplaceImages(builds []graph.Artifact) (ManifestList, error) {
 	replacer := newImageReplacer(builds)
 
 	updated, err := l.Visit(replacer)
@@ -77,7 +77,7 @@ type imageReplacer struct {
 	found           map[string]bool
 }
 
-func newImageReplacer(builds []dep.Artifact) *imageReplacer {
+func newImageReplacer(builds []graph.Artifact) *imageReplacer {
 	tagsByImageName := make(map[string]string)
 	for _, build := range builds {
 		imageName := docker.SanitizeImageName(build.ImageName)

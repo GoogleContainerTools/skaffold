@@ -25,44 +25,44 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type inputDigestTagger struct {
 	cfg docker.Config
-	ag  dep.ArtifactGraph
+	ag  graph.ArtifactGraph
 }
 
-func NewInputDigestTagger(cfg docker.Config, ag dep.ArtifactGraph) (Tagger, error) {
+func NewInputDigestTagger(cfg docker.Config, ag graph.ArtifactGraph) (Tagger, error) {
 	return &inputDigestTagger{
 		cfg: cfg,
 		ag:  ag,
 	}, nil
 }
 
-var getDependenciesForArtifacet = dep.DependenciesForArtifact
+// this variable is for testing only.
+var getDependenciesForArtifact = graph.DependenciesForArtifact
 
 func (t *inputDigestTagger) GenerateTag(_ string, image *latest.Artifact) (string, error) {
 	var inputs []string
 	ctx := context.Background()
-	srcFies, err := getDependenciesForArtifacet(ctx, image, t.cfg, nil)
-
+	srcFies, err := getDependenciesForArtifact(ctx, image, t.cfg, nil)
 	if err != nil {
 		return "", err
 	}
 
-	for _, dkrDep := range t.ag.Dependencies(image) {
-		srcOfDep, err := getDependenciesForArtifacet(ctx, dkrDep, t.cfg, nil)
+	for _, artifactDep := range t.ag.Dependencies(image) {
+		srcOfDep, err := getDependenciesForArtifact(ctx, artifactDep, t.cfg, nil)
 		if err != nil {
 			return "", err
 		}
-
 		srcFies = append(srcFies, srcOfDep...)
 	}
 
@@ -94,16 +94,15 @@ func encode(inputs []string) (string, error) {
 }
 
 // fileHasher hashes the contents and name of a file
-func fileHasher(p string) (string, error) {
+func fileHasher(path string) (string, error) {
 	h := md5.New()
-	fi, err := os.Lstat(p)
+	fi, err := os.Lstat(path)
 	if err != nil {
 		return "", err
 	}
-	h.Write([]byte(fi.Mode().String()))
-	h.Write([]byte(fi.Name()))
+	h.Write([]byte(filepath.Clean(path)))
 	if fi.Mode().IsRegular() {
-		f, err := os.Open(p)
+		f, err := os.Open(path)
 		if err != nil {
 			return "", err
 		}

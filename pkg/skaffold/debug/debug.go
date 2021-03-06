@@ -28,8 +28,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes/scheme"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
@@ -49,7 +49,7 @@ var (
 )
 
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
-func ApplyDebuggingTransforms(l manifest.ManifestList, builds []dep.Artifact, registries manifest.Registries) (manifest.ManifestList, error) {
+func ApplyDebuggingTransforms(l manifest.ManifestList, builds []graph.Artifact, registries manifest.Registries) (manifest.ManifestList, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -85,10 +85,10 @@ func applyDebuggingTransforms(l manifest.ManifestList, retriever configurationRe
 
 // findArtifact finds the corresponding artifact for the given image.
 // If `builds` is empty, then treat all `image` images as a build artifact.
-func findArtifact(image string, builds []dep.Artifact) *dep.Artifact {
+func findArtifact(image string, builds []graph.Artifact) *graph.Artifact {
 	if len(builds) == 0 {
 		logrus.Debugf("No build artifacts specified: using image as-is %q", image)
-		return &dep.Artifact{ImageName: image, Tag: image}
+		return &graph.Artifact{ImageName: image, Tag: image}
 	}
 	for _, artifact := range builds {
 		if image == artifact.ImageName || image == artifact.Tag {
@@ -101,7 +101,7 @@ func findArtifact(image string, builds []dep.Artifact) *dep.Artifact {
 
 // retrieveImageConfiguration retrieves the image container configuration for
 // the given build artifact
-func retrieveImageConfiguration(ctx context.Context, artifact *dep.Artifact, insecureRegistries map[string]bool) (imageConfiguration, error) {
+func retrieveImageConfiguration(ctx context.Context, artifact *graph.Artifact, insecureRegistries map[string]bool) (imageConfiguration, error) {
 	// TODO: use the proper RunContext
 	apiClient, err := docker.NewAPIClient(&runcontext.RunContext{
 		InsecureRegistries: insecureRegistries,

@@ -21,8 +21,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -228,7 +228,7 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&fileHasherFunc, mockCacheHasher)
 			t.Override(&artifactConfigFunc, fakeArtifactConfig)
-			g := dep.ToArtifactGraph(test.artifacts)
+			g := graph.ToArtifactGraph(test.artifacts)
 
 			for _, a := range test.artifacts {
 				if a.DockerArtifact != nil {
@@ -352,7 +352,7 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 		t.Override(&fileHasherFunc, mockCacheHasher)
 		t.Override(&artifactConfigFunc, fakeArtifactConfig)
 
-		depLister := stubDependencyLister([]string{"dep"})
+		depLister := stubDependencyLister([]string{"graph"})
 		hash1, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), artifact)
 
 		t.CheckNoError(err)

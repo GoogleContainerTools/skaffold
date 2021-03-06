@@ -25,11 +25,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
@@ -94,7 +94,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		}
 	}
 
-	var bRes []build.Artifact
+	var bRes []graph.Artifact
 	if needsBuild {
 		event.ResetStateOnBuild()
 		defer func() {
@@ -292,10 +292,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 }
 
 // graph represents the artifact graph
-type graph map[string][]*latest.Artifact
+type devGraph map[string][]*latest.Artifact
 
 // getTransposeGraph builds the transpose of the graph represented by the artifacts slice, with edges directed from required artifact to the dependent artifact.
-func getTransposeGraph(artifacts []*latest.Artifact) graph {
+func getTransposeGraph(artifacts []*latest.Artifact) devGraph {
 	g := make(map[string][]*latest.Artifact)
 	for _, a := range artifacts {
 		for _, d := range a.Dependencies {

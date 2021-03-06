@@ -30,10 +30,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -48,7 +48,7 @@ func TestNewSyncItem(t *testing.T) {
 		dependencies map[string][]string
 		labels       map[string]string
 		evt          filemon.Events
-		builds       []dep.Artifact
+		builds       []graph.Artifact
 		shouldErr    bool
 		expected     *Item
 		workingDir   string
@@ -63,7 +63,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -89,7 +89,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -113,7 +113,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: "node",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -146,7 +146,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: "node",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -175,7 +175,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: "node",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -211,7 +211,7 @@ func TestNewSyncItem(t *testing.T) {
 				Added:   []string{"main.go"},
 				Deleted: []string{"index.html"},
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					Tag: "placeholder",
 				},
@@ -231,7 +231,7 @@ func TestNewSyncItem(t *testing.T) {
 				Added:   []string{"index.html"},
 				Deleted: []string{"some/other/file"},
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					Tag: "placeholder",
 				},
@@ -263,7 +263,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -282,7 +282,7 @@ func TestNewSyncItem(t *testing.T) {
 				Workspace: ".",
 			},
 			workingDir: "/some",
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -311,7 +311,7 @@ func TestNewSyncItem(t *testing.T) {
 				Workspace: ".",
 			},
 			workingDir: "/some/dir",
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -341,7 +341,7 @@ func TestNewSyncItem(t *testing.T) {
 				Workspace: ".",
 			},
 			workingDir: "/some",
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -371,7 +371,7 @@ func TestNewSyncItem(t *testing.T) {
 				Workspace: ".",
 			},
 			workingDir: "/some/dir",
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -403,7 +403,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -429,7 +429,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -449,7 +449,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -469,7 +469,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -490,7 +490,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: "node",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -518,7 +518,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: "node",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -545,7 +545,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: "node",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -577,7 +577,7 @@ func TestNewSyncItem(t *testing.T) {
 				Deleted: []string{"server.html"},
 			},
 			dependencies: map[string][]string{"index.html": {"/index.html"}, "server.html": {"/server.html"}},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					Tag: "placeholder",
 				},
@@ -605,7 +605,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -623,7 +623,7 @@ func TestNewSyncItem(t *testing.T) {
 				Workspace: ".",
 			},
 			workingDir: "/some",
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -654,7 +654,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -694,7 +694,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",
@@ -733,7 +733,7 @@ func TestNewSyncItem(t *testing.T) {
 			evt: filemon.Events{
 				Added: []string{"this actually doesn't matter"},
 			},
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "test",
 					Tag:       "test:123",

@@ -33,12 +33,12 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/fn/framework"
 	k8syaml "sigs.k8s.io/yaml"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -131,7 +131,7 @@ func versionCheck(dir string, stdout io.Writer) error {
 // Deploy hydrates the manifests using kustomizations and kpt functions as described in the render method,
 // outputs them to the applyDir, and runs `kpt live apply` against applyDir to create resources in the cluster.
 // `kpt live apply` supports automated pruning declaratively via resources in the applyDir.
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []dep.Artifact) ([]string, error) {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
 	if err := sanityCheck(k.Dir, out); err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 // Render hydrates manifests using both kustomization and kpt functions.
-func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []dep.Artifact, _ bool, filepath string) error {
+func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, filepath string) error {
 	if err := sanityCheck(k.Dir, out); err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []dep.Artif
 // renderManifests handles a majority of the hydration process for manifests.
 // This involves reading configs from a source directory, running kustomize build, running kpt pipelines,
 // adding image digests, and adding run-id labels.
-func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []dep.Artifact,
+func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []graph.Artifact,
 	flags []string) (manifest.ManifestList, error) {
 	var err error
 	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)

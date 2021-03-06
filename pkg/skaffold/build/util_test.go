@@ -20,33 +20,33 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 // TestMergeWithPreviousBuilds tests that artifacts are always kept in the same order
 func TestMergeWithPreviousBuilds(t *testing.T) {
-	builds := MergeWithPreviousBuilds([]dep.Artifact{artifact("img1", "tag1_1"), artifact("img2", "tag2_1")}, nil)
+	builds := MergeWithPreviousBuilds([]graph.Artifact{artifact("img1", "tag1_1"), artifact("img2", "tag2_1")}, nil)
 	testutil.CheckDeepEqual(t, "img1:tag1_1,img2:tag2_1", tags(builds))
 
-	builds = MergeWithPreviousBuilds([]dep.Artifact{artifact("img1", "tag1_2")}, builds)
+	builds = MergeWithPreviousBuilds([]graph.Artifact{artifact("img1", "tag1_2")}, builds)
 	testutil.CheckDeepEqual(t, "img1:tag1_2,img2:tag2_1", tags(builds))
 
-	builds = MergeWithPreviousBuilds([]dep.Artifact{artifact("img2", "tag2_2")}, builds)
+	builds = MergeWithPreviousBuilds([]graph.Artifact{artifact("img2", "tag2_2")}, builds)
 	testutil.CheckDeepEqual(t, "img1:tag1_2,img2:tag2_2", tags(builds))
 
-	builds = MergeWithPreviousBuilds([]dep.Artifact{artifact("img1", "tag1_3"), artifact("img2", "tag2_3")}, builds)
+	builds = MergeWithPreviousBuilds([]graph.Artifact{artifact("img1", "tag1_3"), artifact("img2", "tag2_3")}, builds)
 	testutil.CheckDeepEqual(t, "img1:tag1_3,img2:tag2_3", tags(builds))
 }
 
-func artifact(image, tag string) dep.Artifact {
-	return dep.Artifact{
+func artifact(image, tag string) graph.Artifact {
+	return graph.Artifact{
 		ImageName: image,
 		Tag:       tag,
 	}
 }
 
-func tags(artifacts []dep.Artifact) string {
+func tags(artifacts []graph.Artifact) string {
 	var tags string
 
 	for i, a := range artifacts {

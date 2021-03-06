@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/custom"
@@ -70,7 +70,7 @@ func (t FullTester) TestDependencies() ([]string, error) {
 
 // Test is the top level testing execution call. It serves as the
 // entrypoint to all individual tests.
-func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []dep.Artifact) error {
+func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []graph.Artifact) error {
 	if len(t.runners) == 0 {
 		return nil
 	}
@@ -103,7 +103,7 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []dep.Artifact
 	return t.runTests(ctx, out, bRes)
 }
 
-func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []dep.Artifact) error {
+func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []graph.Artifact) error {
 	for _, tester := range t.runners {
 		if err := tester.Test(ctx, out, bRes); err != nil {
 			return fmt.Errorf("running tests: %w", err)

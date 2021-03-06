@@ -19,6 +19,8 @@ package tag
 import (
 	"context"
 	"io/ioutil"
+	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -32,7 +34,7 @@ func TestInputDigest_GenerateTagWhenFileDoesntExist(t *testing.T) {
 			c := []string{"imput_digest.go"}
 			return c, nil
 		}
-		getDependenciesForArtifacet = mockDependenciesForArtifact
+		getDependenciesForArtifact = mockDependenciesForArtifact
 
 		tagger, _ := NewInputDigestTagger(nil, nil)
 
@@ -50,9 +52,15 @@ func TestInputDigest_GenerateCorrectChecksumForSingleFile(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		dir := t.TempDir()
 		d1 := []byte("hello\ngo\n")
-		ioutil.WriteFile(dir+"/temp.file", d1, 0644)
+		filePath := filepath.Join(dir, "temp.file")
+		ioutil.WriteFile(filePath, d1, 0644)
 
-		hash, _ := fileHasher(dir + "/temp.file")
-		t.CheckDeepEqual("a5565729485faee8479f7c0760817ea7", hash)
+		hash, _ := fileHasher(filePath)
+
+		// because we are hashing content of file and it's path
+		// we can't get a stable hash in testing because call t.TempDir()
+		// will return a folder to a random name
+		re := regexp.MustCompile(`^[a-fA-F0-9]{32}$`)
+		t.CheckTrue(re.MatchString(hash))
 	})
 }

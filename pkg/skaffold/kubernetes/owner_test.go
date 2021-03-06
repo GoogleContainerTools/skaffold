@@ -59,7 +59,7 @@ func TestTopLevelOwnerKey(t *testing.T) {
 			Namespace: "ns",
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					Name: "dep",
+					Name: "graph",
 					Kind: "Deployment",
 				},
 			},
@@ -68,7 +68,7 @@ func TestTopLevelOwnerKey(t *testing.T) {
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "dep",
+			Name:      "graph",
 			Namespace: "ns",
 		},
 	}
@@ -85,13 +85,13 @@ func TestTopLevelOwnerKey(t *testing.T) {
 			initialObject: pod,
 			kind:          "Pod",
 			objects:       []runtime.Object{pod, rs, deployment},
-			expected:      "Deployment-dep",
+			expected:      "Deployment-graph",
 		}, {
 			description:   "object is owner",
 			initialObject: deployment,
 			kind:          "Deployment",
 			objects:       []runtime.Object{pod, rs, deployment},
-			expected:      "Deployment-dep",
+			expected:      "Deployment-graph",
 		}, {
 			description:   "error, owner doesn't exist",
 			initialObject: pod,
@@ -123,26 +123,26 @@ func TestOwnerMetaObject(t *testing.T) {
 			description: "getting a deployment",
 			or: metav1.OwnerReference{
 				Kind: "Deployment",
-				Name: "dep",
+				Name: "graph",
 			},
 			objects: []runtime.Object{
 				&v1.Service{},
 				&appsv1.Deployment{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "dep",
+						Name:      "graph",
 						Namespace: "ns",
 					},
 				},
 				&appsv1.Deployment{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "dep",
+						Name:      "graph",
 						Namespace: "ns2",
 					},
 				},
 			},
 			expected: &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "dep",
+					Name:      "graph",
 					Namespace: "ns",
 				},
 			},
@@ -162,7 +162,7 @@ func TestOwnerMetaObject(t *testing.T) {
 				},
 				&appsv1.Deployment{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "dep",
+						Name:      "graph",
 						Namespace: "ns2",
 					},
 				},

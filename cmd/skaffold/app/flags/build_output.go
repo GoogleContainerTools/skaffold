@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 )
 
 // BuildOutputFileFlag describes a flag which contains a BuildOutput.
@@ -33,7 +33,7 @@ type BuildOutputFileFlag struct {
 
 // BuildOutput is the output of `skaffold build`.
 type BuildOutput struct {
-	Builds []dep.Artifact `json:"builds"`
+	Builds []graph.Artifact `json:"builds"`
 }
 
 func (t *BuildOutputFileFlag) String() string {
@@ -80,7 +80,7 @@ func (t *BuildOutputFileFlag) Type() string {
 }
 
 // BuildArtifacts returns the Build Artifacts in the BuildOutputFileFlag
-func (t *BuildOutputFileFlag) BuildArtifacts() []dep.Artifact {
+func (t *BuildOutputFileFlag) BuildArtifacts() []graph.Artifact {
 	return t.buildOutput.Builds
 }
 

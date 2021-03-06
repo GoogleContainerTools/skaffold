@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 )
 
 const (
@@ -41,7 +41,7 @@ type withNotification struct {
 	deploy.Deployer
 }
 
-func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []dep.Artifact) ([]string, error) {
+func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
 	ns, err := w.Deployer.Deploy(ctx, out, builds)
 	if err != nil {
 		fmt.Fprint(out, terminalBell)

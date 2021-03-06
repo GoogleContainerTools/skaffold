@@ -30,9 +30,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -49,14 +49,14 @@ type artifactHasher interface {
 }
 
 type artifactHasherImpl struct {
-	artifacts dep.ArtifactGraph
+	artifacts graph.ArtifactGraph
 	lister    DependencyLister
 	mode      config.RunMode
 	syncStore *util.SyncStore
 }
 
 // newArtifactHasher returns a new instance of an artifactHasher. Use newArtifactHasherFunc instead of calling this function directly.
-func newArtifactHasher(artifacts dep.ArtifactGraph, lister DependencyLister, mode config.RunMode) artifactHasher {
+func newArtifactHasher(artifacts graph.ArtifactGraph, lister DependencyLister, mode config.RunMode) artifactHasher {
 	return &artifactHasherImpl{
 		artifacts: artifacts,
 		lister:    lister,
@@ -218,7 +218,7 @@ func fileHasher(p string) (string, error) {
 }
 
 // sortedDependencies returns the dependencies' corresponding Artifacts as sorted by their image name.
-func sortedDependencies(a *latest.Artifact, artifacts dep.ArtifactGraph) []*latest.Artifact {
+func sortedDependencies(a *latest.Artifact, artifacts graph.ArtifactGraph) []*latest.Artifact {
 	sl := artifacts.Dependencies(a)
 	sort.Slice(sl, func(i, j int) bool {
 		ia, ja := sl[i], sl[j]

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package dep
+package graph
 
 import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 

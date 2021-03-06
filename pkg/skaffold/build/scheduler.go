@@ -23,9 +23,9 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
@@ -53,7 +53,7 @@ func newScheduler(artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder,
 	return &s
 }
 
-func (s *scheduler) run(ctx context.Context, tags tag.ImageTags) ([]dep.Artifact, error) {
+func (s *scheduler) run(ctx context.Context, tags tag.ImageTags) ([]graph.Artifact, error) {
 	g, gCtx := errgroup.WithContext(ctx)
 
 	for i := range s.artifacts {
@@ -109,7 +109,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 }
 
 // InOrder builds a list of artifacts in dependency order.
-func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder, concurrency int, store ArtifactStore) ([]dep.Artifact, error) {
+func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, artifactBuilder ArtifactBuilder, concurrency int, store ArtifactStore) ([]graph.Artifact, error) {
 	// `concurrency` specifies the max number of builds that can run at any one time. If concurrency is 0, then all builds can run in parallel.
 	if concurrency == 0 {
 		concurrency = len(artifacts)

@@ -25,8 +25,8 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/dep"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -35,12 +35,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-var testBuilds = []dep.Artifact{{
+var testBuilds = []graph.Artifact{{
 	ImageName: "skaffold-helm",
 	Tag:       "docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
 }}
 
-var testBuildsFoo = []dep.Artifact{{
+var testBuildsFoo = []graph.Artifact{{
 	ImageName: "foo",
 	Tag:       "foo:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
 }}
@@ -484,7 +484,7 @@ func TestHelmDeploy(t *testing.T) {
 		helm               latest.HelmDeploy
 		namespace          string
 		configure          func(*Deployer)
-		builds             []dep.Artifact
+		builds             []graph.Artifact
 		force              bool
 		shouldErr          bool
 		expectedWarnings   []string
@@ -1007,7 +1007,7 @@ func TestHelmCleanup(t *testing.T) {
 		commands         util.Command
 		helm             latest.HelmDeploy
 		namespace        string
-		builds           []dep.Artifact
+		builds           []graph.Artifact
 		expectedWarnings []string
 		envs             map[string]string
 	}{
@@ -1266,7 +1266,7 @@ func TestHelmRender(t *testing.T) {
 		helm        latest.HelmDeploy
 		outputFile  string
 		expected    string
-		builds      []dep.Artifact
+		builds      []graph.Artifact
 		envs        map[string]string
 		namespace   string
 	}{
@@ -1277,7 +1277,7 @@ func TestHelmRender(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --kubeconfig kubeconfig"),
 			helm: testDeployConfig,
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
 					Tag:       "skaffold-helm:tag1",
@@ -1293,7 +1293,7 @@ func TestHelmRender(t *testing.T) {
 			helm:       testDeployConfig,
 			outputFile: "dummy.yaml",
 			expected:   "Dummy Output\n",
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
 					Tag:       "skaffold-helm:tag1",
@@ -1306,7 +1306,7 @@ func TestHelmRender(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<no value> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue --kubeconfig kubeconfig"),
 			helm: testDeployConfigTemplated,
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
 					Tag:       "skaffold-helm:tag1",
@@ -1319,7 +1319,7 @@ func TestHelmRender(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 -f /some/file-FOOBAR.yaml --kubeconfig kubeconfig"),
 			helm: testDeployConfigValuesFilesTemplated,
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
 					Tag:       "skaffold-helm:tag1",
@@ -1331,7 +1331,7 @@ func TestHelmRender(t *testing.T) {
 			commands: testutil.CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --namespace testReleaseNamespace --kubeconfig kubeconfig"),
 			helm: testDeployNamespacedConfig,
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
 					Tag:       "skaffold-helm:tag1",
@@ -1343,7 +1343,7 @@ func TestHelmRender(t *testing.T) {
 			commands: testutil.CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --namespace testReleaseFOOBARNamespace --kubeconfig kubeconfig"),
 			helm: testDeployEnvTemplateNamespacedConfig,
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
 					Tag:       "skaffold-helm:tag1",
@@ -1357,7 +1357,7 @@ func TestHelmRender(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
 			helm: testDeployConfig,
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
 					Tag:       "skaffold-helm:tag1",
@@ -1371,7 +1371,7 @@ func TestHelmRender(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
 			helm: testDeployNamespacedConfig,
-			builds: []dep.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
 					Tag:       "skaffold-helm:tag1",
@@ -1405,7 +1405,7 @@ func TestHelmRender(t *testing.T) {
 func TestWriteBuildArtifacts(t *testing.T) {
 	tests := []struct {
 		description string
-		builds      []dep.Artifact
+		builds      []graph.Artifact
 		result      string
 	}{
 		{
@@ -1415,12 +1415,12 @@ func TestWriteBuildArtifacts(t *testing.T) {
 		},
 		{
 			description: "empty",
-			builds:      []dep.Artifact{},
+			builds:      []graph.Artifact{},
 			result:      `{"builds":[]}`,
 		},
 		{
 			description: "multiple images with tags",
-			builds:      []dep.Artifact{{ImageName: "name", Tag: "name:tag"}, {ImageName: "name2", Tag: "name2:tag"}},
+			builds:      []graph.Artifact{{ImageName: "name", Tag: "name:tag"}, {ImageName: "name2", Tag: "name2:tag"}},
 			result:      `{"builds":[{"imageName":"name","tag":"name:tag"},{"imageName":"name2","tag":"name2:tag"}]}`,
 		},
 	}
