@@ -235,7 +235,7 @@ func TestLocalRun(t *testing.T) {
 					BuildType: latest.BuildType{
 						LocalBuild: &latest.LocalBuild{},
 					},
-				}}}, "", true, true, true)
+				}}}, "", true, true, true, true)
 
 			builder, err := NewBuilder(&mockConfig{},
 				&latest.LocalBuild{

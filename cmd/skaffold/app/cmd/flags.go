@@ -376,7 +376,7 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:     "auto-test",
-		Usage:    "When set to false, deploys wait for API request instead of running automatically",
+		Usage:    "When set to false, tests wait for API request instead of running automatically",
 		Value:    &opts.AutoTest,
 		DefValue: true,
 		DefValuePerCommand: map[string]interface{}{

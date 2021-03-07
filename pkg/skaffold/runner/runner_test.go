@@ -424,16 +424,18 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 		description          string
 		autoBuild            bool
 		autoSync             bool
+		autoTest             bool
 		autoDeploy           bool
 		expectedBuildIntent  bool
 		expectedSyncIntent   bool
-		expectdTestIntent    bool
+		expectedTestIntent   bool
 		expectedDeployIntent bool
 	}{
 		{
 			description:          "default",
 			autoBuild:            true,
 			autoSync:             true,
+			autoTest:             true,
 			autoDeploy:           true,
 			expectedBuildIntent:  true,
 			expectedSyncIntent:   true,
@@ -444,6 +446,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 			description:          "build trigger in api mode",
 			autoBuild:            false,
 			autoSync:             true,
+			autoTest:             true,
 			autoDeploy:           true,
 			expectedBuildIntent:  false,
 			expectedSyncIntent:   true,
@@ -451,19 +454,32 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 			expectedDeployIntent: true,
 		},
 		{
-			description:          "deploy trigger in api mode",
+			description:          "test trigger in api mode",
 			autoBuild:            true,
 			autoSync:             true,
-			autoDeploy:           false,
+			autoTest:             false,
+			autoDeploy:           true,
 			expectedBuildIntent:  true,
 			expectedSyncIntent:   true,
 			expectedTestIntent:   false,
+			expectedDeployIntent: true,
+		},
+		{
+			description:          "deploy trigger in api mode",
+			autoBuild:            true,
+			autoSync:             true,
+			autoTest:             true,
+			autoDeploy:           false,
+			expectedBuildIntent:  true,
+			expectedSyncIntent:   true,
+			expectedTestIntent:   true,
 			expectedDeployIntent: false,
 		},
 		{
 			description:          "sync trigger in api mode",
 			autoBuild:            true,
 			autoSync:             false,
+			autoTest:             true,
 			autoDeploy:           true,
 			expectedBuildIntent:  true,
 			expectedSyncIntent:   false,
@@ -479,6 +495,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 				WatchPollInterval: 100,
 				AutoBuild:         test.autoBuild,
 				AutoSync:          test.autoSync,
+				AutoTest:          test.autoTest,
 				AutoDeploy:        test.autoDeploy,
 			}
 			pipeline := latest.Pipeline{
@@ -488,6 +505,10 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 						LocalBuild: &latest.LocalBuild{},
 					},
 				},
+				Test: []*latest.TestCase{{
+					ImageName:      "image",
+					StructureTests: []string{"test/*"},
+				}},
 				Deploy: latest.DeployConfig{
 					DeployType: latest.DeployType{
 						KubectlDeploy: &latest.KubectlDeploy{},
@@ -501,11 +522,12 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 
 			r.intents.resetBuild()
 			r.intents.resetSync()
+			r.intents.resetTest()
 			r.intents.resetDeploy()
 
 			t.CheckDeepEqual(test.expectedBuildIntent, r.intents.build)
 			t.CheckDeepEqual(test.expectedSyncIntent, r.intents.sync)
-			t.CheckDeepEqual(test.expectedTestIntent, r.intents.sync)
+			t.CheckDeepEqual(test.expectedTestIntent, r.intents.test)
 			t.CheckDeepEqual(test.expectedDeployIntent, r.intents.deploy)
 		})
 	}

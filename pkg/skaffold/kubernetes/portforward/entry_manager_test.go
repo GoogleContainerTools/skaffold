@@ -28,7 +28,7 @@ import (
 )
 
 func TestStop(t *testing.T) {
-	event.InitializeState([]latest.Pipeline{{}}, "test", true, true, true)
+	event.InitializeState([]latest.Pipeline{{}}, "test", true, true, true, true)
 
 	pfe1 := newPortForwardEntry(0, latest.PortForwardResource{
 		Type:      constants.Pod,

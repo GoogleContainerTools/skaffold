@@ -355,6 +355,7 @@ Options:
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --auto-deploy=false: When set to false, deploys wait for API request instead of running automatically
       --auto-sync=false: When set to false, syncs wait for API request instead of running automatically
+      --auto-test=false: When set to false, tests wait for API request instead of running automatically
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
@@ -406,6 +407,7 @@ Env vars:
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_AUTO_DEPLOY` (same as `--auto-deploy`)
 * `SKAFFOLD_AUTO_SYNC` (same as `--auto-sync`)
+* `SKAFFOLD_AUTO_TEST` (same as `--auto-test`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
@@ -587,6 +589,7 @@ Options:
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --auto-deploy=true: When set to false, deploys wait for API request instead of running automatically
       --auto-sync=true: When set to false, syncs wait for API request instead of running automatically
+      --auto-test=true: When set to false, tests wait for API request instead of running automatically
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
@@ -639,6 +642,7 @@ Env vars:
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_AUTO_DEPLOY` (same as `--auto-deploy`)
 * `SKAFFOLD_AUTO_SYNC` (same as `--auto-sync`)
+* `SKAFFOLD_AUTO_TEST` (same as `--auto-test`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
