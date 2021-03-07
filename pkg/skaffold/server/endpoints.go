@@ -72,6 +72,11 @@ func (s *server) AutoBuild(ctx context.Context, request *proto.TriggerRequest) (
 	return executeAutoTrigger("build", request, event.UpdateStateAutoBuildTrigger, event.ResetStateOnBuild, s.autoBuildCallback)
 }
 
+// TODO(modali): Implement support for triggering autoTest().
+func (s *server) AutoTest(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
+	return
+}
+
 func (s *server) AutoDeploy(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
 	return executeAutoTrigger("deploy", request, event.UpdateStateAutoDeployTrigger, event.ResetStateOnDeploy, s.autoDeployCallback)
 }

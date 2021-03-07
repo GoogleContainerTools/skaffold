@@ -2011,7 +2011,7 @@
     },
     "/v1/execute": {
       "post": {
-        "summary": "Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.",
+        "summary": "Allows for a single execution of some or all of the phases (build, sync, test, deploy) in case autoBuild, autoTest, autoDeploy or autoSync are disabled.",
         "operationId": "Execute",
         "responses": {
           "200": {
@@ -2057,6 +2057,33 @@
       "put": {
         "summary": "Allows for enabling or disabling automatic sync trigger",
         "operationId": "AutoSync",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoTriggerState"
+            }
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v2/test/auto_execute": {
+      "put": {
+        "summary": "Allows for enabling or disabling automatic test trigger",
+        "operationId": "AutoTest",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -2453,6 +2480,10 @@
           "format": "boolean"
         },
         "deploy": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "test": {
           "type": "boolean",
           "format": "boolean"
         }
@@ -2869,6 +2900,10 @@
         "statusCode": {
           "$ref": "#/definitions/protoStatusCode",
           "description": "Teststate status code"
+        },
+        "autoTrigger": {
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "`TestState` describes the current state of the test"
