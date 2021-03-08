@@ -48,15 +48,17 @@ func TestNewCustomTestRunner(t *testing.T) {
 			},
 		}
 
-		cfg := &mockConfig{
-			workingDir: tmpDir.Root(),
-			tests: []*latest.TestCase{{
-				ImageName:   "image",
-				CustomTests: []latest.CustomTest{custom},
-			}},
+		testCase := &latest.TestCase{
+			ImageName:   "image",
+			CustomTests: []latest.CustomTest{custom},
 		}
 
-		testRunner, err := New(cfg, cfg.workingDir, custom)
+		cfg := &mockConfig{
+			workingDir: tmpDir.Root(),
+			tests:      []*latest.TestCase{testCase},
+		}
+
+		testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 		t.CheckNoError(err)
 		err = testRunner.Test(context.Background(), ioutil.Discard, nil)
 
@@ -104,15 +106,17 @@ func TestCustomCommandError(t *testing.T) {
 			}
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(command, fmt.Errorf(test.expectedError)))
 
-			cfg := &mockConfig{
-				workingDir: tmpDir.Root(),
-				tests: []*latest.TestCase{{
-					ImageName:   "image",
-					CustomTests: []latest.CustomTest{test.custom},
-				}},
+			testCase := &latest.TestCase{
+				ImageName:   "image",
+				CustomTests: []latest.CustomTest{test.custom},
 			}
 
-			testRunner, err := New(cfg, cfg.workingDir, test.custom)
+			cfg := &mockConfig{
+				workingDir: tmpDir.Root(),
+				tests:      []*latest.TestCase{testCase},
+			}
+
+			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, test.custom)
 			t.CheckNoError(err)
 			err = testRunner.Test(context.Background(), ioutil.Discard, nil)
 
@@ -135,12 +139,14 @@ func TestTestDependenciesCommand(t *testing.T) {
 			},
 		}
 
+		testCase := &latest.TestCase{
+			ImageName:   "image",
+			CustomTests: []latest.CustomTest{custom},
+		}
+
 		cfg := &mockConfig{
 			workingDir: tmpDir.Root(),
-			tests: []*latest.TestCase{{
-				ImageName:   "image",
-				CustomTests: []latest.CustomTest{custom},
-			}},
+			tests:      []*latest.TestCase{testCase},
 		}
 
 		if runtime.GOOS == Windows {
@@ -156,7 +162,7 @@ func TestTestDependenciesCommand(t *testing.T) {
 		}
 
 		expected := []string{"file1", "file2", "file3"}
-		testRunner, err := New(cfg, cfg.workingDir, custom)
+		testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 		t.CheckNoError(err)
 		deps, err := testRunner.TestDependencies()
 
@@ -216,15 +222,17 @@ func TestTestDependenciesPaths(t *testing.T) {
 				},
 			}
 
-			cfg := &mockConfig{
-				workingDir: tmpDir.Root(),
-				tests: []*latest.TestCase{{
-					ImageName:   "image",
-					CustomTests: []latest.CustomTest{custom},
-				}},
+			testCase := &latest.TestCase{
+				ImageName:   "image",
+				CustomTests: []latest.CustomTest{custom},
 			}
 
-			testRunner, err := New(cfg, cfg.workingDir, custom)
+			cfg := &mockConfig{
+				workingDir: tmpDir.Root(),
+				tests:      []*latest.TestCase{testCase},
+			}
+
+			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 			t.CheckNoError(err)
 			deps, err := testRunner.TestDependencies()
 

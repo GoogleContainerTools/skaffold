@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"runtime"
 	"time"
@@ -33,19 +34,27 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-// for tests
-var doRunCustomCommand = runCustomCommand
+var (
+	// for tests
+	doRunCustomCommand = runCustomCommand
+
+	// Image is an environment variable key, whose value is the
+	// fully qualified image name passed in to a custom command.
+	Image = "IMAGE"
+)
 
 const Windows string = "windows"
 
 type Runner struct {
 	customTest     latest.CustomTest
+	imageName      string
 	testWorkingDir string
 }
 
 // New creates a new custom.Runner.
-func New(cfg docker.Config, wd string, ct latest.CustomTest) (*Runner, error) {
+func New(cfg docker.Config, imageName string, wd string, ct latest.CustomTest) (*Runner, error) {
 	return &Runner{
+		imageName:      imageName,
 		customTest:     ct,
 		testWorkingDir: wd,
 	}, nil
@@ -53,14 +62,14 @@ func New(cfg docker.Config, wd string, ct latest.CustomTest) (*Runner, error) {
 
 // Test is the entrypoint for running custom tests
 func (ct *Runner) Test(ctx context.Context, out io.Writer, _ []build.Artifact) error {
-	if err := doRunCustomCommand(ctx, out, ct.customTest); err != nil {
+	if err := doRunCustomCommand(ctx, out, ct.imageName, ct.customTest); err != nil {
 		return fmt.Errorf("running custom test command: %w", err)
 	}
 
 	return nil
 }
 
-func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest) error {
+func runCustomCommand(ctx context.Context, out io.Writer, imageName string, test latest.CustomTest) error {
 	// Expand command
 	command, err := util.ExpandEnvTemplate(test.Command, nil)
 	if err != nil {
@@ -87,6 +96,9 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 
 	cmd.Stdout = out
 	cmd.Stderr = out
+
+	os.Setenv("IMAGE", imageName)
+	color.Default.Fprintf(out, "Retrieved $IMAGE: %s\n", os.Getenv("IMAGE"))
 
 	if err := util.RunCmd(cmd); err != nil {
 		if e, ok := err.(*exec.ExitError); ok {
@@ -118,7 +130,6 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 // TestDependencies returns dependencies listed for a custom test
 func (ct *Runner) TestDependencies() ([]string, error) {
 	test := ct.customTest
-	// var set orderedFileSet
 
 	if test.Dependencies != nil {
 		switch {
