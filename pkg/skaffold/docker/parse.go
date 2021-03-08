@@ -214,14 +214,15 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, cfg Config) (
 		switch node.Value {
 		case command.From:
 			from := fromInstruction(node)
+			if from.as != "" {
+				// Stage names are case insensitive
+				stages[strings.ToLower(from.as)] = true
+			}
+
 			if from.image == "" {
 				// some build args like artifact dependencies are not available until the first build sequence has completed.
 				// skip check if there are unavailable images
 				continue
-			}
-			if from.as != "" {
-				// Stage names are case insensitive
-				stages[strings.ToLower(from.as)] = true
 			}
 
 			// If `from` references a previous stage, then the `workdir`
@@ -324,15 +325,13 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 			expandedNodes = append(expandedNodes, nodes[n:m+1]...)
 			n = m + 1
 
-			if from.image == "" {
-				// some build args like artifact dependencies are not available until the first build sequence has completed.
-				// skip check if there are unavailable images
-				continue
-			}
-
 			var onbuildNodes []*parser.Node
 			if ons, found := onbuildNodesCache[strings.ToLower(from.image)]; found {
 				onbuildNodes = ons
+			} else if from.image == "" {
+				// some build args like artifact dependencies are not available until the first build sequence has completed.
+				// skip check if there are unavailable images
+				onbuildNodes = []*parser.Node{}
 			} else if ons, err := parseOnbuild(from.image, cfg); err == nil {
 				onbuildNodes = ons
 			} else if warnMsg, ok := sErrors.IsOldImageManifestProblem(err); ok && warnMsg != "" {
