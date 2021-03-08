@@ -1,0 +1,15 @@
+{{range .Files}}
+{{range .Enums}}
+<a name="{{.FullName}}"></a>
+
+### {{.LongName}}
+{{.Description}}
+
+| Name | Number | Description |
+| ---- |:------:| ----------- |
+{{range .Values -}}
+  | {{.Name}} | {{.Number}} | {{nobr .Description}} |
+{{end}}
+
+{{end}} <!-- end enums -->
+{{end}}
