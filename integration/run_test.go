@@ -52,6 +52,11 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started"},
 		},
 		{
+			description: "custom-tests",
+			dir:         "examples/custom-tests",
+			pods:        []string{"custom-test"},
+		},
+		{
 			description: "microservices",
 			dir:         "examples/microservices",
 			// See https://github.com/GoogleContainerTools/skaffold/issues/2372
@@ -135,7 +140,8 @@ func TestRun(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			ns, client := SetupNamespace(t)
 
-			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			args := append(test.args, "--cache-artifacts=false")
+			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)

@@ -42,7 +42,7 @@ var (
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CREATE_TAGGER_ERROR,
 				Message:     "creating tagger: something went wrong",
-				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+				Suggestions: reportIssueSuggestion(dummyRunCtx),
 			},
 		},
 		{
@@ -69,7 +69,7 @@ var (
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CREATE_BUILDER_ERROR,
 				Message:     "creating runner: creating builder: something went wrong",
-				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+				Suggestions: reportIssueSuggestion(dummyRunCtx),
 			},
 		},
 		{
@@ -81,7 +81,7 @@ var (
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CREATE_ARTIFACT_DEP_ERROR,
 				Message:     "creating runner: unexpected artifact type `DockerrArtifact`",
-				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+				Suggestions: reportIssueSuggestion(dummyRunCtx),
 			},
 		},
 		{
@@ -93,7 +93,7 @@ var (
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CREATE_TEST_DEP_ERROR,
 				Message:     "creating runner: expanding test file paths: .src/test",
-				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+				Suggestions: reportIssueSuggestion(dummyRunCtx),
 			},
 		},
 		{
@@ -105,7 +105,7 @@ var (
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CACHE_ERROR,
 				Message:     "creating runner: initializing cache at some error",
-				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+				Suggestions: reportIssueSuggestion(dummyRunCtx),
 			},
 		},
 	}

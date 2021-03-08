@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/structure"
 )
 
@@ -49,7 +50,6 @@ func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) 
 	}
 
 	return FullTester{
-		// runners: getRunner(cfg, imagesAreLocal, cfg.TestCases()),
 		runners: runner,
 		muted:   cfg.Muted(),
 	}, nil
@@ -115,11 +115,21 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Ar
 func getRunner(cfg Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latest.TestCase) ([]runner, error) {
 	var runners []runner
 	for _, tc := range tcs {
-		structureRunner, err := structure.New(cfg, cfg.GetWorkingDir(), tc, imagesAreLocal)
-		if err != nil {
-			return nil, err
+		if len(tc.StructureTests) != 0 {
+			structureRunner, err := structure.New(cfg, cfg.GetWorkingDir(), tc, imagesAreLocal)
+			if err != nil {
+				return nil, err
+			}
+			runners = append(runners, structureRunner)
 		}
-		runners = append(runners, structureRunner)
+
+		for _, customTest := range tc.CustomTests {
+			customRunner, err := custom.New(cfg, cfg.GetWorkingDir(), customTest)
+			if err != nil {
+				return nil, err
+			}
+			runners = append(runners, customRunner)
+		}
 	}
 	return runners, nil
 }

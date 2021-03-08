@@ -38,6 +38,7 @@ import (
 const (
 	remoteDigestSource = "remote"
 	noneDigestSource   = "none"
+	tagDigestSource    = "tag"
 )
 
 // Runner is responsible for running the skaffold build, test and deploy config.
