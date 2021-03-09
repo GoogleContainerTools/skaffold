@@ -69,11 +69,17 @@ enum ClusterType {
 
 // Enum indicating the log level of a line of output
 enum LogLevel {
+    // Debug Level
     DEBUG = 0;
+    // Info Level
     INFO = 1;
+    // Warn Level
     WARN = 2;
+    // Error Level
     ERROR = 3;
+    // Fatal Level
     FATAL = 4;
+    // Panic Level
     PANIC = 5;
 }
 

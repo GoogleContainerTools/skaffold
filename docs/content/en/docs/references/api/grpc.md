@@ -847,6 +847,22 @@ Enum indicating deploy tools used
 
 
 
+<a name="proto.enums.LogLevel"></a>
+
+### LogLevel
+Enum indicating the log level of a line of output
+
+| Name | Number | Description |
+| ---- |:------:| ----------- |
+| DEBUG | 0 | Debug Level |
+| INFO | 1 | Info Level |
+| WARN | 2 | Warn Level |
+| ERROR | 3 | Error Level |
+| FATAL | 4 | Fatal Level |
+| PANIC | 5 | Panic Level |
+
+
+
 <a name="proto.enums.StatusCode"></a>
 
 ### StatusCode
