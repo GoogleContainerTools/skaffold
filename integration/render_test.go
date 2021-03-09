@@ -279,8 +279,8 @@ func TestHelmRender(t *testing.T) {
 				},
 			},
 			helmReleases: []latest.HelmRelease{{
-				Name:           "gke_loadbalancer",
-				LocalChartPath: "testdata/gke_loadbalancer/loadbalancer-helm",
+				Name:      "gke_loadbalancer",
+				ChartPath: "testdata/gke_loadbalancer/loadbalancer-helm",
 				ArtifactOverrides: map[string]string{
 					"image": "gke-loadbalancer",
 				},
@@ -337,8 +337,8 @@ spec:
 				},
 			},
 			helmReleases: []latest.HelmRelease{{
-				Name:           "skaffold-helm",
-				LocalChartPath: "testdata/helm/skaffold-helm",
+				Name:      "skaffold-helm",
+				ChartPath: "testdata/helm/skaffold-helm",
 				ArtifactOverrides: map[string]string{
 					"image": "gcr.io/k8s-skaffold/skaffold-helm",
 				},

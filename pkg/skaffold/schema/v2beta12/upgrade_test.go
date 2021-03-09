@@ -125,11 +125,11 @@ deploy:
   helm:
     releases:
     - name: foo1
-      localChartPath: foo1/bar
+      chartPath: foo1/bar
     - name: foo2
-      remoteChartPath: foo2/bar
+      remoteChart: foo2/bar
     - name: foo3
-      localChartPath: foo3/bar`,
+      chartPath: foo3/bar`,
 		},
 	}
 	for _, test := range tests {

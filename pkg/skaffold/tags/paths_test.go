@@ -47,8 +47,8 @@ func TestSetAbsFilePaths(t *testing.T) {
 							KptDeploy:     &latest.KptDeploy{Dir: "."},
 							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{"foo/*", "/a/foo/*"}},
 							HelmDeploy: &latest.HelmDeploy{Releases: []latest.HelmRelease{
-								{LocalChartPath: "../charts", ValuesFiles: []string{"./values1.yaml", "./values2.yaml"}},
-								{RemoteChartPath: "foo/bar", ValuesFiles: []string{"./values1.yaml", "./values2.yaml"}},
+								{ChartPath: "../charts", ValuesFiles: []string{"./values1.yaml", "./values2.yaml"}},
+								{RemoteChart: "foo/bar", ValuesFiles: []string{"./values1.yaml", "./values2.yaml"}},
 							}},
 						},
 					},
@@ -68,8 +68,8 @@ func TestSetAbsFilePaths(t *testing.T) {
 							KptDeploy:     &latest.KptDeploy{Dir: "/a/b"},
 							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{"/a/b/foo/*", "/a/foo/*"}},
 							HelmDeploy: &latest.HelmDeploy{Releases: []latest.HelmRelease{
-								{LocalChartPath: "/a/charts", ValuesFiles: []string{"/a/b/values1.yaml", "/a/b/values2.yaml"}},
-								{RemoteChartPath: "foo/bar", ValuesFiles: []string{"/a/b/values1.yaml", "/a/b/values2.yaml"}},
+								{ChartPath: "/a/charts", ValuesFiles: []string{"/a/b/values1.yaml", "/a/b/values2.yaml"}},
+								{RemoteChart: "foo/bar", ValuesFiles: []string{"/a/b/values1.yaml", "/a/b/values2.yaml"}},
 							}},
 						},
 					},

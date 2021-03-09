@@ -678,11 +678,11 @@ type HelmRelease struct {
 	// It accepts environment variables via the go template syntax.
 	Name string `yaml:"name,omitempty" yamltags:"required"`
 
-	// LocalChartPath is the local path to the packaged Helm chart or the unpacked Helm chart directory.
-	LocalChartPath string `yaml:"localChartPath,omitempty" yamltags:"oneOf=chartSource" skaffold:"filepath"`
+	// ChartPath is the local path to a packaged Helm chart or an unpacked Helm chart directory.
+	ChartPath string `yaml:"chartPath,omitempty" yamltags:"oneOf=chartSource" skaffold:"filepath"`
 
-	// RemoteChartPath is the path to the remote Helm chart reference or URL.
-	RemoteChartPath string `yaml:"remoteChartPath,omitempty" yamltags:"oneOf=chartSource"`
+	// RemoteChart refers to a remote Helm chart reference or URL.
+	RemoteChart string `yaml:"remoteChart,omitempty" yamltags:"oneOf=chartSource"`
 
 	// ValuesFiles are the paths to the Helm `values` files.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty" skaffold:"filepath"`

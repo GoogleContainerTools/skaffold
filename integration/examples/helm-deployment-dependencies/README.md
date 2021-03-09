@@ -11,7 +11,7 @@ deploy:
   helm:
     releases:
     - name: skaffold-helm
-      localChartPath: skaffold-helm
+      chartPath: skaffold-helm
       namespace: skaffold
       skipBuildDependencies: true # Skip helm dep build
       artifactOverrides :

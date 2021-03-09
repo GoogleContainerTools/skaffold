@@ -173,7 +173,7 @@ func (h *Deployer) Dependencies() ([]string, error) {
 		r := release
 		deps = append(deps, r.ValuesFiles...)
 
-		if r.LocalChartPath == "" {
+		if r.ChartPath == "" {
 			// chart path is only a dependency if it exists on the local filesystem
 			continue
 		}
@@ -202,7 +202,7 @@ func (h *Deployer) Dependencies() ([]string, error) {
 			}
 
 			for _, v := range chartDepsDirs {
-				if strings.HasPrefix(path, filepath.Join(release.LocalChartPath, v)) {
+				if strings.HasPrefix(path, filepath.Join(release.ChartPath, v)) {
 					return false, nil
 				}
 			}
@@ -216,7 +216,7 @@ func (h *Deployer) Dependencies() ([]string, error) {
 			return true, nil
 		}
 
-		if err := walk.From(release.LocalChartPath).When(isDep).AppendPaths(&deps); err != nil {
+		if err := walk.From(release.ChartPath).When(isDep).AppendPaths(&deps); err != nil {
 			return deps, userErr("issue walking releases", err)
 		}
 	}
@@ -355,17 +355,17 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		if r.UpgradeOnChange != nil && !*r.UpgradeOnChange {
 			logrus.Infof("Release %s already installed...", releaseName)
 			return []types.Artifact{}, nil
-		} else if r.UpgradeOnChange == nil && r.RemoteChartPath != "" {
+		} else if r.UpgradeOnChange == nil && r.RemoteChart != "" {
 			logrus.Infof("Release %s not upgraded as it is remote...", releaseName)
 			return []types.Artifact{}, nil
 		}
 	}
 
 	// Only build local dependencies, but allow a user to skip them.
-	if !r.SkipBuildDependencies && r.LocalChartPath != "" {
+	if !r.SkipBuildDependencies && r.ChartPath != "" {
 		logrus.Infof("Building helm dependencies...")
 
-		if err := h.exec(ctx, out, false, nil, "dep", "build", r.LocalChartPath); err != nil {
+		if err := h.exec(ctx, out, false, nil, "dep", "build", r.ChartPath); err != nil {
 			return nil, userErr("building helm dependencies", err)
 		}
 	}
@@ -448,7 +448,7 @@ func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (stri
 		tmpDir = t
 	}
 
-	args := []string{"package", r.LocalChartPath, "--destination", tmpDir}
+	args := []string{"package", r.ChartPath, "--destination", tmpDir}
 
 	if r.Packaged.Version != "" {
 		v, err := util.ExpandEnvTemplate(r.Packaged.Version, nil)
@@ -483,8 +483,8 @@ func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (stri
 }
 
 func chartSource(r latest.HelmRelease) string {
-	if r.RemoteChartPath != "" {
-		return r.RemoteChartPath
+	if r.RemoteChart != "" {
+		return r.RemoteChart
 	}
-	return r.LocalChartPath
+	return r.ChartPath
 }

@@ -9,7 +9,7 @@ deploy:
   helm:
     releases:
     - name: skaffold-helm
-      localChartPath: skaffold-helm
+      chartPath: skaffold-helm
       #wait: true
       #valuesFiles:
       #- helm-skaffold-values.yaml

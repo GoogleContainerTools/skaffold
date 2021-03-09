@@ -2,6 +2,6 @@ deploy:
   helm:
     releases:
     - name: skaffold-helm
-      localChartPath: skaffold-helm
+      chartPath: skaffold-helm
       artifactOverrides:
         image: gcr.io/k8s-skaffold/skaffold-helm
