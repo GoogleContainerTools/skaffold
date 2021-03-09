@@ -967,6 +967,14 @@ For Cancelled Error code, use range 800 to 850.<br>
 | TEST_USER_CONFIG_ERR | 1101 | Error expanding paths |
 | TEST_CST_USER_ERR | 1102 | Error running container-structure-test |
 | TEST_IMG_PULL_ERR | 1103 | Unable to docker pull image |
+| TEST_CT_USER_ERR | 1104 | Error running custom test |
+| TEST_CT_CMD_PARSE_ERR | 1105 | Unable to parse test command |
+| TEST_CT_CMD_NON_ZERO_EXIT_ERR | 1106 | Command returned non-zero exit code |
+| TEST_CT_CMD_TIMEDOUT_OR_CANCELLED_ERR | 1107 | command cancelled or timed out |
+| TEST_CT_CMD_EXITED_ERR | 1108 | command exited |
+| TEST_CT_CMD_RUN_ERR | 1110 | error running cmd |
+| TEST_CT_DEPS_CMD_ERR | 1111 | Error getting dependencies from command |
+| TEST_CT_DEPS_UNMARSHALL_ERR | 1112 | Unmarshalling dependency output error |
 | CONFIG_FILE_PARSING_ERR | 1201 | Catch-all configuration file parsing error |
 | CONFIG_FILE_NOT_FOUND_ERR | 1202 | Main configuration file not found |
 | CONFIG_DEPENDENCY_NOT_FOUND_ERR | 1203 | Dependency configuration file not found |
