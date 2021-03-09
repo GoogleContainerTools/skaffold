@@ -19,10 +19,7 @@ package errors
 import (
 	"testing"
 
-	"k8s.io/client-go/tools/clientcmd/api"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -30,26 +27,23 @@ import (
 func TestSuggestDeployFailedAction(t *testing.T) {
 	tests := []struct {
 		description string
-		opts        config.SkaffoldOptions
-		context     api.Config
-		isminikube  bool
+		context     string
+		isMinikube  bool
 		expected    []*proto.Suggestion
 	}{
 		{
-			description: "minicube status",
-			opts:        config.SkaffoldOptions{},
-			context:     api.Config{CurrentContext: "minikube"},
-			isminikube:  true,
+			description: "minikube status",
+			context:     "minikube",
+			isMinikube:  true,
 			expected: []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
-				Action:         "Check if minikube is running using `minikube status` command and try again",
+				Action:         "Check if minikube is running using `minikube status` command and try again.",
 			}},
 		},
 		{
-			description: "minicube status named ctx",
-			opts:        config.SkaffoldOptions{},
-			context:     api.Config{CurrentContext: "test_cluster"},
-			isminikube:  true,
+			description: "minikube status named ctx",
+			context:     "test_cluster",
+			isMinikube:  true,
 			expected: []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
 				Action:         "Check if minikube is running using `minikube status -p test_cluster` command and try again.",
@@ -57,9 +51,8 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 		},
 		{
 			description: "gke cluster",
-			opts:        config.SkaffoldOptions{},
-			context:     api.Config{},
-			isminikube:  false,
+			context:     "gke_test",
+			isMinikube:  false,
 			expected: []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_CLUSTER_CONNECTION,
 				Action:         "Check your connection for the cluster",
@@ -68,13 +61,13 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
-				return test.context, nil
-			})
+			runCtx := runcontext.RunContext{
+				KubeContext: test.context,
+			}
 			t.Override(&isMinikube, func(string) bool {
-				return test.isminikube
+				return test.isMinikube
 			})
-			actual := suggestDeployFailedAction(test.opts)
+			actual := suggestDeployFailedAction(runCtx)
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}

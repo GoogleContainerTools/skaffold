@@ -123,8 +123,22 @@ We also release a **bleeding edge** build, built from the latest commit:
 
 https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe
 
+---
 
 ### Chocolatey
+
+Skaffold can be installed using the [Chocolatey package manager](https://chocolatey.org/packages/skaffold).
+This package is not maintained by the Skaffold team.
+
+{{< alert title="Caution" >}}
+
+Chocolatey's installation mechanism interferes with <kbd>Ctrl</kbd>+<kbd>C</kbd> handling
+and [prevents Skaffold from cleaning up deployments](https://github.com/GoogleContainerTools/skaffold/issues/4815).
+This cannot be fixed by Skaffold.
+For more information about this defect see
+[chocolatey/shimgen#32](https://github.com/chocolatey/shimgen/issues/32).
+
+{{< /alert >}}
 
 ```bash
 choco install -y skaffold
