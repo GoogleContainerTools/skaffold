@@ -14,18 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package parser
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/git"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -82,13 +85,12 @@ type mockCfg struct {
 }
 
 func TestGetAllConfigs(t *testing.T) {
-	// TODO: Modify test to check actual error codes for failure test cases, after fixing https://github.com/GoogleContainerTools/skaffold/issues/5412
 	tests := []struct {
 		description  string
 		documents    []document
 		configFilter []string
 		profiles     []string
-		shouldErr    bool
+		errCode      proto.StatusCode
 		expected     []*latest.SkaffoldConfig
 	}{
 		{
@@ -344,7 +346,7 @@ requires:
 `}}},
 				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
 			},
-			shouldErr: true,
+			errCode: proto.StatusCode_CONFIG_BAD_FILTER_ERR,
 		},
 		{
 			description: "duplicate config names across multiple configs",
@@ -360,14 +362,14 @@ requires:
 `}}},
 				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10"}, {name: "cfg11"}, {name: "cfg00"}}},
 			},
-			shouldErr: true,
+			errCode: proto.StatusCode_CONFIG_DUPLICATE_NAMES_ACROSS_FILES_ERR,
 		},
 		{
 			description: "duplicate config names in main config",
 			documents: []document{
 				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00"}, {name: "cfg00"}}},
 			},
-			shouldErr: true,
+			errCode: proto.StatusCode_CONFIG_DUPLICATE_NAMES_SAME_FILE_ERR,
 		},
 		{
 			description: "remote dependencies",
@@ -432,14 +434,22 @@ requires:
 				}
 			}
 			t.Override(&git.SyncRepo, func(g latest.GitInfo, _ config.SkaffoldOptions) (string, error) { return g.Repo, nil })
-			cfgs, err := getAllConfigs(config.SkaffoldOptions{
+			cfgs, err := GetAllConfigs(config.SkaffoldOptions{
 				Command:             "dev",
 				ConfigurationFile:   test.documents[0].path,
 				ConfigurationFilter: test.configFilter,
 				Profiles:            test.profiles,
 			})
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cfgs)
+			if test.errCode == proto.StatusCode_OK {
+				t.CheckDeepEqual(test.expected, cfgs)
+			} else {
+				var e sErrors.Error
+				if errors.As(err, &e) {
+					t.CheckDeepEqual(test.errCode, e.StatusCode())
+				} else {
+					t.Fail()
+				}
+			}
 		})
 	}
 }

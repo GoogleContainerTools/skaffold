@@ -18,6 +18,7 @@ package errors
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -36,8 +37,8 @@ var (
 	getConfigForCurrentContext = config.GetConfigForCurrentKubectx
 )
 
-func suggestBuildPushAccessDeniedAction(opts config.SkaffoldOptions) []*proto.Suggestion {
-	if defaultRepo := opts.DefaultRepo.Value(); defaultRepo != nil {
+func suggestBuildPushAccessDeniedAction(runCtx runcontext.RunContext) []*proto.Suggestion {
+	if defaultRepo := runCtx.Opts.DefaultRepo.Value(); defaultRepo != nil {
 		suggestions := []*proto.Suggestion{{
 			SuggestionCode: proto.SuggestionCode_CHECK_DEFAULT_REPO,
 			Action:         "Check your `--default-repo` value",
@@ -46,7 +47,7 @@ func suggestBuildPushAccessDeniedAction(opts config.SkaffoldOptions) []*proto.Su
 	}
 
 	// check if global repo is set
-	if cfg, err := getConfigForCurrentContext(opts.GlobalConfig); err == nil {
+	if cfg, err := getConfigForCurrentContext(runCtx.Opts.GlobalConfig); err == nil {
 		if defaultRepo := cfg.DefaultRepo; defaultRepo != "" {
 			suggestions := []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_DEFAULT_REPO_GLOBAL_CONFIG,

@@ -71,7 +71,7 @@ func TestCreateNewRunner(t *testing.T) {
 				Profiles:          []string{"unknown-profile"},
 			},
 			shouldErr:     true,
-			expectedError: "applying profiles",
+			expectedError: "failed to apply profiles",
 		},
 		{
 			description: "unsupported trigger",

@@ -5,4 +5,4 @@ metadata:
 spec:
   containers:
   - name: getting-started
-    image: ko://github.com/GoogleContainerTools/skaffold/examples/custom
+    image: github.com/googlecontainertools/skaffold/examples/custom

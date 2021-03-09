@@ -101,7 +101,7 @@ For more details behind the logic of config changes see [the Skaffold config man
 
 ## Making changes to the Skaffold API
 
-We build the API directly through gRPC, which gets translated into REST API through a reverse proxy gateway library. If you make changes to the [proto/skaffold.proto](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/skaffold.proto) file you can run `./hack/generate-proto.sh` to generate the equivalent Go code. 
+We build the API directly through gRPC, which gets translated into REST API through a reverse proxy gateway library. When adding new message types, make changes to [proto/v1/skaffold.proto](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/v1/skaffold.proto), and when adding new enum types, make changes to [proto/enums/enums.proto](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/enums/enums.proto). When changing either of these files, you can run `./hack/generate-proto.sh` to generate the equivalent Go code.
 
 ## Adding actionable error messages to code.
 Skaffold has a built-in framework to provide actionable error messages for user to help bootstrap skaffold errors.

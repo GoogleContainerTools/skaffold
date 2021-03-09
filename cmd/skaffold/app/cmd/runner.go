@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/sirupsen/logrus"
 
@@ -33,12 +32,14 @@ import (
 	initConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 // For tests
@@ -46,7 +47,6 @@ var createRunner = createNewRunner
 
 func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, []*latest.SkaffoldConfig) error) error {
 	runner, config, err := createRunner(out, opts)
-	sErrors.SetSkaffoldOptions(opts)
 	if err != nil {
 		return err
 	}
@@ -62,6 +62,7 @@ func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner,
 	if err != nil {
 		return nil, nil, err
 	}
+	sErrors.SetRunContext(*runCtx)
 
 	instrumentation.InitMeterFromConfig(configs)
 	runner, err := runner.NewForConfig(runCtx)
@@ -74,7 +75,7 @@ func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner,
 }
 
 func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.SkaffoldConfig, error) {
-	configs, err := withFallbackConfig(out, opts, getAllConfigs)
+	configs, err := withFallbackConfig(out, opts, parser.GetAllConfigs)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -109,7 +110,8 @@ func withFallbackConfig(out io.Writer, opts config.SkaffoldOptions, getCfgs func
 	if err == nil {
 		return configs, nil
 	}
-	if os.IsNotExist(errors.Unwrap(err)) {
+	var e sErrors.Error
+	if errors.As(err, &e) && e.StatusCode() == proto.StatusCode_CONFIG_FILE_NOT_FOUND_ERR {
 		if opts.AutoCreateConfig && initializer.ValidCmd(opts) {
 			color.Default.Fprintf(out, "Skaffold config file %s not found - Trying to create one for you...\n", opts.ConfigurationFile)
 			config, err := initializer.Transparent(context.Background(), out, initConfig.Config{Opts: opts})

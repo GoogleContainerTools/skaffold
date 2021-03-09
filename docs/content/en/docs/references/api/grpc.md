@@ -19,11 +19,11 @@ We also generate the [reference doc for the HTTP layer]({{<relref "/docs/referen
 
 
 
-<a name="skaffold.proto"></a>
+<a name="v1/skaffold.proto"></a>
 
-## skaffold.proto
+## v1/skaffold.proto
 
-You can find the source for skaffold.proto [on Github](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/v1/skaffold.proto).
+You can find the source for v1/skaffold.proto [on Github](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/v1/v1/skaffold.proto).
 
 
 
@@ -60,7 +60,7 @@ Describes all the methods for the Skaffold API
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| errCode | [StatusCode](#proto.StatusCode) |  | error code representing the error |
+| errCode | [enums.StatusCode](#proto.enums.StatusCode) |  | error code representing the error |
 | message | [string](#string) |  | message describing the error. |
 | suggestions | [Suggestion](#proto.Suggestion) | repeated | list of suggestions |
 
@@ -81,7 +81,7 @@ If the build fails, an error will be attached to the event.
 | artifact | [string](#string) |  | artifact name |
 | status | [string](#string) |  | artifact build status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. error when build status is Failed. |
-| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| errCode | [enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
 | actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
@@ -99,7 +99,7 @@ If the build fails, an error will be attached to the event.
 | ----- | ---- | ----- | ----------- |
 | numberOfArtifacts | [int32](#int32) |  |  |
 | builders | [BuildMetadata.ImageBuilder](#proto.BuildMetadata.ImageBuilder) | repeated |  |
-| type | [BuildType](#proto.BuildType) |  |  |
+| type | [enums.BuildType](#proto.enums.BuildType) |  |  |
 | additional | [BuildMetadata.AdditionalEntry](#proto.BuildMetadata.AdditionalEntry) | repeated | Additional key value pairs to describe the deploy pipeline |
 
 
@@ -131,7 +131,7 @@ If the build fails, an error will be attached to the event.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [BuilderType](#proto.BuilderType) |  |  |
+| type | [enums.BuilderType](#proto.enums.BuilderType) |  |  |
 | count | [int32](#int32) |  |  |
 
 
@@ -149,7 +149,7 @@ If the build fails, an error will be attached to the event.
 | ----- | ---- | ----- | ----------- |
 | artifacts | [BuildState.ArtifactsEntry](#proto.BuildState.ArtifactsEntry) | repeated | A map of `artifact name -> build-state`. Artifact name is defined in the `skaffold.yaml`. The `build-state` can be: <br> - `"Not started"`: not yet started <br> - `"In progress"`: build started <br> - `"Complete"`: build succeeded <br> - `"Failed"`: build failed |
 | autoTrigger | [bool](#bool) |  |  |
-| statusCode | [StatusCode](#proto.StatusCode) |  |  |
+| statusCode | [enums.StatusCode](#proto.enums.StatusCode) |  |  |
 
 
 
@@ -221,7 +221,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. error when status is Failed |
-| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| errCode | [enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
 | actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
@@ -238,7 +238,7 @@ anytime a deployment starts or completes, successfully or not.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | deployers | [DeployMetadata.Deployer](#proto.DeployMetadata.Deployer) | repeated |  |
-| cluster | [ClusterType](#proto.ClusterType) |  |  |
+| cluster | [enums.ClusterType](#proto.enums.ClusterType) |  |  |
 
 
 
@@ -253,7 +253,7 @@ anytime a deployment starts or completes, successfully or not.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [DeployerType](#proto.DeployerType) |  |  |
+| type | [enums.DeployerType](#proto.enums.DeployerType) |  |  |
 | count | [int32](#int32) |  |  |
 
 
@@ -271,7 +271,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
 | autoTrigger | [bool](#bool) |  |  |
-| statusCode | [StatusCode](#proto.StatusCode) |  |  |
+| statusCode | [enums.StatusCode](#proto.enums.StatusCode) |  |  |
 
 
 
@@ -333,7 +333,7 @@ FileSyncEvent describes the sync status.
 | image | [string](#string) |  | the container image to which files are sycned. |
 | status | [string](#string) |  | status of file sync. one of: Not Started, In progress, Succeeded, Failed. |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. error in case of status failed. |
-| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| errCode | [enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
 | actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
@@ -514,7 +514,7 @@ will be sent with the new status.
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. |
-| statusCode | [StatusCode](#proto.StatusCode) |  |  |
+| statusCode | [enums.StatusCode](#proto.enums.StatusCode) |  |  |
 | actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
@@ -601,7 +601,7 @@ will be sent with the new status.
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 | err | [string](#string) |  | Deprecated. Use actionableErr.message. |
-| errCode | [StatusCode](#proto.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
+| errCode | [enums.StatusCode](#proto.enums.StatusCode) |  | Deprecated. Use actionableErr.errCode. status code representing success or failure |
 | actionableErr | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
@@ -619,7 +619,7 @@ will be sent with the new status.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
 | resources | [StatusCheckState.ResourcesEntry](#proto.StatusCheckState.ResourcesEntry) | repeated | A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name. The `status-check-state` can be <br> - `"Not started"`: indicates that `status-check` has just started. <br> - `"In progress"`: InProgress is sent after every resource check is complete. <br> - `"Succeeded"`: - `"Failed"`: |
-| statusCode | [StatusCode](#proto.StatusCode) |  | StatusCheck statusCode |
+| statusCode | [enums.StatusCode](#proto.enums.StatusCode) |  | StatusCheck statusCode |
 
 
 
@@ -650,7 +650,7 @@ Suggestion defines the action a user needs to recover from an error.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| suggestionCode | [SuggestionCode](#proto.SuggestionCode) |  | code representing a suggestion |
+| suggestionCode | [enums.SuggestionCode](#proto.enums.SuggestionCode) |  | code representing a suggestion |
 | action | [string](#string) |  | action represents the suggestion action |
 
 
@@ -714,7 +714,7 @@ TestMetadata describes the test pipeline
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [TesterType](#proto.TesterType) |  |  |
+| type | [enums.TesterType](#proto.enums.TesterType) |  |  |
 | count | [int32](#int32) |  |  |
 
 
@@ -731,8 +731,7 @@ TestMetadata describes the test pipeline
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | Status of the current test |
-| statusCode | [StatusCode](#proto.StatusCode) |  | Teststate status code |
-| autoTrigger | [bool](#bool) |  |  |
+| statusCode | [enums.StatusCode](#proto.enums.StatusCode) |  | Teststate status code |
 
 
 
@@ -785,8 +784,13 @@ TriggerState represents trigger state for a given phase.
 
  <!-- end messages -->
 
+ <!-- end HasExtensions -->
 
-<a name="proto.BuildType"></a>
+
+
+
+
+<a name="proto.enums.BuildType"></a>
 
 ### BuildType
 Enum indicating build type i.e. local, cluster vs GCB
@@ -800,7 +804,7 @@ Enum indicating build type i.e. local, cluster vs GCB
 
 
 
-<a name="proto.BuilderType"></a>
+<a name="proto.enums.BuilderType"></a>
 
 ### BuilderType
 Enum indicating builders used
@@ -817,7 +821,7 @@ Enum indicating builders used
 
 
 
-<a name="proto.ClusterType"></a>
+<a name="proto.enums.ClusterType"></a>
 
 ### ClusterType
 Enum indicating cluster type the application is deployed to
@@ -831,7 +835,7 @@ Enum indicating cluster type the application is deployed to
 
 
 
-<a name="proto.DeployerType"></a>
+<a name="proto.enums.DeployerType"></a>
 
 ### DeployerType
 Enum indicating deploy tools used
@@ -845,7 +849,7 @@ Enum indicating deploy tools used
 
 
 
-<a name="proto.StatusCode"></a>
+<a name="proto.enums.StatusCode"></a>
 
 ### StatusCode
 Enum for Status codes<br>
@@ -965,10 +969,21 @@ For Cancelled Error code, use range 800 to 850.<br>
 | TEST_USER_CONFIG_ERR | 1101 | Error expanding paths |
 | TEST_CST_USER_ERR | 1102 | Error running container-structure-test |
 | TEST_IMG_PULL_ERR | 1103 | Unable to docker pull image |
+| CONFIG_FILE_PARSING_ERR | 1201 | Catch-all configuration file parsing error |
+| CONFIG_FILE_NOT_FOUND_ERR | 1202 | Main configuration file not found |
+| CONFIG_DEPENDENCY_NOT_FOUND_ERR | 1203 | Dependency configuration file not found |
+| CONFIG_DUPLICATE_NAMES_SAME_FILE_ERR | 1204 | Duplicate config names in the same configuration file |
+| CONFIG_DUPLICATE_NAMES_ACROSS_FILES_ERR | 1205 | Duplicate config names in two configuration files |
+| CONFIG_BAD_FILTER_ERR | 1206 | No configs matching configs filter |
+| CONFIG_ZERO_FOUND_ERR | 1207 | No configs parsed from current file |
+| CONFIG_APPLY_PROFILES_ERR | 1208 | Failed to apply profiles to config |
+| CONFIG_DEFAULT_VALUES_ERR | 1209 | Failed to set default config values |
+| CONFIG_FILE_PATHS_SUBSTITUTION_ERR | 1210 | Failed to substitute absolute file paths in config |
+| CONFIG_MULTI_IMPORT_PROFILE_CONFLICT_ERR | 1211 | Same config imported at least twice with different set of profiles |
 
 
 
-<a name="proto.SuggestionCode"></a>
+<a name="proto.enums.SuggestionCode"></a>
 
 ### SuggestionCode
 Enum for Suggestion codes
@@ -1014,11 +1029,17 @@ Enum for Suggestion codes
 | UNPAUSE_MINIKUBE | 502 | Minikube is paused: use `minikube unpause` |
 | RUN_DOCKER_PULL | 551 | Run Docker pull for the image with v1 manifest and try again. |
 | SET_RENDER_FLAG_OFFLINE_FALSE | 600 | Rerun with correct offline flag value. |
+| CONFIG_CHECK_FILE_PATH | 700 | Check configuration file path |
+| CONFIG_CHECK_DEPENDENCY_DEFINITION | 701 | Check dependency config definition |
+| CONFIG_CHANGE_NAMES | 702 | Change config name to avoid duplicates |
+| CONFIG_CHECK_FILTER | 703 | Check config filter |
+| CONFIG_CHECK_PROFILE_DEFINITION | 704 | Check profile definition in current config |
+| CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION | 705 | Check active profile selection for dependency config |
 | OPEN_ISSUE | 900 | Open an issue so this situation can be diagnosed |
 
 
 
-<a name="proto.TesterType"></a>
+<a name="proto.enums.TesterType"></a>
 
 ### TesterType
 Enum indicating test tools used
@@ -1031,8 +1052,3 @@ Enum indicating test tools used
 
 
  <!-- end enums -->
-
- <!-- end HasExtensions -->
-
-
-

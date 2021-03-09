@@ -92,7 +92,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	r.hasDeployed = true
 
 	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
-	postStatusCheckFn()
+	defer postStatusCheckFn()
 	if err != nil {
 		return err
 	}

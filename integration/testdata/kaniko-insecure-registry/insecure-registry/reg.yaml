@@ -32,4 +32,8 @@ spec:
         - name: registry
           image: devreg
           ports:
-            - containerPort: 50051
+            - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /v2/_catalog
+              port: 5000

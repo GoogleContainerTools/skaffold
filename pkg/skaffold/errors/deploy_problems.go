@@ -19,11 +19,8 @@ package errors
 import (
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -32,26 +29,15 @@ var (
 	isMinikube = cluster.GetClient().IsMinikube
 )
 
-func suggestDeployFailedAction(opts config.SkaffoldOptions) []*proto.Suggestion {
-	kubeconfig, parsederr := kubectx.CurrentConfig()
-	if parsederr != nil {
-		logrus.Debugf("Error retrieving the config: %q", parsederr)
-		return []*proto.Suggestion{{
-			SuggestionCode: proto.SuggestionCode_CHECK_CLUSTER_CONNECTION,
-			Action:         "Check your connection for the cluster",
-		}}
-	}
-
-	if isMinikube(kubeconfig.CurrentContext) {
-		if kubeconfig.CurrentContext == "minikube" {
-			return []*proto.Suggestion{{
-				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
-				Action:         "Check if minikube is running using `minikube status` command and try again",
-			}}
+func suggestDeployFailedAction(runCtx runcontext.RunContext) []*proto.Suggestion {
+	if isMinikube(runCtx.KubeContext) {
+		command := "minikube status"
+		if runCtx.KubeContext != "minikube" {
+			command = fmt.Sprintf("minikube status -p %s", runCtx.KubeContext)
 		}
 		return []*proto.Suggestion{{
 			SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
-			Action:         fmt.Sprintf("Check if minikube is running using `minikube status -p %s` command and try again.", kubeconfig.CurrentContext),
+			Action:         fmt.Sprintf("Check if minikube is running using `%s` command and try again.", command),
 		}}
 	}
 
