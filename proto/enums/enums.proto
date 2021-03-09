@@ -334,21 +334,21 @@ enum StatusCode {
     // Unable to docker pull image
     TEST_IMG_PULL_ERR = 1103;
     // Error running custom test
-    TEST_CT_USER_ERR = 1104;
+    TEST_CUSTOM_USER_ERR = 1104;
     // Unable to parse test command
-    TEST_CT_CMD_PARSE_ERR = 1105;
+    TEST_CUSTOM_CMD_PARSE_ERR = 1105;
     // Command returned non-zero exit code
-    TEST_CT_CMD_NON_ZERO_EXIT_ERR = 1106;
+    TEST_CUSTOM_CMD_NON_ZERO_EXIT_ERR = 1106;
     // command cancelled or timed out
-    TEST_CT_CMD_TIMEDOUT_OR_CANCELLED_ERR = 1107;
+    TEST_CUSTOM_CMD_TIMEDOUT_OR_CANCELLED_ERR = 1107;
     // command exited
-    TEST_CT_CMD_EXITED_ERR = 1108;
+    TEST_CUSTOM_CMD_EXITED_ERR = 1108;
     // error running cmd
-    TEST_CT_CMD_RUN_ERR = 1110;
+    TEST_CUSTOM_CMD_RUN_ERR = 1110;
     // Error getting dependencies from command
-    TEST_CT_DEPS_CMD_ERR = 1111;
+    TEST_CUSTOM_DEPS_CMD_ERR = 1111;
     // Unmarshalling dependency output error
-    TEST_CT_DEPS_UNMARSHALL_ERR = 1112;
+    TEST_CUSTOM_DEPS_UNMARSHALL_ERR = 1112;
 
 
     // Configuration errors

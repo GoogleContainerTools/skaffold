@@ -27,7 +27,7 @@ func cutomTestErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("running custom test command: %s", err),
-			ErrCode: proto.StatusCode_TEST_CT_USER_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_USER_ERR,
 		},
 	)
 }
@@ -36,7 +36,7 @@ func parsingTestCommandErr(command string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("unable to parse test command %s: %s", command, err),
-			ErrCode: proto.StatusCode_TEST_CT_CMD_PARSE_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_PARSE_ERR,
 		},
 	)
 }
@@ -45,7 +45,7 @@ func commandNonZeroExitErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("command finished with non-0 exit code: %s", err),
-			ErrCode: proto.StatusCode_TEST_CT_CMD_NON_ZERO_EXIT_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_NON_ZERO_EXIT_ERR,
 		},
 	)
 }
@@ -54,7 +54,7 @@ func commandExecutionCancelledOrTimedoutErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("command cancelled or timed out: %s", err),
-			ErrCode: proto.StatusCode_TEST_CT_CMD_TIMEDOUT_OR_CANCELLED_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_TIMEDOUT_OR_CANCELLED_ERR,
 		},
 	)
 }
@@ -63,7 +63,7 @@ func commandExited(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("command exited: %s", err),
-			ErrCode: proto.StatusCode_TEST_CT_CMD_EXITED_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_EXITED_ERR,
 		},
 	)
 }
@@ -72,7 +72,7 @@ func runCmdErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("error running cmd: %s", err),
-			ErrCode: proto.StatusCode_TEST_CT_CMD_RUN_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RUN_ERR,
 		},
 	)
 }
@@ -81,7 +81,7 @@ func gettingDependenciesCommandErr(command string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("getting dependencies from command: %s: %s", command, err),
-			ErrCode: proto.StatusCode_TEST_CT_DEPS_CMD_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_DEPS_CMD_ERR,
 		},
 	)
 }
@@ -90,7 +90,7 @@ func dependencyOutputUnmarshallErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("unmarshalling dependency output into string array: %s", err),
-			ErrCode: proto.StatusCode_TEST_CT_DEPS_UNMARSHALL_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_DEPS_UNMARSHALL_ERR,
 		},
 	)
 }
