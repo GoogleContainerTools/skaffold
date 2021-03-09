@@ -349,6 +349,31 @@ enum StatusCode {
     TEST_CST_USER_ERR = 1102;
     // Unable to docker pull image
     TEST_IMG_PULL_ERR = 1103;
+
+    // Configuration errors
+
+    // Catch-all configuration file parsing error
+    CONFIG_FILE_PARSING_ERR = 1201;
+    // Main configuration file not found
+    CONFIG_FILE_NOT_FOUND_ERR = 1202;
+    // Dependency configuration file not found
+    CONFIG_DEPENDENCY_NOT_FOUND_ERR = 1203;
+    // Duplicate config names in the same configuration file
+    CONFIG_DUPLICATE_NAMES_SAME_FILE_ERR = 1204;
+    // Duplicate config names in two configuration files
+    CONFIG_DUPLICATE_NAMES_ACROSS_FILES_ERR = 1205;
+    // No configs matching configs filter
+    CONFIG_BAD_FILTER_ERR = 1206;
+    // No configs parsed from current file
+    CONFIG_ZERO_FOUND_ERR = 1207;
+    // Failed to apply profiles to config
+    CONFIG_APPLY_PROFILES_ERR = 1208;
+    // Failed to set default config values
+    CONFIG_DEFAULT_VALUES_ERR = 1209;
+    // Failed to substitute absolute file paths in config
+    CONFIG_FILE_PATHS_SUBSTITUTION_ERR = 1210;
+    // Same config imported at least twice with different set of profiles
+    CONFIG_MULTI_IMPORT_PROFILE_CONFLICT_ERR = 1211;
 }
 
 // Enum for Suggestion codes
@@ -457,6 +482,21 @@ enum SuggestionCode {
 
     // Rerun with correct offline flag value.
     SET_RENDER_FLAG_OFFLINE_FALSE = 600;
+
+    // Configuration error suggestion codes
+
+    // Check configuration file path
+    CONFIG_CHECK_FILE_PATH = 700;
+    // Check dependency config definition
+    CONFIG_CHECK_DEPENDENCY_DEFINITION = 701;
+    // Change config name to avoid duplicates
+    CONFIG_CHANGE_NAMES = 702;
+    // Check config filter
+    CONFIG_CHECK_FILTER = 703;
+    // Check profile definition in current config
+    CONFIG_CHECK_PROFILE_DEFINITION = 704;
+    // Check active profile selection for dependency config
+    CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION = 705;
 
     // Open an issue so this situation can be diagnosed
     OPEN_ISSUE = 900;

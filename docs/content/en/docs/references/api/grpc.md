@@ -983,6 +983,17 @@ For Cancelled Error code, use range 800 to 850.<br>
 | TEST_USER_CONFIG_ERR | 1101 | Error expanding paths |
 | TEST_CST_USER_ERR | 1102 | Error running container-structure-test |
 | TEST_IMG_PULL_ERR | 1103 | Unable to docker pull image |
+| CONFIG_FILE_PARSING_ERR | 1201 | Catch-all configuration file parsing error |
+| CONFIG_FILE_NOT_FOUND_ERR | 1202 | Main configuration file not found |
+| CONFIG_DEPENDENCY_NOT_FOUND_ERR | 1203 | Dependency configuration file not found |
+| CONFIG_DUPLICATE_NAMES_SAME_FILE_ERR | 1204 | Duplicate config names in the same configuration file |
+| CONFIG_DUPLICATE_NAMES_ACROSS_FILES_ERR | 1205 | Duplicate config names in two configuration files |
+| CONFIG_BAD_FILTER_ERR | 1206 | No configs matching configs filter |
+| CONFIG_ZERO_FOUND_ERR | 1207 | No configs parsed from current file |
+| CONFIG_APPLY_PROFILES_ERR | 1208 | Failed to apply profiles to config |
+| CONFIG_DEFAULT_VALUES_ERR | 1209 | Failed to set default config values |
+| CONFIG_FILE_PATHS_SUBSTITUTION_ERR | 1210 | Failed to substitute absolute file paths in config |
+| CONFIG_MULTI_IMPORT_PROFILE_CONFLICT_ERR | 1211 | Same config imported at least twice with different set of profiles |
 
 
 
@@ -1032,6 +1043,12 @@ Enum for Suggestion codes
 | UNPAUSE_MINIKUBE | 502 | Minikube is paused: use `minikube unpause` |
 | RUN_DOCKER_PULL | 551 | Run Docker pull for the image with v1 manifest and try again. |
 | SET_RENDER_FLAG_OFFLINE_FALSE | 600 | Rerun with correct offline flag value. |
+| CONFIG_CHECK_FILE_PATH | 700 | Check configuration file path |
+| CONFIG_CHECK_DEPENDENCY_DEFINITION | 701 | Check dependency config definition |
+| CONFIG_CHANGE_NAMES | 702 | Change config name to avoid duplicates |
+| CONFIG_CHECK_FILTER | 703 | Check config filter |
+| CONFIG_CHECK_PROFILE_DEFINITION | 704 | Check profile definition in current config |
+| CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION | 705 | Check active profile selection for dependency config |
 | OPEN_ISSUE | 900 | Open an issue so this situation can be diagnosed |
 
 
