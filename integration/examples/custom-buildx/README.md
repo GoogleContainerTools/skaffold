@@ -97,11 +97,11 @@ Using `buildx` to build for multiple platforms has some subtle
 interactions with Skaffold's artifact caching.
 
 Skaffold normally caches the artifact after a successful container
-image build using the principle that a build should produce the
-same container image given the same source.  Skaffold records an
-association of the resulting image digest with a hash of the artifact
-source.  This principle is the same as how Docker and other builders
-cache image layers to speed up builds.
+image build.  Using the principle that given the same source inputs,
+a build should produce the same container image, Skaffold records
+an association of the resulting image digest with a hash of the
+artifact source.  This is the same principle used followed Docker
+and other builders to cache image layers to speed up builds.
 
 In this example, the build script configures Buildx differently
 depending on the `$PUSH_IMAGE` flag. 
@@ -113,12 +113,13 @@ depending on the `$PUSH_IMAGE` flag.
     the Docker Daemon, and so this example builds a single container
     image for the local platform.
 
-But Skaffold is unaware of the platforms built by this custom builder,
-and so on completion Skaffold will cache the built artifact.  So on
-a local-build, Skaffold will cache the local-platform artifact and
-use that for subsequent deployments (assuming the source is unchanged).
-To avoid this scenario, disable Skaffold's artifact cache when the
-result is to be pushed to a remote registry:
+But Skaffold is unaware that the build result differs based on `$PUSH_IMAGE`.
+So on a local-build, Skaffold will cache the local-platform artifact,
+and that artifact will be used that for subsequent deployments even if
+to a remote registry (assuming the source is unchanged).  To avoid
+this scenario, disable Skaffold's artifact caching when the result
+is to be pushed to a remote registry:
+
 ```
 skaffold build --cache-artifacts=false
 ```
