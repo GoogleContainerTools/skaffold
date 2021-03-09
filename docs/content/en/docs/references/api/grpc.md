@@ -970,11 +970,13 @@ For Cancelled Error code, use range 800 to 850.<br>
 | TEST_CUSTOM_USER_ERR | 1104 | Error running custom test |
 | TEST_CUSTOM_CMD_PARSE_ERR | 1105 | Unable to parse test command |
 | TEST_CUSTOM_CMD_NON_ZERO_EXIT_ERR | 1106 | Command returned non-zero exit code |
-| TEST_CUSTOM_CMD_TIMEDOUT_OR_CANCELLED_ERR | 1107 | command cancelled or timed out |
-| TEST_CUSTOM_CMD_EXITED_ERR | 1108 | command exited |
-| TEST_CUSTOM_CMD_RUN_ERR | 1110 | error running cmd |
-| TEST_CUSTOM_DEPS_CMD_ERR | 1111 | Error getting dependencies from command |
-| TEST_CUSTOM_DEPS_UNMARSHALL_ERR | 1112 | Unmarshalling dependency output error |
+| TEST_CUSTOM_CMD_TIMEDOUT_ERR | 1107 | command cancelled or timed out |
+| TEST_CUSTOM_CMD_CANCELLED_ERR | 1108 | command cancelled or timed out |
+| TEST_CUSTOM_CMD_EXECUTION_ERR | 1110 | command context error |
+| TEST_CUSTOM_CMD_EXITED_ERR | 1111 | command exited |
+| TEST_CUSTOM_CMD_RUN_ERR | 1112 | error running cmd |
+| TEST_CUSTOM_DEPS_CMD_ERR | 1113 | Error getting dependencies from command |
+| TEST_CUSTOM_DEPS_UNMARSHALL_ERR | 1114 | Unmarshalling dependency output error |
 | CONFIG_FILE_PARSING_ERR | 1201 | Catch-all configuration file parsing error |
 | CONFIG_FILE_NOT_FOUND_ERR | 1202 | Main configuration file not found |
 | CONFIG_DEPENDENCY_NOT_FOUND_ERR | 1203 | Dependency configuration file not found |

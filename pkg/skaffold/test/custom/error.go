@@ -50,11 +50,29 @@ func commandNonZeroExitErr(err error) error {
 	)
 }
 
-func commandExecutionCancelledOrTimedoutErr(err error) error {
+func commandTimedoutErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: fmt.Sprintf("command cancelled or timed out: %s", err),
-			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_TIMEDOUT_OR_CANCELLED_ERR,
+			Message: fmt.Sprintf("command timed out: %s", err),
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_TIMEDOUT_ERR,
+		},
+	)
+}
+
+func commandCancelledErr(err error) error {
+	return sErrors.NewError(err,
+		proto.ActionableErr{
+			Message: fmt.Sprintf("command cancelled: %s", err),
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_CANCELLED_ERR,
+		},
+	)
+}
+
+func commandExecutionErr(err error) error {
+	return sErrors.NewError(err,
+		proto.ActionableErr{
+			Message: fmt.Sprintf("command execution error: %s", err),
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_EXECUTION_ERR,
 		},
 	)
 }

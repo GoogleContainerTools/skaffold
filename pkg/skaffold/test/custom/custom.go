@@ -99,10 +99,12 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 			case <-ctx.Done():
 				if ctx.Err() == context.DeadlineExceeded {
 					color.Red.Fprintf(out, "Command timed out\n")
+					return commandTimedoutErr(ctx.Err())
 				} else if ctx.Err() == context.Canceled {
 					color.Red.Fprintf(out, "Command cancelled\n")
+					return commandCancelledErr(ctx.Err())
 				}
-				return commandExecutionCancelledOrTimedoutErr(ctx.Err())
+				return commandExecutionErr(ctx.Err())
 			default:
 				return commandExited(e)
 			}

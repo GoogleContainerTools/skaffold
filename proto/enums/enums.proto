@@ -340,15 +340,19 @@ enum StatusCode {
     // Command returned non-zero exit code
     TEST_CUSTOM_CMD_NON_ZERO_EXIT_ERR = 1106;
     // command cancelled or timed out
-    TEST_CUSTOM_CMD_TIMEDOUT_OR_CANCELLED_ERR = 1107;
+    TEST_CUSTOM_CMD_TIMEDOUT_ERR = 1107;
+    // command cancelled or timed out
+    TEST_CUSTOM_CMD_CANCELLED_ERR = 1108;
+    // command context error
+    TEST_CUSTOM_CMD_EXECUTION_ERR = 1110;
     // command exited
-    TEST_CUSTOM_CMD_EXITED_ERR = 1108;
+    TEST_CUSTOM_CMD_EXITED_ERR = 1111;
     // error running cmd
-    TEST_CUSTOM_CMD_RUN_ERR = 1110;
+    TEST_CUSTOM_CMD_RUN_ERR = 1112;
     // Error getting dependencies from command
-    TEST_CUSTOM_DEPS_CMD_ERR = 1111;
+    TEST_CUSTOM_DEPS_CMD_ERR = 1113;
     // Unmarshalling dependency output error
-    TEST_CUSTOM_DEPS_UNMARSHALL_ERR = 1112;
+    TEST_CUSTOM_DEPS_UNMARSHALL_ERR = 1114;
 
 
     // Configuration errors
