@@ -130,8 +130,8 @@ func TestStart(t *testing.T) {
 			fakeForwarder := newTestForwarder()
 			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
 
-			rf := NewResourceForwarder(entryManager, []string{"test"}, "", nil)
-			if err := rf.Start(context.Background()); err != nil {
+			rf := NewResourceForwarder(entryManager, "", nil)
+			if err := rf.Start(context.Background(), []string{"test"}); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
 
@@ -194,7 +194,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			entryManager.forwardedResources = forwardedResources{
 				resources: test.forwardedResources,
 			}
-			rf := NewResourceForwarder(entryManager, []string{"test"}, "", nil)
+			rf := NewResourceForwarder(entryManager, "", nil)
 			actualEntry := rf.getCurrentEntry(test.resource)
 
 			expectedEntry := test.expected
@@ -272,8 +272,8 @@ func TestUserDefinedResources(t *testing.T) {
 			fakeForwarder := newTestForwarder()
 			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
 
-			rf := NewResourceForwarder(entryManager, test.namespaces, "", test.userResources)
-			if err := rf.Start(context.Background()); err != nil {
+			rf := NewResourceForwarder(entryManager, "", test.userResources)
+			if err := rf.Start(context.Background(), test.namespaces); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
 

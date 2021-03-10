@@ -31,13 +31,12 @@ import (
 
 type PodWatcher interface {
 	Register(receiver chan<- PodEvent)
-	Start() (func(), error)
+	Start(ns []string) (func(), error)
 }
 
 // podWatcher is a pod watcher for multiple namespaces.
 type podWatcher struct {
 	podSelector PodSelector
-	namespaces  []string
 	receivers   []chan<- PodEvent
 }
 
@@ -46,10 +45,9 @@ type PodEvent struct {
 	Pod  *v1.Pod
 }
 
-func NewPodWatcher(podSelector PodSelector, namespaces []string) PodWatcher {
+func NewPodWatcher(podSelector PodSelector) PodWatcher {
 	return &podWatcher{
 		podSelector: podSelector,
-		namespaces:  namespaces,
 	}
 }
 
@@ -57,7 +55,7 @@ func (w *podWatcher) Register(receiver chan<- PodEvent) {
 	w.receivers = append(w.receivers, receiver)
 }
 
-func (w *podWatcher) Start() (func(), error) {
+func (w *podWatcher) Start(namespaces []string) (func(), error) {
 	if len(w.receivers) == 0 {
 		return func() {}, errors.New("no receiver was registered")
 	}
@@ -76,7 +74,7 @@ func (w *podWatcher) Start() (func(), error) {
 
 	var forever int64 = 3600 * 24 * 365 * 100
 
-	for _, ns := range w.namespaces {
+	for _, ns := range namespaces {
 		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(context.Background(), metav1.ListOptions{
 			TimeoutSeconds: &forever,
 		})

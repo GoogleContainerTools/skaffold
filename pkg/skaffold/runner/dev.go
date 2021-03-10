@@ -135,7 +135,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
 			return nil
 		}
-		if err := forwarderManager.Start(ctx); err != nil {
+		if err := forwarderManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
 			logrus.Warnln("Port forwarding failed:", err)
 		}
 	}
@@ -236,32 +236,32 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
+	logger := r.createLogger(out, bRes)
+	defer logger.Stop()
+
+	debugContainerManager := r.createContainerManager()
+	defer debugContainerManager.Stop()
+
 	// Logs should be retrieved up to just before the deploy
-	deployTime := time.Now()
+	logger.SetSince(time.Now())
+
 	// First deploy
 	if err := r.Deploy(ctx, out, r.builds); err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
 
-	logger := r.createLogger(out, bRes)
-	defer logger.Stop()
-	logger.SetSince(deployTime)
-
-	debugContainerManager := r.createContainerManager()
-	defer debugContainerManager.Stop()
-
 	forwarderManager := r.createForwarder(out)
 	defer forwarderManager.Stop()
 
-	if err := forwarderManager.Start(ctx); err != nil {
+	if err := forwarderManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
 	}
-	if err := debugContainerManager.Start(ctx); err != nil {
+	if err := debugContainerManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting debug container notification:", err)
 	}
 	// Start printing the logs after deploy is finished
-	if err := logger.Start(ctx); err != nil {
+	if err := logger.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
 		return fmt.Errorf("starting logger: %w", err)
 	}
 

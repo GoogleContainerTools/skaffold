@@ -26,5 +26,5 @@ func (r *SkaffoldRunner) createContainerManager() *debugging.ContainerManager {
 		return nil
 	}
 
-	return debugging.NewContainerManager(r.podSelector, r.runCtx.GetNamespaces())
+	return debugging.NewContainerManager(r.podSelector)
 }
