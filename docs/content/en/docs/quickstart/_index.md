@@ -31,7 +31,7 @@ In this quickstart, you will:
 Skip this setup step by using Google Cloud Platform's [_Cloud Shell_](http://cloud.google.com/shell),
 which provides a [browser-based terminal/CLI and editor](https://cloud.google.com/shell#product-demo).
 Cloud Shell comes with Skaffold, Minikube, and Docker pre-installed, and is free
-(requires a [Google Account](https://accounts.google.com/SignUp)).
+(requires a [Google Account](https://accounts.google.com/SignUp)). 
 
 [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?shellonly=true&cloudshell_git_repo=https%3A%2F%2Fgithub.com%2FGoogleContainerTools%2Fskaffold&cloudshell_working_dir=examples%2Fgetting-started)
 
@@ -108,7 +108,18 @@ Watching for changes...
 
 ```
 
-{{< alert title="Note">}}
+{{< alert title="Error: Unknown API Version" >}}
+Skaffold may complain:
+```
+parsing skaffold config: unknown api version: "skaffold/v2beta13"
+```
+
+This error indicates that you are not using the latest release of
+Skaffold.  Cloud Shell may lag for several days after a new Skaffold release.
+Simply [install the latest version of Skaffold]({{< relref "/docs/install" >}}).
+{{< /alert >}}
+
+{{< alert title="Error: No push access to specified image repository">}}
 If you are deploying to a remote cluster, you must run `skaffold dev --default-repo=<my_registry>`
 where `<my_registry>` is an image registry that you have write-access to. Skaffold then
 builds and pushes the container images to that location, and non-destructively
