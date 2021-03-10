@@ -10,3 +10,4 @@ test:
       - command: echo Hello world!!
         dependencies:
           command: echo [\"main_test.go\"]
+          

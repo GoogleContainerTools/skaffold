@@ -12,6 +12,7 @@ Custom Test enables the users to:
 - Run validation tests on their code (e.g., unit tests)
 - Run validation and security tests on the image before deploying the image to a cluster (e.g., Developers can shell out GCP Container Analysis or Anchore Grype in a custom test script and use that for validation )
 
+Custom tests are defined per image in the Skaffold config. Every time an artifact is rebuilt, Skaffold runs the associated custom tests as part of the Skaffold dev loop.
 Multiple custom testers can be defined per test. The Skaffold pipeline will be blocked on the custom test to complete or fail. Skaffold will exit the loop when the first test fails. For ongoing test failures, Skaffold will stop the loop (not continue with the deploy) but will not exit the loop. Skaffold would surface the errors to the user and will keep the dev loop running. Skaffold will continue watching user specified test dependencies and re-trigger the loop whenever it detects another change. 
 
 CustomTester has a configurable timeout option to wait for the command to return. If no timeout is specified, Skaffold will wait until the test command has completed execution. 
@@ -70,9 +71,8 @@ The command *must* return dependencies as a JSON array, otherwise skaffold will 
           command: echo [\"main_test.go\"] 
 ```
 
-### File Sync
-
-Syncable files must be included in both the `paths` section of `dependencies`, so that the skaffold file watcher knows to watch them, and the `sync` section, so that skaffold knows to sync them.  
+ 
+>*Note: Adding a file pattern to a test dependency doesn't automatically enable file sync on it.  Refer to the [`file sync`](https://skaffold.dev/docs/pipeline-stages/filesync/) documentation, on how to set that up separately.*
 
 
 ### Logging
