@@ -333,26 +333,24 @@ enum StatusCode {
     TEST_CST_USER_ERR = 1102;
     // Unable to docker pull image
     TEST_IMG_PULL_ERR = 1103;
-    // Error running custom test
-    TEST_CUSTOM_USER_ERR = 1104;
     // Unable to parse test command
-    TEST_CUSTOM_CMD_PARSE_ERR = 1105;
+    TEST_CUSTOM_CMD_PARSE_ERR = 1104;
     // Command returned non-zero exit code
-    TEST_CUSTOM_CMD_NON_ZERO_EXIT_ERR = 1106;
+    TEST_CUSTOM_CMD_RUN_NON_ZERO_EXIT_ERR = 1105;
     // command cancelled or timed out
-    TEST_CUSTOM_CMD_TIMEDOUT_ERR = 1107;
+    TEST_CUSTOM_CMD_RUN_TIMEDOUT_ERR = 1106;
     // command cancelled or timed out
-    TEST_CUSTOM_CMD_CANCELLED_ERR = 1108;
+    TEST_CUSTOM_CMD_RUN_CANCELLED_ERR = 1107;
     // command context error
-    TEST_CUSTOM_CMD_EXECUTION_ERR = 1110;
+    TEST_CUSTOM_CMD_RUN_EXECUTION_ERR = 1108;
     // command exited
-    TEST_CUSTOM_CMD_EXITED_ERR = 1111;
+    TEST_CUSTOM_CMD_RUN_EXITED_ERR = 1110;
     // error running cmd
-    TEST_CUSTOM_CMD_RUN_ERR = 1112;
+    TEST_CUSTOM_CMD_RUN_ERR = 1111;
     // Error getting dependencies from command
-    TEST_CUSTOM_DEPS_CMD_ERR = 1113;
+    TEST_CUSTOM_DEPENDENCIES_CMD_ERR = 1112;
     // Unmarshalling dependency output error
-    TEST_CUSTOM_DEPS_UNMARSHALL_ERR = 1114;
+    TEST_CUSTOM_DEPENDENCIES_UNMARSHALL_ERR = 1113;
 
 
     // Configuration errors
@@ -505,4 +503,10 @@ enum SuggestionCode {
 
     // Open an issue so this situation can be diagnosed
     OPEN_ISSUE = 900;
+
+    // Test error suggestion codes
+    CHECK_CUSTOM_COMMAND = 1000;
+    FIX_CUSTOM_COMMAND_TIMEOUT = 1001;
+    CHECK_CUSTOM_COMMAND_DEPENDENCIES_CMD = 1002;
+    CHECK_CUSTOM_COMMAND_DEPENDENCIES_PATHS = 1003;
 }

@@ -23,70 +23,79 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
-func cutomTestErr(err error) error {
-	return sErrors.NewError(err,
-		proto.ActionableErr{
-			Message: fmt.Sprintf("running custom test command: %s", err),
-			ErrCode: proto.StatusCode_TEST_CUSTOM_USER_ERR,
-		},
-	)
-}
-
-func parsingTestCommandErr(command string, err error) error {
+func cmdRunparsingErr(command string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("unable to parse test command %s: %s", command, err),
 			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_PARSE_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_CHECK_CUSTOM_COMMAND,
+					Action:         fmt.Sprintf("Check the custom command contents: %q", command),
+				},
+			},
 		},
 	)
 }
 
-func commandNonZeroExitErr(err error) error {
+func cmdRunNonZeroExitErr(command string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: fmt.Sprintf("command finished with non-0 exit code: %s", err),
-			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_NON_ZERO_EXIT_ERR,
+			Message: fmt.Sprintf("command %s finished with non-0 exit code: %s", command, err),
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RUN_NON_ZERO_EXIT_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_CHECK_CUSTOM_COMMAND,
+					Action:         fmt.Sprintf("Check the custom command contents: %q", command),
+				},
+			},
 		},
 	)
 }
 
-func commandTimedoutErr(err error) error {
+func cmdRunTimedoutErr(timeoutSeconds int, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("command timed out: %s", err),
-			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_TIMEDOUT_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RUN_TIMEDOUT_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_FIX_CUSTOM_COMMAND_TIMEOUT,
+					Action:         fmt.Sprintf("Fix the custom command timeoutSeconds: %d", timeoutSeconds),
+				},
+			},
 		},
 	)
 }
 
-func commandCancelledErr(err error) error {
+func cmdRunCancelledErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("command cancelled: %s", err),
-			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_CANCELLED_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RUN_CANCELLED_ERR,
 		},
 	)
 }
 
-func commandExecutionErr(err error) error {
+func cmdRunExecutionErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("command execution error: %s", err),
-			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_EXECUTION_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RUN_EXECUTION_ERR,
 		},
 	)
 }
 
-func commandExited(err error) error {
+func cmdRunExited(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("command exited: %s", err),
-			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_EXITED_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RUN_EXITED_ERR,
 		},
 	)
 }
 
-func runCmdErr(err error) error {
+func cmdRunErr(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("error running cmd: %s", err),
@@ -99,16 +108,28 @@ func gettingDependenciesCommandErr(command string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("getting dependencies from command: %s: %s", command, err),
-			ErrCode: proto.StatusCode_TEST_CUSTOM_DEPS_CMD_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_DEPENDENCIES_CMD_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_CHECK_CUSTOM_COMMAND_DEPENDENCIES_CMD,
+					Action:         fmt.Sprintf("Check the custom command dependencies command: %q", command),
+				},
+			},
 		},
 	)
 }
 
-func dependencyOutputUnmarshallErr(err error) error {
+func dependencyOutputUnmarshallErr(paths []string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("unmarshalling dependency output into string array: %s", err),
-			ErrCode: proto.StatusCode_TEST_CUSTOM_DEPS_UNMARSHALL_ERR,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_DEPENDENCIES_UNMARSHALL_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_CHECK_CUSTOM_COMMAND_DEPENDENCIES_PATHS,
+					Action:         fmt.Sprintf("Check the custom command dependencies paths: %q", paths),
+				},
+			},
 		},
 	)
 }

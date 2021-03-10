@@ -53,7 +53,7 @@ func New(cfg docker.Config, wd string, ct latest.CustomTest) (*Runner, error) {
 // Test is the entrypoint for running custom tests
 func (ct *Runner) Test(ctx context.Context, out io.Writer, _ []build.Artifact) error {
 	if err := doRunCustomCommand(ctx, out, ct.customTest); err != nil {
-		return cutomTestErr(err)
+		return err
 	}
 
 	return nil
@@ -63,7 +63,7 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 	// Expand command
 	command, err := util.ExpandEnvTemplate(test.Command, nil)
 	if err != nil {
-		return parsingTestCommandErr(test.Command, err)
+		return cmdRunparsingErr(test.Command, err)
 	}
 
 	if test.TimeoutSeconds <= 0 {
@@ -92,24 +92,24 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 			// If the process exited by itself, just return the error
 			if e.Exited() {
 				color.Red.Fprintf(out, "Command finished with non-0 exit code.\n")
-				return commandNonZeroExitErr(err)
+				return cmdRunNonZeroExitErr(command, e)
 			}
 			// If the context is done, it has been killed by the exec.Command
 			select {
 			case <-ctx.Done():
 				if ctx.Err() == context.DeadlineExceeded {
 					color.Red.Fprintf(out, "Command timed out\n")
-					return commandTimedoutErr(ctx.Err())
+					return cmdRunTimedoutErr(test.TimeoutSeconds, ctx.Err())
 				} else if ctx.Err() == context.Canceled {
 					color.Red.Fprintf(out, "Command cancelled\n")
-					return commandCancelledErr(ctx.Err())
+					return cmdRunCancelledErr(ctx.Err())
 				}
-				return commandExecutionErr(ctx.Err())
+				return cmdRunExecutionErr(ctx.Err())
 			default:
-				return commandExited(e)
+				return cmdRunExited(e)
 			}
 		}
-		return runCmdErr(err)
+		return cmdRunErr(err)
 	}
 	color.Green.Fprintf(out, "Command finished successfully\n")
 
@@ -137,7 +137,7 @@ func (ct *Runner) TestDependencies() ([]string, error) {
 			}
 			var deps []string
 			if err := json.Unmarshal(output, &deps); err != nil {
-				return nil, dependencyOutputUnmarshallErr(err)
+				return nil, dependencyOutputUnmarshallErr(test.Dependencies.Paths, err)
 			}
 			return deps, nil
 
