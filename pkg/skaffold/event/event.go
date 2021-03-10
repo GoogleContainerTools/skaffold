@@ -175,6 +175,10 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 			AutoTrigger: autoBuild,
 			StatusCode:  proto.StatusCode_OK,
 		},
+		TestState: &proto.TestState{
+			Status:     NotStarted,
+			StatusCode: proto.StatusCode_OK,
+		},
 		DeployState: &proto.DeployState{
 			Status:      NotStarted,
 			AutoTrigger: autoDeploy,
@@ -561,6 +565,21 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 			// logEntry.Err = be.Err
 		default:
 		}
+	case *proto.Event_TestEvent:
+		de := e.TestEvent
+		ev.stateLock.Lock()
+		ev.state.TestState.Status = de.Status
+		ev.stateLock.Unlock()
+		switch de.Status {
+		case InProgress:
+			logEntry.Entry = "Test started"
+		case Complete:
+			logEntry.Entry = "Test completed"
+		case Failed:
+			logEntry.Entry = "Test failed"
+			// logEntry.Err = de.Err
+		default:
+		}
 	case *proto.Event_DeployEvent:
 		de := e.DeployEvent
 		ev.stateLock.Lock()
@@ -674,6 +693,17 @@ func ResetStateOnBuild() {
 	}
 	autoBuild, autoDeploy, autoSync := handler.getState().BuildState.AutoTrigger, handler.getState().DeployState.AutoTrigger, handler.getState().FileSyncState.AutoTrigger
 	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata, autoBuild, autoDeploy, autoSync)
+	handler.setState(newState)
+}
+
+// ResetStateOnTest resets the tesrt, deploy, sync and status check state
+func ResetStateOnTest() {
+	newState := handler.getState()
+	newState.TestState.Status = NotStarted
+	newState.TestState.StatusCode = proto.StatusCode_OK
+	newState.StatusCheckState = emptyStatusCheckState()
+	newState.ForwardedPorts = map[int32]*proto.PortEvent{}
+	newState.DebuggingContainers = nil
 	handler.setState(newState)
 }
 
