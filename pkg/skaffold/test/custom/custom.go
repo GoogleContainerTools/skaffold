@@ -61,7 +61,7 @@ func New(cfg docker.Config, imageName string, wd string, ct latest.CustomTest) (
 
 // Test is the entrypoint for running custom tests
 func (ct *Runner) Test(ctx context.Context, out io.Writer, _ []build.Artifact) error {
-	if err := doRunCustomCommand(ctx, out, ct.customTest); err != nil {
+	if err := doRunCustomCommand(ctx, out, ct.imageName, ct.customTest); err != nil {
 		return err
 	}
 
