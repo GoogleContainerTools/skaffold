@@ -45,6 +45,13 @@ func (s StringSet) ToList() []string {
 	return res
 }
 
+// Delete deletes the specified string in the set
+// if set is nil or string is not present, its a no-op
+func (s StringSet) Delete(str string) {
+	delete(s, str)
+}
+
+// Contains checks if a specified string is present in the set.
 func (s StringSet) Contains(str string) bool {
 	_, ok := s[str]
 	return ok

@@ -75,7 +75,6 @@ func TestRunContext_UpdateNamespaces(t *testing.T) {
 			description:   "update namespace when namespace is empty string and runContext is empty",
 			oldNamespaces: []string{},
 			newNamespaces: []string{""},
-			expected:      []string{},
 		},
 	}
 	for _, test := range tests {
