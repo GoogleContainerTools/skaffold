@@ -68,20 +68,6 @@ You can find the source for {{.Name}} [on Github](https://github.com/GoogleConta
 
 {{end}} <!-- end messages -->
 
-{{range .Enums}}
-<a name="{{.FullName}}"></a>
-
-### {{.LongName}}
-{{.Description}}
-
-| Name | Number | Description |
-| ---- |:------:| ----------- |
-{{range .Values -}}
-  | {{.Name}} | {{.Number}} | {{nobr .Description}} |
-{{end}}
-
-{{end}} <!-- end enums -->
-
 {{if .HasExtensions}}
 <a name="{{$file_name}}-extensions"></a>
 

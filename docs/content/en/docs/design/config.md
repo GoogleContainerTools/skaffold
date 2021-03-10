@@ -18,7 +18,7 @@ read the configuration file from the current directory.
 | `kind`  |  The Skaffold configuration file has the kind `Config`.  |
 | `metadata`  |  Holds additional properties like the `name` of this configuration.  |
 | `build`  |  Specifies how Skaffold builds artifacts. You have control over what tool Skaffold can use, how Skaffold tags artifacts and how Skaffold pushes artifacts. Skaffold supports using local Docker daemon, Google Cloud Build, Kaniko, or Bazel to build artifacts. See [Builders](/docs/pipeline-stages/builders) and [Taggers]({{< relref "/docs/pipeline-stages/taggers" >}}) for more information. |
-| `test` |  Specifies how Skaffold tests artifacts. Skaffold supports [container-structure-tests](https://github.com/GoogleContainerTools/container-structure-test) to test built artifacts. See [Testers]({{< relref "/docs/pipeline-stages/testers" >}}) for more information. |
+| `test` |  Specifies how Skaffold tests artifacts. Skaffold supports [container-structure-tests](https://github.com/GoogleContainerTools/container-structure-test) to test built artifacts and custom tests to run custom commands as part of the development pipeline. See [Testers]({{< relref "/docs/pipeline-stages/testers" >}}) for more information. |
 | `deploy` |  Specifies how Skaffold deploys artifacts. Skaffold supports using `kubectl`, `helm`, or `kustomize` to deploy artifacts. See [Deployers]({{< relref "/docs/pipeline-stages/deployers" >}}) for more information. |
 | `profiles`|  Profile is a set of settings that, when activated, overrides the current configuration. You can use Profile to override the `build`, `test` and `deploy` sections. |
 | `requires`|  Specifies a list of other skaffold configurations to import into the current config |

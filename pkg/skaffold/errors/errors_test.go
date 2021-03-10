@@ -20,11 +20,14 @@ import (
 	"fmt"
 	"testing"
 
-	"k8s.io/client-go/tools/clientcmd/api"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+)
+
+var (
+	dummyRunCtx = runcontext.RunContext{}
 )
 
 func TestShowAIError(t *testing.T) {
@@ -176,7 +179,7 @@ func TestShowAIError(t *testing.T) {
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_BUILD_UNKNOWN,
 				Message:     "build failed: something went wrong",
-				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+				Suggestions: reportIssueSuggestion(dummyRunCtx),
 			},
 		},
 		{
@@ -187,7 +190,7 @@ func TestShowAIError(t *testing.T) {
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_DEPLOY_UNKNOWN,
 				Message:     "deploy failed: something went wrong",
-				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+				Suggestions: reportIssueSuggestion(dummyRunCtx),
 			},
 		},
 		{
@@ -198,7 +201,7 @@ func TestShowAIError(t *testing.T) {
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_SYNC_UNKNOWN,
 				Message:     "sync failed: something went wrong",
-				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+				Suggestions: reportIssueSuggestion(dummyRunCtx),
 			},
 		},
 		{
@@ -209,7 +212,7 @@ func TestShowAIError(t *testing.T) {
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_UNKNOWN,
 				Message:     "init failed: something went wrong",
-				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+				Suggestions: reportIssueSuggestion(dummyRunCtx),
 			},
 		},
 		{
@@ -220,7 +223,7 @@ func TestShowAIError(t *testing.T) {
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_CLEANUP_UNKNOWN,
 				Message:     "failed: something went wrong",
-				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+				Suggestions: reportIssueSuggestion(dummyRunCtx),
 			},
 		},
 		{
@@ -231,7 +234,7 @@ func TestShowAIError(t *testing.T) {
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_STATUSCHECK_UNKNOWN,
 				Message:     "failed: something went wrong",
-				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+				Suggestions: reportIssueSuggestion(dummyRunCtx),
 			},
 		},
 		{
@@ -242,7 +245,7 @@ func TestShowAIError(t *testing.T) {
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_DEVINIT_UNKNOWN,
 				Message:     "failed: something went wrong",
-				Suggestions: reportIssueSuggestion(config.SkaffoldOptions{}),
+				Suggestions: reportIssueSuggestion(dummyRunCtx),
 			},
 		},
 		{
@@ -267,8 +270,7 @@ func TestShowAIError(t *testing.T) {
 			t.Override(&getConfigForCurrentContext, func(string) (*config.ContextConfig, error) {
 				return test.context, nil
 			})
-			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "test_cluster"})
-			skaffoldOpts = test.opts
+			runCtx = runcontext.RunContext{KubeContext: "test_cluster", Opts: test.opts}
 			actual := ShowAIError(test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 			actualAE := ActionableErr(test.phase, test.err)
@@ -332,8 +334,10 @@ func TestIsOldImageManifestProblem(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			skaffoldOpts = config.SkaffoldOptions{
-				Command: test.command,
+			runCtx = runcontext.RunContext{
+				Opts: config.SkaffoldOptions{
+					Command: test.command,
+				},
 			}
 			actualMsg, actual := IsOldImageManifestProblem(test.err)
 			fmt.Println(actualMsg)

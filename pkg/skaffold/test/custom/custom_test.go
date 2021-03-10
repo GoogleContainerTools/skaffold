@@ -120,6 +120,7 @@ func TestCustomCommandError(t *testing.T) {
 			t.CheckNoError(err)
 			err = testRunner.Test(context.Background(), ioutil.Discard, nil)
 
+			// TODO(modali): Update the logic to check for error code instead of error string.
 			t.CheckError(test.shouldErr, err)
 			if test.expectedError != "" {
 				t.CheckErrorContains(test.expectedError, err)

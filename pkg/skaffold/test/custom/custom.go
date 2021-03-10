@@ -19,7 +19,6 @@ package custom
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -62,8 +61,8 @@ func New(cfg docker.Config, imageName string, wd string, ct latest.CustomTest) (
 
 // Test is the entrypoint for running custom tests
 func (ct *Runner) Test(ctx context.Context, out io.Writer, _ []build.Artifact) error {
-	if err := doRunCustomCommand(ctx, out, ct.imageName, ct.customTest); err != nil {
-		return fmt.Errorf("running custom test command: %w", err)
+	if err := doRunCustomCommand(ctx, out, ct.customTest); err != nil {
+		return err
 	}
 
 	return nil
@@ -73,7 +72,7 @@ func runCustomCommand(ctx context.Context, out io.Writer, imageName string, test
 	// Expand command
 	command, err := util.ExpandEnvTemplate(test.Command, nil)
 	if err != nil {
-		return fmt.Errorf("unable to parse test command %q: %w", test.Command, err)
+		return cmdRunParsingErr(test.Command, err)
 	}
 
 	if test.TimeoutSeconds <= 0 {
@@ -105,22 +104,24 @@ func runCustomCommand(ctx context.Context, out io.Writer, imageName string, test
 			// If the process exited by itself, just return the error
 			if e.Exited() {
 				color.Red.Fprintf(out, "Command finished with non-0 exit code.\n")
-				return fmt.Errorf("command finished with non-0 exit code: %w", e)
+				return cmdRunNonZeroExitErr(command, e)
 			}
 			// If the context is done, it has been killed by the exec.Command
 			select {
 			case <-ctx.Done():
 				if ctx.Err() == context.DeadlineExceeded {
 					color.Red.Fprintf(out, "Command timed out\n")
+					return cmdRunTimedoutErr(test.TimeoutSeconds, ctx.Err())
 				} else if ctx.Err() == context.Canceled {
 					color.Red.Fprintf(out, "Command cancelled\n")
+					return cmdRunCancelledErr(ctx.Err())
 				}
-				return ctx.Err()
+				return cmdRunExecutionErr(ctx.Err())
 			default:
-				return e
+				return cmdRunExited(e)
 			}
 		}
-		return err
+		return cmdRunErr(err)
 	}
 	color.Green.Fprintf(out, "Command finished successfully\n")
 
@@ -144,11 +145,11 @@ func (ct *Runner) TestDependencies() ([]string, error) {
 
 			output, err := util.RunCmdOut(cmd)
 			if err != nil {
-				return nil, fmt.Errorf("getting dependencies from command: %q: %w", test.Dependencies.Command, err)
+				return nil, gettingDependenciesCommandErr(test.Dependencies.Command, err)
 			}
 			var deps []string
 			if err := json.Unmarshal(output, &deps); err != nil {
-				return nil, fmt.Errorf("unmarshalling dependency output into string array: %w", err)
+				return nil, dependencyOutputUnmarshallErr(test.Dependencies.Paths, err)
 			}
 			return deps, nil
 

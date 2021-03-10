@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package parser
 
 import (
 	"errors"
@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/git"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -59,7 +60,8 @@ func newRecord() *record {
 	return &record{appliedProfiles: make(map[string]string), configNameToFile: make(map[string]string), cachedRepos: make(map[string]interface{})}
 }
 
-func getAllConfigs(opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, error) {
+// GetAllConfigs returns the list of all skaffold configurations parsed from the target config file in addition to all resolved dependency configs.
+func GetAllConfigs(opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, error) {
 	cOpts := configOpts{file: opts.ConfigurationFile, selection: nil, profiles: opts.Profiles, isRequired: false, isDependency: false}
 	cfgs, err := getConfigs(cOpts, opts, newRecord())
 	if err != nil {
@@ -67,9 +69,9 @@ func getAllConfigs(opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, error
 	}
 	if len(cfgs) == 0 {
 		if len(opts.ConfigurationFilter) > 0 {
-			return nil, fmt.Errorf("did not find any configs matching selection %v", opts.ConfigurationFilter)
+			return nil, sErrors.BadConfigFilterErr(opts.ConfigurationFilter)
 		}
-		return nil, fmt.Errorf("failed to get any valid configs from %s", opts.ConfigurationFile)
+		return nil, sErrors.ZeroConfigsParsedErr(opts.ConfigurationFile)
 	}
 	return cfgs, nil
 }
@@ -78,7 +80,10 @@ func getAllConfigs(opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, error
 func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*latest.SkaffoldConfig, error) {
 	parsed, err := schema.ParseConfigAndUpgrade(cfgOpts.file, latest.Version)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, sErrors.MainConfigFileNotFoundErr(cfgOpts.file, err)
+		}
+		return nil, sErrors.ConfigParsingError(err)
 	}
 
 	if !util.IsURL(cfgOpts.file) && !filepath.IsAbs(cfgOpts.file) {
@@ -88,7 +93,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 	}
 
 	if len(parsed) == 0 {
-		return nil, fmt.Errorf("skaffold config file %s is empty", opts.ConfigurationFile)
+		return nil, sErrors.ZeroConfigsParsedErr(cfgOpts.file)
 	}
 	logrus.Debugf("parsed %d configs from configuration file %s", len(parsed), cfgOpts.file)
 
@@ -100,7 +105,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 			continue
 		}
 		if seen[cfgName] {
-			return nil, fmt.Errorf("multiple skaffold configs named %q found in file %q", cfgName, cfgOpts.file)
+			return nil, sErrors.DuplicateConfigNamesInSameFileErr(cfgName, cfgOpts.file)
 		}
 		seen[cfgName] = true
 	}
@@ -124,7 +129,7 @@ func processEachConfig(config *latest.SkaffoldConfig, cfgOpts configOpts, opts c
 	if config.Metadata.Name != "" {
 		prevConfig, found := r.configNameToFile[config.Metadata.Name]
 		if found && prevConfig != cfgOpts.file {
-			return nil, fmt.Errorf("skaffold config named %q found in multiple files: %q and %q", config.Metadata.Name, prevConfig, cfgOpts.file)
+			return nil, sErrors.DuplicateConfigNamesAcrossFilesErr(config.Metadata.Name, prevConfig, cfgOpts.file)
 		}
 		r.configNameToFile[config.Metadata.Name] = cfgOpts.file
 	}
@@ -140,15 +145,15 @@ func processEachConfig(config *latest.SkaffoldConfig, cfgOpts configOpts, opts c
 
 	profiles, err := schema.ApplyProfiles(config, opts, cfgOpts.profiles)
 	if err != nil {
-		return nil, fmt.Errorf("applying profiles: %w", err)
+		return nil, sErrors.ConfigProfileActivationErr(config.Metadata.Name, cfgOpts.file, err)
 	}
 	if err := defaults.Set(config); err != nil {
-		return nil, fmt.Errorf("setting default values: %w", err)
+		return nil, sErrors.ConfigSetDefaultValuesErr(config.Metadata.Name, cfgOpts.file, err)
 	}
 	// convert relative file paths to absolute for all configs that are not invoked explicitly. This avoids maintaining multiple root directory information since the dependency skaffold configs would have their own root directory.
 	if cfgOpts.isDependency {
 		if err := tags.MakeFilePathsAbsolute(config, filepath.Dir(cfgOpts.file)); err != nil {
-			return nil, fmt.Errorf("setting absolute filepaths: %w", err)
+			return nil, sErrors.ConfigSetAbsFilePathsErr(config.Metadata.Name, cfgOpts.file, err)
 		}
 	}
 
@@ -198,7 +203,7 @@ func processEachDependency(d latest.ConfigDependency, cfgOpts configOpts, opts c
 	if d.GitRepo != nil {
 		cachePath, err := cacheRepo(*d.GitRepo, opts, r)
 		if err != nil {
-			return nil, fmt.Errorf("caching remote dependency %s: %w", d.GitRepo.Repo, err)
+			return nil, sErrors.ConfigParsingError(fmt.Errorf("caching remote dependency %s: %w", d.GitRepo.Repo, err))
 		}
 		path = cachePath
 	}
@@ -211,9 +216,9 @@ func processEachDependency(d latest.ConfigDependency, cfgOpts configOpts, opts c
 		fi, err := os.Stat(path)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
-				return nil, fmt.Errorf("could not find skaffold config %s that is referenced as a dependency in config %s", path, cfgOpts.file)
+				return nil, sErrors.DependencyConfigFileNotFoundErr(path, cfgOpts.file, err)
 			}
-			return nil, fmt.Errorf("parsing dependencies for skaffold config %s: %w", cfgOpts.file, err)
+			return nil, sErrors.ConfigParsingError(fmt.Errorf("parsing dependencies for skaffold config %s: %w", cfgOpts.file, err))
 		}
 		if fi.IsDir() {
 			path = filepath.Join(path, "skaffold.yaml")
@@ -268,7 +273,7 @@ func checkRevisit(config *latest.SkaffoldConfig, profiles []string, appliedProfi
 			if config.Metadata.Name != "" {
 				configID = config.Metadata.Name
 			}
-			return true, fmt.Errorf("skaffold config %s from file %s imported multiple times with different profiles", configID, file)
+			return true, sErrors.ConfigProfileConflictErr(configID, file)
 		}
 		return true, nil
 	}

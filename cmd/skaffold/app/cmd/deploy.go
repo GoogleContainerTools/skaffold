@@ -59,7 +59,7 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 		for _, cfg := range configs {
 			artifacts = append(artifacts, cfg.Build.Artifacts...)
 		}
-		buildArtifacts, err := getBuildArtifactsAndSetTags(r, artifacts)
+		buildArtifacts, err := getBuildArtifactsAndSetTags(artifacts, r.ApplyDefaultRepo)
 		if err != nil {
 			tips.PrintUseRunVsDeploy(out)
 			return err

@@ -173,7 +173,7 @@ func (h *Deployer) Dependencies() ([]string, error) {
 		r := release
 		deps = append(deps, r.ValuesFiles...)
 
-		if r.Remote {
+		if r.ChartPath == "" {
 			// chart path is only a dependency if it exists on the local filesystem
 			continue
 		}
@@ -253,7 +253,7 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 	renderedManifests := new(bytes.Buffer)
 
 	for _, r := range h.Releases {
-		args := []string{"template", r.ChartPath}
+		args := []string{"template", chartSource(r)}
 
 		args = append(args[:1], append([]string{r.Name}, args[1:]...)...)
 
@@ -306,7 +306,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		upgrade:     true,
 		flags:       h.Flags.Upgrade,
 		force:       h.forceDeploy,
-		chartPath:   r.ChartPath,
+		chartPath:   chartSource(r),
 		helmVersion: helmVersion,
 		repo:        r.Repo,
 	}
@@ -355,14 +355,14 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		if r.UpgradeOnChange != nil && !*r.UpgradeOnChange {
 			logrus.Infof("Release %s already installed...", releaseName)
 			return []types.Artifact{}, nil
-		} else if r.UpgradeOnChange == nil && r.Remote {
+		} else if r.UpgradeOnChange == nil && r.RemoteChart != "" {
 			logrus.Infof("Release %s not upgraded as it is remote...", releaseName)
 			return []types.Artifact{}, nil
 		}
 	}
 
 	// Only build local dependencies, but allow a user to skip them.
-	if !r.SkipBuildDependencies && !r.Remote {
+	if !r.SkipBuildDependencies && r.ChartPath != "" {
 		logrus.Infof("Building helm dependencies...")
 
 		if err := h.exec(ctx, out, false, nil, "dep", "build", r.ChartPath); err != nil {
@@ -480,4 +480,11 @@ func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (stri
 	}
 
 	return output[idx:], nil
+}
+
+func chartSource(r latest.HelmRelease) string {
+	if r.RemoteChart != "" {
+		return r.RemoteChart
+	}
+	return r.ChartPath
 }
