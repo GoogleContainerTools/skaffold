@@ -1,9 +1,8 @@
 ---
-title: "Test"
-linkTitle: "Test"
+title: "Container Structure Test"
+linkTitle: "Container Structure Test"
 weight: 20
-featureId: test
-aliases: [/docs/how-tos/testers]
+featureId: test.structure
 ---
 
 It's common practice to validate built container images before deploying them to our cluster.
@@ -22,16 +21,16 @@ If frequent tests are prohibitive, long-running tests should be moved to a dedic
 This following example shows the `test` section from a `skaffold.yaml`.
 It instructs Skaffold to run all container structure tests in the `structure-test` folder relative to the Skaffold root directory:
 
-{{% readfile file="samples/testers/test.yaml" %}}
+{{% readfile file="samples/testers/structure/test.yaml" %}}
 
 The files matched by the `structureTests` key are `container-structure-test` test configurations, such as:
 
-{{% readfile file="samples/testers/structureTest.yaml" %}}
+{{% readfile file="samples/testers/structure/structureTest.yaml" %}}
 
 For a reference how to write container structure tests, see its [documentation](https://github.com/GoogleContainerTools/container-structure-test#command-tests).
 
 In order to restrict the executed structure tests, a `profile` section can override the file pattern:
 
-{{% readfile file="samples/testers/testProfile.yaml" %}}
+{{% readfile file="samples/testers/structure/testProfile.yaml" %}}
 
 To execute the tests once, run `skaffold build --profile quickcheck`.
