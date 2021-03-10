@@ -63,7 +63,7 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 	// Expand command
 	command, err := util.ExpandEnvTemplate(test.Command, nil)
 	if err != nil {
-		return cmdRunparsingErr(test.Command, err)
+		return cmdRunParsingErr(test.Command, err)
 	}
 
 	if test.TimeoutSeconds <= 0 {

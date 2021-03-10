@@ -23,7 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
-func cmdRunparsingErr(command string, err error) error {
+func cmdRunParsingErr(command string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
 			Message: fmt.Sprintf("unable to parse test command %s: %s", command, err),
