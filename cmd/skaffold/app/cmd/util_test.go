@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -115,6 +117,85 @@ func TestGetArtifacts(t *testing.T) {
 
 			artifacts, err := mergeBuildArtifacts(test.fromFile, test.fromCLI, test.artifacts)
 
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, artifacts)
+		})
+	}
+}
+
+func Test_getBuildArtifactsAndSetTags(t *testing.T) {
+	tests := []struct {
+		description string
+		artifacts   []build.Artifact
+		expected    []build.Artifact
+		defaultRepo string
+		shouldErr   bool
+	}{
+		{
+			description: "no artifact without default-repo",
+			artifacts:   nil,
+			expected:    []build.Artifact(nil),
+		},
+		{
+			description: "single artifact without default-repo",
+			artifacts:   []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			expected:    []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
+		},
+		{
+			description: "multiple artifacts without default-repo",
+			artifacts: []build.Artifact{
+				{ImageName: "image1", Tag: "image1:tag"},
+				{ImageName: "image1", Tag: "image1:tag"},
+			},
+			expected: []build.Artifact{
+				{ImageName: "image1", Tag: "image1:tag"},
+				{ImageName: "image1", Tag: "image1:tag"},
+			},
+		},
+		{
+			description: "single artifact with default-repo",
+			artifacts:   []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			expected:    []build.Artifact{{ImageName: "image", Tag: "example.com/test-repo/image:tag"}},
+			defaultRepo: "example.com/test-repo",
+		},
+		{
+			description: "multiple artifacts with default-repo",
+			artifacts: []build.Artifact{
+				{ImageName: "image1", Tag: "image1:tag"},
+				{ImageName: "image1", Tag: "image1:tag"},
+			},
+			expected: []build.Artifact{
+				{ImageName: "image1", Tag: "example.com/test-repo/image1:tag"},
+				{ImageName: "image1", Tag: "example.com/test-repo/image1:tag"},
+			},
+			defaultRepo: "example.com/test-repo",
+		},
+		{
+			description: "multiple artifacts with erring default-repo",
+			artifacts: []build.Artifact{
+				{ImageName: "image1", Tag: "image1:tag"},
+				{ImageName: "image1", Tag: "image1:tag"},
+			},
+			expected:    []build.Artifact(nil),
+			defaultRepo: "example.com/test-repo",
+			shouldErr:   true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			artifacts, err := applyDefaultRepoToArtifacts(test.artifacts, func(s string) (string, error) {
+				if test.shouldErr {
+					// this seems counter-intuitive that we explicitly return an error when shouldErr is true,
+					// however this function is a callback, the test is ensuring the error from the callback is handled
+					// correctly
+					return "", errors.New("error")
+				}
+
+				if test.defaultRepo == "" {
+					return s, nil
+				}
+
+				return fmt.Sprintf("%s/%s", test.defaultRepo, s), nil
+			})
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, artifacts)
 		})
 	}

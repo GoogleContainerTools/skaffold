@@ -44,7 +44,7 @@ func doTest(ctx context.Context, out io.Writer) error {
 		for _, c := range configs {
 			artifacts = append(artifacts, c.Build.Artifacts...)
 		}
-		buildArtifacts, err := getBuildArtifactsAndSetTags(r, artifacts)
+		buildArtifacts, err := getBuildArtifactsAndSetTags(artifacts, r.ApplyDefaultRepo)
 		if err != nil {
 			tips.PrintForTest(out)
 			return err
