@@ -1,0 +1,12 @@
+apiVersion: skaffold/v2beta13
+kind: Config
+metadata:
+  name: cfg2
+build:
+  artifacts:
+  - image: app2
+    context: /foo
+deploy:
+  kubectl:
+    manifests:
+    - /k8s/*
