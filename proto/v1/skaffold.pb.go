@@ -85,6 +85,19 @@ const ClusterType_MINIKUBE = ClusterType(enums.ClusterType_MINIKUBE)
 const ClusterType_GKE = ClusterType(enums.ClusterType_GKE)
 const ClusterType_OTHER = ClusterType(enums.ClusterType_OTHER)
 
+// LogLevel from public import enums/enums.proto
+type LogLevel = enums.LogLevel
+
+var LogLevel_name = enums.LogLevel_name
+var LogLevel_value = enums.LogLevel_value
+
+const LogLevel_DEBUG = LogLevel(enums.LogLevel_DEBUG)
+const LogLevel_INFO = LogLevel(enums.LogLevel_INFO)
+const LogLevel_WARN = LogLevel(enums.LogLevel_WARN)
+const LogLevel_ERROR = LogLevel(enums.LogLevel_ERROR)
+const LogLevel_FATAL = LogLevel(enums.LogLevel_FATAL)
+const LogLevel_PANIC = LogLevel(enums.LogLevel_PANIC)
+
 // StatusCode from public import enums/enums.proto
 type StatusCode = enums.StatusCode
 

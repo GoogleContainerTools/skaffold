@@ -67,6 +67,22 @@ enum ClusterType {
     OTHER = 3;
 }
 
+// Enum indicating the log level of a line of output
+enum LogLevel {
+    // Debug Level
+    DEBUG = 0;
+    // Info Level
+    INFO = 1;
+    // Warn Level
+    WARN = 2;
+    // Error Level
+    ERROR = 3;
+    // Fatal Level
+    FATAL = 4;
+    // Panic Level
+    PANIC = 5;
+}
+
 // Enum for Status codes<br>
 // These error codes are prepended by Phase Name e.g.
 // INIT, BUILD, TEST, DEPLOY, STATUSCHECK, DEVINIT<br>
