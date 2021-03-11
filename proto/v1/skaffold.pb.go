@@ -199,6 +199,15 @@ const StatusCode_DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE = StatusCode(enums.StatusCo
 const StatusCode_TEST_USER_CONFIG_ERR = StatusCode(enums.StatusCode_TEST_USER_CONFIG_ERR)
 const StatusCode_TEST_CST_USER_ERR = StatusCode(enums.StatusCode_TEST_CST_USER_ERR)
 const StatusCode_TEST_IMG_PULL_ERR = StatusCode(enums.StatusCode_TEST_IMG_PULL_ERR)
+const StatusCode_TEST_CUSTOM_CMD_PARSE_ERR = StatusCode(enums.StatusCode_TEST_CUSTOM_CMD_PARSE_ERR)
+const StatusCode_TEST_CUSTOM_CMD_RUN_NON_ZERO_EXIT_ERR = StatusCode(enums.StatusCode_TEST_CUSTOM_CMD_RUN_NON_ZERO_EXIT_ERR)
+const StatusCode_TEST_CUSTOM_CMD_RUN_TIMEDOUT_ERR = StatusCode(enums.StatusCode_TEST_CUSTOM_CMD_RUN_TIMEDOUT_ERR)
+const StatusCode_TEST_CUSTOM_CMD_RUN_CANCELLED_ERR = StatusCode(enums.StatusCode_TEST_CUSTOM_CMD_RUN_CANCELLED_ERR)
+const StatusCode_TEST_CUSTOM_CMD_RUN_EXECUTION_ERR = StatusCode(enums.StatusCode_TEST_CUSTOM_CMD_RUN_EXECUTION_ERR)
+const StatusCode_TEST_CUSTOM_CMD_RUN_EXITED_ERR = StatusCode(enums.StatusCode_TEST_CUSTOM_CMD_RUN_EXITED_ERR)
+const StatusCode_TEST_CUSTOM_CMD_RUN_ERR = StatusCode(enums.StatusCode_TEST_CUSTOM_CMD_RUN_ERR)
+const StatusCode_TEST_CUSTOM_DEPENDENCIES_CMD_ERR = StatusCode(enums.StatusCode_TEST_CUSTOM_DEPENDENCIES_CMD_ERR)
+const StatusCode_TEST_CUSTOM_DEPENDENCIES_UNMARSHALL_ERR = StatusCode(enums.StatusCode_TEST_CUSTOM_DEPENDENCIES_UNMARSHALL_ERR)
 const StatusCode_CONFIG_FILE_PARSING_ERR = StatusCode(enums.StatusCode_CONFIG_FILE_PARSING_ERR)
 const StatusCode_CONFIG_FILE_NOT_FOUND_ERR = StatusCode(enums.StatusCode_CONFIG_FILE_NOT_FOUND_ERR)
 const StatusCode_CONFIG_DEPENDENCY_NOT_FOUND_ERR = StatusCode(enums.StatusCode_CONFIG_DEPENDENCY_NOT_FOUND_ERR)
@@ -263,6 +272,10 @@ const SuggestionCode_CONFIG_CHECK_FILTER = SuggestionCode(enums.SuggestionCode_C
 const SuggestionCode_CONFIG_CHECK_PROFILE_DEFINITION = SuggestionCode(enums.SuggestionCode_CONFIG_CHECK_PROFILE_DEFINITION)
 const SuggestionCode_CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION = SuggestionCode(enums.SuggestionCode_CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION)
 const SuggestionCode_OPEN_ISSUE = SuggestionCode(enums.SuggestionCode_OPEN_ISSUE)
+const SuggestionCode_CHECK_CUSTOM_COMMAND = SuggestionCode(enums.SuggestionCode_CHECK_CUSTOM_COMMAND)
+const SuggestionCode_FIX_CUSTOM_COMMAND_TIMEOUT = SuggestionCode(enums.SuggestionCode_FIX_CUSTOM_COMMAND_TIMEOUT)
+const SuggestionCode_CHECK_CUSTOM_COMMAND_DEPENDENCIES_CMD = SuggestionCode(enums.SuggestionCode_CHECK_CUSTOM_COMMAND_DEPENDENCIES_CMD)
+const SuggestionCode_CHECK_CUSTOM_COMMAND_DEPENDENCIES_PATHS = SuggestionCode(enums.SuggestionCode_CHECK_CUSTOM_COMMAND_DEPENDENCIES_PATHS)
 
 type StateResponse struct {
 	State                *State   `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`

@@ -310,10 +310,30 @@
   "test": {
     "dev": "x",
     "run": "x",
+    "test": "x",
     "area": "Test",
     "maturity": "GA",
     "description": "Run tests as part of your pipeline",
     "url": "/docs/pipeline-stages/testers"
+  },
+  "test.structure": {
+    "dev": "x",
+    "run": "x",
+    "test": "x",
+    "area": "Test",
+    "maturity": "GA",
+    "description": "Run structure tests as part of your pipeline",
+    "url": "/docs/pipeline-stages/testers/structure"
+  },
+  "test.custom": {
+    "dev": "x",
+    "run": "x",
+    "test": "x",
+    "area": "Test",
+    "feature": "custom tester",
+    "maturity": "alpha",
+    "description": "Run custom test command locally",
+    "url": "/docs/pipeline-stages/testers/custom"
   },
   "triggers": {
     "dev": "x",
