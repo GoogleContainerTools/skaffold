@@ -19,7 +19,6 @@ package runcontext
 import (
 	"fmt"
 	"os"
-	"sort"
 
 	"github.com/sirupsen/logrus"
 
@@ -27,6 +26,7 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 const (
@@ -234,20 +234,8 @@ func (rc *RunContext) UpdateNamespaces(ns []string) {
 	if len(ns) == 0 {
 		return
 	}
-
-	nsMap := map[string]bool{}
-	for _, ns := range append(ns, rc.Namespaces...) {
-		if ns == emptyNamespace {
-			continue
-		}
-		nsMap[ns] = true
-	}
-
-	// Update RunContext Namespace
-	updated := make([]string, 0, len(nsMap))
-	for k := range nsMap {
-		updated = append(updated, k)
-	}
-	sort.Strings(updated)
-	rc.Namespaces = updated
+	namespaces := util.NewStringSet()
+	namespaces.Insert(append(rc.Namespaces, ns...)...)
+	namespaces.Delete(emptyNamespace)
+	rc.Namespaces = namespaces.ToList()
 }
