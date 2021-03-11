@@ -983,6 +983,15 @@ For Cancelled Error code, use range 800 to 850.<br>
 | TEST_USER_CONFIG_ERR | 1101 | Error expanding paths |
 | TEST_CST_USER_ERR | 1102 | Error running container-structure-test |
 | TEST_IMG_PULL_ERR | 1103 | Unable to docker pull image |
+| TEST_CUSTOM_CMD_PARSE_ERR | 1104 | Unable to parse test command |
+| TEST_CUSTOM_CMD_RUN_NON_ZERO_EXIT_ERR | 1105 | Command returned non-zero exit code |
+| TEST_CUSTOM_CMD_RUN_TIMEDOUT_ERR | 1106 | command cancelled or timed out |
+| TEST_CUSTOM_CMD_RUN_CANCELLED_ERR | 1107 | command cancelled or timed out |
+| TEST_CUSTOM_CMD_RUN_EXECUTION_ERR | 1108 | command context error |
+| TEST_CUSTOM_CMD_RUN_EXITED_ERR | 1110 | command exited |
+| TEST_CUSTOM_CMD_RUN_ERR | 1111 | error running cmd |
+| TEST_CUSTOM_DEPENDENCIES_CMD_ERR | 1112 | Error getting dependencies from command |
+| TEST_CUSTOM_DEPENDENCIES_UNMARSHALL_ERR | 1113 | Unmarshalling dependency output error |
 | CONFIG_FILE_PARSING_ERR | 1201 | Catch-all configuration file parsing error |
 | CONFIG_FILE_NOT_FOUND_ERR | 1202 | Main configuration file not found |
 | CONFIG_DEPENDENCY_NOT_FOUND_ERR | 1203 | Dependency configuration file not found |
@@ -1050,6 +1059,10 @@ Enum for Suggestion codes
 | CONFIG_CHECK_PROFILE_DEFINITION | 704 | Check profile definition in current config |
 | CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION | 705 | Check active profile selection for dependency config |
 | OPEN_ISSUE | 900 | Open an issue so this situation can be diagnosed |
+| CHECK_CUSTOM_COMMAND | 1000 | Test error suggestion codes |
+| FIX_CUSTOM_COMMAND_TIMEOUT | 1001 |  |
+| CHECK_CUSTOM_COMMAND_DEPENDENCIES_CMD | 1002 |  |
+| CHECK_CUSTOM_COMMAND_DEPENDENCIES_PATHS | 1003 |  |
 
 
 

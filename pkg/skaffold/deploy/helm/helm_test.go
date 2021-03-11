@@ -300,7 +300,8 @@ var testTwoReleases = latest.HelmDeploy{
 		Name:      "other",
 		ChartPath: "examples/test",
 	}, {
-		Name: "skaffold-helm",
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
 		ArtifactOverrides: map[string]string{
 			"image.tag": "skaffold-helm",
 		},
@@ -906,8 +907,8 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext upgrade other examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get all other --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext dep build  --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm  --set-string image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig"),
 			helm:   testTwoReleases,
 			builds: testBuilds,
@@ -1157,20 +1158,24 @@ func TestHelmDependencies(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version30))
-
-			tmpDir := t.NewTempDir().
-				Touch(test.files...)
+			tmpDir := t.NewTempDir().Touch(test.files...)
+			var local, remote string
+			if test.remote {
+				remote = "foo/bar"
+			} else {
+				local = tmpDir.Root()
+			}
 
 			deployer, err := NewDeployer(&helmConfig{}, nil, &latest.HelmDeploy{
 				Releases: []latest.HelmRelease{{
 					Name:                  "skaffold-helm",
-					ChartPath:             tmpDir.Root(),
+					ChartPath:             local,
+					RemoteChart:           remote,
 					ValuesFiles:           test.valuesFiles,
 					ArtifactOverrides:     map[string]string{"image": "skaffold-helm"},
 					Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 					SetValues:             map[string]string{"some.key": "somevalue"},
 					SkipBuildDependencies: test.skipBuildDependencies,
-					Remote:                test.remote,
 				}},
 			})
 			t.RequireNoError(err)

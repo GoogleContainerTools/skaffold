@@ -21,25 +21,32 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func getBuildArtifactsAndSetTags(r runner.Runner, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+// DefaultRepoFn takes an image tag and returns either a new tag with the default repo prefixed, or the original tag if
+// no default repo is specified.
+type DefaultRepoFn func(string) (string, error)
+
+func getBuildArtifactsAndSetTags(artifacts []*latest.Artifact, defaulterFn DefaultRepoFn) ([]build.Artifact, error) {
 	buildArtifacts, err := mergeBuildArtifacts(fromBuildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), artifacts)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, artifact := range buildArtifacts {
-		tag, err := r.ApplyDefaultRepo(artifact.Tag)
+	return applyDefaultRepoToArtifacts(buildArtifacts, defaulterFn)
+}
+
+func applyDefaultRepoToArtifacts(artifacts []build.Artifact, defaulterFn DefaultRepoFn) ([]build.Artifact, error) {
+	for i := range artifacts {
+		updatedTag, err := defaulterFn(artifacts[i].Tag)
 		if err != nil {
 			return nil, err
 		}
-		artifact.Tag = tag
+		artifacts[i].Tag = updatedTag
 	}
 
-	return buildArtifacts, nil
+	return artifacts, nil
 }
 
 func mergeBuildArtifacts(fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifact) ([]build.Artifact, error) {
