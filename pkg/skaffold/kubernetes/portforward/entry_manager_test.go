@@ -22,13 +22,13 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
 func TestStop(t *testing.T) {
-	event.InitializeState([]latest.Pipeline{{}}, "test", true, true, true)
+	testEvent.InitializeState([]latest.Pipeline{{}})
 
 	pfe1 := newPortForwardEntry(0, latest.PortForwardResource{
 		Type:      constants.Pod,

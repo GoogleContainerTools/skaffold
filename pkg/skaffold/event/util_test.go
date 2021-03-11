@@ -135,7 +135,7 @@ func TestEmptyState(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			handler = &eventHandler{
-				state: emptyState([]latest.Pipeline{test.cfg}, test.cluster, true, true, true),
+				state: emptyState(mockCfg([]latest.Pipeline{test.cfg}, test.cluster)),
 			}
 			metadata := handler.state.Metadata
 			builders := metadata.Build.Builders

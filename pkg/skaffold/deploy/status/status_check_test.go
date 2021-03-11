@@ -36,12 +36,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
 func TestGetDeployments(t *testing.T) {
@@ -293,7 +293,7 @@ func TestGetDeployStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState([]latest.Pipeline{{}}, "test", true, true, true)
+			testEvent.InitializeState([]latest.Pipeline{{}})
 			errCode, err := getSkaffoldDeployStatus(test.counter, test.deployments)
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
@@ -370,7 +370,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			out := new(bytes.Buffer)
 			rc := newCounter(10)
 			rc.pending = test.pending
-			event.InitializeState([]latest.Pipeline{{}}, "test", true, true, true)
+			testEvent.InitializeState([]latest.Pipeline{{}})
 			r := withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), test.ae)
 			// report status once and set it changed to false.
 			r.ReportSinceLastUpdated(false)
@@ -460,7 +460,7 @@ func TestPrintStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			event.InitializeState([]latest.Pipeline{{}}, "test", true, true, true)
+			testEvent.InitializeState([]latest.Pipeline{{}})
 			checker := statusChecker{labeller: labeller}
 			actual := checker.printStatus(test.rs, out)
 			t.CheckDeepEqual(test.expectedOut, out.String())
@@ -591,7 +591,7 @@ func TestPollDeployment(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.command)
 			t.Override(&defaultPollPeriodInMilliseconds, 100)
-			event.InitializeState([]latest.Pipeline{{}}, "test", true, true, true)
+			testEvent.InitializeState([]latest.Pipeline{{}})
 			mockVal := mockValidator{runs: test.runs}
 			dep := test.dep.WithValidator(mockVal)
 
