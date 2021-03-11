@@ -24,6 +24,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -60,7 +61,10 @@ func TestNewCustomTestRunner(t *testing.T) {
 
 		testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 		t.CheckNoError(err)
-		err = testRunner.Test(context.Background(), ioutil.Discard, nil)
+		err = testRunner.Test(context.Background(), ioutil.Discard, []build.Artifact{{
+			ImageName: "image",
+			Tag:       "image:tag",
+		}})
 
 		t.CheckNoError(err)
 	})
@@ -118,7 +122,10 @@ func TestCustomCommandError(t *testing.T) {
 
 			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, test.custom)
 			t.CheckNoError(err)
-			err = testRunner.Test(context.Background(), ioutil.Discard, nil)
+			err = testRunner.Test(context.Background(), ioutil.Discard, []build.Artifact{{
+				ImageName: "image",
+				Tag:       "image:tag",
+			}})
 
 			// TODO(modali): Update the logic to check for error code instead of error string.
 			t.CheckError(test.shouldErr, err)
