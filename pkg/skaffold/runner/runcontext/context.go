@@ -234,8 +234,8 @@ func (rc *RunContext) UpdateNamespaces(ns []string) {
 	if len(ns) == 0 {
 		return
 	}
-	set := util.NewStringSet()
-	set.Insert(append(rc.Namespaces, ns...)...)
-	set.Delete(emptyNamespace)
-	rc.Namespaces = set.ToList()
+	namespaces := util.NewStringSet()
+	namespaces.Insert(append(rc.Namespaces, ns...)...)
+	namespaces.Delete(emptyNamespace)
+	rc.Namespaces = namespaces.ToList()
 }
