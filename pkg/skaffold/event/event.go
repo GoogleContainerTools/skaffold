@@ -685,7 +685,7 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 	ev.logEvent(*logEntry)
 }
 
-// ResetStateOnBuild resets the build, deploy and sync state
+// ResetStateOnBuild resets the build, test, deploy and sync state
 func ResetStateOnBuild() {
 	builds := map[string]string{}
 	for k := range handler.getState().BuildState.Artifacts {
@@ -696,7 +696,7 @@ func ResetStateOnBuild() {
 	handler.setState(newState)
 }
 
-// ResetStateOnTest resets the tesrt, deploy, sync and status check state
+// ResetStateOnTest resets the test, deploy, sync and status check state
 func ResetStateOnTest() {
 	newState := handler.getState()
 	newState.TestState.Status = NotStarted
