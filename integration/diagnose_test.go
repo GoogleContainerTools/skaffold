@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestDiagnose(t *testing.T) {
@@ -62,4 +63,14 @@ func folders(root string) ([]string, error) {
 	}
 
 	return folders, err
+}
+
+func TestMultiConfigDiagnose(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	testutil.Run(t, "test multiconfig diagnose", func(t *testutil.T) {
+		out := skaffold.Diagnose("--yaml-only").InDir("testdata/diagnose/multi-config").RunOrFailOutput(t.T)
+		expected, err := ioutil.ReadFile("testdata/diagnose/multi-config/skaffold_merged.yaml")
+		t.CheckNoError(err)
+		t.CheckDeepEqual(expected, out)
+	})
 }
