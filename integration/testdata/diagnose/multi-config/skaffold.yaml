@@ -1,0 +1,13 @@
+apiVersion: skaffold/v2beta13
+kind: Config
+requires:
+- path: ./skaffold2.yaml
+- path: ./skaffold3.yaml
+build:
+  artifacts:
+  - image: app1
+    context: /foo
+deploy:
+  kubectl:
+    manifests:
+    - /k8s/*

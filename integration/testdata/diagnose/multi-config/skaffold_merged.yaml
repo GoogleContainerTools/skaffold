@@ -1,0 +1,60 @@
+apiVersion: skaffold/v2beta13
+kind: Config
+metadata:
+  name: cfg2
+build:
+  artifacts:
+  - image: app2
+    context: /foo
+    docker:
+      dockerfile: Dockerfile
+  tagPolicy:
+    gitCommit: {}
+  local:
+    concurrency: 1
+deploy:
+  kubectl:
+    manifests:
+    - /k8s/*
+  logs:
+    prefix: container
+---
+apiVersion: skaffold/v2beta13
+kind: Config
+metadata:
+  name: cfg3
+build:
+  artifacts:
+  - image: app3
+    context: /foo
+    docker:
+      dockerfile: Dockerfile
+  tagPolicy:
+    gitCommit: {}
+  local:
+    concurrency: 1
+deploy:
+  kubectl:
+    manifests:
+    - /k8s/*
+  logs:
+    prefix: container
+---
+apiVersion: skaffold/v2beta13
+kind: Config
+build:
+  artifacts:
+  - image: app1
+    context: /foo
+    docker:
+      dockerfile: Dockerfile
+  tagPolicy:
+    gitCommit: {}
+  local:
+    concurrency: 1
+deploy:
+  kubectl:
+    manifests:
+    - /k8s/*
+  logs:
+    prefix: container

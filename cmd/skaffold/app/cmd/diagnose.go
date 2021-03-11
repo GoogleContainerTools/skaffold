@@ -64,6 +64,10 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 			color.Blue.Fprintln(out, "\nConfiguration")
 		}
 	}
+	// remove the dependency config references since they have already been imported and will be marshalled together.
+	for i := range configs {
+		configs[i].Dependencies = nil
+	}
 	buf, err := yaml.MarshalWithSeparator(configs)
 	if err != nil {
 		return fmt.Errorf("marshalling configuration: %w", err)
