@@ -18,6 +18,7 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -34,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -44,6 +46,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -231,6 +234,107 @@ func getTester(cfg test.Config, isLocalImage func(imageName string) (bool, error
 
 func getSyncer(cfg sync.Config) sync.Syncer {
 	return sync.NewSyncer(cfg)
+}
+
+/*
+The "default deployer" is used in `skaffold apply`, which uses a `kubectl` deployer to actuate resources
+on a cluster regardless of provided deployer configuration in the skaffold.yaml.
+The default deployer will honor a select set of deploy configuration from an existing skaffold.yaml:
+	- deploy.StatusCheckDeadlineSeconds
+	- deploy.Logs.Prefix
+	- deploy.Kubectl.Flags
+	- deploy.Kubectl.DefaultNamespace
+	- deploy.Kustomize.Flags
+	- deploy.Kustomize.DefaultNamespace
+For a multi-config project, we do not currently support resolving conflicts between differing sets of this deploy configuration.
+Therefore, in this function we do implicit validation of the provided configuration, and fail if any conflict cannot be resolved.
+*/
+func getDefaultDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deploy.Deployer, error) {
+	deployCfgs := runCtx.DeployConfigs()
+
+	var kFlags *latest.KubectlFlags
+	var logPrefix string
+	var defaultNamespace *string
+	var kubeContext string
+	statusCheckTimeout := -1
+
+	for _, d := range deployCfgs {
+		if d.KubeContext != "" {
+			if kubeContext != "" && kubeContext != d.KubeContext {
+				return nil, errors.New("cannot resolve active Kubernetes context - multiple contexts configured in skaffold.yaml")
+			}
+			kubeContext = d.KubeContext
+		}
+		if d.StatusCheckDeadlineSeconds != 0 && d.StatusCheckDeadlineSeconds != int(status.DefaultStatusCheckDeadline.Seconds()) {
+			if statusCheckTimeout != -1 && statusCheckTimeout != d.StatusCheckDeadlineSeconds {
+				return nil, fmt.Errorf("found multiple status check timeouts in skaffold.yaml (not supported in `skaffold apply`): %d, %d", statusCheckTimeout, d.StatusCheckDeadlineSeconds)
+			}
+			statusCheckTimeout = d.StatusCheckDeadlineSeconds
+		}
+		if d.Logs.Prefix != "" {
+			if logPrefix != "" && logPrefix != d.Logs.Prefix {
+				return nil, fmt.Errorf("found multiple log prefixes in skaffold.yaml (not supported in `skaffold apply`): %s, %s", logPrefix, d.Logs.Prefix)
+			}
+			logPrefix = d.Logs.Prefix
+		}
+		var currentDefaultNamespace *string
+		var currentKubectlFlags latest.KubectlFlags
+		if d.KubectlDeploy != nil {
+			currentDefaultNamespace = d.KubectlDeploy.DefaultNamespace
+			currentKubectlFlags = d.KubectlDeploy.Flags
+		}
+		if d.KustomizeDeploy != nil {
+			currentDefaultNamespace = d.KustomizeDeploy.DefaultNamespace
+			currentKubectlFlags = d.KustomizeDeploy.Flags
+		}
+		if kFlags == nil {
+			kFlags = &currentKubectlFlags
+		}
+		if err := validateKubectlFlags(kFlags, currentKubectlFlags); err != nil {
+			return nil, err
+		}
+		if currentDefaultNamespace != nil {
+			if defaultNamespace != nil && *defaultNamespace != *currentDefaultNamespace {
+				return nil, fmt.Errorf("found multiple namespaces in skaffold.yaml (not supported in `skaffold apply`): %s, %s", *defaultNamespace, *currentDefaultNamespace)
+			}
+			defaultNamespace = currentDefaultNamespace
+		}
+	}
+	if kFlags == nil {
+		kFlags = &latest.KubectlFlags{}
+	}
+	k := &latest.KubectlDeploy{
+		Flags:            *kFlags,
+		DefaultNamespace: defaultNamespace,
+	}
+	defaultDeployer, err := kubectl.NewDeployer(runCtx, labels, k)
+	if err != nil {
+		return nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
+	}
+	return defaultDeployer, nil
+}
+
+func validateKubectlFlags(flags *latest.KubectlFlags, additional latest.KubectlFlags) error {
+	errStr := "conflicting sets of kubectl deploy flags not supported in `skaffold apply` (flag: %s)"
+	if additional.DisableValidation != flags.DisableValidation {
+		return fmt.Errorf(errStr, additional.DisableValidation)
+	}
+	for _, flag := range additional.Apply {
+		if !util.StrSliceContains(flags.Apply, flag) {
+			return fmt.Errorf(errStr, flag)
+		}
+	}
+	for _, flag := range additional.Delete {
+		if !util.StrSliceContains(flags.Delete, flag) {
+			return fmt.Errorf(errStr, flag)
+		}
+	}
+	for _, flag := range additional.Global {
+		if !util.StrSliceContains(flags.Global, flag) {
+			return fmt.Errorf(errStr, flag)
+		}
+	}
+	return nil
 }
 
 func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deploy.Deployer, error) {
