@@ -105,7 +105,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				return nil
 			}
 			switch {
-			case preReleaseVersion(versionInfo.Version):
+			case preReleaseVersion(versionInfo.Version) && !update.EnableCheck:
 				logrus.Debugf("Update check, survey prompt and telemetry disabled for pre release version")
 			case !interactive:
 				logrus.Debugf("Update check, survey prompt and telemetry disabled in non-interactive mode")
