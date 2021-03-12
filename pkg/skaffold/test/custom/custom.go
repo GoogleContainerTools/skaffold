@@ -39,10 +39,6 @@ import (
 var (
 	// for tests
 	testContext = retrieveTestContext
-
-	// Image is an environment variable key, whose value is the
-	// fully qualified image name passed in to a custom command.
-	Image = "IMAGE"
 )
 
 const Windows string = "windows"
