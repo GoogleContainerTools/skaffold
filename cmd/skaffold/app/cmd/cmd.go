@@ -98,19 +98,21 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			shutdownAPIServer = shutdown
 
 			// Print version
-			version := version.Get()
-			logrus.Infof("Skaffold %+v", version)
+			versionInfo := version.Get()
+			logrus.Infof("Skaffold %+v", versionInfo)
 			if !isHouseKeepingMessagesAllowed(cmd) {
 				logrus.Debugf("Disable housekeeping messages for command explicitly")
 				return nil
 			}
 			switch {
+			case preReleaseVersion(versionInfo.Version) && !update.EnableCheck:
+				logrus.Debugf("Update check, survey prompt and telemetry disabled for pre release version")
 			case !interactive:
-				logrus.Debugf("Update check and survey prompt disabled in non-interactive mode")
+				logrus.Debugf("Update check, survey prompt and telemetry disabled in non-interactive mode")
 			case quietFlag:
-				logrus.Debugf("Update check and survey prompt disabled in quiet mode")
+				logrus.Debugf("Update check, survey prompt and telemetry disabled in quiet mode")
 			case analyze:
-				logrus.Debugf("Update check and survey prompt disabled when running `init --analyze`")
+				logrus.Debugf("Update check, survey prompt and telemetry disabled disabled when running `init --analyze`")
 			default:
 				go func() {
 					msg, err := update.CheckVersion(opts.GlobalConfig)
@@ -285,4 +287,13 @@ func allowHouseKeepingMessages(cmd *cobra.Command) {
 		cmd.Annotations = make(map[string]string)
 	}
 	cmd.Annotations[HouseKeepingMessagesAllowedAnnotation] = "true"
+}
+
+func preReleaseVersion(s string) bool {
+	if v, err := version.ParseVersion(s); err == nil && len(v.Pre) > 0 {
+		return true
+	} else if err != nil {
+		return true
+	}
+	return false
 }
