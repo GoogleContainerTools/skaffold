@@ -24,6 +24,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -48,17 +49,22 @@ func TestNewCustomTestRunner(t *testing.T) {
 			},
 		}
 
-		cfg := &mockConfig{
-			workingDir: tmpDir.Root(),
-			tests: []*latest.TestCase{{
-				ImageName:   "image",
-				CustomTests: []latest.CustomTest{custom},
-			}},
+		testCase := &latest.TestCase{
+			ImageName:   "image",
+			CustomTests: []latest.CustomTest{custom},
 		}
 
-		testRunner, err := New(cfg, cfg.workingDir, custom)
+		cfg := &mockConfig{
+			workingDir: tmpDir.Root(),
+			tests:      []*latest.TestCase{testCase},
+		}
+
+		testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 		t.CheckNoError(err)
-		err = testRunner.Test(context.Background(), ioutil.Discard, nil)
+		err = testRunner.Test(context.Background(), ioutil.Discard, []build.Artifact{{
+			ImageName: "image",
+			Tag:       "image:tag",
+		}})
 
 		t.CheckNoError(err)
 	})
@@ -104,17 +110,22 @@ func TestCustomCommandError(t *testing.T) {
 			}
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(command, fmt.Errorf(test.expectedError)))
 
-			cfg := &mockConfig{
-				workingDir: tmpDir.Root(),
-				tests: []*latest.TestCase{{
-					ImageName:   "image",
-					CustomTests: []latest.CustomTest{test.custom},
-				}},
+			testCase := &latest.TestCase{
+				ImageName:   "image",
+				CustomTests: []latest.CustomTest{test.custom},
 			}
 
-			testRunner, err := New(cfg, cfg.workingDir, test.custom)
+			cfg := &mockConfig{
+				workingDir: tmpDir.Root(),
+				tests:      []*latest.TestCase{testCase},
+			}
+
+			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, test.custom)
 			t.CheckNoError(err)
-			err = testRunner.Test(context.Background(), ioutil.Discard, nil)
+			err = testRunner.Test(context.Background(), ioutil.Discard, []build.Artifact{{
+				ImageName: "image",
+				Tag:       "image:tag",
+			}})
 
 			// TODO(modali): Update the logic to check for error code instead of error string.
 			t.CheckError(test.shouldErr, err)
@@ -136,12 +147,14 @@ func TestTestDependenciesCommand(t *testing.T) {
 			},
 		}
 
+		testCase := &latest.TestCase{
+			ImageName:   "image",
+			CustomTests: []latest.CustomTest{custom},
+		}
+
 		cfg := &mockConfig{
 			workingDir: tmpDir.Root(),
-			tests: []*latest.TestCase{{
-				ImageName:   "image",
-				CustomTests: []latest.CustomTest{custom},
-			}},
+			tests:      []*latest.TestCase{testCase},
 		}
 
 		if runtime.GOOS == Windows {
@@ -157,7 +170,7 @@ func TestTestDependenciesCommand(t *testing.T) {
 		}
 
 		expected := []string{"file1", "file2", "file3"}
-		testRunner, err := New(cfg, cfg.workingDir, custom)
+		testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 		t.CheckNoError(err)
 		deps, err := testRunner.TestDependencies()
 
@@ -217,19 +230,77 @@ func TestTestDependenciesPaths(t *testing.T) {
 				},
 			}
 
-			cfg := &mockConfig{
-				workingDir: tmpDir.Root(),
-				tests: []*latest.TestCase{{
-					ImageName:   "image",
-					CustomTests: []latest.CustomTest{custom},
-				}},
+			testCase := &latest.TestCase{
+				ImageName:   "image",
+				CustomTests: []latest.CustomTest{custom},
 			}
 
-			testRunner, err := New(cfg, cfg.workingDir, custom)
+			cfg := &mockConfig{
+				workingDir: tmpDir.Root(),
+				tests:      []*latest.TestCase{testCase},
+			}
+
+			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 			t.CheckNoError(err)
 			deps, err := testRunner.TestDependencies()
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
+		})
+	}
+}
+
+func TestGetEnv(t *testing.T) {
+	tests := []struct {
+		description string
+		tag         string
+		testContext string
+		environ     []string
+		expected    []string
+	}{
+
+		{
+			description: "make sure tags are correct",
+			tag:         "gcr.io/image/tag:mytag",
+			environ:     nil,
+			testContext: "/some/path",
+			expected:    []string{"IMAGE=gcr.io/image/tag:mytag", "TEST_CONTEXT=/some/path"},
+		}, {
+			description: "make sure environ is correctly applied",
+			tag:         "gcr.io/image/tag:anothertag",
+			environ:     []string{"PATH=/path", "HOME=/root"},
+			testContext: "/some/path",
+			expected:    []string{"IMAGE=gcr.io/image/tag:anothertag", "TEST_CONTEXT=/some/path", "PATH=/path", "HOME=/root"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.OSEnviron, func() []string { return test.environ })
+			t.Override(&testContext, func(string) (string, error) { return test.testContext, nil })
+			tmpDir := t.NewTempDir().Touch("test.yaml")
+
+			custom := latest.CustomTest{
+				Command: "echo Running Custom Test command.",
+			}
+
+			testCase := &latest.TestCase{
+				ImageName:   "image",
+				CustomTests: []latest.CustomTest{custom},
+			}
+
+			cfg := &mockConfig{
+				workingDir: tmpDir.Root(),
+				tests:      []*latest.TestCase{testCase},
+			}
+
+			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
+			t.CheckNoError(err)
+			actual, err := testRunner.getEnv([]build.Artifact{{
+				ImageName: "image",
+				Tag:       test.tag,
+			}})
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }

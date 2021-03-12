@@ -367,6 +367,8 @@ enum StatusCode {
     TEST_CUSTOM_DEPENDENCIES_CMD_ERR = 1112;
     // Unmarshalling dependency output error
     TEST_CUSTOM_DEPENDENCIES_UNMARSHALL_ERR = 1113;
+    // Error retrieving the command
+    TEST_CUSTOM_CMD_RETRIEVE_ERR = 1114;
 
 
     // Configuration errors
@@ -525,4 +527,5 @@ enum SuggestionCode {
     FIX_CUSTOM_COMMAND_TIMEOUT = 1001;
     CHECK_CUSTOM_COMMAND_DEPENDENCIES_CMD = 1002;
     CHECK_CUSTOM_COMMAND_DEPENDENCIES_PATHS = 1003;
+    CHECK_TEST_COMMAND_AND_IMAGE_NAME = 1004;
 }

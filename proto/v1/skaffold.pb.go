@@ -221,6 +221,7 @@ const StatusCode_TEST_CUSTOM_CMD_RUN_EXITED_ERR = StatusCode(enums.StatusCode_TE
 const StatusCode_TEST_CUSTOM_CMD_RUN_ERR = StatusCode(enums.StatusCode_TEST_CUSTOM_CMD_RUN_ERR)
 const StatusCode_TEST_CUSTOM_DEPENDENCIES_CMD_ERR = StatusCode(enums.StatusCode_TEST_CUSTOM_DEPENDENCIES_CMD_ERR)
 const StatusCode_TEST_CUSTOM_DEPENDENCIES_UNMARSHALL_ERR = StatusCode(enums.StatusCode_TEST_CUSTOM_DEPENDENCIES_UNMARSHALL_ERR)
+const StatusCode_TEST_CUSTOM_CMD_RETRIEVE_ERR = StatusCode(enums.StatusCode_TEST_CUSTOM_CMD_RETRIEVE_ERR)
 const StatusCode_CONFIG_FILE_PARSING_ERR = StatusCode(enums.StatusCode_CONFIG_FILE_PARSING_ERR)
 const StatusCode_CONFIG_FILE_NOT_FOUND_ERR = StatusCode(enums.StatusCode_CONFIG_FILE_NOT_FOUND_ERR)
 const StatusCode_CONFIG_DEPENDENCY_NOT_FOUND_ERR = StatusCode(enums.StatusCode_CONFIG_DEPENDENCY_NOT_FOUND_ERR)
@@ -289,6 +290,7 @@ const SuggestionCode_CHECK_CUSTOM_COMMAND = SuggestionCode(enums.SuggestionCode_
 const SuggestionCode_FIX_CUSTOM_COMMAND_TIMEOUT = SuggestionCode(enums.SuggestionCode_FIX_CUSTOM_COMMAND_TIMEOUT)
 const SuggestionCode_CHECK_CUSTOM_COMMAND_DEPENDENCIES_CMD = SuggestionCode(enums.SuggestionCode_CHECK_CUSTOM_COMMAND_DEPENDENCIES_CMD)
 const SuggestionCode_CHECK_CUSTOM_COMMAND_DEPENDENCIES_PATHS = SuggestionCode(enums.SuggestionCode_CHECK_CUSTOM_COMMAND_DEPENDENCIES_PATHS)
+const SuggestionCode_CHECK_TEST_COMMAND_AND_IMAGE_NAME = SuggestionCode(enums.SuggestionCode_CHECK_TEST_COMMAND_AND_IMAGE_NAME)
 
 type StateResponse struct {
 	State                *State   `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`

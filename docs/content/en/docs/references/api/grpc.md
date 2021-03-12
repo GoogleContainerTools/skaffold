@@ -992,6 +992,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | TEST_CUSTOM_CMD_RUN_ERR | 1111 | error running cmd |
 | TEST_CUSTOM_DEPENDENCIES_CMD_ERR | 1112 | Error getting dependencies from command |
 | TEST_CUSTOM_DEPENDENCIES_UNMARSHALL_ERR | 1113 | Unmarshalling dependency output error |
+| TEST_CUSTOM_CMD_RETRIEVE_ERR | 1114 | Error retrieving the command |
 | CONFIG_FILE_PARSING_ERR | 1201 | Catch-all configuration file parsing error |
 | CONFIG_FILE_NOT_FOUND_ERR | 1202 | Main configuration file not found |
 | CONFIG_DEPENDENCY_NOT_FOUND_ERR | 1203 | Dependency configuration file not found |
@@ -1063,6 +1064,7 @@ Enum for Suggestion codes
 | FIX_CUSTOM_COMMAND_TIMEOUT | 1001 |  |
 | CHECK_CUSTOM_COMMAND_DEPENDENCIES_CMD | 1002 |  |
 | CHECK_CUSTOM_COMMAND_DEPENDENCIES_PATHS | 1003 |  |
+| CHECK_TEST_COMMAND_AND_IMAGE_NAME | 1004 |  |
 
 
 

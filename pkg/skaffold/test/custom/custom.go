@@ -19,10 +19,14 @@ package custom
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
@@ -32,34 +36,32 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-// for tests
-var doRunCustomCommand = runCustomCommand
+var (
+	// for tests
+	testContext = retrieveTestContext
+)
 
 const Windows string = "windows"
 
 type Runner struct {
 	customTest     latest.CustomTest
+	imageName      string
 	testWorkingDir string
 }
 
 // New creates a new custom.Runner.
-func New(cfg docker.Config, wd string, ct latest.CustomTest) (*Runner, error) {
+func New(cfg docker.Config, imageName string, wd string, ct latest.CustomTest) (*Runner, error) {
 	return &Runner{
+		imageName:      imageName,
 		customTest:     ct,
 		testWorkingDir: wd,
 	}, nil
 }
 
 // Test is the entrypoint for running custom tests
-func (ct *Runner) Test(ctx context.Context, out io.Writer, _ []build.Artifact) error {
-	if err := doRunCustomCommand(ctx, out, ct.customTest); err != nil {
-		return err
-	}
+func (ct *Runner) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	test := ct.customTest
 
-	return nil
-}
-
-func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest) error {
 	// Expand command
 	command, err := util.ExpandEnvTemplate(test.Command, nil)
 	if err != nil {
@@ -76,16 +78,10 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 		ctx = newCtx
 	}
 
-	var cmd *exec.Cmd
-	// We evaluate the command with a shell so that it can contain env variables.
-	if runtime.GOOS == Windows {
-		cmd = exec.CommandContext(ctx, "cmd.exe", "/C", command)
-	} else {
-		cmd = exec.CommandContext(ctx, "sh", "-c", command)
+	cmd, err := ct.retrieveCmd(ctx, out, command, artifacts)
+	if err != nil {
+		return cmdRunRetrieveErr(command, ct.imageName, err)
 	}
-
-	cmd.Stdout = out
-	cmd.Stderr = out
 
 	if err := util.RunCmd(cmd); err != nil {
 		if e, ok := err.(*exec.ExitError); ok {
@@ -111,7 +107,7 @@ func runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest
 		}
 		return cmdRunErr(err)
 	}
-	color.Green.Fprintf(out, "Command finished successfully\n")
+	color.Green.Fprintf(out, "Command finished successfully.\n")
 
 	return nil
 }
@@ -146,4 +142,65 @@ func (ct *Runner) TestDependencies() ([]string, error) {
 		}
 	}
 	return nil, nil
+}
+
+func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string, artifacts []build.Artifact) (*exec.Cmd, error) {
+	var cmd *exec.Cmd
+	// We evaluate the command with a shell so that it can contain env variables.
+	if runtime.GOOS == Windows {
+		cmd = exec.CommandContext(ctx, "cmd.exe", "/C", command)
+	} else {
+		cmd = exec.CommandContext(ctx, "sh", "-c", command)
+	}
+	cmd.Stdout = out
+	cmd.Stderr = out
+
+	env, err := ct.getEnv(artifacts)
+	if err != nil {
+		return nil, fmt.Errorf("setting env variables: %w", err)
+	}
+	cmd.Env = env
+
+	dir, err := testContext(ct.testWorkingDir)
+	if err != nil {
+		return nil, fmt.Errorf("getting context for test: %w", err)
+	}
+	cmd.Dir = dir
+
+	return cmd, nil
+}
+
+func (ct *Runner) getEnv(artifacts []build.Artifact) ([]string, error) {
+	testContext, err := testContext(ct.testWorkingDir)
+	if err != nil {
+		return nil, fmt.Errorf("getting absolute path for test context: %w", err)
+	}
+
+	fqn, found := resolveArtifactImageTag(ct.imageName, artifacts)
+	if !found {
+		logrus.Debugln("Skipping tests for", ct.imageName, "since it wasn't built")
+		return nil, nil
+	}
+
+	envs := []string{
+		fmt.Sprintf("%s=%s", "IMAGE", fqn),
+		fmt.Sprintf("%s=%s", "TEST_CONTEXT", testContext),
+	}
+
+	envs = append(envs, util.OSEnviron()...)
+	return envs, nil
+}
+
+func resolveArtifactImageTag(imageName string, artifacts []build.Artifact) (string, bool) {
+	for _, res := range artifacts {
+		if imageName == res.ImageName {
+			return res.Tag, true
+		}
+	}
+
+	return "", false
+}
+
+func retrieveTestContext(workspace string) (string, error) {
+	return filepath.Abs(workspace)
 }
