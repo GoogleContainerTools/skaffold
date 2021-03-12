@@ -249,6 +249,62 @@ func TestTestDependenciesPaths(t *testing.T) {
 	}
 }
 
+func TestSetEnv(t *testing.T) {
+	tests := []struct {
+		description string
+		tag         string
+		testContext string
+		environ     []string
+		expected    []string
+	}{
+
+		{
+			description: "make sure tags are correct",
+			tag:         "gcr.io/image/tag:mytag",
+			environ:     nil,
+			testContext: "/some/path",
+			expected:    []string{"IMAGE=gcr.io/image/tag:mytag", "TEST_CONTEXT=/some/path"},
+		}, {
+			description: "make sure environ is correctly applied",
+			tag:         "gcr.io/image/tag:anothertag",
+			environ:     []string{"PATH=/path", "HOME=/root"},
+			testContext: "/some/path",
+			expected:    []string{"IMAGE=gcr.io/image/tag:anothertag", "TEST_CONTEXT=/some/path", "PATH=/path", "HOME=/root"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.OSEnviron, func() []string { return test.environ })
+			t.Override(&testContext, func(string) (string, error) { return test.testContext, nil })
+			tmpDir := t.NewTempDir().Touch("test.yaml")
+
+			custom := latest.CustomTest{
+				Command: "echo Running Custom Test command.",
+			}
+
+			testCase := &latest.TestCase{
+				ImageName:   "image",
+				CustomTests: []latest.CustomTest{custom},
+			}
+
+			cfg := &mockConfig{
+				workingDir: tmpDir.Root(),
+				tests:      []*latest.TestCase{testCase},
+			}
+
+			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
+			t.CheckNoError(err)
+			actual, err := testRunner.setEnv([]build.Artifact{{
+				ImageName: "image",
+				Tag:       test.tag,
+			}})
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	workingDir            string
