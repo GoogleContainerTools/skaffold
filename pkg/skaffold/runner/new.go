@@ -85,15 +85,12 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 			return nil, err
 		}
 
-		for _, t := range tester.GetAllTesters() {
-			testDependencies, err := t.TestDependencies()
-			if err != nil {
-				return nil, err
-			}
-			buildDependencies = append(buildDependencies, testDependencies...)
+		testDependencies, err := tester.TestDependencies()
+		if err != nil {
+			return nil, err
 		}
 
-		return buildDependencies, nil
+		return append(buildDependencies, testDependencies...), nil
 	}
 
 	graph := build.ToArtifactGraph(runCtx.Artifacts())
@@ -223,7 +220,7 @@ func getBuilder(runCtx *runcontext.RunContext, store build.ArtifactStore, p late
 	}
 }
 
-func getTester(cfg test.Config, isLocalImage func(imageName string) (bool, error)) (*test.FullTester, error) {
+func getTester(cfg test.Config, isLocalImage func(imageName string) (bool, error)) (test.Tester, error) {
 	tester, err := test.NewTester(cfg, isLocalImage)
 	if err != nil {
 		return nil, err

@@ -57,7 +57,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
 	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
 	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
-	needsTest := len(r.changeSet.needsRetest) > 0
+	needsTest := r.changeSet.needsRetest
 	needsDeploy := deployIntent && r.changeSet.needsRedeploy
 	if !needsSync && !needsBuild && !needsTest && !needsDeploy {
 		return nil
@@ -202,15 +202,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
-	for _, tester := range r.tester.GetAllTesters() {
-		// Watch test configuration
-		if err := r.monitor.Register(
-			tester.TestDependencies,
-			func(filemon.Events) { r.changeSet.needsRetest = append(r.changeSet.needsRetest, &tester) },
-		); err != nil {
-			event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)
-			return fmt.Errorf("watching test files: %w", err)
-		}
+	// Watch test configuration
+	if err := r.monitor.Register(
+		r.tester.TestDependencies,
+		func(filemon.Events) { r.changeSet.needsRetest = true },
+	); err != nil {
+		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)
+		return fmt.Errorf("watching test files: %w", err)
 	}
 
 	// Watch deployment configuration

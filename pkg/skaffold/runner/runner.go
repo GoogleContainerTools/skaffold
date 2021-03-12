@@ -60,7 +60,7 @@ type Runner interface {
 type SkaffoldRunner struct {
 	builder  build.Builder
 	deployer deploy.Deployer
-	tester   *test.FullTester
+	tester   test.Tester
 	tagger   tag.Tagger
 	syncer   sync.Syncer
 	monitor  filemon.Monitor

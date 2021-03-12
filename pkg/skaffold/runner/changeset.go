@@ -19,7 +19,6 @@ package runner
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
 type changeSet struct {
@@ -27,7 +26,7 @@ type changeSet struct {
 	rebuildTracker map[string]*latest.Artifact
 	needsResync    []*sync.Item
 	resyncTracker  map[string]*sync.Item
-	needsRetest    []*test.Runner
+	needsRetest    bool
 	needsRedeploy  bool
 	needsReload    bool
 }
@@ -42,6 +41,7 @@ func (c *changeSet) AddRebuild(a *latest.Artifact) {
 	}
 	c.rebuildTracker[a.ImageName] = a
 	c.needsRebuild = append(c.needsRebuild, a)
+	c.needsRetest = true
 	c.needsRedeploy = true
 }
 
@@ -68,7 +68,7 @@ func (c *changeSet) resetSync() {
 }
 
 func (c *changeSet) resetTest() {
-	c.needsRetest = nil
+	c.needsRetest = false
 }
 
 func (c *changeSet) resetDeploy() {
