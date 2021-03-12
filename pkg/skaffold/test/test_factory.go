@@ -43,16 +43,25 @@ type Config interface {
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
-func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) (Tester, error) {
-	runner, err := getRunner(cfg, imagesAreLocal, cfg.TestCases())
+func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) (*FullTester, error) {
+	runners, err := getRunners(cfg, imagesAreLocal, cfg.TestCases())
 	if err != nil {
 		return nil, err
 	}
 
-	return FullTester{
-		runners: runner,
+	return &FullTester{
+		Runners: runners,
 		muted:   cfg.Muted(),
 	}, nil
+}
+
+type TesterProvider interface {
+	GetAllTesters() []Tester
+}
+
+// GetAllTesters returns all the runners.
+func (t FullTester) GetAllTesters() []Runner {
+	return t.Runners
 }
 
 // TestDependencies returns the watch dependencies to the runner.
@@ -112,8 +121,8 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []build.Ar
 	return nil
 }
 
-func getRunner(cfg Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latest.TestCase) ([]runner, error) {
-	var runners []runner
+func getRunners(cfg Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latest.TestCase) ([]Runner, error) {
+	var runners []Runner
 	for _, tc := range tcs {
 		if len(tc.StructureTests) != 0 {
 			structureRunner, err := structure.New(cfg, cfg.GetWorkingDir(), tc, imagesAreLocal)

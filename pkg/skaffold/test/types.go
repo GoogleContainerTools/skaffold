@@ -45,15 +45,16 @@ type Muted interface {
 // FullTester should always be the ONLY implementation of the Tester interface;
 // newly added testing implementations should implement the runner interface.
 type FullTester struct {
-	runners []runner
-	muted   Muted
-	// imagesAreLocal func(imageName string) (bool, error)
+	Runners []Runner
+	runners []Runner
+	// runners map[string]runner
+	muted Muted
 }
 
 // runner is the lowest-level test executor in Skaffold, responsible for
 // running a single test on a single artifact image and returning its result.
 // Any new test type should implement this interface.
-type runner interface {
+type Runner interface {
 	Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error
 
 	TestDependencies() ([]string, error)
