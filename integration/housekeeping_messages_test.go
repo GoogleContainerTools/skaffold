@@ -33,7 +33,7 @@ func TestHouseKeepingMessagesNotShownForDiagnose(t *testing.T) {
 func TestHouseKeepingMessagesShownForDev(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	file := testutil.TempFile(t, "config", nil)
-	out := skaffold.Run("-c", file).InDir("examples/getting-started").RunOrFailOutput(t)
+	out := skaffold.Run("-c", file, "--update-check=true").InDir("examples/getting-started").RunOrFailOutput(t)
 	testutil.CheckContains(t, "Help improve Skaffold", string(out))
 	skaffold.Delete().InDir("examples/getting-started")
 }

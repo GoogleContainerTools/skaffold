@@ -25,10 +25,8 @@ set GOOS=windows
 set GOARCH=amd64
 set CGO_ENABLED=1
 FOR /F "tokens=*" %%a in ('git describe --always --tags --dirty') do SET VERSION=%%a
-FOR /F "tokens=*" %%a in ('git status --porcelain') do SET DIRTY=%%a
-IF "%DIRTY" == "" SET TREE=clean ELSE SET TREE=dirty
 FOR /F "tokens=*" %%a in ('git rev-parse HEAD') do SET COMMIT=%%a
 for /f %%a in ('powershell -Command "Get-Date -format yyyy_MM_dd__HH_mm_ss"') do set BUILD_DATE=%%a
-set FLAG_LDFLAGS=" -X github.com/GoogleContainerTools/skaffold/pkg/skaffold/version.version=%VERSION% -X github.com/GoogleContainerTools/skaffold/pkg/skaffold/version.buildDate='%BUILD_DATE%' -X github.com/GoogleContainerTools/skaffold/pkg/skaffold/version.gitCommit=%COMMIT% -X github.com/GoogleContainerTools/skaffold/pkg/skaffold/version.gitTreeState=%TREE%  -extldflags \"\""
+set FLAG_LDFLAGS=" -X github.com/GoogleContainerTools/skaffold/pkg/skaffold/version.version=%VERSION% -X github.com/GoogleContainerTools/skaffold/pkg/skaffold/version.buildDate='%BUILD_DATE%' -X github.com/GoogleContainerTools/skaffold/pkg/skaffold/version.gitCommit=%COMMIT% -extldflags \"\""
 
 go build -ldflags %FLAG_LDFLAGS% -o out/skaffold.exe github.com/GoogleContainerTools/skaffold/cmd/skaffold
