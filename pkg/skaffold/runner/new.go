@@ -260,7 +260,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labels map[string]string)
 
 	for _, d := range deployCfgs {
 		if d.KubeContext != "" {
-			if kubeContext != "" {
+			if kubeContext != "" && kubeContext != d.KubeContext {
 				return nil, errors.New("cannot resolve active Kubernetes context - multiple contexts configured in skaffold.yaml")
 			}
 			kubeContext = d.KubeContext
