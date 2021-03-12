@@ -29,6 +29,7 @@ import (
 
 // Builder is used to build cobra commands.
 type Builder interface {
+	WithArgs(cobra.PositionalArgs, func(context.Context, io.Writer, []string) error) *cobra.Command
 	WithDescription(description string) Builder
 	WithLongDescription(long string) Builder
 	WithExample(comment, command string) Builder
@@ -122,6 +123,20 @@ func (b *builder) NoArgs(action func(context.Context, io.Writer) error) *cobra.C
 	b.cmd.Args = cobra.NoArgs
 	b.cmd.RunE = func(*cobra.Command, []string) error {
 		err := handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout()))
+		// clean up server at end of the execution since post run hooks are only executed if
+		// RunE is successful
+		if shutdownAPIServer != nil {
+			shutdownAPIServer()
+		}
+		return err
+	}
+	return &b.cmd
+}
+
+func (b *builder) WithArgs(f cobra.PositionalArgs, action func(context.Context, io.Writer, []string) error) *cobra.Command {
+	b.cmd.Args = f
+	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
+		err := handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout(), args))
 		// clean up server at end of the execution since post run hooks are only executed if
 		// RunE is successful
 		if shutdownAPIServer != nil {

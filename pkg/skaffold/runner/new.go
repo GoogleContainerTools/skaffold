@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 
@@ -317,7 +318,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labels map[string]string)
 func validateKubectlFlags(flags *latest.KubectlFlags, additional latest.KubectlFlags) error {
 	errStr := "conflicting sets of kubectl deploy flags not supported in `skaffold apply` (flag: %s)"
 	if additional.DisableValidation != flags.DisableValidation {
-		return fmt.Errorf(errStr, additional.DisableValidation)
+		return fmt.Errorf(errStr, strconv.FormatBool(additional.DisableValidation))
 	}
 	for _, flag := range additional.Apply {
 		if !util.StrSliceContains(flags.Apply, flag) {
