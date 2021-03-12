@@ -48,7 +48,7 @@ import (
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
-	event.InitializeState(runCtx.GetPipelines(), runCtx.GetKubeContext(), runCtx.AutoBuild(), runCtx.AutoDeploy(), runCtx.AutoSync())
+	event.InitializeState(runCtx)
 	event.LogMetaEvent()
 	kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
 

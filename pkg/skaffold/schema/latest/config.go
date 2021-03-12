@@ -711,7 +711,7 @@ type HelmRelease struct {
 
 	// SetFiles are key-value pairs.
 	// If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.
-	SetFiles map[string]string `yaml:"setFiles,omitempty"`
+	SetFiles map[string]string `yaml:"setFiles,omitempty" skaffold:"filepath"`
 
 	// CreateNamespace if `true`, Skaffold will send `--create-namespace` flag to Helm CLI.
 	// `--create-namespace` flag is available in Helm since version 3.2.
