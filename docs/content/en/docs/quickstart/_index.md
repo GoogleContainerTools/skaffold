@@ -108,7 +108,18 @@ Watching for changes...
 
 ```
 
-{{< alert title="Note">}}
+{{< alert title="Error: Unknown API Version" >}}
+Skaffold may complain:
+```
+parsing skaffold config: unknown api version: "skaffold/v2beta13"
+```
+
+This error indicates that you are not using the latest release of
+Skaffold.  Cloud Shell may lag for several days after a new Skaffold release.
+Simply [install the latest version of Skaffold]({{< relref "/docs/install" >}}).
+{{< /alert >}}
+
+{{< alert title="Error: No push access to specified image repository">}}
 If you are deploying to a remote cluster, you must run `skaffold dev --default-repo=<my_registry>`
 where `<my_registry>` is an image registry that you have write-access to. Skaffold then
 builds and pushes the container images to that location, and non-destructively
