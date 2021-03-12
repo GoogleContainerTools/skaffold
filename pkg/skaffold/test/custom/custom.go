@@ -63,15 +63,17 @@ func New(cfg docker.Config, imageName string, wd string, ct latest.CustomTest) (
 }
 
 // Test is the entrypoint for running custom tests
-func (ct *Runner) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
-	if err := ct.runCustomCommand(ctx, out, ct.customTest, bRes); err != nil {
+func (ct *Runner) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	if err := ct.runCustomCommand(ctx, out, artifacts); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer, test latest.CustomTest, bRes []build.Artifact) error {
+func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	test := ct.customTest
+
 	// Expand command
 	command, err := util.ExpandEnvTemplate(test.Command, nil)
 	if err != nil {
@@ -88,7 +90,7 @@ func (ct *Runner) runCustomCommand(ctx context.Context, out io.Writer, test late
 		ctx = newCtx
 	}
 
-	cmd, err := ct.retrieveCmd(ctx, out, command, bRes)
+	cmd, err := ct.retrieveCmd(ctx, out, command, artifacts)
 	if err != nil {
 		return cmdRunRetrieveErr(command, ct.imageName, err)
 	}
@@ -154,7 +156,7 @@ func (ct *Runner) TestDependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string, bRes []build.Artifact) (*exec.Cmd, error) {
+func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string, artifacts []build.Artifact) (*exec.Cmd, error) {
 	var cmd *exec.Cmd
 	// We evaluate the command with a shell so that it can contain env variables.
 	if runtime.GOOS == Windows {
@@ -165,7 +167,7 @@ func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string
 	cmd.Stdout = out
 	cmd.Stderr = out
 
-	env, err := ct.getEnv(bRes)
+	env, err := ct.getEnv(artifacts)
 	if err != nil {
 		return nil, fmt.Errorf("setting env variables: %w", err)
 	}
@@ -180,13 +182,13 @@ func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string
 	return cmd, nil
 }
 
-func (ct *Runner) getEnv(bRes []build.Artifact) ([]string, error) {
+func (ct *Runner) getEnv(artifacts []build.Artifact) ([]string, error) {
 	testContext, err := testContext(ct.testWorkingDir)
 	if err != nil {
 		return nil, fmt.Errorf("getting absolute path for test context: %w", err)
 	}
 
-	fqn, found := resolveArtifactImageTag(ct.imageName, bRes)
+	fqn, found := resolveArtifactImageTag(ct.imageName, artifacts)
 	if !found {
 		logrus.Debugln("Skipping tests for", ct.imageName, "since it wasn't built")
 		return nil, nil
@@ -201,8 +203,8 @@ func (ct *Runner) getEnv(bRes []build.Artifact) ([]string, error) {
 	return envs, nil
 }
 
-func resolveArtifactImageTag(imageName string, bRes []build.Artifact) (string, bool) {
-	for _, res := range bRes {
+func resolveArtifactImageTag(imageName string, artifacts []build.Artifact) (string, bool) {
+	for _, res := range artifacts {
 		if imageName == res.ImageName {
 			return res.Tag, true
 		}
