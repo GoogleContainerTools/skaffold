@@ -577,7 +577,6 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 			logEntry.Entry = "Test completed"
 		case Failed:
 			logEntry.Entry = "Test failed"
-			// logEntry.Err = de.Err
 		default:
 		}
 	case *proto.Event_DeployEvent:
@@ -701,9 +700,6 @@ func ResetStateOnTest() {
 	newState := handler.getState()
 	newState.TestState.Status = NotStarted
 	newState.TestState.StatusCode = proto.StatusCode_OK
-	newState.StatusCheckState = emptyStatusCheckState()
-	newState.ForwardedPorts = map[int32]*proto.PortEvent{}
-	newState.DebuggingContainers = nil
 	handler.setState(newState)
 }
 
