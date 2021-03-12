@@ -165,7 +165,7 @@ func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string
 	cmd.Stdout = out
 	cmd.Stderr = out
 
-	env, err := ct.setEnv(bRes)
+	env, err := ct.getEnv(bRes)
 	if err != nil {
 		return nil, fmt.Errorf("setting env variables: %w", err)
 	}
@@ -180,7 +180,7 @@ func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string
 	return cmd, nil
 }
 
-func (ct *Runner) setEnv(bRes []build.Artifact) ([]string, error) {
+func (ct *Runner) getEnv(bRes []build.Artifact) ([]string, error) {
 	testContext, err := testContext(ct.testWorkingDir)
 	if err != nil {
 		return nil, fmt.Errorf("getting absolute path for test context: %w", err)

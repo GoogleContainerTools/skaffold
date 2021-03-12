@@ -249,7 +249,7 @@ func TestTestDependenciesPaths(t *testing.T) {
 	}
 }
 
-func TestSetEnv(t *testing.T) {
+func TestGetEnv(t *testing.T) {
 	tests := []struct {
 		description string
 		tag         string
@@ -294,7 +294,7 @@ func TestSetEnv(t *testing.T) {
 
 			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 			t.CheckNoError(err)
-			actual, err := testRunner.setEnv([]build.Artifact{{
+			actual, err := testRunner.getEnv([]build.Artifact{{
 				ImageName: "image",
 				Tag:       test.tag,
 			}})
