@@ -45,16 +45,20 @@ type WatchingPodForwarder struct {
 	podWatcher   kubernetes.PodWatcher
 	events       chan kubernetes.PodEvent
 
-	// containerPorts returns a possibly-filtered and possibly-generated set of ports for a container.
-	containerPorts func(*v1.Pod, v1.Container) []v1.ContainerPort
+	// portSelector returns a possibly-filtered and possibly-generated set of ports for a pod.
+	containerPorts portSelector
 }
 
+// portSelector selects a set of ContainerPorts from a container in a pod.
+type portSelector func(*v1.Pod, v1.Container) []v1.ContainerPort
+
 // NewWatchingPodForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewWatchingPodForwarder(entryManager *EntryManager, podSelector kubernetes.PodSelector, namespaces []string) *WatchingPodForwarder {
+func NewWatchingPodForwarder(entryManager *EntryManager, podSelector kubernetes.PodSelector, namespaces []string, containerPorts portSelector) *WatchingPodForwarder {
 	return &WatchingPodForwarder{
-		entryManager: entryManager,
-		podWatcher:   newPodWatcher(podSelector, namespaces),
-		events:       make(chan kubernetes.PodEvent),
+		entryManager:   entryManager,
+		podWatcher:     newPodWatcher(podSelector, namespaces),
+		events:         make(chan kubernetes.PodEvent),
+		containerPorts: containerPorts,
 	}
 }
 
