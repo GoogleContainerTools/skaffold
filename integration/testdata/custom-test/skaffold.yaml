@@ -10,8 +10,6 @@ test:
         dependencies:
           paths:
           -  'foo*' 
-    # structureTests:
-    #   -  'foo*'
 deploy:
   kubectl:
     manifests:
