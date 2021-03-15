@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: custom-test
+spec:
+  containers:
+  - name: custom-test
+    image: custom-test-example

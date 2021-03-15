@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -83,6 +84,7 @@ func (ct *Runner) Test(ctx context.Context, out io.Writer, artifacts []build.Art
 		return cmdRunRetrieveErr(command, ct.imageName, err)
 	}
 
+	event.TestInProgress()
 	if err := util.RunCmd(cmd); err != nil {
 		if e, ok := err.(*exec.ExitError); ok {
 			// If the process exited by itself, just return the error
