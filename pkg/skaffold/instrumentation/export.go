@@ -225,6 +225,10 @@ func deployerMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, r
 	for _, deployer := range meter.Deployers {
 		deployerCounter.Record(ctx, 1, randLabel, label.String("deployer", deployer))
 	}
+	if meter.HelmReleasesCount > 0 {
+		multiReleasesCounter := metric.Must(m).NewInt64ValueRecorder("helmReleases", metric.WithDescription("Multiple helm releases used"))
+		multiReleasesCounter.Record(ctx, 1, randLabel, label.Int("count", meter.HelmReleasesCount))
+	}
 }
 
 func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
