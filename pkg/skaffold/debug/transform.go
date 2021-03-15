@@ -55,6 +55,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	shell "github.com/kballard/go-shellquote"
 	"github.com/sirupsen/logrus"
@@ -116,7 +117,12 @@ const (
 	debuggingSupportFilesVolume = "debugging-support-files"
 
 	// DebugConfigAnnotation is the name of the podspec annotation that records debugging configuration information.
+	// The annotation should be a JSON-encoded map of container-name to a `ContainerDebugConfiguration` object.
 	DebugConfigAnnotation = "debug.cloud.google.com/config"
+
+	// DebugProbesAnnotation is the name of the podspec annotation that disables rewriting of probe timeouts.
+	// The annotation value should be `skip`.
+	DebugProbeTimeoutsAnnotation = "debug.cloud.google.com/probe/timeouts"
 )
 
 // containerTransforms are the set of configured transformers
@@ -199,26 +205,38 @@ func transformManifest(obj runtime.Object, retrieveImageConfiguration configurat
 // transformPodSpec attempts to configure a podspec for debugging.
 // Returns true if changed, false otherwise.
 func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieveImageConfiguration configurationRetriever, debugHelpersRegistry string) bool {
+	// order matters as rewriteProbes only affects containers marked for debugging
 	containers := rewriteContainers(metadata, podSpec, retrieveImageConfiguration, debugHelpersRegistry)
-	timeouts := rewriteProbes(metadata, podSpec) // must rewriteProbes after
+	timeouts := rewriteProbes(metadata, podSpec)
 	return containers || timeouts
 }
 
 // rewriteProbes rewrites k8s probes to expand timeouts to 10 minutes to allow debugging local probes.
 func rewriteProbes(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec) bool {
+	var minTimeout time.Duration = 10 * time.Minute // make it configurable?
+	if annotation, found := metadata.Annotations[DebugProbeTimeoutsAnnotation]; found {
+		if annotation == "skip" {
+			logrus.Debugf("skipping probe rewrite on %q by request", metadata.Name)
+			return false
+		}
+		if d, err := time.ParseDuration(annotation); err != nil {
+			logrus.Warnf("invalid probe timeout value for %q: %q: %v", metadata.Name, annotation, err)
+		} else {
+			minTimeout = d
+		}
+	}
 	annotation, found := metadata.Annotations[DebugConfigAnnotation]
 	if !found {
-		logrus.Warn("no debug config found")
+		logrus.Debugf("skipping probe rewrite on %q: not configured for debugging", metadata.Name)
 		return false
 	}
 	var config map[string]ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(annotation), &config); err != nil {
-		logrus.Warn("error unmarshalling config", err)
+		logrus.Warnf("error unmarshalling debugging configuration for %q: %v", metadata.Name, err)
 		return false
 	}
 
 	changed := false
-	var minTimeout int32 = 10 * 60 // make it configurable?
 	for i := range podSpec.Containers {
 		c := &podSpec.Containers[i]
 		// only affect containers listed in debug-config
@@ -235,11 +253,11 @@ func rewriteProbes(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec) bool {
 	return changed
 }
 
-func rewriteHTTPGetProbe(probe *v1.Probe, minTimeout int32) bool {
-	if probe == nil || probe.HTTPGet == nil || minTimeout < probe.TimeoutSeconds {
+func rewriteHTTPGetProbe(probe *v1.Probe, minTimeout time.Duration) bool {
+	if probe == nil || probe.HTTPGet == nil || int32(minTimeout.Seconds()) < probe.TimeoutSeconds {
 		return false
 	}
-	probe.TimeoutSeconds = minTimeout
+	probe.TimeoutSeconds = int32(minTimeout.Seconds())
 	return true
 }
 

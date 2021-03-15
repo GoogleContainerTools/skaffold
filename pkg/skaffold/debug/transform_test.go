@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
@@ -338,33 +339,33 @@ func TestRewriteHTTPGetProbe(t *testing.T) {
 	tests := []struct {
 		description string
 		input       v1.Probe
-		minTimeout  int32
+		minTimeout  time.Duration
 		changed     bool
 		expected    v1.Probe
 	}{
 		{
 			description: "non-http probe should be skipped",
 			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 10},
-			minTimeout:  20,
+			minTimeout:  20 * time.Second,
 			changed:     false,
 		},
 		{
 			description: "http probe with big timeout should be skipped",
 			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 100 * 60},
-			minTimeout:  20,
+			minTimeout:  20 * time.Second,
 			changed:     false,
 		},
 		{
 			description: "http probe with no timeout",
 			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}},
-			minTimeout:  20,
+			minTimeout:  20 * time.Second,
 			changed:     true,
 			expected:    v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 20},
 		},
 		{
 			description: "http probe with small timeout",
 			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 60},
-			minTimeout:  100,
+			minTimeout:  100 * time.Second,
 			changed:     true,
 			expected:    v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 100},
 		},
@@ -384,15 +385,100 @@ func TestRewriteHTTPGetProbe(t *testing.T) {
 // TestRewriteProbes verifies that rewriteProbes skips podspecs that have a
 // `debug.cloud.google.com/config` annotation.
 func TestRewriteProbes(t *testing.T) {
-	pod := v1.Pod{
-		TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
-		ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/config": `{"name1":{"runtime":"test"}}`}},
-		Spec: v1.PodSpec{Containers: []v1.Container{{
-			Name:          "name1",
-			Image:         "image1",
-			LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}}
+	tests := []struct {
+		name    string
+		input   v1.Pod
+		changed bool
+		result  v1.Pod
+	}{
+		{
+			name: "skips pod missing debug annotation",
+			input: v1.Pod{
+				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+				ObjectMeta: metav1.ObjectMeta{Name: "podname"},
+				Spec: v1.PodSpec{Containers: []v1.Container{{
+					Name:          "name1",
+					Image:         "image1",
+					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
+			changed: false,
+		},
+		{
+			name: "processes pod with debug annotation and uses default timeout",
+			input: v1.Pod{
+				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/config": `{"name1":{"runtime":"test"}}`}},
+				Spec: v1.PodSpec{Containers: []v1.Container{{
+					Name:          "name1",
+					Image:         "image1",
+					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
+			changed: true,
+			result: v1.Pod{
+				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/config": `{"name1":{"runtime":"test"}}`}},
+				Spec: v1.PodSpec{Containers: []v1.Container{{
+					Name:          "name1",
+					Image:         "image1",
+					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 600}}}}},
+		},
+		{
+			name: "skips pod with skip-probes annotation",
+			input: v1.Pod{
+				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe/timeouts": `skip`}},
+				Spec: v1.PodSpec{Containers: []v1.Container{{
+					Name:          "name1",
+					Image:         "image1",
+					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
+			changed: false,
+		},
+		{
+			name: "processes pod with probes annotation with explicit timeout",
+			input: v1.Pod{
+				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe/timeouts": `1m`}},
+				Spec: v1.PodSpec{Containers: []v1.Container{{
+					Name:          "name1",
+					Image:         "image1",
+					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
+			changed: false,
+			result: v1.Pod{
+				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe/timeouts": `1m`}},
+				Spec: v1.PodSpec{Containers: []v1.Container{{
+					Name:          "name1",
+					Image:         "image1",
+					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 60}}}}},
+		},
+		{
+			name: "processes pod with probes annotation with invalid timeout",
+			input: v1.Pod{
+				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe/timeouts": `on`}},
+				Spec: v1.PodSpec{Containers: []v1.Container{{
+					Name:          "name1",
+					Image:         "image1",
+					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
+			changed: false,
+			result: v1.Pod{
+				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe/timeouts": `on`}},
+				Spec: v1.PodSpec{Containers: []v1.Container{{
+					Name:          "name1",
+					Image:         "image1",
+					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 600}}}}},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			pod := test.input
+			result := rewriteProbes(&pod.ObjectMeta, &pod.Spec)
+			t.CheckDeepEqual(test.changed, result)
+			if test.changed {
+				t.CheckDeepEqual(test.result, pod)
+			} else {
+				t.CheckDeepEqual(test.input, pod)
+			}
+		})
+	}
 
-	result := rewriteProbes(&pod.ObjectMeta, &pod.Spec)
-	testutil.CheckDeepEqual(t, true, result)
-	testutil.CheckDeepEqual(t, int32(10*60), pod.Spec.Containers[0].LivenessProbe.TimeoutSeconds)
 }

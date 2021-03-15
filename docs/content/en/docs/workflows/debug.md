@@ -41,10 +41,21 @@ specified in [Skaffold's global configuration]({{< relref "/docs/design/global-c
     [liveness, readiness, and startup probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
     to 600 seconds (10 minutes) from the default of 1 second. 
     This change allows probes to be debugged, and avoids negative
-    consequences from probes blocked when the app is already suspended
+    consequences from blocked probes when the app is already suspended
     during a debugging session.
     Failed liveness probes in particular result in the container
     being terminated and restarted.
+
+	The probe timeout value can be set on a per-podspec basis by setting
+	a `debug.cloud.google.com/probe/timeouts` annotation on the podspec's metadata
+	with a valid duration (see [Go's time.ParseDuration()](https://pkg.go.dev/time#ParseDuration)).
+    This probe timeout-rewriting can be skipped entirely by using `skip`.  For example:
+    ```yaml
+    metadata:
+      annotations:
+        debug.cloud.google.com/probe/timeouts: skip
+    spec: ...
+    ```
 
 ### Supported Language Runtimes
 
