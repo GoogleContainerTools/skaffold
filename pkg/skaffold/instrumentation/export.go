@@ -179,7 +179,6 @@ func flagMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randL
 			label.String("flag_name", k),
 			label.String("flag_value", v),
 			label.String("command", meter.Command),
-			label.String("value", v),
 			label.String("error", meter.ErrorCode.String()),
 			randLabel,
 		}
