@@ -47,6 +47,8 @@ func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes
 	if !options.Enabled() {
 		return nil
 	}
+
+	// TODO this doesn't feel like the right place
 	if err := options.Validate(); err != nil {
 		logrus.Error("port-forward: ", err)
 		return nil
@@ -64,7 +66,6 @@ func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes
 	if options.ForwardPods(runMode) {
 		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, namespaces, allPorts))
 	} else if options.ForwardDebug(runMode) {
-		// TODO: just forward debug-related ports
 		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, namespaces, debugPorts))
 	}
 
