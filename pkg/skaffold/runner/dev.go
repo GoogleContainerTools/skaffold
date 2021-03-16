@@ -110,7 +110,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			return nil
 		}
 		r.changeSet.needsRedeploy = true
-		needsDeploy = deployIntent && r.changeSet.needsRedeploy
+		needsDeploy = deployIntent
 
 		// TODO(modali): Add skipTest boolean to Tester itself to avoid this check.
 		if !r.runCtx.SkipTests() {
