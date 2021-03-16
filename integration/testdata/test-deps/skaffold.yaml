@@ -2,15 +2,15 @@ apiVersion: skaffold/v2beta13
 kind: Config
 build:
   artifacts:
-  - image: custom-test-example
+  - image: test-deps-example
 test:
-  - image: custom-test-example
+  - image: test-deps-example
     custom:
-      - command: echo bar >| foo
+      - command: echo Hello!!
         dependencies:
           paths:
           -  'foo*' 
 deploy:
- kubectl:
-   manifests:
-   - pod.yaml
+  kubectl:
+    manifests:
+      - k8s-*

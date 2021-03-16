@@ -32,15 +32,15 @@ func TestTestTriggers(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("testdata/custom-test").RunOrFail(t)
+	skaffold.Build().InDir("testdata/test-deps").RunOrFail(t)
 
 	ns, _ := SetupNamespace(t)
 	rpcAddr := randomPort()
 
-	skaffold.Dev("--rpc-port", rpcAddr).InDir("testdata/custom-test").InNs(ns.Name).RunBackground(t)
+	skaffold.Dev("--rpc-port", rpcAddr).InDir("testdata/test-deps").InNs(ns.Name).RunBackground(t)
 
-	ioutil.WriteFile("testdata/custom-test/foo", []byte("foo"), 0644)
-	defer func() { os.Truncate("testdata/custom-test/foo", 0) }()
+	ioutil.WriteFile("testdata/test-deps/foo", []byte("foo"), 0644)
+	defer func() { os.Truncate("testdata/test-deps/foo", 0) }()
 
 	// Ensure we see a test is triggered in the event log
 	_, entries := apiEvents(t, rpcAddr)

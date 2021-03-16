@@ -152,10 +152,7 @@ func TestTestComplete(t *testing.T) {
 
 	wait(t, func() bool { return handler.getState().TestState.Status == NotStarted })
 	TestComplete()
-	wait(t, func() bool {
-		tState := handler.getState().TestState
-		return tState.Status == Complete && tState.StatusCode == proto.StatusCode_TEST_SUCCESS
-	})
+	wait(t, func() bool { return handler.getState().TestState.Status == Complete })
 }
 
 func TestBuildInProgress(t *testing.T) {

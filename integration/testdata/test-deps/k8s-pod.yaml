@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-deps-example
+spec:
+  containers:
+  - name: test-deps-example
+    image: test-deps-example
