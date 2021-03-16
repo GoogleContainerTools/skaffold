@@ -44,48 +44,26 @@ type ForwarderManager struct {
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
 func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string, label string, runMode config.RunMode, options config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
-	logrus.Warnf(">>> port-forwarding for mode %s %+v", runMode, options)
+	if !options.Enabled() {
+		return nil
+	}
+	if err := options.Validate(); err != nil {
+		logrus.Error("port-forward: ", err)
+		return nil
+	}
+
 	entryManager := NewEntryManager(out, NewKubectlForwarder(out, cli))
 
 	var forwarders []Forwarder
-	var forwardUser, forwardDebug, forwardServices, forwardPods bool
-
-	for _, o := range options.Modes {
-		switch o {
-		case "none", "false":
-			return nil
-		case "compat":
-			// "default" is the `--port-forward` mode
-			switch runMode {
-			case config.RunModes.Debug:
-				forwardDebug = true
-				forwardPods = true
-				fallthrough
-			default:
-				forwardUser = true
-				forwardServices = true
-			}
-		case "user":
-			forwardUser = true
-		case "services":
-			forwardServices = true
-		case "pods":
-			forwardPods = true
-		case "debug":
-			forwardDebug = true
-		default:
-			logrus.Warn("Unknown port-forwarding option: %q", o)
-		}
-	}
-	if forwardUser {
+	if options.ForwardUser(runMode) {
 		forwarders = append(forwarders, NewUserDefinedForwarder(entryManager, namespaces, userDefined))
 	}
-	if forwardServices {
+	if options.ForwardServices(runMode) {
 		forwarders = append(forwarders, NewServicesForwarder(entryManager, namespaces, label))
 	}
-	if forwardPods {
+	if options.ForwardPods(runMode) {
 		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, namespaces, allPorts))
-	} else if forwardDebug {
+	} else if options.ForwardDebug(runMode) {
 		// TODO: just forward debug-related ports
 		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, namespaces, debugPorts))
 	}

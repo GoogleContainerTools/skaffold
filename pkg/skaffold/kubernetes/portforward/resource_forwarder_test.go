@@ -130,7 +130,7 @@ func TestStart(t *testing.T) {
 			fakeForwarder := newTestForwarder()
 			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
 
-			rf := NewResourceForwarder(entryManager, []string{"test"}, "", nil)
+			rf := NewServicesForwarder(entryManager, []string{"test"}, "")
 			if err := rf.Start(context.Background()); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
@@ -194,7 +194,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			entryManager.forwardedResources = forwardedResources{
 				resources: test.forwardedResources,
 			}
-			rf := NewResourceForwarder(entryManager, []string{"test"}, "", nil)
+			rf := NewServicesForwarder(entryManager, []string{"test"}, "")
 			actualEntry := rf.getCurrentEntry(test.resource)
 
 			expectedEntry := test.expected
@@ -219,34 +219,22 @@ func TestUserDefinedResources(t *testing.T) {
 		expectedResources []string
 	}{
 		{
-			description: "one service and one user defined pod",
-			userResources: []*latest.PortForwardResource{
-				{Type: constants.Pod, Name: "pod", Namespace: "some", Port: schemautil.FromInt(9000)},
-			},
-			namespaces: []string{"test"},
-			expectedResources: []string{
-				"service-svc1-test-8080",
-				"pod-pod-some-9000",
-			},
-		},
-		{
+			description: "pod should be found",
 			userResources: []*latest.PortForwardResource{
 				{Type: constants.Pod, Name: "pod", Port: schemautil.FromInt(9000)},
 			},
 			namespaces: []string{"test"},
 			expectedResources: []string{
-				"service-svc1-test-8080",
 				"pod-pod-test-9000",
 			},
 		},
 		{
+			description: "pod not available",
 			userResources: []*latest.PortForwardResource{
 				{Type: constants.Pod, Name: "pod", Port: schemautil.FromInt(9000)},
 			},
-			namespaces: []string{"test", "some"},
-			expectedResources: []string{
-				"service-svc1-test-8080",
-			},
+			namespaces:        []string{"test", "some"},
+			expectedResources: []string{},
 		},
 		{
 			userResources: []*latest.PortForwardResource{
@@ -255,7 +243,6 @@ func TestUserDefinedResources(t *testing.T) {
 			},
 			namespaces: []string{"test", "some"},
 			expectedResources: []string{
-				"service-svc1-test-8080",
 				"pod-pod-some-9001",
 			},
 		},
@@ -272,7 +259,7 @@ func TestUserDefinedResources(t *testing.T) {
 			fakeForwarder := newTestForwarder()
 			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
 
-			rf := NewResourceForwarder(entryManager, test.namespaces, "", test.userResources)
+			rf := NewUserDefinedForwarder(entryManager, test.namespaces, test.userResources)
 			if err := rf.Start(context.Background()); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
