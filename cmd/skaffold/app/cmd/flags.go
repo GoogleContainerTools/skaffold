@@ -251,7 +251,7 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:     "port-forward",
-		Usage:    "Port-forward exposes service ports and container ports within pods and other resources (none, user, services, debug, pods)",
+		Usage:    "Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)",
 		Value:    &opts.PortForward.Modes,
 		DefValue: []string{"user"},
 		DefValuePerCommand: map[string]interface{}{

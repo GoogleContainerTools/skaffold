@@ -27,7 +27,7 @@ const (
 	services = "services"
 	debug    = "debug"
 	pods     = "pods"
-	none     = "none"
+	off      = "off"
 )
 
 // PortForwardOptions are options set by the command line for port forwarding
@@ -49,7 +49,7 @@ func (p PortForwardOptions) Enabled() bool {
 		if err == nil && !b {
 			return false
 		}
-		if o == none {
+		if o == off {
 			return false
 		}
 	}
@@ -67,7 +67,7 @@ func (p PortForwardOptions) Validate() error {
 			}
 		} else {
 			switch o {
-			case none, compat:
+			case off, compat:
 				if len(p.Modes) > 1 {
 					return fmt.Errorf("port-forward %q cannot be combined with other options", o)
 				}

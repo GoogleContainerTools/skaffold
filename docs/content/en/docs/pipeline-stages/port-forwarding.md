@@ -20,16 +20,16 @@ Skaffold supports automatic port forwarding the following classes of resources:
 
 Skaffold enables certain classes of forwards by default depending on the Skaffold command used.
 These defaults can be overridden with the `--port-forward` flag, and port-forwarding can be
-disabled with `--port-forward=none`.
+disabled with `--port-forward=off`.
 
 Command-line                          | Default modes
 ------------------------------------- | -------------------
 `skaffold dev`                        | `user`
 `skaffold dev --port-forward`         | `user`, `services`
-`skaffold dev --port-forward=none`    | _no ports forwarded_
+`skaffold dev --port-forward=off`     | _no ports forwarded_
 `skaffold debug`                      | `user`, `debug`
 `skaffold debug --port-forward`       | `user`, `services`, `debug` <small>(<em>see note below</em>)</small>
-`skaffold debug --port-forward=none`  | _no ports forwarded_
+`skaffold debug --port-forward=off`   | _no ports forwarded_
 
 {{< alert title="Compatibility Note" >}}
 Note that `skaffold debug --port-forward` previously enabled the

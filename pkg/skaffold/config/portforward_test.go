@@ -28,14 +28,14 @@ func TestPortForwardOptions_Validate(t *testing.T) {
 		modes     []string
 		shouldErr bool
 	}{
-		{name: "none", modes: nil, shouldErr: false},
+		{name: "off", modes: nil, shouldErr: false},
 		{name: "compat", modes: []string{"compat"}, shouldErr: false},
-		{name: "none", modes: []string{"none"}, shouldErr: false},
+		{name: "off", modes: []string{"off"}, shouldErr: false},
 		{name: "true", modes: []string{"true"}, shouldErr: false},
 		{name: "false", modes: []string{"false"}, shouldErr: false},
 		{name: "user,debug,pods,services", modes: []string{"user", "debug", "pods", "services"}, shouldErr: false},
 		{name: "user,compat,debug", modes: []string{"user", "compat", "debug"}, shouldErr: true},
-		{name: "none,debug", modes: []string{"none", "debug"}, shouldErr: true},
+		{name: "off,debug", modes: []string{"off", "debug"}, shouldErr: true},
 		{name: "pods,false", modes: []string{"pods", "false"}, shouldErr: true},
 	}
 	for _, test := range tests {
@@ -57,7 +57,7 @@ func TestPortForwardOptions_Forwards(t *testing.T) {
 		forwardDebug    bool
 	}{
 		{name: "nil", modes: nil},                 // all disabled
-		{name: "none", modes: []string{"none"}},   // all disabled
+		{name: "off", modes: []string{"off"}},     // all disabled
 		{name: "false", modes: []string{"false"}}, // all disabled
 		{name: "compat - deploy, dev, run", modes: []string{"compat"}, runModes: []RunMode{RunModes.Deploy, RunModes.Run, RunModes.Dev}, forwardUser: true, forwardServices: true},
 		{name: "compat - debug", modes: []string{"compat"}, runModes: []RunMode{RunModes.Debug}, forwardUser: true, forwardServices: true, forwardDebug: true},
