@@ -548,15 +548,21 @@ func reflectValueOf(values []interface{}) []reflect.Value {
 	return results
 }
 
-func ParseFlags(cmd *cobra.Command, flags []*Flag) {
+func ResetFlagDefaults(cmd *cobra.Command, flags []*Flag) {
 	// Update default values.
 	for _, fl := range flags {
 		flag := cmd.Flag(fl.Name)
-		if fl.DefValuePerCommand != nil {
-			if defValue, present := fl.DefValuePerCommand[cmd.Use]; present {
-				if !flag.Changed {
-					flag.Value.Set(fmt.Sprintf("%v", defValue))
+		if !flag.Changed {
+			defValue := fl.DefValue
+			if fl.DefValuePerCommand != nil {
+				if d, present := fl.DefValuePerCommand[cmd.Use]; present {
+					defValue = d
 				}
+			}
+			if sv, ok := flag.Value.(pflag.SliceValue); ok {
+				reflect.ValueOf(sv).MethodByName("Replace").Call(reflectValueOf([]interface{}{defValue}))
+			} else {
+				flag.Value.Set(fmt.Sprintf("%v", defValue))
 			}
 		}
 		if fl.IsEnum {
@@ -582,7 +588,7 @@ func AddFlags(cmd *cobra.Command) {
 
 	// Apply command-specific default values to flags.
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		ParseFlags(cmd, flagsForCommand)
+		ResetFlagDefaults(cmd, flagsForCommand)
 		// Since PersistentPreRunE replaces the parent's PersistentPreRunE,
 		// make sure we call it, if it is set.
 		if parent := cmd.Parent(); parent != nil {
