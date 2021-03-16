@@ -64,6 +64,9 @@ type skaffoldMeter struct {
 	// BuildDependencies Enum values for all the builders using build dependencies.
 	BuildDependencies map[string]int
 
+	// MultiHelmReleasesCount is the number of releases if helm deployer is present.
+	HelmReleasesCount int
+
 	// SyncType Sync type used in the build configuration: infer, auto, and/or manual.
 	SyncType map[string]bool
 

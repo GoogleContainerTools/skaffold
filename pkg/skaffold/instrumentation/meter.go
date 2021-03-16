@@ -91,6 +91,9 @@ func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
 			}
 		}
 		meter.Deployers = append(meter.Deployers, yamltags.GetYamlKeys(config.Deploy.DeployType)...)
+		if h := config.Deploy.HelmDeploy; h != nil {
+			meter.HelmReleasesCount = len(h.Releases)
+		}
 		meter.BuildArtifacts += len(config.Pipeline.Build.Artifacts)
 	}
 	meter.PlatformType = strings.Join(platforms, ":")
