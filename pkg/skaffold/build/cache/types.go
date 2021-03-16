@@ -21,8 +21,8 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
 type BuildAndTestFn func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact) ([]build.Artifact, error)
