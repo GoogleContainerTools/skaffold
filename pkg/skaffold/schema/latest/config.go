@@ -179,7 +179,7 @@ type TagPolicy struct {
 	CustomTemplateTagger *CustomTemplateTagger `yaml:"customTemplate,omitempty" yamltags:"oneOf=tag"`
 
 	// InputDigest *beta* tags images with their sha256 digest of their content.
-	InputDigest *ShaTagger `yaml:"inputDigest,omitempty" yamltags:"oneOf=tag"`
+	InputDigest *InputDigest `yaml:"inputDigest,omitempty" yamltags:"oneOf=tag"`
 }
 
 // ShaTagger *beta* tags images with their sha256 digest.

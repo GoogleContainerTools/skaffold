@@ -34,7 +34,7 @@ type Tagger interface {
 // GenerateFullyQualifiedImageName resolves the fully qualified image name for an artifact.
 // The workingDir is the root directory of the artifact with respect to the Skaffold root,
 // and imageName is the base name of the image.
-func GenerateFullyQualifiedImageName(t Tagger, image *latest.Artifact) (string, error) {
+func GenerateFullyQualifiedImageName(t Tagger, image latest.Artifact) (string, error) {
 	tag, err := t.GenerateTag(image)
 	if err != nil {
 		return "", fmt.Errorf("generating tag: %w", err)

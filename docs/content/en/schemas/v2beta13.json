@@ -2845,7 +2845,7 @@
           "x-intellij-html-description": "<em>beta</em> tags images with the git tag or commit of the artifact's workspace."
         },
         "inputDigest": {
-          "$ref": "#/definitions/ShaTagger",
+          "$ref": "#/definitions/InputDigest",
           "description": "*beta* tags images with their sha256 digest of their content.",
           "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest of their content."
         },
@@ -2980,7 +2980,7 @@
         {
           "properties": {
             "inputDigest": {
-              "$ref": "#/definitions/ShaTagger",
+              "$ref": "#/definitions/InputDigest",
               "description": "*beta* tags images with their sha256 digest of their content.",
               "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest of their content."
             },
