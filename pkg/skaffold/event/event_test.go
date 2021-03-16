@@ -372,7 +372,6 @@ func TestResetStateOnBuild(t *testing.T) {
 				"image1": NotStarted,
 			},
 		},
-		TestState:        &proto.TestState{Status: NotStarted},
 		DeployState:      &proto.DeployState{Status: NotStarted},
 		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
 		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
