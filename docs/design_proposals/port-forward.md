@@ -89,26 +89,6 @@ just debug ports.  With this proposed change, the `debug` mode will only select 
 `containerPort`s was the cause of some confusion in earlier iterations of port-forwarding.
 
 
-### Skaffold configuration changes
-
-#### skaffold.yaml
-
-We will define a new configuration block `defaults` with a single array field `portForwardModes`:
-```yaml
-apiVersion: skaffold/v2beta8
-kind: Config
-build:
-  artifacts:
-  - image: foo
-defaults:
-  portForwardModes: ["user", "services"]
-```
-
-#### Global config ($HOME/.skaffold/config)
-
-The global config will support a `portForwardModes` with a single array field.  This can be set as a
-global default or as a per-context default.
-
 ### Open Issues/Questions
 
 Please list any open questions here in the following format:
