@@ -50,28 +50,30 @@ func NewInputDigestTagger(cfg docker.Config, ag graph.ArtifactGraph) (Tagger, er
 // this variable is for testing only.
 var getDependenciesForArtifact = graph.DependenciesForArtifact
 
-func (t *inputDigestTagger) GenerateTag(_ string, image *latest.Artifact) (string, error) {
+func (t *inputDigestTagger) GenerateTag(image latest.Artifact) (string, error) {
 	var inputs []string
-	ctx := context.Background()
-	srcFies, err := getDependenciesForArtifact(ctx, image, t.cfg, nil)
+	// TODO(nkubala): plumb through context into Tagger interface
+	ctx := context.TODO()
+	srcFiles, err := getDependenciesForArtifact(ctx, &image, t.cfg, nil)
 	if err != nil {
 		return "", err
 	}
 
-	for _, artifactDep := range t.ag.Dependencies(image) {
+	for _, artifactDep := range t.ag.Dependencies(&image) {
 		srcOfDep, err := getDependenciesForArtifact(ctx, artifactDep, t.cfg, nil)
 		if err != nil {
 			return "", err
 		}
-		srcFies = append(srcFies, srcOfDep...)
+		srcFiles = append(srcFiles, srcOfDep...)
 	}
 
-	sort.Strings(srcFies)
-	for _, d := range srcFies {
+	// must sort as hashing is sensitive to the order in which files are processed
+	sort.Strings(srcFiles)
+	for _, d := range srcFiles {
 		h, err := fileHasher(d)
 		if err != nil {
 			if os.IsNotExist(err) {
-				logrus.Tracef("skipping dependency for artifact cache calculation, file not found %s: %s", d, err)
+				logrus.Tracef("skipping dependency %q for artifact cache calculation: %v", d, err)
 				continue // Ignore files that don't exist
 			}
 

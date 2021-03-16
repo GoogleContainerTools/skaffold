@@ -26,30 +26,30 @@ import (
 func TestSha256_GenerateTag(t *testing.T) {
 	c := &ChecksumTagger{}
 
-	image := &latest.Artifact{
+	image := latest.Artifact{
 		ImageName: "img:tag",
 	}
 
-	tag, err := c.GenerateTag(".", image)
+	tag, err := c.GenerateTag(image)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "", tag)
 
 	image.ImageName = "img"
-	tag, err = c.GenerateTag(".", image)
+	tag, err = c.GenerateTag(image)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "latest", tag)
 
 	image.ImageName = "registry.example.com:8080/img:tag"
-	tag, err = c.GenerateTag(".", image)
+	tag, err = c.GenerateTag(image)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "", tag)
 
 	image.ImageName = "registry.example.com:8080/img"
-	tag, err = c.GenerateTag(".", image)
+	tag, err = c.GenerateTag(image)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "latest", tag)
 
 	image.ImageName = "registry.example.com/img"
-	tag, err = c.GenerateTag(".", image)
+	tag, err = c.GenerateTag(image)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "latest", tag)
 
 	image.ImageName = "registry.example.com:8080:garbage"
-	tag, err = c.GenerateTag(".", image)
+	tag, err = c.GenerateTag(image)
 	testutil.CheckErrorAndDeepEqual(t, true, err, "", tag)
 }

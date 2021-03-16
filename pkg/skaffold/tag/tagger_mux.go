@@ -29,12 +29,12 @@ type TaggerMux struct {
 	byImageName map[string]Tagger
 }
 
-func (t *TaggerMux) GenerateTag(workingDir string, image *latest.Artifact) (string, error) {
+func (t *TaggerMux) GenerateTag(image latest.Artifact) (string, error) {
 	tagger, found := t.byImageName[image.ImageName]
 	if !found {
 		return "", fmt.Errorf("no valid tagger found for artifact: %q", image.ImageName)
 	}
-	return tagger.GenerateTag(workingDir, image)
+	return tagger.GenerateTag(image)
 }
 
 func NewTaggerMux(runCtx *runcontext.RunContext) (Tagger, error) {

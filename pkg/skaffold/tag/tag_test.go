@@ -104,11 +104,11 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return env })
 
-			image := &latest.Artifact{
+			image := latest.Artifact{
 				ImageName: test.imageName,
 			}
 
-			tag, err := GenerateFullyQualifiedImageName(test.tagger, ".", image)
+			tag, err := GenerateFullyQualifiedImageName(test.tagger, image)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, tag)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})

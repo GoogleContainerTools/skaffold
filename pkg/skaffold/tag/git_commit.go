@@ -61,8 +61,8 @@ func NewGitCommit(prefix, variant string, ignoreChanges bool) (*GitCommit, error
 }
 
 // GenerateTag generates a tag from the git commit.
-func (t *GitCommit) GenerateTag(workingDir string, _ *latest.Artifact) (string, error) {
-	ref, err := t.runGitFn(workingDir)
+func (t *GitCommit) GenerateTag(image latest.Artifact) (string, error) {
+	ref, err := t.runGitFn(image.Workspace)
 	if err != nil {
 		return "", fmt.Errorf("unable to find git commit: %w", err)
 	}
@@ -70,7 +70,7 @@ func (t *GitCommit) GenerateTag(workingDir string, _ *latest.Artifact) (string, 
 	ref = sanitizeTag(ref)
 
 	if !t.ignoreChanges {
-		changes, err := runGit(workingDir, "status", ".", "--porcelain")
+		changes, err := runGit(image.Workspace, "status", ".", "--porcelain")
 		if err != nil {
 			return "", fmt.Errorf("getting git status: %w", err)
 		}

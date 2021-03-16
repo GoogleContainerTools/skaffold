@@ -163,7 +163,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 		i := i
 		go func() {
-			tag, err := tag.GenerateFullyQualifiedImageName(r.tagger, artifacts[i].Workspace, artifacts[i])
+			tag, err := tag.GenerateFullyQualifiedImageName(r.tagger, *artifacts[i])
 			tagErrs[i] <- tagErr{tag: tag, err: err}
 		}()
 	}
@@ -184,7 +184,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 				logrus.Debugln(t.err)
 				logrus.Debugln("Using a fall-back tagger")
 
-				fallbackTag, err := tag.GenerateFullyQualifiedImageName(&tag.ChecksumTagger{}, artifact.Workspace, artifact)
+				fallbackTag, err := tag.GenerateFullyQualifiedImageName(&tag.ChecksumTagger{}, *artifact)
 				if err != nil {
 					return nil, fmt.Errorf("generating checksum as fall-back tag for %q: %w", imageName, err)
 				}

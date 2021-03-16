@@ -42,7 +42,7 @@ func NewEnvTemplateTagger(t string) (Tagger, error) {
 }
 
 // GenerateTag generates a tag from a template referencing environment variables.
-func (t *envTemplateTagger) GenerateTag(_ string, image *latest.Artifact) (string, error) {
+func (t *envTemplateTagger) GenerateTag(image latest.Artifact) (string, error) {
 	// missingkey=error throws error when map is indexed with an undefined key
 	tag, err := util.ExecuteEnvTemplate(t.Template.Option("missingkey=error"), map[string]string{
 		"IMAGE_NAME": image.ImageName,

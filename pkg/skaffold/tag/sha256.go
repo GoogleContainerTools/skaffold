@@ -25,7 +25,7 @@ import (
 type ChecksumTagger struct{}
 
 // GenerateTag returns either the current tag or `latest`.
-func (t *ChecksumTagger) GenerateTag(_ string, image *latest.Artifact) (string, error) {
+func (t *ChecksumTagger) GenerateTag(image latest.Artifact) (string, error) {
 	parsed, err := docker.ParseReference(image.ImageName)
 	if err != nil {
 		return "", err

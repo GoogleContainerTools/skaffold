@@ -38,11 +38,11 @@ func TestInputDigest_GenerateTagWhenFileDoesntExist(t *testing.T) {
 
 		tagger, _ := NewInputDigestTagger(nil, nil)
 
-		artifact := &latest.Artifact{
+		artifact := latest.Artifact{
 			ImageName: "image_name",
 		}
 
-		tag, _ := tagger.GenerateTag("", artifact)
+		tag, _ := tagger.GenerateTag(artifact)
 
 		t.CheckDeepEqual("38e0b9de817f645c4bec37c0d4a3e58baecccb040f5718dc069a72c7385a0bed", tag)
 	})
