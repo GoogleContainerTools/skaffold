@@ -104,29 +104,30 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			instrumentation.AddDevIteration("build")
 			meterUpdated = true
 		}
-		bRes, err := r.Build(ctx, out, r.changeSet.needsRebuild)
+		_, err := r.Build(ctx, out, r.changeSet.needsRebuild)
 		if err != nil {
 			logrus.Warnln("Skipping test and deploy due to build error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 			return nil
 		}
-		// TODO(modali): Add skipTest boolean to Tester itself to avoid this check.
-		if !r.runCtx.SkipTests() {
-			if err = r.Test(ctx, out, bRes); err != nil {
-				if needsDeploy {
-					logrus.Warnln("Skipping deploy due to test error:", err)
-				}
-				event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
-				return nil
-			}
-		}
+		needsTest = true
+		// // TODO(modali): Add skipTest boolean to Tester itself to avoid this check.
+		// if !r.runCtx.SkipTests() {
+		// 	if err = r.Test(ctx, out, bRes); err != nil {
+		// 		if needsDeploy {
+		// 			logrus.Warnln("Skipping deploy due to test error:", err)
+		// 		}
+		// 		event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
+		// 		return nil
+		// 	}
+		// }
 	}
 
 	if needsTest {
-		event.ResetStateOnTest()
-		defer func() {
-			r.changeSet.resetTest()
-		}()
+		// event.ResetStateOnTest()
+		// defer func() {
+		// 	r.changeSet.resetTest()
+		// }()
 
 		if err := r.Test(ctx, out, r.builds); err != nil {
 			if needsDeploy {

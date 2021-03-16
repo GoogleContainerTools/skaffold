@@ -175,10 +175,10 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 			AutoTrigger: autoBuild,
 			StatusCode:  proto.StatusCode_OK,
 		},
-		TestState: &proto.TestState{
-			Status:     NotStarted,
-			StatusCode: proto.StatusCode_OK,
-		},
+		// TestState: &proto.TestState{
+		// 	Status:     NotStarted,
+		// 	StatusCode: proto.StatusCode_OK,
+		// },
 		DeployState: &proto.DeployState{
 			Status:      NotStarted,
 			AutoTrigger: autoDeploy,
@@ -565,20 +565,20 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 			// logEntry.Err = be.Err
 		default:
 		}
-	case *proto.Event_TestEvent:
-		de := e.TestEvent
-		ev.stateLock.Lock()
-		ev.state.TestState.Status = de.Status
-		ev.stateLock.Unlock()
-		switch de.Status {
-		case InProgress:
-			logEntry.Entry = "Test started"
-		case Complete:
-			logEntry.Entry = "Test completed"
-		case Failed:
-			logEntry.Entry = "Test failed"
-		default:
-		}
+	// case *proto.Event_TestEvent:
+	// 	de := e.TestEvent
+	// 	ev.stateLock.Lock()
+	// 	ev.state.TestState.Status = de.Status
+	// 	ev.stateLock.Unlock()
+	// 	switch de.Status {
+	// 	case InProgress:
+	// 		logEntry.Entry = "Test started"
+	// 	case Complete:
+	// 		logEntry.Entry = "Test completed"
+	// 	case Failed:
+	// 		logEntry.Entry = "Test failed"
+	// 	default:
+	// 	}
 	case *proto.Event_DeployEvent:
 		de := e.DeployEvent
 		ev.stateLock.Lock()
@@ -695,13 +695,13 @@ func ResetStateOnBuild() {
 	handler.setState(newState)
 }
 
-// ResetStateOnTest resets the test, deploy, sync and status check state
-func ResetStateOnTest() {
-	newState := handler.getState()
-	newState.TestState.Status = NotStarted
-	newState.TestState.StatusCode = proto.StatusCode_OK
-	handler.setState(newState)
-}
+// // ResetStateOnTest resets the test, deploy, sync and status check state
+// func ResetStateOnTest() {
+// 	newState := handler.getState()
+// 	newState.TestState.Status = NotStarted
+// 	newState.TestState.StatusCode = proto.StatusCode_OK
+// 	handler.setState(newState)
+// }
 
 // ResetStateOnDeploy resets the deploy, sync and status check state
 func ResetStateOnDeploy() {
