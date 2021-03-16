@@ -6,28 +6,40 @@ featureId: portforward
 aliases: [/docs/how-tos/portforward]
 ---
 
-Skaffold has built-in support for forwarding ports for exposed Kubernetes resources on your cluster
+Skaffold has built-in support for forwarding ports from exposed Kubernetes resources on your cluster
 to your local machine when running in either `dev` or `debug` mode.
-
-**Port forwarding is disabled by default; it can be enabled with the `--port-forward` flag.**
-**If this flag is not set, no port forwarding will occur!**
-
-When port forwarding is enabled, Skaffold will:
-
-1. Set up automatic port forwarding as described in the following section
-2. Port forward any user defined resources in the Skaffold config
-
 
 ### Automatic Port Forwarding
 
-Skaffold will perform automatic port forwarding for resources that it manages:
+Skaffold supports automatic port forwarding the following classes of resources:
 
-* all **services it deploys** for both `skaffold dev` and `skaffold debug`.
-* all **pods it deploys**, but only including containers that run **skaffold built images**, for `skaffold debug`. 
+- `user`: explicit port-forwards defined in the `skaffold.yaml` (called [_user-defined port forwards_](#UDPF))
+- `services`: ports exposed on services deployed by Skaffold.
+- `debug`: debugging ports as enabled by `skaffold debug` for Skaffold-built images.
+- `pods`: all `containerPort`s on deployed pods for Skaffold-built images.
 
-### User Defined Port Forwarding
+Skaffold enables certain classes of forwards by default depending on the Skaffold command used.
+These defaults can be overridden with the `--port-forward` flag, and port-forwarding can be
+disabled with `--port-forward=none`.
 
-Users can also define additional resources to port forward in the skaffold config, to enable port forwarding for 
+Command-line                          | Default modes
+------------------------------------- | -------------------
+`skaffold dev`                        | `user`
+`skaffold dev --port-forward`         | `user`, `services`
+`skaffold dev --port-forward=none`    | _no ports forwarded_
+`skaffold debug`                      | `user`, `debug`
+`skaffold debug --port-forward`       | `user`, `services`, `debug` <small>(<em>see note below</em>)</small>
+`skaffold debug --port-forward=none`  | _no ports forwarded_
+
+{{< alert title="Compatibility Note" >}}
+Note that `skaffold debug --port-forward` previously enabled the
+equivalent of `pods` as Skaffold did not have an equivalent of `debug`. 
+We have replaced `pods` as it caused confusion.
+{{< /alert >}}
+
+### User-Defined Port Forwarding {#UDPF}
+
+Users can define additional resources to port forward in the skaffold config, to enable port forwarding for 
 
 * additional resource types supported by `kubectl port-forward` e.g.`Deployment`or `ReplicaSet`.
 * additional pods running containers which run images not built by Skaffold.
@@ -38,8 +50,8 @@ For example:
 portForward:
 - resourceType: deployment
   resourceName: myDep
-  namespace: mynamespace  # 
-  port: 8080 # 
+  namespace: mynamespace
+  port: 8080
   localPort: 9000 # *Optional*
 ```
 
