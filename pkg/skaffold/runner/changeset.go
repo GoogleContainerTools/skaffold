@@ -67,10 +67,6 @@ func (c *changeSet) resetSync() {
 	c.needsResync = nil
 }
 
-func (c *changeSet) resetTest() {
-	c.needsRetest = false
-}
-
 func (c *changeSet) resetDeploy() {
 	c.needsRedeploy = false
 }

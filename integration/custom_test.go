@@ -21,6 +21,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
@@ -30,23 +31,32 @@ func TestCustomTest(t *testing.T) {
 
 	config := "skaffold.yaml"
 	expectedText := "bar"
+	testDir := "testdata/custom-test"
+	testFile := "testdata/custom-test/foo"
 
 	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("testdata/custom-test").WithConfig(config).RunOrFail(t)
+	skaffold.Build().InDir(testDir).WithConfig(config).RunOrFail(t)
 
-	ns, client := SetupNamespace(t)
+	ns, _ := SetupNamespace(t)
 
-	skaffold.Dev().InDir("testdata/custom-test").WithConfig(config).InNs(ns.Name).RunBackground(t)
+	skaffold.Dev().InDir(testDir).WithConfig(config).InNs(ns.Name).RunBackground(t)
 
-	client.WaitForPodsReady("custom-test-example")
+	ioutil.WriteFile(testFile, []byte("foo"), 0644)
+	defer func() { os.Truncate(testFile, 0) }()
 
-	ioutil.WriteFile("testdata/custom-test/foo", []byte("foo"), 0644)
-	defer func() { os.Truncate("testdata/custom-test/foo", 0) }()
-
-	fileContent, err := ioutil.ReadFile("testdata/custom-test/foo")
-	actualText := strings.TrimSuffix(string(fileContent), "\n")
-	if err == nil && actualText != expectedText {
-		t.Fatalf("Test failed. Existing file contents %s did not match expected %s", actualText, expectedText)
+	found := false
+	for start := time.Now(); time.Since(start) < time.Second*5; {
+		fileContent, err := ioutil.ReadFile(testFile)
+		if err != nil {
+			failNowIfError(t, err)
+		}
+		actualText := strings.TrimSuffix(string(fileContent), "\n")
+		found = actualText == expectedText
+		if found {
+			break
+		}
 	}
-	failNowIfError(t, err)
+	if !found {
+		t.Fatalf("Test failed. File contents did not match with expected.")
+	}
 }
