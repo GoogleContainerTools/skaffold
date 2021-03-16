@@ -19,9 +19,12 @@ package integration
 import (
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
@@ -44,19 +47,9 @@ func TestCustomTest(t *testing.T) {
 	ioutil.WriteFile(testFile, []byte("foo"), 0644)
 	defer func() { os.Truncate(testFile, 0) }()
 
-	found := false
-	for start := time.Now(); time.Since(start) < time.Second*5; {
-		fileContent, err := ioutil.ReadFile(testFile)
-		if err != nil {
-			failNowIfError(t, err)
-		}
-		actualText := strings.TrimSuffix(string(fileContent), "\n")
-		found = actualText == expectedText
-		if found {
-			break
-		}
-	}
-	if !found {
-		t.Fatalf("Test failed. File contents did not match with expected.")
-	}
+	err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+		out, _ := exec.Command("cat", testFile).Output()
+		return strings.Contains(string(out), expectedText), nil
+	})
+	failNowIfError(t, err)
 }
