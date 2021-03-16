@@ -24,7 +24,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -63,7 +63,7 @@ func TestNewCustomTestRunner(t *testing.T) {
 
 		testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 		t.CheckNoError(err)
-		err = testRunner.Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err = testRunner.Test(context.Background(), ioutil.Discard, []graph.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -125,7 +125,7 @@ func TestCustomCommandError(t *testing.T) {
 
 			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, test.custom)
 			t.CheckNoError(err)
-			err = testRunner.Test(context.Background(), ioutil.Discard, []build.Artifact{{
+			err = testRunner.Test(context.Background(), ioutil.Discard, []graph.Artifact{{
 				ImageName: "image",
 				Tag:       "image:tag",
 			}})
@@ -300,7 +300,7 @@ func TestGetEnv(t *testing.T) {
 
 			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 			t.CheckNoError(err)
-			actual, err := testRunner.getEnv([]build.Artifact{{
+			actual, err := testRunner.getEnv([]graph.Artifact{{
 				ImageName: "image",
 				Tag:       test.tag,
 			}})

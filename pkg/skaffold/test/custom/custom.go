@@ -28,7 +28,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -156,7 +155,7 @@ func (ct *Runner) TestDependencies() ([]string, error) {
 	return nil, nil
 }
 
-func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string, artifacts []build.Artifact) (*exec.Cmd, error) {
+func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string, artifacts []graph.Artifact) (*exec.Cmd, error) {
 	var cmd *exec.Cmd
 	// We evaluate the command with a shell so that it can contain env variables.
 	if runtime.GOOS == Windows {
@@ -182,7 +181,7 @@ func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string
 	return cmd, nil
 }
 
-func (ct *Runner) getEnv(artifacts []build.Artifact) ([]string, error) {
+func (ct *Runner) getEnv(artifacts []graph.Artifact) ([]string, error) {
 	testContext, err := testContext(ct.testWorkingDir)
 	if err != nil {
 		return nil, fmt.Errorf("getting absolute path for test context: %w", err)
@@ -203,7 +202,7 @@ func (ct *Runner) getEnv(artifacts []build.Artifact) ([]string, error) {
 	return envs, nil
 }
 
-func resolveArtifactImageTag(imageName string, artifacts []build.Artifact) (string, bool) {
+func resolveArtifactImageTag(imageName string, artifacts []graph.Artifact) (string, bool) {
 	for _, res := range artifacts {
 		if imageName == res.ImageName {
 			return res.Tag, true

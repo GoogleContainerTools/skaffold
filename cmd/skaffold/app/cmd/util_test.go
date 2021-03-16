@@ -125,45 +125,45 @@ func TestGetArtifacts(t *testing.T) {
 func Test_getBuildArtifactsAndSetTags(t *testing.T) {
 	tests := []struct {
 		description string
-		artifacts   []build.Artifact
-		expected    []build.Artifact
+		artifacts   []graph.Artifact
+		expected    []graph.Artifact
 		defaultRepo string
 		shouldErr   bool
 	}{
 		{
 			description: "no artifact without default-repo",
 			artifacts:   nil,
-			expected:    []build.Artifact(nil),
+			expected:    []graph.Artifact(nil),
 		},
 		{
 			description: "single artifact without default-repo",
-			artifacts:   []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
-			expected:    []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			artifacts:   []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			expected:    []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
 		},
 		{
 			description: "multiple artifacts without default-repo",
-			artifacts: []build.Artifact{
+			artifacts: []graph.Artifact{
 				{ImageName: "image1", Tag: "image1:tag"},
 				{ImageName: "image1", Tag: "image1:tag"},
 			},
-			expected: []build.Artifact{
+			expected: []graph.Artifact{
 				{ImageName: "image1", Tag: "image1:tag"},
 				{ImageName: "image1", Tag: "image1:tag"},
 			},
 		},
 		{
 			description: "single artifact with default-repo",
-			artifacts:   []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
-			expected:    []build.Artifact{{ImageName: "image", Tag: "example.com/test-repo/image:tag"}},
+			artifacts:   []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			expected:    []graph.Artifact{{ImageName: "image", Tag: "example.com/test-repo/image:tag"}},
 			defaultRepo: "example.com/test-repo",
 		},
 		{
 			description: "multiple artifacts with default-repo",
-			artifacts: []build.Artifact{
+			artifacts: []graph.Artifact{
 				{ImageName: "image1", Tag: "image1:tag"},
 				{ImageName: "image1", Tag: "image1:tag"},
 			},
-			expected: []build.Artifact{
+			expected: []graph.Artifact{
 				{ImageName: "image1", Tag: "example.com/test-repo/image1:tag"},
 				{ImageName: "image1", Tag: "example.com/test-repo/image1:tag"},
 			},
@@ -171,11 +171,11 @@ func Test_getBuildArtifactsAndSetTags(t *testing.T) {
 		},
 		{
 			description: "multiple artifacts with erring default-repo",
-			artifacts: []build.Artifact{
+			artifacts: []graph.Artifact{
 				{ImageName: "image1", Tag: "image1:tag"},
 				{ImageName: "image1", Tag: "image1:tag"},
 			},
-			expected:    []build.Artifact(nil),
+			expected:    []graph.Artifact(nil),
 			defaultRepo: "example.com/test-repo",
 			shouldErr:   true,
 		},
