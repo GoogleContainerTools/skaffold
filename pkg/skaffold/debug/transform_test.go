@@ -480,5 +480,4 @@ func TestRewriteProbes(t *testing.T) {
 			}
 		})
 	}
-
 }
