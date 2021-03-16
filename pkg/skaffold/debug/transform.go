@@ -314,19 +314,9 @@ func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retriev
 		supportVolumeMount := v1.VolumeMount{Name: debuggingSupportFilesVolume, MountPath: "/dbg"}
 		// the initContainers are responsible for populating the contents of `/dbg`
 		for imageID := range requiredSupportImages {
-			// The debug helper images were historically named after the runtime (`go`, `nodejs`, `python`)
-			// but this is awkward with some registries being flat-namespaced (like GHCR).  So we began
-			// to prefix these images with `skaffold-debug-`.  As some people may have mirrored these
-			// images, we support the use of a `%s` in `debug-helpers-registry`.
-			var image string
-			if strings.Contains(debugHelpersRegistry, "%s") {
-				image = fmt.Sprintf(debugHelpersRegistry, imageID)
-			} else {
-				image = fmt.Sprintf("%s/skaffold-debug-%s", debugHelpersRegistry, imageID)
-			}
 			supportFilesInitContainer := v1.Container{
 				Name:         fmt.Sprintf("install-%s-debug-support", imageID),
-				Image:        image,
+				Image:        fmt.Sprintf("%s/%s", debugHelpersRegistry, imageID),
 				VolumeMounts: []v1.VolumeMount{supportVolumeMount},
 			}
 			podSpec.InitContainers = append(podSpec.InitContainers, supportFilesInitContainer)
