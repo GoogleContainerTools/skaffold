@@ -121,7 +121,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	}
 
 	// Start printing the logs after deploy is finished
-	if err := logger.Start(ctx,r.runCtx.GetNamespaces()); err != nil {
+	if err := logger.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
 		return fmt.Errorf("starting logger: %w", err)
 	}
 
