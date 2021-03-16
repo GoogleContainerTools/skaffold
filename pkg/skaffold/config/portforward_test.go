@@ -60,9 +60,9 @@ func TestPortForwardOptions_Forwards(t *testing.T) {
 		{name: "none", modes: []string{"none"}},   // all disabled
 		{name: "false", modes: []string{"false"}}, // all disabled
 		{name: "compat - deploy, dev, run", modes: []string{"compat"}, runModes: []RunMode{RunModes.Deploy, RunModes.Run, RunModes.Dev}, forwardUser: true, forwardServices: true},
-		{name: "compat - debug", modes: []string{"compat"}, runModes: []RunMode{RunModes.Debug}, forwardUser: true, forwardServices: true, forwardPods: true, forwardDebug: true},
+		{name: "compat - debug", modes: []string{"compat"}, runModes: []RunMode{RunModes.Debug}, forwardUser: true, forwardServices: true, forwardDebug: true},
 		{name: "true - deploy, dev, run", modes: []string{"true"}, runModes: []RunMode{RunModes.Deploy, RunModes.Run, RunModes.Dev}, forwardUser: true, forwardServices: true},
-		{name: "true - debug", modes: []string{"true"}, runModes: []RunMode{RunModes.Debug}, forwardUser: true, forwardServices: true, forwardPods: true, forwardDebug: true},
+		{name: "true - debug", modes: []string{"true"}, runModes: []RunMode{RunModes.Debug}, forwardUser: true, forwardServices: true, forwardDebug: true},
 
 		{name: "user,debug,pods,services", modes: []string{"user", "debug", "pods", "services"}, forwardUser: true, forwardServices: true, forwardPods: true, forwardDebug: true},
 		{name: "user", modes: []string{"user"}, forwardUser: true},

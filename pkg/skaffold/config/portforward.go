@@ -47,6 +47,8 @@ func (p PortForwardOptions) Enabled() bool {
 	return true
 }
 
+// Validate checks that the port-forward options are ok.
+// For example, `none` is not mixed with other values.
 func (p PortForwardOptions) Validate() error {
 	// boolean values (true/false/1/0), `compat`, and `none` must be used alone
 	for _, v := range p.Modes {
@@ -103,12 +105,11 @@ func (p PortForwardOptions) ForwardPods(runMode RunMode) bool {
 		if b, err := strconv.ParseBool(string(o)); err == nil && b {
 			o = "compat"
 		}
+		// compatibility break: when `--port-forward` was a boolean,
+		// pods were forwarded for `debug`.
 		switch o {
 		case "pods":
 			return true
-		// when --port-forward as a bool option, only `debug` forwarded pods
-		case "compat":
-			return runMode == RunModes.Debug
 		}
 	}
 	return false
