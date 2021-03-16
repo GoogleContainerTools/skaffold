@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	protoV2 "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
 const (
@@ -71,6 +72,21 @@ func ActionableErr(phase Phase, err error) *proto.ActionableErr {
 		ErrCode:     errCode,
 		Message:     err.Error(),
 		Suggestions: suggestions,
+	}
+}
+
+// ActionableErr returns an actionable error message with suggestions
+func ActionableErrV2(phase Phase, err error) *protoV2.ActionableErr {
+	errCode, suggestions := getErrorCodeFromError(phase, err)
+	suggestionsV2 := make([]*protoV2.Suggestion, len(suggestions))
+	for i, suggestion := range suggestions {
+		converted := protoV2.Suggestion(*suggestion)
+		suggestionsV2[i] = &converted
+	}
+	return &protoV2.ActionableErr{
+		ErrCode:     errCode,
+		Message:     err.Error(),
+		Suggestions: suggestionsV2,
 	}
 }
 
