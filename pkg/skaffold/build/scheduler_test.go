@@ -30,9 +30,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
 func TestGetBuild(t *testing.T) {
@@ -393,7 +393,7 @@ func initializeEvents() {
 			},
 		},
 	}}
-	event.InitializeState(pipes, "temp", true, true, true)
+	testEvent.InitializeState(pipes)
 }
 
 func errorsComparer(a, b error) bool {

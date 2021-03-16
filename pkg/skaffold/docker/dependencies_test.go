@@ -63,6 +63,21 @@ FROM nginx
 ADD *.go *.none /tmp/
 `
 
+const simpleArtifactDependency = `
+ARG BASE
+FROM $BASE
+COPY worker.go .
+`
+
+const multiStageArtifactDependency = `
+ARG BASE
+FROM golang:1.9.2
+COPY worker.go .
+
+FROM $BASE AS foo
+FROM foo as bar
+`
+
 const multiStageDockerfile1 = `
 FROM golang:1.9.2
 WORKDIR /go/src/github.com/r2d4/leeroy/
@@ -324,6 +339,18 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  multiStageDockerfile2,
 			workspace:   "",
 			expected:    []string{"Dockerfile", "server.go", "worker.go"},
+		},
+		{
+			description: "simple dockerfile with artifact dependency",
+			dockerfile:  simpleArtifactDependency,
+			workspace:   "",
+			expected:    []string{"Dockerfile", "worker.go"},
+		},
+		{
+			description: "multistage dockerfile with artifact dependency",
+			dockerfile:  multiStageArtifactDependency,
+			workspace:   "",
+			expected:    []string{"Dockerfile", "worker.go"},
 		},
 		{
 			description: "copy twice",

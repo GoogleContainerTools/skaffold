@@ -59,13 +59,37 @@ RUN protoc \
   --swagger_out=logtostderr=true:. \
   v1/*.proto
 
+# Generate proto files for v2 API
+WORKDIR /proto
+COPY v2/skaffold.proto v2/markdown.tmpl v2/
+RUN protoc \
+  -I . \
+  -I enums/ \
+  -I /protoc/include  \
+  -I /grpc-gateway/third_party/googleapis \
+  --grpc-gateway_out=logtostderr=true:. \
+  --go_out=plugins=grpc:. \
+   --doc_out=v2/ \
+  --doc_opt=v2/markdown.tmpl,v2/index.md \
+  --swagger_out=logtostderr=true:. \
+  v2/*.proto
+
 # this is a hack - seemingly grpc-gateway-swagger-gen is sometimes generating titles when they should be descriptions
 RUN jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' v1/skaffold.swagger.json | sponge v1/skaffold.swagger.json
+RUN jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' v2/skaffold.swagger.json | sponge v2/skaffold.swagger.json
+
+# Append enum docs content to main docs content
 RUN cat enums/enums.md >> v1/index.md
+RUN cat enums/enums.md >> v2/index.md
 
 # Compare the proto files with the existing proto files
 FROM generate-files AS compare
-WORKDIR /compare
+WORKDIR /compare/v1
 COPY v1/*.go ./
 COPY --from=generate-files /proto/v1/index.md ./
-CMD cmp /proto/v1/skaffold.pb.go skaffold.pb.go && cmp /proto/v1/skaffold.pb.gw.go skaffold.pb.gw.go
+
+WORKDIR /compare/v2
+COPY v2/*.go ./
+COPY --from=generate-files /proto/v2/index.md ./
+CMD cmp /proto/v1/skaffold.pb.go /compare/v1/skaffold.pb.go && cmp /proto/v1/skaffold.pb.gw.go /compare/v1/skaffold.pb.gw.go && \
+    cmp /proto/v2/skaffold.pb.go /compare/v2/skaffold.pb.go && cmp /proto/v2/skaffold.pb.gw.go /compare/v2/skaffold.pb.gw.go

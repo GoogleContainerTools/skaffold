@@ -124,7 +124,7 @@ func getRunner(cfg Config, imagesAreLocal func(imageName string) (bool, error), 
 		}
 
 		for _, customTest := range tc.CustomTests {
-			customRunner, err := custom.New(cfg, cfg.GetWorkingDir(), customTest)
+			customRunner, err := custom.New(cfg, tc.ImageName, cfg.GetWorkingDir(), customTest)
 			if err != nil {
 				return nil, err
 			}

@@ -30,7 +30,6 @@ import (
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -157,15 +156,15 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(pipelines []latest.Pipeline, kubeContext string, autoBuild, autoDeploy, autoSync bool) proto.State {
+func emptyState(cfg Config) proto.State {
 	builds := map[string]string{}
-	for _, p := range pipelines {
+	for _, p := range cfg.GetPipelines() {
 		for _, a := range p.Build.Artifacts {
 			builds[a.ImageName] = NotStarted
 		}
 	}
-	metadata := initializeMetadata(pipelines, kubeContext)
-	return emptyStateWithArtifacts(builds, metadata, autoBuild, autoDeploy, autoSync)
+	metadata := initializeMetadata(cfg.GetPipelines(), cfg.GetKubeContext())
+	return emptyStateWithArtifacts(builds, metadata, cfg.AutoBuild(), cfg.AutoDeploy(), cfg.AutoSync())
 }
 
 func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata, autoBuild, autoDeploy, autoSync bool) proto.State {
@@ -191,8 +190,8 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-func InitializeState(c []latest.Pipeline, kc string, autoBuild, autoDeploy, autoSync bool) {
-	handler.setState(emptyState(c, kc, autoBuild, autoDeploy, autoSync))
+func InitializeState(cfg Config) {
+	handler.setState(emptyState(cfg))
 }
 
 // DeployInProgress notifies that a deployment has been started.

@@ -23,6 +23,21 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
+func cmdRunRetrieveErr(command string, imageName string, err error) error {
+	return sErrors.NewError(err,
+		proto.ActionableErr{
+			Message: fmt.Sprintf("retrieving cmd %s: %s", command, err),
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_RETRIEVE_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_CHECK_TEST_COMMAND_AND_IMAGE_NAME,
+					Action:         fmt.Sprintf("Check the image name: %q and the command: %q", command, imageName),
+				},
+			},
+		},
+	)
+}
+
 func cmdRunParsingErr(command string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{

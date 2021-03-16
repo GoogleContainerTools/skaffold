@@ -70,11 +70,6 @@ func checkVersion(config string, onError bool) (string, error) {
 // isUpdateCheckEnabled returns whether or not the update check is enabled
 // It is true by default, but setting it to any other value than true will disable the check
 func isUpdateCheckEnabled(configfile string) bool {
-	// Don't perform a version check on dirty trees
-	if version.Get().GitTreeState == "dirty" {
-		return false
-	}
-
 	return EnableCheck && isConfigUpdateCheckEnabled(configfile)
 }
 

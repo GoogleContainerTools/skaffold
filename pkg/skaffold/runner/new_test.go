@@ -124,3 +124,117 @@ func TestGetDeployer(tOuter *testing.T) {
 		}
 	})
 }
+
+func TestGetDefaultDeployer(tOuter *testing.T) {
+	testutil.Run(tOuter, "TestGetDeployer", func(t *testutil.T) {
+		tests := []struct {
+			name      string
+			cfgs      []latest.DeployType
+			expected  *kubectl.Deployer
+			shouldErr bool
+		}{
+			{
+				name: "one config with kubectl deploy",
+				cfgs: []latest.DeployType{{
+					KubectlDeploy: &latest.KubectlDeploy{},
+				}},
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
+				}, nil, &latest.KubectlDeploy{
+					Flags: latest.KubectlFlags{},
+				})).(*kubectl.Deployer),
+			},
+			{
+				name: "one config with kubectl deploy, with flags",
+				cfgs: []latest.DeployType{{
+					KubectlDeploy: &latest.KubectlDeploy{
+						Flags: latest.KubectlFlags{
+							Apply:  []string{"--foo"},
+							Global: []string{"--bar"},
+						},
+					},
+				}},
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
+				}, nil, &latest.KubectlDeploy{
+					Flags: latest.KubectlFlags{
+						Apply:  []string{"--foo"},
+						Global: []string{"--bar"},
+					},
+				})).(*kubectl.Deployer),
+			},
+			{
+				name: "two kubectl configs with mismatched flags should fail",
+				cfgs: []latest.DeployType{
+					{
+						KubectlDeploy: &latest.KubectlDeploy{
+							Flags: latest.KubectlFlags{
+								Apply: []string{"--foo"},
+							},
+						},
+					},
+					{
+						KubectlDeploy: &latest.KubectlDeploy{
+							Flags: latest.KubectlFlags{
+								Apply: []string{"--bar"},
+							},
+						},
+					},
+				},
+				shouldErr: true,
+			},
+			{
+				name: "one config with helm deploy",
+				cfgs: []latest.DeployType{{
+					HelmDeploy: &latest.HelmDeploy{},
+				}},
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
+				}, nil, &latest.KubectlDeploy{
+					Flags: latest.KubectlFlags{},
+				})).(*kubectl.Deployer),
+			},
+			{
+				name: "one config with kustomize deploy",
+				cfgs: []latest.DeployType{{
+					KustomizeDeploy: &latest.KustomizeDeploy{},
+				}},
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latest.Pipeline{{}}),
+				}, nil, &latest.KubectlDeploy{
+					Flags: latest.KubectlFlags{},
+				})).(*kubectl.Deployer),
+			},
+		}
+
+		for _, test := range tests {
+			testutil.Run(tOuter, test.name, func(t *testutil.T) {
+				pipelines := []latest.Pipeline{}
+				for _, cfg := range test.cfgs {
+					pipelines = append(pipelines, latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							DeployType: cfg,
+						},
+					})
+				}
+				deployer, err := getDefaultDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines(pipelines),
+				}, nil)
+
+				t.CheckErrorAndFailNow(test.shouldErr, err)
+
+				// if we were expecting an error, this implies that the returned deployer is nil
+				// this error was checked in the previous call, so if we didn't fail there (i.e. the encountered error was correct),
+				// then the test is finished and we can continue.
+				if !test.shouldErr {
+					t.CheckTypeEquality(&kubectl.Deployer{}, deployer)
+
+					kDeployer := deployer.(*kubectl.Deployer)
+					if !reflect.DeepEqual(kDeployer, test.expected) {
+						t.Fail()
+					}
+				}
+			})
+		}
+	})
+}

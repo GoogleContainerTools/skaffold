@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-var version, gitCommit, gitTreeState, buildDate string
+var version, gitCommit, buildDate string
 var platform = fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 
 type Info struct {
@@ -34,7 +34,6 @@ type Info struct {
 	ConfigVersion string
 	GitVersion    string
 	GitCommit     string
-	GitTreeState  string
 	BuildDate     string
 	GoVersion     string
 	Compiler      string
@@ -49,7 +48,6 @@ var Get = func() *Info {
 		Version:       version,
 		ConfigVersion: latest.Version,
 		GitCommit:     gitCommit,
-		GitTreeState:  gitTreeState,
 		BuildDate:     buildDate,
 		GoVersion:     runtime.Version(),
 		Compiler:      runtime.Compiler,

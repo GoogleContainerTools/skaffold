@@ -34,12 +34,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
 type testAuthHelper struct{}
@@ -229,13 +229,13 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
 				return args, nil
 			})
-			event.InitializeState([]latest.Pipeline{{
+			testEvent.InitializeState([]latest.Pipeline{{
 				Deploy: latest.DeployConfig{},
 				Build: latest.BuildConfig{
 					BuildType: latest.BuildType{
 						LocalBuild: &latest.LocalBuild{},
 					},
-				}}}, "", true, true, true)
+				}}})
 
 			builder, err := NewBuilder(&mockConfig{},
 				&latest.LocalBuild{
