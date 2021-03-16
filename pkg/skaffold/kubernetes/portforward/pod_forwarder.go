@@ -47,17 +47,17 @@ type WatchingPodForwarder struct {
 }
 
 // NewWatchingPodForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewWatchingPodForwarder(entryManager *EntryManager, podSelector kubernetes.PodSelector, namespaces []string) *WatchingPodForwarder {
+func NewWatchingPodForwarder(entryManager *EntryManager, podSelector kubernetes.PodSelector) *WatchingPodForwarder {
 	return &WatchingPodForwarder{
 		entryManager: entryManager,
-		podWatcher:   newPodWatcher(podSelector, namespaces),
+		podWatcher:   newPodWatcher(podSelector),
 		events:       make(chan kubernetes.PodEvent),
 	}
 }
 
-func (p *WatchingPodForwarder) Start(ctx context.Context) error {
+func (p *WatchingPodForwarder) Start(ctx context.Context, namespaces []string) error {
 	p.podWatcher.Register(p.events)
-	stopWatcher, err := p.podWatcher.Start()
+	stopWatcher, err := p.podWatcher.Start(namespaces)
 	if err != nil {
 		return err
 	}
