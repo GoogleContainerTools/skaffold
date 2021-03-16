@@ -19,6 +19,7 @@ package integration
 import (
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -28,6 +29,7 @@ func TestCustomTest(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	config := "skaffold.yaml"
+	expectedText := "bar"
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/custom-test").WithConfig(config).RunOrFail(t)
@@ -42,8 +44,9 @@ func TestCustomTest(t *testing.T) {
 	defer func() { os.Truncate("testdata/custom-test/foo", 0) }()
 
 	fileContent, err := ioutil.ReadFile("testdata/custom-test/foo")
-	if err != nil || string(fileContent) != "bar" {
-		t.Fatalf("Test failed. Existing file contents %s did not match expected %s", string(fileContent), "bar")
+	actualText := strings.TrimSuffix(string(fileContent), "\n")
+	if err == nil && actualText != expectedText {
+		t.Fatalf("Test failed. Existing file contents %s did not match expected %s", actualText, expectedText)
 	}
 	failNowIfError(t, err)
 }
