@@ -57,8 +57,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
 	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
 	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
+	needsTest := r.changeSet.needsRetest
 	needsDeploy := deployIntent && r.changeSet.needsRedeploy
-	if !needsSync && !needsBuild && !needsDeploy {
+	if !needsSync && !needsBuild && !needsTest && !needsDeploy {
 		return nil
 	}
 
@@ -93,6 +94,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		}
 	}
 
+	var bRes []build.Artifact
 	if needsBuild {
 		event.ResetStateOnBuild()
 		defer func() {
@@ -103,19 +105,31 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			instrumentation.AddDevIteration("build")
 			meterUpdated = true
 		}
-		bRes, err := r.Build(ctx, out, r.changeSet.needsRebuild)
+
+		var err error
+		bRes, err = r.Build(ctx, out, r.changeSet.needsRebuild)
 		if err != nil {
 			logrus.Warnln("Skipping test and deploy due to build error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 			return nil
 		}
-		// TODO(modali): Add skipTest boolean to Tester itself to avoid this check.
-		if !r.runCtx.SkipTests() {
-			if err = r.Test(ctx, out, bRes); err != nil {
+		needsTest = true
+	}
+
+	if needsTest && !r.runCtx.SkipTests() {
+		defer func() {
+			r.changeSet.needsRetest = false
+		}()
+
+		if len(bRes) == 0 {
+			bRes = r.builds
+		}
+		if err := r.Test(ctx, out, bRes); err != nil {
+			if needsDeploy {
 				logrus.Warnln("Skipping deploy due to test error:", err)
-				event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
-				return nil
 			}
+			event.DevLoopFailedInPhase(r.devIteration, sErrors.Test, err)
+			return nil
 		}
 	}
 
@@ -191,7 +205,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch test configuration
 	if err := r.monitor.Register(
 		r.tester.TestDependencies,
-		func(filemon.Events) { r.changeSet.needsRedeploy = true },
+		func(filemon.Events) { r.changeSet.needsRetest = true },
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)
 		return fmt.Errorf("watching test files: %w", err)
@@ -229,6 +243,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
 	}
+	// First test
 	if !r.runCtx.SkipTests() {
 		if err = r.Test(ctx, out, bRes); err != nil {
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
