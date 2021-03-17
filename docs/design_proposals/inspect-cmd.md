@@ -21,7 +21,9 @@ ___
 skaffold inspect --help
 Display all resolved skaffold configurations.
 
- You can use --output jsonpath={...} to extract specific values using a jsonpath expression. The configs defined in the main `skaffold.yaml` file can be filted using the special `#` index; if there are multiple matches then it'll return a slice. 
+ You can use --output jsonpath={...} to extract specific values using a jsonpath expression. The configs defined in
+ the main `skaffold.yaml` file can be filted using the special `#` index; if there are multiple matches then it'll 
+ return a slice. 
 
 Examples:
   # Show all resolved configurations with applied profiles.
