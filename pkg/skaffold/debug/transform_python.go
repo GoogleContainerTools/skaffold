@@ -83,10 +83,9 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 			Runtime: "python",
 			Ports:   map[string]uint32{"dap": uint32(spec.port)},
 		}, "", nil
-
 	}
 
-	spec := &pythonSpec{debugger: debugpy, port: portAlloc(defaultPtvsdPort)}
+	spec := &pythonSpec{debugger: debugpy, port: portAlloc(defaultDebugpyPort)}
 	switch {
 	case isLaunchingPython(config.entrypoint):
 		container.Command = rewritePythonCommandLine(config.entrypoint, *spec)
