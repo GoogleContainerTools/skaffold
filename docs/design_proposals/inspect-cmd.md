@@ -21,7 +21,7 @@ ___
 skaffold inspect --help
 Display all resolved skaffold configurations.
 
- You can use --output jsonpath={...} to extract specific values using a jsonpath expression.
+ You can use --output jsonpath={...} to extract specific values using a jsonpath expression. The configs defined in the main `skaffold.yaml` file can be filted using the special `#` index; if there are multiple matches then it'll return a slice. 
 
 Examples:
   # Show all resolved configurations with applied profiles.
@@ -31,10 +31,10 @@ Examples:
   skaffold inspect --raw
   
   # Get all named configs (modules) as a list
-  skaffold inspect -o jsonpath='{.metadata[?(@.name != "")].name}'
+  skaffold inspect -o jsonpath='{.configs[?(@.metadata.name != "")].metadata.name}'
 
-  # Get all profile names.
-  skaffold inspect -o jsonpath='{.profiles[*].name}'
+  # Get all profile names from the main `skaffold.yaml` configs.
+  skaffold inspect -o jsonpath='{.configs[#].profiles[*].name}'
 
 Options:
       --allow-missing-template-keys=true: If true, ignore any errors in templates when a field or map key is missing in
