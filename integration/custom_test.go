@@ -19,7 +19,6 @@ package integration
 import (
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"testing"
 	"time"
 
@@ -52,7 +51,8 @@ func TestCustomTest(t *testing.T) {
 	ioutil.WriteFile(depFile, []byte("foo"), 0644)
 
 	err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-		out, _ := exec.Command("cat", testFile).Output()
+		out, e := ioutil.ReadFile(testFile)
+		failNowIfError(t, e)
 		return string(out) == expectedText, nil
 	})
 	failNowIfError(t, err)
