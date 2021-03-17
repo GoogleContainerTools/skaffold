@@ -33,7 +33,7 @@ import (
 
 // Forwarder is an interface that can modify and manage port-forward processes
 type Forwarder interface {
-	Start(ctx context.Context) error
+	Start(ctx context.Context, namespaces []string) error
 	Stop()
 }
 
@@ -58,15 +58,15 @@ func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes
 
 	var forwarders []Forwarder
 	if options.ForwardUser(runMode) {
-		forwarders = append(forwarders, NewUserDefinedForwarder(entryManager, namespaces, userDefined))
+		forwarders = append(forwarders, NewUserDefinedForwarder(entryManager, userDefined))
 	}
 	if options.ForwardServices(runMode) {
-		forwarders = append(forwarders, NewServicesForwarder(entryManager, namespaces, label))
+		forwarders = append(forwarders, NewServicesForwarder(entryManager, label))
 	}
 	if options.ForwardPods(runMode) {
-		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, namespaces, allPorts))
+		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, allPorts))
 	} else if options.ForwardDebug(runMode) {
-		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, namespaces, debugPorts))
+		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, debugPorts))
 	}
 
 	return &ForwarderManager{
@@ -107,14 +107,14 @@ func debugPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 }
 
 // Start begins all forwarders managed by the ForwarderManager
-func (p *ForwarderManager) Start(ctx context.Context) error {
+func (p *ForwarderManager) Start(ctx context.Context, namespaces []string) error {
 	// Port forwarding is not enabled.
 	if p == nil {
 		return nil
 	}
 
 	for _, f := range p.forwarders {
-		if err := f.Start(ctx); err != nil {
+		if err := f.Start(ctx, namespaces); err != nil {
 			return err
 		}
 	}

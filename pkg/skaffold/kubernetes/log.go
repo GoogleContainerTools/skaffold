@@ -54,12 +54,12 @@ type Config interface {
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector PodSelector, namespaces []string, config Config) *LogAggregator {
+func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector PodSelector, config Config) *LogAggregator {
 	return &LogAggregator{
 		output:      out,
 		kubectlcli:  cli,
 		config:      config,
-		podWatcher:  NewPodWatcher(podSelector, namespaces),
+		podWatcher:  NewPodWatcher(podSelector),
 		colorPicker: NewColorPicker(imageNames),
 		events:      make(chan PodEvent),
 	}
@@ -76,14 +76,14 @@ func (a *LogAggregator) SetSince(t time.Time) {
 
 // Start starts a logger that listens to pods and tail their logs
 // if they are matched by the `podSelector`.
-func (a *LogAggregator) Start(ctx context.Context) error {
+func (a *LogAggregator) Start(ctx context.Context, namespaces []string) error {
 	if a == nil {
 		// Logs are not activated.
 		return nil
 	}
 
 	a.podWatcher.Register(a.events)
-	stopWatcher, err := a.podWatcher.Start()
+	stopWatcher, err := a.podWatcher.Start(namespaces)
 	if err != nil {
 		return err
 	}
