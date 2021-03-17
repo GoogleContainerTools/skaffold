@@ -7,7 +7,7 @@ aliases: [/docs/how-tos/portforward]
 ---
 
 Skaffold has built-in support for forwarding ports from exposed Kubernetes resources on your cluster
-to your local machine when running in either `dev` or `debug` mode.
+to your local machine when running in `dev`, `debug`, `deploy`, or `run` modes.
 
 ### Automatic Port Forwarding
 
@@ -30,6 +30,10 @@ Command-line                          | Default modes
 `skaffold debug`                      | `user`, `debug`
 `skaffold debug --port-forward`       | `user`, `services`, `debug` <small>(<em>see note below</em>)</small>
 `skaffold debug --port-forward=off`   | _no ports forwarded_
+`skaffold deploy`                     | `off`
+`skaffold deploy --port-forward`      | `user`, `services`
+`skaffold run`                        | `off`
+`skaffold run --port-forward`         | `user`, `services`
 
 {{< alert title="Compatibility Note" >}}
 Note that `skaffold debug --port-forward` previously enabled the
