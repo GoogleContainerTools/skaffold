@@ -89,7 +89,7 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latest_v1.LocalBuild) (*Builder, 
 	var pushImages bool
 	if buildCfg.Push == nil {
 		pushImages = cluster.PushImages
-		logrus.Debugf("push value not present, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
+		logrus.Debugf("push value not present in Newbuilder, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
 	} else {
 		pushImages = *buildCfg.Push
 	}
