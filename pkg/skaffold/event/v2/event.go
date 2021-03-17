@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package event
+package v2
 
 import (
 	"bytes"
@@ -29,6 +29,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
@@ -153,7 +154,7 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(cfg Config) proto.State {
+func emptyState(cfg event.Config) proto.State {
 	builds := map[string]string{}
 	for _, p := range cfg.GetPipelines() {
 		for _, a := range p.Build.Artifacts {
