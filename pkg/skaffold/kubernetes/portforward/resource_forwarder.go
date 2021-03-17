@@ -34,7 +34,6 @@ import (
 // services deployed by skaffold.
 type ResourceForwarder struct {
 	entryManager         *EntryManager
-	namespaces           []string
 	label                string
 	userDefinedResources []*latest.PortForwardResource
 }
@@ -46,28 +45,9 @@ var (
 )
 
 // NewResourceForwarder returns a struct that tracks and port-forwards services as they are created and modified
-func NewResourceForwarder(entryManager *EntryManager, namespaces []string, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
-	if len(namespaces) == 1 {
-		for _, pf := range userDefinedResources {
-			if pf.Namespace == "" {
-				pf.Namespace = namespaces[0]
-			}
-		}
-	} else {
-		var validResources []*latest.PortForwardResource
-		for _, pf := range userDefinedResources {
-			if pf.Namespace != "" {
-				validResources = append(validResources, pf)
-			} else {
-				logrus.Warnf("Skipping the port forwarding resource %s/%s because namespace is not specified", pf.Type, pf.Name)
-			}
-		}
-		userDefinedResources = validResources
-	}
-
+func NewResourceForwarder(entryManager *EntryManager, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
 	return &ResourceForwarder{
 		entryManager:         entryManager,
-		namespaces:           namespaces,
 		label:                label,
 		userDefinedResources: userDefinedResources,
 	}
@@ -75,8 +55,25 @@ func NewResourceForwarder(entryManager *EntryManager, namespaces []string, label
 
 // Start gets a list of services deployed by skaffold as []latest.PortForwardResource and
 // forwards them.
-func (p *ResourceForwarder) Start(ctx context.Context) error {
-	serviceResources, err := retrieveServices(ctx, p.label, p.namespaces)
+func (p *ResourceForwarder) Start(ctx context.Context, namespaces []string) error {
+	if len(namespaces) == 1 {
+		for _, pf := range p.userDefinedResources {
+			if pf.Namespace == "" {
+				pf.Namespace = namespaces[0]
+			}
+		}
+	} else {
+		var validResources []*latest.PortForwardResource
+		for _, pf := range p.userDefinedResources {
+			if pf.Namespace != "" {
+				validResources = append(validResources, pf)
+			} else {
+				logrus.Warnf("Skipping the port forwarding resource %s/%s because namespace is not specified", pf.Type, pf.Name)
+			}
+		}
+		p.userDefinedResources = validResources
+	}
+	serviceResources, err := retrieveServices(ctx, p.label, namespaces)
 	if err != nil {
 		return fmt.Errorf("retrieving services for automatic port forwarding: %w", err)
 	}
