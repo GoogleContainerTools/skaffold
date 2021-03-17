@@ -5,7 +5,7 @@ weight: 40
 ---
 
 Skaffold provides several features and sub-command "building blocks" that make it very useful for integrating with (or creating entirely new) CI/CD pipelines.
-The ability to use the same skaffold.yaml for iterative development and continuous delivery make handing off an application from a development team to an ops team a breeze!
+The ability to use the same `skaffold.yaml` for iterative development and continuous delivery eases handing off an application from a development team to an ops team.
 
 Let's start with the simplest use case: a single, full deployment of your application.
 
