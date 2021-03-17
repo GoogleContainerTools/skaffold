@@ -40,24 +40,24 @@ type ContainerManager struct {
 	events     chan kubernetes.PodEvent
 }
 
-func NewContainerManager(podSelector kubernetes.PodSelector, namespaces []string) *ContainerManager {
+func NewContainerManager(podSelector kubernetes.PodSelector) *ContainerManager {
 	// Create the channel here as Stop() may be called before Start() when a build fails, thus
 	// avoiding the possibility of closing a nil channel. Channels are cheap.
 	return &ContainerManager{
-		podWatcher: kubernetes.NewPodWatcher(podSelector, namespaces),
+		podWatcher: kubernetes.NewPodWatcher(podSelector),
 		active:     map[string]string{},
 		events:     make(chan kubernetes.PodEvent),
 	}
 }
 
-func (d *ContainerManager) Start(ctx context.Context) error {
+func (d *ContainerManager) Start(ctx context.Context, namespaces []string) error {
 	if d == nil {
 		// debug mode probably not enabled
 		return nil
 	}
 
 	d.podWatcher.Register(d.events)
-	stopWatcher, err := d.podWatcher.Start()
+	stopWatcher, err := d.podWatcher.Start(namespaces)
 	if err != nil {
 		return err
 	}

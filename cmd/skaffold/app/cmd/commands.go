@@ -93,7 +93,7 @@ func (b *builder) WithFlags(flags []*Flag) Builder {
 		b.cmd.Flags().AddFlag(fl)
 	}
 	b.cmd.PreRun = func(cmd *cobra.Command, args []string) {
-		ParseFlags(cmd, flags)
+		ResetFlagDefaults(cmd, flags)
 	}
 
 	return b

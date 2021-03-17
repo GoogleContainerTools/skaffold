@@ -71,6 +71,7 @@ func TestExportMetrics(t *testing.T) {
 		EnumFlags:         map[string]string{"test_run": "test_run_value"},
 		Builders:          map[string]int{"kustomize": 3, "buildpacks": 2},
 		BuildDependencies: map[string]int{"docker": 1},
+		HelmReleasesCount: 2,
 		DevIterations:     []devIteration{{"sync", 0}, {"build", 400}, {"build", 0}, {"sync", 200}, {"deploy", 0}},
 		ErrorCode:         proto.StatusCode_BUILD_CANCELLED,
 		StartTime:         startTime.Add(time.Hour * 24 * 30),
@@ -249,6 +250,7 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 	errorCount := make(map[interface{}]int)
 	builders := make(map[interface{}]int)
 	buildDeps := make(map[interface{}]int)
+	helmReleases := make(map[interface{}]int)
 	devIterations := make(map[interface{}]int)
 	deployers := make(map[interface{}]int)
 	enumFlags := make(map[interface{}]int)
@@ -324,6 +326,8 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 			errorCount[e]--
 		case "flags":
 			enumFlags[l.Labels["flag_name"]+":"+l.Labels["value"]]--
+		case "helmReleases":
+			helmReleases[l.Labels["helmReleases"]]++
 		default:
 			switch {
 			case MeteredCommands.Contains(l.Name):
