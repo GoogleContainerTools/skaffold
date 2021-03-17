@@ -172,6 +172,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				NewCmdDeploy(),
 				NewCmdDelete(),
 				NewCmdRender(),
+				NewCmdApply(),
 			},
 		},
 		{
