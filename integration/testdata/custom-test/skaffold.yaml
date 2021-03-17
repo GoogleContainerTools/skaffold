@@ -6,10 +6,10 @@ build:
 test:
   - image: custom-test-example
     custom:
-      - command: echo "bar" > foo
+      - command: echo "bar" > test
         dependencies:
           paths:
-          -  'foo*' 
+          -  'testdep*' 
 deploy:
  kubectl:
    manifests:

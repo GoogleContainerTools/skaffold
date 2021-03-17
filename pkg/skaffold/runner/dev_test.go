@@ -240,7 +240,7 @@ func TestDev(t *testing.T) {
 				},
 				{
 					Built:    []string{"img2:2"},
-					Tested:   []string{"img1:1", "img2:2"},
+					Tested:   []string{"img2:2"},
 					Deployed: []string{"img1:1", "img2:2"},
 				},
 			},
@@ -568,7 +568,7 @@ func TestDevSync_WithDependencies(t *testing.T) {
 				},
 				{
 					Built:    []string{"img2:2", "img1:2"},
-					Tested:   []string{"img1:2", "img2:2"},
+					Tested:   []string{"img2:2", "img1:2"},
 					Deployed: []string{"img1:2", "img2:2"},
 				},
 			},

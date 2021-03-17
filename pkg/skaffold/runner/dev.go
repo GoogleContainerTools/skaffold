@@ -94,6 +94,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		}
 	}
 
+	var bRes []build.Artifact
 	if needsBuild {
 		event.ResetStateOnBuild()
 		defer func() {
@@ -104,7 +105,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			instrumentation.AddDevIteration("build")
 			meterUpdated = true
 		}
-		_, err := r.Build(ctx, out, r.changeSet.needsRebuild)
+
+		var err error
+		bRes, err = r.Build(ctx, out, r.changeSet.needsRebuild)
 		if err != nil {
 			logrus.Warnln("Skipping test and deploy due to build error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
@@ -113,8 +116,15 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		needsTest = true
 	}
 
-	if needsTest {
-		if err := r.Test(ctx, out, r.builds); err != nil {
+	if needsTest && !r.runCtx.SkipTests() {
+		defer func() {
+			r.changeSet.needsRetest = false
+		}()
+
+		if len(bRes) == 0 {
+			bRes = r.builds
+		}
+		if err := r.Test(ctx, out, bRes); err != nil {
 			if needsDeploy {
 				logrus.Warnln("Skipping deploy due to test error:", err)
 			}

@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
 	"time"
 
@@ -33,9 +32,14 @@ func TestCustomTest(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	config := "skaffold.yaml"
-	expectedText := "bar"
+	expectedText := "bar\n"
 	testDir := "testdata/custom-test"
-	testFile := "testdata/custom-test/foo"
+	testFile := "testdata/custom-test/test"
+	depFile := "testdata/custom-test/testdep"
+	defer func() {
+		os.Truncate(depFile, 0)
+		os.Truncate(testFile, 0)
+	}()
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir(testDir).WithConfig(config).RunOrFail(t)
@@ -45,11 +49,11 @@ func TestCustomTest(t *testing.T) {
 	skaffold.Dev().InDir(testDir).WithConfig(config).InNs(ns.Name).RunBackground(t)
 
 	ioutil.WriteFile(testFile, []byte("foo"), 0644)
-	defer func() { os.Truncate(testFile, 0) }()
+	ioutil.WriteFile(depFile, []byte("foo"), 0644)
 
 	err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 		out, _ := exec.Command("cat", testFile).Output()
-		return strings.Contains(string(out), expectedText), nil
+		return string(out) == expectedText, nil
 	})
 	failNowIfError(t, err)
 }

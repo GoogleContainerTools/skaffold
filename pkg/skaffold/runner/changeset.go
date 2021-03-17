@@ -41,7 +41,6 @@ func (c *changeSet) AddRebuild(a *latest.Artifact) {
 	}
 	c.rebuildTracker[a.ImageName] = a
 	c.needsRebuild = append(c.needsRebuild, a)
-	c.needsRetest = true
 	c.needsRedeploy = true
 }
 
