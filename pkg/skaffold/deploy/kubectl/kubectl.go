@@ -45,6 +45,7 @@ type Deployer struct {
 	*latest.KubectlDeploy
 
 	originalImages     []build.Artifact
+	hydratedManifests  []string
 	workingDir         string
 	globalConfig       string
 	gcsManifestDir     string
@@ -76,6 +77,7 @@ func NewDeployer(cfg Config, labels map[string]string, d *latest.KubectlDeploy) 
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		skipRender:         cfg.SkipRender(),
 		labels:             labels,
+		hydratedManifests:  cfg.HydratedManifests(),
 	}, nil
 }
 
@@ -86,11 +88,21 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Art
 		manifests manifest.ManifestList
 		err       error
 	)
-	if k.skipRender {
+	// if any hydrated manifests are passed to `skaffold apply`, only deploy these
+	// also, manually set the labels to ensure the runID is added
+	switch {
+	case len(k.hydratedManifests) > 0:
+		manifests, err = createManifestList(k.hydratedManifests)
+		if err != nil {
+			return nil, err
+		}
+		manifests, err = manifests.SetLabels(k.labels)
+	case k.skipRender:
 		manifests, err = k.readManifests(ctx, false)
-	} else {
+	default:
 		manifests, err = k.renderManifests(ctx, out, builds, false)
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +207,10 @@ func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.Ma
 	if hasURLManifest {
 		return nil, offlineModeErr()
 	}
+	return createManifestList(manifests)
+}
 
+func createManifestList(manifests []string) (manifest.ManifestList, error) {
 	var manifestList manifest.ManifestList
 	for _, manifestFilePath := range manifests {
 		manifestFileContent, err := ioutil.ReadFile(manifestFilePath)

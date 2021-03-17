@@ -24,7 +24,6 @@ docker run --rm gen-proto cat v1/skaffold.pb.go > proto/v1/skaffold.pb.go
 docker run --rm gen-proto cat v1/skaffold.pb.gw.go > proto/v1/skaffold.pb.gw.go
 
 # Copy v2 files
-docker run --rm gen-proto ls /proto/
 docker run --rm gen-proto cat /proto/github.com/GoogleContainerTools/skaffold/proto/v2/skaffold.pb.go > proto/v2/skaffold.pb.go
 docker run --rm gen-proto cat /proto/github.com/GoogleContainerTools/skaffold/proto/v2/skaffold.pb.gw.go > proto/v2/skaffold.pb.gw.go
 

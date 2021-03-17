@@ -26,13 +26,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
-var versionFlag = flags.NewTemplateFlag("{{.Version}}\n", version.Info{})
+var versionDefaultTemplate = "{{.Version}}\n"
+var versionFlag = flags.NewTemplateFlag(versionDefaultTemplate, version.Info{})
 
 func NewCmdVersion() *cobra.Command {
 	return NewCmd("version").
 		WithDescription("Print the version information").
 		WithFlags([]*Flag{
-			{Value: versionFlag, Name: "output", Shorthand: "o", Usage: versionFlag.Usage()},
+			{Value: versionFlag, Name: "output", Shorthand: "o", DefValue: versionDefaultTemplate, Usage: versionFlag.Usage()},
 		}).
 		NoArgs(doVersion)
 }

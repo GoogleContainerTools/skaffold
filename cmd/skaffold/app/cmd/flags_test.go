@@ -119,3 +119,58 @@ func TestMakeFlag(t *testing.T) {
 		t.CheckDeepEqual("nooptdefval", build.NoOptDefVal)
 	})
 }
+
+func TestResetFlagDefaults(t *testing.T) {
+	var v string
+	var sl []string
+
+	valueFlag := Flag{
+		Name:          "value",
+		Value:         &v,
+		FlagAddMethod: "StringVar",
+		DefValue:      "default",
+		DefValuePerCommand: map[string]interface{}{
+			"debug": "dbg",
+			"build": "bld",
+		},
+		DefinedOn: []string{"build", "debug", "test"},
+	}
+	sliceFlag := Flag{
+		Name:          "slice",
+		Value:         &sl,
+		FlagAddMethod: "StringSliceVar",
+		DefValue:      []string{"default"},
+		DefValuePerCommand: map[string]interface{}{
+			"debug": []string{"dbg", "other"},
+			"build": []string{"bld"},
+		},
+		DefinedOn: []string{"build", "debug", "test"},
+	}
+	flagRegistry := []*Flag{&valueFlag, &sliceFlag}
+
+	tests := []struct {
+		command       string
+		expectedValue string
+		expectedSlice []string
+	}{
+		{"test", "default", []string{"default"}},
+		{"debug", "dbg", []string{"dbg", "other"}},
+		{"build", "bld", []string{"bld"}},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.command, func(t *testutil.T) {
+			cmd := cobra.Command{Use: test.command}
+			for _, f := range flagRegistry {
+				cmd.Flags().AddFlag(f.flag(test.command))
+			}
+
+			// ResetFlagDefaults should reset to defaults for the given command
+			v = "randovalue"
+			sl = []string{"rando", "value"}
+			ResetFlagDefaults(&cmd, flagRegistry)
+
+			t.CheckDeepEqual(v, test.expectedValue)
+			t.CheckDeepEqual(sl, test.expectedSlice)
+		})
+	}
+}
