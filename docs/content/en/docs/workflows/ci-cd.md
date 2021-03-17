@@ -162,7 +162,7 @@ GitOps-based CD pipelines traditionally see fully-hydrated Kubernetes manifests 
 
 `skaffold apply` consumes one or more fully-hydrated Kubernetes manifests, and then sends the results directly to the Kubernetes control plane via `kubectl` to create resources on the target cluster. After creating the resources on your cluster, `skaffold apply` uses Skaffold's built-in health checking to monitor the created resources for readiness. See [resource health checks]({{<relref "/docs/workflows/ci-cd#waiting-for-skaffold-deployments-using-healthcheck">}}) for more information on how Skaffold's resource health checking works.
 
-*Note: `skaffold apply` will always use `kubectl` to deploy resources to a target cluster, regardless of deployment configuration in the provided skaffold.yaml. A small subset of deploy configuration will be honored when running `skaffold apply`:*
+*Note: `skaffold apply` always uses `kubectl` to deploy resources to a target cluster, regardless of deployment configuration in the provided skaffold.yaml. Only a small subset of deploy configuration is honored when running `skaffold apply`:*
 * deploy.statusCheckDeadlineSeconds
 * deploy.kubeContext
 * deploy.logs.prefix
