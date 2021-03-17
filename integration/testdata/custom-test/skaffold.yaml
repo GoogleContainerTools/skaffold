@@ -6,7 +6,7 @@ build:
 test:
   - image: custom-test-example
     custom:
-      - command: echo "bar" > test
+      - command: echo "bar" >> test
         dependencies:
           paths:
           -  'testdep*' 

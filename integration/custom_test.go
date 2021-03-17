@@ -31,7 +31,7 @@ func TestCustomTest(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	config := "skaffold.yaml"
-	expectedText := "bar\n"
+	expectedText := "bar\nbar\n"
 	testDir := "testdata/custom-test"
 	testFile := "testdata/custom-test/test"
 	depFile := "testdata/custom-test/testdep"
@@ -43,11 +43,11 @@ func TestCustomTest(t *testing.T) {
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir(testDir).WithConfig(config).RunOrFail(t)
 
-	ns, _ := SetupNamespace(t)
+	ns, client := SetupNamespace(t)
 
-	skaffold.Dev().InDir(testDir).WithConfig(config).InNs(ns.Name).RunBackground(t)
+	skaffold.Dev().InDir(testDir).WithConfig(config).InNs(ns.Name).RunLive(t)
 
-	ioutil.WriteFile(testFile, []byte("foo"), 0644)
+	client.WaitForPodsReady("custom-test-example")
 	ioutil.WriteFile(depFile, []byte("foo"), 0644)
 
 	err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
