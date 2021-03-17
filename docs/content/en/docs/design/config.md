@@ -28,16 +28,25 @@ overridden with the `--filename` flag.
 ### File resolution
 
 The Skaffold configuration file often references other files and
-directories.  These files and directories are usually referenced
+directories.  These files and directories are resolved
 relative to the current directory _and not to the location of
-the Skaffold configuration file_.  There is one important exception:
-files referenced from a build artifact definition are resolved
-relative to the build artifact's _context_ directory.
+the Skaffold configuration file_.  There are two important exceptions:
+1. Files referenced from a build artifact definition are resolved relative to the build artifact's _context_ directory.
+   When omitted, the context directory defaults to the current directory.
+2. For [configurations resolved as dependencies](#configuration-dependencies"), paths are always resolved relative to the directory containing the imported configuration file.
 
-In the following config file, the `Dockerfile` for building `app`
-is resolved relative to the `frontend` directory (i.e., `frontend/Dockerfile`),
-whereas the the Helm chart's location and its values-files are
-relative to the current directory in `helm/project`.
+For example, consider a project with the following layout:
+```
+.
+├── frontend
+│   └── Dockerfile
+├── helm
+│   └── project
+│       └── dev-values.yaml
+└── skaffold.yaml
+```
+
+The config file might look like:
 ```yaml
 apiVersion: skaffold/v2beta11
 kind: Config
@@ -58,9 +67,18 @@ deploy:
         image: app
 ```
 
+In this example, the `Dockerfile` for building `app`
+is resolved relative to `app`'s context directory,
+whereas the the Helm chart's location and its values-files are
+relative to the current directory in `helm/project`.
+
+We generally recommend placing the configuration file in the root directory of the Skaffold project.
+
 ## Configuration dependencies
 
-In addition to authoring pipelines in a skaffold configuration file, we can also import pipelines from other existing configurations as dependencies. Skaffold manages all imported and defined pipelines in the same session. It also ensures all artifacts in a required configs are built prior to those in current config (provided the artifacts have dependencies defined); and all deploys in required configs are applied prior to those in current config.
+In addition to authoring pipelines in a Skaffold configuration file, we can also import pipelines from other existing configurations as dependencies. Skaffold manages all imported and defined pipelines in the same session. It also ensures all artifacts in a required configs are built prior to those in current config (provided the artifacts have dependencies defined); and all deploys in required configs are applied prior to those in current config.
+
+Note that in imported configurations, files are resolved relative to the location of imported Skaffold configuration file.
 
 ### Local config dependency
 
