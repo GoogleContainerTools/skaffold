@@ -802,6 +802,11 @@ type Artifact struct {
 	// For example: `gcr.io/k8s-skaffold/example`.
 	ImageName string `yaml:"image,omitempty" yamltags:"required"`
 
+	// NoDigest removes digest (sha256) suffix from generated manifests
+	// Implemented for compatibility with Red Hat Openshift and other CRI-O based platforms
+	// For example 'image:tag@sha256:0123456789ABCDEF...' becomes 'image:tag' in manifests
+	NoDigest bool `yaml:"noDigest"`
+
 	// Workspace is the directory containing the artifact's sources.
 	// Defaults to `.`.
 	Workspace string `yaml:"context,omitempty" skaffold:"filepath"`
