@@ -49,11 +49,14 @@ type Actions struct {
 }
 
 type TestBench struct {
-	buildErrors  []error
-	syncErrors   []error
-	testErrors   []error
-	deployErrors []error
-	namespaces   []string
+	buildErrors   []error
+	syncErrors    []error
+	testErrors    []error
+	deployErrors  []error
+	namespaces    []string
+	userIntents   []func(*intents)
+	intents       *intents
+	intentTrigger bool
 
 	devLoop        func(context.Context, io.Writer, func() error) error
 	firstMonitor   func(bool) error
@@ -178,6 +181,16 @@ func (t *TestBench) WatchForChanges(ctx context.Context, out io.Writer, doDev fu
 	if err := t.firstMonitor(true); err != nil {
 		return err
 	}
+
+	t.intentTrigger = true
+	for _, intent := range t.userIntents {
+		intent(t.intents)
+		if err := t.devLoop(ctx, out, doDev); err != nil {
+			return err
+		}
+	}
+
+	t.intentTrigger = false
 	for i := 0; i < t.cycles; i++ {
 		t.enterNewCycle()
 		t.currentCycle = i
