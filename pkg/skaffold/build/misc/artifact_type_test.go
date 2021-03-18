@@ -72,6 +72,9 @@ func TestFormatArtifact(t *testing.T) {
 				KanikoArtifact: &latest.KanikoArtifact{},
 			},
 		}},
+		{"noDigest", "noDigest: true", &latest.Artifact{
+			NoDigest: true,
+		}},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

@@ -129,14 +129,14 @@ func performBuild(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifac
 		return "", fmt.Errorf("unable to find tag for image %s", artifact.ImageName)
 	}
 
-	t, err := build(ctx, cw, artifact, tag)
+	tRes, err := build(ctx, cw, artifact, tag)
 	if err != nil {
-		return t, err
+		return tRes, err
 	}
 
 	if artifact.NoDigest {
 		return tag, err
-	} else {
-		return t, err
 	}
+
+	return tRes, err
 }
