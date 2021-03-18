@@ -59,7 +59,7 @@ func (p PortForwardOptions) Enabled() bool {
 // Validate checks that the port-forward options are ok.
 // For example, `none` is not mixed with other values.
 func (p PortForwardOptions) Validate() error {
-	// boolean values (true/false/1/0), `compat`, and `none` must be used alone
+	// boolean values (true/false/1/0), `compat`, and `off` must be used alone
 	for _, o := range p.Modes {
 		if _, err := strconv.ParseBool(o); err == nil {
 			if len(p.Modes) > 1 {
