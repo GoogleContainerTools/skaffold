@@ -22,6 +22,30 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func TestPortForwardOptions_Enabled(t *testing.T) {
+	tests := []struct {
+		name string
+		modes     []string
+		enabled bool
+	}{
+		{name: "off", modes: nil, enabled: false},
+		{name: "compat", modes: []string{"compat"}, enabled: true},
+		{name: "off", modes: []string{"off"}, enabled: false},
+		{name: "true", modes: []string{"true"}, enabled: true},
+		{name: "false", modes: []string{"false"}, enabled: false},
+		{name: "user,debug,pods,services", modes: []string{"user", "debug", "pods", "services"}, enabled: true},
+		{name: "user,compat,debug", modes: []string{"user", "compat", "debug"}, enabled: true},
+		{name: "off,debug", modes: []string{"off", "debug"}, enabled: false},
+		{name: "pods,false", modes: []string{"pods", "false"}, enabled: false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			result := PortForwardOptions{Modes: test.modes}.Enabled()
+			t.CheckDeepEqual(test.enabled, result)
+		})
+	}
+}
+
 func TestPortForwardOptions_Validate(t *testing.T) {
 	tests := []struct {
 		name      string
