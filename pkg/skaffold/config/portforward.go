@@ -74,7 +74,7 @@ func (p PortForwardOptions) Validate() error {
 			case user, services, pods, debug:
 				// continue
 			default:
-				return fmt.Errorf("unknown port-forward option %q: expected: user, services, pods, debug, none", o)
+				return fmt.Errorf("unknown port-forward option %q: expected: user, services, pods, debug, off", o)
 			}
 		}
 	}
