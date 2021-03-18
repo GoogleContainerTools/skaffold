@@ -30,28 +30,35 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestExtractPtvsdArg(t *testing.T) {
+func TestExtractDebugSpecs(t *testing.T) {
 	tests := []struct {
 		in     []string
-		result *ptvsdSpec
+		result *pythonSpec
 	}{
 		{nil, nil},
 		{[]string{"foo"}, nil},
 		{[]string{"--foo"}, nil},
 		{[]string{"-mfoo"}, nil},
 		{[]string{"-m", "foo"}, nil},
-		{[]string{"-mptvsd"}, &ptvsdSpec{port: 5678, wait: false}},
-		{[]string{"-m", "ptvsd", "--port", "9329"}, &ptvsdSpec{port: 9329, wait: false}},
-		{[]string{"-mptvsd", "--port", "9329", "--host", "foo"}, &ptvsdSpec{host: "foo", port: 9329, wait: false}},
-		{[]string{"-mptvsd", "--wait"}, &ptvsdSpec{port: 5678, wait: true}},
-		{[]string{"-m", "ptvsd", "--wait", "--port", "9329", "--host", "foo"}, &ptvsdSpec{host: "foo", port: 9329, wait: true}},
+		// ptvsd has implicit port and host
+		{[]string{"-mptvsd"}, &pythonSpec{debugger: ptvsd, port: 5678, wait: false}},
+		{[]string{"-m", "ptvsd", "--port", "9329"}, &pythonSpec{debugger: ptvsd, port: 9329, wait: false}},
+		{[]string{"-mptvsd", "--port", "9329", "--host", "foo"}, &pythonSpec{debugger: ptvsd, host: "foo", port: 9329, wait: false}},
+		{[]string{"-mptvsd", "--wait"}, &pythonSpec{debugger: ptvsd, port: 5678, wait: true}},
+		{[]string{"-m", "ptvsd", "--wait", "--port", "9329", "--host", "foo"}, &pythonSpec{debugger: ptvsd, host: "foo", port: 9329, wait: true}},
+		// debugpy requires a port and either `--connect` or `--listen`
+		{[]string{"-mdebugpy"}, nil}, // debugpy requires a port and `--listen`
+		{[]string{"-mdebugpy", "--wait-for-client"}, nil},
+		{[]string{"-m", "debugpy", "--listen", "9329"}, &pythonSpec{debugger: debugpy, port: 9329, wait: false}},
+		{[]string{"-mdebugpy", "--listen", "foo:9329"}, &pythonSpec{debugger: debugpy, host: "foo", port: 9329, wait: false}},
+		{[]string{"-m", "debugpy", "--wait-for-client", "--listen", "foo:9329"}, &pythonSpec{debugger: debugpy, host: "foo", port: 9329, wait: true}},
 	}
 	for _, test := range tests {
 		testutil.Run(t, strings.Join(test.in, " "), func(t *testutil.T) {
 			if test.result == nil {
-				t.CheckDeepEqual(test.result, extractPtvsdArg(test.in))
+				t.CheckDeepEqual(test.result, extractPythonDebugSpec(test.in))
 			} else {
-				t.CheckDeepEqual(*test.result, *extractPtvsdArg(test.in), cmp.AllowUnexported(ptvsdSpec{}))
+				t.CheckDeepEqual(*test.result, *extractPythonDebugSpec(test.in), cmp.AllowUnexported(pythonSpec{debugger: ptvsd}))
 			}
 		})
 	}
@@ -159,7 +166,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{entrypoint: []string{"python"}},
 			result: v1.Container{
-				Command: []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678"},
+				Command: []string{"python", "-mdebugpy", "--listen", "5678"},
 				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 				Env:     []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 			},
@@ -173,7 +180,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 			},
 			configuration: imageConfiguration{entrypoint: []string{"python"}},
 			result: v1.Container{
-				Command: []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678"},
+				Command: []string{"python", "-mdebugpy", "--listen", "5678"},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "dap", ContainerPort: 5678}},
 				Env:     []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 			},
@@ -187,7 +194,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 			},
 			configuration: imageConfiguration{entrypoint: []string{"python"}, env: map[string]string{"PYTHONUSERBASE": "/foo"}},
 			result: v1.Container{
-				Command: []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678"},
+				Command: []string{"python", "-mdebugpy", "--listen", "5678"},
 				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 				Env:     []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python:/foo"}},
 			},
@@ -199,7 +206,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{arguments: []string{"python"}},
 			result: v1.Container{
-				Args:  []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678"},
+				Args:  []string{"python", "-mdebugpy", "--listen", "5678"},
 				Ports: []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 				Env:   []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 			},
@@ -249,6 +256,50 @@ func TestTransformManifestPython(t *testing.T) {
 				}}},
 		},
 		{
+			"Pod with ptvsd",
+			&v1.Pod{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{{
+						Name:    "test",
+						Command: []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
+					}},
+				}},
+			true,
+			&v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{{
+						Name:    "test",
+						Command: []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
+						Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
+					}},
+				}},
+		},
+		{
+			"Pod with debugpy",
+			&v1.Pod{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{{
+						Name:    "test",
+						Command: []string{"python", "-mdebugpy", "--listen", "5678", "foo.py"},
+					}},
+				}},
+			true,
+			&v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{{
+						Name:    "test",
+						Command: []string{"python", "-mdebugpy", "--listen", "5678", "foo.py"},
+						Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
+					}},
+				}},
+		},
+		{
 			"Pod with Python container",
 			&v1.Pod{
 				Spec: v1.PodSpec{
@@ -265,7 +316,7 @@ func TestTransformManifestPython(t *testing.T) {
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{
 						Name:         "test",
-						Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
+						Command:      []string{"python", "-mdebugpy", "--listen", "5678", "foo.py"},
 						Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 						Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -307,7 +358,7 @@ func TestTransformManifestPython(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mdebugpy", "--listen", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -349,7 +400,7 @@ func TestTransformManifestPython(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mdebugpy", "--listen", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -391,7 +442,7 @@ func TestTransformManifestPython(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mdebugpy", "--listen", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -431,7 +482,7 @@ func TestTransformManifestPython(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mdebugpy", "--listen", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -471,7 +522,7 @@ func TestTransformManifestPython(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mdebugpy", "--listen", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -513,7 +564,7 @@ func TestTransformManifestPython(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mdebugpy", "--listen", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -565,7 +616,7 @@ func TestTransformManifestPython(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"python", "-mptvsd", "--host", "0.0.0.0", "--port", "5678", "foo.py"},
+								Command:      []string{"python", "-mdebugpy", "--listen", "5678", "foo.py"},
 								Ports:        []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 								Env:          []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
