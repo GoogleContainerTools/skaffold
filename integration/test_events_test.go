@@ -31,39 +31,67 @@ import (
 func TestTestEvents(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
-	expectedText := "bar\n"
-	testDir := "testdata/test-events"
-	testFile := "testdata/test-events/test"
-	defer func() {
-		defer os.Remove(testFile)
-	}()
+	tests := []struct {
+		description  string
+		podName      string
+		expectedText string
+		testDir      string
+		testFile     string
+		config       string
+		testType     string
+	}{
+		{
+			description:  "test events for custom test",
+			podName:      "custom-test-events",
+			expectedText: "bar\n",
+			testDir:      "testdata/test-events/custom",
+			testFile:     "testdata/test-events/custom/test",
+			config:       "skaffold.yaml",
+			testType:     "custom",
+		},
+		{
+			description: "test events for structure test",
+			podName:     "structure-test-events",
+			testDir:     "testdata/test-events/structure",
+			testFile:    "testdata/test-events/test",
+			config:      "skaffold.yaml",
+			testType:    "structure",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			defer func() {
+				defer os.Remove(test.testFile)
+			}()
 
-	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir(testDir).RunOrFail(t)
+			// Run skaffold build first to fail quickly on a build failure
+			skaffold.Build().InDir(test.testDir).WithConfig(test.config).RunOrFail(t)
 
-	ns, client := SetupNamespace(t)
-	rpcAddr := randomPort()
+			ns, client := SetupNamespace(t)
+			rpcAddr := randomPort()
 
-	skaffold.Dev("--rpc-port", rpcAddr).InDir(testDir).InNs(ns.Name).RunBackground(t)
+			skaffold.Dev("--rpc-port", rpcAddr).InDir(test.testDir).WithConfig(test.config).InNs(ns.Name).RunBackground(t)
 
-	client.WaitForPodsReady("test-events-example")
+			client.WaitForPodsReady(test.podName)
 
-	// Ensure we see a test is triggered in the event log
-	_, entries := apiEvents(t, rpcAddr)
+			// Ensure we see a test is triggered in the event log
+			_, entries := apiEvents(t, rpcAddr)
 
-	waitForTestEvent(t, entries, func(e *proto.LogEntry) bool {
-		return (e.GetEvent().GetTestEvent().GetStatus() != InProgress)
-	})
+			waitForTestEvent(t, entries, func(e *proto.LogEntry) bool {
+				return (e.GetEvent().GetTestEvent().GetStatus() != InProgress)
+			})
 
-	verifyTestCompletedWithEvents(t, entries, expectedText, testFile)
+			verifyTestCompletedWithEvents(t, entries, test.testType, test.expectedText, test.testFile)
+		})
+	}
 }
 
 func waitForTestEvent(t *testing.T, entries chan *proto.LogEntry, condition func(*proto.LogEntry) bool) {
 	failNowIfError(t, wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) { return condition(<-entries), nil }))
 }
 
-func verifyTestCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry, expectedText string, fileName string) {
-	// Ensure we see a file sync in progress triggered in the event log
+func verifyTestCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry, testType string, expectedText string, fileName string) {
+	// Ensure we see a test in progress triggered in the event log
 	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
 		event := e.GetEvent().GetTestEvent()
@@ -71,10 +99,15 @@ func verifyTestCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry, e
 	})
 	failNowIfError(t, err)
 
-	err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-		out, e := ioutil.ReadFile(fileName)
-		failNowIfError(t, e)
-		return string(out) == expectedText, nil
-	})
-	failNowIfError(t, err)
+	switch testType {
+	case "Custom":
+		err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+			out, e := ioutil.ReadFile(fileName)
+			failNowIfError(t, e)
+			return string(out) == expectedText, nil
+		})
+		failNowIfError(t, err)
+	default:
+		break
+	}
 }

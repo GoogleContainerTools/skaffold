@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: custom-test-events
+spec:
+  containers:
+  - name: custom-test-events
+    image: custom-test-events

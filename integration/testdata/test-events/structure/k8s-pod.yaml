@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: structure-test-events
+spec:
+  containers:
+  - name: structure-test-events
+    image: structure-test-events
