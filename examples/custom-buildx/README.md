@@ -123,3 +123,10 @@ is to be pushed to a remote registry:
 ```
 skaffold build --cache-artifacts=false
 ```
+
+##### Considerations with `skaffold dev`
+
+When using `skaffold dev` with a remote cluster, this example causes unnecessary
+work as it builds and pushes for multiple platforms on each change.  You could
+optimize for this case by using a Docker build through a [command-activated
+profile](https://skaffold.dev/docs/environment/profiles/#activation).
