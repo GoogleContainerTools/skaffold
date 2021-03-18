@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -24,22 +25,24 @@ import (
 
 func TestPortForwardOptions_Enabled(t *testing.T) {
 	tests := []struct {
-		name    string
 		modes   []string
 		enabled bool
 	}{
-		{name: "off", modes: nil, enabled: false},
-		{name: "compat", modes: []string{"compat"}, enabled: true},
-		{name: "off", modes: []string{"off"}, enabled: false},
-		{name: "true", modes: []string{"true"}, enabled: true},
-		{name: "false", modes: []string{"false"}, enabled: false},
-		{name: "user,debug,pods,services", modes: []string{"user", "debug", "pods", "services"}, enabled: true},
-		{name: "user,compat,debug", modes: []string{"user", "compat", "debug"}, enabled: true},
-		{name: "off,debug", modes: []string{"off", "debug"}, enabled: false},
-		{name: "pods,false", modes: []string{"pods", "false"}, enabled: false},
+		{modes: nil, enabled: false},
+		{modes: []string{"off"}, enabled: false},
+		{modes: []string{"true"}, enabled: true},
+		{modes: []string{"false"}, enabled: false},
+		{modes: []string{"TRUE"}, enabled: true},
+		{modes: []string{"FALSE"}, enabled: false},
+		{modes: []string{"1"}, enabled: true},
+		{modes: []string{"0"}, enabled: false},
+		{modes: []string{"user", "debug", "pods", "services"}, enabled: true},
+		{modes: []string{"user", "true", "debug"}, enabled: true},
+		{modes: []string{"off", "debug"}, enabled: false},
+		{modes: []string{"pods", "false"}, enabled: false},
 	}
 	for _, test := range tests {
-		testutil.Run(t, test.name, func(t *testutil.T) {
+		testutil.Run(t, fmt.Sprintf("modes: %v", test.modes), func(t *testutil.T) {
 			result := PortForwardOptions{Modes: test.modes}.Enabled()
 			t.CheckDeepEqual(test.enabled, result)
 		})
@@ -48,22 +51,25 @@ func TestPortForwardOptions_Enabled(t *testing.T) {
 
 func TestPortForwardOptions_Validate(t *testing.T) {
 	tests := []struct {
-		name      string
 		modes     []string
 		shouldErr bool
 	}{
-		{name: "off", modes: nil, shouldErr: false},
-		{name: "compat", modes: []string{"compat"}, shouldErr: false},
-		{name: "off", modes: []string{"off"}, shouldErr: false},
-		{name: "true", modes: []string{"true"}, shouldErr: false},
-		{name: "false", modes: []string{"false"}, shouldErr: false},
-		{name: "user,debug,pods,services", modes: []string{"user", "debug", "pods", "services"}, shouldErr: false},
-		{name: "user,compat,debug", modes: []string{"user", "compat", "debug"}, shouldErr: true},
-		{name: "off,debug", modes: []string{"off", "debug"}, shouldErr: true},
-		{name: "pods,false", modes: []string{"pods", "false"}, shouldErr: true},
+		{modes: nil, shouldErr: false},
+		{modes: []string{"compat"}, shouldErr: true},
+		{modes: []string{"off"}, shouldErr: false},
+		{modes: []string{"true"}, shouldErr: false},
+		{modes: []string{"false"}, shouldErr: false},
+		{modes: []string{"TRUE"}, shouldErr: false},
+		{modes: []string{"FALSE"}, shouldErr: false},
+		{modes: []string{"1"}, shouldErr: false},
+		{modes: []string{"0"}, shouldErr: false},
+		{modes: []string{"user", "debug", "pods", "services"}, shouldErr: false},
+		{modes: []string{"user", "true", "debug"}, shouldErr: true},
+		{modes: []string{"off", "debug"}, shouldErr: true},
+		{modes: []string{"pods", "false"}, shouldErr: true},
 	}
 	for _, test := range tests {
-		testutil.Run(t, test.name, func(t *testutil.T) {
+		testutil.Run(t, fmt.Sprintf("%v", test.modes), func(t *testutil.T) {
 			err := PortForwardOptions{Modes: test.modes}.Validate()
 			t.CheckError(test.shouldErr, err)
 		})
@@ -72,7 +78,6 @@ func TestPortForwardOptions_Validate(t *testing.T) {
 
 func TestPortForwardOptions_Forwards(t *testing.T) {
 	tests := []struct {
-		name            string
 		runModes        []RunMode // if empty, then all of Deploy, Dev, Debug, Run
 		modes           []string
 		forwardUser     bool
@@ -80,34 +85,32 @@ func TestPortForwardOptions_Forwards(t *testing.T) {
 		forwardPods     bool
 		forwardDebug    bool
 	}{
-		{name: "nil", modes: nil},                 // all disabled
-		{name: "off", modes: []string{"off"}},     // all disabled
-		{name: "false", modes: []string{"false"}}, // all disabled
-		{name: "compat - deploy, dev, run", modes: []string{"compat"}, runModes: []RunMode{RunModes.Deploy, RunModes.Run, RunModes.Dev}, forwardUser: true, forwardServices: true},
-		{name: "compat - debug", modes: []string{"compat"}, runModes: []RunMode{RunModes.Debug}, forwardUser: true, forwardServices: true, forwardDebug: true},
-		{name: "true - deploy, dev, run", modes: []string{"true"}, runModes: []RunMode{RunModes.Deploy, RunModes.Run, RunModes.Dev}, forwardUser: true, forwardServices: true},
-		{name: "true - debug", modes: []string{"true"}, runModes: []RunMode{RunModes.Debug}, forwardUser: true, forwardServices: true, forwardDebug: true},
+		{modes: nil},               // all disabled
+		{modes: []string{"off"}},   // all disabled
+		{modes: []string{"false"}}, // all disabled
+		{modes: []string{"true"}, runModes: []RunMode{RunModes.Deploy, RunModes.Run, RunModes.Dev}, forwardUser: true, forwardServices: true},
+		{modes: []string{"true"}, runModes: []RunMode{RunModes.Debug}, forwardUser: true, forwardServices: true, forwardDebug: true},
 
-		{name: "user,debug,pods,services", modes: []string{"user", "debug", "pods", "services"}, forwardUser: true, forwardServices: true, forwardPods: true, forwardDebug: true},
-		{name: "user", modes: []string{"user"}, forwardUser: true},
-		{name: "services", modes: []string{"services"}, forwardServices: true},
-		{name: "pods", modes: []string{"pods"}, forwardPods: true},
-		{name: "debug", modes: []string{"debug"}, forwardDebug: true},
+		{modes: []string{"user", "debug", "pods", "services"}, forwardUser: true, forwardServices: true, forwardPods: true, forwardDebug: true},
+		{modes: []string{"user"}, forwardUser: true},
+		{modes: []string{"services"}, forwardServices: true},
+		{modes: []string{"pods"}, forwardPods: true},
+		{modes: []string{"debug"}, forwardDebug: true},
 	}
 	for _, test := range tests {
-		testutil.Run(t, test.name, func(t *testutil.T) {
-			opts := PortForwardOptions{Modes: test.modes}
-			t.CheckError(false, opts.Validate())
-			runModes := test.runModes
-			if len(runModes) == 0 {
-				runModes = []RunMode{RunModes.Deploy, RunModes.Run, RunModes.Dev, RunModes.Debug}
-			}
-			for _, rm := range runModes {
+		runModes := test.runModes
+		if len(runModes) == 0 {
+			runModes = []RunMode{RunModes.Deploy, RunModes.Run, RunModes.Dev, RunModes.Debug}
+		}
+		for _, rm := range runModes {
+			testutil.Run(t, fmt.Sprintf("modes: %v runMode: %v", test.modes, rm), func(t *testutil.T) {
+				opts := PortForwardOptions{Modes: test.modes}
+				t.CheckError(false, opts.Validate())
 				t.CheckDeepEqual(test.forwardUser, opts.ForwardUser(rm))
 				t.CheckDeepEqual(test.forwardServices, opts.ForwardServices(rm))
 				t.CheckDeepEqual(test.forwardPods, opts.ForwardPods(rm))
 				t.CheckDeepEqual(test.forwardDebug, opts.ForwardDebug(rm))
-			}
-		})
+			})
+		}
 	}
 }

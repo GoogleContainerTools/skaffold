@@ -258,7 +258,7 @@ var flagRegistry = []Flag{
 			"debug": []string{"user", "debug"},
 			"dev":   []string{"user"},
 		},
-		NoOptDefVal:   "compat", // use the settings from when --port-forward was boolean
+		NoOptDefVal:   "true", // uses the settings from when --port-forward was boolean
 		FlagAddMethod: "StringSliceVar",
 		DefinedOn:     []string{"dev", "run", "deploy", "debug"},
 		IsEnum:        true,
