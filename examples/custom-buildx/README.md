@@ -55,6 +55,10 @@ For more information on configuring a custom builder, see the Skaffold custom
 builder [documentation](https://skaffold.dev/docs/how-tos/builders/#custom-build-script-run-locally).
 Note that Skaffold builders are different from `docker buildx` builders.
 
+Note that Buildx does not support loading images for multiple platforms
+o the Docker Daemon.  So this [`build.sh`](build.sh) only uses Buildx
+when pushing an image to a registry.  See the _Cautions_ section below.
+
 
 ##### Step 3: Configure node affinities
 
@@ -109,14 +113,14 @@ depending on the `$PUSH_IMAGE` flag.
   - When `true`, the result is to be pushed to a registry, and all
     registries support multi-platform images. 
   - When `false`, the result is to be loaded to the Docker Daemon. 
-    But Buildx does not support loading multi-platform images to
+    Buildx does not support loading multi-platform images to
     the Docker Daemon, and so this example builds a single container
     image for the local platform.
 
 But Skaffold is unaware that the build result differs based on `$PUSH_IMAGE`.
-So on a local-build, Skaffold will cache the local-platform artifact,
-and that artifact will be used that for subsequent deployments even if pushed
-to a remote registry (assuming the source is unchanged).  To avoid
+So on a local build (`$PUSH_IMAGE=false`), Skaffold will cache the single-platform image,
+and that single-platform image will be used for subsequent deployments _even when pushing
+to a remote registry_ providing the source is unchanged.  To avoid
 this scenario, disable Skaffold's artifact caching when the result
 is to be pushed to a remote registry:
 
