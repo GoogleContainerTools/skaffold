@@ -219,6 +219,72 @@ func validateUniqueDependencyAliases(artifacts []*latest.Artifact) (errs []error
 	return
 }
 
+// extractContainerNameFromNetworkMode returns the container name even if it comes from an Env Var. Error if the mode isn't valid
+// (only container:<id|name> format allowed)
+func extractContainerNameFromNetworkMode(mode string) (string, error) {
+	if strings.HasPrefix(strings.ToLower(mode), "container:") {
+		// Up to this point, we know that we can strip until the colon symbol and keep the second part
+		// this is helpful in case someone sends container not in lowercase
+		maybeID := strings.SplitN(mode, ":", 2)[1]
+		id, err := util.ExpandEnvTemplate(maybeID, map[string]string{})
+		if err != nil {
+			return "", sErrors.NewError(err,
+				proto.ActionableErr{
+					Message: fmt.Sprintf("unable to parse container name %s: %s", mode, err),
+					ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_PARSE_ERR,
+					Suggestions: []*proto.Suggestion{
+						{
+							SuggestionCode: proto.SuggestionCode_CHECK_CUSTOM_COMMAND,
+							Action:         fmt.Sprintf("Check the content of the environment variable: %s", mode),
+						},
+					},
+				})
+		}
+		return id, nil
+	}
+	errMsg := fmt.Sprintf("extracting container name from a non valid container network mode '%s'", mode)
+	return "", sErrors.NewError(fmt.Errorf(errMsg),
+		proto.ActionableErr{
+			Message: errMsg,
+			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_PARSE_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_CHECK_CUSTOM_COMMAND,
+					Action:         fmt.Sprintf("Check the content of the environment variable: %s", mode),
+				},
+			},
+		})
+}
+
+// validateDockerNetworkModeExpression makes sure that the network mode starts with "container:" followed by a valid container name
+func validateDockerNetworkModeExpression(image string, expr string) error {
+	id, err := extractContainerNameFromNetworkMode(expr)
+	if err != nil {
+		return err
+	}
+	return validateDockerContainerExpression(image, id)
+}
+
+// validateDockerContainerExpression makes sure that the container name pass in matches Docker's regular expression for containers
+func validateDockerContainerExpression(image string, id string) error {
+	containerRegExp := regexp.MustCompile("^[a-zA-Z0-9][a-zA-Z0-9_.-]*$")
+	if !containerRegExp.MatchString(id) {
+		errMsg := fmt.Sprintf("artifact %s has invalid container name '%s'", image, id)
+		return sErrors.NewError(fmt.Errorf(errMsg),
+			proto.ActionableErr{
+				Message: errMsg,
+				ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME,
+				Suggestions: []*proto.Suggestion{
+					{
+						SuggestionCode: proto.SuggestionCode_FIX_DOCKER_NETWORK_CONTAINER_NAME,
+						Action:         "Please fix the docker network container name and try again",
+					},
+				},
+			})
+	}
+	return nil
+}
+
 // validateDockerNetworkMode makes sure that networkMode is one of `bridge`, `none`, `container:<name|id>`, or `host` if set.
 func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 	for _, a := range artifacts {
@@ -229,23 +295,11 @@ func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 		if mode == "none" || mode == "bridge" || mode == "host" {
 			continue
 		}
-		containerRegExp := regexp.MustCompile("^container:[a-zA-Z0-9][a-zA-Z0-9_.-]*$")
-		if containerRegExp.MatchString(mode) {
+		networkModeErr := validateDockerNetworkModeExpression(a.ImageName, a.DockerArtifact.NetworkMode)
+		if networkModeErr == nil {
 			continue
 		}
-
-		errMsg := fmt.Sprintf("artifact %s has invalid networkMode '%s'", a.ImageName, mode)
-		errs = append(errs, sErrors.NewError(fmt.Errorf(errMsg),
-			proto.ActionableErr{
-				Message: errMsg,
-				ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME,
-				Suggestions: []*proto.Suggestion{
-					{
-						SuggestionCode: proto.SuggestionCode_FIX_DOCKER_NETWORK_CONTAINER_NAME,
-						Action:         "Please fix the docker network container name and try again",
-					},
-				},
-			}))
+		errs = append(errs, networkModeErr)
 	}
 	return
 }
@@ -270,7 +324,13 @@ func validateDockerNetworkContainerExists(artifacts []*latest.Artifact, runCtx d
 		mode := strings.ToLower(a.DockerArtifact.NetworkMode)
 		prefix := "container:"
 		if strings.HasPrefix(mode, prefix) {
-			id := strings.TrimPrefix(mode, prefix)
+			// We've already validated the container's name in validateDockerNetworkMode.
+			// We can just extract it and check whether it exists
+			id, err := extractContainerNameFromNetworkMode(a.DockerArtifact.NetworkMode)
+			if err != nil {
+				errs = append(errs, err)
+				return errs
+			}
 			containers, err := client.ContainerList(ctx, types.ContainerListOptions{})
 			if err != nil {
 				errs = append(errs, sErrors.NewError(err,
@@ -288,7 +348,7 @@ func validateDockerNetworkContainerExists(artifacts []*latest.Artifact, runCtx d
 			}
 			for _, c := range containers {
 				// Comparing ID seeking for <id>
-				if c.ID == id {
+				if strings.HasPrefix(c.ID, id) {
 					return errs
 				}
 				for _, name := range c.Names {
