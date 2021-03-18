@@ -115,7 +115,7 @@ depending on the `$PUSH_IMAGE` flag.
 
 But Skaffold is unaware that the build result differs based on `$PUSH_IMAGE`.
 So on a local-build, Skaffold will cache the local-platform artifact,
-and that artifact will be used that for subsequent deployments even if
+and that artifact will be used that for subsequent deployments even if pushed
 to a remote registry (assuming the source is unchanged).  To avoid
 this scenario, disable Skaffold's artifact caching when the result
 is to be pushed to a remote registry:
@@ -123,4 +123,3 @@ is to be pushed to a remote registry:
 ```
 skaffold build --cache-artifacts=false
 ```
-
