@@ -36,23 +36,18 @@ type image struct {
 	artifact *build.Artifact
 }
 
-// String Implements String() method for pflag interface and
+// String Implements String() method for pflag Slice Value interface and
 // returns a comma separated list of images.
-func (i *Images) String() string {
+func (i *Images) GetSlice() []string {
 	names := make([]string, len(i.images))
 	for i, image := range i.images {
 		names[i] = image.name
 	}
-	return strings.Join(names, ",")
-}
-
-// Usage Implements Usage() method for pflag interface
-func (i *Images) Usage() string {
-	return i.usage
+	return names
 }
 
 // Set Implements Set() method for pflag interface
-func (i *Images) Set(value string) error {
+func (i *Images) Append(value string) error {
 	a, err := convertImageToArtifact(value)
 	if err != nil {
 		return err
@@ -61,10 +56,10 @@ func (i *Images) Set(value string) error {
 	return nil
 }
 
-// Type Implements Type() method for pflag interface
-func (i *Images) Type() string {
-	return fmt.Sprintf("%T", i)
+func(i *Images) Replace([] string) error {
+
 }
+
 
 // Artifacts returns an artifact representation for the corresponding image
 func (i *Images) Artifacts() []build.Artifact {
