@@ -38,6 +38,7 @@ import (
 func TestGetBuild(t *testing.T) {
 	tests := []struct {
 		description   string
+		artifact      *latest.Artifact
 		buildArtifact ArtifactBuilder
 		tags          tag.ImageTags
 		expectedTag   string
@@ -46,6 +47,7 @@ func TestGetBuild(t *testing.T) {
 	}{
 		{
 			description: "build succeeds",
+			artifact:    &latest.Artifact{ImageName: "skaffold/image1"},
 			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 				out.Write([]byte("build succeeds"))
 				return fmt.Sprintf("%s@sha256:abac", tag), nil
@@ -58,7 +60,22 @@ func TestGetBuild(t *testing.T) {
 			expectedOut: "Building [skaffold/image1]...\nbuild succeeds",
 		},
 		{
+			description: "build succeeds with no digest",
+			artifact:    &latest.Artifact{ImageName: "skaffold/image1", NoDigest: true},
+			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+				out.Write([]byte("build succeeds with no digest"))
+				return fmt.Sprintf("%s@sha256:abac", tag), nil
+			},
+			tags: tag.ImageTags{
+				"skaffold/image1": "skaffold/image1:v0.0.1",
+				"skaffold/image2": "skaffold/image2:v0.0.2",
+			},
+			expectedTag: "skaffold/image1:v0.0.1",
+			expectedOut: "Building [skaffold/image1]...\nbuild succeeds with no digest",
+		},
+		{
 			description: "build fails",
+			artifact:    &latest.Artifact{ImageName: "skaffold/image1"},
 			buildArtifact: func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 				return "", fmt.Errorf("build fails")
 			},
@@ -70,6 +87,7 @@ func TestGetBuild(t *testing.T) {
 		},
 		{
 			description: "tag not found",
+			artifact:    &latest.Artifact{ImageName: "skaffold/image1"},
 			tags:        tag.ImageTags{},
 			expectedOut: "Building [skaffold/image1]...\n",
 			shouldErr:   true,
@@ -79,8 +97,7 @@ func TestGetBuild(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
 
-			artifact := &latest.Artifact{ImageName: "skaffold/image1"}
-			got, err := performBuild(context.Background(), out, test.tags, artifact, test.buildArtifact)
+			got, err := performBuild(context.Background(), out, test.tags, test.artifact, test.buildArtifact)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedTag, got)
 			t.CheckDeepEqual(test.expectedOut, out.String())
