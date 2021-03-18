@@ -1,0 +1,13 @@
+apiVersion: skaffold/v2beta13
+kind: Config
+build:
+  artifacts:
+  - image: test-events-example
+test:
+  - image: test-events-example
+    custom:
+      - command: echo "bar" > test
+deploy:
+  kubectl:
+    manifests:
+      - k8s-*

@@ -110,6 +110,7 @@ func (ct *Runner) Test(ctx context.Context, out io.Writer, artifacts []build.Art
 		return cmdRunErr(err)
 	}
 	color.Green.Fprintf(out, "Command finished successfully.\n")
+	event.TestComplete()
 
 	return nil
 }

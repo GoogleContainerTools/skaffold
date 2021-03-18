@@ -28,19 +28,25 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
-func TestTestTriggers(t *testing.T) {
+func TestTestEvents(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
-	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("testdata/test-deps").RunOrFail(t)
+	expectedText := "bar\n"
+	testDir := "testdata/test-events"
+	testFile := "testdata/test-events/test"
+	defer func() {
+		defer os.Remove(testFile)
+	}()
 
-	ns, _ := SetupNamespace(t)
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir(testDir).RunOrFail(t)
+
+	ns, client := SetupNamespace(t)
 	rpcAddr := randomPort()
 
-	skaffold.Dev("--rpc-port", rpcAddr).InDir("testdata/test-deps").InNs(ns.Name).RunBackground(t)
+	skaffold.Dev("--rpc-port", rpcAddr).InDir(testDir).InNs(ns.Name).RunBackground(t)
 
-	ioutil.WriteFile("testdata/test-deps/foo", []byte("foo"), 0644)
-	defer func() { os.Truncate("testdata/test-deps/foo", 0) }()
+	client.WaitForPodsReady("test-events-example")
 
 	// Ensure we see a test is triggered in the event log
 	_, entries := apiEvents(t, rpcAddr)
@@ -48,8 +54,27 @@ func TestTestTriggers(t *testing.T) {
 	waitForTestEvent(t, entries, func(e *proto.LogEntry) bool {
 		return (e.GetEvent().GetTestEvent().GetStatus() != InProgress)
 	})
+
+	verifyTestCompletedWithEvents(t, entries, expectedText, testFile)
 }
 
 func waitForTestEvent(t *testing.T, entries chan *proto.LogEntry, condition func(*proto.LogEntry) bool) {
 	failNowIfError(t, wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) { return condition(<-entries), nil }))
+}
+
+func verifyTestCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry, expectedText string, fileName string) {
+	// Ensure we see a file sync in progress triggered in the event log
+	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
+		e := <-entries
+		event := e.GetEvent().GetTestEvent()
+		return event != nil && event.GetStatus() == InProgress, nil
+	})
+	failNowIfError(t, err)
+
+	err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+		out, e := ioutil.ReadFile(fileName)
+		failNowIfError(t, e)
+		return string(out) == expectedText, nil
+	})
+	failNowIfError(t, err)
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
 func TestNewRunner(t *testing.T) {
@@ -52,6 +53,7 @@ func TestNewRunner(t *testing.T) {
 			ImageName:      "image",
 			StructureTests: []string{"test.yaml"},
 		}
+		testEvent.InitializeState([]latest.Pipeline{{}})
 
 		testRunner, err := New(cfg, cfg.workingDir, testCase, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
