@@ -23,33 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestPortForwardOptions_Enabled(t *testing.T) {
-	tests := []struct {
-		modes   []string
-		enabled bool
-	}{
-		{modes: nil, enabled: false},
-		{modes: []string{"off"}, enabled: false},
-		{modes: []string{"true"}, enabled: true},
-		{modes: []string{"false"}, enabled: false},
-		{modes: []string{"TRUE"}, enabled: true},
-		{modes: []string{"FALSE"}, enabled: false},
-		{modes: []string{"1"}, enabled: true},
-		{modes: []string{"0"}, enabled: false},
-		{modes: []string{"user", "debug", "pods", "services"}, enabled: true},
-		{modes: []string{"user", "true", "debug"}, enabled: true},
-		{modes: []string{"off", "debug"}, enabled: false},
-		{modes: []string{"pods", "false"}, enabled: false},
-	}
-	for _, test := range tests {
-		testutil.Run(t, fmt.Sprintf("modes: %v", test.modes), func(t *testutil.T) {
-			result := PortForwardOptions{Modes: test.modes}.Enabled()
-			t.CheckDeepEqual(test.enabled, result)
-		})
-	}
-}
-
-func TestPortForwardOptions_Validate(t *testing.T) {
+func TestValidateModes(t *testing.T) {
 	tests := []struct {
 		modes     []string
 		shouldErr bool
@@ -70,8 +44,34 @@ func TestPortForwardOptions_Validate(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, fmt.Sprintf("%v", test.modes), func(t *testutil.T) {
-			err := PortForwardOptions{Modes: test.modes}.Validate()
+			err := validateModes(test.modes)
 			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
+func TestPortForwardOptions_Enabled(t *testing.T) {
+	tests := []struct {
+		modes   []string
+		enabled bool
+	}{
+		{modes: nil, enabled: false},
+		{modes: []string{"off"}, enabled: false},
+		{modes: []string{"true"}, enabled: true},
+		{modes: []string{"false"}, enabled: false},
+		{modes: []string{"TRUE"}, enabled: true},
+		{modes: []string{"FALSE"}, enabled: false},
+		{modes: []string{"1"}, enabled: true},
+		{modes: []string{"0"}, enabled: false},
+		{modes: []string{"user", "debug", "pods", "services"}, enabled: true},
+		{modes: []string{"user", "debug"}, enabled: true},
+	}
+	for _, test := range tests {
+		testutil.Run(t, fmt.Sprintf("modes: %v", test.modes), func(t *testutil.T) {
+			opts := PortForwardOptions{}
+			t.CheckError(false, opts.Replace(test.modes))
+			result := opts.Enabled()
+			t.CheckDeepEqual(test.enabled, result)
 		})
 	}
 }
@@ -104,8 +104,8 @@ func TestPortForwardOptions_Forwards(t *testing.T) {
 		}
 		for _, rm := range runModes {
 			testutil.Run(t, fmt.Sprintf("modes: %v runMode: %v", test.modes, rm), func(t *testutil.T) {
-				opts := PortForwardOptions{Modes: test.modes}
-				t.CheckError(false, opts.Validate())
+				opts := PortForwardOptions{}
+				t.CheckError(false, opts.Replace(test.modes))
 				t.CheckDeepEqual(test.forwardUser, opts.ForwardUser(rm))
 				t.CheckDeepEqual(test.forwardServices, opts.ForwardServices(rm))
 				t.CheckDeepEqual(test.forwardPods, opts.ForwardPods(rm))

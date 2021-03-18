@@ -48,12 +48,6 @@ func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes
 		return nil
 	}
 
-	// TODO this doesn't feel like the right place
-	if err := options.Validate(); err != nil {
-		logrus.Error("port-forward: ", err)
-		return nil
-	}
-
 	entryManager := NewEntryManager(out, NewKubectlForwarder(out, cli))
 
 	var forwarders []Forwarder

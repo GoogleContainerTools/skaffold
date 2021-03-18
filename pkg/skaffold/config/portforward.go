@@ -19,6 +19,10 @@ package config
 import (
 	"fmt"
 	"strconv"
+	"strings"
+
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
 )
 
 // These are the list of accepted port-forward modes.
@@ -38,106 +42,158 @@ const (
 // PortForwardOptions are options set by the command line for port forwarding.
 // `off` is intended to be a single standalone option.
 type PortForwardOptions struct {
-	Modes []string
+	modes           []string
+	forwardUser     bool
+	forwardServices bool
+	forwardPods     bool
+	forwardDebug    bool
+	// compat is true if we're in backwards-compatible mode when --port-forward was boolean
+	compat bool
+}
+
+var _ pflag.Value = (*PortForwardOptions)(nil)
+var _ pflag.SliceValue = (*PortForwardOptions)(nil)
+
+func (p *PortForwardOptions) reset() {
+	p.modes = nil
+	p.forwardUser = false
+	p.forwardServices = false
+	p.forwardPods = false
+	p.forwardDebug = false
+	p.compat = false
+}
+
+func (p *PortForwardOptions) Set(csv string) error {
+	split := strings.Split(csv, ",")
+	return p.Replace(split)
+}
+
+func (p *PortForwardOptions) Type() string {
+	return "stringSlice"
+}
+
+func (p *PortForwardOptions) String() string {
+	return strings.Join(p.modes, ",")
+}
+
+func (p *PortForwardOptions) Append(o string) error {
+	result := append(p.modes, o)
+	if err := validateModes(result); err != nil {
+		return err
+	}
+
+	// check if already present; we know since the result is valid that
+	// we cannot have multiple and different boolean values.
+	for _, v := range p.modes {
+		if v == o {
+			return nil
+		}
+	}
+	// `off` and boolean values must be standalone
+	switch o {
+	case user:
+		p.forwardUser = true
+	case services:
+		p.forwardServices = true
+	case pods:
+		p.forwardPods = true
+	case debug:
+		p.forwardDebug = true
+	}
+	if b, err := strconv.ParseBool(o); err == nil {
+		p.compat = b
+	}
+	p.modes = result
+	return nil
+}
+
+func (p *PortForwardOptions) Replace(options []string) error {
+	if err := validateModes(options); err != nil {
+		return err
+	}
+	p.reset()
+	for _, o := range options {
+		if err := p.Append(o); err != nil {
+			logrus.Fatal(err) // should never happen since we validated the options
+		}
+	}
+	return nil
+}
+
+func (p *PortForwardOptions) GetSlice() []string {
+	return p.modes
 }
 
 // Enabled checks if the port-forwarding options indicates that forwarding should be enabled.
 func (p PortForwardOptions) Enabled() bool {
-	if len(p.Modes) == 0 {
+	if len(p.modes) == 0 {
 		return false
 	}
 	// --port-forward was previously a boolean, so accept pflag's boolean values.
 	// This method accepts "off" or bool variants to be mixed with others,
 	// leaving complaining to be done by Validate.
-	for _, o := range p.Modes {
-		b, err := strconv.ParseBool(o)
-		if err == nil && !b {
+	for _, o := range p.modes {
+		if o == off {
 			return false
 		}
-		if o == off {
+		b, err := strconv.ParseBool(o)
+		if err == nil && !b {
 			return false
 		}
 	}
 	return true
 }
 
-// Validate checks that the port-forward options are ok.
+// validateModes checks that the given set of port-forward modes are ok.
 // For example, `off` and boolean values should not be combined with other values.
-func (p PortForwardOptions) Validate() error {
-	// Boolean values (true/false/1/0) and `off` must be used alone.
-	for _, o := range p.Modes {
-		if _, err := strconv.ParseBool(o); err == nil {
-			if len(p.Modes) > 1 {
-				return fmt.Errorf("port-forward %q cannot be combined with other options", o)
-			}
-		} else {
-			switch o {
-			case off:
-				if len(p.Modes) > 1 {
-					return fmt.Errorf("port-forward %q cannot be combined with other options", o)
-				}
-			case user, services, pods, debug:
-				// continue
-			default:
-				return fmt.Errorf("unknown port-forward option %q: expected: user, services, pods, debug, off", o)
-			}
+func validateModes(modes []string) error {
+	for _, mode := range modes {
+		if err := validateMode(mode); err != nil {
+			return err
+		}
+		// Boolean values (true/false/1/0) and `off` must be used alone.
+		if _, err := strconv.ParseBool(mode); len(modes) > 1 && (err == nil || mode == off) {
+			return fmt.Errorf("port-forward %q cannot be combined with other options", mode)
 		}
 	}
 	return nil
 }
 
-func (p PortForwardOptions) ForwardUser(runMode RunMode) bool {
-	for _, o := range p.Modes {
-		if b, err := strconv.ParseBool(o); err == nil {
-			// When --port-forward was a boolean option, user-defined port-forwards
-			// were enabled all modes.
-			return b
-		}
-		if o == user {
-			return true
-		}
+func validateMode(mode string) error {
+	if _, err := strconv.ParseBool(mode); err == nil {
+		return nil
 	}
-	return false
+	switch mode {
+	case off, user, services, pods, debug:
+		return nil
+	default:
+		return fmt.Errorf("unknown port-forward option %q: expected: user, services, pods, debug, off", mode)
+	}
+}
+
+func (p PortForwardOptions) ForwardUser(runMode RunMode) bool {
+	// When --port-forward was a boolean option, user-defined port-forwards
+	// were enabled all modes.
+	return p.forwardUser || p.compat
 }
 
 func (p PortForwardOptions) ForwardServices(runMode RunMode) bool {
-	for _, o := range p.Modes {
-		if b, err := strconv.ParseBool(o); err == nil {
-			// When --port-forward was a boolean option, service forwarding
-			// was enabled all modes.
-			return b
-		}
-		if o == services {
-			return true
-		}
-	}
-	return false
+	// When --port-forward was a boolean option, service forwarding
+	// was enabled all modes.
+	return p.forwardServices || p.compat
 }
 
 func (p PortForwardOptions) ForwardPods(runMode RunMode) bool {
-	for _, o := range p.Modes {
-		// Compatibility break: when `--port-forward` was a boolean option,
-		// all pods containerPorts were forwarded for `debug`.  But now we
-		// only forward debug-related containerPorts.  So we ignore boolean
-		// values.
-		if o == pods {
-			return true
-		}
-	}
-	return false
+	// Compatibility break: when `--port-forward` was a boolean option,
+	// all pods containerPorts were forwarded for `debug`.  But now we
+	// only forward debug-related containerPorts.  So we ignore boolean
+	// values.
+	return p.forwardPods
 }
 
 func (p PortForwardOptions) ForwardDebug(runMode RunMode) bool {
-	for _, o := range p.Modes {
-		if b, err := strconv.ParseBool(o); err == nil {
-			// When --port-forward was a boolean option, all containerPorts were
-			// forwarded in debug mode to connect debug-related ports; now we only
-			// forward debug-related ports.
-			return b && runMode == RunModes.Debug
-		}
-		if o == debug {
-			return true
-		}
-	}
-	return false
+	// When --port-forward was a boolean option, all containerPorts were
+	// forwarded in debug mode to connect debug-related ports; now we only
+	// forward debug-related ports.
+	return p.forwardDebug || (p.compat && runMode == RunModes.Debug)
 }
