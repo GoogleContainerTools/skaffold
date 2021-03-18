@@ -811,7 +811,7 @@ type Artifact struct {
 
 	// NoDigest removes digest (sha256) suffix from generated manifests
 	// Implemented for compatibility with Red Hat Openshift and other CRI-O based platforms
-	// For example 'image:tag@sha256:0123456789ABCDEF...' becomes 'image:tag' in manifests
+	// For example 'image:tag@sha256:0123456789ABCDEF...' becomes 'image:tag' in manifests .
 	NoDigest bool `yaml:"noDigest,omitempty"`
 
 	// Workspace is the directory containing the artifact's sources.
