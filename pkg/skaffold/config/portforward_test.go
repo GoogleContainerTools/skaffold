@@ -24,8 +24,8 @@ import (
 
 func TestPortForwardOptions_Enabled(t *testing.T) {
 	tests := []struct {
-		name string
-		modes     []string
+		name    string
+		modes   []string
 		enabled bool
 	}{
 		{name: "off", modes: nil, enabled: false},
