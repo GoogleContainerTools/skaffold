@@ -9,7 +9,7 @@
 
   <properties>
     <java.version>1.8</java.version>
-    <jib.maven-plugin-version>2.7.1</jib.maven-plugin-version>
+    <jib.maven-plugin-version>2.8.0</jib.maven-plugin-version>
   </properties>
 
   <parent>
