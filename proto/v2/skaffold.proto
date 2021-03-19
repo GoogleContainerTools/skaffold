@@ -124,19 +124,20 @@ message FileSyncState {
 // `Event` describes an event in the Skaffold process.
 // It is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
 message Event {
+    google.protobuf.Timestamp timestamp = 1; // timestamp of the event.
     oneof event_type {
-        MetaEvent metaEvent = 1; // contains general information regarding Skaffold like version info
-        SkaffoldLogEvent skaffoldLogEvent = 2; // describes a log that comes from a skaffold phase
-        ApplicationLogEvent applicationLogEvent = 3; // describes a log that comes from the user's running application
-        TaskEvent taskEvent = 4; // describes the start, end, or failure of a skaffold phase
-        BuildSubtaskEvent buildSubtaskEvent = 5; // describes if the build status per artifact. Status could be one of "InProgress", "Completed" or "Failed".
-        DeploySubtaskEvent deploySubtaskEvent = 6; // describes if the deployment has started, is in progress or is complete.
-        PortForwardEvent portEvent = 7; //  describes each port forwarding event.
-        StatusCheckSubtaskEvent statusCheckSubtaskEvent = 8; // describes if the Status check has started, is in progress, has succeeded or failed.
-        FileSyncEvent fileSyncEvent = 9; // describes the sync status.
-        DebuggingContainerEvent debuggingContainerEvent = 10; // describes the appearance or disappearance of a debugging container
-        TerminationEvent terminationEvent = 11; // describes a skaffold termination event
-        TestSubtaskEvent testEvent = 12; // describes if the test has started, is in progress or is complete.
+        MetaEvent metaEvent = 2; // contains general information regarding Skaffold like version info
+        SkaffoldLogEvent skaffoldLogEvent = 3; // describes a log that comes from a skaffold phase
+        ApplicationLogEvent applicationLogEvent = 4; // describes a log that comes from the user's running application
+        TaskEvent taskEvent = 5; // describes the start, end, or failure of a skaffold phase
+        BuildSubtaskEvent buildSubtaskEvent = 6; // describes if the build status per artifact. Status could be one of "InProgress", "Completed" or "Failed".
+        DeploySubtaskEvent deploySubtaskEvent = 7; // describes if the deployment has started, is in progress or is complete.
+        PortForwardEvent portEvent = 8; //  describes each port forwarding event.
+        StatusCheckSubtaskEvent statusCheckSubtaskEvent = 9; // describes if the Status check has started, is in progress, has succeeded or failed.
+        FileSyncEvent fileSyncEvent = 10; // describes the sync status.
+        DebuggingContainerEvent debuggingContainerEvent = 11; // describes the appearance or disappearance of a debugging container
+        TerminationEvent terminationEvent = 12; // describes a skaffold termination event
+        TestSubtaskEvent testEvent = 13; // describes if the test has started, is in progress or is complete.
     }
 }
 
@@ -268,13 +269,6 @@ message DebuggingContainerEvent {
     map<string,uint32> debugPorts = 10; // the exposed debugging-related ports
 }
 
-// LogEntry describes an event and a string description of the event.
-message LogEntry {
-    google.protobuf.Timestamp timestamp = 1; // timestamp of the event.
-    Event event = 2; // the actual event that is one of
-    string entry = 3; // description of the event.
-}
-
 message UserIntentRequest {
     Intent intent = 1;
 }
@@ -321,7 +315,7 @@ service SkaffoldV2Service {
     }
 
     // Returns all the events of the current Skaffold execution from the start
-    rpc Events (google.protobuf.Empty) returns (stream LogEntry) {
+    rpc Events (google.protobuf.Empty) returns (stream Event) {
         option (google.api.http) = {
             get: "/v2/events"
         };

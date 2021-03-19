@@ -18,7 +18,6 @@ package v2
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -40,15 +39,27 @@ func TestGetLogEvents(t *testing.T) {
 	for step := 0; step < 1000; step++ {
 		ev := newHandler()
 
-		ev.logEvent(proto.LogEntry{Entry: "OLD"})
+		ev.logEvent(&proto.Event{
+			EventType: &proto.Event_SkaffoldLogEvent{
+				SkaffoldLogEvent: &proto.SkaffoldLogEvent{Message: "OLD"},
+			},
+		})
 		go func() {
-			ev.logEvent(proto.LogEntry{Entry: "FRESH"})
-			ev.logEvent(proto.LogEntry{Entry: "POISON PILL"})
+			ev.logEvent(&proto.Event{
+				EventType: &proto.Event_SkaffoldLogEvent{
+					SkaffoldLogEvent: &proto.SkaffoldLogEvent{Message: "FRESH"},
+				},
+			})
+			ev.logEvent(&proto.Event{
+				EventType: &proto.Event_SkaffoldLogEvent{
+					SkaffoldLogEvent: &proto.SkaffoldLogEvent{Message: "POISON PILL"},
+				},
+			})
 		}()
 
 		var received int32
-		ev.forEachEvent(func(e *proto.LogEntry) error {
-			if e.Entry == "POISON PILL" {
+		ev.forEachEvent(func(e *proto.Event) error {
+			if e.GetSkaffoldLogEvent().Message == "POISON PILL" {
 				return errors.New("Done")
 			}
 
@@ -119,7 +130,8 @@ func TestTaskFailed(t *testing.T) {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
 				handler.logLock.Unlock()
-				return logEntry.Entry == fmt.Sprintf("Task Build-0 failed with error code %v", proto.StatusCode_BUILD_UNKNOWN)
+				te := logEntry.GetTaskEvent()
+				return te != nil && te.Status == Failed && te.Id == "Build-0"
 			},
 		},
 		{
@@ -130,7 +142,8 @@ func TestTaskFailed(t *testing.T) {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
 				handler.logLock.Unlock()
-				return logEntry.Entry == fmt.Sprintf("Task Deploy-1 failed with error code %v", proto.StatusCode_DEPLOY_UNKNOWN)
+				te := logEntry.GetTaskEvent()
+				return te != nil && te.Status == Failed && te.Id == "Deploy-1"
 			},
 		},
 		{
@@ -141,7 +154,8 @@ func TestTaskFailed(t *testing.T) {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
 				handler.logLock.Unlock()
-				return logEntry.Entry == fmt.Sprintf("Task StatusCheck-2 failed with error code %v", proto.StatusCode_STATUSCHECK_UNKNOWN)
+				te := logEntry.GetTaskEvent()
+				return te != nil && te.Status == Failed && te.Id == "StatusCheck-2"
 			},
 		},
 	}
@@ -164,11 +178,11 @@ func TestSaveEventsToFile(t *testing.T) {
 	}
 
 	// add some events to the event log
-	handler.eventLog = []proto.LogEntry{
+	handler.eventLog = []proto.Event{
 		{
-			Event: &proto.Event{EventType: &proto.Event_BuildSubtaskEvent{}},
+			EventType: &proto.Event_BuildSubtaskEvent{},
 		}, {
-			Event: &proto.Event{EventType: &proto.Event_TaskEvent{}},
+			EventType: &proto.Event_TaskEvent{},
 		},
 	}
 
@@ -183,13 +197,13 @@ func TestSaveEventsToFile(t *testing.T) {
 		t.Fatalf("reading tmp file: %v", err)
 	}
 
-	var logEntries []proto.LogEntry
+	var logEntries []proto.Event
 	entries := strings.Split(string(contents), "\n")
 	for _, e := range entries {
 		if e == "" {
 			continue
 		}
-		var logEntry proto.LogEntry
+		var logEntry proto.Event
 		if err := jsonpb.UnmarshalString(e, &logEntry); err != nil {
 			t.Errorf("error converting http response %s to proto: %s", e, err.Error())
 		}
@@ -198,16 +212,16 @@ func TestSaveEventsToFile(t *testing.T) {
 
 	buildCompleteEvent, devLoopCompleteEvent := 0, 0
 	for _, entry := range logEntries {
-		t.Log(entry.Event.GetEventType())
-		switch entry.Event.GetEventType().(type) {
+		t.Log(entry.GetEventType())
+		switch entry.GetEventType().(type) {
 		case *proto.Event_BuildSubtaskEvent:
 			buildCompleteEvent++
-			t.Logf("build event %d: %v", buildCompleteEvent, entry.Event)
+			t.Logf("build event %d: %v", buildCompleteEvent, entry)
 		case *proto.Event_TaskEvent:
 			devLoopCompleteEvent++
-			t.Logf("dev loop event %d: %v", devLoopCompleteEvent, entry.Event)
+			t.Logf("dev loop event %d: %v", devLoopCompleteEvent, entry)
 		default:
-			t.Logf("unknown event: %v", entry.Event)
+			t.Logf("unknown event: %v", entry)
 		}
 	}
 
