@@ -99,6 +99,14 @@ func verifyTestCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry, t
 	})
 	failNowIfError(t, err)
 
+	// Ensure we see the test completed triggered in the event log
+	err = wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
+		e := <-entries
+		event := e.GetEvent().GetTestEvent()
+		return event != nil && event.GetStatus() == "Complete", nil
+	})
+	failNowIfError(t, err)
+
 	switch testType {
 	case "Custom":
 		err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
