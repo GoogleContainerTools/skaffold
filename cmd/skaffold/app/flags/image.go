@@ -36,8 +36,8 @@ type image struct {
 	artifact *build.Artifact
 }
 
-// String Implements String() method for pflag Slice Value interface and
-// returns a comma separated list of images.
+// GetSlice Implements GetSlice() method for pflag SliceValue interface and
+// returns a slice image names.
 func (i *Images) GetSlice() []string {
 	names := make([]string, len(i.images))
 	for i, image := range i.images {
@@ -46,7 +46,7 @@ func (i *Images) GetSlice() []string {
 	return names
 }
 
-// Set Implements Set() method for pflag interface
+// Append Implements Append() method for pflag SliceValue interface
 func (i *Images) Append(value string) error {
 	a, err := convertImageToArtifact(value)
 	if err != nil {
