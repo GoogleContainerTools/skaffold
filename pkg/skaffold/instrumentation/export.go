@@ -139,6 +139,8 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 	randLabel := label.String("randomizer", strconv.Itoa(rand.Intn(75000)))
 
 	m := global.Meter("skaffold")
+
+	// cloud monitoring only supports string type labels
 	labels := []label.KeyValue{
 		label.String("version", meter.Version),
 		label.String("os", meter.OS),
@@ -146,7 +148,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		label.String("command", meter.Command),
 		label.String("error", meter.ErrorCode.String()),
 		label.String("platform_type", meter.PlatformType),
-		label.Int("config_count", meter.ConfigCount),
+		label.String("config_count", strconv.Itoa(meter.ConfigCount)),
 		randLabel,
 	}
 
