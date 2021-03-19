@@ -56,10 +56,17 @@ func (i *Images) Append(value string) error {
 	return nil
 }
 
-func(i *Images) Replace([] string) error {
-
+// Replace Implements Replace() method for pflag SliceValue interface
+func (i *Images) Replace(images []string) error {
+	newImages := NewEmptyImages("new list")
+	for _, value := range images {
+		a, err := convertImageToArtifact(value)
+		if err != nil {
+			return err
+		}
+		newImages.images = append(newImages.images, image{name: value, artifact: a})
+	}
 }
-
 
 // Artifacts returns an artifact representation for the corresponding image
 func (i *Images) Artifacts() []build.Artifact {
