@@ -17,8 +17,6 @@ limitations under the License.
 package integration
 
 import (
-	"io/ioutil"
-	"os"
 	"testing"
 	"time"
 
@@ -32,56 +30,59 @@ func TestTestEvents(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
-		description  string
-		podName      string
-		expectedText string
-		testDir      string
-		testFile     string
-		config       string
-		testType     string
+		description string
+		podName     string
+		testDir     string
+		config      string
+		args        []string
+		numOfTests  int
 	}{
 		{
-			description:  "test events for custom test",
-			podName:      "custom-test-events",
-			expectedText: "bar\n",
-			testDir:      "testdata/test-events/custom",
-			testFile:     "testdata/test-events/custom/test",
-			config:       "skaffold.yaml",
-			testType:     "custom",
+			description: "test events for custom test",
+			podName:     "test-events",
+			testDir:     "testdata/test-events",
+			config:      "skaffold.yaml",
+			args:        []string{"--profile", "custom"},
+			numOfTests:  1,
 		},
 		{
 			description: "test events for structure test",
-			podName:     "structure-test-events",
-			testDir:     "testdata/test-events/structure",
-			testFile:    "testdata/test-events/test",
+			podName:     "test-events",
+			testDir:     "testdata/test-events",
 			config:      "skaffold.yaml",
-			testType:    "structure",
+			args:        []string{"--profile", "structure"},
+			numOfTests:  1,
+		},
+		{
+			description: "test events for custom & structure tests",
+			podName:     "test-events",
+			testDir:     "testdata/test-events",
+			config:      "skaffold.yaml",
+			args:        []string{"--profile", "customandstructure"},
+			numOfTests:  2,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func() {
-				defer os.Remove(test.testFile)
-			}()
 
 			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build().InDir(test.testDir).WithConfig(test.config).RunOrFail(t)
+			skaffold.Build(test.args...).InDir(test.testDir).WithConfig(test.config).RunOrFail(t)
 
 			ns, client := SetupNamespace(t)
 			rpcAddr := randomPort()
 
-			skaffold.Dev("--rpc-port", rpcAddr).InDir(test.testDir).WithConfig(test.config).InNs(ns.Name).RunBackground(t)
+			// test.args...
+			args := append(test.args, "--rpc-port", rpcAddr)
+			skaffold.Dev(args...).InDir(test.testDir).WithConfig(test.config).InNs(ns.Name).RunLive(t)
 
 			client.WaitForPodsReady(test.podName)
 
 			// Ensure we see a test is triggered in the event log
 			_, entries := apiEvents(t, rpcAddr)
 
-			waitForTestEvent(t, entries, func(e *proto.LogEntry) bool {
-				return (e.GetEvent().GetTestEvent().GetStatus() != InProgress)
-			})
-
-			verifyTestCompletedWithEvents(t, entries, test.testType, test.expectedText, test.testFile)
+			for i := 0; i < test.numOfTests; i++ {
+				verifyTestCompletedWithEvents(t, entries)
+			}
 		})
 	}
 }
@@ -90,7 +91,7 @@ func waitForTestEvent(t *testing.T, entries chan *proto.LogEntry, condition func
 	failNowIfError(t, wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) { return condition(<-entries), nil }))
 }
 
-func verifyTestCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry, testType string, expectedText string, fileName string) {
+func verifyTestCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry) {
 	// Ensure we see a test in progress triggered in the event log
 	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
@@ -106,16 +107,4 @@ func verifyTestCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry, t
 		return event != nil && event.GetStatus() == "Complete", nil
 	})
 	failNowIfError(t, err)
-
-	switch testType {
-	case "Custom":
-		err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-			out, e := ioutil.ReadFile(fileName)
-			failNowIfError(t, e)
-			return string(out) == expectedText, nil
-		})
-		failNowIfError(t, err)
-	default:
-		break
-	}
 }

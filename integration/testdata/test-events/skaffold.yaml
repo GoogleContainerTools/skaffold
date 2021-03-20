@@ -1,0 +1,27 @@
+apiVersion: skaffold/v2beta13
+kind: Config
+build:
+  artifacts:
+  - image: test-events
+deploy:
+  kubectl:
+    manifests:
+      - k8s-*
+profiles:
+  - name: custom
+    test:
+      - image: test-events
+        custom:
+          - command: echo Hello!
+  - name: structure
+    test:
+      - image: test-events
+        structureTests:
+          - ./test/*
+  - name: customandstructure
+    test:
+      - image: test-events
+        custom:
+          - command: echo Hello!
+        structureTests:
+          - ./test/*

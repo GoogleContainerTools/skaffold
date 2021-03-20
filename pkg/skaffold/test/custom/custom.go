@@ -61,10 +61,12 @@ func New(cfg docker.Config, imageName string, wd string, ct latest.CustomTest) (
 
 // Test is the entrypoint for running custom tests
 func (ct *Runner) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	event.TestInProgress()
 	if err := ct.runCustomTest(ctx, out, artifacts); err != nil {
 		event.TestFailed(ct.imageName, err)
 		return err
 	}
+	event.TestComplete()
 	return nil
 }
 
@@ -92,7 +94,6 @@ func (ct *Runner) runCustomTest(ctx context.Context, out io.Writer, artifacts []
 		return cmdRunRetrieveErr(command, ct.imageName, err)
 	}
 
-	event.TestInProgress()
 	if err := util.RunCmd(cmd); err != nil {
 		if e, ok := err.(*exec.ExitError); ok {
 			// If the process exited by itself, just return the error
@@ -118,7 +119,6 @@ func (ct *Runner) runCustomTest(ctx context.Context, out io.Writer, artifacts []
 		return cmdRunErr(err)
 	}
 	color.Green.Fprintf(out, "Command finished successfully.\n")
-	event.TestComplete()
 
 	return nil
 }
