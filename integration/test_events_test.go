@@ -64,7 +64,6 @@ func TestTestEvents(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build(test.args...).InDir(test.testDir).WithConfig(test.config).RunOrFail(t)
 
@@ -85,10 +84,6 @@ func TestTestEvents(t *testing.T) {
 			}
 		})
 	}
-}
-
-func waitForTestEvent(t *testing.T, entries chan *proto.LogEntry, condition func(*proto.LogEntry) bool) {
-	failNowIfError(t, wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) { return condition(<-entries), nil }))
 }
 
 func verifyTestCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry) {
