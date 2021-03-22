@@ -231,11 +231,11 @@ func extractContainerNameFromNetworkMode(mode string) (string, error) {
 			return "", sErrors.NewError(err,
 				proto.ActionableErr{
 					Message: fmt.Sprintf("unable to parse container name %s: %s", mode, err),
-					ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_PARSE_ERR,
+					ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_PARSE_ERR,
 					Suggestions: []*proto.Suggestion{
 						{
-							SuggestionCode: proto.SuggestionCode_CHECK_CUSTOM_COMMAND,
-							Action:         fmt.Sprintf("Check the content of the environment variable: %s", mode),
+							SuggestionCode: proto.SuggestionCode_FIX_DOCKER_NETWORK_CONTAINER_NAME,
+							Action:         fmt.Sprintf("Check the content of the environment variable: %s", maybeID),
 						},
 					},
 				})
@@ -246,11 +246,11 @@ func extractContainerNameFromNetworkMode(mode string) (string, error) {
 	return "", sErrors.NewError(fmt.Errorf(errMsg),
 		proto.ActionableErr{
 			Message: errMsg,
-			ErrCode: proto.StatusCode_TEST_CUSTOM_CMD_PARSE_ERR,
+			ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_INVALID_MODE,
 			Suggestions: []*proto.Suggestion{
 				{
-					SuggestionCode: proto.SuggestionCode_CHECK_CUSTOM_COMMAND,
-					Action:         fmt.Sprintf("Check the content of the environment variable: %s", mode),
+					SuggestionCode: proto.SuggestionCode_FIX_DOCKER_NETWORK_MODE_WHEN_EXTRACTING_CONTAINER_NAME,
+					Action:         "Only container mode allowed when calling 'extractContainerNameFromNetworkMode'",
 				},
 			},
 		})
