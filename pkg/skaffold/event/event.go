@@ -730,9 +730,10 @@ func ResetStateOnBuild() {
 	handler.setState(newState)
 }
 
-// ResetStateOnTest resets the deploy, sync and status check state
+// ResetStateOnTest resets the test, deploy, sync and status check state
 func ResetStateOnTest() {
 	newState := handler.getState()
+	newState.TestState.Status = NotStarted
 	newState.DeployState.Status = NotStarted
 	newState.DeployState.StatusCode = proto.StatusCode_OK
 	handler.setState(newState)
