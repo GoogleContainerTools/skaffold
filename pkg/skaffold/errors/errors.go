@@ -151,6 +151,11 @@ var allErrors = map[Phase][]problem{
 		errCode:    proto.StatusCode_INIT_UNKNOWN,
 		suggestion: reportIssueSuggestion,
 	}),
+	Test: {{
+		regexp:     re(".*"),
+		errCode:    proto.StatusCode_TEST_UNKNOWN,
+		suggestion: reportIssueSuggestion,
+	}},
 	Deploy: append(knownDeployProblems, problem{
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_DEPLOY_UNKNOWN,
