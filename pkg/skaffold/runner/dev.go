@@ -117,6 +117,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 	}
 
 	if needsTest && !r.runCtx.SkipTests() {
+		event.ResetStateOnTest()
 		defer func() {
 			r.changeSet.needsRetest = false
 		}()

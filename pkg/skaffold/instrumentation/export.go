@@ -254,6 +254,9 @@ func errorMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, rand
 	case proto.StatusCode_UNKNOWN_ERROR:
 		unknownErrCounter := metric.Must(m).NewInt64ValueRecorder("errors/unknown", metric.WithDescription("Unknown Skaffold Errors"))
 		unknownErrCounter.Record(ctx, 1, randLabel)
+	case proto.StatusCode_TEST_UNKNOWN:
+		unknownCounter := metric.Must(m).NewInt64ValueRecorder("test/unknown", metric.WithDescription("Unknown test Skaffold Errors"))
+		unknownCounter.Record(ctx, 1, commandLabel, randLabel)
 	case proto.StatusCode_DEPLOY_UNKNOWN:
 		unknownCounter := metric.Must(m).NewInt64ValueRecorder("deploy/unknown", metric.WithDescription("Unknown deploy Skaffold Errors"))
 		unknownCounter.Record(ctx, 1, commandLabel, randLabel)
