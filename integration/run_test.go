@@ -18,8 +18,12 @@ package integration
 
 import (
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
+	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -331,4 +335,70 @@ func TestRunTailDeployment(t *testing.T) {
 		"Hello world! 1",
 		"Hello world! 2",
 	)
+}
+
+func TestRunTest(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	tests := []struct {
+		description  string
+		testDir      string
+		testFile     string
+		args         []string
+		skipTests    bool
+		expectedText string
+	}{
+		{
+			description:  "Run test",
+			testDir:      "testdata/custom-test",
+			testFile:     "testdata/custom-test/runtest",
+			args:         []string{"--profile", "custom"},
+			skipTests:    false,
+			expectedText: "foo\n",
+		},
+		{
+			description:  "Run test with skip test false",
+			testDir:      "testdata/custom-test",
+			testFile:     "testdata/custom-test/runtest",
+			args:         []string{"--profile", "custom", "--skip-tests=false"},
+			skipTests:    false,
+			expectedText: "foo\n",
+		},
+		{
+			description: "Run test with skip test true",
+			testDir:     "testdata/custom-test",
+			testFile:    "testdata/custom-test/runtest",
+			args:        []string{"--profile", "custom", "--skip-tests=True"},
+			skipTests:   true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			defer func() {
+				os.Remove(test.testFile)
+			}()
+
+			// Run skaffold build first to fail quickly on a build failure
+			skaffold.Build().InDir(test.testDir).RunOrFail(t)
+
+			ns, client := SetupNamespace(t)
+			skaffold.Run(test.args...).InDir(test.testDir).InNs(ns.Name).RunLive(t)
+
+			client.WaitForPodsReady("custom-test-example")
+
+			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+				_, e := os.Stat(test.testFile)
+				if test.skipTests {
+					if !os.IsNotExist(e) {
+						t.Fatalf("Tests are not skipped.")
+					}
+					return true, nil
+				}
+				out, e := ioutil.ReadFile(test.testFile)
+				failNowIfError(t, e)
+				return string(out) == test.expectedText, nil
+			})
+			failNowIfError(t, err)
+		})
+	}
 }
