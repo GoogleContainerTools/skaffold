@@ -114,6 +114,8 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			return nil
 		}
 		needsTest = true
+		r.changeSet.needsRedeploy = true
+		needsDeploy = deployIntent
 	}
 
 	if needsTest && !r.runCtx.SkipTests() {
