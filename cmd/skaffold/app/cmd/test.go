@@ -33,7 +33,12 @@ func NewCmdTest() *cobra.Command {
 		WithDescription("Run tests against your built application images").
 		WithExample("Build the artifacts and collect the tags into a file", "build --file-output=tags.json").
 		WithExample("Run test against images previously built by Skaffold into a 'tags.json' file", "test --build-artifacts=tags.json").
+		WithExample("Build the artifacts and then deploy them", "build -q | skaffold test --build-artifacts -").
+		WithExample("Test the pre-build image", "test --image='<image-name>'").
 		WithCommonFlags().
+		WithFlags([]*Flag{
+			{Value: &preBuiltImages, Name: "image", Shorthand: "i", Usage: "A pre-built image to test"},
+		}).
 		WithHouseKeepingMessages().
 		NoArgs(doTest)
 }
