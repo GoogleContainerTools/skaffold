@@ -412,7 +412,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			entryManager := NewEntryManager(ioutil.Discard, nil)
 			entryManager.entryForwarder = test.forwarder
 
-			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), nil)
+			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList())
 			for _, pod := range test.pods {
 				err := p.portForwardPod(context.Background(), pod)
 				t.CheckError(test.shouldErr, err)
@@ -476,7 +476,7 @@ func TestStartPodForwarder(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latest.Pipeline{{}})
 			t.Override(&topLevelOwnerKey, func(context.Context, metav1.Object, string) string { return "owner" })
-			t.Override(&newPodWatcher, func(kubernetes.PodSelector, []string) kubernetes.PodWatcher {
+			t.Override(&newPodWatcher, func(kubernetes.PodSelector) kubernetes.PodWatcher {
 				return &fakePodWatcher{
 					events: []kubernetes.PodEvent{test.event},
 				}
@@ -488,8 +488,8 @@ func TestStartPodForwarder(t *testing.T) {
 			fakeForwarder := newTestForwarder()
 			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
 
-			p := NewWatchingPodForwarder(entryManager, imageList, nil)
-			p.Start(context.Background())
+			p := NewWatchingPodForwarder(entryManager, imageList)
+			p.Start(context.Background(), nil)
 
 			// wait for the pod resource to be forwarded
 			err := wait.PollImmediate(10*time.Millisecond, 100*time.Millisecond, func() (bool, error) {
@@ -512,7 +512,7 @@ func (f *fakePodWatcher) Register(receiver chan<- kubernetes.PodEvent) {
 	f.receiver = receiver
 }
 
-func (f *fakePodWatcher) Start() (func(), error) {
+func (f *fakePodWatcher) Start(namespaces []string) (func(), error) {
 	go func() {
 		for _, event := range f.events {
 			f.receiver <- event

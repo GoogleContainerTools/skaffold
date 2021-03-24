@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  # See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+  # for discussion on node-selectors and node-affinity.
+
+  # Node-selectors are an AND of all specified labels and is suitable for
+  # single-platform images.
+  #   nodeSelector:
+  #     kubernetes.io/arch: arm64
+  #     kubernetes.io/os: linux
+
+  # Node affinity is more flexible and may represent several possible conditions.
+  # Here we tell Kubernetes that we support both linux/arm64 and linux/amd64 but
+  # we prefer linux/arm64 if available.
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:          # multiple nodeSelectorTerms are OR
+          - matchExpressions:       # multiple matchExpressions are AND
+            - key: kubernetes.io/os
+              operator: In
+              values: [linux]
+            - key: kubernetes.io/arch
+              operator: In
+              values: [amd64,arm64] # this example builds linux/{amd64,arm64} images
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/arch
+              operator: In
+              values: [arm64]
+
+  containers:
+  - name: getting-started
+    image: skaffold-examples-buildx

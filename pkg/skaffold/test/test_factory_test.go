@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
 func TestNoTestDependencies(t *testing.T) {
@@ -86,6 +87,7 @@ func TestWrongPattern(t *testing.T) {
 
 		_, err = tester.TestDependencies()
 		t.CheckError(true, err)
+		testEvent.InitializeState([]latest.Pipeline{{}})
 
 		err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",

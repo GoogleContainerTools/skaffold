@@ -140,6 +140,15 @@ func (t *T) CheckError(shouldErr bool, err error) {
 	CheckError(t.T, shouldErr, err)
 }
 
+// CheckErrorAndFailNow checks that the provided error complies with whether or not we expect an error
+// and fails the test execution immediately if it does not.
+// Useful for testing functions which return (obj interface{}, e error) and subsequent checks operate on `obj`
+// assuming that it is not nil.
+func (t *T) CheckErrorAndFailNow(shouldErr bool, err error) {
+	t.Helper()
+	CheckErrorAndFailNow(t.T, shouldErr, err)
+}
+
 // CheckErrorContains checks that an error is not nil and contains
 // a given message.
 func (t *T) CheckErrorContains(message string, err error) {
@@ -294,6 +303,13 @@ func CheckError(t *testing.T, shouldErr bool, err error) {
 	t.Helper()
 	if err := checkErr(shouldErr, err); err != nil {
 		t.Error(err)
+	}
+}
+
+func CheckErrorAndFailNow(t *testing.T, shouldErr bool, err error) {
+	t.Helper()
+	if err := checkErr(shouldErr, err); err != nil {
+		t.Fatal(err)
 	}
 }
 

@@ -26,6 +26,7 @@ type changeSet struct {
 	rebuildTracker map[string]*latest.Artifact
 	needsResync    []*sync.Item
 	resyncTracker  map[string]*sync.Item
+	needsRetest    bool
 	needsRedeploy  bool
 	needsReload    bool
 }

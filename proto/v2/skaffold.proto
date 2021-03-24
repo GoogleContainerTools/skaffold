@@ -1,5 +1,7 @@
 syntax = "proto3";
-package proto;
+package proto.v2;
+
+option go_package = "github.com/GoogleContainerTools/skaffold/proto/v2";
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";

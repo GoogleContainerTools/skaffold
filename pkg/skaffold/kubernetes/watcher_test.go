@@ -60,8 +60,8 @@ func (h *hasName) Select(pod *v1.Pod) bool {
 
 func TestPodWatcher(t *testing.T) {
 	testutil.Run(t, "need to register first", func(t *testutil.T) {
-		watcher := NewPodWatcher(&anyPod{}, []string{"ns"})
-		cleanup, err := watcher.Start()
+		watcher := NewPodWatcher(&anyPod{})
+		cleanup, err := watcher.Start([]string{"ns"})
 		defer cleanup()
 
 		t.CheckErrorContains("no receiver was registered", err)
@@ -70,9 +70,9 @@ func TestPodWatcher(t *testing.T) {
 	testutil.Run(t, "fail to get client", func(t *testutil.T) {
 		t.Override(&client.Client, func() (kubernetes.Interface, error) { return nil, errors.New("unable to get client") })
 
-		watcher := NewPodWatcher(&anyPod{}, []string{"ns"})
+		watcher := NewPodWatcher(&anyPod{})
 		watcher.Register(make(chan PodEvent))
-		cleanup, err := watcher.Start()
+		cleanup, err := watcher.Start([]string{"ns"})
 		defer cleanup()
 
 		t.CheckErrorContains("unable to get client", err)
@@ -86,9 +86,9 @@ func TestPodWatcher(t *testing.T) {
 			return true, nil, errors.New("unable to watch")
 		})
 
-		watcher := NewPodWatcher(&anyPod{}, []string{"ns"})
+		watcher := NewPodWatcher(&anyPod{})
 		watcher.Register(make(chan PodEvent))
-		cleanup, err := watcher.Start()
+		cleanup, err := watcher.Start([]string{"ns"})
 		defer cleanup()
 
 		t.CheckErrorContains("unable to watch", err)
@@ -102,9 +102,9 @@ func TestPodWatcher(t *testing.T) {
 			validNames: []string{"pod1", "pod2", "pod3"},
 		}
 		events := make(chan PodEvent)
-		watcher := NewPodWatcher(podSelector, []string{"ns1", "ns2"})
+		watcher := NewPodWatcher(podSelector)
 		watcher.Register(events)
-		cleanup, err := watcher.Start()
+		cleanup, err := watcher.Start([]string{"ns1", "ns2"})
 		defer cleanup()
 		t.CheckNoError(err)
 

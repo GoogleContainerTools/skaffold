@@ -32,6 +32,7 @@ const (
 	// These are phases in a Skaffolld
 	Init        = Phase("Init")
 	Build       = Phase("Build")
+	Test        = Phase("Test")
 	Deploy      = Phase("Deploy")
 	StatusCheck = Phase("StatusCheck")
 	FileSync    = Phase("FileSync")
@@ -150,6 +151,11 @@ var allErrors = map[Phase][]problem{
 		errCode:    proto.StatusCode_INIT_UNKNOWN,
 		suggestion: reportIssueSuggestion,
 	}),
+	Test: {{
+		regexp:     re(".*"),
+		errCode:    proto.StatusCode_TEST_UNKNOWN,
+		suggestion: reportIssueSuggestion,
+	}},
 	Deploy: append(knownDeployProblems, problem{
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_DEPLOY_UNKNOWN,

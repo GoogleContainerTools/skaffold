@@ -17,7 +17,7 @@ syncing as it leads to users accidentally terminating debugging sessions by savi
 These behaviours can be re-enabled with the `--auto-build`, `--auto-deploy`, and `--auto-sync`
 flags.
 
-## How It Works
+## How It works
 
 `skaffold debug` examines the built artifacts to determine the underlying language runtime technology.
 Kubernetes manifests that reference these artifacts are transformed on-the-fly to enable the
@@ -30,6 +30,32 @@ are configured as _init-containers_ to populate a shared-volume that is mounted 
 each of the appropriate containers.  These images are hosted at
 `gcr.io/k8s-skaffold/skaffold-debug-support`; alternative locations can be
 specified in [Skaffold's global configuration]({{< relref "/docs/design/global-config.md" >}}).
+
+`debug` makes some other adjustments to simplify the debug experience:
+
+  - *Replica Counts*: `debug` rewrites  the replica counts to 1 for
+    deployments, replica sets, and stateful sets.  This results in
+    requests being considered one at a time.
+
+  - *Kubernetes Probes*:  `debug` changes the timeouts on HTTP-based
+    [liveness, readiness, and startup probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
+    to 600 seconds (10 minutes) from the default of 1 second. 
+    This change allows probes to be debugged, and avoids negative
+    consequences from blocked probes when the app is already suspended
+    during a debugging session.
+    Failed liveness probes in particular result in the container
+    being terminated and restarted.
+
+	The probe timeout value can be set on a per-podspec basis by setting
+	a `debug.cloud.google.com/probe/timeouts` annotation on the podspec's metadata
+	with a valid duration (see [Go's time.ParseDuration()](https://pkg.go.dev/time#ParseDuration)).
+    This probe timeout-rewriting can be skipped entirely by using `skip`.  For example:
+    ```yaml
+    metadata:
+      annotations:
+        debug.cloud.google.com/probe/timeouts: skip
+    spec: ...
+    ```
 
 ### Supported Language Runtimes
 

@@ -81,6 +81,14 @@ func (ps Pipelines) Artifacts() []*latest.Artifact {
 	return artifacts
 }
 
+func (ps Pipelines) DeployConfigs() []latest.DeployConfig {
+	var cfgs []latest.DeployConfig
+	for _, p := range ps.pipelines {
+		cfgs = append(cfgs, p.Deploy)
+	}
+	return cfgs
+}
+
 func (ps Pipelines) Deployers() []latest.DeployType {
 	var deployers []latest.DeployType
 	for _, p := range ps.pipelines {
@@ -127,6 +135,8 @@ func (rc *RunContext) PortForwardResources() []*latest.PortForwardResource {
 
 func (rc *RunContext) Artifacts() []*latest.Artifact { return rc.Pipelines.Artifacts() }
 
+func (rc *RunContext) DeployConfigs() []latest.DeployConfig { return rc.Pipelines.DeployConfigs() }
+
 func (rc *RunContext) Deployers() []latest.DeployType { return rc.Pipelines.Deployers() }
 
 func (rc *RunContext) TestCases() []*latest.TestCase { return rc.Pipelines.TestCases() }
@@ -159,6 +169,7 @@ func (rc *RunContext) ForceDeploy() bool                         { return rc.Opt
 func (rc *RunContext) GetKubeConfig() string                     { return rc.Opts.KubeConfig }
 func (rc *RunContext) GetKubeNamespace() string                  { return rc.Opts.Namespace }
 func (rc *RunContext) GlobalConfig() string                      { return rc.Opts.GlobalConfig }
+func (rc *RunContext) HydratedManifests() []string               { return rc.Opts.HydratedManifests }
 func (rc *RunContext) MinikubeProfile() string                   { return rc.Opts.MinikubeProfile }
 func (rc *RunContext) Muted() config.Muted                       { return rc.Opts.Muted }
 func (rc *RunContext) NoPruneChildren() bool                     { return rc.Opts.NoPruneChildren }

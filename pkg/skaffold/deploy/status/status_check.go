@@ -42,7 +42,8 @@ import (
 )
 
 var (
-	defaultStatusCheckDeadline = 10 * time.Minute
+	// DefaultStatusCheckDeadline is the default timeout for resource status checks
+	DefaultStatusCheckDeadline = 10 * time.Minute
 
 	// Poll period for checking set to 1 second
 	defaultPollPeriodInMilliseconds = 1000
@@ -235,7 +236,7 @@ func getDeadline(d int) time.Duration {
 	if d > 0 {
 		return time.Duration(d) * time.Second
 	}
-	return defaultStatusCheckDeadline
+	return DefaultStatusCheckDeadline
 }
 
 func (s statusChecker) printStatusCheckSummary(out io.Writer, r *resource.Deployment, c counter) {

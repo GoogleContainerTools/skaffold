@@ -1,0 +1,6 @@
+schemaVersion: 2.0.0
+
+fileExistenceTests:
+  - name: 'no local go binary'
+    path: /usr/local/bin/go'
+    shouldExist: false

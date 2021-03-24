@@ -139,6 +139,8 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 	randLabel := label.String("randomizer", strconv.Itoa(rand.Intn(75000)))
 
 	m := global.Meter("skaffold")
+
+	// cloud monitoring only supports string type labels
 	labels := []label.KeyValue{
 		label.String("version", meter.Version),
 		label.String("os", meter.OS),
@@ -146,7 +148,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		label.String("command", meter.Command),
 		label.String("error", meter.ErrorCode.String()),
 		label.String("platform_type", meter.PlatformType),
-		label.Int("config_count", meter.ConfigCount),
+		label.String("config_count", strconv.Itoa(meter.ConfigCount)),
 		randLabel,
 	}
 
@@ -179,7 +181,6 @@ func flagMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randL
 			label.String("flag_name", k),
 			label.String("flag_value", v),
 			label.String("command", meter.Command),
-			label.String("value", v),
 			label.String("error", meter.ErrorCode.String()),
 			randLabel,
 		}
@@ -225,6 +226,10 @@ func deployerMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, r
 	for _, deployer := range meter.Deployers {
 		deployerCounter.Record(ctx, 1, randLabel, label.String("deployer", deployer))
 	}
+	if meter.HelmReleasesCount > 0 {
+		multiReleasesCounter := metric.Must(m).NewInt64ValueRecorder("helmReleases", metric.WithDescription("Multiple helm releases used"))
+		multiReleasesCounter.Record(ctx, 1, randLabel, label.Int("count", meter.HelmReleasesCount))
+	}
 }
 
 func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
@@ -249,6 +254,9 @@ func errorMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, rand
 	case proto.StatusCode_UNKNOWN_ERROR:
 		unknownErrCounter := metric.Must(m).NewInt64ValueRecorder("errors/unknown", metric.WithDescription("Unknown Skaffold Errors"))
 		unknownErrCounter.Record(ctx, 1, randLabel)
+	case proto.StatusCode_TEST_UNKNOWN:
+		unknownCounter := metric.Must(m).NewInt64ValueRecorder("test/unknown", metric.WithDescription("Unknown test Skaffold Errors"))
+		unknownCounter.Record(ctx, 1, commandLabel, randLabel)
 	case proto.StatusCode_DEPLOY_UNKNOWN:
 		unknownCounter := metric.Must(m).NewInt64ValueRecorder("deploy/unknown", metric.WithDescription("Unknown deploy Skaffold Errors"))
 		unknownCounter.Record(ctx, 1, commandLabel, randLabel)
