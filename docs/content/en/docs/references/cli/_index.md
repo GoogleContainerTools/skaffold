@@ -1105,9 +1105,16 @@ Examples:
   # Run test against images previously built by Skaffold into a 'tags.json' file
   skaffold test --build-artifacts=tags.json
 
+  # Build the artifacts and then deploy them
+  skaffold build -q | skaffold test --build-artifacts -
+
+  # Test the pre-build image
+  skaffold test --image='<image-name>'
+
 Options:
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+  -i, --image=: A pre-built image to test
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
 
@@ -1122,6 +1129,7 @@ Env vars:
 
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_IMAGE` (same as `--image`)
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 
