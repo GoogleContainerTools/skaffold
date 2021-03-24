@@ -155,6 +155,10 @@ enum StatusCode {
     INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME = 123;
     // Docker build error indicating the container referenced does not exists in the docker context used.
     INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST = 124;
+    // Docker Network invalid mode
+    INIT_DOCKER_NETWORK_INVALID_MODE = 125;
+    // Error parsing Docker Network mode
+    INIT_DOCKER_NETWORK_PARSE_ERR = 126;
 
 
     // Container errors
@@ -433,6 +437,10 @@ enum SuggestionCode {
     FIX_DOCKER_NETWORK_CONTAINER_NAME = 112;
     // Docker build network container not existing in the current context.
     CHECK_DOCKER_NETWORK_CONTAINER_RUNNING = 113;
+    // Executing extractContainerNameFromNetworkMode with a non valid mode (only container mode allowed)
+    FIX_DOCKER_NETWORK_MODE_WHEN_EXTRACTING_CONTAINER_NAME = 114;
+
+
 
     // Deploy error suggestion codes
 
