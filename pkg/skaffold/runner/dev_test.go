@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	k8s "k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -140,7 +141,7 @@ func TestDevFailFirstCycle(t *testing.T) {
 			artifacts := []*latest.Artifact{{
 				ImageName: "img",
 			}}
-			runner := createRunner(t, test.testBench, test.monitor, artifacts)
+			runner := createRunner(t, test.testBench, test.monitor, artifacts, nil)
 			test.testBench.firstMonitor = test.monitor.Run
 
 			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
@@ -275,7 +276,7 @@ func TestDev(t *testing.T) {
 			runner := createRunner(t, test.testBench, &TestMonitor{
 				events:    test.watchEvents,
 				testBench: test.testBench,
-			}, artifacts)
+			}, artifacts, nil)
 
 			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
 
@@ -410,12 +411,128 @@ func TestDev_WithDependencies(t *testing.T) {
 			runner := createRunner(t, test.testBench, &TestMonitor{
 				events:    test.watchEvents,
 				testBench: test.testBench,
-			}, artifacts)
+			}, artifacts, nil)
 
 			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())
+		})
+	}
+}
+
+func TestDevAutoTriggers(t *testing.T) {
+	tests := []struct {
+		description     string
+		watchEvents     []filemon.Events
+		expectedActions []Actions
+		autoTriggers    triggerState // the state of auto triggers
+		singleTriggers  triggerState // the state of single intent triggers at the end of dev loop
+	}{
+		{
+			description: "build on; sync on; deploy on",
+			watchEvents: []filemon.Events{
+				{Modified: []string{"file1"}},
+				{Modified: []string{"file2"}},
+			},
+			autoTriggers:   triggerState{true, true, true},
+			singleTriggers: triggerState{true, true, true},
+			expectedActions: []Actions{
+				{
+					Synced: []string{"img1:1"},
+				},
+				{
+					Built:    []string{"img2:2"},
+					Tested:   []string{"img2:2"},
+					Deployed: []string{"img1:1", "img2:2"},
+				},
+			},
+		},
+		{
+			description: "build off; sync off; deploy off",
+			watchEvents: []filemon.Events{
+				{Modified: []string{"file1"}},
+				{Modified: []string{"file2"}},
+			},
+			expectedActions: []Actions{{}, {}},
+		},
+		{
+			description: "build on; sync off; deploy off",
+			watchEvents: []filemon.Events{
+				{Modified: []string{"file1"}},
+				{Modified: []string{"file2"}},
+			},
+			autoTriggers:   triggerState{true, false, false},
+			singleTriggers: triggerState{true, false, false},
+			expectedActions: []Actions{{}, {
+				Built:  []string{"img2:2"},
+				Tested: []string{"img2:2"},
+			}},
+		},
+		{
+			description: "build off; sync on; deploy off",
+			watchEvents: []filemon.Events{
+				{Modified: []string{"file1"}},
+				{Modified: []string{"file2"}},
+			},
+			autoTriggers:   triggerState{false, true, false},
+			singleTriggers: triggerState{false, true, false},
+			expectedActions: []Actions{{
+				Synced: []string{"img1:1"},
+			}, {}},
+		},
+		{
+			description: "build off; sync off; deploy on",
+			watchEvents: []filemon.Events{
+				{Modified: []string{"file1"}},
+				{Modified: []string{"file2"}},
+			},
+			autoTriggers:    triggerState{false, false, true},
+			singleTriggers:  triggerState{false, false, true},
+			expectedActions: []Actions{{}, {}},
+		},
+	}
+	// first build-test-deploy sequence always happens
+	firstAction := Actions{
+		Built:    []string{"img1:1", "img2:1"},
+		Tested:   []string{"img1:1", "img2:1"},
+		Deployed: []string{"img1:1", "img2:1"},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&client.Client, mockK8sClient)
+			t.Override(&sync.WorkingDir, func(string, docker.Config) (string, error) { return "/", nil })
+			testBench := &TestBench{}
+			testBench.cycles = len(test.watchEvents)
+			artifacts := []*latest.Artifact{
+				{
+					ImageName: "img1",
+					Sync: &latest.Sync{
+						Manual: []*latest.SyncRule{{Src: "file1", Dest: "file1"}},
+					},
+				},
+				{
+					ImageName: "img2",
+				},
+			}
+			runner := createRunner(t, testBench, &TestMonitor{
+				events:    test.watchEvents,
+				testBench: testBench,
+			}, artifacts, &test.autoTriggers)
+
+			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(append([]Actions{firstAction}, test.expectedActions...), testBench.Actions())
+
+			singleTriggers := triggerState{
+				build:  runner.intents.build,
+				sync:   runner.intents.sync,
+				deploy: runner.intents.deploy,
+			}
+			t.CheckDeepEqual(test.singleTriggers, singleTriggers, cmp.AllowUnexported(triggerState{}))
 		})
 	}
 }
@@ -507,7 +624,7 @@ func TestDevSync(t *testing.T) {
 			runner := createRunner(t, test.testBench, &TestMonitor{
 				events:    test.watchEvents,
 				testBench: test.testBench,
-			}, artifacts)
+			}, artifacts, nil)
 
 			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
 
@@ -599,7 +716,7 @@ func TestDevSync_WithDependencies(t *testing.T) {
 			runner := createRunner(t, test.testBench, &TestMonitor{
 				events:    test.watchEvents,
 				testBench: test.testBench,
-			}, artifacts)
+			}, artifacts, nil)
 
 			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
 
