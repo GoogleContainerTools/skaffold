@@ -6,16 +6,17 @@ featureId: test.custom
 ---
 
 
-Custom Test would allow developers to run custom commands as part of the development pipeline. The command will be executed in the testing phase of the Skaffold pipeline. It will run on the local machine where Skaffold is being executed and works with all supported Skaffold platforms. Users can opt out of running custom tests by using the `-skipTests` flag.
+Custom Test allows developers to run custom commands as part of their development pipeline. The command executes in the testing phase of the [Skaffold pipeline](https://skaffold.dev/docs/pipeline-stages/). It will run on the local machine where Skaffold is being executed and works with all supported Skaffold platforms. Users can opt out of running custom tests by using the `skip-tests` flag.
 
-Custom Test enables the users to:
-- Run validation tests on their code (e.g., unit tests)
-- Run validation and security tests on the image before deploying the image to a cluster (e.g., Developers can shell out GCP Container Analysis or Anchore Grype in a custom test script and use that for validation )
 
-Custom tests are defined per image in the Skaffold config. Every time an artifact is rebuilt, Skaffold runs the associated custom tests as part of the Skaffold dev loop.
-Multiple custom testers can be defined per test. The Skaffold pipeline will be blocked on the custom test to complete or fail. Skaffold will exit the loop when the first test fails. For ongoing test failures, Skaffold will stop the loop (not continue with the deploy) but will not exit the loop. Skaffold would surface the errors to the user and will keep the dev loop running. Skaffold will continue watching user specified test dependencies and re-trigger the loop whenever it detects another change. 
+Some example use cases for Custom Test are below:
+- Run unit tests
+- Run validation and security scans on images before deploying the image to a cluster for example by running [GCP Container Analysis](https://cloud.google.com/container-analysis/docs/on-demand-scanning-howto) or [Anchore Grype](https://github.com/anchore/grype#readme)
 
-CustomTester has a configurable timeout option to wait for the command to return. If no timeout is specified, Skaffold will wait until the test command has completed execution. 
+
+Custom tests are defined on a per image basis in the Skaffold config. Every time an artifact is rebuilt, Skaffold runs the associated custom tests as part of the Skaffold dev loop. Multiple testers can be defined per test. The Skaffold pipeline will be blocked on the custom test to complete or fail. Skaffold will block deployment when the first test fails. For ongoing test failures in the dev loop, Skaffold will stop the loop (not continue with the deploy) but will not exit the loop. Skaffold would surface the errors to the user and will keep the dev loop running. Skaffold will continue watching user specified test dependencies and re-trigger the loop whenever it detects another change. 
+
+CustomTester has a configurable timeout option to wait for the command to return. If no timeout is specified, Skaffold will wait indefinitely until the test command has completed execution.
 
 ### Contract between Skaffold and Custom command
 
@@ -25,9 +26,8 @@ This variable can be set as a flag value input to the custom command `--flag=$IM
 
 
 ### Configuration
+To use a custom command, add a custom field to the corresponding test in the test section of the skaffold.yaml. Supported schema for CustomTest includes:
 
-To use a custom command, add a `custom` field to the corresponding test in the `test` section of the `skaffold.yaml`.
-Supported schema for `CustomTest` includes:
 
 {{< schema root="CustomTest" >}}
 
@@ -35,18 +35,16 @@ Supported schema for `CustomTest` includes:
 
 ### Dependencies for a Custom Test
 
-Users can specify `dependencies` for custom tests so that skaffold knows when to retest during a dev loop. Dependencies can be specified per command. Users could list out directories and/or files to watch per command. If no dependencies are specified, only the script file (if the command is a script file) will be watched as a dependency. Test dependencies cannot trigger rebuild of an image.
+Users can specify `dependencies` for custom tests so that skaffold knows when to retest during a dev loop. Dependencies can be specified per command. Users could list out directories and/or files (for example test scripts)  to watch per command. If no dependencies are specified, only the script file (if the command is a script file) will be watched as a dependency. Test dependencies cannot trigger rebuild of an image.
 
-Supported schema for `dependencies` includes:
+Supported schema for `dependencies` include:
 
 {{< schema root="CustomTestDependencies" >}}
 
 
 #### Paths and Ignore
 
-`Paths` and `Ignore` are arrays used to list dependencies. This can be a glob.
-Any paths in `Ignore` will be ignored by the skaffold file watcher, even if they are also specified in `Paths`.
-`Ignore` will only work in conjunction with `Paths`.
+`Paths` and `Ignore` are arrays used to list dependencies. This can be a glob. Any `paths` in `Ignore` will be ignored by the skaffold file watcher, even if they are also specified in `Paths`. `Ignore` will only work in conjunction with `Paths`.
 
 ```yaml
     custom:
