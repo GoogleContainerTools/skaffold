@@ -28,7 +28,6 @@ import (
 func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 	// This is for testing envTemplate
 	envTemplateExample, _ := NewEnvTemplateTagger("{{.FOO}}")
-	envTemplateDeprecatedExample, _ := NewEnvTemplateTagger("{{.IMAGE_NAME}}:{{.FOO}}")
 	invalidEnvTemplate, _ := NewEnvTemplateTagger("{{.BAR}}")
 	env := []string{"FOO=BAR"}
 
@@ -68,13 +67,6 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			imageName:   "test",
 			tagger:      envTemplateExample,
 			expected:    "test:BAR",
-		},
-		{
-			description:      "deprecated envTemplate",
-			imageName:        "test",
-			tagger:           envTemplateDeprecatedExample,
-			expected:         "test:BAR",
-			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, envTemplate's template should only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
 		},
 		{
 			description: "undefined env variable",

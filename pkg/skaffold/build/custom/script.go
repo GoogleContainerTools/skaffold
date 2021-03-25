@@ -95,7 +95,6 @@ func (b *Builder) retrieveEnv(a *latest.Artifact, tag string) ([]string, error) 
 
 	envs := []string{
 		fmt.Sprintf("%s=%s", constants.Image, tag),
-		fmt.Sprintf("%s=%s", constants.DeprecatedImages, tag),
 		fmt.Sprintf("%s=%t", constants.PushImage, b.pushImages),
 		fmt.Sprintf("%s=%s", constants.BuildContext, buildContext),
 	}

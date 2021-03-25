@@ -18,9 +18,6 @@ package tag
 
 import (
 	"fmt"
-	"strings"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 // ImageTags maps image names to tags
@@ -32,29 +29,10 @@ type Tagger interface {
 	GenerateTag(workingDir, imageName string) (string, error)
 }
 
-const DeprecatedImageName = "_DEPRECATED_IMAGE_NAME_"
-
 // GenerateFullyQualifiedImageName resolves the fully qualified image name for an artifact.
 // The workingDir is the root directory of the artifact with respect to the Skaffold root,
 // and imageName is the base name of the image.
 func GenerateFullyQualifiedImageName(t Tagger, workingDir, imageName string) (string, error) {
-	// Supporting the use of the deprecated {{.IMAGE_NAME}} in envTemplate
-	if v, ok := t.(*envTemplateTagger); ok {
-		tag, err := v.GenerateTag(workingDir, DeprecatedImageName)
-
-		if err != nil {
-			return "", fmt.Errorf("generating envTemplate tag: %w", err)
-		}
-
-		if strings.Contains(tag, DeprecatedImageName) {
-			warnings.Printf("{{.IMAGE_NAME}} is deprecated, envTemplate's template should only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/")
-
-			return strings.ReplaceAll(tag, DeprecatedImageName, imageName), nil
-		}
-
-		return fmt.Sprintf("%s:%s", imageName, tag), nil
-	}
-
 	tag, err := t.GenerateTag(workingDir, imageName)
 	if err != nil {
 		return "", fmt.Errorf("generating tag: %w", err)
