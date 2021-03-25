@@ -76,7 +76,7 @@ func ActionableErr(phase Phase, err error) *proto.ActionableErr {
 	}
 }
 
-// ActionableErr returns an actionable error message with suggestions
+// ActionableErrV2 returns an actionable error message with suggestions
 func ActionableErrV2(phase Phase, err error) *protoV2.ActionableErr {
 	errCode, suggestions := getErrorCodeFromError(phase, err)
 	suggestionsV2 := make([]*protoV2.Suggestion, len(suggestions))
