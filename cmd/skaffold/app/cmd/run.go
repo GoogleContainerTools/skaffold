@@ -59,10 +59,8 @@ func doRun(ctx context.Context, out io.Writer) error {
 			return fmt.Errorf("failed to deploy: %w", err)
 		}
 
-		if err == nil {
-			tips.PrintForRun(out, opts)
-		}
+		tips.PrintForRun(out, opts)
 
-		return err
+		return nil
 	})
 }

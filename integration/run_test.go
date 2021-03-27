@@ -374,9 +374,7 @@ func TestRunTest(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			defer func() {
-				os.Remove(test.testFile)
-			}()
+			defer os.Remove(test.testFile)
 
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().InDir(test.testDir).RunOrFail(t)
