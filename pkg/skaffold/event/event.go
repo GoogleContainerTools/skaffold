@@ -632,6 +632,9 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 	case *proto.Event_PortEvent:
 		pe := e.PortEvent
 		ev.stateLock.Lock()
+		if ev.state.ForwardedPorts == nil {
+			ev.state.ForwardedPorts = map[int32]*proto.PortEvent{}
+		}
 		ev.state.ForwardedPorts[pe.LocalPort] = pe
 		ev.stateLock.Unlock()
 		logEntry.Entry = fmt.Sprintf("Forwarding container %s to local port %d", pe.ContainerName, pe.LocalPort)

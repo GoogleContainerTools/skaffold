@@ -208,6 +208,8 @@ func TestPortForwarded(t *testing.T) {
 
 	handler = newHandler()
 	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
+	// explicitly re-set the state https://github.com/GoogleContainerTools/skaffold/issues/5612
+	handler.setState(handler.getState())
 
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] == nil })
 	PortForwarded(8080, schemautil.FromInt(8888), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
