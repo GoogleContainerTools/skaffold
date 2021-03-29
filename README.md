@@ -3,7 +3,7 @@
 
 ---------------------
 
-[![Build Status](https://travis-ci.org/GoogleContainerTools/skaffold.svg?branch=master)](https://travis-ci.org/GoogleContainerTools/skaffold)
+[![Build Status](https://travis-ci.com/GoogleContainerTools/skaffold.svg?branch=master)](https://travis-ci.com/GoogleContainerTools/skaffold)
 [![Code Coverage](https://codecov.io/gh/GoogleContainerTools/skaffold/branch/master/graph/badge.svg)](https://codecov.io/gh/GoogleContainerTools/skaffold)
 [![Go Report Card](https://goreportcard.com/badge/GoogleContainerTools/skaffold)](https://goreportcard.com/report/GoogleContainerTools/skaffold)
 [![LICENSE](https://img.shields.io/github/license/GoogleContainerTools/skaffold.svg)](https://github.com/GoogleContainerTools/skaffold/blob/master/LICENSE)
