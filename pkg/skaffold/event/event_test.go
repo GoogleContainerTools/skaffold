@@ -208,8 +208,6 @@ func TestPortForwarded(t *testing.T) {
 
 	handler = newHandler()
 	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
-	// explicitly re-set the state https://github.com/GoogleContainerTools/skaffold/issues/5612
-	handler.setState(handler.getState())
 
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] == nil })
 	PortForwarded(8080, schemautil.FromInt(8888), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
@@ -220,6 +218,22 @@ func TestPortForwarded(t *testing.T) {
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8081] == nil })
 	PortForwarded(8081, schemautil.FromString("http"), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8081] != nil })
+}
+
+// Ensure that port-forward event handling deals with a nil State.ForwardedPorts map.
+// See https://github.com/GoogleContainerTools/skaffold/issues/5612
+func TestPortForwarded_handleNil(t *testing.T) {
+	defer func() { handler = newHandler() }()
+
+	handler = newHandler()
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
+	handler.setState(handler.getState())
+
+	if handler.getState().ForwardedPorts != nil {
+		t.Error("ForwardPorts should be a nil map")
+	}
+	PortForwarded(8080, schemautil.FromInt(8888), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
+	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] != nil })
 }
 
 func TestStatusCheckEventStarted(t *testing.T) {
