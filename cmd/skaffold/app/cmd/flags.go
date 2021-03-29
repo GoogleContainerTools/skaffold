@@ -528,8 +528,22 @@ func (fl *Flag) flag(cmdName string) *pflag.Flag {
 	inputs = append(inputs, fl.Usage)
 
 	fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
-
 	reflect.ValueOf(fs).MethodByName(methodName).Call(reflectValueOf(inputs))
+
+	// Although the default value is re-applied in ResetFlagDefaults, we
+	// must call it here to ensure help text is correct.
+	if methodName == "Var" {
+		d, found := fl.DefValuePerCommand[cmdName]
+		if !found {
+			d = fl.DefValue
+		}
+		if sv, ok := fl.Value.(pflag.SliceValue); ok {
+			sv.Replace(d.([]string))
+		} else if v, ok := fl.Value.(pflag.Value); ok {
+			v.Set(fmt.Sprintf("%s", d))
+		}
+	}
+
 	f := fs.Lookup(fl.Name)
 	if len(fl.NoOptDefVal) > 0 {
 		// f.NoOptDefVal may be set depending on value type
@@ -560,7 +574,7 @@ func ResetFlagDefaults(cmd *cobra.Command, flags []*Flag) {
 				}
 			}
 			if sv, ok := flag.Value.(pflag.SliceValue); ok {
-				reflect.ValueOf(sv).MethodByName("Replace").Call(reflectValueOf([]interface{}{defValue}))
+				sv.Replace(defValue.([]string))
 			} else {
 				flag.Value.Set(fmt.Sprintf("%v", defValue))
 			}
