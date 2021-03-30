@@ -530,18 +530,11 @@ func (fl *Flag) flag(cmdName string) *pflag.Flag {
 	fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
 	reflect.ValueOf(fs).MethodByName(methodName).Call(reflectValueOf(inputs))
 
-	// Although the default value is re-applied in ResetFlagDefaults, we
-	// must call it here to ensure help text is correct.
+	// Var-type flag values do not have a default value set on creation.
+	// Although we do apply the default value in ResetFlagDefaults, we
+	// must also set it here to ensure help text is correct.
 	if methodName == "Var" {
-		d, found := fl.DefValuePerCommand[cmdName]
-		if !found {
-			d = fl.DefValue
-		}
-		if sv, ok := fl.Value.(pflag.SliceValue); ok {
-			sv.Replace(d.([]string))
-		} else if v, ok := fl.Value.(pflag.Value); ok {
-			v.Set(fmt.Sprintf("%s", d))
-		}
+		setDefaultValues(fl.Value, fl, cmdName)
 	}
 
 	f := fs.Lookup(fl.Name)
@@ -554,34 +547,28 @@ func (fl *Flag) flag(cmdName string) *pflag.Flag {
 	return f
 }
 
-func reflectValueOf(values []interface{}) []reflect.Value {
-	var results []reflect.Value
-	for _, v := range values {
-		results = append(results, reflect.ValueOf(v))
-	}
-	return results
-}
-
 func ResetFlagDefaults(cmd *cobra.Command, flags []*Flag) {
 	// Update default values.
 	for _, fl := range flags {
 		flag := cmd.Flag(fl.Name)
 		if !flag.Changed {
-			defValue := fl.DefValue
-			if fl.DefValuePerCommand != nil {
-				if d, present := fl.DefValuePerCommand[cmd.Use]; present {
-					defValue = d
-				}
-			}
-			if sv, ok := flag.Value.(pflag.SliceValue); ok {
-				sv.Replace(defValue.([]string))
-			} else {
-				flag.Value.Set(fmt.Sprintf("%v", defValue))
-			}
+			setDefaultValues(flag.Value, fl, cmd.Name())
 		}
 		if fl.IsEnum {
 			instrumentation.AddFlag(flag)
 		}
+	}
+}
+
+func setDefaultValues(v interface{}, fl *Flag, cmdName string) {
+	d, found := fl.DefValuePerCommand[cmdName]
+	if !found {
+		d = fl.DefValue
+	}
+	if sv, ok := v.(pflag.SliceValue); ok {
+		sv.Replace(asStringSlice(d))
+	} else if v, ok := fl.Value.(pflag.Value); ok {
+		v.Set(fmt.Sprintf("%s", d))
 	}
 }
 
@@ -626,4 +613,30 @@ func hasCmdAnnotation(cmdName string, annotations []string) bool {
 		}
 	}
 	return false
+}
+
+func reflectValueOf(values []interface{}) []reflect.Value {
+	var results []reflect.Value
+	for _, v := range values {
+		results = append(results, reflect.ValueOf(v))
+	}
+	return results
+}
+
+func asStringSlice(v interface{}) []string {
+	vt := reflect.TypeOf(v)
+	if vt == reflect.TypeOf([]string{}) {
+		return v.([]string)
+	}
+	switch vt.Kind() {
+	case reflect.Array, reflect.Slice:
+		value := reflect.ValueOf(v)
+		var slice []string
+		for i := 0; i < value.Len(); i++ {
+			slice = append(slice, fmt.Sprintf("%v", value.Index(i)))
+		}
+		return slice
+	default:
+		return []string{fmt.Sprintf("%v", v)}
+	}
 }

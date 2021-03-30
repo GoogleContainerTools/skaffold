@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -171,6 +172,25 @@ func TestResetFlagDefaults(t *testing.T) {
 
 			t.CheckDeepEqual(v, test.expectedValue)
 			t.CheckDeepEqual(sl, test.expectedSlice)
+		})
+	}
+}
+
+func TestAsStringSlice(t *testing.T) {
+	tests := []struct {
+		input    interface{}
+		expected []string
+	}{
+		{"string", []string{"string"}},
+		{0, []string{"0"}},
+		{[]string{"a", "b"}, []string{"a", "b"}},
+		{[]int{0, 1}, []string{"0", "1"}},
+	}
+	for _, test := range tests {
+		testutil.Run(t, fmt.Sprintf("%v", test.expected), func(t *testutil.T) {
+			result := asStringSlice(test.input)
+
+			t.CheckDeepEqual(test.expected, result)
 		})
 	}
 }
