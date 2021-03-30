@@ -6,7 +6,7 @@ featureId: test.custom
 ---
 
 
-Custom Test allows developers to run custom commands as part of their development pipeline. The command executes in the testing phase of the [Skaffold pipeline](https://skaffold.dev/docs/pipeline-stages/). It will run on the local machine where Skaffold is being executed and works with all supported Skaffold platforms. Users can opt out of running custom tests by using the `skip-tests` flag.
+Custom Test allows developers to run custom commands as part of their development pipeline. The command executes in the testing phase of the [Skaffold pipeline](https://skaffold.dev/docs/pipeline-stages/). It will run on the local machine where Skaffold is being executed and works with all supported Skaffold platforms. Users can opt out of running custom tests by using the `--skip-tests` flag.
 
 
 Some example use cases for Custom Test are below:
