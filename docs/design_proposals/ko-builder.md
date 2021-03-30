@@ -45,7 +45,7 @@ Compared to ...
   `Dockerfile`s. It also doesn't require the Docker daemon, so builds can
   run in security-constrained environments.
 
-- [the kaniko builder](https://skaffold.dev/docs/pipeline-stages/builders/docker/#dockerfile-in-cluster-with-kaniko),
+- [the Kaniko builder](https://skaffold.dev/docs/pipeline-stages/builders/docker/#dockerfile-in-cluster-with-kaniko),
   the ko builder doesn't need a Kubernetes cluster, and avoids the
   previously-mentioned artisanal `Dockerfile`s.
 
@@ -57,8 +57,8 @@ Compared to ...
   the ko builder is portable:
 
   1.  The Skaffold config can be shared with other developers and ops teams,
-      and used in CI/CD pipelines, without requiring installing additional
-      tools such as Docker or
+      and used in CI/CD pipelines, without requiring users to install
+      additional tools such as Docker Engine or
       [crane](https://github.com/google/go-containerregistry/blob/main/cmd/crane/README.md)
       (or even ko, depending on how the builder is implemented). This eases the
       path to adoption of Skaffold and reduces friction for users, both for
@@ -74,7 +74,9 @@ The ko builder supports and enhances these Skaffold
   [fast](https://cloud.google.com/blog/topics/developers-practitioners/ship-your-go-applications-faster-cloud-run-ko).
 
 - _share with other developers_: no additional tools are required to
-  `skaffold run` with the ko builder, not even Docker.
+  `skaffold run` with the ko builder, not even Docker. Though if we don't embed
+  ko in Skaffold, ko will be a tool that all developers in a team would have to
+  install.
 
 - works great as a _CI/CD building block_: when using the ko builder, pipeline
   steps can run using the default Skaffold container image, without
@@ -96,13 +98,30 @@ Adding the ko builder requires making config changes to the Skaffold schema.
 
     ```go
     type KoArtifact struct {
-    	// Flags are additional build flags passed to the builder.
-    	// For example: `["--platform=linux/amd64,linux/arm64"]`.
-    	Flags []string `yaml:"args,omitempty"`
+    	// Annotations are key-value string pairs to add to the image manifest.
+    	// Also known as `LABEL` in `Dockerfile`s.
+    	// Ref: https://github.com/opencontainers/image-spec/blob/master/annotations.md
+    	Annotations map[string]string `yaml:"annotations,omitempty"`
 
     	// BaseImage overrides the default ko base image.
     	// Corresponds to, and overrides, the `defaultBaseImage` in `.ko.yaml`.
     	BaseImage string `yaml:"fromImage,omitempty"`
+
+    	// Env are environment variables, in the `key=value` form, passed to the build.
+    	// For example: `CGO_ENABLED=1`.
+    	Env []string `yaml:"env,omitempty"`
+
+    	// Platforms is the list of platforms to build images for. Each platform
+    	// is of the format `os/arch[/variant]`, e.g., `linux/amd64`.
+    	// By default, the ko builder builds for `all` platforms supported by the
+    	// base image.
+    	Platforms []string `yaml:"platforms,omitempty"`
+
+    	// SourceDateEpoch is the `created` time of the container image.
+    	// Specify as the number of seconds since January 1st 1970, 00:00 UTC.
+    	// You can override this value by setting the `SOURCE_DATE_EPOCH`
+    	// environment variable.
+    	SourceDateEpoch unit64 `yaml:"sourceDateEpoch,omitempty"`
     }
     ```
 
@@ -155,8 +174,8 @@ maps directly to this value.
       of course.) The current `gcr.io/k8s-skaffold/skaffold` container image
       could serve as a build and deploy image for CI/CD pipeline steps.
 
-    Embedding ko would require some stability guarantees for the most important
-    interfaces that Skaffold would use:
+    Embedding ko would require some level of documented behavioural stability
+    guarantees for the most ko interfaces that Skaffold would use, such as
     [`build.Interface`](https://github.com/google/ko/blob/82cabb40bae577ce3bc016e5939fd85889538e8b/pkg/build/build.go#L24)
     and
     [`publish.Interface`](https://github.com/google/ko/blob/82cabb40bae577ce3bc016e5939fd85889538e8b/pkg/publish/publish.go#L24),
@@ -193,6 +212,12 @@ maps directly to this value.
 
     Suggest yes to simplify adoption of Skaffold for existing ko users.
     __Not Yet Resolved__
+
+4.  If a config value is set both as an environment variable, and as a config
+    value, which takes precedence? E.g., `ko.sourceDateEpoch` vs
+    `SOURCE_DATE_EPOCH`.
+
+    Follow existing Skaffold pattern - is there one? __Not Yet Resolved__
 
 ## -- Sections below haven't been fleshed out --
 
