@@ -14,19 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2beta12
+package v2beta13
 
 import (
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta13"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v2beta12 to v2beta13
-// 1. Additions: `HelmRelease.RemoteChart`
-// 2. Removals: `HelmRelease.Remote`
-// 3. Updates: `HelmRelease.ChartPath` will reference only local chart paths
+// Config changes from v2beta13 to v2beta14
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
@@ -37,16 +34,5 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
-	oldDeploy := &oldPipeline.(*Pipeline).Deploy
-	if oldDeploy.HelmDeploy == nil {
-		return nil
-	}
-	newDeploy := &newPipeline.(*next.Pipeline).Deploy
-	for i, r := range oldDeploy.HelmDeploy.Releases {
-		if r.Remote {
-			newDeploy.HelmDeploy.Releases[i].RemoteChart = r.ChartPath
-			newDeploy.HelmDeploy.Releases[i].ChartPath = ""
-		}
-	}
 	return nil
 }
