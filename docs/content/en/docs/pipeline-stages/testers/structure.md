@@ -16,7 +16,7 @@ Structure tests are defined per image in the Skaffold config.
 Every time an artifact is rebuilt, Skaffold runs the associated structure tests on that image.
 If the tests fail, Skaffold will not continue on to the deploy stage.
 If frequent tests are prohibitive, long-running tests should be moved to a dedicated Skaffold profile.
-Users can opt out of running container structure tests by using the `-skipTests` flag.
+Users can opt out of running container structure tests by using the `--skip-tests` flag.
 
 ### Example
 This following example shows the `test` section from a `skaffold.yaml`.
