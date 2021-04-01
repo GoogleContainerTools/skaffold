@@ -167,6 +167,10 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 			AutoTrigger: autoBuild,
 			StatusCode:  proto.StatusCode_OK,
 		},
+		TestState: &proto.TestState{
+			Status:     NotStarted,
+			StatusCode: proto.StatusCode_OK,
+		},
 		DeployState: &proto.DeployState{
 			Status:      NotStarted,
 			AutoTrigger: autoDeploy,

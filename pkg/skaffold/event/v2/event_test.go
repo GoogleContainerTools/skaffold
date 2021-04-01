@@ -121,7 +121,6 @@ func TestResetStateOnBuild(t *testing.T) {
 		ForwardedPorts: map[int32]*proto.PortForwardEvent{
 			2001: {
 				LocalPort:  2000,
-				RemotePort: 2001,
 				PodName:    "test/pod",
 				TargetPort: &targetPort,
 			},
@@ -158,7 +157,6 @@ func TestResetStateOnDeploy(t *testing.T) {
 		ForwardedPorts: map[int32]*proto.PortForwardEvent{
 			2001: {
 				LocalPort:  2000,
-				RemotePort: 2001,
 				PodName:    "test/pod",
 				TargetPort: &targetPort,
 			},
@@ -202,7 +200,6 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 		ForwardedPorts: map[int32]*proto.PortForwardEvent{
 			2001: {
 				LocalPort:  2000,
-				RemotePort: 2001,
 				PodName:    "test/pod",
 				TargetPort: &targetPort,
 			},
@@ -228,7 +225,6 @@ func TestUpdateStateAutoTriggers(t *testing.T) {
 		ForwardedPorts: map[int32]*proto.PortForwardEvent{
 			2001: {
 				LocalPort:  2000,
-				RemotePort: 2001,
 				PodName:    "test/pod",
 				TargetPort: &targetPort,
 			},
