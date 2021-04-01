@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,4 +29,4 @@ type Server struct {
 	AutoDeployCallback   func(bool)
 }
 
-//TODO(marlongamez): Add Set*Callback() funcs once going for feature parity
+//TODO(marlongamez): Add Set*Callback() funcs once going for v1 feature parity

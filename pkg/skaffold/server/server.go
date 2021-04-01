@@ -198,7 +198,7 @@ func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func(
 	}
 	err = protoV2.RegisterSkaffoldV2ServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
 	if err != nil {
-		return func() error {return nil }, err
+		return func() error { return nil }, err
 	}
 
 	l, port, err := listenOnAvailablePort(preferredPort, usedPorts)

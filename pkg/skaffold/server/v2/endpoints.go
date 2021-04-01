@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,6 +27,12 @@ import (
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
+var (
+	// For Testing
+	resetStateOnBuild = event.ResetStateOnBuild
+	resetStateOnDeploy = event.ResetStateOnDeploy
+)
+
 func (s *Server) GetState(context.Context, *empty.Empty) (*proto.State, error) {
 	return event.GetState()
 }
@@ -36,26 +42,26 @@ func (s *Server) Events(_ *empty.Empty, stream proto.SkaffoldV2Service_EventsSer
 }
 
 func (s *Server) Handle(ctx context.Context, e *proto.Event) (*empty.Empty, error) {
-	event.Handle(e)
-	return &empty.Empty{}, nil
+	return &empty.Empty{}, event.Handle(e)
 }
 
-func (s *Server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (*empty.Empty, error) {
-	if intent.GetIntent().GetBuild() {
-		event.ResetStateOnBuild()
+func (s *Server) Execute(ctx context.Context, request *proto.UserIntentRequest) (*empty.Empty, error) {
+	intent := request.GetIntent()
+	if intent.GetBuild() {
+		resetStateOnBuild()
 		go func() {
 			s.BuildIntentCallback()
 		}()
 	}
 
-	if intent.GetIntent().GetDeploy() {
-		event.ResetStateOnDeploy()
+	if intent.GetDeploy() {
+		resetStateOnDeploy()
 		go func() {
 			s.DeployIntentCallback()
 		}()
 	}
 
-	if intent.GetIntent().GetSync() {
+	if intent.GetSync() {
 		go func() {
 			s.SyncIntentCallback()
 		}()
@@ -78,12 +84,8 @@ func (s *Server) AutoSync(ctx context.Context, request *proto.TriggerRequest) (r
 
 func executeAutoTrigger(triggerName string, request *proto.TriggerRequest, updateTriggerStateFunc func(bool), resetPhaseStateFunc func(), serverCallback func(bool)) (res *empty.Empty, err error) {
 	res = &empty.Empty{}
-	v, ok := request.GetState().GetVal().(*proto.TriggerState_Enabled)
-	if !ok {
-		err = status.Error(codes.InvalidArgument, "missing required boolean parameter 'enabled'")
-		return
-	}
-	trigger := v.Enabled
+
+	trigger := request.GetState().GetEnabled()
 	update, err := event.AutoTriggerDiff(triggerName, trigger)
 	if err != nil {
 		return
