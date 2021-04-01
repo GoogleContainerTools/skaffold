@@ -203,7 +203,16 @@ func (r *SkaffoldRunner) WithMonitor(m filemon.Monitor) *SkaffoldRunner {
 	return r
 }
 
-func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, artifacts []*latest.Artifact) *SkaffoldRunner {
+type triggerState struct {
+	build  bool
+	sync   bool
+	deploy bool
+}
+
+func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, artifacts []*latest.Artifact, autoTriggers *triggerState) *SkaffoldRunner {
+	if autoTriggers == nil {
+		autoTriggers = &triggerState{true, true, true}
+	}
 	cfg := &latest.SkaffoldConfig{
 		Pipeline: latest.Pipeline{
 			Build: latest.BuildConfig{
@@ -223,9 +232,9 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 		Opts: config.SkaffoldOptions{
 			Trigger:           "polling",
 			WatchPollInterval: 100,
-			AutoBuild:         true,
-			AutoSync:          true,
-			AutoDeploy:        true,
+			AutoBuild:         autoTriggers.build,
+			AutoSync:          autoTriggers.sync,
+			AutoDeploy:        autoTriggers.deploy,
 		},
 	}
 	runner, err := NewForConfig(runCtx)
