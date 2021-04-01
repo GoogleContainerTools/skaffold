@@ -75,7 +75,6 @@ func (r *mockRunRunner) DeployAndLog(context.Context, io.Writer, []build.Artifac
 }
 
 func TestDoRun(t *testing.T) {
-
 	tests := []struct {
 		description string
 		skipTests   bool
