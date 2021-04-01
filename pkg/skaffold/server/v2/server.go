@@ -29,4 +29,4 @@ type Server struct {
 	AutoDeployCallback   func(bool)
 }
 
-//TODO(marlongamez): Add Set*Callback() funcs once going for v1 feature parity
+// TODO(marlongamez): Add Set*Callback() funcs once going for v1 feature parity
