@@ -46,6 +46,8 @@ func TestNewCmdRun(t *testing.T) {
 
 type mockRunRunner struct {
 	runner.Runner
+	testRan            bool
+	deployRan          bool
 	artifactImageNames []string
 }
 
@@ -63,36 +65,56 @@ func (r *mockRunRunner) Build(_ context.Context, _ io.Writer, artifacts []*lates
 }
 
 func (r *mockRunRunner) Test(context.Context, io.Writer, []build.Artifact) error {
+	r.testRan = true
 	return nil
 }
 
 func (r *mockRunRunner) DeployAndLog(context.Context, io.Writer, []build.Artifact) error {
+	r.deployRan = true
 	return nil
 }
 
-func TestBuildImageFlag(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		mockRunner := &mockRunRunner{}
-		t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
-			return mockRunner, []*latest.SkaffoldConfig{{
-				Pipeline: latest.Pipeline{
-					Build: latest.BuildConfig{
-						Artifacts: []*latest.Artifact{
-							{ImageName: "first"},
-							{ImageName: "second-test"},
-							{ImageName: "test"},
-							{ImageName: "aaabbbccc"},
+func TestDoRun(t *testing.T) {
+
+	tests := []struct {
+		description string
+		skipTests   bool
+	}{
+		{
+			description: "Run with skip tests set to true",
+			skipTests:   true,
+		},
+		{
+			description: "Run with skip tests set to false",
+			skipTests:   false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			mockRunner := &mockRunRunner{}
+			t.Override(&createRunner, func(io.Writer, config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
+				return mockRunner, []*latest.SkaffoldConfig{{
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							Artifacts: []*latest.Artifact{
+								{ImageName: "first"},
+								{ImageName: "second-test"},
+								{ImageName: "test"},
+								{ImageName: "aaabbbccc"},
+							},
 						},
 					},
-				},
-			}}, nil
-		})
-		t.Override(&opts, config.SkaffoldOptions{
-			TargetImages: []string{"test"},
-		})
+				}}, nil
+			})
+			t.Override(&opts, config.SkaffoldOptions{
+				TargetImages: []string{"test"},
+				SkipTests:    test.skipTests,
+			})
 
-		err := doRun(context.Background(), ioutil.Discard)
-		t.CheckNoError(err)
-		t.CheckDeepEqual([]string{"second-test", "test"}, mockRunner.artifactImageNames)
-	})
+			err := doRun(context.Background(), ioutil.Discard)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.skipTests, !mockRunner.testRan)
+			t.CheckDeepEqual([]string{"second-test", "test"}, mockRunner.artifactImageNames)
+		})
+	}
 }
