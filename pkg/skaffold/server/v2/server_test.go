@@ -10,12 +10,14 @@ import (
 
 // Mock structs and functions
 type mockData struct {
-	Build bool
-	Sync bool
+	Build  bool
+	Sync   bool
 	Deploy bool
 }
+
 var data mockData
 var done = make(chan bool)
+
 func mockBuildIntentCallback() {
 	data.Build = true
 	done <- true
@@ -30,11 +32,11 @@ func mockDeployIntentCallback() {
 }
 
 func TestServer_Execute(t *testing.T) {
-	tests := []struct{
-		description string
-		request *proto.UserIntentRequest
+	tests := []struct {
+		description  string
+		request      *proto.UserIntentRequest
 		numCallBacks int
-		expected mockData
+		expected     mockData
 	}{
 		{
 			description: "build intent",
@@ -45,7 +47,7 @@ func TestServer_Execute(t *testing.T) {
 			},
 			numCallBacks: 1,
 			expected: mockData{
-				Build:  true,
+				Build: true,
 			},
 		},
 		{
@@ -57,7 +59,7 @@ func TestServer_Execute(t *testing.T) {
 			},
 			numCallBacks: 1,
 			expected: mockData{
-				Sync:  true,
+				Sync: true,
 			},
 		},
 		{
@@ -69,51 +71,51 @@ func TestServer_Execute(t *testing.T) {
 			},
 			numCallBacks: 1,
 			expected: mockData{
-				Deploy:  true,
+				Deploy: true,
 			},
 		},
 		{
 			description: "build and deploy intent",
 			request: &proto.UserIntentRequest{
 				Intent: &proto.Intent{
-					Build: true,
+					Build:  true,
 					Deploy: true,
 				},
 			},
 			numCallBacks: 2,
 			expected: mockData{
-				Build: true,
-				Deploy:  true,
+				Build:  true,
+				Deploy: true,
 			},
 		},
 		{
 			description: "build, sync, and deploy intent",
 			request: &proto.UserIntentRequest{
 				Intent: &proto.Intent{
-					Build: true,
+					Build:  true,
 					Deploy: true,
-					Sync: true,
+					Sync:   true,
 				},
 			},
 			numCallBacks: 3,
 			expected: mockData{
-				Build: true,
-				Sync: true,
-				Deploy:  true,
+				Build:  true,
+				Sync:   true,
+				Deploy: true,
 			},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&resetStateOnBuild, func(){})
-			t.Override(&resetStateOnDeploy, func(){})
+			t.Override(&resetStateOnBuild, func() {})
+			t.Override(&resetStateOnDeploy, func() {})
 			data = mockData{}
 
 			// Setup server with mock callback functions and run Execute()
 			Srv = &Server{
-				BuildIntentCallback: mockBuildIntentCallback,
-				SyncIntentCallback: mockSyncIntentCallback,
+				BuildIntentCallback:  mockBuildIntentCallback,
+				SyncIntentCallback:   mockSyncIntentCallback,
 				DeployIntentCallback: mockDeployIntentCallback,
 			}
 			_, err := Srv.Execute(context.Background(), test.request)
@@ -123,7 +125,7 @@ func TestServer_Execute(t *testing.T) {
 
 			// Ensure callbacks finish updating data
 			for i := 0; i < test.numCallBacks; i++ {
-				<- done
+				<-done
 			}
 
 			t.CheckDeepEqual(test.expected, data)

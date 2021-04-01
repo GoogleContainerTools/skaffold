@@ -29,7 +29,7 @@ import (
 
 var (
 	// For Testing
-	resetStateOnBuild = event.ResetStateOnBuild
+	resetStateOnBuild  = event.ResetStateOnBuild
 	resetStateOnDeploy = event.ResetStateOnDeploy
 )
 
