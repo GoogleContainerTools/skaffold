@@ -69,14 +69,19 @@ type Config interface {
 	Muted() config.Muted
 }
 
+type BuilderContext interface {
+	Config
+	ArtifactStore() build.ArtifactStore
+}
+
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(cfg Config, buildCfg *latest.LocalBuild) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(cfg)
+func NewBuilder(bCtx BuilderContext, buildCfg *latest.LocalBuild) (*Builder, error) {
+	localDocker, err := docker.NewAPIClient(bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker client: %w", err)
 	}
 
-	cluster := cfg.GetCluster()
+	cluster := bCtx.GetCluster()
 
 	var pushImages bool
 	if buildCfg.Push == nil {
@@ -90,24 +95,21 @@ func NewBuilder(cfg Config, buildCfg *latest.LocalBuild) (*Builder, error) {
 
 	return &Builder{
 		local:              *buildCfg,
-		cfg:                cfg,
-		kubeContext:        cfg.GetKubeContext(),
+		cfg:                bCtx,
+		kubeContext:        bCtx.GetKubeContext(),
 		localDocker:        localDocker,
 		localCluster:       cluster.Local,
 		pushImages:         pushImages,
 		tryImportMissing:   tryImportMissing,
-		skipTests:          cfg.SkipTests(),
-		mode:               cfg.Mode(),
-		prune:              cfg.Prune(),
-		pruneChildren:      !cfg.NoPruneChildren(),
-		localPruner:        newPruner(localDocker, !cfg.NoPruneChildren()),
-		insecureRegistries: cfg.GetInsecureRegistries(),
-		muted:              cfg.Muted(),
+		skipTests:          bCtx.SkipTests(),
+		mode:               bCtx.Mode(),
+		prune:              bCtx.Prune(),
+		pruneChildren:      !bCtx.NoPruneChildren(),
+		localPruner:        newPruner(localDocker, !bCtx.NoPruneChildren()),
+		insecureRegistries: bCtx.GetInsecureRegistries(),
+		muted:              bCtx.Muted(),
+		artifactStore:      bCtx.ArtifactStore(),
 	}, nil
-}
-
-func (b *Builder) ArtifactStore(store build.ArtifactStore) {
-	b.artifactStore = store
 }
 
 // Prune uses the docker API client to remove all images built with Skaffold
