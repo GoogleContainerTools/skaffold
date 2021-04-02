@@ -52,6 +52,7 @@ type dependencyResolverImpl struct {
 }
 
 // ResolveForArtifact returns the source dependencies for the target artifact. It includes the source dependencies from all other artifacts that are in the transitive closure of its artifact dependencies.
+// The result (even if an error) is cached so that the function is evaluated only once for every artifact. The cache is reset before the start of the next devloop.
 func (r *dependencyResolverImpl) ResolveForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
 	res := r.cache.Exec(a.ImageName, func() interface{} {
 		d, e := getDependenciesFunc(ctx, a, r.cfg, r.artifactResolver)
