@@ -254,23 +254,32 @@ func AutoTriggerDiff(name string, val bool) (bool, error) {
 	}
 }
 
-func TaskInProgress(taskName string, iteration int) {
+func TaskInProgress(task sErrors.Phase, iteration int) {
 	handler.handleTaskEvent(&proto.TaskEvent{
-		Id:        fmt.Sprintf("%s-%d", taskName, iteration),
-		Task:      taskName,
+		Id:        fmt.Sprintf("%s-%d", task, iteration),
+		Task:      string(task),
 		Iteration: int32(iteration),
 		Status:    InProgress,
 	})
 }
 
-func TaskFailed(taskName sErrors.Phase, iteration int, err error) {
-	ae := sErrors.ActionableErrV2(taskName, err)
+func TaskFailed(task sErrors.Phase, iteration int, err error) {
+	ae := sErrors.ActionableErrV2(task, err)
 	handler.handleTaskEvent(&proto.TaskEvent{
-		Id:            fmt.Sprintf("%s-%d", taskName, iteration),
-		Task:          string(taskName),
+		Id:            fmt.Sprintf("%s-%d", task, iteration),
+		Task:          string(task),
 		Iteration:     int32(iteration),
 		Status:        Failed,
 		ActionableErr: ae,
+	})
+}
+
+func TaskSucceeded(task sErrors.Phase, iteration int) {
+	handler.handleTaskEvent(&proto.TaskEvent{
+		Id:        fmt.Sprintf("%s-%d", task, iteration),
+		Task:      string(task),
+		Iteration: int32(iteration),
+		Status:    Succeeded,
 	})
 }
 
