@@ -143,7 +143,6 @@ func TestDockerBuildSpec(t *testing.T) {
 				}
 				return m, nil
 			})
-
 			store := mockArtifactStore{
 				"img2": "img2:tag",
 				"img3": "img3:tag",
@@ -155,7 +154,6 @@ func TestDockerBuildSpec(t *testing.T) {
 				MachineType: "n1-standard-1",
 				Timeout:     "10m",
 			})
-
 			desc, err := builder.buildSpec(test.artifact, "nginx", "bucket", "object")
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, desc)
 		})

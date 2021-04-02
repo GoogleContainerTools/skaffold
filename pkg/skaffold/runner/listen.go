@@ -24,6 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
 )
@@ -34,9 +35,10 @@ type Listener interface {
 }
 
 type SkaffoldListener struct {
-	Monitor    filemon.Monitor
-	Trigger    trigger.Trigger
-	intentChan <-chan bool
+	Monitor                 filemon.Monitor
+	Trigger                 trigger.Trigger
+	sourceDependenciesCache build.TransitiveSourceDependenciesCache
+	intentChan              <-chan bool
 }
 
 func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
@@ -77,6 +79,8 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 }
 
 func (l *SkaffoldListener) do(devLoop func() error) error {
+	// reset the dependencies resolver cache at the start of every dev loop.
+	l.sourceDependenciesCache.Reset()
 	if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
 		logrus.Warnf("Ignoring changes: %s", err.Error())
 		return nil

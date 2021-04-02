@@ -68,7 +68,6 @@ func TestJibMavenBuildSpec(t *testing.T) {
 					{ImageName: "img3", Alias: "img3"},
 				},
 			}
-
 			store := mockArtifactStore{
 				"img2": "img2:tag",
 				"img3": "img3:tag",

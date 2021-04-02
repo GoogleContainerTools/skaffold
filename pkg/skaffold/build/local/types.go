@@ -55,6 +55,7 @@ type Builder struct {
 	muted              build.Muted
 	localPruner        *pruner
 	artifactStore      build.ArtifactStore
+	sourceDependencies build.TransitiveSourceDependenciesCache
 }
 
 type Config interface {
@@ -72,6 +73,7 @@ type Config interface {
 type BuilderContext interface {
 	Config
 	ArtifactStore() build.ArtifactStore
+	SourceDependenciesResolver() build.TransitiveSourceDependenciesCache
 }
 
 // NewBuilder returns an new instance of a local Builder.
@@ -109,6 +111,7 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latest.LocalBuild) (*Builder, err
 		insecureRegistries: bCtx.GetInsecureRegistries(),
 		muted:              bCtx.Muted(),
 		artifactStore:      bCtx.ArtifactStore(),
+		sourceDependencies: bCtx.SourceDependenciesResolver(),
 	}, nil
 }
 
@@ -136,7 +139,7 @@ type artifactBuilder interface {
 func newPerArtifactBuilder(b *Builder, a *latest.Artifact) (artifactBuilder, error) {
 	switch {
 	case a.DockerArtifact != nil:
-		return dockerbuilder.NewArtifactBuilder(b.localDocker, b.local.UseDockerCLI, b.local.UseBuildkit, b.pushImages, b.prune, b.cfg.Mode(), b.cfg.GetInsecureRegistries(), b.artifactStore), nil
+		return dockerbuilder.NewArtifactBuilder(b.localDocker, b.local.UseDockerCLI, b.local.UseBuildkit, b.pushImages, b.prune, b.cfg.Mode(), b.cfg.GetInsecureRegistries(), b.artifactStore, b.sourceDependencies), nil
 
 	case a.BazelArtifact != nil:
 		return bazel.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages), nil

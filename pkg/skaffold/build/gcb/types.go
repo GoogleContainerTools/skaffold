@@ -80,10 +80,11 @@ func NewStatusBackoff() *wait.Backoff {
 type Builder struct {
 	*latest.GoogleCloudBuild
 
-	cfg           Config
-	skipTests     bool
-	muted         build.Muted
-	artifactStore build.ArtifactStore
+	cfg                Config
+	skipTests          bool
+	muted              build.Muted
+	artifactStore      build.ArtifactStore
+	sourceDependencies build.TransitiveSourceDependenciesCache
 }
 
 type Config interface {
@@ -96,16 +97,18 @@ type Config interface {
 type BuilderContext interface {
 	Config
 	ArtifactStore() build.ArtifactStore
+	SourceDependenciesResolver() build.TransitiveSourceDependenciesCache
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
 func NewBuilder(bCtx BuilderContext, buildCfg *latest.GoogleCloudBuild) *Builder {
 	return &Builder{
-		GoogleCloudBuild: buildCfg,
-		cfg:              bCtx,
-		skipTests:        bCtx.SkipTests(),
-		muted:            bCtx.Muted(),
-		artifactStore:    bCtx.ArtifactStore(),
+		GoogleCloudBuild:   buildCfg,
+		cfg:                bCtx,
+		skipTests:          bCtx.SkipTests(),
+		muted:              bCtx.Muted(),
+		artifactStore:      bCtx.ArtifactStore(),
+		sourceDependencies: bCtx.SourceDependenciesResolver(),
 	}
 }
 

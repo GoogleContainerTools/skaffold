@@ -32,16 +32,21 @@ import (
 // builderCtx encapsulates a given skaffold run context along with additional builder constructs.
 type builderCtx struct {
 	*runcontext.RunContext
-	artifactStore build.ArtifactStore
+	artifactStore           build.ArtifactStore
+	sourceDependenciesCache build.TransitiveSourceDependenciesCache
 }
 
 func (b *builderCtx) ArtifactStore() build.ArtifactStore {
 	return b.artifactStore
 }
 
+func (b *builderCtx) SourceDependenciesResolver() build.TransitiveSourceDependenciesCache {
+	return b.sourceDependenciesCache
+}
+
 // getBuilder creates a builder from a given RunContext and build pipeline type.
-func getBuilder(runCtx *runcontext.RunContext, store build.ArtifactStore, p latest.Pipeline) (build.PipelineBuilder, error) {
-	bCtx := &builderCtx{artifactStore: store, RunContext: runCtx}
+func getBuilder(r *runcontext.RunContext, s build.ArtifactStore, d build.TransitiveSourceDependenciesCache, p latest.Pipeline) (build.PipelineBuilder, error) {
+	bCtx := &builderCtx{artifactStore: s, sourceDependenciesCache: d, RunContext: r}
 	switch {
 	case p.Build.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
