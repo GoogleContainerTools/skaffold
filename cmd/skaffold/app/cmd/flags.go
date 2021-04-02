@@ -568,7 +568,7 @@ func setDefaultValues(v interface{}, fl *Flag, cmdName string) {
 	if sv, ok := v.(pflag.SliceValue); ok {
 		sv.Replace(asStringSlice(d))
 	} else if v, ok := fl.Value.(pflag.Value); ok {
-		v.Set(fmt.Sprintf("%s", d))
+		v.Set(fmt.Sprintf("%v", d))
 	}
 }
 
