@@ -190,10 +190,9 @@ func TestBuildpackBuildSpec(t *testing.T) {
 				"img2": "img2:tag",
 				"img3": "img3:tag",
 			}
-			builder := NewBuilder(&mockConfig{}, &latest.GoogleCloudBuild{
+			builder := NewBuilder(&mockBuilderContext{artifactStore: store}, &latest.GoogleCloudBuild{
 				PackImage: "pack/image",
 			})
-			builder.ArtifactStore(store)
 			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
 			t.CheckError(test.shouldErr, err)
 

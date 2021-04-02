@@ -26,9 +26,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/gcb"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
@@ -190,38 +187,6 @@ func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error)
 		pushImages = *pipeline.Build.LocalBuild.Push
 	}
 	return !pushImages, nil
-}
-
-// getBuilder creates a builder from a given RunContext and build pipeline type.
-func getBuilder(runCtx *runcontext.RunContext, store build.ArtifactStore, p latest.Pipeline) (build.PipelineBuilder, error) {
-	switch {
-	case p.Build.LocalBuild != nil:
-		logrus.Debugln("Using builder: local")
-		builder, err := local.NewBuilder(runCtx, p.Build.LocalBuild)
-		if err != nil {
-			return nil, err
-		}
-		builder.ArtifactStore(store)
-		return builder, nil
-
-	case p.Build.GoogleCloudBuild != nil:
-		logrus.Debugln("Using builder: google cloud")
-		builder := gcb.NewBuilder(runCtx, p.Build.GoogleCloudBuild)
-		builder.ArtifactStore(store)
-		return builder, nil
-
-	case p.Build.Cluster != nil:
-		logrus.Debugln("Using builder: cluster")
-		builder, err := cluster.NewBuilder(runCtx, p.Build.Cluster)
-		if err != nil {
-			return nil, err
-		}
-		builder.ArtifactStore(store)
-		return builder, err
-
-	default:
-		return nil, fmt.Errorf("unknown builder for config %+v", p.Build)
-	}
 }
 
 func getTester(cfg test.Config, isLocalImage func(imageName string) (bool, error)) (test.Tester, error) {

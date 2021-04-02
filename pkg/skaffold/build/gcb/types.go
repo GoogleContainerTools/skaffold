@@ -93,18 +93,20 @@ type Config interface {
 	Muted() config.Muted
 }
 
-// NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
-func NewBuilder(cfg Config, buildCfg *latest.GoogleCloudBuild) *Builder {
-	return &Builder{
-		GoogleCloudBuild: buildCfg,
-		cfg:              cfg,
-		skipTests:        cfg.SkipTests(),
-		muted:            cfg.Muted(),
-	}
+type BuilderContext interface {
+	Config
+	ArtifactStore() build.ArtifactStore
 }
 
-func (b *Builder) ArtifactStore(store build.ArtifactStore) {
-	b.artifactStore = store
+// NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
+func NewBuilder(bCtx BuilderContext, buildCfg *latest.GoogleCloudBuild) *Builder {
+	return &Builder{
+		GoogleCloudBuild: buildCfg,
+		cfg:              bCtx,
+		skipTests:        bCtx.SkipTests(),
+		muted:            bCtx.Muted(),
+		artifactStore:    bCtx.ArtifactStore(),
+	}
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
