@@ -36,7 +36,7 @@ const (
 	Test        = Phase("Test")
 	Deploy      = Phase("Deploy")
 	StatusCheck = Phase("StatusCheck")
-	FileSync    = Phase("FileSync")
+	Sync        = Phase("Sync")
 	DevInit     = Phase("DevInit")
 	Cleanup     = Phase("Cleanup")
 
@@ -182,7 +182,7 @@ var allErrors = map[Phase][]problem{
 		errCode:    proto.StatusCode_STATUSCHECK_UNKNOWN,
 		suggestion: reportIssueSuggestion,
 	}},
-	FileSync: {{
+	Sync: {{
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_SYNC_UNKNOWN,
 		suggestion: reportIssueSuggestion,

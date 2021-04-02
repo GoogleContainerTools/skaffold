@@ -86,7 +86,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			if err := r.syncer.Sync(ctx, s); err != nil {
 				logrus.Warnln("Skipping deploy due to sync error:", err)
 				fileSyncFailed(fileCount, s.Image, err)
-				event.DevLoopFailedInPhase(r.devIteration, sErrors.FileSync, err)
+				event.DevLoopFailedInPhase(r.devIteration, sErrors.Sync, err)
 				return nil
 			}
 

@@ -291,6 +291,67 @@ func TestTaskFailed(t *testing.T) {
 	}
 }
 
+func TestAutoTriggerDiff(t *testing.T) {
+	tests := []struct {
+		description  string
+		phase        sErrors.Phase
+		handlerState proto.State
+		val          bool
+		expected     bool
+	}{
+		{
+			description: "build needs update",
+			phase:       sErrors.Build,
+			val:         true,
+			handlerState: proto.State{
+				BuildState: &proto.BuildState{
+					AutoTrigger: false,
+				},
+			},
+			expected: true,
+		},
+		{
+			description: "deploy doesn't need update",
+			phase:       sErrors.Deploy,
+			val:         true,
+			handlerState: proto.State{
+				BuildState: &proto.BuildState{
+					AutoTrigger: false,
+				},
+				DeployState: &proto.DeployState{
+					AutoTrigger: true,
+				},
+			},
+			expected: false,
+		},
+		{
+			description: "sync needs update",
+			phase:       sErrors.Sync,
+			val:         false,
+			handlerState: proto.State{
+				FileSyncState: &proto.FileSyncState{
+					AutoTrigger: true,
+				},
+			},
+			expected: true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// Setup handler state
+			handler.setState(test.handlerState)
+
+			got, err := AutoTriggerDiff(test.phase, test.val)
+			if err != nil {
+				t.Fail()
+			}
+
+			t.CheckDeepEqual(test.expected, got)
+		})
+	}
+}
+
 func TestSaveEventsToFile(t *testing.T) {
 	f, err := ioutil.TempFile("", "")
 	if err != nil {

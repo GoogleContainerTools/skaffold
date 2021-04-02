@@ -195,7 +195,7 @@ func TestShowAIError(t *testing.T) {
 		},
 		{
 			description: "file sync unknown error",
-			phase:       FileSync,
+			phase:       Sync,
 			err:         fmt.Errorf("sync failed: something went wrong"),
 			expected:    "sync failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
