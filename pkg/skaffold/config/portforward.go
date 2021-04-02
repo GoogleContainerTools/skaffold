@@ -73,22 +73,25 @@ func (p *PortForwardOptions) Type() string {
 }
 
 func (p *PortForwardOptions) String() string {
+	if len(p.modes) == 0 {
+		return off
+	}
 	return strings.Join(p.modes, ",")
 }
 
 func (p *PortForwardOptions) Append(o string) error {
-	result := append(p.modes, o)
-	if err := validateModes(result); err != nil {
-		return err
-	}
-
-	// check if already present; we know since the result is valid that
-	// we cannot have multiple and different boolean values.
+	// check if already present under the assumption that the
+	// current set is valid
 	for _, v := range p.modes {
 		if v == o {
 			return nil
 		}
 	}
+
+	if err := validateModes(append(p.modes, o)); err != nil {
+		return err
+	}
+
 	// `off` and boolean values must be standalone
 	switch o {
 	case user:
@@ -103,7 +106,7 @@ func (p *PortForwardOptions) Append(o string) error {
 	if b, err := strconv.ParseBool(o); err == nil {
 		p.compat = b
 	}
-	p.modes = result
+	p.modes = append(p.modes, o)
 	return nil
 }
 
