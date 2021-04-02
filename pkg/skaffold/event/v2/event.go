@@ -241,16 +241,16 @@ func emptyStatusCheckState() *proto.StatusCheckState {
 	}
 }
 
-func AutoTriggerDiff(name string, val bool) (bool, error) {
-	switch name {
-	case "build":
+func AutoTriggerDiff(phase sErrors.Phase, val bool) (bool, error) {
+	switch phase {
+	case sErrors.Build:
 		return val != handler.getState().BuildState.AutoTrigger, nil
-	case "sync":
+	case sErrors.Sync:
 		return val != handler.getState().FileSyncState.AutoTrigger, nil
-	case "deploy":
+	case sErrors.Deploy:
 		return val != handler.getState().DeployState.AutoTrigger, nil
 	default:
-		return false, fmt.Errorf("unknown phase %v not found in handler state", name)
+		return false, fmt.Errorf("unknown phase %v not found in handler state", phase)
 	}
 }
 

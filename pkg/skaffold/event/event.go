@@ -413,7 +413,7 @@ func FileSyncInProgress(fileCount int, image string) {
 
 // FileSyncFailed notifies that a file sync has failed.
 func FileSyncFailed(fileCount int, image string, err error) {
-	aiErr := sErrors.ActionableErr(sErrors.FileSync, err)
+	aiErr := sErrors.ActionableErr(sErrors.Sync, err)
 	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed,
 		Err: err.Error(), ErrCode: aiErr.ErrCode, ActionableErr: aiErr})
 }
