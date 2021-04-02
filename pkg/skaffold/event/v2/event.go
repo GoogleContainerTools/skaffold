@@ -167,6 +167,10 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 			AutoTrigger: autoBuild,
 			StatusCode:  proto.StatusCode_OK,
 		},
+		TestState: &proto.TestState{
+			Status:     NotStarted,
+			StatusCode: proto.StatusCode_OK,
+		},
 		DeployState: &proto.DeployState{
 			Status:      NotStarted,
 			AutoTrigger: autoDeploy,
@@ -182,11 +186,71 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 	}
 }
 
+// ResetStateOnBuild resets the build, test, deploy and sync state
+func ResetStateOnBuild() {
+	builds := map[string]string{}
+	for k := range handler.getState().BuildState.Artifacts {
+		builds[k] = NotStarted
+	}
+	autoBuild, autoDeploy, autoSync := handler.getState().BuildState.AutoTrigger, handler.getState().DeployState.AutoTrigger, handler.getState().FileSyncState.AutoTrigger
+	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata, autoBuild, autoDeploy, autoSync)
+	handler.setState(newState)
+}
+
+// ResetStateOnTest resets the test, deploy, sync and status check state
+func ResetStateOnTest() {
+	newState := handler.getState()
+	newState.TestState.Status = NotStarted
+	handler.setState(newState)
+}
+
+// ResetStateOnDeploy resets the deploy, sync and status check state
+func ResetStateOnDeploy() {
+	newState := handler.getState()
+	newState.DeployState.Status = NotStarted
+	newState.DeployState.StatusCode = proto.StatusCode_OK
+	newState.StatusCheckState = emptyStatusCheckState()
+	newState.ForwardedPorts = map[int32]*proto.PortForwardEvent{}
+	newState.DebuggingContainers = nil
+	handler.setState(newState)
+}
+
+func UpdateStateAutoBuildTrigger(t bool) {
+	newState := handler.getState()
+	newState.BuildState.AutoTrigger = t
+	handler.setState(newState)
+}
+
+func UpdateStateAutoDeployTrigger(t bool) {
+	newState := handler.getState()
+	newState.DeployState.AutoTrigger = t
+	handler.setState(newState)
+}
+
+func UpdateStateAutoSyncTrigger(t bool) {
+	newState := handler.getState()
+	newState.FileSyncState.AutoTrigger = t
+	handler.setState(newState)
+}
+
 func emptyStatusCheckState() *proto.StatusCheckState {
 	return &proto.StatusCheckState{
 		Status:     NotStarted,
 		Resources:  map[string]string{},
 		StatusCode: proto.StatusCode_OK,
+	}
+}
+
+func AutoTriggerDiff(name string, val bool) (bool, error) {
+	switch name {
+	case "build":
+		return val != handler.getState().BuildState.AutoTrigger, nil
+	case "sync":
+		return val != handler.getState().FileSyncState.AutoTrigger, nil
+	case "deploy":
+		return val != handler.getState().DeployState.AutoTrigger, nil
+	default:
+		return false, fmt.Errorf("unknown phase %v not found in handler state", name)
 	}
 }
 
@@ -208,6 +272,12 @@ func TaskFailed(taskName sErrors.Phase, iteration int, err error) {
 		Status:        Failed,
 		ActionableErr: ae,
 	})
+}
+
+func (ev *eventHandler) setState(state proto.State) {
+	ev.stateLock.Lock()
+	ev.state = state
+	ev.stateLock.Unlock()
 }
 
 func (ev *eventHandler) handle(event *proto.Event) {

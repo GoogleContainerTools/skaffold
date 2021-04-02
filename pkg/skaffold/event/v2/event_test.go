@@ -35,6 +35,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+var targetPort = proto.IntOrString{Type: 0, IntVal: 2001}
+
 func TestGetLogEvents(t *testing.T) {
 	for step := 0; step < 1000; step++ {
 		ev := newHandler()
@@ -106,12 +108,134 @@ func wait(t *testing.T, condition func() bool) {
 	}
 }
 
+func TestResetStateOnBuild(t *testing.T) {
+	defer func() { handler = newHandler() }()
+	handler = newHandler()
+	handler.state = proto.State{
+		BuildState: &proto.BuildState{
+			Artifacts: map[string]string{
+				"image1": Complete,
+			},
+		},
+		DeployState: &proto.DeployState{Status: Complete},
+		ForwardedPorts: map[int32]*proto.PortForwardEvent{
+			2001: {
+				LocalPort:  2000,
+				PodName:    "test/pod",
+				TargetPort: &targetPort,
+			},
+		},
+		StatusCheckState: &proto.StatusCheckState{Status: Complete},
+		FileSyncState:    &proto.FileSyncState{Status: Succeeded},
+	}
+
+	ResetStateOnBuild()
+	expected := proto.State{
+		BuildState: &proto.BuildState{
+			Artifacts: map[string]string{
+				"image1": NotStarted,
+			},
+		},
+		TestState:        &proto.TestState{Status: NotStarted},
+		DeployState:      &proto.DeployState{Status: NotStarted},
+		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
+		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
+	}
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
+}
+
+func TestResetStateOnDeploy(t *testing.T) {
+	defer func() { handler = newHandler() }()
+	handler = newHandler()
+	handler.state = proto.State{
+		BuildState: &proto.BuildState{
+			Artifacts: map[string]string{
+				"image1": Complete,
+			},
+		},
+		DeployState: &proto.DeployState{Status: Complete},
+		ForwardedPorts: map[int32]*proto.PortForwardEvent{
+			2001: {
+				LocalPort:  2000,
+				PodName:    "test/pod",
+				TargetPort: &targetPort,
+			},
+		},
+		StatusCheckState: &proto.StatusCheckState{Status: Complete},
+	}
+	ResetStateOnDeploy()
+	expected := proto.State{
+		BuildState: &proto.BuildState{
+			Artifacts: map[string]string{
+				"image1": Complete,
+			},
+		},
+		DeployState: &proto.DeployState{Status: NotStarted},
+		StatusCheckState: &proto.StatusCheckState{Status: NotStarted,
+			Resources: map[string]string{},
+		},
+	}
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
+}
+
 func TestEmptyStateCheckState(t *testing.T) {
 	actual := emptyStatusCheckState()
 	expected := &proto.StatusCheckState{Status: NotStarted,
 		Resources: map[string]string{},
 	}
 	testutil.CheckDeepEqual(t, expected, actual, cmpopts.EquateEmpty())
+}
+
+func TestUpdateStateAutoTriggers(t *testing.T) {
+	defer func() { handler = newHandler() }()
+	handler = newHandler()
+	handler.state = proto.State{
+		BuildState: &proto.BuildState{
+			Artifacts: map[string]string{
+				"image1": Complete,
+			},
+			AutoTrigger: false,
+		},
+		DeployState: &proto.DeployState{Status: Complete, AutoTrigger: false},
+		ForwardedPorts: map[int32]*proto.PortForwardEvent{
+			2001: {
+				LocalPort:  2000,
+				PodName:    "test/pod",
+				TargetPort: &targetPort,
+			},
+		},
+		StatusCheckState: &proto.StatusCheckState{Status: Complete},
+		FileSyncState: &proto.FileSyncState{
+			Status:      "Complete",
+			AutoTrigger: false,
+		},
+	}
+	UpdateStateAutoBuildTrigger(true)
+	UpdateStateAutoDeployTrigger(true)
+	UpdateStateAutoSyncTrigger(true)
+
+	expected := proto.State{
+		BuildState: &proto.BuildState{
+			Artifacts: map[string]string{
+				"image1": Complete,
+			},
+			AutoTrigger: true,
+		},
+		DeployState: &proto.DeployState{Status: Complete, AutoTrigger: true},
+		ForwardedPorts: map[int32]*proto.PortForwardEvent{
+			2001: {
+				LocalPort:  2000,
+				PodName:    "test/pod",
+				TargetPort: &targetPort,
+			},
+		},
+		StatusCheckState: &proto.StatusCheckState{Status: Complete},
+		FileSyncState: &proto.FileSyncState{
+			Status:      "Complete",
+			AutoTrigger: true,
+		},
+	}
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
 }
 
 func TestTaskFailed(t *testing.T) {
