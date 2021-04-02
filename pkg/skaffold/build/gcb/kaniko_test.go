@@ -370,6 +370,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 		"--destination", "gcr.io/nginx",
 		"--dockerfile", "Dockerfile",
 	}
+
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := &latest.Artifact{
@@ -382,6 +383,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 					{ImageName: "img3", Alias: "IMG3"},
 				},
 			}
+
 			imageArgs := []string{kaniko.BuildArgsFlag, "IMG2=img2:tag", kaniko.BuildArgsFlag, "IMG3=img3:tag"}
 
 			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, extra map[string]*string) (map[string]*string, error) {
