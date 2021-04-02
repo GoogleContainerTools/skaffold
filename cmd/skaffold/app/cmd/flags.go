@@ -517,6 +517,13 @@ func (fl *Flag) flag(cmdName string) *pflag.Flag {
 	if methodName == "" {
 		methodName = methodNameByType(reflect.ValueOf(fl.Value))
 	}
+	// pflags' Var*() methods do not take a default value but instead
+	// asume the value is already set to its default value.  So we
+	// explicitly set the default value here to ensure help text is correct.
+	if methodName == "Var" {
+		setDefaultValues(fl.Value, fl, cmdName)
+	}
+
 	inputs := []interface{}{fl.Value, fl.Name}
 	if methodName != "Var" {
 		if d, found := fl.DefValuePerCommand[cmdName]; found {
@@ -529,13 +536,6 @@ func (fl *Flag) flag(cmdName string) *pflag.Flag {
 
 	fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
 	reflect.ValueOf(fs).MethodByName(methodName).Call(reflectValueOf(inputs))
-
-	// Var-type flag values do not have a default value set on creation.
-	// Although we do apply the default value in ResetFlagDefaults, we
-	// must also set it here to ensure help text is correct.
-	if methodName == "Var" {
-		setDefaultValues(fl.Value, fl, cmdName)
-	}
 
 	f := fs.Lookup(fl.Name)
 	if len(fl.NoOptDefVal) > 0 {
