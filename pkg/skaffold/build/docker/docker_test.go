@@ -106,7 +106,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			}
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
 
-			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv(test.extraEnv), test.localBuild.UseDockerCLI, test.localBuild.UseBuildkit, false, false, test.mode, nil, mockArtifactResolver{make(map[string]string)})
+			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv(test.extraEnv), test.localBuild.UseDockerCLI, test.localBuild.UseBuildkit, false, false, test.mode, nil, mockArtifactResolver{make(map[string]string)}, nil)
 
 			artifact := &latest.Artifact{
 				Workspace: ".",

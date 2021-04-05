@@ -59,9 +59,12 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	store := build.NewArtifactStore()
+	graph := build.ToArtifactGraph(runCtx.Artifacts())
+	sourceDependencies := build.NewTransitiveSourceDependenciesCache(runCtx, store, graph)
+
 	var builder build.Builder
 	builder, err = build.NewBuilderMux(runCtx, store, func(p latest.Pipeline) (build.PipelineBuilder, error) {
-		return getBuilder(runCtx, store, p)
+		return getBuilder(runCtx, store, sourceDependencies, p)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("creating builder: %w", err)
@@ -80,8 +83,9 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
+
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx, store)
+		buildDependencies, err := sourceDependencies.ResolveForArtifact(ctx, artifact)
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +98,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return append(buildDependencies, testDependencies...), nil
 	}
 
-	graph := build.ToArtifactGraph(runCtx.Artifacts())
 	artifactCache, err := cache.NewCache(runCtx, isLocalImage, depLister, graph, store)
 	if err != nil {
 		return nil, fmt.Errorf("initializing cache: %w", err)
@@ -120,18 +123,20 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		syncer:   syncer,
 		monitor:  monitor,
 		listener: &SkaffoldListener{
-			Monitor:    monitor,
-			Trigger:    trigger,
-			intentChan: intentChan,
+			Monitor:                 monitor,
+			Trigger:                 trigger,
+			intentChan:              intentChan,
+			sourceDependenciesCache: sourceDependencies,
 		},
-		artifactStore: store,
-		kubectlCLI:    kubectlCLI,
-		labeller:      labeller,
-		podSelector:   kubernetes.NewImageList(),
-		cache:         artifactCache,
-		runCtx:        runCtx,
-		intents:       intents,
-		isLocalImage:  isLocalImage,
+		artifactStore:      store,
+		sourceDependencies: sourceDependencies,
+		kubectlCLI:         kubectlCLI,
+		labeller:           labeller,
+		podSelector:        kubernetes.NewImageList(),
+		cache:              artifactCache,
+		runCtx:             runCtx,
+		intents:            intents,
+		isLocalImage:       isLocalImage,
 	}, nil
 }
 

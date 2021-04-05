@@ -17,8 +17,11 @@ limitations under the License.
 package docker
 
 import (
+	"context"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // Builder is an artifact builder that uses docker
@@ -31,6 +34,7 @@ type Builder struct {
 	mode               config.RunMode
 	insecureRegistries map[string]bool
 	artifacts          ArtifactResolver
+	sourceDependencies TransitiveSourceDependenciesResolver
 }
 
 // ArtifactResolver provides an interface to resolve built artifact tags by image name.
@@ -38,8 +42,13 @@ type ArtifactResolver interface {
 	GetImageTag(imageName string) (string, bool)
 }
 
+// TransitiveSourceDependenciesResolver provides an interface to to evaluate the source dependencies for artifacts.
+type TransitiveSourceDependenciesResolver interface {
+	ResolveForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error)
+}
+
 // NewBuilder returns an new instance of a docker builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, useCLI, useBuildKit, pushImages, prune bool, mode config.RunMode, insecureRegistries map[string]bool, r ArtifactResolver) *Builder {
+func NewArtifactBuilder(localDocker docker.LocalDaemon, useCLI, useBuildKit, pushImages, prune bool, mode config.RunMode, insecureRegistries map[string]bool, ar ArtifactResolver, dr TransitiveSourceDependenciesResolver) *Builder {
 	return &Builder{
 		localDocker:        localDocker,
 		pushImages:         pushImages,
@@ -48,6 +57,7 @@ func NewArtifactBuilder(localDocker docker.LocalDaemon, useCLI, useBuildKit, pus
 		useBuildKit:        useBuildKit,
 		mode:               mode,
 		insecureRegistries: insecureRegistries,
-		artifacts:          r,
+		artifacts:          ar,
+		sourceDependencies: dr,
 	}
 }
