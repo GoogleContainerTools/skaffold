@@ -24,8 +24,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
+var (
+	allErrors = map[Phase][]Problem{}
+)
+
 type descriptionFunc func(error) string
-type suggestionFunc func(cfg Config) []*proto.Suggestion
+type suggestionFunc func(cfg interface{}) []*proto.Suggestion
 
 // Problem defines a problem which can list suggestions and error codes
 // evaluated when showing Actionable error messages
@@ -33,7 +37,7 @@ type Problem struct {
 	Regexp      *regexp.Regexp
 	Description func(error) string
 	ErrCode     proto.StatusCode
-	Suggestion  func(cfg Config) []*proto.Suggestion
+	Suggestion  func(cfg interface{}) []*proto.Suggestion
 	Err         error
 }
 
@@ -54,8 +58,8 @@ func (p Problem) Error() string {
 	return description
 }
 
-func (p Problem) AIError(cfg Config) string{
-	if suggestions := p.Suggestion(cfg); suggestions != nil {
+func (p Problem) AIError(i interface{}) string {
+	if suggestions := p.Suggestion(i); suggestions != nil {
 		return fmt.Sprintf("%s. %s", strings.Trim(p.Error(), "."), concatSuggestions(suggestions))
 	}
 	return p.Error()
@@ -71,4 +75,11 @@ func isProblem(err error) (Problem, bool) {
 		return p, true
 	}
 	return Problem{}, false
+}
+
+func AddPhaseProblems(phase Phase, problems []Problem) {
+	if ps, ok := allErrors[phase]; ok {
+		allErrors[phase] = append(ps, problems...)
+	}
+	allErrors[phase] = problems
 }

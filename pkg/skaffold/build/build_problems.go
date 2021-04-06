@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	pushImageErr = "could not push image"
+	PushImageErr = "could not push image"
 	// Error Prefix matches error thrown by Docker
 	// See https://github.com/moby/moby/blob/master/client/errors.go#L18
 	dockerConnectionFailed = ".*(Cannot connect to the Docker daemon.*) Is"
@@ -45,8 +45,62 @@ func re(s string) *regexp.Regexp {
 	return regexp.MustCompile(s)
 }
 
-func suggestBuildPushAccessDeniedAction(cfg Config) []*proto.Suggestion {
-	if defaultRepo := cfg.DefaultRepo(); defaultRepo != nil {
+func init() {
+	sErrors.AddPhaseProblems(sErrors.Build, []sErrors.Problem{
+		{
+			Regexp:  re(fmt.Sprintf(".*%s.* denied: .*", pushImageErr)),
+			ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
+			Description: func(error) string {
+				return "Build Failed. No push access to specified image repository"
+			},
+			Suggestion: suggestBuildPushAccessDeniedAction,
+		},
+		{
+			Regexp:  re(buildCancelled),
+			ErrCode: proto.StatusCode_BUILD_CANCELLED,
+			Description: func(error) string {
+				return "Build Cancelled."
+			},
+		},
+		{
+			Regexp: re(fmt.Sprintf(".*%s.* unknown: Project", pushImageErr)),
+			Description: func(error) string {
+				return "Build Failed"
+			},
+			ErrCode: proto.StatusCode_BUILD_PROJECT_NOT_FOUND,
+			Suggestion: func(interface{}) []*proto.Suggestion {
+				return []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_CHECK_GCLOUD_PROJECT,
+					Action:         "Check your GCR project",
+				}}
+			},
+		},
+		{
+			Regexp:  re(dockerConnectionFailed),
+			ErrCode: proto.StatusCode_BUILD_DOCKER_DAEMON_NOT_RUNNING,
+			Description: func(err error) string {
+				matchExp := re(dockerConnectionFailed)
+				if match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err)); len(match) >= 2 {
+					return fmt.Sprintf("Build Failed. %s", match[1])
+				}
+				return "Build Failed. Could not connect to Docker daemon"
+			},
+			Suggestion: func(interface{}) []*proto.Suggestion {
+				return []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_CHECK_DOCKER_RUNNING,
+					Action:         "Check if docker is running",
+				}}
+			},
+		},
+	})
+}
+
+func suggestBuildPushAccessDeniedAction(cfg interface{}) []*proto.Suggestion {
+	buildCfg, ok := cfg.(Config)
+	if !ok {
+		return nil
+	}
+	if defaultRepo := buildCfg.DefaultRepo(); defaultRepo != nil {
 		suggestions := []*proto.Suggestion{{
 			SuggestionCode: proto.SuggestionCode_CHECK_DEFAULT_REPO,
 			Action:         "Check your `--default-repo` value",
@@ -55,7 +109,7 @@ func suggestBuildPushAccessDeniedAction(cfg Config) []*proto.Suggestion {
 	}
 
 	// check if global repo is set
-	if cfg, err := getConfigForCurrentContext(cfg.GlobalConfig()); err == nil {
+	if cfg, err := getConfigForCurrentContext(buildCfg.GlobalConfig()); err == nil {
 		if defaultRepo := cfg.DefaultRepo; defaultRepo != "" {
 			suggestions := []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_DEFAULT_REPO_GLOBAL_CONFIG,
@@ -83,56 +137,3 @@ func makeAuthSuggestionsForRepo(repo string) *proto.Suggestion {
 		Action:         "try `docker login`",
 	}
 }
-
-var (
-	knownBuildProblems = []sErrors.Problem{
-		{
-			Regexp:  re(fmt.Sprintf(".*%s.* denied: .*", pushImageErr)),
-			ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
-			Description: func(error) string {
-				return "Build Failed. No push access to specified image repository"
-			},
-			Suggestion: suggestBuildPushAccessDeniedAction,
-		},
-		{
-			Regexp:  re(buildCancelled),
-			ErrCode: proto.StatusCode_BUILD_CANCELLED,
-			Description: func(error) string {
-				return "Build Cancelled."
-			},
-			Suggestion: func(_ Config) []*proto.Suggestion {
-				return nil
-			},
-		},
-		{
-			Regexp: re(fmt.Sprintf(".*%s.* unknown: Project", pushImageErr)),
-			Description: func(error) string {
-				return "Build Failed"
-			},
-			ErrCode: proto.StatusCode_BUILD_PROJECT_NOT_FOUND,
-			Suggestion: func() []*proto.Suggestion {
-				return []*proto.Suggestion{{
-					SuggestionCode: proto.SuggestionCode_CHECK_GCLOUD_PROJECT,
-					Action:         "Check your GCR project",
-				}}
-			},
-		},
-		{
-			Regexp:  re(dockerConnectionFailed),
-			ErrCode: proto.StatusCode_BUILD_DOCKER_DAEMON_NOT_RUNNING,
-			Description: func(err error) string {
-				matchExp := re(dockerConnectionFailed)
-				if match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err)); len(match) >= 2 {
-					return fmt.Sprintf("Build Failed. %s", match[1])
-				}
-				return "Build Failed. Could not connect to Docker daemon"
-			},
-			Suggestion: func() []*proto.Suggestion {
-				return []*proto.Suggestion{{
-					SuggestionCode: proto.SuggestionCode_CHECK_DOCKER_RUNNING,
-					Action:         "Check if docker is running",
-				}}
-			},
-		},
-	}
-)

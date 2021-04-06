@@ -14,12 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package errors
+package deploy
 
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -28,13 +27,11 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 	tests := []struct {
 		description string
 		context     string
-		isMinikube  bool
 		expected    []*proto.Suggestion
 	}{
 		{
 			description: "minikube status",
 			context:     "minikube",
-			isMinikube:  true,
 			expected: []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
 				Action:         "Check if minikube is running using `minikube status` command and try again.",
@@ -43,7 +40,6 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 		{
 			description: "minikube status named ctx",
 			context:     "test_cluster",
-			isMinikube:  true,
 			expected: []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
 				Action:         "Check if minikube is running using `minikube status -p test_cluster` command and try again.",
@@ -52,7 +48,6 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 		{
 			description: "gke cluster",
 			context:     "gke_test",
-			isMinikube:  false,
 			expected: []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_CLUSTER_CONNECTION,
 				Action:         "Check your connection for the cluster",
@@ -61,14 +56,15 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			runCtx := runcontext.RunContext{
-				KubeContext: test.context,
-			}
-			t.Override(&isMinikube, func(string) bool {
-				return test.isMinikube
-			})
-			actual := suggestDeployFailedAction(runCtx)
+			actual := suggestDeployFailedAction(mockConfig{minikube: test.context})
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }
+
+type mockConfig struct{
+	minikube string
+}
+
+func (m mockConfig) MiniKubeProfile() string { return m.minikube }
+

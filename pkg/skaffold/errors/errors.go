@@ -19,11 +19,9 @@ package errors
 import (
 	"errors"
 	"strings"
-	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	protoV2 "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
@@ -31,13 +29,13 @@ import (
 const (
 	// Report issue text
 	reportIssueText = "If above error is unexpected, please open an issue " + constants.GithubIssueLink + " to report this error"
+
+	// PushImageErr is the error prepended.
+	PushImageErr = "could not push image"
 )
 
 var (
-	setRunContextOnce sync.Once
-	runCtx            runcontext.RunContext
-
-	reportIssueSuggestion = func(runcontext.RunContext) []*proto.Suggestion {
+	ReportIssueSuggestion = func(interface{}) []*proto.Suggestion {
 		return []*proto.Suggestion{{
 			SuggestionCode: proto.SuggestionCode_OPEN_ISSUE,
 			Action:         reportIssueText,
@@ -45,17 +43,12 @@ var (
 	}
 )
 
-// SetRunContext set Skaffold runCtx  once. This run context is used later to
-// suggest actionable error messages based on skaffold command line options and run context
-func SetRunContext(rc runcontext.RunContext) {
-	setRunContextOnce.Do(func() {
-		runCtx = rc
-	})
-}
+type Phase string
+
 
 // ActionableErr returns an actionable error message with suggestions
-func ActionableErr(phase constants.Phase, err error) *proto.ActionableErr {
-	errCode, suggestions := getErrorCodeFromError(phase, err)
+func ActionableErr(phase constants.Phase, cfg interface{}, err error) *proto.ActionableErr {
+	errCode, suggestions := getErrorCodeFromError(phase, cfg, err)
 	return &proto.ActionableErr{
 		ErrCode:     errCode,
 		Message:     err.Error(),
@@ -64,8 +57,8 @@ func ActionableErr(phase constants.Phase, err error) *proto.ActionableErr {
 }
 
 // ActionableErrV2 returns an actionable error message with suggestions
-func ActionableErrV2(phase constants.Phase, err error) *protoV2.ActionableErr {
-	errCode, suggestions := getErrorCodeFromError(phase, err)
+func ActionableErrV2(phase constants.Phase, cfg interface{}, err error) *protoV2.ActionableErr {
+	errCode, suggestions := getErrorCodeFromError(phase, cfg, err)
 	suggestionsV2 := make([]*protoV2.Suggestion, len(suggestions))
 	for i, suggestion := range suggestions {
 		converted := protoV2.Suggestion(*suggestion)
@@ -89,17 +82,18 @@ func ShowAIError(err error) error {
 		return p
 	}
 
-	var knownProblems = append(knownBuildProblems, knownDeployProblems...)
-	for _, p := range append(knownProblems, knownInitProblems...) {
-		if p.regexp.MatchString(err.Error()) {
-			instrumentation.SetErrorCode(p.errCode)
-			return p.withConfigAndErr(err)
+	for _, problems := range allErrors {
+		for _, p := range problems {
+			if p.Regexp.MatchString(err.Error()) {
+				instrumentation.SetErrorCode(p.ErrCode)
+				return p.withConfigAndErr(err)
+			}
 		}
 	}
 	return err
 }
 
-func getErrorCodeFromError(phase Phase, err error) (proto.StatusCode, []*proto.Suggestion) {
+func getErrorCodeFromError(phase constants.Phase, cfg interface{}, err error) (proto.StatusCode, []*proto.Suggestion) {
 	var sErr Error
 	if errors.As(err, &sErr) {
 		return sErr.StatusCode(), sErr.Suggestions()
@@ -107,12 +101,12 @@ func getErrorCodeFromError(phase Phase, err error) (proto.StatusCode, []*proto.S
 
 	if problems, ok := allErrors[phase]; ok {
 		for _, v := range problems {
-			if v.regexp.MatchString(err.Error()) {
-				return v.errCode, v.suggestion()
+			if v.Regexp.MatchString(err.Error()) {
+				return v.ErrCode, v.Suggestion(cfg)
 			}
 		}
 	}
-	return proto.StatusCode_UNKNOWN_ERROR, nil
+	return unknownErrForPhase(phase), nil
 }
 
 func concatSuggestions(suggestions []*proto.Suggestion) string {
@@ -130,45 +124,25 @@ func concatSuggestions(suggestions []*proto.Suggestion) string {
 	return s.String()
 }
 
-var allErrors = map[constants.Phase][]Problem{
-	constants.Build: Problem{
-		regexp:     re(".*"),
-		errCode:    proto.StatusCode_BUILD_UNKNOWN,
-		suggestion: reportIssueSuggestion,
-	}),
-	constants.Init: append(knownInitProblems, problem{
-		regexp:     re(".*"),
-		errCode:    proto.StatusCode_INIT_UNKNOWN,
-		suggestion: reportIssueSuggestion,
-	}),
-	constants.Test: {{
-		regexp:     re(".*"),
-		errCode:    proto.StatusCode_TEST_UNKNOWN,
-		suggestion: reportIssueSuggestion,
-	}},
-	constants.Deploy: append(knownDeployProblems, problem{
-		regexp:     re(".*"),
-		errCode:    proto.StatusCode_DEPLOY_UNKNOWN,
-		suggestion: reportIssueSuggestion,
-	}),
-	constants.StatusCheck: {{
-		regexp:     re(".*"),
-		errCode:    proto.StatusCode_STATUSCHECK_UNKNOWN,
-		suggestion: reportIssueSuggestion,
-	}},
-	constants.Sync: {{
-		regexp:     re(".*"),
-		errCode:    proto.StatusCode_SYNC_UNKNOWN,
-		suggestion: reportIssueSuggestion,
-	}},
-	constants.DevInit: {oldImageManifest, {
-		regexp:     re(".*"),
-		errCode:    proto.StatusCode_DEVINIT_UNKNOWN,
-		suggestion: reportIssueSuggestion,
-	}},
-	constants.Cleanup: {{
-		regexp:     re(".*"),
-		errCode:    proto.StatusCode_CLEANUP_UNKNOWN,
-		suggestion: reportIssueSuggestion,
-	}},
+func unknownErrForPhase(phase constants.Phase) proto.StatusCode {
+	switch phase {
+	case constants.Build:
+		return proto.StatusCode_BUILD_UNKNOWN
+	case constants.Init:
+		return proto.StatusCode_INIT_UNKNOWN
+	case constants.Test:
+		return proto.StatusCode_TEST_UNKNOWN
+	case constants.Deploy:
+		return proto.StatusCode_DEPLOY_UNKNOWN
+	case constants.StatusCheck:
+		return proto.StatusCode_STATUSCHECK_UNKNOWN
+	case constants.Sync:
+		return proto.StatusCode_SYNC_UNKNOWN
+	case constants.DevInit:
+		return proto.StatusCode_DEVINIT_UNKNOWN
+	case constants.Cleanup:
+		return proto.StatusCode_CLEANUP_UNKNOWN
+	default:
+		return proto.StatusCode_UNKNOWN_ERROR
+	}
 }

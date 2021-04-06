@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package errors
+package initializer
 
 import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -43,7 +44,7 @@ var (
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CREATE_TAGGER_ERROR,
 				Message:     "creating tagger: something went wrong",
-				Suggestions: reportIssueSuggestion(dummyRunCtx),
+				Suggestions: sErrors.ReportIssueSuggestion(nil),
 			},
 		},
 		{
@@ -70,7 +71,7 @@ var (
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CREATE_BUILDER_ERROR,
 				Message:     "creating runner: creating builder: something went wrong",
-				Suggestions: reportIssueSuggestion(dummyRunCtx),
+				Suggestions: sErrors.ReportIssueSuggestion(nil),
 			},
 		},
 		{
@@ -82,7 +83,7 @@ var (
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CREATE_ARTIFACT_DEP_ERROR,
 				Message:     "creating runner: unexpected artifact type `DockerrArtifact`",
-				Suggestions: reportIssueSuggestion(dummyRunCtx),
+				Suggestions: sErrors.ReportIssueSuggestion(nil),
 			},
 		},
 		{
@@ -94,7 +95,7 @@ var (
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CREATE_TEST_DEP_ERROR,
 				Message:     "creating runner: expanding test file paths: .src/test",
-				Suggestions: reportIssueSuggestion(dummyRunCtx),
+				Suggestions: sErrors.ReportIssueSuggestion(nil),
 			},
 		},
 		{
@@ -106,7 +107,7 @@ var (
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CACHE_ERROR,
 				Message:     "creating runner: initializing cache at some error",
-				Suggestions: reportIssueSuggestion(dummyRunCtx),
+				Suggestions: sErrors.ReportIssueSuggestion(nil),
 			},
 		},
 	}

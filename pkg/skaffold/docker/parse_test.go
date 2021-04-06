@@ -18,6 +18,7 @@ package docker
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -141,6 +142,69 @@ func TestValidateParsedDockerfile(t *testing.T) {
 			t.CheckNoError(err)
 			err = validateParsedDockerfile(bytes.NewReader([]byte(test.dockerfile)), res)
 			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
+func TestIsOldImageManifestProblem(t *testing.T) {
+	tests := []struct {
+		description string
+		command     string
+		err         error
+		expectedMsg string
+		expected    bool
+	}{
+		{
+			description: "dev command older manifest with image name",
+			command:     "dev",
+			err:         fmt.Errorf(`listing files: parsing ONBUILD instructions: retrieving image "library/ruby:2.3.0": unsupported MediaType: "application/vnd.docker.distribution.manifest.v1+prettyjws", see https://github.com/google/go-containerregistry/issues/377`),
+			expectedMsg: "Could not retrieve image library/ruby:2.3.0 pushed with the deprecated manifest v1. Ignoring files dependencies for all ONBUILD triggers. To avoid, hit Cntrl-C and run `docker pull` to fetch the specified image and retry.",
+			expected:    true,
+		},
+		{
+			description: "dev command older manifest without image name",
+			command:     "dev",
+			err:         fmt.Errorf(`unsupported MediaType: "application/vnd.docker.distribution.manifest.v1+prettyjws", see https://github.com/google/go-containerregistry/issues/377`),
+			expectedMsg: "Could not retrieve image pushed with the deprecated manifest v1. Ignoring files dependencies for all ONBUILD triggers. To avoid, hit Cntrl-C and run `docker pull` to fetch the specified image and retry.",
+			expected:    true,
+		},
+		{
+			description: "dev command with random name",
+			command:     "dev",
+			err:         fmt.Errorf(`listing files: parsing ONBUILD instructions: retrieve image "noimage" image does not exits`),
+		},
+		{
+			description: "debug command older manifest",
+			command:     "debug",
+			err:         fmt.Errorf(`unsupported MediaType: "application/vnd.docker.distribution.manifest.v1+prettyjws", see https://github.com/google/go-containerregistry/issues/377`),
+			expectedMsg: "Could not retrieve image pushed with the deprecated manifest v1. Ignoring files dependencies for all ONBUILD triggers. To avoid, hit Cntrl-C and run `docker pull` to fetch the specified image and retry.",
+			expected:    true,
+		},
+		{
+			description: "build command older manifest",
+			command:     "build",
+			err:         fmt.Errorf(`unsupported MediaType: "application/vnd.docker.distribution.manifest.v1+prettyjws", see https://github.com/google/go-containerregistry/issues/377`),
+			expected:    true,
+		},
+		{
+			description: "run command older manifest",
+			command:     "run",
+			err:         fmt.Errorf(`unsupported MediaType: "application/vnd.docker.distribution.manifest.v1+prettyjws", see https://github.com/google/go-containerregistry/issues/377`),
+			expected:    true,
+		},
+		{
+			description: "deploy command older manifest",
+			command:     "deploy",
+			err:         fmt.Errorf(`unsupported MediaType: "application/vnd.docker.distribution.manifest.v1+prettyjws", see https://github.com/google/go-containerregistry/issues/377`),
+			expected:    true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfg := mockConfig{}
+			actualMsg, _, actual := isOldImageManifestProblem(cfg, test.err)
+			t.CheckDeepEqual(test.expectedMsg, actualMsg)
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }

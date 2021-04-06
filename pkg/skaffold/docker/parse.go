@@ -234,8 +234,8 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, cfg Config) (
 				img, err := RetrieveImage(from.image, cfg)
 				if err == nil {
 					workdir = img.Config.WorkingDir
-				} else if e, ok := isOldImageManifestProblem(err); !ok {
-					return nil, e
+				} else if _, err, ok := isOldImageManifestProblem(cfg, err); !ok {
+					return nil, err
 				}
 				if workdir == "" {
 					workdir = "/"
@@ -337,13 +337,13 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 				onbuildNodes = []*parser.Node{}
 			} else if ons, err := parseOnbuild(from.image, cfg); err == nil {
 				onbuildNodes = ons
-			} else if warnMsg, ok := sErrors.IsOldImageManifestProblem(err); ok && warnMsg != "" {
+			} else if warnMsg, _, ok := isOldImageManifestProblem(cfg, err); ok && warnMsg != "" {
 				logrus.Warn(warnMsg)
 			} else if !ok {
 				return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
 			}
 
-			// Stage names are case insensitive
+			// Stage names 	are case insensitive
 			onbuildNodesCache[strings.ToLower(from.as)] = nodes
 			onbuildNodesCache[strings.ToLower(from.image)] = nodes
 
@@ -439,15 +439,15 @@ func validateParsedDockerfile(r io.Reader, res *parser.Result) error {
 	return err
 }
 
-func isOldImageManifestProblem(cfg Config, err error) (sErrors.Problem, bool) {
+func isOldImageManifestProblem(cfg Config, err error) (string, error, bool) {
 	// regex for detecting old manifest images
 	retrieveFailedOldManifest := `(.*retrieving image.*\"(.*)\")?.*unsupported MediaType.*manifest\.v1\+prettyjws.*`
 	matchExp := regexp.MustCompile(retrieveFailedOldManifest)
 	if !matchExp.MatchString(err.Error()) {
-		return sErrors.Problem{}, false
+		return "", nil, false
 	}
-	return sErrors.NewProblem(
-		func(err error) string {
+	p := sErrors.Problem{
+		Description: func(err error) string {
 			match := matchExp.FindStringSubmatch(err.Error())
 			pre := "Could not retrieve image pushed with the deprecated manifest v1"
 			if len(match) >= 3 && match[2] != "" {
@@ -455,8 +455,12 @@ func isOldImageManifestProblem(cfg Config, err error) (sErrors.Problem, bool) {
 			}
 			return fmt.Sprintf("%s. Ignoring files dependencies for all ONBUILD triggers", pre)
 		},
-		proto.StatusCode_DEVINIT_UNSUPPORTED_V1_MANIFEST,
-		func() []*proto.Suggestion {
+		ErrCode: proto.StatusCode_DEVINIT_UNSUPPORTED_V1_MANIFEST,
+		Suggestion: func(i interface{}) []*proto.Suggestion {
+			cfg, ok := i.(Config)
+			if !ok {
+				return nil
+			}
 			if cfg.Mode() == config.RunModes.Dev || cfg.Mode() == config.RunModes.Debug {
 				return []*proto.Suggestion{{
 					SuggestionCode: proto.SuggestionCode_RUN_DOCKER_PULL,
@@ -465,5 +469,7 @@ func isOldImageManifestProblem(cfg Config, err error) (sErrors.Problem, bool) {
 			}
 			return nil
 		},
-		err), false
+		Err: err,
+	}
+	return p.AIError(cfg), p, false
 }

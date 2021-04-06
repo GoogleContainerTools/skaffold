@@ -19,12 +19,13 @@ package docker
 import (
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/sirupsen/logrus"
+
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 )
 
 // for testing
@@ -86,7 +87,7 @@ func Push(tarPath, tag string, cfg Config) (string, error) {
 	}
 
 	if err := remote.Write(t, i, remote.WithAuthFromKeychain(primaryKeychain)); err != nil {
-		return "", fmt.Errorf("%s %q: %w", build.pushImageErr, t, err)
+		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErr, t, err)
 	}
 
 	return getRemoteDigest(tag, cfg)
