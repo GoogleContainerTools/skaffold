@@ -54,6 +54,17 @@ type PortForwardOptions struct {
 var _ pflag.Value = (*PortForwardOptions)(nil)
 var _ pflag.SliceValue = (*PortForwardOptions)(nil)
 
+// Equal checks that two options are the same; this method exists
+// primarily for tests.
+func (p PortForwardOptions) Equal(o PortForwardOptions) bool {
+	return len(p.modes) == len(o.modes) &&
+		p.forwardUser == o.forwardUser &&
+		p.forwardServices == o.forwardServices &&
+		p.forwardPods == o.forwardPods &&
+		p.forwardDebug == o.forwardDebug &&
+		p.compat == o.compat
+}
+
 func (p *PortForwardOptions) reset() {
 	p.modes = nil
 	p.forwardUser = false
