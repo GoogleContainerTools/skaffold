@@ -17,10 +17,12 @@ limitations under the License.
 package runner
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -51,10 +53,19 @@ func (f *fakeTriggger) Debounce() bool {
 	return false
 }
 
+type fakeDepsResolver struct{}
+
+func (f *fakeDepsResolver) ResolveForArtifact(context.Context, *latest.Artifact) ([]string, error) {
+	return nil, nil
+}
+
+func (f *fakeDepsResolver) Reset() {}
+
 func TestSkipDevLoopOnMonitorError(t *testing.T) {
 	listener := &SkaffoldListener{
-		Monitor: &errMonitor{},
-		Trigger: &fakeTriggger{},
+		Monitor:                 &errMonitor{},
+		Trigger:                 &fakeTriggger{},
+		sourceDependenciesCache: &fakeDepsResolver{},
 	}
 
 	var devLoopWasCalled bool
@@ -68,8 +79,9 @@ func TestSkipDevLoopOnMonitorError(t *testing.T) {
 
 func TestContinueOnDevLoopError(t *testing.T) {
 	listener := &SkaffoldListener{
-		Monitor: &fakeMonitor{},
-		Trigger: &fakeTriggger{},
+		Monitor:                 &fakeMonitor{},
+		Trigger:                 &fakeTriggger{},
+		sourceDependenciesCache: &fakeDepsResolver{},
 	}
 
 	err := listener.do(func() error {
@@ -81,8 +93,9 @@ func TestContinueOnDevLoopError(t *testing.T) {
 
 func TestReportDevLoopError(t *testing.T) {
 	listener := &SkaffoldListener{
-		Monitor: &fakeMonitor{},
-		Trigger: &fakeTriggger{},
+		Monitor:                 &fakeMonitor{},
+		Trigger:                 &fakeTriggger{},
+		sourceDependenciesCache: &fakeDepsResolver{},
 	}
 
 	err := listener.do(func() error {

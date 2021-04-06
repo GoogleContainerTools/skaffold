@@ -1,3 +1,102 @@
+# v1.21.0 Release - 03/18/2021
+
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.21.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.21.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.21.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.21.0`
+
+Note: This release comes with a new config version, `v2beta13`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* Skaffold now supports running custom scripts in the `skaffold test` command or as part of the `Test` phase in `skaffold dev`. For more information and documentation, look [here](https://skaffold.dev/docs/pipeline-stages/testers/custom/).
+* New command `skaffold apply` for when you want Skaffold to simply deploy your pre-rendered Kubernetes manifests.
+* Debugging Python application using `skaffold debug` now uses `debugpy` by default.
+* New tutorials for [`artifact dependencies`](https://skaffold.dev/docs/tutorials/artifact-dependencies/) and [`configuration dependencies`](https://skaffold.dev/docs/tutorials/config-dependencies/) features.
+* New example project [`examples/custom-buildx`](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/custom-buildx) showing how to build multi-arch images using Skaffold.
+
+New Features:
+* Add 'skaffold apply' command [#5543](https://github.com/GoogleContainerTools/skaffold/pull/5543)
+* Implement custom tester functionality in Skaffold [#5451](https://github.com/GoogleContainerTools/skaffold/pull/5451)
+* Adding support for accessing built images in custom test [#5535](https://github.com/GoogleContainerTools/skaffold/pull/5535)
+* Adding support for re-triggering tests when test dependency changes [#5533](https://github.com/GoogleContainerTools/skaffold/pull/5533)
+* `skaffold debug` rewrites probe timeouts to avoid container restarts [#5474](https://github.com/GoogleContainerTools/skaffold/pull/5474)
+* Add digest source 'tag' to use tag without digest [#5436](https://github.com/GoogleContainerTools/skaffold/pull/5436)
+* Simpler host:port formatting for port-forwards [#5488](https://github.com/GoogleContainerTools/skaffold/pull/5488)
+
+
+Fixes:
+* Fix issue where default-repo wasn't being added to artifact tags (#5341) [#5397](https://github.com/GoogleContainerTools/skaffold/pull/5397)
+* Fix setting of defaults for flags [#5548](https://github.com/GoogleContainerTools/skaffold/pull/5548)
+* fix: `skaffold diagnose` outputs incorrect `yaml` for multiconfig projects [#5531](https://github.com/GoogleContainerTools/skaffold/pull/5531)
+* fix logic that set absolute paths in the parsed configuration [#5452](https://github.com/GoogleContainerTools/skaffold/pull/5452)
+* decouple `helm` deployer `chartPath` into `chartPath` and `remoteChart` [#5482](https://github.com/GoogleContainerTools/skaffold/pull/5482)
+* Fixes #5404: Skaffold configs downloaded from a url can define remote config dependencies [#5405](https://github.com/GoogleContainerTools/skaffold/pull/5405)
+* Add golint support for M1 macs (darwin/arm64 arch) [#5435](https://github.com/GoogleContainerTools/skaffold/pull/5435)
+* Handle nil PortForward item on setting defaults [#5416](https://github.com/GoogleContainerTools/skaffold/pull/5416)
+* skip validating Dockerfile using explicit syntax directive [#5441](https://github.com/GoogleContainerTools/skaffold/pull/5441)
+* add explicit error codes for various config parsing errors [#5483](https://github.com/GoogleContainerTools/skaffold/pull/5483)
+* Adding distinct error codes for custom test failures [#5501](https://github.com/GoogleContainerTools/skaffold/pull/5501)
+* fix: Parsing fails for named multistage dockerfile using build artifact dependency [#5507](https://github.com/GoogleContainerTools/skaffold/pull/5507)
+
+Updates and Refactors:
+* Update 2021 Roadmap [#5514](https://github.com/GoogleContainerTools/skaffold/pull/5514)
+* Give v2 proto different package name [#5557](https://github.com/GoogleContainerTools/skaffold/pull/5557)
+* update v2/ proto files [#5512](https://github.com/GoogleContainerTools/skaffold/pull/5512)
+* [refactor] Move tag package outside of build [#5547](https://github.com/GoogleContainerTools/skaffold/pull/5547)
+* add number of releases in helm config [#5552](https://github.com/GoogleContainerTools/skaffold/pull/5552)
+* Refactoring events to use Config interface for init [#5532](https://github.com/GoogleContainerTools/skaffold/pull/5532)
+* add debug/iterations metric [#5359](https://github.com/GoogleContainerTools/skaffold/pull/5359)
+* Update pack to 0.17.0 with Platform API 0.5 [#5360](https://github.com/GoogleContainerTools/skaffold/pull/5360)
+* Update gcr.io/k8s-skaffold/pack to 0.17.0 [#5430](https://github.com/GoogleContainerTools/skaffold/pull/5430)
+* Update Jib to 2.8.0 [#5457](https://github.com/GoogleContainerTools/skaffold/pull/5457)
+* Add support for no-option-value; surface per-option-defaults [#5447](https://github.com/GoogleContainerTools/skaffold/pull/5447)
+* Add metric for the count of skaffold configurations in current session; fix the build platform type metric to save list of all platforms [#5437](https://github.com/GoogleContainerTools/skaffold/pull/5437)
+* Add repo field to helm release [#5410](https://github.com/GoogleContainerTools/skaffold/pull/5410)
+* Update Paketo buildpack references [#5446](https://github.com/GoogleContainerTools/skaffold/pull/5446)
+* Allow Argo Rollout resource manifests to be transformed (#5523) [#5524](https://github.com/GoogleContainerTools/skaffold/pull/5524)
+* `skaffold debug` should use debugpy for Python [#5576](https://github.com/GoogleContainerTools/skaffold/pull/5576)
+* Revise port-forwarding behaviour [#4832](https://github.com/GoogleContainerTools/skaffold/pull/4832)
+* Add -o shorthand for --output flag to skaffold render [#5526](https://github.com/GoogleContainerTools/skaffold/pull/5526)
+
+Docs, Test, and Release Updates:
+* Documentation for Custom Test in Skaffold [#5521](https://github.com/GoogleContainerTools/skaffold/pull/5521)
+* Fix custom build example [#5495](https://github.com/GoogleContainerTools/skaffold/pull/5495)
+* add tutorial for buildpacks run image override [#5409](https://github.com/GoogleContainerTools/skaffold/pull/5409)
+* Update DEVELOPMENT.md to include new information about changes to .proto files [#5506](https://github.com/GoogleContainerTools/skaffold/pull/5506)
+* Add example to use docker buildx via the custom builder [#5426](https://github.com/GoogleContainerTools/skaffold/pull/5426)
+* Link relevant Cloud Shell tutorials in doc site [#5545](https://github.com/GoogleContainerTools/skaffold/pull/5545)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- AB
+- Bobby Richard
+- Brian de Alwis
+- Dan
+- Felix Beuke
+- Feng Ye
+- Gaurav
+- Gregory Moon
+- Idan Bidani
+- Isaac Duarte
+- Marlon Gamez
+- Matthieu Blottière
+- Mridula
+- Nick Kubala
+- Piotr Szybicki
+- Priya Modali
+- Ricardo La Rosa
+- Ryan Moran
+- Shin Jinwoo
+- Tejal Desai
+- dhodun
+
 # v1.20.0 Release - 02/11/2021
 
 **Linux**

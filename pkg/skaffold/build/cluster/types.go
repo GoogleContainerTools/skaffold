@@ -50,8 +50,13 @@ type Config interface {
 	Mode() config.RunMode
 }
 
+type BuilderContext interface {
+	Config
+	ArtifactStore() build.ArtifactStore
+}
+
 // NewBuilder creates a new Builder that builds artifacts on cluster.
-func NewBuilder(cfg Config, buildCfg *latest.ClusterDetails) (*Builder, error) {
+func NewBuilder(bCtx BuilderContext, buildCfg *latest.ClusterDetails) (*Builder, error) {
 	timeout, err := time.ParseDuration(buildCfg.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("parsing timeout: %w", err)
@@ -59,15 +64,12 @@ func NewBuilder(cfg Config, buildCfg *latest.ClusterDetails) (*Builder, error) {
 
 	return &Builder{
 		ClusterDetails: buildCfg,
-		cfg:            cfg,
-		kubectlcli:     kubectl.NewCLI(cfg, ""),
-		mode:           cfg.Mode(),
+		cfg:            bCtx,
+		kubectlcli:     kubectl.NewCLI(bCtx, ""),
+		mode:           bCtx.Mode(),
 		timeout:        timeout,
+		artifactStore:  bCtx.ArtifactStore(),
 	}, nil
-}
-
-func (b *Builder) ArtifactStore(store build.ArtifactStore) {
-	b.artifactStore = store
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {

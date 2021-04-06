@@ -35,8 +35,11 @@ type WaitForDeletions struct {
 type SkaffoldOptions struct {
 	ConfigurationFile     string
 	ConfigurationFilter   []string
+	HydratedManifests     []string
 	GlobalConfig          string
 	EventLogFile          string
+	RenderOutput          string
+	Apply                 bool
 	Cleanup               bool
 	Notification          bool
 	Tail                  bool
@@ -53,7 +56,6 @@ type SkaffoldOptions struct {
 	RenderOnly            bool
 	AutoCreateConfig      bool
 	AssumeYes             bool
-	RenderOutput          string
 	ProfileAutoActivation bool
 	DryRun                bool
 	SkipRender            bool

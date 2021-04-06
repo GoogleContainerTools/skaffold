@@ -36,6 +36,7 @@ type Config interface {
 	docker.Config
 
 	GetPipelines() []latest.Pipeline
+	Artifacts() []*latest.Artifact
 }
 
 func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
@@ -113,9 +114,11 @@ func typeOfArtifact(a *latest.Artifact) string {
 	}
 }
 
-func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg docker.Config) (string, []string, error) {
+func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg Config) (string, []string, error) {
 	start := time.Now()
-	paths, err := build.DependenciesForArtifact(ctx, a, cfg, nil)
+	graph := build.ToArtifactGraph(cfg.Artifacts())
+	sourceDependencies := build.NewTransitiveSourceDependenciesCache(cfg, nil, graph)
+	paths, err := sourceDependencies.ResolveForArtifact(ctx, a)
 	return util.ShowHumanizeTime(time.Since(start)), paths, err
 }
 

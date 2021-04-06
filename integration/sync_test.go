@@ -246,7 +246,7 @@ func verifySyncCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry, n
 	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
 		event := e.GetEvent().GetFileSyncEvent()
-		return event != nil && event.GetStatus() == "In Progress", nil
+		return event != nil && event.GetStatus() == InProgress, nil
 	})
 	failNowIfError(t, err)
 

@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -60,6 +61,16 @@ func New(cfg docker.Config, imageName string, wd string, ct latest.CustomTest) (
 
 // Test is the entrypoint for running custom tests
 func (ct *Runner) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	event.TestInProgress()
+	if err := ct.runCustomTest(ctx, out, artifacts); err != nil {
+		event.TestFailed(ct.imageName, err)
+		return err
+	}
+	event.TestComplete()
+	return nil
+}
+
+func (ct *Runner) runCustomTest(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
 	test := ct.customTest
 
 	// Expand command

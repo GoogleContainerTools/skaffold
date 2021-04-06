@@ -26,15 +26,17 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	protoV2 "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
 const (
 	// These are phases in a Skaffolld
 	Init        = Phase("Init")
 	Build       = Phase("Build")
+	Test        = Phase("Test")
 	Deploy      = Phase("Deploy")
 	StatusCheck = Phase("StatusCheck")
-	FileSync    = Phase("FileSync")
+	Sync        = Phase("Sync")
 	DevInit     = Phase("DevInit")
 	Cleanup     = Phase("Cleanup")
 
@@ -71,6 +73,21 @@ func ActionableErr(phase Phase, err error) *proto.ActionableErr {
 		ErrCode:     errCode,
 		Message:     err.Error(),
 		Suggestions: suggestions,
+	}
+}
+
+// ActionableErrV2 returns an actionable error message with suggestions
+func ActionableErrV2(phase Phase, err error) *protoV2.ActionableErr {
+	errCode, suggestions := getErrorCodeFromError(phase, err)
+	suggestionsV2 := make([]*protoV2.Suggestion, len(suggestions))
+	for i, suggestion := range suggestions {
+		converted := protoV2.Suggestion(*suggestion)
+		suggestionsV2[i] = &converted
+	}
+	return &protoV2.ActionableErr{
+		ErrCode:     errCode,
+		Message:     err.Error(),
+		Suggestions: suggestionsV2,
 	}
 }
 
@@ -150,6 +167,11 @@ var allErrors = map[Phase][]problem{
 		errCode:    proto.StatusCode_INIT_UNKNOWN,
 		suggestion: reportIssueSuggestion,
 	}),
+	Test: {{
+		regexp:     re(".*"),
+		errCode:    proto.StatusCode_TEST_UNKNOWN,
+		suggestion: reportIssueSuggestion,
+	}},
 	Deploy: append(knownDeployProblems, problem{
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_DEPLOY_UNKNOWN,
@@ -160,7 +182,7 @@ var allErrors = map[Phase][]problem{
 		errCode:    proto.StatusCode_STATUSCHECK_UNKNOWN,
 		suggestion: reportIssueSuggestion,
 	}},
-	FileSync: {{
+	Sync: {{
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_SYNC_UNKNOWN,
 		suggestion: reportIssueSuggestion,

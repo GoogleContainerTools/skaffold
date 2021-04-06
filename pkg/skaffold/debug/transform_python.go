@@ -35,14 +35,23 @@ func init() {
 
 const (
 	// most examples use 5678
-	defaultPtvsdPort = 5678
+	defaultPtvsdPort   = 5678
+	defaultDebugpyPort = 5678
 )
 
-// ptvsdSpec captures the useful python-ptvsd devtools options
-type ptvsdSpec struct {
-	host string
-	port int32
-	wait bool
+type pythonDebugType int
+
+const (
+	ptvsd pythonDebugType = iota
+	debugpy
+)
+
+// pythonSpec captures the useful python-ptvsd devtools options
+type pythonSpec struct {
+	debugger pythonDebugType
+	host     string
+	port     int32
+	wait     bool
 }
 
 // isLaunchingPython determines if the arguments seems to be invoking python
@@ -62,26 +71,30 @@ func (t pythonTransformer) IsApplicable(config imageConfiguration) bool {
 	return isLaunchingPython(config.arguments)
 }
 
-// Apply configures a container definition for Python with pydev/ptvsd
+// Apply configures a container definition for Python with ptvsd/debugpy.
 // Returns a simple map describing the debug configuration details.
 func (t pythonTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for python debugging", container.Name)
 
-	// try to find existing `-mptvsd` command
-	spec := retrievePtvsdSpec(config)
+	// try to find existing `-mptvsd` or `-mdebugpy` command
+	if spec := retrievePythonDebugSpec(config); spec != nil {
+		container.Ports = exposePort(container.Ports, "dap", spec.port)
+		return ContainerDebugConfiguration{
+			Runtime: "python",
+			Ports:   map[string]uint32{"dap": uint32(spec.port)},
+		}, "", nil
+	}
 
-	if spec == nil {
-		spec = &ptvsdSpec{port: portAlloc(defaultPtvsdPort)}
-		switch {
-		case isLaunchingPython(config.entrypoint):
-			container.Command = rewritePythonCommandLine(config.entrypoint, *spec)
+	spec := &pythonSpec{debugger: debugpy, port: portAlloc(defaultDebugpyPort)}
+	switch {
+	case isLaunchingPython(config.entrypoint):
+		container.Command = rewritePythonCommandLine(config.entrypoint, *spec)
 
-		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingPython(config.arguments):
-			container.Args = rewritePythonCommandLine(config.arguments, *spec)
+	case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingPython(config.arguments):
+		container.Args = rewritePythonCommandLine(config.arguments, *spec)
 
-		default:
-			return ContainerDebugConfiguration{}, "", fmt.Errorf("%q does not appear to invoke python", container.Name)
-		}
+	default:
+		return ContainerDebugConfiguration{}, "", fmt.Errorf("%q does not appear to invoke python", container.Name)
 	}
 
 	pyUserBase := "/dbg/python"
@@ -98,21 +111,31 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 	}, "python", nil
 }
 
-func retrievePtvsdSpec(config imageConfiguration) *ptvsdSpec {
-	if spec := extractPtvsdArg(config.entrypoint); spec != nil {
+func retrievePythonDebugSpec(config imageConfiguration) *pythonSpec {
+	if spec := extractPythonDebugSpec(config.entrypoint); spec != nil {
 		return spec
 	}
-	if spec := extractPtvsdArg(config.arguments); spec != nil {
+	if spec := extractPythonDebugSpec(config.arguments); spec != nil {
 		return spec
 	}
 	return nil
 }
 
-func extractPtvsdArg(args []string) *ptvsdSpec {
-	if !hasPtvsdModule(args) {
+func extractPythonDebugSpec(args []string) *pythonSpec {
+	if spec := extractPtvsdSpec(args); spec != nil {
+		return spec
+	}
+	if spec := extractDebugpySpec(args); spec != nil {
+		return spec
+	}
+	return nil
+}
+
+func extractPtvsdSpec(args []string) *pythonSpec {
+	if !hasPyModule("ptvsd", args) {
 		return nil
 	}
-	spec := ptvsdSpec{port: defaultPtvsdPort}
+	spec := pythonSpec{debugger: ptvsd, port: defaultPtvsdPort}
 	for i, arg := range args {
 		switch arg {
 		case "--host":
@@ -139,14 +162,46 @@ func extractPtvsdArg(args []string) *ptvsdSpec {
 	return &spec
 }
 
-func hasPtvsdModule(args []string) bool {
-	if index := util.StrSliceIndex(args, "-mptvsd"); index >= 0 {
+func extractDebugpySpec(args []string) *pythonSpec {
+	if !hasPyModule("debugpy", args) {
+		return nil
+	}
+	spec := pythonSpec{debugger: debugpy, port: -1}
+	for i, arg := range args {
+		switch arg {
+		case "--listen":
+			if i == len(args)-1 {
+				return nil
+			}
+			s := strings.SplitN(args[i+1], ":", 2)
+			if len(s) > 1 {
+				spec.host = s[0]
+			}
+			port, err := strconv.ParseInt(s[len(s)-1], 10, 32)
+			if err != nil {
+				logrus.Errorf("Invalid port %q: %s\n", args[i+1], err)
+				return nil
+			}
+			spec.port = int32(port)
+
+		case "--wait-for-client":
+			spec.wait = true
+		}
+	}
+	if spec.port < 0 {
+		return nil
+	}
+	return &spec
+}
+
+func hasPyModule(module string, args []string) bool {
+	if index := util.StrSliceIndex(args, "-m"+module); index >= 0 {
 		return true
 	}
 	seenDashM := false
 	for _, value := range args {
 		if seenDashM {
-			if value == "ptvsd" {
+			if value == module {
 				return true
 			}
 			seenDashM = false
@@ -158,24 +213,41 @@ func hasPtvsdModule(args []string) bool {
 }
 
 // rewritePythonCommandLine rewrites a python command-line to insert a `-mptvsd` etc
-func rewritePythonCommandLine(commandLine []string, spec ptvsdSpec) []string {
+func rewritePythonCommandLine(commandLine []string, spec pythonSpec) []string {
 	// Assumes that commandLine[0] is "python" or "python3" etc
 	return util.StrSliceInsert(commandLine, 1, spec.asArguments())
 }
 
-func (spec ptvsdSpec) asArguments() []string {
-	args := []string{"-mptvsd"}
-	// --host is a mandatory argument
-	if spec.host == "" {
-		args = append(args, "--host", "0.0.0.0")
-	} else {
-		args = append(args, "--host", spec.host)
+func (spec pythonSpec) asArguments() []string {
+	switch spec.debugger {
+	case ptvsd:
+		args := []string{"-mptvsd"}
+		// --host is a mandatory argument
+		if spec.host == "" {
+			args = append(args, "--host", "0.0.0.0")
+		} else {
+			args = append(args, "--host", spec.host)
+		}
+		if spec.port >= 0 {
+			args = append(args, "--port", strconv.FormatInt(int64(spec.port), 10))
+		}
+		if spec.wait {
+			args = append(args, "--wait")
+		}
+		return args
+
+	case debugpy:
+		args := []string{"-mdebugpy"}
+
+		if spec.host == "" {
+			args = append(args, "--listen", strconv.FormatInt(int64(spec.port), 10))
+		} else {
+			args = append(args, "--listen", fmt.Sprintf("%s:%d", spec.host, spec.port))
+		}
+		if spec.wait {
+			args = append(args, "--wait-for-client")
+		}
+		return args
 	}
-	if spec.port >= 0 {
-		args = append(args, "--port", strconv.FormatInt(int64(spec.port), 10))
-	}
-	if spec.wait {
-		args = append(args, "--wait")
-	}
-	return args
+	return nil
 }
