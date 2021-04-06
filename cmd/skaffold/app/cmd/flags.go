@@ -558,11 +558,12 @@ func ResetFlagDefaults(cmd *cobra.Command, flags []*Flag) {
 				if d, present := fl.DefValuePerCommand[cmd.Use]; present {
 					defValue = d
 				}
-			}
-			if sv, ok := flag.Value.(pflag.SliceValue); ok {
-				reflect.ValueOf(sv).MethodByName("Replace").Call(reflectValueOf([]interface{}{defValue}))
-			} else {
-				flag.Value.Set(fmt.Sprintf("%v", defValue))
+
+				if sv, ok := flag.Value.(pflag.SliceValue); ok {
+					reflect.ValueOf(sv).MethodByName("Replace").Call(reflectValueOf([]interface{}{defValue}))
+				} else {
+					flag.Value.Set(fmt.Sprintf("%v", defValue))
+				}
 			}
 		}
 		if fl.IsEnum {
