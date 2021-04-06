@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -517,15 +518,16 @@ func (fl *Flag) flag(cmdName string) *pflag.Flag {
 	if methodName == "" {
 		methodName = methodNameByType(reflect.ValueOf(fl.Value))
 	}
+	isVar := methodName == "Var"
 	// pflags' Var*() methods do not take a default value but instead
-	// asume the value is already set to its default value.  So we
+	// assume the value is already set to its default value.  So we
 	// explicitly set the default value here to ensure help text is correct.
-	if methodName == "Var" {
+	if isVar {
 		setDefaultValues(fl.Value, fl, cmdName)
 	}
 
 	inputs := []interface{}{fl.Value, fl.Name}
-	if methodName != "Var" {
+	if !isVar {
 		if d, found := fl.DefValuePerCommand[cmdName]; found {
 			inputs = append(inputs, d)
 		} else {
@@ -560,6 +562,8 @@ func ResetFlagDefaults(cmd *cobra.Command, flags []*Flag) {
 	}
 }
 
+// setDefaultValues sets the default value (or values) for the given flag definition.
+// This function handles pflag's SliceValue and Value interfaces.
 func setDefaultValues(v interface{}, fl *Flag, cmdName string) {
 	d, found := fl.DefValuePerCommand[cmdName]
 	if !found {
@@ -567,8 +571,10 @@ func setDefaultValues(v interface{}, fl *Flag, cmdName string) {
 	}
 	if sv, ok := v.(pflag.SliceValue); ok {
 		sv.Replace(asStringSlice(d))
-	} else if v, ok := fl.Value.(pflag.Value); ok {
-		v.Set(fmt.Sprintf("%v", d))
+	} else if val, ok := v.(pflag.Value); ok {
+		val.Set(fmt.Sprintf("%v", d))
+	} else {
+		logrus.Fatalf("%s --%s: unhandled value type: %v (%T)", cmdName, fl.Name, v, v)
 	}
 }
 
