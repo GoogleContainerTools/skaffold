@@ -37,6 +37,8 @@ type BuilderMux struct {
 // Config represents an interface for getting all config pipelines.
 type Config interface {
 	GetPipelines() []latest.Pipeline
+	DefaultRepo() *string
+	GlobalConfig() string
 }
 
 // NewBuilderMux returns an implementation of `build.BuilderMux`.

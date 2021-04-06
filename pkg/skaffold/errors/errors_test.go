@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -268,7 +269,7 @@ func TestShowAIError(t *testing.T) {
 	}
 	for _, test := range append(tests, initTestCases...) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&getConfigForCurrentContext, func(string) (*config.ContextConfig, error) {
+			t.Override(&build.getConfigForCurrentContext, func(string) (*config.ContextConfig, error) {
 				return test.context, nil
 			})
 			runCtx = runcontext.RunContext{KubeContext: "test_cluster", Opts: test.opts}

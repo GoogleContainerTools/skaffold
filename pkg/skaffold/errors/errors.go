@@ -18,7 +18,6 @@ package errors
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"sync"
 
@@ -85,35 +84,22 @@ func ShowAIError(err error) error {
 		return err
 	}
 
+	if p, ok := isProblem(err); ok {
+		instrumentation.SetErrorCode(p.ErrCode)
+		return p
+	}
+
 	var knownProblems = append(knownBuildProblems, knownDeployProblems...)
-	for _, v := range append(knownProblems, knownInitProblems...) {
-		if v.regexp.MatchString(err.Error()) {
-			instrumentation.SetErrorCode(v.errCode)
-			if suggestions := v.suggestion(runCtx); suggestions != nil {
-				description := fmt.Sprintf("%s\n", err)
-				if v.description != nil {
-					description = strings.Trim(v.description(err), ".")
-				}
-				return fmt.Errorf("%s. %s", description, concatSuggestions(suggestions))
-			}
-			return fmt.Errorf(v.description(err))
+	for _, p := range append(knownProblems, knownInitProblems...) {
+		if p.regexp.MatchString(err.Error()) {
+			instrumentation.SetErrorCode(p.errCode)
+			return p.withConfigAndErr(err)
 		}
 	}
 	return err
 }
 
-func IsOldImageManifestProblem(err error) (string, bool) {
-	if err != nil && oldImageManifest.regexp.MatchString(err.Error()) {
-		if s := oldImageManifest.suggestion(runCtx); s != nil {
-			return fmt.Sprintf("%s. %s", oldImageManifest.description(err),
-				concatSuggestions(oldImageManifest.suggestion(runCtx))), true
-		}
-		return "", true
-	}
-	return "", false
-}
-
-func getErrorCodeFromError(phase constants.Phase, err error) (proto.StatusCode, []*proto.Suggestion) {
+func getErrorCodeFromError(phase Phase, err error) (proto.StatusCode, []*proto.Suggestion) {
 	var sErr Error
 	if errors.As(err, &sErr) {
 		return sErr.StatusCode(), sErr.Suggestions()
@@ -122,7 +108,7 @@ func getErrorCodeFromError(phase constants.Phase, err error) (proto.StatusCode, 
 	if problems, ok := allErrors[phase]; ok {
 		for _, v := range problems {
 			if v.regexp.MatchString(err.Error()) {
-				return v.errCode, v.suggestion(runCtx)
+				return v.errCode, v.suggestion()
 			}
 		}
 	}
@@ -144,8 +130,8 @@ func concatSuggestions(suggestions []*proto.Suggestion) string {
 	return s.String()
 }
 
-var allErrors = map[constants.Phase][]problem{
-	constants.Build: append(knownBuildProblems, problem{
+var allErrors = map[constants.Phase][]Problem{
+	constants.Build: Problem{
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_BUILD_UNKNOWN,
 		suggestion: reportIssueSuggestion,

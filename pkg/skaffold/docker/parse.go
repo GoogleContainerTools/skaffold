@@ -25,6 +25,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -35,8 +36,10 @@ import (
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 type from struct {
@@ -231,8 +234,8 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, cfg Config) (
 				img, err := RetrieveImage(from.image, cfg)
 				if err == nil {
 					workdir = img.Config.WorkingDir
-				} else if _, ok := sErrors.IsOldImageManifestProblem(err); !ok {
-					return nil, err
+				} else if e, ok := isOldImageManifestProblem(err); !ok {
+					return nil, e
 				}
 				if workdir == "" {
 					workdir = "/"
@@ -434,4 +437,33 @@ func validateParsedDockerfile(r io.Reader, res *parser.Result) error {
 	// instructions.Parse will check for malformed Dockerfile
 	_, _, err := instructions.Parse(res.AST)
 	return err
+}
+
+func isOldImageManifestProblem(cfg Config, err error) (sErrors.Problem, bool) {
+	// regex for detecting old manifest images
+	retrieveFailedOldManifest := `(.*retrieving image.*\"(.*)\")?.*unsupported MediaType.*manifest\.v1\+prettyjws.*`
+	matchExp := regexp.MustCompile(retrieveFailedOldManifest)
+	if !matchExp.MatchString(err.Error()) {
+		return sErrors.Problem{}, false
+	}
+	return sErrors.NewProblem(
+		func(err error) string {
+			match := matchExp.FindStringSubmatch(err.Error())
+			pre := "Could not retrieve image pushed with the deprecated manifest v1"
+			if len(match) >= 3 && match[2] != "" {
+				pre = fmt.Sprintf("Could not retrieve image %s pushed with the deprecated manifest v1", match[2])
+			}
+			return fmt.Sprintf("%s. Ignoring files dependencies for all ONBUILD triggers", pre)
+		},
+		proto.StatusCode_DEVINIT_UNSUPPORTED_V1_MANIFEST,
+		func() []*proto.Suggestion {
+			if cfg.Mode() == config.RunModes.Dev || cfg.Mode() == config.RunModes.Debug {
+				return []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_RUN_DOCKER_PULL,
+					Action:         "To avoid, hit Cntrl-C and run `docker pull` to fetch the specified image and retry",
+				}}
+			}
+			return nil
+		},
+		err), false
 }

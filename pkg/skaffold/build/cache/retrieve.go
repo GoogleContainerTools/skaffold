@@ -79,7 +79,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		case needsPushing:
 			color.Green.Fprintln(out, "Found. Pushing")
 			if err := result.Push(ctx, out, c); err != nil {
-				return nil, fmt.Errorf("%s: %w", sErrors.PushImageErr, err)
+				return nil, fmt.Errorf("%s: %w", build.pushImageErr, err)
 			}
 
 		default:

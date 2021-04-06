@@ -27,6 +27,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
@@ -39,7 +40,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -271,7 +271,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 		RegistryAuth: registryAuth,
 	})
 	if err != nil {
-		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErr, ref, err)
+		return "", fmt.Errorf("%s %q: %w", build.pushImageErr, ref, err)
 	}
 	defer rc.Close()
 
@@ -290,7 +290,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	}
 
 	if err := streamDockerMessages(out, rc, auxCallback); err != nil {
-		return "", fmt.Errorf("%s %q: %w", sErrors.PushImageErr, ref, err)
+		return "", fmt.Errorf("%s %q: %w", build.pushImageErr, ref, err)
 	}
 
 	if digest == "" {
