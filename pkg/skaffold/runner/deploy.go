@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd/api"
 
@@ -82,10 +83,12 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	event.DeployInProgress()
+	eventV2.TaskInProgress("Deploy", r.devIteration)
 	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
+		eventV2.TaskFailed("Deploy", r.devIteration, err)
 		return err
 	}
 
@@ -97,6 +100,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return err
 	}
 	event.DeployComplete()
+	eventV2.TaskSucceeded("Deploy", r.devIteration)
 	r.runCtx.UpdateNamespaces(namespaces)
 	sErr := r.performStatusCheck(ctx, statusCheckOut)
 	return sErr
