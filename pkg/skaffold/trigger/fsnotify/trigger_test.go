@@ -61,8 +61,3 @@ func Test_Debounce(t *testing.T) {
 	got, want := tr.Debounce(), false
 	testutil.CheckDeepEqual(t, want, got)
 }
-
-func Test_Ignore(t *testing.T) {
-	tr := &Trigger{}
-	testutil.CheckDeepEqual(t, false, tr.Ignore(nil))
-}

@@ -1,4 +1,5 @@
 // +build !windows
+
 /*
 Copyright 2021 The Skaffold Authors
 
@@ -21,8 +22,6 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
-
-	"github.com/rjeczalik/notify"
 )
 
 func TestHidden(t *testing.T) {
@@ -60,20 +59,4 @@ func TestHidden(t *testing.T) {
 			t.CheckDeepEqual(test.expected, tr.hidden(test.filename))
 		})
 	}
-}
-
-type mockEvent struct {
-	file string
-}
-
-func (m mockEvent) Path() string {
-	return m.file
-}
-
-func (m mockEvent) Event() notify.Event {
-	return notify.FSEventsModified
-}
-
-func (m mockEvent) Sys() interface{} {
-	return m
 }

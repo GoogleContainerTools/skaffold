@@ -17,9 +17,9 @@ limitations under the License.
 package fsnotify
 
 import (
-	"fmt"
 	"os"
 	"strings"
+	"syscall"
 )
 
 // For Testing
@@ -30,10 +30,11 @@ var (
 // Hidden checks if the change detected is to be ignored or not for windows
 func (t *Trigger) hidden(path string) bool {
 	for _, p := range strings.Split(path, string(os.PathSeparator)) {
-		attributes, err := fileAttributes(p)
-		if err != nil {
+		if attributes, err := fileAttributes(p); err != nil {
+			logrus.Debugf("could not determine if file %s was hidden due to %e", path, err)
 			return false
 		} else if attributes&syscall.FILE_ATTRIBUTE_HIDDEN == 1 {
+			logrus.Debugf("ignoring hidden file %s", path)
 			return true
 		}
 	}
@@ -43,12 +44,10 @@ func (t *Trigger) hidden(path string) bool {
 func getFileAttributes(path string) (uint32, error) {
 	pointer, err := syscall.UTF16PtrFromString(path)
 	if err != nil {
-		logrus.Debugf("could not determine if file %s was hidden due to %e", path, err)
 		return 0, err
 	}
 	attributes, err := syscall.GetFileAttributes(pointer)
 	if err != nil {
-		logrus.Debugf("could not determine if file %s was hidden due to %s", path, err)
 		return 0, err
 	}
 	return attributes, nil

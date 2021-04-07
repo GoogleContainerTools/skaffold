@@ -1,4 +1,5 @@
 // +build !windows
+
 /*
 Copyright 2021 The Skaffold Authors
 
@@ -18,6 +19,7 @@ limitations under the License.
 package fsnotify
 
 import (
+	"path/filepath"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -28,7 +30,7 @@ import (
 func (t *Trigger) hidden(path string) bool {
 	for _, p := range strings.Split(path, string(filepath.Separator)) {
 		if strings.HasPrefix(p, ".") {
-			logrus.Debugf("ignoring hidden file or file in hidden dir %s", path)
+			logrus.Debugf("ignoring hidden file %s", path)
 			return true
 		}
 	}
