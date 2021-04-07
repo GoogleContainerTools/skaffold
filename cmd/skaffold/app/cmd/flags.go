@@ -53,6 +53,7 @@ type Flag struct {
 	DefValuePerCommand map[string]interface{}
 	NoOptDefVal        string
 	FlagAddMethod      string
+	Deprecated         string
 	DefinedOn          []string
 	Hidden             bool
 	IsEnum             bool
@@ -287,6 +288,7 @@ var flagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "run"},
+		Deprecated:    "please use the `skaffold render` command instead.",
 		IsEnum:        true,
 	},
 	{
@@ -296,6 +298,7 @@ var flagRegistry = []Flag{
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"run"},
+		Deprecated:    "please use the `skaffold render` command instead.",
 	},
 	{
 		Name:          "config",
@@ -557,7 +560,8 @@ func (fl *Flag) flag(cmdName string) *pflag.Flag {
 		f.NoOptDefVal = fl.NoOptDefVal
 	}
 	f.Shorthand = fl.Shorthand
-	f.Hidden = fl.Hidden
+	f.Hidden = fl.Hidden || (fl.Deprecated != "")
+	f.Deprecated = fl.Deprecated
 	return f
 }
 
