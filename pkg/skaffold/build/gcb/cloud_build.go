@@ -38,7 +38,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -95,11 +94,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", fmt.Errorf("checking bucket is in correct project: %w", err)
 	}
 
-<<<<<<< HEAD
 	dependencies, err := b.sourceDependencies.ResolveForArtifact(ctx, artifact)
-=======
-	dependencies, err := graph.DependenciesForArtifact(ctx, artifact, b.cfg, b.artifactStore)
->>>>>>> 01075d79a (change name of the build/dep package to graph. Replace taking a hash over the file name with the full relative path. Remove mode from the hash. Fix some typos)
 	if err != nil {
 		return "", fmt.Errorf("getting dependencies for %q: %w", artifact.ImageName, err)
 	}

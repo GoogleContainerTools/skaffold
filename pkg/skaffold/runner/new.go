@@ -60,8 +60,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	store := build.NewArtifactStore()
-	graph := graph.ToArtifactGraph(runCtx.Artifacts())
-	sourceDependencies := graph.NewTransitiveSourceDependenciesCache(runCtx, store, graph)
+	g := graph.ToArtifactGraph(runCtx.Artifacts())
+	sourceDependencies := graph.NewTransitiveSourceDependenciesCache(runCtx, store, g)
 
 	var builder build.Builder
 	builder, err = build.NewBuilderMux(runCtx, store, func(p latest.Pipeline) (build.PipelineBuilder, error) {
@@ -99,7 +99,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return append(buildDependencies, testDependencies...), nil
 	}
 
-	artifactCache, err := cache.NewCache(runCtx, isLocalImage, depLister, graph, store)
+	artifactCache, err := cache.NewCache(runCtx, isLocalImage, depLister, g, store)
 	if err != nil {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}

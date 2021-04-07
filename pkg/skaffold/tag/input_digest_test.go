@@ -17,36 +17,13 @@ limitations under the License.
 package tag
 
 import (
-	"context"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
-
-func TestInputDigest_GenerateTagWhenFileDoesntExist(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		mockDependenciesForArtifact := func(ctx context.Context, a *latest.Artifact, cfg docker.Config, r docker.ArtifactResolver) ([]string, error) {
-			c := []string{"imput_digest.go"}
-			return c, nil
-		}
-		getDependenciesForArtifact = mockDependenciesForArtifact
-
-		tagger, _ := NewInputDigestTagger(nil, nil)
-
-		artifact := latest.Artifact{
-			ImageName: "image_name",
-		}
-
-		tag, _ := tagger.GenerateTag(artifact)
-
-		t.CheckDeepEqual("38e0b9de817f645c4bec37c0d4a3e58baecccb040f5718dc069a72c7385a0bed", tag)
-	})
-}
 
 func TestInputDigest_GenerateCorrectChecksumForSingleFile(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {

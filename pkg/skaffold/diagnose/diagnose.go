@@ -117,8 +117,8 @@ func typeOfArtifact(a *latest.Artifact) string {
 
 func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg Config) (string, []string, error) {
 	start := time.Now()
-	graph := graph.ToArtifactGraph(cfg.Artifacts())
-	sourceDependencies := graph.NewTransitiveSourceDependenciesCache(cfg, nil, graph)
+	g := graph.ToArtifactGraph(cfg.Artifacts())
+	sourceDependencies := graph.NewTransitiveSourceDependenciesCache(cfg, nil, g)
 	paths, err := sourceDependencies.ResolveForArtifact(ctx, a)
 	return util.ShowHumanizeTime(time.Since(start)), paths, err
 }

@@ -36,31 +36,32 @@ import (
 )
 
 type inputDigestTagger struct {
-	cfg docker.Config
-	ag  graph.ArtifactGraph
+	cfg   docker.Config
+	ag    graph.ArtifactGraph
+	cache graph.TransitiveSourceDependenciesCache
 }
 
 func NewInputDigestTagger(cfg docker.Config, ag graph.ArtifactGraph) (Tagger, error) {
 	return &inputDigestTagger{
-		cfg: cfg,
-		ag:  ag,
+		cfg:   cfg,
+		ag:    ag,
+		cache: graph.NewTransitiveSourceDependenciesCache(cfg, nil, ag),
 	}, nil
 }
-
-// this variable is for testing only.
-var getDependenciesForArtifact = graph.DependenciesForArtifact
 
 func (t *inputDigestTagger) GenerateTag(image latest.Artifact) (string, error) {
 	var inputs []string
 	// TODO(nkubala): plumb through context into Tagger interface
 	ctx := context.TODO()
-	srcFiles, err := getDependenciesForArtifact(ctx, &image, t.cfg, nil)
+	// srcFiles, err := getDependenciesForArtifact(ctx, &image, t.cfg, nil)
+	srcFiles, err := t.cache.ResolveForArtifact(ctx, &image)
 	if err != nil {
 		return "", err
 	}
 
 	for _, artifactDep := range t.ag.Dependencies(&image) {
-		srcOfDep, err := getDependenciesForArtifact(ctx, artifactDep, t.cfg, nil)
+		// srcOfDep, err := getDependenciesForArtifact(ctx, artifactDep, t.cfg, nil)
+		srcOfDep, err := t.cache.ResolveForArtifact(ctx, artifactDep)
 		if err != nil {
 			return "", err
 		}
