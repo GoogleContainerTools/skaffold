@@ -50,11 +50,15 @@ var (
 )
 
 func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kubernetes.LogAggregator, forwarderManager portforward.Forwarder) error {
+	// never queue intents from user, even if they're not used
+	defer r.intents.reset()
+
 	if r.changeSet.needsReload {
 		return ErrorConfigurationChanged
 	}
 
 	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
+	logrus.Tracef("dev intents: build %t, sync %t, deploy %t\n", buildIntent, syncIntent, deployIntent)
 	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
 	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
 	needsTest := r.changeSet.needsRetest

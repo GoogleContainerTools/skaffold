@@ -71,6 +71,10 @@ func (t *TestMonitor) Register(deps func() ([]string, error), onChange func(file
 }
 
 func (t *TestMonitor) Run(bool) error {
+	if t.testBench.intentTrigger {
+		return nil
+	}
+
 	evt := t.events[t.testBench.currentCycle]
 
 	for _, file := range evt.Modified {
@@ -293,6 +297,7 @@ func TestDevAutoTriggers(t *testing.T) {
 		expectedActions []Actions
 		autoTriggers    triggerState // the state of auto triggers
 		singleTriggers  triggerState // the state of single intent triggers at the end of dev loop
+		userIntents     []func(i *intents)
 	}{
 		{
 			description: "build on; sync on; deploy on",
@@ -356,6 +361,46 @@ func TestDevAutoTriggers(t *testing.T) {
 			singleTriggers:  triggerState{false, false, true},
 			expectedActions: []Actions{{}, {}},
 		},
+		{
+			description:     "build off; sync off; deploy off; user requests build, but no change so intent is discarded",
+			watchEvents:     []filemon.Events{},
+			autoTriggers:    triggerState{false, false, false},
+			singleTriggers:  triggerState{false, false, false},
+			expectedActions: []Actions{},
+			userIntents: []func(i *intents){
+				func(i *intents) {
+					i.setBuild(true)
+				},
+			},
+		},
+		{
+			description:     "build off; sync off; deploy off; user requests build, and then sync, but no change so both intents are discarded",
+			watchEvents:     []filemon.Events{},
+			autoTriggers:    triggerState{false, false, false},
+			singleTriggers:  triggerState{false, false, false},
+			expectedActions: []Actions{},
+			userIntents: []func(i *intents){
+				func(i *intents) {
+					i.setBuild(true)
+					i.setSync(true)
+				},
+			},
+		},
+		{
+			description:     "build off; sync off; deploy off; user requests build, and then sync, but no change so both intents are discarded",
+			watchEvents:     []filemon.Events{},
+			autoTriggers:    triggerState{false, false, false},
+			singleTriggers:  triggerState{false, false, false},
+			expectedActions: []Actions{},
+			userIntents: []func(i *intents){
+				func(i *intents) {
+					i.setBuild(true)
+				},
+				func(i *intents) {
+					i.setSync(true)
+				},
+			},
+		},
 	}
 	// first build-test-deploy sequence always happens
 	firstAction := Actions{
@@ -371,6 +416,7 @@ func TestDevAutoTriggers(t *testing.T) {
 			t.Override(&sync.WorkingDir, func(string, docker.Config) (string, error) { return "/", nil })
 			testBench := &TestBench{}
 			testBench.cycles = len(test.watchEvents)
+			testBench.userIntents = test.userIntents
 			artifacts := []*latest.Artifact{
 				{
 					ImageName: "img1",
@@ -386,6 +432,8 @@ func TestDevAutoTriggers(t *testing.T) {
 				events:    test.watchEvents,
 				testBench: testBench,
 			}, artifacts, &test.autoTriggers)
+
+			testBench.intents = runner.intents
 
 			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
 
