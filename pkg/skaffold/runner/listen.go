@@ -24,8 +24,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
 )
 
@@ -37,7 +37,7 @@ type Listener interface {
 type SkaffoldListener struct {
 	Monitor                 filemon.Monitor
 	Trigger                 trigger.Trigger
-	sourceDependenciesCache build.TransitiveSourceDependenciesCache
+	sourceDependenciesCache graph.TransitiveSourceDependenciesCache
 	intentChan              <-chan bool
 }
 

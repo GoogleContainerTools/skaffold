@@ -25,9 +25,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -56,7 +56,7 @@ func New(cfg docker.Config, wd string, tc *latest.TestCase, imagesAreLocal func(
 }
 
 // Test is the entrypoint for running structure tests
-func (cst *Runner) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
+func (cst *Runner) Test(ctx context.Context, out io.Writer, bRes []graph.Artifact) error {
 	event.TestInProgress()
 	if err := cst.runStructureTests(ctx, out, bRes); err != nil {
 		event.TestFailed(cst.image, err)
@@ -66,7 +66,7 @@ func (cst *Runner) Test(ctx context.Context, out io.Writer, bRes []build.Artifac
 	return nil
 }
 
-func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
+func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, bRes []graph.Artifact) error {
 	fqn, err := cst.getImage(ctx, out, cst.image, bRes, cst.imagesAreLocal)
 	if err != nil {
 		return err
@@ -124,7 +124,7 @@ func (cst *Runner) env() []string {
 	return append(mergedEnv, extraEnv...)
 }
 
-func (cst *Runner) getImage(ctx context.Context, out io.Writer, imageName string, bRes []build.Artifact,
+func (cst *Runner) getImage(ctx context.Context, out io.Writer, imageName string, bRes []graph.Artifact,
 	imagesAreLocal func(imageName string) (bool, error)) (string, error) {
 	fqn, found := resolveArtifactImageTag(imageName, bRes)
 	if !found {
@@ -146,7 +146,7 @@ func (cst *Runner) getImage(ctx context.Context, out io.Writer, imageName string
 	return fqn, nil
 }
 
-func resolveArtifactImageTag(imageName string, bRes []build.Artifact) (string, bool) {
+func resolveArtifactImageTag(imageName string, bRes []graph.Artifact) (string, bool) {
 	for _, res := range bRes {
 		if imageName == res.ImageName {
 			return res.Tag, true

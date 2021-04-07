@@ -29,6 +29,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -92,7 +93,7 @@ func TestFormatResults(t *testing.T) {
 	tests := []struct {
 		description string
 		artifacts   []*latest.Artifact
-		expected    []Artifact
+		expected    []graph.Artifact
 		results     map[string]interface{}
 		shouldErr   bool
 	}{
@@ -102,7 +103,7 @@ func TestFormatResults(t *testing.T) {
 				{ImageName: "skaffold/image1"},
 				{ImageName: "skaffold/image2"},
 			},
-			expected: []Artifact{
+			expected: []graph.Artifact{
 				{ImageName: "skaffold/image1", Tag: "skaffold/image1:v0.0.1@sha256:abac"},
 				{ImageName: "skaffold/image2", Tag: "skaffold/image2:v0.0.2@sha256:abac"},
 			},
@@ -251,7 +252,7 @@ func TestInOrderForArgs(t *testing.T) {
 		artifactLen   int
 		concurrency   int
 		dependency    map[int][]int
-		expected      []Artifact
+		expected      []graph.Artifact
 		err           error
 	}{
 		{
@@ -260,7 +261,7 @@ func TestInOrderForArgs(t *testing.T) {
 				return tag, nil
 			},
 			artifactLen: 2,
-			expected: []Artifact{
+			expected: []graph.Artifact{
 				{ImageName: "artifact1", Tag: "artifact1@tag1"},
 				{ImageName: "artifact2", Tag: "artifact2@tag2"},
 			},
@@ -277,7 +278,7 @@ func TestInOrderForArgs(t *testing.T) {
 				3: {4},
 			},
 			artifactLen: 5,
-			expected: []Artifact{
+			expected: []graph.Artifact{
 				{ImageName: "artifact1", Tag: "artifact1@tag1"},
 				{ImageName: "artifact2", Tag: "artifact2@tag2"},
 				{ImageName: "artifact3", Tag: "artifact3@tag3"},
@@ -298,7 +299,7 @@ func TestInOrderForArgs(t *testing.T) {
 			},
 			artifactLen: 5,
 			concurrency: 2,
-			expected: []Artifact{
+			expected: []graph.Artifact{
 				{ImageName: "artifact1", Tag: "artifact1@tag1"},
 				{ImageName: "artifact2", Tag: "artifact2@tag2"},
 				{ImageName: "artifact3", Tag: "artifact3@tag3"},

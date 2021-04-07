@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -135,7 +136,7 @@ func newLogAggregator(out io.Writer, capacity int, concurrency int) logAggregato
 type ArtifactStore interface {
 	Record(a *latest.Artifact, tag string)
 	GetImageTag(imageName string) (tag string, found bool)
-	GetArtifacts(s []*latest.Artifact) ([]Artifact, error)
+	GetArtifacts(s []*latest.Artifact) ([]graph.Artifact, error)
 }
 
 func NewArtifactStore() ArtifactStore {
@@ -162,14 +163,14 @@ func (ba *artifactStoreImpl) GetImageTag(imageName string) (string, bool) {
 	return t, true
 }
 
-func (ba *artifactStoreImpl) GetArtifacts(s []*latest.Artifact) ([]Artifact, error) {
-	var builds []Artifact
+func (ba *artifactStoreImpl) GetArtifacts(s []*latest.Artifact) ([]graph.Artifact, error) {
+	var builds []graph.Artifact
 	for _, a := range s {
 		t, found := ba.GetImageTag(a.ImageName)
 		if !found {
 			return nil, fmt.Errorf("failed to retrieve build result for image %s", a.ImageName)
 		}
-		builds = append(builds, Artifact{ImageName: a.ImageName, Tag: t})
+		builds = append(builds, graph.Artifact{ImageName: a.ImageName, Tag: t})
 	}
 	return builds, nil
 }

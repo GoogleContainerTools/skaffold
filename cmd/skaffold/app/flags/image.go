@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 )
 
 // Images describes a flag which contains a list of image names
@@ -33,7 +33,7 @@ type Images struct {
 
 type image struct {
 	name     string
-	artifact *build.Artifact
+	artifact *graph.Artifact
 }
 
 // String Implements String() method for pflag interface and
@@ -67,8 +67,8 @@ func (i *Images) Type() string {
 }
 
 // Artifacts returns an artifact representation for the corresponding image
-func (i *Images) Artifacts() []build.Artifact {
-	var artifacts []build.Artifact
+func (i *Images) Artifacts() []graph.Artifact {
+	var artifacts []graph.Artifact
 
 	for _, image := range i.images {
 		artifacts = append(artifacts, *image.artifact)
@@ -85,7 +85,7 @@ func NewEmptyImages(usage string) *Images {
 	}
 }
 
-func convertImageToArtifact(value string) (*build.Artifact, error) {
+func convertImageToArtifact(value string) (*graph.Artifact, error) {
 	if value == "" {
 		return nil, errors.New("cannot add an empty image value")
 	}
@@ -93,7 +93,7 @@ func convertImageToArtifact(value string) (*build.Artifact, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &build.Artifact{
+	return &graph.Artifact{
 		ImageName: parsed.BaseName,
 		Tag:       value,
 	}, nil

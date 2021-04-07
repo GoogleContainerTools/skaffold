@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -51,7 +52,7 @@ type withTimings struct {
 	cacheArtifacts bool
 }
 
-func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 	if len(artifacts) == 0 && w.cacheArtifacts {
 		return nil, nil
 	}
@@ -66,7 +67,7 @@ func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 	return bRes, nil
 }
 
-func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Artifact) error {
+func (w withTimings) Test(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting test...")
 
@@ -78,7 +79,7 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Art
 	return nil
 }
 
-func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting deploy...")
 

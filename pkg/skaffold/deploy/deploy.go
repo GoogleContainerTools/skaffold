@@ -20,7 +20,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 )
 
 // Deployer is the Deploy API of skaffold and responsible for deploying
@@ -28,7 +28,7 @@ import (
 type Deployer interface {
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster. Returns the list of impacted namespaces.
-	Deploy(context.Context, io.Writer, []build.Artifact) ([]string, error)
+	Deploy(context.Context, io.Writer, []graph.Artifact) ([]string, error)
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered
@@ -39,5 +39,5 @@ type Deployer interface {
 
 	// Render generates the Kubernetes manifests replacing the build results and
 	// writes them to the given file path
-	Render(context.Context, io.Writer, []build.Artifact, bool, string) error
+	Render(context.Context, io.Writer, []graph.Artifact, bool, string) error
 }
