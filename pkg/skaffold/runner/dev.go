@@ -86,7 +86,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			if err := r.syncer.Sync(ctx, s); err != nil {
 				logrus.Warnln("Skipping deploy due to sync error:", err)
 				fileSyncFailed(fileCount, s.Image, err)
-				event.DevLoopFailedInPhase(r.devIteration, sErrors.FileSync, err)
+				event.DevLoopFailedInPhase(r.devIteration, sErrors.Sync, err)
 				return nil
 			}
 
@@ -114,9 +114,12 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			return nil
 		}
 		needsTest = true
+		r.changeSet.needsRedeploy = true
+		needsDeploy = deployIntent
 	}
 
 	if needsTest && !r.runCtx.SkipTests() {
+		event.ResetStateOnTest()
 		defer func() {
 			r.changeSet.needsRetest = false
 		}()
@@ -182,7 +185,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		default:
 			if err := r.monitor.Register(
 				func() ([]string, error) {
-					return build.DependenciesForArtifact(ctx, artifact, r.runCtx, r.artifactStore)
+					return r.sourceDependencies.ResolveForArtifact(ctx, artifact)
 				},
 				func(e filemon.Events) {
 					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx, len(g[artifact.ImageName]))
@@ -192,7 +195,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 					case s != nil:
 						r.changeSet.AddResync(s)
 					default:
-						addRebuild(g, artifact, r.changeSet.AddRebuild, r.runCtx.Opts.IsTargetImage)
+						r.changeSet.AddRebuild(artifact)
 					}
 				},
 			); err != nil {
@@ -300,14 +303,4 @@ func getTransposeGraph(artifacts []*latest.Artifact) graph {
 		}
 	}
 	return g
-}
-
-// addRebuild runs the `rebuild` function for all target artifacts in the transitive closure on the source `artifact` in graph `g`.
-func addRebuild(g graph, artifact *latest.Artifact, rebuild func(*latest.Artifact), isTarget func(*latest.Artifact) bool) {
-	if isTarget(artifact) {
-		rebuild(artifact)
-	}
-	for _, a := range g[artifact.ImageName] {
-		addRebuild(g, a, rebuild, isTarget)
-	}
 }

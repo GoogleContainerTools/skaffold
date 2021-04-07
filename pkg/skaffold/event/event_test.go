@@ -30,6 +30,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -117,6 +118,43 @@ func TestDeployComplete(t *testing.T) {
 	})
 }
 
+func TestTestInProgress(t *testing.T) {
+	defer func() { handler = newHandler() }()
+
+	handler = newHandler()
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
+
+	wait(t, func() bool { return handler.getState().TestState.Status == NotStarted })
+	TestInProgress()
+	wait(t, func() bool { return handler.getState().TestState.Status == InProgress })
+}
+
+func TestTestFailed(t *testing.T) {
+	defer func() { handler = newHandler() }()
+
+	handler = newHandler()
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
+
+	wait(t, func() bool { return handler.getState().TestState.Status == NotStarted })
+	TestFailed("img", errors.New("BUG"))
+	wait(t, func() bool {
+		tState := handler.getState().TestState
+		color.Yellow.Fprintf(os.Stdout, "Priya_1 tState is: %s): ", tState)
+		return tState.Status == Failed && tState.StatusCode == proto.StatusCode_TEST_UNKNOWN
+	})
+}
+
+func TestTestComplete(t *testing.T) {
+	defer func() { handler = newHandler() }()
+
+	handler = newHandler()
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
+
+	wait(t, func() bool { return handler.getState().TestState.Status == NotStarted })
+	TestComplete()
+	wait(t, func() bool { return handler.getState().TestState.Status == Complete })
+}
+
 func TestBuildInProgress(t *testing.T) {
 	defer func() { handler = newHandler() }()
 
@@ -180,6 +218,22 @@ func TestPortForwarded(t *testing.T) {
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8081] == nil })
 	PortForwarded(8081, schemautil.FromString("http"), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8081] != nil })
+}
+
+// Ensure that port-forward event handling deals with a nil State.ForwardedPorts map.
+// See https://github.com/GoogleContainerTools/skaffold/issues/5612
+func TestPortForwarded_handleNil(t *testing.T) {
+	defer func() { handler = newHandler() }()
+
+	handler = newHandler()
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
+	handler.setState(handler.getState())
+
+	if handler.getState().ForwardedPorts != nil {
+		t.Error("ForwardPorts should be a nil map")
+	}
+	PortForwarded(8080, schemautil.FromInt(8888), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
+	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] != nil })
 }
 
 func TestStatusCheckEventStarted(t *testing.T) {
@@ -372,6 +426,7 @@ func TestResetStateOnBuild(t *testing.T) {
 				"image1": NotStarted,
 			},
 		},
+		TestState:        &proto.TestState{Status: NotStarted},
 		DeployState:      &proto.DeployState{Status: NotStarted},
 		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
 		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
@@ -497,6 +552,20 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 			},
 		},
 		{
+			description: "test failed",
+			state: proto.State{
+				BuildState: &proto.BuildState{},
+				TestState:  &proto.TestState{StatusCode: proto.StatusCode_TEST_UNKNOWN},
+			},
+			phase: sErrors.Test,
+			waitFn: func() bool {
+				handler.logLock.Lock()
+				logEntry := handler.eventLog[len(handler.eventLog)-1]
+				handler.logLock.Unlock()
+				return logEntry.Entry == fmt.Sprintf("Update failed with error code %v", proto.StatusCode_TEST_UNKNOWN)
+			},
+		},
+		{
 			description: "deploy failed",
 			state: proto.State{
 				BuildState:  &proto.BuildState{},
@@ -514,6 +583,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 			description: "status check failed",
 			state: proto.State{
 				BuildState:       &proto.BuildState{},
+				TestState:        &proto.TestState{StatusCode: proto.StatusCode_TEST_SUCCESS},
 				DeployState:      &proto.DeployState{StatusCode: proto.StatusCode_DEPLOY_SUCCESS},
 				StatusCheckState: &proto.StatusCheckState{StatusCode: proto.StatusCode_STATUSCHECK_UNHEALTHY},
 			},

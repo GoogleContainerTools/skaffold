@@ -106,3 +106,7 @@ func (c *mockConfig) PipelineForImage() latest.Pipeline {
 	pipeline.Build.Artifacts = c.artifacts
 	return pipeline
 }
+
+func (c *mockConfig) Artifacts() []*latest.Artifact {
+	return c.artifacts
+}

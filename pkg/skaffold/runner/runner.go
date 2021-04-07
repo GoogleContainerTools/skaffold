@@ -43,17 +43,18 @@ const (
 
 // Runner is responsible for running the skaffold build, test and deploy config.
 type Runner interface {
-	Dev(context.Context, io.Writer, []*latest.Artifact) error
+	Apply(context.Context, io.Writer) error
 	ApplyDefaultRepo(tag string) (string, error)
 	Build(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)
-	Test(context.Context, io.Writer, []build.Artifact) error
-	DeployAndLog(context.Context, io.Writer, []build.Artifact) error
-	GeneratePipeline(context.Context, io.Writer, []*latest.SkaffoldConfig, []string, string) error
-	Render(context.Context, io.Writer, []build.Artifact, bool, string) error
 	Cleanup(context.Context, io.Writer) error
-	Prune(context.Context, io.Writer) error
-	HasDeployed() bool
+	DeployAndLog(context.Context, io.Writer, []build.Artifact) error
+	Dev(context.Context, io.Writer, []*latest.Artifact) error
+	GeneratePipeline(context.Context, io.Writer, []*latest.SkaffoldConfig, []string, string) error
 	HasBuilt() bool
+	HasDeployed() bool
+	Prune(context.Context, io.Writer) error
+	Render(context.Context, io.Writer, []build.Artifact, bool, string) error
+	Test(context.Context, io.Writer, []build.Artifact) error
 }
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
@@ -66,13 +67,14 @@ type SkaffoldRunner struct {
 	monitor  filemon.Monitor
 	listener Listener
 
-	kubectlCLI    *kubectl.CLI
-	cache         cache.Cache
-	changeSet     changeSet
-	runCtx        *runcontext.RunContext
-	labeller      *label.DefaultLabeller
-	builds        []build.Artifact
-	artifactStore build.ArtifactStore
+	kubectlCLI         *kubectl.CLI
+	cache              cache.Cache
+	changeSet          changeSet
+	runCtx             *runcontext.RunContext
+	labeller           *label.DefaultLabeller
+	builds             []build.Artifact
+	artifactStore      build.ArtifactStore
+	sourceDependencies build.TransitiveSourceDependenciesCache
 	// podSelector is used to determine relevant pods for logging and portForwarding
 	podSelector *kubernetes.ImageList
 

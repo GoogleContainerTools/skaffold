@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta13
+apiVersion: skaffold/v2beta14
 kind: Config
 build:
   artifacts:
@@ -14,3 +14,10 @@ deploy:
  kubectl:
    manifests:
    - pod.yaml
+profiles:
+  - name: custom
+    test:
+      - image: custom-test-example
+        custom:
+          - command: echo "foo" > runtest
+

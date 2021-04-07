@@ -27,6 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -56,9 +57,12 @@ func New(cfg docker.Config, wd string, tc *latest.TestCase, imagesAreLocal func(
 
 // Test is the entrypoint for running structure tests
 func (cst *Runner) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
+	event.TestInProgress()
 	if err := cst.runStructureTests(ctx, out, bRes); err != nil {
+		event.TestFailed(cst.image, err)
 		return containerStructureTestErr(err)
 	}
+	event.TestComplete()
 	return nil
 }
 
@@ -89,7 +93,7 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, bRes []
 	cmd.Env = cst.env()
 
 	if err := util.RunCmd(cmd); err != nil {
-		return fmt.Errorf("error running ontainer-structure-test command: %w", err)
+		return fmt.Errorf("error running container-structure-test command: %w", err)
 	}
 
 	return nil

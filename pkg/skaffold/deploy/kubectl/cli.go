@@ -50,6 +50,7 @@ type Config interface {
 	ForceDeploy() bool
 	WaitForDeletions() config.WaitForDeletions
 	Mode() config.RunMode
+	HydratedManifests() []string
 }
 
 func NewCLI(cfg Config, flags latest.KubectlFlags, defaultNameSpace string) CLI {

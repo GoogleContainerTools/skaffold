@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
 func TestNewCustomTestRunner(t *testing.T) {
@@ -58,6 +59,7 @@ func TestNewCustomTestRunner(t *testing.T) {
 			workingDir: tmpDir.Root(),
 			tests:      []*latest.TestCase{testCase},
 		}
+		testEvent.InitializeState([]latest.Pipeline{{}})
 
 		testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 		t.CheckNoError(err)
@@ -119,6 +121,7 @@ func TestCustomCommandError(t *testing.T) {
 				workingDir: tmpDir.Root(),
 				tests:      []*latest.TestCase{testCase},
 			}
+			testEvent.InitializeState([]latest.Pipeline{{}})
 
 			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, test.custom)
 			t.CheckNoError(err)
@@ -156,6 +159,7 @@ func TestTestDependenciesCommand(t *testing.T) {
 			workingDir: tmpDir.Root(),
 			tests:      []*latest.TestCase{testCase},
 		}
+		testEvent.InitializeState([]latest.Pipeline{{}})
 
 		if runtime.GOOS == Windows {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
@@ -239,6 +243,7 @@ func TestTestDependenciesPaths(t *testing.T) {
 				workingDir: tmpDir.Root(),
 				tests:      []*latest.TestCase{testCase},
 			}
+			testEvent.InitializeState([]latest.Pipeline{{}})
 
 			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 			t.CheckNoError(err)
@@ -291,6 +296,7 @@ func TestGetEnv(t *testing.T) {
 				workingDir: tmpDir.Root(),
 				tests:      []*latest.TestCase{testCase},
 			}
+			testEvent.InitializeState([]latest.Pipeline{{}})
 
 			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 			t.CheckNoError(err)
