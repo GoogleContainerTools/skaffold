@@ -113,7 +113,7 @@ func (t *Trigger) Start(ctx context.Context) (<-chan bool, error) {
 				if !t.isActive() && t.Ignore(e) {
 					continue
 				}
-				logrus.Debugln("Change detected", e)
+				logrus.Debugln("Change detected", t.Ignore(e))
 
 				// Wait t.Ienterval before triggering.
 				// This way, rapid stream of events will be grouped.
@@ -131,7 +131,9 @@ func (t *Trigger) Start(ctx context.Context) (<-chan bool, error) {
 }
 
 // Ignore checks if the change detected is to be ignored or not.
-// Currently, returns false i.e Allows all files changed.
-func (t *Trigger) Ignore(_ notify.EventInfo) bool {
-	return false
+func (t *Trigger) Ignore(e notify.EventInfo) bool {
+	if e == nil {
+		return true
+	}
+	return !t.hidden(e.Path())
 }
