@@ -18,15 +18,17 @@ package initializer
 
 import (
 	"fmt"
+	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-var (
-	initTestCases = []struct {
+func TestInitProblems(t *testing.T) {
+	initTestCases := []struct {
 		description string
 		opts        config.SkaffoldOptions
 		phase       constants.Phase
@@ -111,4 +113,12 @@ var (
 			},
 		},
 	}
-)
+	for _, test := range initTestCases {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual := sErrors.ShowAIError(nil, test.err)
+			t.CheckDeepEqual(test.expected, actual.Error())
+			actualAE := sErrors.ActionableErr(nil, sErrors.Init, test.err)
+			t.CheckDeepEqual(test.expectedAE, actualAE)
+		})
+	}
+}

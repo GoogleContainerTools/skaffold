@@ -32,10 +32,11 @@ const (
 	dockerConnectionFailed = ".*(Cannot connect to the Docker daemon.*) Is"
 
 	// Build cancelled due to other build failures
-	buildCancelled = ".*context canceled.*"
+	buildCancelled = ".*globalRepo canceled.*"
 )
 
 var (
+	nilSuggestions = func(cfg interface{}) []*proto.Suggestion { return nil }
 	// for testing
 	getConfigForCurrentContext = config.GetConfigForCurrentKubectx
 )
@@ -48,7 +49,7 @@ func re(s string) *regexp.Regexp {
 func init() {
 	sErrors.AddPhaseProblems(sErrors.Build, []sErrors.Problem{
 		{
-			Regexp:  re(fmt.Sprintf(".*%s.* denied: .*", pushImageErr)),
+			Regexp:  re(fmt.Sprintf(".*%s.* denied: .*", PushImageErr)),
 			ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
 			Description: func(error) string {
 				return "Build Failed. No push access to specified image repository"
@@ -61,9 +62,10 @@ func init() {
 			Description: func(error) string {
 				return "Build Cancelled."
 			},
+			Suggestion: nilSuggestions,
 		},
 		{
-			Regexp: re(fmt.Sprintf(".*%s.* unknown: Project", pushImageErr)),
+			Regexp: re(fmt.Sprintf(".*%s.* unknown: Project", PushImageErr)),
 			Description: func(error) string {
 				return "Build Failed"
 			},
@@ -109,8 +111,8 @@ func suggestBuildPushAccessDeniedAction(cfg interface{}) []*proto.Suggestion {
 	}
 
 	// check if global repo is set
-	if cfg, err := getConfigForCurrentContext(buildCfg.GlobalConfig()); err == nil {
-		if defaultRepo := cfg.DefaultRepo; defaultRepo != "" {
+	if gCfg, err := getConfigForCurrentContext(buildCfg.GlobalConfig()); err == nil {
+		if defaultRepo := gCfg.DefaultRepo; defaultRepo != "" {
 			suggestions := []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_DEFAULT_REPO_GLOBAL_CONFIG,
 				Action:         "Check your default-repo setting in skaffold config",

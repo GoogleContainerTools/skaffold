@@ -58,15 +58,14 @@ func (p Problem) Error() string {
 	return description
 }
 
-func (p Problem) AIError(i interface{}) string {
-	if suggestions := p.Suggestion(i); suggestions != nil {
-		return fmt.Sprintf("%s. %s", strings.Trim(p.Error(), "."), concatSuggestions(suggestions))
-	}
-	return p.Error()
-}
-
-func (p Problem) withConfigAndErr(err error) Problem {
+func (p Problem) AIError(i interface{}, err error) error {
 	p.Err = err
+	if p.Suggestion == nil {
+		return p
+	}
+	if suggestions := p.Suggestion(i); suggestions != nil {
+		return fmt.Errorf("%s. %s", strings.Trim(p.Error(), "."), concatSuggestions(suggestions))
+	}
 	return p
 }
 

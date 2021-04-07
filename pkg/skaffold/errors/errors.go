@@ -45,9 +45,8 @@ var (
 
 type Phase string
 
-
 // ActionableErr returns an actionable error message with suggestions
-func ActionableErr(phase constants.Phase, cfg interface{}, err error) *proto.ActionableErr {
+func ActionableErr(cfg interface{}, phase constants.Phase, err error) *proto.ActionableErr {
 	errCode, suggestions := getErrorCodeFromError(phase, cfg, err)
 	return &proto.ActionableErr{
 		ErrCode:     errCode,
@@ -57,7 +56,7 @@ func ActionableErr(phase constants.Phase, cfg interface{}, err error) *proto.Act
 }
 
 // ActionableErrV2 returns an actionable error message with suggestions
-func ActionableErrV2(phase constants.Phase, cfg interface{}, err error) *protoV2.ActionableErr {
+func ActionableErrV2(cfg interface{}, phase constants.Phase, err error) *protoV2.ActionableErr {
 	errCode, suggestions := getErrorCodeFromError(phase, cfg, err)
 	suggestionsV2 := make([]*protoV2.Suggestion, len(suggestions))
 	for i, suggestion := range suggestions {
@@ -71,7 +70,7 @@ func ActionableErrV2(phase constants.Phase, cfg interface{}, err error) *protoV2
 	}
 }
 
-func ShowAIError(err error) error {
+func ShowAIError(cfg interface{}, err error) error {
 	if IsSkaffoldErr(err) {
 		instrumentation.SetErrorCode(err.(Error).StatusCode())
 		return err
@@ -86,14 +85,14 @@ func ShowAIError(err error) error {
 		for _, p := range problems {
 			if p.Regexp.MatchString(err.Error()) {
 				instrumentation.SetErrorCode(p.ErrCode)
-				return p.withConfigAndErr(err)
+				return p.AIError(cfg, err)
 			}
 		}
 	}
 	return err
 }
 
-func getErrorCodeFromError(phase constants.Phase, cfg interface{}, err error) (proto.StatusCode, []*proto.Suggestion) {
+func getErrorCodeFromError(cfg interface{}, phase constants.Phase, err error) (proto.StatusCode, []*proto.Suggestion) {
 	var sErr Error
 	if errors.As(err, &sErr) {
 		return sErr.StatusCode(), sErr.Suggestions()
@@ -106,7 +105,7 @@ func getErrorCodeFromError(phase constants.Phase, cfg interface{}, err error) (p
 			}
 		}
 	}
-	return unknownErrForPhase(phase), nil
+	return unknownErrForPhase(phase), ReportIssueSuggestion(cfg)
 }
 
 func concatSuggestions(suggestions []*proto.Suggestion) string {

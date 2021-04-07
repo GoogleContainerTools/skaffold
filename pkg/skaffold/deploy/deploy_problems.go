@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
-
 func suggestDeployFailedAction(cfg interface{}) []*proto.Suggestion {
 	deployCfg, ok := cfg.(types.Config)
 	if !ok {
@@ -40,7 +39,7 @@ func suggestDeployFailedAction(cfg interface{}) []*proto.Suggestion {
 		}
 		return []*proto.Suggestion{{
 			SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
-			Action:         fmt.Sprintf("Check if minikube is running using `%s` command and try again.", command),
+			Action:         fmt.Sprintf("Check if minikube is running using %q command and try again.", command),
 		}}
 	}
 
@@ -65,7 +64,7 @@ func init() {
 				if match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err)); len(match) >= 2 {
 					return fmt.Sprintf("Deploy Failed. Could not connect to cluster due to %s", match[1])
 				}
-				return fmt.Sprintf("Deploy Failed. Could not connect to cluster.")
+				return "Deploy Failed. Could not connect to cluster."
 			},
 			Suggestion: suggestDeployFailedAction,
 		},

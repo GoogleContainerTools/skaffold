@@ -69,6 +69,7 @@ func newHandler() *eventHandler {
 type eventHandler struct {
 	eventLog []proto.LogEntry
 	logLock  sync.Mutex
+	cfg      Config
 
 	state     proto.State
 	stateLock sync.Mutex
@@ -196,6 +197,7 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
 func InitializeState(cfg Config) {
+	handler.cfg = cfg
 	handler.setState(emptyState(cfg))
 }
 
@@ -206,7 +208,7 @@ func DeployInProgress() {
 
 // DeployFailed notifies that non-fatal errors were encountered during a deployment.
 func DeployFailed(err error) {
-	aiErr := sErrors.ActionableErr(constants.Deploy, err)
+	aiErr := sErrors.ActionableErr(handler.cfg, constants.Deploy, err)
 	handler.stateLock.Lock()
 	handler.state.DeployState.StatusCode = aiErr.ErrCode
 	handler.stateLock.Unlock()
@@ -323,7 +325,7 @@ func BuildCanceled(imageName string) {
 
 // BuildFailed notifies that a build has failed.
 func BuildFailed(imageName string, err error) {
-	aiErr := sErrors.ActionableErr(constants.Build, err)
+	aiErr := sErrors.ActionableErr(handler.cfg, constants.Build, err)
 	handler.handleBuildEvent(&proto.BuildEvent{
 		Artifact:      imageName,
 		Status:        Failed,
@@ -349,7 +351,7 @@ func TestCanceled() {
 
 // TestFailed notifies that a test has failed.
 func TestFailed(imageName string, err error) {
-	aiErr := sErrors.ActionableErr(constants.Test, err)
+	aiErr := sErrors.ActionableErr(handler.cfg, constants.Test, err)
 	handler.stateLock.Lock()
 	handler.state.TestState.StatusCode = aiErr.ErrCode
 	handler.stateLock.Unlock()
@@ -397,7 +399,7 @@ func DevLoopFailedInPhase(iteration int, phase constants.Phase, err error) {
 	case constants.Test:
 		DevLoopFailedWithErrorCode(iteration, state.TestState.StatusCode, err)
 	default:
-		ai := sErrors.ActionableErr(phase, err)
+		ai := sErrors.ActionableErr(handler.cfg, phase, err)
 		DevLoopFailedWithErrorCode(iteration, ai.ErrCode, err)
 	}
 }
@@ -414,7 +416,7 @@ func FileSyncInProgress(fileCount int, image string) {
 
 // FileSyncFailed notifies that a file sync has failed.
 func FileSyncFailed(fileCount int, image string, err error) {
-	aiErr := sErrors.ActionableErr(constants.Sync, err)
+	aiErr := sErrors.ActionableErr(handler.cfg, constants.Sync, err)
 	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed,
 		Err: err.Error(), ErrCode: aiErr.ErrCode, ActionableErr: aiErr})
 }
@@ -793,7 +795,7 @@ func AutoTriggerDiff(name string, val bool) (bool, error) {
 
 // BuildSequenceFailed notifies that the build sequence has failed.
 func BuildSequenceFailed(err error) {
-	aiErr := sErrors.ActionableErr(constants.Build, err)
+	aiErr := sErrors.ActionableErr(handler.cfg, constants.Build, err)
 	handler.stateLock.Lock()
 	handler.state.BuildState.StatusCode = aiErr.ErrCode
 	handler.stateLock.Unlock()
@@ -804,7 +806,7 @@ func InititializationFailed(err error) {
 		EventType: &proto.Event_TerminationEvent{
 			TerminationEvent: &proto.TerminationEvent{
 				Status: Failed,
-				Err:    sErrors.ActionableErr(constants.Init, err),
+				Err:    sErrors.ActionableErr(handler.cfg, constants.Init, err),
 			},
 		},
 	})

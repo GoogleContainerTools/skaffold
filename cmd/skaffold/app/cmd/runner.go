@@ -45,6 +45,8 @@ import (
 // For tests
 var createRunner = createNewRunner
 
+var runCtxErr *runcontext.RunContext
+
 func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, []*latest.SkaffoldConfig) error) error {
 	runner, config, err := createRunner(out, opts)
 	if err != nil {
@@ -53,16 +55,16 @@ func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, [
 
 	err = action(runner, config)
 
-	return alwaysSucceedWhenCancelled(ctx, err)
+	return alwaysSucceedWhenCancelled(ctx, runCtxErr, err)
 }
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
 func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
 	runCtx, configs, err := runContext(out, opts)
+	runCtxErr = runCtx
 	if err != nil {
 		return nil, nil, err
 	}
-	sErrors.SetRunContext(*runCtx)
 
 	instrumentation.InitMeterFromConfig(configs)
 	runner, err := runner.NewForConfig(runCtx)

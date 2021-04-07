@@ -19,6 +19,8 @@ package deploy
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -27,22 +29,25 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 	tests := []struct {
 		description string
 		context     string
+		isMinikube  bool
 		expected    []*proto.Suggestion
 	}{
 		{
 			description: "minikube status",
 			context:     "minikube",
+			isMinikube:  true,
 			expected: []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
-				Action:         "Check if minikube is running using `minikube status` command and try again.",
+				Action:         "Check if minikube is running using \"minikube status\" command and try again.",
 			}},
 		},
 		{
 			description: "minikube status named ctx",
 			context:     "test_cluster",
+			isMinikube:  true,
 			expected: []*proto.Suggestion{{
 				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
-				Action:         "Check if minikube is running using `minikube status -p test_cluster` command and try again.",
+				Action:         "Check if minikube is running using \"minikube status -p test_cluster\" command and try again.",
 			}},
 		},
 		{
@@ -56,15 +61,29 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := suggestDeployFailedAction(mockConfig{minikube: test.context})
+			cfg := mockConfig{kubeContext: test.context}
+			if test.isMinikube {
+				cfg.minikube = test.context
+			}
+			actual := suggestDeployFailedAction(cfg)
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }
 
-type mockConfig struct{
-	minikube string
+type mockConfig struct {
+	minikube    string
+	kubeContext string
 }
 
-func (m mockConfig) MiniKubeProfile() string { return m.minikube }
-
+func (m mockConfig) MinikubeProfile() string                { return m.minikube }
+func (m mockConfig) GetPipelines() []latest.Pipeline        { return []latest.Pipeline{} }
+func (m mockConfig) GetWorkingDir() string                  { return "" }
+func (m mockConfig) GlobalConfig() string                   { return "" }
+func (m mockConfig) ConfigurationFile() string              { return "" }
+func (m mockConfig) DefaultRepo() *string                   { return &m.minikube }
+func (m mockConfig) SkipRender() bool                       { return true }
+func (m mockConfig) Prune() bool                            { return true }
+func (m mockConfig) GetKubeContext() string                 { return m.kubeContext }
+func (m mockConfig) GetInsecureRegistries() map[string]bool { return map[string]bool{} }
+func (m mockConfig) Mode() config.RunMode                   { return config.RunModes.Dev }

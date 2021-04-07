@@ -234,7 +234,7 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, cfg Config) (
 				img, err := RetrieveImage(from.image, cfg)
 				if err == nil {
 					workdir = img.Config.WorkingDir
-				} else if _, err, ok := isOldImageManifestProblem(cfg, err); !ok {
+				} else if _, ok, err := isOldImageManifestProblem(cfg, err); !ok {
 					return nil, err
 				}
 				if workdir == "" {
@@ -337,13 +337,13 @@ func expandOnbuildInstructions(nodes []*parser.Node, cfg Config) ([]*parser.Node
 				onbuildNodes = []*parser.Node{}
 			} else if ons, err := parseOnbuild(from.image, cfg); err == nil {
 				onbuildNodes = ons
-			} else if warnMsg, _, ok := isOldImageManifestProblem(cfg, err); ok && warnMsg != "" {
+			} else if warnMsg, ok, _ := isOldImageManifestProblem(cfg, err); ok && warnMsg != "" {
 				logrus.Warn(warnMsg)
 			} else if !ok {
 				return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
 			}
 
-			// Stage names 	are case insensitive
+			// Stage names are case insensitive
 			onbuildNodesCache[strings.ToLower(from.as)] = nodes
 			onbuildNodesCache[strings.ToLower(from.image)] = nodes
 
@@ -439,12 +439,12 @@ func validateParsedDockerfile(r io.Reader, res *parser.Result) error {
 	return err
 }
 
-func isOldImageManifestProblem(cfg Config, err error) (string, error, bool) {
+func isOldImageManifestProblem(cfg Config, err error) (string, bool, error) {
 	// regex for detecting old manifest images
 	retrieveFailedOldManifest := `(.*retrieving image.*\"(.*)\")?.*unsupported MediaType.*manifest\.v1\+prettyjws.*`
 	matchExp := regexp.MustCompile(retrieveFailedOldManifest)
 	if !matchExp.MatchString(err.Error()) {
-		return "", nil, false
+		return "", false, nil
 	}
 	p := sErrors.Problem{
 		Description: func(err error) string {
@@ -471,5 +471,9 @@ func isOldImageManifestProblem(cfg Config, err error) (string, error, bool) {
 		},
 		Err: err,
 	}
-	return p.AIError(cfg), p, false
+	var warnMsg string
+	if cfg.Mode() == config.RunModes.Dev || cfg.Mode() == config.RunModes.Debug {
+		warnMsg = p.AIError(cfg, err).Error()
+	}
+	return warnMsg, true, p
 }

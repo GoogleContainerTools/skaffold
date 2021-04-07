@@ -31,7 +31,6 @@ type Config interface {
 	GlobalConfig() string
 	ConfigurationFile() string
 	DefaultRepo() *string
-	MinikubeProfile() string
 	SkipRender() bool
 }
 
