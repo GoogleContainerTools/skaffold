@@ -19,11 +19,11 @@ package v2
 import (
 	"context"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	event "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
