@@ -25,12 +25,14 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/util/homedir"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 var GetClient = getClient
@@ -39,6 +41,7 @@ var GetClient = getClient
 var (
 	minikubeBinaryFunc = minikubeBinary
 	getClusterInfo     = context.GetClusterInfo
+	versionCheckFunc   = versionCheck
 )
 
 type Client interface {
@@ -93,7 +96,35 @@ func minikubeExec(arg ...string) (*exec.Cmd, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getting minikube executable: %w", err)
 	}
+
+	minVer, err := versionCheckFunc()
+	if err != nil {
+		return nil, err
+	}
+	if minVer {
+		arg = append(arg, "--user=skaffold")
+	}
 	return exec.Command(b, arg...), nil
+}
+
+// versionCheck checks if the minikube version meet the minimum requirements for the user flag
+func versionCheck() (bool, error) {
+	cmd := exec.Command("minikube", "version")
+	out, err := util.RunCmdOut(cmd)
+	if err != nil {
+		return false, err
+	}
+
+	currentVersion, err := version.ParseVersion(string(out))
+	if err != nil {
+		return false, err
+	}
+
+	versionWithFlag, err := semver.Make(constants.MinikubeVersionWithUserFlag)
+	if err != nil {
+		return false, err
+	}
+	return currentVersion.GE(versionWithFlag), nil
 }
 
 func minikubeBinary() (string, error) {

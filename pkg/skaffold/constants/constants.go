@@ -51,6 +51,8 @@ const (
 	DefaultRPCPort     = 50051
 	DefaultRPCHTTPPort = 50052
 
+	MinikubeVersionWithUserFlag = "1.18.0"
+
 	DefaultPortForwardAddress = "127.0.0.1"
 
 	DefaultProjectDescriptor = "project.toml"
