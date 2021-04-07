@@ -31,6 +31,7 @@ import (
 
 const (
 	// These are phases in a Skaffolld
+	DevLoop     = Phase("DevLoop")
 	Init        = Phase("Init")
 	Build       = Phase("Build")
 	Test        = Phase("Test")

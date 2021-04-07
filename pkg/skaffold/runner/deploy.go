@@ -22,7 +22,6 @@ import (
 	"io"
 	"time"
 
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd/api"
 
@@ -30,7 +29,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -83,12 +84,12 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	event.DeployInProgress()
-	eventV2.TaskInProgress("Deploy", r.devIteration)
+	eventV2.TaskInProgress(sErrors.Deploy, r.devIteration)
 	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
-		eventV2.TaskFailed("Deploy", r.devIteration, err)
+		eventV2.TaskFailed(sErrors.Deploy, r.devIteration, err)
 		return err
 	}
 
@@ -100,7 +101,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return err
 	}
 	event.DeployComplete()
-	eventV2.TaskSucceeded("Deploy", r.devIteration)
+	eventV2.TaskSucceeded(sErrors.Deploy, r.devIteration)
 	r.runCtx.UpdateNamespaces(namespaces)
 	sErr := r.performStatusCheck(ctx, statusCheckOut)
 	return sErr
