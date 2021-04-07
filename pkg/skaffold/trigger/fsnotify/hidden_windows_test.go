@@ -19,6 +19,7 @@ package fsnotify
 import (
 	"fmt"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
