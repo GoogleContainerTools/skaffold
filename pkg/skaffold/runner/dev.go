@@ -51,7 +51,7 @@ var (
 
 func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kubernetes.LogAggregator, forwarderManager portforward.Forwarder) error {
 	// never queue intents from user, even if they're not used
-	defer r.intents.Reset()
+	defer r.intents.reset()
 
 	if r.changeSet.needsReload {
 		return ErrorConfigurationChanged
