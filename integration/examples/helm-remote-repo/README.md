@@ -11,3 +11,10 @@ deploy:
       repo: https://charts.bitnami.com/bitnami 
       remoteChart: redis
 ```
+
+This is the equivalent of the following on helm CLI:
+
+```bash
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install redis-release bitnami/redis
+```
