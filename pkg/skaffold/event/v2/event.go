@@ -23,6 +23,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
@@ -241,20 +242,20 @@ func emptyStatusCheckState() *proto.StatusCheckState {
 	}
 }
 
-func AutoTriggerDiff(phase sErrors.Phase, val bool) (bool, error) {
+func AutoTriggerDiff(phase constants.Phase, val bool) (bool, error) {
 	switch phase {
-	case sErrors.Build:
+	case constants.Build:
 		return val != handler.getState().BuildState.AutoTrigger, nil
-	case sErrors.Sync:
+	case constants.Sync:
 		return val != handler.getState().FileSyncState.AutoTrigger, nil
-	case sErrors.Deploy:
+	case constants.Deploy:
 		return val != handler.getState().DeployState.AutoTrigger, nil
 	default:
 		return false, fmt.Errorf("unknown phase %v not found in handler state", phase)
 	}
 }
 
-func TaskInProgress(task sErrors.Phase, iteration int) {
+func TaskInProgress(task constants.Phase, iteration int) {
 	handler.handleTaskEvent(&proto.TaskEvent{
 		Id:        fmt.Sprintf("%s-%d", task, iteration),
 		Task:      string(task),
@@ -263,7 +264,7 @@ func TaskInProgress(task sErrors.Phase, iteration int) {
 	})
 }
 
-func TaskFailed(task sErrors.Phase, iteration int, err error) {
+func TaskFailed(task constants.Phase, iteration int, err error) {
 	ae := sErrors.ActionableErrV2(task, err)
 	handler.handleTaskEvent(&proto.TaskEvent{
 		Id:            fmt.Sprintf("%s-%d", task, iteration),
@@ -274,7 +275,7 @@ func TaskFailed(task sErrors.Phase, iteration int, err error) {
 	})
 }
 
-func TaskSucceeded(task sErrors.Phase, iteration int) {
+func TaskSucceeded(task constants.Phase, iteration int) {
 	handler.handleTaskEvent(&proto.TaskEvent{
 		Id:        fmt.Sprintf("%s-%d", task, iteration),
 		Task:      string(task),

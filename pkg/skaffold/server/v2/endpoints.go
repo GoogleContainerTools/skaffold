@@ -19,11 +19,11 @@ package v2
 import (
 	"context"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	event "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
@@ -72,18 +72,18 @@ func (s *Server) Execute(ctx context.Context, request *proto.UserIntentRequest) 
 }
 
 func (s *Server) AutoBuild(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
-	return executeAutoTrigger(sErrors.Build, request, event.UpdateStateAutoBuildTrigger, event.ResetStateOnBuild, s.AutoBuildCallback)
+	return executeAutoTrigger(constants.Build, request, event.UpdateStateAutoBuildTrigger, event.ResetStateOnBuild, s.AutoBuildCallback)
 }
 
 func (s *Server) AutoDeploy(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
-	return executeAutoTrigger(sErrors.Deploy, request, event.UpdateStateAutoDeployTrigger, event.ResetStateOnDeploy, s.AutoDeployCallback)
+	return executeAutoTrigger(constants.Deploy, request, event.UpdateStateAutoDeployTrigger, event.ResetStateOnDeploy, s.AutoDeployCallback)
 }
 
 func (s *Server) AutoSync(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
-	return executeAutoTrigger(sErrors.Sync, request, event.UpdateStateAutoSyncTrigger, func() {}, s.AutoSyncCallback)
+	return executeAutoTrigger(constants.Sync, request, event.UpdateStateAutoSyncTrigger, func() {}, s.AutoSyncCallback)
 }
 
-func executeAutoTrigger(triggerName sErrors.Phase, request *proto.TriggerRequest, updateTriggerStateFunc func(bool), resetPhaseStateFunc func(), serverCallback func(bool)) (res *empty.Empty, err error) {
+func executeAutoTrigger(triggerName constants.Phase, request *proto.TriggerRequest, updateTriggerStateFunc func(bool), resetPhaseStateFunc func(), serverCallback func(bool)) (res *empty.Empty, err error) {
 	res = &empty.Empty{}
 
 	trigger := request.GetState().GetEnabled()
