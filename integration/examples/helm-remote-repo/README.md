@@ -1,6 +1,6 @@
 ### Example: deploy remote helm chart
 
-This example shows how to deploy a remote helm chart from a remote repo. This can be helpful  for consuming other helm packages as part of your app.
+This example shows how to deploy a remote helm chart from a remote repo. This can be helpful for consuming other helm packages as part of your app.
 
 
 ```yaml
