@@ -110,7 +110,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.CacheArtifacts,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "render"},
 		IsEnum:        true,
 	},
 	{
