@@ -20,6 +20,8 @@ import (
 	"os"
 	"strings"
 	"syscall"
+
+	"github.com/sirupsen/logrus"
 )
 
 // For Testing
