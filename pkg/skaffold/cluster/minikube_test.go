@@ -31,65 +31,57 @@ import (
 func TestClientImpl_IsMinikube(t *testing.T) {
 	home := homedir.HomeDir()
 	tests := []struct {
-		description          string
-		kubeContext          string
-		certPath             string
-		serverURL            string
-		minikubeProfileCmd   util.Command
-		minikubeNotInPath    bool
-		expected             bool
-		minikubeWithUserFlag bool
+		description        string
+		kubeContext        string
+		certPath           string
+		serverURL          string
+		minikubeProfileCmd util.Command
+		minikubeNotInPath  bool
+		expected           bool
 	}{
 		{
-			description:          "context is 'minikube'",
-			kubeContext:          "minikube",
-			expected:             true,
-			minikubeWithUserFlag: true,
+			description: "context is 'minikube'",
+			kubeContext: "minikube",
+			expected:    true,
 		},
 		{
-			description:          "'minikube' binary not found",
-			kubeContext:          "test-cluster",
-			minikubeNotInPath:    true,
-			expected:             false,
-			minikubeWithUserFlag: true,
+			description:       "'minikube' binary not found",
+			kubeContext:       "test-cluster",
+			minikubeNotInPath: true,
+			expected:          false,
 		},
 		{
-			description:          "cluster cert inside minikube dir",
-			kubeContext:          "test-cluster",
-			certPath:             filepath.Join(home, ".minikube", "ca.crt"),
-			expected:             true,
-			minikubeWithUserFlag: true,
+			description: "cluster cert inside minikube dir",
+			kubeContext: "test-cluster",
+			certPath:    filepath.Join(home, ".minikube", "ca.crt"),
+			expected:    true,
 		},
 		{
-			description:          "cluster cert outside minikube dir",
-			kubeContext:          "test-cluster",
-			minikubeProfileCmd:   testutil.CmdRunOut("minikube profile list -o json --user=skaffold", fmt.Sprintf(profileStr, "test-cluster", "docker", "172.17.0.3", 8443)),
-			certPath:             filepath.Join(home, "foo", "ca.crt"),
-			expected:             false,
-			minikubeWithUserFlag: true,
+			description:        "cluster cert outside minikube dir",
+			kubeContext:        "test-cluster",
+			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json --user=skaffold", fmt.Sprintf(profileStr, "test-cluster", "docker", "172.17.0.3", 8443)),
+			certPath:           filepath.Join(home, "foo", "ca.crt"),
+			expected:           false,
 		},
 		{
-			description:          "minikube node ip matches api server url",
-			kubeContext:          "test-cluster",
-			serverURL:            "https://192.168.64.10:8443",
-			minikubeProfileCmd:   testutil.CmdRunOut("minikube profile list -o json --user=skaffold", fmt.Sprintf(profileStr, "test-cluster", "hyperkit", "192.168.64.10", 8443)),
-			expected:             true,
-			minikubeWithUserFlag: true,
+			description:        "minikube node ip matches api server url",
+			kubeContext:        "test-cluster",
+			serverURL:          "https://192.168.64.10:8443",
+			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json --user=skaffold", fmt.Sprintf(profileStr, "test-cluster", "hyperkit", "192.168.64.10", 8443)),
+			expected:           true,
 		},
 		{
-			description:          "cannot parse minikube profile list",
-			kubeContext:          "test-cluster",
-			minikubeProfileCmd:   testutil.CmdRunOut("minikube profile list -o json --user=skaffold", `Random error`),
-			expected:             false,
-			minikubeWithUserFlag: true,
+			description:        "cannot parse minikube profile list",
+			kubeContext:        "test-cluster",
+			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json --user=skaffold", `Random error`),
+			expected:           false,
 		},
 		{
-			description:          "minikube node ip different from api server url",
-			kubeContext:          "test-cluster",
-			serverURL:            "https://192.168.64.10:8443",
-			minikubeProfileCmd:   testutil.CmdRunOut("minikube profile list -o json --user=skaffold", fmt.Sprintf(profileStr, "test-cluster", "hyperkit", "192.168.64.11", 8443)),
-			expected:             false,
-			minikubeWithUserFlag: true,
+			description:        "minikube node ip different from api server url",
+			kubeContext:        "test-cluster",
+			serverURL:          "https://192.168.64.10:8443",
+			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json --user=skaffold", fmt.Sprintf(profileStr, "test-cluster", "hyperkit", "192.168.64.11", 8443)),
+			expected:           false,
 		},
 	}
 
@@ -100,7 +92,7 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 			} else {
 				t.Override(&minikubeBinaryFunc, func() (string, error) { return "minikube", nil })
 			}
-			t.Override(&supportsUserFlagFunc, func() (bool, error) { return test.minikubeWithUserFlag, nil })
+			t.Override(&supportsUserFlagFunc, func() (bool, error) { return true, nil })
 			t.Override(&util.DefaultExecCommand, test.minikubeProfileCmd)
 			t.Override(&getClusterInfo, func(string) (*clientcmdapi.Cluster, error) {
 				return &clientcmdapi.Cluster{
