@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -68,7 +69,11 @@ func TestDateTime_GenerateTag(t *testing.T) {
 				timeFn:   func() time.Time { return test.buildTime },
 			}
 
-			tag, err := c.GenerateTag(".", "test")
+			image := latest.Artifact{
+				ImageName: "test",
+			}
+
+			tag, err := c.GenerateTag(image)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, tag)
 		})

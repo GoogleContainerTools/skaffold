@@ -22,9 +22,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 )
 
 // Apply sends Kubernetes manifests to the cluster.
@@ -42,7 +42,7 @@ func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
 	return sErr
 }
 
-func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, artifacts, localImages []build.Artifact) error {
+func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, artifacts, localImages []graph.Artifact) error {
 	// Check that the cluster is reachable.
 	// This gives a better error message when the cluster can't
 	// be reached.

@@ -19,11 +19,11 @@ package runner
 import (
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
 
-func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []build.Artifact) *kubernetes.LogAggregator {
+func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []graph.Artifact) *kubernetes.LogAggregator {
 	if !r.runCtx.Tail() {
 		return nil
 	}

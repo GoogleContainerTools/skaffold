@@ -24,9 +24,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 )
 
-func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool, filepath string) error {
+func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
 	// Fetch the digest and append it to the tag with the format of "tag@digest"
 	if r.runCtx.DigestSource() == remoteDigestSource {
 		for i, a := range builds {

@@ -22,7 +22,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -55,12 +54,9 @@ func TestNewRunner(t *testing.T) {
 		}
 		testEvent.InitializeState([]latest.Pipeline{{}})
 
-		testRunner, err := New(cfg, cfg.workingDir, testCase, func(imageName string) (bool, error) { return true, nil })
+		testRunner, err := New(cfg, cfg.workingDir, testCase, true)
 		t.CheckNoError(err)
-		err = testRunner.Test(context.Background(), ioutil.Discard, []build.Artifact{{
-			ImageName: "image",
-			Tag:       "image:tag",
-		}})
+		err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
 		t.CheckNoError(err)
 	})
 }
@@ -85,7 +81,7 @@ func TestIgnoreDockerNotFound(t *testing.T) {
 			StructureTests: []string{"test.yaml"},
 		}
 
-		testRunner, err := New(cfg, cfg.workingDir, testCase, func(imageName string) (bool, error) { return true, nil })
+		testRunner, err := New(cfg, cfg.workingDir, testCase, true)
 		t.CheckError(true, err)
 		t.CheckNil(testRunner)
 	})

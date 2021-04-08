@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -413,7 +414,7 @@ type mockBuilderContext struct {
 	mode                  config.RunMode
 	cluster               config.Cluster
 	artifactStore         build.ArtifactStore
-	sourceDepsResolver    func() build.TransitiveSourceDependenciesCache
+	sourceDepsResolver    func() graph.TransitiveSourceDependenciesCache
 }
 
 func (c *mockBuilderContext) Mode() config.RunMode {
@@ -428,7 +429,7 @@ func (c *mockBuilderContext) ArtifactStore() build.ArtifactStore {
 	return c.artifactStore
 }
 
-func (c *mockBuilderContext) SourceDependenciesResolver() build.TransitiveSourceDependenciesCache {
+func (c *mockBuilderContext) SourceDependenciesResolver() graph.TransitiveSourceDependenciesCache {
 	if c.sourceDepsResolver != nil {
 		return c.sourceDepsResolver()
 	}

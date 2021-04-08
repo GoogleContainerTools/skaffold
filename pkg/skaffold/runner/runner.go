@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -38,23 +39,22 @@ import (
 const (
 	remoteDigestSource = "remote"
 	noneDigestSource   = "none"
-	tagDigestSource    = "tag"
 )
 
 // Runner is responsible for running the skaffold build, test and deploy config.
 type Runner interface {
 	Apply(context.Context, io.Writer) error
 	ApplyDefaultRepo(tag string) (string, error)
-	Build(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)
+	Build(context.Context, io.Writer, []*latest.Artifact) ([]graph.Artifact, error)
 	Cleanup(context.Context, io.Writer) error
-	DeployAndLog(context.Context, io.Writer, []build.Artifact) error
 	Dev(context.Context, io.Writer, []*latest.Artifact) error
+	DeployAndLog(context.Context, io.Writer, []graph.Artifact) error
 	GeneratePipeline(context.Context, io.Writer, []*latest.SkaffoldConfig, []string, string) error
 	HasBuilt() bool
 	HasDeployed() bool
 	Prune(context.Context, io.Writer) error
-	Render(context.Context, io.Writer, []build.Artifact, bool, string) error
-	Test(context.Context, io.Writer, []build.Artifact) error
+	Render(context.Context, io.Writer, []graph.Artifact, bool, string) error
+	Test(context.Context, io.Writer, []graph.Artifact) error
 }
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
@@ -72,9 +72,9 @@ type SkaffoldRunner struct {
 	changeSet          changeSet
 	runCtx             *runcontext.RunContext
 	labeller           *label.DefaultLabeller
-	builds             []build.Artifact
+	builds             []graph.Artifact
 	artifactStore      build.ArtifactStore
-	sourceDependencies build.TransitiveSourceDependenciesCache
+	sourceDependencies graph.TransitiveSourceDependenciesCache
 	// podSelector is used to determine relevant pods for logging and portForwarding
 	podSelector *kubernetes.ImageList
 

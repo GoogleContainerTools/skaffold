@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -30,9 +30,9 @@ func TestGetArtifacts(t *testing.T) {
 	tests := []struct {
 		description string
 		artifacts   []*latest.Artifact
-		fromFile    []build.Artifact
-		fromCLI     []build.Artifact
-		expected    []build.Artifact
+		fromFile    []graph.Artifact
+		fromCLI     []graph.Artifact
+		expected    []graph.Artifact
 		customTag   string
 		shouldErr   bool
 	}{
@@ -41,41 +41,41 @@ func TestGetArtifacts(t *testing.T) {
 			artifacts:   nil,
 			fromFile:    nil,
 			fromCLI:     nil,
-			expected:    []build.Artifact(nil),
+			expected:    []graph.Artifact(nil),
 		},
 		{
 			description: "from file",
 			artifacts:   []*latest.Artifact{{ImageName: "image"}},
-			fromFile:    []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			fromFile:    []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
 			fromCLI:     nil,
-			expected:    []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			expected:    []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
 		},
 		{
 			description: "from CLI",
 			artifacts:   []*latest.Artifact{{ImageName: "image"}},
 			fromFile:    nil,
-			fromCLI:     []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
-			expected:    []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			fromCLI:     []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			expected:    []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
 		},
 		{
 			description: "one from file, one from CLI",
 			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			fromFile:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}},
-			fromCLI:     []build.Artifact{{ImageName: "image2", Tag: "image2:tag"}},
-			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
+			fromFile:    []graph.Artifact{{ImageName: "image1", Tag: "image1:tag"}},
+			fromCLI:     []graph.Artifact{{ImageName: "image2", Tag: "image2:tag"}},
+			expected:    []graph.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
 		},
 		{
 			description: "file takes precedence on CLI",
 			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			fromFile:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
-			fromCLI:     []build.Artifact{{ImageName: "image1", Tag: "image1:ignored"}},
-			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
+			fromFile:    []graph.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
+			fromCLI:     []graph.Artifact{{ImageName: "image1", Tag: "image1:ignored"}},
+			expected:    []graph.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
 		},
 		{
 			description: "provide tag for non-artifact",
 			artifacts:   []*latest.Artifact{},
-			fromCLI:     []build.Artifact{{ImageName: "busybox", Tag: "busybox:v1"}},
-			expected:    []build.Artifact{{ImageName: "busybox", Tag: "busybox:v1"}},
+			fromCLI:     []graph.Artifact{{ImageName: "busybox", Tag: "busybox:v1"}},
+			expected:    []graph.Artifact{{ImageName: "busybox", Tag: "busybox:v1"}},
 		},
 		{
 			description: "missing tag",
@@ -87,9 +87,9 @@ func TestGetArtifacts(t *testing.T) {
 		{
 			description: "override tag",
 			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			fromFile:    []build.Artifact{{ImageName: "image1", Tag: "image1:tag"}},
-			fromCLI:     []build.Artifact{{ImageName: "image2", Tag: "image2:tag"}},
-			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
+			fromFile:    []graph.Artifact{{ImageName: "image1", Tag: "image1:tag"}},
+			fromCLI:     []graph.Artifact{{ImageName: "image2", Tag: "image2:tag"}},
+			expected:    []graph.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
 			customTag:   "test",
 		},
 		{
@@ -97,7 +97,7 @@ func TestGetArtifacts(t *testing.T) {
 			artifacts:   []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
 			fromFile:    nil,
 			fromCLI:     nil,
-			expected:    []build.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
+			expected:    []graph.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
 			customTag:   "test",
 		},
 		{
@@ -105,7 +105,7 @@ func TestGetArtifacts(t *testing.T) {
 			artifacts:   []*latest.Artifact{},
 			fromFile:    nil,
 			fromCLI:     nil,
-			expected:    []build.Artifact(nil),
+			expected:    []graph.Artifact(nil),
 			customTag:   "test",
 		},
 	}
@@ -125,45 +125,45 @@ func TestGetArtifacts(t *testing.T) {
 func Test_getBuildArtifactsAndSetTags(t *testing.T) {
 	tests := []struct {
 		description string
-		artifacts   []build.Artifact
-		expected    []build.Artifact
+		artifacts   []graph.Artifact
+		expected    []graph.Artifact
 		defaultRepo string
 		shouldErr   bool
 	}{
 		{
 			description: "no artifact without default-repo",
 			artifacts:   nil,
-			expected:    []build.Artifact(nil),
+			expected:    []graph.Artifact(nil),
 		},
 		{
 			description: "single artifact without default-repo",
-			artifacts:   []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
-			expected:    []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			artifacts:   []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			expected:    []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
 		},
 		{
 			description: "multiple artifacts without default-repo",
-			artifacts: []build.Artifact{
+			artifacts: []graph.Artifact{
 				{ImageName: "image1", Tag: "image1:tag"},
 				{ImageName: "image1", Tag: "image1:tag"},
 			},
-			expected: []build.Artifact{
+			expected: []graph.Artifact{
 				{ImageName: "image1", Tag: "image1:tag"},
 				{ImageName: "image1", Tag: "image1:tag"},
 			},
 		},
 		{
 			description: "single artifact with default-repo",
-			artifacts:   []build.Artifact{{ImageName: "image", Tag: "image:tag"}},
-			expected:    []build.Artifact{{ImageName: "image", Tag: "example.com/test-repo/image:tag"}},
+			artifacts:   []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
+			expected:    []graph.Artifact{{ImageName: "image", Tag: "example.com/test-repo/image:tag"}},
 			defaultRepo: "example.com/test-repo",
 		},
 		{
 			description: "multiple artifacts with default-repo",
-			artifacts: []build.Artifact{
+			artifacts: []graph.Artifact{
 				{ImageName: "image1", Tag: "image1:tag"},
 				{ImageName: "image1", Tag: "image1:tag"},
 			},
-			expected: []build.Artifact{
+			expected: []graph.Artifact{
 				{ImageName: "image1", Tag: "example.com/test-repo/image1:tag"},
 				{ImageName: "image1", Tag: "example.com/test-repo/image1:tag"},
 			},
@@ -171,11 +171,11 @@ func Test_getBuildArtifactsAndSetTags(t *testing.T) {
 		},
 		{
 			description: "multiple artifacts with erring default-repo",
-			artifacts: []build.Artifact{
+			artifacts: []graph.Artifact{
 				{ImageName: "image1", Tag: "image1:tag"},
 				{ImageName: "image1", Tag: "image1:tag"},
 			},
-			expected:    []build.Artifact(nil),
+			expected:    []graph.Artifact(nil),
 			defaultRepo: "example.com/test-repo",
 			shouldErr:   true,
 		},

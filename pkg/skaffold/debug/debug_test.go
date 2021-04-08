@@ -24,13 +24,13 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestFindArtifact(t *testing.T) {
-	buildArtifacts := []build.Artifact{
+	buildArtifacts := []graph.Artifact{
 		{ImageName: "image1", Tag: "tag1"},
 	}
 	tests := []struct {

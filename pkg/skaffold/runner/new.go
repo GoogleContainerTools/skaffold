@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -59,8 +60,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	store := build.NewArtifactStore()
-	graph := build.ToArtifactGraph(runCtx.Artifacts())
-	sourceDependencies := build.NewTransitiveSourceDependenciesCache(runCtx, store, graph)
+	g := graph.ToArtifactGraph(runCtx.Artifacts())
+	sourceDependencies := graph.NewTransitiveSourceDependenciesCache(runCtx, store, g)
 
 	var builder build.Builder
 	builder, err = build.NewBuilderMux(runCtx, store, func(p latest.Pipeline) (build.PipelineBuilder, error) {
@@ -98,7 +99,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return append(buildDependencies, testDependencies...), nil
 	}
 
-	artifactCache, err := cache.NewCache(runCtx, isLocalImage, depLister, graph, store)
+	artifactCache, err := cache.NewCache(runCtx, isLocalImage, depLister, g, store)
 	if err != nil {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}

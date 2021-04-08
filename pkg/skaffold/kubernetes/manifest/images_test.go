@@ -19,7 +19,7 @@ package manifest
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -41,7 +41,7 @@ spec:
   - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
     name: digest
 `)}
-	expectedImages := []build.Artifact{
+	expectedImages := []graph.Artifact{
 		{
 			ImageName: "gcr.io/k8s-skaffold/example",
 			Tag:       "gcr.io/k8s-skaffold/example:latest",
@@ -82,7 +82,7 @@ spec:
   - image: unknown
 `)}
 
-	builds := []build.Artifact{{
+	builds := []graph.Artifact{{
 		ImageName: "gcr.io/k8s-skaffold/example",
 		Tag:       "gcr.io/k8s-skaffold/example:TAG",
 	}, {
