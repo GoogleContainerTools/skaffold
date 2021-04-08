@@ -55,6 +55,9 @@ func runDev(ctx context.Context, out io.Writer) error {
 		}()
 	}
 
+	// force skaffold labels to be applied in dev mode - port forwarding and log tailing won't work without them
+	opts.AddSkaffoldLabels = true
+
 	for {
 		select {
 		case <-ctx.Done():
