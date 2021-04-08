@@ -6,6 +6,9 @@ plugins {
     id 'com.google.cloud.tools.jib' version '3.0.0'
 }
 
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
 version '0.1'
 group 'example.jib-gradle'
 
