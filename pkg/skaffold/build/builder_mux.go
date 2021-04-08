@@ -57,7 +57,7 @@ func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeli
 		concurrency := b.Concurrency()
 		if minConcurrency < 0 {
 			minConcurrency = concurrency
-		} else if concurrency > 0 && concurrency < minConcurrency {
+		} else if concurrency > 0 && (minConcurrency == 0 || concurrency < minConcurrency) {
 			// set mux concurrency to be the minimum of all builders' concurrency. (concurrency = 0 means unlimited)
 			minConcurrency = concurrency
 		}

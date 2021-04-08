@@ -142,6 +142,12 @@ func StringPtr(s string) *string {
 	return &o
 }
 
+// IntPtr returns a pointer to an int
+func IntPtr(i int) *int {
+	o := i
+	return &o
+}
+
 func IsURL(s string) bool {
 	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }
