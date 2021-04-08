@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 
 	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
@@ -35,13 +36,19 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
+const (
+	MinikubeVersionWithUserFlag = "1.18.0"
+)
+
+var currentVersionOnce sync.Once
+
 var GetClient = getClient
 
 // To override during tests
 var (
-	minikubeBinaryFunc = minikubeBinary
-	getClusterInfo     = context.GetClusterInfo
-	versionCheckFunc   = versionCheck
+	minikubeBinaryFunc   = minikubeBinary
+	getClusterInfo       = context.GetClusterInfo
+	supportsUserFlagFunc = supportsUserFlag
 )
 
 type Client interface {
@@ -97,7 +104,7 @@ func minikubeExec(arg ...string) (*exec.Cmd, error) {
 		return nil, fmt.Errorf("getting minikube executable: %w", err)
 	}
 
-	minVer, err := versionCheckFunc()
+	minVer, err := supportsUserFlagFunc()
 	if err != nil {
 		return nil, err
 	}
@@ -108,23 +115,32 @@ func minikubeExec(arg ...string) (*exec.Cmd, error) {
 }
 
 // versionCheck checks if the minikube version meet the minimum requirements for the user flag
-func versionCheck() (bool, error) {
+func supportsUserFlag() (bool, error) {
 	cmd := exec.Command("minikube", "version")
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return false, err
 	}
 
-	currentVersion, err := version.ParseVersion(string(out))
+	currentVersion, err := getCurrentVersion(string(out))
 	if err != nil {
 		return false, err
 	}
 
-	versionWithFlag, err := semver.Make(constants.MinikubeVersionWithUserFlag)
+	versionWithFlag, err := semver.Make(MinikubeVersionWithUserFlag)
 	if err != nil {
 		return false, err
 	}
 	return currentVersion.GE(versionWithFlag), nil
+}
+
+func getCurrentVersion(ver string) (semver.Version, error) {
+	var currentVersion semver.Version
+	var err error
+	currentVersionOnce.Do(func() {
+		currentVersion, err = version.ParseVersion(ver)
+	})
+	return currentVersion, err
 }
 
 func minikubeBinary() (string, error) {

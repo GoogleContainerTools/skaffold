@@ -44,12 +44,6 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 			description:          "context is 'minikube'",
 			kubeContext:          "minikube",
 			expected:             true,
-			minikubeWithUserFlag: false,
-		},
-		{
-			description:          "context is 'minikube'",
-			kubeContext:          "minikube",
-			expected:             true,
 			minikubeWithUserFlag: true,
 		},
 		{
@@ -106,7 +100,7 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 			} else {
 				t.Override(&minikubeBinaryFunc, func() (string, error) { return "minikube", nil })
 			}
-			t.Override(&versionCheckFunc, func() (bool, error) { return test.minikubeWithUserFlag, nil })
+			t.Override(&supportsUserFlagFunc, func() (bool, error) { return test.minikubeWithUserFlag, nil })
 			t.Override(&util.DefaultExecCommand, test.minikubeProfileCmd)
 			t.Override(&getClusterInfo, func(string) (*clientcmdapi.Cluster, error) {
 				return &clientcmdapi.Cluster{
