@@ -78,7 +78,7 @@ func getTagger(runCtx *runcontext.RunContext, t *latest.TagPolicy) (Tagger, erro
 		return NewInputDigestTagger(runCtx, graph)
 
 	case t.CustomTemplateTagger != nil:
-		components, err := CreateComponents(t.CustomTemplateTagger)
+		components, err := CreateComponents(runCtx, t.CustomTemplateTagger)
 
 		if err != nil {
 			return nil, fmt.Errorf("creating components: %w", err)
@@ -92,7 +92,7 @@ func getTagger(runCtx *runcontext.RunContext, t *latest.TagPolicy) (Tagger, erro
 }
 
 // CreateComponents creates a map of taggers for CustomTemplateTagger
-func CreateComponents(t *latest.CustomTemplateTagger) (map[string]Tagger, error) {
+func CreateComponents(runCtx *runcontext.RunContext, t *latest.CustomTemplateTagger) (map[string]Tagger, error) {
 	components := map[string]Tagger{}
 
 	for _, taggerComponent := range t.Components {
@@ -114,6 +114,11 @@ func CreateComponents(t *latest.CustomTemplateTagger) (map[string]Tagger, error)
 
 		case c.DateTimeTagger != nil:
 			components[name] = NewDateTimeTagger(c.DateTimeTagger.Format, c.DateTimeTagger.TimeZone)
+
+		case c.InputDigest != nil:
+			graph := graph.ToArtifactGraph(runCtx.Artifacts())
+			inputDigest, _ := NewInputDigestTagger(runCtx, graph)
+			components[name] = inputDigest
 
 		case c.CustomTemplateTagger != nil:
 			return nil, fmt.Errorf("nested customTemplate components are not supported in skaffold (%s)", name)
