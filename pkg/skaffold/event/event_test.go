@@ -31,7 +31,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -535,7 +535,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 	tcs := []struct {
 		description string
 		state       proto.State
-		phase       sErrors.Phase
+		phase       constants.Phase
 		waitFn      func() bool
 	}{
 		{
@@ -543,7 +543,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 			state: proto.State{
 				BuildState: &proto.BuildState{StatusCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED},
 			},
-			phase: sErrors.Build,
+			phase: constants.Build,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
@@ -557,7 +557,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 				BuildState: &proto.BuildState{},
 				TestState:  &proto.TestState{StatusCode: proto.StatusCode_TEST_UNKNOWN},
 			},
-			phase: sErrors.Test,
+			phase: constants.Test,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
@@ -571,7 +571,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 				BuildState:  &proto.BuildState{},
 				DeployState: &proto.DeployState{StatusCode: proto.StatusCode_DEPLOY_UNKNOWN},
 			},
-			phase: sErrors.Deploy,
+			phase: constants.Deploy,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
@@ -587,7 +587,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 				DeployState:      &proto.DeployState{StatusCode: proto.StatusCode_DEPLOY_SUCCESS},
 				StatusCheckState: &proto.StatusCheckState{StatusCode: proto.StatusCode_STATUSCHECK_UNHEALTHY},
 			},
-			phase: sErrors.Deploy,
+			phase: constants.Deploy,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
