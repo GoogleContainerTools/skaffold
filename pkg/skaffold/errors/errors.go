@@ -30,17 +30,6 @@ import (
 )
 
 const (
-	// These are phases in a Skaffolld
-	DevLoop     = Phase("DevLoop")
-	Init        = Phase("Init")
-	Build       = Phase("Build")
-	Test        = Phase("Test")
-	Deploy      = Phase("Deploy")
-	StatusCheck = Phase("StatusCheck")
-	Sync        = Phase("Sync")
-	DevInit     = Phase("DevInit")
-	Cleanup     = Phase("Cleanup")
-
 	// Report issue text
 	reportIssueText = "If above error is unexpected, please open an issue " + constants.GithubIssueLink + " to report this error"
 )
@@ -57,8 +46,6 @@ var (
 	}
 )
 
-type Phase string
-
 // SetRunContext set Skaffold runCtx  once. This run context is used later to
 // suggest actionable error messages based on skaffold command line options and run context
 func SetRunContext(rc runcontext.RunContext) {
@@ -68,7 +55,7 @@ func SetRunContext(rc runcontext.RunContext) {
 }
 
 // ActionableErr returns an actionable error message with suggestions
-func ActionableErr(phase Phase, err error) *proto.ActionableErr {
+func ActionableErr(phase constants.Phase, err error) *proto.ActionableErr {
 	errCode, suggestions := getErrorCodeFromError(phase, err)
 	return &proto.ActionableErr{
 		ErrCode:     errCode,
@@ -78,7 +65,7 @@ func ActionableErr(phase Phase, err error) *proto.ActionableErr {
 }
 
 // ActionableErrV2 returns an actionable error message with suggestions
-func ActionableErrV2(phase Phase, err error) *protoV2.ActionableErr {
+func ActionableErrV2(phase constants.Phase, err error) *protoV2.ActionableErr {
 	errCode, suggestions := getErrorCodeFromError(phase, err)
 	suggestionsV2 := make([]*protoV2.Suggestion, len(suggestions))
 	for i, suggestion := range suggestions {
@@ -126,7 +113,7 @@ func IsOldImageManifestProblem(err error) (string, bool) {
 	return "", false
 }
 
-func getErrorCodeFromError(phase Phase, err error) (proto.StatusCode, []*proto.Suggestion) {
+func getErrorCodeFromError(phase constants.Phase, err error) (proto.StatusCode, []*proto.Suggestion) {
 	var sErr Error
 	if errors.As(err, &sErr) {
 		return sErr.StatusCode(), sErr.Suggestions()
@@ -157,43 +144,43 @@ func concatSuggestions(suggestions []*proto.Suggestion) string {
 	return s.String()
 }
 
-var allErrors = map[Phase][]problem{
-	Build: append(knownBuildProblems, problem{
+var allErrors = map[constants.Phase][]problem{
+	constants.Build: append(knownBuildProblems, problem{
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_BUILD_UNKNOWN,
 		suggestion: reportIssueSuggestion,
 	}),
-	Init: append(knownInitProblems, problem{
+	constants.Init: append(knownInitProblems, problem{
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_INIT_UNKNOWN,
 		suggestion: reportIssueSuggestion,
 	}),
-	Test: {{
+	constants.Test: {{
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_TEST_UNKNOWN,
 		suggestion: reportIssueSuggestion,
 	}},
-	Deploy: append(knownDeployProblems, problem{
+	constants.Deploy: append(knownDeployProblems, problem{
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_DEPLOY_UNKNOWN,
 		suggestion: reportIssueSuggestion,
 	}),
-	StatusCheck: {{
+	constants.StatusCheck: {{
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_STATUSCHECK_UNKNOWN,
 		suggestion: reportIssueSuggestion,
 	}},
-	Sync: {{
+	constants.Sync: {{
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_SYNC_UNKNOWN,
 		suggestion: reportIssueSuggestion,
 	}},
-	DevInit: {oldImageManifest, {
+	constants.DevInit: {oldImageManifest, {
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_DEVINIT_UNKNOWN,
 		suggestion: reportIssueSuggestion,
 	}},
-	Cleanup: {{
+	constants.Cleanup: {{
 		regexp:     re(".*"),
 		errCode:    proto.StatusCode_CLEANUP_UNKNOWN,
 		suggestion: reportIssueSuggestion,

@@ -286,6 +286,8 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []gr
 	}
 
 	// Hydrate the manifests source.
+	// Note: kustomize cannot be used as a kpt fn yet and thus we add a kustomize cmd step in the kpt pipeline:
+	// kpt source --> (workaround) kustomize build -->  kpt run --> kpt sink.
 	_, err = kustomize.FindKustomizationConfig(k.Dir)
 	// Only run kustomize if kustomization.yaml is found.
 	if err == nil {
@@ -312,7 +314,31 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []gr
 		if err != nil {
 			return nil, fmt.Errorf("kustomize build: %w", err)
 		}
+	} else {
+		// Note: Here we use kpt ResourceList as the media to store the config source.
+		// Eventually, skaffold should not need to construct a kpt inner resource but only use kpt commands and
+		// the new Kptfile(v1) to establish a hydration pipeline.
+		input := bytes.NewBufferString(string(buf))
+		rl := framework.ResourceList{
+			Reader: input,
+		}
+		// Manipulate the kustomize "Rnode"(Kustomize term) and pulls out the "Items"
+		// from ResourceLists.
+		if err := rl.Read(); err != nil {
+			return nil, fmt.Errorf("reading ResourceList %w", err)
+		}
+
+		var newBuf []byte
+		for i := range rl.Items {
+			item, err := rl.Items[i].String()
+			if err != nil {
+				return nil, fmt.Errorf("reading Item %w", err)
+			}
+			newBuf = append(newBuf, []byte(item)...)
+		}
+		buf = newBuf
 	}
+
 	// Run kpt functions against the hydrated manifests.
 	cmd = exec.CommandContext(ctx, "kpt", kptCommandArgs("", []string{"fn", "run"}, flags, nil)...)
 	buf = append(buf, []byte("---\n")...)

@@ -9,7 +9,7 @@
 
     <properties>
         <java.version>1.8</java.version>
-        <jib.maven-plugin-version>2.8.0</jib.maven-plugin-version>
+        <jib.maven-plugin-version>3.0.0</jib.maven-plugin-version>
     </properties>
 
     <parent>
@@ -37,6 +37,9 @@
                 <artifactId>jib-maven-plugin</artifactId>
                 <version>${jib.maven-plugin-version}</version>
                 <configuration>
+                    <from>
+                        <image>gcr.io/google-appengine/openjdk:8</image>
+                    </from>
                     <container>
                         <jvmFlags>
                             <jvmFlag>-Djava.security.egd=file:/dev/./urandom</jvmFlag>

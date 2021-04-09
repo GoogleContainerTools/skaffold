@@ -27,8 +27,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -38,7 +38,7 @@ import (
 
 // Build builds a list of artifacts.
 func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
-	eventV2.TaskInProgress(sErrors.Build, r.devIteration)
+	eventV2.TaskInProgress(constants.Build, r.devIteration)
 
 	// Use tags directly from the Kubernetes manifests.
 	if r.runCtx.DigestSource() == noneDigestSource {
@@ -46,13 +46,13 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 	}
 
 	if err := checkWorkspaces(artifacts); err != nil {
-		eventV2.TaskFailed(sErrors.Build, r.devIteration, err)
+		eventV2.TaskFailed(constants.Build, r.devIteration, err)
 		return nil, err
 	}
 
 	tags, err := r.imageTags(ctx, out, artifacts)
 	if err != nil {
-		eventV2.TaskFailed(sErrors.Build, r.devIteration, err)
+		eventV2.TaskFailed(constants.Build, r.devIteration, err)
 		return nil, err
 	}
 
@@ -84,7 +84,7 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 		return bRes, nil
 	})
 	if err != nil {
-		eventV2.TaskFailed(sErrors.Build, r.devIteration, err)
+		eventV2.TaskFailed(constants.Build, r.devIteration, err)
 		return nil, err
 	}
 
@@ -94,7 +94,7 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
 
-	eventV2.TaskSucceeded(sErrors.Build, r.devIteration)
+	eventV2.TaskSucceeded(constants.Build, r.devIteration)
 	return bRes, nil
 }
 
@@ -109,7 +109,7 @@ func (r *SkaffoldRunner) Test(ctx context.Context, out io.Writer, artifacts []gr
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-	eventV2.TaskInProgress(sErrors.Deploy, r.devIteration)
+	eventV2.TaskInProgress(constants.Deploy, r.devIteration)
 
 	// Update which images are logged.
 	r.addTagsToPodSelector(artifacts)
@@ -121,7 +121,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	logger.SetSince(time.Now())
 	// First deploy
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
-		eventV2.TaskFailed(sErrors.Deploy, r.devIteration, err)
+		eventV2.TaskFailed(constants.Deploy, r.devIteration, err)
 		return err
 	}
 
@@ -134,7 +134,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 
 	// Start printing the logs after deploy is finished
 	if err := logger.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
-		eventV2.TaskFailed(sErrors.Deploy, r.devIteration, err)
+		eventV2.TaskFailed(constants.Deploy, r.devIteration, err)
 		return fmt.Errorf("starting logger: %w", err)
 	}
 
@@ -143,7 +143,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		<-ctx.Done()
 	}
 
-	eventV2.TaskSucceeded(sErrors.Deploy, r.devIteration)
+	eventV2.TaskSucceeded(constants.Deploy, r.devIteration)
 	return nil
 }
 
