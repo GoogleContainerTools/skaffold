@@ -34,6 +34,13 @@ var (
 	fromBuildOutputFile flags.BuildOutputFileFlag
 )
 
+// Nillable is used to reset objects that implement pflag's `Value` and `SliceValue`.
+// Some flags, like `--default-repo`, use nil to indicate that they are unset, which
+// is different from the empty string.
+type Nillable interface {
+	SetNil() error
+}
+
 // Flag defines a Skaffold CLI flag which contains a list of
 // subcommands the flag belongs to in `DefinedOn` field.
 // See https://pkg.go.dev/github.com/spf13/pflag#Flag
@@ -100,7 +107,7 @@ var flagRegistry = []Flag{
 		Shorthand:     "d",
 		Usage:         "Default repository value (overrides global config)",
 		Value:         &opts.DefaultRepo,
-		DefValue:      "",
+		DefValue:      nil,
 		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
 	},
@@ -569,7 +576,9 @@ func setDefaultValues(v interface{}, fl *Flag, cmdName string) {
 	if !found {
 		d = fl.DefValue
 	}
-	if sv, ok := v.(pflag.SliceValue); ok {
+	if nv, ok := v.(Nillable); ok && d == nil {
+		nv.SetNil()
+	} else if sv, ok := v.(pflag.SliceValue); ok {
 		sv.Replace(asStringSlice(d))
 	} else if val, ok := v.(pflag.Value); ok {
 		val.Set(fmt.Sprintf("%v", d))

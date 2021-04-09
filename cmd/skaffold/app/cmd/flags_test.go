@@ -22,6 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -124,6 +125,7 @@ func TestMakeFlag(t *testing.T) {
 func TestResetFlagDefaults(t *testing.T) {
 	var v string
 	var sl []string
+	var soru config.StringOrUndefined
 
 	valueFlag := Flag{
 		Name:          "value",
@@ -147,16 +149,28 @@ func TestResetFlagDefaults(t *testing.T) {
 		},
 		DefinedOn: []string{"build", "debug", "test"},
 	}
-	flagRegistry := []*Flag{&valueFlag, &sliceFlag}
+	varFlag := Flag{
+		Name:          "var",
+		Value:         &soru,
+		FlagAddMethod: "Var",
+		DefValue:      nil,
+		DefValuePerCommand: map[string]interface{}{
+			"debug": "dbg",
+			"build": "bld",
+		},
+		DefinedOn: []string{"build", "debug", "test"},
+	}
+	flagRegistry := []*Flag{&valueFlag, &sliceFlag, &varFlag}
 
 	tests := []struct {
 		command       string
 		expectedValue string
 		expectedSlice []string
+		expectedVar   interface{}
 	}{
-		{"test", "default", []string{"default"}},
-		{"debug", "dbg", []string{"dbg", "other"}},
-		{"build", "bld", []string{"bld"}},
+		{"debug", "dbg", []string{"dbg", "other"}, "dbg"},
+		{"test", "default", []string{"default"}, nil},
+		{"build", "bld", []string{"bld"}, "bld"},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.command, func(t *testutil.T) {
@@ -168,10 +182,16 @@ func TestResetFlagDefaults(t *testing.T) {
 			// ResetFlagDefaults should reset to defaults for the given command
 			v = "randovalue"
 			sl = []string{"rando", "value"}
+			soru.Set("randovalue")
 			ResetFlagDefaults(&cmd, flagRegistry)
 
-			t.CheckDeepEqual(v, test.expectedValue)
-			t.CheckDeepEqual(sl, test.expectedSlice)
+			t.CheckDeepEqual(test.expectedValue, v)
+			t.CheckDeepEqual(test.expectedSlice, sl)
+			if test.expectedVar == nil {
+				t.CheckDeepEqual((*string)(nil), soru.Value())
+			} else {
+				t.CheckDeepEqual(soru.String(), test.expectedVar)
+			}
 		})
 	}
 }

@@ -38,6 +38,16 @@ func TestStringOrUndefinedUsage(t *testing.T) {
 	testutil.CheckDeepEqual(t, "Usage:\n\nFlags:\n      --flag string   use it like this\n", output.String())
 }
 
+func TestStringOrUndefined_SetNil(t *testing.T) {
+	var s StringOrUndefined
+	s.Set("hello")
+	testutil.CheckDeepEqual(t, "hello", s.String())
+	s.SetNil()
+	testutil.CheckDeepEqual(t, "", s.String())
+	testutil.CheckDeepEqual(t, (*string)(nil), s.value)
+	testutil.CheckDeepEqual(t, (*string)(nil), s.Value())
+}
+
 func TestStringOrUndefined(t *testing.T) {
 	tests := []struct {
 		description string
