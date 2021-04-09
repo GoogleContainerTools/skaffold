@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -179,7 +180,7 @@ func TestBuildProblems(t *testing.T) {
 			cfg := mockConfig{optRepo: test.optRepo}
 			actual := sErrors.ShowAIError(&cfg, test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
-			actualAE := sErrors.ActionableErr(&cfg, sErrors.Build, test.err)
+			actualAE := sErrors.ActionableErr(&cfg, constants.Build, test.err)
 			t.CheckDeepEqual(test.expectedAE, actualAE)
 		})
 	}

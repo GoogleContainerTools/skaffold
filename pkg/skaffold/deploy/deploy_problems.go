@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -55,7 +56,7 @@ func re(s string) *regexp.Regexp {
 }
 
 func init() {
-	sErrors.AddPhaseProblems(sErrors.Deploy, []sErrors.Problem{
+	sErrors.AddPhaseProblems(constants.Deploy, []sErrors.Problem{
 		{
 			Regexp:  re("(?i).*unable to connect.*: Get (.*)"),
 			ErrCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,

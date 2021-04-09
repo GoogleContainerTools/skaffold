@@ -21,6 +21,7 @@ import (
 	"regexp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -47,7 +48,7 @@ func re(s string) *regexp.Regexp {
 }
 
 func init() {
-	sErrors.AddPhaseProblems(sErrors.Build, []sErrors.Problem{
+	sErrors.AddPhaseProblems(constants.Build, []sErrors.Problem{
 		{
 			Regexp:  re(fmt.Sprintf(".*%s.* denied: .*", PushImageErr)),
 			ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,

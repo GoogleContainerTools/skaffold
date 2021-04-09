@@ -21,11 +21,12 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 var (
-	allErrors = map[Phase][]Problem{}
+	allErrors = map[constants.Phase][]Problem{}
 )
 
 type descriptionFunc func(error) string
@@ -76,7 +77,7 @@ func isProblem(err error) (Problem, bool) {
 	return Problem{}, false
 }
 
-func AddPhaseProblems(phase Phase, problems []Problem) {
+func AddPhaseProblems(phase constants.Phase, problems []Problem) {
 	if ps, ok := allErrors[phase]; ok {
 		allErrors[phase] = append(ps, problems...)
 	}

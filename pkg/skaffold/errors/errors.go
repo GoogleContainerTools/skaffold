@@ -43,11 +43,9 @@ var (
 	}
 )
 
-type Phase string
-
 // ActionableErr returns an actionable error message with suggestions
 func ActionableErr(cfg interface{}, phase constants.Phase, err error) *proto.ActionableErr {
-	errCode, suggestions := getErrorCodeFromError(phase, cfg, err)
+	errCode, suggestions := getErrorCodeFromError(cfg, phase, err)
 	return &proto.ActionableErr{
 		ErrCode:     errCode,
 		Message:     err.Error(),
@@ -57,7 +55,7 @@ func ActionableErr(cfg interface{}, phase constants.Phase, err error) *proto.Act
 
 // ActionableErrV2 returns an actionable error message with suggestions
 func ActionableErrV2(cfg interface{}, phase constants.Phase, err error) *protoV2.ActionableErr {
-	errCode, suggestions := getErrorCodeFromError(phase, cfg, err)
+	errCode, suggestions := getErrorCodeFromError(cfg, phase, err)
 	suggestionsV2 := make([]*protoV2.Suggestion, len(suggestions))
 	for i, suggestion := range suggestions {
 		converted := protoV2.Suggestion(*suggestion)
