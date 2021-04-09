@@ -19,6 +19,7 @@ package tag
 import (
 	"fmt"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -28,12 +29,12 @@ type TaggerMux struct {
 	byImageName map[string]Tagger
 }
 
-func (t *TaggerMux) GenerateTag(workingDir, imageName string) (string, error) {
-	tagger, found := t.byImageName[imageName]
+func (t *TaggerMux) GenerateTag(image latest.Artifact) (string, error) {
+	tagger, found := t.byImageName[image.ImageName]
 	if !found {
-		return "", fmt.Errorf("no valid tagger found for artifact: %q", imageName)
+		return "", fmt.Errorf("no valid tagger found for artifact: %q", image.ImageName)
 	}
-	return tagger.GenerateTag(workingDir, imageName)
+	return tagger.GenerateTag(image)
 }
 
 func NewTaggerMux(runCtx *runcontext.RunContext) (Tagger, error) {
@@ -71,6 +72,10 @@ func getTagger(runCtx *runcontext.RunContext, t *latest.TagPolicy) (Tagger, erro
 
 	case t.DateTimeTagger != nil:
 		return NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil
+
+	case t.InputDigest != nil:
+		graph := graph.ToArtifactGraph(runCtx.Artifacts())
+		return NewInputDigestTagger(runCtx, graph)
 
 	case t.CustomTemplateTagger != nil:
 		components, err := CreateComponents(t.CustomTemplateTagger)

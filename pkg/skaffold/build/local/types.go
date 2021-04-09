@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -55,7 +56,7 @@ type Builder struct {
 	muted              build.Muted
 	localPruner        *pruner
 	artifactStore      build.ArtifactStore
-	sourceDependencies build.TransitiveSourceDependenciesCache
+	sourceDependencies graph.TransitiveSourceDependenciesCache
 }
 
 type Config interface {
@@ -73,7 +74,7 @@ type Config interface {
 type BuilderContext interface {
 	Config
 	ArtifactStore() build.ArtifactStore
-	SourceDependenciesResolver() build.TransitiveSourceDependenciesCache
+	SourceDependenciesResolver() graph.TransitiveSourceDependenciesCache
 }
 
 // NewBuilder returns an new instance of a local Builder.

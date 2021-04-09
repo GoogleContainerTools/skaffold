@@ -31,9 +31,9 @@ import (
 	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -44,10 +44,10 @@ func IsHelmChart(path string) bool {
 
 // copy of cmd/skaffold/app/flags.BuildOutputs
 type buildOutputs struct {
-	Builds []build.Artifact `json:"builds"`
+	Builds []graph.Artifact `json:"builds"`
 }
 
-func writeBuildArtifacts(builds []build.Artifact) (string, func(), error) {
+func writeBuildArtifacts(builds []graph.Artifact) (string, func(), error) {
 	buildOutput, err := json.Marshal(buildOutputs{builds})
 	if err != nil {
 		return "", nil, fmt.Errorf("cannot marshal build artifacts: %w", err)
@@ -120,13 +120,13 @@ func imageSetFromConfig(cfg *latest.HelmConventionConfig, valueName string, tag 
 }
 
 // pairParamsToArtifacts associates parameters to the build artifact it creates
-func pairParamsToArtifacts(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
-	imageToBuildResult := map[string]build.Artifact{}
+func pairParamsToArtifacts(builds []graph.Artifact, params map[string]string) (map[string]graph.Artifact, error) {
+	imageToBuildResult := map[string]graph.Artifact{}
 	for _, b := range builds {
 		imageToBuildResult[b.ImageName] = b
 	}
 
-	paramToBuildResult := map[string]build.Artifact{}
+	paramToBuildResult := map[string]graph.Artifact{}
 
 	for param, imageName := range params {
 		b, ok := imageToBuildResult[imageName]

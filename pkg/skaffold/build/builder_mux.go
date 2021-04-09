@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
@@ -66,7 +67,7 @@ func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeli
 }
 
 // Build executes the specific image builder for each artifact in the given artifact slice.
-func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error) {
+func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 	m := make(map[PipelineBuilder]bool)
 	for _, a := range artifacts {
 		m[b.byImageName[a.ImageName]] = true

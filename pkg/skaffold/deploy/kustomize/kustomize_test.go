@@ -25,9 +25,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -38,7 +38,7 @@ func TestKustomizeDeploy(t *testing.T) {
 	tests := []struct {
 		description                 string
 		kustomize                   latest.KustomizeDeploy
-		builds                      []build.Artifact
+		builds                      []graph.Artifact
 		commands                    util.Command
 		shouldErr                   bool
 		forceDeploy                 bool
@@ -66,7 +66,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				AndRunOut("kustomize build .", kubectl.DeploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", kubectl.DeploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
-			builds: []build.Artifact{{
+			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
 			}},
@@ -84,7 +84,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				AndRunOut("kustomize build .", kubectl.DeploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace2 get -f - --ignore-not-found -ojson", kubectl.DeploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace2 apply -f - --force --grace-period=0"),
-			builds: []build.Artifact{{
+			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
 			}},
@@ -103,7 +103,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				AndRunOut("kustomize build .", kubectl.DeploymentWebYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace2 get -f - --ignore-not-found -ojson", kubectl.DeploymentWebYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace2 apply -f - --force --grace-period=0"),
-			builds: []build.Artifact{{
+			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
 			}},
@@ -125,7 +125,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				AndRunOut("kustomize build b", kubectl.DeploymentAppYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", kubectl.DeploymentWebYAMLv1+"\n---\n"+kubectl.DeploymentAppYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
-			builds: []build.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "leeroy-web",
 					Tag:       "leeroy-web:v1",
@@ -149,7 +149,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace kustomize b", kubectl.DeploymentAppYAML).
 				AndRunInputOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", kubectl.DeploymentWebYAMLv1+"\n---\n"+kubectl.DeploymentAppYAMLv1, "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
-			builds: []build.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "leeroy-web",
 					Tag:       "leeroy-web:v1",
@@ -536,7 +536,7 @@ func TestKustomizeRender(t *testing.T) {
 	}
 	tests := []struct {
 		description    string
-		builds         []build.Artifact
+		builds         []graph.Artifact
 		labels         map[string]string
 		kustomizations []kustomizationCall
 		expected       string
@@ -544,7 +544,7 @@ func TestKustomizeRender(t *testing.T) {
 	}{
 		{
 			description: "single kustomization",
-			builds: []build.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
 					Tag:       "gcr.io/project/image1:tag1",
@@ -584,7 +584,7 @@ spec:
 		},
 		{
 			description: "single kustomization with user labels",
-			builds: []build.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
 					Tag:       "gcr.io/project/image1:tag1",
@@ -627,7 +627,7 @@ spec:
 		},
 		{
 			description: "multiple kustomizations",
-			builds: []build.Artifact{
+			builds: []graph.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
 					Tag:       "gcr.io/project/image1:tag1",
