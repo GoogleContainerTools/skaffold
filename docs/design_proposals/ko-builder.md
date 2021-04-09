@@ -97,22 +97,41 @@ Adding the ko builder requires making config changes to the Skaffold schema.
 2.  Add a `KoArtifact` type:
 
     ```go
+    // KoArtifact builds images using [ko](https://github.com/google/ko).
     type KoArtifact struct {
-    	// Annotations are key-value string pairs to add to the image manifest.
-    	// Also known as `LABEL` in `Dockerfile`s.
-    	// Ref: https://github.com/opencontainers/image-spec/blob/master/annotations.md
-    	Annotations map[string]string `yaml:"annotations,omitempty"`
+    	// Asmflags are assembler flags passed to the builder.
+    	Asmflags []string `yaml:"asmflags,omitempty"`
 
     	// BaseImage overrides the default ko base image.
     	// Corresponds to, and overrides, the `defaultBaseImage` in `.ko.yaml`.
     	BaseImage string `yaml:"fromImage,omitempty"`
 
+    	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
+    	Dependencies *KoDependencies `yaml:"dependencies,omitempty"`
+
     	// Env are environment variables, in the `key=value` form, passed to the build.
-    	// For example: `CGO_ENABLED=1`.
+    	// These environment variables are only used at build time.
+    	// They are _not_ set in the resulting container image.
     	Env []string `yaml:"env,omitempty"`
 
+    	// Flags are additional build flags passed to the builder.
+    	// For example: `["-trimpath", "-v"]`.
+    	Flags []string `yaml:"args,omitempty"`
+
+    	// Gcflags are Go compiler flags passed to the builder.
+    	// For example: `["-m"]`.
+    	Gcflags []string `yaml:"gcflags,omitempty"`
+
+    	// Labels are key-value string pairs to add to the image config.
+    	// For example: `{"foo":"bar"}`.
+    	Labels map[string]string `yaml:"labels,omitempty"`
+
+    	// Ldflags are linker flags passed to the builder.
+    	// For example: `["-buildid=", "-s", "-w"]`.
+    	Ldflags []string `yaml:"ldflags,omitempty"`
+
     	// Platforms is the list of platforms to build images for. Each platform
-    	// is of the format `os/arch[/variant]`, e.g., `linux/amd64`.
+    	// is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
     	// By default, the ko builder builds for `all` platforms supported by the
     	// base image.
     	Platforms []string `yaml:"platforms,omitempty"`
@@ -121,7 +140,7 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     	// Specify as the number of seconds since January 1st 1970, 00:00 UTC.
     	// You can override this value by setting the `SOURCE_DATE_EPOCH`
     	// environment variable.
-    	SourceDateEpoch unit64 `yaml:"sourceDateEpoch,omitempty"`
+    	SourceDateEpoch uint64 `yaml:"sourceDateEpoch,omitempty"`
     }
     ```
 
@@ -141,12 +160,46 @@ apiVersion: skaffold/v2beta14
 kind: Config
 build:
   artifacts:
-  - image: ko://example.com/helloworld
+  - image: ko://github.com/GoogleContainerTools/skaffold/examples/ko
     ko: {}
 ```
 
 The value of the `image` field is the Go import path of the app entry point,
 [prefixed by `ko://`](https://github.com/google/ko/pull/58).
+
+A more comprehensive example config:
+
+```yaml
+apiVersion: skaffold/v2beta14
+kind: Config
+build:
+  artifacts:
+  - image: ko://github.com/GoogleContainerTools/skaffold/examples/ko-complete
+    ko:
+      asmflags: []
+      fromImage: gcr.io/distroless/static-debian10:nonroot
+      dependencies:
+        paths:
+        - go.mod
+        - "**.go"
+      env: []
+      args:
+      - -trimpath
+      - -v
+      gcflags:
+      - -m
+      labels:
+        foo: bar
+        baz: frob
+      ldflags:
+      - -buildid=
+      - -s
+      - -w
+      platforms:
+      - linux/amd64
+      - linux/arm64
+      sourceDateEpoch: 946684800
+```
 
 ko requires setting a
 [`KO_DOCKER_REPO`](https://github.com/google/ko#choose-destination)
