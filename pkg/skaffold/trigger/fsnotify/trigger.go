@@ -115,7 +115,7 @@ func (t *Trigger) Start(ctx context.Context) (<-chan bool, error) {
 				}
 				logrus.Debugln("Change detected", t.Ignore(e))
 
-				// Wait t.Ienterval before triggering.
+				// Wait t.Interval before triggering.
 				// This way, rapid stream of events will be grouped.
 				timer.Reset(t.Interval)
 			case <-timer.C:
