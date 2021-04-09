@@ -486,7 +486,7 @@ type TestCase struct {
 	// StructureTests lists the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
 	// to run on that artifact.
 	// For example: `["./test/*"]`.
-	StructureTests []string `yaml:"structureTests,omitempty"`
+	StructureTests []string `yaml:"structureTests,omitempty" skaffold:"filepath"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps.
