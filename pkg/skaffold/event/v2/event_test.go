@@ -29,7 +29,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -242,13 +242,13 @@ func TestTaskFailed(t *testing.T) {
 	tcs := []struct {
 		description string
 		state       proto.State
-		phase       sErrors.Phase
+		phase       constants.Phase
 		iteration   int
 		waitFn      func() bool
 	}{
 		{
 			description: "build failed",
-			phase:       sErrors.Build,
+			phase:       constants.Build,
 			iteration:   0,
 			waitFn: func() bool {
 				handler.logLock.Lock()
@@ -260,7 +260,7 @@ func TestTaskFailed(t *testing.T) {
 		},
 		{
 			description: "deploy failed",
-			phase:       sErrors.Deploy,
+			phase:       constants.Deploy,
 			iteration:   1,
 			waitFn: func() bool {
 				handler.logLock.Lock()
@@ -272,7 +272,7 @@ func TestTaskFailed(t *testing.T) {
 		},
 		{
 			description: "status check failed",
-			phase:       sErrors.StatusCheck,
+			phase:       constants.StatusCheck,
 			iteration:   2,
 			waitFn: func() bool {
 				handler.logLock.Lock()
@@ -294,14 +294,14 @@ func TestTaskFailed(t *testing.T) {
 func TestAutoTriggerDiff(t *testing.T) {
 	tests := []struct {
 		description  string
-		phase        sErrors.Phase
+		phase        constants.Phase
 		handlerState proto.State
 		val          bool
 		expected     bool
 	}{
 		{
 			description: "build needs update",
-			phase:       sErrors.Build,
+			phase:       constants.Build,
 			val:         true,
 			handlerState: proto.State{
 				BuildState: &proto.BuildState{
@@ -312,7 +312,7 @@ func TestAutoTriggerDiff(t *testing.T) {
 		},
 		{
 			description: "deploy doesn't need update",
-			phase:       sErrors.Deploy,
+			phase:       constants.Deploy,
 			val:         true,
 			handlerState: proto.State{
 				BuildState: &proto.BuildState{
@@ -326,7 +326,7 @@ func TestAutoTriggerDiff(t *testing.T) {
 		},
 		{
 			description: "sync needs update",
-			phase:       sErrors.Sync,
+			phase:       constants.Sync,
 			val:         false,
 			handlerState: proto.State{
 				FileSyncState: &proto.FileSyncState{

@@ -30,6 +30,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -382,7 +383,11 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 
 			tmpDir := t.NewTempDir()
 			test.createGitRepo(tmpDir.Root())
-			workspace := tmpDir.Path(test.subDir)
+
+			image := latest.Artifact{
+				ImageName: "test",
+				Workspace: tmpDir.Path(test.subDir),
+			}
 
 			for variant, expectedTag := range map[string]string{
 				"Tags":            test.variantTags,
@@ -394,7 +399,7 @@ func TestGitCommit_GenerateTag(t *testing.T) {
 				tagger, err := NewGitCommit("", variant, test.ignoreChanges)
 				t.CheckNoError(err)
 
-				tag, err := tagger.GenerateTag(workspace, "test")
+				tag, err := tagger.GenerateTag(image)
 
 				t.CheckErrorAndDeepEqual(test.shouldErr, err, expectedTag, tag)
 			}
@@ -441,7 +446,10 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir()
 			test.createGitRepo(tmpDir.Root())
-			workspace := tmpDir.Path(test.subDir)
+			image := latest.Artifact{
+				ImageName: "test",
+				Workspace: tmpDir.Path(test.subDir),
+			}
 
 			for variant, expectedTag := range map[string]string{
 				"Tags":            test.variantTags,
@@ -453,7 +461,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 				tagger, err := NewGitCommit("", variant, false)
 				t.CheckNoError(err)
 
-				tag, err := GenerateFullyQualifiedImageName(tagger, workspace, "test")
+				tag, err := GenerateFullyQualifiedImageName(tagger, image)
 
 				t.CheckErrorAndDeepEqual(test.shouldErr, err, expectedTag, tag)
 			}
@@ -500,13 +508,16 @@ func TestGitCommit_CustomTemplate(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir()
 			test.createGitRepo(tmpDir.Root())
-			workspace := tmpDir.Path(test.subDir)
+			image := latest.Artifact{
+				ImageName: "test",
+				Workspace: tmpDir.Path(test.subDir),
+			}
 
 			c, err := NewCustomTemplateTagger(test.template, test.customMap)
 
 			t.CheckNoError(err)
 
-			tag, err := c.GenerateTag(workspace, "test")
+			tag, err := c.GenerateTag(image)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, tag)
@@ -518,34 +529,37 @@ func TestGitCommitSubDirectory(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir()
 		gitInit(t.T, tmpDir.Root()).mkdir("sub/sub").commit("initial")
-		workspace := tmpDir.Path("sub/sub")
+		image := latest.Artifact{
+			ImageName: "test",
+			Workspace: tmpDir.Path("sub/sub"),
+		}
 
 		tagger, err := NewGitCommit("", "Tags", false)
 		t.CheckNoError(err)
-		tag, err := tagger.GenerateTag(workspace, "test")
+		tag, err := tagger.GenerateTag(image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("a7b32a6", tag)
 
 		tagger, err = NewGitCommit("", "CommitSha", false)
 		t.CheckNoError(err)
-		tag, err = tagger.GenerateTag(workspace, "test")
+		tag, err = tagger.GenerateTag(image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("a7b32a69335a6daa51bd89cc1bf30bd31df228ba", tag)
 
 		tagger, err = NewGitCommit("", "AbbrevCommitSha", false)
 		t.CheckNoError(err)
-		tag, err = tagger.GenerateTag(workspace, "test")
+		tag, err = tagger.GenerateTag(image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("a7b32a6", tag)
 
 		tagger, err = NewGitCommit("", "TreeSha", false)
 		t.CheckNoError(err)
-		_, err = tagger.GenerateTag(workspace, "test")
+		_, err = tagger.GenerateTag(image)
 		t.CheckErrorAndDeepEqual(true, err, "a7b32a6", tag)
 
 		tagger, err = NewGitCommit("", "AbbrevTreeSha", false)
 		t.CheckNoError(err)
-		_, err = tagger.GenerateTag(workspace, "test")
+		_, err = tagger.GenerateTag(image)
 		t.CheckErrorAndDeepEqual(true, err, "a7b32a6", tag)
 	})
 }
@@ -554,17 +568,20 @@ func TestPrefix(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir()
 		gitInit(t.T, tmpDir.Root()).commit("initial")
-		workspace := tmpDir.Path(".")
+		image := latest.Artifact{
+			ImageName: "test",
+			Workspace: tmpDir.Path("."),
+		}
 
 		tagger, err := NewGitCommit("tag-", "Tags", false)
 		t.CheckNoError(err)
-		tag, err := tagger.GenerateTag(workspace, "test")
+		tag, err := tagger.GenerateTag(image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("tag-a7b32a6", tag)
 
 		tagger, err = NewGitCommit("commit-", "CommitSha", false)
 		t.CheckNoError(err)
-		tag, err = tagger.GenerateTag(workspace, "test")
+		tag, err = tagger.GenerateTag(image)
 		t.CheckNoError(err)
 		t.CheckDeepEqual("commit-a7b32a69335a6daa51bd89cc1bf30bd31df228ba", tag)
 	})

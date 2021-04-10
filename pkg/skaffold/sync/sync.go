@@ -36,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -48,7 +49,7 @@ var (
 	SyncMap    = syncMapForArtifact
 )
 
-func NewItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds []build.Artifact, cfg docker.Config, dependentArtifactsCount int) (*Item, error) {
+func NewItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds []graph.Artifact, cfg docker.Config, dependentArtifactsCount int) (*Item, error) {
 	if !e.HasChanged() || a.Sync == nil {
 		return nil, nil
 	}
@@ -194,7 +195,7 @@ func autoSyncItem(ctx context.Context, a *latest.Artifact, tag string, e filemon
 	}
 }
 
-func latestTag(image string, builds []build.Artifact) string {
+func latestTag(image string, builds []graph.Artifact) string {
 	for _, build := range builds {
 		if build.ImageName == image {
 			return build.Tag

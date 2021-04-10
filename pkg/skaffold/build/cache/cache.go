@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
@@ -47,7 +48,7 @@ type ArtifactCache map[string]ImageDetails
 // cache holds any data necessary for accessing the cache
 type cache struct {
 	artifactCache      ArtifactCache
-	artifactGraph      build.ArtifactGraph
+	artifactGraph      graph.ArtifactGraph
 	artifactStore      build.ArtifactStore
 	cacheMutex         sync.RWMutex
 	client             docker.LocalDaemon
@@ -73,7 +74,7 @@ type Config interface {
 }
 
 // NewCache returns the current state of the cache
-func NewCache(cfg Config, isLocalImage func(imageName string) (bool, error), dependencies DependencyLister, graph build.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
+func NewCache(cfg Config, isLocalImage func(imageName string) (bool, error), dependencies DependencyLister, graph graph.ArtifactGraph, store build.ArtifactStore) (Cache, error) {
 	if !cfg.CacheArtifacts() {
 		return &noCache{}, nil
 	}

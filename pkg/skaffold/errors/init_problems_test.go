@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
@@ -27,7 +28,7 @@ var (
 	initTestCases = []struct {
 		description string
 		opts        config.SkaffoldOptions
-		phase       Phase
+		phase       constants.Phase
 		context     *config.ContextConfig
 		err         error
 		expected    string
@@ -36,7 +37,7 @@ var (
 		{
 			description: "creating tagger error",
 			context:     &config.ContextConfig{},
-			phase:       Init,
+			phase:       constants.Init,
 			err:         fmt.Errorf("creating tagger: something went wrong"),
 			expected:    "creating tagger: something went wrong\n. If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error.",
 			expectedAE: &proto.ActionableErr{
@@ -48,7 +49,7 @@ var (
 		{
 			description: "minikube not started error",
 			context:     &config.ContextConfig{},
-			phase:       Init,
+			phase:       constants.Init,
 			err:         fmt.Errorf("creating runner: creating builder: getting docker client: getting minikube env: running [/Users/tejaldesai/Downloads/google-cloud-sdk2/bin/minikube docker-env --shell none -p minikube]\n - stdout: \"* The control plane node must be running for this command\\n  - To fix this, run: \\\"minikube start\\\"\\n\"\n - stderr: \"\"\n - cause: exit status 89"),
 			expected:    "minikube is probably not running. Try running \"minikube start\".",
 			expectedAE: &proto.ActionableErr{
@@ -63,7 +64,7 @@ var (
 		{
 			description: "create builder error",
 			context:     &config.ContextConfig{},
-			phase:       Init,
+			phase:       constants.Init,
 			err:         fmt.Errorf("creating runner: creating builder: something went wrong"),
 			expected:    "creating runner: creating builder: something went wrong\n. If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error.",
 			expectedAE: &proto.ActionableErr{
@@ -75,7 +76,7 @@ var (
 		{
 			description: "build dependency error",
 			context:     &config.ContextConfig{},
-			phase:       Init,
+			phase:       constants.Init,
 			err:         fmt.Errorf("creating runner: unexpected artifact type `DockerrArtifact`"),
 			expected:    "creating runner: unexpected artifact type `DockerrArtifact`\n. If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error.",
 			expectedAE: &proto.ActionableErr{
@@ -87,7 +88,7 @@ var (
 		{
 			description: "test dependency error",
 			context:     &config.ContextConfig{},
-			phase:       Init,
+			phase:       constants.Init,
 			err:         fmt.Errorf("creating runner: expanding test file paths: .src/test"),
 			expected:    "creating runner: expanding test file paths: .src/test\n. If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error.",
 			expectedAE: &proto.ActionableErr{
@@ -99,7 +100,7 @@ var (
 		{
 			description: "init cache error",
 			context:     &config.ContextConfig{},
-			phase:       Init,
+			phase:       constants.Init,
 			err:         fmt.Errorf("creating runner: initializing cache at some error"),
 			expected:    "creating runner: initializing cache at some error\n. If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error.",
 			expectedAE: &proto.ActionableErr{

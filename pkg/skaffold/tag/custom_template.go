@@ -22,6 +22,8 @@ import (
 	"text/template"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // customTemplateTagger implements Tagger
@@ -44,8 +46,8 @@ func NewCustomTemplateTagger(t string, components map[string]Tagger) (Tagger, er
 }
 
 // GenerateTag generates a tag from a template referencing tagging strategies.
-func (t *customTemplateTagger) GenerateTag(workingDir, imageName string) (string, error) {
-	customMap, err := t.EvaluateComponents(workingDir, imageName)
+func (t *customTemplateTagger) GenerateTag(image latest.Artifact) (string, error) {
+	customMap, err := t.EvaluateComponents(image)
 	if err != nil {
 		return "", err
 	}
@@ -60,14 +62,14 @@ func (t *customTemplateTagger) GenerateTag(workingDir, imageName string) (string
 }
 
 // EvaluateComponents creates a custom mapping of component names to their tagger string representation.
-func (t *customTemplateTagger) EvaluateComponents(workingDir, imageName string) (map[string]string, error) {
+func (t *customTemplateTagger) EvaluateComponents(image latest.Artifact) (map[string]string, error) {
 	customMap := map[string]string{}
 
 	gitTagger, _ := NewGitCommit("", "", false)
 	dateTimeTagger := NewDateTimeTagger("", "")
 
 	for k, v := range map[string]Tagger{"GIT": gitTagger, "DATE": dateTimeTagger, "SHA": &ChecksumTagger{}} {
-		tag, _ := v.GenerateTag(workingDir, imageName)
+		tag, _ := v.GenerateTag(image)
 		customMap[k] = tag
 	}
 
@@ -75,7 +77,7 @@ func (t *customTemplateTagger) EvaluateComponents(workingDir, imageName string) 
 		if _, ok := v.(*customTemplateTagger); ok {
 			return nil, fmt.Errorf("invalid component specified in custom template: %v", v)
 		}
-		tag, err := v.GenerateTag(workingDir, imageName)
+		tag, err := v.GenerateTag(image)
 		if err != nil {
 			return nil, fmt.Errorf("evaluating custom template component: %w", err)
 		}
