@@ -309,13 +309,17 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 }
 
 func TestSetDefaultsOnLocalBuild(t *testing.T) {
-	cfg := &latest.SkaffoldConfig{}
+	cfg1 := &latest.SkaffoldConfig{Pipeline: latest.Pipeline{Build: latest.BuildConfig{}}}
+	cfg2 := &latest.SkaffoldConfig{Pipeline: latest.Pipeline{Build: latest.BuildConfig{Artifacts: []*latest.Artifact{{ImageName: "foo"}}}}}
 
-	err := Set(cfg)
-	SetDefaultDeployer(cfg)
-
+	err := Set(cfg1)
 	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, 1, *cfg.Build.LocalBuild.Concurrency)
+	SetDefaultDeployer(cfg1)
+	testutil.CheckDeepEqual(t, latest.LocalBuild{}, *cfg1.Build.LocalBuild)
+	err = Set(cfg2)
+	testutil.CheckError(t, false, err)
+	SetDefaultDeployer(cfg2)
+	testutil.CheckDeepEqual(t, 1, *cfg2.Build.LocalBuild.Concurrency)
 }
 
 func TestSetPortForwardLocalPort(t *testing.T) {
