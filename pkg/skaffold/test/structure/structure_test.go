@@ -22,7 +22,10 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/blang/semver"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -39,6 +42,8 @@ func TestNewRunner(t *testing.T) {
 
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("test.yaml")
+		t.Override(&cluster.GetCurrentVersionFunc, func() (semver.Version, error) { return semver.Version{}, nil })
+
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image "+imageName+" --config "+tmpDir.Path("test.yaml")))
 
 		cfg := &mockConfig{

@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/blang/semver"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/homedir"
 
@@ -31,13 +32,14 @@ import (
 func TestClientImpl_IsMinikube(t *testing.T) {
 	home := homedir.HomeDir()
 	tests := []struct {
-		description        string
-		kubeContext        string
-		certPath           string
-		serverURL          string
-		minikubeProfileCmd util.Command
-		minikubeNotInPath  bool
-		expected           bool
+		description             string
+		kubeContext             string
+		certPath                string
+		serverURL               string
+		minikubeProfileCmd      util.Command
+		minikubeNotInPath       bool
+		expected                bool
+		minikuneWithoutUserFalg bool
 	}{
 		{
 			description: "context is 'minikube'",
@@ -55,6 +57,14 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 			kubeContext: "test-cluster",
 			certPath:    filepath.Join(home, ".minikube", "ca.crt"),
 			expected:    true,
+		},
+		{
+			description:             "minikube without user flag",
+			kubeContext:             "test-cluster",
+			minikubeProfileCmd:      testutil.CmdRunOut("minikube profile list -o json --user=skaffold", fmt.Sprintf(profileStr, "test-cluster", "docker", "172.17.0.3", 8443)),
+			certPath:                filepath.Join(home, "foo", "ca.crt"),
+			expected:                false,
+			minikuneWithoutUserFalg: true,
 		},
 		{
 			description:        "cluster cert outside minikube dir",
@@ -88,11 +98,21 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			if test.minikubeNotInPath {
-				t.Override(&minikubeBinaryFunc, func() (string, error) { return "", fmt.Errorf("minikube not in PATH") })
+				ver, _ := semver.Make("1.18.0")
+				t.Override(&minikubeBinaryFunc, func() (string, semver.Version, error) {
+					return "", ver, fmt.Errorf("minikube not in PATH")
+				})
 			} else {
-				t.Override(&minikubeBinaryFunc, func() (string, error) { return "minikube", nil })
+				if test.minikuneWithoutUserFalg {
+					ver, _ := semver.Make("1.17.0")
+					t.Override(&minikubeBinaryFunc, func() (string, semver.Version, error) {
+						return "", ver, fmt.Errorf("minikube not in PATH")
+					})
+				} else {
+					ver, _ := semver.Make("1.18.1")
+					t.Override(&minikubeBinaryFunc, func() (string, semver.Version, error) { return "minikube", ver, nil })
+				}
 			}
-			t.Override(&supportsUserFlagFunc, func() (bool, error) { return true, nil })
 			t.Override(&util.DefaultExecCommand, test.minikubeProfileCmd)
 			t.Override(&getClusterInfo, func(string) (*clientcmdapi.Cluster, error) {
 				return &clientcmdapi.Cluster{
