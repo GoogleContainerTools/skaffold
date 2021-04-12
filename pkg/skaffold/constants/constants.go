@@ -23,6 +23,17 @@ import (
 )
 
 const (
+	// These are phases in Skaffold
+	DevLoop     = Phase("DevLoop")
+	Init        = Phase("Init")
+	Build       = Phase("Build")
+	Test        = Phase("Test")
+	Deploy      = Phase("Deploy")
+	StatusCheck = Phase("StatusCheck")
+	Sync        = Phase("Sync")
+	DevInit     = Phase("DevInit")
+	Cleanup     = Phase("Cleanup")
+
 	// DefaultLogLevel is the default global verbosity
 	DefaultLogLevel = logrus.WarnLevel
 
@@ -59,6 +70,8 @@ const (
 
 	GithubIssueLink = "https://github.com/GoogleContainerTools/skaffold/issues/new"
 )
+
+type Phase string
 
 var (
 	Pod     latest.ResourceType = "pod"

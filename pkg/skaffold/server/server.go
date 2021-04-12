@@ -190,7 +190,7 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 }
 
 func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func() error, error) {
-	mux := runtime.NewServeMux(runtime.WithProtoErrorHandler(errorHandler))
+	mux := runtime.NewServeMux(runtime.WithProtoErrorHandler(errorHandler), runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{OrigName: true, EmitDefaults: true}))
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 	err := proto.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
 	if err != nil {
