@@ -423,7 +423,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
-      --port-forward=false: Port-forward exposed container ports within pods
+      --port-forward=user,debug: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
@@ -569,7 +569,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -n, --namespace='': Run deployments in the specified namespace
-      --port-forward=false: Port-forward exposed container ports within pods
+      --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
@@ -655,7 +655,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
-      --port-forward=false: Port-forward exposed container ports within pods
+      --port-forward=user: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
@@ -948,7 +948,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
-      --port-forward=false: Port-forward exposed container ports within pods
+      --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)

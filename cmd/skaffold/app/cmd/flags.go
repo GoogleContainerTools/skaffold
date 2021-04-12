@@ -251,12 +251,17 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
-		Name:          "port-forward",
-		Usage:         "Port-forward exposed container ports within pods",
-		Value:         &opts.PortForward.Enabled,
-		DefValue:      false,
-		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
+		Name:     "port-forward",
+		Usage:    "Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)",
+		Value:    &opts.PortForward,
+		DefValue: []string{"off"},
+		DefValuePerCommand: map[string]interface{}{
+			"debug": []string{"user", "debug"},
+			"dev":   []string{"user"},
+		},
+		NoOptDefVal:   "true", // uses the settings from when --port-forward was boolean
+		FlagAddMethod: "Var",
+		DefinedOn:     []string{"dev", "run", "deploy", "debug"},
 		IsEnum:        true,
 	},
 	{
