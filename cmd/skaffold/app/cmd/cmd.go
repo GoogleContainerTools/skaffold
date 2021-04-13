@@ -47,6 +47,7 @@ var (
 	interactive       bool
 	timestamps        bool
 	shutdownAPIServer func() error
+	renderV2          bool
 )
 
 // Annotation for commands that should allow post execution housekeeping messages like updates and surveys
@@ -207,6 +208,14 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.PersistentFlags().BoolVar(&update.EnableCheck, "update-check", true, "Check for a more recent version of Skaffold")
 	rootCmd.PersistentFlags().BoolVar(&timestamps, "timestamps", false, "Print timestamps in logs.")
 	rootCmd.PersistentFlags().MarkHidden("force-colors")
+
+	// TODO: The default value should be "true" once the following render v2 implementation is done:
+	// 1. kpt-based hydration implementation
+	// 2. kpt-based deploy
+	// 3. skaffold.yaml v3 (`render` and `deploy` section, final UX is TBD)
+	// 4. `skaffold fix` (kustomize and helm migration).
+	rootCmd.PersistentFlags().BoolVar(&renderV2, "render-v2", false, "render and/or deploy the manifests using kpt, skaffold.yaml v3 is required. ")
+	rootCmd.PersistentFlags().MarkHidden("render-v2")
 
 	setFlagsFromEnvVariables(rootCmd)
 

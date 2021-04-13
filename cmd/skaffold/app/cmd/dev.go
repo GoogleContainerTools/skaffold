@@ -29,7 +29,13 @@ import (
 )
 
 // for testing
-var doDev = runDev
+var doDev = func(ctx context.Context, out io.Writer) error {
+	if renderV2 {
+		// TODO: PLACEHOLDER for Skaffold render v2
+		return nil
+	}
+	return runDev(ctx, out)
+}
 
 // NewCmdDev describes the CLI command to run a pipeline in development mode.
 func NewCmdDev() *cobra.Command {

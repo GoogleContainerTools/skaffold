@@ -47,6 +47,7 @@ func NewCmdFix() *cobra.Command {
 }
 
 func doFix(_ context.Context, out io.Writer) error {
+	// TODO: If `renderV2` is enabled, `toVersion` should be at least "v3"
 	return fix(out, opts.ConfigurationFile, toVersion, overwrite)
 }
 

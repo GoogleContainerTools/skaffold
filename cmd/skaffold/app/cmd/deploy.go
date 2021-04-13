@@ -65,6 +65,10 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 			return err
 		}
 
+		if renderV2 {
+			// TODO: PLACEHOLDER for Skaffold render v2
+			return nil
+		}
 		return r.DeployAndLog(ctx, out, buildArtifacts)
 	})
 }

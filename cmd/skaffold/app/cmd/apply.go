@@ -54,7 +54,12 @@ func doApply(ctx context.Context, out io.Writer, args []string) error {
 		return err
 	}
 	return withRunner(ctx, out, func(r runner.Runner, configs []*latest.SkaffoldConfig) error {
-		return r.Apply(ctx, out)
+		if renderV2 {
+			// TODO: PLACEHOLDER for Skaffold render v2
+			return nil
+		} else {
+			return r.Apply(ctx, out)
+		}
 	})
 }
 

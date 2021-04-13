@@ -54,9 +54,13 @@ func doRun(ctx context.Context, out io.Writer) error {
 			}
 		}
 
-		err = r.DeployAndLog(ctx, out, bRes)
-		if err != nil {
-			return fmt.Errorf("failed to deploy: %w", err)
+		if renderV2 {
+			// TODO: PLACEHOLDER for Skaffold render v2
+			return nil
+		} else {
+			if r.DeployAndLog(ctx, out, bRes) != nil {
+				return fmt.Errorf("failed to deploy: %w", err)
+			}
 		}
 
 		tips.PrintForRun(out, opts)
