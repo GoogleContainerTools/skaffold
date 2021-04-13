@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
@@ -28,7 +29,7 @@ import (
 // no default repo is specified.
 type DefaultRepoFn func(string) (string, error)
 
-func getBuildArtifactsAndSetTags(artifacts []*latest.Artifact, defaulterFn DefaultRepoFn) ([]build.Artifact, error) {
+func getBuildArtifactsAndSetTags(artifacts []*latest.Artifact, defaulterFn DefaultRepoFn) ([]graph.Artifact, error) {
 	buildArtifacts, err := mergeBuildArtifacts(fromBuildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), artifacts)
 	if err != nil {
 		return nil, err
@@ -37,7 +38,7 @@ func getBuildArtifactsAndSetTags(artifacts []*latest.Artifact, defaulterFn Defau
 	return applyDefaultRepoToArtifacts(buildArtifacts, defaulterFn)
 }
 
-func applyDefaultRepoToArtifacts(artifacts []build.Artifact, defaulterFn DefaultRepoFn) ([]build.Artifact, error) {
+func applyDefaultRepoToArtifacts(artifacts []graph.Artifact, defaulterFn DefaultRepoFn) ([]graph.Artifact, error) {
 	for i := range artifacts {
 		updatedTag, err := defaulterFn(artifacts[i].Tag)
 		if err != nil {
@@ -49,10 +50,10 @@ func applyDefaultRepoToArtifacts(artifacts []build.Artifact, defaulterFn Default
 	return artifacts, nil
 }
 
-func mergeBuildArtifacts(fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	var buildArtifacts []build.Artifact
+func mergeBuildArtifacts(fromFile, fromCLI []graph.Artifact, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
+	var buildArtifacts []graph.Artifact
 	for _, artifact := range artifacts {
-		buildArtifacts = append(buildArtifacts, build.Artifact{
+		buildArtifacts = append(buildArtifacts, graph.Artifact{
 			ImageName: artifact.ImageName,
 		})
 	}
@@ -74,9 +75,9 @@ func mergeBuildArtifacts(fromFile, fromCLI []build.Artifact, artifacts []*latest
 	return buildArtifacts, nil
 }
 
-func applyCustomTag(artifacts []build.Artifact) ([]build.Artifact, error) {
+func applyCustomTag(artifacts []graph.Artifact) ([]graph.Artifact, error) {
 	if opts.CustomTag != "" {
-		var result []build.Artifact
+		var result []graph.Artifact
 		for _, artifact := range artifacts {
 			if artifact.Tag == "" {
 				artifact.Tag = artifact.ImageName + ":" + opts.CustomTag
@@ -94,7 +95,7 @@ func applyCustomTag(artifacts []build.Artifact) ([]build.Artifact, error) {
 	return artifacts, nil
 }
 
-func validateArtifactTags(artifacts []build.Artifact) error {
+func validateArtifactTags(artifacts []graph.Artifact) error {
 	for _, artifact := range artifacts {
 		if artifact.Tag == "" {
 			return fmt.Errorf("no tag provided for image [%s]", artifact.ImageName)

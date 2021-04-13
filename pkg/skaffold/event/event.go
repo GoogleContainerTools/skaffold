@@ -28,6 +28,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -174,6 +175,10 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 			AutoTrigger: autoBuild,
 			StatusCode:  proto.StatusCode_OK,
 		},
+		TestState: &proto.TestState{
+			Status:     NotStarted,
+			StatusCode: proto.StatusCode_OK,
+		},
 		DeployState: &proto.DeployState{
 			Status:      NotStarted,
 			AutoTrigger: autoDeploy,
@@ -201,7 +206,7 @@ func DeployInProgress() {
 
 // DeployFailed notifies that non-fatal errors were encountered during a deployment.
 func DeployFailed(err error) {
-	aiErr := sErrors.ActionableErr(sErrors.Deploy, err)
+	aiErr := sErrors.ActionableErr(constants.Deploy, err)
 	handler.stateLock.Lock()
 	handler.state.DeployState.StatusCode = aiErr.ErrCode
 	handler.stateLock.Unlock()
@@ -318,7 +323,7 @@ func BuildCanceled(imageName string) {
 
 // BuildFailed notifies that a build has failed.
 func BuildFailed(imageName string, err error) {
-	aiErr := sErrors.ActionableErr(sErrors.Build, err)
+	aiErr := sErrors.ActionableErr(constants.Build, err)
 	handler.handleBuildEvent(&proto.BuildEvent{
 		Artifact:      imageName,
 		Status:        Failed,
@@ -330,6 +335,31 @@ func BuildFailed(imageName string, err error) {
 // BuildComplete notifies that a build has completed.
 func BuildComplete(imageName string) {
 	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Complete})
+}
+
+// TestInProgress notifies that a test has been started.
+func TestInProgress() {
+	handler.handleTestEvent(&proto.TestEvent{Status: InProgress})
+}
+
+// TestCanceled notifies that a test has been canceled.
+func TestCanceled() {
+	handler.handleTestEvent(&proto.TestEvent{Status: Canceled})
+}
+
+// TestFailed notifies that a test has failed.
+func TestFailed(imageName string, err error) {
+	aiErr := sErrors.ActionableErr(constants.Test, err)
+	handler.stateLock.Lock()
+	handler.state.TestState.StatusCode = aiErr.ErrCode
+	handler.stateLock.Unlock()
+	handler.handleTestEvent(&proto.TestEvent{Status: Failed,
+		ActionableErr: aiErr})
+}
+
+// TestComplete notifies that a test has completed.
+func TestComplete() {
+	handler.handleTestEvent(&proto.TestEvent{Status: Complete})
 }
 
 // DevLoopInProgress notifies that a dev loop has been started.
@@ -351,19 +381,21 @@ func DevLoopFailedWithErrorCode(i int, statusCode proto.StatusCode, err error) {
 }
 
 // DevLoopFailed notifies that a dev loop has failed in a given phase
-func DevLoopFailedInPhase(iteration int, phase sErrors.Phase, err error) {
+func DevLoopFailedInPhase(iteration int, phase constants.Phase, err error) {
 	state := handler.getState()
 	switch phase {
-	case sErrors.Deploy:
+	case constants.Deploy:
 		if state.DeployState.StatusCode != proto.StatusCode_DEPLOY_SUCCESS {
 			DevLoopFailedWithErrorCode(iteration, state.DeployState.StatusCode, err)
 		} else {
 			DevLoopFailedWithErrorCode(iteration, state.StatusCheckState.StatusCode, err)
 		}
-	case sErrors.StatusCheck:
+	case constants.StatusCheck:
 		DevLoopFailedWithErrorCode(iteration, state.StatusCheckState.StatusCode, err)
-	case sErrors.Build:
+	case constants.Build:
 		DevLoopFailedWithErrorCode(iteration, state.BuildState.StatusCode, err)
+	case constants.Test:
+		DevLoopFailedWithErrorCode(iteration, state.TestState.StatusCode, err)
 	default:
 		ai := sErrors.ActionableErr(phase, err)
 		DevLoopFailedWithErrorCode(iteration, ai.ErrCode, err)
@@ -382,7 +414,7 @@ func FileSyncInProgress(fileCount int, image string) {
 
 // FileSyncFailed notifies that a file sync has failed.
 func FileSyncFailed(fileCount int, image string, err error) {
-	aiErr := sErrors.ActionableErr(sErrors.FileSync, err)
+	aiErr := sErrors.ActionableErr(constants.Sync, err)
 	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed,
 		Err: err.Error(), ErrCode: aiErr.ErrCode, ActionableErr: aiErr})
 }
@@ -493,6 +525,14 @@ func (ev *eventHandler) handleBuildEvent(e *proto.BuildEvent) {
 	})
 }
 
+func (ev *eventHandler) handleTestEvent(e *proto.TestEvent) {
+	ev.handle(&proto.Event{
+		EventType: &proto.Event_TestEvent{
+			TestEvent: e,
+		},
+	})
+}
+
 func (ev *eventHandler) handleDevLoopEvent(e *proto.DevLoopEvent) {
 	ev.handle(&proto.Event{
 		EventType: &proto.Event_DevLoopEvent{
@@ -560,7 +600,21 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 			// logEntry.Err = be.Err
 		default:
 		}
-
+	case *proto.Event_TestEvent:
+		te := e.TestEvent
+		ev.stateLock.Lock()
+		ev.state.TestState.Status = te.Status
+		ev.stateLock.Unlock()
+		switch te.Status {
+		case InProgress:
+			logEntry.Entry = "Test started"
+		case Complete:
+			logEntry.Entry = "Test completed"
+		case Failed:
+			logEntry.Entry = "Test failed"
+			// logEntry.Err = te.Err
+		default:
+		}
 	case *proto.Event_DeployEvent:
 		de := e.DeployEvent
 		ev.stateLock.Lock()
@@ -579,6 +633,9 @@ func (ev *eventHandler) handleExec(f firedEvent) {
 	case *proto.Event_PortEvent:
 		pe := e.PortEvent
 		ev.stateLock.Lock()
+		if ev.state.ForwardedPorts == nil {
+			ev.state.ForwardedPorts = map[int32]*proto.PortEvent{}
+		}
 		ev.state.ForwardedPorts[pe.LocalPort] = pe
 		ev.stateLock.Unlock()
 		logEntry.Entry = fmt.Sprintf("Forwarding container %s to local port %d", pe.ContainerName, pe.LocalPort)
@@ -677,6 +734,13 @@ func ResetStateOnBuild() {
 	handler.setState(newState)
 }
 
+// ResetStateOnTest resets the test, deploy, sync and status check state
+func ResetStateOnTest() {
+	newState := handler.getState()
+	newState.TestState.Status = NotStarted
+	handler.setState(newState)
+}
+
 // ResetStateOnDeploy resets the deploy, sync and status check state
 func ResetStateOnDeploy() {
 	newState := handler.getState()
@@ -729,7 +793,7 @@ func AutoTriggerDiff(name string, val bool) (bool, error) {
 
 // BuildSequenceFailed notifies that the build sequence has failed.
 func BuildSequenceFailed(err error) {
-	aiErr := sErrors.ActionableErr(sErrors.Build, err)
+	aiErr := sErrors.ActionableErr(constants.Build, err)
 	handler.stateLock.Lock()
 	handler.state.BuildState.StatusCode = aiErr.ErrCode
 	handler.stateLock.Unlock()
@@ -740,7 +804,7 @@ func InititializationFailed(err error) {
 		EventType: &proto.Event_TerminationEvent{
 			TerminationEvent: &proto.TerminationEvent{
 				Status: Failed,
-				Err:    sErrors.ActionableErr(sErrors.Init, err),
+				Err:    sErrors.ActionableErr(constants.Init, err),
 			},
 		},
 	})

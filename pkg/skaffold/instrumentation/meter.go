@@ -54,9 +54,9 @@ var (
 )
 
 func init() {
-	MeteredCommands.Insert("build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test")
+	MeteredCommands.Insert("apply", "build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test")
 	doesBuild.Insert("build", "render", "dev", "debug", "run")
-	doesDeploy.Insert("deploy", "dev", "debug", "run")
+	doesDeploy.Insert("apply", "deploy", "dev", "debug", "run")
 }
 
 // SetOnlineStatus issues a GET request to see if the user is online.

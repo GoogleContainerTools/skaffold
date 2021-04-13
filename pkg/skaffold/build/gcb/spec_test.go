@@ -19,6 +19,8 @@ package gcb
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -44,7 +46,7 @@ func TestBuildSpecFail(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			builder := NewBuilder(&mockConfig{}, &latest.GoogleCloudBuild{})
+			builder := NewBuilder(&mockBuilderContext{}, &latest.GoogleCloudBuild{})
 
 			_, err := builder.buildSpec(test.artifact, "tag", "bucket", "object")
 
@@ -53,6 +55,17 @@ func TestBuildSpecFail(t *testing.T) {
 	}
 }
 
-type mockConfig struct {
+type mockBuilderContext struct {
 	runcontext.RunContext // Embedded to provide the default values.
+	artifactStore         build.ArtifactStore
+	sourceDepsResolver    func() graph.TransitiveSourceDependenciesCache
 }
+
+func (c *mockBuilderContext) SourceDependenciesResolver() graph.TransitiveSourceDependenciesCache {
+	if c.sourceDepsResolver != nil {
+		return c.sourceDepsResolver()
+	}
+	return nil
+}
+
+func (c *mockBuilderContext) ArtifactStore() build.ArtifactStore { return c.artifactStore }

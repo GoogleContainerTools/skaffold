@@ -144,6 +144,15 @@ For more information about this defect see
 choco install -y skaffold
 ```
 
+### Scoop
+
+Skaffold can be installed using the [Scoop package manager](https://scoop.sh/).
+This package is not maintained by the Skaffold team.
+
+```powershell
+scoop install skaffold
+```
+
 {{% /tab %}}
 
 {{% tab "DOCKER" %}}

@@ -143,17 +143,19 @@ func TestDockerBuildSpec(t *testing.T) {
 				}
 				return m, nil
 			})
-			builder := NewBuilder(&mockConfig{}, &latest.GoogleCloudBuild{
+
+			store := mockArtifactStore{
+				"img2": "img2:tag",
+				"img3": "img3:tag",
+			}
+
+			builder := NewBuilder(&mockBuilderContext{artifactStore: store}, &latest.GoogleCloudBuild{
 				DockerImage: "docker/docker",
 				DiskSizeGb:  100,
 				MachineType: "n1-standard-1",
 				Timeout:     "10m",
 			})
-			store := mockArtifactStore{
-				"img2": "img2:tag",
-				"img3": "img3:tag",
-			}
-			builder.ArtifactStore(store)
+
 			desc, err := builder.buildSpec(test.artifact, "nginx", "bucket", "object")
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, desc)
 		})
@@ -173,7 +175,7 @@ func TestPullCacheFrom(t *testing.T) {
 				},
 			},
 		}
-		builder := NewBuilder(&mockConfig{}, &latest.GoogleCloudBuild{
+		builder := NewBuilder(&mockBuilderContext{}, &latest.GoogleCloudBuild{
 			DockerImage: "docker/docker",
 		})
 		desc, err := builder.dockerBuildSpec(artifact, "nginx2")

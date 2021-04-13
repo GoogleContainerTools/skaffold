@@ -32,7 +32,7 @@ import (
 )
 
 func TestDeploymentCheckStatus(t *testing.T) {
-	rolloutCmd := "kubectl --context kubecontext rollout status deployment dep --namespace test --watch=false"
+	rolloutCmd := "kubectl --context kubecontext rollout status deployment graph --namespace test --watch=false"
 	tests := []struct {
 		description     string
 		commands        util.Command
@@ -45,7 +45,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 			description: "rollout status success",
 			commands: testutil.CmdRunOut(
 				rolloutCmd,
-				"deployment \"dep\" successfully rolled out",
+				"deployment \"graph\" successfully rolled out",
 			),
 			expectedDetails: "successfully rolled out",
 			complete:        true,
@@ -101,7 +101,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			r := NewDeployment("dep", "test", 0)
+			r := NewDeployment("graph", "test", 0)
 			r.CheckStatus(context.Background(), &statusConfig{})
 
 			if test.cancelled {

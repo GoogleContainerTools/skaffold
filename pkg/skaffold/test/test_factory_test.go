@@ -27,13 +27,14 @@ import (
 
 	"github.com/docker/docker/client"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
 func TestNoTestDependencies(t *testing.T) {
@@ -86,8 +87,9 @@ func TestWrongPattern(t *testing.T) {
 
 		_, err = tester.TestDependencies()
 		t.CheckError(true, err)
+		testEvent.InitializeState([]latest.Pipeline{{}})
 
-		err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err = tester.Test(context.Background(), ioutil.Discard, []graph.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -139,7 +141,7 @@ func TestTestSuccess(t *testing.T) {
 		imagesAreLocal := true
 		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil })
 		t.CheckNoError(err)
-		err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err = tester.Test(context.Background(), ioutil.Discard, []graph.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -166,7 +168,7 @@ func TestTestSuccessRemoteImage(t *testing.T) {
 		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil })
 		t.CheckNoError(err)
 
-		err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err = tester.Test(context.Background(), ioutil.Discard, []graph.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -194,7 +196,7 @@ func TestTestFailureRemoteImage(t *testing.T) {
 		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return imagesAreLocal, nil })
 		t.CheckNoError(err)
 
-		err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err = tester.Test(context.Background(), ioutil.Discard, []graph.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})
@@ -224,7 +226,7 @@ func TestTestFailure(t *testing.T) {
 		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
 
-		err = tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		err = tester.Test(context.Background(), ioutil.Discard, []graph.Artifact{{
 			ImageName: "broken-image",
 			Tag:       "broken-image:tag",
 		}})
@@ -252,7 +254,7 @@ func TestTestMuted(t *testing.T) {
 		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
 
-		err = tester.Test(context.Background(), &buf, []build.Artifact{{
+		err = tester.Test(context.Background(), &buf, []graph.Artifact{{
 			ImageName: "image",
 			Tag:       "image:tag",
 		}})

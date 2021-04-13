@@ -19,27 +19,37 @@ package tag
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestSha256_GenerateTag(t *testing.T) {
 	c := &ChecksumTagger{}
 
-	tag, err := c.GenerateTag(".", "img:tag")
+	image := latest.Artifact{
+		ImageName: "img:tag",
+	}
+
+	tag, err := c.GenerateTag(image)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "", tag)
 
-	tag, err = c.GenerateTag(".", "img")
+	image.ImageName = "img"
+	tag, err = c.GenerateTag(image)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "latest", tag)
 
-	tag, err = c.GenerateTag(".", "registry.example.com:8080/img:tag")
+	image.ImageName = "registry.example.com:8080/img:tag"
+	tag, err = c.GenerateTag(image)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "", tag)
 
-	tag, err = c.GenerateTag(".", "registry.example.com:8080/img")
+	image.ImageName = "registry.example.com:8080/img"
+	tag, err = c.GenerateTag(image)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "latest", tag)
 
-	tag, err = c.GenerateTag(".", "registry.example.com/img")
+	image.ImageName = "registry.example.com/img"
+	tag, err = c.GenerateTag(image)
 	testutil.CheckErrorAndDeepEqual(t, false, err, "latest", tag)
 
-	tag, err = c.GenerateTag(".", "registry.example.com:8080:garbage")
+	image.ImageName = "registry.example.com:8080:garbage"
+	tag, err = c.GenerateTag(image)
 	testutil.CheckErrorAndDeepEqual(t, true, err, "", tag)
 }

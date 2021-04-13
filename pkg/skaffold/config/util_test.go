@@ -558,11 +558,11 @@ func TestShouldDisplayPrompt(t *testing.T) {
 			},
 		},
 		{
-			description: "should display prompt when last prompted is older than 3 months",
+			description: "should display prompt when last prompted is before 2 weeks",
 			cfg: &ContextConfig{
 				Survey: &SurveyConfig{
 					DisablePrompt: util.BoolPtr(false),
-					LastPrompted:  "2018-09-10T00:00:00Z",
+					LastPrompted:  "2019-01-10T00:00:00Z",
 				},
 			},
 			expected: true,

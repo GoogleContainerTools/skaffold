@@ -26,7 +26,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2beta13"
+const Version string = "skaffold/v2beta14"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -177,10 +177,16 @@ type TagPolicy struct {
 
 	// CustomTemplateTagger *beta* tags images with a configurable template string *composed of other taggers*.
 	CustomTemplateTagger *CustomTemplateTagger `yaml:"customTemplate,omitempty" yamltags:"oneOf=tag"`
+
+	// InputDigest *beta* tags images with their sha256 digest of their content.
+	InputDigest *InputDigest `yaml:"inputDigest,omitempty" yamltags:"oneOf=tag"`
 }
 
 // ShaTagger *beta* tags images with their sha256 digest.
 type ShaTagger struct{}
+
+// InputDigest *beta* tags hashes the image content.
+type InputDigest struct{}
 
 // GitTagger *beta* tags images with the git tag or commit of the artifact's workspace.
 type GitTagger struct {
@@ -480,7 +486,7 @@ type TestCase struct {
 	// StructureTests lists the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test)
 	// to run on that artifact.
 	// For example: `["./test/*"]`.
-	StructureTests []string `yaml:"structureTests,omitempty"`
+	StructureTests []string `yaml:"structureTests,omitempty" skaffold:"filepath"`
 }
 
 // DeployConfig contains all the configuration needed by the deploy steps.

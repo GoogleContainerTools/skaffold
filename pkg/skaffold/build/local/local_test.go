@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -237,13 +238,12 @@ func TestLocalRun(t *testing.T) {
 					},
 				}}})
 
-			builder, err := NewBuilder(&mockConfig{},
+			builder, err := NewBuilder(&mockBuilderContext{artifactStore: build.NewArtifactStore()},
 				&latest.LocalBuild{
 					Push:        util.BoolPtr(test.pushImages),
 					Concurrency: &constants.DefaultLocalConcurrency,
 				})
 			t.CheckNoError(err)
-			builder.ArtifactStore(build.NewArtifactStore())
 			ab := builder.Build(context.Background(), ioutil.Discard, test.artifact)
 			res, err := ab(context.Background(), ioutil.Discard, test.artifact, test.tag)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
@@ -302,7 +302,7 @@ func TestNewBuilder(t *testing.T) {
 				t.Override(&docker.NewAPIClient, test.localDockerFn)
 			}
 
-			builder, err := NewBuilder(&mockConfig{
+			builder, err := NewBuilder(&mockBuilderContext{
 				local:   test.localBuild,
 				cluster: test.cluster,
 			}, &test.localBuild)
@@ -382,9 +382,8 @@ func TestGetArtifactBuilder(t *testing.T) {
 				return args, nil
 			})
 
-			b, err := NewBuilder(&mockConfig{}, &latest.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency})
+			b, err := NewBuilder(&mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latest.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency})
 			t.CheckNoError(err)
-			b.ArtifactStore(build.NewArtifactStore())
 
 			builder, err := newPerArtifactBuilder(b, test.artifact)
 			t.CheckNoError(err)
@@ -409,17 +408,30 @@ func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
 	return docker.NewLocalDaemon(api, nil, false, nil)
 }
 
-type mockConfig struct {
+type mockBuilderContext struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	local                 latest.LocalBuild
 	mode                  config.RunMode
 	cluster               config.Cluster
+	artifactStore         build.ArtifactStore
+	sourceDepsResolver    func() graph.TransitiveSourceDependenciesCache
 }
 
-func (c *mockConfig) Mode() config.RunMode {
+func (c *mockBuilderContext) Mode() config.RunMode {
 	return c.mode
 }
 
-func (c *mockConfig) GetCluster() config.Cluster {
+func (c *mockBuilderContext) GetCluster() config.Cluster {
 	return c.cluster
+}
+
+func (c *mockBuilderContext) ArtifactStore() build.ArtifactStore {
+	return c.artifactStore
+}
+
+func (c *mockBuilderContext) SourceDependenciesResolver() graph.TransitiveSourceDependenciesCache {
+	if c.sourceDepsResolver != nil {
+		return c.sourceDepsResolver()
+	}
+	return nil
 }

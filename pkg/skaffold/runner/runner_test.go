@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -49,11 +50,14 @@ type Actions struct {
 }
 
 type TestBench struct {
-	buildErrors  []error
-	syncErrors   []error
-	testErrors   []error
-	deployErrors []error
-	namespaces   []string
+	buildErrors   []error
+	syncErrors    []error
+	testErrors    []error
+	deployErrors  []error
+	namespaces    []string
+	userIntents   []func(*intents)
+	intents       *intents
+	intentTrigger bool
 
 	devLoop        func(context.Context, io.Writer, func() error) error
 	firstMonitor   func(bool) error
@@ -103,7 +107,7 @@ func (t *TestBench) enterNewCycle() {
 	t.currentActions = Actions{}
 }
 
-func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 	if len(t.buildErrors) > 0 {
 		err := t.buildErrors[0]
 		t.buildErrors = t.buildErrors[1:]
@@ -114,9 +118,9 @@ func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artif
 
 	t.tag++
 
-	var builds []build.Artifact
+	var builds []graph.Artifact
 	for _, artifact := range artifacts {
-		builds = append(builds, build.Artifact{
+		builds = append(builds, graph.Artifact{
 			ImageName: artifact.ImageName,
 			Tag:       fmt.Sprintf("%s:%d", artifact.ImageName, t.tag),
 		})
@@ -139,7 +143,7 @@ func (t *TestBench) Sync(_ context.Context, item *sync.Item) error {
 	return nil
 }
 
-func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []build.Artifact) error {
+func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []graph.Artifact) error {
 	if len(t.testErrors) > 0 {
 		err := t.testErrors[0]
 		t.testErrors = t.testErrors[1:]
@@ -152,7 +156,7 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []build.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact) ([]string, error) {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []graph.Artifact) ([]string, error) {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
@@ -165,7 +169,7 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Art
 	return t.namespaces, nil
 }
 
-func (t *TestBench) Render(context.Context, io.Writer, []build.Artifact, bool, string) error {
+func (t *TestBench) Render(context.Context, io.Writer, []graph.Artifact, bool, string) error {
 	return nil
 }
 
@@ -178,6 +182,16 @@ func (t *TestBench) WatchForChanges(ctx context.Context, out io.Writer, doDev fu
 	if err := t.firstMonitor(true); err != nil {
 		return err
 	}
+
+	t.intentTrigger = true
+	for _, intent := range t.userIntents {
+		intent(t.intents)
+		if err := t.devLoop(ctx, out, doDev); err != nil {
+			return err
+		}
+	}
+
+	t.intentTrigger = false
 	for i := 0; i < t.cycles; i++ {
 		t.enterNewCycle()
 		t.currentCycle = i
@@ -190,7 +204,7 @@ func (t *TestBench) WatchForChanges(ctx context.Context, out io.Writer, doDev fu
 
 func (t *TestBench) LogWatchToUser(_ io.Writer) {}
 
-func findTags(artifacts []build.Artifact) []string {
+func findTags(artifacts []graph.Artifact) []string {
 	var tags []string
 	for _, artifact := range artifacts {
 		tags = append(tags, artifact.Tag)
@@ -203,7 +217,16 @@ func (r *SkaffoldRunner) WithMonitor(m filemon.Monitor) *SkaffoldRunner {
 	return r
 }
 
-func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, artifacts []*latest.Artifact) *SkaffoldRunner {
+type triggerState struct {
+	build  bool
+	sync   bool
+	deploy bool
+}
+
+func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, artifacts []*latest.Artifact, autoTriggers *triggerState) *SkaffoldRunner {
+	if autoTriggers == nil {
+		autoTriggers = &triggerState{true, true, true}
+	}
 	cfg := &latest.SkaffoldConfig{
 		Pipeline: latest.Pipeline{
 			Build: latest.BuildConfig{
@@ -223,9 +246,9 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 		Opts: config.SkaffoldOptions{
 			Trigger:           "polling",
 			WatchPollInterval: 100,
-			AutoBuild:         true,
-			AutoSync:          true,
-			AutoDeploy:        true,
+			AutoBuild:         autoTriggers.build,
+			AutoSync:          autoTriggers.sync,
+			AutoDeploy:        autoTriggers.deploy,
 		},
 	}
 	runner, err := NewForConfig(runCtx)

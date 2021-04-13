@@ -321,7 +321,7 @@ func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
 	if cfg == nil || cfg.Survey == nil {
 		return false
 	}
-	return lessThan(cfg.Survey.LastTaken, 365*24*time.Hour) || lessThan(cfg.Survey.LastPrompted, 60*24*time.Hour)
+	return lessThan(cfg.Survey.LastTaken, 90*24*time.Hour) || lessThan(cfg.Survey.LastPrompted, 10*24*time.Hour)
 }
 
 func lessThan(date string, duration time.Duration) bool {

@@ -19,6 +19,11 @@ package portforward
 import (
 	"context"
 	"testing"
+
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestForwarderManagerZeroValue(t *testing.T) {
@@ -27,4 +32,26 @@ func TestForwarderManagerZeroValue(t *testing.T) {
 	// Should not raise a nil dereference
 	m.Start(context.Background(), nil)
 	m.Stop()
+}
+
+func TestAllPorts(t *testing.T) {
+	ports := []v1.ContainerPort{
+		{Name: "dlv", ContainerPort: 56286},
+		{Name: "http", ContainerPort: 8080},
+	}
+	container := v1.Container{Name: "test", Ports: ports}
+	pod := v1.Pod{Spec: v1.PodSpec{Containers: []v1.Container{container}}}
+	testutil.CheckDeepEqual(t, ports, allPorts(&pod, container))
+}
+
+func TestDebugPorts(t *testing.T) {
+	ports := []v1.ContainerPort{
+		{Name: "dlv", ContainerPort: 56268},
+		{Name: "http", ContainerPort: 8080},
+	}
+	container := v1.Container{Name: "test", Ports: ports}
+	pod := v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "name", Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"foo","ports":{"dlv":56268}}}`}},
+		Spec:       v1.PodSpec{Containers: []v1.Container{container}}}
+	testutil.CheckDeepEqual(t, []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}}, debugPorts(&pod, container))
 }

@@ -5,16 +5,16 @@ has special sync support using the `auto` configuration.
 
 ## Running the example
 
-Run the maven or gradle version of the example with port forwarding on.
+Run the maven or gradle version of the example.
 
 #### Gradle
 ```
-$ skaffold dev -f skaffold-gradle.yaml --port-forward
+$ skaffold dev -f skaffold-gradle.yaml
 ```
 
 #### Maven
 ```
-$ skaffold dev -f skaffold-maven.yaml --port-forward
+$ skaffold dev -f skaffold-maven.yaml
 ```
 
 You can now see sync in action:

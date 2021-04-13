@@ -482,9 +482,12 @@ func format(t *testutil.T, configs []string, apiVersions []string) string {
 
 func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
-		b := latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency}}}
+		b := latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{}}}
 		for _, op := range ops {
 			op(&b)
+		}
+		if len(b.Artifacts) > 0 {
+			b.LocalBuild.Concurrency = &constants.DefaultLocalConcurrency
 		}
 		cfg.Build = b
 	}

@@ -47,6 +47,11 @@ type RunBuilder struct {
 	stdin      []byte
 }
 
+// Apply runs `skaffold apply` with the given arguments.
+func Apply(args ...string) *RunBuilder {
+	return withDefaults("apply", args)
+}
+
 // Dev runs `skaffold dev` with the given arguments.
 func Dev(args ...string) *RunBuilder {
 	return withDefaults("dev", args)

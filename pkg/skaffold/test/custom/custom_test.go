@@ -24,11 +24,11 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
 func TestNewCustomTestRunner(t *testing.T) {
@@ -58,13 +58,11 @@ func TestNewCustomTestRunner(t *testing.T) {
 			workingDir: tmpDir.Root(),
 			tests:      []*latest.TestCase{testCase},
 		}
+		testEvent.InitializeState([]latest.Pipeline{{}})
 
 		testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 		t.CheckNoError(err)
-		err = testRunner.Test(context.Background(), ioutil.Discard, []build.Artifact{{
-			ImageName: "image",
-			Tag:       "image:tag",
-		}})
+		err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
 
 		t.CheckNoError(err)
 	})
@@ -119,13 +117,11 @@ func TestCustomCommandError(t *testing.T) {
 				workingDir: tmpDir.Root(),
 				tests:      []*latest.TestCase{testCase},
 			}
+			testEvent.InitializeState([]latest.Pipeline{{}})
 
 			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, test.custom)
 			t.CheckNoError(err)
-			err = testRunner.Test(context.Background(), ioutil.Discard, []build.Artifact{{
-				ImageName: "image",
-				Tag:       "image:tag",
-			}})
+			err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
 
 			// TODO(modali): Update the logic to check for error code instead of error string.
 			t.CheckError(test.shouldErr, err)
@@ -156,6 +152,7 @@ func TestTestDependenciesCommand(t *testing.T) {
 			workingDir: tmpDir.Root(),
 			tests:      []*latest.TestCase{testCase},
 		}
+		testEvent.InitializeState([]latest.Pipeline{{}})
 
 		if runtime.GOOS == Windows {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
@@ -239,6 +236,7 @@ func TestTestDependenciesPaths(t *testing.T) {
 				workingDir: tmpDir.Root(),
 				tests:      []*latest.TestCase{testCase},
 			}
+			testEvent.InitializeState([]latest.Pipeline{{}})
 
 			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 			t.CheckNoError(err)
@@ -291,13 +289,11 @@ func TestGetEnv(t *testing.T) {
 				workingDir: tmpDir.Root(),
 				tests:      []*latest.TestCase{testCase},
 			}
+			testEvent.InitializeState([]latest.Pipeline{{}})
 
 			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
 			t.CheckNoError(err)
-			actual, err := testRunner.getEnv([]build.Artifact{{
-				ImageName: "image",
-				Tag:       test.tag,
-			}})
+			actual, err := testRunner.getEnv(test.tag)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)

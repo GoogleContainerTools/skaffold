@@ -23,6 +23,17 @@ import (
 )
 
 const (
+	// These are phases in Skaffold
+	DevLoop     = Phase("DevLoop")
+	Init        = Phase("Init")
+	Build       = Phase("Build")
+	Test        = Phase("Test")
+	Deploy      = Phase("Deploy")
+	StatusCheck = Phase("StatusCheck")
+	Sync        = Phase("Sync")
+	DevInit     = Phase("DevInit")
+	Cleanup     = Phase("Cleanup")
+
 	// DefaultLogLevel is the default global verbosity
 	DefaultLogLevel = logrus.WarnLevel
 
@@ -60,6 +71,8 @@ const (
 	GithubIssueLink = "https://github.com/GoogleContainerTools/skaffold/issues/new"
 )
 
+type Phase string
+
 var (
 	Pod     latest.ResourceType = "pod"
 	Service latest.ResourceType = "service"
@@ -68,9 +81,6 @@ var (
 )
 
 var (
-	// DeprecatedImages is an environment variable key, whose value is an array of fully qualified image names passed in to a custom build script.
-	DeprecatedImages = "IMAGES"
-
 	// Image is an environment variable key, whose value is the fully qualified image name passed in to a custom build script.
 	Image = "IMAGE"
 

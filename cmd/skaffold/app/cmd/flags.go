@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -32,6 +33,13 @@ import (
 var (
 	fromBuildOutputFile flags.BuildOutputFileFlag
 )
+
+// Nillable is used to reset objects that implement pflag's `Value` and `SliceValue`.
+// Some flags, like `--default-repo`, use nil to indicate that they are unset, which
+// is different from the empty string.
+type Nillable interface {
+	SetNil() error
+}
 
 // Flag defines a Skaffold CLI flag which contains a list of
 // subcommands the flag belongs to in `DefinedOn` field.
@@ -83,7 +91,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.Profiles,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "apply"},
 	},
 	{
 		Name:          "namespace",
@@ -92,14 +100,14 @@ var flagRegistry = []Flag{
 		Value:         &opts.Namespace,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "apply"},
 	},
 	{
 		Name:          "default-repo",
 		Shorthand:     "d",
 		Usage:         "Default repository value (overrides global config)",
 		Value:         &opts.DefaultRepo,
-		DefValue:      "",
+		DefValue:      nil,
 		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
 	},
@@ -109,7 +117,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.CacheArtifacts,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "render"},
 		IsEnum:        true,
 	},
 	{
@@ -201,7 +209,7 @@ var flagRegistry = []Flag{
 			"debug": true,
 		},
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "apply"},
 		IsEnum:        true,
 	},
 	{
@@ -210,7 +218,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.Force,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+		DefinedOn:     []string{"deploy", "dev", "run", "debug", "apply"},
 		IsEnum:        true,
 	},
 	{
@@ -250,12 +258,17 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
-		Name:          "port-forward",
-		Usage:         "Port-forward exposed container ports within pods",
-		Value:         &opts.PortForward.Enabled,
-		DefValue:      false,
-		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
+		Name:     "port-forward",
+		Usage:    "Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)",
+		Value:    &opts.PortForward,
+		DefValue: []string{"off"},
+		DefValuePerCommand: map[string]interface{}{
+			"debug": []string{"user", "debug"},
+			"dev":   []string{"user"},
+		},
+		NoOptDefVal:   "true", // uses the settings from when --port-forward was boolean
+		FlagAddMethod: "Var",
+		DefinedOn:     []string{"dev", "run", "deploy", "debug"},
 		IsEnum:        true,
 	},
 	{
@@ -264,7 +277,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.StatusCheck,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
+		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
 		IsEnum:        true,
 	},
 	{
@@ -291,7 +304,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.GlobalConfig,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"run", "dev", "debug", "build", "deploy", "delete", "diagnose"},
+		DefinedOn:     []string{"run", "dev", "debug", "build", "deploy", "delete", "diagnose", "apply"},
 	},
 	{
 		Name:          "kube-context",
@@ -299,7 +312,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.KubeContext,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run", "filter"},
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run", "filter", "apply"},
 	},
 	{
 		Name:          "kubeconfig",
@@ -307,7 +320,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.KubeConfig,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run", "filter"},
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run", "filter", "apply"},
 	},
 	{
 		Name:          "tag",
@@ -517,8 +530,16 @@ func (fl *Flag) flag(cmdName string) *pflag.Flag {
 	if methodName == "" {
 		methodName = methodNameByType(reflect.ValueOf(fl.Value))
 	}
+	isVar := methodName == "Var"
+	// pflags' Var*() methods do not take a default value but instead
+	// assume the value is already set to its default value.  So we
+	// explicitly set the default value here to ensure help text is correct.
+	if isVar {
+		setDefaultValues(fl.Value, fl, cmdName)
+	}
+
 	inputs := []interface{}{fl.Value, fl.Name}
-	if methodName != "Var" {
+	if !isVar {
 		if d, found := fl.DefValuePerCommand[cmdName]; found {
 			inputs = append(inputs, d)
 		} else {
@@ -528,8 +549,8 @@ func (fl *Flag) flag(cmdName string) *pflag.Flag {
 	inputs = append(inputs, fl.Usage)
 
 	fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
-
 	reflect.ValueOf(fs).MethodByName(methodName).Call(reflectValueOf(inputs))
+
 	f := fs.Lookup(fl.Name)
 	if len(fl.NoOptDefVal) > 0 {
 		// f.NoOptDefVal may be set depending on value type
@@ -540,34 +561,34 @@ func (fl *Flag) flag(cmdName string) *pflag.Flag {
 	return f
 }
 
-func reflectValueOf(values []interface{}) []reflect.Value {
-	var results []reflect.Value
-	for _, v := range values {
-		results = append(results, reflect.ValueOf(v))
-	}
-	return results
-}
-
 func ResetFlagDefaults(cmd *cobra.Command, flags []*Flag) {
 	// Update default values.
 	for _, fl := range flags {
 		flag := cmd.Flag(fl.Name)
 		if !flag.Changed {
-			defValue := fl.DefValue
-			if fl.DefValuePerCommand != nil {
-				if d, present := fl.DefValuePerCommand[cmd.Use]; present {
-					defValue = d
-				}
-			}
-			if sv, ok := flag.Value.(pflag.SliceValue); ok {
-				reflect.ValueOf(sv).MethodByName("Replace").Call(reflectValueOf([]interface{}{defValue}))
-			} else {
-				flag.Value.Set(fmt.Sprintf("%v", defValue))
-			}
+			setDefaultValues(flag.Value, fl, cmd.Name())
 		}
 		if fl.IsEnum {
 			instrumentation.AddFlag(flag)
 		}
+	}
+}
+
+// setDefaultValues sets the default value (or values) for the given flag definition.
+// This function handles pflag's SliceValue and Value interfaces.
+func setDefaultValues(v interface{}, fl *Flag, cmdName string) {
+	d, found := fl.DefValuePerCommand[cmdName]
+	if !found {
+		d = fl.DefValue
+	}
+	if nv, ok := v.(Nillable); ok && d == nil {
+		nv.SetNil()
+	} else if sv, ok := v.(pflag.SliceValue); ok {
+		sv.Replace(asStringSlice(d))
+	} else if val, ok := v.(pflag.Value); ok {
+		val.Set(fmt.Sprintf("%v", d))
+	} else {
+		logrus.Fatalf("%s --%s: unhandled value type: %v (%T)", cmdName, fl.Name, v, v)
 	}
 }
 
@@ -612,4 +633,30 @@ func hasCmdAnnotation(cmdName string, annotations []string) bool {
 		}
 	}
 	return false
+}
+
+func reflectValueOf(values []interface{}) []reflect.Value {
+	var results []reflect.Value
+	for _, v := range values {
+		results = append(results, reflect.ValueOf(v))
+	}
+	return results
+}
+
+func asStringSlice(v interface{}) []string {
+	vt := reflect.TypeOf(v)
+	if vt == reflect.TypeOf([]string{}) {
+		return v.([]string)
+	}
+	switch vt.Kind() {
+	case reflect.Array, reflect.Slice:
+		value := reflect.ValueOf(v)
+		var slice []string
+		for i := 0; i < value.Len(); i++ {
+			slice = append(slice, fmt.Sprintf("%v", value.Index(i)))
+		}
+		return slice
+	default:
+		return []string{fmt.Sprintf("%v", v)}
+	}
 }

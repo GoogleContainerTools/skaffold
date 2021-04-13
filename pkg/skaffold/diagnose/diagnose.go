@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -36,6 +37,7 @@ type Config interface {
 	docker.Config
 
 	GetPipelines() []latest.Pipeline
+	Artifacts() []*latest.Artifact
 }
 
 func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
@@ -113,9 +115,11 @@ func typeOfArtifact(a *latest.Artifact) string {
 	}
 }
 
-func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg docker.Config) (string, []string, error) {
+func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg Config) (string, []string, error) {
 	start := time.Now()
-	paths, err := build.DependenciesForArtifact(ctx, a, cfg, nil)
+	g := graph.ToArtifactGraph(cfg.Artifacts())
+	sourceDependencies := graph.NewTransitiveSourceDependenciesCache(cfg, nil, g)
+	paths, err := sourceDependencies.ResolveForArtifact(ctx, a)
 	return util.ShowHumanizeTime(time.Since(start)), paths, err
 }
 

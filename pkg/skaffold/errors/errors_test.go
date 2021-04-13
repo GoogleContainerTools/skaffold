@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -34,7 +35,7 @@ func TestShowAIError(t *testing.T) {
 	tests := []struct {
 		description string
 		opts        config.SkaffoldOptions
-		phase       Phase
+		phase       constants.Phase
 		context     *config.ContextConfig
 		err         error
 		expected    string
@@ -43,7 +44,7 @@ func TestShowAIError(t *testing.T) {
 		{
 			description: "Push access denied when neither default repo or global config is defined",
 			context:     &config.ContextConfig{},
-			phase:       Build,
+			phase:       constants.Build,
 			err:         fmt.Errorf("skaffold build failed: could not push image: denied: push access to resource"),
 			expected:    "Build Failed. No push access to specified image repository. Trying running with `--default-repo` flag.",
 			expectedAE: &proto.ActionableErr{
@@ -58,7 +59,7 @@ func TestShowAIError(t *testing.T) {
 		{
 			description: "Push access denied when default repo is defined",
 			opts:        config.SkaffoldOptions{DefaultRepo: stringOrUndefined("gcr.io/test")},
-			phase:       Build,
+			phase:       constants.Build,
 			err:         fmt.Errorf("skaffold build failed: could not push image image1 : denied: push access to resource"),
 			expected:    "Build Failed. No push access to specified image repository. Check your `--default-repo` value or try `gcloud auth configure-docker`.",
 			expectedAE: &proto.ActionableErr{
@@ -77,7 +78,7 @@ func TestShowAIError(t *testing.T) {
 		{
 			description: "Push access denied when global repo is defined",
 			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
-			phase:       Build,
+			phase:       constants.Build,
 			err:         fmt.Errorf("skaffold build failed: could not push image: denied: push access to resource"),
 			expected:    "Build Failed. No push access to specified image repository. Check your default-repo setting in skaffold config or try `docker login`.",
 			expectedAE: &proto.ActionableErr{
@@ -95,7 +96,7 @@ func TestShowAIError(t *testing.T) {
 		},
 		{
 			description: "unknown project error",
-			phase:       Build,
+			phase:       constants.Build,
 			err:         fmt.Errorf("build failed: could not push image: unknown: Project"),
 			expected:    "Build Failed. Check your GCR project.",
 			expectedAE: &proto.ActionableErr{
@@ -114,7 +115,7 @@ func TestShowAIError(t *testing.T) {
  - stdout: "\n\n"
  - stderr: "! Executing \"docker container inspect minikube --format={{.State.Status}}\" took an unusually long time: 7.36540945s\n* Restarting the docker service may improve performance.\nX Exiting due to GUEST_STATUS: state: unknown state \"minikube\": docker container inspect minikube --format=: exit status 1\nstdout:\n\n\nstderr:\nCannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?\n\n* \n* If the above advice does not help, please let us know: \n  - https://github.com/kubernetes/minikube/issues/new/choose\n"
  - cause: exit status 80`),
-			phase:    Build,
+			phase:    constants.Build,
 			expected: "Build Failed. Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Check if docker is running.",
 			expectedAE: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_DOCKER_DAEMON_NOT_RUNNING,
@@ -130,7 +131,7 @@ func TestShowAIError(t *testing.T) {
 			description: "build error when docker is not running and deploying to GKE",
 			err:         fmt.Errorf(`exiting dev mode because first build failed: docker build: Cannot connect to the Docker daemon at tcp://127.0.0.1:32770. Is the docker daemon running?`),
 			expected:    "Build Failed. Cannot connect to the Docker daemon at tcp://127.0.0.1:32770. Check if docker is running.",
-			phase:       Build,
+			phase:       constants.Build,
 			expectedAE: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_DOCKER_DAEMON_NOT_RUNNING,
 				Message: "exiting dev mode because first build failed: docker build: Cannot connect to the Docker daemon at tcp://127.0.0.1:32770. Is the docker daemon running?",
@@ -147,7 +148,7 @@ func TestShowAIError(t *testing.T) {
 			// See https://github.com/moby/moby/blob/master/client/errors.go#L20
 			err:      fmt.Errorf(`exiting dev mode because first build failed: docker build: Cannot connect to the Docker daemon. Is the docker daemon running on this host?`),
 			expected: "Build Failed. Cannot connect to the Docker daemon. Check if docker is running.",
-			phase:    Build,
+			phase:    constants.Build,
 			expectedAE: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_DOCKER_DAEMON_NOT_RUNNING,
 				Message: "exiting dev mode because first build failed: docker build: Cannot connect to the Docker daemon. Is the docker daemon running on this host?",
@@ -162,7 +163,7 @@ func TestShowAIError(t *testing.T) {
 			description: "build cancelled",
 			// See https://github.com/moby/moby/blob/master/client/errors.go#L20
 			err:      fmt.Errorf(`docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  context canceled`),
-			phase:    Build,
+			phase:    constants.Build,
 			expected: "Build Cancelled.",
 			expectedAE: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_CANCELLED,
@@ -173,7 +174,7 @@ func TestShowAIError(t *testing.T) {
 		{
 			description: "build unknown error",
 			context:     &config.ContextConfig{DefaultRepo: "docker.io/global"},
-			phase:       Build,
+			phase:       constants.Build,
 			err:         fmt.Errorf("build failed: something went wrong"),
 			expected:    "build failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
@@ -184,7 +185,7 @@ func TestShowAIError(t *testing.T) {
 		},
 		{
 			description: "deploy unknown error",
-			phase:       Deploy,
+			phase:       constants.Deploy,
 			err:         fmt.Errorf("deploy failed: something went wrong"),
 			expected:    "deploy failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
@@ -195,7 +196,7 @@ func TestShowAIError(t *testing.T) {
 		},
 		{
 			description: "file sync unknown error",
-			phase:       FileSync,
+			phase:       constants.Sync,
 			err:         fmt.Errorf("sync failed: something went wrong"),
 			expected:    "sync failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
@@ -206,7 +207,7 @@ func TestShowAIError(t *testing.T) {
 		},
 		{
 			description: "init unknown error",
-			phase:       Init,
+			phase:       constants.Init,
 			err:         fmt.Errorf("init failed: something went wrong"),
 			expected:    "init failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
@@ -217,7 +218,7 @@ func TestShowAIError(t *testing.T) {
 		},
 		{
 			description: "cleanup unknown error",
-			phase:       Cleanup,
+			phase:       constants.Cleanup,
 			err:         fmt.Errorf("failed: something went wrong"),
 			expected:    "failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
@@ -228,7 +229,7 @@ func TestShowAIError(t *testing.T) {
 		},
 		{
 			description: "status check unknown error",
-			phase:       StatusCheck,
+			phase:       constants.StatusCheck,
 			err:         fmt.Errorf("failed: something went wrong"),
 			expected:    "failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
@@ -239,7 +240,7 @@ func TestShowAIError(t *testing.T) {
 		},
 		{
 			description: "dev init unknown error",
-			phase:       DevInit,
+			phase:       constants.DevInit,
 			err:         fmt.Errorf("failed: something went wrong"),
 			expected:    "failed: something went wrong",
 			expectedAE: &proto.ActionableErr{
@@ -252,7 +253,7 @@ func TestShowAIError(t *testing.T) {
 			description: "deploy failed",
 			opts:        config.SkaffoldOptions{},
 			context:     &config.ContextConfig{},
-			phase:       Deploy,
+			phase:       constants.Deploy,
 			err:         fmt.Errorf(`exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get "https://192.168.64.3:8443/version?timeout=32s": net/http: TLS handshake timeout`),
 			expected:    "Deploy Failed. Could not connect to cluster test_cluster due to \"https://192.168.64.3:8443/version?timeout=32s\": net/http: TLS handshake timeout. Check your connection for the cluster.",
 			expectedAE: &proto.ActionableErr{

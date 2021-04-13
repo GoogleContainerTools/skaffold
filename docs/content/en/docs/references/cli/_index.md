@@ -77,6 +77,7 @@ Pipeline building blocks for CI/CD:
   deploy            Deploy pre-built artifacts
   delete            Delete the deployed application
   render            [alpha] Perform all image builds, and output rendered Kubernetes manifests
+  apply             Apply hydrated manifests to a cluster
 
 Getting started with a new project:
   init              [alpha] Generate configuration for deploying an application
@@ -103,6 +104,54 @@ Env vars:
 * `SKAFFOLD_TIMESTAMPS` (same as `--timestamps`)
 * `SKAFFOLD_UPDATE_CHECK` (same as `--update-check`)
 * `SKAFFOLD_VERBOSITY` (same as `--verbosity`)
+
+### skaffold apply
+
+Apply hydrated manifests to a cluster
+
+```
+
+
+Examples:
+  # Hydrate Kubernetes pod manifest first
+  skaffold render --output rendered-pod.yaml
+
+  # Then create resources on your cluster from that hydrated manifest
+  skaffold apply rendered-pod.yaml
+
+Options:
+  -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
+  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
+      --kube-context='': Deploy to this Kubernetes context
+      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
+  -n, --namespace='': Run deployments in the specified namespace
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
+      --status-check=true: Wait for deployed resources to stabilize
+      --tail=false: Stream logs from deployed objects
+
+Usage:
+  skaffold apply [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+Env vars:
+
+* `SKAFFOLD_CONFIG` (same as `--config`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_FORCE` (same as `--force`)
+* `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
+* `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
+* `SKAFFOLD_MODULE` (same as `--module`)
+* `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
+* `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
+* `SKAFFOLD_TAIL` (same as `--tail`)
 
 ### skaffold build
 
@@ -374,7 +423,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
-      --port-forward=false: Port-forward exposed container ports within pods
+      --port-forward=user,debug: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
@@ -520,7 +569,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -n, --namespace='': Run deployments in the specified namespace
-      --port-forward=false: Port-forward exposed container ports within pods
+      --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
@@ -606,7 +655,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
-      --port-forward=false: Port-forward exposed container ports within pods
+      --port-forward=user: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
@@ -736,7 +785,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --overwrite=false: Overwrite original config with fixed config
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --version='skaffold/v2beta13': Target schema version to upgrade to
+      --version='skaffold/v2beta14': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -825,6 +874,7 @@ Examples:
 Options:
       --add-skaffold-labels=true: Add Skaffold-specific labels to rendered manifest. If false, custom labels are still applied. Helpful for GitOps model where Skaffold is not the deployer.
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+      --cache-artifacts=true: Set to false to disable default caching of artifacts
   -d, --default-repo='': Default repository value (overrides global config)
       --digest-source='local': Set to 'local' to build images locally and use digests from built images; Set to 'remote' to resolve the digest of images by tag from the remote registry; Set to 'none' to use tags directly from the Kubernetes manifests. Set to 'tag' to use tags directly from the build.
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -849,6 +899,7 @@ Env vars:
 
 * `SKAFFOLD_ADD_SKAFFOLD_LABELS` (same as `--add-skaffold-labels`)
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
@@ -899,7 +950,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
-      --port-forward=false: Port-forward exposed container ports within pods
+      --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)

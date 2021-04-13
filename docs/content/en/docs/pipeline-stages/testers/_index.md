@@ -7,7 +7,7 @@ aliases: [/docs/how-tos/testers]
 no_list: true
 ---
 
-Skaffold has an integrated testing phase between the build and deploy phases of the pipeline. Skafforl supports the below types of tests.
+Skaffold has an integrated testing phase between the build and deploy phases of the pipeline. Skaffold supports the below types of tests.
 
 | Skaffold testers|Description| 
 |----------|-------|

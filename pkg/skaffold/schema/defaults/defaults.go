@@ -75,9 +75,12 @@ func Set(c *latest.SkaffoldConfig) error {
 		}
 	}
 
-	withLocalBuild(c,
-		setDefaultConcurrency,
-	)
+	withLocalBuild(c, func(lb *latest.LocalBuild) {
+		// don't set build concurrency if there are no artifacts in the current config
+		if len(c.Build.Artifacts) > 0 {
+			setDefaultConcurrency(lb)
+		}
+	})
 
 	withCloudBuildConfig(c,
 		setDefaultCloudBuildDockerImage,

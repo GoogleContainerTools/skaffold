@@ -25,50 +25,54 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type Runner struct {
 	structureTests []string
-	image          string
+	imageName      string
+	imageIsLocal   bool
 	testWorkingDir string
 	localDaemon    docker.LocalDaemon
-	imagesAreLocal func(imageName string) (bool, error)
 }
 
 // New creates a new structure.Runner.
-func New(cfg docker.Config, wd string, tc *latest.TestCase, imagesAreLocal func(imageName string) (bool, error)) (*Runner, error) {
+func New(cfg docker.Config, wd string, tc *latest.TestCase, imageIsLocal bool) (*Runner, error) {
 	localDaemon, err := docker.NewAPIClient(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &Runner{
 		structureTests: tc.StructureTests,
-		image:          tc.ImageName,
+		imageName:      tc.ImageName,
 		testWorkingDir: wd,
 		localDaemon:    localDaemon,
-		imagesAreLocal: imagesAreLocal,
+		imageIsLocal:   imageIsLocal,
 	}, nil
 }
 
 // Test is the entrypoint for running structure tests
-func (cst *Runner) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
-	if err := cst.runStructureTests(ctx, out, bRes); err != nil {
+func (cst *Runner) Test(ctx context.Context, out io.Writer, imageTag string) error {
+	event.TestInProgress()
+	if err := cst.runStructureTests(ctx, out, imageTag); err != nil {
+		event.TestFailed(cst.imageName, err)
 		return containerStructureTestErr(err)
 	}
+	event.TestComplete()
 	return nil
 }
 
-func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
-	fqn, err := cst.getImage(ctx, out, cst.image, bRes, cst.imagesAreLocal)
-	if err != nil {
-		return err
-	}
-	if fqn == "" {
-		return nil
+func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, imageTag string) error {
+	if !cst.imageIsLocal {
+		// The image is remote so we have to pull it locally.
+		// `container-structure-test` currently can't do it:
+		// https://github.com/GoogleContainerTools/container-structure-test/issues/253.
+		if err := cst.localDaemon.Pull(ctx, out, imageTag); err != nil {
+			return dockerPullImageErr(imageTag, err)
+		}
 	}
 
 	files, err := cst.TestDependencies()
@@ -78,7 +82,7 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, bRes []
 
 	logrus.Infof("Running structure tests for files %v", files)
 
-	args := []string{"test", "-v", "warn", "--image", fqn}
+	args := []string{"test", "-v", "warn", "--image", imageTag}
 	for _, f := range files {
 		args = append(args, "--config", f)
 	}
@@ -89,7 +93,7 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, bRes []
 	cmd.Env = cst.env()
 
 	if err := util.RunCmd(cmd); err != nil {
-		return fmt.Errorf("error running ontainer-structure-test command: %w", err)
+		return fmt.Errorf("error running container-structure-test command: %w", err)
 	}
 
 	return nil
@@ -118,36 +122,4 @@ func (cst *Runner) env() []string {
 	mergedEnv := make([]string, len(parentEnv), len(parentEnv)+len(extraEnv))
 	copy(mergedEnv, parentEnv)
 	return append(mergedEnv, extraEnv...)
-}
-
-func (cst *Runner) getImage(ctx context.Context, out io.Writer, imageName string, bRes []build.Artifact,
-	imagesAreLocal func(imageName string) (bool, error)) (string, error) {
-	fqn, found := resolveArtifactImageTag(imageName, bRes)
-	if !found {
-		logrus.Debugln("Skipping tests for", imageName, "since it wasn't built")
-		return "", nil
-	}
-
-	if imageIsLocal, err := imagesAreLocal(imageName); err != nil {
-		return "", err
-	} else if !imageIsLocal {
-		// The image is remote so we have to pull it locally.
-		// `container-structure-test` currently can't do it:
-		// https://github.com/GoogleContainerTools/container-structure-test/issues/253.
-		if err := cst.localDaemon.Pull(ctx, out, fqn); err != nil {
-			return dockerPullImageErr(fqn, err)
-		}
-	}
-
-	return fqn, nil
-}
-
-func resolveArtifactImageTag(imageName string, bRes []build.Artifact) (string, bool) {
-	for _, res := range bRes {
-		if imageName == res.ImageName {
-			return res.Tag, true
-		}
-	}
-
-	return "", false
 }

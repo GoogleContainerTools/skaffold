@@ -7,6 +7,13 @@
     "description": "Control API, Event API and State API",
     "url": "/docs/design/api"
   },
+  "apply": {
+    "deploy": "x",
+    "area": "Deploy",
+    "feature": "Apply",
+    "maturity": "alpha",
+    "description": "Use hydrated Kubernetes manifests to create resources on the cluster"
+  },
   "build.buildpacks": {
     "build": "x",
     "area": "Build",

@@ -24,7 +24,7 @@ import (
 )
 
 func TestRetrieveEnv(t *testing.T) {
-	builder, err := NewBuilder(&mockConfig{
+	builder, err := NewBuilder(&mockBuilderContext{
 		kubeContext: "kubecontext",
 		namespace:   "test-namespace",
 	}, &latest.ClusterDetails{
@@ -43,7 +43,7 @@ func TestRetrieveEnv(t *testing.T) {
 }
 
 func TestRetrieveEnvMinimal(t *testing.T) {
-	builder, err := NewBuilder(&mockConfig{}, &latest.ClusterDetails{
+	builder, err := NewBuilder(&mockBuilderContext{}, &latest.ClusterDetails{
 		Timeout: "20m",
 	})
 	testutil.CheckError(t, false, err)

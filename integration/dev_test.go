@@ -187,7 +187,7 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 	// Ensure we see a deploy triggered in the event log
 	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
-		return e.GetEvent().GetDeployEvent().GetStatus() == "In Progress", nil
+		return e.GetEvent().GetDeployEvent().GetStatus() == InProgress, nil
 	})
 	failNowIfError(t, err)
 

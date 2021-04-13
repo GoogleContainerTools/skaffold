@@ -33,12 +33,12 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/fn/framework"
 	k8syaml "sigs.k8s.io/yaml"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -131,7 +131,7 @@ func versionCheck(dir string, stdout io.Writer) error {
 // Deploy hydrates the manifests using kustomizations and kpt functions as described in the render method,
 // outputs them to the applyDir, and runs `kpt live apply` against applyDir to create resources in the cluster.
 // `kpt live apply` supports automated pruning declaratively via resources in the applyDir.
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
 	if err := sanityCheck(k.Dir, out); err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 // Render hydrates manifests using both kustomization and kpt functions.
-func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, _ bool, filepath string) error {
+func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, filepath string) error {
 	if err := sanityCheck(k.Dir, out); err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 // renderManifests handles a majority of the hydration process for manifests.
 // This involves reading configs from a source directory, running kustomize build, running kpt pipelines,
 // adding image digests, and adding run-id labels.
-func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []build.Artifact,
+func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []graph.Artifact,
 	flags []string) (manifest.ManifestList, error) {
 	var err error
 	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)
@@ -286,6 +286,8 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []bu
 	}
 
 	// Hydrate the manifests source.
+	// Note: kustomize cannot be used as a kpt fn yet and thus we add a kustomize cmd step in the kpt pipeline:
+	// kpt source --> (workaround) kustomize build -->  kpt run --> kpt sink.
 	_, err = kustomize.FindKustomizationConfig(k.Dir)
 	// Only run kustomize if kustomization.yaml is found.
 	if err == nil {
@@ -312,7 +314,31 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []bu
 		if err != nil {
 			return nil, fmt.Errorf("kustomize build: %w", err)
 		}
+	} else {
+		// Note: Here we use kpt ResourceList as the media to store the config source.
+		// Eventually, skaffold should not need to construct a kpt inner resource but only use kpt commands and
+		// the new Kptfile(v1) to establish a hydration pipeline.
+		input := bytes.NewBufferString(string(buf))
+		rl := framework.ResourceList{
+			Reader: input,
+		}
+		// Manipulate the kustomize "Rnode"(Kustomize term) and pulls out the "Items"
+		// from ResourceLists.
+		if err := rl.Read(); err != nil {
+			return nil, fmt.Errorf("reading ResourceList %w", err)
+		}
+
+		var newBuf []byte
+		for i := range rl.Items {
+			item, err := rl.Items[i].String()
+			if err != nil {
+				return nil, fmt.Errorf("reading Item %w", err)
+			}
+			newBuf = append(newBuf, []byte(item)...)
+		}
+		buf = newBuf
 	}
+
 	// Run kpt functions against the hydrated manifests.
 	cmd = exec.CommandContext(ctx, "kpt", kptCommandArgs("", []string{"fn", "run"}, flags, nil)...)
 	buf = append(buf, []byte("---\n")...)

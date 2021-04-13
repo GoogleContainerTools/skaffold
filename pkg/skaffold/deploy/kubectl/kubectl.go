@@ -28,12 +28,12 @@ import (
 	"github.com/segmentio/textio"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -44,7 +44,8 @@ import (
 type Deployer struct {
 	*latest.KubectlDeploy
 
-	originalImages     []build.Artifact
+	originalImages     []graph.Artifact
+	hydratedManifests  []string
 	workingDir         string
 	globalConfig       string
 	gcsManifestDir     string
@@ -76,21 +77,32 @@ func NewDeployer(cfg Config, labels map[string]string, d *latest.KubectlDeploy) 
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		skipRender:         cfg.SkipRender(),
 		labels:             labels,
+		hydratedManifests:  cfg.HydratedManifests(),
 	}, nil
 }
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact) ([]string, error) {
+func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
 	var (
 		manifests manifest.ManifestList
 		err       error
 	)
-	if k.skipRender {
+	// if any hydrated manifests are passed to `skaffold apply`, only deploy these
+	// also, manually set the labels to ensure the runID is added
+	switch {
+	case len(k.hydratedManifests) > 0:
+		manifests, err = createManifestList(k.hydratedManifests)
+		if err != nil {
+			return nil, err
+		}
+		manifests, err = manifests.SetLabels(k.labels)
+	case k.skipRender:
 		manifests, err = k.readManifests(ctx, false)
-	} else {
+	default:
 		manifests, err = k.renderManifests(ctx, out, builds, false)
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +207,10 @@ func (k *Deployer) readManifests(ctx context.Context, offline bool) (manifest.Ma
 	if hasURLManifest {
 		return nil, offlineModeErr()
 	}
+	return createManifestList(manifests)
+}
 
+func createManifestList(manifests []string) (manifest.ManifestList, error) {
 	var manifestList manifest.ManifestList
 	for _, manifestFilePath := range manifests {
 		manifestFileContent, err := ioutil.ReadFile(manifestFilePath)
@@ -227,7 +242,7 @@ func (k *Deployer) readRemoteManifest(ctx context.Context, name string) ([]byte,
 	return manifest.Bytes(), nil
 }
 
-func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool, filepath string) error {
+func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
 	manifests, err := k.renderManifests(ctx, out, builds, offline)
 	if err != nil {
 		return err
@@ -236,7 +251,7 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []build.Art
 	return manifest.Write(manifests.String(), filepath, out)
 }
 
-func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact, offline bool) (manifest.ManifestList, error) {
+func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestList, error) {
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
 		color.Default.Fprintln(out, err)
@@ -278,7 +293,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 			if err != nil {
 				return nil, err
 			}
-			builds = append(builds, build.Artifact{
+			builds = append(builds, graph.Artifact{
 				ImageName: artifact.ImageName,
 				Tag:       tag,
 			})
