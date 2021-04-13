@@ -100,12 +100,15 @@ func TestImagesFlagSet(t *testing.T) {
 
 func TestImagesString(t *testing.T) {
 	flag := NewEmptyImages("input image flag")
-	flag.Set("gcr.io/test/test-image:test")
-	flag.Set("gcr.io/test/test-image-1:test")
-	str := "gcr.io/test/test-image:test,gcr.io/test/test-image-1:test"
-	if str != flag.String() {
-		t.Errorf("Flag String() does not match. Expected %s, Actual %s", str, flag.String())
-	}
+	flag.Append("gcr.io/test/test-image:test")
+	flag.Append("gcr.io/test/test-image-1:test")
+	testutil.CheckDeepEqual(t, "gcr.io/test/test-image:test,gcr.io/test/test-image-1:test", flag.String())
+
+	flag.SetNil()
+	testutil.CheckDeepEqual(t, "", flag.String())
+
+	flag.Set("gcr.io/test/test-image:test,gcr.io/test/test-image-1:test")
+	testutil.CheckDeepEqual(t, "gcr.io/test/test-image:test,gcr.io/test/test-image-1:test", flag.String())
 }
 
 func TestImagesType(t *testing.T) {

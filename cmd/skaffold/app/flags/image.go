@@ -36,8 +36,31 @@ type image struct {
 	artifact *graph.Artifact
 }
 
+// String Implements String() method for pflag interface and
+// returns a placeholder for the help text.
+func (i *Images) String() string {
+	return strings.Join(i.GetSlice(), ",")
+}
+
+// Type Implements Type() method for pflag interface
+func (i *Images) Type() string {
+	return fmt.Sprintf("%T", i)
+}
+
+// SetNil Implements SetNil() method for our Nillable interface
+func (i *Images) SetNil() error {
+	i.images = []image{}
+	return nil
+}
+
+// Set Implements Set() method for pflag interface
+func (p *Images) Set(csv string) error {
+	split := strings.Split(csv, ",")
+	return p.Replace(split)
+}
+
 // GetSlice Implements GetSlice() method for pflag SliceValue interface and
-// returns a slice image names.
+// returns a slice of image names.
 func (i *Images) GetSlice() []string {
 	names := make([]string, len(i.images))
 	for i, image := range i.images {
@@ -58,15 +81,15 @@ func (i *Images) Append(value string) error {
 
 // Replace Implements Replace() method for pflag SliceValue interface
 func (i *Images) Replace(images []string) error {
-	newImages := make([]image, len(images))
+	newImages := make([]image, 0, len(images))
 	for _, value := range images {
 		a, err := convertImageToArtifact(value)
 		if err != nil {
 			return err
 		}
-		newImages = append(newImages, image{name:value, artifact:a})
-		i.images = newImages
+		newImages = append(newImages, image{name: value, artifact: a})
 	}
+	i.images = newImages
 	return nil
 }
 
