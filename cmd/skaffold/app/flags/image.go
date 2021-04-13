@@ -56,9 +56,9 @@ func (i *Images) SetNil() error {
 // Set Implements Set() method for pflag interface.  We append values
 // to preserve compatibility with previous behaviour where each image
 // required a separate `-i` flag.
-func (p *Images) Set(csv string) error {
+func (i *Images) Set(csv string) error {
 	for _, split := range strings.Split(csv, ",") {
-		if err := p.Append(split); err != nil {
+		if err := i.Append(split); err != nil {
 			return fmt.Errorf("%s: %w", split, err)
 		}
 	}
