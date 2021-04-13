@@ -32,6 +32,7 @@ func TestNewEmptyImage(t *testing.T) {
 }
 
 func TestImagesFlagSet(t *testing.T) {
+	// These tests only check Set() with a single value.
 	tests := []struct {
 		description      string
 		setValue         string
@@ -96,6 +97,19 @@ func TestImagesFlagSet(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestImagesSetCSV(t *testing.T) {
+	flag := NewEmptyImages("input image flag")
+	flag.Set("test-image1:test,test-image2:latest")
+	testutil.CheckDeepEqual(t, 2, len(flag.GetSlice()))
+	testutil.CheckDeepEqual(t, "test-image1:test,test-image2:latest", flag.String())
+
+	// check repeated calls to Set accumulate values.  This is backwards compatibility
+	// with the old behaviour that required `-i` for each image.
+	flag.Set("test-image3:test")
+	testutil.CheckDeepEqual(t, 3, len(flag.GetSlice()))
+	testutil.CheckDeepEqual(t, "test-image1:test,test-image2:latest,test-image3:test", flag.String())
 }
 
 func TestImagesString(t *testing.T) {

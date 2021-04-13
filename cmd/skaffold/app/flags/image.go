@@ -53,10 +53,16 @@ func (i *Images) SetNil() error {
 	return nil
 }
 
-// Set Implements Set() method for pflag interface
+// Set Implements Set() method for pflag interface.  We append values
+// to preserve compatibility with previous behaviour where each image
+// required a separate `-i` flag.
 func (p *Images) Set(csv string) error {
-	split := strings.Split(csv, ",")
-	return p.Replace(split)
+	for _, split := range strings.Split(csv, ",") {
+		if err := p.Append(split); err != nil {
+			return fmt.Errorf("%s: %w", split, err)
+		}
+	}
+	return nil
 }
 
 // GetSlice Implements GetSlice() method for pflag SliceValue interface and
