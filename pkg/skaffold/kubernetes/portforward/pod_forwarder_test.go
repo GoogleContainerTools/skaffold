@@ -403,7 +403,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latest.Pipeline{{}})
 			taken := map[int]struct{}{}
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", taken, test.availablePorts))
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
 			t.Override(&topLevelOwnerKey, func(context.Context, metav1.Object, string) string { return "owner" })
 
 			if test.forwarder == nil {

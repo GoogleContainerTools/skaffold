@@ -64,10 +64,10 @@ func newTestForwarder() *testForwarder {
 	return &testForwarder{}
 }
 
-func mockRetrieveAvailablePort(_ string, taken map[int]struct{}, availablePorts []int) func(string, int, *util.PortSet) int {
+func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int, *util.PortSet) int {
 	// Return first available port in ports that isn't taken
 	var lock sync.Mutex
-	return func(string, int, *util.PortSet) int {
+	return func(int, *util.PortSet) int {
 		for _, p := range availablePorts {
 			lock.Lock()
 			if _, ok := taken[p]; ok {
@@ -122,7 +122,7 @@ func TestStart(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latest.Pipeline{{}})
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, test.availablePorts))
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
 			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latest.PortForwardResource, error) {
 				return test.resources, nil
 			})
@@ -188,7 +188,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, test.availablePorts))
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
 
 			entryManager := NewEntryManager(ioutil.Discard, newTestForwarder())
 			entryManager.forwardedResources = forwardedResources{
@@ -251,7 +251,7 @@ func TestUserDefinedResources(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latest.Pipeline{{}})
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, []int{8080, 9000}))
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, []int{8080, 9000}))
 			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latest.PortForwardResource, error) {
 				return []*latest.PortForwardResource{svc}, nil
 			})

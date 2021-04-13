@@ -127,7 +127,7 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = retrieveAvailablePort(resource.Address, resource.LocalPort, &p.entryManager.forwardedPorts)
+	entry.localPort = retrieveAvailablePort(resource.LocalPort, &p.entryManager.forwardedPorts)
 	return entry
 }
 

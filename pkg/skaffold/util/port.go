@@ -87,34 +87,35 @@ func (f *PortSet) List() []int {
 	return list
 }
 
+// GetAvailablePort returns an available port that is near the requested port when possible.
 // First, check if the provided port is available on the specified address. If so, use it.
 // If not, check if any of the next 10 subsequent ports are available.
 // If not, check if any of ports 4503-4533 are available.
 // If not, return a random port, which hopefully won't collide with any future containers
-
-// See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt,
-func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
-	if getPortIfAvailable(address, port, usedPorts) {
+//
+// See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
+func GetAvailablePort(port int, usedPorts *PortSet) int {
+	if getPortIfAvailable(port, usedPorts) {
 		return port
 	}
 
 	// try the next 10 ports after the provided one
 	for i := 0; i < 10; i++ {
 		port++
-		if getPortIfAvailable(address, port, usedPorts) {
+		if getPortIfAvailable(port, usedPorts) {
 			logrus.Debugf("found open port: %d", port)
 			return port
 		}
 	}
 
 	for port = 4503; port <= 4533; port++ {
-		if getPortIfAvailable(address, port, usedPorts) {
+		if getPortIfAvailable(port, usedPorts) {
 			logrus.Debugf("found open port: %d", port)
 			return port
 		}
 	}
 
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:0", address))
+	l, err := net.Listen("tcp", ":0")
 	if err != nil {
 		return -1
 	}
@@ -126,16 +127,16 @@ func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
 	return p
 }
 
-func getPortIfAvailable(address string, p int, usedPorts *PortSet) bool {
+func getPortIfAvailable(p int, usedPorts *PortSet) bool {
 	if alreadySet := usedPorts.LoadOrSet(p); alreadySet {
 		return false
 	}
 
-	return IsPortFree(address, p)
+	return IsPortFree(p)
 }
 
-func IsPortFree(address string, p int) bool {
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", address, p))
+func IsPortFree(p int) bool {
+	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
 	if err != nil {
 		return false
 	}

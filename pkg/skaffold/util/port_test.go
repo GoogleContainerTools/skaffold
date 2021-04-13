@@ -56,7 +56,7 @@ func TestGetAvailablePort(t *testing.T) {
 	wg.Add(N)
 	for i := 0; i < N; i++ {
 		go func() {
-			port := GetAvailablePort("127.0.0.1", 4503, &ports)
+			port := GetAvailablePort(4503, &ports)
 
 			l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", Loopback, port))
 			if err != nil {
