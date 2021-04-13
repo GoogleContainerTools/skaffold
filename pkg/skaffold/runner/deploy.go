@@ -165,14 +165,17 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 		return nil
 	}
 
+	eventV2.TaskInProgress(constants.StatusCheck, r.devIteration)
 	start := time.Now()
 	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
 
 	s := newStatusCheck(r.runCtx, r.labeller)
 	if err := s.Check(ctx, out); err != nil {
+		eventV2.TaskFailed(constants.StatusCheck, r.devIteration, err)
 		return err
 	}
 
 	color.Default.Fprintln(out, "Deployments stabilized in", util.ShowHumanizeTime(time.Since(start)))
+	eventV2.TaskSucceeded(constants.StatusCheck, r.devIteration)
 	return nil
 }
