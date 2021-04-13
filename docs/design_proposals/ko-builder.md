@@ -203,12 +203,11 @@ build:
 
 ko requires setting a
 [`KO_DOCKER_REPO`](https://github.com/google/ko#choose-destination)
-environment variable. This determines where container images are pushed.
-The Skaffold
+environment variable to specify where container images are pushed. The Skaffold
 [default repo](https://skaffold.dev/docs/environment/image-registries/)
 maps directly to this value.
 
-### Open Questions
+### Open questions
 
 1.  Should Skaffold embed ko (as a Go module), or shell out?
 
@@ -272,11 +271,71 @@ maps directly to this value.
 
     Follow existing Skaffold pattern - is there one? __Not Yet Resolved__
 
-## -- Sections below haven't been fleshed out --
-
 ## Implementation plan
 
-1. TBC
+1.  Define interfaces in the ko codebase that allows ko to be used from
+    Skaffold without duplicating existing ko CLI code.
+
+    Draft interface:
+
+    ```go
+    type KoPublish interface {
+    	func BuildAndPublish(context.Context, options.BuildOptions, options.PublishOptions, importpath string, imageNameWithTag string)
+    }
+    ```
+
+2.  Add ko builder with support for existing ko config options. Provide
+    this as an Alpha feature in an upcoming Skaffold release.
+
+    Config options supported, all are optional:
+
+    -   `dependencies`, for Skaffold file watching.
+    -   `env`, to support ko CLI users who currently set environment variables
+        such as `GOFLAGS` when running ko.
+    -   `fromImage`, to override the default distroless base image
+    -   `labels`
+    -   `platforms`
+    -   `sourceDateEpoch`
+
+    Example `skaffold.yaml` supported at this stage:
+
+    ```yaml
+    apiVersion: skaffold/v2beta14
+    kind: Config
+    build:
+      artifacts:
+      - image: ko://github.com/GoogleContainerTools/skaffold/examples/ko
+        ko:
+          fromImage: gcr.io/distroless/static-debian10:nonroot
+          dependencies:
+            paths:
+            - go.mod
+            - "**.go"
+          env: []
+          labels:
+            foo: bar
+            baz: frob
+          platforms:
+          - linux/amd64
+          - linux/arm64
+          sourceDateEpoch: 946684800
+    ```
+
+3.  Implement support for additional config options in ko:
+
+    -   `args`, e.g., `-v`, `-trimpath`
+    -   `asmflags`
+    -   `gcflags`
+    -   `ldflags`
+
+    See related discussion in
+    [google/ko#316](https://github.com/google/ko/issues/316).
+
+4.  Add support for the additional ko config options from step 2 in Skaffold.
+    Provide this as a feature in an upcoming Skaffold release.
+
+    This will enable support for all the config options shown in the
+    comprehensive example above.
 
 ## Integration test plan
 
@@ -284,10 +343,11 @@ Please describe what new test cases you are going to consider.
 
 1.  Unit and integration tests for ko builder, similar to other builders.
 
+    The integration tests should be written to catch situations such as where
+    changes to ko interfaces break the Skaffold ko builder.
+
 2.  Test that the ko flag
     [`--disable-optimization`](https://github.com/google/ko/blob/f7df8106196518df5c6c35432843421e33990329/pkg/commands/options/build.go#L34)
     is added for debugging.
 
-3.  File sync testing?
-
-4.  Add ko example to the `examples` directory.
+3.  Add ko example to the `examples` directory.
