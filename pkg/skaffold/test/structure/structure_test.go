@@ -41,7 +41,7 @@ func TestNewRunner(t *testing.T) {
 
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("test.yaml")
-		t.Override(&cluster.GetCurrentVersionFunc, func() (semver.Version, error) { return semver.Version{}, nil })
+		t.Override(&cluster.FindMinikubeBinary, func() (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
 
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image "+imageName+" --config "+tmpDir.Path("test.yaml")))
 

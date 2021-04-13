@@ -36,23 +36,22 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
-const (
-	minikubeVersionWithUserFlag = "1.18.0"
+var (
+	GetClient                  = getClient
+	minikubeVrsionWithUserFlag = semver.MustParse("1.18.0")
 )
-
-var GetClient = getClient
 
 // To override during tests
 var (
-	minikubeBinaryFunc    = minikubeBinary
+	FindMinikubeBinary    = minikubeBinary
 	getClusterInfo        = context.GetClusterInfo
 	GetCurrentVersionFunc = getCurrentVersion
 
 	findOnce sync.Once
 	mk       = struct {
+		err     error // determines if version and path are valid
 		version semver.Version
 		path    string
-		err     error
 	}{}
 )
 
@@ -70,7 +69,7 @@ func getClient() Client {
 }
 
 func (clientImpl) IsMinikube(kubeContext string) bool {
-	if _, _, err := minikubeBinaryFunc(); err != nil {
+	if _, _, err := FindMinikubeBinary(); err != nil {
 		logrus.Tracef("Minikube cluster not detected: %v", err)
 		return false
 	}
@@ -104,24 +103,19 @@ func (clientImpl) MinikubeExec(arg ...string) (*exec.Cmd, error) {
 }
 
 func minikubeExec(arg ...string) (*exec.Cmd, error) {
-	b, v, err := minikubeBinaryFunc()
+	b, v, err := FindMinikubeBinary()
 	if err != nil {
 		return nil, fmt.Errorf("getting minikube executable: %w", err)
 	}
 
-	isSupported, _ := supportsUserFlag(v)
-	if isSupported {
+	if supportsUserFlag(v) {
 		arg = append(arg, "--user=skaffold")
 	}
 	return exec.Command(b, arg...), nil
 }
 
-func supportsUserFlag(ver semver.Version) (bool, error) {
-	versionWithFlag, err := semver.Make(minikubeVersionWithUserFlag)
-	if err != nil {
-		return false, err
-	}
-	return ver.GE(versionWithFlag), nil
+func supportsUserFlag(ver semver.Version) bool {
+	return ver.GE(minikubeVrsionWithUserFlag)
 }
 
 // Retrieves minikube version

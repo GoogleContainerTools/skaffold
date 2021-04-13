@@ -98,19 +98,19 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			if test.minikubeNotInPath {
-				ver, _ := semver.Make("1.18.0")
-				t.Override(&minikubeBinaryFunc, func() (string, semver.Version, error) {
+				ver := semver.Version{}
+				t.Override(&FindMinikubeBinary, func() (string, semver.Version, error) {
 					return "", ver, fmt.Errorf("minikube not in PATH")
 				})
 			} else {
 				if test.minikuneWithoutUserFalg {
-					ver, _ := semver.Make("1.17.0")
-					t.Override(&minikubeBinaryFunc, func() (string, semver.Version, error) {
+					ver := semver.Version{Major: 1, Minor: 17, Patch: 0}
+					t.Override(&FindMinikubeBinary, func() (string, semver.Version, error) {
 						return "", ver, fmt.Errorf("minikube not in PATH")
 					})
 				} else {
-					ver, _ := semver.Make("1.18.1")
-					t.Override(&minikubeBinaryFunc, func() (string, semver.Version, error) { return "minikube", ver, nil })
+					ver := semver.Version{Major: 1, Minor: 18, Patch: 1}
+					t.Override(&FindMinikubeBinary, func() (string, semver.Version, error) { return "minikube", ver, nil })
 				}
 			}
 			t.Override(&util.DefaultExecCommand, test.minikubeProfileCmd)
