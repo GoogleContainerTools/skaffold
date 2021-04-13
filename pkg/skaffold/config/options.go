@@ -23,13 +23,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// PortForwardOptions are options set by the command line for port forwarding
-// with additional configuration information as well
-type PortForwardOptions struct {
-	Enabled     bool
-	ForwardPods bool
-}
-
 // WaitForDeletions configures the wait for pending deletions.
 type WaitForDeletions struct {
 	Max     time.Duration

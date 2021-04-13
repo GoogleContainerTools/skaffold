@@ -18,9 +18,14 @@ package portforward
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 
+	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -38,18 +43,61 @@ type ForwarderManager struct {
 }
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
-func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string, label string, opts config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
+func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string, label string, runMode config.RunMode, options config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
+	if !options.Enabled() {
+		return nil
+	}
+
 	entryManager := NewEntryManager(out, NewKubectlForwarder(out, cli))
 
 	var forwarders []Forwarder
-	forwarders = append(forwarders, NewResourceForwarder(entryManager, label, userDefined))
-	if opts.ForwardPods {
-		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector))
+	if options.ForwardUser(runMode) {
+		forwarders = append(forwarders, NewUserDefinedForwarder(entryManager, userDefined))
+	}
+	if options.ForwardServices(runMode) {
+		forwarders = append(forwarders, NewServicesForwarder(entryManager, label))
+	}
+	if options.ForwardPods(runMode) {
+		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, allPorts))
+	} else if options.ForwardDebug(runMode) {
+		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, debugPorts))
 	}
 
 	return &ForwarderManager{
 		forwarders: forwarders,
 	}
+}
+
+func allPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
+	return c.Ports
+}
+
+func debugPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
+	var ports []v1.ContainerPort
+
+	annot, found := pod.ObjectMeta.Annotations[debugging.DebugConfigAnnotation]
+	if !found {
+		return nil
+	}
+	var configurations map[string]debugging.ContainerDebugConfiguration
+	if err := json.Unmarshal([]byte(annot), &configurations); err != nil {
+		logrus.Warnf("could not decode debug annotation on pod/%s (%q): %v", pod.Name, annot, err)
+		return nil
+	}
+	dc, found := configurations[c.Name]
+	if !found {
+		logrus.Debugf("no debug configuration found on pod/%s/%s", pod.Name, c.Name)
+		return nil
+	}
+	for _, port := range c.Ports {
+		for _, exposed := range dc.Ports {
+			if uint32(port.ContainerPort) == exposed {
+				logrus.Debugf("selecting debug port for pod/%s/%s: %v", pod.Name, c.Name, port)
+				ports = append(ports, port)
+			}
+		}
+	}
+	return ports
 }
 
 // Start begins all forwarders managed by the ForwarderManager

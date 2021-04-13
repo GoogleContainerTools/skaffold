@@ -34,6 +34,13 @@ var (
 	fromBuildOutputFile flags.BuildOutputFileFlag
 )
 
+// Nillable is used to reset objects that implement pflag's `Value` and `SliceValue`.
+// Some flags, like `--default-repo`, use nil to indicate that they are unset, which
+// is different from the empty string.
+type Nillable interface {
+	SetNil() error
+}
+
 // Flag defines a Skaffold CLI flag which contains a list of
 // subcommands the flag belongs to in `DefinedOn` field.
 // See https://pkg.go.dev/github.com/spf13/pflag#Flag
@@ -100,7 +107,7 @@ var flagRegistry = []Flag{
 		Shorthand:     "d",
 		Usage:         "Default repository value (overrides global config)",
 		Value:         &opts.DefaultRepo,
-		DefValue:      "",
+		DefValue:      nil,
 		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
 	},
@@ -110,7 +117,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.CacheArtifacts,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "render"},
 		IsEnum:        true,
 	},
 	{
@@ -251,12 +258,17 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
-		Name:          "port-forward",
-		Usage:         "Port-forward exposed container ports within pods",
-		Value:         &opts.PortForward.Enabled,
-		DefValue:      false,
-		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
+		Name:     "port-forward",
+		Usage:    "Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)",
+		Value:    &opts.PortForward,
+		DefValue: []string{"off"},
+		DefValuePerCommand: map[string]interface{}{
+			"debug": []string{"user", "debug"},
+			"dev":   []string{"user"},
+		},
+		NoOptDefVal:   "true", // uses the settings from when --port-forward was boolean
+		FlagAddMethod: "Var",
+		DefinedOn:     []string{"dev", "run", "deploy", "debug"},
 		IsEnum:        true,
 	},
 	{
@@ -569,7 +581,9 @@ func setDefaultValues(v interface{}, fl *Flag, cmdName string) {
 	if !found {
 		d = fl.DefValue
 	}
-	if sv, ok := v.(pflag.SliceValue); ok {
+	if nv, ok := v.(Nillable); ok && d == nil {
+		nv.SetNil()
+	} else if sv, ok := v.(pflag.SliceValue); ok {
 		sv.Replace(asStringSlice(d))
 	} else if val, ok := v.(pflag.Value); ok {
 		val.Set(fmt.Sprintf("%v", d))
