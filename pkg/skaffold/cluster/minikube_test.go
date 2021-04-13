@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/blang/semver"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/homedir"
 
@@ -31,13 +32,14 @@ import (
 func TestClientImpl_IsMinikube(t *testing.T) {
 	home := homedir.HomeDir()
 	tests := []struct {
-		description        string
-		kubeContext        string
-		certPath           string
-		serverURL          string
-		minikubeProfileCmd util.Command
-		minikubeNotInPath  bool
-		expected           bool
+		description             string
+		kubeContext             string
+		certPath                string
+		serverURL               string
+		minikubeProfileCmd      util.Command
+		minikubeNotInPath       bool
+		expected                bool
+		minikuneWithoutUserFalg bool
 	}{
 		{
 			description: "context is 'minikube'",
@@ -57,9 +59,17 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 			expected:    true,
 		},
 		{
+			description:             "minikube without user flag",
+			kubeContext:             "test-cluster",
+			minikubeProfileCmd:      testutil.CmdRunOut("minikube profile list -o json --user=skaffold", fmt.Sprintf(profileStr, "test-cluster", "docker", "172.17.0.3", 8443)),
+			certPath:                filepath.Join(home, "foo", "ca.crt"),
+			expected:                false,
+			minikuneWithoutUserFalg: true,
+		},
+		{
 			description:        "cluster cert outside minikube dir",
 			kubeContext:        "test-cluster",
-			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json", fmt.Sprintf(profileStr, "test-cluster", "docker", "172.17.0.3", 8443)),
+			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json --user=skaffold", fmt.Sprintf(profileStr, "test-cluster", "docker", "172.17.0.3", 8443)),
 			certPath:           filepath.Join(home, "foo", "ca.crt"),
 			expected:           false,
 		},
@@ -67,20 +77,20 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 			description:        "minikube node ip matches api server url",
 			kubeContext:        "test-cluster",
 			serverURL:          "https://192.168.64.10:8443",
-			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json", fmt.Sprintf(profileStr, "test-cluster", "hyperkit", "192.168.64.10", 8443)),
+			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json --user=skaffold", fmt.Sprintf(profileStr, "test-cluster", "hyperkit", "192.168.64.10", 8443)),
 			expected:           true,
 		},
 		{
 			description:        "cannot parse minikube profile list",
 			kubeContext:        "test-cluster",
-			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json", `Random error`),
+			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json --user=skaffold", `Random error`),
 			expected:           false,
 		},
 		{
 			description:        "minikube node ip different from api server url",
 			kubeContext:        "test-cluster",
 			serverURL:          "https://192.168.64.10:8443",
-			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json", fmt.Sprintf(profileStr, "test-cluster", "hyperkit", "192.168.64.11", 8443)),
+			minikubeProfileCmd: testutil.CmdRunOut("minikube profile list -o json --user=skaffold", fmt.Sprintf(profileStr, "test-cluster", "hyperkit", "192.168.64.11", 8443)),
 			expected:           false,
 		},
 	}
@@ -88,9 +98,20 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			if test.minikubeNotInPath {
-				t.Override(&minikubeBinaryFunc, func() (string, error) { return "", fmt.Errorf("minikube not in PATH") })
+				ver := semver.Version{}
+				t.Override(&FindMinikubeBinary, func() (string, semver.Version, error) {
+					return "", ver, fmt.Errorf("minikube not in PATH")
+				})
 			} else {
-				t.Override(&minikubeBinaryFunc, func() (string, error) { return "minikube", nil })
+				if test.minikuneWithoutUserFalg {
+					ver := semver.Version{Major: 1, Minor: 17, Patch: 0}
+					t.Override(&FindMinikubeBinary, func() (string, semver.Version, error) {
+						return "", ver, fmt.Errorf("minikube not in PATH")
+					})
+				} else {
+					ver := semver.Version{Major: 1, Minor: 18, Patch: 1}
+					t.Override(&FindMinikubeBinary, func() (string, semver.Version, error) { return "minikube", ver, nil })
+				}
 			}
 			t.Override(&util.DefaultExecCommand, test.minikubeProfileCmd)
 			t.Override(&getClusterInfo, func(string) (*clientcmdapi.Cluster, error) {
