@@ -126,8 +126,13 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 		return entry
 	}
 
-	// retrieve an open port on the host
-	entry.localPort = retrieveAvailablePort(resource.LocalPort, &p.entryManager.forwardedPorts)
+	// Try to request matching local port *providing* that it is not a system port.
+	// https://github.com/GoogleContainerTools/skaffold/pull/5554#issuecomment-803270340
+	requestPort := resource.LocalPort
+	if requestPort == 0 && resource.Port.IntVal >= 1024 {
+		requestPort = resource.Port.IntVal
+	}
+	entry.localPort = retrieveAvailablePort(requestPort, &p.entryManager.forwardedPorts)
 	return entry
 }
 
@@ -155,7 +160,6 @@ func retrieveServiceResources(ctx context.Context, label string, namespaces []st
 					Namespace: s.Namespace,
 					Port:      schemautil.FromInt(int(p.Port)),
 					Address:   constants.DefaultPortForwardAddress,
-					LocalPort: int(p.Port),
 				})
 			}
 		}

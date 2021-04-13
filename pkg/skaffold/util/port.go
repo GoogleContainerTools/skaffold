@@ -95,16 +95,18 @@ func (f *PortSet) List() []int {
 //
 // See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
 func GetAvailablePort(port int, usedPorts *PortSet) int {
-	if getPortIfAvailable(port, usedPorts) {
-		return port
-	}
-
-	// try the next 10 ports after the provided one
-	for i := 0; i < 10; i++ {
-		port++
+	if port > 0 {
 		if getPortIfAvailable(port, usedPorts) {
-			logrus.Debugf("found open port: %d", port)
 			return port
+		}
+
+		// try the next 10 ports after the provided one
+		for i := 0; i < 10; i++ {
+			port++
+			if getPortIfAvailable(port, usedPorts) {
+				logrus.Debugf("found open port: %d", port)
+				return port
+			}
 		}
 	}
 
