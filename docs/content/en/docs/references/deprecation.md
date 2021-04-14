@@ -70,6 +70,8 @@ Exceptions will always be announced in all relevant release notes.
 
 ## Current deprecation notices
 
+04/07/2021: Release v1.22.0 deprecates the `--render-only` and `--render-output` flags from `skaffold run` and `skaffold dev`, in favor of simply using the `skaffold render` command directly.
+
 ## Past deprecation notices
 
 10/21/2019: With release v0.41.0 we mark for deprecation the `$IMAGES` environment variable passed to custom builders. Variable `$IMAGE` should be used instead.
@@ -80,7 +82,7 @@ Exceptions will always be announced in all relevant release notes.
 
 **This field was removed in version 1.0.0.**
 
-02/15/2019: With  release v0.23.0 we mark for deprecation the following env variables in the `envTemplate` tagger:
+02/15/2019: With release v0.23.0 we mark for deprecation the following env variables in the `envTemplate` tagger:
 - `DIGEST`
 - `DIGEST_ALGO`
 - `DIGEST_HEX`
