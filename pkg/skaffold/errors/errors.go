@@ -28,7 +28,7 @@ import (
 
 const (
 	// Report issue text
-	reportIssueText = "If above error is unexpected, please open an issue to report this error at " " + constants.GithubIssueLink
+	reportIssueText = "If above error is unexpected, please open an issue to report this error at " + constants.GithubIssueLink
 
 	// PushImageErr is the error prepended.
 	PushImageErr = "could not push image"
@@ -97,9 +97,9 @@ func getErrorCodeFromError(cfg interface{}, phase constants.Phase, err error) (p
 	}
 
 	if problems, ok := allErrors[phase]; ok {
-		for _, v := range problems {
-			if v.Regexp.MatchString(err.Error()) {
-				return v.ErrCode, v.Suggestion(cfg)
+		for _, p := range problems {
+			if p.Regexp.MatchString(err.Error()) {
+				return p.ErrCode, p.Suggestion(cfg)
 			}
 		}
 	}

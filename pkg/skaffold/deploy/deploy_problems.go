@@ -32,7 +32,7 @@ func suggestDeployFailedAction(cfg interface{}) []*proto.Suggestion {
 		return nil
 	}
 	kCtx := deployCfg.GetKubeContext()
-	isMinikube := cluster.GetClient().IsMinikube(kCtx)
+	isMinikube := deployCfg.MinikubeProfile() != ""
 
 	if isMinikube {
 		command := "minikube status"

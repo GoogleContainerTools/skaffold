@@ -43,7 +43,7 @@ func TestMakeAuthSuggestionsForRepo(t *testing.T) {
 	testutil.CheckDeepEqual(t, &proto.Suggestion{
 		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `gcloud auth configure-docker`",
-	}, makeAuthSuggestionsForRepo("us-docker.pkg.dev/k8s-skaffold/skaffold"))}
+	}, makeAuthSuggestionsForRepo("us-docker.pkg.dev/k8s-skaffold/skaffold"))
 }
 
 func TestBuildProblems(t *testing.T) {
@@ -168,11 +168,11 @@ func TestBuildProblems(t *testing.T) {
 		{
 			description: "build cancelled",
 			// See https://github.com/moby/moby/blob/master/client/errors.go#L20
-			err:      fmt.Errorf(`docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  globalRepo canceled`),
-			expected: "Build Cancelled.",
+			err:      fmt.Errorf(`docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  context canceled`),
+			expected: "Build Cancelled",
 			expectedAE: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_CANCELLED,
-				Message: `docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  globalRepo canceled`,
+				Message: `docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  context canceled`,
 			},
 		},
 	}

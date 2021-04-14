@@ -52,7 +52,7 @@ func NewProblem(d descriptionFunc, sc proto.StatusCode, s suggestionFunc, err er
 }
 
 func (p Problem) Error() string {
-	description := fmt.Sprintf("%s\n", p.Err)
+	description := fmt.Sprintf("%s.", p.Err)
 	if p.Description != nil {
 		description = p.Description(p.Err)
 	}

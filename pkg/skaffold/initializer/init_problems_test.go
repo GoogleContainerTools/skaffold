@@ -42,7 +42,7 @@ func TestInitProblems(t *testing.T) {
 			context:     &config.ContextConfig{},
 			phase:       constants.Init,
 			err:         fmt.Errorf("creating tagger: something went wrong"),
-			expected:    "creating tagger: something went wrong\n. If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error.",
+			expected:    "creating tagger: something went wrong. If above error is unexpected, please open an issue to report this error at https://github.com/GoogleContainerTools/skaffold/issues/new.",
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CREATE_TAGGER_ERROR,
 				Message:     "creating tagger: something went wrong",
@@ -69,7 +69,7 @@ func TestInitProblems(t *testing.T) {
 			context:     &config.ContextConfig{},
 			phase:       constants.Init,
 			err:         fmt.Errorf("creating runner: creating builder: something went wrong"),
-			expected:    "creating runner: creating builder: something went wrong\n. If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error.",
+			expected:    "creating runner: creating builder: something went wrong. If above error is unexpected, please open an issue to report this error at https://github.com/GoogleContainerTools/skaffold/issues/new.",
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CREATE_BUILDER_ERROR,
 				Message:     "creating runner: creating builder: something went wrong",
@@ -81,7 +81,7 @@ func TestInitProblems(t *testing.T) {
 			context:     &config.ContextConfig{},
 			phase:       constants.Init,
 			err:         fmt.Errorf("creating runner: unexpected artifact type `DockerrArtifact`"),
-			expected:    "creating runner: unexpected artifact type `DockerrArtifact`\n. If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error.",
+			expected:    "creating runner: unexpected artifact type `DockerrArtifact`. If above error is unexpected, please open an issue to report this error at https://github.com/GoogleContainerTools/skaffold/issues/new.",
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CREATE_ARTIFACT_DEP_ERROR,
 				Message:     "creating runner: unexpected artifact type `DockerrArtifact`",
@@ -93,7 +93,7 @@ func TestInitProblems(t *testing.T) {
 			context:     &config.ContextConfig{},
 			phase:       constants.Init,
 			err:         fmt.Errorf("creating runner: expanding test file paths: .src/test"),
-			expected:    "creating runner: expanding test file paths: .src/test\n. If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error.",
+			expected:    "creating runner: expanding test file paths: .src/test. If above error is unexpected, please open an issue to report this error at https://github.com/GoogleContainerTools/skaffold/issues/new.",
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CREATE_TEST_DEP_ERROR,
 				Message:     "creating runner: expanding test file paths: .src/test",
@@ -105,7 +105,7 @@ func TestInitProblems(t *testing.T) {
 			context:     &config.ContextConfig{},
 			phase:       constants.Init,
 			err:         fmt.Errorf("creating runner: initializing cache at some error"),
-			expected:    "creating runner: initializing cache at some error\n. If above error is unexpected, please open an issue https://github.com/GoogleContainerTools/skaffold/issues/new to report this error.",
+			expected:    "creating runner: initializing cache at some error. If above error is unexpected, please open an issue to report this error at https://github.com/GoogleContainerTools/skaffold/issues/new.",
 			expectedAE: &proto.ActionableErr{
 				ErrCode:     proto.StatusCode_INIT_CACHE_ERROR,
 				Message:     "creating runner: initializing cache at some error",

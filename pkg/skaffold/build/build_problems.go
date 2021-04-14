@@ -34,7 +34,7 @@ const (
 
 	// See https://github.com/moby/moby/blob/master/client/errors.go#L20
 	// `docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  globalRepo canceled`
-	dockerBuildCancelled = ".*globalRepo canceled.*"
+	buildCancelled = ".*context canceled.*"
 )
 
 var (
@@ -62,7 +62,7 @@ func init() {
 			Regexp:  re(buildCancelled),
 			ErrCode: proto.StatusCode_BUILD_CANCELLED,
 			Description: func(error) string {
-				return "Build Cancelled."
+				return "Build Cancelled"
 			},
 			Suggestion: nilSuggestions,
 		},
