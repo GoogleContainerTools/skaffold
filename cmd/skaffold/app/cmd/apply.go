@@ -57,9 +57,8 @@ func doApply(ctx context.Context, out io.Writer, args []string) error {
 		if renderV2 {
 			// TODO: PLACEHOLDER for Skaffold render v2
 			return nil
-		} else {
-			return r.Apply(ctx, out)
 		}
+		return r.Apply(ctx, out)
 	})
 }
 

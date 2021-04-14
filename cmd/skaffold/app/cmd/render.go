@@ -76,10 +76,9 @@ func doRender(ctx context.Context, out io.Writer) error {
 		if renderV2 {
 			// TODO: PLACEHOLDER for Skaffold render v2
 			return nil
-		} else {
-			if err := r.Render(ctx, out, bRes, offline, renderOutputPath); err != nil {
-				return fmt.Errorf("rendering manifests: %w", err)
-			}
+		}
+		if err := r.Render(ctx, out, bRes, offline, renderOutputPath); err != nil {
+			return fmt.Errorf("rendering manifests: %w", err)
 		}
 		return nil
 	})
