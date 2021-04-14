@@ -83,8 +83,9 @@ func (t *TestMonitor) Run(bool) error {
 			t.callbacks[0](evt) // 1st artifact changed
 		case "file2":
 			t.callbacks[1](evt) // 2nd artifact changed
+		// callbacks[2] and callbacks[3] are for `test` dependency triggers
 		case "manifest.yaml":
-			t.callbacks[3](evt) // deployment configuration changed
+			t.callbacks[4](evt) // deployment configuration changed
 		}
 	}
 

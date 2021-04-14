@@ -21,6 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // Tester is the top level test executor in Skaffold.
@@ -29,8 +30,7 @@ import (
 // a single test run.
 type Tester interface {
 	Test(context.Context, io.Writer, []graph.Artifact) error
-
-	TestDependencies() ([]string, error)
+	TestDependencies(*latest.Artifact) ([]string, error)
 }
 
 type Muted interface {

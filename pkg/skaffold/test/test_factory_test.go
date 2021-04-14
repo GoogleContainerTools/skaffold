@@ -44,7 +44,7 @@ func TestNoTestDependencies(t *testing.T) {
 		cfg := &mockConfig{}
 		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
-		deps, err := tester.TestDependencies()
+		deps, err := tester.TestDependencies(&latest.Artifact{ImageName: "foo"})
 		t.CheckNoError(err)
 		t.CheckEmpty(deps)
 	})
@@ -57,15 +57,15 @@ func TestTestDependencies(t *testing.T) {
 		cfg := &mockConfig{
 			workingDir: tmpDir.Root(),
 			tests: []*latest.TestCase{
-				{StructureTests: []string{"./tests/*"}},
+				{StructureTests: []string{"./tests/*"}, ImageName: "foo"},
 				{},
-				{StructureTests: []string{"test3.yaml"}},
+				{StructureTests: []string{"test3.yaml"}, ImageName: "foo"},
 			},
 		}
 
 		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
-		deps, err := tester.TestDependencies()
+		deps, err := tester.TestDependencies(&latest.Artifact{ImageName: "foo"})
 
 		expectedDeps := tmpDir.Paths("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 		t.CheckNoError(err)
@@ -85,7 +85,7 @@ func TestWrongPattern(t *testing.T) {
 		tester, err := NewTester(cfg, func(imageName string) (bool, error) { return true, nil })
 		t.CheckNoError(err)
 
-		_, err = tester.TestDependencies()
+		_, err = tester.TestDependencies(&latest.Artifact{ImageName: "image"})
 		t.CheckError(true, err)
 		testEvent.InitializeState([]latest.Pipeline{{}})
 

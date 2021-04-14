@@ -91,7 +91,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 			return nil, err
 		}
 
-		testDependencies, err := tester.TestDependencies()
+		testDependencies, err := tester.TestDependencies(artifact)
 		if err != nil {
 			return nil, err
 		}

@@ -55,17 +55,15 @@ func NewTester(cfg Config, imagesAreLocal func(imageName string) (bool, error)) 
 	}, nil
 }
 
-// TestDependencies returns the watch dependencies to the runner.
-func (t FullTester) TestDependencies() ([]string, error) {
+// TestDependencies returns the watch dependencies for the target artifact to the runner.
+func (t FullTester) TestDependencies(artifact *latest.Artifact) ([]string, error) {
 	var deps []string
-	for _, testers := range t.Testers {
-		for _, tester := range testers {
-			result, err := tester.TestDependencies()
-			if err != nil {
-				return nil, err
-			}
-			deps = append(deps, result...)
+	for _, tester := range t.Testers[artifact.ImageName] {
+		result, err := tester.TestDependencies()
+		if err != nil {
+			return nil, err
 		}
+		deps = append(deps, result...)
 	}
 	return deps, nil
 }
