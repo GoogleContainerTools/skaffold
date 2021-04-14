@@ -18,13 +18,16 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"testing"
 
+	"github.com/blang/semver"
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
@@ -97,10 +100,10 @@ func (t *TestBench) WithTestErrors(testErrors []error) *TestBench {
 	return t
 }
 
-func (t *TestBench) TestDependencies() ([]string, error)              { return nil, nil }
-func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
-func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
-func (t *TestBench) Prune(ctx context.Context, out io.Writer) error   { return nil }
+func (t *TestBench) TestDependencies(*latest.Artifact) ([]string, error) { return nil, nil }
+func (t *TestBench) Dependencies() ([]string, error)                     { return nil, nil }
+func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error    { return nil }
+func (t *TestBench) Prune(ctx context.Context, out io.Writer) error      { return nil }
 
 func (t *TestBench) enterNewCycle() {
 	t.actions = append(t.actions, t.currentActions)
@@ -411,6 +414,7 @@ func TestNewForConfig(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			t.Override(&cluster.FindMinikubeBinary, func() (string, semver.Version, error) { return "", semver.Version{}, errors.New("not found") })
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
 				"helm version --client", `version.BuildInfo{Version:"v3.0.0"}`).
 				AndRunWithOutput("kubectl version --client -ojson", "v1.5.6"))
