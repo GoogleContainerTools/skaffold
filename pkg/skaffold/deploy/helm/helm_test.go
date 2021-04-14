@@ -1350,6 +1350,18 @@ func TestHelmRender(t *testing.T) {
 				}},
 		},
 		{
+			description: "render with remote repo",
+			shouldErr:   false,
+			commands: testutil.CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+			helm: testDeployConfigRemoteRepo,
+			builds: []graph.Artifact{
+				{
+					ImageName: "skaffold-helm",
+					Tag:       "skaffold-helm:tag1",
+				}},
+		},
+		{
 			description: "render with cli namespace",
 			shouldErr:   false,
 			namespace:   "clinamespace",

@@ -288,6 +288,11 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 			args = append(args, "--namespace", namespace)
 		}
 
+		if r.Repo != "" {
+			args = append(args, "--repo")
+			args = append(args, r.Repo)
+		}
+		
 		outBuffer := new(bytes.Buffer)
 		if err := h.exec(ctx, outBuffer, false, nil, args...); err != nil {
 			return userErr("std out err", fmt.Errorf(outBuffer.String()))
