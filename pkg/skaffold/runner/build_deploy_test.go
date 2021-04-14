@@ -171,23 +171,49 @@ func TestBuildDryRun(t *testing.T) {
 	})
 }
 
-func TestBuildSkipBuild(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		testBench := &TestBench{}
-		artifacts := []*latest.Artifact{
-			{ImageName: "img1"},
-			{ImageName: "img2"},
-		}
-		runner := createRunner(t, testBench, nil, artifacts, nil)
-		runner.runCtx.Opts.DigestSource = "none"
+func TestDigestSources(t *testing.T) {
+	artifacts := []*latest.Artifact{
+		{ImageName: "img1"},
+	}
 
-		bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
+	tests := []struct {
+		name         string
+		digestSource string
+		expected     []graph.Artifact
+	}{
+		{
+			name:         "digest source none",
+			digestSource: "none",
+			expected:     []graph.Artifact{},
+		},
+		{
+			name:         "digest source tag",
+			digestSource: "tag",
+			expected: []graph.Artifact{
+				{ImageName: "img1", Tag: "img1:latest"},
+			},
+		},
+		{
+			name:         "digest source remote",
+			digestSource: "remote",
+			expected: []graph.Artifact{
+				{ImageName: "img1", Tag: "img1:latest"},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			testBench := &TestBench{}
+			runner := createRunner(t, testBench, nil, artifacts, nil)
+			runner.runCtx.Opts.DigestSource = test.digestSource
 
-		t.CheckNoError(err)
-		t.CheckDeepEqual([]graph.Artifact{}, bRes)
-		// Nothing was built, tested or deployed
-		t.CheckDeepEqual([]Actions{{}}, testBench.Actions())
-	})
+			bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, bRes)
+			t.CheckDeepEqual([]Actions{{}}, testBench.Actions())
+		})
+	}
 }
 
 func TestCheckWorkspaces(t *testing.T) {
