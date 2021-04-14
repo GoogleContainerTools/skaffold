@@ -672,7 +672,9 @@ func TestUpgradeToNextVersion(t *testing.T) {
 		from := schemaVersion
 		to := SchemaVersions[i+1]
 		description := fmt.Sprintf("Upgrade from %s to %s", from.APIVersion, to.APIVersion)
-
+		if !to.IsBackwardCompatible {
+			continue
+		}
 		testutil.Run(t, description, func(t *testutil.T) {
 			factory, _ := SchemaVersions.Find(from.APIVersion)
 

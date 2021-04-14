@@ -70,6 +70,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta7"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta8"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta9"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v3alpha1"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -78,52 +79,54 @@ type APIVersion struct {
 }
 
 var SchemaVersions = Versions{
-	{v1alpha1.Version, v1alpha1.NewSkaffoldConfig},
-	{v1alpha2.Version, v1alpha2.NewSkaffoldConfig},
-	{v1alpha3.Version, v1alpha3.NewSkaffoldConfig},
-	{v1alpha4.Version, v1alpha4.NewSkaffoldConfig},
-	{v1alpha5.Version, v1alpha5.NewSkaffoldConfig},
-	{v1beta1.Version, v1beta1.NewSkaffoldConfig},
-	{v1beta2.Version, v1beta2.NewSkaffoldConfig},
-	{v1beta3.Version, v1beta3.NewSkaffoldConfig},
-	{v1beta4.Version, v1beta4.NewSkaffoldConfig},
-	{v1beta5.Version, v1beta5.NewSkaffoldConfig},
-	{v1beta6.Version, v1beta6.NewSkaffoldConfig},
-	{v1beta7.Version, v1beta7.NewSkaffoldConfig},
-	{v1beta8.Version, v1beta8.NewSkaffoldConfig},
-	{v1beta9.Version, v1beta9.NewSkaffoldConfig},
-	{v1beta10.Version, v1beta10.NewSkaffoldConfig},
-	{v1beta11.Version, v1beta11.NewSkaffoldConfig},
-	{v1beta12.Version, v1beta12.NewSkaffoldConfig},
-	{v1beta13.Version, v1beta13.NewSkaffoldConfig},
-	{v1beta14.Version, v1beta14.NewSkaffoldConfig},
-	{v1beta15.Version, v1beta15.NewSkaffoldConfig},
-	{v1beta16.Version, v1beta16.NewSkaffoldConfig},
-	{v1beta17.Version, v1beta17.NewSkaffoldConfig},
-	{v1.Version, v1.NewSkaffoldConfig},
-	{v2alpha1.Version, v2alpha1.NewSkaffoldConfig},
-	{v2alpha2.Version, v2alpha2.NewSkaffoldConfig},
-	{v2alpha3.Version, v2alpha3.NewSkaffoldConfig},
-	{v2alpha4.Version, v2alpha4.NewSkaffoldConfig},
-	{v2beta1.Version, v2beta1.NewSkaffoldConfig},
-	{v2beta2.Version, v2beta2.NewSkaffoldConfig},
-	{v2beta3.Version, v2beta3.NewSkaffoldConfig},
-	{v2beta4.Version, v2beta4.NewSkaffoldConfig},
-	{v2beta5.Version, v2beta5.NewSkaffoldConfig},
-	{v2beta6.Version, v2beta6.NewSkaffoldConfig},
-	{v2beta7.Version, v2beta7.NewSkaffoldConfig},
-	{v2beta8.Version, v2beta8.NewSkaffoldConfig},
-	{v2beta9.Version, v2beta9.NewSkaffoldConfig},
-	{v2beta10.Version, v2beta10.NewSkaffoldConfig},
-	{v2beta11.Version, v2beta11.NewSkaffoldConfig},
-	{v2beta12.Version, v2beta12.NewSkaffoldConfig},
-	{v2beta13.Version, v2beta13.NewSkaffoldConfig},
-	{latest.Version, latest.NewSkaffoldConfig},
+	{v1alpha1.Version, v1alpha1.NewSkaffoldConfig, true},
+	{v1alpha2.Version, v1alpha2.NewSkaffoldConfig, true},
+	{v1alpha3.Version, v1alpha3.NewSkaffoldConfig, true},
+	{v1alpha4.Version, v1alpha4.NewSkaffoldConfig, true},
+	{v1alpha5.Version, v1alpha5.NewSkaffoldConfig, true},
+	{v1beta1.Version, v1beta1.NewSkaffoldConfig, true},
+	{v1beta2.Version, v1beta2.NewSkaffoldConfig, true},
+	{v1beta3.Version, v1beta3.NewSkaffoldConfig, true},
+	{v1beta4.Version, v1beta4.NewSkaffoldConfig, true},
+	{v1beta5.Version, v1beta5.NewSkaffoldConfig, true},
+	{v1beta6.Version, v1beta6.NewSkaffoldConfig, true},
+	{v1beta7.Version, v1beta7.NewSkaffoldConfig, true},
+	{v1beta8.Version, v1beta8.NewSkaffoldConfig, true},
+	{v1beta9.Version, v1beta9.NewSkaffoldConfig, true},
+	{v1beta10.Version, v1beta10.NewSkaffoldConfig, true},
+	{v1beta11.Version, v1beta11.NewSkaffoldConfig, true},
+	{v1beta12.Version, v1beta12.NewSkaffoldConfig, true},
+	{v1beta13.Version, v1beta13.NewSkaffoldConfig, true},
+	{v1beta14.Version, v1beta14.NewSkaffoldConfig, true},
+	{v1beta15.Version, v1beta15.NewSkaffoldConfig, true},
+	{v1beta16.Version, v1beta16.NewSkaffoldConfig, true},
+	{v1beta17.Version, v1beta17.NewSkaffoldConfig, true},
+	{v1.Version, v1.NewSkaffoldConfig, true},
+	{v2alpha1.Version, v2alpha1.NewSkaffoldConfig, true},
+	{v2alpha2.Version, v2alpha2.NewSkaffoldConfig, true},
+	{v2alpha3.Version, v2alpha3.NewSkaffoldConfig, true},
+	{v2alpha4.Version, v2alpha4.NewSkaffoldConfig, true},
+	{v2beta1.Version, v2beta1.NewSkaffoldConfig, true},
+	{v2beta2.Version, v2beta2.NewSkaffoldConfig, true},
+	{v2beta3.Version, v2beta3.NewSkaffoldConfig, true},
+	{v2beta4.Version, v2beta4.NewSkaffoldConfig, true},
+	{v2beta5.Version, v2beta5.NewSkaffoldConfig, true},
+	{v2beta6.Version, v2beta6.NewSkaffoldConfig, true},
+	{v2beta7.Version, v2beta7.NewSkaffoldConfig, true},
+	{v2beta8.Version, v2beta8.NewSkaffoldConfig, true},
+	{v2beta9.Version, v2beta9.NewSkaffoldConfig, true},
+	{v2beta10.Version, v2beta10.NewSkaffoldConfig, true},
+	{v2beta11.Version, v2beta11.NewSkaffoldConfig, true},
+	{v2beta12.Version, v2beta12.NewSkaffoldConfig, true},
+	{v2beta13.Version, v2beta13.NewSkaffoldConfig, true},
+	{v3alpha1.Version, v3alpha1.NewSkaffoldConfig, false},
+	{latest.Version, latest.NewSkaffoldConfig, true},
 }
 
 type Version struct {
-	APIVersion string
-	Factory    func() util.VersionedConfig
+	APIVersion           string
+	Factory              func() util.VersionedConfig
+	IsBackwardCompatible bool
 }
 
 type Versions []Version
