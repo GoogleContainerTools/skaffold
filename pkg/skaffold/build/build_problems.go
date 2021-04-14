@@ -32,8 +32,9 @@ const (
 	// See https://github.com/moby/moby/blob/master/client/errors.go#L18
 	dockerConnectionFailed = ".*(Cannot connect to the Docker daemon.*) Is"
 
-	// Build cancelled due to other build failures
-	buildCancelled = ".*globalRepo canceled.*"
+	// See https://github.com/moby/moby/blob/master/client/errors.go#L20
+	// `docker build: error during connect: Post \"https://127.0.0.1:32770/v1.24/build?buildargs=:  globalRepo canceled`
+	dockerBuildCancelled = ".*globalRepo canceled.*"
 )
 
 var (
@@ -83,7 +84,7 @@ func init() {
 			ErrCode: proto.StatusCode_BUILD_DOCKER_DAEMON_NOT_RUNNING,
 			Description: func(err error) string {
 				matchExp := re(dockerConnectionFailed)
-				if match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err)); len(match) >= 2 {
+				if match := matchExp.FindStringSubmatch(err.Error()); len(match) >= 2 {
 					return fmt.Sprintf("Build Failed. %s", match[1])
 				}
 				return "Build Failed. Could not connect to Docker daemon"
@@ -129,7 +130,7 @@ func suggestBuildPushAccessDeniedAction(cfg interface{}) []*proto.Suggestion {
 }
 
 func makeAuthSuggestionsForRepo(repo string) *proto.Suggestion {
-	if re(`(.+\.)?gcr\.io.*`).MatchString(repo) {
+	if re(`(.+\.)?gcr\.io.*`).MatchString(repo) || re(`.+-docker\.pkg\.dev.*`).MatchString(repo) {
 		return &proto.Suggestion{
 			SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
 			Action:         "try `gcloud auth configure-docker`",

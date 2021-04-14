@@ -64,7 +64,7 @@ func (p Problem) AIError(i interface{}, err error) error {
 	if p.Suggestion == nil {
 		return p
 	}
-	if suggestions := p.Suggestion(i); suggestions != nil {
+	if suggestions := p.Suggestion(i); len(suggestions) > 0 {
 		return fmt.Errorf("%s. %s", strings.Trim(p.Error(), "."), concatSuggestions(suggestions))
 	}
 	return p
@@ -79,7 +79,7 @@ func isProblem(err error) (Problem, bool) {
 
 func AddPhaseProblems(phase constants.Phase, problems []Problem) {
 	if ps, ok := allErrors[phase]; ok {
-		allErrors[phase] = append(ps, problems...)
+		problems = append(ps, problems...)
 	}
 	allErrors[phase] = problems
 }

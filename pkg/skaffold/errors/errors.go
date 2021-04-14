@@ -28,7 +28,7 @@ import (
 
 const (
 	// Report issue text
-	reportIssueText = "If above error is unexpected, please open an issue " + constants.GithubIssueLink + " to report this error"
+	reportIssueText = "If above error is unexpected, please open an issue to report this error at " " + constants.GithubIssueLink
 
 	// PushImageErr is the error prepended.
 	PushImageErr = "could not push image"

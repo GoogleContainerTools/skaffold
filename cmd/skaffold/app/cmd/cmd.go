@@ -271,10 +271,10 @@ func setUpLogs(stdErr io.Writer, level string, timestamp bool) error {
 }
 
 // alwaysSucceedWhenCancelled returns nil if the context was cancelled.
-// if the error is due to cancellation, plumbs it through and it gets swallowed
+// If the error is due to cancellation, return it as it gets swallowed
 // in skaffold main.
-// For all other errors, pass it through known errors.
-// TODO: Return null is error is of context.Cancelled and remove check in main.
+// For all other errors, pass through known errors.
+// TODO: Return nil if error is `context.Cancelled` and remove check in main.
 func alwaysSucceedWhenCancelled(ctx context.Context, runCtx *runcontext.RunContext, err error) error {
 	if err == nil {
 		return err

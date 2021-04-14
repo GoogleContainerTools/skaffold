@@ -40,6 +40,10 @@ func TestMakeAuthSuggestionsForRepo(t *testing.T) {
 		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
 		Action:         "try `gcloud auth configure-docker`",
 	}, makeAuthSuggestionsForRepo("eu.gcr.io/test"))
+	testutil.CheckDeepEqual(t, &proto.Suggestion{
+		SuggestionCode: proto.SuggestionCode_GCLOUD_DOCKER_AUTH_CONFIGURE,
+		Action:         "try `gcloud auth configure-docker`",
+	}, makeAuthSuggestionsForRepo("us-docker.pkg.dev/k8s-skaffold/skaffold"))}
 }
 
 func TestBuildProblems(t *testing.T) {

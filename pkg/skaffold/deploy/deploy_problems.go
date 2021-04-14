@@ -32,7 +32,8 @@ func suggestDeployFailedAction(cfg interface{}) []*proto.Suggestion {
 		return nil
 	}
 	kCtx := deployCfg.GetKubeContext()
-	isMinikube := deployCfg.MinikubeProfile() != ""
+	isMinikube := cluster.GetClient().IsMinikube(kCtx)
+
 	if isMinikube {
 		command := "minikube status"
 		if deployCfg.GetKubeContext() != "minikube" {
@@ -62,7 +63,7 @@ func init() {
 			ErrCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
 			Description: func(err error) string {
 				matchExp := re("(?i).*unable to connect.*Get (.*)")
-				if match := matchExp.FindStringSubmatch(fmt.Sprintf("%s", err)); len(match) >= 2 {
+				if match := matchExp.FindStringSubmatch(err.Error()); len(match) >= 2 {
 					return fmt.Sprintf("Deploy Failed. Could not connect to cluster due to %s", match[1])
 				}
 				return "Deploy Failed. Could not connect to cluster."
