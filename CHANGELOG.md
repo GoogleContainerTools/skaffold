@@ -1,3 +1,83 @@
+# v1.22.0 Release - 04/14/2021
+
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.22.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.22.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.22.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.22.0`
+
+Note: This release comes with a new config version, `v2beta14`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* More granular control of `port-forward` options. Checkout the updated [documentation](https://skaffold.dev/docs/pipeline-stages/port-forwarding/) for details. 
+* `InputDigest` image tagging strategy from the [Improve taggers proposal](https://github.com/GoogleContainerTools/skaffold/blob/master/docs/design_proposals/digest-tagger.md) has landed.
+
+New Features:
+* Revise port-forward behaviour [#5554](https://github.com/GoogleContainerTools/skaffold/pull/5554)
+* Add InputDigest support to CustomTemplateTagger [#5661](https://github.com/GoogleContainerTools/skaffold/pull/5661)
+* Support --cache-artifacts flag for render [#5652](https://github.com/GoogleContainerTools/skaffold/pull/5652)
+* Adding testing phase to Skaffold run [#5594](https://github.com/GoogleContainerTools/skaffold/pull/5594)
+* Added helm remote repo example [#5640](https://github.com/GoogleContainerTools/skaffold/pull/5640)
+
+Fixes:
+* fix: test dependencies triggering retest for all artifacts [#5679](https://github.com/GoogleContainerTools/skaffold/pull/5679)
+* Forwarding resources should not allocate system ports [#5670](https://github.com/GoogleContainerTools/skaffold/pull/5670)
+* Make test dependencies retrieval per artifact. [#5678](https://github.com/GoogleContainerTools/skaffold/pull/5678)
+* Fix `default-repo` by supporting nil as default value for flags [#5654](https://github.com/GoogleContainerTools/skaffold/pull/5654)
+* [kpt deployer] Fix non-kustomize manifests not rendered issue [#5627](https://github.com/GoogleContainerTools/skaffold/pull/5627)
+* fix concurrency issue in multi-config [#5646](https://github.com/GoogleContainerTools/skaffold/pull/5646)
+* Fix 5301: Build dependencies for sync inherited from `required` artifacts; cache build dependencies between devloops [#5614](https://github.com/GoogleContainerTools/skaffold/pull/5614)
+* Fix config line number in DEVELOPMENT.md [#5619](https://github.com/GoogleContainerTools/skaffold/pull/5619)
+* fix travis ci md badge link [#5607](https://github.com/GoogleContainerTools/skaffold/pull/5607)
+* helm `render` needs to handle `repo` parameter [#5676](https://github.com/GoogleContainerTools/skaffold/pull/5676)
+* Add service config to leeroy-web deployment.yaml [#5630](https://github.com/GoogleContainerTools/skaffold/pull/5630)
+
+Updates and Refactors:
+* Remove deprecated {{.IMAGES}} and {{.DIGEST_}} env vars [#5605](https://github.com/GoogleContainerTools/skaffold/pull/5605)
+* Adding workspace `context` parameter to `test` definitions. [#5677](https://github.com/GoogleContainerTools/skaffold/pull/5677)
+* Deprecate --render-only and --render-output flags [#5644](https://github.com/GoogleContainerTools/skaffold/pull/5644)
+* Emit TaskEvent messages for DevLoop, Build, and Deploy phases [#5637](https://github.com/GoogleContainerTools/skaffold/pull/5637)
+* Update Jib to 3.0 and set base images [#5651](https://github.com/GoogleContainerTools/skaffold/pull/5651)
+* Add Event v2 package [#5558](https://github.com/GoogleContainerTools/skaffold/pull/5558)
+* Adding events for Test phase [#5573](https://github.com/GoogleContainerTools/skaffold/pull/5573)
+* Add instruction to install using Scoop [#5566](https://github.com/GoogleContainerTools/skaffold/pull/5566)
+* Try reducing ttl to 30 seconds [#5663](https://github.com/GoogleContainerTools/skaffold/pull/5663)
+* Adapting validation for docker container network mode to include ENV_VARS [#5589](https://github.com/GoogleContainerTools/skaffold/pull/5589)
+* Set `redeploy` intent only when there are rebuilt artifacts [#5553](https://github.com/GoogleContainerTools/skaffold/pull/5553)
+* Add event API v2 server handler [#5622](https://github.com/GoogleContainerTools/skaffold/pull/5622)
+* Reset API intents on every dev cycle to avoid queueing [#5636](https://github.com/GoogleContainerTools/skaffold/pull/5636)
+* Bring survey prompt back to 10 days and every 90 days. [#5631](https://github.com/GoogleContainerTools/skaffold/pull/5631)
+
+Docs, Test, and Release Updates:
+* Document portforwarding behavior for system ports [#5680](https://github.com/GoogleContainerTools/skaffold/pull/5680)
+* Updating custom test documentation  [#5606](https://github.com/GoogleContainerTools/skaffold/pull/5606)
+* Fix typo in docs site [#5585](https://github.com/GoogleContainerTools/skaffold/pull/5585)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Brian de Alwis
+- Chanseok Oh
+- Gaurav
+- Ian Danforth
+- Maggie Neterval
+- Mario Fernández
+- Marlon Gamez
+- Mike Kamornikov
+- Nick Kubala
+- Parris Lucas
+- Piotr Szybicki
+- Priya Modali
+- Tejal Desai
+- Yury
+- Yuwen Ma
+- dhodun
+
 # v1.21.0 Release - 03/18/2021
 
 **Linux**
