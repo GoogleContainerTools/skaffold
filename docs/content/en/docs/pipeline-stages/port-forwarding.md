@@ -61,7 +61,13 @@ portForward:
 
 For this example, Skaffold will attempt to forward port 8080 to `localhost:9000`.
 If port 9000 is unavailable, Skaffold will forward to a random open port. 
- 
+
+{{< alert title="Note about forwarding System Ports" >}}
+Skaffold will request matching local ports only when the remote port is `> 1023`. So a service on port `8080` would still map to port `8080` (if available), but a service on port `80` will be mapped to some port `≥ 1024`.
+
+User-defined port-forwards in the `skaffold.yaml` are unaffected and can bind to system ports.
+{{< /alert >}}
+
 Skaffold will run `kubectl port-forward` on each of these resources in addition to the automatic port forwarding described above.
 Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`. 
 
