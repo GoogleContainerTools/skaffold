@@ -93,10 +93,16 @@ func TestNewBuilderMux(t *testing.T) {
 
 type mockConfig struct {
 	pipelines []latest.Pipeline
+	optRepo   string
 }
 
-func (m *mockConfig) GetPipelines() []latest.Pipeline {
-	return m.pipelines
+func (m *mockConfig) GetPipelines() []latest.Pipeline { return m.pipelines }
+func (m *mockConfig) GlobalConfig() string            { return "" }
+func (m *mockConfig) DefaultRepo() *string {
+	if m.optRepo != "" {
+		return &m.optRepo
+	}
+	return nil
 }
 
 type mockPipelineBuilder struct {

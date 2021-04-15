@@ -67,6 +67,7 @@ func newHandler() *eventHandler {
 type eventHandler struct {
 	eventLog []proto.Event
 	logLock  sync.Mutex
+	cfg      event.Config
 
 	state     proto.State
 	stateLock sync.Mutex
@@ -265,7 +266,7 @@ func TaskInProgress(task constants.Phase, iteration int) {
 }
 
 func TaskFailed(task constants.Phase, iteration int, err error) {
-	ae := sErrors.ActionableErrV2(task, err)
+	ae := sErrors.ActionableErrV2(handler.cfg, task, err)
 	handler.handleTaskEvent(&proto.TaskEvent{
 		Id:            fmt.Sprintf("%s-%d", task, iteration),
 		Task:          string(task),

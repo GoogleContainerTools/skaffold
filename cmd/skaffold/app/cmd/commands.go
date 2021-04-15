@@ -23,8 +23,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 )
 
 // Builder is used to build cobra commands.
@@ -108,7 +106,7 @@ func (b *builder) Hidden() Builder {
 func (b *builder) ExactArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command {
 	b.cmd.Args = cobra.ExactArgs(argCount)
 	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
-		err := handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout(), args))
+		err := action(b.cmd.Context(), b.cmd.OutOrStdout(), args)
 		// clean up server at end of the execution since post run hooks are only executed if
 		// RunE is successful
 		if shutdownAPIServer != nil {
@@ -122,7 +120,7 @@ func (b *builder) ExactArgs(argCount int, action func(context.Context, io.Writer
 func (b *builder) NoArgs(action func(context.Context, io.Writer) error) *cobra.Command {
 	b.cmd.Args = cobra.NoArgs
 	b.cmd.RunE = func(*cobra.Command, []string) error {
-		err := handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout()))
+		err := action(b.cmd.Context(), b.cmd.OutOrStdout())
 		// clean up server at end of the execution since post run hooks are only executed if
 		// RunE is successful
 		if shutdownAPIServer != nil {
@@ -136,7 +134,7 @@ func (b *builder) NoArgs(action func(context.Context, io.Writer) error) *cobra.C
 func (b *builder) WithArgs(f cobra.PositionalArgs, action func(context.Context, io.Writer, []string) error) *cobra.Command {
 	b.cmd.Args = f
 	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
-		err := handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout(), args))
+		err := action(b.cmd.Context(), b.cmd.OutOrStdout(), args)
 		// clean up server at end of the execution since post run hooks are only executed if
 		// RunE is successful
 		if shutdownAPIServer != nil {
@@ -145,12 +143,4 @@ func (b *builder) WithArgs(f cobra.PositionalArgs, action func(context.Context, 
 		return err
 	}
 	return &b.cmd
-}
-
-func handleWellKnownErrors(err error) error {
-	if err == nil {
-		return err
-	}
-
-	return sErrors.ShowAIError(err)
 }
