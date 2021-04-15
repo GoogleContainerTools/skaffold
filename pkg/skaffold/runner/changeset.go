@@ -21,7 +21,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
-type changeSet struct {
+type ChangeSet struct {
 	needsRebuild   []*latest.Artifact
 	rebuildTracker map[string]*latest.Artifact
 	needsResync    []*sync.Item
@@ -31,7 +31,7 @@ type changeSet struct {
 	needsReload    bool
 }
 
-func (c *changeSet) AddRebuild(a *latest.Artifact) {
+func (c *ChangeSet) AddRebuild(a *latest.Artifact) {
 	if _, ok := c.rebuildTracker[a.ImageName]; ok {
 		return
 	}
@@ -43,14 +43,14 @@ func (c *changeSet) AddRebuild(a *latest.Artifact) {
 	c.needsRebuild = append(c.needsRebuild, a)
 }
 
-func (c *changeSet) AddRetest(a *latest.Artifact) {
+func (c *ChangeSet) AddRetest(a *latest.Artifact) {
 	if c.needsRetest == nil {
 		c.needsRetest = make(map[string]bool)
 	}
 	c.needsRetest[a.ImageName] = true
 }
 
-func (c *changeSet) AddResync(s *sync.Item) {
+func (c *ChangeSet) AddResync(s *sync.Item) {
 	if _, ok := c.resyncTracker[s.Image]; ok {
 		return
 	}
@@ -62,20 +62,20 @@ func (c *changeSet) AddResync(s *sync.Item) {
 	c.needsResync = append(c.needsResync, s)
 }
 
-func (c *changeSet) resetBuild() {
+func (c *ChangeSet) resetBuild() {
 	c.rebuildTracker = make(map[string]*latest.Artifact)
 	c.needsRebuild = nil
 }
 
-func (c *changeSet) resetSync() {
+func (c *ChangeSet) resetSync() {
 	c.resyncTracker = make(map[string]*sync.Item)
 	c.needsResync = nil
 }
 
-func (c *changeSet) resetDeploy() {
+func (c *ChangeSet) resetDeploy() {
 	c.needsRedeploy = false
 }
 
-func (c *changeSet) resetTest() {
+func (c *ChangeSet) resetTest() {
 	c.needsRetest = make(map[string]bool)
 }

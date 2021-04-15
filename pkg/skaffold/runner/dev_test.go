@@ -298,7 +298,7 @@ func TestDevAutoTriggers(t *testing.T) {
 		expectedActions []Actions
 		autoTriggers    triggerState // the state of auto triggers
 		singleTriggers  triggerState // the state of single intent triggers at the end of dev loop
-		userIntents     []func(i *intents)
+		userIntents     []func(i *Intents)
 	}{
 		{
 			description: "build on; sync on; deploy on",
@@ -368,8 +368,8 @@ func TestDevAutoTriggers(t *testing.T) {
 			autoTriggers:    triggerState{false, false, false},
 			singleTriggers:  triggerState{false, false, false},
 			expectedActions: []Actions{},
-			userIntents: []func(i *intents){
-				func(i *intents) {
+			userIntents: []func(i *Intents){
+				func(i *Intents) {
 					i.setBuild(true)
 				},
 			},
@@ -380,8 +380,8 @@ func TestDevAutoTriggers(t *testing.T) {
 			autoTriggers:    triggerState{false, false, false},
 			singleTriggers:  triggerState{false, false, false},
 			expectedActions: []Actions{},
-			userIntents: []func(i *intents){
-				func(i *intents) {
+			userIntents: []func(i *Intents){
+				func(i *Intents) {
 					i.setBuild(true)
 					i.setSync(true)
 				},
@@ -393,11 +393,11 @@ func TestDevAutoTriggers(t *testing.T) {
 			autoTriggers:    triggerState{false, false, false},
 			singleTriggers:  triggerState{false, false, false},
 			expectedActions: []Actions{},
-			userIntents: []func(i *intents){
-				func(i *intents) {
+			userIntents: []func(i *Intents){
+				func(i *Intents) {
 					i.setBuild(true)
 				},
-				func(i *intents) {
+				func(i *Intents) {
 					i.setSync(true)
 				},
 			},

@@ -26,18 +26,35 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+type BuildRunner struct {
+	builder build.Builder
+	tagger  tag.Tagger
+	cache   cache.Cache
+	builds  []graph.Artifact
+
+	// podSelector is used to determine relevant pods for logging and portForwarding
+	podSelector *kubernetes.ImageList
+
+	hasBuilt     bool
+	devIteration int
+	runCtx       *runcontext.RunContext
+}
+
 // Build builds a list of artifacts.
-func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
+func (r *BuildRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 	eventV2.TaskInProgress(constants.Build, r.devIteration)
 
 	// Use tags directly from the Kubernetes manifests.
@@ -99,55 +116,13 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 	return bRes, nil
 }
 
-// Test tests a list of already built artifacts.
-func (r *SkaffoldRunner) Test(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-	eventV2.TaskInProgress(constants.Test, r.devIteration)
-	if err := r.tester.Test(ctx, out, artifacts); err != nil {
-		eventV2.TaskFailed(constants.Test, r.devIteration, err)
-		return err
-	}
-
-	eventV2.TaskSucceeded(constants.Test, r.devIteration)
-	return nil
-}
-
-// DeployAndLog deploys a list of already built artifacts and optionally show the logs.
-func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-	// Update which images are logged.
-	r.addTagsToPodSelector(artifacts)
-
-	logger := r.createLogger(out, artifacts)
-	defer logger.Stop()
-
-	// Logs should be retrieved up to just before the deploy
-	logger.SetSince(time.Now())
-	// First deploy
-	if err := r.Deploy(ctx, out, artifacts); err != nil {
-		return err
-	}
-
-	forwarderManager := r.createForwarder(out)
-	defer forwarderManager.Stop()
-
-	if err := forwarderManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
-		logrus.Warnln("Error starting port forwarding:", err)
-	}
-
-	// Start printing the logs after deploy is finished
-	if err := logger.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
-		return fmt.Errorf("starting logger: %w", err)
-	}
-
-	if r.runCtx.Tail() || r.runCtx.PortForward() {
-		color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
-		<-ctx.Done()
-	}
-
-	return nil
+// HasBuilt returns true if this runner has built something.
+func (r *BuildRunner) HasBuilt() bool {
+	return r.hasBuilt
 }
 
 // Update which images are logged.
-func (r *SkaffoldRunner) addTagsToPodSelector(artifacts []graph.Artifact) {
+func (r *BuildRunner) addTagsToPodSelector(artifacts []graph.Artifact) {
 	for _, artifact := range artifacts {
 		r.podSelector.Add(artifact.Tag)
 	}
@@ -159,12 +134,12 @@ type tagErr struct {
 }
 
 // ApplyDefaultRepo applies the default repo to a given image tag.
-func (r *SkaffoldRunner) ApplyDefaultRepo(tag string) (string, error) {
+func (r *BuildRunner) ApplyDefaultRepo(tag string) (string, error) {
 	return deployutil.ApplyDefaultRepo(r.runCtx.GlobalConfig(), r.runCtx.DefaultRepo(), tag)
 }
 
 // imageTags generates tags for a list of artifacts
-func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
+func (r *BuildRunner) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
 
