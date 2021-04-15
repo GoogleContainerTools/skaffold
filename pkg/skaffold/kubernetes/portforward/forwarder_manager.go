@@ -21,13 +21,13 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -67,7 +67,7 @@ func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes
 	}
 
 	return &ForwarderManager{
-		iteration: iteration,
+		iteration:  iteration,
 		forwarders: forwarders,
 	}
 }
