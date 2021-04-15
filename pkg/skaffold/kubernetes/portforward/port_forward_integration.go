@@ -37,7 +37,7 @@ func SimulateDevCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
 	defer func() { portForwardEvent = portForwardEventHandler }()
 	portForwardEvent = func(entry *portForwardEntry) {}
 	ctx := context.Background()
-	localPort := retrieveAvailablePort("127.0.0.1", 9000, &em.forwardedPorts)
+	localPort := retrieveAvailablePort(9000, &em.forwardedPorts)
 	pfe := newPortForwardEntry(0, latest.PortForwardResource{
 		Type:      "deployment",
 		Name:      "leeroy-web",
@@ -50,7 +50,7 @@ func SimulateDevCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
 
 	logrus.Info("waiting for the same port to become available...")
 	if err := wait.Poll(100*time.Millisecond, 5*time.Second, func() (done bool, err error) {
-		nextPort := retrieveAvailablePort("127.0.0.1", localPort, &em.forwardedPorts)
+		nextPort := retrieveAvailablePort(localPort, &em.forwardedPorts)
 
 		logrus.Infof("next port %d", nextPort)
 

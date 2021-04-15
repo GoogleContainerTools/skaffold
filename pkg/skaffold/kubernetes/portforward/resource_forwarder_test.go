@@ -64,10 +64,10 @@ func newTestForwarder() *testForwarder {
 	return &testForwarder{}
 }
 
-func mockRetrieveAvailablePort(_ string, taken map[int]struct{}, availablePorts []int) func(string, int, *util.PortSet) int {
+func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int, *util.PortSet) int {
 	// Return first available port in ports that isn't taken
 	var lock sync.Mutex
-	return func(string, int, *util.PortSet) int {
+	return func(int, *util.PortSet) int {
 		for _, p := range availablePorts {
 			lock.Lock()
 			if _, ok := taken[p]; ok {
@@ -122,7 +122,7 @@ func TestStart(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latest.Pipeline{{}})
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, test.availablePorts))
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
 			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latest.PortForwardResource, error) {
 				return test.resources, nil
 			})
@@ -152,6 +152,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 		forwardedResources map[string]*portForwardEntry
 		availablePorts     []int
 		resource           latest.PortForwardResource
+		expectedReq        int
 		expected           *portForwardEntry
 	}{
 		{
@@ -162,6 +163,17 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 				Port: schemautil.FromInt(8080),
 			},
 			availablePorts: []int{8080},
+			expectedReq:    8080,
+			expected:       newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false),
+		}, {
+			description: "should not request system ports (1-1023)",
+			resource: latest.PortForwardResource{
+				Type: "service",
+				Name: "serviceName",
+				Port: schemautil.FromInt(80),
+			},
+			availablePorts: []int{8080},
+			expectedReq:    0, // no local port requested as port 80 is a system port
 			expected:       newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false),
 		}, {
 			description: "port forward existing deployment",
@@ -182,13 +194,17 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 					localPort: 9000,
 				},
 			},
-			expected: newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 9000, false),
+			expectedReq: -1, // retrieveAvailablePort should not be called as there is an assigned localPort
+			expected:    newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 9000, false),
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, test.availablePorts))
+			t.Override(&retrieveAvailablePort, func(req int, ps *util.PortSet) int {
+				t.CheckDeepEqual(test.expectedReq, req)
+				return mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts)(req, ps)
+			})
 
 			entryManager := NewEntryManager(ioutil.Discard, newTestForwarder())
 			entryManager.forwardedResources = forwardedResources{
@@ -251,7 +267,7 @@ func TestUserDefinedResources(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latest.Pipeline{{}})
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, []int{8080, 9000}))
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, []int{8080, 9000}))
 			t.Override(&retrieveServices, func(context.Context, string, []string) ([]*latest.PortForwardResource, error) {
 				return []*latest.PortForwardResource{svc}, nil
 			})
@@ -321,14 +337,14 @@ func TestRetrieveServices(t *testing.T) {
 				Namespace: "test",
 				Port:      schemautil.FromInt(8080),
 				Address:   "127.0.0.1",
-				LocalPort: 8080,
+				LocalPort: 0,
 			}, {
 				Type:      constants.Service,
 				Name:      "svc2",
 				Namespace: "test1",
 				Port:      schemautil.FromInt(8081),
 				Address:   "127.0.0.1",
-				LocalPort: 8081,
+				LocalPort: 0,
 			}},
 		}, {
 			description: "no services in given namespace",

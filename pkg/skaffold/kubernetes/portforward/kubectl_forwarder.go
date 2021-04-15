@@ -91,7 +91,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		}
 		pfe.terminationLock.Unlock()
 
-		if !isPortFree(util.Loopback, pfe.localPort) {
+		if !isPortFree(pfe.localPort) {
 			// Assuming that Skaffold brokered ports don't overlap, this has to be an external process that started
 			// since the dev loop kicked off. We are notifying the user in the hope that they can fix it
 			color.Red.Fprintf(k.out, "failed to port forward %v, port %d is taken, retrying...\n", pfe, pfe.localPort)
