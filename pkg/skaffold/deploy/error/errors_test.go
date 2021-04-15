@@ -30,9 +30,9 @@ func TestUserError(t *testing.T) {
 	tests := []struct {
 		description string
 		statusCode  proto.StatusCode
-		err         error
 		expected    proto.StatusCode
 		expectedErr string
+		err         error
 	}{
 		{
 			description: "internal system error",
@@ -59,7 +59,6 @@ func TestUserError(t *testing.T) {
 				}
 			}
 			t.CheckErrorContains(test.expectedErr, actual)
-
 		})
 	}
 }

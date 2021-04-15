@@ -19,10 +19,11 @@ package helm
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
-	"github.com/pkg/errors"
 )
 
 const (
