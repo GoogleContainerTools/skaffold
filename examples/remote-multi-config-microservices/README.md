@@ -14,7 +14,7 @@ It's highly suggested that you only run this example on a local, private cluster
 From this directory, run:
 
 ```bash
-skaffold dev --port-forward
+skaffold dev
 ```
 
 Now, in a different terminal, hit the `leeroy-web` endpoint
