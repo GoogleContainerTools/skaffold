@@ -188,10 +188,15 @@ func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error)
 
 	cl := runCtx.GetCluster()
 	var pushImages bool
-	if pipeline.Build.LocalBuild.Push == nil {
+
+	switch {
+	case runCtx.Opts.PushImages.Value() != nil:
+		logrus.Debugf("push value set via skaffold build --push flag, --push=%t", *runCtx.Opts.PushImages.Value())
+		pushImages = *runCtx.Opts.PushImages.Value()
+	case pipeline.Build.LocalBuild.Push == nil:
 		pushImages = cl.PushImages
 		logrus.Debugf("push value not present, defaulting to %t because cluster.PushImages is %t", pushImages, cl.PushImages)
-	} else {
+	default:
 		pushImages = *pipeline.Build.LocalBuild.Push
 	}
 	return !pushImages, nil

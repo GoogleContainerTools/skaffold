@@ -79,6 +79,7 @@ type SkaffoldOptions struct {
 	DigestSource       string
 	WatchPollInterval  int
 	DefaultRepo        StringOrUndefined
+	PushImages         BoolOrUndefined
 	CustomLabels       []string
 	TargetImages       []string
 	Profiles           []string
