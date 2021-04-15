@@ -36,7 +36,6 @@ type Config interface {
 	docker.Config
 
 	TestCases() []*latest.TestCase
-	GetWorkingDir() string
 	Muted() config.Muted
 }
 
@@ -114,7 +113,7 @@ func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []graph.Ar
 	return nil
 }
 
-func getImageTesters(cfg Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latest.TestCase) (ImageTesters, error) {
+func getImageTesters(cfg docker.Config, imagesAreLocal func(imageName string) (bool, error), tcs []*latest.TestCase) (ImageTesters, error) {
 	runners := make(map[string][]ImageTester)
 	for _, tc := range tcs {
 		isLocal, err := imagesAreLocal(tc.ImageName)
@@ -123,7 +122,7 @@ func getImageTesters(cfg Config, imagesAreLocal func(imageName string) (bool, er
 		}
 
 		if len(tc.StructureTests) != 0 {
-			structureRunner, err := structure.New(cfg, cfg.GetWorkingDir(), tc, isLocal)
+			structureRunner, err := structure.New(cfg, tc, isLocal)
 			if err != nil {
 				return nil, err
 			}
@@ -131,7 +130,7 @@ func getImageTesters(cfg Config, imagesAreLocal func(imageName string) (bool, er
 		}
 
 		for _, customTest := range tc.CustomTests {
-			customRunner, err := custom.New(cfg, tc.ImageName, cfg.GetWorkingDir(), customTest)
+			customRunner, err := custom.New(cfg, tc.ImageName, tc.Workspace, customTest)
 			if err != nil {
 				return nil, err
 			}

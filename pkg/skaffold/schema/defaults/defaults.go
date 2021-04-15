@@ -107,6 +107,7 @@ func Set(c *latest.SkaffoldConfig) error {
 		setDefaultAddress(pf)
 	}
 
+	setDefaultTestWorkspace(c)
 	return nil
 }
 
@@ -382,5 +383,14 @@ func setDefaultAddress(pf *latest.PortForwardResource) {
 func setDefaultArtifactDependencyAlias(d *latest.ArtifactDependency) {
 	if d.Alias == "" {
 		d.Alias = d.ImageName
+	}
+}
+
+func setDefaultTestWorkspace(c *latest.SkaffoldConfig) {
+	for _, tc := range c.Test {
+		if tc == nil {
+			continue
+		}
+		tc.Workspace = valueOrDefault(tc.Workspace, ".")
 	}
 }

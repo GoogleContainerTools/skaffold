@@ -973,8 +973,8 @@
             "type": "string"
           },
           "type": "array",
-          "description": "should be set to the file dependencies for this command, so that the skaffold file watcher knows when to retest and perform file synchronization.",
-          "x-intellij-html-description": "should be set to the file dependencies for this command, so that the skaffold file watcher knows when to retest and perform file synchronization.",
+          "description": "locates the file dependencies for the command relative to workspace. Paths should be set to the file dependencies for this command, so that the skaffold file watcher knows when to retest and perform file synchronization.",
+          "x-intellij-html-description": "locates the file dependencies for the command relative to workspace. Paths should be set to the file dependencies for this command, so that the skaffold file watcher knows when to retest and perform file synchronization.",
           "default": "[]",
           "examples": [
             "[\"src/test/**\"]"
@@ -3005,6 +3005,12 @@
         "image"
       ],
       "properties": {
+        "context": {
+          "type": "string",
+          "description": "directory containing the test sources.",
+          "x-intellij-html-description": "directory containing the test sources.",
+          "default": "."
+        },
         "custom": {
           "items": {
             "$ref": "#/definitions/CustomTest"
@@ -3036,6 +3042,7 @@
       },
       "preferredOrder": [
         "image",
+        "context",
         "custom",
         "structureTests"
       ],

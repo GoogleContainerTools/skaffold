@@ -42,17 +42,17 @@ var (
 const Windows string = "windows"
 
 type Runner struct {
-	customTest     latest.CustomTest
-	imageName      string
-	testWorkingDir string
+	customTest latest.CustomTest
+	imageName  string
+	workspace  string
 }
 
 // New creates a new custom.Runner.
-func New(cfg docker.Config, imageName string, wd string, ct latest.CustomTest) (*Runner, error) {
+func New(cfg docker.Config, imageName string, ws string, ct latest.CustomTest) (*Runner, error) {
 	return &Runner{
-		imageName:      imageName,
-		customTest:     ct,
-		testWorkingDir: wd,
+		imageName:  imageName,
+		customTest: ct,
+		workspace:  ws,
 	}, nil
 }
 
@@ -146,7 +146,7 @@ func (ct *Runner) TestDependencies() ([]string, error) {
 			return deps, nil
 
 		case test.Dependencies.Paths != nil:
-			return list.Files(ct.testWorkingDir, test.Dependencies.Paths, test.Dependencies.Ignore)
+			return list.Files(ct.workspace, test.Dependencies.Paths, test.Dependencies.Ignore)
 		}
 	}
 	return nil, nil
@@ -169,7 +169,7 @@ func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string
 	}
 	cmd.Env = env
 
-	dir, err := testContext(ct.testWorkingDir)
+	dir, err := testContext(ct.workspace)
 	if err != nil {
 		return nil, fmt.Errorf("getting context for test: %w", err)
 	}
@@ -179,7 +179,7 @@ func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string
 }
 
 func (ct *Runner) getEnv(imageTag string) ([]string, error) {
-	testContext, err := testContext(ct.testWorkingDir)
+	testContext, err := testContext(ct.workspace)
 	if err != nil {
 		return nil, fmt.Errorf("getting absolute path for test context: %w", err)
 	}

@@ -480,6 +480,10 @@ type TestCase struct {
 	// For example: `gcr.io/k8s-skaffold/example`.
 	ImageName string `yaml:"image" yamltags:"required"`
 
+	// Workspace is the directory containing the test sources.
+	// Defaults to `.`.
+	Workspace string `yaml:"context,omitempty" skaffold:"filepath"`
+
 	// CustomTests lists the set of custom tests to run after an artifact is built.
 	CustomTests []CustomTest `yaml:"custom,omitempty"`
 
@@ -1046,13 +1050,14 @@ type CustomTestDependencies struct {
 	// Command represents a command that skaffold executes to obtain dependencies. The output of this command *must* be a valid JSON array.
 	Command string `yaml:"command,omitempty" yamltags:"oneOf=dependency"`
 
+	// Paths locates the file dependencies for the command relative to workspace.
 	// Paths should be set to the file dependencies for this command, so that the skaffold file watcher knows when to retest and perform file synchronization.
 	// For example: `["src/test/**"]`
-	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency" skaffold:"filepath"`
+	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 
 	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both retest and file synchronization.
 	// Will only work in conjunction with `paths`.
-	Ignore []string `yaml:"ignore,omitempty" skaffold:"filepath"`
+	Ignore []string `yaml:"ignore,omitempty"`
 }
 
 // DockerfileDependency *beta* is used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile.

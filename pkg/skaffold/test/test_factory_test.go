@@ -55,11 +55,10 @@ func TestTestDependencies(t *testing.T) {
 		tmpDir := t.NewTempDir().Touch("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 
 		cfg := &mockConfig{
-			workingDir: tmpDir.Root(),
 			tests: []*latest.TestCase{
-				{StructureTests: []string{"./tests/*"}, ImageName: "foo"},
+				{StructureTests: []string{"./tests/*"}, Workspace: tmpDir.Root(), ImageName: "foo"},
 				{},
-				{StructureTests: []string{"test3.yaml"}, ImageName: "foo"},
+				{StructureTests: []string{"test3.yaml"}, Workspace: tmpDir.Root(), ImageName: "foo"},
 			},
 		}
 
@@ -119,15 +118,16 @@ func TestTestSuccess(t *testing.T) {
 			AndRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test3.yaml")))
 
 		cfg := &mockConfig{
-			workingDir: tmpDir.Root(),
 			tests: []*latest.TestCase{
 				{
 					ImageName:      "image",
+					Workspace:      tmpDir.Root(),
 					StructureTests: []string{"./tests/*"},
 				},
 				{},
 				{
 					ImageName:      "image",
+					Workspace:      tmpDir.Root(),
 					StructureTests: []string{"test3.yaml"},
 				},
 				{
@@ -240,9 +240,9 @@ func TestTestMuted(t *testing.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test.yaml")))
 
 		cfg := &mockConfig{
-			workingDir: tmpDir.Root(),
 			tests: []*latest.TestCase{{
 				ImageName:      "image",
+				Workspace:      tmpDir.Root(),
 				StructureTests: []string{"test.yaml"},
 			}},
 			muted: config.Muted{
@@ -270,11 +270,10 @@ func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
 
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
-	workingDir            string
 	tests                 []*latest.TestCase
 	muted                 config.Muted
 }
 
-func (c *mockConfig) Muted() config.Muted           { return c.muted }
-func (c *mockConfig) GetWorkingDir() string         { return c.workingDir }
+func (c *mockConfig) Muted() config.Muted { return c.muted }
+
 func (c *mockConfig) TestCases() []*latest.TestCase { return c.tests }
