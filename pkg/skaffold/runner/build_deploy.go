@@ -101,17 +101,18 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 
 // Test tests a list of already built artifacts.
 func (r *SkaffoldRunner) Test(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+	eventV2.TaskInProgress(constants.Test, r.devIteration)
 	if err := r.tester.Test(ctx, out, artifacts); err != nil {
+		eventV2.TaskFailed(constants.Test, r.devIteration, err)
 		return err
 	}
 
+	eventV2.TaskSucceeded(constants.Test, r.devIteration)
 	return nil
 }
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-	eventV2.TaskInProgress(constants.Deploy, r.devIteration)
-
 	// Update which images are logged.
 	r.addTagsToPodSelector(artifacts)
 
@@ -122,7 +123,6 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	logger.SetSince(time.Now())
 	// First deploy
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
-		eventV2.TaskFailed(constants.Deploy, r.devIteration, err)
 		return err
 	}
 
@@ -135,7 +135,6 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 
 	// Start printing the logs after deploy is finished
 	if err := logger.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
-		eventV2.TaskFailed(constants.Deploy, r.devIteration, err)
 		return fmt.Errorf("starting logger: %w", err)
 	}
 
@@ -144,7 +143,6 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		<-ctx.Done()
 	}
 
-	eventV2.TaskSucceeded(constants.Deploy, r.devIteration)
 	return nil
 }
 
