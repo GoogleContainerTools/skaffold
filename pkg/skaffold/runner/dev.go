@@ -62,7 +62,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 	logrus.Tracef("dev intents: build %t, sync %t, deploy %t\n", buildIntent, syncIntent, deployIntent)
 	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
 	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
-	needsTest := r.changeSet.needsRetest
+	needsTest := len(r.changeSet.needsRetest) > 0
 	needsDeploy := deployIntent && r.changeSet.needsRedeploy
 	if !needsSync && !needsBuild && !needsTest && !needsDeploy {
 		return nil
@@ -121,19 +121,23 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)
 			return nil
 		}
-		needsTest = true
 		r.changeSet.needsRedeploy = true
 		needsDeploy = deployIntent
 	}
 
-	if needsTest && !r.runCtx.SkipTests() {
+	// Trigger retest when there are newly rebuilt artifacts or untested previous artifacts; and it's not explicitly skipped
+	if (len(bRes) > 0 || needsTest) && !r.runCtx.SkipTests() {
 		event.ResetStateOnTest()
 		defer func() {
-			r.changeSet.needsRetest = false
+			r.changeSet.resetTest()
 		}()
-
-		if len(bRes) == 0 {
-			bRes = r.builds
+		for _, a := range bRes {
+			delete(r.changeSet.needsRetest, a.ImageName)
+		}
+		for _, a := range r.builds {
+			if r.changeSet.needsRetest[a.ImageName] {
+				bRes = append(bRes, a)
+			}
 		}
 		if err := r.Test(ctx, out, bRes); err != nil {
 			if needsDeploy {
@@ -223,7 +227,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		artifact := artifacts[i]
 		if err := r.monitor.Register(
 			func() ([]string, error) { return r.tester.TestDependencies(artifact) },
-			func(filemon.Events) { r.changeSet.needsRetest = true },
+			func(filemon.Events) { r.changeSet.AddRetest(artifact) },
 		); err != nil {
 			event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)
 			eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)

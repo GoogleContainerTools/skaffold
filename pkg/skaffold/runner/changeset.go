@@ -26,7 +26,7 @@ type changeSet struct {
 	rebuildTracker map[string]*latest.Artifact
 	needsResync    []*sync.Item
 	resyncTracker  map[string]*sync.Item
-	needsRetest    bool
+	needsRetest    map[string]bool // keyed on artifact image name
 	needsRedeploy  bool
 	needsReload    bool
 }
@@ -41,6 +41,13 @@ func (c *changeSet) AddRebuild(a *latest.Artifact) {
 	}
 	c.rebuildTracker[a.ImageName] = a
 	c.needsRebuild = append(c.needsRebuild, a)
+}
+
+func (c *changeSet) AddRetest(a *latest.Artifact) {
+	if c.needsRetest == nil {
+		c.needsRetest = make(map[string]bool)
+	}
+	c.needsRetest[a.ImageName] = true
 }
 
 func (c *changeSet) AddResync(s *sync.Item) {
@@ -67,4 +74,8 @@ func (c *changeSet) resetSync() {
 
 func (c *changeSet) resetDeploy() {
 	c.needsRedeploy = false
+}
+
+func (c *changeSet) resetTest() {
+	c.needsRetest = make(map[string]bool)
 }
