@@ -90,9 +90,5 @@ func listManifestErr(err error) error {
 }
 
 func userErr(err error) error {
-	return sErrors.NewError(err,
-		proto.ActionableErr{
-			Message: err.Error(),
-			ErrCode: proto.StatusCode_DEPLOY_KUBECTL_USER_ERR,
-		})
+	return deployerr.UserError(err, proto.StatusCode_DEPLOY_KUBECTL_USER_ERR)
 }

@@ -22,6 +22,7 @@ import (
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -67,14 +68,7 @@ func helmLabelErr(err error) error {
 }
 
 func userErr(prefix string, err error) error {
-	if sErrors.IsSkaffoldErr(err) {
-		return err
-	}
-	return sErrors.NewError(err,
-		proto.ActionableErr{
-			Message: fmt.Sprintf("%s: %s", prefix, err.Error()),
-			ErrCode: proto.StatusCode_DEPLOY_HELM_USER_ERR,
-		})
+	return deployerr.UserError(errors.Wrap(err, prefix), proto.StatusCode_DEPLOY_HELM_USER_ERR)
 }
 
 func noMatchingBuild(image string) error {
