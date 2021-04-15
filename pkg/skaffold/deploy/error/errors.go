@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -56,4 +57,18 @@ func MissingToolErr(toolName string, err error) string {
 		return fmt.Sprintf(notFound, toolName)
 	}
 	return err.Error()
+}
+
+func UserError(err error, sc proto.StatusCode) error {
+	if sErrors.IsSkaffoldErr(err) {
+		return err
+	}
+	if deploy.ClusterInternalSystemErr.MatchString(err.Error()) {
+		return err
+	}
+	return sErrors.NewError(err,
+		proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: sc,
+		})
 }
