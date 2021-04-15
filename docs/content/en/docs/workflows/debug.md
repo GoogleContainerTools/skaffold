@@ -72,7 +72,7 @@ We are looking for ways to identify this information and to pass it back if foun
 #### Go
 
 Go-based applications are configured to run under [Delve](https://github.com/go-delve/delve) in its headless-server mode.
-In order to configure your appliction for debugging, your app must be:
+In order to configure your application for debugging, your app must be:
 
   - Identified as being Go-based by setting one of the [standard Go runtime
     environment variables](https://godoc.org/runtime) in the container, such as `GODEBUG`, `GOGC`, `GOMAXPROCS`,
