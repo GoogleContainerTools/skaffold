@@ -35,12 +35,12 @@ type Runner struct {
 	structureTests []string
 	imageName      string
 	imageIsLocal   bool
-	testWorkingDir string
+	workspace      string
 	localDaemon    docker.LocalDaemon
 }
 
 // New creates a new structure.Runner.
-func New(cfg docker.Config, wd string, tc *latest.TestCase, imageIsLocal bool) (*Runner, error) {
+func New(cfg docker.Config, tc *latest.TestCase, imageIsLocal bool) (*Runner, error) {
 	localDaemon, err := docker.NewAPIClient(cfg)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func New(cfg docker.Config, wd string, tc *latest.TestCase, imageIsLocal bool) (
 	return &Runner{
 		structureTests: tc.StructureTests,
 		imageName:      tc.ImageName,
-		testWorkingDir: wd,
+		workspace:      tc.Workspace,
 		localDaemon:    localDaemon,
 		imageIsLocal:   imageIsLocal,
 	}, nil
@@ -101,7 +101,7 @@ func (cst *Runner) runStructureTests(ctx context.Context, out io.Writer, imageTa
 
 // TestDependencies returns dependencies listed for the structure tests
 func (cst *Runner) TestDependencies() ([]string, error) {
-	files, err := util.ExpandPathsGlob(cst.testWorkingDir, cst.structureTests)
+	files, err := util.ExpandPathsGlob(cst.workspace, cst.structureTests)
 	if err != nil {
 		return nil, expandingFilePathsErr(err)
 	}
