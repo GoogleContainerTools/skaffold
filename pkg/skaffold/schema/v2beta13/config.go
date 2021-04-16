@@ -1203,6 +1203,10 @@ type DockerArtifact struct {
 	// `none`: no networking in the container.
 	NetworkMode string `yaml:"network,omitempty"`
 
+	// AddHost lists add host
+	// For example: `["host1:ip1", "host2:ip2"]`.
+	AddHost []string `yaml:"addHost,omitempty"`
+
 	// CacheFrom lists the Docker images used as cache sources.
 	// For example: `["golang:1.10.1-alpine3.7", "alpine:3.7"]`.
 	CacheFrom []string `yaml:"cacheFrom,omitempty"`

@@ -212,6 +212,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 		Target:      a.Target,
 		ForceRemove: l.forceRemove,
 		NetworkMode: strings.ToLower(a.NetworkMode),
+		ExtraHosts:  a.AddHost,
 		NoCache:     a.NoCache,
 	})
 	if err != nil {
@@ -479,6 +480,10 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 		} else {
 			args = append(args, fmt.Sprintf("%s=%s", k, *v))
 		}
+	}
+
+	for _, host := range a.AddHost {
+		args = append(args, "--add-host", host)
 	}
 
 	for _, from := range a.CacheFrom {

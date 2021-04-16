@@ -1109,6 +1109,15 @@
             "none"
           ]
         },
+        "addHost": {
+          "type": "array",
+          "description": "add extra host list.",
+          "x-intellij-html-description": "add extra host list.",
+          "default": "[]",
+          "examples": [
+            "[\"host1:ip1\", \"host2:ip2\"]"
+          ]
+        },
         "noCache": {
           "type": "boolean",
           "description": "used to pass in --no-cache to docker build to prevent caching.",
