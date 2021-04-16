@@ -21,34 +21,34 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestNewForwarderManager(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		description        string
 		fmOptions          string
 		expectedForwarders int
 	}{
 		{
-			description: "nil forwarder manager",
-			fmOptions: "",
+			description:        "nil forwarder manager",
+			fmOptions:          "",
 			expectedForwarders: 0,
 		},
 		{
-			description: "basic forwarder manager",
-			fmOptions: "user",
+			description:        "basic forwarder manager",
+			fmOptions:          "user",
 			expectedForwarders: 1,
 		},
 		{
-			description: "two options forwarder manager",
-			fmOptions: "user,debug",
+			description:        "two options forwarder manager",
+			fmOptions:          "user,debug",
 			expectedForwarders: 2,
 		},
 	}
