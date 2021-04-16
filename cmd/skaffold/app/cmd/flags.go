@@ -509,6 +509,15 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"debug", "dev", "run"},
 		IsEnum:        true,
 	},
+	{
+		Name:          "v3",
+		Usage:         "Next skaffold config (v3). Use kpt to render/hydrate and deploy manifests.",
+		Value:         &opts.Experimental,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"apply", "debug", "deploy", "dev", "run"},
+		IsEnum:        true,
+	},
 }
 
 func methodNameByType(v reflect.Value) string {
