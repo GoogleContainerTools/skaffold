@@ -32,7 +32,7 @@ profiles:
             DEBUG: 1
         sync:
           manual:
-          # Sync all the javascript files that are in the src folder
+          # Sync all the python files that are in the src folder
           # with the container src folder
           - src: 'src/**/*.py'
             dest: .
