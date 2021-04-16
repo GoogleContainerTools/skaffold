@@ -509,6 +509,14 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"debug", "dev", "run"},
 		IsEnum:        true,
 	},
+	{
+		Name:          "build-concurrency",
+		Usage:         "Number of concurrently running builds",
+		Value:         &opts.AssumeYes,
+		DefValue:      1,
+		FlagAddMethod: "IntVar",
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
+	},
 }
 
 func methodNameByType(v reflect.Value) string {
