@@ -1068,6 +1068,18 @@
     },
     "DockerArtifact": {
       "properties": {
+        "addHost": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "add host.",
+          "x-intellij-html-description": "add host.",
+          "default": "[]",
+          "examples": [
+            "[\"host1:ip1\", \"host2:ip2\"]"
+          ]
+        },
         "buildArgs": {
           "additionalProperties": {
             "type": "string"
@@ -1142,6 +1154,7 @@
         "target",
         "buildArgs",
         "network",
+        "addHost",
         "cacheFrom",
         "noCache",
         "squash",
