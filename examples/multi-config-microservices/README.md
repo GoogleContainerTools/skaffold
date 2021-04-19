@@ -40,7 +40,7 @@ These are two independently managed instances of Skaffold running on the `leeroy
 In order to iterate on both apps together we reference them as **required** configs in the `multi-config-microservices/skaffold.yaml` file.
 
 ```yaml
-apiVersion: skaffold/v2beta11
+apiVersion: skaffold/v2beta14
 kind: Config
 requires:
 - path: ./leeroy-app
