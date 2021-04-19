@@ -20,43 +20,17 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
-
-// Artifact is the result corresponding to each successful build.
-type Artifact struct {
-	ImageName string `json:"imageName"`
-	Tag       string `json:"tag"`
-}
-
-// ArtifactGraph is a map of [artifact image : artifact definition]
-type ArtifactGraph map[string]*latest.Artifact
-
-// ToArtifactGraph creates an instance of `ArtifactGraph` from `[]*latest.Artifact`
-func ToArtifactGraph(artifacts []*latest.Artifact) ArtifactGraph {
-	m := make(map[string]*latest.Artifact)
-	for _, a := range artifacts {
-		m[a.ImageName] = a
-	}
-	return m
-}
-
-// Dependencies returns the de-referenced slice of required artifacts for a given artifact
-func (g ArtifactGraph) Dependencies(a *latest.Artifact) []*latest.Artifact {
-	var sl []*latest.Artifact
-	for _, d := range a.Dependencies {
-		sl = append(sl, g[d.ImageName])
-	}
-	return sl
-}
 
 // Builder is an interface to the Build API of Skaffold.
 // It must build and make the resulting image accessible to the cluster.
 // This could include pushing to a authorized repository or loading the nodes with the image.
 // If artifacts is supplied, the builder should only rebuild those artifacts.
 type Builder interface {
-	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error)
+	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]graph.Artifact, error)
 
 	// Prune removes images built with Skaffold
 	Prune(context.Context, io.Writer) error

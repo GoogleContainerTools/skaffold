@@ -25,7 +25,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -75,11 +75,11 @@ func (m *MockDeployer) WithRenderErr(err error) *MockDeployer {
 	return m
 }
 
-func (m *MockDeployer) Deploy(context.Context, io.Writer, []build.Artifact) ([]string, error) {
+func (m *MockDeployer) Deploy(context.Context, io.Writer, []graph.Artifact) ([]string, error) {
 	return m.deployNamespaces, m.deployErr
 }
 
-func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []build.Artifact, _ bool, _ string) error {
+func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []graph.Artifact, _ bool, _ string) error {
 	w.Write([]byte(m.renderResult))
 	return m.renderErr
 }
@@ -165,27 +165,27 @@ func TestDeployerMux_Dependencies(t *testing.T) {
 	}{
 		{
 			name:         "disjoint dependencies are combined",
-			deps1:        []string{"dep-a"},
-			deps2:        []string{"dep-b"},
-			expectedDeps: []string{"dep-a", "dep-b"},
+			deps1:        []string{"graph-a"},
+			deps2:        []string{"graph-b"},
+			expectedDeps: []string{"graph-a", "graph-b"},
 		},
 		{
 			name:         "repeated dependencies are not duplicated",
-			deps1:        []string{"dep-a", "dep-c"},
-			deps2:        []string{"dep-b", "dep-c"},
-			expectedDeps: []string{"dep-a", "dep-b", "dep-c"},
+			deps1:        []string{"graph-a", "graph-c"},
+			deps2:        []string{"graph-b", "graph-c"},
+			expectedDeps: []string{"graph-a", "graph-b", "graph-c"},
 		},
 		{
 			name:      "when first call fails",
-			deps1:     []string{"dep-a"},
+			deps1:     []string{"graph-a"},
 			err1:      fmt.Errorf("failed in first"),
-			deps2:     []string{"dep-b"},
+			deps2:     []string{"graph-b"},
 			shouldErr: true,
 		},
 		{
 			name:      "when second call fails",
-			deps1:     []string{"dep-a"},
-			deps2:     []string{"dep-b"},
+			deps1:     []string{"graph-a"},
+			deps2:     []string{"graph-b"},
 			err2:      fmt.Errorf("failed in second"),
 			shouldErr: true,
 		},

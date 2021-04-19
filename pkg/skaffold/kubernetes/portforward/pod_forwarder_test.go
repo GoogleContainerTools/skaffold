@@ -60,7 +60,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Namespace: "namespace",
 						Port:      schemautil.FromInt(8080),
 						Address:   "127.0.0.1",
-						LocalPort: 8080,
+						LocalPort: 0,
 					},
 					ownerReference:         "owner",
 					automaticPodForwarding: true,
@@ -105,7 +105,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Namespace: "namespace",
 						Port:      schemautil.FromInt(8080),
 						Address:   "127.0.0.1",
-						LocalPort: 8080,
+						LocalPort: 0,
 					},
 					ownerReference:         "owner",
 					automaticPodForwarding: true,
@@ -181,7 +181,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Namespace: "namespace",
 						Port:      schemautil.FromInt(8080),
 						Address:   "127.0.0.1",
-						LocalPort: 8080,
+						LocalPort: 0,
 					},
 					ownerReference:         "owner",
 					portName:               "portname",
@@ -198,7 +198,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Namespace: "namespace2",
 						Port:      schemautil.FromInt(50051),
 						Address:   "127.0.0.1",
-						LocalPort: 50051,
+						LocalPort: 0,
 					},
 					ownerReference:         "owner",
 					portName:               "portname2",
@@ -265,7 +265,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Namespace: "namespace",
 						Port:      schemautil.FromInt(8080),
 						Address:   "127.0.0.1",
-						LocalPort: 8080,
+						LocalPort: 0,
 					},
 					ownerReference:         "owner",
 					automaticPodForwarding: true,
@@ -282,7 +282,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Namespace: "namespace2",
 						Port:      schemautil.FromInt(8080),
 						Address:   "127.0.0.1",
-						LocalPort: 8080,
+						LocalPort: 0,
 					},
 					ownerReference:         "owner",
 					automaticPodForwarding: true,
@@ -348,7 +348,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Namespace: "namespace",
 						Port:      schemautil.FromInt(8080),
 						Address:   "127.0.0.1",
-						LocalPort: 8080,
+						LocalPort: 0,
 					},
 					ownerReference:         "owner",
 					automaticPodForwarding: true,
@@ -403,7 +403,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latest.Pipeline{{}})
 			taken := map[int]struct{}{}
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", taken, test.availablePorts))
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
 			t.Override(&topLevelOwnerKey, func(context.Context, metav1.Object, string) string { return "owner" })
 
 			if test.forwarder == nil {
@@ -412,7 +412,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			entryManager := NewEntryManager(ioutil.Discard, nil)
 			entryManager.entryForwarder = test.forwarder
 
-			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList())
+			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), allPorts)
 			for _, pod := range test.pods {
 				err := p.portForwardPod(context.Background(), pod)
 				t.CheckError(test.shouldErr, err)
@@ -488,7 +488,7 @@ func TestStartPodForwarder(t *testing.T) {
 			fakeForwarder := newTestForwarder()
 			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
 
-			p := NewWatchingPodForwarder(entryManager, imageList)
+			p := NewWatchingPodForwarder(entryManager, imageList, allPorts)
 			p.Start(context.Background(), nil)
 
 			// wait for the pod resource to be forwarded

@@ -47,11 +47,20 @@ func doRun(ctx context.Context, out io.Writer) error {
 			return fmt.Errorf("failed to build: %w", err)
 		}
 
-		err = r.DeployAndLog(ctx, out, bRes)
-		if err == nil {
-			tips.PrintForRun(out, opts)
+		if !opts.SkipTests {
+			err = r.Test(ctx, out, bRes)
+			if err != nil {
+				return fmt.Errorf("failed to test: %w", err)
+			}
 		}
 
-		return err
+		err = r.DeployAndLog(ctx, out, bRes)
+		if err != nil {
+			return fmt.Errorf("failed to deploy: %w", err)
+		}
+
+		tips.PrintForRun(out, opts)
+
+		return nil
 	})
 }

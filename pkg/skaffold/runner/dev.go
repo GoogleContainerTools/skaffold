@@ -25,11 +25,12 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
@@ -50,14 +51,18 @@ var (
 )
 
 func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kubernetes.LogAggregator, forwarderManager portforward.Forwarder) error {
+	// never queue intents from user, even if they're not used
+	defer r.intents.reset()
+
 	if r.changeSet.needsReload {
 		return ErrorConfigurationChanged
 	}
 
 	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
+	logrus.Tracef("dev intents: build %t, sync %t, deploy %t\n", buildIntent, syncIntent, deployIntent)
 	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
 	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
-	needsTest := r.changeSet.needsRetest
+	needsTest := len(r.changeSet.needsRetest) > 0
 	needsDeploy := deployIntent && r.changeSet.needsRedeploy
 	if !needsSync && !needsBuild && !needsTest && !needsDeploy {
 		return nil
@@ -68,6 +73,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 	defer r.monitor.Reset()
 	defer r.listener.LogWatchToUser(out)
 	event.DevLoopInProgress(r.devIteration)
+	eventV2.TaskInProgress(constants.DevLoop, r.devIteration)
 	defer func() { r.devIteration++ }()
 
 	meterUpdated := false
@@ -86,7 +92,8 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 			if err := r.syncer.Sync(ctx, s); err != nil {
 				logrus.Warnln("Skipping deploy due to sync error:", err)
 				fileSyncFailed(fileCount, s.Image, err)
-				event.DevLoopFailedInPhase(r.devIteration, sErrors.FileSync, err)
+				event.DevLoopFailedInPhase(r.devIteration, constants.Sync, err)
+				eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)
 				return nil
 			}
 
@@ -94,7 +101,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		}
 	}
 
-	var bRes []build.Artifact
+	var bRes []graph.Artifact
 	if needsBuild {
 		event.ResetStateOnBuild()
 		defer func() {
@@ -110,28 +117,34 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		bRes, err = r.Build(ctx, out, r.changeSet.needsRebuild)
 		if err != nil {
 			logrus.Warnln("Skipping test and deploy due to build error:", err)
-			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
+			event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
+			eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)
 			return nil
 		}
-		needsTest = true
 		r.changeSet.needsRedeploy = true
 		needsDeploy = deployIntent
 	}
 
-	if needsTest && !r.runCtx.SkipTests() {
+	// Trigger retest when there are newly rebuilt artifacts or untested previous artifacts; and it's not explicitly skipped
+	if (len(bRes) > 0 || needsTest) && !r.runCtx.SkipTests() {
 		event.ResetStateOnTest()
 		defer func() {
-			r.changeSet.needsRetest = false
+			r.changeSet.resetTest()
 		}()
-
-		if len(bRes) == 0 {
-			bRes = r.builds
+		for _, a := range bRes {
+			delete(r.changeSet.needsRetest, a.ImageName)
+		}
+		for _, a := range r.builds {
+			if r.changeSet.needsRetest[a.ImageName] {
+				bRes = append(bRes, a)
+			}
 		}
 		if err := r.Test(ctx, out, bRes); err != nil {
 			if needsDeploy {
 				logrus.Warnln("Skipping deploy due to test error:", err)
 			}
-			event.DevLoopFailedInPhase(r.devIteration, sErrors.Test, err)
+			event.DevLoopFailedInPhase(r.devIteration, constants.Test, err)
+			eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)
 			return nil
 		}
 	}
@@ -149,7 +162,8 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		}
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
-			event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
+			event.DevLoopFailedInPhase(r.devIteration, constants.Deploy, err)
+			eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)
 			return nil
 		}
 		if err := forwarderManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
@@ -157,6 +171,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 		}
 	}
 	event.DevLoopComplete(r.devIteration)
+	eventV2.TaskSucceeded(constants.DevLoop, r.devIteration)
 	logger.Unmute()
 	return nil
 }
@@ -165,6 +180,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 // config until interrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	event.DevLoopInProgress(r.devIteration)
+	eventV2.TaskInProgress(constants.DevLoop, r.devIteration)
 	defer func() { r.devIteration++ }()
 	g := getTransposeGraph(artifacts)
 	// Watch artifacts
@@ -185,7 +201,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		default:
 			if err := r.monitor.Register(
 				func() ([]string, error) {
-					return build.DependenciesForArtifact(ctx, artifact, r.runCtx, r.artifactStore)
+					return r.sourceDependencies.ResolveForArtifact(ctx, artifact)
 				},
 				func(e filemon.Events) {
 					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx, len(g[artifact.ImageName]))
@@ -195,23 +211,28 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 					case s != nil:
 						r.changeSet.AddResync(s)
 					default:
-						addRebuild(g, artifact, r.changeSet.AddRebuild, r.runCtx.Opts.IsTargetImage)
+						r.changeSet.AddRebuild(artifact)
 					}
 				},
 			); err != nil {
 				event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_BUILD_DEPS, err)
+				eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)
 				return fmt.Errorf("watching files for artifact %q: %w", artifact.ImageName, err)
 			}
 		}
 	}
 
 	// Watch test configuration
-	if err := r.monitor.Register(
-		r.tester.TestDependencies,
-		func(filemon.Events) { r.changeSet.needsRetest = true },
-	); err != nil {
-		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)
-		return fmt.Errorf("watching test files: %w", err)
+	for i := range artifacts {
+		artifact := artifacts[i]
+		if err := r.monitor.Register(
+			func() ([]string, error) { return r.tester.TestDependencies(artifact) },
+			func(filemon.Events) { r.changeSet.AddRetest(artifact) },
+		); err != nil {
+			event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)
+			eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)
+			return fmt.Errorf("watching test files: %w", err)
+		}
 	}
 
 	// Watch deployment configuration
@@ -220,6 +241,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		func(filemon.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_DEPLOY_DEPS, err)
+		eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)
 		return fmt.Errorf("watching files for deployer: %w", err)
 	}
 
@@ -229,6 +251,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		func(filemon.Events) { r.changeSet.needsReload = true },
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_CONFIG_DEP, err)
+		eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)
 		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.ConfigurationFile(), err)
 	}
 
@@ -237,19 +260,22 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Init Sync State
 	if err := sync.Init(ctx, artifacts); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_SYNC_INIT_ERROR, err)
+		eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)
 		return fmt.Errorf("exiting dev mode because initializing sync state failed: %w", err)
 	}
 
 	// First build
 	bRes, err := r.Build(ctx, out, artifacts)
 	if err != nil {
-		event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
+		event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
+		eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)
 		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
 	}
 	// First test
 	if !r.runCtx.SkipTests() {
 		if err = r.Test(ctx, out, bRes); err != nil {
-			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
+			event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
+			eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)
 			return fmt.Errorf("exiting dev mode because test failed after first build: %w", err)
 		}
 	}
@@ -265,7 +291,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// First deploy
 	if err := r.Deploy(ctx, out, r.builds); err != nil {
-		event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
+		event.DevLoopFailedInPhase(r.devIteration, constants.Deploy, err)
+		eventV2.TaskFailed(constants.DevLoop, r.devIteration, err)
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
 
@@ -285,17 +312,19 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
 
-	event.DevLoopComplete(0)
+	event.DevLoopComplete(r.devIteration)
+	eventV2.TaskSucceeded(constants.DevLoop, r.devIteration)
+	r.devIteration++
 	return r.listener.WatchForChanges(ctx, out, func() error {
 		return r.doDev(ctx, out, logger, forwarderManager)
 	})
 }
 
 // graph represents the artifact graph
-type graph map[string][]*latest.Artifact
+type devGraph map[string][]*latest.Artifact
 
 // getTransposeGraph builds the transpose of the graph represented by the artifacts slice, with edges directed from required artifact to the dependent artifact.
-func getTransposeGraph(artifacts []*latest.Artifact) graph {
+func getTransposeGraph(artifacts []*latest.Artifact) devGraph {
 	g := make(map[string][]*latest.Artifact)
 	for _, a := range artifacts {
 		for _, d := range a.Dependencies {
@@ -303,14 +332,4 @@ func getTransposeGraph(artifacts []*latest.Artifact) graph {
 		}
 	}
 	return g
-}
-
-// addRebuild runs the `rebuild` function for all target artifacts in the transitive closure on the source `artifact` in graph `g`.
-func addRebuild(g graph, artifact *latest.Artifact, rebuild func(*latest.Artifact), isTarget func(*latest.Artifact) bool) {
-	if isTarget(artifact) {
-		rebuild(artifact)
-	}
-	for _, a := range g[artifact.ImageName] {
-		addRebuild(g, a, rebuild, isTarget)
-	}
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -179,6 +180,8 @@ func (i *fakeImageIndex) ImageIndex(v1.Hash) (v1.ImageIndex, error) { return nil
 type mockConfig struct {
 	Config
 	insecureRegistries map[string]bool
+	mode               config.RunMode
 }
 
-func (c *mockConfig) GetInsecureRegistries() map[string]bool { return c.insecureRegistries }
+func (c mockConfig) GetInsecureRegistries() map[string]bool { return c.insecureRegistries }
+func (c mockConfig) Mode() config.RunMode                   { return c.mode }

@@ -75,9 +75,12 @@ func Set(c *latest.SkaffoldConfig) error {
 		}
 	}
 
-	withLocalBuild(c,
-		setDefaultConcurrency,
-	)
+	withLocalBuild(c, func(lb *latest.LocalBuild) {
+		// don't set build concurrency if there are no artifacts in the current config
+		if len(c.Build.Artifacts) > 0 {
+			setDefaultConcurrency(lb)
+		}
+	})
 
 	withCloudBuildConfig(c,
 		setDefaultCloudBuildDockerImage,
@@ -104,6 +107,7 @@ func Set(c *latest.SkaffoldConfig) error {
 		setDefaultAddress(pf)
 	}
 
+	setDefaultTestWorkspace(c)
 	return nil
 }
 
@@ -379,5 +383,14 @@ func setDefaultAddress(pf *latest.PortForwardResource) {
 func setDefaultArtifactDependencyAlias(d *latest.ArtifactDependency) {
 	if d.Alias == "" {
 		d.Alias = d.ImageName
+	}
+}
+
+func setDefaultTestWorkspace(c *latest.SkaffoldConfig) {
+	for _, tc := range c.Test {
+		if tc == nil {
+			continue
+		}
+		tc.Workspace = valueOrDefault(tc.Workspace, ".")
 	}
 }

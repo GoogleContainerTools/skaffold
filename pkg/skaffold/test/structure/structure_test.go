@@ -22,7 +22,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -42,25 +41,23 @@ func TestNewRunner(t *testing.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image "+imageName+" --config "+tmpDir.Path("test.yaml")))
 
 		cfg := &mockConfig{
-			workingDir: tmpDir.Root(),
 			tests: []*latest.TestCase{{
 				ImageName:      "image",
+				Workspace:      tmpDir.Root(),
 				StructureTests: []string{"test.yaml"},
 			}},
 		}
 
 		testCase := &latest.TestCase{
 			ImageName:      "image",
+			Workspace:      tmpDir.Root(),
 			StructureTests: []string{"test.yaml"},
 		}
 		testEvent.InitializeState([]latest.Pipeline{{}})
 
-		testRunner, err := New(cfg, cfg.workingDir, testCase, func(imageName string) (bool, error) { return true, nil })
+		testRunner, err := New(cfg, testCase, true)
 		t.CheckNoError(err)
-		err = testRunner.Test(context.Background(), ioutil.Discard, []build.Artifact{{
-			ImageName: "image",
-			Tag:       "image:tag",
-		}})
+		err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
 		t.CheckNoError(err)
 	})
 }
@@ -73,19 +70,20 @@ func TestIgnoreDockerNotFound(t *testing.T) {
 		})
 
 		cfg := &mockConfig{
-			workingDir: tmpDir.Root(),
 			tests: []*latest.TestCase{{
 				ImageName:      "image",
+				Workspace:      tmpDir.Root(),
 				StructureTests: []string{"test.yaml"},
 			}},
 		}
 
 		testCase := &latest.TestCase{
 			ImageName:      "image",
+			Workspace:      tmpDir.Root(),
 			StructureTests: []string{"test.yaml"},
 		}
 
-		testRunner, err := New(cfg, cfg.workingDir, testCase, func(imageName string) (bool, error) { return true, nil })
+		testRunner, err := New(cfg, testCase, true)
 		t.CheckError(true, err)
 		t.CheckNil(testRunner)
 	})
@@ -93,11 +91,10 @@ func TestIgnoreDockerNotFound(t *testing.T) {
 
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
-	workingDir            string
 	tests                 []*latest.TestCase
 	muted                 config.Muted
 }
 
-func (c *mockConfig) Muted() config.Muted           { return c.muted }
-func (c *mockConfig) GetWorkingDir() string         { return c.workingDir }
+func (c *mockConfig) Muted() config.Muted { return c.muted }
+
 func (c *mockConfig) TestCases() []*latest.TestCase { return c.tests }

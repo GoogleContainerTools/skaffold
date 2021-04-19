@@ -19,7 +19,7 @@ package flags
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -36,12 +36,12 @@ func TestImagesFlagSet(t *testing.T) {
 		description      string
 		setValue         string
 		shouldErr        bool
-		expectedArtifact build.Artifact
+		expectedArtifact graph.Artifact
 	}{
 		{
 			description: "set on correct value return right artifact with tag",
 			setValue:    "gcr.io/test/test-image:test",
-			expectedArtifact: build.Artifact{
+			expectedArtifact: graph.Artifact{
 				ImageName: "gcr.io/test/test-image",
 				Tag:       "gcr.io/test/test-image:test",
 			},
@@ -49,7 +49,7 @@ func TestImagesFlagSet(t *testing.T) {
 		{
 			description: "set on correct value return right artifact without tag",
 			setValue:    "gcr.io/test/test-image",
-			expectedArtifact: build.Artifact{
+			expectedArtifact: graph.Artifact{
 				ImageName: "gcr.io/test/test-image",
 				Tag:       "gcr.io/test/test-image",
 			},
@@ -57,7 +57,7 @@ func TestImagesFlagSet(t *testing.T) {
 		{
 			description: "set on correct value return right artifact without digest",
 			setValue:    "gcr.io/test/test-image@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
-			expectedArtifact: build.Artifact{
+			expectedArtifact: graph.Artifact{
 				ImageName: "gcr.io/test/test-image",
 				Tag:       "gcr.io/test/test-image@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
 			},
@@ -65,7 +65,7 @@ func TestImagesFlagSet(t *testing.T) {
 		{
 			description: "set with docker name",
 			setValue:    "docker-image-value",
-			expectedArtifact: build.Artifact{
+			expectedArtifact: graph.Artifact{
 				ImageName: "docker-image-value",
 				Tag:       "docker-image-value",
 			},
@@ -120,13 +120,13 @@ func TestConvertToArtifact(t *testing.T) {
 	tests := []struct {
 		description string
 		image       string
-		expected    *build.Artifact
+		expected    *graph.Artifact
 		shouldErr   bool
 	}{
 		{
 			description: "valid image",
 			image:       "skaffold/image1:tag1",
-			expected:    &build.Artifact{ImageName: "skaffold/image1", Tag: "skaffold/image1:tag1"},
+			expected:    &graph.Artifact{ImageName: "skaffold/image1", Tag: "skaffold/image1:tag1"},
 		},
 		{
 			description: "test invalid artifact",

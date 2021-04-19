@@ -17,11 +17,10 @@ limitations under the License.
 package tag
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 	"text/template"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -43,22 +42,13 @@ func NewEnvTemplateTagger(t string) (Tagger, error) {
 }
 
 // GenerateTag generates a tag from a template referencing environment variables.
-func (t *envTemplateTagger) GenerateTag(_, imageName string) (string, error) {
+func (t *envTemplateTagger) GenerateTag(image latest.Artifact) (string, error) {
 	// missingkey=error throws error when map is indexed with an undefined key
 	tag, err := util.ExecuteEnvTemplate(t.Template.Option("missingkey=error"), map[string]string{
-		"IMAGE_NAME":  imageName,
-		"DIGEST":      "_DEPRECATED_DIGEST_",
-		"DIGEST_ALGO": "_DEPRECATED_DIGEST_ALGO_",
-		"DIGEST_HEX":  "_DEPRECATED_DIGEST_HEX_",
+		"IMAGE_NAME": image.ImageName,
 	})
 	if err != nil {
 		return "", err
-	}
-
-	if strings.Contains(tag, "_DEPRECATED_DIGEST_") ||
-		strings.Contains(tag, "_DEPRECATED_DIGEST_ALGO_") ||
-		strings.Contains(tag, "_DEPRECATED_DIGEST_HEX_") {
-		return "", errors.New("{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags")
 	}
 
 	return tag, nil

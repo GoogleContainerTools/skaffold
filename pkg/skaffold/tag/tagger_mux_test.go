@@ -19,11 +19,16 @@ package tag
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestCreateComponents(t *testing.T) {
+	runCtx := &runcontext.RunContext{}
+
+	digestExample, _ := NewInputDigestTagger(runCtx, graph.ToArtifactGraph(runCtx.Artifacts()))
 	gitExample, _ := NewGitCommit("", "", false)
 	envExample, _ := NewEnvTemplateTagger("test")
 
@@ -41,6 +46,7 @@ func TestCreateComponents(t *testing.T) {
 					{Name: "FOE", Component: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}}},
 					{Name: "BAR", Component: latest.TagPolicy{EnvTemplateTagger: &latest.EnvTemplateTagger{Template: "test"}}},
 					{Name: "BAT", Component: latest.TagPolicy{DateTimeTagger: &latest.DateTimeTagger{}}},
+					{Name: "BAS", Component: latest.TagPolicy{InputDigest: &latest.InputDigest{}}},
 				},
 			},
 			expected: map[string]Tagger{
@@ -48,6 +54,7 @@ func TestCreateComponents(t *testing.T) {
 				"FOE": &ChecksumTagger{},
 				"BAR": envExample,
 				"BAT": NewDateTimeTagger("", ""),
+				"BAS": digestExample,
 			},
 		},
 		{
@@ -81,7 +88,7 @@ func TestCreateComponents(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			components, err := CreateComponents(test.customTemplateTagger)
+			components, err := CreateComponents(runCtx, test.customTemplateTagger)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, len(test.expected), len(components))
 			for k, v := range test.expected {
 				t.CheckTypeEquality(v, components[k])

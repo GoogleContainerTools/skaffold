@@ -16,7 +16,9 @@ limitations under the License.
 
 package config
 
-import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+)
 
 // StringOrUndefined holds the value of a flag of type `string`,
 // that's by default `undefined`.
@@ -36,6 +38,11 @@ func (s *StringOrUndefined) Value() *string {
 
 func (s *StringOrUndefined) Set(v string) error {
 	s.value = &v
+	return nil
+}
+
+func (s *StringOrUndefined) SetNil() error {
+	s.value = nil
 	return nil
 }
 

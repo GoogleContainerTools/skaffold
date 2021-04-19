@@ -24,7 +24,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -52,21 +51,18 @@ func TestNewCustomTestRunner(t *testing.T) {
 
 		testCase := &latest.TestCase{
 			ImageName:   "image",
+			Workspace:   tmpDir.Root(),
 			CustomTests: []latest.CustomTest{custom},
 		}
 
 		cfg := &mockConfig{
-			workingDir: tmpDir.Root(),
-			tests:      []*latest.TestCase{testCase},
+			tests: []*latest.TestCase{testCase},
 		}
 		testEvent.InitializeState([]latest.Pipeline{{}})
 
-		testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
+		testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 		t.CheckNoError(err)
-		err = testRunner.Test(context.Background(), ioutil.Discard, []build.Artifact{{
-			ImageName: "image",
-			Tag:       "image:tag",
-		}})
+		err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
 
 		t.CheckNoError(err)
 	})
@@ -114,21 +110,18 @@ func TestCustomCommandError(t *testing.T) {
 
 			testCase := &latest.TestCase{
 				ImageName:   "image",
+				Workspace:   tmpDir.Root(),
 				CustomTests: []latest.CustomTest{test.custom},
 			}
 
 			cfg := &mockConfig{
-				workingDir: tmpDir.Root(),
-				tests:      []*latest.TestCase{testCase},
+				tests: []*latest.TestCase{testCase},
 			}
 			testEvent.InitializeState([]latest.Pipeline{{}})
 
-			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, test.custom)
+			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, test.custom)
 			t.CheckNoError(err)
-			err = testRunner.Test(context.Background(), ioutil.Discard, []build.Artifact{{
-				ImageName: "image",
-				Tag:       "image:tag",
-			}})
+			err = testRunner.Test(context.Background(), ioutil.Discard, "image:tag")
 
 			// TODO(modali): Update the logic to check for error code instead of error string.
 			t.CheckError(test.shouldErr, err)
@@ -152,12 +145,12 @@ func TestTestDependenciesCommand(t *testing.T) {
 
 		testCase := &latest.TestCase{
 			ImageName:   "image",
+			Workspace:   tmpDir.Root(),
 			CustomTests: []latest.CustomTest{custom},
 		}
 
 		cfg := &mockConfig{
-			workingDir: tmpDir.Root(),
-			tests:      []*latest.TestCase{testCase},
+			tests: []*latest.TestCase{testCase},
 		}
 		testEvent.InitializeState([]latest.Pipeline{{}})
 
@@ -174,7 +167,7 @@ func TestTestDependenciesCommand(t *testing.T) {
 		}
 
 		expected := []string{"file1", "file2", "file3"}
-		testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
+		testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 		t.CheckNoError(err)
 		deps, err := testRunner.TestDependencies()
 
@@ -236,16 +229,16 @@ func TestTestDependenciesPaths(t *testing.T) {
 
 			testCase := &latest.TestCase{
 				ImageName:   "image",
+				Workspace:   tmpDir.Root(),
 				CustomTests: []latest.CustomTest{custom},
 			}
 
 			cfg := &mockConfig{
-				workingDir: tmpDir.Root(),
-				tests:      []*latest.TestCase{testCase},
+				tests: []*latest.TestCase{testCase},
 			}
 			testEvent.InitializeState([]latest.Pipeline{{}})
 
-			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
+			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 			t.CheckNoError(err)
 			deps, err := testRunner.TestDependencies()
 
@@ -289,21 +282,18 @@ func TestGetEnv(t *testing.T) {
 
 			testCase := &latest.TestCase{
 				ImageName:   "image",
+				Workspace:   tmpDir.Root(),
 				CustomTests: []latest.CustomTest{custom},
 			}
 
 			cfg := &mockConfig{
-				workingDir: tmpDir.Root(),
-				tests:      []*latest.TestCase{testCase},
+				tests: []*latest.TestCase{testCase},
 			}
 			testEvent.InitializeState([]latest.Pipeline{{}})
 
-			testRunner, err := New(cfg, testCase.ImageName, cfg.workingDir, custom)
+			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 			t.CheckNoError(err)
-			actual, err := testRunner.getEnv([]build.Artifact{{
-				ImageName: "image",
-				Tag:       test.tag,
-			}})
+			actual, err := testRunner.getEnv(test.tag)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
@@ -313,6 +303,5 @@ func TestGetEnv(t *testing.T) {
 
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
-	workingDir            string
 	tests                 []*latest.TestCase
 }

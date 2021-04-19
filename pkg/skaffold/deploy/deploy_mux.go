@@ -22,7 +22,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -32,7 +32,7 @@ import (
 // it collects the results and returns it in bulk.
 type DeployerMux []Deployer
 
-func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []build.Artifact) ([]string, error) {
+func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) ([]string, error) {
 	seenNamespaces := util.NewStringSet()
 
 	for _, deployer := range m {
@@ -67,7 +67,7 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
-func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []build.Artifact, offline bool, filepath string) error {
+func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []graph.Artifact, offline bool, filepath string) error {
 	resources, buf := []string{}, &bytes.Buffer{}
 	for _, deployer := range m {
 		buf.Reset()

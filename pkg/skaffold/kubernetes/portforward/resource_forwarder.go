@@ -36,6 +36,7 @@ type ResourceForwarder struct {
 	entryManager         *EntryManager
 	label                string
 	userDefinedResources []*latest.PortForwardResource
+	services             bool
 }
 
 var (
@@ -44,11 +45,19 @@ var (
 	retrieveServices      = retrieveServiceResources
 )
 
-// NewResourceForwarder returns a struct that tracks and port-forwards services as they are created and modified
-func NewResourceForwarder(entryManager *EntryManager, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
+// NewServicesForwarder returns a struct that tracks and port-forwards services as they are created and modified
+func NewServicesForwarder(entryManager *EntryManager, label string) *ResourceForwarder {
+	return &ResourceForwarder{
+		entryManager: entryManager,
+		label:        label,
+		services:     true,
+	}
+}
+
+// NewUserDefinedForwarder returns a struct that tracks and port-forwards services as they are created and modified
+func NewUserDefinedForwarder(entryManager *EntryManager, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
 	return &ResourceForwarder{
 		entryManager:         entryManager,
-		label:                label,
 		userDefinedResources: userDefinedResources,
 	}
 }
@@ -73,9 +82,14 @@ func (p *ResourceForwarder) Start(ctx context.Context, namespaces []string) erro
 		}
 		p.userDefinedResources = validResources
 	}
-	serviceResources, err := retrieveServices(ctx, p.label, namespaces)
-	if err != nil {
-		return fmt.Errorf("retrieving services for automatic port forwarding: %w", err)
+
+	var serviceResources []*latest.PortForwardResource
+	if p.services {
+		found, err := retrieveServices(ctx, p.label, namespaces)
+		if err != nil {
+			return fmt.Errorf("retrieving services for automatic port forwarding: %w", err)
+		}
+		serviceResources = found
 	}
 	p.portForwardResources(ctx, append(p.userDefinedResources, serviceResources...))
 	return nil
@@ -112,8 +126,13 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 		return entry
 	}
 
-	// retrieve an open port on the host
-	entry.localPort = retrieveAvailablePort(resource.Address, resource.LocalPort, &p.entryManager.forwardedPorts)
+	// Try to request matching local port *providing* that it is not a system port.
+	// https://github.com/GoogleContainerTools/skaffold/pull/5554#issuecomment-803270340
+	requestPort := resource.LocalPort
+	if requestPort == 0 && resource.Port.IntVal >= 1024 {
+		requestPort = resource.Port.IntVal
+	}
+	entry.localPort = retrieveAvailablePort(requestPort, &p.entryManager.forwardedPorts)
 	return entry
 }
 
@@ -141,7 +160,6 @@ func retrieveServiceResources(ctx context.Context, label string, namespaces []st
 					Namespace: s.Namespace,
 					Port:      schemautil.FromInt(int(p.Port)),
 					Address:   constants.DefaultPortForwardAddress,
-					LocalPort: int(p.Port),
 				})
 			}
 		}

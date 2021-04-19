@@ -423,7 +423,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
-      --port-forward=false: Port-forward exposed container ports within pods
+      --port-forward=user,debug: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
@@ -569,7 +569,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -n, --namespace='': Run deployments in the specified namespace
-      --port-forward=false: Port-forward exposed container ports within pods
+      --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
@@ -655,11 +655,10 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
-      --port-forward=false: Port-forward exposed container ports within pods
+      --port-forward=user: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --render-only=false: Print rendered Kubernetes manifests instead of deploying them
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
@@ -711,7 +710,6 @@ Env vars:
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
-* `SKAFFOLD_RENDER_ONLY` (same as `--render-only`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
@@ -785,7 +783,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --overwrite=false: Overwrite original config with fixed config
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --version='skaffold/v2beta13': Target schema version to upgrade to
+      --version='skaffold/v2beta14': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -874,6 +872,7 @@ Examples:
 Options:
       --add-skaffold-labels=true: Add Skaffold-specific labels to rendered manifest. If false, custom labels are still applied. Helpful for GitOps model where Skaffold is not the deployer.
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+      --cache-artifacts=true: Set to false to disable default caching of artifacts
   -d, --default-repo='': Default repository value (overrides global config)
       --digest-source='local': Set to 'local' to build images locally and use digests from built images; Set to 'remote' to resolve the digest of images by tag from the remote registry; Set to 'none' to use tags directly from the Kubernetes manifests. Set to 'tag' to use tags directly from the build.
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -898,6 +897,7 @@ Env vars:
 
 * `SKAFFOLD_ADD_SKAFFOLD_LABELS` (same as `--add-skaffold-labels`)
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
@@ -948,12 +948,10 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
-      --port-forward=false: Port-forward exposed container ports within pods
+      --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --render-only=false: Print rendered Kubernetes manifests instead of deploying them
-      --render-output='': Writes '--render-only' output to the specified file
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
@@ -1000,8 +998,6 @@ Env vars:
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
-* `SKAFFOLD_RENDER_ONLY` (same as `--render-only`)
-* `SKAFFOLD_RENDER_OUTPUT` (same as `--render-output`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)

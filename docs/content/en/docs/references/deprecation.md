@@ -70,17 +70,23 @@ Exceptions will always be announced in all relevant release notes.
 
 ## Current deprecation notices
 
-10/21/2019: With release v0.41.0 we mark for deprecation the `$IMAGES` environment variable passed to custom builders. Variable `$IMAGE` should be used instead.
-This environment variable flag will be removed no earlier than 01/21/2020.
+04/07/2021: Release v1.22.0 deprecates the `--render-only` and `--render-output` flags from `skaffold run` and `skaffold dev`, in favor of simply using the `skaffold render` command directly.
 
 ## Past deprecation notices
 
-03/15/2019: With release v0.25.0 we mark for deprecation the `flags` field in kaniko (`KanikoArtifact.AdditionalFlags`) , instead Kaniko's additional flags will now be represented as unique fields under `kaniko` per artifact (`KanikoArtifact` type).
-This flag will will be removed earliest 06/15/2019.
+10/21/2019: With release v0.41.0 we mark for deprecation the `$IMAGES` environment variable passed to custom builders. Variable `$IMAGE` should be used instead.
 
-02/15/2019: With  release v0.23.0 we mark for deprecation the following env variables in the `envTemplate` tagger:
+**This environment variable flag was removed in version v1.22.0.**
+
+03/15/2019: With release v0.25.0 we mark for deprecation the `flags` field in kaniko (`KanikoArtifact.AdditionalFlags`), instead Kaniko's additional flags will now be represented as unique fields under `kaniko` per artifact (`KanikoArtifact` type).
+
+**This field was removed in version 1.0.0.**
+
+02/15/2019: With release v0.23.0 we mark for deprecation the following env variables in the `envTemplate` tagger:
 - `DIGEST`
 - `DIGEST_ALGO`
 - `DIGEST_HEX`
+
 Currently these variables resolve to `_DEPRECATED_<envvar>_`, and the new tagging mechanism adds a digest to the image name thus it shouldn't break existing configurations.
-This backward compatibility behavior will be removed earliest 05/14/2019.
+
+**This compatibility behavior was removed in version v1.22.0.**

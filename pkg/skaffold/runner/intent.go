@@ -39,6 +39,14 @@ func newIntents(autoBuild, autoSync, autoDeploy bool) *intents {
 	return i
 }
 
+func (i *intents) reset() {
+	i.lock.Lock()
+	i.build = i.autoBuild
+	i.sync = i.autoSync
+	i.deploy = i.autoDeploy
+	i.lock.Unlock()
+}
+
 func (i *intents) resetBuild() {
 	i.lock.Lock()
 	i.build = i.autoBuild

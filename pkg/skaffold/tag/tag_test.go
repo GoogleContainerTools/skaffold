@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -28,7 +29,6 @@ import (
 func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 	// This is for testing envTemplate
 	envTemplateExample, _ := NewEnvTemplateTagger("{{.FOO}}")
-	envTemplateDeprecatedExample, _ := NewEnvTemplateTagger("{{.IMAGE_NAME}}:{{.FOO}}")
 	invalidEnvTemplate, _ := NewEnvTemplateTagger("{{.BAR}}")
 	env := []string{"FOO=BAR"}
 
@@ -70,13 +70,6 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			expected:    "test:BAR",
 		},
 		{
-			description:      "deprecated envTemplate",
-			imageName:        "test",
-			tagger:           envTemplateDeprecatedExample,
-			expected:         "test:BAR",
-			expectedWarnings: []string{"{{.IMAGE_NAME}} is deprecated, envTemplate's template should only specify the tag value. See https://skaffold.dev/docs/pipeline-stages/taggers/"},
-		},
-		{
 			description: "undefined env variable",
 			imageName:   "test",
 			tagger:      invalidEnvTemplate,
@@ -111,7 +104,11 @@ func TestTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return env })
 
-			tag, err := GenerateFullyQualifiedImageName(test.tagger, ".", test.imageName)
+			image := latest.Artifact{
+				ImageName: test.imageName,
+			}
+
+			tag, err := GenerateFullyQualifiedImageName(test.tagger, image)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, tag)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})

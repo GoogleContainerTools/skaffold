@@ -24,7 +24,7 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -35,7 +35,7 @@ func TestTest(t *testing.T) {
 		description     string
 		testBench       *TestBench
 		cfg             []*latest.Artifact
-		artifacts       []build.Artifact
+		artifacts       []graph.Artifact
 		expectedActions []Actions
 		shouldErr       bool
 	}{
@@ -43,7 +43,7 @@ func TestTest(t *testing.T) {
 			description: "test no error",
 			testBench:   &TestBench{},
 			cfg:         []*latest.Artifact{{ImageName: "img1"}, {ImageName: "img2"}},
-			artifacts: []build.Artifact{
+			artifacts: []graph.Artifact{
 				{ImageName: "img1", Tag: "img1:tag1"},
 				{ImageName: "img2", Tag: "img2:tag2"},
 			},
@@ -54,14 +54,14 @@ func TestTest(t *testing.T) {
 		{
 			description:     "no artifacts",
 			testBench:       &TestBench{},
-			artifacts:       []build.Artifact(nil),
+			artifacts:       []graph.Artifact(nil),
 			expectedActions: []Actions{{}},
 		},
 		{
 			description: "missing tag",
 			testBench:   &TestBench{},
 			cfg:         []*latest.Artifact{{ImageName: "image1"}},
-			artifacts:   []build.Artifact{{ImageName: "image1"}},
+			artifacts:   []graph.Artifact{{ImageName: "image1"}},
 			expectedActions: []Actions{{
 				Tested: []string{""},
 			}},
@@ -163,7 +163,7 @@ func TestBuildDryRun(t *testing.T) {
 		bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual([]build.Artifact{
+		t.CheckDeepEqual([]graph.Artifact{
 			{ImageName: "img1", Tag: "img1:latest"},
 			{ImageName: "img2", Tag: "img2:latest"}}, bRes)
 		// Nothing was built, tested or deployed
@@ -171,23 +171,49 @@ func TestBuildDryRun(t *testing.T) {
 	})
 }
 
-func TestBuildSkipBuild(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		testBench := &TestBench{}
-		artifacts := []*latest.Artifact{
-			{ImageName: "img1"},
-			{ImageName: "img2"},
-		}
-		runner := createRunner(t, testBench, nil, artifacts, nil)
-		runner.runCtx.Opts.DigestSource = "none"
+func TestDigestSources(t *testing.T) {
+	artifacts := []*latest.Artifact{
+		{ImageName: "img1"},
+	}
 
-		bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
+	tests := []struct {
+		name         string
+		digestSource string
+		expected     []graph.Artifact
+	}{
+		{
+			name:         "digest source none",
+			digestSource: "none",
+			expected:     []graph.Artifact{},
+		},
+		{
+			name:         "digest source tag",
+			digestSource: "tag",
+			expected: []graph.Artifact{
+				{ImageName: "img1", Tag: "img1:latest"},
+			},
+		},
+		{
+			name:         "digest source remote",
+			digestSource: "remote",
+			expected: []graph.Artifact{
+				{ImageName: "img1", Tag: "img1:latest"},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			testBench := &TestBench{}
+			runner := createRunner(t, testBench, nil, artifacts, nil)
+			runner.runCtx.Opts.DigestSource = test.digestSource
 
-		t.CheckNoError(err)
-		t.CheckDeepEqual([]build.Artifact{}, bRes)
-		// Nothing was built, tested or deployed
-		t.CheckDeepEqual([]Actions{{}}, testBench.Actions())
-	})
+			bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, bRes)
+			t.CheckDeepEqual([]Actions{{}}, testBench.Actions())
+		})
+	}
 }
 
 func TestCheckWorkspaces(t *testing.T) {

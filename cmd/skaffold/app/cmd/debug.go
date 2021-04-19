@@ -45,7 +45,6 @@ func NewCmdDebug() *cobra.Command {
 }
 
 func runDebug(ctx context.Context, out io.Writer) error {
-	opts.PortForward.ForwardPods = true
 	manifest.AddTransform(debugging.ApplyDebuggingTransforms)
 
 	return doDev(ctx, out)

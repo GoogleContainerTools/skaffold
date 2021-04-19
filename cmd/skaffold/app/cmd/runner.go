@@ -46,32 +46,31 @@ import (
 var createRunner = createNewRunner
 
 func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, []*latest.SkaffoldConfig) error) error {
-	runner, config, err := createRunner(out, opts)
+	runner, config, runCtx, err := createRunner(out, opts)
 	if err != nil {
 		return err
 	}
 
 	err = action(runner, config)
 
-	return alwaysSucceedWhenCancelled(ctx, err)
+	return alwaysSucceedWhenCancelled(ctx, runCtx, err)
 }
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
-func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, error) {
+func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, *runcontext.RunContext, error) {
 	runCtx, configs, err := runContext(out, opts)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	sErrors.SetRunContext(*runCtx)
 
 	instrumentation.InitMeterFromConfig(configs)
 	runner, err := runner.NewForConfig(runCtx)
 	if err != nil {
 		event.InititializationFailed(err)
-		return nil, nil, fmt.Errorf("creating runner: %w", err)
+		return nil, nil, nil, fmt.Errorf("creating runner: %w", err)
 	}
 
-	return runner, configs, nil
+	return runner, configs, runCtx, nil
 }
 
 func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.SkaffoldConfig, error) {

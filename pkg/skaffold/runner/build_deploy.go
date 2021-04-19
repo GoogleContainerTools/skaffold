@@ -27,34 +27,41 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Build builds a list of artifacts.
-func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
+	eventV2.TaskInProgress(constants.Build, r.devIteration)
+
 	// Use tags directly from the Kubernetes manifests.
 	if r.runCtx.DigestSource() == noneDigestSource {
-		return []build.Artifact{}, nil
+		return []graph.Artifact{}, nil
 	}
 
 	if err := checkWorkspaces(artifacts); err != nil {
+		eventV2.TaskFailed(constants.Build, r.devIteration, err)
 		return nil, err
 	}
 
 	tags, err := r.imageTags(ctx, out, artifacts)
 	if err != nil {
+		eventV2.TaskFailed(constants.Build, r.devIteration, err)
 		return nil, err
 	}
 
-	// In dry-run mode or with --digest-source  set to 'remote' or 'tag', we don't build anything, just return the tag for each artifact.
+	// In dry-run mode or with --digest-source  set to 'remote' or with --digest-source set to 'tag' , we don't build anything, just return the tag for each artifact.
 	if r.runCtx.DryRun() || (r.runCtx.DigestSource() == remoteDigestSource) ||
 		(r.runCtx.DigestSource() == tagDigestSource) {
-		var bRes []build.Artifact
+		var bRes []graph.Artifact
 		for _, artifact := range artifacts {
-			bRes = append(bRes, build.Artifact{
+			bRes = append(bRes, graph.Artifact{
 				ImageName: artifact.ImageName,
 				Tag:       tags[artifact.ImageName],
 			})
@@ -63,7 +70,7 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 		return bRes, nil
 	}
 
-	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 		if len(artifacts) == 0 {
 			return nil, nil
 		}
@@ -78,6 +85,7 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 		return bRes, nil
 	})
 	if err != nil {
+		eventV2.TaskFailed(constants.Build, r.devIteration, err)
 		return nil, err
 	}
 
@@ -87,20 +95,24 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
 
+	eventV2.TaskSucceeded(constants.Build, r.devIteration)
 	return bRes, nil
 }
 
 // Test tests a list of already built artifacts.
-func (r *SkaffoldRunner) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+func (r *SkaffoldRunner) Test(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+	eventV2.TaskInProgress(constants.Test, r.devIteration)
 	if err := r.tester.Test(ctx, out, artifacts); err != nil {
+		eventV2.TaskFailed(constants.Test, r.devIteration, err)
 		return err
 	}
 
+	eventV2.TaskSucceeded(constants.Test, r.devIteration)
 	return nil
 }
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
-func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
 	// Update which images are logged.
 	r.addTagsToPodSelector(artifacts)
 
@@ -135,7 +147,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 }
 
 // Update which images are logged.
-func (r *SkaffoldRunner) addTagsToPodSelector(artifacts []build.Artifact) {
+func (r *SkaffoldRunner) addTagsToPodSelector(artifacts []graph.Artifact) {
 	for _, artifact := range artifacts {
 		r.podSelector.Add(artifact.Tag)
 	}
@@ -163,7 +175,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 		i := i
 		go func() {
-			tag, err := tag.GenerateFullyQualifiedImageName(r.tagger, artifacts[i].Workspace, artifacts[i].ImageName)
+			tag, err := tag.GenerateFullyQualifiedImageName(r.tagger, *artifacts[i])
 			tagErrs[i] <- tagErr{tag: tag, err: err}
 		}()
 	}
@@ -184,7 +196,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 				logrus.Debugln(t.err)
 				logrus.Debugln("Using a fall-back tagger")
 
-				fallbackTag, err := tag.GenerateFullyQualifiedImageName(&tag.ChecksumTagger{}, artifact.Workspace, imageName)
+				fallbackTag, err := tag.GenerateFullyQualifiedImageName(&tag.ChecksumTagger{}, *artifact)
 				if err != nil {
 					return nil, fmt.Errorf("generating checksum as fall-back tag for %q: %w", imageName, err)
 				}

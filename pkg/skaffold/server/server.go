@@ -32,8 +32,10 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	protoV2 "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
 const maxTryListen = 10
@@ -152,7 +154,16 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 		autoSyncCallback:     func(bool) {},
 		autoDeployCallback:   func(bool) {},
 	}
+	v2.Srv = &v2.Server{
+		BuildIntentCallback:  func() {},
+		DeployIntentCallback: func() {},
+		SyncIntentCallback:   func() {},
+		AutoBuildCallback:    func(bool) {},
+		AutoSyncCallback:     func(bool) {},
+		AutoDeployCallback:   func(bool) {},
+	}
 	proto.RegisterSkaffoldServiceServer(s, srv)
+	protoV2.RegisterSkaffoldV2ServiceServer(s, v2.Srv)
 
 	go func() {
 		if err := s.Serve(l); err != nil {
@@ -179,9 +190,13 @@ func newGRPCServer(preferredPort int, usedPorts *util.PortSet) (func() error, in
 }
 
 func newHTTPServer(preferredPort, proxyPort int, usedPorts *util.PortSet) (func() error, error) {
-	mux := runtime.NewServeMux(runtime.WithProtoErrorHandler(errorHandler))
+	mux := runtime.NewServeMux(runtime.WithProtoErrorHandler(errorHandler), runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{OrigName: true, EmitDefaults: true}))
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 	err := proto.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
+	if err != nil {
+		return func() error { return nil }, err
+	}
+	err = protoV2.RegisterSkaffoldV2ServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
 	if err != nil {
 		return func() error { return nil }, err
 	}
@@ -227,7 +242,7 @@ func errorHandler(ctx context.Context, _ *runtime.ServeMux, marshaler runtime.Ma
 
 func listenOnAvailablePort(preferredPort int, usedPorts *util.PortSet) (net.Listener, int, error) {
 	for try := 1; ; try++ {
-		port := util.GetAvailablePort(util.Loopback, preferredPort, usedPorts)
+		port := util.GetAvailablePort(preferredPort, usedPorts)
 
 		l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
 		if err != nil {

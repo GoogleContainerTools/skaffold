@@ -31,7 +31,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -218,6 +218,22 @@ func TestPortForwarded(t *testing.T) {
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8081] == nil })
 	PortForwarded(8081, schemautil.FromString("http"), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8081] != nil })
+}
+
+// Ensure that port-forward event handling deals with a nil State.ForwardedPorts map.
+// See https://github.com/GoogleContainerTools/skaffold/issues/5612
+func TestPortForwarded_handleNil(t *testing.T) {
+	defer func() { handler = newHandler() }()
+
+	handler = newHandler()
+	handler.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
+	handler.setState(handler.getState())
+
+	if handler.getState().ForwardedPorts != nil {
+		t.Error("ForwardPorts should be a nil map")
+	}
+	PortForwarded(8080, schemautil.FromInt(8888), "pod", "container", "ns", "portname", "resourceType", "resourceName", "127.0.0.1")
+	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] != nil })
 }
 
 func TestStatusCheckEventStarted(t *testing.T) {
@@ -519,7 +535,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 	tcs := []struct {
 		description string
 		state       proto.State
-		phase       sErrors.Phase
+		phase       constants.Phase
 		waitFn      func() bool
 	}{
 		{
@@ -527,7 +543,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 			state: proto.State{
 				BuildState: &proto.BuildState{StatusCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED},
 			},
-			phase: sErrors.Build,
+			phase: constants.Build,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
@@ -541,7 +557,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 				BuildState: &proto.BuildState{},
 				TestState:  &proto.TestState{StatusCode: proto.StatusCode_TEST_UNKNOWN},
 			},
-			phase: sErrors.Test,
+			phase: constants.Test,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
@@ -555,7 +571,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 				BuildState:  &proto.BuildState{},
 				DeployState: &proto.DeployState{StatusCode: proto.StatusCode_DEPLOY_UNKNOWN},
 			},
-			phase: sErrors.Deploy,
+			phase: constants.Deploy,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
@@ -571,7 +587,7 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 				DeployState:      &proto.DeployState{StatusCode: proto.StatusCode_DEPLOY_SUCCESS},
 				StatusCheckState: &proto.StatusCheckState{StatusCode: proto.StatusCode_STATUSCHECK_UNHEALTHY},
 			},
-			phase: sErrors.Deploy,
+			phase: constants.Deploy,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]

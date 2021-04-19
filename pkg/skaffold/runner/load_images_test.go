@@ -22,8 +22,8 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -33,8 +33,8 @@ import (
 type ImageLoadingTest = struct {
 	description   string
 	cluster       string
-	built         []build.Artifact
-	deployed      []build.Artifact
+	built         []graph.Artifact
+	deployed      []graph.Artifact
 	commands      util.Command
 	shouldErr     bool
 	expectedError string
@@ -45,8 +45,8 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 		{
 			description: "load image",
 			cluster:     "kind",
-			built:       []build.Artifact{{Tag: "tag1"}},
-			deployed:    []build.Artifact{{Tag: "tag1"}},
+			built:       []graph.Artifact{{Tag: "tag1"}},
+			deployed:    []graph.Artifact{{Tag: "tag1"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
 				AndRunOut("kind load docker-image --name kind tag1", "output: image loaded"),
@@ -54,8 +54,8 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 		{
 			description: "load missing image",
 			cluster:     "other-kind",
-			built:       []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
-			deployed:    []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
+			built:       []graph.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
+			deployed:    []graph.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "docker.io/library/tag1").
 				AndRunOut("kind load docker-image --name other-kind tag2", "output: image loaded"),
@@ -63,15 +63,15 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 		{
 			description: "no new images",
 			cluster:     "kind",
-			built:       []build.Artifact{{Tag: "tag0"}, {Tag: "docker.io/library/tag1"}, {Tag: "docker.io/tag2"}, {Tag: "gcr.io/test/tag3"}, {Tag: "someregistry.com/tag4"}},
-			deployed:    []build.Artifact{{Tag: "tag0"}, {Tag: "docker.io/library/tag1"}, {Tag: "docker.io/tag2"}, {Tag: "gcr.io/test/tag3"}, {Tag: "someregistry.com/tag4"}},
+			built:       []graph.Artifact{{Tag: "tag0"}, {Tag: "docker.io/library/tag1"}, {Tag: "docker.io/tag2"}, {Tag: "gcr.io/test/tag3"}, {Tag: "someregistry.com/tag4"}},
+			deployed:    []graph.Artifact{{Tag: "tag0"}, {Tag: "docker.io/library/tag1"}, {Tag: "docker.io/tag2"}, {Tag: "gcr.io/test/tag3"}, {Tag: "someregistry.com/tag4"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "docker.io/library/tag0 docker.io/library/tag1 docker.io/library/tag2 gcr.io/test/tag3 someregistry.com/tag4"),
 		},
 		{
 			description: "inspect error",
-			built:       []build.Artifact{{Tag: "tag"}},
-			deployed:    []build.Artifact{{Tag: "tag"}},
+			built:       []graph.Artifact{{Tag: "tag"}},
+			deployed:    []graph.Artifact{{Tag: "tag"}},
 			commands: testutil.
 				CmdRunOutErr("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "", errors.New("BUG")),
 			shouldErr:     true,
@@ -80,8 +80,8 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 		{
 			description: "load error",
 			cluster:     "kind",
-			built:       []build.Artifact{{Tag: "tag"}},
-			deployed:    []build.Artifact{{Tag: "tag"}},
+			built:       []graph.Artifact{{Tag: "tag"}},
+			deployed:    []graph.Artifact{{Tag: "tag"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
 				AndRunOutErr("kind load docker-image --name kind tag", "output: error!", errors.New("BUG")),
@@ -91,20 +91,20 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 		{
 			description: "ignore image that's not built",
 			cluster:     "kind",
-			built:       []build.Artifact{{Tag: "built"}},
-			deployed:    []build.Artifact{{Tag: "built"}, {Tag: "busybox"}},
+			built:       []graph.Artifact{{Tag: "built"}},
+			deployed:    []graph.Artifact{{Tag: "built"}, {Tag: "busybox"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
 				AndRunOut("kind load docker-image --name kind built", ""),
 		},
 		{
 			description: "no artifact",
-			deployed:    []build.Artifact{},
+			deployed:    []graph.Artifact{},
 		},
 		{
 			description: "no built artifact",
-			built:       []build.Artifact{},
-			deployed:    []build.Artifact{{Tag: "busybox"}},
+			built:       []graph.Artifact{},
+			deployed:    []graph.Artifact{{Tag: "busybox"}},
 		},
 	}
 
@@ -118,8 +118,8 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 		{
 			description: "load image",
 			cluster:     "k3d",
-			built:       []build.Artifact{{Tag: "tag1"}},
-			deployed:    []build.Artifact{{Tag: "tag1"}},
+			built:       []graph.Artifact{{Tag: "tag1"}},
+			deployed:    []graph.Artifact{{Tag: "tag1"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
 				AndRunOut("k3d image import --cluster k3d tag1", "output: image loaded"),
@@ -127,8 +127,8 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 		{
 			description: "load missing image",
 			cluster:     "other-k3d",
-			built:       []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
-			deployed:    []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
+			built:       []graph.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
+			deployed:    []graph.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "docker.io/library/tag1").
 				AndRunOut("k3d image import --cluster other-k3d tag2", "output: image loaded"),
@@ -136,15 +136,15 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 		{
 			description: "no new images",
 			cluster:     "k3d",
-			built:       []build.Artifact{{Tag: "tag0"}, {Tag: "docker.io/library/tag1"}, {Tag: "docker.io/tag2"}, {Tag: "gcr.io/test/tag3"}, {Tag: "someregistry.com/tag4"}},
-			deployed:    []build.Artifact{{Tag: "tag0"}, {Tag: "docker.io/library/tag1"}, {Tag: "docker.io/tag2"}, {Tag: "gcr.io/test/tag3"}, {Tag: "someregistry.com/tag4"}},
+			built:       []graph.Artifact{{Tag: "tag0"}, {Tag: "docker.io/library/tag1"}, {Tag: "docker.io/tag2"}, {Tag: "gcr.io/test/tag3"}, {Tag: "someregistry.com/tag4"}},
+			deployed:    []graph.Artifact{{Tag: "tag0"}, {Tag: "docker.io/library/tag1"}, {Tag: "docker.io/tag2"}, {Tag: "gcr.io/test/tag3"}, {Tag: "someregistry.com/tag4"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "docker.io/library/tag0 docker.io/library/tag1 docker.io/library/tag2 gcr.io/test/tag3 someregistry.com/tag4"),
 		},
 		{
 			description: "inspect error",
-			built:       []build.Artifact{{Tag: "tag"}},
-			deployed:    []build.Artifact{{Tag: "tag"}},
+			built:       []graph.Artifact{{Tag: "tag"}},
+			deployed:    []graph.Artifact{{Tag: "tag"}},
 			commands: testutil.
 				CmdRunOutErr("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "", errors.New("BUG")),
 			shouldErr:     true,
@@ -153,8 +153,8 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 		{
 			description: "load error",
 			cluster:     "k3d",
-			built:       []build.Artifact{{Tag: "tag"}},
-			deployed:    []build.Artifact{{Tag: "tag"}},
+			built:       []graph.Artifact{{Tag: "tag"}},
+			deployed:    []graph.Artifact{{Tag: "tag"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
 				AndRunOutErr("k3d image import --cluster k3d tag", "output: error!", errors.New("BUG")),
@@ -164,20 +164,20 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 		{
 			description: "ignore image that's not built",
 			cluster:     "k3d",
-			built:       []build.Artifact{{Tag: "built"}},
-			deployed:    []build.Artifact{{Tag: "built"}, {Tag: "busybox"}},
+			built:       []graph.Artifact{{Tag: "built"}},
+			deployed:    []graph.Artifact{{Tag: "built"}, {Tag: "busybox"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
 				AndRunOut("k3d image import --cluster k3d built", ""),
 		},
 		{
 			description: "no artifact",
-			deployed:    []build.Artifact{},
+			deployed:    []graph.Artifact{},
 		},
 		{
 			description: "no built artifact",
-			built:       []build.Artifact{},
-			deployed:    []build.Artifact{{Tag: "busybox"}},
+			built:       []graph.Artifact{},
+			deployed:    []graph.Artifact{{Tag: "busybox"}},
 		},
 	}
 
