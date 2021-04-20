@@ -83,6 +83,10 @@ type listener struct {
 	closed   bool
 }
 
+func GetIteration() int {
+	return handler.iteration
+}
+
 func GetState() (*proto.State, error) {
 	state := handler.getState()
 	return &state, nil
