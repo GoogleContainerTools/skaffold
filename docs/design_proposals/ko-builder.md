@@ -153,6 +153,29 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     }
     ```
 
+4.  Define ko's position in the initializer builder rank in
+    `pkg/skaffold/initializer/build/resolve.go`. The proposal is to add it
+    ahead of the buildpacks builder:
+
+    ```go
+    func builderRank(builder InitBuilder) int {
+    	a := builder.ArtifactType("")
+    	switch {
+    	case a.DockerArtifact != nil:
+    		return 1
+    	case a.JibArtifact != nil:
+    		return 2
+    	case a.BazelArtifact != nil:
+    		return 3
+    	case a.KoArtifact != nil:
+    		return 4
+    	case a.BuildpackArtifact != nil:
+    		return 5
+    	}
+    	return 6
+    }
+    ```
+
 Example basic config, this will be sufficient for many users:
 
 ```yaml
@@ -198,7 +221,6 @@ build:
       platforms:
       - linux/amd64
       - linux/arm64
-      sourceDateEpoch: 946684800
 ```
 
 ko requires setting a
@@ -265,7 +287,13 @@ maps directly to this value.
     Suggest yes to simplify adoption of Skaffold for existing ko users.
     __Not Yet Resolved__
 
-4.  If a config value is set both as an environment variable, and as a config
+4.  Should the ko builder have a config option for
+    [`SOURCE_DATE_EPOCH`](https://reproducible-builds.org/specs/source-date-epoch/),
+    or should users specify the value via an environment variable?
+
+    __Not Yet Resolved__
+
+5.  If a config value is set both as an environment variable, and as a config
     value, which takes precedence? E.g., `ko.sourceDateEpoch` vs
     `SOURCE_DATE_EPOCH`.
 
