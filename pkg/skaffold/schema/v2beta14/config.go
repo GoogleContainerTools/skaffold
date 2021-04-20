@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v2beta14
 
 import (
 	"encoding/json"
@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2beta15"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v2beta14"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -1213,10 +1213,6 @@ type DockerArtifact struct {
 	// `container:<name|id>`: reuse another container's network stack.
 	// `none`: no networking in the container.
 	NetworkMode string `yaml:"network,omitempty"`
-
-	// AddHost lists add host.
-	// For example: `["host1:ip1", "host2:ip2"]`.
-	AddHost []string `yaml:"addHost,omitempty"`
 
 	// CacheFrom lists the Docker images used as cache sources.
 	// For example: `["golang:1.10.1-alpine3.7", "alpine:3.7"]`.
