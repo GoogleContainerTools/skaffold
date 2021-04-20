@@ -512,7 +512,7 @@ var flagRegistry = []Flag{
 	{
 		Name:          "build-concurrency",
 		Usage:         "Number of concurrently running builds",
-		Value:         &opts.AssumeYes,
+		Value:         &opts.BuildConcurrency,
 		DefValue:      1,
 		FlagAddMethod: "IntVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
