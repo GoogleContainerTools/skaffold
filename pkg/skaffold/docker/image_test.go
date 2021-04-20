@@ -295,6 +295,13 @@ func TestGetBuildArgs(t *testing.T) {
 			shouldErr: true,
 		},
 		{
+			description: "add host",
+			artifact: &latest.DockerArtifact{
+				AddHost: []string{"1.gcr.io:127.0.0.1", "2.gcr.io:127.0.0.1"},
+			},
+			want: []string{"--add-host", "1.gcr.io:127.0.0.1", "--add-host", "2.gcr.io:127.0.0.1"},
+		},
+		{
 			description: "cache from",
 			artifact: &latest.DockerArtifact{
 				CacheFrom: []string{"gcr.io/foo/bar", "baz:latest"},
