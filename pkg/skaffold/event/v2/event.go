@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 
 	//nolint:golint,staticcheck
@@ -69,6 +70,7 @@ type eventHandler struct {
 	logLock  sync.Mutex
 	cfg      event.Config
 
+	iteration int
 	state     proto.State
 	stateLock sync.Mutex
 	eventChan chan *proto.Event
@@ -79,6 +81,10 @@ type listener struct {
 	callback func(*proto.Event) error
 	errors   chan error
 	closed   bool
+}
+
+func GetIteration() int {
+	return handler.iteration
 }
 
 func GetState() (*proto.State, error) {
@@ -243,6 +249,12 @@ func emptyStatusCheckState() *proto.StatusCheckState {
 	}
 }
 
+// InitializeState instantiates the global state of the skaffold runner, as well as the event log.
+func InitializeState(cfg event.Config) {
+	handler.cfg = cfg
+	handler.setState(emptyState(cfg))
+}
+
 func AutoTriggerDiff(phase constants.Phase, val bool) (bool, error) {
 	switch phase {
 	case constants.Build:
@@ -257,6 +269,10 @@ func AutoTriggerDiff(phase constants.Phase, val bool) (bool, error) {
 }
 
 func TaskInProgress(task constants.Phase, iteration int) {
+	if task == constants.DevLoop {
+		handler.iteration = iteration
+	}
+
 	handler.handleTaskEvent(&proto.TaskEvent{
 		Id:        fmt.Sprintf("%s-%d", task, iteration),
 		Task:      string(task),
@@ -285,6 +301,34 @@ func TaskSucceeded(task constants.Phase, iteration int) {
 	})
 }
 
+func BuildInProgress(id int, artifact string) {
+	handler.handleBuildSubtaskEvent(&proto.BuildSubtaskEvent{
+		Id:       strconv.Itoa(id),
+		TaskId:   fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
+		Artifact: artifact,
+		Status:   InProgress,
+	})
+}
+
+func BuildFailed(id int, artifact string, err error) {
+	handler.handleBuildSubtaskEvent(&proto.BuildSubtaskEvent{
+		Id:            strconv.Itoa(id),
+		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
+		Artifact:      artifact,
+		Status:        Failed,
+		ActionableErr: sErrors.ActionableErrV2(handler.cfg, constants.Build, err),
+	})
+}
+
+func BuildSucceeded(id int, artifact string) {
+	handler.handleBuildSubtaskEvent(&proto.BuildSubtaskEvent{
+		Id:       strconv.Itoa(id),
+		TaskId:   fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
+		Artifact: artifact,
+		Status:   Succeeded,
+	})
+}
+
 func (ev *eventHandler) setState(state proto.State) {
 	ev.stateLock.Lock()
 	ev.state = state
@@ -307,6 +351,14 @@ func (ev *eventHandler) handleTaskEvent(e *proto.TaskEvent) {
 	ev.handle(&proto.Event{
 		EventType: &proto.Event_TaskEvent{
 			TaskEvent: e,
+		},
+	})
+}
+
+func (ev *eventHandler) handleBuildSubtaskEvent(e *proto.BuildSubtaskEvent) {
+	ev.handle(&proto.Event{
+		EventType: &proto.Event_BuildSubtaskEvent{
+			BuildSubtaskEvent: e,
 		},
 	})
 }
