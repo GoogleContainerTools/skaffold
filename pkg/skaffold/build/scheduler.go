@@ -25,6 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
@@ -88,10 +89,12 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	defer release()
 
 	event.BuildInProgress(a.ImageName)
+	eventV2.BuildInProgress(i, a.ImageName)
 
 	w, closeFn, err := s.logger.GetWriter()
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
+		eventV2.BuildFailed(i, a.ImageName, err)
 		return err
 	}
 	defer closeFn()
@@ -99,12 +102,14 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	finalTag, err := performBuild(ctx, w, tags, a, s.artifactBuilder)
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
+		eventV2.BuildFailed(i, a.ImageName, err)
 		return err
 	}
 
 	s.results.Record(a, finalTag)
 	n.markComplete()
 	event.BuildComplete(a.ImageName)
+	eventV2.BuildSucceeded(i, a.ImageName)
 	return nil
 }
 

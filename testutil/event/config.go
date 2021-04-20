@@ -18,6 +18,7 @@ package event
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -26,6 +27,7 @@ func InitializeState(pipes []latest.Pipeline) {
 		pipes: pipes,
 	}
 	event.InitializeState(cfg)
+	eventV2.InitializeState(cfg)
 }
 
 type config struct {
