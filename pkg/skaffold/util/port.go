@@ -90,11 +90,12 @@ func (f *PortSet) List() []int {
 	return list
 }
 
+// GetAvailablePort returns an available port that is near the requested port when possible.
 // First, check if the provided port is available on the specified address. If so, use it.
 // If not, check if any of the next 10 subsequent ports are available.
 // If not, check if any of ports 4503-4533 are available.
 // If not, return a random port, which hopefully won't collide with any future containers
-
+//
 // See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
 func GetAvailablePort(port int, usedPorts *PortSet) int {
 	// We map this to allow
