@@ -41,12 +41,11 @@ type Forwarder interface {
 
 // ForwarderManager manages all forwarders
 type ForwarderManager struct {
-	iteration  int
 	forwarders []Forwarder
 }
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
-func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, iteration int, label string, runMode config.RunMode, options config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
+func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, label string, runMode config.RunMode, options config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
 	if !options.Enabled() {
 		return nil
 	}
@@ -67,7 +66,6 @@ func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes
 	}
 
 	return &ForwarderManager{
-		iteration:  iteration,
 		forwarders: forwarders,
 	}
 }
@@ -111,15 +109,15 @@ func (p *ForwarderManager) Start(ctx context.Context, namespaces []string) error
 		return nil
 	}
 
-	eventV2.TaskInProgress(constants.PortForward, p.iteration)
+	eventV2.TaskInProgress(constants.PortForward, eventV2.GetIteration())
 	for _, f := range p.forwarders {
 		if err := f.Start(ctx, namespaces); err != nil {
-			eventV2.TaskFailed(constants.PortForward, p.iteration, err)
+			eventV2.TaskFailed(constants.PortForward, eventV2.GetIteration(), err)
 			return err
 		}
 	}
 
-	eventV2.TaskSucceeded(constants.PortForward, p.iteration)
+	eventV2.TaskSucceeded(constants.PortForward, eventV2.GetIteration())
 	return nil
 }
 

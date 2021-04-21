@@ -60,7 +60,6 @@ func TestNewForwarderManager(t *testing.T) {
 			fm := NewForwarderManager(ioutil.Discard,
 				&kubectl.CLI{},
 				&kubernetes.ImageList{},
-				0,
 				"",
 				"",
 				options,
