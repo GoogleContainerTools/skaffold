@@ -87,14 +87,7 @@ The ko builder supports and enhances these Skaffold
 
 Adding the ko builder requires making config changes to the Skaffold schema.
 
-1.  Add an entry to BuilderType enum in `proto/enums/enums.proto`:
-
-    ```proto
-        // ko Builder
-        KO = 7;
-    ```
-
-2.  Add a `KoArtifact` type:
+1.  Add a `KoArtifact` type:
 
     ```go
     // KoArtifact builds images using [ko](https://github.com/google/ko).
@@ -144,40 +137,32 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     }
     ```
 
-3.  Add a `KoArtifact` field to the `ArtifactType` struct:
+2.  Add a `KoArtifact` field to the `ArtifactType` struct:
 
     ```go
     type ArtifactType struct {
+      [...]
     	// KoArtifact builds images using [ko](https://github.com/google/ko).
     	KoArtifact *KoArtifact `yaml:"ko,omitempty" yamltags:"oneOf=artifact"`
     }
     ```
 
-4.  Define ko's position in the initializer builder rank in
-    `pkg/skaffold/initializer/build/resolve.go`. The proposal is to add it
-    at the end, after the buildpacks builder:
+3.  Define `KoDependencies`:
 
     ```go
-    func builderRank(builder InitBuilder) int {
-    	a := builder.ArtifactType("")
-    	switch {
-    	case a.DockerArtifact != nil:
-    		return 1
-    	case a.JibArtifact != nil:
-    		return 2
-    	case a.BazelArtifact != nil:
-    		return 3
-    	case a.BuildpackArtifact != nil:
-    		return 4
-    	case a.KoArtifact != nil:
-    		return 5
-    	}
+    // KoDependencies is used to specify dependencies for an artifact built by ko.
+    type KoDependencies struct {
+	  	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
+	  	// Defaults to {"go.mod", "**.go"}
+	  	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 
-    	return 6
+	  	// Ignore specifies the paths that should be ignored by skaffold's file watcher.
+    	// If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
+	  	Ignore []string `yaml:"ignore,omitempty"`
     }
     ```
 
-5.  Add `KO` to the `BuilderType` enum in `proto/enums/enums.proto`:
+4.  Add `KO` to the `BuilderType` enum in `proto/enums/enums.proto`:
 
     ```proto
     enum BuilderType {
@@ -200,10 +185,15 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     }
     ```
 
+5.  In `skaffold init`, default to the ko builder for any images where the
+    name starts with the ko prefix `ko://`.
+
+### Builder config schema
+
 Example basic config, this will be sufficient for many users:
 
 ```yaml
-apiVersion: skaffold/v2beta14
+apiVersion: skaffold/v2beta15
 kind: Config
 build:
   artifacts:
@@ -217,7 +207,7 @@ The value of the `image` field is the Go import path of the app entry point,
 A more comprehensive example config:
 
 ```yaml
-apiVersion: skaffold/v2beta14
+apiVersion: skaffold/v2beta15
 kind: Config
 build:
   artifacts:
@@ -331,7 +321,15 @@ maps directly to this value.
 
     __Not Yet Resolved__
 
-7.  Should we default dependency paths to `{"go.mod", "**.go"}` instead of
+7.  File sync support: Should we limit this to
+    [ko static assets](https://github.com/google/ko#static-assets) only?
+
+    This is the only way to include additional files in a container image
+    built by ko.
+
+    __Not Yet Resolved__
+
+8.  Should we default dependency paths to `{"go.mod", "**.go"}` instead of
     `{"."}`.?
 
     The former is a useful default for many (most?) Go apps, and it's used
@@ -341,14 +339,33 @@ maps directly to this value.
 
 ## Implementation plan
 
-1.  Define interfaces in the ko codebase that allows ko to be used from
+1.  Define integration points in the ko codebase that allows ko to be used from
     Skaffold without duplicating existing ko CLI code.
 
-    Draft interface:
+    In the package `github.com/google/ko/pkg/commands`:
 
     ```go
-    type KoPublish interface {
-    	func BuildAndPublish(context.Context, options.BuildOptions, options.PublishOptions, importpath string, imageNameWithTag string)
+    // SetDefaultBaseImage enables programmatically overriding the base image,
+    // as an alternative to specifying it in a `.ko.yaml` file.
+    func SetDefaultBaseImage(baseImage string) error // maps to the fromImage option
+
+    var UserAgent func () string // allow overriding with the Skaffold user agent
+
+    // MakeBuilder creates a build.Interface, delegates to the existing makeBuilder()
+    func MakeBuilder(ctx context.Context, bo *options.BuildOptions) (build.Interface, error)
+
+    // MakePublisher creates a publish.Interface, delegates to the existing makePublisher()
+    func MakePublisher(po *options.PublishOptions) (publish.Interface, error)
+    ```
+
+    In the package `github.com/google/ko/pkg/commands/options`, allow
+    specifying the default repo as a flag:
+
+    ```go
+    type PublishOptions struct {
+    	// DockerRepo overrides the KO_DOCKER_REPO environment variable, if present
+    	DockerRepo string
+      [...]
     }
     ```
 
@@ -368,7 +385,7 @@ maps directly to this value.
     Example `skaffold.yaml` supported at this stage:
 
     ```yaml
-    apiVersion: skaffold/v2beta14
+    apiVersion: skaffold/v2beta15
     kind: Config
     build:
       artifacts:
@@ -386,7 +403,6 @@ maps directly to this value.
           platforms:
           - linux/amd64
           - linux/arm64
-          sourceDateEpoch: 946684800
     ```
 
 3.  Implement support for additional config options in ko:
@@ -418,4 +434,7 @@ Please describe what new test cases you are going to consider.
     [`--disable-optimization`](https://github.com/google/ko/blob/f7df8106196518df5c6c35432843421e33990329/pkg/commands/options/build.go#L34)
     is added for debugging.
 
-3.  Add ko example to the `examples` directory.
+3.  Add basic and comprehensive ko examples to the `integration/examples`
+    directory.
+
+4.  TBC
