@@ -17,7 +17,6 @@ limitations under the License.
 package error
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
@@ -39,7 +38,8 @@ func TestUserError(t *testing.T) {
 			err:         fmt.Errorf("Error: (Internal Server Error: the server is currently unable to handle the request)"),
 			statusCode:  proto.StatusCode_DEPLOY_KUSTOMIZE_USER_ERR,
 			expected:    proto.StatusCode_DEPLOY_CLUSTER_INTERNAL_SYSTEM_ERR,
-			expectedErr: "Error: (Internal Server Error: the server is currently unable to handle the request)",
+			expectedErr: "Deploy Failed. Error: (Internal Server Error: the server is currently unable to handle the request)." +
+				" Something went wrong.",
 		},
 		{
 			description: "not an internal system err",
@@ -51,14 +51,22 @@ func TestUserError(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&internalSystemErrSuggestion, func(_ interface{}) []*proto.Suggestion {
+				return []*proto.Suggestion{{
+					Action: fmt.Sprintf("Something went wrong"),
+				}}
+			})
 			actual := UserError(test.err, test.statusCode)
-			if sErrors.IsSkaffoldErr(actual) {
-				var sErr sErrors.ErrDef
-				if errors.As(actual, &sErr) {
-					t.CheckDeepEqual(test.expected, sErr.StatusCode())
-				}
+			switch actualType := actual.(type) {
+			case sErrors.ErrDef:
+				t.CheckDeepEqual(test.expected, actualType.StatusCode())
+			case sErrors.Problem:
+				t.CheckDeepEqual(test.expected, actualType.ErrCode)
+				actualErr := sErrors.ShowAIError(nil, actualType)
+				t.CheckErrorContains(test.expectedErr, actualErr)
+			default:
+				t.CheckErrorContains(test.expectedErr, actualType)
 			}
-			t.CheckErrorContains(test.expectedErr, actual)
 		})
 	}
 }

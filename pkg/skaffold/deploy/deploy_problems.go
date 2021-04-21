@@ -21,18 +21,14 @@ import (
 	"regexp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
-const (
-	defaultMinikubeProfile = "minikube"
-)
-
 var (
-	ClusterInternalSystemErr = regexp.MustCompile(".*Internal Server Error")
-	clusterConnectionErr     = regexp.MustCompile("(?i).*unable to connect.*: Get (.*)")
+	clusterConnectionErr = regexp.MustCompile("(?i).*unable to connect.*: Get (.*)")
 )
 
 func suggestDeployFailedAction(cfg interface{}) []*proto.Suggestion {
@@ -42,7 +38,7 @@ func suggestDeployFailedAction(cfg interface{}) []*proto.Suggestion {
 	}
 	if deployCfg.MinikubeProfile() != "" {
 		return []*proto.Suggestion{
-			checkMinikubeSuggestion(deployCfg),
+			deployerr.CheckMinikubeStatusSuggestion(deployCfg),
 		}
 	}
 	return []*proto.Suggestion{{
@@ -64,46 +60,5 @@ func init() {
 			},
 			Suggestion: suggestDeployFailedAction,
 		},
-		{
-			Regexp:  ClusterInternalSystemErr,
-			ErrCode: proto.StatusCode_DEPLOY_CLUSTER_INTERNAL_SYSTEM_ERR,
-			Description: func(err error) string {
-				return fmt.Sprintf("Deploy Failed. %v", err)
-			},
-			Suggestion: func(cfg interface{}) []*proto.Suggestion {
-				deployCfg, ok := cfg.(types.Config)
-				if !ok {
-					return nil
-				}
-				if deployCfg.MinikubeProfile() != "" {
-					return []*proto.Suggestion{
-						checkMinikubeSuggestion(deployCfg),
-						{
-							SuggestionCode: proto.SuggestionCode_OPEN_ISSUE,
-							// TODO: show tip to run minikube logs command and attach logs.
-							Action: fmt.Sprintf("open an issue at %s", constants.GithubIssueLink),
-						}}
-				}
-				return []*proto.Suggestion{{
-					SuggestionCode: proto.SuggestionCode_OPEN_ISSUE,
-					Action:         fmt.Sprintf("Something went wrong with your cluster %q. Try again.\nIf this keeps happening please open an issue at %s", deployCfg.GetKubeContext(), constants.GithubIssueLink),
-				}}
-			},
-		},
 	})
-}
-
-func checkMinikubeSuggestion(cfg types.Config) *proto.Suggestion {
-	return &proto.Suggestion{
-		SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
-		Action: fmt.Sprintf("Check if minikube is running using %q command and try again",
-			getMinikubeStatusCommand(cfg.GetKubeContext())),
-	}
-}
-
-func getMinikubeStatusCommand(p string) string {
-	if p == defaultMinikubeProfile {
-		return "minikube status"
-	}
-	return fmt.Sprintf("minikube status -p %s", p)
 }

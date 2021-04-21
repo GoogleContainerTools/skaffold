@@ -81,40 +81,6 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 				}},
 			},
 		},
-		{
-			description: "internal system error for minikube cluster",
-			context:     "minikube",
-			isMinikube:  true,
-			err:         fmt.Errorf("Error: (Internal Server Error: the server is currently unable to handle the request)"),
-			expected:    "Deploy Failed. Error: (Internal Server Error: the server is currently unable to handle the request). Check if minikube is running using \"minikube status\" command and try again or open an issue at https://github.com/GoogleContainerTools/skaffold/issues/new.",
-			expectedAE: &proto.ActionableErr{
-				ErrCode: proto.StatusCode_DEPLOY_CLUSTER_INTERNAL_SYSTEM_ERR,
-				Message: "Error: (Internal Server Error: the server is currently unable to handle the request)",
-				Suggestions: []*proto.Suggestion{{
-					SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
-					Action:         "Check if minikube is running using \"minikube status\" command and try again",
-				},
-					{
-						SuggestionCode: proto.SuggestionCode_OPEN_ISSUE,
-						Action:         fmt.Sprintf("open an issue at %s", constants.GithubIssueLink),
-					},
-				},
-			},
-		},
-		{
-			description: "internal system error for k8s cluster",
-			context:     "test_cluster",
-			err:         fmt.Errorf("Error: (Internal Server Error: the server is currently unable to handle the request)"),
-			expected:    "Deploy Failed. Error: (Internal Server Error: the server is currently unable to handle the request). Something went wrong with your cluster \"test_cluster\". Try again.\nIf this keeps happening please open an issue at https://github.com/GoogleContainerTools/skaffold/issues/new.",
-			expectedAE: &proto.ActionableErr{
-				ErrCode: proto.StatusCode_DEPLOY_CLUSTER_INTERNAL_SYSTEM_ERR,
-				Message: "Error: (Internal Server Error: the server is currently unable to handle the request)",
-				Suggestions: []*proto.Suggestion{{
-					SuggestionCode: proto.SuggestionCode_OPEN_ISSUE,
-					Action:         "Something went wrong with your cluster \"test_cluster\". Try again.\nIf this keeps happening please open an issue at https://github.com/GoogleContainerTools/skaffold/issues/new",
-				}},
-			},
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -123,7 +89,6 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 				cfg.minikube = test.context
 			}
 			actual := sErrors.ShowAIError(&cfg, test.err)
-			fmt.Println(actual.Error(), "\n", test.expected)
 			t.CheckDeepEqual(test.expected, actual.Error())
 			actualAE := sErrors.ActionableErr(&cfg, constants.Deploy, test.err)
 			t.CheckDeepEqual(test.expectedAE, actualAE)
