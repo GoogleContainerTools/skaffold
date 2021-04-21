@@ -114,7 +114,7 @@ Running `skaffold <command> --module <config-name>` will filter to the specified
 
 ### Local config dependency
 
-Consider the same `skaffold.yaml` defined above. Configurations `cfg1` and `cfg2` from the above file can be imported as dependencies in your current config, via:
+Consider the same `skaffold.yaml` defined above. Modules `cfg1` and `cfg2` from the above file can be imported as dependencies in your current config definition, via:
 
 ```yaml
 apiVersion: skaffold/v2beta11
