@@ -102,14 +102,14 @@ deploy:
   # deploy definition
 ```
 
-Here `cfg1` and `cfg2` are independent skaffold modules. Running `skaffold dev` for instance will execute actions from both these modules. You could also run `skaffold dev -m cfg1` to only activate the `cfg1` module and skip `cfg2`.
+Here `cfg1` and `cfg2` are independent skaffold modules. Running `skaffold dev` for instance will execute actions from both these modules. You could also run `skaffold dev --module cfg1` to only activate the `cfg1` module and skip `cfg2`.
 
 ## Configuration dependencies
 
 In addition to authoring configurations in a `skaffold.yaml` file, we can also import other existing configurations as dependencies. Skaffold manages all imported and defined configurations in the same session. It also ensures all artifacts in a required config are built prior to those in current config (provided the artifacts have dependencies defined); and all deploys in required configs are applied prior to those in current config.
 
 {{< alert title="Note:" >}}
-Running `skaffold <command> -m <config-name>` will filter to the specified target module, but also include the transitive closure of all other configurations in its dependency graph. For instance, if a module `cfg1` imported another module `cfg2` as a dependency while `cfg2` imported `cfg3` and `cfg4`, then running `skaffold dev -m cfg1` would activate all of `cfg1`, `cfg2`, `cfg3` and `cfg4` and execute them in dependency order.
+Running `skaffold <command> --module <config-name>` will filter to the specified target module, but also include the transitive closure of all other configurations in its dependency graph. For instance, if a module `cfg1` imported another module `cfg2` as a dependency while `cfg2` imported `cfg3` and `cfg4`, then running `skaffold dev --module cfg1` would activate all of `cfg1`, `cfg2`, `cfg3` and `cfg4` and execute them in dependency order.
 {{< /alert >}}
 
 ### Local config dependency
