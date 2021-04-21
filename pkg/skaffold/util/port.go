@@ -102,16 +102,19 @@ func GetAvailablePort(port int, usedPorts *PortSet) int {
 }
 
 func GetAvailablePortWithAddreess(address string, port int, usedPorts *PortSet) int {
-	if getPortIfAvailable(address, port, usedPorts) {
-		return port
-	}
-
-	// try the next 10 ports after the provided one
-	for i := 0; i < 10; i++ {
-		port++
+	if port > 0 {
 		if getPortIfAvailable(address, port, usedPorts) {
 			logrus.Debugf("found open port: %d", port)
 			return port
+		}
+
+		// try the next 10 ports after the provided one
+		for i := 0; i < 10; i++ {
+			port++
+			if getPortIfAvailable(address, port, usedPorts) {
+				logrus.Debugf("found open port: %d", port)
+				return port
+			}
 		}
 	}
 
