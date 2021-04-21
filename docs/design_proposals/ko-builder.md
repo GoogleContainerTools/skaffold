@@ -155,7 +155,7 @@ Adding the ko builder requires making config changes to the Skaffold schema.
 
 4.  Define ko's position in the initializer builder rank in
     `pkg/skaffold/initializer/build/resolve.go`. The proposal is to add it
-    ahead of the buildpacks builder:
+    at the end, after the buildpacks builder:
 
     ```go
     func builderRank(builder InitBuilder) int {
@@ -167,12 +167,36 @@ Adding the ko builder requires making config changes to the Skaffold schema.
     		return 2
     	case a.BazelArtifact != nil:
     		return 3
-    	case a.KoArtifact != nil:
-    		return 4
     	case a.BuildpackArtifact != nil:
+    		return 4
+    	case a.KoArtifact != nil:
     		return 5
     	}
+
     	return 6
+    }
+    ```
+
+5.  Add `KO` to the `BuilderType` enum in `proto/enums/enums.proto`:
+
+    ```proto
+    enum BuilderType {
+        // Could not determine builder type
+        UNKNOWN_BUILDER_TYPE = 0;
+        // JIB Builder
+        JIB = 1;
+        // Bazel Builder
+        BAZEL = 2;
+        // Buildpacks Builder
+        BUILDPACKS = 3;
+        // Custom Builder
+        CUSTOM = 4;
+        // Kaniko Builder
+        KANIKO = 5;
+        // Docker Builder
+        DOCKER = 6;
+        // Ko Builder
+        KO = 7;
     }
     ```
 
@@ -298,6 +322,22 @@ maps directly to this value.
     `SOURCE_DATE_EPOCH`.
 
     Follow existing Skaffold pattern - is there one? __Not Yet Resolved__
+
+6.  Add a Google Cloud Build (`gcb`) support for the ko builder?
+    Other builders that support `gcb` have default public builder images.
+    The image `gcr.io/tekton-releases/ko-ci` is public, but do we want to
+    rely on it? Once ko is embedded in Skaffold, we could use
+    `gcr.io/k8s-skaffold/skaffold` as a default image.`
+
+    __Not Yet Resolved__
+
+7.  Should we default dependency paths to `{"go.mod", "**.go"}` instead of
+    `{"."}`.?
+
+    The former is a useful default for many (most?) Go apps, and it's used
+    in the `custom` example. The latter is the default for some other builders.
+
+    __Not Yet Resolved__
 
 ## Implementation plan
 
