@@ -95,13 +95,13 @@ func (f *PortSet) List() []int {
 // If not, check if any of ports 4503-4533 are available.
 // If not, return a random port, which hopefully won't collide with any future containers
 
-// See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt,
+// See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
 func GetAvailablePort(port int, usedPorts *PortSet) int {
 	// We map this to allow
-	return GetAvailablePortWithAddreess(Any, port, usedPorts)
+	return GetAvailablePortWithAddress(Any, port, usedPorts)
 }
 
-func GetAvailablePortWithAddreess(address string, port int, usedPorts *PortSet) int {
+func GetAvailablePortWithAddress(address string, port int, usedPorts *PortSet) int {
 	if port > 0 {
 		if getPortIfAvailable(address, port, usedPorts) {
 			logrus.Debugf("found open port: %d", port)
