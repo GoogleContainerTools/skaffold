@@ -242,7 +242,7 @@ func errorHandler(ctx context.Context, _ *runtime.ServeMux, marshaler runtime.Ma
 
 func listenOnAvailablePort(preferredPort int, usedPorts *util.PortSet) (net.Listener, int, error) {
 	for try := 1; ; try++ {
-		port := util.GetAvailablePort(preferredPort, usedPorts)
+		port := util.GetAvailablePortWithAddreess(util.Loopback, preferredPort, usedPorts)
 
 		l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
 		if err != nil {

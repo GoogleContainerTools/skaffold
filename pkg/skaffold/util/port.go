@@ -28,6 +28,9 @@ import (
 // Loopback network address. Skaffold should not bind to 0.0.0.0
 // unless we really want to expose something to the network.
 const Loopback = "127.0.0.1"
+// Network address which represent any address. This is the default that
+// we should use when checking if port is free.
+const Any = ""
 
 type PortSet struct {
 	ports map[int]bool
@@ -87,37 +90,39 @@ func (f *PortSet) List() []int {
 	return list
 }
 
-// GetAvailablePort returns an available port that is near the requested port when possible.
 // First, check if the provided port is available on the specified address. If so, use it.
 // If not, check if any of the next 10 subsequent ports are available.
 // If not, check if any of ports 4503-4533 are available.
 // If not, return a random port, which hopefully won't collide with any future containers
-//
-// See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
-func GetAvailablePort(port int, usedPorts *PortSet) int {
-	if port > 0 {
-		if getPortIfAvailable(port, usedPorts) {
-			return port
-		}
 
-		// try the next 10 ports after the provided one
-		for i := 0; i < 10; i++ {
-			port++
-			if getPortIfAvailable(port, usedPorts) {
-				logrus.Debugf("found open port: %d", port)
-				return port
-			}
-		}
+// See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt,
+func GetAvailablePort(port int, usedPorts *PortSet) int {
+	// We map this to allow
+	return GetAvailablePortWithAddreess(Any, port, usedPorts)
+}
+
+func GetAvailablePortWithAddreess(address string, port int, usedPorts *PortSet) int {
+	if getPortIfAvailable(address, port, usedPorts) {
+		return port
 	}
 
-	for port = 4503; port <= 4533; port++ {
-		if getPortIfAvailable(port, usedPorts) {
+	// try the next 10 ports after the provided one
+	for i := 0; i < 10; i++ {
+		port++
+		if getPortIfAvailable(address, port, usedPorts) {
 			logrus.Debugf("found open port: %d", port)
 			return port
 		}
 	}
 
-	l, err := net.Listen("tcp", ":0")
+	for port = 4503; port <= 4533; port++ {
+		if getPortIfAvailable(address, port, usedPorts) {
+			logrus.Debugf("found open port: %d", port)
+			return port
+		}
+	}
+
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:0", address))
 	if err != nil {
 		return -1
 	}
@@ -129,16 +134,20 @@ func GetAvailablePort(port int, usedPorts *PortSet) int {
 	return p
 }
 
-func getPortIfAvailable(p int, usedPorts *PortSet) bool {
+func getPortIfAvailable(address string, p int, usedPorts *PortSet) bool {
 	if alreadySet := usedPorts.LoadOrSet(p); alreadySet {
 		return false
 	}
 
-	return IsPortFree(p)
+	return IsPortFreeWithAddress(address, p)
 }
 
 func IsPortFree(p int) bool {
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
+	return IsPortFreeWithAddress(Any, p)
+}
+
+func IsPortFreeWithAddress(address string, p int) bool {
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", address, p))
 	if err != nil {
 		return false
 	}
