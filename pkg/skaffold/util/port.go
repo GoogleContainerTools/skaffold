@@ -104,7 +104,6 @@ func GetAvailablePort(port int, usedPorts *PortSet) int {
 func GetAvailablePortWithAddress(address string, port int, usedPorts *PortSet) int {
 	if port > 0 {
 		if getPortIfAvailable(address, port, usedPorts) {
-			logrus.Debugf("found open port: %d", port)
 			return port
 		}
 
