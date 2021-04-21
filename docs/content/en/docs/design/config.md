@@ -6,7 +6,7 @@ aliases: [/docs/concepts/config]
 ---
 
 You can configure Skaffold with the Skaffold configuration file,
-`skaffold.yaml`.  The configuration file consists of several different components:
+`skaffold.yaml`.  A single configuration consists of several different components:
 
 | Component  | Description |
 | ---------- | ------------|
@@ -74,15 +74,12 @@ relative to the current directory in `helm/project`.
 
 We generally recommend placing the configuration file in the root directory of the Skaffold project.
 
-## Configuration dependencies
+## Multiple configuration support
 
-In addition to authoring pipelines in a Skaffold configuration file, we can also import pipelines from other existing configurations as dependencies. Skaffold manages all imported and defined pipelines in the same session. It also ensures all artifacts in a required configs are built prior to those in current config (provided the artifacts have dependencies defined); and all deploys in required configs are applied prior to those in current config.
-
-Note that in imported configurations, files are resolved relative to the location of imported Skaffold configuration file.
-
-### Local config dependency
+A single `skaffold.yaml` file can define multiple skaffold configurations in the schema described above using the separator `---`. If these configuration objects have the `metadata.name` property then you can individually invoke a selection of configurations to run in any skaffold session.
 
 Consider a `skaffold.yaml` defined as:
+
 ```yaml
 apiVersion: skaffold/vX
 kind: Config
@@ -105,7 +102,19 @@ deploy:
   # deploy definition
 ```
 
-Configurations `cfg1` and `cfg2` from the above file can be imported as dependencies in your current config, via:
+Here `cfg1` and `cfg2` are independent skaffold configurations. Running `skaffold dev` for instance will execute actions from both these configurations. You could also run `skaffold dev -m cfg1` to only activate the `cfg1` configuration and skip `cfg2`.
+
+## Configuration dependencies
+
+In addition to authoring configurations in a `skaffold.yaml` file, we can also import other existing configurations as dependencies. Skaffold manages all imported and defined configurations in the same session. It also ensures all artifacts in a required config are built prior to those in current config (provided the artifacts have dependencies defined); and all deploys in required configs are applied prior to those in current config.
+
+{{< alert title="Note:" >}}
+Running `skaffold <command> -m <config-name>` will filter to the specified target configuration, but also include the transitive closure of all other configurations in its dependency graph. For instance, if a config `cfg1` imported `cfg2` as a dependency while `cfg2` imported `cfg3` and `cfg4`, then running `skaffold dev -m cfg1` would activate all of `cfg1`, `cfg2`, `cfg3` and `cfg4` and execute them in dependency order.
+{{< /alert >}}
+
+### Local config dependency
+
+Consider the same `skaffold.yaml` defined above. Configurations `cfg1` and `cfg2` from the above file can be imported as dependencies in your current config, via:
 
 ```yaml
 apiVersion: skaffold/v2beta11
@@ -120,6 +129,10 @@ deploy:
 ```
 
 If the `configs` list isn't defined then it imports all the configs defined in the file pointed by `path`. Additionally, if the `path` to the configuration isn't defined it assumes that all the required configs are defined in the same file as the current config.
+
+{{< alert title="Note:" >}}
+In imported configurations, files are resolved relative to the location of imported Skaffold configuration file.
+{{< /alert >}}
 
 ### Remote config dependency
 
@@ -140,7 +153,7 @@ The environment variable `SKAFFOLD_REMOTE_CACHE_DIR` or flag `--remote-cache-dir
 The repo root directory name is a hash of the repo `uri` and the `branch/ref`.
 Every execution of a remote module resets the cached repo to the referenced ref. The default ref is master. If master is not defined then it defaults to main.
 The remote config gets treated like a local config after substituting the path with the actual path in the cache directory.
-  
+
 ### Profile Activation in required configs
 
 Additionally the `activeProfiles` stanza can define the profiles to be activated in the required configs, via:
@@ -159,3 +172,7 @@ requires:
 ```
 
 Here, `profile1` is a profile that needs to exist in both configs `cfg1` and `cfg2`; while `profile2` and `profile3` are profiles defined in the current config `cfg`. If the current config is activated with either `profile2` or `profile3` then the required configs `cfg1` and `cfg2` are imported with `profile1` applied. If the `activatedBy` clause is omitted then that `profile1` always gets applied for the imported configs.
+
+{{< alert title="Follow up" >}}
+Take a look at the [tutorial]({{< relref "/docs/tutorials/config-dependencies" >}}) section to see this in action.
+{{< /alert >}}
