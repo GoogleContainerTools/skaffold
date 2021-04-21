@@ -53,7 +53,7 @@ func TestUserError(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&internalSystemErrSuggestion, func(_ interface{}) []*proto.Suggestion {
 				return []*proto.Suggestion{{
-					Action: fmt.Sprintf("Something went wrong"),
+					Action: "Something went wrong",
 				}}
 			})
 			actual := UserError(test.err, test.statusCode)
