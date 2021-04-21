@@ -53,6 +53,57 @@ func (s *StringOrUndefined) String() string {
 	return *s.value
 }
 
+// BoolOrUndefined holds the value of a flag of type `bool`,
+// that's by default `undefined`.
+// We use this instead of just `bool` to differentiate `undefined`
+// and `false` values.
+type BoolOrUndefined struct {
+	value *bool
+}
+
+func (s *BoolOrUndefined) Type() string {
+	return "bool"
+}
+
+func (s *BoolOrUndefined) Value() *bool {
+	return s.value
+}
+
+func (s *BoolOrUndefined) Set(v string) error {
+	switch v {
+	case "true":
+		s.value = util.BoolPtr(true)
+	case "false":
+		s.value = util.BoolPtr(false)
+	default:
+		s.value = nil
+	}
+	return nil
+}
+
+func (s *BoolOrUndefined) SetNil() error {
+	s.value = nil
+	return nil
+}
+
+func (s *BoolOrUndefined) String() string {
+	b := s.value
+	if b == nil {
+		return ""
+	}
+	if *b {
+		return "true"
+	}
+	if !*b {
+		return "false"
+	}
+	return ""
+}
+
+func NewBoolOrUndefined(v *bool) BoolOrUndefined {
+	return BoolOrUndefined{value: v}
+}
+
 // Muted lists phases for which logs are muted.
 type Muted struct {
 	Phases []string

@@ -157,7 +157,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 
 			// we ignore Skaffold options
 			test.expectedConfig.Opts = capturedConfig.Opts
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedConfig, capturedConfig, cmp.AllowUnexported(cfg.StringOrUndefined{}))
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedConfig, capturedConfig, cmp.AllowUnexported(cfg.StringOrUndefined{}, cfg.BoolOrUndefined{}))
 		})
 	}
 }
