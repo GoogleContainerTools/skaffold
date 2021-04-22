@@ -18,15 +18,26 @@ package error
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 const (
-	executableNotFound = "executable file not found"
-	notFound           = "%s not found"
+	executableNotFound     = "executable file not found"
+	notFound               = "%s not found"
+	defaultMinikubeProfile = "minikube"
+)
+
+var (
+	clusterInternalSystemErr = regexp.MustCompile(".*Internal Server Error")
+
+	// for testing
+	internalSystemErrSuggestion = internalSystemErrSuggestionFunc
 )
 
 // DebugHelperRetrieveErr is thrown when debug helpers could not be retrieved.
@@ -56,4 +67,59 @@ func MissingToolErr(toolName string, err error) string {
 		return fmt.Sprintf(notFound, toolName)
 	}
 	return err.Error()
+}
+
+func UserError(err error, sc proto.StatusCode) error {
+	if sErrors.IsSkaffoldErr(err) {
+		return err
+	}
+	if clusterInternalSystemErr.MatchString(err.Error()) {
+		return sErrors.NewProblem(
+			func(err error) string {
+				return fmt.Sprintf("Deploy Failed. %v", err)
+			},
+			proto.StatusCode_DEPLOY_CLUSTER_INTERNAL_SYSTEM_ERR,
+			internalSystemErrSuggestion,
+			err)
+	}
+	return sErrors.NewError(err,
+		proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: sc,
+		})
+}
+
+func CheckMinikubeStatusSuggestion(cfg types.Config) *proto.Suggestion {
+	return &proto.Suggestion{
+		SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
+		Action: fmt.Sprintf("Check if minikube is running using %q command and try again",
+			getMinikubeStatusCommand(cfg.GetKubeContext())),
+	}
+}
+
+func getMinikubeStatusCommand(p string) string {
+	if p == defaultMinikubeProfile {
+		return "minikube status"
+	}
+	return fmt.Sprintf("minikube status -p %s", p)
+}
+
+func internalSystemErrSuggestionFunc(cfg interface{}) []*proto.Suggestion {
+	deployCfg, ok := cfg.(types.Config)
+	if !ok {
+		return nil
+	}
+	if deployCfg.MinikubeProfile() != "" {
+		return []*proto.Suggestion{
+			CheckMinikubeStatusSuggestion(deployCfg),
+			{
+				SuggestionCode: proto.SuggestionCode_OPEN_ISSUE,
+				// TODO: show tip to run minikube logs command and attach logs.
+				Action: fmt.Sprintf("open an issue at %s", constants.GithubIssueLink),
+			}}
+	}
+	return []*proto.Suggestion{{
+		SuggestionCode: proto.SuggestionCode_OPEN_ISSUE,
+		Action:         fmt.Sprintf("Something went wrong with your cluster %q. Try again.\nIf this keeps happening please open an issue at %s", deployCfg.GetKubeContext(), constants.GithubIssueLink),
+	}}
 }

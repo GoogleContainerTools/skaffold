@@ -49,7 +49,6 @@ type SkaffoldOptions struct {
 	Force                 bool
 	NoPrune               bool
 	NoPruneChildren       bool
-	StatusCheck           bool
 	AutoBuild             bool
 	AutoSync              bool
 	AutoDeploy            bool
@@ -68,6 +67,7 @@ type SkaffoldOptions struct {
 	DetectMinikube    bool
 	// Experimental is the entrypoint to run skaffold v3 before it's fully implemented.
 	Experimental bool
+	StatusCheck  BoolOrUndefined
 
 	PortForward        PortForwardOptions
 	CustomTag          string

@@ -277,9 +277,10 @@ var flagRegistry = []Flag{
 		Usage:         "Wait for deployed resources to stabilize",
 		Value:         &opts.StatusCheck,
 		DefValue:      true,
-		FlagAddMethod: "BoolVar",
+		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
 		IsEnum:        true,
+		NoOptDefVal:   "true",
 	},
 	{
 		Name:          "render-only",
