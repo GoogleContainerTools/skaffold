@@ -94,10 +94,7 @@ func (s *BoolOrUndefined) String() string {
 	if *b {
 		return "true"
 	}
-	if !*b {
-		return "false"
-	}
-	return ""
+	return "false"
 }
 
 func NewBoolOrUndefined(v *bool) BoolOrUndefined {

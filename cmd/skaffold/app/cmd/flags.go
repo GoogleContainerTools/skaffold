@@ -280,6 +280,7 @@ var flagRegistry = []Flag{
 		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
 		IsEnum:        true,
+		NoOptDefVal:   "true",
 	},
 	{
 		Name:          "render-only",
