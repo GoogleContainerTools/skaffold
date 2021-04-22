@@ -517,8 +517,8 @@ var flagRegistry = []Flag{
 		FlagAddMethod: "IntVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
 	},
-    {
-        Name:          "v3",
+	{
+		Name:          "v3",
 		Usage:         "Next skaffold config (v3). Use kpt to render/hydrate and deploy manifests.",
 		Value:         &opts.Experimental,
 		DefValue:      false,
