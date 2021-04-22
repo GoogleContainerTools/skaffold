@@ -18,9 +18,14 @@ package util
 
 import (
 	"io"
+	"os/exec"
+	"strconv"
+	"strings"
 
 	"golang.org/x/term"
 )
+
+var colors = tputColors
 
 func IsTerminal(w io.Writer) (uintptr, bool) {
 	type descriptor interface {
@@ -34,4 +39,22 @@ func IsTerminal(w io.Writer) (uintptr, bool) {
 	}
 
 	return 0, false
+}
+
+func SupportsColor() (bool, error) {
+	res, err := colors()
+	if err != nil {
+		return false, err
+	}
+
+	numColors, err := strconv.Atoi(strings.TrimSpace(string(res)))
+	if err != nil {
+		return false, err
+	}
+
+	return numColors != 0, nil
+}
+
+func tputColors() ([]byte, error) {
+	return exec.Command("tput", "colors").Output()
 }

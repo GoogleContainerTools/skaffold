@@ -18,6 +18,7 @@ package util
 
 import (
 	"bytes"
+	"errors"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -30,4 +31,45 @@ func TestIsNotTerminal(t *testing.T) {
 
 	testutil.CheckDeepEqual(t, uintptr(0x00), termFd)
 	testutil.CheckDeepEqual(t, false, isTerm)
+}
+
+func TestSupportsColor(t *testing.T) {
+	tests := []struct {
+		description  string
+		colorsOutput []byte
+		shouldErr    bool
+		expected     bool
+	}{
+		{
+			description:  "Supports 256 colors",
+			colorsOutput: []byte("256"),
+			expected:     true,
+		},
+		{
+			description:  "Supports 0 colors",
+			colorsOutput: []byte("0"),
+			expected:     false,
+		},
+		{
+			description:  "Errors",
+			colorsOutput: []byte("-1"),
+			shouldErr:    true,
+			expected:     false,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&colors, func() ([]byte, error) {
+				if test.shouldErr {
+					return nil, errors.New("error")
+				}
+
+				return test.colorsOutput, nil
+			})
+
+			supportsColors, err := SupportsColor()
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, supportsColors)
+		})
+	}
 }

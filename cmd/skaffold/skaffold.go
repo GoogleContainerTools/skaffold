@@ -38,7 +38,8 @@ func main() {
 		if errors.Is(err, context.Canceled) {
 			logrus.Debugln("ignore error since context is cancelled:", err)
 		} else {
-			color.Red.Fprintln(os.Stderr, err)
+			errOut, _ := color.SetupColors(os.Stderr, color.DefaultColorCode, false)
+			color.Red.Fprintln(errOut, err)
 			code = exitCode(err)
 		}
 	}
