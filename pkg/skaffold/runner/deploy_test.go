@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -43,25 +44,32 @@ func TestDeploy(t *testing.T) {
 	tests := []struct {
 		description string
 		testBench   *TestBench
-		statusCheck bool
+		statusCheck config.BoolOrUndefined
 		shouldErr   bool
 		shouldWait  bool
 	}{
 		{
 			description: "deploy shd perform status check",
 			testBench:   &TestBench{},
-			statusCheck: true,
+			statusCheck: config.NewBoolOrUndefined(nil),
+			shouldWait:  true,
+		},
+		{
+			description: "deploy shd perform status check",
+			testBench:   &TestBench{},
+			statusCheck: config.NewBoolOrUndefined(util.BoolPtr(true)),
 			shouldWait:  true,
 		},
 		{
 			description: "deploy shd not perform status check",
 			testBench:   &TestBench{},
+			statusCheck: config.NewBoolOrUndefined(util.BoolPtr(false)),
 		},
 		{
 			description: "deploy shd not perform status check when deployer is in error",
 			testBench:   &TestBench{deployErrors: []error{errors.New("deploy error")}},
 			shouldErr:   true,
-			statusCheck: true,
+			statusCheck: config.NewBoolOrUndefined(util.BoolPtr(true)),
 		},
 	}
 

@@ -84,6 +84,73 @@ func TestStringOrUndefined(t *testing.T) {
 	}
 }
 
+func TestBoolOrUndefinedUsage(t *testing.T) {
+	var output bytes.Buffer
+
+	cmd := &cobra.Command{}
+	cmd.Flags().Var(&BoolOrUndefined{}, "bool-flag", "use it like this")
+	cmd.SetOut(&output)
+	cmd.Usage()
+
+	testutil.CheckDeepEqual(t, "Usage:\n\nFlags:\n      --bool-flag   use it like this\n", output.String())
+}
+
+func TestBoolOrUndefined_SetNil(t *testing.T) {
+	var s BoolOrUndefined
+	s.Set("false")
+	testutil.CheckDeepEqual(t, "false", s.String())
+	s.SetNil()
+	testutil.CheckDeepEqual(t, "", s.String())
+	testutil.CheckDeepEqual(t, (*bool)(nil), s.value)
+	testutil.CheckDeepEqual(t, (*bool)(nil), s.Value())
+}
+
+func TestBoolOrUndefined(t *testing.T) {
+	tests := []struct {
+		description string
+		args        []string
+		expected    *bool
+	}{
+		{
+			description: "undefined",
+			args:        []string{},
+			expected:    nil,
+		},
+		{
+			description: "empty",
+			args:        []string{"--bool-flag="},
+			expected:    nil,
+		},
+		{
+			description: "invalid",
+			args:        []string{"--bool-flag=invalid"},
+			expected:    nil,
+		},
+		{
+			description: "true",
+			args:        []string{"--bool-flag=true"},
+			expected:    util.BoolPtr(true),
+		},
+		{
+			description: "false",
+			args:        []string{"--bool-flag=false"},
+			expected:    util.BoolPtr(false),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			var flag BoolOrUndefined
+
+			cmd := &cobra.Command{}
+			cmd.Flags().Var(&flag, "bool-flag", "")
+			cmd.SetArgs(test.args)
+			cmd.Execute()
+
+			t.CheckDeepEqual(test.expected, flag.value)
+		})
+	}
+}
+
 func TestMuted(t *testing.T) {
 	tests := []struct {
 		phases                  []string

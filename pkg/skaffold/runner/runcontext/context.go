@@ -146,6 +146,14 @@ func (rc *RunContext) Deployers() []latest.DeployType { return rc.Pipelines.Depl
 
 func (rc *RunContext) TestCases() []*latest.TestCase { return rc.Pipelines.TestCases() }
 
+func (rc *RunContext) StatusCheck() bool {
+	sc := rc.Opts.StatusCheck.Value()
+	if sc == nil {
+		return true
+	}
+	return *sc
+}
+
 func (rc *RunContext) StatusCheckDeadlineSeconds() int {
 	return rc.Pipelines.StatusCheckDeadlineSeconds()
 }
@@ -185,7 +193,6 @@ func (rc *RunContext) RenderOnly() bool                          { return rc.Opt
 func (rc *RunContext) RenderOutput() string                      { return rc.Opts.RenderOutput }
 func (rc *RunContext) SkipRender() bool                          { return rc.Opts.SkipRender }
 func (rc *RunContext) SkipTests() bool                           { return rc.Opts.SkipTests }
-func (rc *RunContext) StatusCheck() bool                         { return rc.Opts.StatusCheck }
 func (rc *RunContext) Tail() bool                                { return rc.Opts.Tail }
 func (rc *RunContext) Trigger() string                           { return rc.Opts.Trigger }
 func (rc *RunContext) WaitForDeletions() config.WaitForDeletions { return rc.Opts.WaitForDeletions }
