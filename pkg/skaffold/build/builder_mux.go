@@ -61,7 +61,7 @@ func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeli
 			m[a.ImageName] = b
 		}
 
-		if cfg.BuildConcurrency() > 0 {
+		if cfg.BuildConcurrency() >= 0 {
 			minConcurrency = cfg.BuildConcurrency()
 		} else {
 			concurrency := b.Concurrency()
