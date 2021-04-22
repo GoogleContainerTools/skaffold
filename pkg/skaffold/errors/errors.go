@@ -69,6 +69,9 @@ func ActionableErrV2(cfg interface{}, phase constants.Phase, err error) *protoV2
 }
 
 func ShowAIError(cfg interface{}, err error) error {
+	if uErr := errors.Unwrap(err); uErr != nil {
+		err = uErr
+	}
 	if IsSkaffoldErr(err) {
 		instrumentation.SetErrorCode(err.(Error).StatusCode())
 		return err
@@ -76,7 +79,7 @@ func ShowAIError(cfg interface{}, err error) error {
 
 	if p, ok := isProblem(err); ok {
 		instrumentation.SetErrorCode(p.ErrCode)
-		return p
+		return p.AIError(cfg, err)
 	}
 
 	for _, problems := range allErrors {
