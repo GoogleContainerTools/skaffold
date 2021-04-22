@@ -28,6 +28,7 @@ import (
 // Loopback network address. Skaffold should not bind to 0.0.0.0
 // unless we really want to expose something to the network.
 const Loopback = "127.0.0.1"
+
 // Network address which represent any address. This is the default that
 // we should use when checking if port is free.
 const Any = ""
