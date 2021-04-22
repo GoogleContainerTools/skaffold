@@ -118,11 +118,22 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
+	podSelectors := kubernetes.NewImageList()
 	return &SkaffoldRunner{
-		builder:  builder,
-		tester:   tester,
+		Builder: Builder{
+			builder:     builder,
+			tagger:      tagger,
+			cache:       artifactCache,
+			podSelector: podSelectors,
+			runCtx:      runCtx,
+		},
+		Pruner: Pruner{
+			builder,
+		},
+		Tester: Tester{
+			tester: tester,
+		},
 		deployer: deployer,
-		tagger:   tagger,
 		syncer:   syncer,
 		monitor:  monitor,
 		listener: &SkaffoldListener{
@@ -135,7 +146,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		sourceDependencies: sourceDependencies,
 		kubectlCLI:         kubectlCLI,
 		labeller:           labeller,
-		podSelector:        kubernetes.NewImageList(),
+		podSelector:        podSelectors,
 		cache:              artifactCache,
 		runCtx:             runCtx,
 		intents:            intents,
@@ -143,7 +154,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}, nil
 }
 
-func setupIntents(runCtx *runcontext.RunContext) (*intents, chan bool) {
+func setupIntents(runCtx *runcontext.RunContext) (*Intents, chan bool) {
 	intents := newIntents(runCtx.AutoBuild(), runCtx.AutoSync(), runCtx.AutoDeploy())
 
 	intentChan := make(chan bool, 1)

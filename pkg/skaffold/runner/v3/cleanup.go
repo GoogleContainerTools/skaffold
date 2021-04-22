@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,20 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-package runner
+package v3
 
 import (
 	"context"
+	"fmt"
 	"io"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 )
 
-type Pruner struct {
-	build.Builder
-}
-
-func (r *Pruner) Prune(ctx context.Context, out io.Writer) error {
-	return r.Builder.Prune(ctx, out)
+func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer) error {
+	return fmt.Errorf("not implemented error: SkaffoldRunner(v3).Cleanup")
 }
