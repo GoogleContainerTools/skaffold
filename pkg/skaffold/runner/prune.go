@@ -23,10 +23,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 )
 
-type PruneRunner struct {
+type Pruner struct {
 	build.Builder
 }
 
-func (r *PruneRunner) Prune(ctx context.Context, out io.Writer) error {
+func (r *Pruner) Prune(ctx context.Context, out io.Writer) error {
 	return r.Builder.Prune(ctx, out)
 }

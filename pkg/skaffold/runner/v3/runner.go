@@ -20,9 +20,9 @@ import (
 )
 
 type SkaffoldRunner struct {
-	runner.BuildRunner
-	runner.PruneRunner
-	runner.TestRunner
+	runner.Builder
+	runner.Pruner
+	runner.Tester
 }
 
 func (r *SkaffoldRunner) HasDeployed() bool { return true }

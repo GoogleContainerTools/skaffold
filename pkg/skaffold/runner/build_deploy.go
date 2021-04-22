@@ -39,7 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-type BuildRunner struct {
+type Builder struct {
 	builder build.Builder
 	tagger  tag.Tagger
 	cache   cache.Cache
@@ -54,7 +54,7 @@ type BuildRunner struct {
 }
 
 // Build builds a list of artifacts.
-func (r *BuildRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
+func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
 	eventV2.TaskInProgress(constants.Build, r.devIteration)
 
 	// Use tags directly from the Kubernetes manifests.
@@ -117,12 +117,12 @@ func (r *BuildRunner) Build(ctx context.Context, out io.Writer, artifacts []*lat
 }
 
 // HasBuilt returns true if this runner has built something.
-func (r *BuildRunner) HasBuilt() bool {
+func (r *Builder) HasBuilt() bool {
 	return r.hasBuilt
 }
 
 // Update which images are logged.
-func (r *BuildRunner) addTagsToPodSelector(artifacts []graph.Artifact) {
+func (r *Builder) addTagsToPodSelector(artifacts []graph.Artifact) {
 	for _, artifact := range artifacts {
 		r.podSelector.Add(artifact.Tag)
 	}
@@ -134,12 +134,12 @@ type tagErr struct {
 }
 
 // ApplyDefaultRepo applies the default repo to a given image tag.
-func (r *BuildRunner) ApplyDefaultRepo(tag string) (string, error) {
+func (r *Builder) ApplyDefaultRepo(tag string) (string, error) {
 	return deployutil.ApplyDefaultRepo(r.runCtx.GlobalConfig(), r.runCtx.DefaultRepo(), tag)
 }
 
 // imageTags generates tags for a list of artifacts
-func (r *BuildRunner) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
+func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
 

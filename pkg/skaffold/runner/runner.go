@@ -59,9 +59,9 @@ type Runner interface {
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
-	BuildRunner
-	PruneRunner
-	TestRunner
+	Builder
+	Pruner
+	Tester
 
 	deployer deploy.Deployer
 	syncer   sync.Syncer

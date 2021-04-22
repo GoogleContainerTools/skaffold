@@ -118,17 +118,17 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	podSelectors := kubernetes.NewImageList()
 	return &SkaffoldRunner{
-		BuildRunner: BuildRunner{
+		Builder: Builder{
 			builder:     builder,
 			tagger:      tagger,
 			cache:       artifactCache,
 			podSelector: podSelectors,
 			runCtx:      runCtx,
 		},
-		PruneRunner: PruneRunner{
+		Pruner: Pruner{
 			builder,
 		},
-		TestRunner: TestRunner{
+		Tester: Tester{
 			tester: tester,
 		},
 		deployer: deployer,

@@ -23,12 +23,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
-type TestRunner struct {
+type Tester struct {
 	tester test.Tester
 }
 
 // Test tests a list of already built artifacts.
-func (r *TestRunner) Test(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+func (r *Tester) Test(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
 	if err := r.tester.Test(ctx, out, artifacts); err != nil {
 		return err
 	}

@@ -201,7 +201,7 @@ func runImageLoadingTests(t *testing.T, tests []ImageLoadingTest, loadingFunc fu
 			r := &SkaffoldRunner{
 				runCtx:     runCtx,
 				kubectlCLI: kubectl.NewCLI(runCtx, ""),
-				BuildRunner: BuildRunner{
+				Builder: Builder{
 					builds: test.built,
 				},
 			}
