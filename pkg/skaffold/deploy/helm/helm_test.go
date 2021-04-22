@@ -893,9 +893,8 @@ func TestHelmDeploy(t *testing.T) {
 			helm:   testDeployWithoutTags,
 			builds: testBuilds,
 			expectedWarnings: []string{
-				"See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml",
+				"See helm documentation on how to replace image names with their actual tags: https://skaffold.dev/docs/pipeline-stages/deployers/helm/#image-configuration",
 				"image [docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184] is not used.",
-				"image [skaffold-helm] is used instead.",
 			},
 		},
 		{
