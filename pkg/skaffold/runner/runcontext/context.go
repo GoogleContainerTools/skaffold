@@ -65,6 +65,11 @@ func (ps Pipelines) Select(imageName string) (latest.Pipeline, bool) {
 	return p, found
 }
 
+// IsMultiPipeline returns true if there are more than one constituent skaffold pipelines.
+func (ps Pipelines) IsMultiPipeline() bool {
+	return len(ps.pipelines) > 1
+}
+
 func (ps Pipelines) PortForwardResources() []*latest.PortForwardResource {
 	var pf []*latest.PortForwardResource
 	for _, p := range ps.pipelines {
@@ -185,6 +190,7 @@ func (rc *RunContext) Tail() bool                                { return rc.Opt
 func (rc *RunContext) Trigger() string                           { return rc.Opts.Trigger }
 func (rc *RunContext) WaitForDeletions() config.WaitForDeletions { return rc.Opts.WaitForDeletions }
 func (rc *RunContext) WatchPollInterval() int                    { return rc.Opts.WatchPollInterval }
+func (rc *RunContext) IsMultiConfig() bool                       { return rc.Pipelines.IsMultiPipeline() }
 
 func GetRunContext(opts config.SkaffoldOptions, pipelines []latest.Pipeline) (*RunContext, error) {
 	kubeConfig, err := kubectx.CurrentConfig()
