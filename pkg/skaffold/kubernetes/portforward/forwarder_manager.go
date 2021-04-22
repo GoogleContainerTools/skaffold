@@ -109,15 +109,15 @@ func (p *ForwarderManager) Start(ctx context.Context, namespaces []string) error
 		return nil
 	}
 
-	eventV2.TaskInProgress(constants.PortForward, eventV2.GetIteration())
+	eventV2.TaskInProgress(constants.PortForward)
 	for _, f := range p.forwarders {
 		if err := f.Start(ctx, namespaces); err != nil {
-			eventV2.TaskFailed(constants.PortForward, eventV2.GetIteration(), err)
+			eventV2.TaskFailed(constants.PortForward, err)
 			return err
 		}
 	}
 
-	eventV2.TaskSucceeded(constants.PortForward, eventV2.GetIteration())
+	eventV2.TaskSucceeded(constants.PortForward)
 	return nil
 }
 

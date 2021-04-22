@@ -84,12 +84,12 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	event.DeployInProgress()
-	eventV2.TaskInProgress(constants.Deploy, r.devIteration)
+	eventV2.TaskInProgress(constants.Deploy)
 	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
-		eventV2.TaskFailed(constants.Deploy, r.devIteration, err)
+		eventV2.TaskFailed(constants.Deploy, err)
 		return err
 	}
 
@@ -101,7 +101,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return err
 	}
 	event.DeployComplete()
-	eventV2.TaskSucceeded(constants.Deploy, r.devIteration)
+	eventV2.TaskSucceeded(constants.Deploy)
 	r.runCtx.UpdateNamespaces(namespaces)
 	sErr := r.performStatusCheck(ctx, statusCheckOut)
 	return sErr
@@ -165,17 +165,17 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 		return nil
 	}
 
-	eventV2.TaskInProgress(constants.StatusCheck, r.devIteration)
+	eventV2.TaskInProgress(constants.StatusCheck)
 	start := time.Now()
 	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
 
 	s := newStatusCheck(r.runCtx, r.labeller)
 	if err := s.Check(ctx, out); err != nil {
-		eventV2.TaskFailed(constants.StatusCheck, r.devIteration, err)
+		eventV2.TaskFailed(constants.StatusCheck, err)
 		return err
 	}
 
 	color.Default.Fprintln(out, "Deployments stabilized in", util.ShowHumanizeTime(time.Since(start)))
-	eventV2.TaskSucceeded(constants.StatusCheck, r.devIteration)
+	eventV2.TaskSucceeded(constants.StatusCheck)
 	return nil
 }

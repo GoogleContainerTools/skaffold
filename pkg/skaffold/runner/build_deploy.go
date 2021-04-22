@@ -38,7 +38,7 @@ import (
 
 // Build builds a list of artifacts.
 func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
-	eventV2.TaskInProgress(constants.Build, r.devIteration)
+	eventV2.TaskInProgress(constants.Build)
 
 	// Use tags directly from the Kubernetes manifests.
 	if r.runCtx.DigestSource() == noneDigestSource {
@@ -46,13 +46,13 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 	}
 
 	if err := checkWorkspaces(artifacts); err != nil {
-		eventV2.TaskFailed(constants.Build, r.devIteration, err)
+		eventV2.TaskFailed(constants.Build, err)
 		return nil, err
 	}
 
 	tags, err := r.imageTags(ctx, out, artifacts)
 	if err != nil {
-		eventV2.TaskFailed(constants.Build, r.devIteration, err)
+		eventV2.TaskFailed(constants.Build, err)
 		return nil, err
 	}
 
@@ -85,7 +85,7 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 		return bRes, nil
 	})
 	if err != nil {
-		eventV2.TaskFailed(constants.Build, r.devIteration, err)
+		eventV2.TaskFailed(constants.Build, err)
 		return nil, err
 	}
 
@@ -95,19 +95,19 @@ func (r *SkaffoldRunner) Build(ctx context.Context, out io.Writer, artifacts []*
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
 
-	eventV2.TaskSucceeded(constants.Build, r.devIteration)
+	eventV2.TaskSucceeded(constants.Build)
 	return bRes, nil
 }
 
 // Test tests a list of already built artifacts.
 func (r *SkaffoldRunner) Test(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-	eventV2.TaskInProgress(constants.Test, r.devIteration)
+	eventV2.TaskInProgress(constants.Test)
 	if err := r.tester.Test(ctx, out, artifacts); err != nil {
-		eventV2.TaskFailed(constants.Test, r.devIteration, err)
+		eventV2.TaskFailed(constants.Test, err)
 		return err
 	}
 
-	eventV2.TaskSucceeded(constants.Test, r.devIteration)
+	eventV2.TaskSucceeded(constants.Test)
 	return nil
 }
 
