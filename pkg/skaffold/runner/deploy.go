@@ -39,7 +39,7 @@ import (
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-	eventV2.TaskInProgress(constants.Deploy, r.devIteration)
+	eventV2.TaskInProgress(constants.Deploy)
 
 	// Update which images are logged.
 	r.addTagsToPodSelector(artifacts)
@@ -51,7 +51,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	logger.SetSince(time.Now())
 	// First deploy
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
-		eventV2.TaskFailed(constants.Deploy, r.devIteration, err)
+		eventV2.TaskFailed(constants.Deploy, err)
 		return err
 	}
 
@@ -64,7 +64,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 
 	// Start printing the logs after deploy is finished
 	if err := logger.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
-		eventV2.TaskFailed(constants.Deploy, r.devIteration, err)
+		eventV2.TaskFailed(constants.Deploy, err)
 		return fmt.Errorf("starting logger: %w", err)
 	}
 
@@ -73,7 +73,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		<-ctx.Done()
 	}
 
-	eventV2.TaskSucceeded(constants.Deploy, r.devIteration)
+	eventV2.TaskSucceeded(constants.Deploy)
 	return nil
 }
 
@@ -124,12 +124,12 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	event.DeployInProgress()
-	eventV2.TaskInProgress(constants.Deploy, r.devIteration)
+	eventV2.TaskInProgress(constants.Deploy)
 	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
-		eventV2.TaskFailed(constants.Deploy, r.devIteration, err)
+		eventV2.TaskFailed(constants.Deploy, err)
 		return err
 	}
 
@@ -141,7 +141,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return err
 	}
 	event.DeployComplete()
-	eventV2.TaskSucceeded(constants.Deploy, r.devIteration)
+	eventV2.TaskSucceeded(constants.Deploy)
 	r.runCtx.UpdateNamespaces(namespaces)
 	sErr := r.performStatusCheck(ctx, statusCheckOut)
 	return sErr
@@ -205,17 +205,17 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 		return nil
 	}
 
-	eventV2.TaskInProgress(constants.StatusCheck, r.devIteration)
+	eventV2.TaskInProgress(constants.StatusCheck)
 	start := time.Now()
 	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
 
 	s := newStatusCheck(r.runCtx, r.labeller)
 	if err := s.Check(ctx, out); err != nil {
-		eventV2.TaskFailed(constants.StatusCheck, r.devIteration, err)
+		eventV2.TaskFailed(constants.StatusCheck, err)
 		return err
 	}
 
 	color.Default.Fprintln(out, "Deployments stabilized in", util.ShowHumanizeTime(time.Since(start)))
-	eventV2.TaskSucceeded(constants.StatusCheck, r.devIteration)
+	eventV2.TaskSucceeded(constants.StatusCheck)
 	return nil
 }

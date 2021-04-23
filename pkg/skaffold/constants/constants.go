@@ -30,6 +30,7 @@ const (
 	Test        = Phase("Test")
 	Deploy      = Phase("Deploy")
 	StatusCheck = Phase("StatusCheck")
+	PortForward = Phase("PortForward")
 	Sync        = Phase("Sync")
 	DevInit     = Phase("DevInit")
 	Cleanup     = Phase("Cleanup")

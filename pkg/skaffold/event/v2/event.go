@@ -268,35 +268,35 @@ func AutoTriggerDiff(phase constants.Phase, val bool) (bool, error) {
 	}
 }
 
-func TaskInProgress(task constants.Phase, iteration int) {
+func TaskInProgress(task constants.Phase) {
 	if task == constants.DevLoop {
-		handler.iteration = iteration
+		handler.iteration++
 	}
 
 	handler.handleTaskEvent(&proto.TaskEvent{
-		Id:        fmt.Sprintf("%s-%d", task, iteration),
+		Id:        fmt.Sprintf("%s-%d", task, handler.iteration),
 		Task:      string(task),
-		Iteration: int32(iteration),
+		Iteration: int32(handler.iteration),
 		Status:    InProgress,
 	})
 }
 
-func TaskFailed(task constants.Phase, iteration int, err error) {
+func TaskFailed(task constants.Phase, err error) {
 	ae := sErrors.ActionableErrV2(handler.cfg, task, err)
 	handler.handleTaskEvent(&proto.TaskEvent{
-		Id:            fmt.Sprintf("%s-%d", task, iteration),
+		Id:            fmt.Sprintf("%s-%d", task, handler.iteration),
 		Task:          string(task),
-		Iteration:     int32(iteration),
+		Iteration:     int32(handler.iteration),
 		Status:        Failed,
 		ActionableErr: ae,
 	})
 }
 
-func TaskSucceeded(task constants.Phase, iteration int) {
+func TaskSucceeded(task constants.Phase) {
 	handler.handleTaskEvent(&proto.TaskEvent{
-		Id:        fmt.Sprintf("%s-%d", task, iteration),
+		Id:        fmt.Sprintf("%s-%d", task, handler.iteration),
 		Task:      string(task),
-		Iteration: int32(iteration),
+		Iteration: int32(handler.iteration),
 		Status:    Succeeded,
 	})
 }

@@ -48,14 +48,13 @@ type Builder struct {
 	// podSelector is used to determine relevant pods for logging and portForwarding
 	podSelector *kubernetes.ImageList
 
-	hasBuilt     bool
-	devIteration int
-	runCtx       *runcontext.RunContext
+	hasBuilt bool
+	runCtx   *runcontext.RunContext
 }
 
 // Build builds a list of artifacts.
 func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
-	eventV2.TaskInProgress(constants.Build, r.devIteration)
+	eventV2.TaskInProgress(constants.Build)
 
 	// Use tags directly from the Kubernetes manifests.
 	if r.runCtx.DigestSource() == noneDigestSource {
@@ -63,13 +62,13 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.
 	}
 
 	if err := checkWorkspaces(artifacts); err != nil {
-		eventV2.TaskFailed(constants.Build, r.devIteration, err)
+		eventV2.TaskFailed(constants.Build, err)
 		return nil, err
 	}
 
 	tags, err := r.imageTags(ctx, out, artifacts)
 	if err != nil {
-		eventV2.TaskFailed(constants.Build, r.devIteration, err)
+		eventV2.TaskFailed(constants.Build, err)
 		return nil, err
 	}
 
@@ -102,7 +101,7 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.
 		return bRes, nil
 	})
 	if err != nil {
-		eventV2.TaskFailed(constants.Build, r.devIteration, err)
+		eventV2.TaskFailed(constants.Build, err)
 		return nil, err
 	}
 
@@ -112,7 +111,7 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
 
-	eventV2.TaskSucceeded(constants.Build, r.devIteration)
+	eventV2.TaskSucceeded(constants.Build)
 	return bRes, nil
 }
 

@@ -25,7 +25,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -43,7 +45,7 @@ type ForwarderManager struct {
 }
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
-func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string, label string, runMode config.RunMode, options config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
+func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, label string, runMode config.RunMode, options config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
 	if !options.Enabled() {
 		return nil
 	}
@@ -107,11 +109,15 @@ func (p *ForwarderManager) Start(ctx context.Context, namespaces []string) error
 		return nil
 	}
 
+	eventV2.TaskInProgress(constants.PortForward)
 	for _, f := range p.forwarders {
 		if err := f.Start(ctx, namespaces); err != nil {
+			eventV2.TaskFailed(constants.PortForward, err)
 			return err
 		}
 	}
+
+	eventV2.TaskSucceeded(constants.PortForward)
 	return nil
 }
 
