@@ -26,7 +26,7 @@ import (
 
 // Tester is the top level test executor in Skaffold.
 // A tester is really a collection of artifact-specific testers,
-// each of which contains one or more TestRunners which implements
+// each of which contains one or more Tester which implements
 // a single test run.
 type Tester interface {
 	Test(context.Context, io.Writer, []graph.Artifact) error

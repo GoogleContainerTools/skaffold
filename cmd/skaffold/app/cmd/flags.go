@@ -277,9 +277,10 @@ var flagRegistry = []Flag{
 		Usage:         "Wait for deployed resources to stabilize",
 		Value:         &opts.StatusCheck,
 		DefValue:      true,
-		FlagAddMethod: "BoolVar",
+		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
 		IsEnum:        true,
+		NoOptDefVal:   "true",
 	},
 	{
 		Name:          "render-only",
@@ -508,6 +509,14 @@ var flagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"debug", "dev", "run"},
 		IsEnum:        true,
+	},
+	{
+		Name:          "build-concurrency",
+		Usage:         "Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.",
+		Value:         &opts.BuildConcurrency,
+		DefValue:      -1,
+		FlagAddMethod: "IntVar",
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
 	},
 	{
 		Name:          "v3",

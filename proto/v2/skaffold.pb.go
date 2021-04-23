@@ -211,6 +211,7 @@ const StatusCode_DEPLOY_SET_LABEL_ERR = StatusCode(enums.StatusCode_DEPLOY_SET_L
 const StatusCode_DEPLOY_MANIFEST_WRITE_ERR = StatusCode(enums.StatusCode_DEPLOY_MANIFEST_WRITE_ERR)
 const StatusCode_DEPLOY_PARSE_MANIFEST_IMAGES_ERR = StatusCode(enums.StatusCode_DEPLOY_PARSE_MANIFEST_IMAGES_ERR)
 const StatusCode_DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE = StatusCode(enums.StatusCode_DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE)
+const StatusCode_DEPLOY_CLUSTER_INTERNAL_SYSTEM_ERR = StatusCode(enums.StatusCode_DEPLOY_CLUSTER_INTERNAL_SYSTEM_ERR)
 const StatusCode_TEST_USER_CONFIG_ERR = StatusCode(enums.StatusCode_TEST_USER_CONFIG_ERR)
 const StatusCode_TEST_CST_USER_ERR = StatusCode(enums.StatusCode_TEST_CST_USER_ERR)
 const StatusCode_TEST_IMG_PULL_ERR = StatusCode(enums.StatusCode_TEST_IMG_PULL_ERR)

@@ -17,9 +17,12 @@ limitations under the License.
 package deploy
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -29,34 +32,54 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 	tests := []struct {
 		description string
 		context     string
+		err         error
 		isMinikube  bool
-		expected    []*proto.Suggestion
+		expected    string
+		expectedAE  *proto.ActionableErr
 	}{
 		{
 			description: "minikube status",
 			context:     "minikube",
 			isMinikube:  true,
-			expected: []*proto.Suggestion{{
-				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
-				Action:         "Check if minikube is running using \"minikube status\" command and try again.",
-			}},
+			err:         fmt.Errorf("exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get \"https://192.168.64.3:8443/version?timeout=32s\": net/http: TLS handshake timeout"),
+			expected:    "Deploy Failed. Could not connect to cluster due to \"https://192.168.64.3:8443/version?timeout=32s\": net/http: TLS handshake timeout. Check if minikube is running using \"minikube status\" command and try again.",
+			expectedAE: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
+				Message: "exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get \"https://192.168.64.3:8443/version?timeout=32s\": net/http: TLS handshake timeout",
+				Suggestions: []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
+					Action:         "Check if minikube is running using \"minikube status\" command and try again",
+				}},
+			},
 		},
 		{
 			description: "minikube status named ctx",
 			context:     "test_cluster",
 			isMinikube:  true,
-			expected: []*proto.Suggestion{{
-				SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
-				Action:         "Check if minikube is running using \"minikube status -p test_cluster\" command and try again.",
-			}},
+			err:         fmt.Errorf("exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get \"https://192.168.64.3:8443/version?timeout=32s\": net/http: TLS handshake timeout"),
+			expected:    "Deploy Failed. Could not connect to cluster due to \"https://192.168.64.3:8443/version?timeout=32s\": net/http: TLS handshake timeout. Check if minikube is running using \"minikube status -p test_cluster\" command and try again.",
+			expectedAE: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
+				Message: "exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get \"https://192.168.64.3:8443/version?timeout=32s\": net/http: TLS handshake timeout",
+				Suggestions: []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_CHECK_MINIKUBE_STATUS,
+					Action:         "Check if minikube is running using \"minikube status -p test_cluster\" command and try again",
+				}},
+			},
 		},
 		{
 			description: "gke cluster",
 			context:     "gke_test",
-			expected: []*proto.Suggestion{{
-				SuggestionCode: proto.SuggestionCode_CHECK_CLUSTER_CONNECTION,
-				Action:         "Check your connection for the cluster",
-			}},
+			err:         fmt.Errorf("exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get \"https://192.168.64.3:8443/version?timeout=32s\": net/http: TLS handshake timeout"),
+			expected:    "Deploy Failed. Could not connect to cluster due to \"https://192.168.64.3:8443/version?timeout=32s\": net/http: TLS handshake timeout. Check your connection for the cluster.",
+			expectedAE: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
+				Message: "exiting dev mode because first deploy failed: unable to connect to Kubernetes: Get \"https://192.168.64.3:8443/version?timeout=32s\": net/http: TLS handshake timeout",
+				Suggestions: []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_CHECK_CLUSTER_CONNECTION,
+					Action:         "Check your connection for the cluster",
+				}},
+			},
 		},
 	}
 	for _, test := range tests {
@@ -65,8 +88,10 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 			if test.isMinikube {
 				cfg.minikube = test.context
 			}
-			actual := suggestDeployFailedAction(cfg)
-			t.CheckDeepEqual(test.expected, actual)
+			actual := sErrors.ShowAIError(&cfg, test.err)
+			t.CheckDeepEqual(test.expected, actual.Error())
+			actualAE := sErrors.ActionableErr(&cfg, constants.Deploy, test.err)
+			t.CheckDeepEqual(test.expectedAE, actualAE)
 		})
 	}
 }

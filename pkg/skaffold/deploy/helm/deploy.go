@@ -83,15 +83,20 @@ type Deployer struct {
 
 	labels map[string]string
 
-	forceDeploy bool
-	enableDebug bool
-
+	forceDeploy   bool
+	enableDebug   bool
+	isMultiConfig bool
 	// bV is the helm binary version
 	bV semver.Version
 }
 
+type Config interface {
+	kubectl.Config
+	IsMultiConfig() bool
+}
+
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg kubectl.Config, labels map[string]string, h *latest.HelmDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, h *latest.HelmDeploy) (*Deployer, error) {
 	hv, err := binVer()
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -102,15 +107,16 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, h *latest.HelmDep
 	}
 
 	return &Deployer{
-		HelmDeploy:  h,
-		kubeContext: cfg.GetKubeContext(),
-		kubeConfig:  cfg.GetKubeConfig(),
-		namespace:   cfg.GetKubeNamespace(),
-		forceDeploy: cfg.ForceDeploy(),
-		configFile:  cfg.ConfigurationFile(),
-		labels:      labels,
-		bV:          hv,
-		enableDebug: cfg.Mode() == config.RunModes.Debug,
+		HelmDeploy:    h,
+		kubeContext:   cfg.GetKubeContext(),
+		kubeConfig:    cfg.GetKubeConfig(),
+		namespace:     cfg.GetKubeNamespace(),
+		forceDeploy:   cfg.ForceDeploy(),
+		configFile:    cfg.ConfigurationFile(),
+		labels:        labels,
+		bV:            hv,
+		enableDebug:   cfg.Mode() == config.RunModes.Debug,
+		isMultiConfig: cfg.IsMultiConfig(),
 	}, nil
 }
 
@@ -145,12 +151,9 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 	// Let's make sure that every image tag is set with `--set`.
 	// Otherwise, templates have no way to use the images that were built.
-	for _, b := range builds {
-		if !valuesSet[b.Tag] {
-			warnings.Printf("image [%s] is not used.", b.Tag)
-			warnings.Printf("image [%s] is used instead.", b.ImageName)
-			warnings.Printf("See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml")
-		}
+	// Skip warning for multi-config projects as there can be artifacts without any usage in the current deployer.
+	if !h.isMultiConfig {
+		warnAboutUnusedImages(builds, valuesSet)
 	}
 
 	if err := label.Apply(ctx, h.labels, dRes); err != nil {
@@ -492,4 +495,13 @@ func chartSource(r latest.HelmRelease) string {
 		return r.RemoteChart
 	}
 	return r.ChartPath
+}
+
+func warnAboutUnusedImages(builds []graph.Artifact, valuesSet map[string]bool) {
+	for _, b := range builds {
+		if !valuesSet[b.Tag] {
+			warnings.Printf("image [%s] is not used.", b.Tag)
+			warnings.Printf("See helm documentation on how to replace image names with their actual tags: https://skaffold.dev/docs/pipeline-stages/deployers/helm/#image-configuration")
+		}
+	}
 }

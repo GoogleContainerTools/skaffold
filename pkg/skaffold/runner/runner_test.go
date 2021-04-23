@@ -55,8 +55,8 @@ type TestBench struct {
 	testErrors    []error
 	deployErrors  []error
 	namespaces    []string
-	userIntents   []func(*intents)
-	intents       *intents
+	userIntents   []func(*Intents)
+	intents       *Intents
 	intentTrigger bool
 
 	devLoop        func(context.Context, io.Writer, func() error) error

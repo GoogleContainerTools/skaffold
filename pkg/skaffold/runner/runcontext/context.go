@@ -65,6 +65,11 @@ func (ps Pipelines) Select(imageName string) (latest.Pipeline, bool) {
 	return p, found
 }
 
+// IsMultiPipeline returns true if there are more than one constituent skaffold pipelines.
+func (ps Pipelines) IsMultiPipeline() bool {
+	return len(ps.pipelines) > 1
+}
+
 func (ps Pipelines) PortForwardResources() []*latest.PortForwardResource {
 	var pf []*latest.PortForwardResource
 	for _, p := range ps.pipelines {
@@ -141,6 +146,14 @@ func (rc *RunContext) Deployers() []latest.DeployType { return rc.Pipelines.Depl
 
 func (rc *RunContext) TestCases() []*latest.TestCase { return rc.Pipelines.TestCases() }
 
+func (rc *RunContext) StatusCheck() bool {
+	sc := rc.Opts.StatusCheck.Value()
+	if sc == nil {
+		return true
+	}
+	return *sc
+}
+
 func (rc *RunContext) StatusCheckDeadlineSeconds() int {
 	return rc.Pipelines.StatusCheckDeadlineSeconds()
 }
@@ -180,11 +193,12 @@ func (rc *RunContext) RenderOnly() bool                          { return rc.Opt
 func (rc *RunContext) RenderOutput() string                      { return rc.Opts.RenderOutput }
 func (rc *RunContext) SkipRender() bool                          { return rc.Opts.SkipRender }
 func (rc *RunContext) SkipTests() bool                           { return rc.Opts.SkipTests }
-func (rc *RunContext) StatusCheck() bool                         { return rc.Opts.StatusCheck }
 func (rc *RunContext) Tail() bool                                { return rc.Opts.Tail }
 func (rc *RunContext) Trigger() string                           { return rc.Opts.Trigger }
 func (rc *RunContext) WaitForDeletions() config.WaitForDeletions { return rc.Opts.WaitForDeletions }
 func (rc *RunContext) WatchPollInterval() int                    { return rc.Opts.WatchPollInterval }
+func (rc *RunContext) BuildConcurrency() int                     { return rc.Opts.BuildConcurrency }
+func (rc *RunContext) IsMultiConfig() bool                       { return rc.Pipelines.IsMultiPipeline() }
 
 func GetRunContext(opts config.SkaffoldOptions, pipelines []latest.Pipeline) (*RunContext, error) {
 	kubeConfig, err := kubectx.CurrentConfig()

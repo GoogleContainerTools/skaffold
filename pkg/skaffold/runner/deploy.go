@@ -37,6 +37,46 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+// DeployAndLog deploys a list of already built artifacts and optionally show the logs.
+func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+	eventV2.TaskInProgress(constants.Deploy)
+
+	// Update which images are logged.
+	r.addTagsToPodSelector(artifacts)
+
+	logger := r.createLogger(out, artifacts)
+	defer logger.Stop()
+
+	// Logs should be retrieved up to just before the deploy
+	logger.SetSince(time.Now())
+	// First deploy
+	if err := r.Deploy(ctx, out, artifacts); err != nil {
+		eventV2.TaskFailed(constants.Deploy, err)
+		return err
+	}
+
+	forwarderManager := r.createForwarder(out)
+	defer forwarderManager.Stop()
+
+	if err := forwarderManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+		logrus.Warnln("Error starting port forwarding:", err)
+	}
+
+	// Start printing the logs after deploy is finished
+	if err := logger.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+		eventV2.TaskFailed(constants.Deploy, err)
+		return fmt.Errorf("starting logger: %w", err)
+	}
+
+	if r.runCtx.Tail() || r.runCtx.PortForward() {
+		color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
+		<-ctx.Done()
+	}
+
+	eventV2.TaskSucceeded(constants.Deploy)
+	return nil
+}
+
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
 	if r.runCtx.RenderOnly() {
 		return r.Render(ctx, out, artifacts, false, r.runCtx.RenderOutput())
