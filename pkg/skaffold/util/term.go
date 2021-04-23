@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"io"
 	"os/exec"
 	"strconv"
@@ -44,7 +45,7 @@ func IsTerminal(w io.Writer) (uintptr, bool) {
 func SupportsColor() (bool, error) {
 	res, err := colors()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("checking terminal colors: %w", err)
 	}
 
 	numColors, err := strconv.Atoi(strings.TrimSpace(string(res)))
