@@ -197,6 +197,7 @@ func (rc *RunContext) Tail() bool                                { return rc.Opt
 func (rc *RunContext) Trigger() string                           { return rc.Opts.Trigger }
 func (rc *RunContext) WaitForDeletions() config.WaitForDeletions { return rc.Opts.WaitForDeletions }
 func (rc *RunContext) WatchPollInterval() int                    { return rc.Opts.WatchPollInterval }
+func (rc *RunContext) BuildConcurrency() int                     { return rc.Opts.BuildConcurrency }
 func (rc *RunContext) IsMultiConfig() bool                       { return rc.Pipelines.IsMultiPipeline() }
 
 func GetRunContext(opts config.SkaffoldOptions, pipelines []latest.Pipeline) (*RunContext, error) {

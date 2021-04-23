@@ -511,6 +511,14 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
+		Name:          "build-concurrency",
+		Usage:         "Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.",
+		Value:         &opts.BuildConcurrency,
+		DefValue:      -1,
+		FlagAddMethod: "IntVar",
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
+	},
+	{
 		Name:          "v3",
 		Usage:         "Next skaffold config (v3). Use kpt to render/hydrate and deploy manifests.",
 		Value:         &opts.Experimental,

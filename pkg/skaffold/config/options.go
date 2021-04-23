@@ -87,6 +87,7 @@ type SkaffoldOptions struct {
 	Command            string
 	RPCPort            int
 	RPCHTTPPort        int
+	BuildConcurrency   int
 
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
