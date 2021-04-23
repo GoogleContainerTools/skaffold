@@ -75,10 +75,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 
 			opts.Command = cmd.Use
 			instrumentation.SetCommand(cmd.Use)
-			out, err := color.SetupColors(out, defaultColor, forceColors)
-			if err != nil {
-				return err
-			}
+			out := color.SetupColors(out, defaultColor, forceColors)
 			if timestamps {
 				l := logrus.New()
 				l.SetOutput(out)

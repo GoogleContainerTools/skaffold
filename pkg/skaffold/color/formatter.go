@@ -37,12 +37,9 @@ func init() {
 }
 
 // SetupColors conditionally wraps the input `Writer` with a color enabled `Writer`.
-func SetupColors(out io.Writer, defaultColor int, forceColors bool) (io.Writer, error) {
+func SetupColors(out io.Writer, defaultColor int, forceColors bool) io.Writer {
 	_, isTerm := util.IsTerminal(out)
-	supportsColor, err := util.SupportsColor()
-	if err != nil {
-		return out, err
-	}
+	supportsColor, _ := util.SupportsColor()
 
 	useColors := (isTerm && supportsColor) || forceColors
 	if useColors {
@@ -70,9 +67,9 @@ func SetupColors(out io.Writer, defaultColor int, forceColors bool) (io.Writer, 
 	}[defaultColor]
 
 	if useColors {
-		return NewWriter(out), nil
+		return NewWriter(out)
 	}
-	return out, nil
+	return out
 }
 
 // Color can be used to format text so it can be printed to the terminal in color.
