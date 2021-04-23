@@ -512,7 +512,7 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:          "build-concurrency",
-		Usage:         "Number of concurrently running builds",
+		Usage:         "Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.",
 		Value:         &opts.BuildConcurrency,
 		DefValue:      -1,
 		FlagAddMethod: "IntVar",
