@@ -151,9 +151,19 @@ func IsPortFree(p int) bool {
 }
 
 func IsPortFreeWithAddress(address string, p int) bool {
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", address, p))
-	if err != nil {
+	// Ensure the port is available across all interfaces
+	if l, err := net.Listen("tcp", fmt.Sprintf(":%d", p));  err != nil {
 		return false
+	} else {
+		l.Close()
+	}
+	if address != Any {
+		// Ensure the port is available on the specific interface too
+		if l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", address, p));  err != nil {
+			return false
+		} else {
+			l.Close()
+		}
 	}
 
 	l.Close()
