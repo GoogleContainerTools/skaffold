@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -37,7 +37,7 @@ func TestFix(t *testing.T) {
 	}{
 		{
 			description:   "v1alpha4 to latest",
-			targetVersion: latest.Version,
+			targetVersion: latest_v1.Version,
 			inputYaml: `apiVersion: skaffold/v1alpha4
 kind: Config
 build:
@@ -69,11 +69,11 @@ deploy:
   kubectl:
     manifests:
     - k8s/deployment.yaml
-`, latest.Version),
+`, latest_v1.Version),
 		},
 		{
 			description:   "v1alpha1 to latest",
-			targetVersion: latest.Version,
+			targetVersion: latest_v1.Version,
 			inputYaml: `apiVersion: skaffold/v1alpha1
 kind: Config
 build:
@@ -97,7 +97,7 @@ deploy:
   kubectl:
     manifests:
     - k8s/deployment.yaml
-`, latest.Version),
+`, latest_v1.Version),
 		},
 		{
 			description:   "v1alpha1 to v1",
@@ -129,11 +129,11 @@ deploy:
 		},
 		{
 			description:   "already target version",
-			targetVersion: latest.Version,
+			targetVersion: latest_v1.Version,
 			inputYaml: fmt.Sprintf(`apiVersion: %s
 kind: Config
-`, latest.Version),
-			output: "config is already version " + latest.Version + "\n",
+`, latest_v1.Version),
+			output: "config is already version " + latest_v1.Version + "\n",
 		},
 		{
 			description: "invalid input",
@@ -142,7 +142,7 @@ kind: Config
 		},
 		{
 			description:   "validation fails",
-			targetVersion: latest.Version,
+			targetVersion: latest_v1.Version,
 			inputYaml: `apiVersion: skaffold/v1alpha1
 kind: Config
 build:
@@ -197,13 +197,13 @@ deploy:
   kubectl:
     manifests:
     - k8s/deployment.yaml
-`, latest.Version)
+`, latest_v1.Version)
 
 	testutil.Run(t, "", func(t *testutil.T) {
 		cfgFile := t.TempFile("config", []byte(inputYaml))
 
 		var b bytes.Buffer
-		err := fix(&b, cfgFile, latest.Version, true)
+		err := fix(&b, cfgFile, latest_v1.Version, true)
 
 		output, _ := ioutil.ReadFile(cfgFile)
 

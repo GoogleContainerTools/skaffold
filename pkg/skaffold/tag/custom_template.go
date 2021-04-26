@@ -23,7 +23,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // customTemplateTagger implements Tagger
@@ -46,7 +46,7 @@ func NewCustomTemplateTagger(t string, components map[string]Tagger) (Tagger, er
 }
 
 // GenerateTag generates a tag from a template referencing tagging strategies.
-func (t *customTemplateTagger) GenerateTag(image latest.Artifact) (string, error) {
+func (t *customTemplateTagger) GenerateTag(image latest_v1.Artifact) (string, error) {
 	customMap, err := t.EvaluateComponents(image)
 	if err != nil {
 		return "", err
@@ -62,7 +62,7 @@ func (t *customTemplateTagger) GenerateTag(image latest.Artifact) (string, error
 }
 
 // EvaluateComponents creates a custom mapping of component names to their tagger string representation.
-func (t *customTemplateTagger) EvaluateComponents(image latest.Artifact) (map[string]string, error) {
+func (t *customTemplateTagger) EvaluateComponents(image latest_v1.Artifact) (map[string]string, error) {
 	customMap := map[string]string{}
 
 	gitTagger, _ := NewGitCommit("", "", false)

@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -71,18 +71,18 @@ func TestGenerateKustomizePipeline(t *testing.T) {
 		base              string
 		baseKustomization string
 		overlays          []overlay
-		expectedConfig    latest.SkaffoldConfig
+		expectedConfig    latest_v1.SkaffoldConfig
 	}{
 		{
 			description:       "single overlay",
 			base:              baseDeployment,
 			baseKustomization: baseKustomization,
 			overlays:          []overlay{{"dev", overlayDeployment, overlayKustomization}},
-			expectedConfig: latest.SkaffoldConfig{
-				Pipeline: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KustomizeDeploy: &latest.KustomizeDeploy{
+			expectedConfig: latest_v1.SkaffoldConfig{
+				Pipeline: latest_v1.Pipeline{
+					Deploy: latest_v1.DeployConfig{
+						DeployType: latest_v1.DeployType{
+							KustomizeDeploy: &latest_v1.KustomizeDeploy{
 								KustomizePaths: []string{filepath.Join("overlays", "dev")},
 							},
 						},
@@ -99,23 +99,23 @@ func TestGenerateKustomizePipeline(t *testing.T) {
 				{"bar", overlayDeployment, overlayKustomization},
 				{"baz", overlayDeployment, overlayKustomization},
 			},
-			expectedConfig: latest.SkaffoldConfig{
-				Pipeline: latest.Pipeline{
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KustomizeDeploy: &latest.KustomizeDeploy{
+			expectedConfig: latest_v1.SkaffoldConfig{
+				Pipeline: latest_v1.Pipeline{
+					Deploy: latest_v1.DeployConfig{
+						DeployType: latest_v1.DeployType{
+							KustomizeDeploy: &latest_v1.KustomizeDeploy{
 								KustomizePaths: []string{filepath.Join("overlays", "foo")},
 							},
 						},
 					},
 				},
-				Profiles: []latest.Profile{
+				Profiles: []latest_v1.Profile{
 					{
 						Name: "bar",
-						Pipeline: latest.Pipeline{
-							Deploy: latest.DeployConfig{
-								DeployType: latest.DeployType{
-									KustomizeDeploy: &latest.KustomizeDeploy{
+						Pipeline: latest_v1.Pipeline{
+							Deploy: latest_v1.DeployConfig{
+								DeployType: latest_v1.DeployType{
+									KustomizeDeploy: &latest_v1.KustomizeDeploy{
 										KustomizePaths: []string{filepath.Join("overlays", "bar")},
 									},
 								},
@@ -124,10 +124,10 @@ func TestGenerateKustomizePipeline(t *testing.T) {
 					},
 					{
 						Name: "baz",
-						Pipeline: latest.Pipeline{
-							Deploy: latest.DeployConfig{
-								DeployType: latest.DeployType{
-									KustomizeDeploy: &latest.KustomizeDeploy{
+						Pipeline: latest_v1.Pipeline{
+							Deploy: latest_v1.DeployConfig{
+								DeployType: latest_v1.DeployType{
+									KustomizeDeploy: &latest_v1.KustomizeDeploy{
 										KustomizePaths: []string{filepath.Join("overlays", "baz")},
 									},
 								},

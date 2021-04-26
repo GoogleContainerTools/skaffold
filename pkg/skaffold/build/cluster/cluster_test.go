@@ -19,7 +19,7 @@ package cluster
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -27,10 +27,10 @@ func TestRetrieveEnv(t *testing.T) {
 	builder, err := NewBuilder(&mockBuilderContext{
 		kubeContext: "kubecontext",
 		namespace:   "test-namespace",
-	}, &latest.ClusterDetails{
+	}, &latest_v1.ClusterDetails{
 		Namespace:      "namespace",
 		PullSecretName: "pullSecret",
-		DockerConfig: &latest.DockerConfig{
+		DockerConfig: &latest_v1.DockerConfig{
 			SecretName: "dockerconfig",
 		},
 		Timeout: "2m",
@@ -43,7 +43,7 @@ func TestRetrieveEnv(t *testing.T) {
 }
 
 func TestRetrieveEnvMinimal(t *testing.T) {
-	builder, err := NewBuilder(&mockBuilderContext{}, &latest.ClusterDetails{
+	builder, err := NewBuilder(&mockBuilderContext{}, &latest_v1.ClusterDetails{
 		Timeout: "20m",
 	})
 	testutil.CheckError(t, false, err)

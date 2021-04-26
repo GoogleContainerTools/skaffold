@@ -22,12 +22,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 type portForwardEntry struct {
 	resourceVersion        int
-	resource               latest.PortForwardResource
+	resource               latest_v1.PortForwardResource
 	podName                string
 	containerName          string
 	portName               string
@@ -40,7 +40,7 @@ type portForwardEntry struct {
 }
 
 // newPortForwardEntry returns a port forward entry.
-func newPortForwardEntry(resourceVersion int, resource latest.PortForwardResource, podName, containerName, portName, ownerReference string, localPort int, automaticPodForwarding bool) *portForwardEntry {
+func newPortForwardEntry(resourceVersion int, resource latest_v1.PortForwardResource, podName, containerName, portName, ownerReference string, localPort int, automaticPodForwarding bool) *portForwardEntry {
 	return &portForwardEntry{
 		resourceVersion:        resourceVersion,
 		resource:               resource,

@@ -28,7 +28,7 @@ import (
 
 	cstorage "cloud.google.com/go/storage"
 	"github.com/sirupsen/logrus"
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -38,13 +38,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Build builds a list of artifacts with Google Cloud Build.
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Artifact) build.ArtifactBuilder {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest_v1.Artifact) build.ArtifactBuilder {
 	builder := build.WithLogFile(b.buildArtifactWithCloudBuild, b.muted)
 	return builder
 }
@@ -61,7 +61,7 @@ func (b *Builder) Concurrency() int {
 	return b.GoogleCloudBuild.Concurrency
 }
 
-func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest_v1.Artifact, tag string) (string, error) {
 	// TODO: [#4922] Implement required artifact resolution from the `artifactStore`
 	cbclient, err := cloudbuild.NewService(ctx, gcp.ClientOptions()...)
 	if err != nil {

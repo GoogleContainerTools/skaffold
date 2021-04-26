@@ -23,7 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -37,12 +37,12 @@ func TestNewBuilder(t *testing.T) {
 		description string
 		shouldErr   bool
 		bCtx        BuilderContext
-		cluster     *latest.ClusterDetails
+		cluster     *latest_v1.ClusterDetails
 	}{
 		{
 			description: "failed to parse cluster build timeout",
 			bCtx:        &mockBuilderContext{},
-			cluster: &latest.ClusterDetails{
+			cluster: &latest_v1.ClusterDetails{
 				Timeout: "illegal",
 			},
 			shouldErr: true,
@@ -53,7 +53,7 @@ func TestNewBuilder(t *testing.T) {
 				kubeContext: kubeContext,
 				namespace:   namespace,
 			},
-			cluster: &latest.ClusterDetails{
+			cluster: &latest_v1.ClusterDetails{
 				Timeout:   "100s",
 				Namespace: "test-ns",
 			},
@@ -65,7 +65,7 @@ func TestNewBuilder(t *testing.T) {
 				namespace:          namespace,
 				insecureRegistries: map[string]bool{"insecure-reg1": true},
 			},
-			cluster: &latest.ClusterDetails{
+			cluster: &latest_v1.ClusterDetails{
 				Timeout:   "100s",
 				Namespace: "test-ns",
 			},

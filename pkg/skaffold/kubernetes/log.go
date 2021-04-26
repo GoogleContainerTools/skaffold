@@ -30,7 +30,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // LogAggregator aggregates the logs for all the deployed pods.
@@ -49,8 +49,8 @@ type LogAggregator struct {
 }
 
 type Config interface {
-	PipelineForImage(imageName string) (latest.Pipeline, bool)
-	DefaultPipeline() latest.Pipeline
+	PipelineForImage(imageName string) (latest_v1.Pipeline, bool)
+	DefaultPipeline() latest_v1.Pipeline
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
@@ -180,7 +180,7 @@ func (a *LogAggregator) printLogLine(headerColor color.Color, prefix, text strin
 }
 
 func (a *LogAggregator) prefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	var c latest.Pipeline
+	var c latest_v1.Pipeline
 	var present bool
 	for _, container := range pod.Spec.Containers {
 		if c, present = a.config.PipelineForImage(stripTag(container.Image)); present {

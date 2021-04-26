@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -37,7 +37,7 @@ import (
 func TestKustomizeDeploy(t *testing.T) {
 	tests := []struct {
 		description                 string
-		kustomize                   latest.KustomizeDeploy
+		kustomize                   latest_v1.KustomizeDeploy
 		builds                      []graph.Artifact
 		commands                    util.Command
 		shouldErr                   bool
@@ -48,7 +48,7 @@ func TestKustomizeDeploy(t *testing.T) {
 	}{
 		{
 			description: "no manifest",
-			kustomize: latest.KustomizeDeploy{
+			kustomize: latest_v1.KustomizeDeploy{
 				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
@@ -58,7 +58,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success",
-			kustomize: latest.KustomizeDeploy{
+			kustomize: latest_v1.KustomizeDeploy{
 				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
@@ -75,7 +75,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace)",
-			kustomize: latest.KustomizeDeploy{
+			kustomize: latest_v1.KustomizeDeploy{
 				KustomizePaths:   []string{"."},
 				DefaultNamespace: &kubectl.TestNamespace2,
 			},
@@ -94,7 +94,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace with env template)",
-			kustomize: latest.KustomizeDeploy{
+			kustomize: latest_v1.KustomizeDeploy{
 				KustomizePaths:   []string{"."},
 				DefaultNamespace: &kubectl.TestNamespace2FromEnvTemplate,
 			},
@@ -116,7 +116,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success with multiple kustomizations",
-			kustomize: latest.KustomizeDeploy{
+			kustomize: latest_v1.KustomizeDeploy{
 				KustomizePaths: []string{"a", "b"},
 			},
 			commands: testutil.
@@ -140,7 +140,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		},
 		{
 			description: "built-in kubectl kustomize",
-			kustomize: latest.KustomizeDeploy{
+			kustomize: latest_v1.KustomizeDeploy{
 				KustomizePaths: []string{"a", "b"},
 			},
 			commands: testutil.
@@ -200,13 +200,13 @@ func TestKustomizeCleanup(t *testing.T) {
 
 	tests := []struct {
 		description string
-		kustomize   latest.KustomizeDeploy
+		kustomize   latest_v1.KustomizeDeploy
 		commands    util.Command
 		shouldErr   bool
 	}{
 		{
 			description: "cleanup success",
-			kustomize: latest.KustomizeDeploy{
+			kustomize: latest_v1.KustomizeDeploy{
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
@@ -215,7 +215,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup success with multiple kustomizations",
-			kustomize: latest.KustomizeDeploy{
+			kustomize: latest_v1.KustomizeDeploy{
 				KustomizePaths: tmpDir.Paths("a", "b"),
 			},
 			commands: testutil.
@@ -225,7 +225,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup error",
-			kustomize: latest.KustomizeDeploy{
+			kustomize: latest_v1.KustomizeDeploy{
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
@@ -235,7 +235,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		},
 		{
 			description: "fail to read manifests",
-			kustomize: latest.KustomizeDeploy{
+			kustomize: latest_v1.KustomizeDeploy{
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
@@ -454,7 +454,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 				tmpDir.Write(path, contents)
 			}
 
-			k, err := NewDeployer(&kustomizeConfig{}, nil, &latest.KustomizeDeploy{KustomizePaths: kustomizePaths})
+			k, err := NewDeployer(&kustomizeConfig{}, nil, &latest_v1.KustomizeDeploy{KustomizePaths: kustomizePaths})
 			t.RequireNoError(err)
 
 			deps, err := k.Dependencies()
@@ -698,7 +698,7 @@ spec:
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: kubectl.TestNamespace}},
-			}, test.labels, &latest.KustomizeDeploy{
+			}, test.labels, &latest_v1.KustomizeDeploy{
 				KustomizePaths: kustomizationPaths,
 			})
 			t.RequireNoError(err)

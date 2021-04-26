@@ -20,7 +20,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // NoBuilder allows users to specify they don't want to build
@@ -38,7 +38,7 @@ type InitBuilder interface {
 
 	// ArtifactType returns the type of the artifact to be built.  Paths should be relative to the workspace.
 	// To make skaffold.yaml more portable across OS-es we should always generate /-delimited filepaths.
-	ArtifactType(workspace string) latest.ArtifactType
+	ArtifactType(workspace string) latest_v1.ArtifactType
 
 	// ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured.
 	// This should be a cheap operation.
@@ -67,7 +67,7 @@ type Initializer interface {
 	// contained in the initializer with the provided images from the deploy initializer
 	ProcessImages([]string) error
 	// BuildConfig returns the processed build config to be written to the skaffold.yaml
-	BuildConfig() (latest.BuildConfig, []*latest.PortForwardResource)
+	BuildConfig() (latest_v1.BuildConfig, []*latest_v1.PortForwardResource)
 	// PrintAnalysis writes the project analysis to the provided out stream
 	PrintAnalysis(io.Writer) error
 	// GenerateManifests generates image names and manifests for all unresolved pairs
@@ -81,8 +81,8 @@ func (e *emptyBuildInitializer) ProcessImages([]string) error {
 	return nil
 }
 
-func (e *emptyBuildInitializer) BuildConfig() (latest.BuildConfig, []*latest.PortForwardResource) {
-	return latest.BuildConfig{}, nil
+func (e *emptyBuildInitializer) BuildConfig() (latest_v1.BuildConfig, []*latest_v1.PortForwardResource) {
+	return latest_v1.BuildConfig{}, nil
 }
 
 func (e *emptyBuildInitializer) PrintAnalysis(io.Writer) error {

@@ -29,12 +29,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildAndTest BuildAndTestFn) ([]graph.Artifact, error) {
+func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest_v1.Artifact, buildAndTest BuildAndTestFn) ([]graph.Artifact, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -53,7 +53,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	}
 
 	hashByName := make(map[string]string)
-	var needToBuild []*latest.Artifact
+	var needToBuild []*latest_v1.Artifact
 	var alreadyBuilt []graph.Artifact
 	for i, artifact := range artifacts {
 		color.Default.Fprintf(out, " - %s: ", artifact.ImageName)
@@ -141,7 +141,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	return maintainArtifactOrder(append(bRes, alreadyBuilt...), artifacts), err
 }
 
-func maintainArtifactOrder(built []graph.Artifact, artifacts []*latest.Artifact) []graph.Artifact {
+func maintainArtifactOrder(built []graph.Artifact, artifacts []*latest_v1.Artifact) []graph.Artifact {
 	byName := make(map[string]graph.Artifact)
 	for _, build := range built {
 		byName[build.ImageName] = build

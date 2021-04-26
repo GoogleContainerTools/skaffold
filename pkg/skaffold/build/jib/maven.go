@@ -26,7 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -43,7 +43,7 @@ const MinimumJibMavenVersionForSync = "2.0.0"
 // MavenCommand stores Maven executable and wrapper name
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
-func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, deps []*latest.ArtifactDependency, tag string) (string, error) {
+func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest_v1.JibArtifact, deps []*latest_v1.ArtifactDependency, tag string) (string, error) {
 	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), color.IsColorable(out))
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", jibToolErr(err)
@@ -52,7 +52,7 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 	return b.localDocker.ImageID(ctx, tag)
 }
 
-func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, deps []*latest.ArtifactDependency, tag string) (string, error) {
+func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest_v1.JibArtifact, deps []*latest_v1.ArtifactDependency, tag string) (string, error) {
 	args := GenerateMavenBuildArgs("build", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), color.IsColorable(out))
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", jibToolErr(err)
@@ -77,7 +77,7 @@ func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace 
 
 // getDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
-func getDependenciesMaven(ctx context.Context, workspace string, a *latest.JibArtifact) ([]string, error) {
+func getDependenciesMaven(ctx context.Context, workspace string, a *latest_v1.JibArtifact) ([]string, error) {
 	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a), a)
 	if err != nil {
 		return nil, dependencyErr(JibMaven, workspace, err)
@@ -86,20 +86,20 @@ func getDependenciesMaven(ctx context.Context, workspace string, a *latest.JibAr
 	return deps, nil
 }
 
-func getCommandMaven(ctx context.Context, workspace string, a *latest.JibArtifact) exec.Cmd {
+func getCommandMaven(ctx context.Context, workspace string, a *latest_v1.JibArtifact) exec.Cmd {
 	args := mavenArgsFunc(a, MinimumJibMavenVersion)
 	args = append(args, "jib:_skaffold-files-v2", "--quiet", "--batch-mode")
 
 	return MavenCommand.CreateCommand(ctx, workspace, args)
 }
 
-func getSyncMapCommandMaven(ctx context.Context, workspace string, a *latest.JibArtifact) *exec.Cmd {
+func getSyncMapCommandMaven(ctx context.Context, workspace string, a *latest_v1.JibArtifact) *exec.Cmd {
 	cmd := MavenCommand.CreateCommand(ctx, workspace, mavenBuildArgsFunc("_skaffold-sync-map", a, true, false, MinimumJibMavenVersionForSync))
 	return &cmd
 }
 
 // GenerateMavenBuildArgs generates the arguments to Maven for building the project as an image.
-func GenerateMavenBuildArgs(goal string, imageName string, a *latest.JibArtifact, skipTests, pushImages bool, deps []*latest.ArtifactDependency, r ArtifactResolver, insecureRegistries map[string]bool, showColors bool) []string {
+func GenerateMavenBuildArgs(goal string, imageName string, a *latest_v1.JibArtifact, skipTests, pushImages bool, deps []*latest_v1.ArtifactDependency, r ArtifactResolver, insecureRegistries map[string]bool, showColors bool) []string {
 	args := mavenBuildArgsFunc(goal, a, skipTests, showColors, MinimumJibMavenVersion)
 	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
@@ -114,7 +114,7 @@ func GenerateMavenBuildArgs(goal string, imageName string, a *latest.JibArtifact
 }
 
 // Do not use directly, use mavenBuildArgsFunc
-func mavenBuildArgs(goal string, a *latest.JibArtifact, skipTests, showColors bool, minimumVersion string) []string {
+func mavenBuildArgs(goal string, a *latest_v1.JibArtifact, skipTests, showColors bool, minimumVersion string) []string {
 	// Disable jib's rich progress footer on builds. Show colors on normal builds for clearer information,
 	// but use --batch-mode for internal goals to avoid formatting issues
 	var args []string
@@ -140,7 +140,7 @@ func mavenBuildArgs(goal string, a *latest.JibArtifact, skipTests, showColors bo
 }
 
 // Do not use directly, use mavenArgsFunc
-func mavenArgs(a *latest.JibArtifact, minimumVersion string) []string {
+func mavenArgs(a *latest_v1.JibArtifact, minimumVersion string) []string {
 	args := []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + minimumVersion}
 	args = append(args, a.Flags...)
 
