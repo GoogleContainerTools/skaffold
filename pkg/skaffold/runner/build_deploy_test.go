@@ -24,9 +24,11 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -168,6 +170,22 @@ func TestBuildDryRun(t *testing.T) {
 			{ImageName: "img2", Tag: "img2:latest"}}, bRes)
 		// Nothing was built, tested or deployed
 		t.CheckDeepEqual([]Actions{{}}, testBench.Actions())
+	})
+}
+
+func TestBuildPushFlag(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		testBench := &TestBench{}
+		artifacts := []*latest.Artifact{
+			{ImageName: "img1"},
+			{ImageName: "img2"},
+		}
+		runner := createRunner(t, testBench, nil, artifacts, nil)
+		runner.runCtx.Opts.PushImages = config.NewBoolOrUndefined(util.BoolPtr(true))
+
+		_, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
+
+		t.CheckNoError(err)
 	})
 }
 
