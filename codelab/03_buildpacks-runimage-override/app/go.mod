@@ -1,3 +1,3 @@
-module github.com/GoogleContainerTools/skaffold/examples/buildpacks
+module github.com/GoogleContainerTools/skaffold/codelabs/buildpacks
 
 go 1.13
