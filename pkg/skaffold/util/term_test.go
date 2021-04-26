@@ -19,8 +19,10 @@ package util
 import (
 	"bytes"
 	"errors"
+	"runtime"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -67,6 +69,10 @@ func TestSupportsColor(t *testing.T) {
 
 				return test.colorsOutput, nil
 			})
+			if runtime.GOOS == constants.Windows {
+				test.expected = true
+				test.shouldErr = false
+			}
 
 			supportsColors, err := SupportsColor()
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, supportsColors)

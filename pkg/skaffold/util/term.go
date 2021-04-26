@@ -20,10 +20,13 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 
 	"golang.org/x/term"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 var colors = tputColors
@@ -43,6 +46,10 @@ func IsTerminal(w io.Writer) (uintptr, bool) {
 }
 
 func SupportsColor() (bool, error) {
+	if runtime.GOOS == constants.Windows {
+		return true, nil
+	}
+
 	res, err := colors()
 	if err != nil {
 		return false, fmt.Errorf("checking terminal colors: %w", err)

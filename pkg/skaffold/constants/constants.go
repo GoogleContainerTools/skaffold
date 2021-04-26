@@ -69,6 +69,8 @@ const (
 	LeeroyAppResponse = "leeroooooy app!!\n"
 
 	GithubIssueLink = "https://github.com/GoogleContainerTools/skaffold/issues/new"
+
+	Windows = "windows"
 )
 
 type Phase string
