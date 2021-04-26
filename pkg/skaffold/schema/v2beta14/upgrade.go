@@ -24,7 +24,6 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v2beta14 to v2beta15
-// 1. Additions: `Deploy.StatusCheck` (defaults to true)
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
@@ -35,6 +34,5 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
-	newPipeline.(*next.Pipeline).Deploy.StatusCheck = true
 	return nil
 }

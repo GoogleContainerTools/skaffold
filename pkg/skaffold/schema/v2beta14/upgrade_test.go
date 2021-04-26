@@ -136,7 +136,6 @@ deploy:
   kustomize:
     paths:
     - kustomization-main
-  statusCheck: true
 portForward:
   - resourceType: deployment
     resourceName: leeroy-app
@@ -164,7 +163,6 @@ profiles:
       kustomize:
         paths:
         - kustomization-test
-      statusCheck: true
   - name: test local
     build:
       artifacts:
@@ -178,7 +176,6 @@ profiles:
         manifests:
         - k8s-*
       kustomize: {}
-      statusCheck: true
 `
 	verifyUpgrade(t, yaml, expected)
 }

@@ -110,12 +110,13 @@ func (ps Pipelines) TestCases() []*latest_v1.TestCase {
 	return tests
 }
 
-func (ps Pipelines) StatusCheck() bool {
-	var sc bool
-	// set the group status check to enabled if any pipeline has it enabled
+func (ps Pipelines) StatusCheck() *bool {
+	var sc *bool
+	// set the group status check to disabled if any pipeline has StatusCheck
+	// set to false.
 	for _, p := range ps.pipelines {
-		if p.Deploy.StatusCheck {
-			sc = true
+		if p.Deploy.StatusCheck != nil && !*p.Deploy.StatusCheck {
+			sc = util.BoolPtr(false)
 		}
 	}
 	return sc
@@ -159,11 +160,15 @@ func (rc *RunContext) TestCases() []*latest_v1.TestCase { return rc.Pipelines.Te
 
 func (rc *RunContext) StatusCheck() bool {
 	scOpts := rc.Opts.StatusCheck.Value()
-	scPipelines := rc.Pipelines.StatusCheck()
-	if scOpts == nil {
-		return scPipelines
+	scConfig := rc.Pipelines.StatusCheck()
+	switch {
+	case scOpts != nil:
+		return *scOpts
+	case scConfig != nil:
+		return *scConfig
+	default:
+		return true
 	}
-	return *scOpts
 }
 
 func (rc *RunContext) StatusCheckDeadlineSeconds() int {

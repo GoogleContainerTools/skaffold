@@ -1050,8 +1050,7 @@
         "statusCheck": {
           "type": "boolean",
           "description": "*beta* enables waiting for deployments to stabilize.",
-          "x-intellij-html-description": "<em>beta</em> enables waiting for deployments to stabilize.",
-          "default": "false"
+          "x-intellij-html-description": "<em>beta</em> enables waiting for deployments to stabilize."
         },
         "statusCheckDeadlineSeconds": {
           "type": "integer",

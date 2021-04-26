@@ -69,7 +69,6 @@ deploy:
   kubectl:
     manifests:
     - k8s/deployment.yaml
-  statusCheck: true
 `, latest_v1.Version),
 		},
 		{
@@ -98,7 +97,6 @@ deploy:
   kubectl:
     manifests:
     - k8s/deployment.yaml
-  statusCheck: true
 `, latest_v1.Version),
 		},
 		{
@@ -199,7 +197,6 @@ deploy:
   kubectl:
     manifests:
     - k8s/deployment.yaml
-  statusCheck: true
 `, latest_v1.Version)
 
 	testutil.Run(t, "", func(t *testutil.T) {
