@@ -117,6 +117,10 @@ func GetDependencies(ctx context.Context, workspace string, artifact *latest.Jib
 
 // DeterminePluginType tries to determine the Jib plugin type for the given artifact.
 func DeterminePluginType(workspace string, artifact *latest.JibArtifact) (PluginType, error) {
+	if !JVMFound {
+		return "", errors.New("no working JVM available")
+	}
+
 	// check if explicitly specified
 	if artifact != nil {
 		if t := PluginType(artifact.Type); t.IsKnown() {
