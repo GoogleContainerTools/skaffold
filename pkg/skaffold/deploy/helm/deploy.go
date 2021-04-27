@@ -413,7 +413,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		return nil, userErr("install", err)
 	}
 
-	b, err := h.getRelease(ctx, releaseName, opts.namespace)
+	b, err := h.getReleaseManifest(ctx, releaseName, opts.namespace)
 	if err != nil {
 		return nil, userErr("get release", err)
 	}
@@ -422,8 +422,8 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	return artifacts, nil
 }
 
-// getRelease confirms that a release is visible to helm
-func (h *Deployer) getRelease(ctx context.Context, releaseName string, namespace string) (bytes.Buffer, error) {
+// getReleaseManifest confirms that a release is visible to helm and returns the release manifest
+func (h *Deployer) getReleaseManifest(ctx context.Context, releaseName string, namespace string) (bytes.Buffer, error) {
 	// Retry, because sometimes a release may not be immediately visible
 	opts := backoff.NewExponentialBackOff()
 	opts.MaxElapsedTime = 4 * time.Second
@@ -431,7 +431,10 @@ func (h *Deployer) getRelease(ctx context.Context, releaseName string, namespace
 
 	err := backoff.Retry(
 		func() error {
-			if err := h.exec(ctx, &b, false, nil, getArgs(releaseName, namespace)...); err != nil {
+			// only intereted in the deployed YAML
+			args := getArgs(releaseName, namespace)
+			args = append(args, "--template", "{{.Release.Manifest}}")
+			if err := h.exec(ctx, &b, false, nil, args...); err != nil {
 				logrus.Debugf("unable to get release: %v (may retry):\n%s", err, b.String())
 				return err
 			}
