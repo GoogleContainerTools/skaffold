@@ -74,7 +74,7 @@ func SetOnlineStatus() {
 	}()
 }
 
-func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
+func InitMeterFromConfig(configs []*latest.SkaffoldConfig, user string) {
 	var platforms []string
 	for _, config := range configs {
 		pl := yamltags.GetYamlTag(config.Build.BuildType)
@@ -98,6 +98,7 @@ func InitMeterFromConfig(configs []*latest.SkaffoldConfig) {
 	}
 	meter.PlatformType = strings.Join(platforms, ":")
 	meter.ConfigCount = len(configs)
+	meter.User = strings.ToLower(user)
 }
 
 func SetCommand(cmd string) {

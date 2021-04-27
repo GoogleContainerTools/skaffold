@@ -104,6 +104,7 @@ func TestExportMetrics(t *testing.T) {
 		name                string
 		meter               skaffoldMeter
 		savedMetrics        []byte
+		expectedMeter       skaffoldMeter
 		shouldFailUnmarshal bool
 		isOnline            bool
 	}{
@@ -241,6 +242,101 @@ func TestInitCloudMonitoring(t *testing.T) {
 	}
 }
 
+func TestUserMetricReported(t *testing.T) {
+	fs := &testutil.FakeFileSystem{
+		Files: map[string][]byte{
+			"/secret/keys.json": []byte(testKey),
+		},
+	}
+
+	tests := []struct {
+		name         string
+		meter        skaffoldMeter
+		expectedUser string
+	}{
+		{
+			name: "test meter with user intellij",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+				User:    "intellij",
+			},
+			expectedUser: "intellij",
+		},
+		{
+			name: "test meter with user vsc",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+				User:    "vsc",
+			},
+			expectedUser: "vsc",
+		},
+		{
+			name: "test meter with user gcloud",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+				User:    "gcloud",
+			},
+			expectedUser: "gcloud",
+		},
+		{
+			name: "test meter with no user set",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+			},
+		},
+		{
+			name: "test meter with user set to any value then allowed",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+				User:    "random",
+			},
+			expectedUser: "",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			tmp := t.NewTempDir()
+			filename := "metrics"
+			openTelFilename := "otel_metrics"
+
+			t.Override(&statik.FS, func() (http.FileSystem, error) { return fs, nil })
+			t.Override(&isOnline, true)
+			tmpFile, err := os.OpenFile(tmp.Path(openTelFilename), os.O_RDWR|os.O_CREATE, os.ModePerm)
+			if err != nil {
+				t.Error(err)
+			}
+			t.Override(&initExporter, func() (*push.Controller, error) {
+				return stdout.InstallNewPipeline([]stdout.Option{
+					stdout.WithQuantiles([]float64{0.5}),
+					stdout.WithPrettyPrint(),
+					stdout.WithWriter(tmpFile),
+				}, nil)
+			})
+
+			_ = exportMetrics(context.Background(), tmp.Path(filename), test.meter)
+
+			b, err := ioutil.ReadFile(tmp.Path(openTelFilename))
+			t.CheckNoError(err)
+			checkUser(t, test.expectedUser, b)
+		})
+	}
+}
+
 func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 	osCount := make(map[interface{}]int)
 	versionCount := make(map[interface{}]int)
@@ -342,6 +438,21 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		for n, v := range m {
 			t.Logf("Checking %s", n)
 			t.CheckDeepEqual(0, v)
+		}
+	}
+}
+
+func checkUser(t *testutil.T, user string, b []byte) {
+	var lines []*line
+	json.Unmarshal(b, &lines)
+	expectedFound := user != ""
+	for _, l := range lines {
+		l.initLine()
+		if l.Name == "launches" {
+			v, ok := l.Labels["user"]
+			t.CheckDeepEqual(expectedFound, ok)
+			t.CheckDeepEqual(user, v)
+			return
 		}
 	}
 }

@@ -39,6 +39,7 @@ type SkaffoldOptions struct {
 	GlobalConfig          string
 	EventLogFile          string
 	RenderOutput          string
+	User                  string
 	Apply                 bool
 	Cleanup               bool
 	Notification          bool

@@ -33,6 +33,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/metric"
+	"go.opentelemetry.io/otel/exporters/stdout"
 	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/sdk/metric/controller/push"
 	"google.golang.org/api/option"
@@ -40,6 +41,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
+)
+
+var (
+	allowedUsers = map[string]struct{}{
+		"vsc":      {},
+		"intellij": {},
+		"gcloud":   {},
+	}
 )
 
 func ExportMetrics(exitCode int) error {
@@ -103,7 +112,7 @@ func initCloudMonitoringExporterMetrics() (*push.Controller, error) {
 	if err != nil {
 		// No keys have been set in this version so do not attempt to write metrics
 		if os.IsNotExist(err) {
-			return nil, nil
+			return devStdOutExporter()
 		}
 		return nil, err
 	}
@@ -131,6 +140,18 @@ func initCloudMonitoringExporterMetrics() (*push.Controller, error) {
 	)
 }
 
+func devStdOutExporter() (*push.Controller, error) {
+	// export metrics to std out if local env is set.
+	if isLocal := os.Getenv("EXPORT_TO_STDOUT"); isLocal != "" {
+		return stdout.InstallNewPipeline([]stdout.Option{
+			stdout.WithQuantiles([]float64{0.5}),
+			stdout.WithPrettyPrint(),
+			stdout.WithWriter(os.Stdout),
+		}, nil)
+	}
+	return nil, nil
+}
+
 func createMetrics(ctx context.Context, meter skaffoldMeter) {
 	// There is a minimum 10 second interval that metrics are allowed to upload to Cloud monitoring
 	// A metric is uniquely identified by the metric name and the labels and corresponding values
@@ -150,6 +171,9 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		label.String("platform_type", meter.PlatformType),
 		label.String("config_count", strconv.Itoa(meter.ConfigCount)),
 		randLabel,
+	}
+	if _, ok := allowedUsers[meter.User]; ok {
+		labels = append(labels, label.String("user", meter.User))
 	}
 
 	runCounter := metric.Must(m).NewInt64ValueRecorder("launches", metric.WithDescription("Skaffold Invocations"))
