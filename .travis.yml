@@ -13,6 +13,11 @@ branches:
 git:
   submodules: false
 
+before_install:
+  - echo 'DOCKER_OPTS="$DOCKER_OPTS --registry-mirror=https://mirror.gcr.io"'
+  - sudo service docker restart
+  - docker system info
+
 install:
   # enable tcp_mtu_probing=1 to enable MTU path discovery when ICMP blackhole detected
   # bump fs.file-max to workaround rancher/k3d#407
