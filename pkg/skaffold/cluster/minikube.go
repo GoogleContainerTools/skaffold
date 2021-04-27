@@ -37,8 +37,8 @@ import (
 )
 
 var (
-	GetClient                  = getClient
-	minikubeVrsionWithUserFlag = semver.MustParse("1.18.0")
+	GetClient                   = getClient
+	minikubeVersionWithUserFlag = semver.MustParse("1.18.0")
 )
 
 // To override during tests
@@ -104,34 +104,35 @@ func (clientImpl) MinikubeExec(arg ...string) (*exec.Cmd, error) {
 
 func minikubeExec(arg ...string) (*exec.Cmd, error) {
 	b, v, err := FindMinikubeBinary()
-	if err != nil {
+	if err != nil && !errors.As(err, &versionErr{}) {
 		return nil, fmt.Errorf("getting minikube executable: %w", err)
-	}
-
-	if supportsUserFlag(v) {
-		arg = append(arg, "--user=skaffold")
+	} else if err == nil && supportsUserFlag(v) {
+			arg = append(arg, "--user=skaffold")
 	}
 	return exec.Command(b, arg...), nil
 }
 
 func supportsUserFlag(ver semver.Version) bool {
-	return ver.GE(minikubeVrsionWithUserFlag)
+	return ver.GE(minikubeVersionWithUserFlag)
 }
 
 // Retrieves minikube version
 func getCurrentVersion() (semver.Version, error) {
-	cmd := exec.Command("minikube", "version")
+	cmd := exec.Command("minikube", "version", "--output=json")
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return semver.Version{}, err
 	}
-
-	currentVersion, err := version.ParseVersion(string(out))
-	if err != nil {
-		return semver.Version{}, err
+	minikubeOutput := map[string]string{}
+	err = json.Unmarshal(out, &minikubeOutput)
+	if v, ok := minikubeOutput["minikubeVersion"]; ok {
+		currentVersion, err := version.ParseVersion(v)
+		if err != nil {
+			return semver.Version{}, err
+		}
+		return currentVersion, nil
 	}
-
-	return currentVersion, nil
+	return semver.Version{}, err
 }
 
 func minikubeBinary() (string, semver.Version, error) {
@@ -145,13 +146,21 @@ func minikubeBinary() (string, semver.Version, error) {
 		}
 		mk.path = filename
 		if v, err := GetCurrentVersionFunc(); err != nil {
-			mk.err = err
+			mk.err = versionErr{err: err}
 		} else {
 			mk.version = v
 		}
 	})
 
 	return mk.path, mk.version, mk.err
+}
+
+type versionErr struct{
+	err error
+}
+
+func (v versionErr) Error() string {
+	return v.err.Error()
 }
 
 // matchClusterCertPath checks if the cluster certificate for this context is from inside the minikube directory
