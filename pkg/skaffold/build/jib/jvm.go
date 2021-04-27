@@ -39,7 +39,7 @@ func JVMFound() bool {
 	return jvmPresent
 }
 
-// resolveJVMForInit returns true if a Java VM was found and works.  It is intended for
+// resolveJVM returns true if a Java VM was found and works.  It is intended for
 // `skaffold init` on macOS where calling out to the Maven Wrapper script (mvnw) can
 // hang if there is no installed Java VM found.
 func resolveJVM() bool {
