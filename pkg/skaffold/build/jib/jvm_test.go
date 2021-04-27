@@ -26,7 +26,7 @@ import (
 
 func TestResolveJVM(t *testing.T) {
 	tests := []struct {
-		name string
+		name     string
 		cmd      *testutil.FakeCmd
 		expected bool
 	}{

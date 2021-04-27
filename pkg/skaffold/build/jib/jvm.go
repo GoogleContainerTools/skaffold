@@ -28,7 +28,7 @@ import (
 var (
 	// JVMFound is true if a Java VM was found and works.
 	resolveJVMOnce sync.Once
-	jvmPresent bool
+	jvmPresent     bool
 )
 
 // JVMFound returns true if a Java VM was found and works.
