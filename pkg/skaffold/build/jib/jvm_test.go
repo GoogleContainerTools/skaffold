@@ -26,7 +26,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	JVMFound()	// prime the pump
+	JVMFound() // prime the pump
 	jvmPresent = true
 	os.Exit(m.Run())
 }
