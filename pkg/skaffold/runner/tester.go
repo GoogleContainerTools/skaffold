@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,14 +13,25 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-package kustomize
+package runner
 
 import (
-	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"context"
+	"io"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
-func userErr(err error) error {
-	return deployerr.UserError(err, proto.StatusCode_DEPLOY_KUSTOMIZE_USER_ERR)
+type Tester struct {
+	tester test.Tester
+}
+
+// Test tests a list of already built artifacts.
+func (r *Tester) Test(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+	if err := r.tester.Test(ctx, out, artifacts); err != nil {
+		return err
+	}
+
+	return nil
 }

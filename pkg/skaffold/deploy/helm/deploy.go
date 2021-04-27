@@ -83,15 +83,20 @@ type Deployer struct {
 
 	labels map[string]string
 
-	forceDeploy bool
-	enableDebug bool
-
+	forceDeploy   bool
+	enableDebug   bool
+	isMultiConfig bool
 	// bV is the helm binary version
 	bV semver.Version
 }
 
+type Config interface {
+	kubectl.Config
+	IsMultiConfig() bool
+}
+
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg kubectl.Config, labels map[string]string, h *latest.HelmDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, h *latest.HelmDeploy) (*Deployer, error) {
 	hv, err := binVer()
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -102,15 +107,16 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, h *latest.HelmDep
 	}
 
 	return &Deployer{
-		HelmDeploy:  h,
-		kubeContext: cfg.GetKubeContext(),
-		kubeConfig:  cfg.GetKubeConfig(),
-		namespace:   cfg.GetKubeNamespace(),
-		forceDeploy: cfg.ForceDeploy(),
-		configFile:  cfg.ConfigurationFile(),
-		labels:      labels,
-		bV:          hv,
-		enableDebug: cfg.Mode() == config.RunModes.Debug,
+		HelmDeploy:    h,
+		kubeContext:   cfg.GetKubeContext(),
+		kubeConfig:    cfg.GetKubeConfig(),
+		namespace:     cfg.GetKubeNamespace(),
+		forceDeploy:   cfg.ForceDeploy(),
+		configFile:    cfg.ConfigurationFile(),
+		labels:        labels,
+		bV:            hv,
+		enableDebug:   cfg.Mode() == config.RunModes.Debug,
+		isMultiConfig: cfg.IsMultiConfig(),
 	}, nil
 }
 
@@ -145,12 +151,9 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 	// Let's make sure that every image tag is set with `--set`.
 	// Otherwise, templates have no way to use the images that were built.
-	for _, b := range builds {
-		if !valuesSet[b.Tag] {
-			warnings.Printf("image [%s] is not used.", b.Tag)
-			warnings.Printf("image [%s] is used instead.", b.ImageName)
-			warnings.Printf("See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml")
-		}
+	// Skip warning for multi-config projects as there can be artifacts without any usage in the current deployer.
+	if !h.isMultiConfig {
+		warnAboutUnusedImages(builds, valuesSet)
 	}
 
 	if err := label.Apply(ctx, h.labels, dRes); err != nil {
@@ -410,7 +413,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		return nil, userErr("install", err)
 	}
 
-	b, err := h.getRelease(ctx, releaseName, opts.namespace)
+	b, err := h.getReleaseManifest(ctx, releaseName, opts.namespace)
 	if err != nil {
 		return nil, userErr("get release", err)
 	}
@@ -419,8 +422,8 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	return artifacts, nil
 }
 
-// getRelease confirms that a release is visible to helm
-func (h *Deployer) getRelease(ctx context.Context, releaseName string, namespace string) (bytes.Buffer, error) {
+// getReleaseManifest confirms that a release is visible to helm and returns the release manifest
+func (h *Deployer) getReleaseManifest(ctx context.Context, releaseName string, namespace string) (bytes.Buffer, error) {
 	// Retry, because sometimes a release may not be immediately visible
 	opts := backoff.NewExponentialBackOff()
 	opts.MaxElapsedTime = 4 * time.Second
@@ -428,7 +431,10 @@ func (h *Deployer) getRelease(ctx context.Context, releaseName string, namespace
 
 	err := backoff.Retry(
 		func() error {
-			if err := h.exec(ctx, &b, false, nil, getArgs(releaseName, namespace)...); err != nil {
+			// only intereted in the deployed YAML
+			args := getArgs(releaseName, namespace)
+			args = append(args, "--template", "{{.Release.Manifest}}")
+			if err := h.exec(ctx, &b, false, nil, args...); err != nil {
 				logrus.Debugf("unable to get release: %v (may retry):\n%s", err, b.String())
 				return err
 			}
@@ -492,4 +498,13 @@ func chartSource(r latest.HelmRelease) string {
 		return r.RemoteChart
 	}
 	return r.ChartPath
+}
+
+func warnAboutUnusedImages(builds []graph.Artifact, valuesSet map[string]bool) {
+	for _, b := range builds {
+		if !valuesSet[b.Tag] {
+			warnings.Printf("image [%s] is not used.", b.Tag)
+			warnings.Printf("See helm documentation on how to replace image names with their actual tags: https://skaffold.dev/docs/pipeline-stages/deployers/helm/#image-configuration")
+		}
+	}
 }

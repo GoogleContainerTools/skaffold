@@ -243,13 +243,11 @@ func TestTaskFailed(t *testing.T) {
 		description string
 		state       proto.State
 		phase       constants.Phase
-		iteration   int
 		waitFn      func() bool
 	}{
 		{
 			description: "build failed",
 			phase:       constants.Build,
-			iteration:   0,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
@@ -261,31 +259,29 @@ func TestTaskFailed(t *testing.T) {
 		{
 			description: "deploy failed",
 			phase:       constants.Deploy,
-			iteration:   1,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
 				handler.logLock.Unlock()
 				te := logEntry.GetTaskEvent()
-				return te != nil && te.Status == Failed && te.Id == "Deploy-1"
+				return te != nil && te.Status == Failed && te.Id == "Deploy-0"
 			},
 		},
 		{
 			description: "status check failed",
 			phase:       constants.StatusCheck,
-			iteration:   2,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
 				handler.logLock.Unlock()
 				te := logEntry.GetTaskEvent()
-				return te != nil && te.Status == Failed && te.Id == "StatusCheck-2"
+				return te != nil && te.Status == Failed && te.Id == "StatusCheck-0"
 			},
 		},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.description, func(t *testing.T) {
-			TaskFailed(tc.phase, tc.iteration, errors.New("random error"))
+			TaskFailed(tc.phase, errors.New("random error"))
 			wait(t, tc.waitFn)
 		})
 	}

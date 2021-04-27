@@ -182,6 +182,7 @@ Examples:
   skaffold build -q --dry-run
 
 Options:
+      --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
   -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
@@ -202,6 +203,7 @@ Options:
   -o, --output={{json .}}: Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --push=: Push the built images to the specified image repository.
   -q, --quiet=false: Suppress the build output and print image built on success. See --output to format output.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
@@ -219,6 +221,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
 * `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
@@ -239,6 +242,7 @@ Env vars:
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_PUSH` (same as `--push`)
 * `SKAFFOLD_QUIET` (same as `--quiet`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
@@ -406,6 +410,7 @@ Options:
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --auto-deploy=false: When set to false, deploys wait for API request instead of running automatically
       --auto-sync=false: When set to false, syncs wait for API request instead of running automatically
+      --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
@@ -458,6 +463,7 @@ Env vars:
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_AUTO_DEPLOY` (same as `--auto-deploy`)
 * `SKAFFOLD_AUTO_SYNC` (same as `--auto-sync`)
+* `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
@@ -559,6 +565,7 @@ Examples:
 
 Options:
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+      --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -599,6 +606,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
+* `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
@@ -642,6 +650,7 @@ Options:
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --auto-deploy=true: When set to false, deploys wait for API request instead of running automatically
       --auto-sync=true: When set to false, syncs wait for API request instead of running automatically
+      --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
@@ -694,6 +703,7 @@ Env vars:
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_AUTO_DEPLOY` (same as `--auto-deploy`)
 * `SKAFFOLD_AUTO_SYNC` (same as `--auto-sync`)
+* `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CLEANUP` (same as `--cleanup`)
@@ -936,6 +946,7 @@ Examples:
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
+      --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
   -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
@@ -983,6 +994,7 @@ Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
+* `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
 * `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)

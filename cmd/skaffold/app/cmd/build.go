@@ -55,6 +55,7 @@ func NewCmdBuild() *cobra.Command {
 			{Value: buildFormatFlag, Name: "output", Shorthand: "o", DefValue: defaultBuildFormatTemplate, Usage: "Used in conjunction with --quiet flag. " + buildFormatFlag.Usage()},
 			{Value: &buildOutputFlag, Name: "file-output", DefValue: "", Usage: "Filename to write build images to"},
 			{Value: &opts.DryRun, Name: "dry-run", DefValue: false, Usage: "Don't build images, just compute the tag for each artifact.", IsEnum: true},
+			{Value: &opts.PushImages, Name: "push", DefValue: nil, Usage: "Push the built images to the specified image repository.", IsEnum: true, NoOptDefVal: "true"},
 		}).
 		WithHouseKeepingMessages().
 		NoArgs(doBuild)

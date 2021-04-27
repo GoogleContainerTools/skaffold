@@ -18,13 +18,59 @@ package portforward
 
 import (
 	"context"
+	"io/ioutil"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+func TestNewForwarderManager(t *testing.T) {
+	tests := []struct {
+		description        string
+		fmOptions          string
+		expectedForwarders int
+	}{
+		{
+			description:        "nil forwarder manager",
+			fmOptions:          "",
+			expectedForwarders: 0,
+		},
+		{
+			description:        "basic forwarder manager",
+			fmOptions:          "user",
+			expectedForwarders: 1,
+		},
+		{
+			description:        "two options forwarder manager",
+			fmOptions:          "user,debug",
+			expectedForwarders: 2,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			options := config.PortForwardOptions{}
+			options.Set(test.fmOptions)
+			fm := NewForwarderManager(ioutil.Discard,
+				&kubectl.CLI{},
+				&kubernetes.ImageList{},
+				"",
+				"",
+				options,
+				nil)
+
+			if fm != nil {
+				t.CheckDeepEqual(test.expectedForwarders, len(fm.forwarders))
+			}
+		})
+	}
+}
 
 func TestForwarderManagerZeroValue(t *testing.T) {
 	var m *ForwarderManager

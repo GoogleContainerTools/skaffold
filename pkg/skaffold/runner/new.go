@@ -118,11 +118,22 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
+	podSelectors := kubernetes.NewImageList()
 	return &SkaffoldRunner{
-		builder:  builder,
-		tester:   tester,
+		Builder: Builder{
+			builder:     builder,
+			tagger:      tagger,
+			cache:       artifactCache,
+			podSelector: podSelectors,
+			runCtx:      runCtx,
+		},
+		Pruner: Pruner{
+			builder,
+		},
+		Tester: Tester{
+			tester: tester,
+		},
 		deployer: deployer,
-		tagger:   tagger,
 		syncer:   syncer,
 		monitor:  monitor,
 		listener: &SkaffoldListener{
@@ -135,7 +146,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		sourceDependencies: sourceDependencies,
 		kubectlCLI:         kubectlCLI,
 		labeller:           labeller,
-		podSelector:        kubernetes.NewImageList(),
+		podSelector:        podSelectors,
 		cache:              artifactCache,
 		runCtx:             runCtx,
 		intents:            intents,
@@ -143,7 +154,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}, nil
 }
 
-func setupIntents(runCtx *runcontext.RunContext) (*intents, chan bool) {
+func setupIntents(runCtx *runcontext.RunContext) (*Intents, chan bool) {
 	intents := newIntents(runCtx.AutoBuild(), runCtx.AutoSync(), runCtx.AutoDeploy())
 
 	intentChan := make(chan bool, 1)
@@ -188,10 +199,15 @@ func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error)
 
 	cl := runCtx.GetCluster()
 	var pushImages bool
-	if pipeline.Build.LocalBuild.Push == nil {
+
+	switch {
+	case runCtx.Opts.PushImages.Value() != nil:
+		logrus.Debugf("push value set via skaffold build --push flag, --push=%t", *runCtx.Opts.PushImages.Value())
+		pushImages = *runCtx.Opts.PushImages.Value()
+	case pipeline.Build.LocalBuild.Push == nil:
 		pushImages = cl.PushImages
 		logrus.Debugf("push value not present, defaulting to %t because cluster.PushImages is %t", pushImages, cl.PushImages)
-	} else {
+	default:
 		pushImages = *pipeline.Build.LocalBuild.Push
 	}
 	return !pushImages, nil
