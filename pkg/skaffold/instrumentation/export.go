@@ -33,6 +33,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/metric"
+	"go.opentelemetry.io/otel/exporters/stdout"
 	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/sdk/metric/controller/push"
 	"google.golang.org/api/option"
@@ -40,6 +41,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
+)
+
+var (
+	allowedUsers = map[string]struct{}{
+		"vsc":      {},
+		"intellij": {},
+		"gcloud":   {},
+	}
 )
 
 func ExportMetrics(exitCode int) error {
@@ -103,7 +112,7 @@ func initCloudMonitoringExporterMetrics() (*push.Controller, error) {
 	if err != nil {
 		// No keys have been set in this version so do not attempt to write metrics
 		if os.IsNotExist(err) {
-			return nil, nil
+			return devStdOutExporter()
 		}
 		return nil, err
 	}
@@ -131,6 +140,18 @@ func initCloudMonitoringExporterMetrics() (*push.Controller, error) {
 	)
 }
 
+func devStdOutExporter() (*push.Controller, error) {
+	// export metrics to std out if local env is set.
+	if isLocal := os.Getenv("SKAFFOLD_EXPORT_TO_STDOUT"); isLocal != "" {
+		return stdout.InstallNewPipeline([]stdout.Option{
+			stdout.WithQuantiles([]float64{0.5}),
+			stdout.WithPrettyPrint(),
+			stdout.WithWriter(os.Stdout),
+		}, nil)
+	}
+	return nil, nil
+}
+
 func createMetrics(ctx context.Context, meter skaffoldMeter) {
 	// There is a minimum 10 second interval that metrics are allowed to upload to Cloud monitoring
 	// A metric is uniquely identified by the metric name and the labels and corresponding values
@@ -149,8 +170,14 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		label.String("error", meter.ErrorCode.String()),
 		label.String("platform_type", meter.PlatformType),
 		label.String("config_count", strconv.Itoa(meter.ConfigCount)),
+	}
+	sharedLabels := []label.KeyValue{
 		randLabel,
 	}
+	if _, ok := allowedUsers[meter.User]; ok {
+		sharedLabels = append(sharedLabels, label.String("user", meter.User))
+	}
+	labels = append(labels, sharedLabels...)
 
 	runCounter := metric.Must(m).NewInt64ValueRecorder("launches", metric.WithDescription("Skaffold Invocations"))
 	runCounter.Record(ctx, 1, labels...)
@@ -159,18 +186,18 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		metric.WithDescription("durations of skaffold commands in seconds"))
 	durationRecorder.Record(ctx, meter.Duration.Seconds(), labels...)
 	if meter.Command != "" {
-		commandMetrics(ctx, meter, m, randLabel)
+		commandMetrics(ctx, meter, m, sharedLabels...)
 		flagMetrics(ctx, meter, m, randLabel)
 		if doesBuild.Contains(meter.Command) {
-			builderMetrics(ctx, meter, m, randLabel)
+			builderMetrics(ctx, meter, m, sharedLabels...)
 		}
 		if doesDeploy.Contains(meter.Command) {
-			deployerMetrics(ctx, meter, m, randLabel)
+			deployerMetrics(ctx, meter, m, sharedLabels...)
 		}
 	}
 
 	if meter.ErrorCode != 0 {
-		errorMetrics(ctx, meter, m, randLabel)
+		errorMetrics(ctx, meter, m, sharedLabels...)
 	}
 }
 
@@ -188,13 +215,10 @@ func flagMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randL
 	}
 }
 
-func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
+func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...label.KeyValue) {
 	commandCounter := metric.Must(m).NewInt64ValueRecorder(meter.Command,
 		metric.WithDescription(fmt.Sprintf("Number of times %s is used", meter.Command)))
-	labels := []label.KeyValue{
-		label.String("error", meter.ErrorCode.String()),
-		randLabel,
-	}
+	labels = append(labels, label.String("error", meter.ErrorCode.String()))
 	commandCounter.Record(ctx, 1, labels...)
 
 	if meter.Command == "dev" || meter.Command == "debug" {
@@ -213,55 +237,56 @@ func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, ra
 		for intention, errorCounts := range counts {
 			for errorCode, count := range errorCounts {
 				iterationCounter.Record(ctx, int64(count),
-					label.String("intent", intention),
-					label.String("error", errorCode.String()),
-					randLabel)
+					append(labels,
+						label.String("intent", intention),
+						label.String("error", errorCode.String()),
+					)...)
 			}
 		}
 	}
 }
 
-func deployerMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
+func deployerMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...label.KeyValue) {
 	deployerCounter := metric.Must(m).NewInt64ValueRecorder("deployer", metric.WithDescription("Deployers used"))
 	for _, deployer := range meter.Deployers {
-		deployerCounter.Record(ctx, 1, randLabel, label.String("deployer", deployer))
+		deployerCounter.Record(ctx, 1, append(labels, label.String("deployer", deployer))...)
 	}
 	if meter.HelmReleasesCount > 0 {
 		multiReleasesCounter := metric.Must(m).NewInt64ValueRecorder("helmReleases", metric.WithDescription("Multiple helm releases used"))
-		multiReleasesCounter.Record(ctx, 1, randLabel, label.Int("count", meter.HelmReleasesCount))
+		multiReleasesCounter.Record(ctx, 1, append(labels, label.Int("count", meter.HelmReleasesCount))...)
 	}
 }
 
-func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
+func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...label.KeyValue) {
 	builderCounter := metric.Must(m).NewInt64ValueRecorder("builders", metric.WithDescription("Builders used"))
 	artifactCounter := metric.Must(m).NewInt64ValueRecorder("artifacts", metric.WithDescription("Number of artifacts used"))
 	dependenciesCounter := metric.Must(m).NewInt64ValueRecorder("artifact-dependencies", metric.WithDescription("Number of artifacts with dependencies"))
 	for builder, count := range meter.Builders {
 		bLabel := label.String("builder", builder)
-		builderCounter.Record(ctx, 1, bLabel, randLabel)
-		artifactCounter.Record(ctx, int64(count), bLabel, randLabel)
-		dependenciesCounter.Record(ctx, int64(meter.BuildDependencies[builder]), bLabel, randLabel)
+		builderCounter.Record(ctx, 1, append(labels, bLabel)...)
+		artifactCounter.Record(ctx, int64(count), append(labels, bLabel)...)
+		dependenciesCounter.Record(ctx, int64(meter.BuildDependencies[builder]), append(labels, bLabel)...)
 	}
 }
 
-func errorMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel label.KeyValue) {
+func errorMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...label.KeyValue) {
 	errCounter := metric.Must(m).NewInt64ValueRecorder("errors", metric.WithDescription("Skaffold errors"))
-	errCounter.Record(ctx, 1, label.String("error", meter.ErrorCode.String()), randLabel)
+	errCounter.Record(ctx, 1, append(labels, label.String("error", meter.ErrorCode.String()))...)
 
-	commandLabel := label.String("command", meter.Command)
+	labels = append(labels, label.String("command", meter.Command))
 
 	switch meter.ErrorCode {
 	case proto.StatusCode_UNKNOWN_ERROR:
 		unknownErrCounter := metric.Must(m).NewInt64ValueRecorder("errors/unknown", metric.WithDescription("Unknown Skaffold Errors"))
-		unknownErrCounter.Record(ctx, 1, randLabel)
+		unknownErrCounter.Record(ctx, 1, labels...)
 	case proto.StatusCode_TEST_UNKNOWN:
 		unknownCounter := metric.Must(m).NewInt64ValueRecorder("test/unknown", metric.WithDescription("Unknown test Skaffold Errors"))
-		unknownCounter.Record(ctx, 1, commandLabel, randLabel)
+		unknownCounter.Record(ctx, 1, labels...)
 	case proto.StatusCode_DEPLOY_UNKNOWN:
 		unknownCounter := metric.Must(m).NewInt64ValueRecorder("deploy/unknown", metric.WithDescription("Unknown deploy Skaffold Errors"))
-		unknownCounter.Record(ctx, 1, commandLabel, randLabel)
+		unknownCounter.Record(ctx, 1, labels...)
 	case proto.StatusCode_BUILD_UNKNOWN:
 		unknownCounter := metric.Must(m).NewInt64ValueRecorder("build/unknown", metric.WithDescription("Unknown build Skaffold Errors"))
-		unknownCounter.Record(ctx, 1, commandLabel, randLabel)
+		unknownCounter.Record(ctx, 1, labels...)
 	}
 }

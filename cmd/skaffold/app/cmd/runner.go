@@ -63,7 +63,7 @@ func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner,
 		return nil, nil, nil, err
 	}
 
-	instrumentation.InitMeterFromConfig(configs)
+	instrumentation.InitMeterFromConfig(configs, opts.User)
 	runner, err := runner.NewForConfig(runCtx)
 	if err != nil {
 		event.InititializationFailed(err)
