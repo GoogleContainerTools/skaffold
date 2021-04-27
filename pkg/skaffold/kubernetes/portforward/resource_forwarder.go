@@ -132,7 +132,7 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 	if requestPort == 0 && resource.Port.IntVal >= 1024 {
 		requestPort = resource.Port.IntVal
 	}
-	entry.localPort = retrieveAvailablePort(requestPort, &p.entryManager.forwardedPorts)
+	entry.localPort = retrieveAvailablePort(resource.Address, requestPort, &p.entryManager.forwardedPorts)
 	return entry
 }
 

@@ -92,18 +92,13 @@ func (f *PortSet) List() []int {
 }
 
 // GetAvailablePort returns an available port that is near the requested port when possible.
-// First, check if the provided port is available on the specified address. If so, use it.
+// First, check if the provided port is available on the specified address and INADDR_ANY. If so, use it.
 // If not, check if any of the next 10 subsequent ports are available.
 // If not, check if any of ports 4503-4533 are available.
 // If not, return a random port, which hopefully won't collide with any future containers
 //
 // See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
-func GetAvailablePort(port int, usedPorts *PortSet) int {
-	// We map this to allow
-	return GetAvailablePortWithAddress(Any, port, usedPorts)
-}
-
-func GetAvailablePortWithAddress(address string, port int, usedPorts *PortSet) int {
+func GetAvailablePort(address string, port int, usedPorts *PortSet) int {
 	if port > 0 {
 		if getPortIfAvailable(address, port, usedPorts) {
 			return port
@@ -143,14 +138,10 @@ func getPortIfAvailable(address string, p int, usedPorts *PortSet) bool {
 		return false
 	}
 
-	return IsPortFreeWithAddress(address, p)
+	return IsPortFree(address, p)
 }
 
-func IsPortFree(p int) bool {
-	return IsPortFreeWithAddress(Any, p)
-}
-
-func IsPortFreeWithAddress(address string, p int) bool {
+func IsPortFree(address string, p int) bool {
 	// Ensure the port is available across all interfaces
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", p))
 	if err != nil || l == nil {

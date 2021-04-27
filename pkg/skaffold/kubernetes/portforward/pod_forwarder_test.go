@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
@@ -403,7 +404,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latest.Pipeline{{}})
 			taken := map[int]struct{}{}
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(util.Loopback, taken, test.availablePorts))
 			t.Override(&topLevelOwnerKey, func(context.Context, metav1.Object, string) string { return "owner" })
 
 			if test.forwarder == nil {
