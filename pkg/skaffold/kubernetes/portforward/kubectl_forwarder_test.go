@@ -50,7 +50,7 @@ func TestUnavailablePort(t *testing.T) {
 		// has been called
 		var portFreeWG sync.WaitGroup
 		portFreeWG.Add(1)
-		t.Override(&isPortFree, func(int) bool {
+		t.Override(&isPortFree, func(string, int) bool {
 			portFreeWG.Done()
 			return false
 		})
