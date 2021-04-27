@@ -13,7 +13,7 @@ branches:
 git:
   submodules: false
 
-before_install:
+before_script:
   - echo 'DOCKER_OPTS="$DOCKER_OPTS --registry-mirror=https://mirror.gcr.io"'
   - sudo service docker restart
   - docker system info
