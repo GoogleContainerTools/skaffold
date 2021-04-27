@@ -156,7 +156,6 @@ func TestGetVersion(t *testing.T) {
 			)
 			actual, err := getCurrentVersion()
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, actual, test.expected)
-
 		})
 	}
 }
