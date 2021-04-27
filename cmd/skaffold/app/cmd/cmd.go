@@ -105,30 +105,24 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 				logrus.Debugf("Disable housekeeping messages for command explicitly")
 				return nil
 			}
-			switch {
-			case preReleaseVersion(versionInfo.Version) && !update.EnableCheck:
-				logrus.Debugf("Update check, survey prompt and telemetry disabled for pre release version")
-			case !interactive:
-				logrus.Debugf("Update check, survey prompt and telemetry disabled in non-interactive mode")
-			case quietFlag:
-				logrus.Debugf("Update check, survey prompt and telemetry disabled in quiet mode")
-			case analyze:
-				logrus.Debugf("Update check, survey prompt and telemetry disabled disabled when running `init --analyze`")
-			default:
-				go func() {
-					msg, err := update.CheckVersion(opts.GlobalConfig)
-					if err != nil {
-						logrus.Infof("update check failed: %s", err)
-					} else if msg != "" {
-						updateMsg <- msg
-					}
-					surveyPrompt <- config.ShouldDisplayPrompt(opts.GlobalConfig)
-					metricsPrompt <- instrumentation.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
-				}()
+			// Perform update check always.
+			go func() {
+				updateMsg <- updateCheck(versionInfo)
+			}()
+			if msg, isQuiet := isQuiet(); isQuiet {
+				logrus.Debugf(msg)
+				return nil
 			}
+			go func() {
+				surveyPrompt <- config.ShouldDisplayPrompt(opts.GlobalConfig)
+				metricsPrompt <- instrumentation.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
+			}()
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			if _, ok := isQuiet(); ok {
+				return
+			}
 			select {
 			case msg := <-updateMsg:
 				fmt.Fprintf(cmd.OutOrStderr(), "%s\n", msg)
@@ -309,4 +303,30 @@ func preReleaseVersion(s string) bool {
 		return true
 	}
 	return false
+}
+
+func isQuiet() (string, bool){
+	switch {
+	case !interactive:
+		return "Update check prompt, survey prompt and telemetry disabled in non-interactive mode", true
+	case quietFlag:
+		return "Update check prompt, survey prompt and telemetry disabled in quiet mode", true
+	case analyze:
+		return "Update check prompt, survey prompt and telemetry disabled disabled when running `init --analyze`", true
+	default:
+		return "", false
+	}
+}
+
+func updateCheck(info *version.Info) string {
+	if preReleaseVersion(info.Version) || !update.EnableCheck {
+		logrus.Debug("Skipping update check for pre-release version or flag `--update-check` set to false")
+		return ""
+	}
+	msg, err := update.CheckVersion(opts.GlobalConfig)
+	if err != nil {
+		logrus.Infof("update check failed: %s", err)
+	}
+	logrus.Infof("returning message ", msg, "--end")
+	return msg
 }
