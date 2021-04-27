@@ -283,9 +283,6 @@ func TestKanikoPodSpec(t *testing.T) {
 				Args:            []string{"--dockerfile", "Dockerfile", "--context", "dir:///kaniko/buildcontext", "--destination", "tag", "-v", "info"},
 				ImagePullPolicy: v1.PullIfNotPresent,
 				Env: []v1.EnvVar{{
-					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-					Value: "/secret/kaniko-secret.json",
-				}, {
 					Name:  "UPSTREAM_CLIENT_TYPE",
 					Value: "UpstreamClient(skaffold-)",
 				}, {
@@ -297,6 +294,9 @@ func TestKanikoPodSpec(t *testing.T) {
 				}, {
 					Name:  "HTTPS_PROXY",
 					Value: "https://proxy",
+				}, {
+					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+					Value: "/secret/kaniko-secret.json",
 				}},
 				VolumeMounts: []v1.VolumeMount{
 					{
