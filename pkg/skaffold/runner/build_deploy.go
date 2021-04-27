@@ -75,13 +75,13 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest_
 	// In dry-run mode or with --digest-source set to 'remote' or 'tag' in render, we don't build anything, just return the tag for each artifact.
 	switch {
 	case r.runCtx.DryRun():
-		color.Yellow.Fprintln(out, "Skipping image build since --dry-run=true")
+		color.Yellow.Fprintln(out, "Skipping build phase since --dry-run=true")
 		return artifactsWithTags(tags, artifacts), nil
 	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == remoteDigestSource:
-		color.Yellow.Fprintln(out, "Skipping image build since --digest-source=remote")
+		color.Yellow.Fprintln(out, "Skipping build phase since --digest-source=remote")
 		return artifactsWithTags(tags, artifacts), nil
 	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == tagDigestSource:
-		color.Yellow.Fprintln(out, "Skipping image build since --digest-source=tag")
+		color.Yellow.Fprintln(out, "Skipping build phase since --digest-source=tag")
 		return artifactsWithTags(tags, artifacts), nil
 	default:
 	}
