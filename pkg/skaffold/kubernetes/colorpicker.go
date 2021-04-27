@@ -17,11 +17,10 @@ limitations under the License.
 package kubernetes
 
 import (
-	"strings"
-
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
 var colorCodes = []color.Color{
@@ -57,7 +56,7 @@ func NewColorPicker(imageNames []string) ColorPicker {
 	imageColors := make(map[string]color.Color)
 
 	for i, imageName := range imageNames {
-		imageColors[stripTag(imageName)] = colorCodes[i%len(colorCodes)]
+		imageColors[tag.StripTag(imageName)] = colorCodes[i%len(colorCodes)]
 	}
 
 	return &colorPicker{
@@ -70,19 +69,11 @@ func NewColorPicker(imageNames []string) ColorPicker {
 // write with no formatting.
 func (p *colorPicker) Pick(pod *v1.Pod) color.Color {
 	for _, container := range pod.Spec.Containers {
-		if c, present := p.imageColors[stripTag(container.Image)]; present {
+		if c, present := p.imageColors[tag.StripTag(container.Image)]; present {
 			return c
 		}
 	}
 
 	// If no mapping is found, don't add any color formatting
 	return color.None
-}
-
-func stripTag(image string) string {
-	if !strings.Contains(image, ":") {
-		return image
-	}
-
-	return strings.SplitN(image, ":", 2)[0]
 }
