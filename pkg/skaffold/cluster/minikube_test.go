@@ -127,18 +127,17 @@ func TestClientImpl_IsMinikube(t *testing.T) {
 	}
 }
 
-
 func TestGetVersion(t *testing.T) {
 	tests := []struct {
-		description  string
+		description string
 		versionBlob string
-		expected   semver.Version
-		shouldErr bool
+		expected    semver.Version
+		shouldErr   bool
 	}{
 		{
 			description: "minikube version incorrect json",
 			versionBlob: `{"commit":"ec61815d60f66a6e4f6353030a40b12362557caa-dirty`,
-			shouldErr: true,
+			shouldErr:   true,
 		},
 		{
 			description: "minikube version without the expected key for version",
@@ -147,14 +146,14 @@ func TestGetVersion(t *testing.T) {
 		{
 			description: "minikube version output as expected",
 			versionBlob: `{"commit":"ec61815d60f66a6e4f6353030a40b12362557caa-dirty","minikubeVersion":"v1.18.0"}`,
-			expected: semver.Version{Major: 1, Minor: 18, Patch: 0},
+			expected:    semver.Version{Major: 1, Minor: 18, Patch: 0},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut("minikube version --output=json",
 				test.versionBlob),
-				)
+			)
 			actual, err := getCurrentVersion()
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, actual, test.expected)
 
@@ -164,29 +163,29 @@ func TestGetVersion(t *testing.T) {
 
 func TestMinikubeExec(t *testing.T) {
 	tests := []struct {
-		description  string
-		version  semver.Version
-		err  error
-		hasUserArg bool
-		shouldErr bool
+		description string
+		version     semver.Version
+		err         error
+		hasUserArg  bool
+		shouldErr   bool
 	}{
 		{
 			description: "minikube binary error",
-			err: fmt.Errorf("could not find minikube"),
-			shouldErr: true,
+			err:         fmt.Errorf("could not find minikube"),
+			shouldErr:   true,
 		},
 		{
 			description: "minikube version error",
-			err: versionErr{err: fmt.Errorf("wrong version error")},
+			err:         versionErr{err: fmt.Errorf("wrong version error")},
 		},
 		{
 			description: "minikube semver version v.18.0 and greater",
-			version: semver.Version{Major: 1, Minor: 18, Patch: 1},
-			hasUserArg: true,
+			version:     semver.Version{Major: 1, Minor: 18, Patch: 1},
+			hasUserArg:  true,
 		},
 		{
 			description: "minikube semver version less than v.18.0",
-			version: semver.Version{Major: 1, Minor: 17, Patch: 1},
+			version:     semver.Version{Major: 1, Minor: 17, Patch: 1},
 		},
 	}
 	for _, test := range tests {

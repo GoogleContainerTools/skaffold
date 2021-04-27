@@ -107,7 +107,7 @@ func minikubeExec(arg ...string) (*exec.Cmd, error) {
 	if err != nil && !errors.As(err, &versionErr{}) {
 		return nil, fmt.Errorf("getting minikube executable: %w", err)
 	} else if err == nil && supportsUserFlag(v) {
-			arg = append(arg, "--user=skaffold")
+		arg = append(arg, "--user=skaffold")
 	}
 	return exec.Command(b, arg...), nil
 }
@@ -155,7 +155,7 @@ func minikubeBinary() (string, semver.Version, error) {
 	return mk.path, mk.version, mk.err
 }
 
-type versionErr struct{
+type versionErr struct {
 	err error
 }
 
