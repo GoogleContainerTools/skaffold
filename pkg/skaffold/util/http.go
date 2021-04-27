@@ -30,7 +30,7 @@ func Download(url string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating http request: %w", err)
 	}
-	req.Header.Set("User-Agent", version.UserAgent())
+	req.Header.Set("User-Agent", version.UserAgentWithClient())
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

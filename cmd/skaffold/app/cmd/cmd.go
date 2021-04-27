@@ -49,6 +49,9 @@ var (
 	interactive       bool
 	timestamps        bool
 	shutdownAPIServer func() error
+
+	// for testing
+	updateCheck = update.CheckVersion
 )
 
 // Annotation for commands that should allow post execution housekeeping messages like updates and surveys
@@ -100,14 +103,15 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 
 			// Print version
 			versionInfo := version.Get()
+			version.SetClient(opts.User)
 			logrus.Infof("Skaffold %+v", versionInfo)
 			if !isHouseKeepingMessagesAllowed(cmd) {
 				logrus.Debugf("Disable housekeeping messages for command explicitly")
 				return nil
 			}
-			// Perform update check always.
+			// Always perform update check.
 			go func() {
-				updateMsg <- updateCheck(versionInfo)
+				updateMsg <- updateCheckForReleasedVersionsIfNotDisabled(versionInfo.Version)
 			}()
 			if msg, isQuiet := isQuiet(); isQuiet {
 				logrus.Debugf(msg)
@@ -305,7 +309,7 @@ func preReleaseVersion(s string) bool {
 	return false
 }
 
-func isQuiet() (string, bool){
+func isQuiet() (string, bool) {
 	switch {
 	case !interactive:
 		return "Update check prompt, survey prompt and telemetry disabled in non-interactive mode", true
@@ -318,15 +322,14 @@ func isQuiet() (string, bool){
 	}
 }
 
-func updateCheck(info *version.Info) string {
-	if preReleaseVersion(info.Version) || !update.EnableCheck {
+func updateCheckForReleasedVersionsIfNotDisabled(s string) string {
+	if preReleaseVersion(s) || !update.EnableCheck {
 		logrus.Debug("Skipping update check for pre-release version or flag `--update-check` set to false")
 		return ""
 	}
-	msg, err := update.CheckVersion(opts.GlobalConfig)
+	msg, err := updateCheck(opts.GlobalConfig)
 	if err != nil {
 		logrus.Infof("update check failed: %s", err)
 	}
-	logrus.Infof("returning message ", msg, "--end")
 	return msg
 }

@@ -21,12 +21,12 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/blang/semver"
-
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+
+	"github.com/blang/semver"
 )
 
-var version, gitCommit, buildDate string
+var version, gitCommit, buildDate, client string
 var platform = fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 
 type Info struct {
@@ -38,6 +38,7 @@ type Info struct {
 	GoVersion     string
 	Compiler      string
 	Platform      string
+	User          string
 }
 
 // Get returns the version and buildtime information about the binary.
@@ -55,8 +56,21 @@ var Get = func() *Info {
 	}
 }
 
+var SetClient = func(user string) {
+	client = user
+}
+
 func UserAgent() string {
 	return fmt.Sprintf("skaffold/%s/%s", platform, version)
+}
+
+// UserAgentWithClient add the `-user` flag value to the request header
+// This value can be used to distinguish cli vs non cli user.
+func UserAgentWithClient() string {
+	if client == "" {
+		return fmt.Sprintf("skaffold/%s/%s", platform, version)
+	}
+	return fmt.Sprintf("skaffold-%s/%s/%s", client, platform, version)
 }
 
 func ParseVersion(version string) (semver.Version, error) {
