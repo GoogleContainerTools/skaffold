@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta15
+apiVersion: skaffold/v2beta14
 kind: Config
 metadata:
   name: web-config
