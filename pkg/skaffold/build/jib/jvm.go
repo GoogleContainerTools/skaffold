@@ -18,6 +18,7 @@ package jib
 
 import (
 	"os/exec"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 
@@ -26,11 +27,16 @@ import (
 
 var (
 	// JVMFound is true if a Java VM was found and works.
-	JVMFound bool
+	resolveJVMOnce sync.Once
+	jvmPresent bool
 )
 
-func init() {
-	JVMFound = resolveJVM()
+// JVMFound returns true if a Java VM was found and works.
+func JVMFound() bool {
+	resolveJVMOnce.Do(func() {
+		jvmPresent = resolveJVM()
+	})
+	return jvmPresent
 }
 
 // resolveJVMForInit returns true if a Java VM was found and works.  It is intended for
@@ -41,7 +47,7 @@ func resolveJVM() bool {
 	cmd := exec.Command("java", "-version")
 	err := util.RunCmd(cmd)
 	if err != nil {
-		logrus.Warnf("Skipping Jib init: could not resolve JVM: %v", err)
+		logrus.Warnf("Skipping Jib: no JVM: %v failed: %v", cmd.Args, err)
 	}
 	return err == nil
 }

@@ -85,7 +85,7 @@ type jibJSON struct {
 
 // validate checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
 func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
-	if !JVMFound {
+	if !JVMFound() {
 		logrus.Debugf("Skipping Jib for init for %q: no functioning Java VM", path)
 		return nil
 	}
