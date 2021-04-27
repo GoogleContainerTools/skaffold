@@ -18,11 +18,18 @@ package jib
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+func TestMain(m *testing.M) {
+	JVMFound()	// prime the pump
+	jvmPresent = true
+	os.Exit(m.Run())
+}
 
 func TestResolveJVM(t *testing.T) {
 	tests := []struct {
