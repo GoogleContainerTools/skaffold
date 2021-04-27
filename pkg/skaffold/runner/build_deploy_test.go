@@ -224,6 +224,7 @@ func TestDigestSources(t *testing.T) {
 			testBench := &TestBench{}
 			runner := createRunner(t, testBench, nil, artifacts, nil)
 			runner.runCtx.Opts.DigestSource = test.digestSource
+			runner.runCtx.Opts.RenderOnly = true
 
 			bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
 
