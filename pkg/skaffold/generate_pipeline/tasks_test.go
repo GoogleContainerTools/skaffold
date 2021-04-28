@@ -23,7 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -40,10 +40,10 @@ func TestGenerateBuildTasks(t *testing.T) {
 			configFiles: []*ConfigFile{
 				{
 					Path: "test1",
-					Profile: &latest.Profile{
-						Pipeline: latest.Pipeline{
-							Build: latest.BuildConfig{
-								Artifacts: []*latest.Artifact{
+					Profile: &latest_v1.Profile{
+						Pipeline: latest_v1.Pipeline{
+							Build: latest_v1.BuildConfig{
+								Artifacts: []*latest_v1.Artifact{
 									{
 										ImageName: "testArtifact1",
 									},
@@ -54,10 +54,10 @@ func TestGenerateBuildTasks(t *testing.T) {
 				},
 				{
 					Path: "test2",
-					Profile: &latest.Profile{
-						Pipeline: latest.Pipeline{
-							Build: latest.BuildConfig{
-								Artifacts: []*latest.Artifact{
+					Profile: &latest_v1.Profile{
+						Pipeline: latest_v1.Pipeline{
+							Build: latest_v1.BuildConfig{
+								Artifacts: []*latest_v1.Artifact{
 									{
 										ImageName: "testArtifact2",
 									},
@@ -111,10 +111,10 @@ func TestGenerateBuildTasks(t *testing.T) {
 			configFiles: []*ConfigFile{
 				{
 					Path: "test1",
-					Profile: &latest.Profile{
-						Pipeline: latest.Pipeline{
-							Build: latest.BuildConfig{
-								Artifacts: []*latest.Artifact{
+					Profile: &latest_v1.Profile{
+						Pipeline: latest_v1.Pipeline{
+							Build: latest_v1.BuildConfig{
+								Artifacts: []*latest_v1.Artifact{
 									{
 										ImageName: "testArtifact1",
 									},
@@ -168,13 +168,13 @@ func TestGenerateBuildTasks(t *testing.T) {
 func TestGenerateBuildTask(t *testing.T) {
 	var tests = []struct {
 		description string
-		buildConfig latest.BuildConfig
+		buildConfig latest_v1.BuildConfig
 		shouldErr   bool
 	}{
 		{
 			description: "successfully generate build task",
-			buildConfig: latest.BuildConfig{
-				Artifacts: []*latest.Artifact{
+			buildConfig: latest_v1.BuildConfig{
+				Artifacts: []*latest_v1.Artifact{
 					{
 						ImageName: "testArtifact",
 					},
@@ -184,8 +184,8 @@ func TestGenerateBuildTask(t *testing.T) {
 		},
 		{
 			description: "fail generating build task",
-			buildConfig: latest.BuildConfig{
-				Artifacts: []*latest.Artifact{},
+			buildConfig: latest_v1.BuildConfig{
+				Artifacts: []*latest_v1.Artifact{},
 			},
 			shouldErr: true,
 		},
@@ -195,8 +195,8 @@ func TestGenerateBuildTask(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			configFile := &ConfigFile{
 				Path: "test",
-				Profile: &latest.Profile{
-					Pipeline: latest.Pipeline{
+				Profile: &latest_v1.Profile{
+					Pipeline: latest_v1.Pipeline{
 						Build: test.buildConfig,
 					},
 				},
@@ -220,11 +220,11 @@ func TestGenerateDeployTasks(t *testing.T) {
 			configFiles: []*ConfigFile{
 				{
 					Path: "test1",
-					Config: &latest.SkaffoldConfig{
-						Pipeline: latest.Pipeline{
-							Deploy: latest.DeployConfig{
-								DeployType: latest.DeployType{
-									HelmDeploy: &latest.HelmDeploy{},
+					Config: &latest_v1.SkaffoldConfig{
+						Pipeline: latest_v1.Pipeline{
+							Deploy: latest_v1.DeployConfig{
+								DeployType: latest_v1.DeployType{
+									HelmDeploy: &latest_v1.HelmDeploy{},
 								},
 							},
 						},
@@ -232,11 +232,11 @@ func TestGenerateDeployTasks(t *testing.T) {
 				},
 				{
 					Path: "test2",
-					Config: &latest.SkaffoldConfig{
-						Pipeline: latest.Pipeline{
-							Deploy: latest.DeployConfig{
-								DeployType: latest.DeployType{
-									HelmDeploy: &latest.HelmDeploy{},
+					Config: &latest_v1.SkaffoldConfig{
+						Pipeline: latest_v1.Pipeline{
+							Deploy: latest_v1.DeployConfig{
+								DeployType: latest_v1.DeployType{
+									HelmDeploy: &latest_v1.HelmDeploy{},
 								},
 							},
 						},
@@ -285,11 +285,11 @@ func TestGenerateDeployTasks(t *testing.T) {
 			configFiles: []*ConfigFile{
 				{
 					Path: "test1",
-					Config: &latest.SkaffoldConfig{
-						Pipeline: latest.Pipeline{
-							Deploy: latest.DeployConfig{
-								DeployType: latest.DeployType{
-									HelmDeploy: &latest.HelmDeploy{},
+					Config: &latest_v1.SkaffoldConfig{
+						Pipeline: latest_v1.Pipeline{
+							Deploy: latest_v1.DeployConfig{
+								DeployType: latest_v1.DeployType{
+									HelmDeploy: &latest_v1.HelmDeploy{},
 								},
 							},
 						},
@@ -337,22 +337,22 @@ func TestGenerateDeployTasks(t *testing.T) {
 func TestGenerateDeployTask(t *testing.T) {
 	var tests = []struct {
 		description  string
-		deployConfig latest.DeployConfig
+		deployConfig latest_v1.DeployConfig
 		shouldErr    bool
 	}{
 		{
 			description: "successfully generate deploy task",
-			deployConfig: latest.DeployConfig{
-				DeployType: latest.DeployType{
-					HelmDeploy: &latest.HelmDeploy{},
+			deployConfig: latest_v1.DeployConfig{
+				DeployType: latest_v1.DeployType{
+					HelmDeploy: &latest_v1.HelmDeploy{},
 				},
 			},
 			shouldErr: false,
 		},
 		{
 			description: "fail generating deploy task",
-			deployConfig: latest.DeployConfig{
-				DeployType: latest.DeployType{
+			deployConfig: latest_v1.DeployConfig{
+				DeployType: latest_v1.DeployType{
 					HelmDeploy:      nil,
 					KubectlDeploy:   nil,
 					KustomizeDeploy: nil,
@@ -366,8 +366,8 @@ func TestGenerateDeployTask(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			configFile := &ConfigFile{
 				Path: "test",
-				Config: &latest.SkaffoldConfig{
-					Pipeline: latest.Pipeline{
+				Config: &latest_v1.SkaffoldConfig{
+					Pipeline: latest_v1.Pipeline{
 						Deploy: test.deployConfig,
 					},
 				},

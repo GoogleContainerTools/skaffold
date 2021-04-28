@@ -28,34 +28,34 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 var (
-	cfgWithErrors = &latest.SkaffoldConfig{
-		Pipeline: latest.Pipeline{
-			Build: latest.BuildConfig{
-				Artifacts: []*latest.Artifact{
+	cfgWithErrors = &latest_v1.SkaffoldConfig{
+		Pipeline: latest_v1.Pipeline{
+			Build: latest_v1.BuildConfig{
+				Artifacts: []*latest_v1.Artifact{
 					{
-						ArtifactType: latest.ArtifactType{
-							DockerArtifact: &latest.DockerArtifact{},
-							BazelArtifact:  &latest.BazelArtifact{},
+						ArtifactType: latest_v1.ArtifactType{
+							DockerArtifact: &latest_v1.DockerArtifact{},
+							BazelArtifact:  &latest_v1.BazelArtifact{},
 						},
 					},
 					{
-						ArtifactType: latest.ArtifactType{
-							BazelArtifact:  &latest.BazelArtifact{},
-							KanikoArtifact: &latest.KanikoArtifact{},
+						ArtifactType: latest_v1.ArtifactType{
+							BazelArtifact:  &latest_v1.BazelArtifact{},
+							KanikoArtifact: &latest_v1.KanikoArtifact{},
 						},
 					},
 				},
 			},
-			Deploy: latest.DeployConfig{
-				DeployType: latest.DeployType{
-					HelmDeploy:    &latest.HelmDeploy{},
-					KubectlDeploy: &latest.KubectlDeploy{},
+			Deploy: latest_v1.DeployConfig{
+				DeployType: latest_v1.DeployType{
+					HelmDeploy:    &latest_v1.HelmDeploy{},
+					KubectlDeploy: &latest_v1.KubectlDeploy{},
 				},
 			},
 		},
@@ -65,7 +65,7 @@ var (
 func TestValidateSchema(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         *latest.SkaffoldConfig
+		cfg         *latest_v1.SkaffoldConfig
 		shouldErr   bool
 	}{
 		{
@@ -75,12 +75,12 @@ func TestValidateSchema(t *testing.T) {
 		},
 		{
 			description: "empty config",
-			cfg:         &latest.SkaffoldConfig{},
+			cfg:         &latest_v1.SkaffoldConfig{},
 			shouldErr:   true,
 		},
 		{
 			description: "minimal config",
-			cfg: &latest.SkaffoldConfig{
+			cfg: &latest_v1.SkaffoldConfig{
 				APIVersion: "foo",
 				Kind:       "bar",
 			},
@@ -89,7 +89,7 @@ func TestValidateSchema(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := Process([]*latest.SkaffoldConfig{test.cfg})
+			err := Process([]*latest_v1.SkaffoldConfig{test.cfg})
 
 			t.CheckError(test.shouldErr, err)
 		})
@@ -263,39 +263,39 @@ func TestVisitStructs(t *testing.T) {
 func TestValidateNetworkMode(t *testing.T) {
 	tests := []struct {
 		description string
-		artifacts   []*latest.Artifact
+		artifacts   []*latest_v1.Artifact
 		shouldErr   bool
 		env         []string
 	}{
 		{
 			description: "not a docker artifact",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/bazel",
-					ArtifactType: latest.ArtifactType{
-						BazelArtifact: &latest.BazelArtifact{},
+					ArtifactType: latest_v1.ArtifactType{
+						BazelArtifact: &latest_v1.BazelArtifact{},
 					},
 				},
 			},
 		},
 		{
 			description: "no networkmode",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/no-network",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{},
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{},
 					},
 				},
 			},
 		},
 		{
 			description: "bridge",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/bridge",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Bridge",
 						},
 					},
@@ -304,11 +304,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 		{
 			description: "empty container's network stack",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:",
 						},
 					},
@@ -318,11 +318,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 		{
 			description: "empty container's network stack in env var",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:{{.CONTAINER}}",
 						},
 					},
@@ -333,11 +333,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 		{
 			description: "wrong container's network stack '-not-valid'",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:-not-valid",
 						},
 					},
@@ -347,11 +347,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 		{
 			description: "wrong container's network stack '-not-valid' in env var",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:{{.CONTAINER}}",
 						},
 					},
@@ -362,11 +362,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 		{
 			description: "wrong container's network stack 'fussball'",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:fußball",
 						},
 					},
@@ -376,11 +376,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 		{
 			description: "wrong container's network stack 'fussball' in env var",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:{{.CONTAINER}}",
 						},
 					},
@@ -391,11 +391,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 		{
 			description: "container's network stack 'unique'",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:unique",
 						},
 					},
@@ -404,11 +404,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 		{
 			description: "container's network stack 'unique' in env var",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:{{.CONTAINER}}",
 						},
 					},
@@ -418,11 +418,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 		{
 			description: "container's network stack 'unique-id.123'",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:unique-id.123",
 						},
 					},
@@ -431,11 +431,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 		{
 			description: "container's network stack 'unique-id.123' in env var",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:{{.CONTAINER}}",
 						},
 					},
@@ -445,11 +445,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 		{
 			description: "none",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/none",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "None",
 						},
 					},
@@ -458,11 +458,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 		{
 			description: "host",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/host",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Host",
 						},
 					},
@@ -472,11 +472,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		{
 			description: "invalid networkmode",
 			shouldErr:   true,
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/bad",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Bad",
 						},
 					},
@@ -485,11 +485,11 @@ func TestValidateNetworkMode(t *testing.T) {
 		},
 		{
 			description: "case insensitive",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/case-insensitive",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "bRiDgE",
 						},
 					},
@@ -504,9 +504,9 @@ func TestValidateNetworkMode(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.env })
 
 			err := Process(
-				[]*latest.SkaffoldConfig{{
-					Pipeline: latest.Pipeline{
-						Build: latest.BuildConfig{
+				[]*latest_v1.SkaffoldConfig{{
+					Pipeline: latest_v1.Pipeline{
+						Build: latest_v1.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
@@ -529,18 +529,18 @@ func (f fakeCommonAPIClient) ContainerList(ctx context.Context, options types.Co
 func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 	tests := []struct {
 		description    string
-		artifacts      []*latest.Artifact
+		artifacts      []*latest_v1.Artifact
 		clientResponse []types.Container
 		shouldErr      bool
 		env            []string
 	}{
 		{
 			description: "no running containers",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:foo",
 						},
 					},
@@ -551,11 +551,11 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 		},
 		{
 			description: "not matching running containers",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:foo",
 						},
 					},
@@ -571,11 +571,11 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 		},
 		{
 			description: "existing running container referenced by id",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:foo",
 						},
 					},
@@ -589,11 +589,11 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 		},
 		{
 			description: "existing running container referenced by first id chars",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:123",
 						},
 					},
@@ -607,11 +607,11 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 		},
 		{
 			description: "existing running container referenced by name",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:foo",
 						},
 					},
@@ -626,11 +626,11 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 		},
 		{
 			description: "non existing running container referenced by id in envvar",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:{{ .CONTAINER }}",
 						},
 					},
@@ -646,11 +646,11 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 		},
 		{
 			description: "existing running container referenced by id in envvar",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:{{ .CONTAINER }}",
 						},
 					},
@@ -665,11 +665,11 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 		},
 		{
 			description: "existing running container referenced by name in envvar",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/container",
-					ArtifactType: latest.ArtifactType{
-						DockerArtifact: &latest.DockerArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						DockerArtifact: &latest_v1.DockerArtifact{
 							NetworkMode: "Container:{{ .CONTAINER }}",
 						},
 					},
@@ -700,9 +700,9 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 			})
 
 			err := ProcessWithRunContext(&runcontext.RunContext{
-				Pipelines: runcontext.NewPipelines([]latest.Pipeline{
+				Pipelines: runcontext.NewPipelines([]latest_v1.Pipeline{
 					{
-						Build: latest.BuildConfig{
+						Build: latest_v1.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
@@ -717,7 +717,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 func TestValidateSyncRules(t *testing.T) {
 	tests := []struct {
 		description string
-		artifacts   []*latest.Artifact
+		artifacts   []*latest_v1.Artifact
 		shouldErr   bool
 	}{
 		{
@@ -726,16 +726,16 @@ func TestValidateSyncRules(t *testing.T) {
 		},
 		{
 			description: "no sync rules",
-			artifacts: []*latest.Artifact{{
+			artifacts: []*latest_v1.Artifact{{
 				ImageName: "img",
 				Sync:      nil,
 			}},
 		},
 		{
 			description: "two good rules",
-			artifacts: []*latest.Artifact{{
+			artifacts: []*latest_v1.Artifact{{
 				ImageName: "img",
-				Sync: &latest.Sync{Manual: []*latest.SyncRule{
+				Sync: &latest_v1.Sync{Manual: []*latest_v1.SyncRule{
 					{
 						Src:  "src/**/*.js",
 						Dest: ".",
@@ -750,9 +750,9 @@ func TestValidateSyncRules(t *testing.T) {
 		},
 		{
 			description: "one good one bad rule",
-			artifacts: []*latest.Artifact{{
+			artifacts: []*latest_v1.Artifact{{
 				ImageName: "img",
-				Sync: &latest.Sync{Manual: []*latest.SyncRule{
+				Sync: &latest_v1.Sync{Manual: []*latest_v1.SyncRule{
 					{
 						Src:   "src/**/*.js",
 						Dest:  ".",
@@ -769,9 +769,9 @@ func TestValidateSyncRules(t *testing.T) {
 		},
 		{
 			description: "two bad rules",
-			artifacts: []*latest.Artifact{{
+			artifacts: []*latest_v1.Artifact{{
 				ImageName: "img",
-				Sync: &latest.Sync{Manual: []*latest.SyncRule{
+				Sync: &latest_v1.Sync{Manual: []*latest_v1.SyncRule{
 					{
 						Dest:  ".",
 						Strip: "src",
@@ -787,10 +787,10 @@ func TestValidateSyncRules(t *testing.T) {
 		},
 		{
 			description: "stripping part of folder name is valid",
-			artifacts: []*latest.Artifact{{
+			artifacts: []*latest_v1.Artifact{{
 				ImageName: "img",
-				Sync: &latest.Sync{
-					Manual: []*latest.SyncRule{{
+				Sync: &latest_v1.Sync{
+					Manual: []*latest_v1.SyncRule{{
 						Src:   "srcsomeother/**/*.js",
 						Dest:  ".",
 						Strip: "src",
@@ -805,9 +805,9 @@ func TestValidateSyncRules(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				[]*latest.SkaffoldConfig{{
-					Pipeline: latest.Pipeline{
-						Build: latest.BuildConfig{
+				[]*latest_v1.SkaffoldConfig{{
+					Pipeline: latest_v1.Pipeline{
+						Build: latest_v1.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
@@ -821,19 +821,19 @@ func TestValidateSyncRules(t *testing.T) {
 func TestValidateCustomDependencies(t *testing.T) {
 	tests := []struct {
 		description    string
-		dependencies   *latest.CustomDependencies
+		dependencies   *latest_v1.CustomDependencies
 		expectedErrors int
 	}{
 		{
 			description: "no errors",
-			dependencies: &latest.CustomDependencies{
+			dependencies: &latest_v1.CustomDependencies{
 				Paths:  []string{"somepath"},
 				Ignore: []string{"anotherpath"},
 			},
 		}, {
 			description: "ignore in conjunction with dockerfile",
-			dependencies: &latest.CustomDependencies{
-				Dockerfile: &latest.DockerfileDependency{
+			dependencies: &latest_v1.CustomDependencies{
+				Dockerfile: &latest_v1.DockerfileDependency{
 					Path: "some/path",
 				},
 				Ignore: []string{"ignoreme"},
@@ -841,7 +841,7 @@ func TestValidateCustomDependencies(t *testing.T) {
 			expectedErrors: 1,
 		}, {
 			description: "ignore in conjunction with command",
-			dependencies: &latest.CustomDependencies{
+			dependencies: &latest_v1.CustomDependencies{
 				Command: "bazel query deps",
 				Ignore:  []string{"ignoreme"},
 			},
@@ -853,15 +853,15 @@ func TestValidateCustomDependencies(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := &latest.Artifact{
-				ArtifactType: latest.ArtifactType{
-					CustomArtifact: &latest.CustomArtifact{
+			artifact := &latest_v1.Artifact{
+				ArtifactType: latest_v1.ArtifactType{
+					CustomArtifact: &latest_v1.CustomArtifact{
 						Dependencies: test.dependencies,
 					},
 				},
 			}
 
-			errs := validateCustomDependencies([]*latest.Artifact{artifact})
+			errs := validateCustomDependencies([]*latest_v1.Artifact{artifact})
 
 			t.CheckDeepEqual(test.expectedErrors, len(errs))
 		})
@@ -886,9 +886,9 @@ func TestValidatePortForwardResources(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.resourceType, func(t *testutil.T) {
-			pfrs := []*latest.PortForwardResource{
+			pfrs := []*latest_v1.PortForwardResource{
 				{
-					Type: latest.ResourceType(test.resourceType),
+					Type: latest_v1.ResourceType(test.resourceType),
 				},
 			}
 			errs := validatePortForwardResources(pfrs)
@@ -905,26 +905,26 @@ func TestValidatePortForwardResources(t *testing.T) {
 func TestValidateImageNames(t *testing.T) {
 	tests := []struct {
 		description string
-		artifacts   []*latest.Artifact
+		artifacts   []*latest_v1.Artifact
 		shouldErr   bool
 	}{
 		{
 			description: "no name",
-			artifacts: []*latest.Artifact{{
+			artifacts: []*latest_v1.Artifact{{
 				ImageName: "",
 			}},
 			shouldErr: true,
 		},
 		{
 			description: "valid",
-			artifacts: []*latest.Artifact{{
+			artifacts: []*latest_v1.Artifact{{
 				ImageName: "img",
 			}},
 			shouldErr: false,
 		},
 		{
 			description: "duplicates",
-			artifacts: []*latest.Artifact{{
+			artifacts: []*latest_v1.Artifact{{
 				ImageName: "img",
 			}, {
 				ImageName: "img",
@@ -933,21 +933,21 @@ func TestValidateImageNames(t *testing.T) {
 		},
 		{
 			description: "shouldn't have a tag",
-			artifacts: []*latest.Artifact{{
+			artifacts: []*latest_v1.Artifact{{
 				ImageName: "img:tag",
 			}},
 			shouldErr: true,
 		},
 		{
 			description: "shouldn't have a digest",
-			artifacts: []*latest.Artifact{{
+			artifacts: []*latest_v1.Artifact{{
 				ImageName: "img@sha256:77af4d6b9913e693e8d0b4b294fa62ade6054e6b2f1ffb617ac955dd63fb0182",
 			}},
 			shouldErr: true,
 		},
 		{
 			description: "no tag nor digest",
-			artifacts: []*latest.Artifact{{
+			artifacts: []*latest_v1.Artifact{{
 				ImageName: "img:tag@sha256:77af4d6b9913e693e8d0b4b294fa62ade6054e6b2f1ffb617ac955dd63fb0182",
 			}},
 			shouldErr: true,
@@ -959,9 +959,9 @@ func TestValidateImageNames(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				[]*latest.SkaffoldConfig{{
-					Pipeline: latest.Pipeline{
-						Build: latest.BuildConfig{
+				[]*latest_v1.SkaffoldConfig{{
+					Pipeline: latest_v1.Pipeline{
+						Build: latest_v1.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
@@ -975,27 +975,27 @@ func TestValidateImageNames(t *testing.T) {
 func TestValidateJibPluginType(t *testing.T) {
 	tests := []struct {
 		description string
-		artifacts   []*latest.Artifact
+		artifacts   []*latest_v1.Artifact
 		shouldErr   bool
 	}{
 		{
 			description: "no type",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/jib",
-					ArtifactType: latest.ArtifactType{
-						JibArtifact: &latest.JibArtifact{},
+					ArtifactType: latest_v1.ArtifactType{
+						JibArtifact: &latest_v1.JibArtifact{},
 					},
 				},
 			},
 		},
 		{
 			description: "maven",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/jib",
-					ArtifactType: latest.ArtifactType{
-						JibArtifact: &latest.JibArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						JibArtifact: &latest_v1.JibArtifact{
 							Type: "maven",
 						},
 					},
@@ -1004,11 +1004,11 @@ func TestValidateJibPluginType(t *testing.T) {
 		},
 		{
 			description: "gradle",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/jib",
-					ArtifactType: latest.ArtifactType{
-						JibArtifact: &latest.JibArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						JibArtifact: &latest_v1.JibArtifact{
 							Type: "gradle",
 						},
 					},
@@ -1017,11 +1017,11 @@ func TestValidateJibPluginType(t *testing.T) {
 		},
 		{
 			description: "empty",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/jib",
-					ArtifactType: latest.ArtifactType{
-						JibArtifact: &latest.JibArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						JibArtifact: &latest_v1.JibArtifact{
 							Type: "",
 						},
 					},
@@ -1030,11 +1030,11 @@ func TestValidateJibPluginType(t *testing.T) {
 		},
 		{
 			description: "cAsE inSenSiTiVe",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/jib",
-					ArtifactType: latest.ArtifactType{
-						JibArtifact: &latest.JibArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						JibArtifact: &latest_v1.JibArtifact{
 							Type: "gRaDlE",
 						},
 					},
@@ -1044,11 +1044,11 @@ func TestValidateJibPluginType(t *testing.T) {
 		{
 			description: "invalid type",
 			shouldErr:   true,
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image/jib",
-					ArtifactType: latest.ArtifactType{
-						JibArtifact: &latest.JibArtifact{
+					ArtifactType: latest_v1.ArtifactType{
+						JibArtifact: &latest_v1.JibArtifact{
 							Type: "invalid",
 						},
 					},
@@ -1062,9 +1062,9 @@ func TestValidateJibPluginType(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				[]*latest.SkaffoldConfig{{
-					Pipeline: latest.Pipeline{
-						Build: latest.BuildConfig{
+				[]*latest_v1.SkaffoldConfig{{
+					Pipeline: latest_v1.Pipeline{
+						Build: latest_v1.BuildConfig{
 							Artifacts: test.artifacts,
 						},
 					},
@@ -1078,7 +1078,7 @@ func TestValidateJibPluginType(t *testing.T) {
 func TestValidateLogsConfig(t *testing.T) {
 	tests := []struct {
 		prefix    string
-		cfg       latest.LogsConfig
+		cfg       latest_v1.LogsConfig
 		shouldErr bool
 	}{
 		{prefix: "auto", shouldErr: false},
@@ -1094,10 +1094,10 @@ func TestValidateLogsConfig(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				[]*latest.SkaffoldConfig{{
-					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{
-							Logs: latest.LogsConfig{
+				[]*latest_v1.SkaffoldConfig{{
+					Pipeline: latest_v1.Pipeline{
+						Deploy: latest_v1.DeployConfig{
+							Logs: latest_v1.LogsConfig{
 								Prefix: test.prefix,
 							},
 						},
@@ -1167,10 +1167,10 @@ func TestValidateAcyclicDependencies(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifacts := make([]*latest.Artifact, test.artifactLen)
+			artifacts := make([]*latest_v1.Artifact, test.artifactLen)
 			for i := 0; i < test.artifactLen; i++ {
 				a := fmt.Sprintf("artifact%d", i+1)
-				artifacts[i] = &latest.Artifact{ImageName: a}
+				artifacts[i] = &latest_v1.Artifact{ImageName: a}
 			}
 
 			setDependencies(artifacts, test.dependency)
@@ -1194,10 +1194,10 @@ func TestValidateAcyclicDependencies(t *testing.T) {
 //    2 : {3},
 //}
 // implies that a[0] artifact depends on a[1] and a[2]; and a[2] depends on a[3].
-func setDependencies(a []*latest.Artifact, d map[int][]int) {
+func setDependencies(a []*latest_v1.Artifact, d map[int][]int) {
 	for k, dep := range d {
 		for i := range dep {
-			a[k].Dependencies = append(a[k].Dependencies, &latest.ArtifactDependency{
+			a[k].Dependencies = append(a[k].Dependencies, &latest_v1.ArtifactDependency{
 				ImageName: a[dep[i]].ImageName,
 			})
 		}
@@ -1205,21 +1205,21 @@ func setDependencies(a []*latest.Artifact, d map[int][]int) {
 }
 
 func TestValidateUniqueDependencyAliases(t *testing.T) {
-	cfgs := []*latest.SkaffoldConfig{
+	cfgs := []*latest_v1.SkaffoldConfig{
 		{
-			Pipeline: latest.Pipeline{
-				Build: latest.BuildConfig{
-					Artifacts: []*latest.Artifact{
+			Pipeline: latest_v1.Pipeline{
+				Build: latest_v1.BuildConfig{
+					Artifacts: []*latest_v1.Artifact{
 						{
 							ImageName: "artifact1",
-							Dependencies: []*latest.ArtifactDependency{
+							Dependencies: []*latest_v1.ArtifactDependency{
 								{Alias: "alias2", ImageName: "artifact2a"},
 								{Alias: "alias2", ImageName: "artifact2b"},
 							},
 						},
 						{
 							ImageName: "artifact2",
-							Dependencies: []*latest.ArtifactDependency{
+							Dependencies: []*latest_v1.ArtifactDependency{
 								{Alias: "alias1", ImageName: "artifact1"},
 								{Alias: "alias2", ImageName: "artifact1"},
 							},
@@ -1240,22 +1240,22 @@ func TestValidateUniqueDependencyAliases(t *testing.T) {
 func TestValidateSingleKubeContext(t *testing.T) {
 	tests := []struct {
 		description string
-		configs     []*latest.SkaffoldConfig
+		configs     []*latest_v1.SkaffoldConfig
 		err         []error
 	}{
 		{
 			description: "different kubeContext specified",
-			configs: []*latest.SkaffoldConfig{
+			configs: []*latest_v1.SkaffoldConfig{
 				{
-					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{
+					Pipeline: latest_v1.Pipeline{
+						Deploy: latest_v1.DeployConfig{
 							KubeContext: "",
 						},
 					},
 				},
 				{
-					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{
+					Pipeline: latest_v1.Pipeline{
+						Deploy: latest_v1.DeployConfig{
 							KubeContext: "foo",
 						},
 					},
@@ -1265,17 +1265,17 @@ func TestValidateSingleKubeContext(t *testing.T) {
 		},
 		{
 			description: "same kubeContext specified",
-			configs: []*latest.SkaffoldConfig{
+			configs: []*latest_v1.SkaffoldConfig{
 				{
-					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{
+					Pipeline: latest_v1.Pipeline{
+						Deploy: latest_v1.DeployConfig{
 							KubeContext: "foo",
 						},
 					},
 				},
 				{
-					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{
+					Pipeline: latest_v1.Pipeline{
+						Deploy: latest_v1.DeployConfig{
 							KubeContext: "foo",
 						},
 					},
@@ -1284,15 +1284,15 @@ func TestValidateSingleKubeContext(t *testing.T) {
 		},
 		{
 			description: "no kubeContext specified",
-			configs: []*latest.SkaffoldConfig{
+			configs: []*latest_v1.SkaffoldConfig{
 				{
-					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{},
+					Pipeline: latest_v1.Pipeline{
+						Deploy: latest_v1.DeployConfig{},
 					},
 				},
 				{
-					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{},
+					Pipeline: latest_v1.Pipeline{
+						Deploy: latest_v1.DeployConfig{},
 					},
 				},
 			},
@@ -1308,50 +1308,50 @@ func TestValidateSingleKubeContext(t *testing.T) {
 }
 
 func TestValidateValidDependencyAliases(t *testing.T) {
-	cfgs := []*latest.SkaffoldConfig{
+	cfgs := []*latest_v1.SkaffoldConfig{
 		{
-			Pipeline: latest.Pipeline{
-				Build: latest.BuildConfig{
-					Artifacts: []*latest.Artifact{
+			Pipeline: latest_v1.Pipeline{
+				Build: latest_v1.BuildConfig{
+					Artifacts: []*latest_v1.Artifact{
 						{
 							ImageName: "artifact1",
 						},
 						{
 							ImageName: "artifact2",
-							ArtifactType: latest.ArtifactType{
-								DockerArtifact: &latest.DockerArtifact{},
+							ArtifactType: latest_v1.ArtifactType{
+								DockerArtifact: &latest_v1.DockerArtifact{},
 							},
-							Dependencies: []*latest.ArtifactDependency{
+							Dependencies: []*latest_v1.ArtifactDependency{
 								{Alias: "ARTIFACT_1", ImageName: "artifact1"},
 								{Alias: "1_ARTIFACT", ImageName: "artifact1"},
 							},
 						},
 						{
 							ImageName: "artifact3",
-							ArtifactType: latest.ArtifactType{
-								DockerArtifact: &latest.DockerArtifact{},
+							ArtifactType: latest_v1.ArtifactType{
+								DockerArtifact: &latest_v1.DockerArtifact{},
 							},
-							Dependencies: []*latest.ArtifactDependency{
+							Dependencies: []*latest_v1.ArtifactDependency{
 								{Alias: "artifact!", ImageName: "artifact1"},
 								{Alias: "artifact#1", ImageName: "artifact1"},
 							},
 						},
 						{
 							ImageName: "artifact4",
-							ArtifactType: latest.ArtifactType{
-								CustomArtifact: &latest.CustomArtifact{},
+							ArtifactType: latest_v1.ArtifactType{
+								CustomArtifact: &latest_v1.CustomArtifact{},
 							},
-							Dependencies: []*latest.ArtifactDependency{
+							Dependencies: []*latest_v1.ArtifactDependency{
 								{Alias: "alias1", ImageName: "artifact1"},
 								{Alias: "alias2", ImageName: "artifact2"},
 							},
 						},
 						{
 							ImageName: "artifact5",
-							ArtifactType: latest.ArtifactType{
-								BuildpackArtifact: &latest.BuildpackArtifact{},
+							ArtifactType: latest_v1.ArtifactType{
+								BuildpackArtifact: &latest_v1.BuildpackArtifact{},
 							},
-							Dependencies: []*latest.ArtifactDependency{
+							Dependencies: []*latest_v1.ArtifactDependency{
 								{Alias: "artifact!", ImageName: "artifact1"},
 								{Alias: "artifact#1", ImageName: "artifact1"},
 							},
@@ -1383,34 +1383,34 @@ func errorsComparer(a, b error) bool {
 func TestValidateTaggingPolicy(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         latest.BuildConfig
+		cfg         latest_v1.BuildConfig
 		shouldErr   bool
 	}{
 		{
 			description: "ShaTagger can be used when tryImportMissing is disabled",
 			shouldErr:   false,
-			cfg: latest.BuildConfig{
-				BuildType: latest.BuildType{
-					LocalBuild: &latest.LocalBuild{
+			cfg: latest_v1.BuildConfig{
+				BuildType: latest_v1.BuildType{
+					LocalBuild: &latest_v1.LocalBuild{
 						TryImportMissing: false,
 					},
 				},
-				TagPolicy: latest.TagPolicy{
-					ShaTagger: &latest.ShaTagger{},
+				TagPolicy: latest_v1.TagPolicy{
+					ShaTagger: &latest_v1.ShaTagger{},
 				},
 			},
 		},
 		{
 			description: "ShaTagger can not be used when tryImportMissing is enabled",
 			shouldErr:   true,
-			cfg: latest.BuildConfig{
-				BuildType: latest.BuildType{
-					LocalBuild: &latest.LocalBuild{
+			cfg: latest_v1.BuildConfig{
+				BuildType: latest_v1.BuildType{
+					LocalBuild: &latest_v1.LocalBuild{
 						TryImportMissing: true,
 					},
 				},
-				TagPolicy: latest.TagPolicy{
-					ShaTagger: &latest.ShaTagger{},
+				TagPolicy: latest_v1.TagPolicy{
+					ShaTagger: &latest_v1.ShaTagger{},
 				},
 			},
 		},
@@ -1421,8 +1421,8 @@ func TestValidateTaggingPolicy(t *testing.T) {
 			t.Override(&validateYamltags, func(interface{}) error { return nil })
 
 			err := Process(
-				[]*latest.SkaffoldConfig{{
-					Pipeline: latest.Pipeline{
+				[]*latest_v1.SkaffoldConfig{{
+					Pipeline: latest_v1.Pipeline{
 						Build: test.cfg,
 					},
 				}})
@@ -1436,20 +1436,20 @@ func TestValidateCustomTest(t *testing.T) {
 	tests := []struct {
 		description    string
 		command        string
-		dependencies   *latest.CustomTestDependencies
+		dependencies   *latest_v1.CustomTestDependencies
 		expectedErrors int
 	}{
 		{
 			description: "no errors",
 			command:     "echo Hello!",
-			dependencies: &latest.CustomTestDependencies{
+			dependencies: &latest_v1.CustomTestDependencies{
 				Paths:  []string{"somepath"},
 				Ignore: []string{"anotherpath"},
 			},
 		}, {
 			description: "empty command",
 			command:     "",
-			dependencies: &latest.CustomTestDependencies{
+			dependencies: &latest_v1.CustomTestDependencies{
 				Paths:  []string{"somepath"},
 				Ignore: []string{"anotherpath"},
 			},
@@ -1457,7 +1457,7 @@ func TestValidateCustomTest(t *testing.T) {
 		}, {
 			description: "use both path and command",
 			command:     "echo Hello!",
-			dependencies: &latest.CustomTestDependencies{
+			dependencies: &latest_v1.CustomTestDependencies{
 				Command: "bazel query deps",
 				Paths:   []string{"somepath"},
 			},
@@ -1465,7 +1465,7 @@ func TestValidateCustomTest(t *testing.T) {
 		}, {
 			description: "ignore in conjunction with command",
 			command:     "echo Hello!",
-			dependencies: &latest.CustomTestDependencies{
+			dependencies: &latest_v1.CustomTestDependencies{
 				Command: "bazel query deps",
 				Ignore:  []string{"ignoreme"},
 			},
@@ -1478,15 +1478,15 @@ func TestValidateCustomTest(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			testCase := &latest.TestCase{
+			testCase := &latest_v1.TestCase{
 				ImageName: "image",
-				CustomTests: []latest.CustomTest{{
+				CustomTests: []latest_v1.CustomTest{{
 					Command:      test.command,
 					Dependencies: test.dependencies,
 				}},
 			}
 
-			errs := validateCustomTest([]*latest.TestCase{testCase})
+			errs := validateCustomTest([]*latest_v1.TestCase{testCase})
 			t.CheckDeepEqual(test.expectedErrors, len(errs))
 		})
 	}

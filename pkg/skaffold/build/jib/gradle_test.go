@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -36,35 +36,35 @@ import (
 func TestBuildJibGradleToDocker(t *testing.T) {
 	tests := []struct {
 		description   string
-		artifact      *latest.JibArtifact
+		artifact      *latest_v1.JibArtifact
 		commands      util.Command
 		shouldErr     bool
 		expectedError string
 	}{
 		{
 			description: "build",
-			artifact:    &latest.JibArtifact{},
+			artifact:    &latest_v1.JibArtifact{},
 			commands: testutil.CmdRun(
 				"gradle fake-gradleBuildArgs-for-jibDockerBuild --image=img:tag",
 			),
 		},
 		{
 			description: "build with project",
-			artifact:    &latest.JibArtifact{Project: "project"},
+			artifact:    &latest_v1.JibArtifact{Project: "project"},
 			commands: testutil.CmdRun(
 				"gradle fake-gradleBuildArgs-for-project-for-jibDockerBuild --image=img:tag",
 			),
 		},
 		{
 			description: "build with custom base image",
-			artifact:    &latest.JibArtifact{BaseImage: "docker://busybox"},
+			artifact:    &latest_v1.JibArtifact{BaseImage: "docker://busybox"},
 			commands: testutil.CmdRun(
 				"gradle fake-gradleBuildArgs-for-jibDockerBuild -Djib.from.image=docker://busybox --image=img:tag",
 			),
 		},
 		{
 			description: "fail build",
-			artifact:    &latest.JibArtifact{},
+			artifact:    &latest_v1.JibArtifact{},
 			commands: testutil.CmdRunErr(
 				"gradle fake-gradleBuildArgs-for-jibDockerBuild --image=img:tag",
 				errors.New("BUG"),
@@ -83,8 +83,8 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 			localDocker := fakeLocalDaemon(api)
 
 			builder := NewArtifactBuilder(localDocker, &mockConfig{}, false, false, nil)
-			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
-				ArtifactType: latest.ArtifactType{
+			result, err := builder.Build(context.Background(), ioutil.Discard, &latest_v1.Artifact{
+				ArtifactType: latest_v1.ArtifactType{
 					JibArtifact: test.artifact,
 				},
 			}, "img:tag")
@@ -102,35 +102,35 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 func TestBuildJibGradleToRegistry(t *testing.T) {
 	tests := []struct {
 		description   string
-		artifact      *latest.JibArtifact
+		artifact      *latest_v1.JibArtifact
 		commands      util.Command
 		shouldErr     bool
 		expectedError string
 	}{
 		{
 			description: "remote build",
-			artifact:    &latest.JibArtifact{},
+			artifact:    &latest_v1.JibArtifact{},
 			commands: testutil.CmdRun(
 				"gradle fake-gradleBuildArgs-for-jib --image=img:tag",
 			),
 		},
 		{
 			description: "build with project",
-			artifact:    &latest.JibArtifact{Project: "project"},
+			artifact:    &latest_v1.JibArtifact{Project: "project"},
 			commands: testutil.CmdRun(
 				"gradle fake-gradleBuildArgs-for-project-for-jib --image=img:tag",
 			),
 		},
 		{
 			description: "build with custom base image",
-			artifact:    &latest.JibArtifact{BaseImage: "docker://busybox"},
+			artifact:    &latest_v1.JibArtifact{BaseImage: "docker://busybox"},
 			commands: testutil.CmdRun(
 				"gradle fake-gradleBuildArgs-for-jib -Djib.from.image=docker://busybox --image=img:tag",
 			),
 		},
 		{
 			description: "fail build",
-			artifact:    &latest.JibArtifact{},
+			artifact:    &latest_v1.JibArtifact{},
 			commands: testutil.CmdRunErr(
 				"gradle fake-gradleBuildArgs-for-jib --image=img:tag",
 				errors.New("BUG"),
@@ -154,8 +154,8 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 			localDocker := fakeLocalDaemon(&testutil.FakeAPIClient{})
 
 			builder := NewArtifactBuilder(localDocker, &mockConfig{}, true, false, nil)
-			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
-				ArtifactType: latest.ArtifactType{
+			result, err := builder.Build(context.Background(), ioutil.Discard, &latest_v1.Artifact{
+				ArtifactType: latest_v1.ArtifactType{
 					JibArtifact: test.artifact,
 				},
 			}, "img:tag")
@@ -225,7 +225,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOutErr(
-				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibArtifact{Project: "gradle-test"}).Args, " "),
+				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest_v1.JibArtifact{Project: "gradle-test"}).Args, " "),
 				test.stdout,
 				test.err,
 			))
@@ -236,7 +236,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 			}
 
 			ws := tmpDir.Root()
-			deps, err := getDependenciesGradle(ctx, ws, &latest.JibArtifact{Project: "gradle-test"})
+			deps, err := getDependenciesGradle(ctx, ws, &latest_v1.JibArtifact{Project: "gradle-test"})
 			if test.err != nil {
 				prefix := fmt.Sprintf("could not fetch dependencies for workspace %s: initial Jib dependency refresh failed: failed to get Jib dependencies: ", ws)
 				t.CheckErrorAndDeepEqual(true, err, prefix+test.err.Error(), err.Error())
@@ -252,13 +252,13 @@ func TestGetCommandGradle(t *testing.T) {
 
 	tests := []struct {
 		description      string
-		jibArtifact      latest.JibArtifact
+		jibArtifact      latest_v1.JibArtifact
 		filesInWorkspace []string
 		expectedCmd      func(workspace string) exec.Cmd
 	}{
 		{
 			description:      "gradle default",
-			jibArtifact:      latest.JibArtifact{},
+			jibArtifact:      latest_v1.JibArtifact{},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":_jibSkaffoldFilesV2", "-q", "--console=plain"})
@@ -266,7 +266,7 @@ func TestGetCommandGradle(t *testing.T) {
 		},
 		{
 			description:      "gradle default with project",
-			jibArtifact:      latest.JibArtifact{Project: "project"},
+			jibArtifact:      latest_v1.JibArtifact{Project: "project"},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:_jibSkaffoldFilesV2", "-q", "--console=plain"})
@@ -274,7 +274,7 @@ func TestGetCommandGradle(t *testing.T) {
 		},
 		{
 			description:      "gradle with wrapper",
-			jibArtifact:      latest.JibArtifact{},
+			jibArtifact:      latest_v1.JibArtifact{},
 			filesInWorkspace: []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":_jibSkaffoldFilesV2", "-q", "--console=plain"})
@@ -282,7 +282,7 @@ func TestGetCommandGradle(t *testing.T) {
 		},
 		{
 			description:      "gradle with wrapper and project",
-			jibArtifact:      latest.JibArtifact{Project: "project"},
+			jibArtifact:      latest_v1.JibArtifact{Project: "project"},
 			filesInWorkspace: []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:_jibSkaffoldFilesV2", "-q", "--console=plain"})
@@ -309,19 +309,19 @@ func TestGetSyncMapCommandGradle(t *testing.T) {
 	tests := []struct {
 		description string
 		workspace   string
-		jibArtifact latest.JibArtifact
+		jibArtifact latest_v1.JibArtifact
 		expectedCmd func(workspace string) exec.Cmd
 	}{
 		{
 			description: "single module",
-			jibArtifact: latest.JibArtifact{},
+			jibArtifact: latest_v1.JibArtifact{},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{"fake-gradleBuildArgs-for-_jibSkaffoldSyncMap-skipTests"})
 			},
 		},
 		{
 			description: "multi module",
-			jibArtifact: latest.JibArtifact{Project: "project"},
+			jibArtifact: latest_v1.JibArtifact{Project: "project"},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{"fake-gradleBuildArgs-for-project-for-_jibSkaffoldSyncMap-skipTests"})
 			},
@@ -342,8 +342,8 @@ func TestGetSyncMapCommandGradle(t *testing.T) {
 func TestGenerateGradleBuildArgs(t *testing.T) {
 	tests := []struct {
 		description        string
-		in                 latest.JibArtifact
-		deps               []*latest.ArtifactDependency
+		in                 latest_v1.JibArtifact
+		deps               []*latest_v1.ArtifactDependency
 		image              string
 		skipTests          bool
 		pushImages         bool
@@ -353,41 +353,41 @@ func TestGenerateGradleBuildArgs(t *testing.T) {
 	}{
 		{description: "single module", image: "image", out: []string{"fake-gradleBuildArgs-for-testTask", "--image=image"}},
 		{description: "single module without tests", image: "image", skipTests: true, out: []string{"fake-gradleBuildArgs-for-testTask-skipTests", "--image=image"}},
-		{description: "multi module", in: latest.JibArtifact{Project: "project"}, image: "image", out: []string{"fake-gradleBuildArgs-for-project-for-testTask", "--image=image"}},
-		{description: "multi module without tests", in: latest.JibArtifact{Project: "project"}, image: "image", skipTests: true, out: []string{"fake-gradleBuildArgs-for-project-for-testTask-skipTests", "--image=image"}},
-		{description: "multi module without tests with insecure registries", in: latest.JibArtifact{Project: "project"}, image: "registry.tld/image", skipTests: true, insecureRegistries: map[string]bool{"registry.tld": true}, out: []string{"fake-gradleBuildArgs-for-project-for-testTask-skipTests", "-Djib.allowInsecureRegistries=true", "--image=registry.tld/image"}},
-		{description: "single module with custom base image", in: latest.JibArtifact{BaseImage: "docker://busybox"}, image: "image", out: []string{"fake-gradleBuildArgs-for-testTask", "-Djib.from.image=docker://busybox", "--image=image"}},
-		{description: "multi module with custom base image", in: latest.JibArtifact{Project: "project", BaseImage: "docker://busybox"}, image: "image", out: []string{"fake-gradleBuildArgs-for-project-for-testTask", "-Djib.from.image=docker://busybox", "--image=image"}},
+		{description: "multi module", in: latest_v1.JibArtifact{Project: "project"}, image: "image", out: []string{"fake-gradleBuildArgs-for-project-for-testTask", "--image=image"}},
+		{description: "multi module without tests", in: latest_v1.JibArtifact{Project: "project"}, image: "image", skipTests: true, out: []string{"fake-gradleBuildArgs-for-project-for-testTask-skipTests", "--image=image"}},
+		{description: "multi module without tests with insecure registries", in: latest_v1.JibArtifact{Project: "project"}, image: "registry.tld/image", skipTests: true, insecureRegistries: map[string]bool{"registry.tld": true}, out: []string{"fake-gradleBuildArgs-for-project-for-testTask-skipTests", "-Djib.allowInsecureRegistries=true", "--image=registry.tld/image"}},
+		{description: "single module with custom base image", in: latest_v1.JibArtifact{BaseImage: "docker://busybox"}, image: "image", out: []string{"fake-gradleBuildArgs-for-testTask", "-Djib.from.image=docker://busybox", "--image=image"}},
+		{description: "multi module with custom base image", in: latest_v1.JibArtifact{Project: "project", BaseImage: "docker://busybox"}, image: "image", out: []string{"fake-gradleBuildArgs-for-project-for-testTask", "-Djib.from.image=docker://busybox", "--image=image"}},
 		{
 			description: "single module with local base image from required artifacts",
-			in:          latest.JibArtifact{BaseImage: "alias"},
+			in:          latest_v1.JibArtifact{BaseImage: "alias"},
 			image:       "image",
-			deps:        []*latest.ArtifactDependency{{ImageName: "img", Alias: "alias"}},
+			deps:        []*latest_v1.ArtifactDependency{{ImageName: "img", Alias: "alias"}},
 			r:           mockArtifactResolver{m: map[string]string{"img": "img:tag"}},
 			out:         []string{"fake-gradleBuildArgs-for-testTask", "-Djib.from.image=docker://img:tag", "--image=image"},
 		},
 		{
 			description: "multi module with local base image from required artifacts",
-			in:          latest.JibArtifact{Project: "project", BaseImage: "alias"},
+			in:          latest_v1.JibArtifact{Project: "project", BaseImage: "alias"},
 			image:       "image",
-			deps:        []*latest.ArtifactDependency{{ImageName: "img", Alias: "alias"}},
+			deps:        []*latest_v1.ArtifactDependency{{ImageName: "img", Alias: "alias"}},
 			r:           mockArtifactResolver{m: map[string]string{"img": "img:tag"}},
 			out:         []string{"fake-gradleBuildArgs-for-project-for-testTask", "-Djib.from.image=docker://img:tag", "--image=image"},
 		}, {
 			description: "single module with remote base image from required artifacts",
-			in:          latest.JibArtifact{BaseImage: "alias"},
+			in:          latest_v1.JibArtifact{BaseImage: "alias"},
 			image:       "image",
 			pushImages:  true,
-			deps:        []*latest.ArtifactDependency{{ImageName: "img", Alias: "alias"}},
+			deps:        []*latest_v1.ArtifactDependency{{ImageName: "img", Alias: "alias"}},
 			r:           mockArtifactResolver{m: map[string]string{"img": "img:tag"}},
 			out:         []string{"fake-gradleBuildArgs-for-testTask", "-Djib.from.image=img:tag", "--image=image"},
 		},
 		{
 			description: "multi module with remote base image from required artifacts",
-			in:          latest.JibArtifact{Project: "project", BaseImage: "alias"},
+			in:          latest_v1.JibArtifact{Project: "project", BaseImage: "alias"},
 			image:       "image",
 			pushImages:  true,
-			deps:        []*latest.ArtifactDependency{{ImageName: "img", Alias: "alias"}},
+			deps:        []*latest_v1.ArtifactDependency{{ImageName: "img", Alias: "alias"}},
 			r:           mockArtifactResolver{m: map[string]string{"img": "img:tag"}},
 			out:         []string{"fake-gradleBuildArgs-for-project-for-testTask", "-Djib.from.image=img:tag", "--image=image"},
 		},
@@ -404,17 +404,17 @@ func TestGenerateGradleBuildArgs(t *testing.T) {
 func TestGradleArgs(t *testing.T) {
 	tests := []struct {
 		description string
-		jibArtifact latest.JibArtifact
+		jibArtifact latest_v1.JibArtifact
 		expected    []string
 	}{
 		{
 			description: "single module",
-			jibArtifact: latest.JibArtifact{},
+			jibArtifact: latest_v1.JibArtifact{},
 			expected:    []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=test-version", ":testTask"},
 		},
 		{
 			description: "multi module",
-			jibArtifact: latest.JibArtifact{Project: "module"},
+			jibArtifact: latest_v1.JibArtifact{Project: "module"},
 			expected:    []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=test-version", ":module:testTask"},
 		},
 	}
@@ -427,56 +427,56 @@ func TestGradleArgs(t *testing.T) {
 func TestGradleBuildArgs(t *testing.T) {
 	tests := []struct {
 		description string
-		jibArtifact latest.JibArtifact
+		jibArtifact latest_v1.JibArtifact
 		skipTests   bool
 		showColors  bool
 		expected    []string
 	}{
 		{
 			description: "single module",
-			jibArtifact: latest.JibArtifact{},
+			jibArtifact: latest_v1.JibArtifact{},
 			skipTests:   false,
 			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask"},
 		},
 		{
 			description: "single module skip tests",
-			jibArtifact: latest.JibArtifact{},
+			jibArtifact: latest_v1.JibArtifact{},
 			skipTests:   true,
 			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask", "-x", "test"},
 		},
 		{
 			description: "single module plain console",
-			jibArtifact: latest.JibArtifact{},
+			jibArtifact: latest_v1.JibArtifact{},
 			skipTests:   true,
 			showColors:  false,
 			expected:    []string{"--console=plain", "fake-gradleArgs-for-testTask", "-x", "test"},
 		},
 		{
 			description: "single module with extra flags",
-			jibArtifact: latest.JibArtifact{Flags: []string{"--flag1", "--flag2"}},
+			jibArtifact: latest_v1.JibArtifact{Flags: []string{"--flag1", "--flag2"}},
 			skipTests:   false,
 			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask", "--flag1", "--flag2"},
 		},
 		{
 			description: "multi module",
-			jibArtifact: latest.JibArtifact{Project: "module"},
+			jibArtifact: latest_v1.JibArtifact{Project: "module"},
 			skipTests:   false,
 			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask"},
 		},
 		{
 			description: "single module skip tests",
-			jibArtifact: latest.JibArtifact{Project: "module"},
+			jibArtifact: latest_v1.JibArtifact{Project: "module"},
 			skipTests:   true,
 			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask", "-x", "test"},
 		},
 		{
 			description: "multi module with extra flags",
-			jibArtifact: latest.JibArtifact{Project: "module", Flags: []string{"--flag1", "--flag2"}},
+			jibArtifact: latest_v1.JibArtifact{Project: "module", Flags: []string{"--flag1", "--flag2"}},
 			skipTests:   false,
 			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask", "--flag1", "--flag2"},
@@ -491,8 +491,8 @@ func TestGradleBuildArgs(t *testing.T) {
 	}
 }
 
-func getGradleArgsFuncFake(t *testutil.T, expectedMinimumVersion string) func(*latest.JibArtifact, string, string) []string {
-	return func(a *latest.JibArtifact, task string, minimumVersion string) []string {
+func getGradleArgsFuncFake(t *testutil.T, expectedMinimumVersion string) func(*latest_v1.JibArtifact, string, string) []string {
+	return func(a *latest_v1.JibArtifact, task string, minimumVersion string) []string {
 		t.CheckDeepEqual(expectedMinimumVersion, minimumVersion)
 		if a.Project == "" {
 			return []string{"fake-gradleArgs-for-" + task}
@@ -502,8 +502,8 @@ func getGradleArgsFuncFake(t *testutil.T, expectedMinimumVersion string) func(*l
 }
 
 // check that parameters are actually passed though
-func getGradleBuildArgsFuncFake(t *testutil.T, expectedMinimumVersion string) func(string, *latest.JibArtifact, bool, bool, string) []string {
-	return func(task string, a *latest.JibArtifact, skipTests, showColors bool, minimumVersion string) []string {
+func getGradleBuildArgsFuncFake(t *testutil.T, expectedMinimumVersion string) func(string, *latest_v1.JibArtifact, bool, bool, string) []string {
+	return func(task string, a *latest_v1.JibArtifact, skipTests, showColors bool, minimumVersion string) []string {
 		t.CheckDeepEqual(expectedMinimumVersion, minimumVersion)
 
 		testString := ""

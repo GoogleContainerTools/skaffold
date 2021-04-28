@@ -40,7 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -61,7 +61,7 @@ const (
 
 // Deployer deploys workflows with kpt CLI
 type Deployer struct {
-	*latest.KptDeploy
+	*latest_v1.KptDeploy
 
 	insecureRegistries map[string]bool
 	labels             map[string]string
@@ -69,7 +69,7 @@ type Deployer struct {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg types.Config, labels map[string]string, d *latest.KptDeploy) *Deployer {
+func NewDeployer(cfg types.Config, labels map[string]string, d *latest_v1.KptDeploy) *Deployer {
 	return &Deployer{
 		KptDeploy:          d,
 		insecureRegistries: cfg.GetInsecureRegistries(),

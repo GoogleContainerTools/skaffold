@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -36,7 +36,7 @@ func TestTest(t *testing.T) {
 	tests := []struct {
 		description     string
 		testBench       *TestBench
-		cfg             []*latest.Artifact
+		cfg             []*latest_v1.Artifact
 		artifacts       []graph.Artifact
 		expectedActions []Actions
 		shouldErr       bool
@@ -44,7 +44,7 @@ func TestTest(t *testing.T) {
 		{
 			description: "test no error",
 			testBench:   &TestBench{},
-			cfg:         []*latest.Artifact{{ImageName: "img1"}, {ImageName: "img2"}},
+			cfg:         []*latest_v1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}},
 			artifacts: []graph.Artifact{
 				{ImageName: "img1", Tag: "img1:tag1"},
 				{ImageName: "img2", Tag: "img2:tag2"},
@@ -62,7 +62,7 @@ func TestTest(t *testing.T) {
 		{
 			description: "missing tag",
 			testBench:   &TestBench{},
-			cfg:         []*latest.Artifact{{ImageName: "image1"}},
+			cfg:         []*latest_v1.Artifact{{ImageName: "image1"}},
 			artifacts:   []graph.Artifact{{ImageName: "image1"}},
 			expectedActions: []Actions{{
 				Tested: []string{""},
@@ -134,7 +134,7 @@ func TestBuildTestDeploy(t *testing.T) {
 			t.Override(&client.Client, mockK8sClient)
 
 			ctx := context.Background()
-			artifacts := []*latest.Artifact{{
+			artifacts := []*latest_v1.Artifact{{
 				ImageName: "img",
 			}}
 
@@ -155,7 +155,7 @@ func TestBuildTestDeploy(t *testing.T) {
 func TestBuildDryRun(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		testBench := &TestBench{}
-		artifacts := []*latest.Artifact{
+		artifacts := []*latest_v1.Artifact{
 			{ImageName: "img1"},
 			{ImageName: "img2"},
 		}
@@ -176,7 +176,7 @@ func TestBuildDryRun(t *testing.T) {
 func TestBuildPushFlag(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		testBench := &TestBench{}
-		artifacts := []*latest.Artifact{
+		artifacts := []*latest_v1.Artifact{
 			{ImageName: "img1"},
 			{ImageName: "img2"},
 		}
@@ -190,7 +190,7 @@ func TestBuildPushFlag(t *testing.T) {
 }
 
 func TestDigestSources(t *testing.T) {
-	artifacts := []*latest.Artifact{
+	artifacts := []*latest_v1.Artifact{
 		{ImageName: "img1"},
 	}
 
@@ -240,12 +240,12 @@ func TestCheckWorkspaces(t *testing.T) {
 
 	tests := []struct {
 		description string
-		artifacts   []*latest.Artifact
+		artifacts   []*latest_v1.Artifact
 		shouldErr   bool
 	}{
 		{
 			description: "no workspace",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image",
 				},
@@ -253,7 +253,7 @@ func TestCheckWorkspaces(t *testing.T) {
 		},
 		{
 			description: "directory that exists",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image",
 					Workspace: tmpDir.Root(),
@@ -262,7 +262,7 @@ func TestCheckWorkspaces(t *testing.T) {
 		},
 		{
 			description: "error on non-existent location",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image",
 					Workspace: "doesnotexist",
@@ -272,7 +272,7 @@ func TestCheckWorkspaces(t *testing.T) {
 		},
 		{
 			description: "error on file",
-			artifacts: []*latest.Artifact{
+			artifacts: []*latest_v1.Artifact{
 				{
 					ImageName: "image",
 					Workspace: tmpFile,

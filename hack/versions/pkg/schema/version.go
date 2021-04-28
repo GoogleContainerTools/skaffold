@@ -25,15 +25,15 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 )
 
 func GetLatestVersion() (string, bool) {
-	current := strings.TrimPrefix(latest.Version, "skaffold/")
+	current := strings.TrimPrefix(latest_v1.Version, "skaffold/")
 	logrus.Debugf("Current Skaffold version: %s", current)
 
-	config, err := ioutil.ReadFile("pkg/skaffold/schema/latest/config.go")
+	config, err := ioutil.ReadFile("pkg/skaffold/schema/latest/v1/config.go")
 	if err != nil {
 		logrus.Fatalf("failed to read latest config: %s", err)
 	}

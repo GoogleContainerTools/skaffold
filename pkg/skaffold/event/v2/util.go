@@ -19,11 +19,11 @@ package v2
 import (
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
-func initializeMetadata(pipelines []latest.Pipeline, kubeContext string) *proto.Metadata {
+func initializeMetadata(pipelines []latest_v1.Pipeline, kubeContext string) *proto.Metadata {
 	artifactCount := 0
 	for _, p := range pipelines {
 		artifactCount += len(p.Build.Artifacts)
@@ -67,7 +67,7 @@ func initializeMetadata(pipelines []latest.Pipeline, kubeContext string) *proto.
 	return m
 }
 
-func getBuilders(b latest.BuildConfig) []*proto.BuildMetadata_ImageBuilder {
+func getBuilders(b latest_v1.BuildConfig) []*proto.BuildMetadata_ImageBuilder {
 	m := map[proto.BuilderType]int{}
 	for _, a := range b.Artifacts {
 		switch {
@@ -96,7 +96,7 @@ func getBuilders(b latest.BuildConfig) []*proto.BuildMetadata_ImageBuilder {
 	return builders
 }
 
-func getDeploy(d latest.DeployConfig) []*proto.DeployMetadata_Deployer {
+func getDeploy(d latest_v1.DeployConfig) []*proto.DeployMetadata_Deployer {
 	var deployers []*proto.DeployMetadata_Deployer
 
 	if d.HelmDeploy != nil {

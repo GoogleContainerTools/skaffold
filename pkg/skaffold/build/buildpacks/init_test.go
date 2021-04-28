@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -132,7 +132,7 @@ func TestArtifactType(t *testing.T) {
 	var tests = []struct {
 		description  string
 		config       ArtifactConfig
-		expectedType latest.ArtifactType
+		expectedType latest_v1.ArtifactType
 	}{
 		{
 			description: "buildpacks - NodeJS",
@@ -140,8 +140,8 @@ func TestArtifactType(t *testing.T) {
 				File:    filepath.Join("path", "to", "package.json"),
 				Builder: "some/builder",
 			},
-			expectedType: latest.ArtifactType{
-				BuildpackArtifact: &latest.BuildpackArtifact{
+			expectedType: latest_v1.ArtifactType{
+				BuildpackArtifact: &latest_v1.BuildpackArtifact{
 					Builder: "some/builder",
 				},
 			},

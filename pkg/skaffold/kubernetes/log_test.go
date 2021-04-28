@@ -28,7 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -187,7 +187,7 @@ func TestPrefix(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			logger := NewLogAggregator(nil, nil, nil, nil, &mockConfig{log: latest.LogsConfig{
+			logger := NewLogAggregator(nil, nil, nil, nil, &mockConfig{log: latest_v1.LogsConfig{
 				Prefix: test.prefix,
 			}})
 
@@ -213,17 +213,17 @@ func containerWithName(n string) v1.ContainerStatus {
 }
 
 type mockConfig struct {
-	log latest.LogsConfig
+	log latest_v1.LogsConfig
 }
 
-func (c *mockConfig) PipelineForImage(string) (latest.Pipeline, bool) {
-	var pipeline latest.Pipeline
+func (c *mockConfig) PipelineForImage(string) (latest_v1.Pipeline, bool) {
+	var pipeline latest_v1.Pipeline
 	pipeline.Deploy.Logs = c.log
 	return pipeline, true
 }
 
-func (c *mockConfig) DefaultPipeline() latest.Pipeline {
-	var pipeline latest.Pipeline
+func (c *mockConfig) DefaultPipeline() latest_v1.Pipeline {
+	var pipeline latest_v1.Pipeline
 	pipeline.Deploy.Logs = c.log
 	return pipeline
 }

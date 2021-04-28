@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -53,7 +53,7 @@ type Builder struct {
 }
 
 // Build builds a list of artifacts.
-func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
+func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest_v1.Artifact) ([]graph.Artifact, error) {
 	eventV2.TaskInProgress(constants.Build)
 
 	// Use tags directly from the Kubernetes manifests.
@@ -86,7 +86,7 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.
 		return bRes, nil
 	}
 
-	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
+	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest_v1.Artifact) ([]graph.Artifact, error) {
 		if len(artifacts) == 0 {
 			return nil, nil
 		}
@@ -138,7 +138,7 @@ func (r *Builder) ApplyDefaultRepo(tag string) (string, error) {
 }
 
 // imageTags generates tags for a list of artifacts
-func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
+func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latest_v1.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
 
@@ -197,7 +197,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 	return imageTags, nil
 }
 
-func checkWorkspaces(artifacts []*latest.Artifact) error {
+func checkWorkspaces(artifacts []*latest_v1.Artifact) error {
 	for _, a := range artifacts {
 		if a.Workspace != "" {
 			if info, err := os.Stat(a.Workspace); err != nil {

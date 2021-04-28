@@ -29,7 +29,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -43,7 +43,7 @@ var once sync.Once
 
 // GetDependencies finds the sources dependencies for the given bazel artifact.
 // All paths are relative to the workspace.
-func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) ([]string, error) {
+func GetDependencies(ctx context.Context, dir string, a *latest_v1.BazelArtifact) ([]string, error) {
 	timer := time.NewTimer(1 * time.Second)
 	defer timer.Stop()
 
