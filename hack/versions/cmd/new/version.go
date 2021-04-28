@@ -53,7 +53,7 @@ func main() {
 	makeSchemaDir(current)
 
 	// Create a package for current version
-	walk.From(path("latest")).WhenIsFile().MustDo(func(file string, info walk.Dirent) error {
+	walk.From(path("latest", "v1")).WhenIsFile().MustDo(func(file string, info walk.Dirent) error {
 		cp(file, path(current, info.Name()))
 		sed(path(current, info.Name()), "package latest", "package "+current)
 		return nil
@@ -74,7 +74,7 @@ func main() {
 	sed(path(prev, "upgrade_test.go"), "latest", current)
 
 	// Latest uses the new version
-	sed(path("latest", "config.go"), current, next)
+	sed(path("latest", "v1", "config.go"), current, next)
 
 	hackschema.UpdateVersionComment(path("latest", "config.go"), false)
 
