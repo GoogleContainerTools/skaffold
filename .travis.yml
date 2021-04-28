@@ -13,13 +13,14 @@ branches:
 git:
   submodules: false
 
-before_script:
-  - tmpdaemon=$(mktemp)
-  - sudo jq '."registry-mirrors" += ["https://mirror.gcr.io"]' /etc/docker/daemon.json > $tmpdaemon
-  - sudo mv $tmpdaemon /etc/docker/daemon.json
-  - sudo systemctl daemon-reload
-  - sudo systemctl restart docker
-  - docker system info
+_registry_mirror: &registry_mirror
+  before_script:
+    - tmpdaemon=$(mktemp)
+    - sudo jq '."registry-mirrors" += ["https://mirror.gcr.io"]' /etc/docker/daemon.json > $tmpdaemon
+    - sudo mv $tmpdaemon /etc/docker/daemon.json
+    - sudo systemctl daemon-reload
+    - sudo systemctl restart docker
+    - docker system info
 
 install:
   # enable tcp_mtu_probing=1 to enable MTU path discovery when ICMP blackhole detected
@@ -54,10 +55,12 @@ _upgrade_docker: &upgrade_docker
 jobs:
   include:
     - os: linux
+      <<: *registry_mirror
       name: "linters"
       script:
         - make linters
     - os: linux
+      <<: *registry_mirror
       name: "checks"
       script:
         - make checks
@@ -65,6 +68,7 @@ jobs:
         directories:
           - $HOME/.cache/go-build
     - os: linux
+      <<: *registry_mirror
       name: "Linux unit"
       script:
         - make coverage
@@ -87,42 +91,51 @@ jobs:
           - C:\\Users\\travis\\AppData\\Local\\go-build
     - name: "kind integration partition 0"
       <<: *integration_test
+      <<: *registry_mirror
       script:
         - env IT_PARTITION=0 make integration-in-kind
     - name: "kind integration partition 1"
       <<: *integration_test
+      <<: *registry_mirror
       script:
         - env IT_PARTITION=1 make integration-in-kind
     - name: "kind integration partition 2"
       <<: *integration_test
+      <<: *registry_mirror
       script:
         - env IT_PARTITION=2 make integration-in-kind
     - name: "kind integration partition 3"
       <<: *integration_test
+      <<: *registry_mirror
       script:
         - env IT_PARTITION=3 make integration-in-kind
     - name: "k3d integration partition 0"
       <<: *integration_test
       <<: *upgrade_docker
+      <<: *registry_mirror
       script:
         - env IT_PARTITION=0 make integration-in-k3d
     - name: "k3d integration partition 1"
       <<: *integration_test
       <<: *upgrade_docker
+      <<: *registry_mirror
       script:
         - env IT_PARTITION=1 make integration-in-k3d
     - name: "k3d integration partition 2"
       <<: *integration_test
       <<: *upgrade_docker
+      <<: *registry_mirror
       script:
         - env IT_PARTITION=2 make integration-in-k3d
     - name: "k3d integration partition 3"
       <<: *integration_test
       <<: *upgrade_docker
+      <<: *registry_mirror
       script:
         - env IT_PARTITION=3 make integration-in-k3d
     - os: linux
       name: "diag/Linux unit"
+      <<: *registry_mirror
       script:
         - make -f Makefile.diag coverage
       cache:
