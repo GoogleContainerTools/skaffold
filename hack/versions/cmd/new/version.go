@@ -55,7 +55,7 @@ func main() {
 	// Create a package for current version
 	walk.From(path("latest", "v1")).WhenIsFile().MustDo(func(file string, info walk.Dirent) error {
 		cp(file, path(current, info.Name()))
-		sed(path(current, info.Name()), "package latest", "package "+current)
+		sed(path(current, info.Name()), "package v1", "package "+current)
 		return nil
 	})
 
