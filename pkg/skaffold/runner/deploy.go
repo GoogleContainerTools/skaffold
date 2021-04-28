@@ -201,7 +201,11 @@ func failIfClusterIsNotReachable() error {
 
 func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
-	if !r.runCtx.StatusCheck() {
+	enabled, err := r.runCtx.StatusCheck()
+	if err != nil {
+		return err
+	}
+	if enabled != nil && !*enabled {
 		return nil
 	}
 

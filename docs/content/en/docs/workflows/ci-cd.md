@@ -36,6 +36,10 @@ healthy before proceeding with the next steps in the pipeline.
 `healthcheck` is enabled by default; it can be disabled with the `--status-check=false`
 flag, or by setting the `statusCheck` field of the deployment config stanza in
 the `skaffold.yaml` to false.
+
+If the `skaffold.yaml` contains multiple pipelines, it is invalid for one to
+have `statusCheck` explicitly set to `true` and a second to have `statusCheck`
+explicitly set to `false`.
 {{</alert>}}
 
 To determine if a `Deployment` resource is up and running, Skaffold relies on `kubectl rollout status` to obtain its status.
