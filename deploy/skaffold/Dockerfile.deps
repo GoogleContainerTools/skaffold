@@ -14,22 +14,22 @@
 
 # Download kubectl
 FROM alpine:3.10 as download-kubectl
-# Track default version installed by Google Cloud SDK: 320.0.0 moved to 1.17(.14)
-ENV KUBECTL_VERSION v1.17.14
+# Track default version installed by Google Cloud SDK: 335.0.0 moved to 1.17(.17)
+ENV KUBECTL_VERSION v1.17.17
 ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl
 RUN wget -O kubectl "${KUBECTL_URL}"
 RUN chmod +x kubectl
 
 # Download helm (see https://github.com/helm/helm/releases/latest)
 FROM alpine:3.10 as download-helm
-ENV HELM_VERSION v3.4.2
+ENV HELM_VERSION v3.5.4
 ENV HELM_URL https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz
 RUN wget -O helm.tar.gz "${HELM_URL}"
 RUN tar -xvf helm.tar.gz --strip-components 1
 
 # Download kustomize
 FROM alpine:3.10 as download-kustomize
-ENV KUSTOMIZE_VERSION 3.8.9
+ENV KUSTOMIZE_VERSION 4.1.2
 ENV KUSTOMIZE_URL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
 RUN wget -O kustomize.tar.gz "${KUSTOMIZE_URL}"
 RUN tar -xvf kustomize.tar.gz
@@ -50,28 +50,28 @@ RUN chmod +x container-structure-test
 
 # Download kind
 FROM alpine:3.10 as download-kind
-ENV KIND_VERSION v0.9.0
+ENV KIND_VERSION v0.10.0
 ENV KIND_URL https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64
 RUN wget -O kind "${KIND_URL}"
 RUN chmod +x kind
 
 # Download k3d
 FROM alpine:3.10 as download-k3d
-ENV K3D_VERSION v3.4.0
+ENV K3D_VERSION v4.4.2
 ENV K3D_URL https://github.com/rancher/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
 RUN wget -O k3d "${K3D_URL}"
 RUN chmod +x k3d
 
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
-ENV GCLOUD_VERSION 322.0.0
+ENV GCLOUD_VERSION 335.0.0
 ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz
 RUN wget -O gcloud.tar.gz "${GCLOUD_URL}"
 RUN tar -zxf gcloud.tar.gz
 
 # Download bazel
 FROM alpine:3.10 as download-bazel
-ENV BAZEL_VERSION 3.7.2
+ENV BAZEL_VERSION 4.0.0
 ENV BAZEL_URL https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-x86_64
 RUN wget -O bazel "${BAZEL_URL}"
 RUN chmod +x bazel
