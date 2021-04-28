@@ -114,7 +114,7 @@ func TestDebug(t *testing.T) {
 func TestFilterWithDebugging(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	// `filter` currently expects to receive a digested yaml
-	renderedOutput := skaffold.Render().InDir("examples/getting-started").RunOrFailOutput(t)
+	renderedOutput := skaffold.Render("--digest-source=local").InDir("examples/getting-started").RunOrFailOutput(t)
 
 	testutil.Run(t, "no --build-artifacts should transform all images", func(t *testutil.T) {
 		transformedOutput := skaffold.Filter("--debugging").InDir("examples/getting-started").WithStdin(renderedOutput).RunOrFailOutput(t.T)
