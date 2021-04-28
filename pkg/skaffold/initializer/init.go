@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -76,7 +76,7 @@ See https://skaffold.dev/docs/pipeline-stages/deployers/helm/ for a detailed gui
 
 // Initialize uses the information gathered by the analyzer to create a skaffold config and generate kubernetes manifests.
 // The returned map[string][]byte represents a mapping from generated config name to its respective manifest data held in a []byte
-func Initialize(out io.Writer, c config.Config, a *analyze.ProjectAnalysis) (*latest.SkaffoldConfig, map[string][]byte, error) {
+func Initialize(out io.Writer, c config.Config, a *analyze.ProjectAnalysis) (*latest_v1.SkaffoldConfig, map[string][]byte, error) {
 	deployInitializer := deploy.NewInitializer(a.Manifests(), a.KustomizeBases(), a.KustomizePaths(), c)
 	images := deployInitializer.GetImages()
 
@@ -119,7 +119,7 @@ func generateManifests(out io.Writer, c config.Config, bInitializer build.Initia
 }
 
 // WriteData takes the given skaffold config and k8s manifests and writes them out to a file or the given io.Writer
-func WriteData(out io.Writer, c config.Config, newConfig *latest.SkaffoldConfig, newManifests map[string][]byte) error {
+func WriteData(out io.Writer, c config.Config, newConfig *latest_v1.SkaffoldConfig, newManifests map[string][]byte) error {
 	pipeline, err := yaml.Marshal(newConfig)
 	if err != nil {
 		return err

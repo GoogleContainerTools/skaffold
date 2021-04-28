@@ -30,10 +30,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
 const (
@@ -46,11 +44,12 @@ const (
 type Runner interface {
 	Apply(context.Context, io.Writer) error
 	ApplyDefaultRepo(tag string) (string, error)
-	Build(context.Context, io.Writer, []*latest.Artifact) ([]graph.Artifact, error)
+	Build(context.Context, io.Writer, []*latest_v1.Artifact) ([]graph.Artifact, error)
 	Cleanup(context.Context, io.Writer) error
-	Dev(context.Context, io.Writer, []*latest.Artifact) error
+	Dev(context.Context, io.Writer, []*latest_v1.Artifact) error
+	Deploy(context.Context, io.Writer, []graph.Artifact) error
 	DeployAndLog(context.Context, io.Writer, []graph.Artifact) error
-	GeneratePipeline(context.Context, io.Writer, []*latest.SkaffoldConfig, []string, string) error
+	GeneratePipeline(context.Context, io.Writer, []*latest_v1.SkaffoldConfig, []string, string) error
 	HasBuilt() bool
 	HasDeployed() bool
 	Prune(context.Context, io.Writer) error
@@ -60,30 +59,29 @@ type Runner interface {
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
-	builder  build.Builder
+	Builder
+	Pruner
+	Tester
+
 	deployer deploy.Deployer
-	tester   test.Tester
-	tagger   tag.Tagger
 	syncer   sync.Syncer
 	monitor  filemon.Monitor
 	listener Listener
 
 	kubectlCLI         *kubectl.CLI
 	cache              cache.Cache
-	changeSet          changeSet
+	changeSet          ChangeSet
 	runCtx             *runcontext.RunContext
 	labeller           *label.DefaultLabeller
-	builds             []graph.Artifact
 	artifactStore      build.ArtifactStore
 	sourceDependencies graph.TransitiveSourceDependenciesCache
 	// podSelector is used to determine relevant pods for logging and portForwarding
 	podSelector *kubernetes.ImageList
 
-	isLocalImage func(imageName string) (bool, error)
-	hasBuilt     bool
-	hasDeployed  bool
-	intents      *intents
 	devIteration int
+	isLocalImage func(imageName string) (bool, error)
+	hasDeployed  bool
+	intents      *Intents
 }
 
 // for testing
@@ -94,9 +92,4 @@ var (
 // HasDeployed returns true if this runner has deployed something.
 func (r *SkaffoldRunner) HasDeployed() bool {
 	return r.hasDeployed
-}
-
-// HasBuilt returns true if this runner has built something.
-func (r *SkaffoldRunner) HasBuilt() bool {
-	return r.hasBuilt
 }

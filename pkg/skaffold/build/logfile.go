@@ -22,7 +22,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 type Muted interface {
@@ -35,7 +35,7 @@ func WithLogFile(builder ArtifactBuilder, muted Muted) ArtifactBuilder {
 		return builder
 	}
 
-	return func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	return func(ctx context.Context, out io.Writer, artifact *latest_v1.Artifact, tag string) (string, error) {
 		file, err := logfile.Create("build", artifact.ImageName+".log")
 		if err != nil {
 			return "", fmt.Errorf("unable to create log file for %s: %w", artifact.ImageName, err)

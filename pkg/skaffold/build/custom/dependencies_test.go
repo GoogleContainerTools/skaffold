@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -38,9 +38,9 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 	tmpDir.Touch("foo", "bar", "baz/file")
 	tmpDir.Write("Dockerfile", "FROM scratch \n ARG file \n COPY $file baz/file .")
 
-	customArtifact := &latest.CustomArtifact{
-		Dependencies: &latest.CustomDependencies{
-			Dockerfile: &latest.DockerfileDependency{
+	customArtifact := &latest_v1.CustomArtifact{
+		Dependencies: &latest_v1.CustomDependencies{
+			Dockerfile: &latest_v1.DockerfileDependency{
 				Path: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"file": util.StringPtr("foo"),
@@ -62,8 +62,8 @@ func TestGetDependenciesCommand(t *testing.T) {
 			"[\"file1\",\"file2\",\"file3\"]",
 		))
 
-		customArtifact := &latest.CustomArtifact{
-			Dependencies: &latest.CustomDependencies{
+		customArtifact := &latest_v1.CustomArtifact{
+			Dependencies: &latest_v1.CustomDependencies{
 				Command: "echo [\"file1\",\"file2\",\"file3\"]",
 			},
 		}
@@ -119,8 +119,8 @@ func TestGetDependenciesPaths(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Touch("foo", "bar", "baz/file")
 
-			deps, err := GetDependencies(context.Background(), tmpDir.Root(), "test", &latest.CustomArtifact{
-				Dependencies: &latest.CustomDependencies{
+			deps, err := GetDependencies(context.Background(), tmpDir.Root(), "test", &latest_v1.CustomArtifact{
+				Dependencies: &latest_v1.CustomDependencies{
 					Paths:  test.paths,
 					Ignore: test.ignore,
 				},

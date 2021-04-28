@@ -25,7 +25,7 @@ import (
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // For testing
@@ -52,7 +52,7 @@ func (c ArtifactConfig) Describe() string {
 }
 
 // ArtifactType returns the type of the artifact to be built.
-func (c ArtifactConfig) ArtifactType(workspace string) latest.ArtifactType {
+func (c ArtifactConfig) ArtifactType(workspace string) latest_v1.ArtifactType {
 	dockerfile := filepath.Base(c.File)
 	if workspace != "" {
 		// attempt to relativize the path
@@ -61,8 +61,8 @@ func (c ArtifactConfig) ArtifactType(workspace string) latest.ArtifactType {
 		}
 	}
 
-	return latest.ArtifactType{
-		DockerArtifact: &latest.DockerArtifact{
+	return latest_v1.ArtifactType{
+		DockerArtifact: &latest_v1.DockerArtifact{
 			// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
 			DockerfilePath: filepath.ToSlash(dockerfile),
 		},

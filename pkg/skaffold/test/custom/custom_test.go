@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
@@ -40,25 +40,25 @@ func TestNewCustomTestRunner(t *testing.T) {
 		}
 		tmpDir := t.NewTempDir().Touch("test.yaml")
 
-		custom := latest.CustomTest{
+		custom := latest_v1.CustomTest{
 			Command:        "echo Running Custom Test command.",
 			TimeoutSeconds: 10,
-			Dependencies: &latest.CustomTestDependencies{
+			Dependencies: &latest_v1.CustomTestDependencies{
 				Paths:  []string{"**"},
 				Ignore: []string{"b*"},
 			},
 		}
 
-		testCase := &latest.TestCase{
+		testCase := &latest_v1.TestCase{
 			ImageName:   "image",
 			Workspace:   tmpDir.Root(),
-			CustomTests: []latest.CustomTest{custom},
+			CustomTests: []latest_v1.CustomTest{custom},
 		}
 
 		cfg := &mockConfig{
-			tests: []*latest.TestCase{testCase},
+			tests: []*latest_v1.TestCase{testCase},
 		}
-		testEvent.InitializeState([]latest.Pipeline{{}})
+		testEvent.InitializeState([]latest_v1.Pipeline{{}})
 
 		testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 		t.CheckNoError(err)
@@ -71,7 +71,7 @@ func TestNewCustomTestRunner(t *testing.T) {
 func TestCustomCommandError(t *testing.T) {
 	tests := []struct {
 		description        string
-		custom             latest.CustomTest
+		custom             latest_v1.CustomTest
 		shouldErr          bool
 		expectedCmd        string
 		expectedWindowsCmd string
@@ -79,7 +79,7 @@ func TestCustomCommandError(t *testing.T) {
 	}{
 		{
 			description: "Non zero exit",
-			custom: latest.CustomTest{
+			custom: latest_v1.CustomTest{
 				Command: "exit 20",
 			},
 			shouldErr:          true,
@@ -89,7 +89,7 @@ func TestCustomCommandError(t *testing.T) {
 		},
 		{
 			description: "Command timed out",
-			custom: latest.CustomTest{
+			custom: latest_v1.CustomTest{
 				Command:        "sleep 20",
 				TimeoutSeconds: 2,
 			},
@@ -108,16 +108,16 @@ func TestCustomCommandError(t *testing.T) {
 			}
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(command, fmt.Errorf(test.expectedError)))
 
-			testCase := &latest.TestCase{
+			testCase := &latest_v1.TestCase{
 				ImageName:   "image",
 				Workspace:   tmpDir.Root(),
-				CustomTests: []latest.CustomTest{test.custom},
+				CustomTests: []latest_v1.CustomTest{test.custom},
 			}
 
 			cfg := &mockConfig{
-				tests: []*latest.TestCase{testCase},
+				tests: []*latest_v1.TestCase{testCase},
 			}
-			testEvent.InitializeState([]latest.Pipeline{{}})
+			testEvent.InitializeState([]latest_v1.Pipeline{{}})
 
 			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, test.custom)
 			t.CheckNoError(err)
@@ -136,23 +136,23 @@ func TestTestDependenciesCommand(t *testing.T) {
 	testutil.Run(t, "Testing new custom test runner", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("test.yaml")
 
-		custom := latest.CustomTest{
+		custom := latest_v1.CustomTest{
 			Command: "echo Hello!",
-			Dependencies: &latest.CustomTestDependencies{
+			Dependencies: &latest_v1.CustomTestDependencies{
 				Command: "echo [\"file1\",\"file2\",\"file3\"]",
 			},
 		}
 
-		testCase := &latest.TestCase{
+		testCase := &latest_v1.TestCase{
 			ImageName:   "image",
 			Workspace:   tmpDir.Root(),
-			CustomTests: []latest.CustomTest{custom},
+			CustomTests: []latest_v1.CustomTest{custom},
 		}
 
 		cfg := &mockConfig{
-			tests: []*latest.TestCase{testCase},
+			tests: []*latest_v1.TestCase{testCase},
 		}
-		testEvent.InitializeState([]latest.Pipeline{{}})
+		testEvent.InitializeState([]latest_v1.Pipeline{{}})
 
 		if runtime.GOOS == Windows {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
@@ -219,24 +219,24 @@ func TestTestDependenciesPaths(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Touch("foo", "bar", "baz/file")
 
-			custom := latest.CustomTest{
+			custom := latest_v1.CustomTest{
 				Command: "echo Hello!",
-				Dependencies: &latest.CustomTestDependencies{
+				Dependencies: &latest_v1.CustomTestDependencies{
 					Paths:  test.paths,
 					Ignore: test.ignore,
 				},
 			}
 
-			testCase := &latest.TestCase{
+			testCase := &latest_v1.TestCase{
 				ImageName:   "image",
 				Workspace:   tmpDir.Root(),
-				CustomTests: []latest.CustomTest{custom},
+				CustomTests: []latest_v1.CustomTest{custom},
 			}
 
 			cfg := &mockConfig{
-				tests: []*latest.TestCase{testCase},
+				tests: []*latest_v1.TestCase{testCase},
 			}
-			testEvent.InitializeState([]latest.Pipeline{{}})
+			testEvent.InitializeState([]latest_v1.Pipeline{{}})
 
 			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 			t.CheckNoError(err)
@@ -276,20 +276,20 @@ func TestGetEnv(t *testing.T) {
 			t.Override(&testContext, func(string) (string, error) { return test.testContext, nil })
 			tmpDir := t.NewTempDir().Touch("test.yaml")
 
-			custom := latest.CustomTest{
+			custom := latest_v1.CustomTest{
 				Command: "echo Running Custom Test command.",
 			}
 
-			testCase := &latest.TestCase{
+			testCase := &latest_v1.TestCase{
 				ImageName:   "image",
 				Workspace:   tmpDir.Root(),
-				CustomTests: []latest.CustomTest{custom},
+				CustomTests: []latest_v1.CustomTest{custom},
 			}
 
 			cfg := &mockConfig{
-				tests: []*latest.TestCase{testCase},
+				tests: []*latest_v1.TestCase{testCase},
 			}
-			testEvent.InitializeState([]latest.Pipeline{{}})
+			testEvent.InitializeState([]latest_v1.Pipeline{{}})
 
 			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 			t.CheckNoError(err)
@@ -303,5 +303,5 @@ func TestGetEnv(t *testing.T) {
 
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
-	tests                 []*latest.TestCase
+	tests                 []*latest_v1.TestCase
 }

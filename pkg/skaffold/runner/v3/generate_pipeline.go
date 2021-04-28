@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,16 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-package latest
+package v3
 
 import (
-	"errors"
+	"context"
+	"fmt"
+	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
-// Upgrade upgrades a configuration to the next version.
-func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
-	return nil, errors.New("there's no version to upgrade from \"latest\"")
+func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, configs []*latest_v1.SkaffoldConfig, configPaths []string, fileOut string) error {
+	return fmt.Errorf("not implemented error: SkaffoldRunner(v3).GeneratePipeline")
 }

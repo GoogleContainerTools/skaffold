@@ -29,15 +29,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
-	kubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // CLI holds parameters to run kubectl.
 type CLI struct {
 	*kubectl.CLI
-	Flags latest.KubectlFlags
+	Flags latest_v1.KubectlFlags
 
 	forceDeploy      bool
 	waitForDeletions config.WaitForDeletions
@@ -53,7 +53,7 @@ type Config interface {
 	HydratedManifests() []string
 }
 
-func NewCLI(cfg Config, flags latest.KubectlFlags, defaultNameSpace string) CLI {
+func NewCLI(cfg Config, flags latest_v1.KubectlFlags, defaultNameSpace string) CLI {
 	return CLI{
 		CLI:              kubectl.NewCLI(cfg, defaultNameSpace),
 		Flags:            flags,

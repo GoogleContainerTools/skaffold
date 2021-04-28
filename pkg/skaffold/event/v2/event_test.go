@@ -30,7 +30,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -77,7 +77,7 @@ func TestGetLogEvents(t *testing.T) {
 
 func TestGetState(t *testing.T) {
 	ev := newHandler()
-	ev.state = emptyState(mockCfg([]latest.Pipeline{{}}, "test"))
+	ev.state = emptyState(mockCfg([]latest_v1.Pipeline{{}}, "test"))
 
 	ev.stateLock.Lock()
 	ev.state.BuildState.Artifacts["img"] = Complete
@@ -243,13 +243,11 @@ func TestTaskFailed(t *testing.T) {
 		description string
 		state       proto.State
 		phase       constants.Phase
-		iteration   int
 		waitFn      func() bool
 	}{
 		{
 			description: "build failed",
 			phase:       constants.Build,
-			iteration:   0,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
@@ -261,31 +259,29 @@ func TestTaskFailed(t *testing.T) {
 		{
 			description: "deploy failed",
 			phase:       constants.Deploy,
-			iteration:   1,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
 				handler.logLock.Unlock()
 				te := logEntry.GetTaskEvent()
-				return te != nil && te.Status == Failed && te.Id == "Deploy-1"
+				return te != nil && te.Status == Failed && te.Id == "Deploy-0"
 			},
 		},
 		{
 			description: "status check failed",
 			phase:       constants.StatusCheck,
-			iteration:   2,
 			waitFn: func() bool {
 				handler.logLock.Lock()
 				logEntry := handler.eventLog[len(handler.eventLog)-1]
 				handler.logLock.Unlock()
 				te := logEntry.GetTaskEvent()
-				return te != nil && te.Status == Failed && te.Id == "StatusCheck-2"
+				return te != nil && te.Status == Failed && te.Id == "StatusCheck-0"
 			},
 		},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.description, func(t *testing.T) {
-			TaskFailed(tc.phase, tc.iteration, errors.New("random error"))
+			TaskFailed(tc.phase, errors.New("random error"))
 			wait(t, tc.waitFn)
 		})
 	}
@@ -417,17 +413,17 @@ func TestSaveEventsToFile(t *testing.T) {
 }
 
 type config struct {
-	pipes   []latest.Pipeline
+	pipes   []latest_v1.Pipeline
 	kubectx string
 }
 
-func (c config) GetKubeContext() string          { return c.kubectx }
-func (c config) AutoBuild() bool                 { return true }
-func (c config) AutoDeploy() bool                { return true }
-func (c config) AutoSync() bool                  { return true }
-func (c config) GetPipelines() []latest.Pipeline { return c.pipes }
+func (c config) GetKubeContext() string             { return c.kubectx }
+func (c config) AutoBuild() bool                    { return true }
+func (c config) AutoDeploy() bool                   { return true }
+func (c config) AutoSync() bool                     { return true }
+func (c config) GetPipelines() []latest_v1.Pipeline { return c.pipes }
 
-func mockCfg(pipes []latest.Pipeline, kubectx string) config {
+func mockCfg(pipes []latest_v1.Pipeline, kubectx string) config {
 	return config{
 		pipes:   pipes,
 		kubectx: kubectx,

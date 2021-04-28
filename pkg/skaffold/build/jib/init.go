@@ -28,7 +28,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -59,9 +59,9 @@ func (c ArtifactConfig) Describe() string {
 }
 
 // ArtifactType returns the type of the artifact to be built.
-func (c ArtifactConfig) ArtifactType(_ string) latest.ArtifactType {
-	return latest.ArtifactType{
-		JibArtifact: &latest.JibArtifact{
+func (c ArtifactConfig) ArtifactType(_ string) latest_v1.ArtifactType {
+	return latest_v1.ArtifactType{
+		JibArtifact: &latest_v1.JibArtifact{
 			Project: c.Project,
 		},
 	}

@@ -44,7 +44,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -71,7 +71,7 @@ var (
 
 // Deployer deploys workflows using the helm CLI
 type Deployer struct {
-	*latest.HelmDeploy
+	*latest_v1.HelmDeploy
 
 	kubeContext string
 	kubeConfig  string
@@ -96,7 +96,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg Config, labels map[string]string, h *latest.HelmDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, h *latest_v1.HelmDeploy) (*Deployer, error) {
 	hv, err := binVer()
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -307,7 +307,7 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 }
 
 // deployRelease deploys a single release
-func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latest.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]types.Artifact, error) {
+func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latest_v1.HelmRelease, builds []graph.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]types.Artifact, error) {
 	var err error
 	opts := installOpts{
 		releaseName: releaseName,
@@ -413,7 +413,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		return nil, userErr("install", err)
 	}
 
-	b, err := h.getRelease(ctx, releaseName, opts.namespace)
+	b, err := h.getReleaseManifest(ctx, releaseName, opts.namespace)
 	if err != nil {
 		return nil, userErr("get release", err)
 	}
@@ -422,8 +422,8 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	return artifacts, nil
 }
 
-// getRelease confirms that a release is visible to helm
-func (h *Deployer) getRelease(ctx context.Context, releaseName string, namespace string) (bytes.Buffer, error) {
+// getReleaseManifest confirms that a release is visible to helm and returns the release manifest
+func (h *Deployer) getReleaseManifest(ctx context.Context, releaseName string, namespace string) (bytes.Buffer, error) {
 	// Retry, because sometimes a release may not be immediately visible
 	opts := backoff.NewExponentialBackOff()
 	opts.MaxElapsedTime = 4 * time.Second
@@ -431,7 +431,10 @@ func (h *Deployer) getRelease(ctx context.Context, releaseName string, namespace
 
 	err := backoff.Retry(
 		func() error {
-			if err := h.exec(ctx, &b, false, nil, getArgs(releaseName, namespace)...); err != nil {
+			// only intereted in the deployed YAML
+			args := getArgs(releaseName, namespace)
+			args = append(args, "--template", "{{.Release.Manifest}}")
+			if err := h.exec(ctx, &b, false, nil, args...); err != nil {
 				logrus.Debugf("unable to get release: %v (may retry):\n%s", err, b.String())
 				return err
 			}
@@ -444,7 +447,7 @@ func (h *Deployer) getRelease(ctx context.Context, releaseName string, namespace
 }
 
 // packageChart packages the chart and returns the path to the resulting chart archive
-func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (string, error) {
+func (h *Deployer) packageChart(ctx context.Context, r latest_v1.HelmRelease) (string, error) {
 	// Allow a test to sneak a predictable path in
 	tmpDir := h.pkgTmpDir
 
@@ -490,7 +493,7 @@ func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (stri
 	return output[idx:], nil
 }
 
-func chartSource(r latest.HelmRelease) string {
+func chartSource(r latest_v1.HelmRelease) string {
 	if r.RemoteChart != "" {
 		return r.RemoteChart
 	}

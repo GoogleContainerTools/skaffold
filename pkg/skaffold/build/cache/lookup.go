@@ -25,11 +25,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
-func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifacts []*latest.Artifact) []cacheDetails {
+func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifacts []*latest_v1.Artifact) []cacheDetails {
 	details := make([]cacheDetails, len(artifacts))
 	// Create a new `artifactHasher` on every new dev loop.
 	// This way every artifact hash is calculated at most once in a single dev loop, and recalculated on every dev loop.
@@ -49,7 +49,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 	return details
 }
 
-func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, h artifactHasher) cacheDetails {
+func (c *cache) lookup(ctx context.Context, a *latest_v1.Artifact, tag string, h artifactHasher) cacheDetails {
 	hash, err := h.hash(ctx, a)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
@@ -122,7 +122,7 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 	return needsBuilding{hash: hash}
 }
 
-func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, hash string) (ImageDetails, error) {
+func (c *cache) tryImport(ctx context.Context, a *latest_v1.Artifact, tag string, hash string) (ImageDetails, error) {
 	entry := ImageDetails{}
 
 	if importMissing, err := c.importMissingImage(a.ImageName); err != nil {

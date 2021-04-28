@@ -37,7 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -293,7 +293,7 @@ func TestGetDeployStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			testEvent.InitializeState([]latest.Pipeline{{}})
+			testEvent.InitializeState([]latest_v1.Pipeline{{}})
 			errCode, err := getSkaffoldDeployStatus(test.counter, test.deployments)
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
@@ -370,7 +370,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			out := new(bytes.Buffer)
 			rc := newCounter(10)
 			rc.pending = test.pending
-			testEvent.InitializeState([]latest.Pipeline{{}})
+			testEvent.InitializeState([]latest_v1.Pipeline{{}})
 			r := withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), test.ae)
 			// report status once and set it changed to false.
 			r.ReportSinceLastUpdated(false)
@@ -460,7 +460,7 @@ func TestPrintStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			testEvent.InitializeState([]latest.Pipeline{{}})
+			testEvent.InitializeState([]latest_v1.Pipeline{{}})
 			checker := statusChecker{labeller: labeller}
 			actual := checker.printStatus(test.rs, out)
 			t.CheckDeepEqual(test.expectedOut, out.String())
@@ -591,7 +591,7 @@ func TestPollDeployment(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.command)
 			t.Override(&defaultPollPeriodInMilliseconds, 100)
-			testEvent.InitializeState([]latest.Pipeline{{}})
+			testEvent.InitializeState([]latest_v1.Pipeline{{}})
 			mockVal := mockValidator{runs: test.runs}
 			dep := test.dep.WithValidator(mockVal)
 

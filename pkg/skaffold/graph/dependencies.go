@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -36,7 +36,7 @@ var getDependenciesFunc = sourceDependenciesForArtifact
 // TransitiveSourceDependenciesCache provides an interface to evaluate and cache the source dependencies for artifacts.
 // This additionally includes the source dependencies from all other artifacts that are in the transitive closure of its artifact dependencies.
 type TransitiveSourceDependenciesCache interface {
-	ResolveForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error)
+	ResolveForArtifact(ctx context.Context, a *latest_v1.Artifact) ([]string, error)
 	Reset()
 }
 
@@ -53,7 +53,7 @@ type dependencyResolverImpl struct {
 
 // ResolveForArtifact returns the source dependencies for the target artifact. It includes the source dependencies from all other artifacts that are in the transitive closure of its artifact dependencies.
 // The result (even if an error) is cached so that the function is evaluated only once for every artifact. The cache is reset before the start of the next devloop.
-func (r *dependencyResolverImpl) ResolveForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
+func (r *dependencyResolverImpl) ResolveForArtifact(ctx context.Context, a *latest_v1.Artifact) ([]string, error) {
 	res := r.cache.Exec(a.ImageName, func() interface{} {
 		d, e := getDependenciesFunc(ctx, a, r.cfg, r.artifactResolver)
 		if e != nil {
@@ -82,7 +82,7 @@ func (r *dependencyResolverImpl) Reset() {
 }
 
 // sourceDependenciesForArtifact returns the build dependencies for the current artifact.
-func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker.Config, r docker.ArtifactResolver) ([]string, error) {
+func sourceDependenciesForArtifact(ctx context.Context, a *latest_v1.Artifact, cfg docker.Config, r docker.ArtifactResolver) ([]string, error) {
 	var (
 		paths []string
 		err   error

@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -143,7 +143,7 @@ func TestDevFailFirstCycle(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
-			artifacts := []*latest.Artifact{{
+			artifacts := []*latest_v1.Artifact{{
 				ImageName: "img",
 			}}
 			runner := createRunner(t, test.testBench, test.monitor, artifacts, nil)
@@ -274,7 +274,7 @@ func TestDev(t *testing.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&client.Client, mockK8sClient)
 			test.testBench.cycles = len(test.watchEvents)
-			artifacts := []*latest.Artifact{
+			artifacts := []*latest_v1.Artifact{
 				{ImageName: "img1"},
 				{ImageName: "img2"},
 			}
@@ -298,7 +298,7 @@ func TestDevAutoTriggers(t *testing.T) {
 		expectedActions []Actions
 		autoTriggers    triggerState // the state of auto triggers
 		singleTriggers  triggerState // the state of single intent triggers at the end of dev loop
-		userIntents     []func(i *intents)
+		userIntents     []func(i *Intents)
 	}{
 		{
 			description: "build on; sync on; deploy on",
@@ -368,8 +368,8 @@ func TestDevAutoTriggers(t *testing.T) {
 			autoTriggers:    triggerState{false, false, false},
 			singleTriggers:  triggerState{false, false, false},
 			expectedActions: []Actions{},
-			userIntents: []func(i *intents){
-				func(i *intents) {
+			userIntents: []func(i *Intents){
+				func(i *Intents) {
 					i.setBuild(true)
 				},
 			},
@@ -380,8 +380,8 @@ func TestDevAutoTriggers(t *testing.T) {
 			autoTriggers:    triggerState{false, false, false},
 			singleTriggers:  triggerState{false, false, false},
 			expectedActions: []Actions{},
-			userIntents: []func(i *intents){
-				func(i *intents) {
+			userIntents: []func(i *Intents){
+				func(i *Intents) {
 					i.setBuild(true)
 					i.setSync(true)
 				},
@@ -393,11 +393,11 @@ func TestDevAutoTriggers(t *testing.T) {
 			autoTriggers:    triggerState{false, false, false},
 			singleTriggers:  triggerState{false, false, false},
 			expectedActions: []Actions{},
-			userIntents: []func(i *intents){
-				func(i *intents) {
+			userIntents: []func(i *Intents){
+				func(i *Intents) {
 					i.setBuild(true)
 				},
-				func(i *intents) {
+				func(i *Intents) {
 					i.setSync(true)
 				},
 			},
@@ -418,11 +418,11 @@ func TestDevAutoTriggers(t *testing.T) {
 			testBench := &TestBench{}
 			testBench.cycles = len(test.watchEvents)
 			testBench.userIntents = test.userIntents
-			artifacts := []*latest.Artifact{
+			artifacts := []*latest_v1.Artifact{
 				{
 					ImageName: "img1",
-					Sync: &latest.Sync{
-						Manual: []*latest.SyncRule{{Src: "file1", Dest: "file1"}},
+					Sync: &latest_v1.Sync{
+						Manual: []*latest_v1.SyncRule{{Src: "file1", Dest: "file1"}},
 					},
 				},
 				{
@@ -524,11 +524,11 @@ func TestDevSync(t *testing.T) {
 			t.Override(&fileSyncSucceeded, func(int, string) { actualFileSyncEventCalls.Succeeded++ })
 			t.Override(&sync.WorkingDir, func(string, docker.Config) (string, error) { return "/", nil })
 			test.testBench.cycles = len(test.watchEvents)
-			artifacts := []*latest.Artifact{
+			artifacts := []*latest_v1.Artifact{
 				{
 					ImageName: "img1",
-					Sync: &latest.Sync{
-						Manual: []*latest.SyncRule{{Src: "file1", Dest: "file1"}},
+					Sync: &latest_v1.Sync{
+						Manual: []*latest_v1.SyncRule{{Src: "file1", Dest: "file1"}},
 					},
 				},
 				{

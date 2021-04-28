@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -40,7 +40,7 @@ type mockBuilder struct {
 	err bool
 }
 
-func (m *mockBuilder) Build(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact) ([]graph.Artifact, error) {
+func (m *mockBuilder) Build(context.Context, io.Writer, tag.ImageTags, []*latest_v1.Artifact) ([]graph.Artifact, error) {
 	if m.err {
 		return nil, errors.New("Unable to build")
 	}

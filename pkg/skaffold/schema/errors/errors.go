@@ -27,7 +27,7 @@ import (
 func ConfigParsingError(err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: "error parsing skaffold configuration file",
+			Message: fmt.Sprintf("error parsing skaffold configuration file: %v", err),
 			ErrCode: proto.StatusCode_CONFIG_FILE_PARSING_ERR,
 		})
 }
@@ -36,7 +36,7 @@ func ConfigParsingError(err error) error {
 func MainConfigFileNotFoundErr(file string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: fmt.Sprintf("unable to find configuration file %q", file),
+			Message: fmt.Sprintf("unable to find configuration file %q: %v", file, err),
 			ErrCode: proto.StatusCode_CONFIG_FILE_NOT_FOUND_ERR,
 			Suggestions: []*proto.Suggestion{
 				{
@@ -51,7 +51,7 @@ func MainConfigFileNotFoundErr(file string, err error) error {
 func DependencyConfigFileNotFoundErr(depFile, parentFile string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: fmt.Sprintf("could not find skaffold config file %q that is referenced as a dependency in config file %q", depFile, parentFile),
+			Message: fmt.Sprintf("could not find skaffold config file %q that is referenced as a dependency in config file %q: %v", depFile, parentFile, err),
 			ErrCode: proto.StatusCode_CONFIG_DEPENDENCY_NOT_FOUND_ERR,
 			Suggestions: []*proto.Suggestion{
 				{
@@ -124,7 +124,7 @@ func DuplicateConfigNamesAcrossFilesErr(config, file1, file2 string) error {
 func ConfigProfileActivationErr(config, file string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: fmt.Sprintf("failed to apply profiles to config %q defined in file %q", config, file),
+			Message: fmt.Sprintf("failed to apply profiles to config %q defined in file %q: %v", config, file, err),
 			ErrCode: proto.StatusCode_CONFIG_APPLY_PROFILES_ERR,
 			Suggestions: []*proto.Suggestion{
 				{
@@ -139,7 +139,7 @@ func ConfigProfileActivationErr(config, file string, err error) error {
 func ConfigSetDefaultValuesErr(config, file string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: fmt.Sprintf("failed to set default values for config %q defined in file %q", config, file),
+			Message: fmt.Sprintf("failed to set default values for config %q defined in file %q: %v", config, file, err),
 			ErrCode: proto.StatusCode_CONFIG_DEFAULT_VALUES_ERR,
 		})
 }
@@ -148,7 +148,7 @@ func ConfigSetDefaultValuesErr(config, file string, err error) error {
 func ConfigSetAbsFilePathsErr(config, file string, err error) error {
 	return sErrors.NewError(err,
 		proto.ActionableErr{
-			Message: fmt.Sprintf("failed to set absolute filepaths for config %q defined in file %q", config, file),
+			Message: fmt.Sprintf("failed to set absolute filepaths for config %q defined in file %q: %v", config, file, err),
 			ErrCode: proto.StatusCode_CONFIG_FILE_PATHS_SUBSTITUTION_ERR,
 		})
 }

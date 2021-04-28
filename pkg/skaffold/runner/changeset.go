@@ -17,13 +17,13 @@ limitations under the License.
 package runner
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
-type changeSet struct {
-	needsRebuild   []*latest.Artifact
-	rebuildTracker map[string]*latest.Artifact
+type ChangeSet struct {
+	needsRebuild   []*latest_v1.Artifact
+	rebuildTracker map[string]*latest_v1.Artifact
 	needsResync    []*sync.Item
 	resyncTracker  map[string]*sync.Item
 	needsRetest    map[string]bool // keyed on artifact image name
@@ -31,26 +31,26 @@ type changeSet struct {
 	needsReload    bool
 }
 
-func (c *changeSet) AddRebuild(a *latest.Artifact) {
+func (c *ChangeSet) AddRebuild(a *latest_v1.Artifact) {
 	if _, ok := c.rebuildTracker[a.ImageName]; ok {
 		return
 	}
 
 	if c.rebuildTracker == nil {
-		c.rebuildTracker = map[string]*latest.Artifact{}
+		c.rebuildTracker = map[string]*latest_v1.Artifact{}
 	}
 	c.rebuildTracker[a.ImageName] = a
 	c.needsRebuild = append(c.needsRebuild, a)
 }
 
-func (c *changeSet) AddRetest(a *latest.Artifact) {
+func (c *ChangeSet) AddRetest(a *latest_v1.Artifact) {
 	if c.needsRetest == nil {
 		c.needsRetest = make(map[string]bool)
 	}
 	c.needsRetest[a.ImageName] = true
 }
 
-func (c *changeSet) AddResync(s *sync.Item) {
+func (c *ChangeSet) AddResync(s *sync.Item) {
 	if _, ok := c.resyncTracker[s.Image]; ok {
 		return
 	}
@@ -62,20 +62,20 @@ func (c *changeSet) AddResync(s *sync.Item) {
 	c.needsResync = append(c.needsResync, s)
 }
 
-func (c *changeSet) resetBuild() {
-	c.rebuildTracker = make(map[string]*latest.Artifact)
+func (c *ChangeSet) resetBuild() {
+	c.rebuildTracker = make(map[string]*latest_v1.Artifact)
 	c.needsRebuild = nil
 }
 
-func (c *changeSet) resetSync() {
+func (c *ChangeSet) resetSync() {
 	c.resyncTracker = make(map[string]*sync.Item)
 	c.needsResync = nil
 }
 
-func (c *changeSet) resetDeploy() {
+func (c *ChangeSet) resetDeploy() {
 	c.needsRedeploy = false
 }
 
-func (c *changeSet) resetTest() {
+func (c *ChangeSet) resetTest() {
 	c.needsRetest = make(map[string]bool)
 }

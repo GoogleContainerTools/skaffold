@@ -27,7 +27,7 @@ import (
 
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	skutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
@@ -36,7 +36,7 @@ import (
 
 // ApplyProfiles modifies the input skaffold configuration by the application
 // of a list of profiles, and returns the list of applied profiles.
-func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions, namedProfiles []string) ([]string, error) {
+func ApplyProfiles(c *latest_v1.SkaffoldConfig, opts cfg.SkaffoldOptions, namedProfiles []string) ([]string, error) {
 	byName := profilesByName(c.Profiles)
 
 	profiles, contextSpecificProfiles, err := activatedProfiles(c.Profiles, opts, namedProfiles)
@@ -85,7 +85,7 @@ func checkKubeContextConsistency(contextSpecificProfiles []string, cliContext, e
 
 // activatedProfiles returns the activated profiles and activated profiles which are kube-context specific.
 // The latter matters for error reporting when the effective kube-context changes.
-func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions, namedProfiles []string) ([]string, []string, error) {
+func activatedProfiles(profiles []latest_v1.Profile, opts cfg.SkaffoldOptions, namedProfiles []string) ([]string, []string, error) {
 	var activated []string
 	var contextSpecificProfiles []string
 
@@ -189,7 +189,7 @@ func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
 	return skutil.RegexEqual(kubeContext, currentKubeConfig.CurrentContext), nil
 }
 
-func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
+func applyProfile(config *latest_v1.SkaffoldConfig, profile latest_v1.Profile) error {
 	logrus.Infof("applying profile: %s", profile.Name)
 
 	// Apply profile, field by field
@@ -246,7 +246,7 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 		return err
 	}
 
-	*config = latest.SkaffoldConfig{}
+	*config = latest_v1.SkaffoldConfig{}
 	return yaml.Unmarshal(buf, config)
 }
 
@@ -264,8 +264,8 @@ func tryPatch(patch yamlpatch.Operation, buf []byte) (valid bool) {
 	return err == nil
 }
 
-func profilesByName(profiles []latest.Profile) map[string]latest.Profile {
-	byName := make(map[string]latest.Profile)
+func profilesByName(profiles []latest_v1.Profile) map[string]latest_v1.Profile {
+	byName := make(map[string]latest_v1.Profile)
 	for _, profile := range profiles {
 		byName[profile.Name] = profile
 	}

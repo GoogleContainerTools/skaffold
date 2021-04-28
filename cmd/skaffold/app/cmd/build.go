@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 var (
@@ -55,6 +55,7 @@ func NewCmdBuild() *cobra.Command {
 			{Value: buildFormatFlag, Name: "output", Shorthand: "o", DefValue: defaultBuildFormatTemplate, Usage: "Used in conjunction with --quiet flag. " + buildFormatFlag.Usage()},
 			{Value: &buildOutputFlag, Name: "file-output", DefValue: "", Usage: "Filename to write build images to"},
 			{Value: &opts.DryRun, Name: "dry-run", DefValue: false, Usage: "Don't build images, just compute the tag for each artifact.", IsEnum: true},
+			{Value: &opts.PushImages, Name: "push", DefValue: nil, Usage: "Push the built images to the specified image repository.", IsEnum: true, NoOptDefVal: "true"},
 		}).
 		WithHouseKeepingMessages().
 		NoArgs(doBuild)
@@ -66,7 +67,7 @@ func doBuild(ctx context.Context, out io.Writer) error {
 		buildOut = ioutil.Discard
 	}
 
-	return withRunner(ctx, out, func(r runner.Runner, configs []*latest.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, configs []*latest_v1.SkaffoldConfig) error {
 		bRes, err := r.Build(ctx, buildOut, targetArtifacts(opts, configs))
 
 		if quietFlag || buildOutputFlag != "" {
@@ -93,8 +94,8 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	})
 }
 
-func targetArtifacts(opts config.SkaffoldOptions, configs []*latest.SkaffoldConfig) []*latest.Artifact {
-	var targetArtifacts []*latest.Artifact
+func targetArtifacts(opts config.SkaffoldOptions, configs []*latest_v1.SkaffoldConfig) []*latest_v1.Artifact {
+	var targetArtifacts []*latest_v1.Artifact
 	for _, cfg := range configs {
 		for _, artifact := range cfg.Build.Artifacts {
 			if opts.IsTargetImage(artifact) {

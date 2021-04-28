@@ -21,14 +21,14 @@ import (
 	"sort"
 
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // GetAllPodNamespaces lists the namespaces that should be watched.
 // + The namespace passed on the command line
 // + Current kube context's namespace
 // + Namespaces referenced in Helm releases
-func GetAllPodNamespaces(configNamespace string, pipelines []latest.Pipeline) ([]string, error) {
+func GetAllPodNamespaces(configNamespace string, pipelines []latest_v1.Pipeline) ([]string, error) {
 	nsMap := make(map[string]bool)
 
 	if configNamespace == "" {
@@ -63,7 +63,7 @@ func GetAllPodNamespaces(configNamespace string, pipelines []latest.Pipeline) ([
 	return namespaces, nil
 }
 
-func collectHelmReleasesNamespaces(pipelines []latest.Pipeline) []string {
+func collectHelmReleasesNamespaces(pipelines []latest_v1.Pipeline) []string {
 	var namespaces []string
 	for _, cfg := range pipelines {
 		if cfg.Deploy.HelmDeploy != nil {

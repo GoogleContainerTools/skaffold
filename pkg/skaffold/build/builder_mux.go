@@ -25,7 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
@@ -39,13 +39,14 @@ type BuilderMux struct {
 
 // Config represents an interface for getting all config pipelines.
 type Config interface {
-	GetPipelines() []latest.Pipeline
+	GetPipelines() []latest_v1.Pipeline
 	DefaultRepo() *string
 	GlobalConfig() string
+	BuildConcurrency() int
 }
 
 // NewBuilderMux returns an implementation of `build.BuilderMux`.
-func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeline) (PipelineBuilder, error)) (*BuilderMux, error) {
+func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest_v1.Pipeline) (PipelineBuilder, error)) (*BuilderMux, error) {
 	pipelines := cfg.GetPipelines()
 	m := make(map[string]PipelineBuilder)
 	var pb []PipelineBuilder
@@ -59,17 +60,22 @@ func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeli
 		for _, a := range p.Build.Artifacts {
 			m[a.ImageName] = b
 		}
-		concurrency := b.Concurrency()
-		// set mux concurrency to be the minimum of all builders' concurrency. (concurrency = 0 means unlimited)
-		switch {
-		case minConcurrency < 0:
-			minConcurrency = concurrency
-			logrus.Infof("build concurrency first set to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
-		case concurrency > 0 && (minConcurrency == 0 || concurrency < minConcurrency):
-			minConcurrency = concurrency
-			logrus.Infof("build concurrency updated to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
-		default:
-			logrus.Infof("build concurrency value %d parsed from %s[%d] is ignored since it's not less than previously set value %d", concurrency, reflect.TypeOf(b).String(), i, minConcurrency)
+
+		if cfg.BuildConcurrency() >= 0 {
+			minConcurrency = cfg.BuildConcurrency()
+		} else {
+			concurrency := b.Concurrency()
+			// set mux concurrency to be the minimum of all builders' concurrency. (concurrency = 0 means unlimited)
+			switch {
+			case minConcurrency < 0:
+				minConcurrency = concurrency
+				logrus.Infof("build concurrency first set to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
+			case concurrency > 0 && (minConcurrency == 0 || concurrency < minConcurrency):
+				minConcurrency = concurrency
+				logrus.Infof("build concurrency updated to %d parsed from %s[%d]", minConcurrency, reflect.TypeOf(b).String(), i)
+			default:
+				logrus.Infof("build concurrency value %d parsed from %s[%d] is ignored since it's not less than previously set value %d", concurrency, reflect.TypeOf(b).String(), i, minConcurrency)
+			}
 		}
 	}
 	logrus.Infof("final build concurrency value is %d", minConcurrency)
@@ -78,7 +84,7 @@ func NewBuilderMux(cfg Config, store ArtifactStore, builder func(p latest.Pipeli
 }
 
 // Build executes the specific image builder for each artifact in the given artifact slice.
-func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]graph.Artifact, error) {
+func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest_v1.Artifact) ([]graph.Artifact, error) {
 	m := make(map[PipelineBuilder]bool)
 	for _, a := range artifacts {
 		m[b.byImageName[a.ImageName]] = true
@@ -90,7 +96,7 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		}
 	}
 
-	builder := func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	builder := func(ctx context.Context, out io.Writer, artifact *latest_v1.Artifact, tag string) (string, error) {
 		p := b.byImageName[artifact.ImageName]
 		artifactBuilder := p.Build(ctx, out, artifact)
 		return artifactBuilder(ctx, out, artifact, tag)

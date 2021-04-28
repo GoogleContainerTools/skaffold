@@ -19,32 +19,32 @@ package tags
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestSetAbsFilePaths(t *testing.T) {
 	tests := []struct {
 		description string
-		config      *latest.SkaffoldConfig
+		config      *latest_v1.SkaffoldConfig
 		base        string
-		expected    *latest.SkaffoldConfig
+		expected    *latest_v1.SkaffoldConfig
 	}{
 		{
 			description: "relative path",
-			config: &latest.SkaffoldConfig{
-				Pipeline: latest.Pipeline{
-					Build: latest.BuildConfig{
-						Artifacts: []*latest.Artifact{
+			config: &latest_v1.SkaffoldConfig{
+				Pipeline: latest_v1.Pipeline{
+					Build: latest_v1.BuildConfig{
+						Artifacts: []*latest_v1.Artifact{
 							{ImageName: "foo1", Workspace: "foo"},
 							{ImageName: "foo2", Workspace: `C:\a\foo`},
 						},
 					},
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KptDeploy:     &latest.KptDeploy{Dir: "."},
-							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{`foo\*`, `C:\a\foo\*`}},
-							HelmDeploy: &latest.HelmDeploy{Releases: []latest.HelmRelease{
+					Deploy: latest_v1.DeployConfig{
+						DeployType: latest_v1.DeployType{
+							KptDeploy:     &latest_v1.KptDeploy{Dir: "."},
+							KubectlDeploy: &latest_v1.KubectlDeploy{Manifests: []string{`foo\*`, `C:\a\foo\*`}},
+							HelmDeploy: &latest_v1.HelmDeploy{Releases: []latest_v1.HelmRelease{
 								{ChartPath: `..\charts`, ValuesFiles: []string{"values1.yaml", "values2.yaml"}, SetFiles: map[string]string{"envFile": "values3.yaml", "configFile": "values4.yaml", "anotherFile": `C:\c\values5.yaml`}},
 								{RemoteChart: "foo/bar", ValuesFiles: []string{"values1.yaml", "values2.yaml"}, SetFiles: map[string]string{"envFile": "values3.yaml", "configFile": "values4.yaml", "anotherFile": `C:\c\values5.yaml`}},
 							}},
@@ -53,19 +53,19 @@ func TestSetAbsFilePaths(t *testing.T) {
 				},
 			},
 			base: `C:\a\b`,
-			expected: &latest.SkaffoldConfig{
-				Pipeline: latest.Pipeline{
-					Build: latest.BuildConfig{
-						Artifacts: []*latest.Artifact{
+			expected: &latest_v1.SkaffoldConfig{
+				Pipeline: latest_v1.Pipeline{
+					Build: latest_v1.BuildConfig{
+						Artifacts: []*latest_v1.Artifact{
 							{ImageName: "foo1", Workspace: `C:\a\b\foo`},
 							{ImageName: "foo2", Workspace: `C:\a\foo`},
 						},
 					},
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KptDeploy:     &latest.KptDeploy{Dir: `C:\a\b`},
-							KubectlDeploy: &latest.KubectlDeploy{Manifests: []string{`C:\a\b\foo\*`, `C:\a\foo\*`}},
-							HelmDeploy: &latest.HelmDeploy{Releases: []latest.HelmRelease{
+					Deploy: latest_v1.DeployConfig{
+						DeployType: latest_v1.DeployType{
+							KptDeploy:     &latest_v1.KptDeploy{Dir: `C:\a\b`},
+							KubectlDeploy: &latest_v1.KubectlDeploy{Manifests: []string{`C:\a\b\foo\*`, `C:\a\foo\*`}},
+							HelmDeploy: &latest_v1.HelmDeploy{Releases: []latest_v1.HelmRelease{
 								{ChartPath: `C:\a\charts`, ValuesFiles: []string{`C:\a\b\values1.yaml`, `C:\a\b\values2.yaml`}, SetFiles: map[string]string{"envFile": `C:\a\b\values3.yaml`, "configFile": `C:\a\b\values4.yaml`, "anotherFile": `C:\c\values5.yaml`}},
 								{RemoteChart: "foo/bar", ValuesFiles: []string{`C:\a\b\values1.yaml`, `C:\a\b\values2.yaml`}, SetFiles: map[string]string{"envFile": `C:\a\b\values3.yaml`, "configFile": `C:\a\b\values4.yaml`, "anotherFile": `C:\c\values5.yaml`}},
 							}},

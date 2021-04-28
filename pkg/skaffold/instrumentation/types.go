@@ -51,6 +51,9 @@ type skaffoldMeter struct {
 	// PlatformType Where Skaffold is building artifacts (local, cluster, Google Cloud Build, or a combination of them).
 	PlatformType string
 
+	// User indicates the client invoking skaffold. Is one of allowedUser i.e. vsc, intellij, gcloud
+	User string
+
 	// Deployers All the deployers used in the Skaffold execution.
 	Deployers []string
 
