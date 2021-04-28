@@ -14,8 +14,11 @@ git:
   submodules: false
 
 before_script:
-  - echo 'DOCKER_OPTS="$DOCKER_OPTS --registry-mirror=https://mirror.gcr.io"'
-  - sudo service docker restart
+  - tmpdaemon=$(mktemp)
+  - sudo jq '."registry-mirrors" += ["https://mirror.gcr.io"]' /etc/docker/daemon.json > $tmpdaemon
+  - sudo mv $tmpdaemon /etc/docker/daemon.json
+  - sudo systemctl daemon-reload
+  - sudo systemctl restart docker
   - docker system info
 
 install:
