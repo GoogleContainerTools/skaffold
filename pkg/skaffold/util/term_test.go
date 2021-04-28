@@ -38,37 +38,40 @@ func TestIsNotTerminal(t *testing.T) {
 func TestSupportsColor(t *testing.T) {
 	tests := []struct {
 		description  string
-		colorsOutput []byte
+		colorsOutput string
 		shouldErr    bool
 		expected     bool
 	}{
 		{
 			description:  "Supports 256 colors",
-			colorsOutput: []byte("256"),
+			colorsOutput: "256",
 			expected:     true,
 		},
 		{
 			description:  "Supports 0 colors",
-			colorsOutput: []byte("0"),
+			colorsOutput: "0",
 			expected:     false,
 		},
 		{
-			description:  "Errors",
-			colorsOutput: []byte("-1"),
-			shouldErr:    true,
+			description:  "tput returns -1",
+			colorsOutput: "-1",
 			expected:     false,
+		},
+		{
+			description:  "cmd run errors",
+			colorsOutput: "-1",
+			expected:     false,
+			shouldErr:    true,
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&colors, func() ([]byte, error) {
-				if test.shouldErr {
-					return nil, errors.New("error")
-				}
-
-				return test.colorsOutput, nil
-			})
+			if test.shouldErr {
+				t.Override(&DefaultExecCommand, testutil.CmdRunOutErr("tput colors", test.colorsOutput, errors.New("error")))
+			} else {
+				t.Override(&DefaultExecCommand, testutil.CmdRunOut("tput colors", test.colorsOutput))
+			}
 			if runtime.GOOS == constants.Windows {
 				test.expected = true
 				test.shouldErr = false

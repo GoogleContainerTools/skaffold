@@ -29,8 +29,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
-var colors = tputColors
-
 func IsTerminal(w io.Writer) (uintptr, bool) {
 	type descriptor interface {
 		Fd() uintptr
@@ -50,7 +48,8 @@ func SupportsColor() (bool, error) {
 		return true, nil
 	}
 
-	res, err := colors()
+	cmd := exec.Command("tput", "colors")
+	res, err := RunCmdOut(cmd)
 	if err != nil {
 		return false, fmt.Errorf("checking terminal colors: %w", err)
 	}
@@ -60,9 +59,5 @@ func SupportsColor() (bool, error) {
 		return false, err
 	}
 
-	return numColors != 0, nil
-}
-
-func tputColors() ([]byte, error) {
-	return exec.Command("tput", "colors").Output()
+	return numColors > 0, nil
 }
