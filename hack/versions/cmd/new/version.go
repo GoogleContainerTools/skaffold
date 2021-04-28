@@ -70,8 +70,8 @@ func main() {
 	sed(path(current, "upgrade_test.go"), prev, current)
 
 	// Previous version now upgrades to current instead of latest
-	sed(path(prev, "upgrade.go"), "latest", current)
-	sed(path(prev, "upgrade_test.go"), "latest", current)
+	sed(path(prev, "upgrade.go"), "latest/v1", current)
+	sed(path(prev, "upgrade_test.go"), "latest/v1", current)
 
 	// Latest uses the new version
 	sed(path("latest", "v1", "config.go"), current, next)
