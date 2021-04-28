@@ -142,7 +142,7 @@ func initCloudMonitoringExporterMetrics() (*push.Controller, error) {
 
 func devStdOutExporter() (*push.Controller, error) {
 	// export metrics to std out if local env is set.
-	if isLocal := os.Getenv("SKAFFOLD_EXPORT_TO_STDOUT"); isLocal != "" {
+	if _, ok := os.LookupEnv("SKAFFOLD_EXPORT_TO_STDOUT"); ok {
 		return stdout.InstallNewPipeline([]stdout.Option{
 			stdout.WithQuantiles([]float64{0.5}),
 			stdout.WithPrettyPrint(),
