@@ -182,6 +182,7 @@ Examples:
   skaffold build -q --dry-run
 
 Options:
+      --apply-profiles-recursively=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
       --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
   -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
       --cache-artifacts=true: Set to false to disable default caching of artifacts
@@ -221,6 +222,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_APPLY_PROFILES_RECURSIVELY` (same as `--apply-profiles-recursively`)
 * `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
 * `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
@@ -405,6 +407,7 @@ Examples:
   skaffold debug --port-forward
 
 Options:
+      --apply-profiles-recursively=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
       --auto-build=false: When set to false, builds wait for API request instead of running automatically
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
@@ -458,6 +461,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_APPLY_PROFILES_RECURSIVELY` (same as `--apply-profiles-recursively`)
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_AUTO_BUILD` (same as `--auto-build`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
@@ -510,6 +514,7 @@ Delete the deployed application
 
 
 Options:
+      --apply-profiles-recursively=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
@@ -531,6 +536,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_APPLY_PROFILES_RECURSIVELY` (same as `--apply-profiles-recursively`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
@@ -564,6 +570,7 @@ Examples:
   skaffold deploy --skip-render
 
 Options:
+      --apply-profiles-recursively=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
       --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
@@ -605,6 +612,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_APPLY_PROFILES_RECURSIVELY` (same as `--apply-profiles-recursively`)
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
@@ -645,6 +653,7 @@ Run a pipeline in development mode
 
 
 Options:
+      --apply-profiles-recursively=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
       --auto-build=true: When set to false, builds wait for API request instead of running automatically
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
@@ -698,6 +707,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_APPLY_PROFILES_RECURSIVELY` (same as `--apply-profiles-recursively`)
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_AUTO_BUILD` (same as `--auto-build`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
@@ -757,6 +767,7 @@ Examples:
   skaffold diagnose --yaml-only --profile PROFILE
 
 Options:
+      --apply-profiles-recursively=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
@@ -774,6 +785,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_APPLY_PROFILES_RECURSIVELY` (same as `--apply-profiles-recursively`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
@@ -889,6 +901,7 @@ Examples:
 
 Options:
       --add-skaffold-labels=true: Add Skaffold-specific labels to rendered manifest. If false, custom labels are still applied. Helpful for GitOps model where Skaffold is not the deployer.
+      --apply-profiles-recursively=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
       --cache-artifacts=true: Set to false to disable default caching of artifacts
   -d, --default-repo='': Default repository value (overrides global config)
@@ -914,6 +927,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_ADD_SKAFFOLD_LABELS` (same as `--add-skaffold-labels`)
+* `SKAFFOLD_APPLY_PROFILES_RECURSIVELY` (same as `--apply-profiles-recursively`)
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
@@ -944,6 +958,7 @@ Examples:
   skaffold run -p <profile>
 
 Options:
+      --apply-profiles-recursively=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
@@ -992,6 +1007,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 ```
 Env vars:
 
+* `SKAFFOLD_APPLY_PROFILES_RECURSIVELY` (same as `--apply-profiles-recursively`)
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)

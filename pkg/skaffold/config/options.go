@@ -33,32 +33,33 @@ type WaitForDeletions struct {
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
-	ConfigurationFile     string
-	ConfigurationFilter   []string
-	HydratedManifests     []string
-	GlobalConfig          string
-	EventLogFile          string
-	RenderOutput          string
-	User                  string
-	Apply                 bool
-	Cleanup               bool
-	Notification          bool
-	Tail                  bool
-	SkipTests             bool
-	CacheArtifacts        bool
-	EnableRPC             bool
-	Force                 bool
-	NoPrune               bool
-	NoPruneChildren       bool
-	AutoBuild             bool
-	AutoSync              bool
-	AutoDeploy            bool
-	RenderOnly            bool
-	AutoCreateConfig      bool
-	AssumeYes             bool
-	ProfileAutoActivation bool
-	DryRun                bool
-	SkipRender            bool
+	ConfigurationFile        string
+	ConfigurationFilter      []string
+	HydratedManifests        []string
+	GlobalConfig             string
+	EventLogFile             string
+	RenderOutput             string
+	User                     string
+	Apply                    bool
+	Cleanup                  bool
+	Notification             bool
+	Tail                     bool
+	SkipTests                bool
+	CacheArtifacts           bool
+	EnableRPC                bool
+	Force                    bool
+	NoPrune                  bool
+	NoPruneChildren          bool
+	AutoBuild                bool
+	AutoSync                 bool
+	AutoDeploy               bool
+	RenderOnly               bool
+	AutoCreateConfig         bool
+	AssumeYes                bool
+	ProfileAutoActivation    bool
+	ApplyProfilesRecursively bool
+	DryRun                   bool
+	SkipRender               bool
 
 	// Add Skaffold-specific labels including runID, deployer labels, etc.
 	// `CustomLabels` are still applied if this is false. Must only be used in

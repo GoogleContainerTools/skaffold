@@ -156,7 +156,9 @@ The remote config gets treated like a local config after substituting the path w
 
 ### Profile Activation in required configs
 
-Additionally the `activeProfiles` stanza can define the profiles to be activated in the required configs, via:
+Skaffold will try to apply `profiles` specified by the `--profile` flag, recursively to all configurations imported as dependencies. This behavior can be disabled by setting the `--apply-profiles-recursively` flag to `false`.
+
+You can additionally set up more granular and conditional profile activations across dependencies through the `activeProfiles` stanza:
 
 ```yaml
 apiVersion: skaffold/v2beta11
@@ -172,6 +174,8 @@ requires:
 ```
 
 Here, `profile1` is a profile that needs to exist in both configs `cfg1` and `cfg2`; while `profile2` and `profile3` are profiles defined in the current config `cfg`. If the current config is activated with either `profile2` or `profile3` then the required configs `cfg1` and `cfg2` are imported with `profile1` applied. If the `activatedBy` clause is omitted then that `profile1` always gets applied for the imported configs.
+
+
 
 {{< alert title="Follow up" >}}
 Take a look at the [tutorial]({{< relref "/docs/tutorials/config-dependencies" >}}) section to see this in action.

@@ -164,7 +164,7 @@ func processEachConfig(config *latest_v1.SkaffoldConfig, cfgOpts configOpts, opt
 
 	var configs []*latest_v1.SkaffoldConfig
 	for _, d := range config.Dependencies {
-		newOpts := configOpts{file: cfgOpts.file, profiles: filterActiveProfiles(d, profiles), isRequired: required, isDependency: cfgOpts.isDependency}
+		newOpts := configOpts{file: cfgOpts.file, profiles: filterActiveProfiles(d, profiles, opts), isRequired: required, isDependency: cfgOpts.isDependency}
 		depConfigs, err := processEachDependency(d, newOpts, opts, r)
 		if err != nil {
 			return nil, err
@@ -179,7 +179,7 @@ func processEachConfig(config *latest_v1.SkaffoldConfig, cfgOpts configOpts, opt
 }
 
 // filterActiveProfiles selects the set of profiles to activate in the dependency config based on the current set of active profiles.
-func filterActiveProfiles(d latest_v1.ConfigDependency, profiles []string) []string {
+func filterActiveProfiles(d latest_v1.ConfigDependency, profiles []string, opts config.SkaffoldOptions) []string {
 	var depProfiles []string
 	for _, ap := range d.ActiveProfiles {
 		if len(ap.ActivatedBy) == 0 {
@@ -191,6 +191,14 @@ func filterActiveProfiles(d latest_v1.ConfigDependency, profiles []string) []str
 				depProfiles = append(depProfiles, ap.Name)
 				break
 			}
+		}
+	}
+	if !opts.ApplyProfilesRecursively {
+		return depProfiles
+	}
+	for _, p := range opts.Profiles {
+		if !util.StrSliceContains(depProfiles, p) {
+			depProfiles = append(depProfiles, p)
 		}
 	}
 	return depProfiles

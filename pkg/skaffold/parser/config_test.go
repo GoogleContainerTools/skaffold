@@ -86,12 +86,13 @@ type mockCfg struct {
 
 func TestGetAllConfigs(t *testing.T) {
 	tests := []struct {
-		description  string
-		documents    []document
-		configFilter []string
-		profiles     []string
-		errCode      proto.StatusCode
-		expected     []*latest_v1.SkaffoldConfig
+		description              string
+		documents                []document
+		configFilter             []string
+		profiles                 []string
+		applyProfilesRecursively bool
+		errCode                  proto.StatusCode
+		expected                 []*latest_v1.SkaffoldConfig
 	}{
 		{
 			description: "no dependencies",
@@ -402,6 +403,30 @@ requires:
 				createCfg("cfg01", "image01", ".", nil),
 			},
 		},
+		{
+			description:              "recursively applied profiles",
+			profiles:                 []string{"pf0"},
+			applyProfilesRecursively: true,
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
+requires:
+  - path: doc1
+    configs: [cfg10]
+`}, {name: "cfg01", requiresStanza: ""}}},
+				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: `
+requires:
+  - path: ../doc2
+    configs: [cfg21]
+`}, {name: "cfg11", requiresStanza: ""}}},
+				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
+			},
+			expected: []*latest_v1.SkaffoldConfig{
+				createCfg("cfg21", "pf0image21", "doc2", nil),
+				createCfg("cfg10", "pf0image10", "doc1", []latest_v1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
+				createCfg("cfg00", "pf0image00", ".", []latest_v1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
+				createCfg("cfg01", "pf0image01", ".", nil),
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -435,10 +460,11 @@ requires:
 			}
 			t.Override(&git.SyncRepo, func(g latest_v1.GitInfo, _ config.SkaffoldOptions) (string, error) { return g.Repo, nil })
 			cfgs, err := GetAllConfigs(config.SkaffoldOptions{
-				Command:             "dev",
-				ConfigurationFile:   test.documents[0].path,
-				ConfigurationFilter: test.configFilter,
-				Profiles:            test.profiles,
+				Command:                  "dev",
+				ConfigurationFile:        test.documents[0].path,
+				ConfigurationFilter:      test.configFilter,
+				Profiles:                 test.profiles,
+				ApplyProfilesRecursively: test.applyProfilesRecursively,
 			})
 			if test.errCode == proto.StatusCode_OK {
 				t.CheckDeepEqual(test.expected, cfgs)
