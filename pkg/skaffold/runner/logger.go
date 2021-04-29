@@ -20,10 +20,10 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 )
 
-func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []graph.Artifact) *kubernetes.LogAggregator {
+func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []graph.Artifact) *logger.LogAggregator {
 	if !r.runCtx.Tail() {
 		return nil
 	}
@@ -33,5 +33,5 @@ func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []graph.Artifact)
 		imageNames = append(imageNames, artifact.Tag)
 	}
 
-	return kubernetes.NewLogAggregator(out, r.kubectlCLI, imageNames, r.podSelector, r.runCtx)
+	return logger.NewLogAggregator(out, r.kubectlCLI, imageNames, r.podSelector, r.runCtx)
 }
