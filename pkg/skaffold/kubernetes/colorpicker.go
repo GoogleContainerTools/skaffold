@@ -42,6 +42,7 @@ var colorCodes = []output.Color{
 // from each pod.
 type ColorPicker interface {
 	Pick(pod *v1.Pod) output.Color
+	AddImage(image string)
 }
 
 type colorPicker struct {
@@ -52,16 +53,20 @@ type colorPicker struct {
 // sequentially from `colorCodes`. If all colors are used, the first color will be used
 // again. The formatter for the associated color will then be returned by `Pick` each
 // time it is called for the artifact and can be used to write to out in that color.
-func NewColorPicker(imageNames []string) ColorPicker {
+func NewColorPicker() ColorPicker {
 	imageColors := make(map[string]output.Color)
-
-	for i, imageName := range imageNames {
-		imageColors[tag.StripTag(imageName, false)] = colorCodes[i%len(colorCodes)]
-	}
 
 	return &colorPicker{
 		imageColors: imageColors,
 	}
+}
+
+func (p *colorPicker) AddImage(image string) {
+	imageName := tag.StripTag(image, false)
+	if _, ok := p.imageColors[imageName]; ok {
+		return
+	}
+	p.imageColors[imageName] = colorCodes[len(p.imageColors)%len(colorCodes)]
 }
 
 // Pick will return the color that was associated with pod when `NewColorPicker` was called.

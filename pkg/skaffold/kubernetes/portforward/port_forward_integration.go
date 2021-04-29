@@ -33,7 +33,7 @@ import (
 
 // SimulateDevCycle is used for testing a port forward + stop + restart in a simulated dev cycle
 func SimulateDevCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
-	em := NewEntryManager(os.Stdout, NewKubectlForwarder(os.Stdout, kubectlCLI))
+	em := NewEntryManager(NewKubectlForwarder(kubectlCLI))
 	portForwardEventHandler := portForwardEvent
 	defer func() { portForwardEvent = portForwardEventHandler }()
 	portForwardEvent = func(entry *portForwardEntry) {}
@@ -46,7 +46,7 @@ func SimulateDevCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
 		Port:      schemautil.FromInt(8080),
 	}, "", "dummy container", "", "", localPort, false)
 	defer em.Stop()
-	em.forwardPortForwardEntry(ctx, pfe)
+	em.forwardPortForwardEntry(ctx, os.Stdout, pfe)
 	em.Stop()
 
 	logrus.Info("waiting for the same port to become available...")
@@ -63,5 +63,5 @@ func SimulateDevCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
 		t.Fatalf("port is not released after portforwarding stopped: %d", localPort)
 	}
 
-	em.forwardPortForwardEntry(ctx, pfe)
+	em.forwardPortForwardEntry(ctx, os.Stdout, pfe)
 }

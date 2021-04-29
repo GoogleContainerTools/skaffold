@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -320,7 +321,7 @@ func TestUpdateForShDashC(t *testing.T) {
 			container := v1.Container{}
 			// The transformer reverses the unwrapped entrypoint which should be reflected into the container.Entrypoint
 			updateForShDashC(&container, test.input,
-				func(c *v1.Container, result imageConfiguration) (ContainerDebugConfiguration, string, error) {
+				func(c *v1.Container, result imageConfiguration) (util.ContainerDebugConfiguration, string, error) {
 					t.CheckDeepEqual(test.unwrapped, result, cmp.AllowUnexported(imageConfiguration{}))
 					if len(result.entrypoint) > 0 {
 						c.Command = make([]string, len(result.entrypoint))
@@ -328,7 +329,7 @@ func TestUpdateForShDashC(t *testing.T) {
 							c.Command[len(result.entrypoint)-i-1] = s
 						}
 					}
-					return ContainerDebugConfiguration{}, "image", nil
+					return util.ContainerDebugConfiguration{}, "image", nil
 				})
 			t.CheckDeepEqual(test.expected, container)
 		})

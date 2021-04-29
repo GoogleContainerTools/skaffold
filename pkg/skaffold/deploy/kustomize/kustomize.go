@@ -28,13 +28,18 @@ import (
 	yamlv3 "gopkg.in/yaml.v3"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -94,14 +99,20 @@ type secretGenerator struct {
 type Deployer struct {
 	*latestV1.KustomizeDeploy
 
+	log.Logger
+	preview.ResourcePreviewer
+	debug.Debugger
+
 	kubectl             kubectl.CLI
+	podSelector         *kubernetes.ImageList
+	originalImages      []graph.Artifact
 	insecureRegistries  map[string]bool
 	labels              map[string]string
 	globalConfig        string
 	useKubectlKustomize bool
 }
 
-func NewDeployer(cfg kubectl.Config, labels map[string]string, d *latestV1.KustomizeDeploy) (*Deployer, error) {
+func NewDeployer(cfg kubectl.Config, labels map[string]string, logProvider log.Provider, previewProvider preview.Provider, debugProvider debug.Provider, d *latestV1.KustomizeDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -115,7 +126,13 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, d *latestV1.Kusto
 	// if user has kustomize binary, prioritize that over kubectl kustomize
 	useKubectlKustomize := !KustomizeBinaryCheck() && kubectlVersionCheck(kubectl)
 
+	podSelector := kubernetes.NewImageList()
+
 	return &Deployer{
+		Logger:              logProvider.GetKubernetesLogger(podSelector),
+		ResourcePreviewer:   previewProvider.GetKubernetesPreviewer(podSelector),
+		Debugger:            debugProvider.GetKubernetesDebugger(podSelector),
+		podSelector:         podSelector,
 		KustomizeDeploy:     d,
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),
@@ -183,6 +200,8 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 	endTrace()
 
+	deployutil.AddTagsToPodSelector(builds, k.originalImages, k.podSelector)
+	k.RegisterArtifactsToLogger(builds)
 	return namespaces, nil
 }
 
@@ -204,6 +223,13 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 
 	if len(manifests) == 0 {
 		return nil, nil
+	}
+
+	if len(k.originalImages) == 0 {
+		k.originalImages, err = manifests.GetImages()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	manifests, err = manifests.ReplaceImages(ctx, builds)

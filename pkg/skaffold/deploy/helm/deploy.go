@@ -37,14 +37,19 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -74,10 +79,16 @@ var (
 type Deployer struct {
 	*latestV1.HelmDeploy
 
-	kubeContext string
-	kubeConfig  string
-	namespace   string
-	configFile  string
+	log.Logger
+	preview.ResourcePreviewer
+	debug.Debugger
+
+	podSelector    *kubernetes.ImageList
+	originalImages []graph.Artifact
+	kubeContext    string
+	kubeConfig     string
+	namespace      string
+	configFile     string
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
@@ -97,7 +108,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg Config, labels map[string]string, h *latestV1.HelmDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, logProvider log.Provider, previewProvider preview.Provider, debugProvider debug.Provider, h *latestV1.HelmDeploy) (*Deployer, error) {
 	hv, err := binVer()
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -107,17 +118,33 @@ func NewDeployer(cfg Config, labels map[string]string, h *latestV1.HelmDeploy) (
 		return nil, minVersionErr()
 	}
 
+	podSelector := kubernetes.NewImageList()
+
+	originalImages := []graph.Artifact{}
+	for _, release := range h.Releases {
+		for _, v := range release.ArtifactOverrides {
+			originalImages = append(originalImages, graph.Artifact{
+				ImageName: v,
+			})
+		}
+	}
+
 	return &Deployer{
-		HelmDeploy:    h,
-		kubeContext:   cfg.GetKubeContext(),
-		kubeConfig:    cfg.GetKubeConfig(),
-		namespace:     cfg.GetKubeNamespace(),
-		forceDeploy:   cfg.ForceDeploy(),
-		configFile:    cfg.ConfigurationFile(),
-		labels:        labels,
-		bV:            hv,
-		enableDebug:   cfg.Mode() == config.RunModes.Debug,
-		isMultiConfig: cfg.IsMultiConfig(),
+		Logger:            logProvider.GetKubernetesLogger(podSelector),
+		ResourcePreviewer: previewProvider.GetKubernetesPreviewer(podSelector),
+		Debugger:          debugProvider.GetKubernetesDebugger(podSelector),
+		originalImages:    originalImages,
+		podSelector:       podSelector,
+		HelmDeploy:        h,
+		kubeContext:       cfg.GetKubeContext(),
+		kubeConfig:        cfg.GetKubeConfig(),
+		namespace:         cfg.GetKubeNamespace(),
+		forceDeploy:       cfg.ForceDeploy(),
+		configFile:        cfg.ConfigurationFile(),
+		labels:            labels,
+		bV:                hv,
+		enableDebug:       cfg.Mode() == config.RunModes.Debug,
+		isMultiConfig:     cfg.IsMultiConfig(),
 	}, nil
 }
 
@@ -171,6 +198,9 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	for ns := range nsMap {
 		namespaces = append(namespaces, ns)
 	}
+
+	deployutil.AddTagsToPodSelector(builds, h.originalImages, h.podSelector)
+	h.RegisterArtifactsToLogger(builds)
 	return namespaces, nil
 }
 

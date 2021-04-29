@@ -23,7 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
@@ -51,7 +51,7 @@ func NewContainerManager(podSelector kubernetes.PodSelector) *ContainerManager {
 	}
 }
 
-func (d *ContainerManager) Start(ctx context.Context, namespaces []string) error {
+func (d *ContainerManager) StartDebugger(ctx context.Context, namespaces []string) error {
 	if d == nil {
 		// debug mode probably not enabled
 		return nil
@@ -82,23 +82,19 @@ func (d *ContainerManager) Start(ctx context.Context, namespaces []string) error
 	return nil
 }
 
-func (d *ContainerManager) Stop() {
+func (d *ContainerManager) StopDebugger() {
 	// if nil then debug mode probably not enabled
 	if d != nil {
 		d.stopWatcher()
 	}
 }
 
-func (d *ContainerManager) Name() string {
-	return "Debug Manager"
-}
-
 func (d *ContainerManager) checkPod(pod *v1.Pod) {
-	debugConfigString, found := pod.Annotations[debug.DebugConfigAnnotation]
+	debugConfigString, found := pod.Annotations[util.DebugConfigAnnotation]
 	if !found {
 		return
 	}
-	var configurations map[string]debug.ContainerDebugConfiguration
+	var configurations map[string]util.ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(debugConfigString), &configurations); err != nil {
 		logrus.Warnf("Unable to parse debug-config for pod %s/%s: '%s'", pod.Namespace, pod.Name, debugConfigString)
 		return

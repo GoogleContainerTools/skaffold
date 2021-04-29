@@ -26,7 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/util"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -34,10 +34,24 @@ import (
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
+type Config interface {
+	Mode() config.RunMode
+	PortForwardResources() []*latestV1.PortForwardResource
+	PortForwardOptions() config.PortForwardOptions
+}
+
 // Forwarder is an interface that can modify and manage port-forward processes
 type Forwarder interface {
-	Start(ctx context.Context, namespaces []string) error
+	Start(ctx context.Context, out io.Writer, namespaces []string) error
 	Stop()
+}
+
+func (f *ForwarderManager) StartResourcePreview(ctx context.Context, out io.Writer, namespaces []string) error {
+	return f.Start(ctx, out, namespaces)
+}
+
+func (f *ForwarderManager) StopResourcePreview() {
+	f.Stop()
 }
 
 // ForwarderManager manages all forwarders
@@ -46,12 +60,12 @@ type ForwarderManager struct {
 }
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
-func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, label string, runMode config.RunMode, options config.PortForwardOptions, userDefined []*latestV1.PortForwardResource) *ForwarderManager {
+func NewForwarderManager(cli *kubectl.CLI, podSelector kubernetes.PodSelector, label string, runMode config.RunMode, options config.PortForwardOptions, userDefined []*latestV1.PortForwardResource) *ForwarderManager {
 	if !options.Enabled() {
 		return nil
 	}
 
-	entryManager := NewEntryManager(out, NewKubectlForwarder(out, cli))
+	entryManager := NewEntryManager(NewKubectlForwarder(cli))
 
 	var forwarders []Forwarder
 	if options.ForwardUser(runMode) {
@@ -78,11 +92,11 @@ func allPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 func debugPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 	var ports []v1.ContainerPort
 
-	annot, found := pod.ObjectMeta.Annotations[debugging.DebugConfigAnnotation]
+	annot, found := pod.ObjectMeta.Annotations[util.DebugConfigAnnotation]
 	if !found {
 		return nil
 	}
-	var configurations map[string]debugging.ContainerDebugConfiguration
+	var configurations map[string]util.ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(annot), &configurations); err != nil {
 		logrus.Warnf("could not decode debug annotation on pod/%s (%q): %v", pod.Name, annot, err)
 		return nil
@@ -104,18 +118,18 @@ func debugPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 }
 
 // Start begins all forwarders managed by the ForwarderManager
-func (p *ForwarderManager) Start(ctx context.Context, namespaces []string) error {
+func (f *ForwarderManager) Start(ctx context.Context, out io.Writer, namespaces []string) error {
 	// Port forwarding is not enabled.
-	if p == nil {
+	if f == nil {
 		return nil
 	}
 
-	eventV2.TaskInProgress(constants.PortForward, "Port forward URLs")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Start")
 	defer endTrace()
 
-	for _, f := range p.forwarders {
-		if err := f.Start(ctx, namespaces); err != nil {
+	eventV2.TaskInProgress(constants.PortForward, "Port forward URLs")
+	for _, forwarder := range f.forwarders {
+		if err := forwarder.Start(ctx, out, namespaces); err != nil {
 			eventV2.TaskFailed(constants.PortForward, err)
 			endTrace(instrumentation.TraceEndError(err))
 			return err
@@ -127,17 +141,13 @@ func (p *ForwarderManager) Start(ctx context.Context, namespaces []string) error
 }
 
 // Stop cleans up and terminates all forwarders managed by the ForwarderManager
-func (p *ForwarderManager) Stop() {
+func (f *ForwarderManager) Stop() {
 	// Port forwarding is not enabled.
-	if p == nil {
+	if f == nil {
 		return
 	}
 
-	for _, f := range p.forwarders {
-		f.Stop()
+	for _, forwarder := range f.forwarders {
+		forwarder.Stop()
 	}
-}
-
-func (p *ForwarderManager) Name() string {
-	return "PortForwarding"
 }

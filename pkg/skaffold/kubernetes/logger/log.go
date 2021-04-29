@@ -29,6 +29,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
@@ -41,10 +42,12 @@ type LogAggregator struct {
 	output      io.Writer
 	kubectlcli  *kubectl.CLI
 	config      Config
+	podSelector kubernetes.PodSelector
 	podWatcher  kubernetes.PodWatcher
 	colorPicker kubernetes.ColorPicker
 
 	muted             int32
+	stopWatcher       func()
 	sinceTime         time.Time
 	events            chan kubernetes.PodEvent
 	trackedContainers trackedContainers
@@ -52,19 +55,29 @@ type LogAggregator struct {
 }
 
 type Config interface {
+	Tail() bool
 	PipelineForImage(imageName string) (latestV1.Pipeline, bool)
 	DefaultPipeline() latestV1.Pipeline
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector kubernetes.PodSelector, config Config) *LogAggregator {
+func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, config Config) *LogAggregator {
 	return &LogAggregator{
-		output:      out,
 		kubectlcli:  cli,
 		config:      config,
+		podSelector: podSelector,
 		podWatcher:  kubernetes.NewPodWatcher(podSelector),
-		colorPicker: kubernetes.NewColorPicker(imageNames),
+		colorPicker: kubernetes.NewColorPicker(),
 		events:      make(chan kubernetes.PodEvent),
+	}
+}
+
+// RegisterArtifactsToLogger tracks the provided build artifacts in the colorpicker
+func (a *LogAggregator) RegisterArtifactsToLogger(artifacts []graph.Artifact) {
+	// image tags are added to the podSelector by the runner, which are picked up by the podWatcher
+	// we just need to make sure the colorPicker knows about them.
+	for _, artifact := range artifacts {
+		a.colorPicker.AddImage(artifact.Tag)
 	}
 }
 
@@ -77,23 +90,24 @@ func (a *LogAggregator) SetSince(t time.Time) {
 	a.sinceTime = t
 }
 
-// Start starts a logger that listens to pods and tail their logs
+// StartLogger starts a logger that listens to pods and tail their logs
 // if they are matched by the `podSelector`.
-func (a *LogAggregator) Start(ctx context.Context, namespaces []string) error {
+func (a *LogAggregator) StartLogger(ctx context.Context, out io.Writer, namespaces []string) error {
+	var err error
 	if a == nil {
 		// Logs are not activated.
 		return nil
 	}
+	a.output = out
 
 	a.podWatcher.Register(a.events)
 	stopWatcher, err := a.podWatcher.Start(namespaces)
+	a.stopWatcher = stopWatcher
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		defer stopWatcher()
-
 		for {
 			select {
 			case <-ctx.Done():
@@ -120,17 +134,16 @@ func (a *LogAggregator) Start(ctx context.Context, namespaces []string) error {
 			}
 		}
 	}()
-
-	return nil
+	return err
 }
 
-// Stop stops the logger.
-func (a *LogAggregator) Stop() {
+// StopLogger stops the logger.
+func (a *LogAggregator) StopLogger() {
 	if a == nil {
 		// Logs are not activated.
 		return
 	}
-
+	a.stopWatcher()
 	close(a.events)
 }
 
@@ -268,7 +281,7 @@ func (a *LogAggregator) Unmute() {
 	atomic.StoreInt32(&a.muted, 0)
 }
 
-// IsMuted says if the logs are to be muted.
+// IsMuted returns true if the logger has been muted.
 func (a *LogAggregator) IsMuted() bool {
 	return atomic.LoadInt32(&a.muted) == 1
 }

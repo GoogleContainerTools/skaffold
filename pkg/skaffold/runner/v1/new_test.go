@@ -21,11 +21,14 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -66,7 +69,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				expected: deploy.DeployerMux{
 					t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 						Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
-					}, nil, &latestV1.KubectlDeploy{
+					}, nil, &log.NoopProvider{}, &preview.NoopProvider{}, &debug.NoopProvider{}, &latestV1.KubectlDeploy{
 						Flags: latestV1.KubectlFlags{},
 					})).(deploy.Deployer),
 				},
@@ -77,7 +80,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				expected: deploy.DeployerMux{
 					t.RequireNonNilResult(kustomize.NewDeployer(&runcontext.RunContext{
 						Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
-					}, nil, &latestV1.KustomizeDeploy{
+					}, nil, &log.NoopProvider{}, &preview.NoopProvider{}, &debug.NoopProvider{}, &latestV1.KustomizeDeploy{
 						Flags: latestV1.KubectlFlags{},
 					})).(deploy.Deployer),
 				},
@@ -86,7 +89,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				description: "kpt deployer",
 				cfg:         latestV1.DeployType{KptDeploy: &latestV1.KptDeploy{}},
 				expected: deploy.DeployerMux{
-					kpt.NewDeployer(&runcontext.RunContext{}, nil, &latestV1.KptDeploy{}),
+					kpt.NewDeployer(&runcontext.RunContext{}, nil, &log.NoopProvider{}, &preview.NoopProvider{}, &debug.NoopProvider{}, &latestV1.KptDeploy{}),
 				},
 			},
 			{
@@ -95,7 +98,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				apply:       true,
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
-				}, nil, &latestV1.KubectlDeploy{
+				}, nil, &log.NoopProvider{}, &preview.NoopProvider{}, &debug.NoopProvider{}, &latestV1.KubectlDeploy{
 					Flags: latestV1.KubectlFlags{},
 				})).(deploy.Deployer),
 			},
@@ -106,7 +109,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				apply:       true,
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
-				}, nil, &latestV1.KubectlDeploy{
+				}, nil, &log.NoopProvider{}, &preview.NoopProvider{}, &debug.NoopProvider{}, &latestV1.KubectlDeploy{
 					Flags: latestV1.KubectlFlags{},
 				})).(deploy.Deployer),
 			},
@@ -119,7 +122,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
 				expected: deploy.DeployerMux{
 					&helm.Deployer{},
-					kpt.NewDeployer(&runcontext.RunContext{}, nil, &latestV1.KptDeploy{}),
+					kpt.NewDeployer(&runcontext.RunContext{}, nil, &log.NoopProvider{}, &preview.NoopProvider{}, &debug.NoopProvider{}, &latestV1.KptDeploy{}),
 				},
 			},
 		}
@@ -141,7 +144,7 @@ func TestGetDeployer(tOuter *testing.T) {
 							DeployType: test.cfg,
 						},
 					}}),
-				}, nil)
+				}, nil, &log.NoopProvider{}, &preview.NoopProvider{}, &debug.NoopProvider{})
 
 				t.CheckError(test.shouldErr, err)
 				t.CheckTypeEquality(test.expected, deployer)
@@ -174,7 +177,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 				}},
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
-				}, nil, &latestV1.KubectlDeploy{
+				}, nil, &log.NoopProvider{}, &preview.NoopProvider{}, &debug.NoopProvider{}, &latestV1.KubectlDeploy{
 					Flags: latestV1.KubectlFlags{},
 				})).(*kubectl.Deployer),
 			},
@@ -190,7 +193,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 				}},
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
-				}, nil, &latestV1.KubectlDeploy{
+				}, nil, &log.NoopProvider{}, &preview.NoopProvider{}, &debug.NoopProvider{}, &latestV1.KubectlDeploy{
 					Flags: latestV1.KubectlFlags{
 						Apply:  []string{"--foo"},
 						Global: []string{"--bar"},
@@ -224,7 +227,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 				}},
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
-				}, nil, &latestV1.KubectlDeploy{
+				}, nil, &log.NoopProvider{}, &preview.NoopProvider{}, &debug.NoopProvider{}, &latestV1.KubectlDeploy{
 					Flags: latestV1.KubectlFlags{},
 				})).(*kubectl.Deployer),
 			},
@@ -235,7 +238,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 				}},
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
-				}, nil, &latestV1.KubectlDeploy{
+				}, nil, &log.NoopProvider{}, &preview.NoopProvider{}, &debug.NoopProvider{}, &latestV1.KubectlDeploy{
 					Flags: latestV1.KubectlFlags{},
 				})).(*kubectl.Deployer),
 			},
@@ -253,7 +256,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 				}
 				deployer, err := getDefaultDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines(pipelines),
-				}, nil)
+				}, nil, &log.NoopProvider{}, &preview.NoopProvider{}, &debug.NoopProvider{})
 
 				t.CheckErrorAndFailNow(test.shouldErr, err)
 

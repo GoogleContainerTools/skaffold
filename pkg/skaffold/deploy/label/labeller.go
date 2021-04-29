@@ -30,6 +30,10 @@ const (
 
 var runID = uuid.New().String()
 
+type Config interface {
+	RunIDSelector() string
+}
+
 // DefaultLabeller adds K8s style managed-by label and a run-specific UUID label
 type DefaultLabeller struct {
 	addSkaffoldLabels bool

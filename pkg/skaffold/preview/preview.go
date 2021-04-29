@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,24 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package preview
 
 import (
+	"context"
 	"io"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 )
 
-func (r *SkaffoldRunner) createForwarder(out io.Writer) *portforward.ForwarderManager {
-	if !r.runCtx.PortForward() {
-		return nil
-	}
+type ResourcePreviewer interface {
+	StartResourcePreview(context.Context, io.Writer, []string) error
 
-	return portforward.NewForwarderManager(out,
-		r.kubectlCLI,
-		r.podSelector,
-		r.labeller.RunIDSelector(),
-		r.runCtx.Mode(),
-		r.runCtx.Opts.PortForward,
-		r.runCtx.PortForwardResources())
+	StopResourcePreview()
 }
+
+type NoopPreviewer struct{}
+
+func (n *NoopPreviewer) StartResourcePreview(context.Context, io.Writer, []string) error { return nil }
+
+func (n *NoopPreviewer) StopResourcePreview() {}

@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
+	debugutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -106,14 +107,14 @@ func (t pythonTransformer) IsApplicable(config imageConfiguration) bool {
 
 // Apply configures a container definition for Python with ptvsd/debugpy/pydevd.
 // Returns a simple map describing the debug configuration details.
-func (t pythonTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (ContainerDebugConfiguration, string, error) {
+func (t pythonTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (debugutil.ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for python debugging", container.Name)
 
 	// try to find existing `-mptvsd` or `-mdebugpy` command
 	if spec := retrievePythonDebugSpec(config); spec != nil {
 		protocol := spec.protocol()
 		container.Ports = exposePort(container.Ports, protocol, spec.port)
-		return ContainerDebugConfiguration{
+		return debugutil.ContainerDebugConfiguration{
 			Runtime: "python",
 			Ports:   map[string]uint32{protocol: uint32(spec.port)},
 		}, "", nil
@@ -132,13 +133,13 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 		container.Command = rewritePythonCommandLine(config.entrypoint, *spec)
 
 	default:
-		return ContainerDebugConfiguration{}, "", fmt.Errorf("%q does not appear to invoke python", container.Name)
+		return debugutil.ContainerDebugConfiguration{}, "", fmt.Errorf("%q does not appear to invoke python", container.Name)
 	}
 
 	protocol := spec.protocol()
 	container.Ports = exposePort(container.Ports, protocol, spec.port)
 
-	return ContainerDebugConfiguration{
+	return debugutil.ContainerDebugConfiguration{
 		Runtime: "python",
 		Ports:   map[string]uint32{protocol: uint32(spec.port)},
 	}, "python", nil

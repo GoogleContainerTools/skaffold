@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"time"
 
@@ -31,7 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -47,7 +47,7 @@ var (
 	fileSyncSucceeded  = event.FileSyncSucceeded
 )
 
-func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logger.LogAggregator, watchers ...Watcher) error {
+func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	// never queue intents from user, even if they're not used
 	defer r.intents.Reset()
 
@@ -65,7 +65,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 		return nil
 	}
 
-	logger.Mute()
+	r.deployer.Mute()
 	// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
 	defer r.monitor.Reset()
 	defer r.listener.LogWatchToUser(out)
@@ -99,7 +99,6 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 				event.DevLoopFailedInPhase(r.devIteration, constants.Sync, err)
 				eventV2.TaskFailed(constants.DevLoop, err)
 				endTrace(instrumentation.TraceEndError(err))
-
 				return nil
 			}
 
@@ -170,10 +169,8 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 			r.intents.ResetDeploy()
 		}()
 
-		for _, w := range watchers {
-			logrus.Debugf("stopping watcher %s", w.Name())
-			w.Stop()
-		}
+		r.deployer.StopResourcePreview()
+		r.deployer.StopDebugger()
 		if !meterUpdated {
 			instrumentation.AddDevIteration("deploy")
 		}
@@ -184,10 +181,13 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 			endTrace(instrumentation.TraceEndError(err))
 			return nil
 		}
-		for _, w := range watchers {
-			if err := w.Start(childCtx, r.runCtx.GetNamespaces()); err != nil {
-				logrus.Warnf("\n%s failed: %s", w.Name(), err)
-			}
+
+		if err := r.deployer.StartResourcePreview(childCtx, out, r.runCtx.GetNamespaces()); err != nil {
+			logrus.Warnln("Port forwarding failed:", err)
+		}
+
+		if err := r.deployer.StartDebugger(childCtx, r.runCtx.GetNamespaces()); err != nil {
+			logrus.Warnln("Debugging failed:", err)
 		}
 
 		endTrace()
@@ -195,7 +195,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 	event.DevLoopComplete(r.devIteration)
 	eventV2.TaskSucceeded(constants.DevLoop)
 	endTrace()
-	logger.Unmute()
+	r.deployer.Unmute()
 	return nil
 }
 
@@ -316,14 +316,14 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
-	logger := r.createLogger(out, bRes)
-	defer logger.Stop()
-
-	debugContainerManager := r.createContainerManager()
-	defer debugContainerManager.Stop()
+	defer r.deployer.StopLogger()
+	defer func() {
+		fmt.Fprintf(os.Stdout, "calling stop debugger on %+v\n", r.deployer)
+		r.deployer.StopDebugger()
+	}()
 
 	// Logs should be retrieved up to just before the deploy
-	logger.SetSince(time.Now())
+	r.deployer.SetSince(time.Now())
 
 	// First deploy
 	if err := r.Deploy(ctx, out, r.Builds); err != nil {
@@ -333,17 +333,16 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
 
-	forwarderManager := r.createForwarder(out)
-	defer forwarderManager.Stop()
+	defer r.deployer.StopResourcePreview()
 
-	if err := forwarderManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.StartResourcePreview(ctx, out, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
 	}
-	if err := debugContainerManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.StartDebugger(ctx, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting debug container notification:", err)
 	}
 	// Start printing the logs after deploy is finished
-	if err := logger.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.StartLogger(ctx, out, r.runCtx.GetNamespaces()); err != nil {
 		return fmt.Errorf("starting logger: %w", err)
 	}
 
@@ -354,7 +353,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	endTrace()
 	r.devIteration++
 	return r.listener.WatchForChanges(ctx, out, func() error {
-		return r.doDev(ctx, out, logger, forwarderManager, debugContainerManager)
+		return r.doDev(ctx, out)
 	})
 }
 
