@@ -34,7 +34,6 @@ import (
 var getDependenciesFunc = sourceDependenciesForArtifact
 
 // SourceDependenciesCache provides an interface to evaluate and cache the source dependencies for artifacts.
-// This additionally includes the source dependencies from all other artifacts that are in the transitive closure of its artifact dependencies.
 type SourceDependenciesCache interface {
 	// TransitiveArtifactDependencies returns the source dependencies for the target artifact, including the source dependencies from all other artifacts that are in the transitive closure of its artifact dependencies.
 	// The result (even if an error) is cached so that the function is evaluated only once for every artifact. The cache is reset before the start of the next devloop.
