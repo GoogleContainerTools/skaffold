@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/exporters/stdout"
-	"go.opentelemetry.io/otel/sdk/metric/controller/push"
+	"go.opentelemetry.io/otel/sdk/metric/controller/basic"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -162,12 +162,12 @@ func TestExportMetrics(t *testing.T) {
 				if err != nil {
 					t.Error(err)
 				}
-				t.Override(&initExporter, func() (*push.Controller, error) {
-					return stdout.InstallNewPipeline([]stdout.Option{
-						stdout.WithQuantiles([]float64{0.5}),
+				t.Override(&initExporter, func() (*basic.Controller, error) {
+					_, controller, err := stdout.InstallNewPipeline([]stdout.Option{
 						stdout.WithPrettyPrint(),
 						stdout.WithWriter(tmpFile),
 					}, nil)
+					return controller, err
 				})
 			}
 			if len(test.savedMetrics) > 0 {
@@ -320,12 +320,12 @@ func TestUserMetricReported(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			t.Override(&initExporter, func() (*push.Controller, error) {
-				return stdout.InstallNewPipeline([]stdout.Option{
-					stdout.WithQuantiles([]float64{0.5}),
+			t.Override(&initExporter, func() (*basic.Controller, error) {
+				_, controller, err := stdout.InstallNewPipeline([]stdout.Option{
 					stdout.WithPrettyPrint(),
 					stdout.WithWriter(tmpFile),
 				}, nil)
+				return controller, err
 			})
 
 			_ = exportMetrics(context.Background(), tmp.Path(filename), test.meter)
@@ -459,15 +459,12 @@ func checkUser(t *testutil.T, user string, b []byte) {
 
 // Derived from go.opentelemetry.io/otel/exporters/stdout/metric.go
 type line struct {
-	Name      string      `json:"Name"`
-	Count     interface{} `json:"Count,omitempty"`
-	Quantiles []quantile  `json:"Quantiles,omitempty"`
-	Labels    map[string]string
-}
-
-type quantile struct {
-	Quantile interface{} `json:"Quantile"`
-	Value    interface{} `json:"Value"`
+	Name   string      `json:"Name"`
+	Min    interface{} `json:"Min,omitempty"`
+	Max    interface{} `json:"Max,omitempty"`
+	Sum    interface{} `json:"Sum,omitempty"`
+	Count  interface{} `json:"Count,omitempty"`
+	Labels map[string]string
 }
 
 func (l *line) initLine() {
@@ -484,5 +481,5 @@ func (l *line) initLine() {
 }
 
 func (l *line) value() interface{} {
-	return l.Quantiles[0].Value
+	return l.Max
 }
