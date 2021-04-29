@@ -76,7 +76,7 @@ func main() {
 	// Latest uses the new version
 	sed(path("latest", "v1", "config.go"), current, next)
 
-	hackschema.UpdateVersionComment(path("latest", "config.go"), false)
+	hackschema.UpdateVersionComment(path("latest", "v1", "config.go"), false)
 
 	// Update skaffold.yaml in integration tests
 	walk.From("integration").WhenNameMatches("*skaffold*.yaml").MustDo(func(path string, _ walk.Dirent) error {
