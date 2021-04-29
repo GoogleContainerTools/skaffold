@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
@@ -34,6 +35,8 @@ import (
 func NewMockDeployer() *MockDeployer { return &MockDeployer{labels: make(map[string]string)} }
 
 type MockDeployer struct {
+	log.NoopLogger
+
 	labels           map[string]string
 	deployNamespaces []string
 	deployErr        error
