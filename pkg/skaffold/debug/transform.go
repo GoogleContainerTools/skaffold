@@ -132,6 +132,8 @@ var containerTransforms []containerTransformer
 // as a command-line.  These entrypoints are ignored.
 var entrypointLaunchers []string
 
+var Protocols = []string{}
+
 // isEntrypointLauncher checks if the given entrypoint is a known entrypoint launcher,
 // meaning an entrypoint that treats the image's CMD as a command-line.
 func isEntrypointLauncher(entrypoint []string) bool {

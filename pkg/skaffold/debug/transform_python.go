@@ -37,6 +37,7 @@ const (
 	// most examples use 5678
 	defaultPtvsdPort   = 5678
 	defaultDebugpyPort = 5678
+	defaultPydevdPort  = 5678
 )
 
 type pythonDebugType int
@@ -44,6 +45,7 @@ type pythonDebugType int
 const (
 	ptvsd pythonDebugType = iota
 	debugpy
+	pydevd
 )
 
 // pythonSpec captures the useful python-ptvsd devtools options
@@ -85,7 +87,16 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 		}, "", nil
 	}
 
-	spec := &pythonSpec{debugger: debugpy, port: portAlloc(defaultDebugpyPort)}
+	var spec = &pythonSpec{debugger: debugpy, port: portAlloc(defaultDebugpyPort)}
+
+	// Check for override protocols.
+	for _, protocol := range Protocols {
+		if protocol == "pydevd" {
+			spec = &pythonSpec{debugger: pydevd, port: portAlloc(defaultPydevdPort)}
+			break
+		}
+	}
+
 	switch {
 	case isLaunchingPython(config.entrypoint):
 		container.Command = rewritePythonCommandLine(config.entrypoint, *spec)
@@ -103,11 +114,17 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 		pyUserBase = pyUserBase + ":" + existing
 	}
 	container.Env = setEnvVar(container.Env, "PYTHONUSERBASE", pyUserBase)
-	container.Ports = exposePort(container.Ports, "dap", spec.port)
+
+	var portName = "dap"
+	if spec.debugger == pydevd {
+		portName = "pydevd"
+	}
+
+	container.Ports = exposePort(container.Ports, portName, spec.port)
 
 	return ContainerDebugConfiguration{
 		Runtime: "python",
-		Ports:   map[string]uint32{"dap": uint32(spec.port)},
+		Ports:   map[string]uint32{portName: uint32(spec.port)},
 	}, "python", nil
 }
 
@@ -215,39 +232,29 @@ func hasPyModule(module string, args []string) bool {
 // rewritePythonCommandLine rewrites a python command-line to insert a `-mptvsd` etc
 func rewritePythonCommandLine(commandLine []string, spec pythonSpec) []string {
 	// Assumes that commandLine[0] is "python" or "python3" etc
-	return util.StrSliceInsert(commandLine, 1, spec.asArguments())
+	return util.StrSliceInsert(commandLine, 0, spec.asArguments())
 }
 
 func (spec pythonSpec) asArguments() []string {
+	var mode string
 	switch spec.debugger {
 	case ptvsd:
-		args := []string{"-mptvsd"}
-		// --host is a mandatory argument
-		if spec.host == "" {
-			args = append(args, "--host", "0.0.0.0")
-		} else {
-			args = append(args, "--host", spec.host)
-		}
-		if spec.port >= 0 {
-			args = append(args, "--port", strconv.FormatInt(int64(spec.port), 10))
-		}
-		if spec.wait {
-			args = append(args, "--wait")
-		}
-		return args
-
+		mode = "ptvsd"
 	case debugpy:
-		args := []string{"-mdebugpy"}
-
-		if spec.host == "" {
-			args = append(args, "--listen", strconv.FormatInt(int64(spec.port), 10))
-		} else {
-			args = append(args, "--listen", fmt.Sprintf("%s:%d", spec.host, spec.port))
-		}
-		if spec.wait {
-			args = append(args, "--wait-for-client")
-		}
-		return args
+		mode = "debugpy"
+	case pydevd:
+		mode = "pydevd"
+	default:
+		return nil
 	}
-	return nil
+
+	args := []string{"/dbg/python/launcher", "--mode", mode}
+	if spec.port >= 0 {
+		args = append(args, "--port", strconv.FormatInt(int64(spec.port), 10))
+	}
+	if spec.wait {
+		args = append(args, "--wait")
+	}
+	args = append(args, "--")
+	return args
 }
