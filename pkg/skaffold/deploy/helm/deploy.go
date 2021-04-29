@@ -256,9 +256,13 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	renderedManifests := new(bytes.Buffer)
 
 	for _, r := range h.Releases {
-		args := []string{"template", chartSource(r)}
+		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
+		if err != nil {
+			return userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
+		}
 
-		args = append(args[:1], append([]string{r.Name}, args[1:]...)...)
+		args := []string{"template", chartSource(r)}
+		args = append(args[:1], append([]string{releaseName}, args[1:]...)...)
 
 		params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
 		if err != nil {

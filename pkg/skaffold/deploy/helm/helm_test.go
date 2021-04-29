@@ -488,7 +488,6 @@ func TestHelmDeploy(t *testing.T) {
 		force              bool
 		shouldErr          bool
 		expectedWarnings   []string
-		envs               map[string]string
 		expectedNamespaces []string
 	}{
 
@@ -1008,7 +1007,6 @@ func TestHelmCleanup(t *testing.T) {
 		namespace        string
 		builds           []graph.Artifact
 		expectedWarnings []string
-		envs             map[string]string
 	}{
 		{
 			description: "helm3 cleanup success",
@@ -1263,10 +1261,10 @@ func TestHelmRender(t *testing.T) {
 		shouldErr   bool
 		commands    util.Command
 		helm        latest_v1.HelmDeploy
+		env         []string
 		outputFile  string
 		expected    string
 		builds      []graph.Artifact
-		envs        map[string]string
 		namespace   string
 	}{
 		{
@@ -1323,6 +1321,22 @@ func TestHelmRender(t *testing.T) {
 					ImageName: "skaffold-helm",
 					Tag:       "skaffold-helm:tag1",
 				}},
+		},
+		{
+			description: "render with missing templated release name should fail",
+			shouldErr:   true,
+			commands:    testutil.CmdRunWithOutput("helm version --client", version31),
+			helm:        testDeployWithTemplatedName,
+			builds:      testBuilds,
+		},
+		{
+			description: "render with templated release name",
+			env:         []string{"USER=user"},
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext template user-skaffold-helm examples/test --set-string image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig"),
+			helm:   testDeployWithTemplatedName,
+			builds: testBuilds,
 		},
 		{
 			description: "render with namespace",
@@ -1396,7 +1410,7 @@ func TestHelmRender(t *testing.T) {
 				file = t.NewTempDir().Path(test.outputFile)
 			}
 
-			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
+			t.Override(&util.OSEnviron, func() []string { return append([]string{"FOO=FOOBAR"}, test.env...) })
 			t.Override(&util.DefaultExecCommand, test.commands)
 			deployer, err := NewDeployer(&helmConfig{
 				namespace: test.namespace,
