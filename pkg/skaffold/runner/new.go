@@ -88,7 +88,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	depLister := func(ctx context.Context, artifact *latest_v1.Artifact) ([]string, error) {
-		buildDependencies, err := sourceDependencies.TransitiveArtifactDependencies(ctx, artifact)
+		buildDependencies, err := sourceDependencies.SingleArtifactDependencies(ctx, artifact)
 		if err != nil {
 			return nil, err
 		}
