@@ -28,7 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
@@ -41,6 +41,7 @@ type LogAggregator struct {
 	output      io.Writer
 	kubectlcli  *kubectl.CLI
 	config      Config
+	podSelector kubernetes.PodSelector
 	podWatcher  kubernetes.PodWatcher
 	colorPicker kubernetes.ColorPicker
 
@@ -57,14 +58,22 @@ type Config interface {
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector kubernetes.PodSelector, config Config) *LogAggregator {
+func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, config Config) *LogAggregator {
 	return &LogAggregator{
-		output:      out,
 		kubectlcli:  cli,
 		config:      config,
+		podSelector: podSelector,
 		podWatcher:  kubernetes.NewPodWatcher(podSelector),
-		colorPicker: kubernetes.NewColorPicker(imageNames),
+		colorPicker: kubernetes.NewColorPicker(),
 		events:      make(chan kubernetes.PodEvent),
+	}
+}
+
+func (a *LogAggregator) RegisterBuildArtifacts(artifacts []graph.Artifact) {
+	// image tags are added to the podSelector by the runner, which are picked up by the podWatcher
+	// we just need to make sure the colorPicker knows about them.
+	for _, artifact := range artifacts {
+		a.colorPicker.AddImage(artifact.Tag)
 	}
 }
 
@@ -79,11 +88,13 @@ func (a *LogAggregator) SetSince(t time.Time) {
 
 // Start starts a logger that listens to pods and tail their logs
 // if they are matched by the `podSelector`.
-func (a *LogAggregator) Start(ctx context.Context, namespaces []string) error {
+func (a *LogAggregator) StartLogger(ctx context.Context, out io.Writer, namespaces []string) error {
 	if a == nil {
 		// Logs are not activated.
 		return nil
 	}
+
+	a.output = out
 
 	a.podWatcher.Register(a.events)
 	stopWatcher, err := a.podWatcher.Start(namespaces)
@@ -125,7 +136,7 @@ func (a *LogAggregator) Start(ctx context.Context, namespaces []string) error {
 }
 
 // Stop stops the logger.
-func (a *LogAggregator) Stop() {
+func (a *LogAggregator) StopLogger() {
 	if a == nil {
 		// Logs are not activated.
 		return

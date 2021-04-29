@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -43,6 +44,8 @@ import (
 // Deployer deploys workflows using kubectl CLI.
 type Deployer struct {
 	*latestV1.KubectlDeploy
+
+	log.Logger
 
 	originalImages     []graph.Artifact
 	hydratedManifests  []string
@@ -58,7 +61,7 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KubectlDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, logger log.Logger, d *latestV1.KubectlDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -69,6 +72,7 @@ func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KubectlDeploy
 	}
 
 	return &Deployer{
+		Logger:             logger,
 		KubectlDeploy:      d,
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),

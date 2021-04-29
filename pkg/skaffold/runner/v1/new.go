@@ -39,6 +39,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -82,8 +84,13 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating tester: %w", err)
 	}
 	syncer := getSyncer(runCtx)
+
+	podSelectors := kubernetes.NewImageList()
+
+	logger := getLogger(runCtx, kubectlCLI, podSelectors)
+
 	var deployer deploy.Deployer
-	deployer, err = getDeployer(runCtx, labeller.Labels())
+	deployer, err = getDeployer(runCtx, labeller.Labels(), logger)
 	if err != nil {
 		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
@@ -118,8 +125,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
-
-	podSelectors := kubernetes.NewImageList()
 
 	rbuilder := runner.NewBuilder(builder, tagger, artifactCache, podSelectors, runCtx)
 	return &SkaffoldRunner{
@@ -227,7 +232,7 @@ The default deployer will honor a select set of deploy configuration from an exi
 For a multi-config project, we do not currently support resolving conflicts between differing sets of this deploy configuration.
 Therefore, in this function we do implicit validation of the provided configuration, and fail if any conflict cannot be resolved.
 */
-func getDefaultDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deploy.Deployer, error) {
+func getDefaultDeployer(runCtx *runcontext.RunContext, labels map[string]string, logger log.Logger) (deploy.Deployer, error) {
 	deployCfgs := runCtx.DeployConfigs()
 
 	var kFlags *latestV1.KubectlFlags
@@ -285,7 +290,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labels map[string]string)
 		Flags:            *kFlags,
 		DefaultNamespace: defaultNamespace,
 	}
-	defaultDeployer, err := kubectl.NewDeployer(runCtx, labels, k)
+	defaultDeployer, err := kubectl.NewDeployer(runCtx, labels, logger, k)
 	if err != nil {
 		return nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
 	}
@@ -315,9 +320,9 @@ func validateKubectlFlags(flags *latestV1.KubectlFlags, additional latestV1.Kube
 	return nil
 }
 
-func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deploy.Deployer, error) {
+func getDeployer(runCtx *runcontext.RunContext, labels map[string]string, logger log.Logger) (deploy.Deployer, error) {
 	if runCtx.Opts.Apply {
-		return getDefaultDeployer(runCtx, labels)
+		return getDefaultDeployer(runCtx, labels, logger)
 	}
 
 	deployerCfg := runCtx.Deployers()
@@ -325,7 +330,7 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deplo
 	var deployers deploy.DeployerMux
 	for _, d := range deployerCfg {
 		if d.HelmDeploy != nil {
-			h, err := helm.NewDeployer(runCtx, labels, d.HelmDeploy)
+			h, err := helm.NewDeployer(runCtx, labels, logger, d.HelmDeploy)
 			if err != nil {
 				return nil, err
 			}
@@ -333,11 +338,11 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deplo
 		}
 
 		if d.KptDeploy != nil {
-			deployers = append(deployers, kpt.NewDeployer(runCtx, labels, d.KptDeploy))
+			deployers = append(deployers, kpt.NewDeployer(runCtx, labels, logger, d.KptDeploy))
 		}
 
 		if d.KubectlDeploy != nil {
-			deployer, err := kubectl.NewDeployer(runCtx, labels, d.KubectlDeploy)
+			deployer, err := kubectl.NewDeployer(runCtx, labels, logger, d.KubectlDeploy)
 			if err != nil {
 				return nil, err
 			}
@@ -345,7 +350,7 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deplo
 		}
 
 		if d.KustomizeDeploy != nil {
-			deployer, err := kustomize.NewDeployer(runCtx, labels, d.KustomizeDeploy)
+			deployer, err := kustomize.NewDeployer(runCtx, labels, logger, d.KustomizeDeploy)
 			if err != nil {
 				return nil, err
 			}
@@ -354,4 +359,12 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deplo
 	}
 
 	return deployers, nil
+}
+
+func getLogger(runCtx *runcontext.RunContext, cli *pkgkubectl.CLI, podSelector kubernetes.PodSelector) log.Logger {
+	if !runCtx.Tail() {
+		return nil
+	}
+
+	return logger.NewLogAggregator(cli, podSelector, runCtx)
 }

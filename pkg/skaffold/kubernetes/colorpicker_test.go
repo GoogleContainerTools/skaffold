@@ -71,7 +71,9 @@ func TestColorPicker(t *testing.T) {
 		},
 	}
 
-	picker := NewColorPicker([]string{"image:ignored", "second"})
+	picker := NewColorPicker()
+	picker.AddImage("image:ignored")
+	picker.AddImage("second")
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
