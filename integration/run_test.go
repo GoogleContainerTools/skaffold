@@ -206,6 +206,12 @@ func TestRunGCPOnly(t *testing.T) {
 			pods:        []string{"getting-started"},
 		},
 		{
+			description: "Google Cloud Build with source artifact dependencies",
+			dir:         "examples/microservices",
+			args:        []string{"-p", "gcb"},
+			deployments: []string{"leeroy-app", "leeroy-web"},
+		},
+		{
 			description: "Google Cloud Build with Kaniko",
 			dir:         "examples/gcb-kaniko",
 			pods:        []string{"getting-started-kaniko"},

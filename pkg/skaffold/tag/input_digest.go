@@ -38,14 +38,14 @@ import (
 type inputDigestTagger struct {
 	cfg   docker.Config
 	ag    graph.ArtifactGraph
-	cache graph.TransitiveSourceDependenciesCache
+	cache graph.SourceDependenciesCache
 }
 
 func NewInputDigestTagger(cfg docker.Config, ag graph.ArtifactGraph) (Tagger, error) {
 	return &inputDigestTagger{
 		cfg:   cfg,
 		ag:    ag,
-		cache: graph.NewTransitiveSourceDependenciesCache(cfg, nil, ag),
+		cache: graph.NewSourceDependenciesCache(cfg, nil, ag),
 	}, nil
 }
 
@@ -54,14 +54,14 @@ func (t *inputDigestTagger) GenerateTag(image latest_v1.Artifact) (string, error
 	// TODO(nkubala): plumb through context into Tagger interface
 	ctx := context.TODO()
 	// srcFiles, err := getDependenciesForArtifact(ctx, &image, t.cfg, nil)
-	srcFiles, err := t.cache.ResolveForArtifact(ctx, &image)
+	srcFiles, err := t.cache.TransitiveArtifactDependencies(ctx, &image)
 	if err != nil {
 		return "", err
 	}
 
 	for _, artifactDep := range t.ag.Dependencies(&image) {
 		// srcOfDep, err := getDependenciesForArtifact(ctx, artifactDep, t.cfg, nil)
-		srcOfDep, err := t.cache.ResolveForArtifact(ctx, artifactDep)
+		srcOfDep, err := t.cache.TransitiveArtifactDependencies(ctx, artifactDep)
 		if err != nil {
 			return "", err
 		}

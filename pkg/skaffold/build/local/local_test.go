@@ -414,7 +414,7 @@ type mockBuilderContext struct {
 	mode                  config.RunMode
 	cluster               config.Cluster
 	artifactStore         build.ArtifactStore
-	sourceDepsResolver    func() graph.TransitiveSourceDependenciesCache
+	sourceDepsResolver    func() graph.SourceDependenciesCache
 }
 
 func (c *mockBuilderContext) Mode() config.RunMode {
@@ -429,7 +429,7 @@ func (c *mockBuilderContext) ArtifactStore() build.ArtifactStore {
 	return c.artifactStore
 }
 
-func (c *mockBuilderContext) SourceDependenciesResolver() graph.TransitiveSourceDependenciesCache {
+func (c *mockBuilderContext) SourceDependenciesResolver() graph.SourceDependenciesCache {
 	if c.sourceDepsResolver != nil {
 		return c.sourceDepsResolver()
 	}
