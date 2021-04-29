@@ -62,7 +62,7 @@ const (
 func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	updateMsg := make(chan string, 1)
 	surveyPrompt := make(chan bool, 1)
-	metricsPrompt := make(chan bool, 1)
+	var metricsExportEnabled bool
 
 	rootCmd := &cobra.Command{
 		Use: "skaffold",
@@ -109,23 +109,17 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 				logrus.Debugf("Disable housekeeping messages for command explicitly")
 				return nil
 			}
-			// Always perform update check.
+			// Always perform all checks.
 			go func() {
 				updateMsg <- updateCheckForReleasedVersionsIfNotDisabled(versionInfo.Version)
-			}()
-			if msg, isQuiet := isQuiet(); isQuiet {
-				logrus.Debugf(msg)
-				return nil
-			}
-			go func() {
 				surveyPrompt <- config.ShouldDisplayPrompt(opts.GlobalConfig)
-				metricsPrompt <- instrumentation.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
 			}()
+			metricsExportEnabled = instrumentation.InitInstrumentation(opts.GlobalConfig)
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			if _, ok := isQuiet(); ok {
-				return
+			if msg, isQuiet := isQuietMode(); isQuiet {
+				logrus.Debugf(msg)
 			}
 			select {
 			case msg := <-updateMsg:
@@ -142,14 +136,10 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 				}
 			default:
 			}
-			select {
-			case showMetricsPrompt := <-metricsPrompt:
-				if showMetricsPrompt {
-					if err := instrumentation.DisplayMetricsPrompt(opts.GlobalConfig, cmd.OutOrStdout()); err != nil {
-						fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
-					}
+			if !metricsExportEnabled {
+				if err := instrumentation.DisplayMetricsPrompt(opts.GlobalConfig, cmd.OutOrStdout()); err != nil {
+					fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 				}
-			default:
 			}
 		},
 	}
@@ -309,14 +299,14 @@ func preReleaseVersion(s string) bool {
 	return false
 }
 
-func isQuiet() (string, bool) {
+func isQuietMode() (string, bool) {
 	switch {
 	case !interactive:
-		return "Update check prompt, survey prompt and telemetry disabled in non-interactive mode", true
+		return "Update check prompt, survey prompt and telemetry prompt disabled in non-interactive mode", true
 	case quietFlag:
-		return "Update check prompt, survey prompt and telemetry disabled in quiet mode", true
+		return "Update check prompt, survey prompt and telemetry prompt disabled in quiet mode", true
 	case analyze:
-		return "Update check prompt, survey prompt and telemetry disabled disabled when running `init --analyze`", true
+		return "Update check prompt, survey prompt and telemetry prompt disabled when running `init --analyze`", true
 	default:
 		return "", false
 	}

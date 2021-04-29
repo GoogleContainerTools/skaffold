@@ -37,7 +37,9 @@ var (
 	setStatus    = SetOnlineStatus
 )
 
-func ShouldDisplayMetricsPrompt(configfile string) bool {
+// InitInstrumentation initializes instrumentation if its enabled
+// and returns true. If instrumentation is disabled, returns false.
+func InitInstrumentation(configfile string) bool {
 	cfg, err := getConfig(configfile)
 	if err != nil {
 		return false

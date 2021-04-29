@@ -64,8 +64,10 @@ func UserAgent() string {
 	return fmt.Sprintf("skaffold/%s/%s", platform, version)
 }
 
-// UserAgentWithClient add the `-user` flag value to the request header
-// This value can be used to distinguish cli vs non cli user.
+// UserAgentWithClient returns a string to be passed as the `--user` flag value
+// to a request header
+// Use UserAgentWithClient method to record requests from skaffold CLI users vs
+// other clients.
 func UserAgentWithClient() string {
 	if client == "" {
 		return fmt.Sprintf("skaffold/%s/%s", platform, version)
