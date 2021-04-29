@@ -801,7 +801,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --overwrite=false: Overwrite original config with fixed config
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
-      --version='skaffold/v2beta16': Target schema version to upgrade to
+      --version='skaffold/v2beta15': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
