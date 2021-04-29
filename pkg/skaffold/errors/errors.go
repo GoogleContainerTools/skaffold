@@ -82,6 +82,8 @@ func ShowAIError(cfg interface{}, err error) error {
 		return p.AIError(cfg, err)
 	}
 
+	allErrorsLock.RLock()
+	defer allErrorsLock.RUnlock()
 	for _, problems := range allErrors {
 		for _, p := range problems {
 			if p.Regexp.MatchString(err.Error()) {
