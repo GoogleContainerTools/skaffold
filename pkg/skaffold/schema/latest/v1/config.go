@@ -497,6 +497,9 @@ type TestCase struct {
 type DeployConfig struct {
 	DeployType `yaml:",inline"`
 
+	// StatusCheck *beta* enables waiting for deployments to stabilize.
+	StatusCheck *bool `yaml:"statusCheck,omitempty"`
+
 	// StatusCheckDeadlineSeconds *beta* is the deadline for deployments to stabilize in seconds.
 	StatusCheckDeadlineSeconds int `yaml:"statusCheckDeadlineSeconds,omitempty"`
 

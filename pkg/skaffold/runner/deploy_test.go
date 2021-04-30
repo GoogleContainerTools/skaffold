@@ -42,34 +42,71 @@ import (
 func TestDeploy(t *testing.T) {
 	expectedOutput := "Waiting for deployments to stabilize..."
 	tests := []struct {
-		description string
-		testBench   *TestBench
-		statusCheck config.BoolOrUndefined
-		shouldErr   bool
-		shouldWait  bool
+		description       string
+		testBench         *TestBench
+		statusCheckFlag   *bool // --status-check CLI flag
+		statusCheckConfig *bool // skaffold.yaml Deploy.StatusCheck field
+		shouldErr         bool
+		shouldWait        bool
 	}{
 		{
-			description: "deploy shd perform status check",
+			description: "deploy shd perform status check when statusCheck flag is unspecified, in-config value is unspecified",
 			testBench:   &TestBench{},
-			statusCheck: config.NewBoolOrUndefined(nil),
 			shouldWait:  true,
 		},
 		{
-			description: "deploy shd perform status check",
-			testBench:   &TestBench{},
-			statusCheck: config.NewBoolOrUndefined(util.BoolPtr(true)),
-			shouldWait:  true,
+			description:       "deploy shd not perform status check when statusCheck flag is unspecified, in-config value is false",
+			testBench:         &TestBench{},
+			statusCheckConfig: util.BoolPtr(false),
 		},
 		{
-			description: "deploy shd not perform status check",
-			testBench:   &TestBench{},
-			statusCheck: config.NewBoolOrUndefined(util.BoolPtr(false)),
+			description:       "deploy shd perform status check when statusCheck flag is unspecified, in-config value is true",
+			testBench:         &TestBench{},
+			statusCheckConfig: util.BoolPtr(true),
+			shouldWait:        true,
 		},
 		{
-			description: "deploy shd not perform status check when deployer is in error",
-			testBench:   &TestBench{deployErrors: []error{errors.New("deploy error")}},
-			shouldErr:   true,
-			statusCheck: config.NewBoolOrUndefined(util.BoolPtr(true)),
+			description:     "deploy shd not perform status check when statusCheck flag is false, in-config value is unspecified",
+			testBench:       &TestBench{},
+			statusCheckFlag: util.BoolPtr(false),
+		},
+		{
+			description:       "deploy shd not perform status check when statusCheck flag is false, in-config value is false",
+			testBench:         &TestBench{},
+			statusCheckFlag:   util.BoolPtr(false),
+			statusCheckConfig: util.BoolPtr(false),
+		},
+		{
+			description:       "deploy shd not perform status check when statusCheck flag is false, in-config value is true",
+			testBench:         &TestBench{},
+			statusCheckFlag:   util.BoolPtr(false),
+			statusCheckConfig: util.BoolPtr(true),
+		},
+		{
+			description:     "deploy shd perform status check when statusCheck flag is true, in-config value is unspecified",
+			testBench:       &TestBench{},
+			statusCheckFlag: util.BoolPtr(true),
+			shouldWait:      true,
+		},
+		{
+			description:       "deploy shd perform status check when statusCheck flag is true, in-config value is false",
+			testBench:         &TestBench{},
+			statusCheckFlag:   util.BoolPtr(true),
+			statusCheckConfig: util.BoolPtr(false),
+			shouldWait:        true,
+		},
+		{
+			description:       "deploy shd perform status check when statusCheck flag is true, in-config value is true",
+			testBench:         &TestBench{},
+			statusCheckFlag:   util.BoolPtr(true),
+			statusCheckConfig: util.BoolPtr(true),
+			shouldWait:        true,
+		},
+		{
+			description:     "deploy shd not perform status check when deployer is in error",
+			testBench:       &TestBench{deployErrors: []error{errors.New("deploy error")}},
+			shouldErr:       true,
+			statusCheckFlag: util.BoolPtr(true),
 		},
 	}
 
@@ -82,7 +119,8 @@ func TestDeploy(t *testing.T) {
 			})
 
 			runner := createRunner(t, test.testBench, nil, []*latest_v1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}, nil)
-			runner.runCtx.Opts.StatusCheck = test.statusCheck
+			runner.runCtx.Opts.StatusCheck = config.NewBoolOrUndefined(test.statusCheckFlag)
+			runner.runCtx.Pipelines.All()[0].Deploy.StatusCheck = test.statusCheckConfig
 			out := new(bytes.Buffer)
 
 			err := runner.Deploy(context.Background(), out, []graph.Artifact{

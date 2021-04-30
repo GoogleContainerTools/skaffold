@@ -1047,6 +1047,11 @@
           "description": "configures how container logs are printed as a result of a deployment.",
           "x-intellij-html-description": "configures how container logs are printed as a result of a deployment."
         },
+        "statusCheck": {
+          "type": "boolean",
+          "description": "*beta* enables waiting for deployments to stabilize.",
+          "x-intellij-html-description": "<em>beta</em> enables waiting for deployments to stabilize."
+        },
         "statusCheckDeadlineSeconds": {
           "type": "integer",
           "description": "*beta* deadline for deployments to stabilize in seconds.",
@@ -1058,6 +1063,7 @@
         "kpt",
         "kubectl",
         "kustomize",
+        "statusCheck",
         "statusCheckDeadlineSeconds",
         "kubeContext",
         "logs"
