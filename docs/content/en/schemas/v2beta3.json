@@ -633,8 +633,8 @@
         },
         "runAsUser": {
           "type": "integer",
-          "description": "defines the UID to request for running the container. If omitted, no SeurityContext will be specified for the pod and will therefore be inherited from the service account.",
-          "x-intellij-html-description": "defines the UID to request for running the container. If omitted, no SeurityContext will be specified for the pod and will therefore be inherited from the service account."
+          "description": "defines the UID to request for running the container. If omitted, no SecurityContext will be specified for the pod and will therefore be inherited from the service account.",
+          "x-intellij-html-description": "defines the UID to request for running the container. If omitted, no SecurityContext will be specified for the pod and will therefore be inherited from the service account."
         },
         "serviceAccount": {
           "type": "string",
