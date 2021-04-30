@@ -75,11 +75,7 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 }
 
 func printArtifactDiagnostics(ctx context.Context, out io.Writer, configs []*latest_v1.SkaffoldConfig) error {
-	var pipelines []latest_v1.Pipeline
-	for _, cfg := range configs {
-		pipelines = append(pipelines, cfg.Pipeline)
-	}
-	runCtx, err := getRunContext(opts, pipelines)
+	runCtx, err := getRunContext(opts, configs)
 	if err != nil {
 		return fmt.Errorf("getting run context: %w", err)
 	}

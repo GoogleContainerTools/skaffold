@@ -57,7 +57,7 @@ metadata:
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&getRunContext, func(config.SkaffoldOptions, []latest_v1.Pipeline) (*runcontext.RunContext, error) {
+			t.Override(&getRunContext, func(config.SkaffoldOptions, []*latest_v1.SkaffoldConfig) (*runcontext.RunContext, error) {
 				return nil, fmt.Errorf("cannot get the runtime context")
 			})
 			t.Override(&yamlOnly, test.yamlOnly)
