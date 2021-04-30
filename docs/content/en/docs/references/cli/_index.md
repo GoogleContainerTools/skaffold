@@ -85,7 +85,7 @@ Getting started with a new project:
 
 Other Commands:
   completion        Output shell completion for the given shell (bash or zsh)
-  config            Interact with the Skaffold configuration
+  config            Interact with the global skaffold config file (defaults to `$HOME/.skaffold/config`)
   credits           Export third party notices to given path (./skaffold-credits by default)
   diagnose          Run a diagnostic on Skaffold
   schema            List and print json schemas used to validate skaffold.yaml configuration
@@ -268,7 +268,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 
 ### skaffold config
 
-Interact with the Skaffold configuration
+Interact with the global skaffold config file (defaults to `$HOME/.skaffold/config`)
 
 ```
 

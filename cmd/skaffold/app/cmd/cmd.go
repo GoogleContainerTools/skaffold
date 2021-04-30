@@ -200,6 +200,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 	rootCmd.AddCommand(NewCmdGeneratePipeline())
 	rootCmd.AddCommand(NewCmdSurvey())
+	rootCmd.AddCommand(NewCmdInspect())
 
 	templates.ActsAsRootCommand(rootCmd, nil, groups...)
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
