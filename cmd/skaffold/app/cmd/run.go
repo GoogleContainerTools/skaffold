@@ -41,9 +41,6 @@ func NewCmdRun() *cobra.Command {
 }
 
 func doRun(ctx context.Context, out io.Writer) error {
-	// force skaffold labels to be applied in run mode - log tailing won't work without them
-	opts.AddSkaffoldLabels = true
-
 	return withRunner(ctx, out, func(r runner.Runner, configs []*latest_v1.SkaffoldConfig) error {
 		bRes, err := r.Build(ctx, out, targetArtifacts(opts, configs))
 		if err != nil {
