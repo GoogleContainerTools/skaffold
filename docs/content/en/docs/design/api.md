@@ -18,7 +18,7 @@ To retrieve information about the Skaffold pipeline, the Skaffold API provides t
   
   * A snapshot of the [overall state]({{< relref "#state-api" >}}) of the pipeline at any given time during the run.
 
-To control the individual phases of the Skaffold, the Skaffold API provides [fine-grained control]({{< relref "#controlling-build-sync-deploy" >}})
+To control the individual phases of the Skaffold, the Skaffold API provides [fine-grained control]({{< relref "#control-api" >}})
 over the individual phases of the pipeline (build, deploy, and sync).
 
 
