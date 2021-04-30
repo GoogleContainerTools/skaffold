@@ -9,7 +9,7 @@ import (
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
-func DeployInProgress(id int, artifact string) {
+func DeployInProgress(id int) {
 	handler.handleDeploySubtaskEvent(&proto.DeploySubtaskEvent{
 		Id:       strconv.Itoa(id),
 		TaskId:   fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
@@ -17,7 +17,7 @@ func DeployInProgress(id int, artifact string) {
 	})
 }
 
-func DeployFailed(id int, artifact string, err error) {
+func DeployFailed(id int, err error) {
 	handler.handleDeploySubtaskEvent(&proto.DeploySubtaskEvent{
 		Id:            strconv.Itoa(id),
 		TaskId:        fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
@@ -26,7 +26,7 @@ func DeployFailed(id int, artifact string, err error) {
 	})
 }
 
-func DeploySucceeded(id int, artifact string) {
+func DeploySucceeded(id int) {
 	handler.handleDeploySubtaskEvent(&proto.DeploySubtaskEvent{
 		Id:       strconv.Itoa(id),
 		TaskId:   fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),

@@ -360,10 +360,6 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deplo
 			deployers = append(deployers, deployer)
 		}
 	}
-	// avoid muxing overhead when only a single deployer is configured
-	if len(deployers) == 1 {
-		return deployers[0], nil
-	}
 
 	return deployers, nil
 }

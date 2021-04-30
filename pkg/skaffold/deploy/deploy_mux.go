@@ -22,6 +22,7 @@ import (
 	"io"
 	"strings"
 
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -35,12 +36,17 @@ type DeployerMux []Deployer
 func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) ([]string, error) {
 	seenNamespaces := util.NewStringSet()
 
-	for _, deployer := range m {
+	for i, deployer := range m {
+		eventV2.DeployInProgress(i)
+
 		namespaces, err := deployer.Deploy(ctx, w, as)
 		if err != nil {
+			eventV2.DeployFailed(i, err)
 			return nil, err
 		}
 		seenNamespaces.Insert(namespaces...)
+
+		eventV2.DeploySucceeded(i)
 	}
 
 	return seenNamespaces.ToList(), nil
