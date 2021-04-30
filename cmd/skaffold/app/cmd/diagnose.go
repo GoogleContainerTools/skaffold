@@ -21,14 +21,13 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/diagnose"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/diagnose"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -57,22 +56,8 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 		return err
 	}
 	if !yamlOnly {
-		var pipelines []latest_v1.Pipeline
-		for _, cfg := range configs {
-			pipelines = append(pipelines, cfg.Pipeline)
-		}
-		runCtx, err := getRunContext(opts, pipelines)
-		if err != nil {
-			return fmt.Errorf("getting run context: %w", err)
-		}
-		for _, config := range configs {
-			fmt.Fprintln(out, "Skaffold version:", version.Get().GitCommit)
-			fmt.Fprintln(out, "Configuration version:", config.APIVersion)
-			fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
-			if err := diagnose.CheckArtifacts(ctx, runCtx, out); err != nil {
-				return fmt.Errorf("running diagnostic on artifacts: %w", err)
-			}
-			color.Blue.Fprintln(out, "\nConfiguration")
+		if err := printDockerArtifact(ctx, out, configs); err != nil {
+			return err
 		}
 	}
 	// remove the dependency config references since they have already been imported and will be marshalled together.
@@ -86,4 +71,26 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 	out.Write(buf)
 
 	return nil
+}
+
+func printDockerArtifact(ctx context.Context, out io.Writer, configs []*latest_v1.SkaffoldConfig) error {
+	var pipelines []latest_v1.Pipeline
+	for _, cfg := range configs {
+		pipelines = append(pipelines, cfg.Pipeline)
+	}
+	runCtx, err := getRunContext(opts, pipelines)
+	if err != nil {
+		return fmt.Errorf("getting run context: %w", err)
+	}
+	for _, config := range configs {
+		fmt.Fprintln(out, "Skaffold version:", version.Get().GitCommit)
+		fmt.Fprintln(out, "Configuration version:", config.APIVersion)
+		fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
+
+		if err := diagnose.CheckArtifacts(ctx, runCtx, out); err != nil {
+			return fmt.Errorf("running diagnostic on artifacts: %w", err)
+		}
+
+		color.Blue.Fprintln(out, "\nConfiguration")
+	}
 }
