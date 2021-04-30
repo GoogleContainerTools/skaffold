@@ -44,7 +44,7 @@ type ArtifactResolver interface {
 
 // TransitiveSourceDependenciesResolver provides an interface to to evaluate the source dependencies for artifacts.
 type TransitiveSourceDependenciesResolver interface {
-	ResolveForArtifact(ctx context.Context, a *latest_v1.Artifact) ([]string, error)
+	TransitiveArtifactDependencies(ctx context.Context, a *latest_v1.Artifact) ([]string, error)
 }
 
 // NewBuilder returns an new instance of a docker builder

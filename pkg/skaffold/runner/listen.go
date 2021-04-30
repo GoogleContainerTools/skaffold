@@ -37,7 +37,7 @@ type Listener interface {
 type SkaffoldListener struct {
 	Monitor                 filemon.Monitor
 	Trigger                 trigger.Trigger
-	sourceDependenciesCache graph.TransitiveSourceDependenciesCache
+	sourceDependenciesCache graph.SourceDependenciesCache
 	intentChan              <-chan bool
 }
 

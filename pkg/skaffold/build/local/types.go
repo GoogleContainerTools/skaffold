@@ -56,7 +56,7 @@ type Builder struct {
 	muted              build.Muted
 	localPruner        *pruner
 	artifactStore      build.ArtifactStore
-	sourceDependencies graph.TransitiveSourceDependenciesCache
+	sourceDependencies graph.SourceDependenciesCache
 }
 
 type Config interface {
@@ -74,7 +74,7 @@ type Config interface {
 type BuilderContext interface {
 	Config
 	ArtifactStore() build.ArtifactStore
-	SourceDependenciesResolver() graph.TransitiveSourceDependenciesCache
+	SourceDependenciesResolver() graph.SourceDependenciesCache
 }
 
 // NewBuilder returns an new instance of a local Builder.

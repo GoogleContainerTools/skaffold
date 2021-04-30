@@ -58,10 +58,10 @@ func TestBuildSpecFail(t *testing.T) {
 type mockBuilderContext struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	artifactStore         build.ArtifactStore
-	sourceDepsResolver    func() graph.TransitiveSourceDependenciesCache
+	sourceDepsResolver    func() graph.SourceDependenciesCache
 }
 
-func (c *mockBuilderContext) SourceDependenciesResolver() graph.TransitiveSourceDependenciesCache {
+func (c *mockBuilderContext) SourceDependenciesResolver() graph.SourceDependenciesCache {
 	if c.sourceDepsResolver != nil {
 		return c.sourceDepsResolver()
 	}

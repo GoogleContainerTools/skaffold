@@ -74,7 +74,7 @@ type SkaffoldRunner struct {
 	runCtx             *runcontext.RunContext
 	labeller           *label.DefaultLabeller
 	artifactStore      build.ArtifactStore
-	sourceDependencies graph.TransitiveSourceDependenciesCache
+	sourceDependencies graph.SourceDependenciesCache
 	// podSelector is used to determine relevant pods for logging and portForwarding
 	podSelector *kubernetes.ImageList
 

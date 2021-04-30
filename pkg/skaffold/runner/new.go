@@ -63,7 +63,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	store := build.NewArtifactStore()
 	g := graph.ToArtifactGraph(runCtx.Artifacts())
-	sourceDependencies := graph.NewTransitiveSourceDependenciesCache(runCtx, store, g)
+	sourceDependencies := graph.NewSourceDependenciesCache(runCtx, store, g)
 
 	var builder build.Builder
 	builder, err = build.NewBuilderMux(runCtx, store, func(p latest_v1.Pipeline) (build.PipelineBuilder, error) {
@@ -88,7 +88,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	depLister := func(ctx context.Context, artifact *latest_v1.Artifact) ([]string, error) {
-		buildDependencies, err := sourceDependencies.ResolveForArtifact(ctx, artifact)
+		buildDependencies, err := sourceDependencies.SingleArtifactDependencies(ctx, artifact)
 		if err != nil {
 			return nil, err
 		}
