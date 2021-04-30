@@ -200,7 +200,13 @@ func (rc *RunContext) WatchPollInterval() int                    { return rc.Opt
 func (rc *RunContext) BuildConcurrency() int                     { return rc.Opts.BuildConcurrency }
 func (rc *RunContext) IsMultiConfig() bool                       { return rc.Pipelines.IsMultiPipeline() }
 
-func GetRunContext(opts config.SkaffoldOptions, pipelines []latest_v1.Pipeline) (*RunContext, error) {
+func GetRunContext(opts config.SkaffoldOptions, configs []*latest_v1.SkaffoldConfig) (*RunContext, error) {
+	var pipelines []latest_v1.Pipeline
+	for _, cfg := range configs {
+		if cfg != nil {
+			pipelines = append(pipelines, cfg.Pipeline)
+		}
+	}
 	kubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
 		return nil, fmt.Errorf("getting current cluster context: %w", err)
