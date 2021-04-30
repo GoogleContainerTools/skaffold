@@ -21,6 +21,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -31,6 +34,9 @@ import (
 
 var (
 	yamlOnly bool
+	// for testing
+	getRunContext          = runcontext.GetRunContext
+	withFallbackConfigFunc = withFallbackConfig
 )
 
 // NewCmdDiagnose describes the CLI command to diagnose skaffold.
@@ -46,21 +52,26 @@ func NewCmdDiagnose() *cobra.Command {
 }
 
 func doDiagnose(ctx context.Context, out io.Writer) error {
-	runCtx, configs, err := runContext(out, opts)
+	configs, err := withFallbackConfigFunc(out, opts, parser.GetAllConfigs)
 	if err != nil {
 		return err
 	}
-
-	for _, config := range configs {
-		if !yamlOnly {
+	if !yamlOnly {
+		var pipelines []latest_v1.Pipeline
+		for _, cfg := range configs {
+			pipelines = append(pipelines, cfg.Pipeline)
+		}
+		runCtx, err := getRunContext(opts, pipelines)
+		if err != nil {
+			return fmt.Errorf("getting run context: %w", err)
+		}
+		for _, config := range configs {
 			fmt.Fprintln(out, "Skaffold version:", version.Get().GitCommit)
 			fmt.Fprintln(out, "Configuration version:", config.APIVersion)
 			fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
-
 			if err := diagnose.CheckArtifacts(ctx, runCtx, out); err != nil {
 				return fmt.Errorf("running diagnostic on artifacts: %w", err)
 			}
-
 			color.Blue.Fprintln(out, "\nConfiguration")
 		}
 	}
