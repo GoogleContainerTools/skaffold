@@ -35,8 +35,8 @@ import (
 var (
 	yamlOnly bool
 	// for testing
-	getRunContext          = runcontext.GetRunContext
-	withFallbackConfigFunc = withFallbackConfig
+	getRunContext = runcontext.GetRunContext
+	getCfgs       = parser.GetAllConfigs
 )
 
 // NewCmdDiagnose describes the CLI command to diagnose skaffold.
@@ -52,7 +52,7 @@ func NewCmdDiagnose() *cobra.Command {
 }
 
 func doDiagnose(ctx context.Context, out io.Writer) error {
-	configs, err := withFallbackConfigFunc(out, opts, parser.GetAllConfigs)
+	configs, err := getCfgs(opts)
 	if err != nil {
 		return err
 	}

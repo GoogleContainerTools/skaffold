@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -62,7 +61,7 @@ metadata:
 				return nil, fmt.Errorf("cannot get the runtime context")
 			})
 			t.Override(&yamlOnly, test.yamlOnly)
-			t.Override(&withFallbackConfigFunc, func(io.Writer, config.SkaffoldOptions, func(opts config.SkaffoldOptions) ([]*latest_v1.SkaffoldConfig, error)) ([]*latest_v1.SkaffoldConfig, error) {
+			t.Override(&getCfgs, func(opts config.SkaffoldOptions) ([]*latest_v1.SkaffoldConfig, error) {
 				return []*latest_v1.SkaffoldConfig{
 					{
 						APIVersion: "testVersion",
