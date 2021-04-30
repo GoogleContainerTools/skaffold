@@ -21,13 +21,14 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/spf13/cobra"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/diagnose"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/spf13/cobra"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -56,7 +57,7 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 		return err
 	}
 	if !yamlOnly {
-		if err := printDockerArtifact(ctx, out, configs); err != nil {
+		if err := printArtifactDiagnostics(ctx, out, configs); err != nil {
 			return err
 		}
 	}
@@ -73,7 +74,7 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func printDockerArtifact(ctx context.Context, out io.Writer, configs []*latest_v1.SkaffoldConfig) error {
+func printArtifactDiagnostics(ctx context.Context, out io.Writer, configs []*latest_v1.SkaffoldConfig) error {
 	var pipelines []latest_v1.Pipeline
 	for _, cfg := range configs {
 		pipelines = append(pipelines, cfg.Pipeline)
@@ -93,4 +94,5 @@ func printDockerArtifact(ctx context.Context, out io.Writer, configs []*latest_v
 
 		color.Blue.Fprintln(out, "\nConfiguration")
 	}
+	return nil
 }
