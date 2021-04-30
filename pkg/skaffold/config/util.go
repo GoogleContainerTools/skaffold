@@ -304,7 +304,7 @@ func IsUpdateCheckEnabled(configfile string) bool {
 	return cfg == nil || cfg.UpdateCheck == nil || *cfg.UpdateCheck
 }
 
-func ShouldDisplayPrompt(configfile string) bool {
+func ShouldDisplaySurveyPrompt(configfile string) bool {
 	cfg, disabled := isSurveyPromptDisabled(configfile)
 	return !disabled && !recentlyPromptedOrTaken(cfg)
 }

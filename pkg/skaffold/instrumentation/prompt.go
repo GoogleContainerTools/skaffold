@@ -21,6 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/sirupsen/logrus"
 )
 
 const Prompt = `To help improve the quality of this product, we collect anonymized usage data for details on what is tracked and how we use this data visit <https://skaffold.dev/docs/resources/telemetry/>. This data is handled in accordance with our privacy policy <https://policies.google.com/privacy>
@@ -37,11 +38,11 @@ var (
 	setStatus    = SetOnlineStatus
 )
 
-// InitInstrumentation initializes instrumentation if its enabled
-// and returns true. If instrumentation is disabled, returns false.
-func InitInstrumentation(configfile string) bool {
+// ShouldDisplayMetricsPrompt returns true if metrics is not enabled.
+func ShouldDisplayMetricsPrompt(configfile string) bool {
 	cfg, err := getConfig(configfile)
 	if err != nil {
+		logrus.Debugf("could not read global config %s", err)
 		return false
 	}
 	if cfg == nil || cfg.CollectMetrics == nil {

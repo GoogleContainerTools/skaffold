@@ -66,7 +66,7 @@ func TestShouldDisplayMetricsPrompt(t *testing.T) {
 			mock := func(string) (*config.ContextConfig, error) { return test.config, test.err }
 			t.Override(&getConfig, mock)
 			t.Override(&setStatus, func() {})
-			actual := InitInstrumentation(test.name)
+			actual := ShouldDisplayMetricsPrompt(test.name)
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}

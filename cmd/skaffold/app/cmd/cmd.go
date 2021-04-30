@@ -62,7 +62,7 @@ const (
 func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	updateMsg := make(chan string, 1)
 	surveyPrompt := make(chan bool, 1)
-	var metricsExportEnabled bool
+	var metricsPrompt bool
 
 	rootCmd := &cobra.Command{
 		Use: "skaffold",
@@ -112,14 +112,14 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			// Always perform all checks.
 			go func() {
 				updateMsg <- updateCheckForReleasedVersionsIfNotDisabled(versionInfo.Version)
-				surveyPrompt <- config.ShouldDisplayPrompt(opts.GlobalConfig)
+				surveyPrompt <- config.ShouldDisplaySurveyPrompt(opts.GlobalConfig)
 			}()
-			metricsExportEnabled = instrumentation.InitInstrumentation(opts.GlobalConfig)
+			metricsPrompt = instrumentation.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			if msg, isQuiet := isQuietMode(); isQuiet {
-				logrus.Debugf(msg)
+			if isQuietMode() && !isHouseKeepingMessagesAllowed(cmd) {
+				return
 			}
 			select {
 			case msg := <-updateMsg:
@@ -136,7 +136,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 				}
 			default:
 			}
-			if !metricsExportEnabled {
+			if metricsPrompt {
 				if err := instrumentation.DisplayMetricsPrompt(opts.GlobalConfig, cmd.OutOrStdout()); err != nil {
 					fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 				}
@@ -299,16 +299,19 @@ func preReleaseVersion(s string) bool {
 	return false
 }
 
-func isQuietMode() (string, bool) {
+func isQuietMode() bool {
 	switch {
 	case !interactive:
-		return "Update check prompt, survey prompt and telemetry prompt disabled in non-interactive mode", true
+		logrus.Debug("Update check prompt, survey prompt and telemetry prompt disabled in non-interactive mode")
+		return true
 	case quietFlag:
-		return "Update check prompt, survey prompt and telemetry prompt disabled in quiet mode", true
+		logrus.Debug("Update check prompt, survey prompt and telemetry prompt disabled in quiet mode")
+		return true
 	case analyze:
-		return "Update check prompt, survey prompt and telemetry prompt disabled when running `init --analyze`", true
+		logrus.Debug("Update check prompt, survey prompt and telemetry prompt disabled when running `init --analyze`")
+		return true
 	default:
-		return "", false
+		return false
 	}
 }
 
