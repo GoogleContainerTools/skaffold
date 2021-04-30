@@ -21,9 +21,9 @@ import (
 	"runtime"
 	"strings"
 
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-
 	"github.com/blang/semver"
+
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 var version, gitCommit, buildDate, client string
