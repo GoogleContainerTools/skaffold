@@ -119,10 +119,10 @@ func (ps Pipelines) StatusCheck() (*bool, error) {
 			} else {
 				disabled = true
 			}
+			if enabled && disabled {
+				return nil, fmt.Errorf("cannot explicitly enable StatusCheck in one pipeline and explicitly disable it in another pipeline, see https://skaffold.dev/docs/workflows/ci-cd/#waiting-for-skaffold-deployments-using-healthcheck")
+			}
 		}
-	}
-	if enabled && disabled {
-		return nil, fmt.Errorf("cannot explicitly enable StatusCheck in one pipeline and explicitly disable it in another pipeline, see https://skaffold.dev/docs/workflows/ci-cd/#waiting-for-skaffold-deployments-using-healthcheck")
 	}
 	// set the group status check to disabled if any pipeline has StatusCheck
 	// set to false.
