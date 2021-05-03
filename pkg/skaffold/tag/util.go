@@ -25,20 +25,27 @@ func StripTags(taggedImages []string) []string {
 	// Remove tags from image names
 	var images []string
 	for _, image := range taggedImages {
-		parsed, err := docker.ParseReference(image)
-		if err != nil {
-			// It's possible that it's a templatized name that can't be parsed as is.
-			warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
-			continue
+		tag := StripTag(image)
+		if tag != "" {
+			images = append(images, tag)
 		}
-		if parsed.Digest != "" {
-			warnings.Printf("Ignoring image referenced by digest: [%s]", image)
-			continue
-		}
-
-		images = append(images, parsed.BaseName)
 	}
 	return images
+}
+
+func StripTag(image string) string {
+	parsed, err := docker.ParseReference(image)
+	if err != nil {
+		// It's possible that it's a templatized name that can't be parsed as is.
+		warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
+		return ""
+	}
+	if parsed.Digest != "" {
+		warnings.Printf("Ignoring image referenced by digest: [%s]", image)
+		return ""
+	}
+
+	return parsed.BaseName
 }
 
 func SetImageTag(image, tag string) (string, error) {

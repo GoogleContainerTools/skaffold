@@ -21,16 +21,16 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestTransitiveSourceDependenciesCache(t *testing.T) {
+func TestSourceDependenciesCache(t *testing.T) {
 	testutil.Run(t, "TestTransitiveSourceDependenciesCache", func(t *testutil.T) {
-		g := map[string]*latest.Artifact{
-			"img1": {ImageName: "img1", Dependencies: []*latest.ArtifactDependency{{ImageName: "img2"}}},
-			"img2": {ImageName: "img2", Dependencies: []*latest.ArtifactDependency{{ImageName: "img3"}, {ImageName: "img4"}}},
-			"img3": {ImageName: "img3", Dependencies: []*latest.ArtifactDependency{{ImageName: "img4"}}},
+		g := map[string]*latest_v1.Artifact{
+			"img1": {ImageName: "img1", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img2"}}},
+			"img2": {ImageName: "img2", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img3"}, {ImageName: "img4"}}},
+			"img3": {ImageName: "img3", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img4"}}},
 			"img4": {ImageName: "img4"},
 		}
 		deps := map[string][]string{
@@ -40,13 +40,13 @@ func TestTransitiveSourceDependenciesCache(t *testing.T) {
 			"img4": {"file41", "file42"},
 		}
 		counts := map[string]int{"img1": 0, "img2": 0, "img3": 0, "img4": 0}
-		t.Override(&getDependenciesFunc, func(_ context.Context, a *latest.Artifact, _ docker.Config, _ docker.ArtifactResolver) ([]string, error) {
+		t.Override(&getDependenciesFunc, func(_ context.Context, a *latest_v1.Artifact, _ docker.Config, _ docker.ArtifactResolver) ([]string, error) {
 			counts[a.ImageName]++
 			return deps[a.ImageName], nil
 		})
 
-		r := NewTransitiveSourceDependenciesCache(nil, nil, g)
-		d, err := r.ResolveForArtifact(context.Background(), g["img1"])
+		r := NewSourceDependenciesCache(nil, nil, g)
+		d, err := r.TransitiveArtifactDependencies(context.Background(), g["img1"])
 		t.CheckNoError(err)
 		expectedDeps := []string{"file11", "file12", "file21", "file22", "file31", "file32", "file41", "file42", "file41", "file42"}
 		t.CheckDeepEqual(expectedDeps, d)

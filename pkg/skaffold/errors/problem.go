@@ -20,13 +20,15 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
 var (
-	allErrors = map[constants.Phase][]Problem{}
+	allErrors     = map[constants.Phase][]Problem{}
+	allErrorsLock sync.RWMutex
 )
 
 type descriptionFunc func(error) string
@@ -78,8 +80,10 @@ func isProblem(err error) (Problem, bool) {
 }
 
 func AddPhaseProblems(phase constants.Phase, problems []Problem) {
+	allErrorsLock.Lock()
 	if ps, ok := allErrors[phase]; ok {
 		problems = append(ps, problems...)
 	}
 	allErrors[phase] = problems
+	allErrorsLock.Unlock()
 }

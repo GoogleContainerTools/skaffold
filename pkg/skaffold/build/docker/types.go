@@ -21,7 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // Builder is an artifact builder that uses docker
@@ -44,7 +44,7 @@ type ArtifactResolver interface {
 
 // TransitiveSourceDependenciesResolver provides an interface to to evaluate the source dependencies for artifacts.
 type TransitiveSourceDependenciesResolver interface {
-	ResolveForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error)
+	TransitiveArtifactDependencies(ctx context.Context, a *latest_v1.Artifact) ([]string, error)
 }
 
 // NewBuilder returns an new instance of a docker builder

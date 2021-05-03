@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubernetes
+package logger
 
 import (
 	"bufio"
@@ -30,7 +30,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
 // LogAggregator aggregates the logs for all the deployed pods.
@@ -38,30 +40,30 @@ type LogAggregator struct {
 	output      io.Writer
 	kubectlcli  *kubectl.CLI
 	config      Config
-	podWatcher  PodWatcher
-	colorPicker ColorPicker
+	podWatcher  kubernetes.PodWatcher
+	colorPicker kubernetes.ColorPicker
 
 	muted             int32
 	sinceTime         time.Time
-	events            chan PodEvent
+	events            chan kubernetes.PodEvent
 	trackedContainers trackedContainers
 	outputLock        sync.Mutex
 }
 
 type Config interface {
-	PipelineForImage(imageName string) (latest.Pipeline, bool)
-	DefaultPipeline() latest.Pipeline
+	PipelineForImage(imageName string) (latest_v1.Pipeline, bool)
+	DefaultPipeline() latest_v1.Pipeline
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector PodSelector, config Config) *LogAggregator {
+func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector kubernetes.PodSelector, config Config) *LogAggregator {
 	return &LogAggregator{
 		output:      out,
 		kubectlcli:  cli,
 		config:      config,
-		podWatcher:  NewPodWatcher(podSelector),
-		colorPicker: NewColorPicker(imageNames),
-		events:      make(chan PodEvent),
+		podWatcher:  kubernetes.NewPodWatcher(podSelector),
+		colorPicker: kubernetes.NewColorPicker(imageNames),
+		events:      make(chan kubernetes.PodEvent),
 	}
 }
 
@@ -180,10 +182,10 @@ func (a *LogAggregator) printLogLine(headerColor color.Color, prefix, text strin
 }
 
 func (a *LogAggregator) prefix(pod *v1.Pod, container v1.ContainerStatus) string {
-	var c latest.Pipeline
+	var c latest_v1.Pipeline
 	var present bool
 	for _, container := range pod.Spec.Containers {
-		if c, present = a.config.PipelineForImage(stripTag(container.Image)); present {
+		if c, present = a.config.PipelineForImage(tag.StripTag(container.Image)); present {
 			break
 		}
 	}
@@ -286,43 +288,4 @@ func (t *trackedContainers) add(id string) bool {
 	t.Unlock()
 
 	return alreadyTracked
-}
-
-// PodSelector is used to choose which pods to log.
-type PodSelector interface {
-	Select(pod *v1.Pod) bool
-}
-
-// ImageList implements PodSelector based on a list of images names.
-type ImageList struct {
-	sync.RWMutex
-	names map[string]bool
-}
-
-// NewImageList creates a new ImageList.
-func NewImageList() *ImageList {
-	return &ImageList{
-		names: make(map[string]bool),
-	}
-}
-
-// Add adds an image to the list.
-func (l *ImageList) Add(image string) {
-	l.Lock()
-	l.names[image] = true
-	l.Unlock()
-}
-
-// Select returns true if one of the pod's images is in the list.
-func (l *ImageList) Select(pod *v1.Pod) bool {
-	l.RLock()
-	defer l.RUnlock()
-
-	for _, container := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
-		if l.names[container.Image] {
-			return true
-		}
-	}
-
-	return false
 }

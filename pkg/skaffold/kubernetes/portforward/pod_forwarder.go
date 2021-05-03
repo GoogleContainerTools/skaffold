@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
@@ -105,7 +105,7 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 	for _, c := range pod.Spec.Containers {
 		for _, port := range p.containerPorts(pod, c) {
 			// get current entry for this container
-			resource := latest.PortForwardResource{
+			resource := latest_v1.PortForwardResource{
 				Type:      constants.Pod,
 				Name:      pod.Name,
 				Namespace: pod.Namespace,
@@ -132,7 +132,7 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 	return nil
 }
 
-func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName, portName, ownerReference string, resource latest.PortForwardResource) (*portForwardEntry, error) {
+func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName, portName, ownerReference string, resource latest_v1.PortForwardResource) (*portForwardEntry, error) {
 	rv, err := strconv.Atoi(resourceVersion)
 	if err != nil {
 		return nil, fmt.Errorf("converting resource version to integer: %w", err)
@@ -148,7 +148,7 @@ func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = retrieveAvailablePort(resource.Port.IntVal, &p.entryManager.forwardedPorts)
+	entry.localPort = retrieveAvailablePort(resource.Address, resource.Port.IntVal, &p.entryManager.forwardedPorts)
 
 	return entry, nil
 }

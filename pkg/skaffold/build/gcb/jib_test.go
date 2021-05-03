@@ -23,7 +23,7 @@ import (
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -59,11 +59,11 @@ func TestJibMavenBuildSpec(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := &latest.Artifact{
-				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Type: string(jib.JibMaven), BaseImage: test.baseImage},
+			artifact := &latest_v1.Artifact{
+				ArtifactType: latest_v1.ArtifactType{
+					JibArtifact: &latest_v1.JibArtifact{Type: string(jib.JibMaven), BaseImage: test.baseImage},
 				},
-				Dependencies: []*latest.ArtifactDependency{
+				Dependencies: []*latest_v1.ArtifactDependency{
 					{ImageName: "img2", Alias: "img2"},
 					{ImageName: "img3", Alias: "img3"},
 				},
@@ -73,7 +73,7 @@ func TestJibMavenBuildSpec(t *testing.T) {
 				"img2": "img2:tag",
 				"img3": "img3:tag",
 			}
-			builder := NewBuilder(&mockBuilderContext{artifactStore: store}, &latest.GoogleCloudBuild{
+			builder := NewBuilder(&mockBuilderContext{artifactStore: store}, &latest_v1.GoogleCloudBuild{
 				MavenImage: "maven:3.6.0",
 			})
 			builder.skipTests = test.skipTests
@@ -112,13 +112,13 @@ func TestJibGradleBuildSpec(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := &latest.Artifact{
-				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Type: string(jib.JibGradle)},
+			artifact := &latest_v1.Artifact{
+				ArtifactType: latest_v1.ArtifactType{
+					JibArtifact: &latest_v1.JibArtifact{Type: string(jib.JibGradle)},
 				},
 			}
 
-			builder := NewBuilder(&mockBuilderContext{}, &latest.GoogleCloudBuild{
+			builder := NewBuilder(&mockBuilderContext{}, &latest_v1.GoogleCloudBuild{
 				GradleImage: "gradle:5.1.1",
 			})
 			builder.skipTests = test.skipTests

@@ -33,7 +33,13 @@ This feature can be very useful in Continuous Delivery pipelines to ensure that 
 healthy before proceeding with the next steps in the pipeline.
 
 {{<alert title="Note">}}
-`healthcheck` is enabled by default; it can be disabled with the `--status-check=false` flag.
+`healthcheck` is enabled by default; it can be disabled with the `--status-check=false`
+flag, or by setting the `statusCheck` field of the deployment config stanza in
+the `skaffold.yaml` to false.
+
+If the `skaffold.yaml` contains multiple pipelines, it is invalid for one to
+have `statusCheck` explicitly set to `true` and a second to have `statusCheck`
+explicitly set to `false`.
 {{</alert>}}
 
 To determine if a `Deployment` resource is up and running, Skaffold relies on `kubectl rollout status` to obtain its status.
@@ -59,7 +65,6 @@ the time specified by [`progressDeadlineSeconds`](https://kubernetes.io/docs/con
 from the deployment configuration.
 
 If the `Deployment.spec.progressDeadlineSeconds` is not set, Skaffold will either wait for
-
 the time specified in the `statusCheckDeadlineSeconds` field of the deployment config stanza in the `skaffold.yaml`, or
 default to 10 minutes if this is not specified.
 

@@ -17,13 +17,13 @@ limitations under the License.
 package runner
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
 type ChangeSet struct {
-	needsRebuild   []*latest.Artifact
-	rebuildTracker map[string]*latest.Artifact
+	needsRebuild   []*latest_v1.Artifact
+	rebuildTracker map[string]*latest_v1.Artifact
 	needsResync    []*sync.Item
 	resyncTracker  map[string]*sync.Item
 	needsRetest    map[string]bool // keyed on artifact image name
@@ -31,19 +31,19 @@ type ChangeSet struct {
 	needsReload    bool
 }
 
-func (c *ChangeSet) AddRebuild(a *latest.Artifact) {
+func (c *ChangeSet) AddRebuild(a *latest_v1.Artifact) {
 	if _, ok := c.rebuildTracker[a.ImageName]; ok {
 		return
 	}
 
 	if c.rebuildTracker == nil {
-		c.rebuildTracker = map[string]*latest.Artifact{}
+		c.rebuildTracker = map[string]*latest_v1.Artifact{}
 	}
 	c.rebuildTracker[a.ImageName] = a
 	c.needsRebuild = append(c.needsRebuild, a)
 }
 
-func (c *ChangeSet) AddRetest(a *latest.Artifact) {
+func (c *ChangeSet) AddRetest(a *latest_v1.Artifact) {
 	if c.needsRetest == nil {
 		c.needsRetest = make(map[string]bool)
 	}
@@ -63,7 +63,7 @@ func (c *ChangeSet) AddResync(s *sync.Item) {
 }
 
 func (c *ChangeSet) resetBuild() {
-	c.rebuildTracker = make(map[string]*latest.Artifact)
+	c.rebuildTracker = make(map[string]*latest_v1.Artifact)
 	c.needsRebuild = nil
 }
 

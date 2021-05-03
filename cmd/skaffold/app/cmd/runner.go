@@ -36,7 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -45,7 +45,7 @@ import (
 // For tests
 var createRunner = createNewRunner
 
-func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, []*latest.SkaffoldConfig) error) error {
+func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, []*latest_v1.SkaffoldConfig) error) error {
 	runner, config, runCtx, err := createRunner(out, opts)
 	if err != nil {
 		return err
@@ -57,13 +57,13 @@ func withRunner(ctx context.Context, out io.Writer, action func(runner.Runner, [
 }
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
-func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []*latest.SkaffoldConfig, *runcontext.RunContext, error) {
+func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner, []*latest_v1.SkaffoldConfig, *runcontext.RunContext, error) {
 	runCtx, configs, err := runContext(out, opts)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	instrumentation.InitMeterFromConfig(configs)
+	instrumentation.InitMeterFromConfig(configs, opts.User)
 	runner, err := runner.NewForConfig(runCtx)
 	if err != nil {
 		event.InititializationFailed(err)
@@ -73,16 +73,12 @@ func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner,
 	return runner, configs, runCtx, nil
 }
 
-func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest.SkaffoldConfig, error) {
+func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunContext, []*latest_v1.SkaffoldConfig, error) {
 	configs, err := withFallbackConfig(out, opts, parser.GetAllConfigs)
 	if err != nil {
 		return nil, nil, err
 	}
 	setDefaultDeployer(configs)
-	var pipelines []latest.Pipeline
-	for _, cfg := range configs {
-		pipelines = append(pipelines, cfg.Pipeline)
-	}
 
 	// TODO: Should support per-config kubecontext. Right now we constrain all configs to define the same kubecontext.
 	kubectx.ConfigureKubeConfig(opts.KubeConfig, opts.KubeContext, configs[0].Deploy.KubeContext)
@@ -91,7 +87,7 @@ func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunCont
 		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
 	}
 
-	runCtx, err := runcontext.GetRunContext(opts, pipelines)
+	runCtx, err := runcontext.GetRunContext(opts, configs)
 	if err != nil {
 		return nil, nil, fmt.Errorf("getting run context: %w", err)
 	}
@@ -104,7 +100,7 @@ func runContext(out io.Writer, opts config.SkaffoldOptions) (*runcontext.RunCont
 }
 
 // withFallbackConfig will try to automatically generate a config if root `skaffold.yaml` file does not exist.
-func withFallbackConfig(out io.Writer, opts config.SkaffoldOptions, getCfgs func(opts config.SkaffoldOptions) ([]*latest.SkaffoldConfig, error)) ([]*latest.SkaffoldConfig, error) {
+func withFallbackConfig(out io.Writer, opts config.SkaffoldOptions, getCfgs func(opts config.SkaffoldOptions) ([]*latest_v1.SkaffoldConfig, error)) ([]*latest_v1.SkaffoldConfig, error) {
 	configs, err := getCfgs(opts)
 	if err == nil {
 		return configs, nil
@@ -123,7 +119,7 @@ func withFallbackConfig(out io.Writer, opts config.SkaffoldOptions, getCfgs func
 
 			defaults.Set(config)
 
-			return []*latest.SkaffoldConfig{config}, nil
+			return []*latest_v1.SkaffoldConfig{config}, nil
 		}
 
 		return nil, fmt.Errorf("skaffold config file %s not found - check your current working directory, or try running `skaffold init`", opts.ConfigurationFile)
@@ -136,7 +132,7 @@ func withFallbackConfig(out io.Writer, opts config.SkaffoldOptions, getCfgs func
 	return nil, fmt.Errorf("parsing skaffold config: %w", err)
 }
 
-func setDefaultDeployer(configs []*latest.SkaffoldConfig) {
+func setDefaultDeployer(configs []*latest_v1.SkaffoldConfig) {
 	// do not set a default deployer in a multi-config application.
 	if len(configs) > 1 {
 		return

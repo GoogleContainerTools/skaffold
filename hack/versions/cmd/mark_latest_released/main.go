@@ -23,6 +23,6 @@ import (
 )
 
 func main() {
-	latest := path.Join("pkg", "skaffold", "schema", "latest", "config.go")
+	latest := path.Join("pkg", "skaffold", "schema", "latest", "v1", "config.go")
 	schema.UpdateVersionComment(latest, true)
 }

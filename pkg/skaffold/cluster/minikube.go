@@ -24,21 +24,35 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 
+	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/util/homedir"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
-var GetClient = getClient
+var (
+	GetClient                   = getClient
+	minikubeVersionWithUserFlag = semver.MustParse("1.18.0")
+)
 
 // To override during tests
 var (
-	minikubeBinaryFunc = minikubeBinary
-	getClusterInfo     = context.GetClusterInfo
+	FindMinikubeBinary    = minikubeBinary
+	getClusterInfo        = context.GetClusterInfo
+	GetCurrentVersionFunc = getCurrentVersion
+
+	findOnce sync.Once
+	mk       = struct {
+		err     error // determines if version and path are valid
+		version semver.Version
+		path    string
+	}{}
 )
 
 type Client interface {
@@ -55,7 +69,7 @@ func getClient() Client {
 }
 
 func (clientImpl) IsMinikube(kubeContext string) bool {
-	if _, err := minikubeBinaryFunc(); err != nil {
+	if _, _, err := FindMinikubeBinary(); err != nil {
 		logrus.Tracef("Minikube cluster not detected: %v", err)
 		return false
 	}
@@ -89,22 +103,64 @@ func (clientImpl) MinikubeExec(arg ...string) (*exec.Cmd, error) {
 }
 
 func minikubeExec(arg ...string) (*exec.Cmd, error) {
-	b, err := minikubeBinaryFunc()
-	if err != nil {
+	b, v, err := FindMinikubeBinary()
+	if err != nil && !errors.As(err, &versionErr{}) {
 		return nil, fmt.Errorf("getting minikube executable: %w", err)
+	} else if err == nil && supportsUserFlag(v) {
+		arg = append(arg, "--user=skaffold")
 	}
 	return exec.Command(b, arg...), nil
 }
 
-func minikubeBinary() (string, error) {
-	filename, err := exec.LookPath("minikube")
+func supportsUserFlag(ver semver.Version) bool {
+	return ver.GE(minikubeVersionWithUserFlag)
+}
+
+// Retrieves minikube version
+func getCurrentVersion() (semver.Version, error) {
+	cmd := exec.Command("minikube", "version", "--output=json")
+	out, err := util.RunCmdOut(cmd)
 	if err != nil {
-		return "", errors.New("unable to find minikube executable. Please add it to PATH environment variable")
+		return semver.Version{}, err
 	}
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		return "", fmt.Errorf("unable to find minikube executable. File not found %s", filename)
+	minikubeOutput := map[string]string{}
+	err = json.Unmarshal(out, &minikubeOutput)
+	if v, ok := minikubeOutput["minikubeVersion"]; ok {
+		currentVersion, err := version.ParseVersion(v)
+		if err != nil {
+			return semver.Version{}, err
+		}
+		return currentVersion, nil
 	}
-	return filename, nil
+	return semver.Version{}, err
+}
+
+func minikubeBinary() (string, semver.Version, error) {
+	findOnce.Do(func() {
+		filename, err := exec.LookPath("minikube")
+		if err != nil {
+			mk.err = errors.New("unable to lookup minikube executable. Please add it to PATH environment variable")
+		}
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			mk.err = fmt.Errorf("unable to find minikube executable. File not found %s", filename)
+		}
+		mk.path = filename
+		if v, err := GetCurrentVersionFunc(); err != nil {
+			mk.err = versionErr{err: err}
+		} else {
+			mk.version = v
+		}
+	})
+
+	return mk.path, mk.version, mk.err
+}
+
+type versionErr struct {
+	err error
+}
+
+func (v versionErr) Error() string {
+	return v.err.Error()
 }
 
 // matchClusterCertPath checks if the cluster certificate for this context is from inside the minikube directory

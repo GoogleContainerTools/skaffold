@@ -28,7 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
@@ -63,6 +63,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta12"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta13"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta14"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta15"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta4"
@@ -120,7 +121,8 @@ var SchemaVersions = Versions{
 	{v2beta12.Version, v2beta12.NewSkaffoldConfig},
 	{v2beta13.Version, v2beta13.NewSkaffoldConfig},
 	{v2beta14.Version, v2beta14.NewSkaffoldConfig},
-	{latest.Version, latest.NewSkaffoldConfig},
+	{v2beta15.Version, v2beta15.NewSkaffoldConfig},
+	{latest_v1.Version, latest_v1.NewSkaffoldConfig},
 }
 
 type Version struct {

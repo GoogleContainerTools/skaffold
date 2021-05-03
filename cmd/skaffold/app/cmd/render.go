@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 var (
@@ -50,7 +50,6 @@ func NewCmdRender() *cobra.Command {
 			{Value: &renderOutputPath, Name: "output", Shorthand: "o", DefValue: "", Usage: "file to write rendered manifests to"},
 			{Value: &opts.DigestSource, Name: "digest-source", DefValue: "local", Usage: "Set to 'local' to build images locally and use digests from built images; Set to 'remote' to resolve the digest of images by tag from the remote registry; Set to 'none' to use tags directly from the Kubernetes manifests. Set to 'tag' to use tags directly from the build.", IsEnum: true},
 		}).
-		WithHouseKeepingMessages().
 		NoArgs(doRender)
 }
 
@@ -60,7 +59,7 @@ func doRender(ctx context.Context, out io.Writer) error {
 		buildOut = out
 	}
 
-	return withRunner(ctx, out, func(r runner.Runner, configs []*latest.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, configs []*latest_v1.SkaffoldConfig) error {
 		var bRes []graph.Artifact
 
 		if renderFromBuildOutputFile.String() != "" {

@@ -32,40 +32,28 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 type inputDigestTagger struct {
 	cfg   docker.Config
-	ag    graph.ArtifactGraph
-	cache graph.TransitiveSourceDependenciesCache
+	cache graph.SourceDependenciesCache
 }
 
 func NewInputDigestTagger(cfg docker.Config, ag graph.ArtifactGraph) (Tagger, error) {
 	return &inputDigestTagger{
 		cfg:   cfg,
-		ag:    ag,
-		cache: graph.NewTransitiveSourceDependenciesCache(cfg, nil, ag),
+		cache: graph.NewSourceDependenciesCache(cfg, nil, ag),
 	}, nil
 }
 
-func (t *inputDigestTagger) GenerateTag(image latest.Artifact) (string, error) {
+func (t *inputDigestTagger) GenerateTag(image latest_v1.Artifact) (string, error) {
 	var inputs []string
 	// TODO(nkubala): plumb through context into Tagger interface
 	ctx := context.TODO()
-	// srcFiles, err := getDependenciesForArtifact(ctx, &image, t.cfg, nil)
-	srcFiles, err := t.cache.ResolveForArtifact(ctx, &image)
+	srcFiles, err := t.cache.TransitiveArtifactDependencies(ctx, &image)
 	if err != nil {
 		return "", err
-	}
-
-	for _, artifactDep := range t.ag.Dependencies(&image) {
-		// srcOfDep, err := getDependenciesForArtifact(ctx, artifactDep, t.cfg, nil)
-		srcOfDep, err := t.cache.ResolveForArtifact(ctx, artifactDep)
-		if err != nil {
-			return "", err
-		}
-		srcFiles = append(srcFiles, srcOfDep...)
 	}
 
 	// must sort as hashing is sensitive to the order in which files are processed

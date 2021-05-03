@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -61,11 +61,11 @@ func TestSizeOfDockerContext(t *testing.T) {
 				Write("Dockerfile", test.DockerfileContents).
 				WriteFiles(test.files)
 
-			dummyArtifact := &latest.Artifact{
+			dummyArtifact := &latest_v1.Artifact{
 				Workspace: tmpDir.Root(),
 				ImageName: test.artifactName,
-				ArtifactType: latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{
+				ArtifactType: latest_v1.ArtifactType{
+					DockerArtifact: &latest_v1.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 					},
 				},
@@ -82,10 +82,10 @@ func TestCheckArtifacts(t *testing.T) {
 		tmpDir := t.NewTempDir().Write("Dockerfile", "FROM busybox")
 
 		err := CheckArtifacts(context.Background(), &mockConfig{
-			artifacts: []*latest.Artifact{{
+			artifacts: []*latest_v1.Artifact{{
 				Workspace: tmpDir.Root(),
-				ArtifactType: latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{
+				ArtifactType: latest_v1.ArtifactType{
+					DockerArtifact: &latest_v1.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 					},
 				},
@@ -98,15 +98,15 @@ func TestCheckArtifacts(t *testing.T) {
 
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
-	artifacts             []*latest.Artifact
+	artifacts             []*latest_v1.Artifact
 }
 
-func (c *mockConfig) PipelineForImage() latest.Pipeline {
-	var pipeline latest.Pipeline
+func (c *mockConfig) PipelineForImage() latest_v1.Pipeline {
+	var pipeline latest_v1.Pipeline
 	pipeline.Build.Artifacts = c.artifacts
 	return pipeline
 }
 
-func (c *mockConfig) Artifacts() []*latest.Artifact {
+func (c *mockConfig) Artifacts() []*latest_v1.Artifact {
 	return c.artifacts
 }

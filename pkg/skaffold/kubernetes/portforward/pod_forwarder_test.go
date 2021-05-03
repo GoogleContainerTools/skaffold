@@ -29,8 +29,9 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
@@ -54,7 +55,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
-					resource: latest.PortForwardResource{
+					resource: latest_v1.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
 						Namespace: "namespace",
@@ -99,7 +100,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
-					resource: latest.PortForwardResource{
+					resource: latest_v1.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
 						Namespace: "namespace",
@@ -175,7 +176,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
-					resource: latest.PortForwardResource{
+					resource: latest_v1.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
 						Namespace: "namespace",
@@ -192,7 +193,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
-					resource: latest.PortForwardResource{
+					resource: latest_v1.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname2",
 						Namespace: "namespace2",
@@ -259,7 +260,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					podName:         "podname",
 					containerName:   "containername",
 					portName:        "portname",
-					resource: latest.PortForwardResource{
+					resource: latest_v1.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
 						Namespace: "namespace",
@@ -276,7 +277,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					podName:         "podname2",
 					containerName:   "containername2",
 					portName:        "portname2",
-					resource: latest.PortForwardResource{
+					resource: latest_v1.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname2",
 						Namespace: "namespace2",
@@ -342,7 +343,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					podName:         "podname",
 					containerName:   "containername",
 					portName:        "portname",
-					resource: latest.PortForwardResource{
+					resource: latest_v1.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
 						Namespace: "namespace",
@@ -401,9 +402,9 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			testEvent.InitializeState([]latest.Pipeline{{}})
+			testEvent.InitializeState([]latest_v1.Pipeline{{}})
 			taken := map[int]struct{}{}
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(util.Loopback, taken, test.availablePorts))
 			t.Override(&topLevelOwnerKey, func(context.Context, metav1.Object, string) string { return "owner" })
 
 			if test.forwarder == nil {
@@ -474,7 +475,7 @@ func TestStartPodForwarder(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			testEvent.InitializeState([]latest.Pipeline{{}})
+			testEvent.InitializeState([]latest_v1.Pipeline{{}})
 			t.Override(&topLevelOwnerKey, func(context.Context, metav1.Object, string) string { return "owner" })
 			t.Override(&newPodWatcher, func(kubernetes.PodSelector) kubernetes.PodWatcher {
 				return &fakePodWatcher{

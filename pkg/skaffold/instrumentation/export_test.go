@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/exporters/stdout"
-	"go.opentelemetry.io/otel/sdk/metric/controller/push"
+	"go.opentelemetry.io/otel/sdk/metric/controller/basic"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -104,6 +104,7 @@ func TestExportMetrics(t *testing.T) {
 		name                string
 		meter               skaffoldMeter
 		savedMetrics        []byte
+		expectedMeter       skaffoldMeter
 		shouldFailUnmarshal bool
 		isOnline            bool
 	}{
@@ -161,12 +162,12 @@ func TestExportMetrics(t *testing.T) {
 				if err != nil {
 					t.Error(err)
 				}
-				t.Override(&initExporter, func() (*push.Controller, error) {
-					return stdout.InstallNewPipeline([]stdout.Option{
-						stdout.WithQuantiles([]float64{0.5}),
+				t.Override(&initExporter, func() (*basic.Controller, error) {
+					_, controller, err := stdout.InstallNewPipeline([]stdout.Option{
 						stdout.WithPrettyPrint(),
 						stdout.WithWriter(tmpFile),
 					}, nil)
+					return controller, err
 				})
 			}
 			if len(test.savedMetrics) > 0 {
@@ -237,6 +238,101 @@ func TestInitCloudMonitoring(t *testing.T) {
 			p, err := initCloudMonitoringExporterMetrics()
 
 			t.CheckErrorAndDeepEqual(test.shouldError, err, test.pusherIsNil || test.shouldError, p == nil)
+		})
+	}
+}
+
+func TestUserMetricReported(t *testing.T) {
+	fs := &testutil.FakeFileSystem{
+		Files: map[string][]byte{
+			"/secret/keys.json": []byte(testKey),
+		},
+	}
+
+	tests := []struct {
+		name         string
+		meter        skaffoldMeter
+		expectedUser string
+	}{
+		{
+			name: "test meter with user intellij",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+				User:    "intellij",
+			},
+			expectedUser: "intellij",
+		},
+		{
+			name: "test meter with user vsc",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+				User:    "vsc",
+			},
+			expectedUser: "vsc",
+		},
+		{
+			name: "test meter with user gcloud",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+				User:    "gcloud",
+			},
+			expectedUser: "gcloud",
+		},
+		{
+			name: "test meter with no user set",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+			},
+		},
+		{
+			name: "test meter with user set to any value then allowed",
+			meter: skaffoldMeter{
+				Command: "build",
+				Version: "vTest.0",
+				Arch:    "test arch",
+				OS:      "test os",
+				User:    "random",
+			},
+			expectedUser: "",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			tmp := t.NewTempDir()
+			filename := "metrics"
+			openTelFilename := "otel_metrics"
+
+			t.Override(&statik.FS, func() (http.FileSystem, error) { return fs, nil })
+			t.Override(&isOnline, true)
+			tmpFile, err := os.OpenFile(tmp.Path(openTelFilename), os.O_RDWR|os.O_CREATE, os.ModePerm)
+			if err != nil {
+				t.Error(err)
+			}
+			t.Override(&initExporter, func() (*basic.Controller, error) {
+				_, controller, err := stdout.InstallNewPipeline([]stdout.Option{
+					stdout.WithPrettyPrint(),
+					stdout.WithWriter(tmpFile),
+				}, nil)
+				return controller, err
+			})
+
+			_ = exportMetrics(context.Background(), tmp.Path(filename), test.meter)
+
+			b, err := ioutil.ReadFile(tmp.Path(openTelFilename))
+			t.CheckNoError(err)
+			checkUser(t, test.expectedUser, b)
 		})
 	}
 }
@@ -346,17 +442,29 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 	}
 }
 
-// Derived from go.opentelemetry.io/otel/exporters/stdout/metric.go
-type line struct {
-	Name      string      `json:"Name"`
-	Count     interface{} `json:"Count,omitempty"`
-	Quantiles []quantile  `json:"Quantiles,omitempty"`
-	Labels    map[string]string
+func checkUser(t *testutil.T, user string, b []byte) {
+	var lines []*line
+	json.Unmarshal(b, &lines)
+	expectedFound := user != ""
+	for _, l := range lines {
+		l.initLine()
+		if l.Name == "launches" {
+			v, ok := l.Labels["user"]
+			t.CheckDeepEqual(expectedFound, ok)
+			t.CheckDeepEqual(user, v)
+			return
+		}
+	}
 }
 
-type quantile struct {
-	Quantile interface{} `json:"Quantile"`
-	Value    interface{} `json:"Value"`
+// Derived from go.opentelemetry.io/otel/exporters/stdout/metric.go
+type line struct {
+	Name   string      `json:"Name"`
+	Min    interface{} `json:"Min,omitempty"`
+	Max    interface{} `json:"Max,omitempty"`
+	Sum    interface{} `json:"Sum,omitempty"`
+	Count  interface{} `json:"Count,omitempty"`
+	Labels map[string]string
 }
 
 func (l *line) initLine() {
@@ -373,5 +481,5 @@ func (l *line) initLine() {
 }
 
 func (l *line) value() interface{} {
-	return l.Quantiles[0].Value
+	return l.Max
 }

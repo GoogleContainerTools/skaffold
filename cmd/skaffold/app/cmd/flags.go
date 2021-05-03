@@ -86,6 +86,15 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"all"},
 	},
 	{
+		Name:          "user",
+		Shorthand:     "u",
+		Value:         &opts.User,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		Hidden:        true,
+		DefinedOn:     []string{"all"},
+	},
+	{
 		Name:          "profile",
 		Shorthand:     "p",
 		Usage:         "Activate profiles by name (prefixed with `-` to disable a profile)",

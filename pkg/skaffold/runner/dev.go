@@ -32,9 +32,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -50,7 +50,7 @@ var (
 	fileSyncSucceeded  = event.FileSyncSucceeded
 )
 
-func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kubernetes.LogAggregator, forwarderManager portforward.Forwarder) error {
+func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logger.LogAggregator, forwarderManager portforward.Forwarder) error {
 	// never queue intents from user, even if they're not used
 	defer r.intents.reset()
 
@@ -178,7 +178,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *kuber
 
 // Dev watches for changes and runs the skaffold build, test and deploy
 // config until interrupted by the user.
-func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
+func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest_v1.Artifact) error {
 	event.DevLoopInProgress(r.devIteration)
 	eventV2.TaskInProgress(constants.DevLoop)
 	defer func() { r.devIteration++ }()
@@ -201,7 +201,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		default:
 			if err := r.monitor.Register(
 				func() ([]string, error) {
-					return r.sourceDependencies.ResolveForArtifact(ctx, artifact)
+					return r.sourceDependencies.TransitiveArtifactDependencies(ctx, artifact)
 				},
 				func(e filemon.Events) {
 					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx, len(g[artifact.ImageName]))
@@ -321,11 +321,11 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 }
 
 // graph represents the artifact graph
-type devGraph map[string][]*latest.Artifact
+type devGraph map[string][]*latest_v1.Artifact
 
 // getTransposeGraph builds the transpose of the graph represented by the artifacts slice, with edges directed from required artifact to the dependent artifact.
-func getTransposeGraph(artifacts []*latest.Artifact) devGraph {
-	g := make(map[string][]*latest.Artifact)
+func getTransposeGraph(artifacts []*latest_v1.Artifact) devGraph {
+	g := make(map[string][]*latest_v1.Artifact)
 	for _, a := range artifacts {
 		for _, d := range a.Dependencies {
 			g[d.ImageName] = append(g[d.ImageName], a)

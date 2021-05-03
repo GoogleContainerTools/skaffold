@@ -26,8 +26,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // SimulateDevCycle is used for testing a port forward + stop + restart in a simulated dev cycle
@@ -37,8 +38,8 @@ func SimulateDevCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
 	defer func() { portForwardEvent = portForwardEventHandler }()
 	portForwardEvent = func(entry *portForwardEntry) {}
 	ctx := context.Background()
-	localPort := retrieveAvailablePort(9000, &em.forwardedPorts)
-	pfe := newPortForwardEntry(0, latest.PortForwardResource{
+	localPort := retrieveAvailablePort(util.Loopback, 9000, &em.forwardedPorts)
+	pfe := newPortForwardEntry(0, latest_v1.PortForwardResource{
 		Type:      "deployment",
 		Name:      "leeroy-web",
 		Namespace: namespace,
@@ -50,7 +51,7 @@ func SimulateDevCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
 
 	logrus.Info("waiting for the same port to become available...")
 	if err := wait.Poll(100*time.Millisecond, 5*time.Second, func() (done bool, err error) {
-		nextPort := retrieveAvailablePort(localPort, &em.forwardedPorts)
+		nextPort := retrieveAvailablePort(util.Loopback, localPort, &em.forwardedPorts)
 
 		logrus.Infof("next port %d", nextPort)
 

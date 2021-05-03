@@ -23,7 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -102,7 +102,7 @@ type mockConfig struct {
 }
 
 func (m mockConfig) MinikubeProfile() string                { return m.minikube }
-func (m mockConfig) GetPipelines() []latest.Pipeline        { return []latest.Pipeline{} }
+func (m mockConfig) GetPipelines() []latest_v1.Pipeline     { return []latest_v1.Pipeline{} }
 func (m mockConfig) GetWorkingDir() string                  { return "" }
 func (m mockConfig) GlobalConfig() string                   { return "" }
 func (m mockConfig) ConfigurationFile() string              { return "" }

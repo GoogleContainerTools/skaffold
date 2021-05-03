@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2beta15"
+const Version string = "skaffold/v2beta16"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -415,7 +415,7 @@ type ClusterDetails struct {
 	Annotations map[string]string `yaml:"annotations,omitempty"`
 
 	// RunAsUser defines the UID to request for running the container.
-	// If omitted, no SeurityContext will be specified for the pod and will therefore be inherited
+	// If omitted, no SecurityContext will be specified for the pod and will therefore be inherited
 	// from the service account.
 	RunAsUser *int64 `yaml:"runAsUser,omitempty"`
 
@@ -496,6 +496,9 @@ type TestCase struct {
 // DeployConfig contains all the configuration needed by the deploy steps.
 type DeployConfig struct {
 	DeployType `yaml:",inline"`
+
+	// StatusCheck *beta* enables waiting for deployments to stabilize.
+	StatusCheck *bool `yaml:"statusCheck,omitempty"`
 
 	// StatusCheckDeadlineSeconds *beta* is the deadline for deployments to stabilize in seconds.
 	StatusCheckDeadlineSeconds int `yaml:"statusCheckDeadlineSeconds,omitempty"`

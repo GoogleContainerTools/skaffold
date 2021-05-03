@@ -3,7 +3,7 @@
 * Author(s): Brian de Alwis
 * Date: 2020-09-22
 * Late updated: 2021-03-16
-* Status: Reviewed/Cancelled/**Under implementation**/Complete
+* Status: Reviewed/Cancelled/Under implementation/**Complete**
 
 ## Objective
 
@@ -57,9 +57,7 @@ of Skaffold except where noted.
 > a backward-compatible manner (still under investigation).  This document assumes it is
 > not possible.
 
-~Skaffold's `--port-forward` argument should be changed from a binary true/false option to~
-
-Skaffold will introduce a new `--port-forward-modes` argument that takes
+Skaffold's `--port-forward` argument should be changed from a binary true/false option to
 a set of comma-separated values with the following defined modes:
 
    - `user`: user-defined port-forwards as defined in the `skaffold.yaml`
@@ -118,9 +116,9 @@ Please describe what new test cases you are going to consider.
 
 1. `skaffold dev` should forward user-defined ports (no services, not container ports).
 2. `skaffold dev --port-forward` should forward services (no container ports).
-3. `skaffold dev --port-forward-modes=off` should forward nothing.
-4. `skaffold dev --port-forward-modes=X` for X={user,debug,pods,services}` should only forward those items.
+3. `skaffold dev --port-forward=off` should forward nothing.
+4. `skaffold dev --port-forward=X` for X={user,debug,pods,services}` should only forward those items.
 5. `skaffold debug` should forward user-defined ports and debug ports (no services, no other container ports).
 6. `skaffold debug --port-forward` should forward user-defined ports, debug ports, and services (no container ports).
-7. `skaffold debug --port-forward-modes=off` should forward nothing.
-8. `skaffold debug --port-forward-modes=X` for X={user,debug,pods,services}` should only forward those items.
+7. `skaffold debug --port-forward=off` should forward nothing.
+8. `skaffold debug --port-forward=X` for X={user,debug,pods,services}` should only forward those items.

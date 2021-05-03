@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
-func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
+func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest_v1.Artifact) error {
 	return fmt.Errorf("not implemented error: SkaffoldRunner(v3).Dev")
 }

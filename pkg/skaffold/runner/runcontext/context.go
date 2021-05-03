@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -45,22 +45,22 @@ type RunContext struct {
 
 // Pipelines encapsulates multiple config pipelines
 type Pipelines struct {
-	pipelines            []latest.Pipeline
-	pipelinesByImageName map[string]latest.Pipeline
+	pipelines            []latest_v1.Pipeline
+	pipelinesByImageName map[string]latest_v1.Pipeline
 }
 
 // All returns all config pipelines.
-func (ps Pipelines) All() []latest.Pipeline {
+func (ps Pipelines) All() []latest_v1.Pipeline {
 	return ps.pipelines
 }
 
-// Head returns the first `latest.Pipeline`.
-func (ps Pipelines) Head() latest.Pipeline {
+// Head returns the first `latest_v1.Pipeline`.
+func (ps Pipelines) Head() latest_v1.Pipeline {
 	return ps.pipelines[0] // there always exists atleast one pipeline.
 }
 
-// Select returns the first `latest.Pipeline` that matches the given artifact `imageName`.
-func (ps Pipelines) Select(imageName string) (latest.Pipeline, bool) {
+// Select returns the first `latest_v1.Pipeline` that matches the given artifact `imageName`.
+func (ps Pipelines) Select(imageName string) (latest_v1.Pipeline, bool) {
 	p, found := ps.pipelinesByImageName[imageName]
 	return p, found
 }
@@ -70,44 +70,66 @@ func (ps Pipelines) IsMultiPipeline() bool {
 	return len(ps.pipelines) > 1
 }
 
-func (ps Pipelines) PortForwardResources() []*latest.PortForwardResource {
-	var pf []*latest.PortForwardResource
+func (ps Pipelines) PortForwardResources() []*latest_v1.PortForwardResource {
+	var pf []*latest_v1.PortForwardResource
 	for _, p := range ps.pipelines {
 		pf = append(pf, p.PortForward...)
 	}
 	return pf
 }
 
-func (ps Pipelines) Artifacts() []*latest.Artifact {
-	var artifacts []*latest.Artifact
+func (ps Pipelines) Artifacts() []*latest_v1.Artifact {
+	var artifacts []*latest_v1.Artifact
 	for _, p := range ps.pipelines {
 		artifacts = append(artifacts, p.Build.Artifacts...)
 	}
 	return artifacts
 }
 
-func (ps Pipelines) DeployConfigs() []latest.DeployConfig {
-	var cfgs []latest.DeployConfig
+func (ps Pipelines) DeployConfigs() []latest_v1.DeployConfig {
+	var cfgs []latest_v1.DeployConfig
 	for _, p := range ps.pipelines {
 		cfgs = append(cfgs, p.Deploy)
 	}
 	return cfgs
 }
 
-func (ps Pipelines) Deployers() []latest.DeployType {
-	var deployers []latest.DeployType
+func (ps Pipelines) Deployers() []latest_v1.DeployType {
+	var deployers []latest_v1.DeployType
 	for _, p := range ps.pipelines {
 		deployers = append(deployers, p.Deploy.DeployType)
 	}
 	return deployers
 }
 
-func (ps Pipelines) TestCases() []*latest.TestCase {
-	var tests []*latest.TestCase
+func (ps Pipelines) TestCases() []*latest_v1.TestCase {
+	var tests []*latest_v1.TestCase
 	for _, p := range ps.pipelines {
 		tests = append(tests, p.Test...)
 	}
 	return tests
+}
+
+func (ps Pipelines) StatusCheck() (*bool, error) {
+	var enabled, disabled bool
+	for _, p := range ps.pipelines {
+		if p.Deploy.StatusCheck != nil {
+			if *p.Deploy.StatusCheck {
+				enabled = true
+			} else {
+				disabled = true
+			}
+			if enabled && disabled {
+				return nil, fmt.Errorf("cannot explicitly enable StatusCheck in one pipeline and explicitly disable it in another pipeline, see https://skaffold.dev/docs/workflows/ci-cd/#waiting-for-skaffold-deployments-using-healthcheck")
+			}
+		}
+	}
+	// set the group status check to disabled if any pipeline has StatusCheck
+	// set to false.
+	if disabled {
+		return util.BoolPtr(false), nil
+	}
+	return util.BoolPtr(true), nil
 }
 
 func (ps Pipelines) StatusCheckDeadlineSeconds() int {
@@ -120,8 +142,8 @@ func (ps Pipelines) StatusCheckDeadlineSeconds() int {
 	}
 	return c
 }
-func NewPipelines(pipelines []latest.Pipeline) Pipelines {
-	m := make(map[string]latest.Pipeline)
+func NewPipelines(pipelines []latest_v1.Pipeline) Pipelines {
+	m := make(map[string]latest_v1.Pipeline)
 	for _, p := range pipelines {
 		for _, a := range p.Build.Artifacts {
 			m[a.ImageName] = p
@@ -130,38 +152,46 @@ func NewPipelines(pipelines []latest.Pipeline) Pipelines {
 	return Pipelines{pipelines: pipelines, pipelinesByImageName: m}
 }
 
-func (rc *RunContext) PipelineForImage(imageName string) (latest.Pipeline, bool) {
+func (rc *RunContext) PipelineForImage(imageName string) (latest_v1.Pipeline, bool) {
 	return rc.Pipelines.Select(imageName)
 }
 
-func (rc *RunContext) PortForwardResources() []*latest.PortForwardResource {
+func (rc *RunContext) PortForwardResources() []*latest_v1.PortForwardResource {
 	return rc.Pipelines.PortForwardResources()
 }
 
-func (rc *RunContext) Artifacts() []*latest.Artifact { return rc.Pipelines.Artifacts() }
+func (rc *RunContext) Artifacts() []*latest_v1.Artifact { return rc.Pipelines.Artifacts() }
 
-func (rc *RunContext) DeployConfigs() []latest.DeployConfig { return rc.Pipelines.DeployConfigs() }
+func (rc *RunContext) DeployConfigs() []latest_v1.DeployConfig { return rc.Pipelines.DeployConfigs() }
 
-func (rc *RunContext) Deployers() []latest.DeployType { return rc.Pipelines.Deployers() }
+func (rc *RunContext) Deployers() []latest_v1.DeployType { return rc.Pipelines.Deployers() }
 
-func (rc *RunContext) TestCases() []*latest.TestCase { return rc.Pipelines.TestCases() }
+func (rc *RunContext) TestCases() []*latest_v1.TestCase { return rc.Pipelines.TestCases() }
 
-func (rc *RunContext) StatusCheck() bool {
-	sc := rc.Opts.StatusCheck.Value()
-	if sc == nil {
-		return true
+func (rc *RunContext) StatusCheck() (*bool, error) {
+	scOpts := rc.Opts.StatusCheck.Value()
+	scConfig, err := rc.Pipelines.StatusCheck()
+	if err != nil {
+		return nil, err
 	}
-	return *sc
+	switch {
+	case scOpts != nil:
+		return util.BoolPtr(*scOpts), nil
+	case scConfig != nil:
+		return util.BoolPtr(*scConfig), nil
+	default:
+		return util.BoolPtr(true), nil
+	}
 }
 
 func (rc *RunContext) StatusCheckDeadlineSeconds() int {
 	return rc.Pipelines.StatusCheckDeadlineSeconds()
 }
 
-func (rc *RunContext) DefaultPipeline() latest.Pipeline          { return rc.Pipelines.Head() }
+func (rc *RunContext) DefaultPipeline() latest_v1.Pipeline       { return rc.Pipelines.Head() }
 func (rc *RunContext) GetKubeContext() string                    { return rc.KubeContext }
 func (rc *RunContext) GetNamespaces() []string                   { return rc.Namespaces }
-func (rc *RunContext) GetPipelines() []latest.Pipeline           { return rc.Pipelines.All() }
+func (rc *RunContext) GetPipelines() []latest_v1.Pipeline        { return rc.Pipelines.All() }
 func (rc *RunContext) GetInsecureRegistries() map[string]bool    { return rc.InsecureRegistries }
 func (rc *RunContext) GetWorkingDir() string                     { return rc.WorkingDir }
 func (rc *RunContext) GetCluster() config.Cluster                { return rc.Cluster }
@@ -200,7 +230,13 @@ func (rc *RunContext) WatchPollInterval() int                    { return rc.Opt
 func (rc *RunContext) BuildConcurrency() int                     { return rc.Opts.BuildConcurrency }
 func (rc *RunContext) IsMultiConfig() bool                       { return rc.Pipelines.IsMultiPipeline() }
 
-func GetRunContext(opts config.SkaffoldOptions, pipelines []latest.Pipeline) (*RunContext, error) {
+func GetRunContext(opts config.SkaffoldOptions, configs []*latest_v1.SkaffoldConfig) (*RunContext, error) {
+	var pipelines []latest_v1.Pipeline
+	for _, cfg := range configs {
+		if cfg != nil {
+			pipelines = append(pipelines, cfg.Pipeline)
+		}
+	}
 	kubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
 		return nil, fmt.Errorf("getting current cluster context: %w", err)

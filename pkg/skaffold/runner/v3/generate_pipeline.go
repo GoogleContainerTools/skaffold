@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
-func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, configs []*latest.SkaffoldConfig, configPaths []string, fileOut string) error {
+func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, configs []*latest_v1.SkaffoldConfig, configPaths []string, fileOut string) error {
 	return fmt.Errorf("not implemented error: SkaffoldRunner(v3).GeneratePipeline")
 }

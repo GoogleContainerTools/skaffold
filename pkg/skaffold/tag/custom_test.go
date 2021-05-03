@@ -19,7 +19,7 @@ package tag
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -44,7 +44,7 @@ func TestCustomTag_GenerateTag(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		image := latest.Artifact{
+		image := latest_v1.Artifact{
 			ImageName: "test",
 		}
 		tag, err := test.c.GenerateTag(image)
