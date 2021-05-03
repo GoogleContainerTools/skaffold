@@ -62,6 +62,20 @@ func newRecord() *record {
 
 // GetAllConfigs returns the list of all skaffold configurations parsed from the target config file in addition to all resolved dependency configs.
 func GetAllConfigs(opts config.SkaffoldOptions) ([]*latest_v1.SkaffoldConfig, error) {
+	set, err := GetConfigSet(opts)
+	if err != nil {
+		return nil, err
+	}
+	var cfgs []*latest_v1.SkaffoldConfig
+	for _, cfg := range set {
+		cfgs = append(cfgs, cfg.SkaffoldConfig)
+	}
+	return cfgs, nil
+}
+
+// GetConfigSet returns the list of all skaffold configurations parsed from the target config file in addition to all resolved dependency configs as a `SkaffoldConfigSet`.
+// This struct additionally contains the file location that each skaffold configuration is parsed from.
+func GetConfigSet(opts config.SkaffoldOptions) (SkaffoldConfigSet, error) {
 	cOpts := configOpts{file: opts.ConfigurationFile, selection: nil, profiles: opts.Profiles, isRequired: false, isDependency: false}
 	cfgs, err := getConfigs(cOpts, opts, newRecord())
 	if err != nil {
@@ -77,7 +91,7 @@ func GetAllConfigs(opts config.SkaffoldOptions) ([]*latest_v1.SkaffoldConfig, er
 }
 
 // getConfigs recursively parses all configs and their dependencies in the specified `skaffold.yaml`
-func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*latest_v1.SkaffoldConfig, error) {
+func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
 	parsed, err := schema.ParseConfigAndUpgrade(cfgOpts.file, latest_v1.Version)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -110,7 +124,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 		seen[cfgName] = true
 	}
 
-	var configs []*latest_v1.SkaffoldConfig
+	var configs SkaffoldConfigSet
 	for i, cfg := range parsed {
 		config := cfg.(*latest_v1.SkaffoldConfig)
 		processed, err := processEachConfig(config, cfgOpts, opts, r, i)
@@ -124,7 +138,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 
 // processEachConfig processes each parsed config by applying profiles and recursively processing its dependencies.
 // The `index` parameter specifies the index of the current config in its `skaffold.yaml` file. We use the `index` instead of the config `metadata.name` property to uniquely identify each config since not all configs define `name`.
-func processEachConfig(config *latest_v1.SkaffoldConfig, cfgOpts configOpts, opts config.SkaffoldOptions, r *record, index int) ([]*latest_v1.SkaffoldConfig, error) {
+func processEachConfig(config *latest_v1.SkaffoldConfig, cfgOpts configOpts, opts config.SkaffoldOptions, r *record, index int) (SkaffoldConfigSet, error) {
 	// check that the same config name isn't repeated in multiple files.
 	if config.Metadata.Name != "" {
 		prevConfig, found := r.configNameToFile[config.Metadata.Name]
@@ -162,7 +176,7 @@ func processEachConfig(config *latest_v1.SkaffoldConfig, cfgOpts configOpts, opt
 		return nil, err
 	}
 
-	var configs []*latest_v1.SkaffoldConfig
+	var configs SkaffoldConfigSet
 	for _, d := range config.Dependencies {
 		newOpts := configOpts{file: cfgOpts.file, profiles: filterActiveProfiles(d, profiles), isRequired: required, isDependency: cfgOpts.isDependency}
 		depConfigs, err := processEachDependency(d, newOpts, opts, r)
@@ -173,7 +187,7 @@ func processEachConfig(config *latest_v1.SkaffoldConfig, cfgOpts configOpts, opt
 	}
 
 	if required {
-		configs = append(configs, config)
+		configs = append(configs, &SkaffoldConfigEntry{SkaffoldConfig: config, SourceFile: cfgOpts.file, SourceIndex: index})
 	}
 	return configs, nil
 }
@@ -197,7 +211,7 @@ func filterActiveProfiles(d latest_v1.ConfigDependency, profiles []string) []str
 }
 
 // processEachDependency parses a config dependency with the calculated set of activated profiles.
-func processEachDependency(d latest_v1.ConfigDependency, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*latest_v1.SkaffoldConfig, error) {
+func processEachDependency(d latest_v1.ConfigDependency, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
 	path := d.Path
 
 	if d.GitRepo != nil {

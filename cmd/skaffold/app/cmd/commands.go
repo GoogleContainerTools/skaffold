@@ -38,6 +38,8 @@ type Builder interface {
 	Hidden() Builder
 	ExactArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command
 	NoArgs(action func(context.Context, io.Writer) error) *cobra.Command
+	WithCommands(cmds ...*cobra.Command) *cobra.Command
+	WithPersistentFlagAdder(adder func(*pflag.FlagSet)) Builder
 }
 
 type builder struct {
@@ -94,7 +96,11 @@ func (b *builder) WithFlags(flags []*Flag) Builder {
 	b.cmd.PreRun = func(cmd *cobra.Command, args []string) {
 		ResetFlagDefaults(cmd, flags)
 	}
+	return b
+}
 
+func (b *builder) WithPersistentFlagAdder(adder func(*pflag.FlagSet)) Builder {
+	adder(b.cmd.PersistentFlags())
 	return b
 }
 
@@ -141,6 +147,13 @@ func (b *builder) WithArgs(f cobra.PositionalArgs, action func(context.Context, 
 			shutdownAPIServer()
 		}
 		return err
+	}
+	return &b.cmd
+}
+
+func (b *builder) WithCommands(cmds ...*cobra.Command) *cobra.Command {
+	for _, c := range cmds {
+		b.cmd.AddCommand(c)
 	}
 	return &b.cmd
 }
