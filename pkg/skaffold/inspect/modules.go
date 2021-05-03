@@ -24,6 +24,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 )
 
+var (
+	getConfigSetFunc = parser.GetConfigSet
+)
+
 type moduleList struct {
 	Modules []moduleEntry `json:"modules"`
 }
@@ -35,7 +39,7 @@ type moduleEntry struct {
 
 func PrintModulesList(ctx context.Context, out io.Writer, opts Options) error {
 	formatter := getOutputFormatter(out, opts.OutFormat)
-	cfgs, err := parser.GetConfigSet(config.SkaffoldOptions{ConfigurationFile: opts.Filename})
+	cfgs, err := getConfigSetFunc(config.SkaffoldOptions{ConfigurationFile: opts.Filename})
 	if err != nil {
 		return formatter.WriteErr(err)
 	}
