@@ -228,7 +228,7 @@ func rewritePythonCommandLine(commandLine []string, spec pythonSpec) []string {
 func (spec pythonSpec) asArguments() []string {
 	mode, err := spec.launcherMode()
 	if err != nil {
-		logrus.Fatal("%s", err)
+		logrus.Fatal(err)
 		return nil
 	}
 
