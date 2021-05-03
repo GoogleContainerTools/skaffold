@@ -80,10 +80,11 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 
 	// try to find existing `-mptvsd` or `-mdebugpy` command
 	if spec := retrievePythonDebugSpec(config); spec != nil {
-		container.Ports = exposePort(container.Ports, "dap", spec.port)
+		protocol := spec.protocol()
+		container.Ports = exposePort(container.Ports, protocol, spec.port)
 		return ContainerDebugConfiguration{
 			Runtime: "python",
-			Ports:   map[string]uint32{"dap": uint32(spec.port)},
+			Ports:   map[string]uint32{protocol: uint32(spec.port)},
 		}, "", nil
 	}
 
