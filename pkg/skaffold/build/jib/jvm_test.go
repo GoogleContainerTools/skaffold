@@ -26,8 +26,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	JVMFound() // prime the pump
-	jvmPresent = true
+	// these tests don't actually require a JVM
+	JVMFound = func() bool { return true }
 	os.Exit(m.Run())
 }
 

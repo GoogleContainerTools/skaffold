@@ -26,13 +26,19 @@ import (
 )
 
 var (
-	// JVMFound is true if a Java VM was found and works.
+	// replaceable for testing
+	JVMFound = jvmFound
+
+	// JVMFound() returns true if a Java VM was found and works.
 	resolveJVMOnce sync.Once
 	jvmPresent     bool
+
 )
 
-// JVMFound returns true if a Java VM was found and works.
-func JVMFound() bool {
+// jvmFound returns true if a Java VM was found and works.
+func jvmFound() bool {
+	// Check on demand: performing the check in an init() causes the
+	// check to be run even when no jib functionality was used.
 	resolveJVMOnce.Do(func() {
 		jvmPresent = resolveJVM()
 	})
@@ -41,9 +47,11 @@ func JVMFound() bool {
 
 // resolveJVM returns true if a Java VM was found and works.  It is intended for
 // `skaffold init` on macOS where calling out to the Maven Wrapper script (mvnw) can
-// hang if there is no installed Java VM found.
+// hang if there is no installed Java VM found. 
 func resolveJVM() bool {
-	// TODO: should we have an override for testing?
+	// Note that just checking for the existence of `java` is insufficient
+	// as macOS ships with /usr/bin/java that tries to hand off to a JVM
+	// installed in /Library/Java/JavaVirtualMachines
 	cmd := exec.Command("java", "-version")
 	err := util.RunCmd(cmd)
 	if err != nil {

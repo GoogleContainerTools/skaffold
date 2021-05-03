@@ -17,6 +17,7 @@ limitations under the License.
 package gcb
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -26,6 +27,12 @@ import (
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+func TestMain(m *testing.M) {
+	// these tests don't actually require a JVM
+	jib.JVMFound = func() bool { return true }
+	os.Exit(m.Run())
+}
 
 func TestJibMavenBuildSpec(t *testing.T) {
 	tests := []struct {
