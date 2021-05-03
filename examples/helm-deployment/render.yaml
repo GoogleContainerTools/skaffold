@@ -1,0 +1,22 @@
+---
+# Source: skaffold-helm/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skaffold-helm
+  labels:
+    app: skaffold-helm
+spec:
+  selector:
+    matchLabels:
+      app: skaffold-helm
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: skaffold-helm
+    spec:
+      containers:
+      - name: skaffold-helm
+        image: skaffold-helm:a4d4c31e69acdaffc9a008a4adfd4abbe6c8100e8c847113e7579359f108617a
+
