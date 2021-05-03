@@ -120,7 +120,7 @@ func (r *Builder) HasBuilt() bool {
 	return r.hasBuilt
 }
 
-func artifactsWithTags(tags tag.ImageTags, artifacts []*latest.Artifact) []graph.Artifact {
+func artifactsWithTags(tags tag.ImageTags, artifacts []*latest_v1.Artifact) []graph.Artifact {
 	var bRes []graph.Artifact
 	for _, artifact := range artifacts {
 		bRes = append(bRes, graph.Artifact{
