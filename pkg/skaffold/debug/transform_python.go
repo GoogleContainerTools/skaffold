@@ -108,23 +108,12 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 		return ContainerDebugConfiguration{}, "", fmt.Errorf("%q does not appear to invoke python", container.Name)
 	}
 
-	pyUserBase := "/dbg/python"
-	if existing, found := config.env["PYTHONUSERBASE"]; found {
-		// todo: handle windows containers?
-		pyUserBase = pyUserBase + ":" + existing
-	}
-	container.Env = setEnvVar(container.Env, "PYTHONUSERBASE", pyUserBase)
-
-	var portName = "dap"
-	if spec.debugger == pydevd {
-		portName = "pydevd"
-	}
-
-	container.Ports = exposePort(container.Ports, portName, spec.port)
+	protocol := spec.protocol()
+	container.Ports = exposePort(container.Ports, protocol, spec.port)
 
 	return ContainerDebugConfiguration{
 		Runtime: "python",
-		Ports:   map[string]uint32{portName: uint32(spec.port)},
+		Ports:   map[string]uint32{protocol: uint32(spec.port)},
 	}, "python", nil
 }
 
@@ -236,15 +225,9 @@ func rewritePythonCommandLine(commandLine []string, spec pythonSpec) []string {
 }
 
 func (spec pythonSpec) asArguments() []string {
-	var mode string
-	switch spec.debugger {
-	case ptvsd:
-		mode = "ptvsd"
-	case debugpy:
-		mode = "debugpy"
-	case pydevd:
-		mode = "pydevd"
-	default:
+	mode, err := spec.launcherMode()
+	if err != nil {
+		logrus.Fatal("%s", err)
 		return nil
 	}
 
@@ -257,4 +240,26 @@ func (spec pythonSpec) asArguments() []string {
 	}
 	args = append(args, "--")
 	return args
+}
+
+func (spec pythonSpec) launcherMode() (string, error) {
+	switch spec.debugger {
+	case pydevd:
+		return "pydevd", nil
+	case ptvsd:
+		return "ptvsd", nil
+	case debugpy:
+		return "debugpy", nil
+	default:
+		return "", fmt.Errorf("unhandled debugger type: %q", spec.debugger)
+	}
+}
+
+func (spec pythonSpec) protocol() string {
+	switch spec.debugger {
+	case pydevd:
+		return "pydevd"
+	default:
+		return "dap"
+	}
 }
