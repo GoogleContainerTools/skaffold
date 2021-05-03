@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"context"
@@ -33,7 +33,7 @@ func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
+	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.RunCtx.Muted())
 	postStatusCheckFn()
 	if err != nil {
 		return err
@@ -50,20 +50,20 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
-	if len(localImages) > 0 && r.runCtx.Cluster.LoadImages {
-		err := r.loadImagesIntoCluster(ctx, out, localImages)
+	if len(localImages) > 0 && r.RunCtx.Cluster.LoadImages {
+		err := r.LoadImagesIntoCluster(ctx, out, localImages)
 		if err != nil {
 			return err
 		}
 	}
 
-	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
+	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.RunCtx.Muted())
 	if err != nil {
 		return err
 	}
 
 	event.DeployInProgress()
-	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
+	namespaces, err := r.Deployer.Deploy(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
@@ -72,6 +72,6 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 
 	r.hasDeployed = true
 	event.DeployComplete()
-	r.runCtx.UpdateNamespaces(namespaces)
+	r.RunCtx.UpdateNamespaces(namespaces)
 	return nil
 }

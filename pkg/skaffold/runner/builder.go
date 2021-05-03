@@ -45,8 +45,8 @@ func (b *builderCtx) SourceDependenciesResolver() graph.SourceDependenciesCache 
 	return b.sourceDependenciesCache
 }
 
-// getBuilder creates a builder from a given RunContext and build pipeline type.
-func getBuilder(r *runcontext.RunContext, s build.ArtifactStore, d graph.SourceDependenciesCache, p latest_v1.Pipeline) (build.PipelineBuilder, error) {
+// GetBuilder creates a builder from a given RunContext and build pipeline type.
+func GetBuilder(r *runcontext.RunContext, s build.ArtifactStore, d graph.SourceDependenciesCache, p latest_v1.Pipeline) (build.PipelineBuilder, error) {
 	bCtx := &builderCtx{artifactStore: s, sourceDependenciesCache: d, RunContext: r}
 	switch {
 	case p.Build.LocalBuild != nil:

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"context"
@@ -35,7 +35,7 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 	var baseConfig []*pipeline.ConfigFile
 	for _, config := range configs {
 		cfgFile := &pipeline.ConfigFile{
-			Path:    r.runCtx.ConfigurationFile(),
+			Path:    r.RunCtx.ConfigurationFile(),
 			Config:  config,
 			Profile: nil,
 		}
@@ -51,13 +51,13 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 	// Will run the profile setup multiple times and require user input for each specified config
 	color.Default.Fprintln(out, "Running profile setup...")
 	for _, configFile := range configFiles {
-		if err := pipeline.CreateSkaffoldProfile(out, r.runCtx.GetKubeNamespace(), configFile); err != nil {
+		if err := pipeline.CreateSkaffoldProfile(out, r.RunCtx.GetKubeNamespace(), configFile); err != nil {
 			return fmt.Errorf("setting up profile: %w", err)
 		}
 	}
 
 	color.Default.Fprintln(out, "Generating Pipeline...")
-	pipelineYaml, err := pipeline.Yaml(out, r.runCtx.GetKubeNamespace(), configFiles)
+	pipelineYaml, err := pipeline.Yaml(out, r.RunCtx.GetKubeNamespace(), configFiles)
 	if err != nil {
 		return fmt.Errorf("generating pipeline yaml contents: %w", err)
 	}

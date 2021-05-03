@@ -40,7 +40,7 @@ import (
 )
 
 type Builder struct {
-	builder build.Builder
+	Builder build.Builder
 	tagger  tag.Tagger
 	cache   cache.Cache
 	builds  []graph.Artifact
@@ -52,16 +52,36 @@ type Builder struct {
 	runCtx   *runcontext.RunContext
 }
 
+// TODO:simplify the runner.Builder,build.Builder buildCtx.
+func NewBuilder(builder build.Builder, tagger tag.Tagger, cache cache.Cache, podSelector *kubernetes.ImageList,
+	runCtx *runcontext.RunContext) *Builder {
+	return &Builder{
+		Builder:     builder,
+		tagger:      tagger,
+		cache:       cache,
+		podSelector: podSelector,
+		runCtx:      runCtx,
+	}
+}
+func (r *Builder) GetBuilds() *[]graph.Artifact {
+	return &r.builds
+}
+
+// For testing only.
+func (r *Builder) SetBuilds(builds []graph.Artifact) {
+	r.builds = builds
+}
+
 // Build builds a list of artifacts.
 func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest_v1.Artifact) ([]graph.Artifact, error) {
 	eventV2.TaskInProgress(constants.Build)
 
 	// Use tags directly from the Kubernetes manifests.
-	if r.runCtx.DigestSource() == noneDigestSource {
+	if r.runCtx.DigestSource() == NoneDigestSource {
 		return []graph.Artifact{}, nil
 	}
 
-	if err := checkWorkspaces(artifacts); err != nil {
+	if err := CheckWorkspaces(artifacts); err != nil {
 		eventV2.TaskFailed(constants.Build, err)
 		return nil, err
 	}
@@ -73,8 +93,8 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest_
 	}
 
 	// In dry-run mode or with --digest-source  set to 'remote' or with --digest-source set to 'tag' , we don't build anything, just return the tag for each artifact.
-	if r.runCtx.DryRun() || (r.runCtx.DigestSource() == remoteDigestSource) ||
-		(r.runCtx.DigestSource() == tagDigestSource) {
+	if r.runCtx.DryRun() || (r.runCtx.DigestSource() == RemoteDigestSource) ||
+		(r.runCtx.DigestSource() == TagDigestSource) {
 		var bRes []graph.Artifact
 		for _, artifact := range artifacts {
 			bRes = append(bRes, graph.Artifact{
@@ -93,7 +113,7 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest_
 
 		r.hasBuilt = true
 
-		bRes, err := r.builder.Build(ctx, out, tags, artifacts)
+		bRes, err := r.Builder.Build(ctx, out, tags, artifacts)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +126,7 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest_
 	}
 
 	// Update which images are logged.
-	r.addTagsToPodSelector(bRes)
+	r.AddTagsToPodSelector(bRes)
 
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
@@ -121,7 +141,7 @@ func (r *Builder) HasBuilt() bool {
 }
 
 // Update which images are logged.
-func (r *Builder) addTagsToPodSelector(artifacts []graph.Artifact) {
+func (r *Builder) AddTagsToPodSelector(artifacts []graph.Artifact) {
 	for _, artifact := range artifacts {
 		r.podSelector.Add(artifact.Tag)
 	}
@@ -197,7 +217,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 	return imageTags, nil
 }
 
-func checkWorkspaces(artifacts []*latest_v1.Artifact) error {
+func CheckWorkspaces(artifacts []*latest_v1.Artifact) error {
 	for _, a := range artifacts {
 		if a.Workspace != "" {
 			if info, err := os.Stat(a.Workspace); err != nil {

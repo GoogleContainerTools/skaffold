@@ -29,7 +29,7 @@ type Intents struct {
 	lock sync.Mutex
 }
 
-func newIntents(autoBuild, autoSync, autoDeploy bool) *Intents {
+func NewIntents(autoBuild, autoSync, autoDeploy bool) *Intents {
 	i := &Intents{
 		autoBuild:  autoBuild,
 		autoSync:   autoSync,
@@ -39,7 +39,12 @@ func newIntents(autoBuild, autoSync, autoDeploy bool) *Intents {
 	return i
 }
 
-func (i *Intents) reset() {
+// For testing only.
+func GetIntentsAttrs(i Intents) (bool, bool, bool) {
+	return i.build, i.sync, i.deploy
+}
+
+func (i *Intents) Reset() {
 	i.lock.Lock()
 	i.build = i.autoBuild
 	i.sync = i.autoSync
@@ -47,73 +52,73 @@ func (i *Intents) reset() {
 	i.lock.Unlock()
 }
 
-func (i *Intents) resetBuild() {
+func (i *Intents) ResetBuild() {
 	i.lock.Lock()
 	i.build = i.autoBuild
 	i.lock.Unlock()
 }
 
-func (i *Intents) resetSync() {
+func (i *Intents) ResetSync() {
 	i.lock.Lock()
 	i.sync = i.autoSync
 	i.lock.Unlock()
 }
 
-func (i *Intents) resetDeploy() {
+func (i *Intents) ResetDeploy() {
 	i.lock.Lock()
 	i.deploy = i.autoDeploy
 	i.lock.Unlock()
 }
 
-func (i *Intents) setBuild(val bool) {
+func (i *Intents) SetBuild(val bool) {
 	i.lock.Lock()
 	i.build = val
 	i.lock.Unlock()
 }
 
-func (i *Intents) setSync(val bool) {
+func (i *Intents) SetSync(val bool) {
 	i.lock.Lock()
 	i.sync = val
 	i.lock.Unlock()
 }
 
-func (i *Intents) setDeploy(val bool) {
+func (i *Intents) SetDeploy(val bool) {
 	i.lock.Lock()
 	i.deploy = val
 	i.lock.Unlock()
 }
 
-func (i *Intents) getAutoBuild() bool {
+func (i *Intents) GetAutoBuild() bool {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	return i.autoBuild
 }
 
-func (i *Intents) getAutoSync() bool {
+func (i *Intents) GetAutoSync() bool {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	return i.autoSync
 }
 
-func (i *Intents) getAutoDeploy() bool {
+func (i *Intents) GetAutoDeploy() bool {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	return i.autoDeploy
 }
 
-func (i *Intents) setAutoBuild(val bool) {
+func (i *Intents) SetAutoBuild(val bool) {
 	i.lock.Lock()
 	i.autoBuild = val
 	i.lock.Unlock()
 }
 
-func (i *Intents) setAutoSync(val bool) {
+func (i *Intents) SetAutoSync(val bool) {
 	i.lock.Lock()
 	i.autoSync = val
 	i.lock.Unlock()
 }
 
-func (i *Intents) setAutoDeploy(val bool) {
+func (i *Intents) SetAutoDeploy(val bool) {
 	i.lock.Lock()
 	i.autoDeploy = val
 	i.lock.Unlock()

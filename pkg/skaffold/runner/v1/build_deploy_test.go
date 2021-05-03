@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"context"
@@ -27,6 +27,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/test"
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -35,55 +37,55 @@ import (
 func TestTest(t *testing.T) {
 	tests := []struct {
 		description     string
-		testBench       *TestBench
+		testBench       *test.TestBench
 		cfg             []*latest_v1.Artifact
 		artifacts       []graph.Artifact
-		expectedActions []Actions
+		expectedActions []test.Actions
 		shouldErr       bool
 	}{
 		{
 			description: "test no error",
-			testBench:   &TestBench{},
+			testBench:   &test.TestBench{},
 			cfg:         []*latest_v1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}},
 			artifacts: []graph.Artifact{
 				{ImageName: "img1", Tag: "img1:tag1"},
 				{ImageName: "img2", Tag: "img2:tag2"},
 			},
-			expectedActions: []Actions{{
+			expectedActions: []test.Actions{{
 				Tested: []string{"img1:tag1", "img2:tag2"},
 			}},
 		},
 		{
 			description:     "no artifacts",
-			testBench:       &TestBench{},
+			testBench:       &test.TestBench{},
 			artifacts:       []graph.Artifact(nil),
-			expectedActions: []Actions{{}},
+			expectedActions: []test.Actions{{}},
 		},
 		{
 			description: "missing tag",
-			testBench:   &TestBench{},
+			testBench:   &test.TestBench{},
 			cfg:         []*latest_v1.Artifact{{ImageName: "image1"}},
 			artifacts:   []graph.Artifact{{ImageName: "image1"}},
-			expectedActions: []Actions{{
+			expectedActions: []test.Actions{{
 				Tested: []string{""},
 			}},
 		},
 		{
 			description:     "test error",
-			testBench:       &TestBench{testErrors: []error{errors.New("")}},
-			expectedActions: []Actions{{}},
+			testBench:       &test.TestBench{TestErrors: []error{errors.New("")}},
+			expectedActions: []test.Actions{{}},
 			shouldErr:       true,
 		},
 	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			runner := createRunner(t, test.testBench, nil, test.cfg, nil)
+	for _, testdata := range tests {
+		testutil.Run(t, testdata.description, func(t *testutil.T) {
+			runner := MockRunnerV1(t, testdata.testBench, nil, testdata.cfg, nil)
 
-			err := runner.Test(context.Background(), ioutil.Discard, test.artifacts)
+			err := runner.Test(context.Background(), ioutil.Discard, testdata.artifacts)
 
-			t.CheckError(test.shouldErr, err)
+			t.CheckError(testdata.shouldErr, err)
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedActions, test.testBench.Actions())
+			t.CheckErrorAndDeepEqual(testdata.shouldErr, err, testdata.expectedActions, testdata.testBench.Actions())
 		})
 	}
 }
@@ -91,14 +93,14 @@ func TestTest(t *testing.T) {
 func TestBuildTestDeploy(t *testing.T) {
 	tests := []struct {
 		description     string
-		testBench       *TestBench
+		testBench       *test.TestBench
 		shouldErr       bool
-		expectedActions []Actions
+		expectedActions []test.Actions
 	}{
 		{
 			description: "run no error",
-			testBench:   &TestBench{},
-			expectedActions: []Actions{{
+			testBench:   &test.TestBench{},
+			expectedActions: []test.Actions{{
 				Built:    []string{"img:1"},
 				Tested:   []string{"img:1"},
 				Deployed: []string{"img:1"},
@@ -106,39 +108,39 @@ func TestBuildTestDeploy(t *testing.T) {
 		},
 		{
 			description:     "run build error",
-			testBench:       &TestBench{buildErrors: []error{errors.New("")}},
+			testBench:       &test.TestBench{BuildErrors: []error{errors.New("")}},
 			shouldErr:       true,
-			expectedActions: []Actions{{}},
+			expectedActions: []test.Actions{{}},
 		},
 		{
 			description: "run test error",
-			testBench:   &TestBench{testErrors: []error{errors.New("")}},
+			testBench:   &test.TestBench{TestErrors: []error{errors.New("")}},
 			shouldErr:   true,
-			expectedActions: []Actions{{
+			expectedActions: []test.Actions{{
 				Built: []string{"img:1"},
 			}},
 		},
 		{
 			description: "run deploy error",
-			testBench:   &TestBench{deployErrors: []error{errors.New("")}},
+			testBench:   &test.TestBench{DeployErrors: []error{errors.New("")}},
 			shouldErr:   true,
-			expectedActions: []Actions{{
+			expectedActions: []test.Actions{{
 				Built:  []string{"img:1"},
 				Tested: []string{"img:1"},
 			}},
 		},
 	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
+	for _, testdata := range tests {
+		testutil.Run(t, testdata.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&client.Client, mockK8sClient)
+			t.Override(&client.Client, test.MockK8sClient)
 
 			ctx := context.Background()
 			artifacts := []*latest_v1.Artifact{{
 				ImageName: "img",
 			}}
 
-			runner := createRunner(t, test.testBench, nil, artifacts, nil)
+			runner := MockRunnerV1(t, testdata.testBench, nil, artifacts, nil)
 			bRes, err := runner.Build(ctx, ioutil.Discard, artifacts)
 			if err == nil {
 				err = runner.Test(ctx, ioutil.Discard, bRes)
@@ -147,20 +149,20 @@ func TestBuildTestDeploy(t *testing.T) {
 				}
 			}
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedActions, test.testBench.Actions())
+			t.CheckErrorAndDeepEqual(testdata.shouldErr, err, testdata.expectedActions, testdata.testBench.Actions())
 		})
 	}
 }
 
 func TestBuildDryRun(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		testBench := &TestBench{}
+		testBench := &test.TestBench{}
 		artifacts := []*latest_v1.Artifact{
 			{ImageName: "img1"},
 			{ImageName: "img2"},
 		}
-		runner := createRunner(t, testBench, nil, artifacts, nil)
-		runner.runCtx.Opts.DryRun = true
+		runner := MockRunnerV1(t, testBench, nil, artifacts, nil)
+		runner.RunCtx.Opts.DryRun = true
 
 		bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
 
@@ -169,19 +171,19 @@ func TestBuildDryRun(t *testing.T) {
 			{ImageName: "img1", Tag: "img1:latest"},
 			{ImageName: "img2", Tag: "img2:latest"}}, bRes)
 		// Nothing was built, tested or deployed
-		t.CheckDeepEqual([]Actions{{}}, testBench.Actions())
+		t.CheckDeepEqual([]test.Actions{{}}, testBench.Actions())
 	})
 }
 
 func TestBuildPushFlag(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		testBench := &TestBench{}
+		testBench := &test.TestBench{}
 		artifacts := []*latest_v1.Artifact{
 			{ImageName: "img1"},
 			{ImageName: "img2"},
 		}
-		runner := createRunner(t, testBench, nil, artifacts, nil)
-		runner.runCtx.Opts.PushImages = config.NewBoolOrUndefined(util.BoolPtr(true))
+		runner := MockRunnerV1(t, testBench, nil, artifacts, nil)
+		runner.RunCtx.Opts.PushImages = config.NewBoolOrUndefined(util.BoolPtr(true))
 
 		_, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
 
@@ -219,17 +221,17 @@ func TestDigestSources(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
-		testutil.Run(t, test.name, func(t *testutil.T) {
-			testBench := &TestBench{}
-			runner := createRunner(t, testBench, nil, artifacts, nil)
-			runner.runCtx.Opts.DigestSource = test.digestSource
+	for _, testdata := range tests {
+		testutil.Run(t, testdata.name, func(t *testutil.T) {
+			testBench := &test.TestBench{}
+			runner := MockRunnerV1(t, testBench, nil, artifacts, nil)
+			runner.RunCtx.Opts.DigestSource = testdata.digestSource
 
 			bRes, err := runner.Build(context.Background(), ioutil.Discard, artifacts)
 
 			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, bRes)
-			t.CheckDeepEqual([]Actions{{}}, testBench.Actions())
+			t.CheckDeepEqual(testdata.expected, bRes)
+			t.CheckDeepEqual([]test.Actions{{}}, testBench.Actions())
 		})
 	}
 }
@@ -283,7 +285,7 @@ func TestCheckWorkspaces(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := checkWorkspaces(test.artifacts)
+			err := runner.CheckWorkspaces(test.artifacts)
 			t.CheckError(test.shouldErr, err)
 		})
 	}

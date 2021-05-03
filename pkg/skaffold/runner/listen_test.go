@@ -69,7 +69,7 @@ func TestSkipDevLoopOnMonitorError(t *testing.T) {
 	listener := &SkaffoldListener{
 		Monitor:                 &errMonitor{},
 		Trigger:                 &fakeTriggger{},
-		sourceDependenciesCache: &fakeDepsResolver{},
+		SourceDependenciesCache: &fakeDepsResolver{},
 	}
 
 	var devLoopWasCalled bool
@@ -85,7 +85,7 @@ func TestContinueOnDevLoopError(t *testing.T) {
 	listener := &SkaffoldListener{
 		Monitor:                 &fakeMonitor{},
 		Trigger:                 &fakeTriggger{},
-		sourceDependenciesCache: &fakeDepsResolver{},
+		SourceDependenciesCache: &fakeDepsResolver{},
 	}
 
 	err := listener.do(func() error {
@@ -99,7 +99,7 @@ func TestReportDevLoopError(t *testing.T) {
 	listener := &SkaffoldListener{
 		Monitor:                 &fakeMonitor{},
 		Trigger:                 &fakeTriggger{},
-		sourceDependenciesCache: &fakeDepsResolver{},
+		SourceDependenciesCache: &fakeDepsResolver{},
 	}
 
 	err := listener.do(func() error {

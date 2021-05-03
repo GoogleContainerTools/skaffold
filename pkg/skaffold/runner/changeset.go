@@ -31,6 +31,26 @@ type ChangeSet struct {
 	needsReload    bool
 }
 
+func (c *ChangeSet) NeedsRebuild() []*latest_v1.Artifact {
+	return c.needsRebuild
+}
+
+func (c *ChangeSet) NeedsResync() []*sync.Item {
+	return c.needsResync
+}
+
+func (c *ChangeSet) NeedsRedeploy() bool {
+	return c.needsRedeploy
+}
+
+func (c *ChangeSet) NeedsRetest() map[string]bool {
+	return c.needsRetest
+}
+
+func (c *ChangeSet) NeedsReload() bool {
+	return c.needsReload
+}
+
 func (c *ChangeSet) AddRebuild(a *latest_v1.Artifact) {
 	if _, ok := c.rebuildTracker[a.ImageName]; ok {
 		return
@@ -62,20 +82,28 @@ func (c *ChangeSet) AddResync(s *sync.Item) {
 	c.needsResync = append(c.needsResync, s)
 }
 
-func (c *ChangeSet) resetBuild() {
+func (c *ChangeSet) ResetBuild() {
 	c.rebuildTracker = make(map[string]*latest_v1.Artifact)
 	c.needsRebuild = nil
 }
 
-func (c *ChangeSet) resetSync() {
+func (c *ChangeSet) ResetSync() {
 	c.resyncTracker = make(map[string]*sync.Item)
 	c.needsResync = nil
 }
 
-func (c *ChangeSet) resetDeploy() {
+func (c *ChangeSet) ResetDeploy() {
 	c.needsRedeploy = false
 }
 
-func (c *ChangeSet) resetTest() {
+func (c *ChangeSet) Redeploy() {
+	c.needsRedeploy = true
+}
+
+func (c *ChangeSet) Reload() {
+	c.needsReload = true
+}
+
+func (c *ChangeSet) ResetTest() {
 	c.needsRetest = make(map[string]bool)
 }

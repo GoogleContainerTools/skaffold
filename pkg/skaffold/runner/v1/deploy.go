@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,8 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-package runner
+package v1
 
 import (
 	"context"
@@ -23,17 +22,16 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -42,9 +40,18 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	eventV2.TaskInProgress(constants.Deploy)
 
 	// Update which images are logged.
-	r.addTagsToPodSelector(artifacts)
+	r.AddTagsToPodSelector(artifacts)
 
-	logger := r.createLogger(out, artifacts)
+	if !r.RunCtx.Tail() {
+		return nil
+	}
+
+	var imageNames []string
+	for _, artifact := range artifacts {
+		imageNames = append(imageNames, artifact.Tag)
+	}
+
+	logger := logger.NewLogAggregator(out, r.kubectlCLI, imageNames, r.podSelector, r.RunCtx)
 	defer logger.Stop()
 
 	// Logs should be retrieved up to just before the deploy
@@ -55,20 +62,30 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		return err
 	}
 
-	forwarderManager := r.createForwarder(out)
+	if !r.RunCtx.PortForward() {
+		return nil
+	}
+	forwarderManager := portforward.NewForwarderManager(out,
+		r.kubectlCLI,
+		r.podSelector,
+		r.labeller.RunIDSelector(),
+		r.RunCtx.Mode(),
+		r.RunCtx.Opts.PortForward,
+		r.RunCtx.PortForwardResources())
+
 	defer forwarderManager.Stop()
 
-	if err := forwarderManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+	if err := forwarderManager.Start(ctx, r.RunCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
 	}
 
 	// Start printing the logs after deploy is finished
-	if err := logger.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+	if err := logger.Start(ctx, r.RunCtx.GetNamespaces()); err != nil {
 		eventV2.TaskFailed(constants.Deploy, err)
 		return fmt.Errorf("starting logger: %w", err)
 	}
 
-	if r.runCtx.Tail() || r.runCtx.PortForward() {
+	if r.RunCtx.Tail() || r.RunCtx.PortForward() {
 		color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
 		<-ctx.Done()
 	}
@@ -78,8 +95,8 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 }
 
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-	if r.runCtx.RenderOnly() {
-		return r.Render(ctx, out, artifacts, false, r.runCtx.RenderOutput())
+	if r.RunCtx.RenderOnly() {
+		return r.Render(ctx, out, artifacts, false, r.RunCtx.RenderOutput())
 	}
 
 	color.Default.Fprintln(out, "Tags used in deployment:")
@@ -111,21 +128,21 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
-	if len(localImages) > 0 && r.runCtx.Cluster.LoadImages {
-		err := r.loadImagesIntoCluster(ctx, out, localImages)
+	if len(localImages) > 0 && r.RunCtx.Cluster.LoadImages {
+		err := r.LoadImagesIntoCluster(ctx, out, localImages)
 		if err != nil {
 			return err
 		}
 	}
 
-	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
+	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.RunCtx.Muted())
 	if err != nil {
 		return err
 	}
 
 	event.DeployInProgress()
 	eventV2.TaskInProgress(constants.Deploy)
-	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
+	namespaces, err := r.Deployer.Deploy(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
@@ -135,56 +152,16 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 
 	r.hasDeployed = true
 
-	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
+	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.RunCtx.Muted())
 	defer postStatusCheckFn()
 	if err != nil {
 		return err
 	}
 	event.DeployComplete()
 	eventV2.TaskSucceeded(constants.Deploy)
-	r.runCtx.UpdateNamespaces(namespaces)
+	r.RunCtx.UpdateNamespaces(namespaces)
 	sErr := r.performStatusCheck(ctx, statusCheckOut)
 	return sErr
-}
-
-func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-	currentContext, err := r.getCurrentContext()
-	if err != nil {
-		return err
-	}
-
-	if config.IsKindCluster(r.runCtx.GetKubeContext()) {
-		kindCluster := config.KindClusterName(currentContext.Cluster)
-
-		// With `kind`, docker images have to be loaded with the `kind` CLI.
-		if err := r.loadImagesInKindNodes(ctx, out, kindCluster, artifacts); err != nil {
-			return fmt.Errorf("loading images into kind nodes: %w", err)
-		}
-	}
-
-	if config.IsK3dCluster(r.runCtx.GetKubeContext()) {
-		k3dCluster := config.K3dClusterName(currentContext.Cluster)
-
-		// With `k3d`, docker images have to be loaded with the `k3d` CLI.
-		if err := r.loadImagesInK3dNodes(ctx, out, k3dCluster, artifacts); err != nil {
-			return fmt.Errorf("loading images into k3d nodes: %w", err)
-		}
-	}
-
-	return nil
-}
-
-func (r *SkaffoldRunner) getCurrentContext() (*api.Context, error) {
-	currentCfg, err := kubectx.CurrentConfig()
-	if err != nil {
-		return nil, fmt.Errorf("unable to get kubernetes config: %w", err)
-	}
-
-	currentContext, present := currentCfg.Contexts[r.runCtx.GetKubeContext()]
-	if !present {
-		return nil, fmt.Errorf("unable to get current kubernetes context: %w", err)
-	}
-	return currentContext, nil
 }
 
 // failIfClusterIsNotReachable checks that Kubernetes is reachable.
@@ -201,7 +178,7 @@ func failIfClusterIsNotReachable() error {
 
 func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
-	enabled, err := r.runCtx.StatusCheck()
+	enabled, err := r.RunCtx.StatusCheck()
 	if err != nil {
 		return err
 	}
@@ -213,7 +190,7 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 	start := time.Now()
 	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
 
-	s := newStatusCheck(r.runCtx, r.labeller)
+	s := newStatusCheck(r.RunCtx, r.labeller)
 	if err := s.Check(ctx, out); err != nil {
 		eventV2.TaskFailed(constants.StatusCheck, err)
 		return err

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"context"
@@ -25,21 +25,22 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 )
 
 func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
 	// Fetch the digest and append it to the tag with the format of "tag@digest"
-	if r.runCtx.DigestSource() == remoteDigestSource {
+	if r.RunCtx.DigestSource() == runner.RemoteDigestSource {
 		for i, a := range builds {
-			digest, err := docker.RemoteDigest(a.Tag, r.runCtx)
+			digest, err := docker.RemoteDigest(a.Tag, r.RunCtx)
 			if err != nil {
 				return fmt.Errorf("failed to resolve the digest of %s, render aborted", a.Tag)
 			}
 			builds[i].Tag = build.TagWithDigest(a.Tag, digest)
 		}
 	}
-	if r.runCtx.DigestSource() == noneDigestSource {
+	if r.RunCtx.DigestSource() == runner.NoneDigestSource {
 		color.Default.Fprintln(out, "--digest-source set to 'none', tags listed in Kubernetes manifests will be used for render")
 	}
-	return r.deployer.Render(ctx, out, builds, offline, filepath)
+	return r.Deployer.Render(ctx, out, builds, offline, filepath)
 }

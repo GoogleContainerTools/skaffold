@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,25 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-package runner
+package v2
 
 import (
+	"context"
+	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
-func (r *SkaffoldRunner) createForwarder(out io.Writer) *portforward.ForwarderManager {
-	if !r.runCtx.PortForward() {
-		return nil
-	}
-
-	return portforward.NewForwarderManager(out,
-		r.kubectlCLI,
-		r.podSelector,
-		r.labeller.RunIDSelector(),
-		r.runCtx.Mode(),
-		r.runCtx.Opts.PortForward,
-		r.runCtx.PortForwardResources())
+func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest_v1.Artifact) error {
+	return fmt.Errorf("not implemented error: SkaffoldRunner(v3).Dev")
 }

@@ -29,6 +29,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
 )
 
+// ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
+var ErrorConfigurationChanged = errors.New("configuration changed")
+
 type Listener interface {
 	WatchForChanges(context.Context, io.Writer, func() error) error
 	LogWatchToUser(io.Writer)
@@ -37,8 +40,8 @@ type Listener interface {
 type SkaffoldListener struct {
 	Monitor                 filemon.Monitor
 	Trigger                 trigger.Trigger
-	sourceDependenciesCache graph.SourceDependenciesCache
-	intentChan              <-chan bool
+	SourceDependenciesCache graph.SourceDependenciesCache
+	IntentChan              <-chan bool
 }
 
 func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
@@ -66,7 +69,7 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-l.intentChan:
+		case <-l.IntentChan:
 			if err := l.do(devLoop); err != nil {
 				return err
 			}
@@ -80,7 +83,7 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 
 func (l *SkaffoldListener) do(devLoop func() error) error {
 	// reset the dependencies resolver cache at the start of every dev loop.
-	l.sourceDependenciesCache.Reset()
+	l.SourceDependenciesCache.Reset()
 	if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
 		logrus.Warnf("Ignoring changes: %s", err.Error())
 		return nil

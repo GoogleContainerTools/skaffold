@@ -13,16 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package v3
+package v2
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"context"
+	"fmt"
+	"io"
 )
 
-type SkaffoldRunner struct {
-	runner.Builder
-	runner.Pruner
-	runner.Tester
+func (r *SkaffoldRunner) Apply(ctx context.Context, out io.Writer) error {
+	return fmt.Errorf("not implemented error: SkaffoldRunner(v3).Apply")
 }
-
-func (r *SkaffoldRunner) HasDeployed() bool { return true }

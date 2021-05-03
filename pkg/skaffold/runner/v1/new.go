@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"context"
@@ -37,8 +37,8 @@ import (
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
@@ -50,11 +50,10 @@ import (
 )
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
-func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
+func NewForConfig(runCtx *runcontext.RunContext) (runner.Runner, error) {
 	event.InitializeState(runCtx)
 	event.LogMetaEvent()
 	eventV2.InitializeState(runCtx)
-	kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
 
 	tagger, err := tag.NewTaggerMux(runCtx)
 	if err != nil {
@@ -67,7 +66,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	var builder build.Builder
 	builder, err = build.NewBuilderMux(runCtx, store, func(p latest_v1.Pipeline) (build.PipelineBuilder, error) {
-		return getBuilder(runCtx, store, sourceDependencies, p)
+		return runner.GetBuilder(runCtx, store, sourceDependencies, p)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("creating builder: %w", err)
@@ -76,11 +75,11 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return isImageLocal(runCtx, imageName)
 	}
 	labeller := label.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels())
-	tester, err := getTester(runCtx, isLocalImage)
+	tester, err := test.NewTester(runCtx, isLocalImage)
 	if err != nil {
 		return nil, fmt.Errorf("creating tester: %w", err)
 	}
-	syncer := getSyncer(runCtx)
+	syncer := sync.NewSyncer(runCtx)
 	var deployer deploy.Deployer
 	deployer, err = getDeployer(runCtx, labeller.Labels())
 	if err != nil {
@@ -106,9 +105,9 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
 
-	builder, tester, deployer = WithTimings(builder, tester, deployer, runCtx.CacheArtifacts())
+	builder, tester, deployer = runner.WithTimings(builder, tester, deployer, runCtx.CacheArtifacts())
 	if runCtx.Notification() {
-		deployer = WithNotification(deployer)
+		deployer = runner.WithNotification(deployer)
 	}
 
 	monitor := filemon.NewMonitor()
@@ -119,48 +118,25 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	podSelectors := kubernetes.NewImageList()
-	return &SkaffoldRunner{
-		Builder: Builder{
-			builder:     builder,
-			tagger:      tagger,
-			cache:       artifactCache,
-			podSelector: podSelectors,
-			runCtx:      runCtx,
-		},
-		Pruner: Pruner{
-			builder,
-		},
-		Tester: Tester{
-			tester: tester,
-		},
-		deployer: deployer,
-		syncer:   syncer,
-		monitor:  monitor,
-		listener: &SkaffoldListener{
-			Monitor:                 monitor,
-			Trigger:                 trigger,
-			intentChan:              intentChan,
-			sourceDependenciesCache: sourceDependencies,
-		},
-		artifactStore:      store,
-		sourceDependencies: sourceDependencies,
-		kubectlCLI:         kubectlCLI,
-		labeller:           labeller,
-		podSelector:        podSelectors,
-		cache:              artifactCache,
-		runCtx:             runCtx,
-		intents:            intents,
-		isLocalImage:       isLocalImage,
-	}, nil
+	pruner := runner.Pruner{Builder: builder}
+	buildRunner := runner.NewBuilder(builder, tagger, artifactCache, podSelectors, runCtx)
+	listener := &runner.SkaffoldListener{
+		Monitor:                 monitor,
+		Trigger:                 trigger,
+		IntentChan:              intentChan,
+		SourceDependenciesCache: sourceDependencies,
+	}
+	return NewSkaffoldRunner(builder, buildRunner, deployer, syncer, monitor, listener, trigger, pruner, tester,
+		labeller, podSelectors, intents, intentChan, artifactCache, runCtx, store, sourceDependencies, isLocalImage), nil
 }
 
-func setupIntents(runCtx *runcontext.RunContext) (*Intents, chan bool) {
-	intents := newIntents(runCtx.AutoBuild(), runCtx.AutoSync(), runCtx.AutoDeploy())
+func setupIntents(runCtx *runcontext.RunContext) (*runner.Intents, chan bool) {
+	intents := runner.NewIntents(runCtx.AutoBuild(), runCtx.AutoSync(), runCtx.AutoDeploy())
 
 	intentChan := make(chan bool, 1)
-	setupTrigger("build", intents.setBuild, intents.setAutoBuild, intents.getAutoBuild, server.SetBuildCallback, server.SetAutoBuildCallback, intentChan)
-	setupTrigger("sync", intents.setSync, intents.setAutoSync, intents.getAutoSync, server.SetSyncCallback, server.SetAutoSyncCallback, intentChan)
-	setupTrigger("deploy", intents.setDeploy, intents.setAutoDeploy, intents.getAutoDeploy, server.SetDeployCallback, server.SetAutoDeployCallback, intentChan)
+	setupTrigger("build", intents.SetBuild, intents.SetAutoBuild, intents.GetAutoBuild, server.SetBuildCallback, server.SetAutoBuildCallback, intentChan)
+	setupTrigger("sync", intents.SetSync, intents.SetAutoSync, intents.GetAutoSync, server.SetSyncCallback, server.SetAutoSyncCallback, intentChan)
+	setupTrigger("deploy", intents.SetDeploy, intents.SetAutoDeploy, intents.GetAutoDeploy, server.SetDeployCallback, server.SetAutoDeployCallback, intentChan)
 
 	return intents, intentChan
 }
@@ -211,19 +187,6 @@ func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error)
 		pushImages = *pipeline.Build.LocalBuild.Push
 	}
 	return !pushImages, nil
-}
-
-func getTester(cfg test.Config, isLocalImage func(imageName string) (bool, error)) (test.Tester, error) {
-	tester, err := test.NewTester(cfg, isLocalImage)
-	if err != nil {
-		return nil, err
-	}
-
-	return tester, nil
-}
-
-func getSyncer(cfg sync.Config) sync.Syncer {
-	return sync.NewSyncer(cfg)
 }
 
 /*

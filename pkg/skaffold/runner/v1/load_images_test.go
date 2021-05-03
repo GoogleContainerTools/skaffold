@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"context"
@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -109,7 +110,7 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 	}
 
 	runImageLoadingTests(t, tests, func(r *SkaffoldRunner, test ImageLoadingTest) error {
-		return r.loadImagesInKindNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
+		return r.LoadImagesInKindNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
 	})
 }
 
@@ -182,7 +183,7 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 	}
 
 	runImageLoadingTests(t, tests, func(r *SkaffoldRunner, test ImageLoadingTest) error {
-		return r.loadImagesInK3dNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
+		return r.LoadImagesInK3dNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
 	})
 }
 
@@ -197,13 +198,12 @@ func runImageLoadingTests(t *testing.T, tests []ImageLoadingTest, loadingFunc fu
 				},
 				KubeContext: "kubecontext",
 			}
-
+			builder := &runner.Builder{}
+			builder.SetBuilds(test.built)
 			r := &SkaffoldRunner{
-				runCtx:     runCtx,
+				Builder:    builder,
+				RunCtx:     runCtx,
 				kubectlCLI: kubectl.NewCLI(runCtx, ""),
-				Builder: Builder{
-					builds: test.built,
-				},
 			}
 			err := loadingFunc(r, test)
 

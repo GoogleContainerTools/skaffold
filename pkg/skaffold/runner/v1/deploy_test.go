@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"bytes"
@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/test"
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -43,7 +44,7 @@ func TestDeploy(t *testing.T) {
 	expectedOutput := "Waiting for deployments to stabilize..."
 	tests := []struct {
 		description       string
-		testBench         *TestBench
+		testBench         *test.TestBench
 		statusCheckFlag   *bool // --status-check CLI flag
 		statusCheckConfig *bool // skaffold.yaml Deploy.StatusCheck field
 		shouldErr         bool
@@ -51,85 +52,87 @@ func TestDeploy(t *testing.T) {
 	}{
 		{
 			description: "deploy shd perform status check when statusCheck flag is unspecified, in-config value is unspecified",
-			testBench:   &TestBench{},
+			testBench:   &test.TestBench{},
 			shouldWait:  true,
 		},
 		{
 			description:       "deploy shd not perform status check when statusCheck flag is unspecified, in-config value is false",
-			testBench:         &TestBench{},
+			testBench:         &test.TestBench{},
 			statusCheckConfig: util.BoolPtr(false),
 		},
 		{
 			description:       "deploy shd perform status check when statusCheck flag is unspecified, in-config value is true",
-			testBench:         &TestBench{},
+			testBench:         &test.TestBench{},
 			statusCheckConfig: util.BoolPtr(true),
 			shouldWait:        true,
 		},
 		{
 			description:     "deploy shd not perform status check when statusCheck flag is false, in-config value is unspecified",
-			testBench:       &TestBench{},
+			testBench:       &test.TestBench{},
 			statusCheckFlag: util.BoolPtr(false),
 		},
 		{
 			description:       "deploy shd not perform status check when statusCheck flag is false, in-config value is false",
-			testBench:         &TestBench{},
+			testBench:         &test.TestBench{},
 			statusCheckFlag:   util.BoolPtr(false),
 			statusCheckConfig: util.BoolPtr(false),
 		},
 		{
 			description:       "deploy shd not perform status check when statusCheck flag is false, in-config value is true",
-			testBench:         &TestBench{},
+			testBench:         &test.TestBench{},
 			statusCheckFlag:   util.BoolPtr(false),
 			statusCheckConfig: util.BoolPtr(true),
 		},
 		{
 			description:     "deploy shd perform status check when statusCheck flag is true, in-config value is unspecified",
-			testBench:       &TestBench{},
+			testBench:       &test.TestBench{},
 			statusCheckFlag: util.BoolPtr(true),
 			shouldWait:      true,
 		},
 		{
 			description:       "deploy shd perform status check when statusCheck flag is true, in-config value is false",
-			testBench:         &TestBench{},
+			testBench:         &test.TestBench{},
 			statusCheckFlag:   util.BoolPtr(true),
 			statusCheckConfig: util.BoolPtr(false),
 			shouldWait:        true,
 		},
 		{
 			description:       "deploy shd perform status check when statusCheck flag is true, in-config value is true",
-			testBench:         &TestBench{},
+			testBench:         &test.TestBench{},
 			statusCheckFlag:   util.BoolPtr(true),
 			statusCheckConfig: util.BoolPtr(true),
 			shouldWait:        true,
 		},
 		{
 			description:     "deploy shd not perform status check when deployer is in error",
-			testBench:       &TestBench{deployErrors: []error{errors.New("deploy error")}},
+			testBench:       &test.TestBench{DeployErrors: []error{errors.New("deploy error")}},
 			shouldErr:       true,
 			statusCheckFlag: util.BoolPtr(true),
 		},
 	}
 
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
+	for _, testdata := range tests {
+		testutil.Run(t, testdata.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&client.Client, mockK8sClient)
+			t.Override(&client.Client, test.MockK8sClient)
 			t.Override(&newStatusCheck, func(status.Config, *label.DefaultLabeller) status.Checker {
 				return dummyStatusChecker{}
 			})
 
-			runner := createRunner(t, test.testBench, nil, []*latest_v1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}, nil)
-			runner.runCtx.Opts.StatusCheck = config.NewBoolOrUndefined(test.statusCheckFlag)
-			runner.runCtx.Pipelines.All()[0].Deploy.StatusCheck = test.statusCheckConfig
+			runner := MockRunnerV1(t, testdata.testBench, nil, []*latest_v1.Artifact{{ImageName: "img1"},
+				{ImageName: "img2"}}, nil)
+			runner.RunCtx.Opts.StatusCheck = config.NewBoolOrUndefined(testdata.statusCheckFlag)
+			runner.RunCtx.Pipelines.All()[0].Deploy.StatusCheck = testdata.statusCheckConfig
 			out := new(bytes.Buffer)
 
 			err := runner.Deploy(context.Background(), out, []graph.Artifact{
 				{ImageName: "img1", Tag: "img1:tag1"},
 				{ImageName: "img2", Tag: "img2:tag2"},
 			})
-			t.CheckError(test.shouldErr, err)
-			if strings.Contains(out.String(), expectedOutput) != test.shouldWait {
-				t.Errorf("expected %s to contain %s %t. But found %t", out.String(), expectedOutput, test.shouldWait, !test.shouldWait)
+			t.CheckError(testdata.shouldErr, err)
+			if strings.Contains(out.String(), expectedOutput) != testdata.shouldWait {
+				t.Errorf("expected %s to contain %s %t. But found %t", out.String(),
+					expectedOutput, testdata.shouldWait, !testdata.shouldWait)
 			}
 		})
 	}
@@ -139,45 +142,46 @@ func TestDeployNamespace(t *testing.T) {
 	tests := []struct {
 		description string
 		Namespaces  []string
-		testBench   *TestBench
+		testBench   *test.TestBench
 		expected    []string
 	}{
 		{
 			description: "deploy shd add all namespaces to run Context",
 			Namespaces:  []string{"test", "test-ns"},
-			testBench:   NewTestBench().WithDeployNamespaces([]string{"test-ns", "test-ns-1"}),
+			testBench:   test.NewTestBench().WithDeployNamespaces([]string{"test-ns", "test-ns-1"}),
 			expected:    []string{"test", "test-ns", "test-ns-1"},
 		},
 		{
 			description: "deploy without command opts namespace",
-			testBench:   NewTestBench().WithDeployNamespaces([]string{"test-ns", "test-ns-1"}),
+			testBench:   test.NewTestBench().WithDeployNamespaces([]string{"test-ns", "test-ns-1"}),
 			expected:    []string{"test-ns", "test-ns-1"},
 		},
 		{
 			description: "deploy with no namespaces returned",
 			Namespaces:  []string{"test"},
-			testBench:   &TestBench{},
+			testBench:   &test.TestBench{},
 			expected:    []string{"test"},
 		},
 	}
 
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
+	for _, testdata := range tests {
+		testutil.Run(t, testdata.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			t.Override(&client.Client, mockK8sClient)
+			t.Override(&client.Client, test.MockK8sClient)
 			t.Override(&newStatusCheck, func(status.Config, *label.DefaultLabeller) status.Checker {
 				return dummyStatusChecker{}
 			})
 
-			runner := createRunner(t, test.testBench, nil, []*latest_v1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}, nil)
-			runner.runCtx.Namespaces = test.Namespaces
+			runner := MockRunnerV1(t, testdata.testBench, nil, []*latest_v1.Artifact{{ImageName: "img1"},
+				{ImageName: "img2"}}, nil)
+			runner.RunCtx.Namespaces = testdata.Namespaces
 
 			runner.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
 				{ImageName: "img1", Tag: "img1:tag1"},
 				{ImageName: "img2", Tag: "img2:tag2"},
 			})
 
-			t.CheckDeepEqual(test.expected, runner.runCtx.GetNamespaces())
+			t.CheckDeepEqual(testdata.expected, runner.RunCtx.GetNamespaces())
 		})
 	}
 }
@@ -195,9 +199,9 @@ func TestSkaffoldDeployRenderOnly(t *testing.T) {
 		deployer, err := getDeployer(runCtx, nil)
 		t.RequireNoError(err)
 		r := SkaffoldRunner{
-			runCtx:     runCtx,
+			RunCtx:     runCtx,
 			kubectlCLI: kubectl.NewCLI(runCtx, ""),
-			deployer:   deployer,
+			Deployer:   deployer,
 		}
 		var builds []graph.Artifact
 

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package v3
+package v2
 
 import (
 	"context"
@@ -24,5 +24,5 @@ import (
 )
 
 func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
-	return fmt.Errorf("not implemented error: SkaffoldRunner(v3).Dev")
+	return fmt.Errorf("not implemented error: SkaffoldRunner(v2).Dev")
 }

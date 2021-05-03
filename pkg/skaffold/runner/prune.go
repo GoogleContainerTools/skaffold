@@ -24,7 +24,7 @@ import (
 )
 
 type Pruner struct {
-	build.Builder
+	Builder build.Builder
 }
 
 func (r *Pruner) Prune(ctx context.Context, out io.Writer) error {

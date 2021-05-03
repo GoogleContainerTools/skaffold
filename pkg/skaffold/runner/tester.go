@@ -24,12 +24,12 @@ import (
 )
 
 type Tester struct {
-	tester test.Tester
+	test.Tester
 }
 
 // Test tests a list of already built artifacts.
 func (r *Tester) Test(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-	if err := r.tester.Test(ctx, out, artifacts); err != nil {
+	if err := r.Tester.Test(ctx, out, artifacts); err != nil {
 		return err
 	}
 
