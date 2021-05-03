@@ -26,13 +26,12 @@ import (
 )
 
 var (
-	// replaceable for testing
+	// JVMFound is replaceable for testing
 	JVMFound = jvmFound
 
 	// JVMFound() returns true if a Java VM was found and works.
 	resolveJVMOnce sync.Once
 	jvmPresent     bool
-
 )
 
 // jvmFound returns true if a Java VM was found and works.
@@ -47,7 +46,7 @@ func jvmFound() bool {
 
 // resolveJVM returns true if a Java VM was found and works.  It is intended for
 // `skaffold init` on macOS where calling out to the Maven Wrapper script (mvnw) can
-// hang if there is no installed Java VM found. 
+// hang if there is no installed Java VM found.
 func resolveJVM() bool {
 	// Note that just checking for the existence of `java` is insufficient
 	// as macOS ships with /usr/bin/java that tries to hand off to a JVM
