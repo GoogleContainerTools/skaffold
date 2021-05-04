@@ -77,7 +77,8 @@ func GetAllConfigs(opts config.SkaffoldOptions) ([]*latest_v1.SkaffoldConfig, er
 // This struct additionally contains the file location that each skaffold configuration is parsed from.
 func GetConfigSet(opts config.SkaffoldOptions) (SkaffoldConfigSet, error) {
 	cOpts := configOpts{file: opts.ConfigurationFile, selection: nil, profiles: opts.Profiles, isRequired: false, isDependency: false}
-	cfgs, err := getConfigs(cOpts, opts, newRecord())
+	r := newRecord()
+	cfgs, err := getConfigs(cOpts, opts, r)
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +87,10 @@ func GetConfigSet(opts config.SkaffoldOptions) (SkaffoldConfigSet, error) {
 			return nil, sErrors.BadConfigFilterErr(opts.ConfigurationFilter)
 		}
 		return nil, sErrors.ZeroConfigsParsedErr(opts.ConfigurationFile)
+	}
+
+	if unmatched := unmatchedProfiles(r.appliedProfiles, opts.Profiles); len(unmatched) != 0 {
+		return nil, sErrors.ConfigProfilesNotMatchedErr(unmatched)
 	}
 	return cfgs, nil
 }
@@ -293,4 +298,21 @@ func checkRevisit(config *latest_v1.SkaffoldConfig, profiles []string, appliedPr
 	}
 	appliedProfiles[key] = expected
 	return false, nil
+}
+
+func unmatchedProfiles(activatedProfiles map[string]string, allProfiles []string) []string {
+	var unmatched []string
+	for _, p := range allProfiles {
+		var seen bool
+		for _, profiles := range activatedProfiles {
+			if strings.Contains(profiles, p) {
+				seen = true
+				break
+			}
+		}
+		if !seen {
+			unmatched = append(unmatched, p)
+		}
+	}
+	return unmatched
 }

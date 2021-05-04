@@ -294,6 +294,30 @@ requires:
 			},
 		},
 		{
+			description: "named profile not found",
+			profiles:    []string{"pf0", "pf2"},
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
+requires:
+  - path: doc1
+    configs: [cfg10]
+    activeProfiles:
+      - name: pf0
+        activatedBy: [pf0]
+`}, {name: "cfg01", requiresStanza: ""}}},
+				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: `
+requires:
+  - path: ../doc2
+    configs: [cfg21]
+    activeProfiles:
+      - name: pf0
+        activatedBy: [pf0]
+`}, {name: "cfg11", requiresStanza: ""}}},
+				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
+			},
+			errCode: proto.StatusCode_CONFIG_PROFILES_NOT_FOUND_ERR,
+		},
+		{
 			description:  "cascading dependencies with config flag",
 			configFilter: []string{"cfg11"},
 			documents: []document{

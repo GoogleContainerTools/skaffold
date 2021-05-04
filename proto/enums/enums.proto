@@ -401,6 +401,8 @@ enum StatusCode {
     CONFIG_FILE_PATHS_SUBSTITUTION_ERR = 1210;
     // Same config imported at least twice with different set of profiles
     CONFIG_MULTI_IMPORT_PROFILE_CONFLICT_ERR = 1211;
+    // Profile selection did not match known profile names
+    CONFIG_PROFILES_NOT_FOUND_ERR = 1212;
 }
 
 // Enum for Suggestion codes
@@ -528,7 +530,8 @@ enum SuggestionCode {
     CONFIG_CHECK_PROFILE_DEFINITION = 704;
     // Check active profile selection for dependency config
     CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION = 705;
-
+    // Check profile selection flag
+    CONFIG_CHECK_PROFILE_SELECTION = 706;
     // Open an issue so this situation can be diagnosed
     OPEN_ISSUE = 900;
 

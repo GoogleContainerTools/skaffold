@@ -1007,6 +1007,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | CONFIG_DEFAULT_VALUES_ERR | 1209 | Failed to set default config values |
 | CONFIG_FILE_PATHS_SUBSTITUTION_ERR | 1210 | Failed to substitute absolute file paths in config |
 | CONFIG_MULTI_IMPORT_PROFILE_CONFLICT_ERR | 1211 | Same config imported at least twice with different set of profiles |
+| CONFIG_PROFILES_NOT_FOUND_ERR | 1212 | Profile selection did not match known profile names |
 
 
 
@@ -1063,6 +1064,7 @@ Enum for Suggestion codes
 | CONFIG_CHECK_FILTER | 703 | Check config filter |
 | CONFIG_CHECK_PROFILE_DEFINITION | 704 | Check profile definition in current config |
 | CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION | 705 | Check active profile selection for dependency config |
+| CONFIG_CHECK_PROFILE_SELECTION | 706 | Check profile selection flag |
 | OPEN_ISSUE | 900 | Open an issue so this situation can be diagnosed |
 | CHECK_CUSTOM_COMMAND | 1000 | Test error suggestion codes |
 | FIX_CUSTOM_COMMAND_TIMEOUT | 1001 |  |
