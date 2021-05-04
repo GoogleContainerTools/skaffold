@@ -50,12 +50,16 @@ func TestPrintProfilesList(t *testing.T) {
 					{Name: "p3", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
 					{Name: "p4", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{GoogleCloudBuild: &v1.GoogleCloudBuild{}}}}},
 				}}, SourceFile: "path/to/cfg2"},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Profiles: []v1.Profile{
+					{Name: "p5", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
+				}}, SourceFile: "path/to/cfg2"},
 			},
 			expected: `{"profiles":[` +
 				`{"name":"p1","path":"path/to/cfg1","module":"cfg1"},` +
 				`{"name":"p2","path":"path/to/cfg1","module":"cfg1"},` +
 				`{"name":"p3","path":"path/to/cfg2","module":"cfg2"},` +
-				`{"name":"p4","path":"path/to/cfg2","module":"cfg2"}` +
+				`{"name":"p4","path":"path/to/cfg2","module":"cfg2"},` +
+				`{"name":"p5","path":"path/to/cfg2"}` +
 				"]}\n",
 		},
 		{

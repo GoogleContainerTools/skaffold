@@ -31,7 +31,7 @@ type profileList struct {
 type profileEntry struct {
 	Name   string `json:"name"`
 	Path   string `json:"path"`
-	Module string `json:"module"`
+	Module string `json:"module,omitempty"`
 }
 
 func PrintProfilesList(ctx context.Context, out io.Writer, opts Options) error {
