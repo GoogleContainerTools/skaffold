@@ -301,16 +301,13 @@ func checkRevisit(config *latest_v1.SkaffoldConfig, profiles []string, appliedPr
 }
 
 func unmatchedProfiles(activatedProfiles map[string]string, allProfiles []string) []string {
+	var allActivated []string
+	for _, profiles := range activatedProfiles {
+		allActivated = append(allActivated, strings.Split(profiles, ",")...)
+	}
 	var unmatched []string
 	for _, p := range allProfiles {
-		var seen bool
-		for _, profiles := range activatedProfiles {
-			if strings.Contains(profiles, p) {
-				seen = true
-				break
-			}
-		}
-		if !seen {
+		if !util.StrSliceContains(allActivated, p) {
 			unmatched = append(unmatched, p)
 		}
 	}
