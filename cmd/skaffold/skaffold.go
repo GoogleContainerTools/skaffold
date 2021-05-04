@@ -38,8 +38,9 @@ func main() {
 		if errors.Is(err, context.Canceled) {
 			logrus.Debugln("ignore error since context is cancelled:", err)
 		} else {
-			// Because we use cobra flags to setup colors for the main run, we can't run SetupColors()
-			// for the entire skaffold run here, and have to call it again before we print an error
+			// As we allow some color setup using CLI flags for the main run, we can't run SetupColors()
+			// for the entire skaffold run here. It's possible SetupColors() was never called, so call it again
+			// before we print an error to get the right coloring.
 			errOut := color.SetupColors(os.Stderr, color.DefaultColorCode, false)
 			color.Red.Fprintln(errOut, err)
 			code = exitCode(err)
