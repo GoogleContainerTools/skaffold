@@ -27,6 +27,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 type headerModifier func(*tar.Header)
@@ -145,7 +147,7 @@ func addFileToTar(root string, src string, dst string, tw *tar.Writer, hm header
 	}
 
 	// Code copied from https://github.com/moby/moby/blob/master/pkg/archive/archive_windows.go
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == constants.Windows {
 		header.Mode = int64(chmodTarEntry(os.FileMode(header.Mode)))
 	}
 	if hm != nil {

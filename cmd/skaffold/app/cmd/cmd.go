@@ -56,7 +56,7 @@ const (
 	HouseKeepingMessagesAllowedAnnotation = "skaffold_annotation_housekeeping_allowed"
 )
 
-func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
+func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	updateMsg := make(chan string, 1)
 	surveyPrompt := make(chan bool, 1)
 	metricsPrompt := make(chan bool, 1)
@@ -75,8 +75,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 			opts.Command = cmd.Use
 			instrumentation.SetCommand(cmd.Use)
-
-			out = color.SetupColors(out, defaultColor, forceColors)
+			out := color.SetupColors(out, defaultColor, forceColors)
 			if timestamps {
 				l := logrus.New()
 				l.SetOutput(out)
@@ -88,7 +87,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			cmd.Root().SetOutput(out)
 
 			// Setup logs
-			if err := setUpLogs(err, v, timestamps); err != nil {
+			if err := setUpLogs(errOut, v, timestamps); err != nil {
 				return err
 			}
 

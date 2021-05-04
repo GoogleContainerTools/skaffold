@@ -17,9 +17,16 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"io"
+	"os/exec"
+	"runtime"
+	"strconv"
+	"strings"
 
 	"golang.org/x/term"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 func IsTerminal(w io.Writer) (uintptr, bool) {
@@ -34,4 +41,23 @@ func IsTerminal(w io.Writer) (uintptr, bool) {
 	}
 
 	return 0, false
+}
+
+func SupportsColor() (bool, error) {
+	if runtime.GOOS == constants.Windows {
+		return true, nil
+	}
+
+	cmd := exec.Command("tput", "colors")
+	res, err := RunCmdOut(cmd)
+	if err != nil {
+		return false, fmt.Errorf("checking terminal colors: %w", err)
+	}
+
+	numColors, err := strconv.Atoi(strings.TrimSpace(string(res)))
+	if err != nil {
+		return false, err
+	}
+
+	return numColors > 0, nil
 }
