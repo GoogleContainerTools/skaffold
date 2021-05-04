@@ -49,7 +49,9 @@ func TestGetDeployer(tOuter *testing.T) {
 				description: "helm deployer with 3.0.0 version",
 				cfg:         latest_v1.DeployType{HelmDeploy: &latest_v1.HelmDeploy{}},
 				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
-				expected:    &helm.Deployer{},
+				expected: deploy.DeployerMux{
+					&helm.Deployer{},
+				},
 			},
 			{
 				description: "helm deployer with less than 3.0.0 version",
@@ -60,25 +62,31 @@ func TestGetDeployer(tOuter *testing.T) {
 			{
 				description: "kubectl deployer",
 				cfg:         latest_v1.DeployType{KubectlDeploy: &latest_v1.KubectlDeploy{}},
-				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
-					Pipelines: runcontext.NewPipelines([]latest_v1.Pipeline{{}}),
-				}, nil, &latest_v1.KubectlDeploy{
-					Flags: latest_v1.KubectlFlags{},
-				})).(deploy.Deployer),
+				expected: deploy.DeployerMux{
+					t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+						Pipelines: runcontext.NewPipelines([]latest_v1.Pipeline{{}}),
+					}, nil, &latest_v1.KubectlDeploy{
+						Flags: latest_v1.KubectlFlags{},
+					})).(deploy.Deployer),
+				},
 			},
 			{
 				description: "kustomize deployer",
 				cfg:         latest_v1.DeployType{KustomizeDeploy: &latest_v1.KustomizeDeploy{}},
-				expected: t.RequireNonNilResult(kustomize.NewDeployer(&runcontext.RunContext{
-					Pipelines: runcontext.NewPipelines([]latest_v1.Pipeline{{}}),
-				}, nil, &latest_v1.KustomizeDeploy{
-					Flags: latest_v1.KubectlFlags{},
-				})).(deploy.Deployer),
+				expected: deploy.DeployerMux{
+					t.RequireNonNilResult(kustomize.NewDeployer(&runcontext.RunContext{
+						Pipelines: runcontext.NewPipelines([]latest_v1.Pipeline{{}}),
+					}, nil, &latest_v1.KustomizeDeploy{
+						Flags: latest_v1.KubectlFlags{},
+					})).(deploy.Deployer),
+				},
 			},
 			{
 				description: "kpt deployer",
 				cfg:         latest_v1.DeployType{KptDeploy: &latest_v1.KptDeploy{}},
-				expected:    kpt.NewDeployer(&runcontext.RunContext{}, nil, &latest_v1.KptDeploy{}),
+				expected: deploy.DeployerMux{
+					kpt.NewDeployer(&runcontext.RunContext{}, nil, &latest_v1.KptDeploy{}),
+				},
 			},
 			{
 				description: "multiple deployers",
