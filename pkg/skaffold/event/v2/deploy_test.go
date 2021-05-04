@@ -7,8 +7,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestHandleDeploySubtaskEvent(t *testing.T) {
@@ -43,9 +43,16 @@ func TestHandleDeploySubtaskEvent(t *testing.T) {
 		},
 	}
 
+	defer func() { handler = newHandler() }()
 	for _, test := range tests {
-		testutil.Run(t, test.name, func(t *testutil.T) {
+		t.Run(test.name, func(t *testing.T) {
+			handler = newHandler()
+			handler.state = emptyState(mockCfg([]latest_v1.Pipeline{{}}, "test"))
+
+
+			wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
 			handler.handleDeploySubtaskEvent(test.event)
+			wait(t, func() bool { return handler.getState().DeployState.Status == test.event.Status })
 		})
 	}
 }
