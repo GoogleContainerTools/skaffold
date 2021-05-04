@@ -246,7 +246,9 @@ func sanitizeFilePath(s string, isWindowsOS bool) string {
 		}
 		b = append(b, s[i])
 	}
-
+	if slashes == 1 {
+		b = append(b, '\\')
+	}
 	if needsQuotes {
 		return fmt.Sprintf(`"%s"`, string(b))
 	}

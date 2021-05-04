@@ -97,6 +97,23 @@ func TestSanitizeFilePath(t *testing.T) {
 			input:       `z/foo bar/spaces.abs.yaml`,
 			output:      `"z/foo bar/spaces.abs.yaml"`,
 		},
+		{
+			description: "unescaped relative dir path on Windows",
+			isWindowsOS: true,
+			input:       `.\foo\not_escaped_relative\`,
+			output:      `.\\foo\\not_escaped_relative\\`,
+		},
+		{
+			description: "escaped relative dir path on Windows",
+			isWindowsOS: true,
+			input:       `.\\foo\\escaped_relative\\`,
+			output:      `.\\foo\\escaped_relative\\`,
+		},
+		{
+			description: "unescaped relative dir path on non-Windows",
+			input:       `./foo/not_escaped_relative/`,
+			output:      `./foo/not_escaped_relative/`,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
