@@ -48,6 +48,11 @@ const (
 	pydevd
 )
 
+const (
+	pydevdProtocol = "pydevd"
+	dapProtocol    = "dap"
+)
+
 // pythonSpec captures the useful python-ptvsd devtools options
 type pythonSpec struct {
 	debugger pythonDebugType
@@ -92,7 +97,7 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 
 	// Check for override protocols.
 	for _, protocol := range Protocols {
-		if protocol == "pydevd" {
+		if protocol == pydevdProtocol {
 			spec = &pythonSpec{debugger: pydevd, port: portAlloc(defaultPydevdPort)}
 			break
 		}
@@ -259,8 +264,8 @@ func (spec pythonSpec) launcherMode() (string, error) {
 func (spec pythonSpec) protocol() string {
 	switch spec.debugger {
 	case pydevd:
-		return "pydevd"
+		return pydevdProtocol
 	default:
-		return "dap"
+		return dapProtocol
 	}
 }
