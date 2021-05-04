@@ -146,13 +146,14 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 
 func TestPythonTransformer_Apply(t *testing.T) {
 	tests := []struct {
-		description   string
-		containerSpec v1.Container
-		configuration imageConfiguration
-		shouldErr     bool
-		result        v1.Container
-		debugConfig   ContainerDebugConfiguration
-		image         string
+		description       string
+		containerSpec     v1.Container
+		configuration     imageConfiguration
+		shouldErr         bool
+		result            v1.Container
+		debugConfig       ContainerDebugConfiguration
+		image             string
+		overrideProtocols []string
 	}{
 		{
 			description:   "empty",
@@ -171,6 +172,18 @@ func TestPythonTransformer_Apply(t *testing.T) {
 			},
 			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
 			image:       "python",
+		},
+		{
+			description:   "override protocol",
+			containerSpec: v1.Container{},
+			configuration: imageConfiguration{entrypoint: []string{"python"}},
+			result: v1.Container{
+				Command: []string{"/dbg/python/launcher", "--mode", "pydevd", "--port", "5678", "--", "python"},
+				Ports:   []v1.ContainerPort{{Name: "pydevd", ContainerPort: 5678}},
+			},
+			debugConfig:       ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"pydevd": 5678}},
+			image:             "python",
+			overrideProtocols: []string{"pydevd"},
 		},
 		{
 			description: "existing port",
@@ -202,7 +215,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			config, image, err := pythonTransformer{}.Apply(&test.containerSpec, test.configuration, identity, []string{})
+			config, image, err := pythonTransformer{}.Apply(&test.containerSpec, test.configuration, identity, test.overrideProtocols)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.result, test.containerSpec)
