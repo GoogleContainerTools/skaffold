@@ -84,5 +84,5 @@ func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []graph.Artifac
 	}
 
 	allResources := strings.Join(resources, "\n---\n")
-	return manifest.Write(allResources, filepath, w)
+	return manifest.Write(strings.TrimSpace(allResources), filepath, w)
 }
