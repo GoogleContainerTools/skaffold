@@ -19,6 +19,8 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
@@ -29,9 +31,13 @@ type Tester struct {
 
 // Test tests a list of already built artifacts.
 func (r *Tester) Test(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+	eventV2.TaskInProgress(constants.Test)
+
 	if err := r.tester.Test(ctx, out, artifacts); err != nil {
+		eventV2.TaskFailed(constants.Test, err)
 		return err
 	}
 
+	eventV2.TaskSucceeded(constants.Test)
 	return nil
 }
