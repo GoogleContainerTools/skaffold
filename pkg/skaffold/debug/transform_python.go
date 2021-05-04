@@ -224,7 +224,7 @@ func hasPyModule(module string, args []string) bool {
 	return false
 }
 
-// rewritePythonCommandLine rewrites a python command-line to insert a `-mptvsd` etc
+// rewritePythonCommandLine rewrites a python command-line to use the debug-support's launcher.
 func rewritePythonCommandLine(commandLine []string, spec pythonSpec) []string {
 	// Assumes that commandLine[0] is "python" or "python3" etc
 	return util.StrSliceInsert(commandLine, 0, spec.asArguments())
