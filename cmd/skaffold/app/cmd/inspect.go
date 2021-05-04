@@ -24,6 +24,8 @@ import (
 var inspectFlags = struct {
 	fileName  string
 	outFormat string
+	modules   []string
+	buildEnv  string
 }{
 	fileName: "skaffold.yaml",
 }
@@ -33,7 +35,7 @@ func NewCmdInspect() *cobra.Command {
 		WithDescription("Helper commands for Cloud Code IDEs to interact with and modify skaffold configuration files.").
 		WithPersistentFlagAdder(cmdInspectFlags).
 		Hidden().
-		WithCommands(cmdModules())
+		WithCommands(cmdModules(), cmdProfiles())
 }
 
 func cmdInspectFlags(f *pflag.FlagSet) {

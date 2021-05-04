@@ -33,7 +33,7 @@ func cmdModules() *cobra.Command {
 
 func cmdModulesList() *cobra.Command {
 	return NewCmd("list").
-		WithExample("Get list of modules", "skaffold inspect modules list --format json").
+		WithExample("Get list of modules", "inspect modules list --format json").
 		WithDescription("Print the list of module names that can be invoked with the --module flag in other skaffold commands.").
 		NoArgs(listModules)
 }
