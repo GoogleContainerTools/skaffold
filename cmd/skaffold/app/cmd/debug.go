@@ -38,7 +38,7 @@ func NewCmdDebug() *cobra.Command {
 			"Auto-build and sync is disabled by default to prevent accidentally tearing down debug sessions.").
 		WithCommonFlags().
 		WithFlags([]*Flag{
-			{Value: &debugging.Protocols, Name: "protocols", DefValue: []string{}, Usage: "Priority sorted order of debuggers to override the default debuggers with."},
+			{Value: &debugging.Protocols, Name: "protocols", DefValue: []string{}, Usage: "Priority sorted order of debugger protocols to support."},
 		}).
 		WithExample("Launch with port-forwarding", "debug --port-forward").
 		WithHouseKeepingMessages().
