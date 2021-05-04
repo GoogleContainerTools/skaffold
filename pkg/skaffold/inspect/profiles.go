@@ -21,28 +21,36 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-type moduleList struct {
-	Modules []moduleEntry `json:"modules"`
+type profileList struct {
+	Profiles []profileEntry `json:"profiles"`
 }
 
-type moduleEntry struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
+type profileEntry struct {
+	Name   string `json:"name"`
+	Path   string `json:"path"`
+	Module string `json:"module,omitempty"`
 }
 
-func PrintModulesList(ctx context.Context, out io.Writer, opts Options) error {
+func PrintProfilesList(ctx context.Context, out io.Writer, opts Options) error {
 	formatter := getOutputFormatter(out, opts.OutFormat)
 	cfgs, err := getConfigSetFunc(config.SkaffoldOptions{ConfigurationFile: opts.Filename})
 	if err != nil {
 		return formatter.WriteErr(err)
 	}
 
-	l := &moduleList{Modules: []moduleEntry{}}
+	l := &profileList{Profiles: []profileEntry{}}
 	for _, c := range cfgs {
-		if c.Metadata.Name != "" {
-			l.Modules = append(l.Modules, moduleEntry{Name: c.Metadata.Name, Path: c.SourceFile})
+		if len(opts.Modules) > 0 && !util.StrSliceContains(opts.Modules, c.Metadata.Name) {
+			continue
+		}
+		for _, p := range c.Profiles {
+			if !opts.BuildEnv.MatchesConfig(&p.Build.BuildType) {
+				continue
+			}
+			l.Profiles = append(l.Profiles, profileEntry{Name: p.Name, Path: c.SourceFile, Module: c.Metadata.Name})
 		}
 	}
 	return formatter.Write(l)
