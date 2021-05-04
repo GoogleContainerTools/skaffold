@@ -13,16 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package v3
+package v2
 
 import (
 	"context"
 	"fmt"
 	"io"
-
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
-func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest_v1.Artifact) error {
-	return fmt.Errorf("not implemented error: SkaffoldRunner(v3).Dev")
+func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer) error {
+	return fmt.Errorf("not implemented error: SkaffoldRunner(v2).Cleanup")
 }

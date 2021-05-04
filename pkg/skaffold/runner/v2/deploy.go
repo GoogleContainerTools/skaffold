@@ -13,14 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package v3
+package v2
 
 import (
 	"context"
 	"fmt"
 	"io"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 )
 
-func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer) error {
-	return fmt.Errorf("not implemented error: SkaffoldRunner(v3).Cleanup")
+func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+	return fmt.Errorf("not implemented error: SkaffoldRunner(v2).Deploy")
 }
