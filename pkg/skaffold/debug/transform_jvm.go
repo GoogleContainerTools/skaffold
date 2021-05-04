@@ -63,7 +63,7 @@ type jdwpSpec struct {
 
 // Apply configures a container definition for JVM debugging.
 // Returns a simple map describing the debug configuration details.
-func (t jdwpTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
+func (t jdwpTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for JVM debugging", container.Name)
 	// try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
 	spec := retrieveJdwpSpec(config)

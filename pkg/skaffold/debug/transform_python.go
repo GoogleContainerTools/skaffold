@@ -78,9 +78,9 @@ func (t pythonTransformer) IsApplicable(config imageConfiguration) bool {
 	return isLaunchingPython(config.arguments)
 }
 
-// Apply configures a container definition for Python with ptvsd/debugpy.
+// Apply configures a container definition for Python with ptvsd/debugpy/pydevd.
 // Returns a simple map describing the debug configuration details.
-func (t pythonTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
+func (t pythonTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for python debugging", container.Name)
 
 	// try to find existing `-mptvsd` or `-mdebugpy` command
@@ -96,7 +96,7 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 	var spec = &pythonSpec{debugger: debugpy, port: portAlloc(defaultDebugpyPort)}
 
 	// Check for override protocols.
-	for _, protocol := range Protocols {
+	for _, protocol := range overrideProtocols {
 		if protocol == pydevdProtocol {
 			spec = &pythonSpec{debugger: pydevd, port: portAlloc(defaultPydevdPort)}
 			break

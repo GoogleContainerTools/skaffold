@@ -109,7 +109,7 @@ type containerTransformer interface {
 	// and required initContainer (an empty string if not required), or return a non-nil error if
 	// the container could not be transformed.  The initContainer image is intended to install any
 	// required debug support tools.
-	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error)
+	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (ContainerDebugConfiguration, string, error)
 }
 
 const (
@@ -456,7 +456,7 @@ func performContainerTransform(container *v1.Container, config imageConfiguratio
 	logrus.Tracef("Examining container %q with config %v", container.Name, config)
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
-			return transform.Apply(container, config, portAlloc)
+			return transform.Apply(container, config, portAlloc, Protocols)
 		}
 	}
 	return ContainerDebugConfiguration{}, "", fmt.Errorf("unable to determine runtime for %q", container.Name)
