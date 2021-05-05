@@ -6,7 +6,7 @@ aliases: [/docs/concepts/pipeline]
 no_list: true
 ---
 
-Skaffold features a five-stage workflow:
+Skaffold features a multi-stage workflow:
 
 ![workflow](/images/workflow.png)
 
