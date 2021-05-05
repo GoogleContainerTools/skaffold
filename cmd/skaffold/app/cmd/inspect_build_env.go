@@ -28,7 +28,7 @@ import (
 
 func cmdBuildEnv() *cobra.Command {
 	return NewCmd("build-env").
-		WithDescription("Interact with skaffold build environments definitions.").
+		WithDescription("Interact with skaffold build environment definitions.").
 		WithPersistentFlagAdder(cmdBuildEnvFlags).
 		WithCommands(cmdBuildEnvList())
 }
