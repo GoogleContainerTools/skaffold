@@ -31,12 +31,19 @@ type Options struct {
 	Modules []string
 
 	ProfilesOptions
+	BuildEnvOptions
 }
 
 // ProfilesOptions holds flag values for various `skaffold inspect profiles` commands
 type ProfilesOptions struct {
 	// BuildEnv is the build-env filter for command output. One of: local, googleCloudBuild, cluster.
 	BuildEnv BuildEnv
+}
+
+// BuildEnvOptions holds flag values for various `skaffold inspect build-env` commands
+type BuildEnvOptions struct {
+	// Profiles is the slice of profile names to activate.
+	Profiles []string
 }
 
 type BuildEnv string
@@ -53,17 +60,13 @@ var (
 	}
 )
 
-func (b BuildEnv) MatchesConfig(t *latest_v1.BuildType) bool {
-	switch b {
-	case BuildEnvs.Local:
-		return t.LocalBuild != nil
-	case BuildEnvs.GoogleCloudBuild:
-		return t.GoogleCloudBuild != nil
-	case BuildEnvs.Cluster:
-		return t.Cluster != nil
-	case BuildEnvs.Unspecified:
-		return true
+func GetBuildEnv(t *latest_v1.BuildType) BuildEnv {
+	switch {
+	case t.Cluster != nil:
+		return BuildEnvs.Cluster
+	case t.GoogleCloudBuild != nil:
+		return BuildEnvs.GoogleCloudBuild
 	default:
-		return false
+		return BuildEnvs.Local
 	}
 }
