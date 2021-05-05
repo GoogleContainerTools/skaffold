@@ -236,6 +236,7 @@ const StatusCode_CONFIG_APPLY_PROFILES_ERR = StatusCode(enums.StatusCode_CONFIG_
 const StatusCode_CONFIG_DEFAULT_VALUES_ERR = StatusCode(enums.StatusCode_CONFIG_DEFAULT_VALUES_ERR)
 const StatusCode_CONFIG_FILE_PATHS_SUBSTITUTION_ERR = StatusCode(enums.StatusCode_CONFIG_FILE_PATHS_SUBSTITUTION_ERR)
 const StatusCode_CONFIG_MULTI_IMPORT_PROFILE_CONFLICT_ERR = StatusCode(enums.StatusCode_CONFIG_MULTI_IMPORT_PROFILE_CONFLICT_ERR)
+const StatusCode_CONFIG_PROFILES_NOT_FOUND_ERR = StatusCode(enums.StatusCode_CONFIG_PROFILES_NOT_FOUND_ERR)
 
 // SuggestionCode from public import enums/enums.proto
 type SuggestionCode = enums.SuggestionCode
@@ -289,6 +290,7 @@ const SuggestionCode_CONFIG_CHANGE_NAMES = SuggestionCode(enums.SuggestionCode_C
 const SuggestionCode_CONFIG_CHECK_FILTER = SuggestionCode(enums.SuggestionCode_CONFIG_CHECK_FILTER)
 const SuggestionCode_CONFIG_CHECK_PROFILE_DEFINITION = SuggestionCode(enums.SuggestionCode_CONFIG_CHECK_PROFILE_DEFINITION)
 const SuggestionCode_CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION = SuggestionCode(enums.SuggestionCode_CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION)
+const SuggestionCode_CONFIG_CHECK_PROFILE_SELECTION = SuggestionCode(enums.SuggestionCode_CONFIG_CHECK_PROFILE_SELECTION)
 const SuggestionCode_OPEN_ISSUE = SuggestionCode(enums.SuggestionCode_OPEN_ISSUE)
 const SuggestionCode_CHECK_CUSTOM_COMMAND = SuggestionCode(enums.SuggestionCode_CHECK_CUSTOM_COMMAND)
 const SuggestionCode_FIX_CUSTOM_COMMAND_TIMEOUT = SuggestionCode(enums.SuggestionCode_FIX_CUSTOM_COMMAND_TIMEOUT)

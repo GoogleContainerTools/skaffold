@@ -114,12 +114,6 @@ func TestApplyProfiles(t *testing.T) {
 		shouldErr                bool
 	}{
 		{
-			description: "unknown profile",
-			config:      config(),
-			profile:     "profile",
-			shouldErr:   true,
-		},
-		{
 			description:              "build type",
 			profile:                  "profile",
 			profileAutoActivationCli: true,
@@ -722,6 +716,8 @@ func TestActivatedProfiles(t *testing.T) {
 				Profiles:              []string{"activated", "also-activated"},
 			},
 			profiles: []latest_v1.Profile{
+				{Name: "activated"},
+				{Name: "also-activated"},
 				{Name: "run-profile", Activation: []latest_v1.Activation{{Command: "run"}}},
 			},
 			expected: []string{"run-profile", "activated", "also-activated"},

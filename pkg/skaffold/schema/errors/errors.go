@@ -153,6 +153,22 @@ func ConfigSetAbsFilePathsErr(config, file string, err error) error {
 		})
 }
 
+// ConfigProfilesNotMatchedErr specifies that the profiles selected via the `--profile` flag could not be matched against any config
+func ConfigProfilesNotMatchedErr(profiles []string) error {
+	msg := fmt.Sprintf("profile selection %q did not match those defined in any configurations", profiles)
+	return sErrors.NewError(fmt.Errorf(msg),
+		proto.ActionableErr{
+			Message: msg,
+			ErrCode: proto.StatusCode_CONFIG_PROFILES_NOT_FOUND_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_CONFIG_CHECK_PROFILE_SELECTION,
+					Action:         `Check that values specified in the "--profile" or "-p" flags are valid profile names`,
+				},
+			},
+		})
+}
+
 // ConfigProfileConflictErr specifies that the same config is imported with different set of profiles.
 func ConfigProfileConflictErr(config, file string) error {
 	msg := fmt.Sprintf("config %q defined in file %q imported multiple times with different set of profiles", config, file)
