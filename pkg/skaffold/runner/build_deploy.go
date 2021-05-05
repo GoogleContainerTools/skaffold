@@ -72,18 +72,18 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest_
 		return nil, err
 	}
 
-	// In dry-run mode or with --digest-source  set to 'remote' or with --digest-source set to 'tag' , we don't build anything, just return the tag for each artifact.
-	if r.runCtx.DryRun() || (r.runCtx.DigestSource() == remoteDigestSource) ||
-		(r.runCtx.DigestSource() == tagDigestSource) {
-		var bRes []graph.Artifact
-		for _, artifact := range artifacts {
-			bRes = append(bRes, graph.Artifact{
-				ImageName: artifact.ImageName,
-				Tag:       tags[artifact.ImageName],
-			})
-		}
-
-		return bRes, nil
+	// In dry-run mode or with --digest-source set to 'remote' or 'tag' in render, we don't build anything, just return the tag for each artifact.
+	switch {
+	case r.runCtx.DryRun():
+		color.Yellow.Fprintln(out, "Skipping build phase since --dry-run=true")
+		return artifactsWithTags(tags, artifacts), nil
+	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == remoteDigestSource:
+		color.Yellow.Fprintln(out, "Skipping build phase since --digest-source=remote")
+		return artifactsWithTags(tags, artifacts), nil
+	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == tagDigestSource:
+		color.Yellow.Fprintln(out, "Skipping build phase since --digest-source=tag")
+		return artifactsWithTags(tags, artifacts), nil
+	default:
 	}
 
 	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest_v1.Artifact) ([]graph.Artifact, error) {
@@ -118,6 +118,18 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest_
 // HasBuilt returns true if this runner has built something.
 func (r *Builder) HasBuilt() bool {
 	return r.hasBuilt
+}
+
+func artifactsWithTags(tags tag.ImageTags, artifacts []*latest_v1.Artifact) []graph.Artifact {
+	var bRes []graph.Artifact
+	for _, artifact := range artifacts {
+		bRes = append(bRes, graph.Artifact{
+			ImageName: artifact.ImageName,
+			Tag:       tags[artifact.ImageName],
+		})
+	}
+
+	return bRes
 }
 
 // Update which images are logged.

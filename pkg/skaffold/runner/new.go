@@ -206,7 +206,7 @@ func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error)
 		pushImages = *runCtx.Opts.PushImages.Value()
 	case pipeline.Build.LocalBuild.Push == nil:
 		pushImages = cl.PushImages
-		logrus.Debugf("push value not present, defaulting to %t because cluster.PushImages is %t", pushImages, cl.PushImages)
+		logrus.Debugf("push value not present in isImageLocal(), defaulting to %t because cluster.PushImages is %t", pushImages, cl.PushImages)
 	default:
 		pushImages = *pipeline.Build.LocalBuild.Push
 	}

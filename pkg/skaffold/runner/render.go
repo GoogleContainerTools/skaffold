@@ -33,7 +33,7 @@ func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []gra
 		for i, a := range builds {
 			digest, err := docker.RemoteDigest(a.Tag, r.runCtx)
 			if err != nil {
-				return fmt.Errorf("failed to resolve the digest of %s, render aborted", a.Tag)
+				return fmt.Errorf("failed to resolve the digest of %s: does the image exist remotely?", a.Tag)
 			}
 			builds[i].Tag = build.TagWithDigest(a.Tag, digest)
 		}
