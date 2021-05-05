@@ -553,7 +553,7 @@ func TestPollDeployment(t *testing.T) {
 					"pod",
 					"dep-pod",
 					"Pending",
-					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED},
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR},
 					[]string{"err"})},
 			},
 			expected: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,

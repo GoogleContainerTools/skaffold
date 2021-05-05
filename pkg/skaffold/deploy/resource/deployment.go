@@ -47,10 +47,7 @@ var (
 	MsgKubectlConnection = "kubectl connection error\n"
 
 	nonRetryContainerErrors = map[proto.StatusCode]struct{}{
-		proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR:       {},
-		proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR:    {},
-		proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED: {},
-		proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING: {},
+		proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR: {},
 	}
 )
 
