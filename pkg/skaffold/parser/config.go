@@ -170,7 +170,7 @@ func processEachConfig(config *latest_v1.SkaffoldConfig, cfgOpts configOpts, opt
 		return nil, sErrors.ConfigSetDefaultValuesErr(config.Metadata.Name, cfgOpts.file, err)
 	}
 	// convert relative file paths to absolute for all configs that are not invoked explicitly. This avoids maintaining multiple root directory information since the dependency skaffold configs would have their own root directory.
-	if cfgOpts.isDependency {
+	if cfgOpts.isDependency || opts.MakePathsAbsolute {
 		if err := tags.MakeFilePathsAbsolute(config, filepath.Dir(cfgOpts.file)); err != nil {
 			return nil, sErrors.ConfigSetAbsFilePathsErr(config.Metadata.Name, cfgOpts.file, err)
 		}

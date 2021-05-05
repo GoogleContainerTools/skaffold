@@ -86,7 +86,7 @@ func TestCheckArtifacts(t *testing.T) {
 				Workspace: tmpDir.Root(),
 				ArtifactType: latest_v1.ArtifactType{
 					DockerArtifact: &latest_v1.DockerArtifact{
-						DockerfilePath: "Dockerfile",
+						DockerfilePath: tmpDir.Path("Dockerfile"),
 					},
 				},
 			}},

@@ -59,6 +59,7 @@ type SkaffoldOptions struct {
 	ProfileAutoActivation bool
 	DryRun                bool
 	SkipRender            bool
+	MakePathsAbsolute     bool
 
 	// Add Skaffold-specific labels including runID, deployer labels, etc.
 	// `CustomLabels` are still applied if this is false. Must only be used in
