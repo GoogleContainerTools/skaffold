@@ -171,7 +171,7 @@ func TestRunRenderOnly(t *testing.T) {
 			dir         string
 			pods        []string
 		}{
-			args: []string{"--render-only", "--render-output", renderPath},
+			args: []string{"--digest-source=local", "--render-only", "--render-output", renderPath},
 			dir:  "examples/getting-started",
 			pods: []string{"getting-started"},
 		}

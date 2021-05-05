@@ -45,18 +45,19 @@ type Nillable interface {
 // subcommands the flag belongs to in `DefinedOn` field.
 // See https://pkg.go.dev/github.com/spf13/pflag#Flag
 type Flag struct {
-	Name               string
-	Shorthand          string
-	Usage              string
-	Value              interface{}
-	DefValue           interface{}
-	DefValuePerCommand map[string]interface{}
-	NoOptDefVal        string
-	FlagAddMethod      string
-	Deprecated         string
-	DefinedOn          []string
-	Hidden             bool
-	IsEnum             bool
+	Name                 string
+	Shorthand            string
+	Usage                string
+	Value                interface{}
+	DefValue             interface{}
+	DefValuePerCommand   map[string]interface{}
+	DeprecatedPerCommand map[string]interface{}
+	NoOptDefVal          string
+	FlagAddMethod        string
+	Deprecated           string
+	DefinedOn            []string
+	Hidden               bool
+	IsEnum               bool
 }
 
 // flagRegistry is a list of all Skaffold CLI flags.
@@ -536,6 +537,19 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"apply", "debug", "deploy", "dev", "run"},
 		IsEnum:        true,
 	},
+	{
+		Name:          "digest-source",
+		Usage:         "Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.",
+		Value:         &opts.DigestSource,
+		DefValue:      "remote",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "render", "run"},
+		DeprecatedPerCommand: map[string]interface{}{
+			"dev": true,
+			"run": true,
+		},
+		IsEnum: true,
+	},
 }
 
 func methodNameByType(v reflect.Value) string {
@@ -589,6 +603,11 @@ func (fl *Flag) flag(cmdName string) *pflag.Flag {
 	f.Shorthand = fl.Shorthand
 	f.Hidden = fl.Hidden || (fl.Deprecated != "")
 	f.Deprecated = fl.Deprecated
+
+	// Deprecations can be applied per command
+	if _, found := fl.DeprecatedPerCommand[cmdName]; found {
+		f.Deprecated = fl.Deprecated
+	}
 	return f
 }
 

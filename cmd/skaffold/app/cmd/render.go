@@ -48,7 +48,6 @@ func NewCmdRender() *cobra.Command {
 			{Value: &renderFromBuildOutputFile, Name: "build-artifacts", Shorthand: "a", Usage: "File containing build result from a previous 'skaffold build --file-output'"},
 			{Value: &offline, Name: "offline", DefValue: false, Usage: `Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.`, IsEnum: true},
 			{Value: &renderOutputPath, Name: "output", Shorthand: "o", DefValue: "", Usage: "file to write rendered manifests to"},
-			{Value: &opts.DigestSource, Name: "digest-source", DefValue: "remote", Usage: "Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.", IsEnum: true},
 		}).
 		NoArgs(doRender)
 }
