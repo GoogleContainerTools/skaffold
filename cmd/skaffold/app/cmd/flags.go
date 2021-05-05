@@ -433,13 +433,17 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "debug"},
 	},
 	{
-		Name:          "add-skaffold-labels",
-		Usage:         "Add Skaffold-specific labels to rendered manifest. If false, custom labels are still applied. Helpful for GitOps model where Skaffold is not the deployer.",
-		Value:         &opts.AddSkaffoldLabels,
-		DefValue:      true,
+		Name:     "add-skaffold-labels",
+		Usage:    "Add Skaffold-specific labels to rendered manifest. Custom labels will still be applied. Helpful for GitOps model where Skaffold is not the deployer.",
+		Value:    &opts.AddSkaffoldLabels,
+		DefValue: true,
+		DefValuePerCommand: map[string]interface{}{
+			"render": false,
+		},
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"render"},
+		DefinedOn:     []string{"dev", "debug", "render", "run"},
 		IsEnum:        true,
+		Deprecated:    "Adding Skaffold-specific labels in `render` is deprecated.",
 	},
 	{
 		Name:          "mute-logs",
