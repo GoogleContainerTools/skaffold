@@ -52,6 +52,8 @@ func NewCmdDiagnose() *cobra.Command {
 }
 
 func doDiagnose(ctx context.Context, out io.Writer) error {
+	// force absolute path resolution during diagnose
+	opts.MakePathsAbsolute = true
 	configs, err := getCfgs(opts)
 	if err != nil {
 		return err
