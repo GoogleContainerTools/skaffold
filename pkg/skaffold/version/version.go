@@ -62,18 +62,24 @@ var SetClient = func(user string) {
 UserAgent returns a conformant value for HTTP `User-Agent` headers.  It is of the
 form `skaffold/<version> (<os>/<arch>)`, and the version will be omitted if not available.
 func UserAgent() string {
+	if version == "" {
+		// likely running under tests
+		return fmt.Sprintf("skaffold (%s)", platform)
+	}
 	return fmt.Sprintf("skaffold/%s (%s)", version, platform)
 }
 
-// UserAgentWithClient returns a string to be passed as the `--user` flag value
-// to a request header
+// UserAgentWithClient returns a conformant value for HTTP `User-Agent` headers that includes
+// the client value provided with the `--user` flag.  If there is no client value, then the value will be equivalent
+// to `UserAgent()`.  Otherwise it is of the form `skaffold/<version> (<os>/<arch>) <client>`, and the version
+// will be omitted if not available.
 // Use UserAgentWithClient method to record requests from skaffold CLI users vs
 // other clients.
 func UserAgentWithClient() string {
 	if client == "" {
-		return fmt.Sprintf("skaffold/%s (%s)", version, platform)
+		return UserAgent()
 	}
-	return fmt.Sprintf("skaffold/%s (%s) %s", version, platform, client)
+	return fmt.Sprintf("%s %s", UserAgent(), client)
 }
 
 func ParseVersion(version string) (semver.Version, error) {
