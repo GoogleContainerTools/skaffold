@@ -49,8 +49,8 @@ func CheckVersionOnError(config string) (string, error) {
 	return checkVersion(config, true)
 }
 
-func checkVersion(config string, onError bool) (string, error) {
-	if !isUpdateCheckEnabled(config) {
+func checkVersion(configfile string, onError bool) (string, error) {
+	if !isUpdateCheckEnabled(configfile) {
 		logrus.Debugf("Update check not enabled, skipping.")
 		return "", nil
 	}
@@ -58,13 +58,13 @@ func checkVersion(config string, onError bool) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("getting latest and current skaffold versions: %w", err)
 	}
-	if !latest.GT(current) {
-		return "", nil
+	if latest.GT(current) && config.ShouldDisplayUpdateMsg(configfile) {
+		if onError {
+			return fmt.Sprintf("Your Skaffold version might be too old. Download the latest version (%s) from:\n  %s\n", latest, releaseURL(latest)), nil
+		}
+		return fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it from:\n  %s\n", latest, releaseURL(latest)), nil
 	}
-	if onError {
-		return fmt.Sprintf("Your Skaffold version might be too old. Download the latest version (%s) from:\n  %s\n", latest, releaseURL(latest)), nil
-	}
-	return fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it from:\n  %s\n", latest, releaseURL(latest)), nil
+	return "", nil
 }
 
 // isUpdateCheckEnabled returns whether or not the update check is enabled
