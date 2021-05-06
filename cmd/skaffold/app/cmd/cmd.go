@@ -131,6 +131,9 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			select {
 			case msg := <-updateMsg:
+				if err := config.UpdateMsgDisplayed(opts.GlobalConfig); err != nil {
+					logrus.Debugf("could not update the 'last-prompted' config for 'update-config' section due to %s", err)
+				}
 				fmt.Fprintf(cmd.OutOrStderr(), "%s\n", msg)
 			default:
 			}

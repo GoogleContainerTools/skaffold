@@ -324,6 +324,42 @@ func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
 	return lessThan(cfg.Survey.LastTaken, 90*24*time.Hour) || lessThan(cfg.Survey.LastPrompted, 10*24*time.Hour)
 }
 
+func ShouldDisplayUpdateMsg(configfile string) bool {
+	cfg, err := GetConfigForCurrentKubectx(configfile)
+	if err != nil {
+		return true
+	}
+	if cfg == nil || cfg.UpdateCheckConfig == nil {
+		return true
+	}
+	return !lessThan(cfg.UpdateCheckConfig.LastPrompted, 24*time.Hour)
+}
+
+// UpdateMsgDisplayed updates the `last-prompted` config for `update-config` in
+// the skaffold config
+func UpdateMsgDisplayed(configFile string) error {
+	// Today's date
+	today := current().Format(time.RFC3339)
+
+	configFile, err := ResolveConfigFile(configFile)
+	if err != nil {
+		return err
+	}
+	fullConfig, err := ReadConfigFile(configFile)
+	if err != nil {
+		return err
+	}
+	if fullConfig.Global == nil {
+		fullConfig.Global = &ContextConfig{}
+	}
+	if fullConfig.Global.UpdateCheckConfig == nil {
+		fullConfig.Global.UpdateCheckConfig = &UpdateConfig{}
+	}
+	fullConfig.Global.UpdateCheckConfig.LastPrompted = today
+	err = WriteFullConfig(configFile, fullConfig)
+	return err
+}
+
 func lessThan(date string, duration time.Duration) bool {
 	t, err := time.Parse(time.RFC3339, date)
 	if err != nil {
