@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"context"
@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -146,10 +147,10 @@ func TestDevFailFirstCycle(t *testing.T) {
 			artifacts := []*latest_v1.Artifact{{
 				ImageName: "img",
 			}}
-			runner := createRunner(t, test.testBench, test.monitor, artifacts, nil)
+			r := createRunner(t, test.testBench, test.monitor, artifacts, nil)
 			test.testBench.firstMonitor = test.monitor.Run
 
-			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
+			err := r.Dev(context.Background(), ioutil.Discard, artifacts)
 
 			t.CheckErrorAndDeepEqual(true, err, test.expectedActions, test.testBench.Actions())
 		})
@@ -278,12 +279,12 @@ func TestDev(t *testing.T) {
 				{ImageName: "img1"},
 				{ImageName: "img2"},
 			}
-			runner := createRunner(t, test.testBench, &TestMonitor{
+			r := createRunner(t, test.testBench, &TestMonitor{
 				events:    test.watchEvents,
 				testBench: test.testBench,
 			}, artifacts, nil)
 
-			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
+			err := r.Dev(context.Background(), ioutil.Discard, artifacts)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())
@@ -298,7 +299,7 @@ func TestDevAutoTriggers(t *testing.T) {
 		expectedActions []Actions
 		autoTriggers    triggerState // the state of auto triggers
 		singleTriggers  triggerState // the state of single intent triggers at the end of dev loop
-		userIntents     []func(i *Intents)
+		userIntents     []func(i *runner.Intents)
 	}{
 		{
 			description: "build on; sync on; deploy on",
@@ -368,9 +369,9 @@ func TestDevAutoTriggers(t *testing.T) {
 			autoTriggers:    triggerState{false, false, false},
 			singleTriggers:  triggerState{false, false, false},
 			expectedActions: []Actions{},
-			userIntents: []func(i *Intents){
-				func(i *Intents) {
-					i.setBuild(true)
+			userIntents: []func(i *runner.Intents){
+				func(i *runner.Intents) {
+					i.SetBuild(true)
 				},
 			},
 		},
@@ -380,10 +381,10 @@ func TestDevAutoTriggers(t *testing.T) {
 			autoTriggers:    triggerState{false, false, false},
 			singleTriggers:  triggerState{false, false, false},
 			expectedActions: []Actions{},
-			userIntents: []func(i *Intents){
-				func(i *Intents) {
-					i.setBuild(true)
-					i.setSync(true)
+			userIntents: []func(i *runner.Intents){
+				func(i *runner.Intents) {
+					i.SetBuild(true)
+					i.SetSync(true)
 				},
 			},
 		},
@@ -393,12 +394,12 @@ func TestDevAutoTriggers(t *testing.T) {
 			autoTriggers:    triggerState{false, false, false},
 			singleTriggers:  triggerState{false, false, false},
 			expectedActions: []Actions{},
-			userIntents: []func(i *Intents){
-				func(i *Intents) {
-					i.setBuild(true)
+			userIntents: []func(i *runner.Intents){
+				func(i *runner.Intents) {
+					i.SetBuild(true)
 				},
-				func(i *Intents) {
-					i.setSync(true)
+				func(i *runner.Intents) {
+					i.SetSync(true)
 				},
 			},
 		},
@@ -429,22 +430,23 @@ func TestDevAutoTriggers(t *testing.T) {
 					ImageName: "img2",
 				},
 			}
-			runner := createRunner(t, testBench, &TestMonitor{
+			r := createRunner(t, testBench, &TestMonitor{
 				events:    test.watchEvents,
 				testBench: testBench,
 			}, artifacts, &test.autoTriggers)
 
-			testBench.intents = runner.intents
+			testBench.intents = r.intents
 
-			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
+			err := r.Dev(context.Background(), ioutil.Discard, artifacts)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(append([]Actions{firstAction}, test.expectedActions...), testBench.Actions())
 
+			build, _sync, deploy := r.intents.GetIntentsAttrs()
 			singleTriggers := triggerState{
-				build:  runner.intents.build,
-				sync:   runner.intents.sync,
-				deploy: runner.intents.deploy,
+				build:  build,
+				sync:   _sync,
+				deploy: deploy,
 			}
 			t.CheckDeepEqual(test.singleTriggers, singleTriggers, cmp.AllowUnexported(triggerState{}))
 		})
@@ -535,12 +537,12 @@ func TestDevSync(t *testing.T) {
 					ImageName: "img2",
 				},
 			}
-			runner := createRunner(t, test.testBench, &TestMonitor{
+			r := createRunner(t, test.testBench, &TestMonitor{
 				events:    test.watchEvents,
 				testBench: test.testBench,
 			}, artifacts, nil)
 
-			err := runner.Dev(context.Background(), ioutil.Discard, artifacts)
+			err := r.Dev(context.Background(), ioutil.Discard, artifacts)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedActions, test.testBench.Actions())

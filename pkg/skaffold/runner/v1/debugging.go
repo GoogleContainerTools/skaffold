@@ -14,24 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
-	"io"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
 )
 
-func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []graph.Artifact) *logger.LogAggregator {
-	if !r.runCtx.Tail() {
+func (r *SkaffoldRunner) createContainerManager() *debugging.ContainerManager {
+	if r.runCtx.Mode() != config.RunModes.Debug {
 		return nil
 	}
 
-	var imageNames []string
-	for _, artifact := range artifacts {
-		imageNames = append(imageNames, artifact.Tag)
-	}
-
-	return logger.NewLogAggregator(out, r.kubectlCLI, imageNames, r.podSelector, r.runCtx)
+	return debugging.NewContainerManager(r.podSelector)
 }

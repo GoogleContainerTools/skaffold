@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"context"
@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -42,7 +43,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	eventV2.TaskInProgress(constants.Deploy)
 
 	// Update which images are logged.
-	r.addTagsToPodSelector(artifacts)
+	r.AddTagsToPodSelector(artifacts)
 
 	logger := r.createLogger(out, artifacts)
 	defer logger.Stop()
@@ -213,7 +214,7 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 	start := time.Now()
 	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
 
-	s := newStatusCheck(r.runCtx, r.labeller)
+	s := runner.NewStatusCheck(r.runCtx, r.labeller)
 	if err := s.Check(ctx, out); err != nil {
 		eventV2.TaskFailed(constants.StatusCheck, err)
 		return err

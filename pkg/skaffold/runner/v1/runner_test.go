@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"context"
@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -58,8 +59,8 @@ type TestBench struct {
 	testErrors    []error
 	deployErrors  []error
 	namespaces    []string
-	userIntents   []func(*Intents)
-	intents       *Intents
+	userIntents   []func(*runner.Intents)
+	intents       *runner.Intents
 	intentTrigger bool
 
 	devLoop        func(context.Context, io.Writer, func() error) error
@@ -257,9 +258,10 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor, 
 	runner, err := NewForConfig(runCtx)
 	t.CheckNoError(err)
 
-	runner.builder = testBench
+	// TODO(yuwenma):builder.builder looks weird. Avoid the nested struct.
+	runner.Builder.Builder = testBench
 	runner.syncer = testBench
-	runner.tester = testBench
+	runner.Tester = testBench
 	runner.deployer = testBench
 	runner.listener = testBench
 	runner.monitor = monitor
@@ -428,17 +430,14 @@ func TestNewForConfig(t *testing.T) {
 
 			cfg, err := NewForConfig(runCtx)
 			t.CheckError(test.shouldErr, err)
-
-			t.CheckError(test.shouldErr, err)
 			if cfg != nil {
-				b, _t, d := WithTimings(&test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
-
+				b, _t, d := runner.WithTimings(&test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
 				if test.shouldErr {
 					t.CheckError(true, err)
 				} else {
 					t.CheckNoError(err)
-					t.CheckTypeEquality(b, cfg.builder)
-					t.CheckTypeEquality(_t, cfg.tester)
+					t.CheckTypeEquality(b, cfg.Pruner.Builder)
+					t.CheckTypeEquality(_t, cfg.Tester)
 					t.CheckTypeEquality(d, cfg.deployer)
 				}
 			}
@@ -521,13 +520,14 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 				Pipelines: runcontext.NewPipelines([]latest_v1.Pipeline{pipeline}),
 			})
 
-			r.intents.resetBuild()
-			r.intents.resetSync()
-			r.intents.resetDeploy()
+			r.intents.ResetBuild()
+			r.intents.ResetSync()
+			r.intents.ResetDeploy()
 
-			t.CheckDeepEqual(test.expectedBuildIntent, r.intents.build)
-			t.CheckDeepEqual(test.expectedSyncIntent, r.intents.sync)
-			t.CheckDeepEqual(test.expectedDeployIntent, r.intents.deploy)
+			build, sync, deploy := r.intents.GetIntentsAttrs()
+			t.CheckDeepEqual(test.expectedBuildIntent, build)
+			t.CheckDeepEqual(test.expectedSyncIntent, sync)
+			t.CheckDeepEqual(test.expectedDeployIntent, deploy)
 		})
 	}
 }

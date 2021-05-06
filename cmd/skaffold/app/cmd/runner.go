@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
@@ -64,7 +65,7 @@ func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner,
 	}
 
 	instrumentation.InitMeterFromConfig(configs, opts.User)
-	runner, err := runner.NewForConfig(runCtx)
+	runner, err := v1.NewForConfig(runCtx)
 	if err != nil {
 		event.InititializationFailed(err)
 		return nil, nil, nil, fmt.Errorf("creating runner: %w", err)

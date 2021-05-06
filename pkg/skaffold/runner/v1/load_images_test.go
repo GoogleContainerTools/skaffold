@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"context"
@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -201,9 +202,7 @@ func runImageLoadingTests(t *testing.T, tests []ImageLoadingTest, loadingFunc fu
 			r := &SkaffoldRunner{
 				runCtx:     runCtx,
 				kubectlCLI: kubectl.NewCLI(runCtx, ""),
-				Builder: Builder{
-					builds: test.built,
-				},
+				Builder:    runner.Builder{Builds: test.built},
 			}
 			err := loadingFunc(r, test)
 
