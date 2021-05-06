@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -82,7 +82,7 @@ func TestGetDependencies(t *testing.T) {
 			))
 			t.NewTempDir().WriteFiles(test.files).Chdir()
 
-			deps, err := GetDependencies(context.Background(), test.workspace, &latest_v1.BazelArtifact{
+			deps, err := GetDependencies(context.Background(), test.workspace, &latestV1.BazelArtifact{
 				BuildTarget: test.target,
 			})
 

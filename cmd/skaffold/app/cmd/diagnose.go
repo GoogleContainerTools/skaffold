@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/diagnose"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -76,7 +76,7 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func printArtifactDiagnostics(ctx context.Context, out io.Writer, configs []*latest_v1.SkaffoldConfig) error {
+func printArtifactDiagnostics(ctx context.Context, out io.Writer, configs []*latestV1.SkaffoldConfig) error {
 	runCtx, err := getRunContext(opts, configs)
 	if err != nil {
 		return fmt.Errorf("getting run context: %w", err)

@@ -25,7 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // NewCmdRun describes the CLI command to run a pipeline.
@@ -41,7 +41,7 @@ func NewCmdRun() *cobra.Command {
 }
 
 func doRun(ctx context.Context, out io.Writer) error {
-	return withRunner(ctx, out, func(r runner.Runner, configs []*latest_v1.SkaffoldConfig) error {
+	return withRunner(ctx, out, func(r runner.Runner, configs []*latestV1.SkaffoldConfig) error {
 		bRes, err := r.Build(ctx, out, targetArtifacts(opts, configs))
 		if err != nil {
 			return fmt.Errorf("failed to build: %w", err)

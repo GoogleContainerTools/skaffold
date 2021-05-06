@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -39,7 +39,7 @@ func SimulateDevCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
 	portForwardEvent = func(entry *portForwardEntry) {}
 	ctx := context.Background()
 	localPort := retrieveAvailablePort(util.Loopback, 9000, &em.forwardedPorts)
-	pfe := newPortForwardEntry(0, latest_v1.PortForwardResource{
+	pfe := newPortForwardEntry(0, latestV1.PortForwardResource{
 		Type:      "deployment",
 		Name:      "leeroy-web",
 		Namespace: namespace,

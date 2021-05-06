@@ -26,7 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/deploy"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
@@ -35,7 +35,7 @@ var (
 	getWd = os.Getwd
 )
 
-func generateSkaffoldConfig(b build.Initializer, d deploy.Initializer) *latest_v1.SkaffoldConfig {
+func generateSkaffoldConfig(b build.Initializer, d deploy.Initializer) *latestV1.SkaffoldConfig {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
@@ -48,13 +48,13 @@ func generateSkaffoldConfig(b build.Initializer, d deploy.Initializer) *latest_v
 	deploy, profiles := d.DeployConfig()
 	build, portForward := b.BuildConfig()
 
-	return &latest_v1.SkaffoldConfig{
-		APIVersion: latest_v1.Version,
+	return &latestV1.SkaffoldConfig{
+		APIVersion: latestV1.Version,
 		Kind:       "Config",
-		Metadata: latest_v1.Metadata{
+		Metadata: latestV1.Metadata{
 			Name: name,
 		},
-		Pipeline: latest_v1.Pipeline{
+		Pipeline: latestV1.Pipeline{
 			Build:       build,
 			Deploy:      deploy,
 			PortForward: portForward,

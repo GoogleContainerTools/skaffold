@@ -32,7 +32,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 type inputDigestTagger struct {
@@ -47,7 +47,7 @@ func NewInputDigestTagger(cfg docker.Config, ag graph.ArtifactGraph) (Tagger, er
 	}, nil
 }
 
-func (t *inputDigestTagger) GenerateTag(image latest_v1.Artifact) (string, error) {
+func (t *inputDigestTagger) GenerateTag(image latestV1.Artifact) (string, error) {
 	var inputs []string
 	// TODO(nkubala): plumb through context into Tagger interface
 	ctx := context.TODO()

@@ -24,7 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -57,23 +57,23 @@ metadata:
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&getRunContext, func(config.SkaffoldOptions, []*latest_v1.SkaffoldConfig) (*runcontext.RunContext, error) {
+			t.Override(&getRunContext, func(config.SkaffoldOptions, []*latestV1.SkaffoldConfig) (*runcontext.RunContext, error) {
 				return nil, fmt.Errorf("cannot get the runtime context")
 			})
 			t.Override(&yamlOnly, test.yamlOnly)
-			t.Override(&getCfgs, func(opts config.SkaffoldOptions) ([]*latest_v1.SkaffoldConfig, error) {
-				return []*latest_v1.SkaffoldConfig{
+			t.Override(&getCfgs, func(opts config.SkaffoldOptions) ([]*latestV1.SkaffoldConfig, error) {
+				return []*latestV1.SkaffoldConfig{
 					{
 						APIVersion: "testVersion",
 						Kind:       "Config",
-						Metadata: latest_v1.Metadata{
+						Metadata: latestV1.Metadata{
 							Name: "config1",
 						},
 					},
 					{
 						APIVersion: "testVersion",
 						Kind:       "Config",
-						Metadata: latest_v1.Metadata{
+						Metadata: latestV1.Metadata{
 							Name: "config2",
 						},
 					},

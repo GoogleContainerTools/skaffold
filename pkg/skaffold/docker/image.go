@@ -40,7 +40,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -64,7 +64,7 @@ type LocalDaemon interface {
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
-	Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latest_v1.DockerArtifact, opts BuildOptions) (string, error)
+	Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latestV1.DockerArtifact, opts BuildOptions) (string, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
@@ -166,7 +166,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 	return cfg, nil
 }
 
-func (l *localDaemon) CheckCompatible(a *latest_v1.DockerArtifact) error {
+func (l *localDaemon) CheckCompatible(a *latestV1.DockerArtifact) error {
 	if a.Secret != nil || a.SSH != "" {
 		return fmt.Errorf("docker build options, secrets and ssh, require BuildKit - set `useBuildkit: true` in your config, or run with `DOCKER_BUILDKIT=1`")
 	}
@@ -174,7 +174,7 @@ func (l *localDaemon) CheckCompatible(a *latest_v1.DockerArtifact) error {
 }
 
 // Build performs a docker build and returns the imageID.
-func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latest_v1.DockerArtifact, opts BuildOptions) (string, error) {
+func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latestV1.DockerArtifact, opts BuildOptions) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	if err := l.CheckCompatible(a); err != nil {
@@ -463,7 +463,7 @@ func (l *localDaemon) DiskUsage(ctx context.Context) (uint64, error) {
 	return uint64(usage.LayersSize), nil
 }
 
-func ToCLIBuildArgs(a *latest_v1.DockerArtifact, evaluatedArgs map[string]*string) ([]string, error) {
+func ToCLIBuildArgs(a *latestV1.DockerArtifact, evaluatedArgs map[string]*string) ([]string, error) {
 	var args []string
 	var keys []string
 	for k := range evaluatedArgs {

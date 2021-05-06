@@ -27,7 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
@@ -66,7 +66,7 @@ func doFindConfigs(_ context.Context, out io.Writer) error {
 		pathOutLen, versionOutLen := 70, 30
 		for p, v := range pathToVersion {
 			c := color.Default
-			if v != latest_v1.Version {
+			if v != latestV1.Version {
 				c = color.Green
 			}
 			c.Fprintf(out, fmt.Sprintf("%%-%ds\t%%-%ds\n", pathOutLen, versionOutLen), p, v)

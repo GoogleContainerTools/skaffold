@@ -26,11 +26,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
-func (b *Builder) kanikoPodSpec(artifact *latest_v1.KanikoArtifact, tag string) (*v1.Pod, error) {
+func (b *Builder) kanikoPodSpec(artifact *latestV1.KanikoArtifact, tag string) (*v1.Pod, error) {
 	args, err := kanikoArgs(artifact, tag, b.cfg.GetInsecureRegistries())
 	if err != nil {
 		return nil, fmt.Errorf("building args list: %w", err)
@@ -121,7 +121,7 @@ func (b *Builder) kanikoPodSpec(artifact *latest_v1.KanikoArtifact, tag string) 
 	return pod, nil
 }
 
-func (b *Builder) env(artifact *latest_v1.KanikoArtifact, httpProxy, httpsProxy string) []v1.EnvVar {
+func (b *Builder) env(artifact *latestV1.KanikoArtifact, httpProxy, httpsProxy string) []v1.EnvVar {
 	pullSecretPath := strings.Join(
 		[]string{b.ClusterDetails.PullSecretMountPath, b.ClusterDetails.PullSecretPath},
 		"/", // linux filepath separator.
@@ -190,7 +190,7 @@ func addHostPathVolume(pod *v1.Pod, name, mountPath, path string) {
 	})
 }
 
-func resourceRequirements(rr *latest_v1.ResourceRequirements) v1.ResourceRequirements {
+func resourceRequirements(rr *latestV1.ResourceRequirements) v1.ResourceRequirements {
 	req := v1.ResourceRequirements{}
 
 	if rr != nil {
@@ -233,7 +233,7 @@ func resourceRequirements(rr *latest_v1.ResourceRequirements) v1.ResourceRequire
 	return req
 }
 
-func kanikoArgs(artifact *latest_v1.KanikoArtifact, tag string, insecureRegistries map[string]bool) ([]string, error) {
+func kanikoArgs(artifact *latestV1.KanikoArtifact, tag string, insecureRegistries map[string]bool) ([]string, error) {
 	for reg := range insecureRegistries {
 		artifact.InsecureRegistry = append(artifact.InsecureRegistry, reg)
 	}

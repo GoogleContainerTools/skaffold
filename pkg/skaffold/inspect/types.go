@@ -18,7 +18,7 @@ package inspect
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // Options holds flag values for the various `skaffold inspect` commands
@@ -60,7 +60,7 @@ var (
 	}
 )
 
-func GetBuildEnv(t *latest_v1.BuildType) BuildEnv {
+func GetBuildEnv(t *latestV1.BuildType) BuildEnv {
 	switch {
 	case t.Cluster != nil:
 		return BuildEnvs.Cluster

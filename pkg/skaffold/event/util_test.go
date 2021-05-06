@@ -20,7 +20,7 @@ import (
 	"sort"
 	"testing"
 
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -28,21 +28,21 @@ import (
 func TestEmptyState(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         latest_v1.Pipeline
+		cfg         latestV1.Pipeline
 		cluster     string
 		expected    *proto.Metadata
 	}{
 		{
 			description: "one build artifact minikube cluster multiple deployers",
-			cfg: latest_v1.Pipeline{
-				Build: latest_v1.BuildConfig{
-					BuildType: latest_v1.BuildType{LocalBuild: &latest_v1.LocalBuild{}},
-					Artifacts: []*latest_v1.Artifact{{ImageName: "img", ArtifactType: latest_v1.ArtifactType{DockerArtifact: &latest_v1.DockerArtifact{}}}},
+			cfg: latestV1.Pipeline{
+				Build: latestV1.BuildConfig{
+					BuildType: latestV1.BuildType{LocalBuild: &latestV1.LocalBuild{}},
+					Artifacts: []*latestV1.Artifact{{ImageName: "img", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}}},
 				},
-				Deploy: latest_v1.DeployConfig{
-					DeployType: latest_v1.DeployType{
-						KubectlDeploy: &latest_v1.KubectlDeploy{},
-						HelmDeploy:    &latest_v1.HelmDeploy{Releases: []latest_v1.HelmRelease{{Name: "first"}, {Name: "second"}}},
+				Deploy: latestV1.DeployConfig{
+					DeployType: latestV1.DeployType{
+						KubectlDeploy: &latestV1.KubectlDeploy{},
+						HelmDeploy:    &latestV1.HelmDeploy{Releases: []latestV1.HelmRelease{{Name: "first"}, {Name: "second"}}},
 					},
 				},
 			},
@@ -63,18 +63,18 @@ func TestEmptyState(t *testing.T) {
 		},
 		{
 			description: "multiple artifacts of different types gke cluster 1 deployer ",
-			cfg: latest_v1.Pipeline{
-				Build: latest_v1.BuildConfig{
-					BuildType: latest_v1.BuildType{Cluster: &latest_v1.ClusterDetails{}},
-					Artifacts: []*latest_v1.Artifact{
-						{ImageName: "img1", ArtifactType: latest_v1.ArtifactType{DockerArtifact: &latest_v1.DockerArtifact{}}},
-						{ImageName: "img2", ArtifactType: latest_v1.ArtifactType{DockerArtifact: &latest_v1.DockerArtifact{}}},
-						{ImageName: "img3", ArtifactType: latest_v1.ArtifactType{JibArtifact: &latest_v1.JibArtifact{}}},
+			cfg: latestV1.Pipeline{
+				Build: latestV1.BuildConfig{
+					BuildType: latestV1.BuildType{Cluster: &latestV1.ClusterDetails{}},
+					Artifacts: []*latestV1.Artifact{
+						{ImageName: "img1", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}},
+						{ImageName: "img2", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}},
+						{ImageName: "img3", ArtifactType: latestV1.ArtifactType{JibArtifact: &latestV1.JibArtifact{}}},
 					},
 				},
-				Deploy: latest_v1.DeployConfig{
-					DeployType: latest_v1.DeployType{
-						KustomizeDeploy: &latest_v1.KustomizeDeploy{},
+				Deploy: latestV1.DeployConfig{
+					DeployType: latestV1.DeployType{
+						KustomizeDeploy: &latestV1.KustomizeDeploy{},
 					},
 				},
 			},
@@ -95,11 +95,11 @@ func TestEmptyState(t *testing.T) {
 		},
 		{
 			description: "no deployer, kaniko artifact, GCB build",
-			cfg: latest_v1.Pipeline{
-				Build: latest_v1.BuildConfig{
-					BuildType: latest_v1.BuildType{GoogleCloudBuild: &latest_v1.GoogleCloudBuild{}},
-					Artifacts: []*latest_v1.Artifact{
-						{ImageName: "img1", ArtifactType: latest_v1.ArtifactType{KanikoArtifact: &latest_v1.KanikoArtifact{}}},
+			cfg: latestV1.Pipeline{
+				Build: latestV1.BuildConfig{
+					BuildType: latestV1.BuildType{GoogleCloudBuild: &latestV1.GoogleCloudBuild{}},
+					Artifacts: []*latestV1.Artifact{
+						{ImageName: "img1", ArtifactType: latestV1.ArtifactType{KanikoArtifact: &latestV1.KanikoArtifact{}}},
 					},
 				},
 			},
@@ -115,10 +115,10 @@ func TestEmptyState(t *testing.T) {
 		},
 		{
 			description: "no build, kustomize deployer other cluster",
-			cfg: latest_v1.Pipeline{
-				Deploy: latest_v1.DeployConfig{
-					DeployType: latest_v1.DeployType{
-						KustomizeDeploy: &latest_v1.KustomizeDeploy{},
+			cfg: latestV1.Pipeline{
+				Deploy: latestV1.DeployConfig{
+					DeployType: latestV1.DeployType{
+						KustomizeDeploy: &latestV1.KustomizeDeploy{},
 					},
 				},
 			},
@@ -135,7 +135,7 @@ func TestEmptyState(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			handler = &eventHandler{
-				state: emptyState(mockCfg([]latest_v1.Pipeline{test.cfg}, test.cluster)),
+				state: emptyState(mockCfg([]latestV1.Pipeline{test.cfg}, test.cluster)),
 			}
 			metadata := handler.state.Metadata
 			builders := metadata.Build.Builders
