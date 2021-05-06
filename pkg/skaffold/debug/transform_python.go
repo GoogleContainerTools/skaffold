@@ -96,8 +96,8 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 	var spec = &pythonSpec{debugger: debugpy, port: portAlloc(defaultDebugpyPort)}
 
 	// Check for override protocols.
-	for _, protocol := range overrideProtocols {
-		if protocol == pydevdProtocol {
+	for _, p := range overrideProtocols {
+		if p == pydevdProtocol {
 			spec = &pythonSpec{debugger: pydevd, port: portAlloc(defaultPydevdPort)}
 			break
 		}
@@ -231,13 +231,7 @@ func rewritePythonCommandLine(commandLine []string, spec pythonSpec) []string {
 }
 
 func (spec pythonSpec) asArguments() []string {
-	mode, err := spec.launcherMode()
-	if err != nil {
-		logrus.Fatal(err)
-		return nil
-	}
-
-	args := []string{"/dbg/python/launcher", "--mode", mode}
+	args := []string{"/dbg/python/launcher", "--mode", spec.launcherMode()}
 	if spec.port >= 0 {
 		args = append(args, "--port", strconv.FormatInt(int64(spec.port), 10))
 	}
@@ -248,17 +242,17 @@ func (spec pythonSpec) asArguments() []string {
 	return args
 }
 
-func (spec pythonSpec) launcherMode() (string, error) {
+func (spec pythonSpec) launcherMode() string {
 	switch spec.debugger {
 	case pydevd:
-		return "pydevd", nil
+		return "pydevd"
 	case ptvsd:
-		return "ptvsd", nil
+		return "ptvsd"
 	case debugpy:
-		return "debugpy", nil
-	default:
-		return "", fmt.Errorf("unhandled debugger type: %q", spec.debugger)
+		return "debugpy"
 	}
+	logrus.Fatalf("invalid debugger type: %q", spec.debugger)
+	return ""
 }
 
 func (spec pythonSpec) protocol() string {
