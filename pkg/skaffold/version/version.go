@@ -59,7 +59,8 @@ var Get = func() *Info {
 var SetClient = func(user string) {
 	client = user
 }
-
+UserAgent returns a conformant value for HTTP `User-Agent` headers.  It is of the
+form `skaffold/<version> (<os>/<arch>)`, and the version will be omitted if not available.
 func UserAgent() string {
 	return fmt.Sprintf("skaffold/%s (%s)", version, platform)
 }
