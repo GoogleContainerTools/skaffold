@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 )
 
+// TODO(yuwenma): Print the latest released versions for both v1 and v2.
 // Print the latest version released.
 func main() {
 	logrus.SetLevel(logrus.ErrorLevel)
@@ -35,7 +36,7 @@ func main() {
 	if latestIsReleased {
 		fmt.Println(current)
 	} else {
-		prev := strings.TrimPrefix(schema.SchemaVersions[len(schema.SchemaVersions)-2].APIVersion, "skaffold/")
+		prev := strings.TrimPrefix(schema.SchemaVersionsV1[len(schema.SchemaVersionsV1)-2].APIVersion, "skaffold/")
 		fmt.Println(prev)
 	}
 }

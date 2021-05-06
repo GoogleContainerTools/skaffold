@@ -27,6 +27,7 @@ import (
 
 var OutputType string
 
+// TODO(yuwenma): We currently hide the v3alpha* schemas from users. We should display it once the render v2 is available.
 // List prints to `out` all supported schema versions.
 func List(_ context.Context, out io.Writer) error {
 	return list(out, OutputType)
@@ -64,7 +65,7 @@ func printPlain(out io.Writer) error {
 func versions() []string {
 	var versions []string
 
-	for _, version := range schema.SchemaVersions {
+	for _, version := range schema.SchemaVersionsV1 {
 		versions = append(versions, version.APIVersion)
 	}
 

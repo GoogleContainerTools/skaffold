@@ -17,11 +17,22 @@ limitations under the License.
 package v3alpha1
 
 import (
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v3alpha1 to v3alpha2
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
-	return c, nil
+	var newConfig next.SkaffoldConfig
+	pkgutil.CloneThroughJSON(c, &newConfig)
+	newConfig.APIVersion = next.Version
+
+	err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline)
+	return &newConfig, err
+}
+
+func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	return nil
 }
