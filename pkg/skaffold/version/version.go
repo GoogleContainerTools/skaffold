@@ -61,7 +61,7 @@ var SetClient = func(user string) {
 }
 
 func UserAgent() string {
-	return fmt.Sprintf("skaffold/%s/%s", platform, version)
+	return fmt.Sprintf("skaffold/%s (%s)", version, platform)
 }
 
 // UserAgentWithClient returns a string to be passed as the `--user` flag value
@@ -70,9 +70,9 @@ func UserAgent() string {
 // other clients.
 func UserAgentWithClient() string {
 	if client == "" {
-		return fmt.Sprintf("skaffold/%s/%s", platform, version)
+		return fmt.Sprintf("skaffold/%s (%s)", version, platform)
 	}
-	return fmt.Sprintf("skaffold-%s/%s/%s", client, platform, version)
+	return fmt.Sprintf("skaffold/%s (%s) %s", version, platform, client)
 }
 
 func ParseVersion(version string) (semver.Version, error) {

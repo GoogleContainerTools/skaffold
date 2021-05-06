@@ -63,6 +63,22 @@ func TestUserAgent(t *testing.T) {
 
 		userAgent := UserAgent()
 
-		t.CheckDeepEqual("skaffold/osx/1.0", userAgent)
+		t.CheckDeepEqual("skaffold/1.0 (osx)", userAgent)
+	})
+}
+
+func TestUserAgentWithClient(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&platform, "osx")
+		t.Override(&version, "1.0")
+		t.Override(&client, "vsc")
+
+		userAgent := UserAgentWithClient()
+
+		t.CheckDeepEqual("skaffold/1.0 (osx) vsc", userAgent)
+
+		t.Override(&client, "")
+		userAgent = UserAgentWithClient()
+		t.CheckDeepEqual("skaffold/1.0 (osx)", userAgent)
 	})
 }

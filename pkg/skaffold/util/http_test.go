@@ -34,7 +34,7 @@ func TestDownload_UserAgent(t *testing.T) {
 	defer ts.Close()
 
 	// although we don't have a version number in tests, the user-agent string still
-	// has `skaffold/<GOOS>/<GOARCH>/`
+	// has `skaffold/<GOARCH> (<GOOS>)`
 	testutil.CheckDeepEqual(t, true, strings.HasPrefix(version.UserAgent(), "skaffold/"))
 
 	v, err := Download(ts.URL)

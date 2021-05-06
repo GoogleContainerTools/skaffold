@@ -316,8 +316,12 @@ func isQuietMode() bool {
 }
 
 func updateCheckForReleasedVersionsIfNotDisabled(s string) string {
-	if preReleaseVersion(s) || !update.EnableCheck {
-		logrus.Debug("Skipping update check for pre-release version or flag `--update-check` set to false")
+	if preReleaseVersion(s) {
+		logrus.Debug("Skipping update check for pre-release version")
+		return ""
+	}
+	if !update.EnableCheck {
+		logrus.Debug("Skipping update check for flag `--update-check` set to false")
 		return ""
 	}
 	msg, err := updateCheck(opts.GlobalConfig)
