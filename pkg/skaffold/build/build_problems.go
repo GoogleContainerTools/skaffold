@@ -41,15 +41,7 @@ var (
 	nilSuggestions = func(cfg interface{}) []*proto.Suggestion { return nil }
 	// for testing
 	getConfigForCurrentContext = config.GetConfigForCurrentKubectx
-)
-
-// re is a shortcut around regexp.MustCompile
-func re(s string) *regexp.Regexp {
-	return regexp.MustCompile(s)
-}
-
-func init() {
-	sErrors.AddPhaseProblems(constants.Build, []sErrors.Problem{
+	problems                   = []sErrors.Problem{
 		{
 			Regexp:  re(fmt.Sprintf(".*%s.* denied: .*", PushImageErr)),
 			ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
@@ -96,7 +88,16 @@ func init() {
 				}}
 			},
 		},
-	})
+	}
+)
+
+// re is a shortcut around regexp.MustCompile
+func re(s string) *regexp.Regexp {
+	return regexp.MustCompile(s)
+}
+
+func init() {
+	sErrors.AddPhaseProblems(constants.Build, problems)
 }
 
 func suggestBuildPushAccessDeniedAction(cfg interface{}) []*proto.Suggestion {

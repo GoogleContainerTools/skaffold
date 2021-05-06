@@ -26,6 +26,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
+var (
+	problemCatalog      ProblemCatalog
+	addPhaseProblemLock sync.RWMutex
+)
+
 type descriptionFunc func(error) string
 type suggestionFunc func(cfg interface{}) []*proto.Suggestion
 
@@ -74,25 +79,11 @@ func isProblem(err error) (Problem, bool) {
 	return Problem{}, false
 }
 
-
-type ProblemCatalog struct {
-	allErrors map[constants.Phase][]Problem
-	allErrorsLock sync.RWMutex
-}
-
-func (p ProblemCatalog) AddPhaseProblems(phase constants.Phase, problems []Problem) {
-	p.allErrorsLock.Lock()
-	if ps, ok := p.allErrors[phase]; ok {
-		problems = append(ps, problems...)
+func AddPhaseProblems(phase constants.Phase, problems []Problem) {
+	addPhaseProblemLock.Lock()
+	if problemCatalog.allErrors == nil {
+		problemCatalog = NewProblemCatalog()
 	}
-	p.allErrors[phase] = problems
-	p.allErrorsLock.Unlock()
-}
-
-func (p ProblemCatalog) GetProblemCatalog() ProblemCatalog {
-	return copy(p)
-}
-
-func NewCatalog() ProblemCatalog {
-	return ProblemCatalog{}
+	problemCatalog.AddPhaseProblems(phase, problems)
+	addPhaseProblemLock.Unlock()
 }

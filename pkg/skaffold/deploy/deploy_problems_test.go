@@ -84,6 +84,11 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&sErrors.GetProblemCatalogCopy, func() sErrors.ProblemCatalog {
+				pc := sErrors.NewProblemCatalog()
+				pc.AddPhaseProblems(constants.Deploy, problems)
+				return pc
+			})
 			cfg := mockConfig{kubeContext: test.context}
 			if test.isMinikube {
 				cfg.minikube = test.context
