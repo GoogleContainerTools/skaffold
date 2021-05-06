@@ -831,7 +831,9 @@ kubeContexts: []`,
 }
 
 func TestShouldDisplayUpdateMsg(t *testing.T) {
-	Jan012021, _ := time.Parse(time.RFC3339, "2021-01-01T12:04:05Z")
+	today, _ := time.Parse(time.RFC3339, "2021-01-01T12:04:05Z")
+	todayStr := "2021-01-01T00:00:00Z"
+	yesterday := "2020-12-22T00:00:00Z"
 	tests := []struct {
 		description string
 		cfg         *ContextConfig
@@ -840,13 +842,13 @@ func TestShouldDisplayUpdateMsg(t *testing.T) {
 		{
 			description: "should not display prompt when prompt is displayed in last 24 hours",
 			cfg: &ContextConfig{
-				UpdateCheckConfig: &UpdateConfig{LastPrompted: "2021-01-01T00:00:00Z"},
+				UpdateCheckConfig: &UpdateConfig{LastPrompted: todayStr},
 			},
 		},
 		{
 			description: "should display prompt when last prompted is before 24 hours",
 			cfg: &ContextConfig{
-				UpdateCheckConfig: &UpdateConfig{LastPrompted: "2020-12-22T00:00:00Z"},
+				UpdateCheckConfig: &UpdateConfig{LastPrompted: yesterday},
 			},
 			expected: true,
 		},
@@ -855,7 +857,7 @@ func TestShouldDisplayUpdateMsg(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
 			t.Override(&current, func() time.Time {
-				return Jan012021
+				return today
 			})
 			t.CheckDeepEqual(test.expected, ShouldDisplayUpdateMsg("dummyconfig"))
 		})
