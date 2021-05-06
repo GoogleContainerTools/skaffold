@@ -19,8 +19,6 @@ package instrumentation
 import (
 	"io"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
@@ -43,7 +41,6 @@ var (
 func ShouldDisplayMetricsPrompt(configfile string) bool {
 	cfg, err := getConfig(configfile)
 	if err != nil {
-		logrus.Debugf("could not read global config %s", err)
 		return false
 	}
 	if cfg == nil || cfg.CollectMetrics == nil {

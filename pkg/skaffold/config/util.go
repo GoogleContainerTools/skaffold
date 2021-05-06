@@ -69,6 +69,7 @@ func readConfigFileCached(filename string) (*GlobalConfig, error) {
 		filenameOrDefault, err := ResolveConfigFile(filename)
 		if err != nil {
 			configFileErr = err
+			logrus.Warnf("Could not load global Skaffold defaults. Error resolving config file %q", filenameOrDefault)
 			return
 		}
 		configFile, configFileErr = ReadConfigFileNoCache(filenameOrDefault)
@@ -96,10 +97,12 @@ func ResolveConfigFile(configFile string) (string, error) {
 func ReadConfigFileNoCache(configFile string) (*GlobalConfig, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
+		logrus.Warnf("Could not load global Skaffold defaults. Error encounter while reading file %q", configFile)
 		return nil, fmt.Errorf("reading global config: %w", err)
 	}
 	config := GlobalConfig{}
 	if err := yaml.Unmarshal(contents, &config); err != nil {
+		logrus.Warnf("Could not load global Skaffold defaults. Error encounter while unmarshalling the contents of file %q", configFile)
 		return nil, fmt.Errorf("unmarshalling global skaffold config: %w", err)
 	}
 	return &config, nil

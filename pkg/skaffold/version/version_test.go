@@ -57,28 +57,69 @@ func TestParseVersion(t *testing.T) {
 }
 
 func TestUserAgent(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&platform, "osx")
-		t.Override(&version, "1.0")
+	tests := []struct {
+		description string
+		platform    string
+		version     string
+		expected    string
+	}{
+		{
+			description: "version number specified",
+			platform:    "osx",
+			version:     "1.0",
+			expected:    "skaffold/1.0 (osx)",
+		},
+		{
+			description: "version not number specified",
+			platform:    "osx",
+			expected:    "skaffold (osx)",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			t.Override(&platform, test.platform)
+			t.Override(&version, test.version)
 
-		userAgent := UserAgent()
+			userAgent := UserAgent()
 
-		t.CheckDeepEqual("skaffold/1.0 (osx)", userAgent)
-	})
+			t.CheckDeepEqual(test.expected, userAgent)
+		})
+	}
 }
 
 func TestUserAgentWithClient(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&platform, "osx")
-		t.Override(&version, "1.0")
-		t.Override(&client, "vsc")
+	tests := []struct {
+		description string
+		platform    string
+		version     string
+		user        string
+		expected    string
+	}{
+		{
+			description: "user in allowed list",
+			platform:    "osx",
+			version:     "1.0",
+			user:        "vsc",
+			expected:    "skaffold/1.0 (osx) vsc",
+		},
+		{
+			description: "user not in allowed list",
+			platform:    "osx",
+			version:     "1.0",
+			user:        "vsc/random",
+			expected:    "skaffold/1.0 (osx)",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			t.Override(&platform, test.platform)
+			t.Override(&version, test.version)
+			t.Override(&client, "")
+			SetClient(test.user)
 
-		userAgent := UserAgentWithClient()
+			userAgent := UserAgentWithClient()
 
-		t.CheckDeepEqual("skaffold/1.0 (osx) vsc", userAgent)
-
-		t.Override(&client, "")
-		userAgent = UserAgentWithClient()
-		t.CheckDeepEqual("skaffold/1.0 (osx)", userAgent)
-	})
+			t.CheckDeepEqual(test.expected, userAgent)
+		})
+	}
 }

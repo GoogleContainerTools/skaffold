@@ -23,6 +23,7 @@ import (
 
 	"github.com/blang/semver"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -57,10 +58,13 @@ var Get = func() *Info {
 }
 
 var SetClient = func(user string) {
-	client = user
+	if _, ok := constants.AllowedUsers[user]; ok {
+		client = user
+	}
 }
-UserAgent returns a conformant value for HTTP `User-Agent` headers.  It is of the
-form `skaffold/<version> (<os>/<arch>)`, and the version will be omitted if not available.
+
+// UserAgent returns a conformant value for HTTP `User-Agent` headers.  It is of the
+// form `skaffold/<version> (<os>/<arch>)`, and the version will be omitted if not available.
 func UserAgent() string {
 	if version == "" {
 		// likely running under tests
