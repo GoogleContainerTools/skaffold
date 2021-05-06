@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"context"
@@ -101,7 +101,7 @@ func findKnownImages(ctx context.Context, cli *kubectl.CLI) ([]string, error) {
 }
 
 func (r *SkaffoldRunner) wasBuilt(tag string) bool {
-	for _, built := range r.builds {
+	for _, built := range r.Builds {
 		if built.Tag == tag {
 			return true
 		}

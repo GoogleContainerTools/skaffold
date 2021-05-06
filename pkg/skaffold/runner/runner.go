@@ -18,27 +18,22 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
 const (
-	remoteDigestSource = "remote"
-	noneDigestSource   = "none"
-	tagDigestSource    = "tag"
+	RemoteDigestSource = "remote"
+	NoneDigestSource   = "none"
+	TagDigestSource    = "tag"
 )
+
+// ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
+var ErrorConfigurationChanged = errors.New("configuration changed")
 
 // Runner is responsible for running the skaffold build, test and deploy config.
 type Runner interface {
@@ -57,39 +52,7 @@ type Runner interface {
 	Test(context.Context, io.Writer, []graph.Artifact) error
 }
 
-// SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
-type SkaffoldRunner struct {
-	Builder
-	Pruner
-	Tester
-
-	deployer deploy.Deployer
-	syncer   sync.Syncer
-	monitor  filemon.Monitor
-	listener Listener
-
-	kubectlCLI         *kubectl.CLI
-	cache              cache.Cache
-	changeSet          ChangeSet
-	runCtx             *runcontext.RunContext
-	labeller           *label.DefaultLabeller
-	artifactStore      build.ArtifactStore
-	sourceDependencies graph.SourceDependenciesCache
-	// podSelector is used to determine relevant pods for logging and portForwarding
-	podSelector *kubernetes.ImageList
-
-	devIteration int
-	isLocalImage func(imageName string) (bool, error)
-	hasDeployed  bool
-	intents      *Intents
-}
-
 // for testing
 var (
-	newStatusCheck = status.NewStatusChecker
+	NewStatusCheck = status.NewStatusChecker
 )
-
-// HasDeployed returns true if this runner has deployed something.
-func (r *SkaffoldRunner) HasDeployed() bool {
-	return r.hasDeployed
-}

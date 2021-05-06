@@ -17,12 +17,13 @@ package v2
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 )
 
 type SkaffoldRunner struct {
 	runner.Builder
 	runner.Pruner
-	runner.Tester
+	test.Tester
 }
 
 func (r *SkaffoldRunner) HasDeployed() bool { return true }

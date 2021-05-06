@@ -14,13 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
-	"context"
 	"io"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 )
 
-func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer) error {
-	return r.deployer.Cleanup(ctx, out)
+func (r *SkaffoldRunner) createForwarder(out io.Writer) *portforward.ForwarderManager {
+	if !r.runCtx.PortForward() {
+		return nil
+	}
+
+	return portforward.NewForwarderManager(out,
+		r.kubectlCLI,
+		r.podSelector,
+		r.labeller.RunIDSelector(),
+		r.runCtx.Mode(),
+		r.runCtx.Opts.PortForward,
+		r.runCtx.PortForwardResources())
 }

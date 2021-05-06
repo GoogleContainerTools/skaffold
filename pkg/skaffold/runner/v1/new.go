@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"context"
@@ -39,6 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
@@ -67,7 +68,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	var builder build.Builder
 	builder, err = build.NewBuilderMux(runCtx, store, func(p latest_v1.Pipeline) (build.PipelineBuilder, error) {
-		return getBuilder(runCtx, store, sourceDependencies, p)
+		return runner.GetBuilder(runCtx, store, sourceDependencies, p)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("creating builder: %w", err)
@@ -106,42 +107,29 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
 
-	builder, tester, deployer = WithTimings(builder, tester, deployer, runCtx.CacheArtifacts())
+	builder, tester, deployer = runner.WithTimings(builder, tester, deployer, runCtx.CacheArtifacts())
 	if runCtx.Notification() {
-		deployer = WithNotification(deployer)
+		deployer = runner.WithNotification(deployer)
 	}
 
 	monitor := filemon.NewMonitor()
 	intents, intentChan := setupIntents(runCtx)
-	trigger, err := trigger.NewTrigger(runCtx, intents.IsAnyAutoEnabled)
+	rtrigger, err := trigger.NewTrigger(runCtx, intents.IsAnyAutoEnabled)
 	if err != nil {
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
 	podSelectors := kubernetes.NewImageList()
+
+	rbuilder := runner.NewBuilder(builder, tagger, artifactCache, podSelectors, runCtx)
 	return &SkaffoldRunner{
-		Builder: Builder{
-			builder:     builder,
-			tagger:      tagger,
-			cache:       artifactCache,
-			podSelector: podSelectors,
-			runCtx:      runCtx,
-		},
-		Pruner: Pruner{
-			builder,
-		},
-		Tester: Tester{
-			tester: tester,
-		},
-		deployer: deployer,
-		syncer:   syncer,
-		monitor:  monitor,
-		listener: &SkaffoldListener{
-			Monitor:                 monitor,
-			Trigger:                 trigger,
-			intentChan:              intentChan,
-			sourceDependenciesCache: sourceDependencies,
-		},
+		Builder:            *rbuilder,
+		Pruner:             runner.Pruner{Builder: builder},
+		Tester:             tester,
+		deployer:           deployer,
+		syncer:             syncer,
+		monitor:            monitor,
+		listener:           runner.NewSkaffoldListener(monitor, rtrigger, sourceDependencies, intentChan),
 		artifactStore:      store,
 		sourceDependencies: sourceDependencies,
 		kubectlCLI:         kubectlCLI,
@@ -154,13 +142,13 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}, nil
 }
 
-func setupIntents(runCtx *runcontext.RunContext) (*Intents, chan bool) {
-	intents := newIntents(runCtx.AutoBuild(), runCtx.AutoSync(), runCtx.AutoDeploy())
+func setupIntents(runCtx *runcontext.RunContext) (*runner.Intents, chan bool) {
+	intents := runner.NewIntents(runCtx.AutoBuild(), runCtx.AutoSync(), runCtx.AutoDeploy())
 
 	intentChan := make(chan bool, 1)
-	setupTrigger("build", intents.setBuild, intents.setAutoBuild, intents.getAutoBuild, server.SetBuildCallback, server.SetAutoBuildCallback, intentChan)
-	setupTrigger("sync", intents.setSync, intents.setAutoSync, intents.getAutoSync, server.SetSyncCallback, server.SetAutoSyncCallback, intentChan)
-	setupTrigger("deploy", intents.setDeploy, intents.setAutoDeploy, intents.getAutoDeploy, server.SetDeployCallback, server.SetAutoDeployCallback, intentChan)
+	setupTrigger("build", intents.SetBuild, intents.SetAutoBuild, intents.GetAutoBuild, server.SetBuildCallback, server.SetAutoBuildCallback, intentChan)
+	setupTrigger("sync", intents.SetSync, intents.SetAutoSync, intents.GetAutoSync, server.SetSyncCallback, server.SetAutoSyncCallback, intentChan)
+	setupTrigger("deploy", intents.SetDeploy, intents.SetAutoDeploy, intents.GetAutoDeploy, server.SetDeployCallback, server.SetAutoDeployCallback, intentChan)
 
 	return intents, intentChan
 }

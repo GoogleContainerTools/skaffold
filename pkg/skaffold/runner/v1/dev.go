@@ -14,11 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package v1
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -34,14 +33,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
-
-// ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
-var ErrorConfigurationChanged = errors.New("configuration changed")
 
 var (
 	// For testing
@@ -52,18 +49,18 @@ var (
 
 func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logger.LogAggregator, forwarderManager portforward.Forwarder) error {
 	// never queue intents from user, even if they're not used
-	defer r.intents.reset()
+	defer r.intents.Reset()
 
-	if r.changeSet.needsReload {
-		return ErrorConfigurationChanged
+	if r.changeSet.NeedsReload() {
+		return runner.ErrorConfigurationChanged
 	}
 
 	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
 	logrus.Tracef("dev intents: build %t, sync %t, deploy %t\n", buildIntent, syncIntent, deployIntent)
-	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
-	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
-	needsTest := len(r.changeSet.needsRetest) > 0
-	needsDeploy := deployIntent && r.changeSet.needsRedeploy
+	needsSync := syncIntent && len(r.changeSet.NeedsResync()) > 0
+	needsBuild := buildIntent && len(r.changeSet.NeedsRebuild()) > 0
+	needsTest := len(r.changeSet.NeedsRetest()) > 0
+	needsDeploy := deployIntent && r.changeSet.NeedsRedeploy()
 	if !needsSync && !needsBuild && !needsTest && !needsDeploy {
 		return nil
 	}
@@ -79,12 +76,12 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 	meterUpdated := false
 	if needsSync {
 		defer func() {
-			r.changeSet.resetSync()
-			r.intents.resetSync()
+			r.changeSet.ResetSync()
+			r.intents.ResetSync()
 		}()
 		instrumentation.AddDevIteration("sync")
 		meterUpdated = true
-		for _, s := range r.changeSet.needsResync {
+		for _, s := range r.changeSet.NeedsResync() {
 			fileCount := len(s.Copy) + len(s.Delete)
 			color.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
 			fileSyncInProgress(fileCount, s.Image)
@@ -105,8 +102,8 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 	if needsBuild {
 		event.ResetStateOnBuild()
 		defer func() {
-			r.changeSet.resetBuild()
-			r.intents.resetBuild()
+			r.changeSet.ResetBuild()
+			r.intents.ResetBuild()
 		}()
 		if !meterUpdated {
 			instrumentation.AddDevIteration("build")
@@ -114,14 +111,14 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 		}
 
 		var err error
-		bRes, err = r.Build(ctx, out, r.changeSet.needsRebuild)
+		bRes, err = r.Build(ctx, out, r.changeSet.NeedsRebuild())
 		if err != nil {
 			logrus.Warnln("Skipping test and deploy due to build error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
 			eventV2.TaskFailed(constants.DevLoop, err)
 			return nil
 		}
-		r.changeSet.needsRedeploy = true
+		r.changeSet.Redeploy()
 		needsDeploy = deployIntent
 	}
 
@@ -129,13 +126,13 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 	if (len(bRes) > 0 || needsTest) && !r.runCtx.SkipTests() {
 		event.ResetStateOnTest()
 		defer func() {
-			r.changeSet.resetTest()
+			r.changeSet.ResetTest()
 		}()
 		for _, a := range bRes {
-			delete(r.changeSet.needsRetest, a.ImageName)
+			delete(r.changeSet.NeedsRetest(), a.ImageName)
 		}
-		for _, a := range r.builds {
-			if r.changeSet.needsRetest[a.ImageName] {
+		for _, a := range r.Builds {
+			if r.changeSet.NeedsRetest()[a.ImageName] {
 				bRes = append(bRes, a)
 			}
 		}
@@ -152,15 +149,15 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 	if needsDeploy {
 		event.ResetStateOnDeploy()
 		defer func() {
-			r.changeSet.resetDeploy()
-			r.intents.resetDeploy()
+			r.changeSet.ResetDeploy()
+			r.intents.ResetDeploy()
 		}()
 
 		forwarderManager.Stop()
 		if !meterUpdated {
 			instrumentation.AddDevIteration("deploy")
 		}
-		if err := r.Deploy(ctx, out, r.builds); err != nil {
+		if err := r.Deploy(ctx, out, r.Builds); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, constants.Deploy, err)
 			eventV2.TaskFailed(constants.DevLoop, err)
@@ -204,7 +201,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 					return r.sourceDependencies.TransitiveArtifactDependencies(ctx, artifact)
 				},
 				func(e filemon.Events) {
-					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx, len(g[artifact.ImageName]))
+					s, err := sync.NewItem(ctx, artifact, e, r.Builds, r.runCtx, len(g[artifact.ImageName]))
 					switch {
 					case err != nil:
 						logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
@@ -226,7 +223,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	for i := range artifacts {
 		artifact := artifacts[i]
 		if err := r.monitor.Register(
-			func() ([]string, error) { return r.tester.TestDependencies(artifact) },
+			func() ([]string, error) { return r.Tester.TestDependencies(artifact) },
 			func(filemon.Events) { r.changeSet.AddRetest(artifact) },
 		); err != nil {
 			event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)
@@ -238,7 +235,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch deployment configuration
 	if err := r.monitor.Register(
 		r.deployer.Dependencies,
-		func(filemon.Events) { r.changeSet.needsRedeploy = true },
+		func(filemon.Events) { r.changeSet.Redeploy() },
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_DEPLOY_DEPS, err)
 		eventV2.TaskFailed(constants.DevLoop, err)
@@ -248,7 +245,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch Skaffold configuration
 	if err := r.monitor.Register(
 		func() ([]string, error) { return []string{r.runCtx.ConfigurationFile()}, nil },
-		func(filemon.Events) { r.changeSet.needsReload = true },
+		func(filemon.Events) { r.changeSet.Reload() },
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_CONFIG_DEP, err)
 		eventV2.TaskFailed(constants.DevLoop, err)
@@ -290,7 +287,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	logger.SetSince(time.Now())
 
 	// First deploy
-	if err := r.Deploy(ctx, out, r.builds); err != nil {
+	if err := r.Deploy(ctx, out, r.Builds); err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, constants.Deploy, err)
 		eventV2.TaskFailed(constants.DevLoop, err)
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
