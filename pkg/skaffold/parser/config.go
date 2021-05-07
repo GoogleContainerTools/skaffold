@@ -169,8 +169,9 @@ func processEachConfig(config *latest_v1.SkaffoldConfig, cfgOpts configOpts, opt
 	if err := defaults.Set(config); err != nil {
 		return nil, sErrors.ConfigSetDefaultValuesErr(config.Metadata.Name, cfgOpts.file, err)
 	}
-	// convert relative file paths to absolute for all configs that are not invoked explicitly. This avoids maintaining multiple root directory information since the dependency skaffold configs would have their own root directory.
-	if cfgOpts.isDependency || opts.MakePathsAbsolute {
+	// if `opts.MakePathsAbsolute` is not set, convert relative file paths to absolute for all configs that are not invoked explicitly. This avoids maintaining multiple root directory information since the dependency skaffold configs would have their own root directory.
+	// if `opts.MakePathsAbsolute` is set, use that as condition to decide on making file paths absolute for all configs or none at all. This is used when the parsed config is marshalled out (for commands like `skaffold diagnose` or `skaffold inspect`), we want to retain the original relative paths in the output files.
+	if (opts.MakePathsAbsolute != nil && *opts.MakePathsAbsolute) || (opts.MakePathsAbsolute == nil && cfgOpts.isDependency) {
 		if err := tags.MakeFilePathsAbsolute(config, filepath.Dir(cfgOpts.file)); err != nil {
 			return nil, sErrors.ConfigSetAbsFilePathsErr(config.Metadata.Name, cfgOpts.file, err)
 		}
@@ -217,7 +218,7 @@ func filterActiveProfiles(d latest_v1.ConfigDependency, profiles []string) []str
 
 // processEachDependency parses a config dependency with the calculated set of activated profiles.
 func processEachDependency(d latest_v1.ConfigDependency, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
-	path := d.Path
+	path := makeConfigPathAbsolute(d.Path, cfgOpts.file)
 
 	if d.GitRepo != nil {
 		cachePath, err := cacheRepo(*d.GitRepo, opts, r)
@@ -312,4 +313,17 @@ func unmatchedProfiles(activatedProfiles map[string]string, allProfiles []string
 		}
 	}
 	return unmatched
+}
+
+func makeConfigPathAbsolute(dependentConfigPath string, currentConfigPath string) string {
+	if dependentConfigPath == "" || filepath.IsAbs(dependentConfigPath) || util.IsURL(dependentConfigPath) {
+		return dependentConfigPath
+	}
+	// if current config is either a URL or STDIN, base path should be CWD
+	if util.IsURL(currentConfigPath) || currentConfigPath == "-" {
+		cwd, _ := util.RealWorkDir()
+		return filepath.Join(cwd, dependentConfigPath)
+	}
+	// dependent config path is relative to the current config path
+	return filepath.Join(filepath.Dir(currentConfigPath), dependentConfigPath)
 }
