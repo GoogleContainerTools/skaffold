@@ -107,6 +107,12 @@ var (
 
 	// Timeout is the amount of time an on cluster build is allowed to run.
 	Timeout = "TIMEOUT"
+
+	AllowedUsers = map[string]struct{}{
+		"vsc":      {},
+		"intellij": {},
+		"gcloud":   {},
+	}
 )
 
 var ImageRef = struct {

@@ -21,7 +21,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v3alpha1"
+const Version string = "skaffold/v3alpha2"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {

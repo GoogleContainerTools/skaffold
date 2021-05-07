@@ -595,7 +595,7 @@ func TestShouldDisplayPrompt(t *testing.T) {
 				t, _ := time.Parse(time.RFC3339, "2019-01-30T12:04:05Z")
 				return t
 			})
-			t.CheckDeepEqual(test.expected, ShouldDisplayPrompt("dummyconfig"))
+			t.CheckDeepEqual(test.expected, ShouldDisplaySurveyPrompt("dummyconfig"))
 		})
 	}
 }
@@ -761,6 +761,105 @@ kubeContexts: []`,
 			// update time in expected cfg.
 			test.expectedCfg.Global.Survey.LastPrompted = testTime.Format(time.RFC3339)
 			t.CheckDeepEqual(test.expectedCfg, actualConfig)
+		})
+	}
+}
+
+func TestUpdateMsgDisplayed(t *testing.T) {
+	testTimeStr := "2021-01-01T00:00:00Z"
+	tests := []struct {
+		description string
+		cfg         string
+		expectedCfg *GlobalConfig
+	}{
+		{
+			description: "update global context when context is empty",
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					UpdateCheckConfig: &UpdateConfig{LastPrompted: testTimeStr},
+				},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "update global context when update config is not nil",
+			cfg: `
+global:
+  update-config:
+    last-prompted: "some date"
+kubeContexts: []`,
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					UpdateCheckConfig: &UpdateConfig{LastPrompted: testTimeStr},
+				},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "update global context when update config last taken is in past",
+			cfg: `
+global:
+  update-config:
+    last-taken: "some date in past"
+kubeContexts: []`,
+			expectedCfg: &GlobalConfig{
+				Global: &ContextConfig{
+					UpdateCheckConfig: &UpdateConfig{
+						LastPrompted: "2021-01-01T00:00:00Z"},
+				},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			configFile := t.TempFile("config", []byte(test.cfg))
+			t.Override(&ReadConfigFile, ReadConfigFileNoCache)
+			t.Override(&current, func() time.Time {
+				testTime, _ := time.Parse(time.RFC3339, testTimeStr)
+				return testTime
+			})
+
+			// update the cfg
+			err := UpdateMsgDisplayed(configFile)
+			t.CheckNoError(err)
+
+			cfg, cfgErr := ReadConfigFileNoCache(configFile)
+			t.CheckErrorAndDeepEqual(false, cfgErr, test.expectedCfg, cfg)
+		})
+	}
+}
+
+func TestShouldDisplayUpdateMsg(t *testing.T) {
+	today, _ := time.Parse(time.RFC3339, "2021-01-01T12:04:05Z")
+	todayStr := "2021-01-01T00:00:00Z"
+	yesterday := "2020-12-22T00:00:00Z"
+	tests := []struct {
+		description string
+		cfg         *ContextConfig
+		expected    bool
+	}{
+		{
+			description: "should not display prompt when prompt is displayed in last 24 hours",
+			cfg: &ContextConfig{
+				UpdateCheckConfig: &UpdateConfig{LastPrompted: todayStr},
+			},
+		},
+		{
+			description: "should display prompt when last prompted is before 24 hours",
+			cfg: &ContextConfig{
+				UpdateCheckConfig: &UpdateConfig{LastPrompted: yesterday},
+			},
+			expected: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
+			t.Override(&current, func() time.Time {
+				return today
+			})
+			t.CheckDeepEqual(test.expected, ShouldDisplayUpdateMsg("dummyconfig"))
 		})
 	}
 }

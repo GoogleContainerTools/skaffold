@@ -97,7 +97,7 @@ func GetConfigSet(opts config.SkaffoldOptions) (SkaffoldConfigSet, error) {
 
 // getConfigs recursively parses all configs and their dependencies in the specified `skaffold.yaml`
 func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
-	parsed, err := schema.ParseConfigAndUpgrade(cfgOpts.file, latestV1.Version)
+	parsed, err := schema.ParseConfigAndUpgrade(cfgOpts.file)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, sErrors.MainConfigFileNotFoundErr(cfgOpts.file, err)

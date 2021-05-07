@@ -69,6 +69,7 @@ func readConfigFileCached(filename string) (*GlobalConfig, error) {
 		filenameOrDefault, err := ResolveConfigFile(filename)
 		if err != nil {
 			configFileErr = err
+			logrus.Warnf("Could not load global Skaffold defaults. Error resolving config file %q", filenameOrDefault)
 			return
 		}
 		configFile, configFileErr = ReadConfigFileNoCache(filenameOrDefault)
@@ -96,10 +97,12 @@ func ResolveConfigFile(configFile string) (string, error) {
 func ReadConfigFileNoCache(configFile string) (*GlobalConfig, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
+		logrus.Warnf("Could not load global Skaffold defaults. Error encounter while reading file %q", configFile)
 		return nil, fmt.Errorf("reading global config: %w", err)
 	}
 	config := GlobalConfig{}
 	if err := yaml.Unmarshal(contents, &config); err != nil {
+		logrus.Warnf("Could not load global Skaffold defaults. Error encounter while unmarshalling the contents of file %q", configFile)
 		return nil, fmt.Errorf("unmarshalling global skaffold config: %w", err)
 	}
 	return &config, nil
@@ -304,7 +307,7 @@ func IsUpdateCheckEnabled(configfile string) bool {
 	return cfg == nil || cfg.UpdateCheck == nil || *cfg.UpdateCheck
 }
 
-func ShouldDisplayPrompt(configfile string) bool {
+func ShouldDisplaySurveyPrompt(configfile string) bool {
 	cfg, disabled := isSurveyPromptDisabled(configfile)
 	return !disabled && !recentlyPromptedOrTaken(cfg)
 }
@@ -322,6 +325,42 @@ func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
 		return false
 	}
 	return lessThan(cfg.Survey.LastTaken, 90*24*time.Hour) || lessThan(cfg.Survey.LastPrompted, 10*24*time.Hour)
+}
+
+func ShouldDisplayUpdateMsg(configfile string) bool {
+	cfg, err := GetConfigForCurrentKubectx(configfile)
+	if err != nil {
+		return true
+	}
+	if cfg == nil || cfg.UpdateCheckConfig == nil {
+		return true
+	}
+	return !lessThan(cfg.UpdateCheckConfig.LastPrompted, 24*time.Hour)
+}
+
+// UpdateMsgDisplayed updates the `last-prompted` config for `update-config` in
+// the skaffold config
+func UpdateMsgDisplayed(configFile string) error {
+	// Today's date
+	today := current().Format(time.RFC3339)
+
+	configFile, err := ResolveConfigFile(configFile)
+	if err != nil {
+		return err
+	}
+	fullConfig, err := ReadConfigFile(configFile)
+	if err != nil {
+		return err
+	}
+	if fullConfig.Global == nil {
+		fullConfig.Global = &ContextConfig{}
+	}
+	if fullConfig.Global.UpdateCheckConfig == nil {
+		fullConfig.Global.UpdateCheckConfig = &UpdateConfig{}
+	}
+	fullConfig.Global.UpdateCheckConfig.LastPrompted = today
+	err = WriteFullConfig(configFile, fullConfig)
+	return err
 }
 
 func lessThan(date string, duration time.Duration) bool {

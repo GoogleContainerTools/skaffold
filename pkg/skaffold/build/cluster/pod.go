@@ -122,14 +122,7 @@ func (b *Builder) kanikoPodSpec(artifact *latestV1.KanikoArtifact, tag string) (
 }
 
 func (b *Builder) env(artifact *latestV1.KanikoArtifact, httpProxy, httpsProxy string) []v1.EnvVar {
-	pullSecretPath := strings.Join(
-		[]string{b.ClusterDetails.PullSecretMountPath, b.ClusterDetails.PullSecretPath},
-		"/", // linux filepath separator.
-	)
 	env := []v1.EnvVar{{
-		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-		Value: pullSecretPath,
-	}, {
 		// This should be same https://github.com/GoogleContainerTools/kaniko/blob/77cfb912f3483c204bfd09e1ada44fd200b15a78/pkg/executor/push.go#L49
 		Name:  "UPSTREAM_CLIENT_TYPE",
 		Value: fmt.Sprintf("UpstreamClient(skaffold-%s)", version.Get().Version),
@@ -155,6 +148,18 @@ func (b *Builder) env(artifact *latestV1.KanikoArtifact, httpProxy, httpsProxy s
 		})
 	}
 
+	// if cluster.PullSecretName  is non-empty populate secret path and use as GOOGLE_APPLICATION_CREDENTIALS
+	// by default it is not empty, so need to
+	if b.ClusterDetails.PullSecretName != "" {
+		pullSecretPath := strings.Join(
+			[]string{b.ClusterDetails.PullSecretMountPath, b.ClusterDetails.PullSecretPath},
+			"/", // linux filepath separator.
+		)
+		env = append(env, v1.EnvVar{
+			Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+			Value: pullSecretPath,
+		})
+	}
 	return env
 }
 

@@ -77,7 +77,7 @@ func TestParseSamples(t *testing.T) {
 
 func checkSkaffoldConfig(t *testutil.T, yaml []byte) {
 	configFile := t.TempFile("skaffold.yaml", yaml)
-	parsed, err := ParseConfigAndUpgrade(configFile, latestV1.Version)
+	parsed, err := ParseConfigAndUpgrade(configFile)
 	t.CheckNoError(err)
 	var cfgs []*latestV1.SkaffoldConfig
 	for _, p := range parsed {

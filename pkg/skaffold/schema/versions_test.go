@@ -29,8 +29,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta14"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta8"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v3alpha1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -402,7 +409,7 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Write("skaffold.yaml", format(t, test.config, test.apiVersion))
 
-			cfgs, err := ParseConfigAndUpgrade(tmpDir.Path("skaffold.yaml"), latestV1.Version)
+			cfgs, err := ParseConfigAndUpgrade(tmpDir.Path("skaffold.yaml"))
 			for _, cfg := range cfgs {
 				err := defaults.Set(cfg.(*latestV1.SkaffoldConfig))
 				defaults.SetDefaultDeployer(cfg.(*latestV1.SkaffoldConfig))
@@ -668,40 +675,38 @@ func withLogsPrefix(prefix string) func(*latestV1.SkaffoldConfig) {
 }
 
 func TestUpgradeToNextVersion(t *testing.T) {
-	for i, schemaVersion := range SchemaVersions[0 : len(SchemaVersions)-2] {
-		from := schemaVersion
-		to := SchemaVersions[i+1]
-		description := fmt.Sprintf("Upgrade from %s to %s", from.APIVersion, to.APIVersion)
+	for _, versions := range []Versions{SchemaVersionsV1, SchemaVersionsV2} {
+		for i, schemaVersion := range versions[0 : len(versions)-2] {
+			from := schemaVersion
+			to := versions[i+1]
+			description := fmt.Sprintf("Upgrade from %s to %s", from.APIVersion, to.APIVersion)
 
-		testutil.Run(t, description, func(t *testutil.T) {
-			factory, _ := SchemaVersions.Find(from.APIVersion)
+			testutil.Run(t, description, func(t *testutil.T) {
+				factory, _ := versions.Find(from.APIVersion)
 
-			newer, err := factory().Upgrade()
+				newer, err := factory().Upgrade()
 
-			t.CheckNoError(err)
-			t.CheckDeepEqual(to.APIVersion, newer.GetVersion())
-		})
+				t.CheckNoError(err)
+				t.CheckDeepEqual(to.APIVersion, newer.GetVersion())
+			})
+		}
 	}
 }
 
-func TestCantUpgradeFromLatestVersion(t *testing.T) {
-	factory, present := SchemaVersions.Find(latestV1.Version)
+func TestCantUpgradeFromLatestV1Version(t *testing.T) {
+	factory, present := SchemaVersionsV1.Find(latestV1.Version)
 	testutil.CheckDeepEqual(t, true, present)
 
 	_, err := factory().Upgrade()
 	testutil.CheckError(t, true, err)
 }
 
-func TestParseConfigAndUpgradeToUnknownVersion(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		t.NewTempDir().
-			Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latestV1.Version, minimalConfig)).
-			Chdir()
+func TestCantUpgradeFromLatestV2Version(t *testing.T) {
+	factory, present := SchemaVersionsV2.Find(latestV2.Version)
+	testutil.CheckDeepEqual(t, true, present)
 
-		_, err := ParseConfigAndUpgrade("skaffold.yaml", "unknown")
-
-		t.CheckErrorContains(`unknown api version: "unknown"`, err)
-	})
+	_, err := factory().Upgrade()
+	testutil.CheckError(t, true, err)
 }
 
 func TestParseConfigAndUpgradeToOlderVersion(t *testing.T) {
@@ -710,8 +715,122 @@ func TestParseConfigAndUpgradeToOlderVersion(t *testing.T) {
 			Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latestV1.Version, minimalConfig)).
 			Chdir()
 
-		_, err := ParseConfigAndUpgrade("skaffold.yaml", "skaffold/v1alpha1")
-
+		cfgs, err := ParseConfig("skaffold.yaml")
+		t.CheckNoError(err)
+		_, err = UpgradeTo(cfgs, "skaffold/v1alpha1")
 		t.CheckErrorContains(`is more recent than target version "skaffold/v1alpha1": upgrade Skaffold`, err)
 	})
+}
+
+func TestGetLatestFromCompatibilityCheck(t *testing.T) {
+	tests := []struct {
+		description string
+		apiVersions []util.VersionedConfig
+		expected    string
+		shouldErr   bool
+		err         error
+	}{
+		{
+			apiVersions: []util.VersionedConfig{
+				&v1alpha1.SkaffoldConfig{APIVersion: v1alpha1.Version},
+				&v1beta1.SkaffoldConfig{APIVersion: v1beta1.Version},
+				&v2alpha1.SkaffoldConfig{APIVersion: v2alpha1.Version},
+				&v2beta1.SkaffoldConfig{APIVersion: v2beta1.Version},
+			},
+			description: "valid compatibility check for all v1 schemas releases",
+			expected:    latestV1.Version,
+			shouldErr:   false,
+		},
+		{
+
+			apiVersions: []util.VersionedConfig{
+				&v3alpha1.SkaffoldConfig{APIVersion: v3alpha1.Version},
+			},
+			description: "valid compatibility check for all v2 schemas releases",
+			expected:    latestV2.Version,
+			shouldErr:   false,
+		},
+		{
+			apiVersions: []util.VersionedConfig{
+				&v1alpha1.SkaffoldConfig{APIVersion: v1alpha1.Version},
+				&v3alpha1.SkaffoldConfig{APIVersion: v3alpha1.Version},
+			},
+			description: "invalid compatibility among v1 and v2 versions",
+			shouldErr:   true,
+			err: fmt.Errorf("detected incompatible versions:%v are incompatible with %v",
+				[]string{latestV1.Version, v1alpha1.Version}, []string{v3alpha1.Version}),
+		},
+		{
+			apiVersions: []util.VersionedConfig{
+				&v1alpha1.SkaffoldConfig{APIVersion: "vXalphaY"},
+			},
+			description: "invalid api version",
+			shouldErr:   true,
+			err:         fmt.Errorf("unknown apiVersion vXalpaY"),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			upToDateVersion, err := getLatestFromCompatibilityCheck(test.apiVersions)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, upToDateVersion)
+		})
+	}
+}
+
+func TestIsCompatibleWith(t *testing.T) {
+	tests := []struct {
+		description string
+		apiVersions []util.VersionedConfig
+		toVersion   string
+		shouldErr   bool
+		err         error
+	}{
+		{
+			apiVersions: []util.VersionedConfig{
+				&v1alpha1.SkaffoldConfig{APIVersion: v1alpha1.Version},
+				&v1beta1.SkaffoldConfig{APIVersion: v1beta1.Version},
+				&v2alpha1.SkaffoldConfig{APIVersion: v2alpha1.Version},
+				&v2beta1.SkaffoldConfig{APIVersion: v2beta1.Version},
+			},
+			description: "v1 schemas are compatible to a v1 schema",
+			toVersion:   v2beta14.Version,
+			shouldErr:   false,
+		},
+		{
+			apiVersions: []util.VersionedConfig{
+				&v3alpha1.SkaffoldConfig{APIVersion: v3alpha1.Version},
+			},
+			description: "v2 schemas are compatible to a v2 schema",
+			toVersion:   latestV2.Version,
+			shouldErr:   false,
+		},
+		{
+			apiVersions: []util.VersionedConfig{
+				&v1alpha1.SkaffoldConfig{APIVersion: v1alpha1.Version},
+				&v1beta1.SkaffoldConfig{APIVersion: v1beta1.Version},
+			},
+			description: "v1 schemas cannot upgrade to v2.",
+			toVersion:   latestV2.Version,
+			shouldErr:   true,
+			err: fmt.Errorf("the following versions are incompatible with target version %v. upgrade aborted",
+				[]string{v1alpha1.Version, v1beta1.Version}),
+		},
+		{
+			apiVersions: []util.VersionedConfig{
+				&v3alpha1.SkaffoldConfig{APIVersion: v3alpha1.Version},
+				&latestV2.SkaffoldConfig{APIVersion: latestV2.Version},
+			},
+			description: "v2 schemas are incompatible with v1.",
+			toVersion:   latestV1.Version,
+			shouldErr:   true,
+			err: fmt.Errorf("the following versions are incompatible with target version %v. upgrade aborted",
+				[]string{v3alpha1.Version, latestV2.Version}),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			_, err := IsCompatibleWith(test.apiVersions, test.toVersion)
+			t.CheckError(test.shouldErr, err)
+		})
+	}
 }

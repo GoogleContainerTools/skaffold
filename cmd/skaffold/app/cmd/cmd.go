@@ -49,6 +49,9 @@ var (
 	interactive       bool
 	timestamps        bool
 	shutdownAPIServer func() error
+
+	// for testing
+	updateCheck = update.CheckVersion
 )
 
 // Annotation for commands that should allow post execution housekeeping messages like updates and surveys
@@ -59,7 +62,7 @@ const (
 func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	updateMsg := make(chan string, 1)
 	surveyPrompt := make(chan bool, 1)
-	metricsPrompt := make(chan bool, 1)
+	var metricsPrompt bool
 
 	rootCmd := &cobra.Command{
 		Use: "skaffold",
@@ -100,37 +103,29 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 
 			// Print version
 			versionInfo := version.Get()
+			version.SetClient(opts.User)
 			logrus.Infof("Skaffold %+v", versionInfo)
 			if !isHouseKeepingMessagesAllowed(cmd) {
 				logrus.Debugf("Disable housekeeping messages for command explicitly")
 				return nil
 			}
-			switch {
-			case preReleaseVersion(versionInfo.Version) && !update.EnableCheck:
-				logrus.Debugf("Update check, survey prompt and telemetry disabled for pre release version")
-			case !interactive:
-				logrus.Debugf("Update check, survey prompt and telemetry disabled in non-interactive mode")
-			case quietFlag:
-				logrus.Debugf("Update check, survey prompt and telemetry disabled in quiet mode")
-			case analyze:
-				logrus.Debugf("Update check, survey prompt and telemetry disabled disabled when running `init --analyze`")
-			default:
-				go func() {
-					msg, err := update.CheckVersion(opts.GlobalConfig)
-					if err != nil {
-						logrus.Infof("update check failed: %s", err)
-					} else if msg != "" {
-						updateMsg <- msg
-					}
-					surveyPrompt <- config.ShouldDisplayPrompt(opts.GlobalConfig)
-					metricsPrompt <- instrumentation.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
-				}()
-			}
+			// Always perform all checks.
+			go func() {
+				updateMsg <- updateCheckForReleasedVersionsIfNotDisabled(versionInfo.Version)
+				surveyPrompt <- config.ShouldDisplaySurveyPrompt(opts.GlobalConfig)
+			}()
+			metricsPrompt = instrumentation.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			if isQuietMode() && !isHouseKeepingMessagesAllowed(cmd) {
+				return
+			}
 			select {
 			case msg := <-updateMsg:
+				if err := config.UpdateMsgDisplayed(opts.GlobalConfig); err != nil {
+					logrus.Debugf("could not update the 'last-prompted' config for 'update-config' section due to %s", err)
+				}
 				fmt.Fprintf(cmd.OutOrStderr(), "%s\n", msg)
 			default:
 			}
@@ -144,14 +139,10 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 				}
 			default:
 			}
-			select {
-			case showMetricsPrompt := <-metricsPrompt:
-				if showMetricsPrompt {
-					if err := instrumentation.DisplayMetricsPrompt(opts.GlobalConfig, cmd.OutOrStdout()); err != nil {
-						fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
-					}
+			if metricsPrompt {
+				if err := instrumentation.DisplayMetricsPrompt(opts.GlobalConfig, cmd.OutOrStdout()); err != nil {
+					fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 				}
-			default:
 			}
 		},
 	}
@@ -309,4 +300,36 @@ func preReleaseVersion(s string) bool {
 		return true
 	}
 	return false
+}
+
+func isQuietMode() bool {
+	switch {
+	case !interactive:
+		logrus.Debug("Update check prompt, survey prompt and telemetry prompt disabled in non-interactive mode")
+		return true
+	case quietFlag:
+		logrus.Debug("Update check prompt, survey prompt and telemetry prompt disabled in quiet mode")
+		return true
+	case analyze:
+		logrus.Debug("Update check prompt, survey prompt and telemetry prompt disabled when running `init --analyze`")
+		return true
+	default:
+		return false
+	}
+}
+
+func updateCheckForReleasedVersionsIfNotDisabled(s string) string {
+	if preReleaseVersion(s) {
+		logrus.Debug("Skipping update check for pre-release version")
+		return ""
+	}
+	if !update.EnableCheck {
+		logrus.Debug("Skipping update check for flag `--update-check` set to false")
+		return ""
+	}
+	msg, err := updateCheck(opts.GlobalConfig)
+	if err != nil {
+		logrus.Infof("update check failed: %s", err)
+	}
+	return msg
 }

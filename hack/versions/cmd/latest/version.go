@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
 )
 
+// TODO(yuwenma): Print the latest versions for both v1 and v2.
 // Print the latest version released.
 func main() {
 	logrus.SetLevel(logrus.ErrorLevel)

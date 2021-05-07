@@ -67,8 +67,14 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		return nil
 	}
 
-	versionedCfgs, err := schema.ParseConfigAndUpgrade(configFile, toVersion)
+	versionedCfgs, err := schema.ParseConfig(configFile)
 	if err != nil {
+		return err
+	}
+	if ok, err := schema.IsCompatibleWith(versionedCfgs, toVersion); !ok {
+		return err
+	}
+	if versionedCfgs, err = schema.UpgradeTo(versionedCfgs, toVersion); err != nil {
 		return err
 	}
 
