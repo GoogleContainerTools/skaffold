@@ -93,17 +93,18 @@ type sameErr struct {
 	err  error
 }
 
+// TODO(yuwenma): Generate v2 schemas.
 func generateSchemas(root string, dryRun bool) (bool, error) {
 	var results [](chan sameErr)
-	for range schema.SchemaVersions {
+	for range schema.AllVersions {
 		results = append(results, make(chan sameErr, 1))
 	}
 
 	var wg sync.WaitGroup
-	for i, version := range schema.SchemaVersions {
+	for i, version := range schema.SchemaVersionsV1 {
 		wg.Add(1)
 		go func(i int, version schema.Version) {
-			same, err := generateSchema(root, dryRun, version)
+			same, err := generateV1Schema(root, dryRun, version)
 			results[i] <- sameErr{
 				same: same,
 				err:  err,
@@ -114,7 +115,7 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 	wg.Wait()
 
 	same := true
-	for i := range schema.SchemaVersions {
+	for i := range schema.SchemaVersionsV1 {
 		result := <-results[i]
 		if result.err != nil {
 			return false, result.err
@@ -126,12 +127,12 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 	return same, nil
 }
 
-func generateSchema(root string, dryRun bool, version schema.Version) (bool, error) {
+func generateV1Schema(root string, dryRun bool, version schema.Version) (bool, error) {
 	apiVersion := strings.TrimPrefix(version.APIVersion, "skaffold/")
 
 	folder := apiVersion
 	strict := false
-	if version.APIVersion == schema.SchemaVersions[len(schema.SchemaVersions)-1].APIVersion {
+	if version.APIVersion == schema.SchemaVersionsV1[len(schema.SchemaVersionsV1)-1].APIVersion {
 		folder = "latest/v1"
 		strict = true
 	}

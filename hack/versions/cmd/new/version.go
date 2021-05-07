@@ -34,11 +34,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
+// TODO(yuwenma): Upgrade the version to include v3alpha* once it's available.
 // Before: prev -> current (latest)
 // After:  prev -> current -> new (latest)
 func main() {
 	logrus.SetLevel(logrus.DebugLevel)
-	prev := strings.TrimPrefix(schema.SchemaVersions[len(schema.SchemaVersions)-2].APIVersion, "skaffold/")
+	prev := strings.TrimPrefix(schema.SchemaVersionsV1[len(schema.SchemaVersionsV1)-2].APIVersion, "skaffold/")
 	logrus.Infof("Previous Skaffold version: %s", prev)
 
 	current, latestIsReleased := hackschema.GetLatestVersion()
