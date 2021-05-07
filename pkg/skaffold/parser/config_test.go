@@ -1207,7 +1207,7 @@ requires:
 		},
 	}
 	for _, test := range tests {
-		testutil.Run(t, fmt.Sprintf(test.description), func(t *testutil.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir()
 			for i, d := range test.documents {
 				var cfgs []string
@@ -1219,7 +1219,6 @@ requires:
 				tmpDir.Write(d.path, strings.Join(cfgs, "\n---\n"))
 			}
 			tmpDir.Chdir()
-			// test output with all three values for `config.SkaffoldOptions.MakePathsAbsolute`
 			var expected []*latest_v1.SkaffoldConfig
 			if test.expected != nil {
 				wd, _ := util.RealWorkDir()
