@@ -24,6 +24,7 @@ import (
 	"github.com/blang/semver"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 var version, gitCommit, buildDate, client string
