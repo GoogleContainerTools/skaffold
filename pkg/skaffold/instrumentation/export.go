@@ -44,14 +44,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
-var (
-	allowedUsers = map[string]struct{}{
-		"vsc":      {},
-		"intellij": {},
-		"gcloud":   {},
-	}
-)
-
 func ExportMetrics(exitCode int) error {
 	if !shouldExportMetrics || meter.Command == "" {
 		return nil
@@ -175,7 +167,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 	sharedLabels := []attribute.KeyValue{
 		randLabel,
 	}
-	if _, ok := allowedUsers[meter.User]; ok {
+	if _, ok := constants.AllowedUsers[meter.User]; ok {
 		sharedLabels = append(sharedLabels, attribute.String("user", meter.User))
 	}
 	labels = append(labels, sharedLabels...)

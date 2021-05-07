@@ -23,10 +23,11 @@ import (
 
 	"github.com/blang/semver"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
-var version, gitCommit, buildDate string
+var version, gitCommit, buildDate, client string
 var platform = fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 
 type Info struct {
@@ -38,6 +39,7 @@ type Info struct {
 	GoVersion     string
 	Compiler      string
 	Platform      string
+	User          string
 }
 
 // Get returns the version and buildtime information about the binary.
@@ -55,8 +57,33 @@ var Get = func() *Info {
 	}
 }
 
+var SetClient = func(user string) {
+	if _, ok := constants.AllowedUsers[user]; ok {
+		client = user
+	}
+}
+
+// UserAgent returns a conformant value for HTTP `User-Agent` headers.  It is of the
+// form `skaffold/<version> (<os>/<arch>)`, and the version will be omitted if not available.
 func UserAgent() string {
-	return fmt.Sprintf("skaffold/%s/%s", platform, version)
+	if version == "" {
+		// likely running under tests
+		return fmt.Sprintf("skaffold (%s)", platform)
+	}
+	return fmt.Sprintf("skaffold/%s (%s)", version, platform)
+}
+
+// UserAgentWithClient returns a conformant value for HTTP `User-Agent` headers that includes
+// the client value provided with the `--user` flag.  If there is no client value, then the value will be equivalent
+// to `UserAgent()`.  Otherwise it is of the form `skaffold/<version> (<os>/<arch>) <client>`, and the version
+// will be omitted if not available.
+// Use UserAgentWithClient method to record requests from skaffold CLI users vs
+// other clients.
+func UserAgentWithClient() string {
+	if client == "" {
+		return UserAgent()
+	}
+	return fmt.Sprintf("%s %s", UserAgent(), client)
 }
 
 func ParseVersion(version string) (semver.Version, error) {

@@ -595,7 +595,7 @@ func TestShouldDisplayPrompt(t *testing.T) {
 				t, _ := time.Parse(time.RFC3339, "2019-01-30T12:04:05Z")
 				return t
 			})
-			t.CheckDeepEqual(test.expected, ShouldDisplayPrompt("dummyconfig"))
+			t.CheckDeepEqual(test.expected, ShouldDisplaySurveyPrompt("dummyconfig"))
 		})
 	}
 }
