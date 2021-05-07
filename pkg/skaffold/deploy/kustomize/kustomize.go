@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
@@ -91,7 +91,7 @@ type secretGenerator struct {
 
 // Deployer deploys workflows using kustomize CLI.
 type Deployer struct {
-	*latest_v1.KustomizeDeploy
+	*latestV1.KustomizeDeploy
 
 	kubectl             kubectl.CLI
 	insecureRegistries  map[string]bool
@@ -100,7 +100,7 @@ type Deployer struct {
 	useKubectlKustomize bool
 }
 
-func NewDeployer(cfg kubectl.Config, labels map[string]string, d *latest_v1.KustomizeDeploy) (*Deployer, error) {
+func NewDeployer(cfg kubectl.Config, labels map[string]string, d *latestV1.KustomizeDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error

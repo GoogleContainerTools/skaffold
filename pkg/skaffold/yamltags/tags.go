@@ -76,7 +76,7 @@ func GetYamlTag(value interface{}) string {
 }
 
 // GetYamlKeys returns the yaml key for each non-nested field of the given non-nil config parameter
-// For example if config is `latest_v1.DeployType{HelmDeploy: &HelmDeploy{...}, KustomizeDeploy: &KustomizeDeploy{...}}`
+// For example if config is `latestV1.DeployType{HelmDeploy: &HelmDeploy{...}, KustomizeDeploy: &KustomizeDeploy{...}}`
 // then it returns `["helm", "kustomize"]`
 func GetYamlKeys(config interface{}) []string {
 	var tags []string

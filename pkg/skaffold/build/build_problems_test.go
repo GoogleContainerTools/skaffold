@@ -181,6 +181,11 @@ func TestBuildProblems(t *testing.T) {
 			t.Override(&getConfigForCurrentContext, func(string) (*config.ContextConfig, error) {
 				return &test.context, nil
 			})
+			t.Override(&sErrors.GetProblemCatalogCopy, func() sErrors.ProblemCatalog {
+				pc := sErrors.NewProblemCatalog()
+				pc.AddPhaseProblems(constants.Build, problems)
+				return pc
+			})
 			cfg := mockConfig{optRepo: test.optRepo}
 			actual := sErrors.ShowAIError(&cfg, test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())

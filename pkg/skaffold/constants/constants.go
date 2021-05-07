@@ -19,7 +19,7 @@ package constants
 import (
 	"github.com/sirupsen/logrus"
 
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 const (
@@ -77,8 +77,8 @@ const (
 type Phase string
 
 var (
-	Pod     latest_v1.ResourceType = "pod"
-	Service latest_v1.ResourceType = "service"
+	Pod     latestV1.ResourceType = "pod"
+	Service latestV1.ResourceType = "service"
 
 	DefaultLocalConcurrency = 1
 )
@@ -107,6 +107,12 @@ var (
 
 	// Timeout is the amount of time an on cluster build is allowed to run.
 	Timeout = "TIMEOUT"
+
+	AllowedUsers = map[string]struct{}{
+		"vsc":      {},
+		"intellij": {},
+		"gcloud":   {},
+	}
 )
 
 var ImageRef = struct {

@@ -27,7 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 const bufferedLinesPerArtifact = 10000
@@ -134,9 +134,9 @@ func newLogAggregator(out io.Writer, capacity int, concurrency int) logAggregato
 
 // ArtifactStore stores the results of each artifact build.
 type ArtifactStore interface {
-	Record(a *latest_v1.Artifact, tag string)
+	Record(a *latestV1.Artifact, tag string)
 	GetImageTag(imageName string) (tag string, found bool)
-	GetArtifacts(s []*latest_v1.Artifact) ([]graph.Artifact, error)
+	GetArtifacts(s []*latestV1.Artifact) ([]graph.Artifact, error)
 }
 
 func NewArtifactStore() ArtifactStore {
@@ -147,7 +147,7 @@ type artifactStoreImpl struct {
 	m *sync.Map
 }
 
-func (ba *artifactStoreImpl) Record(a *latest_v1.Artifact, tag string) {
+func (ba *artifactStoreImpl) Record(a *latestV1.Artifact, tag string) {
 	ba.m.Store(a.ImageName, tag)
 }
 
@@ -163,7 +163,7 @@ func (ba *artifactStoreImpl) GetImageTag(imageName string) (string, bool) {
 	return t, true
 }
 
-func (ba *artifactStoreImpl) GetArtifacts(s []*latest_v1.Artifact) ([]graph.Artifact, error) {
+func (ba *artifactStoreImpl) GetArtifacts(s []*latestV1.Artifact) ([]graph.Artifact, error) {
 	var builds []graph.Artifact
 	for _, a := range s {
 		t, found := ba.GetImageTag(a.ImageName)

@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -69,7 +69,7 @@ func (r *Builder) GetBuilds() []graph.Artifact {
 }
 
 // Build builds a list of artifacts.
-func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest_v1.Artifact) ([]graph.Artifact, error) {
+func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
 	eventV2.TaskInProgress(constants.Build)
 
 	// Use tags directly from the Kubernetes manifests.
@@ -102,7 +102,7 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest_
 	default:
 	}
 
-	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest_v1.Artifact) ([]graph.Artifact, error) {
+	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
 		if len(artifacts) == 0 {
 			return nil, nil
 		}
@@ -136,7 +136,7 @@ func (r *Builder) HasBuilt() bool {
 	return r.hasBuilt
 }
 
-func artifactsWithTags(tags tag.ImageTags, artifacts []*latest_v1.Artifact) []graph.Artifact {
+func artifactsWithTags(tags tag.ImageTags, artifacts []*latestV1.Artifact) []graph.Artifact {
 	var bRes []graph.Artifact
 	for _, artifact := range artifacts {
 		bRes = append(bRes, graph.Artifact{
@@ -166,7 +166,7 @@ func (r *Builder) ApplyDefaultRepo(tag string) (string, error) {
 }
 
 // imageTags generates tags for a list of artifacts
-func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latest_v1.Artifact) (tag.ImageTags, error) {
+func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latestV1.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
 
@@ -225,7 +225,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 	return imageTags, nil
 }
 
-func CheckWorkspaces(artifacts []*latest_v1.Artifact) error {
+func CheckWorkspaces(artifacts []*latestV1.Artifact) error {
 	for _, a := range artifacts {
 		if a.Workspace != "" {
 			if info, err := os.Stat(a.Workspace); err != nil {

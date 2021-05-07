@@ -24,16 +24,16 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 type stubDeploymentInitializer struct {
-	config   latest_v1.DeployConfig
-	profiles []latest_v1.Profile
+	config   latestV1.DeployConfig
+	profiles []latestV1.Profile
 }
 
-func (s stubDeploymentInitializer) DeployConfig() (latest_v1.DeployConfig, []latest_v1.Profile) {
+func (s stubDeploymentInitializer) DeployConfig() (latestV1.DeployConfig, []latestV1.Profile) {
 	return s.config, s.profiles
 }
 
@@ -61,8 +61,8 @@ func (s stubBuildInitializer) PrintAnalysis(io.Writer) error {
 	panic("no sir")
 }
 
-func (s stubBuildInitializer) BuildConfig() (latest_v1.BuildConfig, []*latest_v1.PortForwardResource) {
-	return latest_v1.BuildConfig{
+func (s stubBuildInitializer) BuildConfig() (latestV1.BuildConfig, []*latestV1.PortForwardResource) {
+	return latestV1.BuildConfig{
 		Artifacts: build.Artifacts(s.artifactInfos),
 	}, nil
 }
@@ -74,25 +74,25 @@ func (s stubBuildInitializer) GenerateManifests(io.Writer, bool) (map[build.Gene
 func TestGenerateSkaffoldConfig(t *testing.T) {
 	tests := []struct {
 		name                   string
-		expectedSkaffoldConfig *latest_v1.SkaffoldConfig
-		deployConfig           latest_v1.DeployConfig
-		profiles               []latest_v1.Profile
+		expectedSkaffoldConfig *latestV1.SkaffoldConfig
+		deployConfig           latestV1.DeployConfig
+		profiles               []latestV1.Profile
 		builderConfigInfos     []build.ArtifactInfo
 		getWd                  func() (string, error)
 	}{
 		{
 			name:               "empty",
 			builderConfigInfos: []build.ArtifactInfo{},
-			deployConfig:       latest_v1.DeployConfig{},
+			deployConfig:       latestV1.DeployConfig{},
 			getWd: func() (s string, err error) {
 				return filepath.Join("rootDir", "testConfig"), nil
 			},
-			expectedSkaffoldConfig: &latest_v1.SkaffoldConfig{
-				APIVersion: latest_v1.Version,
+			expectedSkaffoldConfig: &latestV1.SkaffoldConfig{
+				APIVersion: latestV1.Version,
 				Kind:       "Config",
-				Metadata:   latest_v1.Metadata{Name: "testconfig"},
-				Pipeline: latest_v1.Pipeline{
-					Deploy: latest_v1.DeployConfig{},
+				Metadata:   latestV1.Metadata{Name: "testconfig"},
+				Pipeline: latestV1.Pipeline{
+					Deploy: latestV1.DeployConfig{},
 				},
 			},
 		},
@@ -106,41 +106,41 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 					ImageName: "image1",
 				},
 			},
-			deployConfig: latest_v1.DeployConfig{},
+			deployConfig: latestV1.DeployConfig{},
 			getWd: func() (s string, err error) {
 				return string(filepath.Separator), nil
 			},
-			expectedSkaffoldConfig: &latest_v1.SkaffoldConfig{
-				APIVersion: latest_v1.Version,
+			expectedSkaffoldConfig: &latestV1.SkaffoldConfig{
+				APIVersion: latestV1.Version,
 				Kind:       "Config",
-				Metadata:   latest_v1.Metadata{},
-				Pipeline: latest_v1.Pipeline{
-					Build: latest_v1.BuildConfig{
-						Artifacts: []*latest_v1.Artifact{
+				Metadata:   latestV1.Metadata{},
+				Pipeline: latestV1.Pipeline{
+					Build: latestV1.BuildConfig{
+						Artifacts: []*latestV1.Artifact{
 							{
 								ImageName: "image1",
 								Workspace: "testDir",
-								ArtifactType: latest_v1.ArtifactType{
-									DockerArtifact: &latest_v1.DockerArtifact{DockerfilePath: "Dockerfile"},
+								ArtifactType: latestV1.ArtifactType{
+									DockerArtifact: &latestV1.DockerArtifact{DockerfilePath: "Dockerfile"},
 								},
 							},
 						},
 					},
-					Deploy: latest_v1.DeployConfig{},
+					Deploy: latestV1.DeployConfig{},
 				},
 			},
 		},
 		{
 			name:               "error working dir",
 			builderConfigInfos: []build.ArtifactInfo{},
-			deployConfig:       latest_v1.DeployConfig{},
+			deployConfig:       latestV1.DeployConfig{},
 			getWd: func() (s string, err error) {
 				return "", errors.New("testError")
 			},
-			expectedSkaffoldConfig: &latest_v1.SkaffoldConfig{
-				APIVersion: latest_v1.Version,
+			expectedSkaffoldConfig: &latestV1.SkaffoldConfig{
+				APIVersion: latestV1.Version,
 				Kind:       "Config",
-				Metadata:   latest_v1.Metadata{},
+				Metadata:   latestV1.Metadata{},
 			},
 		},
 	}

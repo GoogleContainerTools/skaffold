@@ -29,6 +29,19 @@ import (
 
 var (
 	clusterConnectionErr = regexp.MustCompile("(?i).*unable to connect.*: Get (.*)")
+	problems             = []sErrors.Problem{
+		{
+			Regexp:  clusterConnectionErr,
+			ErrCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
+			Description: func(err error) string {
+				if match := clusterConnectionErr.FindStringSubmatch(err.Error()); len(match) >= 2 {
+					return fmt.Sprintf("Deploy Failed. Could not connect to cluster due to %s", match[1])
+				}
+				return "Deploy Failed. Could not connect to cluster."
+			},
+			Suggestion: suggestDeployFailedAction,
+		},
+	}
 )
 
 func suggestDeployFailedAction(cfg interface{}) []*proto.Suggestion {
@@ -48,17 +61,5 @@ func suggestDeployFailedAction(cfg interface{}) []*proto.Suggestion {
 }
 
 func init() {
-	sErrors.AddPhaseProblems(constants.Deploy, []sErrors.Problem{
-		{
-			Regexp:  clusterConnectionErr,
-			ErrCode: proto.StatusCode_DEPLOY_CLUSTER_CONNECTION_ERR,
-			Description: func(err error) string {
-				if match := clusterConnectionErr.FindStringSubmatch(err.Error()); len(match) >= 2 {
-					return fmt.Sprintf("Deploy Failed. Could not connect to cluster due to %s", match[1])
-				}
-				return "Deploy Failed. Could not connect to cluster."
-			},
-			Suggestion: suggestDeployFailedAction,
-		},
-	})
+	sErrors.AddPhaseProblems(constants.Deploy, problems)
 }

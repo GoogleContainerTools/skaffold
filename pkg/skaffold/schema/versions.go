@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -28,7 +29,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
@@ -72,14 +74,23 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta7"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta8"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta9"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v3alpha1"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+)
+
+var (
+	AllVersions = append(SchemaVersionsV1, SchemaVersionsV2...)
+	V1Pattern   = regexp.MustCompile(`skaffold/v[12]((alpha|beta)\d+)?`)
+	V2Pattern   = regexp.MustCompile(`skaffold/v3((alpha|beta)\d+)?`)
 )
 
 type APIVersion struct {
 	Version string `yaml:"apiVersion"`
 }
 
-var SchemaVersions = Versions{
+// SchemaVersionsV1 refers to all the supported API Schemas for skaffold v1 executables.e.g. skaffold 1.13. The API
+// schema versions are in the range of v1alpha*, v1beta*, v2alpha* and v2beta*.
+var SchemaVersionsV1 = Versions{
 	{v1alpha1.Version, v1alpha1.NewSkaffoldConfig},
 	{v1alpha2.Version, v1alpha2.NewSkaffoldConfig},
 	{v1alpha3.Version, v1alpha3.NewSkaffoldConfig},
@@ -122,7 +133,14 @@ var SchemaVersions = Versions{
 	{v2beta13.Version, v2beta13.NewSkaffoldConfig},
 	{v2beta14.Version, v2beta14.NewSkaffoldConfig},
 	{v2beta15.Version, v2beta15.NewSkaffoldConfig},
-	{latest_v1.Version, latest_v1.NewSkaffoldConfig},
+	{latestV1.Version, latestV1.NewSkaffoldConfig},
+}
+
+// SchemaVersionsV2 refers to all the supported API Schemas for skaffold v2 executables. The API schema versions are
+// in the range of v3alpha*.
+var SchemaVersionsV2 = Versions{
+	{v3alpha1.Version, v1alpha1.NewSkaffoldConfig},
+	{latestV2.Version, latestV2.NewSkaffoldConfig},
 }
 
 type Version struct {
@@ -173,51 +191,16 @@ func ParseConfig(filename string) ([]util.VersionedConfig, error) {
 }
 
 // ParseConfigAndUpgrade reads a configuration file and upgrades it to a given version.
-func ParseConfigAndUpgrade(filename, toVersion string) ([]util.VersionedConfig, error) {
+func ParseConfigAndUpgrade(filename string) ([]util.VersionedConfig, error) {
 	configs, err := ParseConfig(filename)
 	if err != nil {
 		return nil, err
 	}
-
-	// Check that the target version exists
-	if _, present := SchemaVersions.Find(toVersion); !present {
-		return nil, fmt.Errorf("unknown api version: %q", toVersion)
+	toVersion, err := getLatestFromCompatibilityCheck(configs)
+	if err != nil {
+		return nil, err
 	}
-	upgradeNeeded := false
-	for _, cfg := range configs {
-		// Check that the config's version is not newer than the target version
-		currentVersion, err := apiversion.Parse(cfg.GetVersion())
-		if err != nil {
-			return nil, err
-		}
-		targetVersion, err := apiversion.Parse(toVersion)
-		if err != nil {
-			return nil, err
-		}
-
-		if currentVersion.NE(targetVersion) {
-			upgradeNeeded = true
-		}
-		if currentVersion.GT(targetVersion) {
-			return nil, fmt.Errorf("config version %q is more recent than target version %q: upgrade Skaffold", cfg.GetVersion(), toVersion)
-		}
-	}
-	if !upgradeNeeded {
-		return configs, nil
-	}
-	logrus.Debugf("config version out of date: upgrading to latest %q", toVersion)
-
-	var upgraded []util.VersionedConfig
-	for _, cfg := range configs {
-		for cfg.GetVersion() != toVersion {
-			cfg, err = cfg.Upgrade()
-			if err != nil {
-				return nil, fmt.Errorf("transforming skaffold config: %w", err)
-			}
-		}
-		upgraded = append(upgraded, cfg)
-	}
-	return upgraded, nil
+	return UpgradeTo(configs, toVersion)
 }
 
 // configFactoryFromAPIVersion checks that all configs in the input stream have the same API version, and returns a function to create a config with that API version.
@@ -240,7 +223,7 @@ func configFactoryFromAPIVersion(buf []byte) ([]func() util.VersionedConfig, err
 		if err != nil {
 			return nil, fmt.Errorf("parsing api version: %w", err)
 		}
-		factory, present := SchemaVersions.Find(v.Version)
+		factory, present := AllVersions.Find(v.Version)
 		if !present {
 			return nil, fmt.Errorf("unknown api version: %q", v.Version)
 		}
@@ -300,4 +283,95 @@ func parseConfig(buf []byte, factories []func() util.VersionedConfig) ([]util.Ve
 		cfgs = append(cfgs, cfg)
 	}
 	return cfgs, nil
+}
+
+// getLatestFromCompatibilityCheck makes sure the schema versions in SchemaVersionsV1 and SchemaVersionsV2 are not used
+// together and returns the latest version where this VersionedConfig slice belongs to.
+func getLatestFromCompatibilityCheck(cfgs []util.VersionedConfig) (string, error) {
+	var v1Track, v2Track []string
+	for _, cfg := range cfgs {
+		curVersion := cfg.GetVersion()
+		if matched := V1Pattern.MatchString(curVersion); matched {
+			v1Track = append(v1Track, curVersion)
+		} else if matched := V2Pattern.MatchString(curVersion); matched {
+			v2Track = append(v2Track, curVersion)
+		} else {
+			return "", fmt.Errorf("unknown apiVersion %v", curVersion)
+		}
+	}
+
+	if len(v1Track) > 0 && len(v2Track) > 0 {
+		return "", fmt.Errorf("detected incompatible versions:%v are incompatible with %v", v1Track, v2Track)
+	}
+	if len(v1Track) > 0 {
+		return latestV1.Version, nil
+	}
+	if len(v2Track) > 0 {
+		return latestV2.Version, nil
+	}
+	return "", fmt.Errorf("unable to find a valid API Schema version")
+}
+
+// IsCompatibleWith checks if the cfgs versions can be upgraded to toVersion.
+func IsCompatibleWith(cfgs []util.VersionedConfig, toVersion string) (bool, error) {
+	var pattern *regexp.Regexp
+	if matched := V1Pattern.MatchString(toVersion); matched {
+		pattern = V1Pattern
+	} else if matched := V2Pattern.MatchString(toVersion); matched {
+		pattern = V2Pattern
+	} else {
+		return false, fmt.Errorf("target version %v is invalid", toVersion)
+	}
+	var badVersions []string
+	for _, cfg := range cfgs {
+		curVersion := cfg.GetVersion()
+		if matched := pattern.MatchString(curVersion); !matched {
+			badVersions = append(badVersions, curVersion)
+		}
+	}
+	if len(badVersions) > 0 {
+		return false, fmt.Errorf(
+			"the following versions are incompatible with target version %v. upgrade aborted",
+			badVersions)
+	}
+	return true, nil
+}
+
+// UpgradeTo upgrades the given configs to toVersion.
+func UpgradeTo(configs []util.VersionedConfig, toVersion string) ([]util.VersionedConfig, error) {
+	upgradeNeeded := false
+	for _, cfg := range configs {
+		// Check that the config's version is not newer than the target version
+		currentVersion, err := apiversion.Parse(cfg.GetVersion())
+		if err != nil {
+			return nil, err
+		}
+		targetVersion, err := apiversion.Parse(toVersion)
+		if err != nil {
+			return nil, err
+		}
+
+		if currentVersion.NE(targetVersion) {
+			upgradeNeeded = true
+		}
+		if currentVersion.GT(targetVersion) {
+			return nil, fmt.Errorf("config version %q is more recent than target version %q: upgrade Skaffold", cfg.GetVersion(), toVersion)
+		}
+	}
+	if !upgradeNeeded {
+		return configs, nil
+	}
+	logrus.Debugf("config version out of date: upgrading to latest %q", toVersion)
+	var err error
+	var upgraded []util.VersionedConfig
+	for _, cfg := range configs {
+		for cfg.GetVersion() != toVersion {
+			cfg, err = cfg.Upgrade()
+			if err != nil {
+				return nil, fmt.Errorf("transforming skaffold config: %w", err)
+			}
+		}
+		upgraded = append(upgraded, cfg)
+	}
+	return upgraded, nil
 }

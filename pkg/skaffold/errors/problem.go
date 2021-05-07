@@ -27,8 +27,8 @@ import (
 )
 
 var (
-	allErrors     = map[constants.Phase][]Problem{}
-	allErrorsLock sync.RWMutex
+	problemCatalog      ProblemCatalog
+	addPhaseProblemLock sync.RWMutex
 )
 
 type descriptionFunc func(error) string
@@ -80,10 +80,10 @@ func isProblem(err error) (Problem, bool) {
 }
 
 func AddPhaseProblems(phase constants.Phase, problems []Problem) {
-	allErrorsLock.Lock()
-	if ps, ok := allErrors[phase]; ok {
-		problems = append(ps, problems...)
+	addPhaseProblemLock.Lock()
+	if problemCatalog.allErrors == nil {
+		problemCatalog = NewProblemCatalog()
 	}
-	allErrors[phase] = problems
-	allErrorsLock.Unlock()
+	problemCatalog.AddPhaseProblems(phase, problems)
+	addPhaseProblemLock.Unlock()
 }

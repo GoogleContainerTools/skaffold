@@ -28,7 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -36,7 +36,7 @@ import (
 func TestDockerCLIBuild(t *testing.T) {
 	tests := []struct {
 		description string
-		localBuild  latest_v1.LocalBuild
+		localBuild  latestV1.LocalBuild
 		mode        config.RunMode
 		extraEnv    []string
 		expectedEnv []string
@@ -45,37 +45,37 @@ func TestDockerCLIBuild(t *testing.T) {
 	}{
 		{
 			description: "docker build",
-			localBuild:  latest_v1.LocalBuild{},
+			localBuild:  latestV1.LocalBuild{},
 			mode:        config.RunModes.Dev,
 			expectedEnv: []string{"KEY=VALUE"},
 		},
 		{
 			description: "extra env",
-			localBuild:  latest_v1.LocalBuild{},
+			localBuild:  latestV1.LocalBuild{},
 			extraEnv:    []string{"OTHER=VALUE"},
 			expectedEnv: []string{"KEY=VALUE", "OTHER=VALUE"},
 		},
 		{
 			description: "buildkit",
-			localBuild:  latest_v1.LocalBuild{UseBuildkit: true},
+			localBuild:  latestV1.LocalBuild{UseBuildkit: true},
 			expectedEnv: []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description: "buildkit and extra env",
-			localBuild:  latest_v1.LocalBuild{UseBuildkit: true},
+			localBuild:  latestV1.LocalBuild{UseBuildkit: true},
 			extraEnv:    []string{"OTHER=VALUE"},
 			expectedEnv: []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description: "env var collisions",
-			localBuild:  latest_v1.LocalBuild{UseBuildkit: true},
+			localBuild:  latestV1.LocalBuild{UseBuildkit: true},
 			extraEnv:    []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
 			// env var collisions are handled by cmd.Run(). Last one wins.
 			expectedEnv: []string{"KEY=VALUE", "KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0", "DOCKER_BUILDKIT=1"},
 		},
 		{
 			description: "docker build internal error",
-			localBuild:  latest_v1.LocalBuild{UseDockerCLI: true},
+			localBuild:  latestV1.LocalBuild{UseDockerCLI: true},
 			err:         errdefs.Cancelled(fmt.Errorf("cancelled")),
 			expectedErr: newBuildError(errdefs.Cancelled(fmt.Errorf("cancelled"))),
 		},
@@ -108,10 +108,10 @@ func TestDockerCLIBuild(t *testing.T) {
 
 			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv(test.extraEnv), test.localBuild.UseDockerCLI, test.localBuild.UseBuildkit, false, false, test.mode, nil, mockArtifactResolver{make(map[string]string)}, nil)
 
-			artifact := &latest_v1.Artifact{
+			artifact := &latestV1.Artifact{
 				Workspace: ".",
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 					},
 				},

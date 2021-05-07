@@ -26,7 +26,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -61,7 +61,7 @@ func NewGitCommit(prefix, variant string, ignoreChanges bool) (*GitCommit, error
 }
 
 // GenerateTag generates a tag from the git commit.
-func (t *GitCommit) GenerateTag(image latest_v1.Artifact) (string, error) {
+func (t *GitCommit) GenerateTag(image latestV1.Artifact) (string, error) {
 	ref, err := t.runGitFn(image.Workspace)
 	if err != nil {
 		return "", fmt.Errorf("unable to find git commit: %w", err)

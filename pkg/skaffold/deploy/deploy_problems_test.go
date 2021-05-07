@@ -23,7 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -84,6 +84,11 @@ func TestSuggestDeployFailedAction(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&sErrors.GetProblemCatalogCopy, func() sErrors.ProblemCatalog {
+				pc := sErrors.NewProblemCatalog()
+				pc.AddPhaseProblems(constants.Deploy, problems)
+				return pc
+			})
 			cfg := mockConfig{kubeContext: test.context}
 			if test.isMinikube {
 				cfg.minikube = test.context
@@ -102,7 +107,7 @@ type mockConfig struct {
 }
 
 func (m mockConfig) MinikubeProfile() string                { return m.minikube }
-func (m mockConfig) GetPipelines() []latest_v1.Pipeline     { return []latest_v1.Pipeline{} }
+func (m mockConfig) GetPipelines() []latestV1.Pipeline      { return []latestV1.Pipeline{} }
 func (m mockConfig) GetWorkingDir() string                  { return "" }
 func (m mockConfig) GlobalConfig() string                   { return "" }
 func (m mockConfig) ConfigurationFile() string              { return "" }

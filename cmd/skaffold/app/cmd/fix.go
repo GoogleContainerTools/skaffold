@@ -26,7 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
@@ -41,7 +41,7 @@ func NewCmdFix() *cobra.Command {
 		WithCommonFlags().
 		WithFlags([]*Flag{
 			{Value: &overwrite, Name: "overwrite", DefValue: false, Usage: "Overwrite original config with fixed config"},
-			{Value: &toVersion, Name: "version", DefValue: latest_v1.Version, Usage: "Target schema version to upgrade to"},
+			{Value: &toVersion, Name: "version", DefValue: latestV1.Version, Usage: "Target schema version to upgrade to"},
 		}).
 		NoArgs(doFix)
 }
@@ -67,17 +67,23 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		return nil
 	}
 
-	versionedCfgs, err := schema.ParseConfigAndUpgrade(configFile, toVersion)
+	versionedCfgs, err := schema.ParseConfig(configFile)
 	if err != nil {
+		return err
+	}
+	if ok, err := schema.IsCompatibleWith(versionedCfgs, toVersion); !ok {
+		return err
+	}
+	if versionedCfgs, err = schema.UpgradeTo(versionedCfgs, toVersion); err != nil {
 		return err
 	}
 
 	// TODO(dgageot): We should be able run validations on any schema version
 	// but that's not the case. They can only run on the latest version for now.
-	if toVersion == latest_v1.Version {
-		var cfgs []*latest_v1.SkaffoldConfig
+	if toVersion == latestV1.Version {
+		var cfgs []*latestV1.SkaffoldConfig
 		for _, cfg := range versionedCfgs {
-			cfgs = append(cfgs, cfg.(*latest_v1.SkaffoldConfig))
+			cfgs = append(cfgs, cfg.(*latestV1.SkaffoldConfig))
 		}
 		if err := validation.Process(cfgs); err != nil {
 			return fmt.Errorf("validating upgraded config: %w", err)

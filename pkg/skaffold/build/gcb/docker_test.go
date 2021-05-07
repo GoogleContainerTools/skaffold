@@ -23,7 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -31,15 +31,15 @@ import (
 func TestDockerBuildSpec(t *testing.T) {
 	tests := []struct {
 		description string
-		artifact    *latest_v1.Artifact
+		artifact    *latestV1.Artifact
 		expected    cloudbuild.Build
 		shouldErr   bool
 	}{
 		{
 			description: "normal docker build",
-			artifact: &latest_v1.Artifact{
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 						BuildArgs: map[string]*string{
 							"arg1": util.StringPtr("value1"),
@@ -70,10 +70,10 @@ func TestDockerBuildSpec(t *testing.T) {
 		},
 		{
 			description: "docker build with artifact dependencies",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "img1",
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 						BuildArgs: map[string]*string{
 							"arg1": util.StringPtr("value1"),
@@ -81,7 +81,7 @@ func TestDockerBuildSpec(t *testing.T) {
 						},
 					},
 				},
-				Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img2", Alias: "IMG2"}, {ImageName: "img3", Alias: "IMG3"}},
+				Dependencies: []*latestV1.ArtifactDependency{{ImageName: "img2", Alias: "IMG2"}, {ImageName: "img3", Alias: "IMG3"}},
 			},
 			expected: cloudbuild.Build{
 				LogsBucket: "bucket",
@@ -105,11 +105,11 @@ func TestDockerBuildSpec(t *testing.T) {
 		},
 		{
 			description: "buildkit `secret` option not supported in GCB",
-			artifact: &latest_v1.Artifact{
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						DockerfilePath: "Dockerfile",
-						Secret: &latest_v1.DockerSecret{
+						Secret: &latestV1.DockerSecret{
 							ID: "secret",
 						},
 					},
@@ -119,9 +119,9 @@ func TestDockerBuildSpec(t *testing.T) {
 		},
 		{
 			description: "buildkit `ssh` option not supported in GCB",
-			artifact: &latest_v1.Artifact{
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 						SSH:            "default",
 					},
@@ -149,7 +149,7 @@ func TestDockerBuildSpec(t *testing.T) {
 				"img3": "img3:tag",
 			}
 
-			builder := NewBuilder(&mockBuilderContext{artifactStore: store}, &latest_v1.GoogleCloudBuild{
+			builder := NewBuilder(&mockBuilderContext{artifactStore: store}, &latestV1.GoogleCloudBuild{
 				DockerImage: "docker/docker",
 				DiskSizeGb:  100,
 				MachineType: "n1-standard-1",
@@ -167,15 +167,15 @@ func TestPullCacheFrom(t *testing.T) {
 		t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
 			return args, nil
 		})
-		artifact := &latest_v1.Artifact{
-			ArtifactType: latest_v1.ArtifactType{
-				DockerArtifact: &latest_v1.DockerArtifact{
+		artifact := &latestV1.Artifact{
+			ArtifactType: latestV1.ArtifactType{
+				DockerArtifact: &latestV1.DockerArtifact{
 					DockerfilePath: "Dockerfile",
 					CacheFrom:      []string{"from/image1", "from/image2"},
 				},
 			},
 		}
-		builder := NewBuilder(&mockBuilderContext{}, &latest_v1.GoogleCloudBuild{
+		builder := NewBuilder(&mockBuilderContext{}, &latestV1.GoogleCloudBuild{
 			DockerImage: "docker/docker",
 		})
 		desc, err := builder.dockerBuildSpec(artifact, "nginx2")

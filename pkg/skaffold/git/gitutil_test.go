@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -75,7 +75,7 @@ func TestDefaultRef(t *testing.T) {
 func TestSyncRepo(t *testing.T) {
 	tests := []struct {
 		description string
-		g           latest_v1.GitInfo
+		g           latestV1.GitInfo
 		cmds        []cmdResponse
 		existing    bool
 		shouldErr   bool
@@ -83,7 +83,7 @@ func TestSyncRepo(t *testing.T) {
 	}{
 		{
 			description: "first time repo clone succeeds",
-			g:           latest_v1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			cmds: []cmdResponse{
 				{cmd: "git clone http://github.com/foo.git iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1"},
 			},
@@ -91,7 +91,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "first time repo clone fails",
-			g:           latest_v1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			cmds: []cmdResponse{
 				{cmd: "git clone http://github.com/foo.git iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1", err: errors.New("error")},
 			},
@@ -99,7 +99,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo update succeeds",
-			g:           latest_v1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
@@ -112,7 +112,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo update fails on remote check",
-			g:           latest_v1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", err: errors.New("error")},
@@ -121,7 +121,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing dirty repo with sync off succeeds",
-			g:           latest_v1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(false)},
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(false)},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
@@ -130,7 +130,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo with uncommitted changes and sync on fails",
-			g:           latest_v1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
@@ -141,7 +141,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo with unpushed commits and sync on fails",
-			g:           latest_v1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.BoolPtr(true)},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
@@ -154,7 +154,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo update fails on fetch",
-			g:           latest_v1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
@@ -164,7 +164,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo update fails on diff remote",
-			g:           latest_v1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
@@ -176,7 +176,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo update fails on diff working dir",
-			g:           latest_v1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
@@ -187,7 +187,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo update fails on reset",
-			g:           latest_v1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           latestV1.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},

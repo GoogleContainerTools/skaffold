@@ -25,11 +25,11 @@ import (
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func (b *Builder) jibBuildSpec(artifact *latest_v1.Artifact, tag string) (cloudbuild.Build, error) {
+func (b *Builder) jibBuildSpec(artifact *latestV1.Artifact, tag string) (cloudbuild.Build, error) {
 	t, err := jib.DeterminePluginType(artifact.Workspace, artifact.JibArtifact)
 	if err != nil {
 		return cloudbuild.Build{}, err

@@ -20,29 +20,29 @@ import (
 	"io/ioutil"
 	"testing"
 
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGenerateProfile(t *testing.T) {
 	var tests = []struct {
 		description     string
-		skaffoldConfig  *latest_v1.SkaffoldConfig
-		expectedProfile *latest_v1.Profile
+		skaffoldConfig  *latestV1.SkaffoldConfig
+		expectedProfile *latestV1.Profile
 		responses       []string
 		namespace       string
 		shouldErr       bool
 	}{
 		{
 			description: "successful profile generation docker",
-			skaffoldConfig: &latest_v1.SkaffoldConfig{
-				Pipeline: latest_v1.Pipeline{
-					Build: latest_v1.BuildConfig{
-						Artifacts: []*latest_v1.Artifact{
+			skaffoldConfig: &latestV1.SkaffoldConfig{
+				Pipeline: latestV1.Pipeline{
+					Build: latestV1.BuildConfig{
+						Artifacts: []*latestV1.Artifact{
 							{
 								ImageName: "test",
-								ArtifactType: latest_v1.ArtifactType{
-									DockerArtifact: &latest_v1.DockerArtifact{},
+								ArtifactType: latestV1.ArtifactType{
+									DockerArtifact: &latestV1.DockerArtifact{},
 								},
 							},
 						},
@@ -50,20 +50,20 @@ func TestGenerateProfile(t *testing.T) {
 				},
 			},
 			namespace: "",
-			expectedProfile: &latest_v1.Profile{
+			expectedProfile: &latestV1.Profile{
 				Name: "oncluster",
-				Pipeline: latest_v1.Pipeline{
-					Build: latest_v1.BuildConfig{
-						Artifacts: []*latest_v1.Artifact{
+				Pipeline: latestV1.Pipeline{
+					Build: latestV1.BuildConfig{
+						Artifacts: []*latestV1.Artifact{
 							{
 								ImageName: "test-pipeline",
-								ArtifactType: latest_v1.ArtifactType{
-									KanikoArtifact: &latest_v1.KanikoArtifact{},
+								ArtifactType: latestV1.ArtifactType{
+									KanikoArtifact: &latestV1.KanikoArtifact{},
 								},
 							},
 						},
-						BuildType: latest_v1.BuildType{
-							Cluster: &latest_v1.ClusterDetails{
+						BuildType: latestV1.BuildType{
+							Cluster: &latestV1.ClusterDetails{
 								PullSecretName: "kaniko-secret",
 							},
 						},
@@ -74,14 +74,14 @@ func TestGenerateProfile(t *testing.T) {
 		},
 		{
 			description: "successful profile generation jib",
-			skaffoldConfig: &latest_v1.SkaffoldConfig{
-				Pipeline: latest_v1.Pipeline{
-					Build: latest_v1.BuildConfig{
-						Artifacts: []*latest_v1.Artifact{
+			skaffoldConfig: &latestV1.SkaffoldConfig{
+				Pipeline: latestV1.Pipeline{
+					Build: latestV1.BuildConfig{
+						Artifacts: []*latestV1.Artifact{
 							{
 								ImageName: "test",
-								ArtifactType: latest_v1.ArtifactType{
-									JibArtifact: &latest_v1.JibArtifact{
+								ArtifactType: latestV1.ArtifactType{
+									JibArtifact: &latestV1.JibArtifact{
 										Project: "test-module",
 									},
 									DockerArtifact: nil,
@@ -92,15 +92,15 @@ func TestGenerateProfile(t *testing.T) {
 				},
 			},
 			namespace: "",
-			expectedProfile: &latest_v1.Profile{
+			expectedProfile: &latestV1.Profile{
 				Name: "oncluster",
-				Pipeline: latest_v1.Pipeline{
-					Build: latest_v1.BuildConfig{
-						Artifacts: []*latest_v1.Artifact{
+				Pipeline: latestV1.Pipeline{
+					Build: latestV1.BuildConfig{
+						Artifacts: []*latestV1.Artifact{
 							{
 								ImageName: "test-pipeline",
-								ArtifactType: latest_v1.ArtifactType{
-									JibArtifact: &latest_v1.JibArtifact{
+								ArtifactType: latestV1.ArtifactType{
+									JibArtifact: &latestV1.JibArtifact{
 										Project: "test-module",
 									},
 								},
@@ -113,14 +113,14 @@ func TestGenerateProfile(t *testing.T) {
 		},
 		{
 			description: "kaniko artifact with namespace",
-			skaffoldConfig: &latest_v1.SkaffoldConfig{
-				Pipeline: latest_v1.Pipeline{
-					Build: latest_v1.BuildConfig{
-						Artifacts: []*latest_v1.Artifact{
+			skaffoldConfig: &latestV1.SkaffoldConfig{
+				Pipeline: latestV1.Pipeline{
+					Build: latestV1.BuildConfig{
+						Artifacts: []*latestV1.Artifact{
 							{
 								ImageName: "test",
-								ArtifactType: latest_v1.ArtifactType{
-									DockerArtifact: &latest_v1.DockerArtifact{},
+								ArtifactType: latestV1.ArtifactType{
+									DockerArtifact: &latestV1.DockerArtifact{},
 								},
 							},
 						},
@@ -128,20 +128,20 @@ func TestGenerateProfile(t *testing.T) {
 				},
 			},
 			namespace: "test-ns",
-			expectedProfile: &latest_v1.Profile{
+			expectedProfile: &latestV1.Profile{
 				Name: "oncluster",
-				Pipeline: latest_v1.Pipeline{
-					Build: latest_v1.BuildConfig{
-						Artifacts: []*latest_v1.Artifact{
+				Pipeline: latestV1.Pipeline{
+					Build: latestV1.BuildConfig{
+						Artifacts: []*latestV1.Artifact{
 							{
 								ImageName: "test-pipeline",
-								ArtifactType: latest_v1.ArtifactType{
-									KanikoArtifact: &latest_v1.KanikoArtifact{},
+								ArtifactType: latestV1.ArtifactType{
+									KanikoArtifact: &latestV1.KanikoArtifact{},
 								},
 							},
 						},
-						BuildType: latest_v1.BuildType{
-							Cluster: &latest_v1.ClusterDetails{
+						BuildType: latestV1.BuildType{
+							Cluster: &latestV1.ClusterDetails{
 								PullSecretName: "kaniko-secret",
 								Namespace:      "test-ns",
 							},
@@ -153,10 +153,10 @@ func TestGenerateProfile(t *testing.T) {
 		},
 		{
 			description: "failed profile generation",
-			skaffoldConfig: &latest_v1.SkaffoldConfig{
-				Pipeline: latest_v1.Pipeline{
-					Build: latest_v1.BuildConfig{
-						Artifacts: []*latest_v1.Artifact{},
+			skaffoldConfig: &latestV1.SkaffoldConfig{
+				Pipeline: latestV1.Pipeline{
+					Build: latestV1.BuildConfig{
+						Artifacts: []*latestV1.Artifact{},
 					},
 				},
 			},

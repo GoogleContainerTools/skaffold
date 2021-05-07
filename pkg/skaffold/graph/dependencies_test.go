@@ -21,16 +21,16 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestSourceDependenciesCache(t *testing.T) {
 	testutil.Run(t, "TestTransitiveSourceDependenciesCache", func(t *testutil.T) {
-		g := map[string]*latest_v1.Artifact{
-			"img1": {ImageName: "img1", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img2"}}},
-			"img2": {ImageName: "img2", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img3"}, {ImageName: "img4"}}},
-			"img3": {ImageName: "img3", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img4"}}},
+		g := map[string]*latestV1.Artifact{
+			"img1": {ImageName: "img1", Dependencies: []*latestV1.ArtifactDependency{{ImageName: "img2"}}},
+			"img2": {ImageName: "img2", Dependencies: []*latestV1.ArtifactDependency{{ImageName: "img3"}, {ImageName: "img4"}}},
+			"img3": {ImageName: "img3", Dependencies: []*latestV1.ArtifactDependency{{ImageName: "img4"}}},
 			"img4": {ImageName: "img4"},
 		}
 		deps := map[string][]string{
@@ -40,7 +40,7 @@ func TestSourceDependenciesCache(t *testing.T) {
 			"img4": {"file41", "file42"},
 		}
 		counts := map[string]int{"img1": 0, "img2": 0, "img3": 0, "img4": 0}
-		t.Override(&getDependenciesFunc, func(_ context.Context, a *latest_v1.Artifact, _ docker.Config, _ docker.ArtifactResolver) ([]string, error) {
+		t.Override(&getDependenciesFunc, func(_ context.Context, a *latestV1.Artifact, _ docker.Config, _ docker.ArtifactResolver) ([]string, error) {
 			counts[a.ImageName]++
 			return deps[a.ImageName], nil
 		})

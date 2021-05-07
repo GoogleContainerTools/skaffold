@@ -22,14 +22,14 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGetArtifacts(t *testing.T) {
 	tests := []struct {
 		description string
-		artifacts   []*latest_v1.Artifact
+		artifacts   []*latestV1.Artifact
 		fromFile    []graph.Artifact
 		fromCLI     []graph.Artifact
 		expected    []graph.Artifact
@@ -45,48 +45,48 @@ func TestGetArtifacts(t *testing.T) {
 		},
 		{
 			description: "from file",
-			artifacts:   []*latest_v1.Artifact{{ImageName: "image"}},
+			artifacts:   []*latestV1.Artifact{{ImageName: "image"}},
 			fromFile:    []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
 			fromCLI:     nil,
 			expected:    []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
 		},
 		{
 			description: "from CLI",
-			artifacts:   []*latest_v1.Artifact{{ImageName: "image"}},
+			artifacts:   []*latestV1.Artifact{{ImageName: "image"}},
 			fromFile:    nil,
 			fromCLI:     []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
 			expected:    []graph.Artifact{{ImageName: "image", Tag: "image:tag"}},
 		},
 		{
 			description: "one from file, one from CLI",
-			artifacts:   []*latest_v1.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
+			artifacts:   []*latestV1.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
 			fromFile:    []graph.Artifact{{ImageName: "image1", Tag: "image1:tag"}},
 			fromCLI:     []graph.Artifact{{ImageName: "image2", Tag: "image2:tag"}},
 			expected:    []graph.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
 		},
 		{
 			description: "file takes precedence on CLI",
-			artifacts:   []*latest_v1.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
+			artifacts:   []*latestV1.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
 			fromFile:    []graph.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
 			fromCLI:     []graph.Artifact{{ImageName: "image1", Tag: "image1:ignored"}},
 			expected:    []graph.Artifact{{ImageName: "image1", Tag: "image1:tag"}, {ImageName: "image2", Tag: "image2:tag"}},
 		},
 		{
 			description: "provide tag for non-artifact",
-			artifacts:   []*latest_v1.Artifact{},
+			artifacts:   []*latestV1.Artifact{},
 			fromCLI:     []graph.Artifact{{ImageName: "busybox", Tag: "busybox:v1"}},
 			expected:    []graph.Artifact{{ImageName: "busybox", Tag: "busybox:v1"}},
 		},
 		{
 			description: "missing tag",
-			artifacts:   []*latest_v1.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
+			artifacts:   []*latestV1.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
 			fromFile:    nil,
 			fromCLI:     nil,
 			shouldErr:   true,
 		},
 		{
 			description: "override tag",
-			artifacts:   []*latest_v1.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
+			artifacts:   []*latestV1.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
 			fromFile:    []graph.Artifact{{ImageName: "image1", Tag: "image1:tag"}},
 			fromCLI:     []graph.Artifact{{ImageName: "image2", Tag: "image2:tag"}},
 			expected:    []graph.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
@@ -94,7 +94,7 @@ func TestGetArtifacts(t *testing.T) {
 		},
 		{
 			description: "override missing tag",
-			artifacts:   []*latest_v1.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
+			artifacts:   []*latestV1.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
 			fromFile:    nil,
 			fromCLI:     nil,
 			expected:    []graph.Artifact{{ImageName: "image1", Tag: "image1:test"}, {ImageName: "image2", Tag: "image2:test"}},
@@ -102,7 +102,7 @@ func TestGetArtifacts(t *testing.T) {
 		},
 		{
 			description: "apply tags to no artifacts",
-			artifacts:   []*latest_v1.Artifact{},
+			artifacts:   []*latestV1.Artifact{},
 			fromFile:    nil,
 			fromCLI:     nil,
 			expected:    []graph.Artifact(nil),

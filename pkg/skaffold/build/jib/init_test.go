@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -217,27 +217,27 @@ func TestArtifactType(t *testing.T) {
 	var tests = []struct {
 		description  string
 		config       ArtifactConfig
-		expectedType latest_v1.ArtifactType
+		expectedType latestV1.ArtifactType
 	}{
 		{
 			description:  "jib gradle",
 			config:       ArtifactConfig{BuilderName: "Jib Gradle Plugin", File: filepath.Join("path", "to", "build.gradle"), Project: "project"},
-			expectedType: latest_v1.ArtifactType{JibArtifact: &latest_v1.JibArtifact{Project: "project"}},
+			expectedType: latestV1.ArtifactType{JibArtifact: &latestV1.JibArtifact{Project: "project"}},
 		},
 		{
 			description:  "jib gradle without project",
 			config:       ArtifactConfig{BuilderName: "Jib Gradle Plugin", File: filepath.Join("path", "to", "build.gradle")},
-			expectedType: latest_v1.ArtifactType{JibArtifact: &latest_v1.JibArtifact{}},
+			expectedType: latestV1.ArtifactType{JibArtifact: &latestV1.JibArtifact{}},
 		},
 		{
 			description:  "jib maven",
 			config:       ArtifactConfig{BuilderName: "Jib Maven Plugin", File: filepath.Join("path", "to", "pom.xml"), Project: "project"},
-			expectedType: latest_v1.ArtifactType{JibArtifact: &latest_v1.JibArtifact{Project: "project"}},
+			expectedType: latestV1.ArtifactType{JibArtifact: &latestV1.JibArtifact{Project: "project"}},
 		},
 		{
 			description:  "jib maven without project",
 			config:       ArtifactConfig{BuilderName: "Jib Maven Plugin", File: filepath.Join("path", "to", "pom.xml")},
-			expectedType: latest_v1.ArtifactType{JibArtifact: &latest_v1.JibArtifact{}},
+			expectedType: latestV1.ArtifactType{JibArtifact: &latestV1.JibArtifact{}},
 		},
 	}
 	for _, test := range tests {

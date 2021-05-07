@@ -25,12 +25,12 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
-func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest_v1.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error) {
 	// Fail fast if the Dockerfile can't be found.
 	dockerfile, err := docker.NormalizeDockerfilePath(a.Workspace, a.DockerArtifact.DockerfilePath)
 	if err != nil {
@@ -66,7 +66,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest_v1.Artifac
 	return imageID, nil
 }
 
-func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, dockerfilePath string, a *latest_v1.DockerArtifact, opts docker.BuildOptions) (string, error) {
+func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, dockerfilePath string, a *latestV1.DockerArtifact, opts docker.BuildOptions) (string, error) {
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", opts.Tag}
 	ba, err := docker.EvalBuildArgs(b.mode, workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs)
 	if err != nil {
@@ -97,7 +97,7 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	return b.localDocker.ImageID(ctx, opts.Tag)
 }
 
-func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latest_v1.DockerArtifact) error {
+func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latestV1.DockerArtifact) error {
 	if len(a.CacheFrom) == 0 {
 		return nil
 	}

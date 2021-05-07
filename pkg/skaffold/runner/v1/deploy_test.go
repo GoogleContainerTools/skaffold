@@ -35,7 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -119,7 +119,7 @@ func TestDeploy(t *testing.T) {
 				return dummyStatusChecker{}
 			})
 
-			r := createRunner(t, test.testBench, nil, []*latest_v1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}, nil)
+			r := createRunner(t, test.testBench, nil, []*latestV1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}, nil)
 			r.runCtx.Opts.StatusCheck = config.NewBoolOrUndefined(test.statusCheckFlag)
 			r.runCtx.Pipelines.All()[0].Deploy.StatusCheck = test.statusCheckConfig
 			out := new(bytes.Buffer)
@@ -170,7 +170,7 @@ func TestDeployNamespace(t *testing.T) {
 				return dummyStatusChecker{}
 			})
 
-			r := createRunner(t, test.testBench, nil, []*latest_v1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}, nil)
+			r := createRunner(t, test.testBench, nil, []*latestV1.Artifact{{ImageName: "img1"}, {ImageName: "img2"}}, nil)
 			r.runCtx.Namespaces = test.Namespaces
 
 			err := r.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{

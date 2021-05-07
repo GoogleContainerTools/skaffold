@@ -22,7 +22,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -31,7 +31,7 @@ func TestGetAllPodNamespaces(t *testing.T) {
 		description    string
 		argNamespace   string
 		currentContext string
-		cfg            latest_v1.Pipeline
+		cfg            latestV1.Pipeline
 		expected       []string
 	}{
 		{
@@ -52,11 +52,11 @@ func TestGetAllPodNamespaces(t *testing.T) {
 		{
 			description:  "add namespaces for helm",
 			argNamespace: "ns",
-			cfg: latest_v1.Pipeline{
-				Deploy: latest_v1.DeployConfig{
-					DeployType: latest_v1.DeployType{
-						HelmDeploy: &latest_v1.HelmDeploy{
-							Releases: []latest_v1.HelmRelease{
+			cfg: latestV1.Pipeline{
+				Deploy: latestV1.DeployConfig{
+					DeployType: latestV1.DeployType{
+						HelmDeploy: &latestV1.HelmDeploy{
+							Releases: []latestV1.HelmRelease{
 								{Namespace: "ns3"},
 								{Namespace: ""},
 								{Namespace: ""},
@@ -80,7 +80,7 @@ func TestGetAllPodNamespaces(t *testing.T) {
 				}, nil
 			})
 
-			namespaces, err := GetAllPodNamespaces(test.argNamespace, []latest_v1.Pipeline{test.cfg})
+			namespaces, err := GetAllPodNamespaces(test.argNamespace, []latestV1.Pipeline{test.cfg})
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, namespaces)
