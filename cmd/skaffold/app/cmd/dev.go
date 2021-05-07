@@ -25,7 +25,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // for testing
@@ -60,8 +60,8 @@ func runDev(ctx context.Context, out io.Writer) error {
 		case <-ctx.Done():
 			return nil
 		default:
-			err := withRunner(ctx, out, func(r runner.Runner, configs []*latest_v1.SkaffoldConfig) error {
-				var artifacts []*latest_v1.Artifact
+			err := withRunner(ctx, out, func(r runner.Runner, configs []*latestV1.SkaffoldConfig) error {
+				var artifacts []*latestV1.Artifact
 				for _, cfg := range configs {
 					artifacts = append(artifacts, cfg.Build.Artifacts...)
 				}

@@ -22,11 +22,11 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // Build builds an artifact using a custom script
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest_v1.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
 	if err := b.runBuildScript(ctx, out, artifact, tag); err != nil {
 		return "", fmt.Errorf("building custom artifact: %w", err)
 	}

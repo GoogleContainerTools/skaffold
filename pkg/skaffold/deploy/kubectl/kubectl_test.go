@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -39,7 +39,7 @@ import (
 func TestKubectlDeploy(t *testing.T) {
 	tests := []struct {
 		description                 string
-		kubectl                     latest_v1.KubectlDeploy
+		kubectl                     latestV1.KubectlDeploy
 		builds                      []graph.Artifact
 		commands                    util.Command
 		shouldErr                   bool
@@ -50,15 +50,15 @@ func TestKubectlDeploy(t *testing.T) {
 	}{
 		{
 			description:      "no manifest",
-			kubectl:          latest_v1.KubectlDeploy{},
+			kubectl:          latestV1.KubectlDeploy{},
 			commands:         testutil.CmdRunOut("kubectl version --client -ojson", KubectlVersion112),
 			waitForDeletions: true,
 		},
 		{
 			description: "deploy success (disable validation)",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
-				Flags: latest_v1.KubectlFlags{
+				Flags: latestV1.KubectlFlags{
 					DisableValidation: true,
 				},
 			},
@@ -75,7 +75,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (forced)",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -92,7 +92,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -108,7 +108,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (kubectl v1.18)",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -124,7 +124,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace)",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests:        []string{"deployment.yaml"},
 				DefaultNamespace: &TestNamespace2,
 			},
@@ -142,7 +142,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success (default namespace with env template)",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests:        []string{"deployment.yaml"},
 				DefaultNamespace: &TestNamespace2FromEnvTemplate,
 			},
@@ -163,7 +163,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "http manifest",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml", "http://remote.yaml"},
 			},
 			commands: testutil.
@@ -179,7 +179,7 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy command error",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -196,9 +196,9 @@ func TestKubectlDeploy(t *testing.T) {
 		},
 		{
 			description: "additional flags",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
-				Flags: latest_v1.KubectlFlags{
+				Flags: latestV1.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"--overwrite=true"},
 					Delete: []string{"ignored"},
@@ -254,13 +254,13 @@ func TestKubectlDeploy(t *testing.T) {
 func TestKubectlCleanup(t *testing.T) {
 	tests := []struct {
 		description string
-		kubectl     latest_v1.KubectlDeploy
+		kubectl     latestV1.KubectlDeploy
 		commands    util.Command
 		shouldErr   bool
 	}{
 		{
 			description: "cleanup success",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -270,7 +270,7 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup success (kubectl v1.18)",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -280,7 +280,7 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup error",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
@@ -291,9 +291,9 @@ func TestKubectlCleanup(t *testing.T) {
 		},
 		{
 			description: "additional flags",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
-				Flags: latest_v1.KubectlFlags{
+				Flags: latestV1.KubectlFlags{
 					Global: []string{"-v=0"},
 					Apply:  []string{"ignored"},
 					Delete: []string{"--grace-period=1"},
@@ -328,12 +328,12 @@ func TestKubectlCleanup(t *testing.T) {
 func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 	tests := []struct {
 		description string
-		kubectl     latest_v1.KubectlDeploy
+		kubectl     latestV1.KubectlDeploy
 		commands    util.Command
 	}{
 		{
 			description: "cleanup success",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				RemoteManifests: []string{"pod/leeroy-web"},
 			},
 			commands: testutil.
@@ -343,7 +343,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 		},
 		{
 			description: "cleanup error",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				RemoteManifests: []string{"anotherNamespace:pod/leeroy-web"},
 			},
 			commands: testutil.
@@ -396,7 +396,7 @@ func TestKubectlRedeploy(t *testing.T) {
 				Enabled: true,
 				Delay:   0 * time.Millisecond,
 				Max:     10 * time.Second},
-		}, nil, &latest_v1.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-app.yaml"), tmpDir.Path("deployment-web.yaml")}})
+		}, nil, &latestV1.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-app.yaml"), tmpDir.Path("deployment-web.yaml")}})
 		t.RequireNoError(err)
 
 		// Deploy one manifest
@@ -460,7 +460,7 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 				Delay:   0 * time.Millisecond,
 				Max:     10 * time.Second,
 			},
-		}, nil, &latest_v1.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}})
+		}, nil, &latestV1.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}})
 		t.RequireNoError(err)
 
 		var out bytes.Buffer
@@ -497,7 +497,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 				Delay:   10 * time.Second,
 				Max:     100 * time.Millisecond,
 			},
-		}, nil, &latest_v1.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}})
+		}, nil, &latestV1.KubectlDeploy{Manifests: []string{tmpDir.Path("deployment-web.yaml")}})
 		t.RequireNoError(err)
 
 		_, err = deployer.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{
@@ -558,7 +558,7 @@ func TestDependencies(t *testing.T) {
 				Touch("00/b.yaml", "00/a.yaml").
 				Chdir()
 
-			k, err := NewDeployer(&kubectlConfig{}, nil, &latest_v1.KubectlDeploy{Manifests: test.manifests})
+			k, err := NewDeployer(&kubectlConfig{}, nil, &latestV1.KubectlDeploy{Manifests: test.manifests})
 			t.RequireNoError(err)
 
 			dependencies, err := k.Dependencies()
@@ -674,7 +674,7 @@ spec:
 			deployer, err := NewDeployer(&kubectlConfig{
 				workingDir:  ".",
 				defaultRepo: "gcr.io/project",
-			}, nil, &latest_v1.KubectlDeploy{
+			}, nil, &latestV1.KubectlDeploy{
 				Manifests: []string{tmpDir.Path("deployment.yaml")},
 			})
 			t.RequireNoError(err)
@@ -689,14 +689,14 @@ spec:
 func TestGCSManifests(t *testing.T) {
 	tests := []struct {
 		description string
-		kubectl     latest_v1.KubectlDeploy
+		kubectl     latestV1.KubectlDeploy
 		commands    util.Command
 		shouldErr   bool
 		skipRender  bool
 	}{
 		{
 			description: "manifest from GCS",
-			kubectl: latest_v1.KubectlDeploy{
+			kubectl: latestV1.KubectlDeploy{
 				Manifests: []string{"gs://dev/deployment.yaml"},
 			},
 			commands: testutil.

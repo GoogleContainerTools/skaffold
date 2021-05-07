@@ -19,7 +19,7 @@ package runcontext
 import (
 	"testing"
 
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -124,14 +124,14 @@ func TestPipelines_StatusCheck(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			p := &Pipelines{
-				pipelines: []latest_v1.Pipeline{
+				pipelines: []latestV1.Pipeline{
 					{
-						Deploy: latest_v1.DeployConfig{
+						Deploy: latestV1.DeployConfig{
 							StatusCheck: test.statusCheckP1,
 						},
 					},
 					{
-						Deploy: latest_v1.DeployConfig{
+						Deploy: latestV1.DeployConfig{
 							StatusCheck: test.statusCheckP2,
 						},
 					},

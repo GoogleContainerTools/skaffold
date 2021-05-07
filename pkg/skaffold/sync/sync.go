@@ -38,7 +38,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -49,7 +49,7 @@ var (
 	SyncMap    = syncMapForArtifact
 )
 
-func NewItem(ctx context.Context, a *latest_v1.Artifact, e filemon.Events, builds []graph.Artifact, cfg docker.Config, dependentArtifactsCount int) (*Item, error) {
+func NewItem(ctx context.Context, a *latestV1.Artifact, e filemon.Events, builds []graph.Artifact, cfg docker.Config, dependentArtifactsCount int) (*Item, error) {
 	if !e.HasChanged() || a.Sync == nil {
 		return nil, nil
 	}
@@ -79,7 +79,7 @@ func NewItem(ctx context.Context, a *latest_v1.Artifact, e filemon.Events, build
 	}
 }
 
-func syncItem(a *latest_v1.Artifact, tag string, e filemon.Events, syncRules []*latest_v1.SyncRule, cfg docker.Config) (*Item, error) {
+func syncItem(a *latestV1.Artifact, tag string, e filemon.Events, syncRules []*latestV1.SyncRule, cfg docker.Config) (*Item, error) {
 	containerWd, err := WorkingDir(tag, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving working dir for %q: %w", tag, err)
@@ -103,7 +103,7 @@ func syncItem(a *latest_v1.Artifact, tag string, e filemon.Events, syncRules []*
 	return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
 }
 
-func inferredSyncItem(a *latest_v1.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
+func inferredSyncItem(a *latestV1.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
 	// deleted files are no longer contained in the syncMap, so we need to rebuild
 	if len(e.Deleted) > 0 {
 		return nil, nil
@@ -147,7 +147,7 @@ func inferredSyncItem(a *latest_v1.Artifact, tag string, e filemon.Events, cfg d
 	return &Item{Image: tag, Copy: toCopy}, nil
 }
 
-func syncMapForArtifact(a *latest_v1.Artifact, cfg docker.Config) (map[string][]string, error) {
+func syncMapForArtifact(a *latestV1.Artifact, cfg docker.Config) (map[string][]string, error) {
 	switch {
 	case a.DockerArtifact != nil:
 		return docker.SyncMap(a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, cfg)
@@ -163,7 +163,7 @@ func syncMapForArtifact(a *latest_v1.Artifact, cfg docker.Config) (map[string][]
 	}
 }
 
-func autoSyncItem(ctx context.Context, a *latest_v1.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
+func autoSyncItem(ctx context.Context, a *latestV1.Artifact, tag string, e filemon.Events, cfg docker.Config) (*Item, error) {
 	switch {
 	case a.BuildpackArtifact != nil:
 		labels, err := Labels(tag, cfg)
@@ -204,7 +204,7 @@ func latestTag(image string, builds []graph.Artifact) string {
 	return ""
 }
 
-func intersect(contextWd, containerWd string, syncRules []*latest_v1.SyncRule, files []string) (syncMap, error) {
+func intersect(contextWd, containerWd string, syncRules []*latestV1.SyncRule, files []string) (syncMap, error) {
 	ret := make(syncMap)
 	for _, f := range files {
 		relPath, err := filepath.Rel(contextWd, f)
@@ -227,7 +227,7 @@ func intersect(contextWd, containerWd string, syncRules []*latest_v1.SyncRule, f
 	return ret, nil
 }
 
-func matchSyncRules(syncRules []*latest_v1.SyncRule, relPath, containerWd string) ([]string, error) {
+func matchSyncRules(syncRules []*latestV1.SyncRule, relPath, containerWd string) ([]string, error) {
 	dsts := make([]string, 0, 1)
 	for _, r := range syncRules {
 		matches, err := doublestar.PathMatch(filepath.FromSlash(r.Src), relPath)
@@ -321,7 +321,7 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 	return nil
 }
 
-func Init(ctx context.Context, artifacts []*latest_v1.Artifact) error {
+func Init(ctx context.Context, artifacts []*latestV1.Artifact) error {
 	for _, a := range artifacts {
 		if a.Sync == nil {
 			continue

@@ -24,7 +24,7 @@ import (
 	"github.com/blang/semver"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 var version, gitCommit, buildDate, client string
@@ -48,7 +48,7 @@ var Get = func() *Info {
 	// These variables typically come from -ldflags settings to `go build`
 	return &Info{
 		Version:       version,
-		ConfigVersion: latest_v1.Version,
+		ConfigVersion: latestV1.Version,
 		GitCommit:     gitCommit,
 		BuildDate:     buildDate,
 		GoVersion:     runtime.Version(),

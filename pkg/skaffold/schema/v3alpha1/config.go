@@ -17,7 +17,7 @@ limitations under the License.
 package v3alpha1
 
 import (
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
@@ -44,7 +44,7 @@ type SkaffoldConfig struct {
 	Metadata Metadata `yaml:"metadata,omitempty"`
 
 	// Dependencies describes a list of other required configs for the current config.
-	Dependencies []latest_v1.ConfigDependency `yaml:"requires,omitempty"`
+	Dependencies []latestV1.ConfigDependency `yaml:"requires,omitempty"`
 
 	// Pipeline defines the Build/Test/Deploy phases.
 	Pipeline `yaml:",inline"`
@@ -62,10 +62,10 @@ type Metadata struct {
 // Pipeline describes a Skaffold pipeline.
 type Pipeline struct {
 	// Build describes how images are built.
-	Build latest_v1.BuildConfig `yaml:"build,omitempty"`
+	Build latestV1.BuildConfig `yaml:"build,omitempty"`
 
 	// Test describes how images are tested.
-	Test []*latest_v1.TestCase `yaml:"test,omitempty"`
+	Test []*latestV1.TestCase `yaml:"test,omitempty"`
 
 	// Render describes how the original manifests are hydrated, validated and transformed.
 	Render RenderConfig `yaml:"manifests,omitempty"`
@@ -74,7 +74,7 @@ type Pipeline struct {
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 
 	// PortForward describes user defined resources to port-forward.
-	PortForward []*latest_v1.PortForwardResource `yaml:"portForward,omitempty"`
+	PortForward []*latestV1.PortForwardResource `yaml:"portForward,omitempty"`
 }
 
 // RenderConfig contains all the configuration needed by the render steps.
@@ -166,11 +166,11 @@ type Profile struct {
 	// Activation criteria by which a profile can be auto-activated.
 	// The profile is auto-activated if any one of the activations are triggered.
 	// An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.
-	Activation []latest_v1.Activation `yaml:"activation,omitempty"`
+	Activation []latestV1.Activation `yaml:"activation,omitempty"`
 
 	// Patches lists patches applied to the configuration.
 	// Patches use the JSON patch notation.
-	Patches []latest_v1.JSONPatch `yaml:"patches,omitempty"`
+	Patches []latestV1.JSONPatch `yaml:"patches,omitempty"`
 
 	// Pipeline contains the definitions to replace the default skaffold pipeline.
 	Pipeline `yaml:",inline"`

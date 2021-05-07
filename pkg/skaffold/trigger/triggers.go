@@ -29,7 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	fsNotify "github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger/fsnotify"
 )
 
@@ -42,7 +42,7 @@ type Trigger interface {
 
 type Config interface {
 	Trigger() string
-	Artifacts() []*latest_v1.Artifact
+	Artifacts() []*latestV1.Artifact
 	WatchPollInterval() int
 }
 

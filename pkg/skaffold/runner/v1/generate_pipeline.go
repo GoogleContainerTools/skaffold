@@ -26,10 +26,10 @@ import (
 	pipeline "github.com/GoogleContainerTools/skaffold/pkg/skaffold/generate_pipeline"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
-func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, configs []*latest_v1.SkaffoldConfig, configPaths []string, fileOut string) error {
+func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, configs []*latestV1.SkaffoldConfig, configPaths []string, fileOut string) error {
 	// Keep track of files, configs, and profiles. This will be used to know which files to write
 	// profiles to and what flags to add to task commands
 	var baseConfig []*pipeline.ConfigFile
@@ -79,7 +79,7 @@ func setupConfigFiles(configPaths []string) ([]*pipeline.ConfigFile, error) {
 			return nil, fmt.Errorf("parsing config %q: %w", path, err)
 		}
 		for _, parsedCfg := range parsedCfgs {
-			config := parsedCfg.(*latest_v1.SkaffoldConfig)
+			config := parsedCfg.(*latestV1.SkaffoldConfig)
 
 			if err := defaults.Set(config); err != nil {
 				return nil, fmt.Errorf("setting default values for extra configs: %w", err)

@@ -21,7 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
@@ -30,7 +30,7 @@ import (
 // This could include pushing to a authorized repository or loading the nodes with the image.
 // If artifacts is supplied, the builder should only rebuild those artifacts.
 type Builder interface {
-	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest_v1.Artifact) ([]graph.Artifact, error)
+	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact) ([]graph.Artifact, error)
 
 	// Prune removes images built with Skaffold
 	Prune(context.Context, io.Writer) error
@@ -44,7 +44,7 @@ type PipelineBuilder interface {
 	PreBuild(ctx context.Context, out io.Writer) error
 
 	// Build returns the `ArtifactBuilder` based on this build pipeline type
-	Build(ctx context.Context, out io.Writer, artifact *latest_v1.Artifact) ArtifactBuilder
+	Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact) ArtifactBuilder
 
 	// PostBuild executes any one-time teardown required after all builds on this builder are complete
 	PostBuild(ctx context.Context, out io.Writer) error

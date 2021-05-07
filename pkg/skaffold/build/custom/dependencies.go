@@ -25,12 +25,12 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // GetDependencies returns dependencies listed for a custom artifact
-func GetDependencies(ctx context.Context, workspace string, artifactName string, a *latest_v1.CustomArtifact, cfg docker.Config) ([]string, error) {
+func GetDependencies(ctx context.Context, workspace string, artifactName string, a *latestV1.CustomArtifact, cfg docker.Config) ([]string, error) {
 	switch {
 	case a.Dependencies.Dockerfile != nil:
 		return docker.GetDependencies(ctx, getDockerBuildConfig(workspace, artifactName, a), cfg)
@@ -53,7 +53,7 @@ func GetDependencies(ctx context.Context, workspace string, artifactName string,
 	}
 }
 
-func getDockerBuildConfig(ws string, artifact string, a *latest_v1.CustomArtifact) docker.BuildConfig {
+func getDockerBuildConfig(ws string, artifact string, a *latestV1.CustomArtifact) docker.BuildConfig {
 	dockerfile := a.Dependencies.Dockerfile
 	return docker.NewBuildConfig(ws, artifact, dockerfile.Path, dockerfile.BuildArgs)
 }

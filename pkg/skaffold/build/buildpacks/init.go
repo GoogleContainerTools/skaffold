@@ -21,7 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // For testing
@@ -49,9 +49,9 @@ func (c ArtifactConfig) Describe() string {
 }
 
 // ArtifactType returns the type of the artifact to be built.
-func (c ArtifactConfig) ArtifactType(_ string) latest_v1.ArtifactType {
-	return latest_v1.ArtifactType{
-		BuildpackArtifact: &latest_v1.BuildpackArtifact{
+func (c ArtifactConfig) ArtifactType(_ string) latestV1.ArtifactType {
+	return latestV1.ArtifactType{
+		BuildpackArtifact: &latestV1.BuildpackArtifact{
 			Builder: c.Builder,
 		},
 	}

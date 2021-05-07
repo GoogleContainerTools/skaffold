@@ -17,7 +17,7 @@ limitations under the License.
 package event
 
 import (
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 type Config interface {
@@ -25,5 +25,5 @@ type Config interface {
 	AutoBuild() bool
 	AutoDeploy() bool
 	AutoSync() bool
-	GetPipelines() []latest_v1.Pipeline
+	GetPipelines() []latestV1.Pipeline
 }

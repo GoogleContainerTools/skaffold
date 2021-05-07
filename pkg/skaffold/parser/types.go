@@ -16,14 +16,14 @@ limitations under the License.
 
 package parser
 
-import latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+import latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 
 // SkaffoldConfigSet encapsulates a slice of skaffold configurations.
 type SkaffoldConfigSet []*SkaffoldConfigEntry
 
 // SkaffoldConfigEntry encapsulates a single skaffold configuration, along with the source filename and its index in that file.
 type SkaffoldConfigEntry struct {
-	*latest_v1.SkaffoldConfig
+	*latestV1.SkaffoldConfig
 	SourceFile  string
 	SourceIndex int
 }
