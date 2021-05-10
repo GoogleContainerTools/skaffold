@@ -96,7 +96,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				apply:       true,
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
-				}, nil, &latestV1.KubectlDeploy{
+				}, nil, &log.NoopLogger{}, &latestV1.KubectlDeploy{
 					Flags: latestV1.KubectlFlags{},
 				})).(deploy.Deployer),
 			},
@@ -107,7 +107,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				apply:       true,
 				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
-				}, nil, &latestV1.KubectlDeploy{
+				}, nil, &log.NoopLogger{}, &latestV1.KubectlDeploy{
 					Flags: latestV1.KubectlFlags{},
 				})).(deploy.Deployer),
 			},
