@@ -67,13 +67,13 @@ func NewUserDefinedForwarder(entryManager *EntryManager, userDefinedResources []
 func (p *ResourceForwarder) Start(ctx context.Context, namespaces []string) error {
 	if len(namespaces) == 1 {
 		for _, pf := range p.userDefinedResources {
-			if pf.Namespace == "" {
-				pf.Namespace = namespaces[0]
-			} else {
+			if pf.Namespace != "" {
 				err := applyNamespaceWithTemplate(pf)
 				if err != nil {
 					return err
 				}
+			} else {
+				pf.Namespace = namespaces[0]
 			}
 		}
 	} else {
