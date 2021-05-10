@@ -316,6 +316,10 @@ func validateKubectlFlags(flags *latestV1.KubectlFlags, additional latestV1.Kube
 }
 
 func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deploy.Deployer, error) {
+	if runCtx.Opts.Apply {
+		return getDefaultDeployer(runCtx, labels)
+	}
+
 	deployerCfg := runCtx.Deployers()
 
 	var deployers deploy.DeployerMux

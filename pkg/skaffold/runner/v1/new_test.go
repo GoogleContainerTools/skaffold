@@ -39,6 +39,7 @@ func TestGetDeployer(tOuter *testing.T) {
 			cfg         latestV1.DeployType
 			helmVersion string
 			expected    deploy.Deployer
+			apply       bool
 			shouldErr   bool
 		}{
 			{
@@ -89,6 +90,27 @@ func TestGetDeployer(tOuter *testing.T) {
 				},
 			},
 			{
+				description: "apply forces creation of kubectl deployer with kpt config",
+				cfg:         latestV1.DeployType{KptDeploy: &latestV1.KptDeploy{}},
+				apply:       true,
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
+				}, nil, &latestV1.KubectlDeploy{
+					Flags: latestV1.KubectlFlags{},
+				})).(deploy.Deployer),
+			},
+			{
+				description: "apply forces creation of kubectl deployer with helm config",
+				cfg:         latestV1.DeployType{HelmDeploy: &latestV1.HelmDeploy{}},
+				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
+				apply:       true,
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{}}),
+				}, nil, &latestV1.KubectlDeploy{
+					Flags: latestV1.KubectlFlags{},
+				})).(deploy.Deployer),
+			},
+			{
 				description: "multiple deployers",
 				cfg: latestV1.DeployType{
 					HelmDeploy: &latestV1.HelmDeploy{},
@@ -111,6 +133,9 @@ func TestGetDeployer(tOuter *testing.T) {
 				}
 
 				deployer, err := getDeployer(&runcontext.RunContext{
+					Opts: config.SkaffoldOptions{
+						Apply: test.apply,
+					},
 					Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{
 						Deploy: latestV1.DeployConfig{
 							DeployType: test.cfg,
