@@ -262,6 +262,26 @@ func TestUserDefinedResources(t *testing.T) {
 				"pod-pod-some-9001",
 			},
 		},
+		{
+			description: "pod should be found with namespace with template",
+			userResources: []*latestV1.PortForwardResource{
+				{Type: constants.Pod, Name: "pod", Namespace: "some-with-template-{{ .FOO }}", Port: schemautil.FromInt(9000)},
+			},
+			namespaces: []string{"test"},
+			expectedResources: []string{
+				"pod-pod-some-with-template-bar-9000",
+			},
+		},
+		{
+			description: "pod should be found with namespace with template",
+			userResources: []*latestV1.PortForwardResource{
+				{Type: constants.Pod, Name: "pod", Namespace: "some-with-template-{{ .FOO }}", Port: schemautil.FromInt(9000)},
+			},
+			namespaces: []string{"test", "another"},
+			expectedResources: []string{
+				"pod-pod-some-with-template-bar-9000",
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -274,6 +294,10 @@ func TestUserDefinedResources(t *testing.T) {
 
 			fakeForwarder := newTestForwarder()
 			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
+
+			util.OSEnviron = func() []string {
+				return []string{"FOO=bar"}
+			}
 
 			rf := NewUserDefinedForwarder(entryManager, test.userResources)
 			if err := rf.Start(context.Background(), test.namespaces); err != nil {
