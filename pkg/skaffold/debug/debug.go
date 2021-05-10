@@ -158,5 +158,4 @@ func dupMap(s map[string]string) map[string]string {
 		dup[k] = v
 	}
 	return dup
-
 }
