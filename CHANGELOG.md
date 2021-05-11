@@ -1,3 +1,93 @@
+# v1.24.0 Release - 05/11/2021
+
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.24.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.24.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.24.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.24.0`
+
+Note: This release comes with a new config version, `v2beta16`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+
+New Features:
+* Support templated release names in helm render [#5751](https://github.com/GoogleContainerTools/skaffold/pull/5751)
+* Add StatusCheck field to skaffold.yaml (#4904) [#5706](https://github.com/GoogleContainerTools/skaffold/pull/5706)
+* Add `skaffold inspect` command [#5765](https://github.com/GoogleContainerTools/skaffold/pull/5765)
+* bring back error coloring [#5718](https://github.com/GoogleContainerTools/skaffold/pull/5718)
+* add `skaffold inspect profiles` command [#5778](https://github.com/GoogleContainerTools/skaffold/pull/5778)
+* Emit TaskEvent protos for Test phase [#5786](https://github.com/GoogleContainerTools/skaffold/pull/5786)
+* add `skaffold inspect build-env` command [#5792](https://github.com/GoogleContainerTools/skaffold/pull/5792)
+* Default digest source to 'remote' in render [#5578](https://github.com/GoogleContainerTools/skaffold/pull/5578)
+* Don't add skaffold labels by default in render, and deprecate the --add-skaffold-labels flag [#5653](https://github.com/GoogleContainerTools/skaffold/pull/5653)
+* Emit deploy subtask events for API V2 [#5783](https://github.com/GoogleContainerTools/skaffold/pull/5783)
+* Allow specifying whether to make file paths absolute when parsing configs. [#5805](https://github.com/GoogleContainerTools/skaffold/pull/5805)
+* add emission of TaskEvents for Test phase [#5814](https://github.com/GoogleContainerTools/skaffold/pull/5814)
+* Add emission of TestSubtaskEvents [#5816](https://github.com/GoogleContainerTools/skaffold/pull/5816)
+
+
+Fixes:
+* Protect errors.allErrors with mutex [#5753](https://github.com/GoogleContainerTools/skaffold/pull/5753)
+* Fix tarring of build context for artifacts with source dependencies [#5750](https://github.com/GoogleContainerTools/skaffold/pull/5750)
+* skaffold diagnose to not initialize runconfig for yaml only flag [#5762](https://github.com/GoogleContainerTools/skaffold/pull/5762)
+* Ensure working JVM before enabling Jib actions to avoid hangs [#5725](https://github.com/GoogleContainerTools/skaffold/pull/5725)
+* Fix setting helm `--setFiles` for Windows [#5648](https://github.com/GoogleContainerTools/skaffold/pull/5648)
+* Resolve all filepaths to absolute in 'skaffold diagnose' [#5791](https://github.com/GoogleContainerTools/skaffold/pull/5791)
+* Default to empty secret path for Kaniko to use Workload Identity credentials [#5730](https://github.com/GoogleContainerTools/skaffold/pull/5730)
+* Use default deployer in 'skaffold apply' [#5776](https://github.com/GoogleContainerTools/skaffold/pull/5776)
+
+
+Updates and Refactors:
+* [V3] (Part 1) Refactor schema "latest" to "latest/v1" [#5728](https://github.com/GoogleContainerTools/skaffold/pull/5728)
+* Bump several build dependencies [#5747](https://github.com/GoogleContainerTools/skaffold/pull/5747)
+* Consolidate tag stripping logic from Kubernetes logger [#5740](https://github.com/GoogleContainerTools/skaffold/pull/5740)
+* [V3] (Part 2) Add new schema to latest/v2 [#5729](https://github.com/GoogleContainerTools/skaffold/pull/5729)
+* [Refactor] Move kubernetes log code to pkg/skaffold/kubernetes/logger [#5761](https://github.com/GoogleContainerTools/skaffold/pull/5761)
+* update otel libs from v0.13.0 -> v0.20.0 [#5757](https://github.com/GoogleContainerTools/skaffold/pull/5757)
+* move profile verification higher up the stack [#5779](https://github.com/GoogleContainerTools/skaffold/pull/5779)
+* [V3] (part 1) Change runner/v3 to runner/v2. Update v3 flag to v2 [#5780](https://github.com/GoogleContainerTools/skaffold/pull/5780)
+* [v3] (part 2) Move the v1 runner components to `pkg/skaffold/runner/v1`. [#5781](https://github.com/GoogleContainerTools/skaffold/pull/5781)
+* [Code style] Fix snake case import package "latest_v1" to "latestV1" [#5799](https://github.com/GoogleContainerTools/skaffold/pull/5799)
+* Embed Logger inside Deployer [#5809](https://github.com/GoogleContainerTools/skaffold/pull/5809)
+
+
+Docs, Test, and Release Updates:
+* Update `hack/new_version.sh` script and generate v2beta16 [#5748](https://github.com/GoogleContainerTools/skaffold/pull/5748)
+* Use GCR registry mirror in Travis for Linux-based platforms [#5735](https://github.com/GoogleContainerTools/skaffold/pull/5735)
+* Update api.md [#5764](https://github.com/GoogleContainerTools/skaffold/pull/5764)
+* fix SecurityContext typo [#5769](https://github.com/GoogleContainerTools/skaffold/pull/5769)
+* disable housekeeping messages for render [#5770](https://github.com/GoogleContainerTools/skaffold/pull/5770)
+* Update _index.md [#5752](https://github.com/GoogleContainerTools/skaffold/pull/5752)
+* Update examples/typescript w/ recommended ENV=production info [#5777](https://github.com/GoogleContainerTools/skaffold/pull/5777)
+* [v3] Schema Version upgrading for v1 and v2. [#5796](https://github.com/GoogleContainerTools/skaffold/pull/5796)
+
+
+Designs:
+* Add ko builder design proposal draft [#5611](https://github.com/GoogleContainerTools/skaffold/pull/5611)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Brian de Alwis
+- Gaurav
+- Halvard Skogsrud
+- Joe Bowbeer
+- Maggie Neterval
+- Marlon Gamez
+- Nick Kubala
+- Tejal Desai
+- Vladimir Ivanov
+- Yuwen Ma
+- aleksandrOranskiy
+
+
 # v1.23.0 Release - 04/27/2021
 
 **Linux**
