@@ -63,15 +63,41 @@ type pythonSpec struct {
 
 // isLaunchingPython determines if the arguments seems to be invoking python
 func isLaunchingPython(args []string) bool {
-	return len(args) > 0 &&
-		(args[0] == "python" || strings.HasSuffix(args[0], "/python") ||
-			args[0] == "python2" || strings.HasSuffix(args[0], "/python2") ||
-			args[0] == "python3" || strings.HasSuffix(args[0], "/python3"))
+	return len(args) > 0 && (args[0] == "python" || strings.HasSuffix(args[0], "/python") ||
+		args[0] == "python2" || strings.HasSuffix(args[0], "/python2") ||
+		args[0] == "python3" || strings.HasSuffix(args[0], "/python3"))
+}
+
+func hasCommonPythonEnvVars(env map[string]string) bool {
+	for _, key := range []string{
+		"PYTHON_VERSION",
+		"PYTHONVERBOSE",
+		"PYTHONINSPECT",
+		"PYTHONOPTIMIZE",
+		"PYTHONUSERSITE",
+		"PYTHONUNBUFFERED",
+		"PYTHONPATH",
+		"PYTHONUSERBASE",
+		"PYTHONWARNINGS",
+		"PYTHONHOME",
+		"PYTHONCASEOK",
+		"PYTHONIOENCODING",
+		"PYTHONHASHSEED",
+		"PYTHONDONTWRITEBYTECODE",
+	} {
+		if _, found := env[key]; found {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (t pythonTransformer) IsApplicable(config imageConfiguration) bool {
-	// We can only put Python in debug mode by modifying the python command line,
-	// so looking for Python-related environment variables is insufficient.
+	if hasCommonPythonEnvVars(config.env) {
+		return true
+	}
+
 	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return isLaunchingPython(config.entrypoint)
 	}
@@ -109,6 +135,9 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 
 	case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && isLaunchingPython(config.arguments):
 		container.Args = rewritePythonCommandLine(config.arguments, *spec)
+
+	case hasCommonPythonEnvVars(config.env):
+		container.Command = rewritePythonCommandLine(config.entrypoint, *spec)
 
 	default:
 		return ContainerDebugConfiguration{}, "", fmt.Errorf("%q does not appear to invoke python", container.Name)

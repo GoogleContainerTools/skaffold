@@ -74,7 +74,7 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 		{
 			description: "PYTHON_VERSION",
 			source:      imageConfiguration{env: map[string]string{"PYTHON_VERSION": "2.7"}},
-			result:      false,
+			result:      true,
 		},
 		{
 			description: "entrypoint python",
@@ -205,6 +205,28 @@ func TestPythonTransformer_Apply(t *testing.T) {
 			result: v1.Container{
 				Args:  []string{"/dbg/python/launcher", "--mode", "debugpy", "--port", "5678", "--", "python"},
 				Ports: []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
+			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			image:       "python",
+		},
+		{
+			description:   "entrypoint with python env vars",
+			containerSpec: v1.Container{},
+			configuration: imageConfiguration{entrypoint: []string{"foo"}, env: map[string]string{"PYTHON_VERSION": "3"}},
+			result: v1.Container{
+				Command: []string{"/dbg/python/launcher", "--mode", "debugpy", "--port", "5678", "--", "foo"},
+				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
+			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			image:       "python",
+		},
+		{
+			description:   "command with python env vars",
+			containerSpec: v1.Container{},
+			configuration: imageConfiguration{arguments: []string{"foo"}, env: map[string]string{"PYTHON_VERSION": "3"}},
+			result: v1.Container{
+				Command: []string{"/dbg/python/launcher", "--mode", "debugpy", "--port", "5678", "--"},
+				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 			},
 			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
 			image:       "python",
