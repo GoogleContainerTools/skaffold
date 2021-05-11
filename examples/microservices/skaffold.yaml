@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta15
+apiVersion: skaffold/v2beta16
 kind: Config
 build:
   artifacts:
@@ -28,3 +28,7 @@ portForward:
     resourceName: leeroy-app
     port: http
     localPort: 9001
+profiles:
+  - name: gcb
+    build:
+      googleCloudBuild: {}
