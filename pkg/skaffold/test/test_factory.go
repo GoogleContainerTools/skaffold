@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -103,11 +104,16 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []graph.Artifa
 }
 
 func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []graph.Artifact) error {
+	testerID := 0
 	for _, b := range bRes {
 		for _, tester := range t.Testers[b.ImageName] {
+			eventV2.TesterInProgress(testerID)
 			if err := tester.Test(ctx, out, b.Tag); err != nil {
+				eventV2.TesterFailed(testerID, err)
 				return fmt.Errorf("running tests: %w", err)
 			}
+			eventV2.TesterSucceeded(testerID)
+			testerID++
 		}
 	}
 	return nil
