@@ -112,11 +112,16 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []graph.Artifa
 }
 
 func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []graph.Artifact) error {
+	testerID := 0
 	for _, b := range bRes {
 		for _, tester := range t.Testers[b.ImageName] {
+			eventV2.TesterInProgress(testerID)
 			if err := tester.Test(ctx, out, b.Tag); err != nil {
+				eventV2.TesterFailed(testerID, err)
 				return fmt.Errorf("running tests: %w", err)
 			}
+			eventV2.TesterSucceeded(testerID)
+			testerID++
 		}
 	}
 	return nil
