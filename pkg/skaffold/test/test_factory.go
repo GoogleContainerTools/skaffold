@@ -24,7 +24,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -74,6 +76,7 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []graph.Artifa
 		return nil
 	}
 
+	eventV2.TaskInProgress(constants.Test)
 	color.Default.Fprintln(out, "Testing images...")
 
 	if t.muted.MuteTest() {
@@ -99,7 +102,13 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []graph.Artifa
 		return err
 	}
 
-	return t.runTests(ctx, out, bRes)
+	if err := t.runTests(ctx, out, bRes); err != nil {
+		eventV2.TaskFailed(constants.Test, err)
+		return err
+	}
+
+	eventV2.TaskSucceeded(constants.Test)
+	return nil
 }
 
 func (t FullTester) runTests(ctx context.Context, out io.Writer, bRes []graph.Artifact) error {
