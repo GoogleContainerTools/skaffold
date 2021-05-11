@@ -288,7 +288,10 @@ func (spec pythonSpec) protocol() string {
 	switch spec.debugger {
 	case pydevd:
 		return pydevdProtocol
+	case debugpy, ptvsd:
+		return dapProtocol
 	default:
+		logrus.Fatalf("invalid debugger type: %q", spec.debugger)
 		return dapProtocol
 	}
 }
