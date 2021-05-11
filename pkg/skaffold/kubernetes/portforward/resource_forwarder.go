@@ -68,8 +68,7 @@ func (p *ResourceForwarder) Start(ctx context.Context, namespaces []string) erro
 	if len(namespaces) == 1 {
 		for _, pf := range p.userDefinedResources {
 			if pf.Namespace != "" {
-				err := applyNamespaceWithTemplate(pf)
-				if err != nil {
+				if err := applyNamespaceWithTemplate(pf); err != nil {
 					return err
 				}
 			} else {
@@ -80,8 +79,7 @@ func (p *ResourceForwarder) Start(ctx context.Context, namespaces []string) erro
 		var validResources []*latestV1.PortForwardResource
 		for _, pf := range p.userDefinedResources {
 			if pf.Namespace != "" {
-				err := applyNamespaceWithTemplate(pf)
-				if err != nil {
+				if err := applyNamespaceWithTemplate(pf); err != nil {
 					return err
 				}
 				validResources = append(validResources, pf)
