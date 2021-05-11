@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -47,7 +46,7 @@ var (
 	fileSyncSucceeded  = event.FileSyncSucceeded
 )
 
-func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logger.LogAggregator, forwarderManager portforward.Forwarder) error {
+func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, forwarderManager portforward.Forwarder) error {
 	// never queue intents from user, even if they're not used
 	defer r.intents.Reset()
 
@@ -65,7 +64,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 		return nil
 	}
 
-	logger.Mute()
+	r.deployer.Mute()
 	// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
 	defer r.monitor.Reset()
 	defer r.listener.LogWatchToUser(out)
@@ -169,7 +168,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 	}
 	event.DevLoopComplete(r.devIteration)
 	eventV2.TaskSucceeded(constants.DevLoop)
-	logger.Unmute()
+	r.deployer.Unmute()
 	return nil
 }
 
@@ -277,14 +276,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
-	logger := r.createLogger(out, bRes)
-	defer logger.Stop()
+	defer r.deployer.StopLogger()
 
 	debugContainerManager := r.createContainerManager()
 	defer debugContainerManager.Stop()
 
 	// Logs should be retrieved up to just before the deploy
-	logger.SetSince(time.Now())
+	r.deployer.SetSince(time.Now())
 
 	// First deploy
 	if err := r.Deploy(ctx, out, r.Builds); err != nil {
@@ -303,7 +301,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		logrus.Warnln("Error starting debug container notification:", err)
 	}
 	// Start printing the logs after deploy is finished
-	if err := logger.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.StartLogger(ctx, out, r.runCtx.GetNamespaces()); err != nil {
 		return fmt.Errorf("starting logger: %w", err)
 	}
 
@@ -313,7 +311,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	eventV2.TaskSucceeded(constants.DevLoop)
 	r.devIteration++
 	return r.listener.WatchForChanges(ctx, out, func() error {
-		return r.doDev(ctx, out, logger, forwarderManager)
+		return r.doDev(ctx, out, forwarderManager)
 	})
 }
 

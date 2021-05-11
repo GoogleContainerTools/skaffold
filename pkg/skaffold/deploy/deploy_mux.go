@@ -21,6 +21,7 @@ import (
 	"context"
 	"io"
 	"strings"
+	"time"
 
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -85,4 +86,43 @@ func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []graph.Artifac
 
 	allResources := strings.Join(resources, "\n---\n")
 	return manifest.Write(strings.TrimSpace(allResources), filepath, w)
+}
+
+func (m DeployerMux) StartLogger(ctx context.Context, out io.Writer, namespaces []string) error {
+	for _, deployer := range m {
+		if err := deployer.StartLogger(ctx, out, namespaces); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m DeployerMux) StopLogger() {
+	for _, deployer := range m {
+		deployer.StopLogger()
+	}
+}
+
+func (m DeployerMux) Mute() {
+	for _, deployer := range m {
+		deployer.Mute()
+	}
+}
+
+func (m DeployerMux) Unmute() {
+	for _, deployer := range m {
+		deployer.Unmute()
+	}
+}
+
+func (m DeployerMux) SetSince(t time.Time) {
+	for _, deployer := range m {
+		deployer.SetSince(t)
+	}
+}
+
+func (m DeployerMux) RegisterBuildArtifacts(artifacts []graph.Artifact) {
+	for _, deployer := range m {
+		deployer.RegisterBuildArtifacts(artifacts)
+	}
 }

@@ -44,6 +44,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -73,6 +74,8 @@ var (
 type Deployer struct {
 	*latestV1.HelmDeploy
 
+	log.Logger
+
 	kubeContext string
 	kubeConfig  string
 	namespace   string
@@ -96,7 +99,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg Config, labels map[string]string, h *latestV1.HelmDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, logger log.Logger, h *latestV1.HelmDeploy) (*Deployer, error) {
 	hv, err := binVer()
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -107,6 +110,7 @@ func NewDeployer(cfg Config, labels map[string]string, h *latestV1.HelmDeploy) (
 	}
 
 	return &Deployer{
+		Logger:        logger,
 		HelmDeploy:    h,
 		kubeContext:   cfg.GetKubeContext(),
 		kubeConfig:    cfg.GetKubeConfig(),
