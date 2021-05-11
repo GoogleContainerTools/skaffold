@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -46,7 +45,7 @@ var (
 	fileSyncSucceeded  = event.FileSyncSucceeded
 )
 
-func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, forwarderManager portforward.Forwarder) error {
+func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	// never queue intents from user, even if they're not used
 	defer r.intents.Reset()
 
@@ -152,7 +151,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, forwarderMana
 			r.intents.ResetDeploy()
 		}()
 
-		forwarderManager.Stop()
+		r.deployer.StopResourcePreview()
 		if !meterUpdated {
 			instrumentation.AddDevIteration("deploy")
 		}
@@ -162,7 +161,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, forwarderMana
 			eventV2.TaskFailed(constants.DevLoop, err)
 			return nil
 		}
-		if err := forwarderManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+		if err := r.deployer.StartResourcePreview(ctx, out, r.runCtx.GetNamespaces()); err != nil {
 			logrus.Warnln("Port forwarding failed:", err)
 		}
 	}
@@ -291,10 +290,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
 
-	forwarderManager := r.createForwarder(out)
-	defer forwarderManager.Stop()
+	defer r.deployer.StopResourcePreview()
 
-	if err := forwarderManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.StartResourcePreview(ctx, out, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
 	}
 	if err := debugContainerManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
@@ -311,7 +309,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	eventV2.TaskSucceeded(constants.DevLoop)
 	r.devIteration++
 	return r.listener.WatchForChanges(ctx, out, func() error {
-		return r.doDev(ctx, out, forwarderManager)
+		return r.doDev(ctx, out)
 	})
 }
 

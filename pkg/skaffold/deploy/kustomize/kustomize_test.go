@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -187,7 +188,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				},
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption,
-				}}}, nil, &log.NoopLogger{}, &test.kustomize)
+				}}}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, &test.kustomize)
 			t.RequireNoError(err)
 			_, err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
@@ -253,7 +254,7 @@ func TestKustomizeCleanup(t *testing.T) {
 				workingDir: tmpDir.Root(),
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
-			}, nil, &log.NoopLogger{}, &test.kustomize)
+			}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, &test.kustomize)
 			t.RequireNoError(err)
 			err = k.Cleanup(context.Background(), ioutil.Discard)
 
@@ -455,7 +456,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 				tmpDir.Write(path, contents)
 			}
 
-			k, err := NewDeployer(&kustomizeConfig{}, nil, &log.NoopLogger{}, &latestV1.KustomizeDeploy{KustomizePaths: kustomizePaths})
+			k, err := NewDeployer(&kustomizeConfig{}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, &latestV1.KustomizeDeploy{KustomizePaths: kustomizePaths})
 			t.RequireNoError(err)
 
 			deps, err := k.Dependencies()
@@ -699,7 +700,7 @@ spec:
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: kubectl.TestNamespace}},
-			}, test.labels, &log.NoopLogger{}, &latestV1.KustomizeDeploy{
+			}, test.labels, &log.NoopLogger{}, &preview.NoopPreviewer{}, &latestV1.KustomizeDeploy{
 				KustomizePaths: kustomizationPaths,
 			})
 			t.RequireNoError(err)

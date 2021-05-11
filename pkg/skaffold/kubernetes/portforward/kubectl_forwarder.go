@@ -51,9 +51,9 @@ type KubectlForwarder struct {
 }
 
 // NewKubectlForwarder returns a new KubectlForwarder
-func NewKubectlForwarder(out io.Writer, cli *kubectl.CLI) *KubectlForwarder {
+func NewKubectlForwarder(cli *kubectl.CLI) *KubectlForwarder {
 	return &KubectlForwarder{
-		out:     out,
+		// out:     out,
 		kubectl: cli,
 	}
 }

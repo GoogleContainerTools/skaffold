@@ -41,6 +41,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -88,9 +89,10 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	podSelectors := kubernetes.NewImageList()
 
 	logger := getLogger(runCtx, kubectlCLI, podSelectors)
+	previewer := getResourcePreviewer(runCtx, kubectlCLI, podSelectors, labeller.RunIDSelector())
 
 	var deployer deploy.Deployer
-	deployer, err = getDeployer(runCtx, labeller.Labels(), logger)
+	deployer, err = getDeployer(runCtx, labeller.Labels(), logger, previewer)
 	if err != nil {
 		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
@@ -232,7 +234,7 @@ The default deployer will honor a select set of deploy configuration from an exi
 For a multi-config project, we do not currently support resolving conflicts between differing sets of this deploy configuration.
 Therefore, in this function we do implicit validation of the provided configuration, and fail if any conflict cannot be resolved.
 */
-func getDefaultDeployer(runCtx *runcontext.RunContext, labels map[string]string, logger log.Logger) (deploy.Deployer, error) {
+func getDefaultDeployer(runCtx *runcontext.RunContext, labels map[string]string, logger log.Logger, previewer preview.ResourcePreviewer) (deploy.Deployer, error) {
 	deployCfgs := runCtx.DeployConfigs()
 
 	var kFlags *latestV1.KubectlFlags
@@ -290,7 +292,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labels map[string]string,
 		Flags:            *kFlags,
 		DefaultNamespace: defaultNamespace,
 	}
-	defaultDeployer, err := kubectl.NewDeployer(runCtx, labels, logger, k)
+	defaultDeployer, err := kubectl.NewDeployer(runCtx, labels, logger, previewer, k)
 	if err != nil {
 		return nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
 	}
@@ -320,9 +322,9 @@ func validateKubectlFlags(flags *latestV1.KubectlFlags, additional latestV1.Kube
 	return nil
 }
 
-func getDeployer(runCtx *runcontext.RunContext, labels map[string]string, logger log.Logger) (deploy.Deployer, error) {
+func getDeployer(runCtx *runcontext.RunContext, labels map[string]string, logger log.Logger, previewer preview.ResourcePreviewer) (deploy.Deployer, error) {
 	if runCtx.Opts.Apply {
-		return getDefaultDeployer(runCtx, labels, logger)
+		return getDefaultDeployer(runCtx, labels, logger, previewer)
 	}
 
 	deployerCfg := runCtx.Deployers()
@@ -330,7 +332,7 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string, logger
 	var deployers deploy.DeployerMux
 	for _, d := range deployerCfg {
 		if d.HelmDeploy != nil {
-			h, err := helm.NewDeployer(runCtx, labels, logger, d.HelmDeploy)
+			h, err := helm.NewDeployer(runCtx, labels, logger, previewer, d.HelmDeploy)
 			if err != nil {
 				return nil, err
 			}
@@ -338,11 +340,11 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string, logger
 		}
 
 		if d.KptDeploy != nil {
-			deployers = append(deployers, kpt.NewDeployer(runCtx, labels, logger, d.KptDeploy))
+			deployers = append(deployers, kpt.NewDeployer(runCtx, labels, logger, previewer, d.KptDeploy))
 		}
 
 		if d.KubectlDeploy != nil {
-			deployer, err := kubectl.NewDeployer(runCtx, labels, logger, d.KubectlDeploy)
+			deployer, err := kubectl.NewDeployer(runCtx, labels, logger, previewer, d.KubectlDeploy)
 			if err != nil {
 				return nil, err
 			}
@@ -350,7 +352,7 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string, logger
 		}
 
 		if d.KustomizeDeploy != nil {
-			deployer, err := kustomize.NewDeployer(runCtx, labels, logger, d.KustomizeDeploy)
+			deployer, err := kustomize.NewDeployer(runCtx, labels, logger, previewer, d.KustomizeDeploy)
 			if err != nil {
 				return nil, err
 			}

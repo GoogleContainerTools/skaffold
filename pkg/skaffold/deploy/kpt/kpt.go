@@ -41,6 +41,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -66,15 +67,18 @@ type Deployer struct {
 
 	log.Logger
 
+	preview.ResourcePreviewer
+
 	insecureRegistries map[string]bool
 	labels             map[string]string
 	globalConfig       string
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg types.Config, labels map[string]string, logger log.Logger, d *latestV1.KptDeploy) *Deployer {
+func NewDeployer(cfg types.Config, labels map[string]string, logger log.Logger, previewer preview.ResourcePreviewer, d *latestV1.KptDeploy) *Deployer {
 	return &Deployer{
 		Logger:             logger,
+		ResourcePreviewer:  previewer,
 		KptDeploy:          d,
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
