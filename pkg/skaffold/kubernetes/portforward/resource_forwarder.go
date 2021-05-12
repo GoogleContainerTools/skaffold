@@ -67,7 +67,11 @@ func NewUserDefinedForwarder(entryManager *EntryManager, userDefinedResources []
 func (p *ResourceForwarder) Start(ctx context.Context, namespaces []string) error {
 	if len(namespaces) == 1 {
 		for _, pf := range p.userDefinedResources {
-			if pf.Namespace == "" {
+			if pf.Namespace != "" {
+				if err := applyNamespaceWithTemplate(pf); err != nil {
+					return err
+				}
+			} else {
 				pf.Namespace = namespaces[0]
 			}
 		}
@@ -75,6 +79,9 @@ func (p *ResourceForwarder) Start(ctx context.Context, namespaces []string) erro
 		var validResources []*latestV1.PortForwardResource
 		for _, pf := range p.userDefinedResources {
 			if pf.Namespace != "" {
+				if err := applyNamespaceWithTemplate(pf); err != nil {
+					return err
+				}
 				validResources = append(validResources, pf)
 			} else {
 				logrus.Warnf("Skipping the port forwarding resource %s/%s because namespace is not specified", pf.Type, pf.Name)
@@ -92,6 +99,15 @@ func (p *ResourceForwarder) Start(ctx context.Context, namespaces []string) erro
 		serviceResources = found
 	}
 	p.portForwardResources(ctx, append(p.userDefinedResources, serviceResources...))
+	return nil
+}
+
+func applyNamespaceWithTemplate(resource *latestV1.PortForwardResource) error {
+	namespace, err := util.ExpandEnvTemplateOrFail(resource.Namespace, nil)
+	if err != nil {
+		return fmt.Errorf("cannot parse the namespace template on user defined port forwarder: %w", err)
+	}
+	resource.Namespace = namespace
 	return nil
 }
 
