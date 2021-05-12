@@ -20,12 +20,9 @@ import proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 
 func ApplicationLog(podName, containerName, message string) {
 	handler.handleApplicationLogEvent(&proto.ApplicationLogEvent{
-		ContainerName:        podName,
-		PodName:              containerName,
-		Message:              message,
-		XXX_NoUnkeyedLiteral: struct{}{},
-		XXX_unrecognized:     nil,
-		XXX_sizecache:        0,
+		ContainerName: podName,
+		PodName:       containerName,
+		Message:       message,
 	})
 }
 
