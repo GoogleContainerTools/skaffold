@@ -17,10 +17,14 @@ limitations under the License.
 package manifest
 
 import (
+	"context"
+	"strconv"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
@@ -58,11 +62,18 @@ func (is *imageSaver) Visit(o map[string]interface{}, k string, v interface{}) b
 }
 
 // ReplaceImages replaces image names in a list of manifests.
-func (l *ManifestList) ReplaceImages(builds []graph.Artifact) (ManifestList, error) {
+func (l *ManifestList) ReplaceImages(ctx context.Context, builds []graph.Artifact) (ManifestList, error) {
+	_, endTrace := instrumentation.StartTrace(ctx, "ReplaceImages", map[string]string{
+		"manifestEntries":   strconv.Itoa(len(*l)),
+		"numImagesReplaced": strconv.Itoa(len(builds)),
+	})
+	defer endTrace()
+
 	replacer := newImageReplacer(builds)
 
 	updated, err := l.Visit(replacer)
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, replaceImageErr(err)
 	}
 

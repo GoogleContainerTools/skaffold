@@ -33,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -66,14 +67,21 @@ func newArtifactHasher(artifacts graph.ArtifactGraph, lister DependencyLister, m
 }
 
 func (h *artifactHasherImpl) hash(ctx context.Context, a *latestV1.Artifact) (string, error) {
+	ctx, endTrace := instrumentation.StartTrace(ctx, "hash_GenerateHashOneArtifact", map[string]string{
+		"ImageName": instrumentation.PII(a.ImageName),
+	})
+	defer endTrace()
+
 	hash, err := h.safeHash(ctx, a)
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return "", err
 	}
 	hashes := []string{hash}
 	for _, dep := range sortedDependencies(a, h.artifacts) {
 		depHash, err := h.hash(ctx, dep)
 		if err != nil {
+			endTrace(instrumentation.TraceEndError(err))
 			return "", err
 		}
 		hashes = append(hashes, depHash)

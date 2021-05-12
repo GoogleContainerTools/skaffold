@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -69,14 +70,19 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 	// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
 	defer r.monitor.Reset()
 	defer r.listener.LogWatchToUser(out)
+
 	event.DevLoopInProgress(r.devIteration)
 	eventV2.InitializeState(r.runCtx)
 	eventV2.TaskInProgress(constants.DevLoop)
 	defer func() { r.devIteration++ }()
 	eventV2.LogMetaEvent()
+	ctx, endTrace := instrumentation.StartTrace(ctx, "doDev_DevLoopInProgress", map[string]string{
+		"devIteration": strconv.Itoa(r.devIteration),
+	})
 
 	meterUpdated := false
 	if needsSync {
+		childCtx, endTrace := instrumentation.StartTrace(ctx, "doDev_needsSync")
 		defer func() {
 			r.changeSet.ResetSync()
 			r.intents.ResetSync()
@@ -88,20 +94,24 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 			output.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
 			fileSyncInProgress(fileCount, s.Image)
 
-			if err := r.syncer.Sync(ctx, s); err != nil {
+			if err := r.syncer.Sync(childCtx, s); err != nil {
 				logrus.Warnln("Skipping deploy due to sync error:", err)
 				fileSyncFailed(fileCount, s.Image, err)
 				event.DevLoopFailedInPhase(r.devIteration, constants.Sync, err)
 				eventV2.TaskFailed(constants.DevLoop, err)
+				endTrace(instrumentation.TraceEndError(err))
+
 				return nil
 			}
 
 			fileSyncSucceeded(fileCount, s.Image)
 		}
+		endTrace()
 	}
 
 	var bRes []graph.Artifact
 	if needsBuild {
+		childCtx, endTrace := instrumentation.StartTrace(ctx, "doDev_needsBuild")
 		event.ResetStateOnBuild()
 		defer func() {
 			r.changeSet.ResetBuild()
@@ -113,19 +123,22 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 		}
 
 		var err error
-		bRes, err = r.Build(ctx, out, r.changeSet.NeedsRebuild())
+		bRes, err = r.Build(childCtx, out, r.changeSet.NeedsRebuild())
 		if err != nil {
 			logrus.Warnln("Skipping test and deploy due to build error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
 			eventV2.TaskFailed(constants.DevLoop, err)
+			endTrace(instrumentation.TraceEndError(err))
 			return nil
 		}
 		r.changeSet.Redeploy()
 		needsDeploy = deployIntent
+		endTrace()
 	}
 
 	// Trigger retest when there are newly rebuilt artifacts or untested previous artifacts; and it's not explicitly skipped
 	if (len(bRes) > 0 || needsTest) && !r.runCtx.SkipTests() {
+		childCtx, endTrace := instrumentation.StartTrace(ctx, "doDev_needsTest")
 		event.ResetStateOnTest()
 		defer func() {
 			r.changeSet.ResetTest()
@@ -138,17 +151,20 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 				bRes = append(bRes, a)
 			}
 		}
-		if err := r.Test(ctx, out, bRes); err != nil {
+		if err := r.Test(childCtx, out, bRes); err != nil {
 			if needsDeploy {
 				logrus.Warnln("Skipping deploy due to test error:", err)
 			}
 			event.DevLoopFailedInPhase(r.devIteration, constants.Test, err)
 			eventV2.TaskFailed(constants.DevLoop, err)
+			endTrace(instrumentation.TraceEndError(err))
 			return nil
 		}
+		endTrace()
 	}
 
 	if needsDeploy {
+		childCtx, endTrace := instrumentation.StartTrace(ctx, "doDev_needsDeploy")
 		event.ResetStateOnDeploy()
 		defer func() {
 			r.changeSet.ResetDeploy()
@@ -159,18 +175,21 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 		if !meterUpdated {
 			instrumentation.AddDevIteration("deploy")
 		}
-		if err := r.Deploy(ctx, out, r.Builds); err != nil {
+		if err := r.Deploy(childCtx, out, r.Builds); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, constants.Deploy, err)
 			eventV2.TaskFailed(constants.DevLoop, err)
+			endTrace(instrumentation.TraceEndError(err))
 			return nil
 		}
-		if err := forwarderManager.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
+		if err := forwarderManager.Start(childCtx, r.runCtx.GetNamespaces()); err != nil {
 			logrus.Warnln("Port forwarding failed:", err)
 		}
+		endTrace()
 	}
 	event.DevLoopComplete(r.devIteration)
 	eventV2.TaskSucceeded(constants.DevLoop)
+	endTrace()
 	logger.Unmute()
 	return nil
 }
@@ -183,6 +202,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	eventV2.TaskInProgress(constants.DevLoop)
 	defer func() { r.devIteration++ }()
 	eventV2.LogMetaEvent()
+	ctx, endTrace := instrumentation.StartTrace(ctx, "Dev", map[string]string{
+		"devIteration": strconv.Itoa(r.devIteration),
+	})
 
 	g := getTransposeGraph(artifacts)
 	// Watch artifacts
@@ -219,6 +241,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			); err != nil {
 				event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_BUILD_DEPS, err)
 				eventV2.TaskFailed(constants.DevLoop, err)
+				endTrace()
 				return fmt.Errorf("watching files for artifact %q: %w", artifact.ImageName, err)
 			}
 		}
@@ -233,6 +256,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		); err != nil {
 			event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)
 			eventV2.TaskFailed(constants.DevLoop, err)
+			endTrace()
 			return fmt.Errorf("watching test files: %w", err)
 		}
 	}
@@ -244,6 +268,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_DEPLOY_DEPS, err)
 		eventV2.TaskFailed(constants.DevLoop, err)
+		endTrace()
 		return fmt.Errorf("watching files for deployer: %w", err)
 	}
 
@@ -254,6 +279,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_CONFIG_DEP, err)
 		eventV2.TaskFailed(constants.DevLoop, err)
+		endTrace()
 		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.ConfigurationFile(), err)
 	}
 
@@ -263,6 +289,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err := sync.Init(ctx, artifacts); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_SYNC_INIT_ERROR, err)
 		eventV2.TaskFailed(constants.DevLoop, err)
+		endTrace()
 		return fmt.Errorf("exiting dev mode because initializing sync state failed: %w", err)
 	}
 
@@ -271,6 +298,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
 		eventV2.TaskFailed(constants.DevLoop, err)
+		endTrace()
 		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
 	}
 	// First test
@@ -278,6 +306,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		if err = r.Test(ctx, out, bRes); err != nil {
 			event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
 			eventV2.TaskFailed(constants.DevLoop, err)
+			endTrace()
 			return fmt.Errorf("exiting dev mode because test failed after first build: %w", err)
 		}
 	}
@@ -295,6 +324,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err := r.Deploy(ctx, out, r.Builds); err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, constants.Deploy, err)
 		eventV2.TaskFailed(constants.DevLoop, err)
+		endTrace()
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
 
@@ -316,6 +346,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	event.DevLoopComplete(r.devIteration)
 	eventV2.TaskSucceeded(constants.DevLoop)
+	endTrace()
 	r.devIteration++
 	return r.listener.WatchForChanges(ctx, out, func() error {
 		return r.doDev(ctx, out, logger, forwarderManager)

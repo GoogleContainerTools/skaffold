@@ -29,6 +29,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
@@ -42,6 +43,8 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	start := time.Now()
 
 	output.Default.Fprintln(out, "Checking cache...")
+	ctx, endTrace := instrumentation.StartTrace(ctx, "Build_CheckBuildCache")
+	defer endTrace()
 
 	lookup := make(chan []cacheDetails)
 	go func() { lookup <- c.lookupArtifacts(ctx, tags, artifacts) }()
@@ -64,6 +67,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		switch result := result.(type) {
 		case failed:
 			output.Red.Fprintln(out, "Error checking cache.")
+			endTrace(instrumentation.TraceEndError(result.err))
 			return nil, result.err
 
 		case needsBuilding:
@@ -77,6 +81,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			eventV2.CacheCheckHit(artifact.ImageName)
 			output.Green.Fprintln(out, "Found. Tagging")
 			if err := result.Tag(ctx, c); err != nil {
+				endTrace(instrumentation.TraceEndError(err))
 				return nil, fmt.Errorf("tagging image: %w", err)
 			}
 
@@ -84,6 +89,8 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			eventV2.CacheCheckHit(artifact.ImageName)
 			output.Green.Fprintln(out, "Found. Pushing")
 			if err := result.Push(ctx, out, c); err != nil {
+				endTrace(instrumentation.TraceEndError(err))
+
 				return nil, fmt.Errorf("%s: %w", sErrors.PushImageErr, err)
 			}
 
@@ -91,6 +98,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			eventV2.CacheCheckHit(artifact.ImageName)
 			isLocal, err := c.isLocalImage(artifact.ImageName)
 			if err != nil {
+				endTrace(instrumentation.TraceEndError(err))
 				return nil, err
 			}
 			if isLocal {
@@ -109,12 +117,14 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		var uniqueTag string
 		isLocal, err := c.isLocalImage(artifact.ImageName)
 		if err != nil {
+			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
 		}
 		if isLocal {
 			var err error
 			uniqueTag, err = build.TagWithImageID(ctx, tag, entry.ID, c.client)
 			if err != nil {
+				endTrace(instrumentation.TraceEndError(err))
 				return nil, err
 			}
 		} else {
@@ -131,6 +141,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 	bRes, err := buildAndTest(ctx, out, tags, needToBuild)
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
 

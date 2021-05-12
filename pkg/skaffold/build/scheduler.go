@@ -20,12 +20,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 
 	"golang.org/x/sync/errgroup"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
@@ -90,11 +92,17 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 
 	event.BuildInProgress(a.ImageName)
 	eventV2.BuildInProgress(a.ImageName)
+	ctx, endTrace := instrumentation.StartTrace(ctx, "build_BuildInProgress", map[string]string{
+		"ArtifactNumber": strconv.Itoa(i),
+		"ImageName":      instrumentation.PII(a.ImageName),
+	})
+	defer endTrace()
 
 	w, closeFn, err := s.logger.GetWriter()
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
 		eventV2.BuildFailed(a.ImageName, err)
+		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
 	defer closeFn()
@@ -103,6 +111,7 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
 		eventV2.BuildFailed(a.ImageName, err)
+		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
 

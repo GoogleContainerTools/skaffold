@@ -64,13 +64,12 @@ func createNewRunner(out io.Writer, opts config.SkaffoldOptions) (runner.Runner,
 		return nil, nil, nil, err
 	}
 
-	instrumentation.InitMeterFromConfig(configs, opts.User)
+	instrumentation.Init(configs, opts.User)
 	runner, err := v1.NewForConfig(runCtx)
 	if err != nil {
 		event.InititializationFailed(err)
 		return nil, nil, nil, fmt.Errorf("creating runner: %w", err)
 	}
-
 	return runner, configs, runCtx, nil
 }
 

@@ -46,9 +46,7 @@ func main() {
 			code = exitCode(err)
 		}
 	}
-	if err := instrumentation.ExportMetrics(code); err != nil {
-		logrus.Debugf("error exporting metrics %v", err)
-	}
+	instrumentation.ShutdownAndFlush(context.Background(), code)
 	os.Exit(code)
 }
 

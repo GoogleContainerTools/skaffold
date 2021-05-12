@@ -85,7 +85,7 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	if err != nil {
 		return err
 	}
-	manifests, err = manifests.ReplaceImages(builds)
+	manifests, err = manifests.ReplaceImages(ctx, builds)
 	if err != nil {
 		return err
 	}

@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -57,13 +58,20 @@ type dependencyResolverImpl struct {
 }
 
 func (r *dependencyResolverImpl) TransitiveArtifactDependencies(ctx context.Context, a *latestV1.Artifact) ([]string, error) {
+	ctx, endTrace := instrumentation.StartTrace(ctx, "TransitiveArtifactDependencies", map[string]string{
+		"ArtifactName": instrumentation.PII(a.ImageName),
+	})
+	defer endTrace()
+
 	deps, err := r.SingleArtifactDependencies(ctx, a)
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
 	for _, ad := range a.Dependencies {
 		d, err := r.TransitiveArtifactDependencies(ctx, r.artifactGraph[ad.ImageName])
 		if err != nil {
+			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
 		}
 		deps = append(deps, d...)
@@ -72,6 +80,11 @@ func (r *dependencyResolverImpl) TransitiveArtifactDependencies(ctx context.Cont
 }
 
 func (r *dependencyResolverImpl) SingleArtifactDependencies(ctx context.Context, a *latestV1.Artifact) ([]string, error) {
+	ctx, endTrace := instrumentation.StartTrace(ctx, "SingleArtifactDependencies", map[string]string{
+		"ArtifactName": instrumentation.PII(a.ImageName),
+	})
+	defer endTrace()
+
 	res := r.cache.Exec(a.ImageName, func() interface{} {
 		d, e := getDependenciesFunc(ctx, a, r.cfg, r.artifactResolver)
 		if e != nil {
@@ -80,6 +93,7 @@ func (r *dependencyResolverImpl) SingleArtifactDependencies(ctx context.Context,
 		return d
 	})
 	if err, ok := res.(error); ok {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
 	return res.([]string), nil

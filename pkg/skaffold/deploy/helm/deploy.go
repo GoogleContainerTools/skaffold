@@ -42,6 +42,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -122,6 +123,11 @@ func NewDeployer(cfg Config, labels map[string]string, h *latestV1.HelmDeploy) (
 
 // Deploy deploys the build results to the Kubernetes cluster
 func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
+	ctx, endTrace := instrumentation.StartTrace(ctx, "Render", map[string]string{
+		"DeployerType": "helm",
+	})
+	defer endTrace()
+
 	logrus.Infof("Deploying with helm v%s ...", h.bV)
 
 	var dRes []types.Artifact
@@ -229,6 +235,10 @@ func (h *Deployer) Dependencies() ([]string, error) {
 
 // Cleanup deletes what was deployed by calling Deploy.
 func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"DeployerType": "helm",
+	})
+
 	for _, r := range h.Releases {
 		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
 		if err != nil {
@@ -253,6 +263,9 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 // Render generates the Kubernetes manifests and writes them out
 func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"DeployerType": "helm",
+	})
 	renderedManifests := new(bytes.Buffer)
 
 	for _, r := range h.Releases {

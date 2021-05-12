@@ -38,6 +38,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -142,41 +143,67 @@ func versionCheck(dir string, stdout io.Writer) error {
 // outputs them to the applyDir, and runs `kpt live apply` against applyDir to create resources in the cluster.
 // `kpt live apply` supports automated pruning declaratively via resources in the applyDir.
 func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"DeployerType": "kpt",
+	})
+
+	_, endTrace := instrumentation.StartTrace(ctx, "Deploy_sanityCheck")
 	if err := sanityCheck(k.Dir, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
+	endTrace()
+
+	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_getKptFnRunArgs")
 	flags, err := k.getKptFnRunArgs()
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return []string{}, err
 	}
-	manifests, err := k.renderManifests(ctx, out, builds, flags)
+	endTrace()
+
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_renderManifests")
+	manifests, err := k.renderManifests(childCtx, out, builds, flags)
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
 
 	if len(manifests) == 0 {
+		endTrace()
 		return nil, nil
 	}
+	endTrace()
 
+	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_CollectNamespaces")
 	namespaces, err := manifests.CollectNamespaces()
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not fetch deployed resource namespace. "+
 			"This might cause port-forward and deploy health-check to fail: %w", err))
 	}
+	endTrace()
 
-	applyDir, err := k.getApplyDir(ctx)
+	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_getApplyDir")
+	applyDir, err := k.getApplyDir(childCtx)
 	if err != nil {
 		return nil, fmt.Errorf("getting applyDir: %w", err)
 	}
+	endTrace()
 
+	_, endTrace = instrumentation.StartTrace(ctx, "Deploy_manifest.Write")
 	manifest.Write(manifests.String(), filepath.Join(applyDir, "resources.yaml"), out)
-	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "apply"}, k.getKptLiveApplyArgs(), nil)...)
+	endTrace()
+
+	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_execKptCommand")
+	cmd := exec.CommandContext(childCtx, "kpt", kptCommandArgs(applyDir, []string{"live", "apply"}, k.getKptLiveApplyArgs(), nil)...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
 
+	endTrace()
 	return namespaces, nil
 }
 
@@ -220,6 +247,10 @@ func (k *Deployer) Dependencies() ([]string, error) {
 
 // Cleanup deletes what was deployed by calling `kpt live destroy`.
 func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"DeployerType": "kpt",
+	})
+
 	applyDir, err := k.getApplyDir(ctx)
 	if err != nil {
 		return fmt.Errorf("getting applyDir: %w", err)
@@ -237,19 +268,36 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 // Render hydrates manifests using both kustomization and kpt functions.
 func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, _ bool, filepath string) error {
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"DeployerType": "kubectl",
+	})
+
+	_, endTrace := instrumentation.StartTrace(ctx, "Render_sanityCheck")
+
 	if err := sanityCheck(k.Dir, out); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
+	endTrace()
+
+	_, endTrace = instrumentation.StartTrace(ctx, "Render_getKptFnRunArgs")
 	flags, err := k.getKptFnRunArgs()
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
+	endTrace()
 
-	manifests, err := k.renderManifests(ctx, out, builds, flags)
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Render_renderManifests")
+	manifests, err := k.renderManifests(childCtx, out, builds, flags)
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
+	endTrace()
 
+	_, endTrace = instrumentation.StartTrace(ctx, "Render_manifest.Write")
+	defer endTrace()
 	return manifest.Write(manifests.String(), filepath, out)
 }
 
@@ -385,7 +433,7 @@ func (k *Deployer) renderManifests(ctx context.Context, _ io.Writer, builds []gr
 	if err != nil {
 		return nil, fmt.Errorf("excluding kpt functions from manifests: %w", err)
 	}
-	manifests, err = manifests.ReplaceImages(builds)
+	manifests, err = manifests.ReplaceImages(ctx, builds)
 	if err != nil {
 		return nil, fmt.Errorf("replacing images in manifests: %w", err)
 	}

@@ -24,6 +24,7 @@ import (
 
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -38,15 +39,18 @@ func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifac
 
 	for i, deployer := range m {
 		eventV2.DeployInProgress(i)
+		ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy")
 
 		namespaces, err := deployer.Deploy(ctx, w, as)
 		if err != nil {
 			eventV2.DeployFailed(i, err)
+			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
 		}
 		seenNamespaces.Insert(namespaces...)
 
 		eventV2.DeploySucceeded(i)
+		endTrace()
 	}
 
 	return seenNamespaces.ToList(), nil
@@ -66,9 +70,11 @@ func (m DeployerMux) Dependencies() ([]string, error) {
 
 func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer) error {
 	for _, deployer := range m {
+		ctx, endTrace := instrumentation.StartTrace(ctx, "Cleanup")
 		if err := deployer.Cleanup(ctx, w); err != nil {
 			return err
 		}
+		endTrace()
 	}
 	return nil
 }
@@ -76,11 +82,14 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer) error {
 func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []graph.Artifact, offline bool, filepath string) error {
 	resources, buf := []string{}, &bytes.Buffer{}
 	for _, deployer := range m {
+		ctx, endTrace := instrumentation.StartTrace(ctx, "Render")
 		buf.Reset()
 		if err := deployer.Render(ctx, buf, as, offline, "" /* never write to files */); err != nil {
+			endTrace(instrumentation.TraceEndError(err))
 			return err
 		}
 		resources = append(resources, buf.String())
+		endTrace()
 	}
 
 	allResources := strings.Join(resources, "\n---\n")

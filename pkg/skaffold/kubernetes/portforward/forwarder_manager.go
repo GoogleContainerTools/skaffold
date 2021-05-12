@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -110,9 +111,13 @@ func (p *ForwarderManager) Start(ctx context.Context, namespaces []string) error
 	}
 
 	eventV2.TaskInProgress(constants.PortForward)
+	ctx, endTrace := instrumentation.StartTrace(ctx, "Start")
+	defer endTrace()
+
 	for _, f := range p.forwarders {
 		if err := f.Start(ctx, namespaces); err != nil {
 			eventV2.TaskFailed(constants.PortForward, err)
+			endTrace(instrumentation.TraceEndError(err))
 			return err
 		}
 	}

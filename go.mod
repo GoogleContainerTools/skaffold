@@ -17,6 +17,7 @@ require (
 	cloud.google.com/go/storage v1.10.0
 	github.com/AlecAivazis/survey/v2 v2.2.7
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.20.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.20.0
 	github.com/aws/aws-sdk-go v1.36.30 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.4
@@ -24,7 +25,6 @@ require (
 	github.com/buildpacks/lifecycle v0.10.2
 	github.com/buildpacks/pack v0.18.1
 	github.com/cenkalti/backoff/v4 v4.0.2
-	github.com/daixiang0/gci v0.2.8 // indirect
 	github.com/docker/cli v20.10.0-beta1.0.20201117192004-5cc239616494+incompatible
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v20.10.0-beta1.0.20201110211921-af34b94a78a1+incompatible
@@ -66,8 +66,10 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
 	github.com/xeipuuv/gojsonschema v1.2.0
+	go.opencensus.io v0.22.5
 	go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/exporters/stdout v0.20.0
+	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.0 // indirect
 	go.opentelemetry.io/otel/metric v0.20.0
 	go.opentelemetry.io/otel/sdk v0.20.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.20.0

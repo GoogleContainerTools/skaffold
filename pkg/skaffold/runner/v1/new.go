@@ -37,6 +37,7 @@ import (
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -57,9 +58,12 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	eventV2.InitializeState(runCtx)
 	eventV2.LogMetaEvent()
 	kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
+	_, endTrace := instrumentation.StartTrace(context.Background(), "NewForConfig")
+	defer endTrace()
 
 	tagger, err := tag.NewTaggerMux(runCtx)
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating tagger: %w", err)
 	}
 
@@ -72,6 +76,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return runner.GetBuilder(runCtx, store, sourceDependencies, p)
 	})
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating builder: %w", err)
 	}
 	isLocalImage := func(imageName string) (bool, error) {
@@ -80,31 +85,38 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	labeller := label.NewLabeller(runCtx.AddSkaffoldLabels(), runCtx.CustomLabels())
 	tester, err := getTester(runCtx, isLocalImage)
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating tester: %w", err)
 	}
 	syncer := getSyncer(runCtx)
 	var deployer deploy.Deployer
 	deployer, err = getDeployer(runCtx, labeller.Labels())
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
 
 	depLister := func(ctx context.Context, artifact *latestV1.Artifact) ([]string, error) {
+		ctx, endTrace := instrumentation.StartTrace(ctx, "NewForConfig_depLister")
+		defer endTrace()
+
 		buildDependencies, err := sourceDependencies.SingleArtifactDependencies(ctx, artifact)
 		if err != nil {
+			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
 		}
 
 		testDependencies, err := tester.TestDependencies(artifact)
 		if err != nil {
+			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
 		}
-
 		return append(buildDependencies, testDependencies...), nil
 	}
 
 	artifactCache, err := cache.NewCache(runCtx, isLocalImage, depLister, g, store)
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
 
@@ -117,6 +129,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	intents, intentChan := setupIntents(runCtx)
 	rtrigger, err := trigger.NewTrigger(runCtx, intents.IsAnyAutoEnabled)
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
