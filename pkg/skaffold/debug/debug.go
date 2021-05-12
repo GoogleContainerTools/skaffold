@@ -119,12 +119,13 @@ func retrieveImageConfiguration(ctx context.Context, artifact *graph.Artifact, i
 
 	config := manifest.Config
 	logrus.Debugf("Retrieved local image configuration for %v: %v", artifact.Tag, config)
+	// need to duplicate slices as apiClient caches requests
 	return imageConfiguration{
 		artifact:   artifact.ImageName,
 		env:        envAsMap(config.Env),
-		entrypoint: config.Entrypoint,
-		arguments:  config.Cmd,
-		labels:     config.Labels,
+		entrypoint: dupArray(config.Entrypoint),
+		arguments:  dupArray(config.Cmd),
+		labels:     dupMap(config.Labels),
 		workingDir: config.WorkingDir,
 	}, nil
 }
@@ -137,4 +138,24 @@ func envAsMap(env []string) map[string]string {
 		result[s[0]] = s[1]
 	}
 	return result
+}
+
+func dupArray(s []string) []string {
+	if len(s) == 0 {
+		return nil
+	}
+	dup := make([]string, len(s))
+	copy(dup, s)
+	return dup
+}
+
+func dupMap(s map[string]string) map[string]string {
+	if len(s) == 0 {
+		return nil
+	}
+	dup := make(map[string]string, len(s))
+	for k, v := range s {
+		dup[k] = v
+	}
+	return dup
 }
