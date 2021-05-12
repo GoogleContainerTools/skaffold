@@ -29,6 +29,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -177,7 +178,7 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 
 	headerColor := a.colorPicker.Pick(pod)
 	prefix := a.prefix(pod, container)
-	if err := a.streamRequest(ctx, headerColor, prefix, tr); err != nil {
+	if err := a.streamRequest(ctx, headerColor, prefix, pod.Name, container.Name, tr); err != nil {
 		logrus.Errorf("streaming request %s", err)
 	}
 }
@@ -236,7 +237,7 @@ func podAndContainerPrefix(pod *v1.Pod, container v1.ContainerStatus) string {
 	return fmt.Sprintf("[%s %s]", pod.Name, container.Name)
 }
 
-func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Color, prefix string, rc io.Reader) error {
+func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Color, prefix, podName, containerName string, rc io.Reader) error {
 	r := bufio.NewReader(rc)
 	for {
 		select {
@@ -254,6 +255,7 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Col
 			}
 
 			a.printLogLine(headerColor, prefix, line)
+			eventV2.ApplicationLog(podName, containerName, line)
 		}
 	}
 }
