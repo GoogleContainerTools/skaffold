@@ -165,7 +165,7 @@ var flagRegistry = []Flag{
 			"debug": true,
 		},
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "apply", "test"},
 		IsEnum:        true,
 	},
 	{
@@ -174,7 +174,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.EventLogFile,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "test", "apply"},
 	},
 	{
 		Name:          "rpc-port",
