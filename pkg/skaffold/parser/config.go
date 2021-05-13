@@ -166,14 +166,16 @@ func processEachConfig(config *latestV1.SkaffoldConfig, cfgOpts configOpts, opts
 	if err != nil {
 		return nil, sErrors.ConfigProfileActivationErr(config.Metadata.Name, cfgOpts.file, err)
 	}
-	if err := defaults.Set(config); err != nil {
-		return nil, sErrors.ConfigSetDefaultValuesErr(config.Metadata.Name, cfgOpts.file, err)
+	if !opts.SkipConfigDefaults {
+		if err := defaults.Set(config); err != nil {
+			return nil, sErrors.ConfigSetDefaultValuesErr(config.Metadata.Name, cfgOpts.file, err)
+		}
 	}
 	// if `opts.MakePathsAbsolute` is not set, convert relative file paths to absolute for all configs that are not invoked explicitly.
 	// This avoids maintaining multiple root directory information since the dependency skaffold configs would have their own root directory.
 	// if `opts.MakePathsAbsolute` is set, use that as condition to decide on making file paths absolute for all configs or none at all.
 	// This is used when the parsed config is marshalled out (for commands like `skaffold diagnose` or `skaffold inspect`), we want to retain the original relative paths in the output files.
-	if (opts.MakePathsAbsolute != nil && *opts.MakePathsAbsolute) || (opts.MakePathsAbsolute == nil && cfgOpts.isDependency) {
+	if (opts.MakePathsAbsolute != nil && (*opts.MakePathsAbsolute)) || (opts.MakePathsAbsolute == nil && cfgOpts.isDependency) {
 		if err := tags.MakeFilePathsAbsolute(config, filepath.Dir(cfgOpts.file)); err != nil {
 			return nil, sErrors.ConfigSetAbsFilePathsErr(config.Metadata.Name, cfgOpts.file, err)
 		}
@@ -195,7 +197,7 @@ func processEachConfig(config *latestV1.SkaffoldConfig, cfgOpts configOpts, opts
 	}
 
 	if required {
-		configs = append(configs, &SkaffoldConfigEntry{SkaffoldConfig: config, SourceFile: cfgOpts.file, SourceIndex: index})
+		configs = append(configs, &SkaffoldConfigEntry{SkaffoldConfig: config, SourceFile: cfgOpts.file, SourceIndex: index, IsRootConfig: !cfgOpts.isDependency})
 	}
 	return configs, nil
 }

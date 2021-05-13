@@ -21,6 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 )
 
 type moduleList struct {
@@ -32,9 +33,9 @@ type moduleEntry struct {
 	Path string `json:"path"`
 }
 
-func PrintModulesList(ctx context.Context, out io.Writer, opts Options) error {
-	formatter := getOutputFormatter(out, opts.OutFormat)
-	cfgs, err := getConfigSetFunc(config.SkaffoldOptions{ConfigurationFile: opts.Filename})
+func PrintModulesList(ctx context.Context, out io.Writer, opts inspect.Options) error {
+	formatter := inspect.OutputFormatter(out, opts.OutFormat)
+	cfgs, err := inspect.ConfigSetFunc(config.SkaffoldOptions{ConfigurationFile: opts.Filename})
 	if err != nil {
 		return formatter.WriteErr(err)
 	}
