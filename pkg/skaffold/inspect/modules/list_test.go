@@ -55,7 +55,7 @@ func TestPrintModulesList(t *testing.T) {
 		{
 			description: "generic error",
 			err:         errors.New("some error occurred"),
-			expected:    `{"errorCode":"UNKNOWN_ERROR","errorMessage":"some error occurred"}` + "\n",
+			expected:    `{"errorCode":"INSPECT_UNKNOWN_ERR","errorMessage":"some error occurred"}` + "\n",
 		},
 	}
 

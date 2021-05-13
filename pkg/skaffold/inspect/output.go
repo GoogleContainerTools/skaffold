@@ -54,7 +54,7 @@ func (j jsonFormatter) WriteErr(err error) error {
 	if errors.As(err, &sErr) {
 		jsonErr = jsonErrorOutput{ErrorCode: sErr.StatusCode().String(), ErrorMessage: sErr.Error()}
 	} else {
-		jsonErr = jsonErrorOutput{ErrorCode: proto.StatusCode_UNKNOWN_ERROR.String(), ErrorMessage: err.Error()}
+		jsonErr = jsonErrorOutput{ErrorCode: proto.StatusCode_INSPECT_UNKNOWN_ERR.String(), ErrorMessage: err.Error()}
 	}
 	return json.NewEncoder(j.out).Encode(jsonErr)
 }

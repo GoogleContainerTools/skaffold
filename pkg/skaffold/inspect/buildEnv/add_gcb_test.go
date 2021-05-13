@@ -19,11 +19,14 @@ package inspect
 import (
 	"bytes"
 	"context"
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
@@ -37,7 +40,8 @@ func TestAddGcbBuildEnv(t *testing.T) {
 		modules         []string
 		buildEnvOpts    inspect.BuildEnvOptions
 		expectedConfigs []string
-		expectedError   string
+		err             error
+		expectedErrMsg  string
 	}{
 		{
 			description:  "add to default pipeline",
@@ -293,6 +297,16 @@ profiles:
 `,
 			},
 		},
+		{
+			description:    "actionable error",
+			err:            sErrors.MainConfigFileNotFoundErr("path/to/skaffold.yaml", fmt.Errorf("failed to read file : %q", "skaffold.yaml")),
+			expectedErrMsg: `{"errorCode":"CONFIG_FILE_NOT_FOUND_ERR","errorMessage":"unable to find configuration file \"path/to/skaffold.yaml\": failed to read file : \"skaffold.yaml\". Check that the specified configuration file exists at \"path/to/skaffold.yaml\"."}` + "\n",
+		},
+		{
+			description:    "generic error",
+			err:            errors.New("some error occurred"),
+			expectedErrMsg: `{"errorCode":"INSPECT_UNKNOWN_ERR","errorMessage":"some error occurred"}` + "\n",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -318,6 +332,9 @@ profiles:
 					}}, SourceFile: "path/to/cfg2", SourceIndex: 0},
 			}
 			t.Override(&inspect.ConfigSetFunc, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
+				if test.err != nil {
+					return nil, test.err
+				}
 				var sets parser.SkaffoldConfigSet
 				if len(opts.ConfigurationFilter) == 0 || util.StrSliceContains(opts.ConfigurationFilter, "cfg2") || util.StrSliceContains(opts.ConfigurationFilter, "cfg1_1") {
 					sets = append(sets, configSet[2])
@@ -355,11 +372,11 @@ profiles:
 			var buf bytes.Buffer
 			err := AddGcbBuildEnv(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.modules, BuildEnvOptions: test.buildEnvOpts})
 			t.CheckNoError(err)
-			if test.expectedError == "" {
+			if test.err == nil {
 				t.CheckDeepEqual(test.expectedConfigs[0], actualCfg1)
 				t.CheckDeepEqual(test.expectedConfigs[1], actualCfg2)
 			} else {
-				t.CheckDeepEqual(test.expectedError, buf.String())
+				t.CheckDeepEqual(test.expectedErrMsg, buf.String())
 			}
 		})
 	}
