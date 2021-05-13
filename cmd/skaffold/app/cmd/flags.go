@@ -171,6 +171,7 @@ var flagRegistry = []Flag{
 	{
 		Name:          "event-log-file",
 		Usage:         "Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true",
+		Hidden:        true,
 		Value:         &opts.EventLogFile,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",

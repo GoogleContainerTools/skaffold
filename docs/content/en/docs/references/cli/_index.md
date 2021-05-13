@@ -122,7 +122,6 @@ Examples:
 Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events
-      --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --kube-context='': Deploy to this Kubernetes context
@@ -146,7 +145,6 @@ Env vars:
 
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
-* `SKAFFOLD_EVENT_LOG_FILE` (same as `--event-log-file`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
@@ -195,7 +193,6 @@ Options:
       --detect-minikube=true: Use heuristics to detect a minikube cluster
       --dry-run=false: Don't build images, just compute the tag for each artifact.
       --enable-rpc=false: Enable gRPC for exposing Skaffold events
-      --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
       --file-output='': Filename to write build images to
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --insecure-registry=[]: Target registries for built images which are not secure
@@ -234,7 +231,6 @@ Env vars:
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_DRY_RUN` (same as `--dry-run`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
-* `SKAFFOLD_EVENT_LOG_FILE` (same as `--event-log-file`)
 * `SKAFFOLD_FILE_OUTPUT` (same as `--file-output`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
@@ -422,7 +418,6 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
       --enable-rpc=true: Enable gRPC for exposing Skaffold events
-      --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
@@ -475,7 +470,6 @@ Env vars:
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
-* `SKAFFOLD_EVENT_LOG_FILE` (same as `--event-log-file`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
@@ -574,7 +568,6 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --detect-minikube=true: Use heuristics to detect a minikube cluster
       --enable-rpc=false: Enable gRPC for exposing Skaffold events
-      --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
   -i, --images=: A list of pre-built images to deploy
@@ -615,7 +608,6 @@ Env vars:
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
-* `SKAFFOLD_EVENT_LOG_FILE` (same as `--event-log-file`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_IMAGES` (same as `--images`)
@@ -663,7 +655,6 @@ Options:
       --detect-minikube=true: Use heuristics to detect a minikube cluster
       --digest-source='remote': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.
       --enable-rpc=true: Enable gRPC for exposing Skaffold events
-      --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
@@ -717,7 +708,6 @@ Env vars:
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
-* `SKAFFOLD_EVENT_LOG_FILE` (same as `--event-log-file`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
@@ -899,7 +889,6 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --digest-source='remote': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.
       --enable-rpc=false: Enable gRPC for exposing Skaffold events
-      --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
       --loud=false: Show the build logs and output
@@ -925,7 +914,6 @@ Env vars:
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
-* `SKAFFOLD_EVENT_LOG_FILE` (same as `--event-log-file`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_LOUD` (same as `--loud`)
@@ -964,7 +952,6 @@ Options:
       --detect-minikube=true: Use heuristics to detect a minikube cluster
       --digest-source='remote': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.
       --enable-rpc=false: Enable gRPC for exposing Skaffold events
-      --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --insecure-registry=[]: Target registries for built images which are not secure
@@ -1013,7 +1000,6 @@ Env vars:
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
-* `SKAFFOLD_EVENT_LOG_FILE` (same as `--event-log-file`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
@@ -1136,7 +1122,6 @@ Examples:
 Options:
   -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
       --enable-rpc=false: Enable gRPC for exposing Skaffold events
-      --event-log-file='': Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
@@ -1152,7 +1137,6 @@ Env vars:
 
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
-* `SKAFFOLD_EVENT_LOG_FILE` (same as `--event-log-file`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
