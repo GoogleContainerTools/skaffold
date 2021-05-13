@@ -75,9 +75,9 @@ type Deployer struct {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg types.Config, labels map[string]string, logger log.Logger, previewer preview.ResourcePreviewer, d *latestV1.KptDeploy) *Deployer {
+func NewDeployer(cfg types.Config, labels map[string]string, logProvider log.Provider, previewer preview.ResourcePreviewer, d *latestV1.KptDeploy) *Deployer {
 	return &Deployer{
-		Logger:             logger,
+		Logger:             logProvider.Do(),
 		ResourcePreviewer:  previewer,
 		KptDeploy:          d,
 		insecureRegistries: cfg.GetInsecureRegistries(),

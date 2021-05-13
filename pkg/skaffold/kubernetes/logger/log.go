@@ -47,6 +47,8 @@ type LogAggregator struct {
 	colorPicker kubernetes.ColorPicker
 
 	muted             int32
+	started           int32
+	stopped           int32
 	sinceTime         time.Time
 	events            chan kubernetes.PodEvent
 	trackedContainers trackedContainers
@@ -54,6 +56,7 @@ type LogAggregator struct {
 }
 
 type Config interface {
+	Tail() bool
 	PipelineForImage(imageName string) (latestV1.Pipeline, bool)
 	DefaultPipeline() latestV1.Pipeline
 }
@@ -90,11 +93,12 @@ func (a *LogAggregator) SetSince(t time.Time) {
 // Start starts a logger that listens to pods and tail their logs
 // if they are matched by the `podSelector`.
 func (a *LogAggregator) StartLogger(ctx context.Context, out io.Writer, namespaces []string) error {
-	if a == nil {
+	if a == nil || a.IsStarted() {
 		// Logs are not activated.
 		return nil
 	}
 
+	atomic.StoreInt32(&a.started, 1)
 	a.output = out
 
 	a.podWatcher.Register(a.events)
@@ -138,11 +142,12 @@ func (a *LogAggregator) StartLogger(ctx context.Context, out io.Writer, namespac
 
 // Stop stops the logger.
 func (a *LogAggregator) StopLogger() {
-	if a == nil {
+	if a == nil || a.IsStopped() {
 		// Logs are not activated.
 		return
 	}
 
+	atomic.StoreInt32(&a.stopped, 1)
 	close(a.events)
 }
 
@@ -280,9 +285,19 @@ func (a *LogAggregator) Unmute() {
 	atomic.StoreInt32(&a.muted, 0)
 }
 
-// IsMuted says if the logs are to be muted.
+// IsMuted returns true if the logger has been muted.
 func (a *LogAggregator) IsMuted() bool {
 	return atomic.LoadInt32(&a.muted) == 1
+}
+
+// IsStarted returns true if the logger has been started.
+func (a *LogAggregator) IsStarted() bool {
+	return atomic.LoadInt32(&a.started) == 1
+}
+
+// IsStopped returns true if the logger has been stopped.
+func (a *LogAggregator) IsStopped() bool {
+	return atomic.LoadInt32(&a.stopped) == 1
 }
 
 type trackedContainers struct {

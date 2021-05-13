@@ -228,3 +228,7 @@ func (c *mockConfig) DefaultPipeline() latestV1.Pipeline {
 	pipeline.Deploy.Logs = c.log
 	return pipeline
 }
+
+func (c *mockConfig) Tail() bool {
+	return true
+}

@@ -90,7 +90,7 @@ spec:
 					},
 				},
 			}}),
-		}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, &latestV1.KubectlDeploy{
+		}, nil, &log.NoopProvider{}, &preview.NoopPreviewer{}, &latestV1.KubectlDeploy{
 			Manifests: []string{"deployment.yaml"},
 		})
 		t.RequireNoError(err)
@@ -250,7 +250,7 @@ spec:
 				Opts: config.SkaffoldOptions{
 					AddSkaffoldLabels: true,
 				},
-			}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, &latestV1.KubectlDeploy{
+			}, nil, &log.NoopProvider{}, &preview.NoopPreviewer{}, &latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			})
 			t.RequireNoError(err)
@@ -436,7 +436,7 @@ spec:
 						},
 					},
 				}}),
-			}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, &latestV1.HelmDeploy{
+			}, nil, &log.NoopProvider{}, &preview.NoopPreviewer{}, &latestV1.HelmDeploy{
 				Releases: test.helmReleases,
 			})
 			t.RequireNoError(err)

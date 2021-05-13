@@ -106,7 +106,7 @@ type Deployer struct {
 	useKubectlKustomize bool
 }
 
-func NewDeployer(cfg kubectl.Config, labels map[string]string, logger log.Logger, previewer preview.ResourcePreviewer, d *latestV1.KustomizeDeploy) (*Deployer, error) {
+func NewDeployer(cfg kubectl.Config, labels map[string]string, logProvider log.Provider, previewer preview.ResourcePreviewer, d *latestV1.KustomizeDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -121,7 +121,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, logger log.Logger
 	useKubectlKustomize := !kustomizeBinaryCheck() && kubectlVersionCheck(kubectl)
 
 	return &Deployer{
-		Logger:              logger,
+		Logger:              logProvider.Do(),
 		ResourcePreviewer:   previewer,
 		KustomizeDeploy:     d,
 		kubectl:             kubectl,
