@@ -23,7 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
-// BadConfigFilterErr specifies no configs matched the configs filter
+// BuildEnvAlreadyExists specifies that there's an existing build environment definition for the same type.
 func BuildEnvAlreadyExists(b BuildEnv, filename string, profile string) error {
 	var msg string
 	if profile == "" {
