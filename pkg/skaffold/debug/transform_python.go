@@ -119,15 +119,7 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 		}, "", nil
 	}
 
-	var spec = &pythonSpec{debugger: debugpy, port: portAlloc(defaultDebugpyPort)}
-
-	// Check for override protocols.
-	for _, p := range overrideProtocols {
-		if p == pydevdProtocol {
-			spec = &pythonSpec{debugger: pydevd, port: portAlloc(defaultPydevdPort)}
-			break
-		}
-	}
+	spec := createPythonDebugSpec(overrideProtocols, portAlloc)
 
 	switch {
 	case isLaunchingPython(config.entrypoint):
@@ -170,6 +162,19 @@ func extractPythonDebugSpec(args []string) *pythonSpec {
 		return spec
 	}
 	return nil
+}
+
+func createPythonDebugSpec(overrideProtocols []string, portAlloc portAllocator) *pythonSpec {
+	for _, p := range overrideProtocols {
+		switch p {
+		case pydevdProtocol:
+			return &pythonSpec{debugger: pydevd, port: portAlloc(defaultPydevdPort)}
+		case dapProtocol:
+			return &pythonSpec{debugger: debugpy, port: portAlloc(defaultDebugpyPort)}
+		}
+	}
+
+	return &pythonSpec{debugger: debugpy, port: portAlloc(defaultDebugpyPort)}
 }
 
 func extractPtvsdSpec(args []string) *pythonSpec {

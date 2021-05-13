@@ -149,11 +149,11 @@ func TestPythonTransformer_Apply(t *testing.T) {
 		description       string
 		containerSpec     v1.Container
 		configuration     imageConfiguration
+		overrideProtocols []string
 		shouldErr         bool
 		result            v1.Container
 		debugConfig       ContainerDebugConfiguration
 		image             string
-		overrideProtocols []string
 	}{
 		{
 			description:   "empty",
@@ -174,16 +174,28 @@ func TestPythonTransformer_Apply(t *testing.T) {
 			image:       "python",
 		},
 		{
-			description:   "override protocol",
-			containerSpec: v1.Container{},
-			configuration: imageConfiguration{entrypoint: []string{"python"}},
+			description:       "override protocol - pydevd, dap",
+			containerSpec:     v1.Container{},
+			configuration:     imageConfiguration{entrypoint: []string{"python"}},
+			overrideProtocols: []string{"pydevd", "dap"},
 			result: v1.Container{
 				Command: []string{"/dbg/python/launcher", "--mode", "pydevd", "--port", "5678", "--", "python"},
 				Ports:   []v1.ContainerPort{{Name: "pydevd", ContainerPort: 5678}},
 			},
-			debugConfig:       ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"pydevd": 5678}},
-			image:             "python",
-			overrideProtocols: []string{"pydevd"},
+			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"pydevd": 5678}},
+			image:       "python",
+		},
+		{
+			description:       "override protocol - dap, pydevd",
+			containerSpec:     v1.Container{},
+			configuration:     imageConfiguration{entrypoint: []string{"python"}},
+			overrideProtocols: []string{"dap", "pydevd"},
+			result: v1.Container{
+				Command: []string{"/dbg/python/launcher", "--mode", "debugpy", "--port", "5678", "--", "python"},
+				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
+			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			image:       "python",
 		},
 		{
 			description: "existing port",
