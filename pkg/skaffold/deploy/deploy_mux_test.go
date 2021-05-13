@@ -27,6 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
@@ -36,6 +37,7 @@ func NewMockDeployer() *MockDeployer { return &MockDeployer{labels: make(map[str
 
 type MockDeployer struct {
 	log.NoopLogger
+	preview.NoopPreviewer
 
 	labels           map[string]string
 	deployNamespaces []string
