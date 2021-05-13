@@ -24,6 +24,18 @@ type SkaffoldConfigSet []*SkaffoldConfigEntry
 // SkaffoldConfigEntry encapsulates a single skaffold configuration, along with the source filename and its index in that file.
 type SkaffoldConfigEntry struct {
 	*latestV1.SkaffoldConfig
-	SourceFile  string
-	SourceIndex int
+	SourceFile   string
+	SourceIndex  int
+	IsRootConfig bool
+}
+
+// SelectRootConfigs filters SkaffoldConfigSet to only configs read from the root skaffold.yaml file
+func (s SkaffoldConfigSet) SelectRootConfigs() SkaffoldConfigSet {
+	var filteredSet SkaffoldConfigSet
+	for _, entry := range s {
+		if entry.IsRootConfig {
+			filteredSet = append(filteredSet, entry)
+		}
+	}
+	return filteredSet
 }

@@ -24,9 +24,11 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -98,10 +100,14 @@ func TestPrintBuildEnvsList(t *testing.T) {
 						{Name: "local", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
 					}}, SourceFile: "path/to/cfg2"},
 			}
-			t.Override(&getConfigSetFunc, func(config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
+			t.Override(&inspect.ConfigSetFunc, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				// mock profile activation
+				var set parser.SkaffoldConfigSet
 				for _, c := range configSet {
-					for _, pName := range test.profiles {
+					if len(opts.ConfigurationFilter) > 0 && !util.StrSliceContains(opts.ConfigurationFilter, c.Metadata.Name) {
+						continue
+					}
+					for _, pName := range opts.Profiles {
 						for _, profile := range c.Profiles {
 							if profile.Name != pName {
 								continue
@@ -109,11 +115,12 @@ func TestPrintBuildEnvsList(t *testing.T) {
 							c.Build.BuildType = profile.Build.BuildType
 						}
 					}
+					set = append(set, c)
 				}
-				return configSet, test.err
+				return set, test.err
 			})
 			var buf bytes.Buffer
-			err := PrintBuildEnvsList(context.Background(), &buf, Options{OutFormat: "json", Modules: test.module, BuildEnvOptions: BuildEnvOptions{Profiles: test.profiles}})
+			err := PrintBuildEnvsList(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.module, BuildEnvOptions: inspect.BuildEnvOptions{Profiles: test.profiles}})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})

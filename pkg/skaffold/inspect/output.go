@@ -25,12 +25,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
-type formatter interface {
+type Formatter interface {
 	Write(interface{}) error
 	WriteErr(error) error
 }
 
-func getOutputFormatter(out io.Writer, _ string) formatter {
+func OutputFormatter(out io.Writer, _ string) Formatter {
 	// TODO: implement other output formatters. Currently only JSON is implemented
 	return jsonFormatter{out: out}
 }

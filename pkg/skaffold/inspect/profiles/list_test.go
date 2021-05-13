@@ -24,9 +24,11 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -34,7 +36,7 @@ func TestPrintProfilesList(t *testing.T) {
 	tests := []struct {
 		description string
 		configSet   parser.SkaffoldConfigSet
-		buildEnv    BuildEnv
+		buildEnv    inspect.BuildEnv
 		module      []string
 		err         error
 		expected    string
@@ -96,7 +98,7 @@ func TestPrintProfilesList(t *testing.T) {
 				`{"name":"p4","path":"path/to/cfg2","module":"cfg2"}` +
 				"]}\n",
 			module:   []string{"cfg2"},
-			buildEnv: BuildEnvs.GoogleCloudBuild,
+			buildEnv: inspect.BuildEnvs.GoogleCloudBuild,
 		},
 		{
 			description: "actionable error",
@@ -112,11 +114,21 @@ func TestPrintProfilesList(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&getConfigSetFunc, func(config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
-				return test.configSet, test.err
+			t.Override(&inspect.ConfigSetFunc, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
+				if len(opts.ConfigurationFilter) == 0 {
+					return test.configSet, test.err
+				}
+				var set parser.SkaffoldConfigSet
+				if util.StrSliceContains(opts.ConfigurationFilter, "cfg1") {
+					set = append(set, test.configSet[0])
+				}
+				if util.StrSliceContains(opts.ConfigurationFilter, "cfg2") {
+					set = append(set, test.configSet[1])
+				}
+				return set, test.err
 			})
 			var buf bytes.Buffer
-			err := PrintProfilesList(context.Background(), &buf, Options{OutFormat: "json", Modules: test.module, ProfilesOptions: ProfilesOptions{BuildEnv: test.buildEnv}})
+			err := PrintProfilesList(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.module, ProfilesOptions: inspect.ProfilesOptions{BuildEnv: test.buildEnv}})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})

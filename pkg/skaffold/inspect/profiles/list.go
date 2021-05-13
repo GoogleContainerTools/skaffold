@@ -21,7 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 )
 
 type profileList struct {
@@ -34,20 +34,17 @@ type profileEntry struct {
 	Module string `json:"module,omitempty"`
 }
 
-func PrintProfilesList(ctx context.Context, out io.Writer, opts Options) error {
-	formatter := getOutputFormatter(out, opts.OutFormat)
-	cfgs, err := getConfigSetFunc(config.SkaffoldOptions{ConfigurationFile: opts.Filename})
+func PrintProfilesList(ctx context.Context, out io.Writer, opts inspect.Options) error {
+	formatter := inspect.OutputFormatter(out, opts.OutFormat)
+	cfgs, err := inspect.ConfigSetFunc(config.SkaffoldOptions{ConfigurationFile: opts.Filename, ConfigurationFilter: opts.Modules})
 	if err != nil {
 		return formatter.WriteErr(err)
 	}
 
 	l := &profileList{Profiles: []profileEntry{}}
 	for _, c := range cfgs {
-		if len(opts.Modules) > 0 && !util.StrSliceContains(opts.Modules, c.Metadata.Name) {
-			continue
-		}
 		for _, p := range c.Profiles {
-			if opts.BuildEnv != BuildEnvs.Unspecified && GetBuildEnv(&p.Build.BuildType) != opts.BuildEnv {
+			if opts.BuildEnv != inspect.BuildEnvs.Unspecified && inspect.GetBuildEnv(&p.Build.BuildType) != opts.BuildEnv {
 				continue
 			}
 			l.Profiles = append(l.Profiles, profileEntry{Name: p.Name, Path: c.SourceFile, Module: c.Metadata.Name})

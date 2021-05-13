@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
+	modules "github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect/modules"
 )
 
 func cmdModules() *cobra.Command {
@@ -39,5 +40,5 @@ func cmdModulesList() *cobra.Command {
 }
 
 func listModules(ctx context.Context, out io.Writer) error {
-	return inspect.PrintModulesList(ctx, out, inspect.Options{Filename: inspectFlags.fileName, OutFormat: inspectFlags.outFormat})
+	return modules.PrintModulesList(ctx, out, inspect.Options{Filename: inspectFlags.fileName, OutFormat: inspectFlags.outFormat})
 }

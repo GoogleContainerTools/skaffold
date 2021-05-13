@@ -44,13 +44,25 @@ type ProfilesOptions struct {
 type BuildEnvOptions struct {
 	// Profiles is the slice of profile names to activate.
 	Profiles []string
+	// Profile is a target profile to create or edit
+	Profile string
+	// ProjectID is the GCP project ID
+	ProjectID string
+	// DiskSizeGb is the disk size of the VM that runs the build
+	DiskSizeGb int64
+	// MachineType is the type of VM that runs the build
+	MachineType string
+	// Timeout is the build timeout (in seconds)
+	Timeout string
+	// Concurrency is the number of artifacts to build concurrently. 0 means "no-limit"
+	Concurrency int
 }
 
 type BuildEnv string
 
 var (
-	getConfigSetFunc = parser.GetConfigSet
-	BuildEnvs        = struct {
+	ConfigSetFunc = parser.GetConfigSet
+	BuildEnvs     = struct {
 		Unspecified      BuildEnv
 		Local            BuildEnv
 		GoogleCloudBuild BuildEnv
