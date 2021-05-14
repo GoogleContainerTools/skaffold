@@ -24,6 +24,7 @@ import (
 
 	"github.com/buildpacks/pack"
 	packcfg "github.com/buildpacks/pack/config"
+	"github.com/docker/docker/api/types"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -414,6 +415,8 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 				Add(test.artifact.BuildpackArtifact.Builder, "builderImageID").
 				Add(test.artifact.BuildpackArtifact.RunImage, "runImageID").
 				Add("img:latest", "builtImageID")
+			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
+
 			localDocker := fakeLocalDaemon(test.api)
 
 			builder := NewArtifactBuilder(localDocker, test.pushImages, test.mode, test.resolver)
@@ -477,4 +480,13 @@ func (r mockArtifactResolver) GetImageTag(imageName string) (string, bool) {
 	}
 	val, found := r.m[imageName]
 	return val, found
+}
+
+type testAuthHelper struct{}
+
+func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
+	return types.AuthConfig{}, nil
+}
+func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
+	return nil, nil
 }

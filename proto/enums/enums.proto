@@ -403,6 +403,8 @@ enum StatusCode {
     CONFIG_MULTI_IMPORT_PROFILE_CONFLICT_ERR = 1211;
     // Profile selection did not match known profile names
     CONFIG_PROFILES_NOT_FOUND_ERR = 1212;
+    // Config API version not found
+    CONFIG_UNKNOWN_API_VERSION_ERR = 1213;
 
     // Inspect command errors
 
@@ -539,6 +541,8 @@ enum SuggestionCode {
     CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION = 705;
     // Check profile selection flag
     CONFIG_CHECK_PROFILE_SELECTION = 706;
+    // Fix config API version or upgrade the skaffold binary
+    CONFIG_FIX_API_VERSION = 707;
 
     // `skaffold inspect` command error suggestion codes
     INSPECT_DEDUP_NEW_BUILD_ENV = 800;
