@@ -86,13 +86,14 @@ type mockCfg struct {
 
 func TestGetAllConfigs(t *testing.T) {
 	tests := []struct {
-		description       string
-		documents         []document
-		configFilter      []string
-		profiles          []string
-		makePathsAbsolute *bool
-		errCode           proto.StatusCode
-		expected          func(base string) []*latestV1.SkaffoldConfig
+		description              string
+		documents                []document
+		configFilter             []string
+		profiles                 []string
+		makePathsAbsolute        *bool
+		errCode                  proto.StatusCode
+		applyProfilesRecursively bool
+		expected                 func(base string) []*latestV1.SkaffoldConfig
 	}{
 		{
 			description: "makePathsAbsolute unspecified; no dependencies",
@@ -1205,6 +1206,86 @@ requires:
 				}
 			},
 		},
+		{
+			description:              "makePathsAbsolute unspecified; recursively applied profiles",
+			profiles:                 []string{"pf0"},
+			applyProfilesRecursively: true,
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
+requires:
+  - path: doc1
+    configs: [cfg10]
+`}, {name: "cfg01", requiresStanza: ""}}},
+				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: `
+requires:
+  - path: ../doc2
+    configs: [cfg21]
+`}, {name: "cfg11", requiresStanza: ""}}},
+				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
+			},
+			expected: func(base string) []*latestV1.SkaffoldConfig {
+				return []*latestV1.SkaffoldConfig{
+					createCfg("cfg21", "pf0image21", filepath.Join(base, "doc2"), nil),
+					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
+					createCfg("cfg01", "pf0image01", ".", nil),
+				}
+			},
+		},
+		{
+			description:              "makePathsAbsolute false; recursively applied profiles",
+			makePathsAbsolute:        util.BoolPtr(false),
+			profiles:                 []string{"pf0"},
+			applyProfilesRecursively: true,
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
+requires:
+  - path: doc1
+    configs: [cfg10]
+`}, {name: "cfg01", requiresStanza: ""}}},
+				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: `
+requires:
+  - path: ../doc2
+    configs: [cfg21]
+`}, {name: "cfg11", requiresStanza: ""}}},
+				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
+			},
+			expected: func(base string) []*latestV1.SkaffoldConfig {
+				return []*latestV1.SkaffoldConfig{
+					createCfg("cfg21", "pf0image21", ".", nil),
+					createCfg("cfg10", "pf0image10", ".", []latestV1.ConfigDependency{{Path: "../doc2", Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "pf0image00", ".", []latestV1.ConfigDependency{{Path: "doc1", Names: []string{"cfg10"}}}),
+					createCfg("cfg01", "pf0image01", ".", nil),
+				}
+			},
+		},
+		{
+			description:              "makePathsAbsolute true; recursively applied profiles",
+			makePathsAbsolute:        util.BoolPtr(true),
+			profiles:                 []string{"pf0"},
+			applyProfilesRecursively: true,
+			documents: []document{
+				{path: "skaffold.yaml", configs: []mockCfg{{name: "cfg00", requiresStanza: `
+requires:
+  - path: doc1
+    configs: [cfg10]
+`}, {name: "cfg01", requiresStanza: ""}}},
+				{path: "doc1/skaffold.yaml", configs: []mockCfg{{name: "cfg10", requiresStanza: `
+requires:
+  - path: ../doc2
+    configs: [cfg21]
+`}, {name: "cfg11", requiresStanza: ""}}},
+				{path: "doc2/skaffold.yaml", configs: []mockCfg{{name: "cfg20", requiresStanza: ""}, {name: "cfg21", requiresStanza: ""}}},
+			},
+			expected: func(base string) []*latestV1.SkaffoldConfig {
+				return []*latestV1.SkaffoldConfig{
+					createCfg("cfg21", "pf0image21", filepath.Join(base, "doc2"), nil),
+					createCfg("cfg10", "pf0image10", filepath.Join(base, "doc1"), []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc2"), Names: []string{"cfg21"}}}),
+					createCfg("cfg00", "pf0image00", base, []latestV1.ConfigDependency{{Path: filepath.Join(base, "doc1"), Names: []string{"cfg10"}}}),
+					createCfg("cfg01", "pf0image01", base, nil),
+				}
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -1230,6 +1311,7 @@ requires:
 				ConfigurationFile:   test.documents[0].path,
 				ConfigurationFilter: test.configFilter,
 				Profiles:            test.profiles,
+				PropagateProfiles:   test.applyProfilesRecursively,
 				MakePathsAbsolute:   test.makePathsAbsolute,
 			})
 			if test.errCode == proto.StatusCode_OK {

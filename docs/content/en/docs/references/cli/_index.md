@@ -204,6 +204,7 @@ Options:
   -o, --output={{json .}}: Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --propagate-profiles=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
       --push=: Push the built images to the specified image repository.
   -q, --quiet=false: Suppress the build output and print image built on success. See --output to format output.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
@@ -242,6 +243,7 @@ Env vars:
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_PUSH` (same as `--push`)
 * `SKAFFOLD_QUIET` (same as `--quiet`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
@@ -432,6 +434,7 @@ Options:
       --port-forward=user,debug: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --propagate-profiles=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -484,6 +487,7 @@ Env vars:
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
@@ -518,6 +522,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --propagate-profiles=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
 
 Usage:
@@ -539,6 +544,7 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 
 ### skaffold deploy
@@ -580,6 +586,7 @@ Options:
       --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --propagate-profiles=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -620,6 +627,7 @@ Env vars:
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
@@ -669,6 +677,7 @@ Options:
       --port-forward=user: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --propagate-profiles=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -722,6 +731,7 @@ Env vars:
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
@@ -758,6 +768,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --propagate-profiles=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --yaml-only=false: Only prints the effective skaffold.yaml configuration
 
@@ -775,6 +786,7 @@ Env vars:
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_YAML_ONLY` (same as `--yaml-only`)
 
@@ -898,6 +910,7 @@ Options:
   -o, --output='': file to write rendered manifests to
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --propagate-profiles=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
 
 Usage:
@@ -923,6 +936,7 @@ Env vars:
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 
 ### skaffold run
@@ -966,6 +980,7 @@ Options:
       --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --propagate-profiles=true: Set to false to disable propagating profiles set by the '--profile' flag across config dependencies
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -1014,6 +1029,7 @@ Env vars:
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)

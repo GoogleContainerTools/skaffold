@@ -368,6 +368,15 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
+		Name:          "propagate-profiles",
+		Usage:         "Set to false to disable propagating profiles set by the '--profile' flag across config dependencies",
+		Value:         &opts.PropagateProfiles,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose"},
+		IsEnum:        true,
+	},
+	{
 		Name:          "trigger",
 		Usage:         "How is change detection triggered? (polling, notify, or manual)",
 		Value:         &opts.Trigger,
