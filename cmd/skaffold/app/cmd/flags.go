@@ -369,7 +369,7 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:          "propagate-profiles",
-		Usage:         "Set to false to disable propagating profiles set by the '--profile' flag across config dependencies",
+		Usage:         "Setting '--propogate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.",
 		Value:         &opts.PropagateProfiles,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
