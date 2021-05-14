@@ -28,10 +28,10 @@ import (
 )
 
 var buildEnvFlags = struct {
-	profile     string
+	profile string
 
 	// Common
-	timeout string
+	timeout     string
 	concurrency int
 
 	// Google Cloud Build
@@ -40,18 +40,18 @@ var buildEnvFlags = struct {
 	machineType string
 
 	// Cluster (kaniko)
-	pullSecretPath string
-	pullSecretName string
+	pullSecretPath      string
+	pullSecretName      string
 	pullSecretMountPath string
-	namespace string
+	namespace           string
 
-	dockerConfigPath string
+	dockerConfigPath       string
 	dockerConfigSecretName string
 
 	serviceAccount string
-	runAsUser int64
+	runAsUser      int64
 
-	randomPullSecret bool
+	randomPullSecret        bool
 	randomDockerConigSecret bool
 }{}
 
@@ -92,7 +92,7 @@ Use the '--module' filter to specify the individual module to target. Otherwise,
 func cmdBuildEnvAddCluster() *cobra.Command {
 	return NewCmd("cluster").
 		WithDescription("Add a new Cluster build environment definition").
-			WithLongDescription(`Add a new Cluster build environment definition.
+		WithLongDescription(`Add a new Cluster build environment definition.
 Without the '--profile' flag the new environment definition is added to the default pipeline. With the '--profile' flag it will create a new profile with this build env definition. 
 In these respective scenarios, it will fail if the build env definition for the default pipeline or the named profile already exists. To override an existing definition use 'skaffold inspect build-env modify' command instead. 
 Use the '--module' filter to specify the individual module to target. Otherwise, it'll be applied to all modules defined in the target file. Also, with the '--profile' flag if the target config imports other configs as dependencies, then the new profile will be recursively created in all the imported configs also.`).
@@ -183,18 +183,18 @@ func addClusterBuildEnvOptions() inspect.Options {
 		OutFormat: inspectFlags.outFormat,
 		Modules:   inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{
-			PullSecretPath: buildEnvFlags.pullSecretPath,
-			PullSecretName: buildEnvFlags.pullSecretName,
-			PullSecretMountPath: buildEnvFlags.pullSecretMountPath,
-			Namespace: buildEnvFlags.namespace,
-			DockerConfigPath: buildEnvFlags.dockerConfigPath,
-			DockerConfigSecretName: buildEnvFlags.dockerConfigSecretName,
-			ServiceAccount: buildEnvFlags.serviceAccount,
-			RunAsUser: buildEnvFlags.runAsUser,
-			RandomPullSecret: buildEnvFlags.randomPullSecret,
-			RandomDockerConigSecret: buildEnvFlags.randomDockerConigSecret,
-			Timeout:     buildEnvFlags.timeout,
-			Concurrency: buildEnvFlags.concurrency,
+			PullSecretPath:           buildEnvFlags.pullSecretPath,
+			PullSecretName:           buildEnvFlags.pullSecretName,
+			PullSecretMountPath:      buildEnvFlags.pullSecretMountPath,
+			Namespace:                buildEnvFlags.namespace,
+			DockerConfigPath:         buildEnvFlags.dockerConfigPath,
+			DockerConfigSecretName:   buildEnvFlags.dockerConfigSecretName,
+			ServiceAccount:           buildEnvFlags.serviceAccount,
+			RunAsUser:                buildEnvFlags.runAsUser,
+			RandomPullSecret:         buildEnvFlags.randomPullSecret,
+			RandomDockerConfigSecret: buildEnvFlags.randomDockerConigSecret,
+			Timeout:                  buildEnvFlags.timeout,
+			Concurrency:              buildEnvFlags.concurrency,
 		},
 	}
 }
