@@ -64,14 +64,6 @@ type BuildEnvOptions struct {
 	DockerConfigSecretName string
 	ServiceAccount string
 	RunAsUser int64
-	CpuRequest string
-	MemoryRequest string
-	EphemeralStorageRequest string
-	ResourceStorageRequest string
-	CpuLimit string
-	MemoryLimit string
-	EphemeralStorageLimit string
-	ResourceStorageLimit string
 	RandomPullSecret bool
 	RandomDockerConigSecret bool
 }

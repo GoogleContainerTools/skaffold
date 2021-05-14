@@ -51,16 +51,6 @@ var buildEnvFlags = struct {
 	serviceAccount string
 	runAsUser int64
 
-	cpuRequest string
-	memoryRequest string
-	ephemeralStorageRequest string
-	resourceStorageRequest string
-
-	cpuLimit string
-	memoryLimit string
-	ephemeralStorageLimit string
-	resourceStorageLimit string
-
 	randomPullSecret bool
 	randomDockerConigSecret bool
 }{}
@@ -150,16 +140,6 @@ func cmdBuildEnvAddClusterFlags(f *pflag.FlagSet) {
 	f.StringVar(&buildEnvFlags.serviceAccount, "serviceAccount", "", "Kubernetes service account to use for the pod.")
 	f.Int64Var(&buildEnvFlags.runAsUser, "runAsUser", -1, "Defines the UID to request for running the container.")
 
-	f.StringVar(&buildEnvFlags.cpuRequest, "cpuRequest", "", "Number of cores to be used.")
-	f.StringVar(&buildEnvFlags.memoryRequest, "memoryRequest", "", "Amount of memory to allocate to the pod.")
-	f.StringVar(&buildEnvFlags.ephemeralStorageRequest, "ephemeralStorageRequest", "", "Amount of Ephemeral storage to allocate to the pod.")
-	f.StringVar(&buildEnvFlags.resourceStorageRequest, "resourceStorageRequest", "", "Amount of resource storage to allocate to the pod.")
-
-	f.StringVar(&buildEnvFlags.cpuLimit, "cpuLimit", "", "Limit on number of cores to be used.")
-	f.StringVar(&buildEnvFlags.memoryLimit, "memoryLimit", "", "Limit on amount of memory to allocate to the pod.")
-	f.StringVar(&buildEnvFlags.ephemeralStorageLimit, "ephemeralStorageLimit", "", "Limit on amount of ephemeral storage to allocate to the pod.")
-	f.StringVar(&buildEnvFlags.resourceStorageLimit, "resourceStorageLimit", "", "Limit on amount of resource storage to allocation to the pod.")
-
 	f.BoolVar(&buildEnvFlags.randomPullSecret, "randomPullSecret", false, "Adds a random UUID postfix to the default name of the pull secret to facilitate parallel builds.")
 	f.BoolVar(&buildEnvFlags.randomDockerConigSecret, "randomDockerConigSecret", false, "Adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds.")
 }
@@ -211,14 +191,6 @@ func addClusterBuildEnvOptions() inspect.Options {
 			DockerConfigSecretName: buildEnvFlags.dockerConfigSecretName,
 			ServiceAccount: buildEnvFlags.serviceAccount,
 			RunAsUser: buildEnvFlags.runAsUser,
-			CpuRequest: buildEnvFlags.cpuRequest,
-			MemoryRequest: buildEnvFlags.memoryRequest,
-			EphemeralStorageRequest: buildEnvFlags.ephemeralStorageRequest,
-			ResourceStorageRequest: buildEnvFlags.resourceStorageRequest,
-			CpuLimit: buildEnvFlags.cpuLimit,
-			MemoryLimit: buildEnvFlags.memoryLimit,
-			EphemeralStorageLimit: buildEnvFlags.ephemeralStorageLimit,
-			ResourceStorageLimit: buildEnvFlags.resourceStorageLimit,
 			RandomPullSecret: buildEnvFlags.randomPullSecret,
 			RandomDockerConigSecret: buildEnvFlags.randomDockerConigSecret,
 			Timeout:     buildEnvFlags.timeout,

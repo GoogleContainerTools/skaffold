@@ -89,9 +89,15 @@ func constructClusterDefinition(existing *latestV1.ClusterDetails, opts inspect.
 		b.Namespace = opts.Namespace
 	}
 	if opts.DockerConfigPath != "" {
+		if b.DockerConfig == nil {
+			b.DockerConfig = &latestV1.DockerConfig{}
+		}
 		b.DockerConfig.Path = opts.DockerConfigPath
 	}
 	if opts.DockerConfigSecretName != "" {
+		if b.DockerConfig == nil {
+			b.DockerConfig = &latestV1.DockerConfig{}
+		}
 		b.DockerConfig.SecretName = opts.DockerConfigSecretName
 	}
 	if opts.ServiceAccount != "" {
@@ -99,30 +105,6 @@ func constructClusterDefinition(existing *latestV1.ClusterDetails, opts inspect.
 	}
 	if opts.RunAsUser >= 0 {
 		b.RunAsUser = &opts.RunAsUser
-	}
-	if opts.CpuRequest != "" {
-		b.Resources.Requests.CPU = opts.CpuRequest
-	}
-	if opts.MemoryRequest != "" {
-		b.Resources.Requests.Memory = opts.MemoryRequest
-	}
-	if opts.EphemeralStorageRequest != "" {
-		b.Resources.Requests.EphemeralStorage = opts.EphemeralStorageRequest
-	}
-	if opts.ResourceStorageRequest != "" {
-		b.Resources.Requests.ResourceStorage = opts.ResourceStorageRequest
-	}
-	if opts.CpuLimit != "" {
-		b.Resources.Limits.CPU = opts.CpuLimit
-	}
-	if opts.MemoryLimit != "" {
-		b.Resources.Limits.Memory = opts.MemoryLimit
-	}
-	if opts.EphemeralStorageLimit != "" {
-		b.Resources.Limits.EphemeralStorage = opts.EphemeralStorageLimit
-	}
-	if opts.ResourceStorageLimit != "" {
-		b.Resources.Limits.ResourceStorage = opts.ResourceStorageLimit
 	}
 	if opts.RandomPullSecret != false {
 		b.RandomPullSecret = opts.RandomPullSecret
