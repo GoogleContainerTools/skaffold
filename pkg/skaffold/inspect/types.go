@@ -56,6 +56,24 @@ type BuildEnvOptions struct {
 	Timeout string
 	// Concurrency is the number of artifacts to build concurrently. 0 means "no-limit"
 	Concurrency int
+	PullSecretPath string
+	PullSecretName string
+	PullSecretMountPath string
+	Namespace string
+	DockerConfigPath string
+	DockerConfigSecretName string
+	ServiceAccount string
+	RunAsUser int64
+	CpuRequest string
+	MemoryRequest string
+	EphemeralStorageRequest string
+	ResourceStorageRequest string
+	CpuLimit string
+	MemoryLimit string
+	EphemeralStorageLimit string
+	ResourceStorageLimit string
+	RandomPullSecret bool
+	RandomDockerConigSecret bool
 }
 
 type BuildEnv string
