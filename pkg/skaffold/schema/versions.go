@@ -29,6 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -225,7 +226,7 @@ func configFactoryFromAPIVersion(buf []byte) ([]func() util.VersionedConfig, err
 		}
 		factory, present := AllVersions.Find(v.Version)
 		if !present {
-			return nil, fmt.Errorf("unknown api version: %q", v.Version)
+			return nil, sErrors.ConfigUnknownAPIVersionErr(v.Version)
 		}
 		factories = append(factories, factory)
 	}

@@ -184,3 +184,19 @@ func ConfigProfileConflictErr(config, file string) error {
 			},
 		})
 }
+
+// ConfigUnknownAPIVersionErr specifies that the config API version doesn't match any known versions.
+func ConfigUnknownAPIVersionErr(version string) error {
+	msg := fmt.Sprintf("unknown skaffold config API version %q", version)
+	return sErrors.NewError(fmt.Errorf(msg),
+		proto.ActionableErr{
+			Message: msg,
+			ErrCode: proto.StatusCode_CONFIG_UNKNOWN_API_VERSION_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_CONFIG_FIX_API_VERSION,
+					Action:         "Set the config 'apiVersion' to a known value. Check https://skaffold.dev/docs/references/yaml/ for the list of valid API versions. Otherwise, check that your skaffold version is up-to-date",
+				},
+			},
+		})
+}
