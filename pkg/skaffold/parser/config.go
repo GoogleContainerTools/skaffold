@@ -188,7 +188,16 @@ func processEachConfig(config *latestV1.SkaffoldConfig, cfgOpts configOpts, opts
 
 	var configs SkaffoldConfigSet
 	for _, d := range config.Dependencies {
-		newOpts := configOpts{file: cfgOpts.file, profiles: filterActiveProfiles(d, profiles), isRequired: required, isDependency: cfgOpts.isDependency}
+		depProfiles := filterActiveProfiles(d, profiles)
+		if opts.PropagateProfiles {
+			// propagate all profiles supplied as command line input to the imported configs
+			for _, p := range opts.Profiles {
+				if !util.StrSliceContains(depProfiles, p) {
+					depProfiles = append(depProfiles, p)
+				}
+			}
+		}
+		newOpts := configOpts{file: cfgOpts.file, profiles: depProfiles, isRequired: required, isDependency: cfgOpts.isDependency}
 		depConfigs, err := processEachDependency(d, newOpts, opts, r)
 		if err != nil {
 			return nil, err
