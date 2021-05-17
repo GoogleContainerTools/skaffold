@@ -1,3 +1,43 @@
+# v1.24.1 Release - 05/17/2021
+
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.24.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.24.1/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v1.24.1/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.24.1`
+
+Note: This is a patch release for fixing a regression introduced in v1.24.0 (see [#5840](https://github.com/GoogleContainerTools/skaffold/issues/5840)).
+
+Fixes:
+* Fix 5840 [#5858](https://github.com/GoogleContainerTools/skaffold/pull/5858)
+* fix skaffold test to use minikube docker-env docker context [#5815](https://github.com/GoogleContainerTools/skaffold/pull/5815)
+
+Updates and Refactors:
+* propagate profiles across imported configs by default; disable using `propagate-profiles` flag [#5846](https://github.com/GoogleContainerTools/skaffold/pull/5846)
+* add explicit error code `UNKNOWN_API_VERSION` [#5848](https://github.com/GoogleContainerTools/skaffold/pull/5848)
+* Expose --event-log-file to render, apply, and test [#5828](https://github.com/GoogleContainerTools/skaffold/pull/5828)
+* Bump flask from 1.1.2 to 2.0.0 in /integration/examples [#5822](https://github.com/GoogleContainerTools/skaffold/pull/5822)
+* Bump flask from 1.1.2 to 2.0.0 in /examples [#5821](https://github.com/GoogleContainerTools/skaffold/pull/5821)
+* Add kpt v1.0.0-alpha.2 to Skaffold image [#5825](https://github.com/GoogleContainerTools/skaffold/pull/5825)
+* Avoid aliasing in image configuration [#5804](https://github.com/GoogleContainerTools/skaffold/pull/5804)
+* Add support for Port forwarding with namespaces with Templated Fields [#5808](https://github.com/GoogleContainerTools/skaffold/pull/5808)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Brian de Alwis
+- Gaurav
+- Itai Schwartz
+- Marlon Gamez
+- Nick Kubala
+- Yuwen Ma
+
 # v1.24.0 Release - 05/11/2021
 
 **Linux**
