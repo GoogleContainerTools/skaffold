@@ -35,7 +35,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -97,8 +96,6 @@ type Deployer struct {
 
 	log.Logger
 
-	preview.ResourcePreviewer
-
 	kubectl             kubectl.CLI
 	insecureRegistries  map[string]bool
 	labels              map[string]string
@@ -106,7 +103,7 @@ type Deployer struct {
 	useKubectlKustomize bool
 }
 
-func NewDeployer(cfg kubectl.Config, labels map[string]string, logger log.Logger, previewer preview.ResourcePreviewer, d *latestV1.KustomizeDeploy) (*Deployer, error) {
+func NewDeployer(cfg kubectl.Config, labels map[string]string, logger log.Logger, d *latestV1.KustomizeDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -122,7 +119,6 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, logger log.Logger
 
 	return &Deployer{
 		Logger:              logger,
-		ResourcePreviewer:   previewer,
 		KustomizeDeploy:     d,
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),

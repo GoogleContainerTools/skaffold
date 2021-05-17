@@ -35,7 +35,7 @@ import (
 
 // Forwarder is an interface that can modify and manage port-forward processes
 type Forwarder interface {
-	Start(ctx context.Context, out io.Writer, namespaces []string) error
+	Start(ctx context.Context, namespaces []string) error
 	Stop()
 }
 
@@ -44,21 +44,13 @@ type ForwarderManager struct {
 	forwarders []Forwarder
 }
 
-func (f *ForwarderManager) StartResourcePreview(ctx context.Context, out io.Writer, namespaces []string) error {
-	return f.Start(ctx, out, namespaces)
-}
-
-func (f *ForwarderManager) StopResourcePreview() {
-	f.Stop()
-}
-
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
-func NewForwarderManager(cli *kubectl.CLI, podSelector kubernetes.PodSelector, label string, runMode config.RunMode, options config.PortForwardOptions, userDefined []*latestV1.PortForwardResource) *ForwarderManager {
+func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, label string, runMode config.RunMode, options config.PortForwardOptions, userDefined []*latestV1.PortForwardResource) *ForwarderManager {
 	if !options.Enabled() {
 		return nil
 	}
 
-	entryManager := NewEntryManager(NewKubectlForwarder(cli))
+	entryManager := NewEntryManager(out, NewKubectlForwarder(out, cli))
 
 	var forwarders []Forwarder
 	if options.ForwardUser(runMode) {
@@ -111,15 +103,15 @@ func debugPorts(pod *v1.Pod, c v1.Container) []v1.ContainerPort {
 }
 
 // Start begins all forwarders managed by the ForwarderManager
-func (f *ForwarderManager) Start(ctx context.Context, out io.Writer, namespaces []string) error {
+func (p *ForwarderManager) Start(ctx context.Context, namespaces []string) error {
 	// Port forwarding is not enabled.
-	if f == nil {
+	if p == nil {
 		return nil
 	}
 
 	eventV2.TaskInProgress(constants.PortForward)
-	for _, f := range f.forwarders {
-		if err := f.Start(ctx, out, namespaces); err != nil {
+	for _, f := range p.forwarders {
+		if err := f.Start(ctx, namespaces); err != nil {
 			eventV2.TaskFailed(constants.PortForward, err)
 			return err
 		}
@@ -130,13 +122,13 @@ func (f *ForwarderManager) Start(ctx context.Context, out io.Writer, namespaces 
 }
 
 // Stop cleans up and terminates all forwarders managed by the ForwarderManager
-func (f *ForwarderManager) Stop() {
+func (p *ForwarderManager) Stop() {
 	// Port forwarding is not enabled.
-	if f == nil {
+	if p == nil {
 		return
 	}
 
-	for _, f := range f.forwarders {
+	for _, f := range p.forwarders {
 		f.Stop()
 	}
 }

@@ -17,17 +17,21 @@ limitations under the License.
 package v1
 
 import (
-	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"io"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
-func getResourcePreviewer(runCtx *runcontext.RunContext, cli *pkgkubectl.CLI, podSelector kubernetes.PodSelector, runID string) preview.ResourcePreviewer {
-	if !runCtx.PortForward() {
-		return &preview.NoopPreviewer{}
+func (r *SkaffoldRunner) createForwarder(out io.Writer) *portforward.ForwarderManager {
+	if !r.runCtx.PortForward() {
+		return nil
 	}
 
-	return portforward.NewForwarderManager(cli, podSelector, runID, runCtx.Mode(), runCtx.Opts.PortForward, runCtx.PortForwardResources())
+	return portforward.NewForwarderManager(out,
+		r.kubectlCLI,
+		r.podSelector,
+		r.labeller.RunIDSelector(),
+		r.runCtx.Mode(),
+		r.runCtx.Opts.PortForward,
+		r.runCtx.PortForwardResources())
 }

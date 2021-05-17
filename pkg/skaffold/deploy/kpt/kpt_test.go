@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -222,7 +221,7 @@ func TestKpt_Deploy(t *testing.T) {
 
 			tmpDir.WriteFiles(test.kustomizations)
 
-			k := NewDeployer(&kptConfig{}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, &test.kpt)
+			k := NewDeployer(&kptConfig{}, nil, &log.NoopLogger{}, &test.kpt)
 
 			if k.Live.Apply.Dir == "valid_path" {
 				// 0755 is a permission setting where the owner can read, write, and execute.
@@ -362,7 +361,7 @@ func TestKpt_Dependencies(t *testing.T) {
 			tmpDir.WriteFiles(test.createFiles)
 			tmpDir.WriteFiles(test.kustomizations)
 
-			k := NewDeployer(&kptConfig{}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, &test.kpt)
+			k := NewDeployer(&kptConfig{}, nil, &log.NoopLogger{}, &test.kpt)
 
 			res, err := k.Dependencies()
 
@@ -415,7 +414,7 @@ func TestKpt_Cleanup(t *testing.T) {
 
 			k := NewDeployer(&kptConfig{
 				workingDir: ".",
-			}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, &latestV1.KptDeploy{
+			}, nil, &log.NoopLogger{}, &latestV1.KptDeploy{
 				Live: latestV1.KptLive{
 					Apply: latestV1.KptApplyInventory{
 						Dir: test.applyDir,
@@ -771,7 +770,7 @@ spec:
 
 			k := NewDeployer(&kptConfig{
 				workingDir: ".",
-			}, test.labels, &log.NoopLogger{}, &preview.NoopPreviewer{}, &test.kpt)
+			}, test.labels, &log.NoopLogger{}, &test.kpt)
 
 			var b bytes.Buffer
 			err := k.Render(context.Background(), &b, test.builds, true, "")
@@ -845,7 +844,7 @@ func TestKpt_GetApplyDir(t *testing.T) {
 
 			k := NewDeployer(&kptConfig{
 				workingDir: ".",
-			}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, &latestV1.KptDeploy{
+			}, nil, &log.NoopLogger{}, &latestV1.KptDeploy{
 				Live: test.live,
 			})
 
@@ -1004,7 +1003,7 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k := NewDeployer(&kptConfig{}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, nil)
+			k := NewDeployer(&kptConfig{}, nil, &log.NoopLogger{}, nil)
 			actualManifest, err := k.excludeKptFn(test.manifests)
 			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
 		})

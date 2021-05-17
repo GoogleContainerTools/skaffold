@@ -126,19 +126,3 @@ func (m DeployerMux) RegisterBuildArtifacts(artifacts []graph.Artifact) {
 		deployer.RegisterBuildArtifacts(artifacts)
 	}
 }
-
-func (m DeployerMux) StartResourcePreview(ctx context.Context, out io.Writer, namespaces []string) error {
-	for _, deployer := range m {
-		var err error
-		if err = deployer.StartResourcePreview(ctx, out, namespaces); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (m DeployerMux) StopResourcePreview() {
-	for _, deployer := range m {
-		deployer.StopResourcePreview()
-	}
-}

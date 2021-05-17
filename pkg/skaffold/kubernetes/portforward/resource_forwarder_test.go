@@ -128,10 +128,10 @@ func TestStart(t *testing.T) {
 			})
 
 			fakeForwarder := newTestForwarder()
-			entryManager := NewEntryManager(fakeForwarder)
+			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
 
 			rf := NewServicesForwarder(entryManager, "")
-			if err := rf.Start(context.Background(), ioutil.Discard, []string{"test"}); err != nil {
+			if err := rf.Start(context.Background(), []string{"test"}); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
 
@@ -206,7 +206,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 				return mockRetrieveAvailablePort(util.Loopback, map[int]struct{}{}, test.availablePorts)(addr, req, ps)
 			})
 
-			entryManager := NewEntryManager(newTestForwarder())
+			entryManager := NewEntryManager(ioutil.Discard, newTestForwarder())
 			entryManager.forwardedResources = forwardedResources{
 				resources: test.forwardedResources,
 			}
@@ -293,14 +293,14 @@ func TestUserDefinedResources(t *testing.T) {
 			})
 
 			fakeForwarder := newTestForwarder()
-			entryManager := NewEntryManager(fakeForwarder)
+			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
 
 			util.OSEnviron = func() []string {
 				return []string{"FOO=bar"}
 			}
 
 			rf := NewUserDefinedForwarder(entryManager, test.userResources)
-			if err := rf.Start(context.Background(), ioutil.Discard, test.namespaces); err != nil {
+			if err := rf.Start(context.Background(), test.namespaces); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
 

@@ -45,7 +45,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -77,8 +76,6 @@ type Deployer struct {
 
 	log.Logger
 
-	preview.ResourcePreviewer
-
 	kubeContext string
 	kubeConfig  string
 	namespace   string
@@ -102,7 +99,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg Config, labels map[string]string, logger log.Logger, previewer preview.ResourcePreviewer, h *latestV1.HelmDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, logger log.Logger, h *latestV1.HelmDeploy) (*Deployer, error) {
 	hv, err := binVer()
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -113,18 +110,17 @@ func NewDeployer(cfg Config, labels map[string]string, logger log.Logger, previe
 	}
 
 	return &Deployer{
-		Logger:            logger,
-		ResourcePreviewer: previewer,
-		HelmDeploy:        h,
-		kubeContext:       cfg.GetKubeContext(),
-		kubeConfig:        cfg.GetKubeConfig(),
-		namespace:         cfg.GetKubeNamespace(),
-		forceDeploy:       cfg.ForceDeploy(),
-		configFile:        cfg.ConfigurationFile(),
-		labels:            labels,
-		bV:                hv,
-		enableDebug:       cfg.Mode() == config.RunModes.Debug,
-		isMultiConfig:     cfg.IsMultiConfig(),
+		Logger:        logger,
+		HelmDeploy:    h,
+		kubeContext:   cfg.GetKubeContext(),
+		kubeConfig:    cfg.GetKubeConfig(),
+		namespace:     cfg.GetKubeNamespace(),
+		forceDeploy:   cfg.ForceDeploy(),
+		configFile:    cfg.ConfigurationFile(),
+		labels:        labels,
+		bV:            hv,
+		enableDebug:   cfg.Mode() == config.RunModes.Debug,
+		isMultiConfig: cfg.IsMultiConfig(),
 	}, nil
 }
 
