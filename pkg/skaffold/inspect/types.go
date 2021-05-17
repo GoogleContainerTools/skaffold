@@ -56,6 +56,27 @@ type BuildEnvOptions struct {
 	Timeout string
 	// Concurrency is the number of artifacts to build concurrently. 0 means "no-limit"
 	Concurrency int
+	// PullSecretPath is the path to the Google Cloud service account secret key file.
+	PullSecretPath string
+	// PullSecretName is the name of the Kubernetes secret for pulling base images
+	// and pushing the final image.
+	PullSecretName string
+	// PullSecretMountPath is the path the pull secret will be mounted at within the running container.
+	PullSecretMountPath string
+	// Namespace is the Kubernetes namespace.
+	Namespace string
+	// DockerConfigPath is the path to the docker `config.json`.
+	DockerConfigPath string
+	// DockerConfigSecretName is the Kubernetes secret that contains the `config.json` Docker configuration.
+	DockerConfigSecretName string
+	// ServiceAccount describes the Kubernetes service account to use for the pod.
+	ServiceAccount string
+	// RunAsUser defines the UID to request for running the container.
+	RunAsUser int64
+	// RandomPullSecret adds a random UUID postfix to the default name of the pull secret to facilitate parallel builds, e.g. kaniko-secretdocker-cfgfd154022-c761-416f-8eb3-cf8258450b85.
+	RandomPullSecret bool
+	// RandomDockerConfigSecret adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds, e.g. docker-cfgfd154022-c761-416f-8eb3-cf8258450b85.
+	RandomDockerConfigSecret bool
 }
 
 type BuildEnv string

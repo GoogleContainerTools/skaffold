@@ -28,12 +28,31 @@ import (
 )
 
 var buildEnvFlags = struct {
-	profile     string
+	profile string
+
+	// Common
+	timeout     string
+	concurrency int
+
+	// Google Cloud Build
 	projectID   string
 	diskSizeGb  int64
 	machineType string
-	timeout     string
-	concurrency int
+
+	// Cluster (kaniko)
+	pullSecretPath      string
+	pullSecretName      string
+	pullSecretMountPath string
+	namespace           string
+
+	dockerConfigPath       string
+	dockerConfigSecretName string
+
+	serviceAccount string
+	runAsUser      int64
+
+	randomPullSecret        bool
+	randomDockerConigSecret bool
 }{}
 
 func cmdBuildEnv() *cobra.Command {
@@ -55,7 +74,7 @@ func cmdBuildEnvAdd() *cobra.Command {
 	return NewCmd("add").
 		WithDescription("Add a new build environment to the default pipeline or to a new or existing profile.").
 		WithPersistentFlagAdder(cmdBuildEnvAddFlags).
-		WithCommands(cmdBuildEnvAddGcb())
+		WithCommands(cmdBuildEnvAddGcb(), cmdBuildEnvAddCluster())
 }
 
 func cmdBuildEnvAddGcb() *cobra.Command {
@@ -70,12 +89,28 @@ Use the '--module' filter to specify the individual module to target. Otherwise,
 		NoArgs(addGcbBuildEnv)
 }
 
+func cmdBuildEnvAddCluster() *cobra.Command {
+	return NewCmd("cluster").
+		WithDescription("Add a new Cluster build environment definition").
+		WithLongDescription(`Add a new Cluster build environment definition.
+Without the '--profile' flag the new environment definition is added to the default pipeline. With the '--profile' flag it will create a new profile with this build env definition. 
+In these respective scenarios, it will fail if the build env definition for the default pipeline or the named profile already exists. To override an existing definition use 'skaffold inspect build-env modify' command instead. 
+Use the '--module' filter to specify the individual module to target. Otherwise, it'll be applied to all modules defined in the target file. Also, with the '--profile' flag if the target config imports other configs as dependencies, then the new profile will be recursively created in all the imported configs also.`).
+		WithExample("Add a new profile named 'cluster' targeting the builder 'kaniko' using the Kubernetes secret 'my-secret'", "inspect build-env add cluster --profile cluster --pullSecretName my-secret -f skaffold.yaml").
+		WithFlagAdder(cmdBuildEnvAddClusterFlags).
+		NoArgs(addClusterBuildEnv)
+}
+
 func listBuildEnv(ctx context.Context, out io.Writer) error {
 	return buildEnv.PrintBuildEnvsList(ctx, out, printBuildEnvsListOptions())
 }
 
 func addGcbBuildEnv(ctx context.Context, out io.Writer) error {
 	return buildEnv.AddGcbBuildEnv(ctx, out, addGcbBuildEnvOptions())
+}
+
+func addClusterBuildEnv(ctx context.Context, out io.Writer) error {
+	return buildEnv.AddClusterBuildEnv(ctx, out, addClusterBuildEnvOptions())
 }
 
 func cmdBuildEnvAddFlags(f *pflag.FlagSet) {
@@ -88,6 +123,25 @@ func cmdBuildEnvAddGcbFlags(f *pflag.FlagSet) {
 	f.StringVar(&buildEnvFlags.machineType, "machineType", "", `Type of VM that runs the build`)
 	f.StringVar(&buildEnvFlags.timeout, "timeout", "", `Build timeout (in seconds)`)
 	f.IntVar(&buildEnvFlags.concurrency, "concurrency", -1, `number of artifacts to build concurrently. 0 means "no-limit"`)
+}
+
+func cmdBuildEnvAddClusterFlags(f *pflag.FlagSet) {
+	f.StringVar(&buildEnvFlags.timeout, "timeout", "", `Build timeout (in seconds)`)
+	f.IntVar(&buildEnvFlags.concurrency, "concurrency", -1, `number of artifacts to build concurrently. 0 means "no-limit"`)
+
+	f.StringVar(&buildEnvFlags.pullSecretPath, "pullSecretPath", "", "Path to the Google Cloud service account secret key file.")
+	f.StringVar(&buildEnvFlags.pullSecretName, "pullSecretName", "", "Name of the Kubernetes secret for pulling base images and pushing the final image.")
+	f.StringVar(&buildEnvFlags.pullSecretMountPath, "pullSecretMountPath", "", "Path the pull secret will be mounted at within the running container.")
+	f.StringVar(&buildEnvFlags.namespace, "namespace", "", "Kubernetes namespace.")
+
+	f.StringVar(&buildEnvFlags.dockerConfigPath, "dockerConfigPath", "", "Path to the docker config.json.")
+	f.StringVar(&buildEnvFlags.dockerConfigSecretName, "dockerConfigSecretName", "", "Kubernetes secret that contains the config.json Docker configuration.")
+
+	f.StringVar(&buildEnvFlags.serviceAccount, "serviceAccount", "", "Kubernetes service account to use for the pod.")
+	f.Int64Var(&buildEnvFlags.runAsUser, "runAsUser", -1, "Defines the UID to request for running the container.")
+
+	f.BoolVar(&buildEnvFlags.randomPullSecret, "randomPullSecret", false, "Adds a random UUID postfix to the default name of the pull secret to facilitate parallel builds.")
+	f.BoolVar(&buildEnvFlags.randomDockerConigSecret, "randomDockerConigSecret", false, "Adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds.")
 }
 
 func cmdBuildEnvFlags(f *pflag.FlagSet) {
@@ -120,6 +174,27 @@ func addGcbBuildEnvOptions() inspect.Options {
 			MachineType: buildEnvFlags.machineType,
 			Timeout:     buildEnvFlags.timeout,
 			Concurrency: buildEnvFlags.concurrency,
+		},
+	}
+}
+func addClusterBuildEnvOptions() inspect.Options {
+	return inspect.Options{
+		Filename:  inspectFlags.fileName,
+		OutFormat: inspectFlags.outFormat,
+		Modules:   inspectFlags.modules,
+		BuildEnvOptions: inspect.BuildEnvOptions{
+			PullSecretPath:           buildEnvFlags.pullSecretPath,
+			PullSecretName:           buildEnvFlags.pullSecretName,
+			PullSecretMountPath:      buildEnvFlags.pullSecretMountPath,
+			Namespace:                buildEnvFlags.namespace,
+			DockerConfigPath:         buildEnvFlags.dockerConfigPath,
+			DockerConfigSecretName:   buildEnvFlags.dockerConfigSecretName,
+			ServiceAccount:           buildEnvFlags.serviceAccount,
+			RunAsUser:                buildEnvFlags.runAsUser,
+			RandomPullSecret:         buildEnvFlags.randomPullSecret,
+			RandomDockerConfigSecret: buildEnvFlags.randomDockerConigSecret,
+			Timeout:                  buildEnvFlags.timeout,
+			Concurrency:              buildEnvFlags.concurrency,
 		},
 	}
 }

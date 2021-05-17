@@ -33,12 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-const (
-	pathToCfg1 = "path/to/cfg1"
-	pathToCfg2 = "path/to/cfg2"
-)
-
-func TestAddGcbBuildEnv(t *testing.T) {
+func TestAddClusterBuildEnv(t *testing.T) {
 	tests := []struct {
 		description     string
 		profile         string
@@ -50,19 +45,19 @@ func TestAddGcbBuildEnv(t *testing.T) {
 	}{
 		{
 			description:  "add to default pipeline",
-			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project1", DiskSizeGb: 2, MachineType: "machine1", Timeout: "128", Concurrency: 2},
+			buildEnvOpts: inspect.BuildEnvOptions{RunAsUser: -1, PullSecretPath: "path/to/secret", DockerConfigPath: "path/to/docker/config", Timeout: "128", Concurrency: 2},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
 metadata:
   name: cfg1_0
 build:
-  googleCloudBuild:
-    projectId: project1
-    diskSizeGb: 2
-    machineType: machine1
-    timeout: "128"
+  cluster:
     concurrency: 2
+    dockerConfig:
+      path: path/to/docker/config
+    pullSecretPath: path/to/secret
+    timeout: "128"
 profiles:
 - name: p1
   build:
@@ -75,12 +70,12 @@ metadata:
 requires:
 - path: path/to/cfg2
 build:
-  googleCloudBuild:
-    projectId: project1
-    diskSizeGb: 2
-    machineType: machine1
-    timeout: "128"
+  cluster:
     concurrency: 2
+    dockerConfig:
+      path: path/to/docker/config
+    pullSecretPath: path/to/secret
+    timeout: "128"
 profiles:
 - name: p1
   build:
@@ -90,7 +85,7 @@ profiles:
 		},
 		{
 			description:  "add to existing profile",
-			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project1", DiskSizeGb: 2, MachineType: "machine1", Timeout: "128", Concurrency: 2, Profile: "p1"},
+			buildEnvOpts: inspect.BuildEnvOptions{RunAsUser: -1, PullSecretPath: "path/to/secret", DockerConfigPath: "path/to/docker/config", Timeout: "128", Concurrency: 2, Profile: "p1"},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -101,12 +96,12 @@ build:
 profiles:
 - name: p1
   build:
-    googleCloudBuild:
-      projectId: project1
-      diskSizeGb: 2
-      machineType: machine1
-      timeout: "128"
+    cluster:
       concurrency: 2
+      dockerConfig:
+        path: path/to/docker/config
+      pullSecretPath: path/to/secret
+      timeout: "128"
 ---
 apiVersion: ""
 kind: ""
@@ -123,12 +118,12 @@ build:
 profiles:
 - name: p1
   build:
-    googleCloudBuild:
-      projectId: project1
-      diskSizeGb: 2
-      machineType: machine1
-      timeout: "128"
+    cluster:
       concurrency: 2
+      dockerConfig:
+        path: path/to/docker/config
+      pullSecretPath: path/to/secret
+      timeout: "128"
 `, `apiVersion: ""
 kind: ""
 metadata:
@@ -138,18 +133,18 @@ build:
 profiles:
 - name: p1
   build:
-    googleCloudBuild:
-      projectId: project1
-      diskSizeGb: 2
-      machineType: machine1
-      timeout: "128"
+    cluster:
       concurrency: 2
+      dockerConfig:
+        path: path/to/docker/config
+      pullSecretPath: path/to/secret
+      timeout: "128"
 `,
 			},
 		},
 		{
 			description:  "add to new profile",
-			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project1", DiskSizeGb: 2, MachineType: "machine1", Timeout: "128", Concurrency: 2, Profile: "p2"},
+			buildEnvOpts: inspect.BuildEnvOptions{RunAsUser: -1, PullSecretPath: "path/to/secret", DockerConfigPath: "path/to/docker/config", Timeout: "128", Concurrency: 2, Profile: "p2"},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -163,12 +158,12 @@ profiles:
     cluster: {}
 - name: p2
   build:
-    googleCloudBuild:
-      projectId: project1
-      diskSizeGb: 2
-      machineType: machine1
-      timeout: "128"
+    cluster:
       concurrency: 2
+      dockerConfig:
+        path: path/to/docker/config
+      pullSecretPath: path/to/secret
+      timeout: "128"
 ---
 apiVersion: ""
 kind: ""
@@ -188,12 +183,12 @@ profiles:
     cluster: {}
 - name: p2
   build:
-    googleCloudBuild:
-      projectId: project1
-      diskSizeGb: 2
-      machineType: machine1
-      timeout: "128"
+    cluster:
       concurrency: 2
+      dockerConfig:
+        path: path/to/docker/config
+      pullSecretPath: path/to/secret
+      timeout: "128"
 `, `apiVersion: ""
 kind: ""
 metadata:
@@ -206,19 +201,19 @@ profiles:
     local: {}
 - name: p2
   build:
-    googleCloudBuild:
-      projectId: project1
-      diskSizeGb: 2
-      machineType: machine1
-      timeout: "128"
+    cluster:
       concurrency: 2
+      dockerConfig:
+        path: path/to/docker/config
+      pullSecretPath: path/to/secret
+      timeout: "128"
 `,
 			},
 		},
 		{
 			description:  "add to new profile in selected modules",
 			modules:      []string{"cfg1_1"},
-			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project1", DiskSizeGb: 2, MachineType: "machine1", Timeout: "128", Concurrency: 2, Profile: "p2"},
+			buildEnvOpts: inspect.BuildEnvOptions{RunAsUser: -1, PullSecretPath: "path/to/secret", DockerConfigPath: "path/to/docker/config", Timeout: "128", Concurrency: 2, Profile: "p2"},
 			expectedConfigs: []string{
 				`apiVersion: ""
 kind: ""
@@ -249,12 +244,12 @@ profiles:
     cluster: {}
 - name: p2
   build:
-    googleCloudBuild:
-      projectId: project1
-      diskSizeGb: 2
-      machineType: machine1
-      timeout: "128"
+    cluster:
       concurrency: 2
+      dockerConfig:
+        path: path/to/docker/config
+      pullSecretPath: path/to/secret
+      timeout: "128"
 `, `apiVersion: ""
 kind: ""
 metadata:
@@ -267,19 +262,19 @@ profiles:
     local: {}
 - name: p2
   build:
-    googleCloudBuild:
-      projectId: project1
-      diskSizeGb: 2
-      machineType: machine1
-      timeout: "128"
+    cluster:
       concurrency: 2
+      dockerConfig:
+        path: path/to/docker/config
+      pullSecretPath: path/to/secret
+      timeout: "128"
 `, "",
 			},
 		},
 		{
 			description:  "add to new profile in nested module",
 			modules:      []string{"cfg2"},
-			buildEnvOpts: inspect.BuildEnvOptions{ProjectID: "project1", DiskSizeGb: 2, MachineType: "machine1", Timeout: "128", Concurrency: 2, Profile: "p2"},
+			buildEnvOpts: inspect.BuildEnvOptions{RunAsUser: -1, PullSecretPath: "path/to/secret", DockerConfigPath: "path/to/docker/config", Timeout: "128", Concurrency: 2, Profile: "p2"},
 			expectedConfigs: []string{"",
 				`apiVersion: ""
 kind: ""
@@ -293,12 +288,12 @@ profiles:
     local: {}
 - name: p2
   build:
-    googleCloudBuild:
-      projectId: project1
-      diskSizeGb: 2
-      machineType: machine1
-      timeout: "128"
+    cluster:
       concurrency: 2
+      dockerConfig:
+        path: path/to/docker/config
+      pullSecretPath: path/to/secret
+      timeout: "128"
 `,
 			},
 		},
@@ -375,7 +370,7 @@ profiles:
 			})
 
 			var buf bytes.Buffer
-			err := AddGcbBuildEnv(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.modules, BuildEnvOptions: test.buildEnvOpts})
+			err := AddClusterBuildEnv(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.modules, BuildEnvOptions: test.buildEnvOpts})
 			t.CheckNoError(err)
 			if test.err == nil {
 				t.CheckDeepEqual(test.expectedConfigs[0], actualCfg1)
