@@ -33,8 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/helm"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -90,7 +88,7 @@ spec:
 					},
 				},
 			}}),
-		}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, &latestV1.KubectlDeploy{
+		}, nil, &latestV1.KubectlDeploy{
 			Manifests: []string{"deployment.yaml"},
 		})
 		t.RequireNoError(err)
@@ -250,7 +248,7 @@ spec:
 				Opts: config.SkaffoldOptions{
 					AddSkaffoldLabels: true,
 				},
-			}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, &latestV1.KubectlDeploy{
+			}, nil, &latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			})
 			t.RequireNoError(err)
@@ -436,7 +434,7 @@ spec:
 						},
 					},
 				}}),
-			}, nil, &log.NoopLogger{}, &preview.NoopPreviewer{}, &latestV1.HelmDeploy{
+			}, nil, &latestV1.HelmDeploy{
 				Releases: test.helmReleases,
 			})
 			t.RequireNoError(err)

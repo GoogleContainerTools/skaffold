@@ -21,17 +21,11 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
 )
 
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
 type Deployer interface {
-	log.Logger
-
-	preview.ResourcePreviewer
-
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster. Returns the list of impacted namespaces.
 	Deploy(context.Context, io.Writer, []graph.Artifact) ([]string, error)

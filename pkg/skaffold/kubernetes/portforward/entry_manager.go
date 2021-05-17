@@ -84,6 +84,7 @@ func (f *forwardedResources) Length() int {
 // EntryManager handles forwarding entries and keeping track of
 // forwarded ports and resources.
 type EntryManager struct {
+	output         io.Writer
 	entryForwarder EntryForwarder
 
 	// forwardedPorts serves as a synchronized set of ports we've forwarded.
@@ -95,13 +96,14 @@ type EntryManager struct {
 
 // NewEntryManager returns a new port forward entry manager to keep track
 // of forwarded ports and resources
-func NewEntryManager(entryForwarder EntryForwarder) *EntryManager {
+func NewEntryManager(out io.Writer, entryForwarder EntryForwarder) *EntryManager {
 	return &EntryManager{
+		output:         out,
 		entryForwarder: entryForwarder,
 	}
 }
 
-func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, out io.Writer, entry *portForwardEntry) {
+func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portForwardEntry) {
 	// Check if this resource has already been forwarded
 	if _, ok := b.forwardedResources.Load(entry.key()); ok {
 		return
@@ -110,7 +112,7 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, out io.Write
 
 	if err := b.entryForwarder.Forward(ctx, entry); err == nil {
 		color.Green.Fprintln(
-			out,
+			b.output,
 			fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %s -> %s:%d",
 				entry.resource.Type,
 				entry.resource.Name,
@@ -119,7 +121,7 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, out io.Write
 				entry.resource.Address,
 				entry.localPort))
 	} else {
-		color.Red.Fprintln(out, err)
+		color.Red.Fprintln(b.output, err)
 	}
 	portForwardEvent(entry)
 }

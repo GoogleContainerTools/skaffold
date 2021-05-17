@@ -43,9 +43,9 @@ func TestStop(t *testing.T) {
 	}, "", "", "", "", 9001, false)
 
 	fakeForwarder := newTestForwarder()
-	em := NewEntryManager(fakeForwarder)
-	em.forwardPortForwardEntry(context.Background(), ioutil.Discard, pfe1)
-	em.forwardPortForwardEntry(context.Background(), ioutil.Discard, pfe2)
+	em := NewEntryManager(ioutil.Discard, fakeForwarder)
+	em.forwardPortForwardEntry(context.Background(), pfe1)
+	em.forwardPortForwardEntry(context.Background(), pfe2)
 
 	testutil.CheckDeepEqual(t, 2, fakeForwarder.forwardedResources.Length())
 	testutil.CheckDeepEqual(t, 2, fakeForwarder.forwardedPorts.Length())
