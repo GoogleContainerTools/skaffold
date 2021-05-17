@@ -45,10 +45,11 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	// Update which images are logged.
 	r.AddTagsToPodSelector(artifacts)
 
-	defer r.deployer.StopLogger()
+	logger := r.createLogger(out, artifacts)
+	defer logger.Stop()
 
 	// Logs should be retrieved up to just before the deploy
-	r.deployer.SetSince(time.Now())
+	logger.SetSince(time.Now())
 	// First deploy
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
 		eventV2.TaskFailed(constants.Deploy, err)
@@ -63,7 +64,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	}
 
 	// Start printing the logs after deploy is finished
-	if err := r.deployer.StartLogger(ctx, out, r.runCtx.GetNamespaces()); err != nil {
+	if err := logger.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
 		eventV2.TaskFailed(constants.Deploy, err)
 		return fmt.Errorf("starting logger: %w", err)
 	}

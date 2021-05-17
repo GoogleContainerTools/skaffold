@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,40 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package log
+package v1
 
 import (
-	"context"
 	"io"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
 )
 
-type Logger interface {
-	StartLogger(context.Context, io.Writer, []string) error
+func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []graph.Artifact) *logger.LogAggregator {
+	if !r.runCtx.Tail() {
+		return nil
+	}
 
-	StopLogger()
+	var imageNames []string
+	for _, artifact := range artifacts {
+		imageNames = append(imageNames, artifact.Tag)
+	}
 
-	Mute()
-
-	Unmute()
-
-	SetSince(time.Time)
-
-	RegisterBuildArtifacts([]graph.Artifact)
+	return logger.NewLogAggregator(out, r.kubectlCLI, imageNames, r.podSelector, r.runCtx)
 }
-
-type NoopLogger struct{}
-
-func (n *NoopLogger) StartLogger(context.Context, io.Writer, []string) error { return nil }
-
-func (n *NoopLogger) StopLogger() {}
-
-func (n *NoopLogger) Mute() {}
-
-func (n *NoopLogger) Unmute() {}
-
-func (n *NoopLogger) SetSince(time.Time) {}
-
-func (n *NoopLogger) RegisterBuildArtifacts(_ []graph.Artifact) {}
