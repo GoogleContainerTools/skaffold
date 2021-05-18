@@ -196,7 +196,7 @@ func setDefaultKustomizePath(c *latestV1.SkaffoldConfig) {
 }
 
 func setDefaultKubectlManifests(c *latestV1.SkaffoldConfig) {
-	if c.Deploy.KubectlDeploy != nil && len(c.Deploy.KubectlDeploy.Manifests) == 0 {
+	if c.Deploy.KubectlDeploy != nil && len(c.Deploy.KubectlDeploy.Manifests) == 0 && len(c.Deploy.KubectlDeploy.RemoteManifests) == 0 {
 		c.Deploy.KubectlDeploy.Manifests = constants.DefaultKubectlManifests
 	}
 }
