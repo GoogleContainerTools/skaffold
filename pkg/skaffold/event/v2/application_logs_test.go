@@ -42,9 +42,9 @@ func TestHandleApplicationLogEvent(t *testing.T) {
 		})
 	}
 	wait(t, func() bool {
-		testHandler.logLock.Lock()
-		logLen := len(testHandler.eventLog)
-		testHandler.logLock.Unlock()
+		testHandler.applicationLogsLock.Lock()
+		logLen := len(testHandler.applicationLogs)
+		testHandler.applicationLogsLock.Unlock()
 		return logLen == len(messages)
 	})
 }

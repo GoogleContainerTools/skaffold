@@ -42,6 +42,10 @@ func (s *Server) Events(_ *empty.Empty, stream proto.SkaffoldV2Service_EventsSer
 	return event.ForEachEvent(stream.Send)
 }
 
+func (s *Server) ApplicationLogs(_ *empty.Empty, stream proto.SkaffoldV2Service_ApplicationLogsServer) error {
+	return event.ForEachApplicationLog(stream.Send)
+}
+
 func (s *Server) Handle(ctx context.Context, e *proto.Event) (*empty.Empty, error) {
 	return &empty.Empty{}, event.Handle(e)
 }
