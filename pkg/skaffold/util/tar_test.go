@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -234,7 +235,7 @@ func TestCreateTarWithAbsolutePaths(t *testing.T) {
 }
 
 func TestAddFileToTarSymlinks(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == constants.Windows {
 		t.Skip("creating symlinks requires extra privileges on Windows")
 	}
 

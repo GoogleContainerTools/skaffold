@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -32,7 +32,7 @@ import (
 func TestKanikoArgs(t *testing.T) {
 	tests := []struct {
 		description        string
-		artifact           *latest_v1.KanikoArtifact
+		artifact           *latestV1.KanikoArtifact
 		insecureRegistries map[string]bool
 		tag                string
 		shouldErr          bool
@@ -40,24 +40,24 @@ func TestKanikoArgs(t *testing.T) {
 	}{
 		{
 			description: "simple build",
-			artifact: &latest_v1.KanikoArtifact{
+			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 			},
 			expectedArgs: []string{},
 		},
 		{
 			description: "cache layers",
-			artifact: &latest_v1.KanikoArtifact{
+			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
-				Cache:          &latest_v1.KanikoCache{},
+				Cache:          &latestV1.KanikoCache{},
 			},
 			expectedArgs: []string{kaniko.CacheFlag},
 		},
 		{
 			description: "cache layers to specific repo",
-			artifact: &latest_v1.KanikoArtifact{
+			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
-				Cache: &latest_v1.KanikoCache{
+				Cache: &latestV1.KanikoCache{
 					Repo: "repo",
 				},
 			},
@@ -65,9 +65,9 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "cache path",
-			artifact: &latest_v1.KanikoArtifact{
+			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
-				Cache: &latest_v1.KanikoCache{
+				Cache: &latestV1.KanikoCache{
 					HostPath: "/cache",
 				},
 			},
@@ -77,7 +77,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "target",
-			artifact: &latest_v1.KanikoArtifact{
+			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				Target:         "target",
 			},
@@ -85,7 +85,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "reproducible",
-			artifact: &latest_v1.KanikoArtifact{
+			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				Reproducible:   true,
 			},
@@ -93,7 +93,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "build args",
-			artifact: &latest_v1.KanikoArtifact{
+			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"nil_key":   nil,
@@ -108,7 +108,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "invalid build args",
-			artifact: &latest_v1.KanikoArtifact{
+			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"invalid": util.StringPtr("{{Invalid"),
@@ -118,7 +118,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "insecure registries",
-			artifact: &latest_v1.KanikoArtifact{
+			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 			},
 			insecureRegistries: map[string]bool{"localhost:4000": true},
@@ -126,7 +126,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "skip tls",
-			artifact: &latest_v1.KanikoArtifact{
+			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				SkipTLS:        true,
 			},
@@ -137,7 +137,7 @@ func TestKanikoArgs(t *testing.T) {
 		},
 		{
 			description: "invalid registry",
-			artifact: &latest_v1.KanikoArtifact{
+			artifact: &latestV1.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				SkipTLS:        true,
 			},
@@ -164,7 +164,7 @@ func TestKanikoArgs(t *testing.T) {
 }
 
 func TestKanikoPodSpec(t *testing.T) {
-	artifact := &latest_v1.KanikoArtifact{
+	artifact := &latestV1.KanikoArtifact{
 		Image:          "image",
 		DockerfilePath: "Dockerfile",
 		InitImage:      "init/image",
@@ -192,7 +192,7 @@ func TestKanikoPodSpec(t *testing.T) {
 
 	builder := &Builder{
 		cfg: &mockBuilderContext{},
-		ClusterDetails: &latest_v1.ClusterDetails{
+		ClusterDetails: &latestV1.ClusterDetails{
 			Namespace:           "ns",
 			PullSecretName:      "secret",
 			PullSecretPath:      "kaniko-secret.json",
@@ -201,11 +201,11 @@ func TestKanikoPodSpec(t *testing.T) {
 			HTTPSProxy:          "https://proxy",
 			ServiceAccountName:  "aVerySpecialSA",
 			RunAsUser:           &runAsUser,
-			Resources: &latest_v1.ResourceRequirements{
-				Requests: &latest_v1.ResourceRequirement{
+			Resources: &latestV1.ResourceRequirements{
+				Requests: &latestV1.ResourceRequirement{
 					CPU: "0.1",
 				},
-				Limits: &latest_v1.ResourceRequirement{
+				Limits: &latestV1.ResourceRequirement{
 					CPU: "0.5",
 				},
 			},
@@ -283,9 +283,6 @@ func TestKanikoPodSpec(t *testing.T) {
 				Args:            []string{"--dockerfile", "Dockerfile", "--context", "dir:///kaniko/buildcontext", "--destination", "tag", "-v", "info"},
 				ImagePullPolicy: v1.PullIfNotPresent,
 				Env: []v1.EnvVar{{
-					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-					Value: "/secret/kaniko-secret.json",
-				}, {
 					Name:  "UPSTREAM_CLIENT_TYPE",
 					Value: "UpstreamClient(skaffold-)",
 				}, {
@@ -297,6 +294,9 @@ func TestKanikoPodSpec(t *testing.T) {
 				}, {
 					Name:  "HTTPS_PROXY",
 					Value: "https://proxy",
+				}, {
+					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+					Value: "/secret/kaniko-secret.json",
 				}},
 				VolumeMounts: []v1.VolumeMount{
 					{
@@ -386,24 +386,24 @@ func TestKanikoPodSpec(t *testing.T) {
 func TestResourceRequirements(t *testing.T) {
 	tests := []struct {
 		description string
-		initial     *latest_v1.ResourceRequirements
+		initial     *latestV1.ResourceRequirements
 		expected    v1.ResourceRequirements
 	}{
 		{
 			description: "no resource specified",
-			initial:     &latest_v1.ResourceRequirements{},
+			initial:     &latestV1.ResourceRequirements{},
 			expected:    v1.ResourceRequirements{},
 		},
 		{
 			description: "with resource specified",
-			initial: &latest_v1.ResourceRequirements{
-				Requests: &latest_v1.ResourceRequirement{
+			initial: &latestV1.ResourceRequirements{
+				Requests: &latestV1.ResourceRequirement{
 					CPU:              "0.5",
 					Memory:           "1000",
 					ResourceStorage:  "1000",
 					EphemeralStorage: "1000",
 				},
-				Limits: &latest_v1.ResourceRequirement{
+				Limits: &latestV1.ResourceRequirement{
 					CPU:              "1.0",
 					Memory:           "2000",
 					ResourceStorage:  "1000",

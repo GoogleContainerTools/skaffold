@@ -17,3 +17,6 @@ skaffold dev
     * `tsc-watch` will restart the application
 * Make some changes to `package.json`:
     * The full build/push/deploy process will be triggered, fetching dependencies from `npm`
+* NOTE: Currently in this example, `tsc-watch` is not configured when `ENV=production`.  To configure it, update the [package.json](./backend/src/package.json) file `scripts.production"` field to be:
+  * `"production": "tsc && node ./src/index.js"` instead of the default `"production": "node src/index.js",`
+  

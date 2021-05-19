@@ -19,6 +19,7 @@ package cmd
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -46,6 +47,47 @@ func TestPreReleaseVersion(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual := preReleaseVersion(test.versionStr)
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+func TestUpdateCheck(t *testing.T) {
+	tests := []struct {
+		description string
+		versionStr  string
+		expected    string
+		versionMsg  string
+		updateCheck bool
+	}{
+		{
+			description: "pre release version, update check is disabled",
+			versionStr:  "v1.20.0-42-g92900f245-dirty",
+		},
+		{
+			description: "release version but update check disabled",
+			versionStr:  "v1.20.0",
+		},
+		{
+			description: "release version and update check enabled",
+			versionStr:  "v1.20.0",
+			updateCheck: true,
+			versionMsg:  "newer version is available",
+			expected:    "newer version is available",
+		},
+		{
+			description: "update check enabled but version already up to date",
+			versionStr:  "v1.20.0",
+			updateCheck: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&updateCheck, func(string) (string, error) {
+				return test.versionMsg, nil
+			})
+			t.Override(&update.EnableCheck, test.updateCheck)
+			actual := updateCheckForReleasedVersionsIfNotDisabled(test.versionStr)
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}

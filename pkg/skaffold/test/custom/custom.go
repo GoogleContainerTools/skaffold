@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -42,14 +42,16 @@ var (
 const Windows string = "windows"
 
 type Runner struct {
-	customTest latest_v1.CustomTest
+	cfg        docker.Config
+	customTest latestV1.CustomTest
 	imageName  string
 	workspace  string
 }
 
 // New creates a new custom.Runner.
-func New(cfg docker.Config, imageName string, ws string, ct latest_v1.CustomTest) (*Runner, error) {
+func New(cfg docker.Config, imageName string, ws string, ct latestV1.CustomTest) (*Runner, error) {
 	return &Runner{
+		cfg:        cfg,
 		imageName:  imageName,
 		customTest: ct,
 		workspace:  ws,
@@ -155,6 +157,7 @@ func (ct *Runner) TestDependencies() ([]string, error) {
 func (ct *Runner) retrieveCmd(ctx context.Context, out io.Writer, command string, imageTag string) (*exec.Cmd, error) {
 	var cmd *exec.Cmd
 	// We evaluate the command with a shell so that it can contain env variables.
+
 	if runtime.GOOS == Windows {
 		cmd = exec.CommandContext(ctx, "cmd.exe", "/C", command)
 	} else {
@@ -190,6 +193,14 @@ func (ct *Runner) getEnv(imageTag string) ([]string, error) {
 	}
 
 	envs = append(envs, util.OSEnviron()...)
+
+	// add minikube docker env vars to command env context if minikube cluster detected
+	localDaemon, err := docker.NewAPIClient(ct.cfg)
+	if err != nil {
+		return nil, fmt.Errorf("getting docker client information: %w", err)
+	}
+	envs = append(envs, localDaemon.ExtraEnv()...)
+
 	return envs, nil
 }
 

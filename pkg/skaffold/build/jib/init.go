@@ -28,7 +28,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -59,9 +59,9 @@ func (c ArtifactConfig) Describe() string {
 }
 
 // ArtifactType returns the type of the artifact to be built.
-func (c ArtifactConfig) ArtifactType(_ string) latest_v1.ArtifactType {
-	return latest_v1.ArtifactType{
-		JibArtifact: &latest_v1.JibArtifact{
+func (c ArtifactConfig) ArtifactType(_ string) latestV1.ArtifactType {
+	return latestV1.ArtifactType{
+		JibArtifact: &latestV1.JibArtifact{
 			Project: c.Project,
 		},
 	}
@@ -85,6 +85,10 @@ type jibJSON struct {
 
 // validate checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
 func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
+	if !JVMFound() {
+		logrus.Debugf("Skipping Jib for init for %q: no functioning Java VM", path)
+		return nil
+	}
 	// Determine whether maven or gradle
 	var builderType PluginType
 	var executable, wrapper, taskName, searchString, consoleFlag string

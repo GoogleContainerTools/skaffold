@@ -115,6 +115,11 @@ func TestInitProblems(t *testing.T) {
 	}
 	for _, test := range initTestCases {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&sErrors.GetProblemCatalogCopy, func() sErrors.ProblemCatalog {
+				pc := sErrors.NewProblemCatalog()
+				pc.AddPhaseProblems(constants.Init, problems)
+				return pc
+			})
 			actual := sErrors.ShowAIError(nil, test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 			actualAE := sErrors.ActionableErr(nil, constants.Init, test.err)

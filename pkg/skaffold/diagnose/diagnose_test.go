@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -61,11 +61,11 @@ func TestSizeOfDockerContext(t *testing.T) {
 				Write("Dockerfile", test.DockerfileContents).
 				WriteFiles(test.files)
 
-			dummyArtifact := &latest_v1.Artifact{
+			dummyArtifact := &latestV1.Artifact{
 				Workspace: tmpDir.Root(),
 				ImageName: test.artifactName,
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 					},
 				},
@@ -82,11 +82,11 @@ func TestCheckArtifacts(t *testing.T) {
 		tmpDir := t.NewTempDir().Write("Dockerfile", "FROM busybox")
 
 		err := CheckArtifacts(context.Background(), &mockConfig{
-			artifacts: []*latest_v1.Artifact{{
+			artifacts: []*latestV1.Artifact{{
 				Workspace: tmpDir.Root(),
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
-						DockerfilePath: "Dockerfile",
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
+						DockerfilePath: tmpDir.Path("Dockerfile"),
 					},
 				},
 			}},
@@ -98,15 +98,15 @@ func TestCheckArtifacts(t *testing.T) {
 
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
-	artifacts             []*latest_v1.Artifact
+	artifacts             []*latestV1.Artifact
 }
 
-func (c *mockConfig) PipelineForImage() latest_v1.Pipeline {
-	var pipeline latest_v1.Pipeline
+func (c *mockConfig) PipelineForImage() latestV1.Pipeline {
+	var pipeline latestV1.Pipeline
 	pipeline.Build.Artifacts = c.artifacts
 	return pipeline
 }
 
-func (c *mockConfig) Artifacts() []*latest_v1.Artifact {
+func (c *mockConfig) Artifacts() []*latestV1.Artifact {
 	return c.artifacts
 }

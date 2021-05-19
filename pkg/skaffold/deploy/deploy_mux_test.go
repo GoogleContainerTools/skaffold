@@ -26,7 +26,9 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
 
 func NewMockDeployer() *MockDeployer { return &MockDeployer{labels: make(map[string]string)} }
@@ -141,6 +143,14 @@ func TestDeployerMux_Deploy(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			testEvent.InitializeState([]latestV1.Pipeline{{
+				Deploy: latestV1.DeployConfig{},
+				Build: latestV1.BuildConfig{
+					BuildType: latestV1.BuildType{
+						LocalBuild: &latestV1.LocalBuild{},
+					},
+				}}})
+
 			deployerMux := DeployerMux([]Deployer{
 				NewMockDeployer().WithDeployNamespaces(test.namespaces1).WithDeployErr(test.err1),
 				NewMockDeployer().WithDeployNamespaces(test.namespaces2).WithDeployErr(test.err2),

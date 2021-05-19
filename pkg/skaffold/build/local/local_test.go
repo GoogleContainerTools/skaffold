@@ -36,7 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -57,7 +57,7 @@ func TestLocalRun(t *testing.T) {
 		description      string
 		api              *testutil.FakeAPIClient
 		tag              string
-		artifact         *latest_v1.Artifact
+		artifact         *latestV1.Artifact
 		expected         string
 		expectedWarnings []string
 		expectedPushed   map[string]string
@@ -66,10 +66,10 @@ func TestLocalRun(t *testing.T) {
 	}{
 		{
 			description: "single build (local)",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{},
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{},
 				},
 			},
 			tag:        "gcr.io/test/image:tag",
@@ -79,10 +79,10 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "error getting image digest",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{},
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{},
 				},
 			},
 			tag: "gcr.io/test/image:tag",
@@ -93,10 +93,10 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "single build (remote)",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{},
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{},
 				},
 			},
 			tag:        "gcr.io/test/image:tag",
@@ -109,10 +109,10 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "error build",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{},
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{},
 				},
 			},
 			tag: "gcr.io/test/image:tag",
@@ -123,10 +123,10 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "Don't push on build error",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{},
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{},
 				},
 			},
 			tag:        "gcr.io/test/image:tag",
@@ -138,16 +138,16 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "unknown artifact type",
-			artifact:    &latest_v1.Artifact{},
+			artifact:    &latestV1.Artifact{},
 			api:         &testutil.FakeAPIClient{},
 			shouldErr:   true,
 		},
 		{
 			description: "cache-from images already pulled",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						CacheFrom: []string{"pull1", "pull2"},
 					},
 				},
@@ -158,10 +158,10 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "pull cache-from images",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						CacheFrom: []string{"pull1", "pull2"},
 					},
 				},
@@ -172,10 +172,10 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "ignore cache-from pull error",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						CacheFrom: []string{"pull1"},
 					},
 				},
@@ -189,10 +189,10 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "error checking cache-from image",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						CacheFrom: []string{"pull"},
 					},
 				},
@@ -205,10 +205,10 @@ func TestLocalRun(t *testing.T) {
 		},
 		{
 			description: "fail fast docker not found",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{},
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{},
 				},
 			},
 			tag: "gcr.io/test/image:tag",
@@ -230,16 +230,16 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
 				return args, nil
 			})
-			testEvent.InitializeState([]latest_v1.Pipeline{{
-				Deploy: latest_v1.DeployConfig{},
-				Build: latest_v1.BuildConfig{
-					BuildType: latest_v1.BuildType{
-						LocalBuild: &latest_v1.LocalBuild{},
+			testEvent.InitializeState([]latestV1.Pipeline{{
+				Deploy: latestV1.DeployConfig{},
+				Build: latestV1.BuildConfig{
+					BuildType: latestV1.BuildType{
+						LocalBuild: &latestV1.LocalBuild{},
 					},
 				}}})
 
 			builder, err := NewBuilder(&mockBuilderContext{artifactStore: build.NewArtifactStore()},
-				&latest_v1.LocalBuild{
+				&latestV1.LocalBuild{
 					Push:        util.BoolPtr(test.pushImages),
 					Concurrency: &constants.DefaultLocalConcurrency,
 				})
@@ -265,7 +265,7 @@ func TestNewBuilder(t *testing.T) {
 		shouldErr     bool
 		expectedPush  bool
 		cluster       config.Cluster
-		localBuild    latest_v1.LocalBuild
+		localBuild    latestV1.LocalBuild
 		localDockerFn func(docker.Config) (docker.LocalDaemon, error)
 	}{
 		{
@@ -289,7 +289,7 @@ func TestNewBuilder(t *testing.T) {
 				return dummyDaemon, nil
 			},
 			cluster: config.Cluster{PushImages: true},
-			localBuild: latest_v1.LocalBuild{
+			localBuild: latestV1.LocalBuild{
 				Push: util.BoolPtr(false),
 			},
 			shouldErr:    false,
@@ -318,56 +318,56 @@ func TestNewBuilder(t *testing.T) {
 func TestGetArtifactBuilder(t *testing.T) {
 	tests := []struct {
 		description string
-		artifact    *latest_v1.Artifact
+		artifact    *latestV1.Artifact
 		expected    string
 		shouldErr   bool
 	}{
 		{
 			description: "docker builder",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{},
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{},
 				},
 			},
 			expected: "docker",
 		},
 		{
 			description: "jib builder",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					JibArtifact: &latest_v1.JibArtifact{},
+				ArtifactType: latestV1.ArtifactType{
+					JibArtifact: &latestV1.JibArtifact{},
 				},
 			},
 			expected: "jib",
 		},
 		{
 			description: "buildpacks builder",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					BuildpackArtifact: &latest_v1.BuildpackArtifact{},
+				ArtifactType: latestV1.ArtifactType{
+					BuildpackArtifact: &latestV1.BuildpackArtifact{},
 				},
 			},
 			expected: "buildpacks",
 		},
 		{
 			description: "bazel builder",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					BazelArtifact: &latest_v1.BazelArtifact{},
+				ArtifactType: latestV1.ArtifactType{
+					BazelArtifact: &latestV1.BazelArtifact{},
 				},
 			},
 			expected: "bazel",
 		},
 		{
 			description: "custom builder",
-			artifact: &latest_v1.Artifact{
+			artifact: &latestV1.Artifact{
 				ImageName: "gcr.io/test/image",
-				ArtifactType: latest_v1.ArtifactType{
-					CustomArtifact: &latest_v1.CustomArtifact{},
+				ArtifactType: latestV1.ArtifactType{
+					CustomArtifact: &latestV1.CustomArtifact{},
 				},
 			},
 			expected: "custom",
@@ -382,7 +382,7 @@ func TestGetArtifactBuilder(t *testing.T) {
 				return args, nil
 			})
 
-			b, err := NewBuilder(&mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latest_v1.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency})
+			b, err := NewBuilder(&mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latestV1.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency})
 			t.CheckNoError(err)
 
 			builder, err := newPerArtifactBuilder(b, test.artifact)
@@ -410,11 +410,11 @@ func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
 
 type mockBuilderContext struct {
 	runcontext.RunContext // Embedded to provide the default values.
-	local                 latest_v1.LocalBuild
+	local                 latestV1.LocalBuild
 	mode                  config.RunMode
 	cluster               config.Cluster
 	artifactStore         build.ArtifactStore
-	sourceDepsResolver    func() graph.TransitiveSourceDependenciesCache
+	sourceDepsResolver    func() graph.SourceDependenciesCache
 }
 
 func (c *mockBuilderContext) Mode() config.RunMode {
@@ -429,7 +429,7 @@ func (c *mockBuilderContext) ArtifactStore() build.ArtifactStore {
 	return c.artifactStore
 }
 
-func (c *mockBuilderContext) SourceDependenciesResolver() graph.TransitiveSourceDependenciesCache {
+func (c *mockBuilderContext) SourceDependenciesResolver() graph.SourceDependenciesCache {
 	if c.sourceDepsResolver != nil {
 		return c.sourceDepsResolver()
 	}

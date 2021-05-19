@@ -24,12 +24,17 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
 )
+
+func fakeLocalDaemonWithExtraEnv(extraEnv []string) docker.LocalDaemon {
+	return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, extraEnv, false, nil)
+}
 
 func TestNewCustomTestRunner(t *testing.T) {
 	testutil.Run(t, "Testing new custom test runner", func(t *testutil.T) {
@@ -38,27 +43,31 @@ func TestNewCustomTestRunner(t *testing.T) {
 		} else {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRun("sh -c echo Running Custom Test command."))
 		}
+		t.Override(&docker.NewAPIClient, func(cfg docker.Config) (docker.LocalDaemon, error) {
+			return fakeLocalDaemonWithExtraEnv([]string{}), nil
+		})
+
 		tmpDir := t.NewTempDir().Touch("test.yaml")
 
-		custom := latest_v1.CustomTest{
+		custom := latestV1.CustomTest{
 			Command:        "echo Running Custom Test command.",
 			TimeoutSeconds: 10,
-			Dependencies: &latest_v1.CustomTestDependencies{
+			Dependencies: &latestV1.CustomTestDependencies{
 				Paths:  []string{"**"},
 				Ignore: []string{"b*"},
 			},
 		}
 
-		testCase := &latest_v1.TestCase{
+		testCase := &latestV1.TestCase{
 			ImageName:   "image",
 			Workspace:   tmpDir.Root(),
-			CustomTests: []latest_v1.CustomTest{custom},
+			CustomTests: []latestV1.CustomTest{custom},
 		}
 
 		cfg := &mockConfig{
-			tests: []*latest_v1.TestCase{testCase},
+			tests: []*latestV1.TestCase{testCase},
 		}
-		testEvent.InitializeState([]latest_v1.Pipeline{{}})
+		testEvent.InitializeState([]latestV1.Pipeline{{}})
 
 		testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 		t.CheckNoError(err)
@@ -71,7 +80,7 @@ func TestNewCustomTestRunner(t *testing.T) {
 func TestCustomCommandError(t *testing.T) {
 	tests := []struct {
 		description        string
-		custom             latest_v1.CustomTest
+		custom             latestV1.CustomTest
 		shouldErr          bool
 		expectedCmd        string
 		expectedWindowsCmd string
@@ -79,7 +88,7 @@ func TestCustomCommandError(t *testing.T) {
 	}{
 		{
 			description: "Non zero exit",
-			custom: latest_v1.CustomTest{
+			custom: latestV1.CustomTest{
 				Command: "exit 20",
 			},
 			shouldErr:          true,
@@ -89,7 +98,7 @@ func TestCustomCommandError(t *testing.T) {
 		},
 		{
 			description: "Command timed out",
-			custom: latest_v1.CustomTest{
+			custom: latestV1.CustomTest{
 				Command:        "sleep 20",
 				TimeoutSeconds: 2,
 			},
@@ -107,17 +116,20 @@ func TestCustomCommandError(t *testing.T) {
 				command = test.expectedWindowsCmd
 			}
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(command, fmt.Errorf(test.expectedError)))
+			t.Override(&docker.NewAPIClient, func(cfg docker.Config) (docker.LocalDaemon, error) {
+				return fakeLocalDaemonWithExtraEnv([]string{}), nil
+			})
 
-			testCase := &latest_v1.TestCase{
+			testCase := &latestV1.TestCase{
 				ImageName:   "image",
 				Workspace:   tmpDir.Root(),
-				CustomTests: []latest_v1.CustomTest{test.custom},
+				CustomTests: []latestV1.CustomTest{test.custom},
 			}
 
 			cfg := &mockConfig{
-				tests: []*latest_v1.TestCase{testCase},
+				tests: []*latestV1.TestCase{testCase},
 			}
-			testEvent.InitializeState([]latest_v1.Pipeline{{}})
+			testEvent.InitializeState([]latestV1.Pipeline{{}})
 
 			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, test.custom)
 			t.CheckNoError(err)
@@ -136,23 +148,23 @@ func TestTestDependenciesCommand(t *testing.T) {
 	testutil.Run(t, "Testing new custom test runner", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("test.yaml")
 
-		custom := latest_v1.CustomTest{
+		custom := latestV1.CustomTest{
 			Command: "echo Hello!",
-			Dependencies: &latest_v1.CustomTestDependencies{
+			Dependencies: &latestV1.CustomTestDependencies{
 				Command: "echo [\"file1\",\"file2\",\"file3\"]",
 			},
 		}
 
-		testCase := &latest_v1.TestCase{
+		testCase := &latestV1.TestCase{
 			ImageName:   "image",
 			Workspace:   tmpDir.Root(),
-			CustomTests: []latest_v1.CustomTest{custom},
+			CustomTests: []latestV1.CustomTest{custom},
 		}
 
 		cfg := &mockConfig{
-			tests: []*latest_v1.TestCase{testCase},
+			tests: []*latestV1.TestCase{testCase},
 		}
-		testEvent.InitializeState([]latest_v1.Pipeline{{}})
+		testEvent.InitializeState([]latestV1.Pipeline{{}})
 
 		if runtime.GOOS == Windows {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
@@ -219,24 +231,24 @@ func TestTestDependenciesPaths(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Touch("foo", "bar", "baz/file")
 
-			custom := latest_v1.CustomTest{
+			custom := latestV1.CustomTest{
 				Command: "echo Hello!",
-				Dependencies: &latest_v1.CustomTestDependencies{
+				Dependencies: &latestV1.CustomTestDependencies{
 					Paths:  test.paths,
 					Ignore: test.ignore,
 				},
 			}
 
-			testCase := &latest_v1.TestCase{
+			testCase := &latestV1.TestCase{
 				ImageName:   "image",
 				Workspace:   tmpDir.Root(),
-				CustomTests: []latest_v1.CustomTest{custom},
+				CustomTests: []latestV1.CustomTest{custom},
 			}
 
 			cfg := &mockConfig{
-				tests: []*latest_v1.TestCase{testCase},
+				tests: []*latestV1.TestCase{testCase},
 			}
-			testEvent.InitializeState([]latest_v1.Pipeline{{}})
+			testEvent.InitializeState([]latestV1.Pipeline{{}})
 
 			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 			t.CheckNoError(err)
@@ -254,6 +266,7 @@ func TestGetEnv(t *testing.T) {
 		testContext string
 		environ     []string
 		expected    []string
+		extraEnv    []string
 	}{
 
 		{
@@ -269,27 +282,41 @@ func TestGetEnv(t *testing.T) {
 			testContext: "/some/path",
 			expected:    []string{"IMAGE=gcr.io/image/tag:anothertag", "TEST_CONTEXT=/some/path", "PATH=/path", "HOME=/root"},
 		},
+		{
+			description: "make sure minikube docker env is applied when minikube profile present",
+			tag:         "gcr.io/image/tag:anothertag",
+			environ:     []string{"PATH=/path", "HOME=/root"},
+			testContext: "/some/path",
+			expected: []string{"IMAGE=gcr.io/image/tag:anothertag", "TEST_CONTEXT=/some/path", "PATH=/path", "HOME=/root",
+				"DOCKER_CERT_PATH=/path/.minikube/certs", "DOCKER_HOST=tcp://192.168.49.2:2376",
+				"DOCKER_TLS_VERIFY=1", "MINIKUBE_ACTIVE_DOCKERD=minikube"},
+			extraEnv: []string{"DOCKER_CERT_PATH=/path/.minikube/certs", "DOCKER_HOST=tcp://192.168.49.2:2376",
+				"DOCKER_TLS_VERIFY=1", "MINIKUBE_ACTIVE_DOCKERD=minikube"},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.environ })
 			t.Override(&testContext, func(string) (string, error) { return test.testContext, nil })
+			t.Override(&docker.NewAPIClient, func(cfg docker.Config) (docker.LocalDaemon, error) {
+				return fakeLocalDaemonWithExtraEnv(test.extraEnv), nil
+			})
 			tmpDir := t.NewTempDir().Touch("test.yaml")
 
-			custom := latest_v1.CustomTest{
+			custom := latestV1.CustomTest{
 				Command: "echo Running Custom Test command.",
 			}
 
-			testCase := &latest_v1.TestCase{
+			testCase := &latestV1.TestCase{
 				ImageName:   "image",
 				Workspace:   tmpDir.Root(),
-				CustomTests: []latest_v1.CustomTest{custom},
+				CustomTests: []latestV1.CustomTest{custom},
 			}
 
 			cfg := &mockConfig{
-				tests: []*latest_v1.TestCase{testCase},
+				tests: []*latestV1.TestCase{testCase},
 			}
-			testEvent.InitializeState([]latest_v1.Pipeline{{}})
+			testEvent.InitializeState([]latestV1.Pipeline{{}})
 
 			testRunner, err := New(cfg, testCase.ImageName, testCase.Workspace, custom)
 			t.CheckNoError(err)
@@ -303,5 +330,5 @@ func TestGetEnv(t *testing.T) {
 
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
-	tests                 []*latest_v1.TestCase
+	tests                 []*latestV1.TestCase
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@ limitations under the License.
 package runner
 
 import (
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
 type ChangeSet struct {
-	needsRebuild   []*latest_v1.Artifact
-	rebuildTracker map[string]*latest_v1.Artifact
+	needsRebuild   []*latestV1.Artifact
+	rebuildTracker map[string]*latestV1.Artifact
 	needsResync    []*sync.Item
 	resyncTracker  map[string]*sync.Item
 	needsRetest    map[string]bool // keyed on artifact image name
@@ -31,19 +31,43 @@ type ChangeSet struct {
 	needsReload    bool
 }
 
-func (c *ChangeSet) AddRebuild(a *latest_v1.Artifact) {
+// NeedsRebuild gets the value of needsRebuild, which itself is not expected to be changed outside ChangeSet
+func (c *ChangeSet) NeedsRebuild() []*latestV1.Artifact {
+	return c.needsRebuild
+}
+
+// NeedsResync gets the value of needsResync, which itself is not expected to be changed outside ChangeSet
+func (c *ChangeSet) NeedsResync() []*sync.Item {
+	return c.needsResync
+}
+
+// NeedsRedeploy gets the value of needsRedeploy, which itself is not expected to be changed outside ChangeSet
+func (c *ChangeSet) NeedsRedeploy() bool {
+	return c.needsRedeploy
+}
+
+// NeedsRetest gets the value of needsRetest, which itself is not expected to be changed outside ChangeSet
+func (c *ChangeSet) NeedsRetest() map[string]bool {
+	return c.needsRetest
+}
+
+// NeedsReload gets the value of needsReload, which itself is not expected to be changed outside ChangeSet
+func (c *ChangeSet) NeedsReload() bool {
+	return c.needsReload
+}
+
+func (c *ChangeSet) AddRebuild(a *latestV1.Artifact) {
 	if _, ok := c.rebuildTracker[a.ImageName]; ok {
 		return
 	}
-
 	if c.rebuildTracker == nil {
-		c.rebuildTracker = map[string]*latest_v1.Artifact{}
+		c.rebuildTracker = map[string]*latestV1.Artifact{}
 	}
 	c.rebuildTracker[a.ImageName] = a
 	c.needsRebuild = append(c.needsRebuild, a)
 }
 
-func (c *ChangeSet) AddRetest(a *latest_v1.Artifact) {
+func (c *ChangeSet) AddRetest(a *latestV1.Artifact) {
 	if c.needsRetest == nil {
 		c.needsRetest = make(map[string]bool)
 	}
@@ -54,7 +78,6 @@ func (c *ChangeSet) AddResync(s *sync.Item) {
 	if _, ok := c.resyncTracker[s.Image]; ok {
 		return
 	}
-
 	if c.resyncTracker == nil {
 		c.resyncTracker = map[string]*sync.Item{}
 	}
@@ -62,20 +85,30 @@ func (c *ChangeSet) AddResync(s *sync.Item) {
 	c.needsResync = append(c.needsResync, s)
 }
 
-func (c *ChangeSet) resetBuild() {
-	c.rebuildTracker = make(map[string]*latest_v1.Artifact)
+func (c *ChangeSet) ResetBuild() {
+	c.rebuildTracker = make(map[string]*latestV1.Artifact)
 	c.needsRebuild = nil
 }
 
-func (c *ChangeSet) resetSync() {
+func (c *ChangeSet) ResetSync() {
 	c.resyncTracker = make(map[string]*sync.Item)
 	c.needsResync = nil
 }
 
-func (c *ChangeSet) resetDeploy() {
+func (c *ChangeSet) ResetDeploy() {
 	c.needsRedeploy = false
 }
 
-func (c *ChangeSet) resetTest() {
+// Redeploy marks that deploy is expected to happen.
+func (c *ChangeSet) Redeploy() {
+	c.needsRedeploy = true
+}
+
+// Reload marks that reload is expected to happen.
+func (c *ChangeSet) Reload() {
+	c.needsReload = true
+}
+
+func (c *ChangeSet) ResetTest() {
 	c.needsRetest = make(map[string]bool)
 }

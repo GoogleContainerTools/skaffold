@@ -19,7 +19,7 @@ package tag
 import (
 	"errors"
 
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 type CustomTag struct {
@@ -27,7 +27,7 @@ type CustomTag struct {
 }
 
 // GenerateTag generates a tag using the custom tag.
-func (t *CustomTag) GenerateTag(_ latest_v1.Artifact) (string, error) {
+func (t *CustomTag) GenerateTag(_ latestV1.Artifact) (string, error) {
 	tag := t.Tag
 	if tag == "" {
 		return "", errors.New("custom tag not provided")

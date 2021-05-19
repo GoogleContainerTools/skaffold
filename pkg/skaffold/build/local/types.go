@@ -33,13 +33,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Builder uses the host docker daemon to build and tag the image.
 type Builder struct {
-	local latest_v1.LocalBuild
+	local latestV1.LocalBuild
 
 	cfg                docker.Config
 	localDocker        docker.LocalDaemon
@@ -56,7 +56,7 @@ type Builder struct {
 	muted              build.Muted
 	localPruner        *pruner
 	artifactStore      build.ArtifactStore
-	sourceDependencies graph.TransitiveSourceDependenciesCache
+	sourceDependencies graph.SourceDependenciesCache
 }
 
 type Config interface {
@@ -74,11 +74,11 @@ type Config interface {
 type BuilderContext interface {
 	Config
 	ArtifactStore() build.ArtifactStore
-	SourceDependenciesResolver() graph.TransitiveSourceDependenciesCache
+	SourceDependenciesResolver() graph.SourceDependenciesCache
 }
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(bCtx BuilderContext, buildCfg *latest_v1.LocalBuild) (*Builder, error) {
+func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.LocalBuild) (*Builder, error) {
 	localDocker, err := docker.NewAPIClient(bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker client: %w", err)
@@ -89,7 +89,7 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latest_v1.LocalBuild) (*Builder, 
 	var pushImages bool
 	if buildCfg.Push == nil {
 		pushImages = cluster.PushImages
-		logrus.Debugf("push value not present, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
+		logrus.Debugf("push value not present in NewBuilder, defaulting to %t because cluster.PushImages is %t", pushImages, cluster.PushImages)
 	} else {
 		pushImages = *buildCfg.Push
 	}
@@ -133,11 +133,11 @@ func (b *Builder) Prune(ctx context.Context, _ io.Writer) error {
 
 // artifactBuilder represents a per artifact builder interface
 type artifactBuilder interface {
-	Build(ctx context.Context, out io.Writer, a *latest_v1.Artifact, tag string) (string, error)
+	Build(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error)
 }
 
 // newPerArtifactBuilder returns an instance of `artifactBuilder`
-func newPerArtifactBuilder(b *Builder, a *latest_v1.Artifact) (artifactBuilder, error) {
+func newPerArtifactBuilder(b *Builder, a *latestV1.Artifact) (artifactBuilder, error) {
 	switch {
 	case a.DockerArtifact != nil:
 		return dockerbuilder.NewArtifactBuilder(b.localDocker, b.local.UseDockerCLI, b.local.UseBuildkit, b.pushImages, b.prune, b.cfg.Mode(), b.cfg.GetInsecureRegistries(), b.artifactStore, b.sourceDependencies), nil

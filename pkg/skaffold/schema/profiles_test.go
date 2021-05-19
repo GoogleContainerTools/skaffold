@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -67,14 +67,14 @@ profiles:
 		t.CheckNoError(err)
 		t.CheckTrue(len(parsed) > 0)
 
-		skaffoldConfig := parsed[0].(*latest_v1.SkaffoldConfig)
+		skaffoldConfig := parsed[0].(*latestV1.SkaffoldConfig)
 		activated, err := ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{}, []string{"patches"})
 		t.CheckNoError(err)
 		t.CheckDeepEqual([]string{"patches"}, activated)
 		t.CheckDeepEqual("replacement", skaffoldConfig.Build.Artifacts[0].ImageName)
 		t.CheckDeepEqual("Dockerfile.DEV", skaffoldConfig.Build.Artifacts[0].DockerArtifact.DockerfilePath)
 		t.CheckDeepEqual("Dockerfile.second", skaffoldConfig.Build.Artifacts[1].DockerArtifact.DockerfilePath)
-		t.CheckDeepEqual(latest_v1.DeployConfig{}, skaffoldConfig.Deploy)
+		t.CheckDeepEqual(latestV1.DeployConfig{}, skaffoldConfig.Deploy)
 	})
 }
 
@@ -97,7 +97,7 @@ profiles:
 		t.CheckNoError(err)
 		t.CheckTrue(len(parsed) > 0)
 
-		skaffoldConfig := parsed[0].(*latest_v1.SkaffoldConfig)
+		skaffoldConfig := parsed[0].(*latestV1.SkaffoldConfig)
 		_, err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{}, []string{"patches"})
 		t.CheckErrorAndDeepEqual(true, err, `applying profile "patches": invalid path: /build/artifacts/0/image/`, err.Error())
 	})
@@ -106,19 +106,13 @@ profiles:
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
 		description              string
-		config                   *latest_v1.SkaffoldConfig
+		config                   *latestV1.SkaffoldConfig
 		profile                  string
-		expected                 *latest_v1.SkaffoldConfig
+		expected                 *latestV1.SkaffoldConfig
 		kubeContextCli           string
 		profileAutoActivationCli bool
 		shouldErr                bool
 	}{
-		{
-			description: "unknown profile",
-			config:      config(),
-			profile:     "profile",
-			shouldErr:   true,
-		},
 		{
 			description:              "build type",
 			profile:                  "profile",
@@ -129,12 +123,12 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(latest_v1.Profile{
+				withProfiles(latestV1.Profile{
 					Name: "profile",
-					Pipeline: latest_v1.Pipeline{
-						Build: latest_v1.BuildConfig{
-							BuildType: latest_v1.BuildType{
-								GoogleCloudBuild: &latest_v1.GoogleCloudBuild{
+					Pipeline: latestV1.Pipeline{
+						Build: latestV1.BuildConfig{
+							BuildType: latestV1.BuildType{
+								GoogleCloudBuild: &latestV1.GoogleCloudBuild{
 									ProjectID:   "my-project",
 									DockerImage: "gcr.io/cloud-builders/docker",
 									MavenImage:  "gcr.io/cloud-builders/mvn",
@@ -165,11 +159,11 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(latest_v1.Profile{
+				withProfiles(latestV1.Profile{
 					Name: "dev",
-					Pipeline: latest_v1.Pipeline{
-						Build: latest_v1.BuildConfig{
-							TagPolicy: latest_v1.TagPolicy{ShaTagger: &latest_v1.ShaTagger{}},
+					Pipeline: latestV1.Pipeline{
+						Build: latestV1.BuildConfig{
+							TagPolicy: latestV1.TagPolicy{ShaTagger: &latestV1.ShaTagger{}},
 						},
 					},
 				}),
@@ -192,18 +186,18 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(latest_v1.Profile{
+				withProfiles(latestV1.Profile{
 					Name: "profile",
-					Pipeline: latest_v1.Pipeline{
-						Build: latest_v1.BuildConfig{
-							Artifacts: []*latest_v1.Artifact{
-								{ImageName: "image", Workspace: ".", ArtifactType: latest_v1.ArtifactType{
-									DockerArtifact: &latest_v1.DockerArtifact{
+					Pipeline: latestV1.Pipeline{
+						Build: latestV1.BuildConfig{
+							Artifacts: []*latestV1.Artifact{
+								{ImageName: "image", Workspace: ".", ArtifactType: latestV1.ArtifactType{
+									DockerArtifact: &latestV1.DockerArtifact{
 										DockerfilePath: "Dockerfile.DEV",
 									},
 								}},
-								{ImageName: "imageProd", Workspace: ".", ArtifactType: latest_v1.ArtifactType{
-									DockerArtifact: &latest_v1.DockerArtifact{
+								{ImageName: "imageProd", Workspace: ".", ArtifactType: latestV1.ArtifactType{
+									DockerArtifact: &latestV1.DockerArtifact{
 										DockerfilePath: "Dockerfile.DEV",
 									},
 								}},
@@ -230,12 +224,12 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(latest_v1.Profile{
+				withProfiles(latestV1.Profile{
 					Name: "profile",
-					Pipeline: latest_v1.Pipeline{
-						Deploy: latest_v1.DeployConfig{
-							DeployType: latest_v1.DeployType{
-								HelmDeploy: &latest_v1.HelmDeploy{},
+					Pipeline: latestV1.Pipeline{
+						Deploy: latestV1.DeployConfig{
+							DeployType: latestV1.DeployType{
+								HelmDeploy: &latestV1.HelmDeploy{},
 							},
 						},
 					},
@@ -259,9 +253,9 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(latest_v1.Profile{
+				withProfiles(latestV1.Profile{
 					Name: "profile",
-					Patches: []latest_v1.JSONPatch{{
+					Patches: []latestV1.JSONPatch{{
 						Path:  "/build/artifacts/0/docker/dockerfile",
 						Value: &util.YamlpatchNode{Node: *yamlpatch.NewNode(str("Dockerfile.DEV"))},
 					}},
@@ -285,9 +279,9 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(latest_v1.Profile{
+				withProfiles(latestV1.Profile{
 					Name: "profile",
-					Patches: []latest_v1.JSONPatch{{
+					Patches: []latestV1.JSONPatch{{
 						Path: "/unknown",
 						Op:   "replace",
 					}},
@@ -303,10 +297,10 @@ func TestApplyProfiles(t *testing.T) {
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withProfiles(latest_v1.Profile{
+				withProfiles(latestV1.Profile{
 					Name: "profile",
-					Pipeline: latest_v1.Pipeline{
-						Test: []*latest_v1.TestCase{{
+					Pipeline: latestV1.Pipeline{
+						Test: []*latestV1.TestCase{{
 							ImageName:      "image",
 							StructureTests: []string{"test/*"},
 						}},
@@ -317,7 +311,7 @@ func TestApplyProfiles(t *testing.T) {
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withTests(&latest_v1.TestCase{
+				withTests(&latestV1.TestCase{
 					ImageName:      "image",
 					StructureTests: []string{"test/*"},
 				}),
@@ -331,10 +325,10 @@ func TestApplyProfiles(t *testing.T) {
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withProfiles(latest_v1.Profile{
+				withProfiles(latestV1.Profile{
 					Name: "profile",
-					Pipeline: latest_v1.Pipeline{
-						PortForward: []*latest_v1.PortForwardResource{{
+					Pipeline: latestV1.Pipeline{
+						PortForward: []*latestV1.PortForwardResource{{
 							Namespace: "ns",
 							Name:      "name",
 							Type:      "service",
@@ -348,7 +342,7 @@ func TestApplyProfiles(t *testing.T) {
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withPortForward(&latest_v1.PortForwardResource{
+				withPortForward(&latestV1.PortForwardResource{
 					Namespace: "ns",
 					Name:      "name",
 					Type:      "service",
@@ -362,16 +356,16 @@ func TestApplyProfiles(t *testing.T) {
 			profile:                  "profile",
 			profileAutoActivationCli: true,
 			config: config(
-				withProfiles(latest_v1.Profile{
+				withProfiles(latestV1.Profile{
 					Name: "profile",
-					Pipeline: latest_v1.Pipeline{
-						Deploy: latest_v1.DeployConfig{
+					Pipeline: latestV1.Pipeline{
+						Deploy: latestV1.DeployConfig{
 							KubeContext: "staging",
 						},
 					}},
-					latest_v1.Profile{
+					latestV1.Profile{
 						Name:       "prod",
-						Activation: []latest_v1.Activation{{KubeContext: "prod-context"}},
+						Activation: []latestV1.Activation{{KubeContext: "prod-context"}},
 					},
 				),
 			),
@@ -382,10 +376,10 @@ func TestApplyProfiles(t *testing.T) {
 			profile:                  "profile",
 			profileAutoActivationCli: true,
 			config: config(
-				withProfiles(latest_v1.Profile{
+				withProfiles(latestV1.Profile{
 					Name: "profile",
-					Pipeline: latest_v1.Pipeline{
-						Deploy: latest_v1.DeployConfig{
+					Pipeline: latestV1.Pipeline{
+						Deploy: latestV1.DeployConfig{
 							KubeContext: "staging",
 						},
 					}},
@@ -401,14 +395,14 @@ func TestApplyProfiles(t *testing.T) {
 			profileAutoActivationCli: true,
 			config: config(
 				withProfiles(
-					latest_v1.Profile{
+					latestV1.Profile{
 						Name:       "prod",
-						Activation: []latest_v1.Activation{{KubeContext: "prod-context"}},
+						Activation: []latestV1.Activation{{KubeContext: "prod-context"}},
 					},
-					latest_v1.Profile{
+					latestV1.Profile{
 						Name: "profile",
-						Pipeline: latest_v1.Pipeline{
-							Deploy: latest_v1.DeployConfig{
+						Pipeline: latestV1.Pipeline{
+							Deploy: latestV1.DeployConfig{
 								KubeContext: "staging",
 							},
 						}},
@@ -429,15 +423,15 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(latest_v1.Profile{
+				withProfiles(latestV1.Profile{
 					Name: "dev",
 				},
-					latest_v1.Profile{
+					latestV1.Profile{
 						Name:       "prod",
-						Activation: []latest_v1.Activation{{KubeContext: "prod-context"}},
-						Pipeline: latest_v1.Pipeline{
-							Build: latest_v1.BuildConfig{
-								TagPolicy: latest_v1.TagPolicy{ShaTagger: &latest_v1.ShaTagger{}},
+						Activation: []latestV1.Activation{{KubeContext: "prod-context"}},
+						Pipeline: latestV1.Pipeline{
+							Build: latestV1.BuildConfig{
+								TagPolicy: latestV1.TagPolicy{ShaTagger: &latestV1.ShaTagger{}},
 							},
 						},
 					}),
@@ -460,15 +454,15 @@ func TestApplyProfiles(t *testing.T) {
 					withDockerArtifact("image", ".", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withProfiles(latest_v1.Profile{
+				withProfiles(latestV1.Profile{
 					Name: "dev",
 				},
-					latest_v1.Profile{
+					latestV1.Profile{
 						Name:       "prod",
-						Activation: []latest_v1.Activation{{KubeContext: "prod-context"}},
-						Pipeline: latest_v1.Pipeline{
-							Build: latest_v1.BuildConfig{
-								TagPolicy: latest_v1.TagPolicy{ShaTagger: &latest_v1.ShaTagger{}},
+						Activation: []latestV1.Activation{{KubeContext: "prod-context"}},
+						Pipeline: latestV1.Pipeline{
+							Build: latestV1.BuildConfig{
+								TagPolicy: latestV1.TagPolicy{ShaTagger: &latestV1.ShaTagger{}},
 							},
 						},
 					}),
@@ -503,7 +497,7 @@ func TestApplyProfiles(t *testing.T) {
 func TestActivatedProfiles(t *testing.T) {
 	tests := []struct {
 		description string
-		profiles    []latest_v1.Profile
+		profiles    []latestV1.Profile
 		opts        cfg.SkaffoldOptions
 		envs        map[string]string
 		expected    []string
@@ -516,7 +510,7 @@ func TestActivatedProfiles(t *testing.T) {
 				Command:               "dev",
 				Profiles:              []string{"activated", "also-activated"},
 			},
-			profiles: []latest_v1.Profile{
+			profiles: []latestV1.Profile{
 				{Name: "activated"},
 				{Name: "not-activated"},
 				{Name: "also-activated"},
@@ -528,12 +522,12 @@ func TestActivatedProfiles(t *testing.T) {
 				ProfileAutoActivation: true,
 				Command:               "dev",
 			},
-			profiles: []latest_v1.Profile{
-				{Name: "run-profile", Activation: []latest_v1.Activation{{Command: "run"}}},
-				{Name: "dev-profile", Activation: []latest_v1.Activation{{Command: "dev"}}},
-				{Name: "non-run-profile", Activation: []latest_v1.Activation{{Command: "!run"}}},
-				{Name: "run-or-dev-profile", Activation: []latest_v1.Activation{{Command: "(run)|(dev)"}}},
-				{Name: "other-profile", Activation: []latest_v1.Activation{{Command: "!(run)|(dev)"}}},
+			profiles: []latestV1.Profile{
+				{Name: "run-profile", Activation: []latestV1.Activation{{Command: "run"}}},
+				{Name: "dev-profile", Activation: []latestV1.Activation{{Command: "dev"}}},
+				{Name: "non-run-profile", Activation: []latestV1.Activation{{Command: "!run"}}},
+				{Name: "run-or-dev-profile", Activation: []latestV1.Activation{{Command: "(run)|(dev)"}}},
+				{Name: "other-profile", Activation: []latestV1.Activation{{Command: "!(run)|(dev)"}}},
 			},
 			expected: []string{"dev-profile", "non-run-profile", "run-or-dev-profile"},
 		}, {
@@ -542,14 +536,14 @@ func TestActivatedProfiles(t *testing.T) {
 			opts: cfg.SkaffoldOptions{
 				ProfileAutoActivation: true,
 			},
-			profiles: []latest_v1.Profile{
-				{Name: "activated", Activation: []latest_v1.Activation{{Env: "KEY=VALUE"}}},
-				{Name: "not-activated", Activation: []latest_v1.Activation{{Env: "KEY=OTHER"}}},
-				{Name: "also-activated", Activation: []latest_v1.Activation{{Env: "KEY=!OTHER"}}},
-				{Name: "not-treated-as-regex", Activation: []latest_v1.Activation{{Env: "KEY="}}},
-				{Name: "regex-activated", Activation: []latest_v1.Activation{{Env: "KEY=V.*E"}}},
-				{Name: "regex-activated-two", Activation: []latest_v1.Activation{{Env: "KEY=^V.*E$"}}},
-				{Name: "regex-activated-substring-match", Activation: []latest_v1.Activation{{Env: "KEY=^VAL"}}},
+			profiles: []latestV1.Profile{
+				{Name: "activated", Activation: []latestV1.Activation{{Env: "KEY=VALUE"}}},
+				{Name: "not-activated", Activation: []latestV1.Activation{{Env: "KEY=OTHER"}}},
+				{Name: "also-activated", Activation: []latestV1.Activation{{Env: "KEY=!OTHER"}}},
+				{Name: "not-treated-as-regex", Activation: []latestV1.Activation{{Env: "KEY="}}},
+				{Name: "regex-activated", Activation: []latestV1.Activation{{Env: "KEY=V.*E"}}},
+				{Name: "regex-activated-two", Activation: []latestV1.Activation{{Env: "KEY=^V.*E$"}}},
+				{Name: "regex-activated-substring-match", Activation: []latestV1.Activation{{Env: "KEY=^VAL"}}},
 			},
 			expected: []string{"activated", "also-activated", "regex-activated", "regex-activated-two", "regex-activated-substring-match"},
 		}, {
@@ -560,10 +554,10 @@ func TestActivatedProfiles(t *testing.T) {
 				Command:               "dev",
 				Profiles:              []string{"activated", "also-activated"},
 			},
-			profiles: []latest_v1.Profile{
-				{Name: "activated", Activation: []latest_v1.Activation{{Env: "KEY=VALUE"}, {Command: "dev"}}},
-				{Name: "not-activated", Activation: []latest_v1.Activation{{Env: "KEY=OTHER"}}},
-				{Name: "also-activated", Activation: []latest_v1.Activation{{Env: "KEY=!OTHER"}}},
+			profiles: []latestV1.Profile{
+				{Name: "activated", Activation: []latestV1.Activation{{Env: "KEY=VALUE"}, {Command: "dev"}}},
+				{Name: "not-activated", Activation: []latestV1.Activation{{Env: "KEY=OTHER"}}},
+				{Name: "also-activated", Activation: []latestV1.Activation{{Env: "KEY=!OTHER"}}},
 			},
 			expected: []string{"activated", "also-activated"},
 		}, {
@@ -572,8 +566,8 @@ func TestActivatedProfiles(t *testing.T) {
 			opts: cfg.SkaffoldOptions{
 				ProfileAutoActivation: true,
 			},
-			profiles: []latest_v1.Profile{
-				{Name: "activated", Activation: []latest_v1.Activation{{Env: "KEY:VALUE"}}},
+			profiles: []latestV1.Profile{
+				{Name: "activated", Activation: []latestV1.Activation{{Env: "KEY:VALUE"}}},
 			},
 			shouldErr: true,
 		}, {
@@ -581,13 +575,13 @@ func TestActivatedProfiles(t *testing.T) {
 			opts: cfg.SkaffoldOptions{
 				ProfileAutoActivation: true,
 			},
-			profiles: []latest_v1.Profile{
-				{Name: "activated", Activation: []latest_v1.Activation{{KubeContext: "prod-context"}}},
-				{Name: "not-activated", Activation: []latest_v1.Activation{{KubeContext: "dev-context"}}},
-				{Name: "also-activated", Activation: []latest_v1.Activation{{KubeContext: "!dev-context"}}},
-				{Name: "activated-regexp", Activation: []latest_v1.Activation{{KubeContext: "prod-.*"}}},
-				{Name: "not-activated-regexp", Activation: []latest_v1.Activation{{KubeContext: "dev-.*"}}},
-				{Name: "invalid-regexp", Activation: []latest_v1.Activation{{KubeContext: `\`}}},
+			profiles: []latestV1.Profile{
+				{Name: "activated", Activation: []latestV1.Activation{{KubeContext: "prod-context"}}},
+				{Name: "not-activated", Activation: []latestV1.Activation{{KubeContext: "dev-context"}}},
+				{Name: "also-activated", Activation: []latestV1.Activation{{KubeContext: "!dev-context"}}},
+				{Name: "activated-regexp", Activation: []latestV1.Activation{{KubeContext: "prod-.*"}}},
+				{Name: "not-activated-regexp", Activation: []latestV1.Activation{{KubeContext: "dev-.*"}}},
+				{Name: "invalid-regexp", Activation: []latestV1.Activation{{KubeContext: `\`}}},
 			},
 			expected: []string{"activated", "also-activated", "activated-regexp"},
 		}, {
@@ -597,16 +591,16 @@ func TestActivatedProfiles(t *testing.T) {
 				ProfileAutoActivation: true,
 				Command:               "dev",
 			},
-			profiles: []latest_v1.Profile{
+			profiles: []latestV1.Profile{
 				{
-					Name: "activated", Activation: []latest_v1.Activation{{
+					Name: "activated", Activation: []latestV1.Activation{{
 						Env:         "KEY=VALUE",
 						KubeContext: "prod-context",
 						Command:     "dev",
 					}},
 				},
 				{
-					Name: "not-activated", Activation: []latest_v1.Activation{{
+					Name: "not-activated", Activation: []latestV1.Activation{{
 						Env:         "KEY=VALUE",
 						KubeContext: "prod-context",
 						Command:     "build",
@@ -620,9 +614,9 @@ func TestActivatedProfiles(t *testing.T) {
 				ProfileAutoActivation: true,
 				Command:               "dev",
 			},
-			profiles: []latest_v1.Profile{
+			profiles: []latestV1.Profile{
 				{
-					Name: "activated", Activation: []latest_v1.Activation{{
+					Name: "activated", Activation: []latestV1.Activation{{
 						Command: "run",
 					}, {
 						Command: "dev",
@@ -638,34 +632,34 @@ func TestActivatedProfiles(t *testing.T) {
 				ProfileAutoActivation: true,
 				Command:               "dev",
 			},
-			profiles: []latest_v1.Profile{
+			profiles: []latestV1.Profile{
 				{
-					Name: "empty", Activation: []latest_v1.Activation{{
+					Name: "empty", Activation: []latestV1.Activation{{
 						Env: "ABC=",
 					}},
 				},
 				{
-					Name: "empty-by-regex", Activation: []latest_v1.Activation{{
+					Name: "empty-by-regex", Activation: []latestV1.Activation{{
 						Env: "ABC=^$",
 					}},
 				},
 				{
-					Name: "not-empty", Activation: []latest_v1.Activation{{
+					Name: "not-empty", Activation: []latestV1.Activation{{
 						Env: "ABC=!",
 					}},
 				},
 				{
-					Name: "one", Activation: []latest_v1.Activation{{
+					Name: "one", Activation: []latestV1.Activation{{
 						Env: "ABC=1",
 					}},
 				},
 				{
-					Name: "not-one", Activation: []latest_v1.Activation{{
+					Name: "not-one", Activation: []latestV1.Activation{{
 						Env: "ABC=!1",
 					}},
 				},
 				{
-					Name: "two", Activation: []latest_v1.Activation{{
+					Name: "two", Activation: []latestV1.Activation{{
 						Env: "ABC=2",
 					}},
 				},
@@ -679,33 +673,33 @@ func TestActivatedProfiles(t *testing.T) {
 				ProfileAutoActivation: true,
 				Command:               "dev",
 			},
-			profiles: []latest_v1.Profile{
+			profiles: []latestV1.Profile{
 				{
-					Name: "empty", Activation: []latest_v1.Activation{{
+					Name: "empty", Activation: []latestV1.Activation{{
 						Env: "ABC=",
 					}},
 				},
 				{
-					Name: "one", Activation: []latest_v1.Activation{{
+					Name: "one", Activation: []latestV1.Activation{{
 						Env: "ABC=1",
 					}},
 				},
 				{
-					Name: "one-as-well", Activation: []latest_v1.Activation{{
+					Name: "one-as-well", Activation: []latestV1.Activation{{
 						Command: "not-triggered",
 					}, {
 						Env: "ABC=1",
 					}},
 				},
 				{
-					Name: "two", Activation: []latest_v1.Activation{{
+					Name: "two", Activation: []latestV1.Activation{{
 						Command: "build",
 					}, {
 						Env: "ABC=2",
 					}},
 				},
 				{
-					Name: "not-two", Activation: []latest_v1.Activation{{
+					Name: "not-two", Activation: []latestV1.Activation{{
 						Command: "build",
 					}, {
 						Env: "ABC=!2",
@@ -721,8 +715,10 @@ func TestActivatedProfiles(t *testing.T) {
 				Command:               "run",
 				Profiles:              []string{"activated", "also-activated"},
 			},
-			profiles: []latest_v1.Profile{
-				{Name: "run-profile", Activation: []latest_v1.Activation{{Command: "run"}}},
+			profiles: []latestV1.Profile{
+				{Name: "activated"},
+				{Name: "also-activated"},
+				{Name: "run-profile", Activation: []latestV1.Activation{{Command: "run"}}},
 			},
 			expected: []string{"run-profile", "activated", "also-activated"},
 		},
@@ -733,12 +729,12 @@ func TestActivatedProfiles(t *testing.T) {
 				Command:               "dev",
 				Profiles:              []string{"activated", "also-activated"},
 			},
-			profiles: []latest_v1.Profile{
+			profiles: []latestV1.Profile{
 				{Name: "activated"},
 				{Name: "not-activated"},
 				{Name: "also-activated"},
-				{Name: "not-activated-regexp", Activation: []latest_v1.Activation{{KubeContext: "prod-.*"}}},
-				{Name: "not-activated-kubecontext", Activation: []latest_v1.Activation{{KubeContext: "prod-context"}}},
+				{Name: "not-activated-regexp", Activation: []latestV1.Activation{{KubeContext: "prod-.*"}}},
+				{Name: "not-activated-kubecontext", Activation: []latestV1.Activation{{KubeContext: "prod-context"}}},
 			},
 			expected: []string{"activated", "also-activated"},
 		},
@@ -749,9 +745,9 @@ func TestActivatedProfiles(t *testing.T) {
 				Command:               "dev",
 				Profiles:              []string{"-dev-profile"},
 			},
-			profiles: []latest_v1.Profile{
-				{Name: "dev-profile", Activation: []latest_v1.Activation{{Command: "dev"}}},
-				{Name: "run-or-dev-profile", Activation: []latest_v1.Activation{{Command: "(run)|(dev)"}}},
+			profiles: []latestV1.Profile{
+				{Name: "dev-profile", Activation: []latestV1.Activation{{Command: "dev"}}},
+				{Name: "run-or-dev-profile", Activation: []latestV1.Activation{{Command: "(run)|(dev)"}}},
 			},
 			expected: []string{"run-or-dev-profile"},
 		},
@@ -801,19 +797,19 @@ profiles:
 		t.RequireNoError(err)
 		t.CheckTrue(len(parsed) > 0)
 
-		skaffoldConfig := parsed[0].(*latest_v1.SkaffoldConfig)
+		skaffoldConfig := parsed[0].(*latestV1.SkaffoldConfig)
 
 		t.CheckDeepEqual(2, len(skaffoldConfig.Profiles))
 		t.CheckDeepEqual("simple1", skaffoldConfig.Profiles[0].Name)
-		t.CheckDeepEqual([]latest_v1.Activation{{Env: "ABC=common"}, {Env: "ABC=1"}}, skaffoldConfig.Profiles[0].Activation)
+		t.CheckDeepEqual([]latestV1.Activation{{Env: "ABC=common"}, {Env: "ABC=1"}}, skaffoldConfig.Profiles[0].Activation)
 		t.CheckDeepEqual("simple2", skaffoldConfig.Profiles[1].Name)
-		t.CheckDeepEqual([]latest_v1.Activation{{Env: "ABC=common"}, {Env: "ABC=2"}}, skaffoldConfig.Profiles[1].Activation)
+		t.CheckDeepEqual([]latestV1.Activation{{Env: "ABC=common"}, {Env: "ABC=2"}}, skaffoldConfig.Profiles[1].Activation)
 
 		applied, err := ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{}, []string{"simple1"})
 		t.CheckNoError(err)
 		t.CheckDeepEqual([]string{"simple1"}, applied)
 		t.CheckDeepEqual(1, len(skaffoldConfig.Build.Artifacts))
-		t.CheckDeepEqual(latest_v1.Artifact{ImageName: "simpleimage1"}, *skaffoldConfig.Build.Artifacts[0])
+		t.CheckDeepEqual(latestV1.Artifact{ImageName: "simpleimage1"}, *skaffoldConfig.Build.Artifacts[0])
 	})
 }
 
@@ -823,7 +819,7 @@ func str(value string) *interface{} {
 }
 
 func addVersion(yaml string) string {
-	return fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest_v1.Version, yaml)
+	return fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latestV1.Version, yaml)
 }
 
 func setupFakeKubeConfig(t *testutil.T, config api.Config) {

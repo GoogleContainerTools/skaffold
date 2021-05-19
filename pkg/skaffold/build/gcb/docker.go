@@ -23,11 +23,11 @@ import (
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // dockerBuildSpec lists the build steps required to build a docker image.
-func (b *Builder) dockerBuildSpec(a *latest_v1.Artifact, tag string) (cloudbuild.Build, error) {
+func (b *Builder) dockerBuildSpec(a *latestV1.Artifact, tag string) (cloudbuild.Build, error) {
 	args, err := b.dockerBuildArgs(a, tag, a.Dependencies)
 	if err != nil {
 		return cloudbuild.Build{}, err
@@ -46,7 +46,7 @@ func (b *Builder) dockerBuildSpec(a *latest_v1.Artifact, tag string) (cloudbuild
 }
 
 // cacheFromSteps pulls images used by `--cache-from`.
-func (b *Builder) cacheFromSteps(artifact *latest_v1.DockerArtifact) []*cloudbuild.BuildStep {
+func (b *Builder) cacheFromSteps(artifact *latestV1.DockerArtifact) []*cloudbuild.BuildStep {
 	var steps []*cloudbuild.BuildStep
 
 	for _, cacheFrom := range artifact.CacheFrom {
@@ -61,7 +61,7 @@ func (b *Builder) cacheFromSteps(artifact *latest_v1.DockerArtifact) []*cloudbui
 }
 
 // dockerBuildArgs lists the arguments passed to `docker` to build a given image.
-func (b *Builder) dockerBuildArgs(a *latest_v1.Artifact, tag string, deps []*latest_v1.ArtifactDependency) ([]string, error) {
+func (b *Builder) dockerBuildArgs(a *latestV1.Artifact, tag string, deps []*latestV1.ArtifactDependency) ([]string, error) {
 	d := a.DockerArtifact
 	// TODO(nkubala): remove when buildkit is supported in GCB (#4773)
 	if d.Secret != nil || d.SSH != "" {

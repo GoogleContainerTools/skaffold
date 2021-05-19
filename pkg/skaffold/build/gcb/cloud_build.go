@@ -38,13 +38,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Build builds a list of artifacts with Google Cloud Build.
-func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest_v1.Artifact) build.ArtifactBuilder {
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact) build.ArtifactBuilder {
 	builder := build.WithLogFile(b.buildArtifactWithCloudBuild, b.muted)
 	return builder
 }
@@ -61,7 +61,7 @@ func (b *Builder) Concurrency() int {
 	return b.GoogleCloudBuild.Concurrency
 }
 
-func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest_v1.Artifact, tag string) (string, error) {
+func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
 	// TODO: [#4922] Implement required artifact resolution from the `artifactStore`
 	cbclient, err := cloudbuild.NewService(ctx, gcp.ClientOptions()...)
 	if err != nil {
@@ -94,7 +94,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", fmt.Errorf("checking bucket is in correct project: %w", err)
 	}
 
-	dependencies, err := b.sourceDependencies.ResolveForArtifact(ctx, artifact)
+	dependencies, err := b.sourceDependencies.SingleArtifactDependencies(ctx, artifact)
 	if err != nil {
 		return "", fmt.Errorf("getting dependencies for %q: %w", artifact.ImageName, err)
 	}

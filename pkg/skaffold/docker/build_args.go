@@ -23,7 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -96,7 +96,7 @@ type ArtifactResolver interface {
 
 // ResolveDependencyImages creates a map of artifact aliases to their built image from a required artifacts slice.
 // If `missingIsFatal` is false then it is permissive of missing entries in the ArtifactResolver and returns nil for those entries.
-func ResolveDependencyImages(deps []*latest_v1.ArtifactDependency, r ArtifactResolver, missingIsFatal bool) map[string]*string {
+func ResolveDependencyImages(deps []*latestV1.ArtifactDependency, r ArtifactResolver, missingIsFatal bool) map[string]*string {
 	if r == nil {
 		// `diagnose` is called without an artifact resolver. Return an empty map in this case.
 		return nil

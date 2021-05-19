@@ -26,12 +26,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // Builder builds docker artifacts on Kubernetes.
 type Builder struct {
-	*latest_v1.ClusterDetails
+	*latestV1.ClusterDetails
 
 	cfg           Config
 	kubectlcli    *kubectl.CLI
@@ -56,7 +56,7 @@ type BuilderContext interface {
 }
 
 // NewBuilder creates a new Builder that builds artifacts on cluster.
-func NewBuilder(bCtx BuilderContext, buildCfg *latest_v1.ClusterDetails) (*Builder, error) {
+func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.ClusterDetails) (*Builder, error) {
 	timeout, err := time.ParseDuration(buildCfg.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("parsing timeout: %w", err)

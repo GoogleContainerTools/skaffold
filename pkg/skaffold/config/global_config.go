@@ -37,6 +37,7 @@ type ContextConfig struct {
 	KindDisableLoad      *bool         `yaml:"kind-disable-load,omitempty"`
 	K3dDisableLoad       *bool         `yaml:"k3d-disable-load,omitempty"`
 	CollectMetrics       *bool         `yaml:"collect-metrics,omitempty"`
+	UpdateCheckConfig    *UpdateConfig `yaml:"update,omitempty"`
 }
 
 // SurveyConfig is the survey config information
@@ -44,4 +45,10 @@ type SurveyConfig struct {
 	DisablePrompt *bool  `yaml:"disable-prompt,omitempty"`
 	LastTaken     string `yaml:"last-taken,omitempty"`
 	LastPrompted  string `yaml:"last-prompted,omitempty"`
+}
+
+// UpdateConfig is the update config information
+type UpdateConfig struct {
+	// TODO (tejaldesai) Move ContextConfig.UpdateCheck config within this struct
+	LastPrompted string `yaml:"last-prompted,omitempty"`
 }

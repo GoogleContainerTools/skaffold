@@ -37,6 +37,7 @@ var (
 	setStatus    = SetOnlineStatus
 )
 
+// ShouldDisplayMetricsPrompt returns true if metrics is not enabled.
 func ShouldDisplayMetricsPrompt(configfile string) bool {
 	cfg, err := getConfig(configfile)
 	if err != nil {

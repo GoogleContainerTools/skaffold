@@ -171,7 +171,7 @@ func TestRunRenderOnly(t *testing.T) {
 			dir         string
 			pods        []string
 		}{
-			args: []string{"--render-only", "--render-output", renderPath},
+			args: []string{"--digest-source=local", "--render-only", "--render-output", renderPath},
 			dir:  "examples/getting-started",
 			pods: []string{"getting-started"},
 		}
@@ -204,6 +204,12 @@ func TestRunGCPOnly(t *testing.T) {
 			description: "Google Cloud Build with sub folder",
 			dir:         "testdata/gcb-sub-folder",
 			pods:        []string{"getting-started"},
+		},
+		{
+			description: "Google Cloud Build with source artifact dependencies",
+			dir:         "examples/microservices",
+			args:        []string{"-p", "gcb"},
+			deployments: []string{"leeroy-app", "leeroy-web"},
 		},
 		{
 			description: "Google Cloud Build with Kaniko",

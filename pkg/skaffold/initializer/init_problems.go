@@ -24,13 +24,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
-// re is a shortcut around regexp.MustCompile
-func re(s string) *regexp.Regexp {
-	return regexp.MustCompile(s)
-}
-
-func init() {
-	sErrors.AddPhaseProblems(constants.Init, []sErrors.Problem{
+var (
+	problems = []sErrors.Problem{
 		{
 			Regexp:     re(".*creating tagger.*"),
 			ErrCode:    proto.StatusCode_INIT_CREATE_TAGGER_ERROR,
@@ -77,5 +72,14 @@ func init() {
 			ErrCode:    proto.StatusCode_INIT_CACHE_ERROR,
 			Suggestion: sErrors.ReportIssueSuggestion,
 		},
-	})
+	}
+)
+
+// re is a shortcut around regexp.MustCompile
+func re(s string) *regexp.Regexp {
+	return regexp.MustCompile(s)
+}
+
+func init() {
+	sErrors.AddPhaseProblems(constants.Init, problems)
 }

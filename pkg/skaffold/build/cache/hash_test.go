@@ -23,13 +23,13 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func stubDependencyLister(dependencies []string) DependencyLister {
-	return func(context.Context, *latest_v1.Artifact) ([]string, error) {
+	return func(context.Context, *latestV1.Artifact) ([]string, error) {
 		return dependencies, nil
 	}
 }
@@ -41,7 +41,7 @@ var mockCacheHasher = func(s string) (string, error) {
 	return s, nil
 }
 
-var fakeArtifactConfig = func(a *latest_v1.Artifact) (string, error) {
+var fakeArtifactConfig = func(a *latestV1.Artifact) (string, error) {
 	if a.ArtifactType.DockerArtifact != nil {
 		return "docker/target=" + a.ArtifactType.DockerArtifact.Target, nil
 	}
@@ -54,42 +54,42 @@ func TestGetHashForArtifact(t *testing.T) {
 	tests := []struct {
 		description  string
 		dependencies []string
-		artifact     *latest_v1.Artifact
+		artifact     *latestV1.Artifact
 		mode         config.RunMode
 		expected     string
 	}{
 		{
 			description:  "hash for artifact",
 			dependencies: []string{"a", "b"},
-			artifact:     &latest_v1.Artifact{},
+			artifact:     &latestV1.Artifact{},
 			mode:         config.RunModes.Dev,
 			expected:     "d99ab295a682897269b4db0fe7c136ea1ecd542150fa224ee03155b4e3e995d9",
 		},
 		{
 			description:  "ignore file not found",
 			dependencies: []string{"a", "b", "not-found"},
-			artifact:     &latest_v1.Artifact{},
+			artifact:     &latestV1.Artifact{},
 			mode:         config.RunModes.Dev,
 			expected:     "d99ab295a682897269b4db0fe7c136ea1ecd542150fa224ee03155b4e3e995d9",
 		},
 		{
 			description:  "dependencies in different orders",
 			dependencies: []string{"b", "a"},
-			artifact:     &latest_v1.Artifact{},
+			artifact:     &latestV1.Artifact{},
 			mode:         config.RunModes.Dev,
 			expected:     "d99ab295a682897269b4db0fe7c136ea1ecd542150fa224ee03155b4e3e995d9",
 		},
 		{
 			description: "no dependencies",
-			artifact:    &latest_v1.Artifact{},
+			artifact:    &latestV1.Artifact{},
 			mode:        config.RunModes.Dev,
 			expected:    "7c077ca2308714493d07163e1033c4282bd869ff6d477b3e77408587f95e2930",
 		},
 		{
 			description: "docker target",
-			artifact: &latest_v1.Artifact{
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						Target: "target",
 					},
 				},
@@ -99,9 +99,9 @@ func TestGetHashForArtifact(t *testing.T) {
 		},
 		{
 			description: "different docker target",
-			artifact: &latest_v1.Artifact{
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						Target: "other",
 					},
 				},
@@ -112,9 +112,9 @@ func TestGetHashForArtifact(t *testing.T) {
 		{
 			description:  "build args",
 			dependencies: []string{"a", "b"},
-			artifact: &latest_v1.Artifact{
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						BuildArgs: map[string]*string{
 							"key": util.StringPtr("value"),
 						},
@@ -127,9 +127,9 @@ func TestGetHashForArtifact(t *testing.T) {
 		{
 			description:  "buildpack in dev mode",
 			dependencies: []string{"a", "b"},
-			artifact: &latest_v1.Artifact{
-				ArtifactType: latest_v1.ArtifactType{
-					BuildpackArtifact: &latest_v1.BuildpackArtifact{},
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					BuildpackArtifact: &latestV1.BuildpackArtifact{},
 				},
 			},
 			mode:     config.RunModes.Dev,
@@ -138,9 +138,9 @@ func TestGetHashForArtifact(t *testing.T) {
 		{
 			description:  "buildpack in debug mode",
 			dependencies: []string{"a", "b"},
-			artifact: &latest_v1.Artifact{
-				ArtifactType: latest_v1.ArtifactType{
-					BuildpackArtifact: &latest_v1.BuildpackArtifact{},
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					BuildpackArtifact: &latestV1.BuildpackArtifact{},
 				},
 			},
 			mode:     config.RunModes.Debug,
@@ -170,18 +170,18 @@ func TestGetHashForArtifact(t *testing.T) {
 func TestGetHashForArtifactWithDependencies(t *testing.T) {
 	tests := []struct {
 		description string
-		artifacts   []*latest_v1.Artifact
+		artifacts   []*latestV1.Artifact
 		fileDeps    map[string][]string // keyed on artifact ImageName, returns a list of mock file dependencies.
 		mode        config.RunMode
 		expected    string
 	}{
 		{
 			description: "hash for artifact with two dependencies",
-			artifacts: []*latest_v1.Artifact{
-				{ImageName: "img1", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img2"}, {ImageName: "img3"}}},
-				{ImageName: "img2", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latest_v1.ArtifactType{DockerArtifact: &latest_v1.DockerArtifact{Target: "target2"}}},
-				{ImageName: "img3", ArtifactType: latest_v1.ArtifactType{DockerArtifact: &latest_v1.DockerArtifact{Target: "target3"}}},
-				{ImageName: "img4", ArtifactType: latest_v1.ArtifactType{DockerArtifact: &latest_v1.DockerArtifact{Target: "target4"}}},
+			artifacts: []*latestV1.Artifact{
+				{ImageName: "img1", Dependencies: []*latestV1.ArtifactDependency{{ImageName: "img2"}, {ImageName: "img3"}}},
+				{ImageName: "img2", Dependencies: []*latestV1.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{Target: "target2"}}},
+				{ImageName: "img3", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{Target: "target3"}}},
+				{ImageName: "img4", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{Target: "target4"}}},
 			},
 			fileDeps: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"d"}},
 			mode:     config.RunModes.Dev,
@@ -189,11 +189,11 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 		},
 		{
 			description: "hash for artifact with two dependencies in different order",
-			artifacts: []*latest_v1.Artifact{
-				{ImageName: "img1", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img3"}, {ImageName: "img2"}}},
-				{ImageName: "img2", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latest_v1.ArtifactType{DockerArtifact: &latest_v1.DockerArtifact{Target: "target2"}}},
-				{ImageName: "img3", ArtifactType: latest_v1.ArtifactType{DockerArtifact: &latest_v1.DockerArtifact{Target: "target3"}}},
-				{ImageName: "img4", ArtifactType: latest_v1.ArtifactType{DockerArtifact: &latest_v1.DockerArtifact{Target: "target4"}}},
+			artifacts: []*latestV1.Artifact{
+				{ImageName: "img1", Dependencies: []*latestV1.ArtifactDependency{{ImageName: "img3"}, {ImageName: "img2"}}},
+				{ImageName: "img2", Dependencies: []*latestV1.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{Target: "target2"}}},
+				{ImageName: "img3", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{Target: "target3"}}},
+				{ImageName: "img4", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{Target: "target4"}}},
 			},
 			fileDeps: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"d"}},
 			mode:     config.RunModes.Dev,
@@ -201,11 +201,11 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 		},
 		{
 			description: "hash for artifact with different dependencies (img4 builder changed)",
-			artifacts: []*latest_v1.Artifact{
-				{ImageName: "img1", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img2"}, {ImageName: "img3"}}},
-				{ImageName: "img2", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latest_v1.ArtifactType{DockerArtifact: &latest_v1.DockerArtifact{Target: "target2"}}},
-				{ImageName: "img3", ArtifactType: latest_v1.ArtifactType{DockerArtifact: &latest_v1.DockerArtifact{Target: "target3"}}},
-				{ImageName: "img4", ArtifactType: latest_v1.ArtifactType{BuildpackArtifact: &latest_v1.BuildpackArtifact{Builder: "builder"}}},
+			artifacts: []*latestV1.Artifact{
+				{ImageName: "img1", Dependencies: []*latestV1.ArtifactDependency{{ImageName: "img2"}, {ImageName: "img3"}}},
+				{ImageName: "img2", Dependencies: []*latestV1.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{Target: "target2"}}},
+				{ImageName: "img3", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{Target: "target3"}}},
+				{ImageName: "img4", ArtifactType: latestV1.ArtifactType{BuildpackArtifact: &latestV1.BuildpackArtifact{Builder: "builder"}}},
 			},
 			fileDeps: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"d"}},
 			mode:     config.RunModes.Dev,
@@ -213,11 +213,11 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 		},
 		{
 			description: "hash for artifact with different dependencies (img4 files changed)",
-			artifacts: []*latest_v1.Artifact{
-				{ImageName: "img1", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img2"}, {ImageName: "img3"}}},
-				{ImageName: "img2", Dependencies: []*latest_v1.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latest_v1.ArtifactType{DockerArtifact: &latest_v1.DockerArtifact{Target: "target2"}}},
-				{ImageName: "img3", ArtifactType: latest_v1.ArtifactType{DockerArtifact: &latest_v1.DockerArtifact{Target: "target3"}}},
-				{ImageName: "img4", ArtifactType: latest_v1.ArtifactType{BuildpackArtifact: &latest_v1.BuildpackArtifact{}}},
+			artifacts: []*latestV1.Artifact{
+				{ImageName: "img1", Dependencies: []*latestV1.ArtifactDependency{{ImageName: "img2"}, {ImageName: "img3"}}},
+				{ImageName: "img2", Dependencies: []*latestV1.ArtifactDependency{{ImageName: "img4"}}, ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{Target: "target2"}}},
+				{ImageName: "img3", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{Target: "target3"}}},
+				{ImageName: "img4", ArtifactType: latestV1.ArtifactType{BuildpackArtifact: &latestV1.BuildpackArtifact{}}},
 			},
 			fileDeps: map[string][]string{"img1": {"a"}, "img2": {"b"}, "img3": {"c"}, "img4": {"e"}},
 			mode:     config.RunModes.Dev,
@@ -239,7 +239,7 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 				}
 			}
 
-			depLister := func(_ context.Context, a *latest_v1.Artifact) ([]string, error) {
+			depLister := func(_ context.Context, a *latestV1.Artifact) ([]string, error) {
 				return test.fileDeps[a.ImageName], nil
 			}
 
@@ -253,18 +253,18 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 
 func TestArtifactConfig(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		config1, err := artifactConfig(&latest_v1.Artifact{
-			ArtifactType: latest_v1.ArtifactType{
-				DockerArtifact: &latest_v1.DockerArtifact{
+		config1, err := artifactConfig(&latestV1.Artifact{
+			ArtifactType: latestV1.ArtifactType{
+				DockerArtifact: &latestV1.DockerArtifact{
 					Target: "target",
 				},
 			},
 		})
 		t.CheckNoError(err)
 
-		config2, err := artifactConfig(&latest_v1.Artifact{
-			ArtifactType: latest_v1.ArtifactType{
-				DockerArtifact: &latest_v1.DockerArtifact{
+		config2, err := artifactConfig(&latestV1.Artifact{
+			ArtifactType: latestV1.ArtifactType{
+				DockerArtifact: &latestV1.DockerArtifact{
 					Target: "other",
 				},
 			},
@@ -295,10 +295,10 @@ func TestBuildArgs(t *testing.T) {
 		testutil.Run(t, "", func(t *testutil.T) {
 			tmpDir := t.NewTempDir()
 			tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
-			artifact := &latest_v1.Artifact{
+			artifact := &latestV1.Artifact{
 				Workspace: tmpDir.Path("."),
-				ArtifactType: latest_v1.ArtifactType{
-					DockerArtifact: &latest_v1.DockerArtifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
 						DockerfilePath: Dockerfile,
 						BuildArgs:      map[string]*string{"one": util.StringPtr("1"), "two": util.StringPtr("2")},
 					},
@@ -339,10 +339,10 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 		}
 		tmpDir := t.NewTempDir()
 		tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
-		artifact := &latest_v1.Artifact{
+		artifact := &latestV1.Artifact{
 			Workspace: tmpDir.Path("."),
-			ArtifactType: latest_v1.ArtifactType{
-				DockerArtifact: &latest_v1.DockerArtifact{
+			ArtifactType: latestV1.ArtifactType{
+				DockerArtifact: &latestV1.DockerArtifact{
 					BuildArgs:      map[string]*string{"env": util.StringPtr("${{.FOO}}")},
 					DockerfilePath: Dockerfile,
 				},
@@ -420,7 +420,7 @@ func TestCacheHasher(t *testing.T) {
 			path := originalFile
 			depLister := stubDependencyLister([]string{tmpDir.Path(originalFile)})
 
-			oldHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), &latest_v1.Artifact{})
+			oldHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), &latestV1.Artifact{})
 			t.CheckNoError(err)
 
 			test.update(originalFile, tmpDir)
@@ -429,7 +429,7 @@ func TestCacheHasher(t *testing.T) {
 			}
 
 			depLister = stubDependencyLister([]string{tmpDir.Path(path)})
-			newHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), &latest_v1.Artifact{})
+			newHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), &latestV1.Artifact{})
 
 			t.CheckNoError(err)
 			t.CheckFalse(test.differentHash && oldHash == newHash)
@@ -441,14 +441,14 @@ func TestCacheHasher(t *testing.T) {
 func TestHashBuildArgs(t *testing.T) {
 	tests := []struct {
 		description  string
-		artifactType latest_v1.ArtifactType
+		artifactType latestV1.ArtifactType
 		expected     []string
 		mode         config.RunMode
 	}{
 		{
 			description: "docker artifact with build args for dev",
-			artifactType: latest_v1.ArtifactType{
-				DockerArtifact: &latest_v1.DockerArtifact{
+			artifactType: latestV1.ArtifactType{
+				DockerArtifact: &latestV1.DockerArtifact{
 					BuildArgs: map[string]*string{
 						"foo": util.StringPtr("bar"),
 					},
@@ -458,8 +458,8 @@ func TestHashBuildArgs(t *testing.T) {
 			expected: []string{"foo=bar"},
 		}, {
 			description: "docker artifact with build args for debug",
-			artifactType: latest_v1.ArtifactType{
-				DockerArtifact: &latest_v1.DockerArtifact{
+			artifactType: latestV1.ArtifactType{
+				DockerArtifact: &latestV1.DockerArtifact{
 					BuildArgs: map[string]*string{
 						"foo": util.StringPtr("bar"),
 					},
@@ -469,34 +469,34 @@ func TestHashBuildArgs(t *testing.T) {
 			expected: []string{"SKAFFOLD_GO_GCFLAGS=all=-N -l", "foo=bar"},
 		}, {
 			description: "docker artifact without build args for debug",
-			artifactType: latest_v1.ArtifactType{
-				DockerArtifact: &latest_v1.DockerArtifact{},
+			artifactType: latestV1.ArtifactType{
+				DockerArtifact: &latestV1.DockerArtifact{},
 			},
 			mode:     config.RunModes.Debug,
 			expected: []string{"SKAFFOLD_GO_GCFLAGS=all=-N -l"},
 		}, {
 			description: "docker artifact without build args for dev",
-			artifactType: latest_v1.ArtifactType{
-				DockerArtifact: &latest_v1.DockerArtifact{},
+			artifactType: latestV1.ArtifactType{
+				DockerArtifact: &latestV1.DockerArtifact{},
 			},
 			mode: config.RunModes.Dev,
 		}, {
 			description: "kaniko artifact with build args",
-			artifactType: latest_v1.ArtifactType{
-				KanikoArtifact: &latest_v1.KanikoArtifact{
+			artifactType: latestV1.ArtifactType{
+				KanikoArtifact: &latestV1.KanikoArtifact{
 					BuildArgs: map[string]*string{},
 				},
 			},
 			expected: nil,
 		}, {
 			description: "kaniko artifact without build args",
-			artifactType: latest_v1.ArtifactType{
-				KanikoArtifact: &latest_v1.KanikoArtifact{},
+			artifactType: latestV1.ArtifactType{
+				KanikoArtifact: &latestV1.KanikoArtifact{},
 			},
 		}, {
 			description: "buildpacks artifact with env for dev",
-			artifactType: latest_v1.ArtifactType{
-				BuildpackArtifact: &latest_v1.BuildpackArtifact{
+			artifactType: latestV1.ArtifactType{
+				BuildpackArtifact: &latestV1.BuildpackArtifact{
 					Env: []string{"foo=bar"},
 				},
 			},
@@ -504,14 +504,14 @@ func TestHashBuildArgs(t *testing.T) {
 			expected: []string{"foo=bar"},
 		}, {
 			description: "buildpacks artifact without env for dev",
-			artifactType: latest_v1.ArtifactType{
-				BuildpackArtifact: &latest_v1.BuildpackArtifact{},
+			artifactType: latestV1.ArtifactType{
+				BuildpackArtifact: &latestV1.BuildpackArtifact{},
 			},
 			mode: config.RunModes.Dev,
 		}, {
 			description: "buildpacks artifact with env for debug",
-			artifactType: latest_v1.ArtifactType{
-				BuildpackArtifact: &latest_v1.BuildpackArtifact{
+			artifactType: latestV1.ArtifactType{
+				BuildpackArtifact: &latestV1.BuildpackArtifact{
 					Env: []string{"foo=bar"},
 				},
 			},
@@ -519,17 +519,17 @@ func TestHashBuildArgs(t *testing.T) {
 			expected: []string{"GOOGLE_GOGCFLAGS=all=-N -l", "foo=bar"},
 		}, {
 			description: "buildpacks artifact without env for debug",
-			artifactType: latest_v1.ArtifactType{
-				BuildpackArtifact: &latest_v1.BuildpackArtifact{},
+			artifactType: latestV1.ArtifactType{
+				BuildpackArtifact: &latestV1.BuildpackArtifact{},
 			},
 			mode:     config.RunModes.Debug,
 			expected: []string{"GOOGLE_GOGCFLAGS=all=-N -l"},
 		}, {
 			description: "custom artifact, dockerfile dependency, with build args",
-			artifactType: latest_v1.ArtifactType{
-				CustomArtifact: &latest_v1.CustomArtifact{
-					Dependencies: &latest_v1.CustomDependencies{
-						Dockerfile: &latest_v1.DockerfileDependency{
+			artifactType: latestV1.ArtifactType{
+				CustomArtifact: &latestV1.CustomArtifact{
+					Dependencies: &latestV1.CustomDependencies{
+						Dockerfile: &latestV1.DockerfileDependency{
 							BuildArgs: map[string]*string{},
 						},
 					},
@@ -538,9 +538,9 @@ func TestHashBuildArgs(t *testing.T) {
 			expected: nil,
 		}, {
 			description: "custom artifact, no dockerfile dependency",
-			artifactType: latest_v1.ArtifactType{
-				CustomArtifact: &latest_v1.CustomArtifact{
-					Dependencies: &latest_v1.CustomDependencies{},
+			artifactType: latestV1.ArtifactType{
+				CustomArtifact: &latestV1.CustomArtifact{
+					Dependencies: &latestV1.CustomDependencies{},
 				},
 			},
 		},
@@ -548,7 +548,7 @@ func TestHashBuildArgs(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			a := &latest_v1.Artifact{
+			a := &latestV1.Artifact{
 				ArtifactType: test.artifactType,
 			}
 			if test.artifactType.DockerArtifact != nil {

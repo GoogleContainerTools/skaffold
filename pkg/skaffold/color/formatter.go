@@ -24,6 +24,7 @@ import (
 
 	colors "github.com/heroku/color"
 	"github.com/mattn/go-colorable"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -39,7 +40,12 @@ func init() {
 // SetupColors conditionally wraps the input `Writer` with a color enabled `Writer`.
 func SetupColors(out io.Writer, defaultColor int, forceColors bool) io.Writer {
 	_, isTerm := util.IsTerminal(out)
-	useColors := isTerm || forceColors
+	supportsColor, err := util.SupportsColor()
+	if err != nil {
+		logrus.Debugf("error checking for color support: %v", err)
+	}
+
+	useColors := (isTerm && supportsColor) || forceColors
 	if useColors {
 		// Use EnableColorsStdout to enable use of color on Windows
 		useColors = false // value is updated if color-enablement is successful

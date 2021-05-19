@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
 // WaitForDeletions configures the wait for pending deletions.
@@ -59,6 +59,8 @@ type SkaffoldOptions struct {
 	ProfileAutoActivation bool
 	DryRun                bool
 	SkipRender            bool
+	SkipConfigDefaults    bool
+	PropagateProfiles     bool
 
 	// Add Skaffold-specific labels including runID, deployer labels, etc.
 	// `CustomLabels` are still applied if this is false. Must only be used in
@@ -90,7 +92,7 @@ type SkaffoldOptions struct {
 	RPCPort            int
 	RPCHTTPPort        int
 	BuildConcurrency   int
-
+	MakePathsAbsolute  *bool
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
@@ -131,7 +133,7 @@ func (opts *SkaffoldOptions) Mode() RunMode {
 	return RunMode(opts.Command)
 }
 
-func (opts *SkaffoldOptions) IsTargetImage(artifact *latest_v1.Artifact) bool {
+func (opts *SkaffoldOptions) IsTargetImage(artifact *latestV1.Artifact) bool {
 	if len(opts.TargetImages) == 0 {
 		return true
 	}

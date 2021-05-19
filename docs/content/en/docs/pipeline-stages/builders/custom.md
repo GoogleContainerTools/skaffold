@@ -74,7 +74,7 @@ Skaffold will pass in the following additional environment variables for cluster
 
 **Configuration**
 
-To configure custom build script locally, in addition to adding a [`custom` field](#configuration) to each corresponding artifact in the `build`, add `cluster` to you `build` config.
+To configure custom build script in cluster, in addition to adding a [`custom` field](#configuration) to each corresponding artifact in the `build`, add `cluster` to your `build` config.
 
 #### Custom Build Script on Google Cloud Build
 

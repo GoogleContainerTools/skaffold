@@ -401,6 +401,17 @@ enum StatusCode {
     CONFIG_FILE_PATHS_SUBSTITUTION_ERR = 1210;
     // Same config imported at least twice with different set of profiles
     CONFIG_MULTI_IMPORT_PROFILE_CONFLICT_ERR = 1211;
+    // Profile selection did not match known profile names
+    CONFIG_PROFILES_NOT_FOUND_ERR = 1212;
+    // Config API version not found
+    CONFIG_UNKNOWN_API_VERSION_ERR = 1213;
+
+    // Inspect command errors
+
+    // Catch-all `skaffold inspect` command error
+    INSPECT_UNKNOWN_ERR = 1301;
+    // Trying to add new build environment that already exists
+    INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR = 1302;
 }
 
 // Enum for Suggestion codes
@@ -528,6 +539,14 @@ enum SuggestionCode {
     CONFIG_CHECK_PROFILE_DEFINITION = 704;
     // Check active profile selection for dependency config
     CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION = 705;
+    // Check profile selection flag
+    CONFIG_CHECK_PROFILE_SELECTION = 706;
+    // Fix config API version or upgrade the skaffold binary
+    CONFIG_FIX_API_VERSION = 707;
+
+    // `skaffold inspect` command error suggestion codes
+    INSPECT_DEDUP_NEW_BUILD_ENV = 800;
+
 
     // Open an issue so this situation can be diagnosed
     OPEN_ISSUE = 900;

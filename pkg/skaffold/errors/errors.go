@@ -82,9 +82,7 @@ func ShowAIError(cfg interface{}, err error) error {
 		return p.AIError(cfg, err)
 	}
 
-	allErrorsLock.RLock()
-	defer allErrorsLock.RUnlock()
-	for _, problems := range allErrors {
+	for _, problems := range GetProblemCatalogCopy().allErrors {
 		for _, p := range problems {
 			if p.Regexp.MatchString(err.Error()) {
 				instrumentation.SetErrorCode(p.ErrCode)
@@ -101,7 +99,7 @@ func getErrorCodeFromError(cfg interface{}, phase constants.Phase, err error) (p
 		return sErr.StatusCode(), sErr.Suggestions()
 	}
 
-	if problems, ok := allErrors[phase]; ok {
+	if problems, ok := GetProblemCatalogCopy().allErrors[phase]; ok {
 		for _, p := range problems {
 			if p.Regexp.MatchString(err.Error()) {
 				return p.ErrCode, p.Suggestion(cfg)

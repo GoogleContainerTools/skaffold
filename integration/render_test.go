@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -79,16 +79,16 @@ spec:
 			Chdir()
 		deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 			WorkingDir: ".",
-			Pipelines: runcontext.NewPipelines([]latest_v1.Pipeline{{
-				Deploy: latest_v1.DeployConfig{
-					DeployType: latest_v1.DeployType{
-						KubectlDeploy: &latest_v1.KubectlDeploy{
+			Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{
+				Deploy: latestV1.DeployConfig{
+					DeployType: latestV1.DeployType{
+						KubectlDeploy: &latestV1.KubectlDeploy{
 							Manifests: []string{"deployment.yaml"},
 						},
 					},
 				},
 			}}),
-		}, nil, &latest_v1.KubectlDeploy{
+		}, nil, &latestV1.KubectlDeploy{
 			Manifests: []string{"deployment.yaml"},
 		})
 		t.RequireNoError(err)
@@ -236,10 +236,10 @@ spec:
 
 			deployer, err := kubectl.NewDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
-				Pipelines: runcontext.NewPipelines([]latest_v1.Pipeline{{
-					Deploy: latest_v1.DeployConfig{
-						DeployType: latest_v1.DeployType{
-							KubectlDeploy: &latest_v1.KubectlDeploy{
+				Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{
+					Deploy: latestV1.DeployConfig{
+						DeployType: latestV1.DeployType{
+							KubectlDeploy: &latestV1.KubectlDeploy{
 								Manifests: []string{"deployment.yaml"},
 							},
 						},
@@ -248,7 +248,7 @@ spec:
 				Opts: config.SkaffoldOptions{
 					AddSkaffoldLabels: true,
 				},
-			}, nil, &latest_v1.KubectlDeploy{
+			}, nil, &latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			})
 			t.RequireNoError(err)
@@ -267,7 +267,7 @@ func TestHelmRender(t *testing.T) {
 	tests := []struct {
 		description  string
 		builds       []graph.Artifact
-		helmReleases []latest_v1.HelmRelease
+		helmReleases []latestV1.HelmRelease
 		expectedOut  string
 	}{
 		{
@@ -278,7 +278,7 @@ func TestHelmRender(t *testing.T) {
 					Tag:       "gke-loadbalancer:test",
 				},
 			},
-			helmReleases: []latest_v1.HelmRelease{{
+			helmReleases: []latestV1.HelmRelease{{
 				Name:      "gke_loadbalancer",
 				ChartPath: "testdata/gke_loadbalancer/loadbalancer-helm",
 				ArtifactOverrides: map[string]string{
@@ -336,7 +336,7 @@ spec:
 					Tag:       "gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenslettersandnumbers",
 				},
 			},
-			helmReleases: []latest_v1.HelmRelease{{
+			helmReleases: []latestV1.HelmRelease{{
 				Name:      "skaffold-helm",
 				ChartPath: "testdata/helm/skaffold-helm",
 				ArtifactOverrides: map[string]string{
@@ -425,16 +425,16 @@ spec:
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			deployer, err := helm.NewDeployer(&runcontext.RunContext{
-				Pipelines: runcontext.NewPipelines([]latest_v1.Pipeline{{
-					Deploy: latest_v1.DeployConfig{
-						DeployType: latest_v1.DeployType{
-							HelmDeploy: &latest_v1.HelmDeploy{
+				Pipelines: runcontext.NewPipelines([]latestV1.Pipeline{{
+					Deploy: latestV1.DeployConfig{
+						DeployType: latestV1.DeployType{
+							HelmDeploy: &latestV1.HelmDeploy{
 								Releases: test.helmReleases,
 							},
 						},
 					},
 				}}),
-			}, nil, &latest_v1.HelmDeploy{
+			}, nil, &latestV1.HelmDeploy{
 				Releases: test.helmReleases,
 			})
 			t.RequireNoError(err)
@@ -716,7 +716,7 @@ spec:
 
 			tmpDir.Chdir()
 
-			args := []string{"--build-artifacts=" + path.Join(testDir, test.buildOutputFilePath), "--add-skaffold-labels=" + strconv.FormatBool(test.addSkaffoldLabels), "--output", "rendered.yaml"}
+			args := []string{"--digest-source=local", "--build-artifacts=" + path.Join(testDir, test.buildOutputFilePath), "--add-skaffold-labels=" + strconv.FormatBool(test.addSkaffoldLabels), "--output", "rendered.yaml"}
 
 			if test.offline {
 				env := []string{"KUBECONFIG=not-supposed-to-be-used-in-offline-mode"}

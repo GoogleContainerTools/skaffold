@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
 )
 
@@ -35,7 +35,7 @@ const (
 
 // ArtifactType returns a string representing the type found in an artifact. Used for error messages.
 // (this would normally be implemented as a String() method on the type, but types are versioned)
-func ArtifactType(a *latest_v1.Artifact) string {
+func ArtifactType(a *latestV1.Artifact) string {
 	switch {
 	case a.DockerArtifact != nil:
 		return Docker
@@ -55,7 +55,7 @@ func ArtifactType(a *latest_v1.Artifact) string {
 }
 
 // FormatArtifact returns a string representation of an artifact for usage in error messages
-func FormatArtifact(a *latest_v1.Artifact) string {
+func FormatArtifact(a *latestV1.Artifact) string {
 	buf, err := yaml.Marshal(a)
 	if err != nil {
 		return fmt.Sprintf("%+v", a)

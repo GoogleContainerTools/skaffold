@@ -34,11 +34,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
+// TODO(yuwenma): Upgrade the version to include v3alpha* once it's available.
 // Before: prev -> current (latest)
 // After:  prev -> current -> new (latest)
 func main() {
 	logrus.SetLevel(logrus.DebugLevel)
-	prev := strings.TrimPrefix(schema.SchemaVersions[len(schema.SchemaVersions)-2].APIVersion, "skaffold/")
+	prev := strings.TrimPrefix(schema.SchemaVersionsV1[len(schema.SchemaVersionsV1)-2].APIVersion, "skaffold/")
 	logrus.Infof("Previous Skaffold version: %s", prev)
 
 	current, latestIsReleased := hackschema.GetLatestVersion()
@@ -53,9 +54,9 @@ func main() {
 	makeSchemaDir(current)
 
 	// Create a package for current version
-	walk.From(path("latest")).WhenIsFile().MustDo(func(file string, info walk.Dirent) error {
+	walk.From(path("latest", "v1")).WhenIsFile().MustDo(func(file string, info walk.Dirent) error {
 		cp(file, path(current, info.Name()))
-		sed(path(current, info.Name()), "package latest", "package "+current)
+		sed(path(current, info.Name()), "package v1", "package "+current)
 		return nil
 	})
 
@@ -70,13 +71,13 @@ func main() {
 	sed(path(current, "upgrade_test.go"), prev, current)
 
 	// Previous version now upgrades to current instead of latest
-	sed(path(prev, "upgrade.go"), "latest", current)
-	sed(path(prev, "upgrade_test.go"), "latest", current)
+	sed(path(prev, "upgrade.go"), "latest/v1", current)
+	sed(path(prev, "upgrade_test.go"), "latest/v1", current)
 
 	// Latest uses the new version
-	sed(path("latest", "config.go"), current, next)
+	sed(path("latest", "v1", "config.go"), current, next)
 
-	hackschema.UpdateVersionComment(path("latest", "config.go"), false)
+	hackschema.UpdateVersionComment(path("latest", "v1", "config.go"), false)
 
 	// Update skaffold.yaml in integration tests
 	walk.From("integration").WhenNameMatches("*skaffold*.yaml").MustDo(func(path string, _ walk.Dirent) error {

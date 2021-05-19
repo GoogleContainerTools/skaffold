@@ -28,7 +28,7 @@ import (
 func TestFilterPassthrough(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	// `filter` currently expects to receive a digested yaml
-	renderedOutput := skaffold.Render().InDir("examples/getting-started").RunOrFailOutput(t)
+	renderedOutput := skaffold.Render("--digest-source=local").InDir("examples/getting-started").RunOrFailOutput(t)
 
 	testutil.Run(t, "no filters should just pass through", func(t *testutil.T) {
 		transformedOutput := skaffold.Filter().InDir("examples/getting-started").WithStdin(renderedOutput).RunOrFailOutput(t.T)

@@ -31,7 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -61,9 +61,24 @@ func newRecord() *record {
 }
 
 // GetAllConfigs returns the list of all skaffold configurations parsed from the target config file in addition to all resolved dependency configs.
-func GetAllConfigs(opts config.SkaffoldOptions) ([]*latest_v1.SkaffoldConfig, error) {
+func GetAllConfigs(opts config.SkaffoldOptions) ([]*latestV1.SkaffoldConfig, error) {
+	set, err := GetConfigSet(opts)
+	if err != nil {
+		return nil, err
+	}
+	var cfgs []*latestV1.SkaffoldConfig
+	for _, cfg := range set {
+		cfgs = append(cfgs, cfg.SkaffoldConfig)
+	}
+	return cfgs, nil
+}
+
+// GetConfigSet returns the list of all skaffold configurations parsed from the target config file in addition to all resolved dependency configs as a `SkaffoldConfigSet`.
+// This struct additionally contains the file location that each skaffold configuration is parsed from.
+func GetConfigSet(opts config.SkaffoldOptions) (SkaffoldConfigSet, error) {
 	cOpts := configOpts{file: opts.ConfigurationFile, selection: nil, profiles: opts.Profiles, isRequired: false, isDependency: false}
-	cfgs, err := getConfigs(cOpts, opts, newRecord())
+	r := newRecord()
+	cfgs, err := getConfigs(cOpts, opts, r)
 	if err != nil {
 		return nil, err
 	}
@@ -73,12 +88,16 @@ func GetAllConfigs(opts config.SkaffoldOptions) ([]*latest_v1.SkaffoldConfig, er
 		}
 		return nil, sErrors.ZeroConfigsParsedErr(opts.ConfigurationFile)
 	}
+
+	if unmatched := unmatchedProfiles(r.appliedProfiles, opts.Profiles); len(unmatched) != 0 {
+		return nil, sErrors.ConfigProfilesNotMatchedErr(unmatched)
+	}
 	return cfgs, nil
 }
 
 // getConfigs recursively parses all configs and their dependencies in the specified `skaffold.yaml`
-func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*latest_v1.SkaffoldConfig, error) {
-	parsed, err := schema.ParseConfigAndUpgrade(cfgOpts.file, latest_v1.Version)
+func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
+	parsed, err := schema.ParseConfigAndUpgrade(cfgOpts.file)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, sErrors.MainConfigFileNotFoundErr(cfgOpts.file, err)
@@ -100,7 +119,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 	// validate that config names are unique if specified
 	seen := make(map[string]bool)
 	for _, cfg := range parsed {
-		cfgName := cfg.(*latest_v1.SkaffoldConfig).Metadata.Name
+		cfgName := cfg.(*latestV1.SkaffoldConfig).Metadata.Name
 		if cfgName == "" {
 			continue
 		}
@@ -110,9 +129,9 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 		seen[cfgName] = true
 	}
 
-	var configs []*latest_v1.SkaffoldConfig
+	var configs SkaffoldConfigSet
 	for i, cfg := range parsed {
-		config := cfg.(*latest_v1.SkaffoldConfig)
+		config := cfg.(*latestV1.SkaffoldConfig)
 		processed, err := processEachConfig(config, cfgOpts, opts, r, i)
 		if err != nil {
 			return nil, err
@@ -124,7 +143,7 @@ func getConfigs(cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*
 
 // processEachConfig processes each parsed config by applying profiles and recursively processing its dependencies.
 // The `index` parameter specifies the index of the current config in its `skaffold.yaml` file. We use the `index` instead of the config `metadata.name` property to uniquely identify each config since not all configs define `name`.
-func processEachConfig(config *latest_v1.SkaffoldConfig, cfgOpts configOpts, opts config.SkaffoldOptions, r *record, index int) ([]*latest_v1.SkaffoldConfig, error) {
+func processEachConfig(config *latestV1.SkaffoldConfig, cfgOpts configOpts, opts config.SkaffoldOptions, r *record, index int) (SkaffoldConfigSet, error) {
 	// check that the same config name isn't repeated in multiple files.
 	if config.Metadata.Name != "" {
 		prevConfig, found := r.configNameToFile[config.Metadata.Name]
@@ -147,11 +166,16 @@ func processEachConfig(config *latest_v1.SkaffoldConfig, cfgOpts configOpts, opt
 	if err != nil {
 		return nil, sErrors.ConfigProfileActivationErr(config.Metadata.Name, cfgOpts.file, err)
 	}
-	if err := defaults.Set(config); err != nil {
-		return nil, sErrors.ConfigSetDefaultValuesErr(config.Metadata.Name, cfgOpts.file, err)
+	if !opts.SkipConfigDefaults {
+		if err := defaults.Set(config); err != nil {
+			return nil, sErrors.ConfigSetDefaultValuesErr(config.Metadata.Name, cfgOpts.file, err)
+		}
 	}
-	// convert relative file paths to absolute for all configs that are not invoked explicitly. This avoids maintaining multiple root directory information since the dependency skaffold configs would have their own root directory.
-	if cfgOpts.isDependency {
+	// if `opts.MakePathsAbsolute` is not set, convert relative file paths to absolute for all configs that are not invoked explicitly.
+	// This avoids maintaining multiple root directory information since the dependency skaffold configs would have their own root directory.
+	// if `opts.MakePathsAbsolute` is set, use that as condition to decide on making file paths absolute for all configs or none at all.
+	// This is used when the parsed config is marshalled out (for commands like `skaffold diagnose` or `skaffold inspect`), we want to retain the original relative paths in the output files.
+	if (opts.MakePathsAbsolute != nil && (*opts.MakePathsAbsolute)) || (opts.MakePathsAbsolute == nil && cfgOpts.isDependency) {
 		if err := tags.MakeFilePathsAbsolute(config, filepath.Dir(cfgOpts.file)); err != nil {
 			return nil, sErrors.ConfigSetAbsFilePathsErr(config.Metadata.Name, cfgOpts.file, err)
 		}
@@ -162,9 +186,18 @@ func processEachConfig(config *latest_v1.SkaffoldConfig, cfgOpts configOpts, opt
 		return nil, err
 	}
 
-	var configs []*latest_v1.SkaffoldConfig
+	var configs SkaffoldConfigSet
 	for _, d := range config.Dependencies {
-		newOpts := configOpts{file: cfgOpts.file, profiles: filterActiveProfiles(d, profiles), isRequired: required, isDependency: cfgOpts.isDependency}
+		depProfiles := filterActiveProfiles(d, profiles)
+		if opts.PropagateProfiles {
+			// propagate all profiles supplied as command line input to the imported configs
+			for _, p := range opts.Profiles {
+				if !util.StrSliceContains(depProfiles, p) {
+					depProfiles = append(depProfiles, p)
+				}
+			}
+		}
+		newOpts := configOpts{file: cfgOpts.file, profiles: depProfiles, isRequired: required, isDependency: cfgOpts.isDependency}
 		depConfigs, err := processEachDependency(d, newOpts, opts, r)
 		if err != nil {
 			return nil, err
@@ -173,13 +206,13 @@ func processEachConfig(config *latest_v1.SkaffoldConfig, cfgOpts configOpts, opt
 	}
 
 	if required {
-		configs = append(configs, config)
+		configs = append(configs, &SkaffoldConfigEntry{SkaffoldConfig: config, SourceFile: cfgOpts.file, SourceIndex: index, IsRootConfig: !cfgOpts.isDependency})
 	}
 	return configs, nil
 }
 
 // filterActiveProfiles selects the set of profiles to activate in the dependency config based on the current set of active profiles.
-func filterActiveProfiles(d latest_v1.ConfigDependency, profiles []string) []string {
+func filterActiveProfiles(d latestV1.ConfigDependency, profiles []string) []string {
 	var depProfiles []string
 	for _, ap := range d.ActiveProfiles {
 		if len(ap.ActivatedBy) == 0 {
@@ -197,8 +230,8 @@ func filterActiveProfiles(d latest_v1.ConfigDependency, profiles []string) []str
 }
 
 // processEachDependency parses a config dependency with the calculated set of activated profiles.
-func processEachDependency(d latest_v1.ConfigDependency, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) ([]*latest_v1.SkaffoldConfig, error) {
-	path := d.Path
+func processEachDependency(d latestV1.ConfigDependency, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
+	path := makeConfigPathAbsolute(d.Path, cfgOpts.file)
 
 	if d.GitRepo != nil {
 		cachePath, err := cacheRepo(*d.GitRepo, opts, r)
@@ -238,7 +271,7 @@ func processEachDependency(d latest_v1.ConfigDependency, cfgOpts configOpts, opt
 }
 
 // cacheRepo downloads the referenced git repository to skaffold's cache if required and returns the path to the target configuration file in that repository.
-func cacheRepo(g latest_v1.GitInfo, opts config.SkaffoldOptions, r *record) (string, error) {
+func cacheRepo(g latestV1.GitInfo, opts config.SkaffoldOptions, r *record) (string, error) {
 	key := fmt.Sprintf("%s@%s", g.Repo, g.Ref)
 	if p, found := r.cachedRepos[key]; found {
 		switch v := p.(type) {
@@ -263,7 +296,7 @@ func cacheRepo(g latest_v1.GitInfo, opts config.SkaffoldOptions, r *record) (str
 
 // checkRevisit ensures that each config is activated with the same set of active profiles
 // It returns true if this config was visited once before. It additionally returns an error if the previous visit was with a different set of active profiles.
-func checkRevisit(config *latest_v1.SkaffoldConfig, profiles []string, appliedProfiles map[string]string, file string, required bool, index int) (bool, error) {
+func checkRevisit(config *latestV1.SkaffoldConfig, profiles []string, appliedProfiles map[string]string, file string, required bool, index int) (bool, error) {
 	key := fmt.Sprintf("%s:%d:%t", file, index, required)
 	expected := strings.Join(profiles, ",")
 	// including `required` in the key implies that we search this dependency tree once for a possible match of required named configs, but also again if the current config is itself required which makes all subsequent configs also required.
@@ -279,4 +312,31 @@ func checkRevisit(config *latest_v1.SkaffoldConfig, profiles []string, appliedPr
 	}
 	appliedProfiles[key] = expected
 	return false, nil
+}
+
+func unmatchedProfiles(activatedProfiles map[string]string, allProfiles []string) []string {
+	var allActivated []string
+	for _, profiles := range activatedProfiles {
+		allActivated = append(allActivated, strings.Split(profiles, ",")...)
+	}
+	var unmatched []string
+	for _, p := range allProfiles {
+		if !util.StrSliceContains(allActivated, p) {
+			unmatched = append(unmatched, p)
+		}
+	}
+	return unmatched
+}
+
+func makeConfigPathAbsolute(dependentConfigPath string, currentConfigPath string) string {
+	if dependentConfigPath == "" || filepath.IsAbs(dependentConfigPath) || util.IsURL(dependentConfigPath) {
+		return dependentConfigPath
+	}
+	// if current config is either a URL or STDIN, base path should be CWD
+	if util.IsURL(currentConfigPath) || currentConfigPath == "-" {
+		cwd, _ := util.RealWorkDir()
+		return filepath.Join(cwd, dependentConfigPath)
+	}
+	// dependent config path is relative to the current config path
+	return filepath.Join(filepath.Dir(currentConfigPath), dependentConfigPath)
 }

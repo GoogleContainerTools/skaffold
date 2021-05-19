@@ -29,6 +29,16 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
 )
 
+func NewSkaffoldListener(monitor filemon.Monitor, trigger trigger.Trigger, cache graph.SourceDependenciesCache,
+	intentChan <-chan bool) *SkaffoldListener {
+	return &SkaffoldListener{
+		Monitor:                 monitor,
+		Trigger:                 trigger,
+		sourceDependenciesCache: cache,
+		intentChan:              intentChan,
+	}
+}
+
 type Listener interface {
 	WatchForChanges(context.Context, io.Writer, func() error) error
 	LogWatchToUser(io.Writer)
@@ -37,7 +47,7 @@ type Listener interface {
 type SkaffoldListener struct {
 	Monitor                 filemon.Monitor
 	Trigger                 trigger.Trigger
-	sourceDependenciesCache graph.TransitiveSourceDependenciesCache
+	sourceDependenciesCache graph.SourceDependenciesCache
 	intentChan              <-chan bool
 }
 

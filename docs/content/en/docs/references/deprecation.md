@@ -71,6 +71,8 @@ Exceptions will always be announced in all relevant release notes.
 ## Current deprecation notices
 
 04/07/2021: Release v1.22.0 deprecates the `--render-only` and `--render-output` flags from `skaffold run` and `skaffold dev`, in favor of simply using the `skaffold render` command directly.
+05/05/2021: Release v1.23.0 deprecates the `--add-skaffold-labels` flag from `skaffold render`, and implicitly deprecates the addition of Skaffold-internal labels to any Kubernetes resources
+hydrated by Skaffold through `skaffold render`.
 
 ## Past deprecation notices
 

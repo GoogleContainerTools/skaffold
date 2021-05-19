@@ -41,7 +41,7 @@ func TestDiagnoseRenderApply(t *testing.T) {
 
 		tmpDir.Write("skaffold-diagnose.yaml", string(out))
 
-		out = skaffold.Render("--add-skaffold-labels=false", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFailOutput(t.T)
+		out = skaffold.Render("--digest-source=local", "--add-skaffold-labels=false", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFailOutput(t.T)
 		tmpDir.Write("render.yaml", string(out))
 
 		skaffold.Apply("render.yaml", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFail(t.T)
@@ -51,5 +51,27 @@ func TestDiagnoseRenderApply(t *testing.T) {
 
 		depWeb := client.GetDeployment("leeroy-web")
 		t.CheckNotNil(depWeb)
+	})
+}
+
+func TestRenderApplyHelmDeployment(t *testing.T) {
+	testutil.Run(t, "DiagnoseRenderApply", func(t *testutil.T) {
+		MarkIntegrationTest(t.T, NeedsGcp)
+		ns, client := SetupNamespace(t.T)
+
+		out := skaffold.Diagnose("--yaml-only").InDir("examples/helm-deployment").RunOrFailOutput(t.T)
+
+		tmpDir := testutil.NewTempDir(t.T)
+		tmpDir.Chdir()
+
+		tmpDir.Write("skaffold-diagnose.yaml", string(out))
+
+		out = skaffold.Render("--digest-source=local", "--add-skaffold-labels=false", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFailOutput(t.T)
+		tmpDir.Write("render.yaml", string(out))
+
+		skaffold.Apply("render.yaml", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFail(t.T)
+
+		depApp := client.GetDeployment("skaffold-helm")
+		t.CheckNotNil(depApp)
 	})
 }

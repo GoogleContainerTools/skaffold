@@ -28,6 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -112,6 +113,9 @@ func TestBuild(t *testing.T) {
 // TestExpectedBuildFailures verifies that `skaffold build` fails in expected ways
 func TestExpectedBuildFailures(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
+	if !jib.JVMFound() {
+		t.Fatal("test requires Java VM")
+	}
 
 	tests := []struct {
 		description string

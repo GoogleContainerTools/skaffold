@@ -34,16 +34,27 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	latest_v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+func NewBuilder(builder build.Builder, tagger tag.Tagger, cache cache.Cache, podSelector *kubernetes.ImageList,
+	runCtx *runcontext.RunContext) *Builder {
+	return &Builder{
+		Builder:     builder,
+		tagger:      tagger,
+		cache:       cache,
+		podSelector: podSelector,
+		runCtx:      runCtx,
+	}
+}
+
 type Builder struct {
-	builder build.Builder
+	Builder build.Builder
 	tagger  tag.Tagger
 	cache   cache.Cache
-	builds  []graph.Artifact
+	Builds  []graph.Artifact
 
 	// podSelector is used to determine relevant pods for logging and portForwarding
 	podSelector *kubernetes.ImageList
@@ -52,16 +63,21 @@ type Builder struct {
 	runCtx   *runcontext.RunContext
 }
 
+// GetBuilds returns the builds value.
+func (r *Builder) GetBuilds() []graph.Artifact {
+	return r.Builds
+}
+
 // Build builds a list of artifacts.
-func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest_v1.Artifact) ([]graph.Artifact, error) {
+func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
 	eventV2.TaskInProgress(constants.Build)
 
 	// Use tags directly from the Kubernetes manifests.
-	if r.runCtx.DigestSource() == noneDigestSource {
+	if r.runCtx.DigestSource() == NoneDigestSource {
 		return []graph.Artifact{}, nil
 	}
 
-	if err := checkWorkspaces(artifacts); err != nil {
+	if err := CheckWorkspaces(artifacts); err != nil {
 		eventV2.TaskFailed(constants.Build, err)
 		return nil, err
 	}
@@ -72,28 +88,28 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest_
 		return nil, err
 	}
 
-	// In dry-run mode or with --digest-source  set to 'remote' or with --digest-source set to 'tag' , we don't build anything, just return the tag for each artifact.
-	if r.runCtx.DryRun() || (r.runCtx.DigestSource() == remoteDigestSource) ||
-		(r.runCtx.DigestSource() == tagDigestSource) {
-		var bRes []graph.Artifact
-		for _, artifact := range artifacts {
-			bRes = append(bRes, graph.Artifact{
-				ImageName: artifact.ImageName,
-				Tag:       tags[artifact.ImageName],
-			})
-		}
-
-		return bRes, nil
+	// In dry-run mode or with --digest-source set to 'remote' or 'tag' in render, we don't build anything, just return the tag for each artifact.
+	switch {
+	case r.runCtx.DryRun():
+		color.Yellow.Fprintln(out, "Skipping build phase since --dry-run=true")
+		return artifactsWithTags(tags, artifacts), nil
+	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == RemoteDigestSource:
+		color.Yellow.Fprintln(out, "Skipping build phase since --digest-source=remote")
+		return artifactsWithTags(tags, artifacts), nil
+	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == TagDigestSource:
+		color.Yellow.Fprintln(out, "Skipping build phase since --digest-source=tag")
+		return artifactsWithTags(tags, artifacts), nil
+	default:
 	}
 
-	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest_v1.Artifact) ([]graph.Artifact, error) {
+	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latestV1.Artifact) ([]graph.Artifact, error) {
 		if len(artifacts) == 0 {
 			return nil, nil
 		}
 
 		r.hasBuilt = true
 
-		bRes, err := r.builder.Build(ctx, out, tags, artifacts)
+		bRes, err := r.Builder.Build(ctx, out, tags, artifacts)
 		if err != nil {
 			return nil, err
 		}
@@ -106,10 +122,10 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest_
 	}
 
 	// Update which images are logged.
-	r.addTagsToPodSelector(bRes)
+	r.AddTagsToPodSelector(bRes)
 
 	// Make sure all artifacts are redeployed. Not only those that were just built.
-	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
+	r.Builds = build.MergeWithPreviousBuilds(bRes, r.Builds)
 
 	eventV2.TaskSucceeded(constants.Build)
 	return bRes, nil
@@ -120,8 +136,20 @@ func (r *Builder) HasBuilt() bool {
 	return r.hasBuilt
 }
 
+func artifactsWithTags(tags tag.ImageTags, artifacts []*latestV1.Artifact) []graph.Artifact {
+	var bRes []graph.Artifact
+	for _, artifact := range artifacts {
+		bRes = append(bRes, graph.Artifact{
+			ImageName: artifact.ImageName,
+			Tag:       tags[artifact.ImageName],
+		})
+	}
+
+	return bRes
+}
+
 // Update which images are logged.
-func (r *Builder) addTagsToPodSelector(artifacts []graph.Artifact) {
+func (r *Builder) AddTagsToPodSelector(artifacts []graph.Artifact) {
 	for _, artifact := range artifacts {
 		r.podSelector.Add(artifact.Tag)
 	}
@@ -138,7 +166,7 @@ func (r *Builder) ApplyDefaultRepo(tag string) (string, error) {
 }
 
 // imageTags generates tags for a list of artifacts
-func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latest_v1.Artifact) (tag.ImageTags, error) {
+func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latestV1.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
 
@@ -149,8 +177,8 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 
 		i := i
 		go func() {
-			tag, err := tag.GenerateFullyQualifiedImageName(r.tagger, *artifacts[i])
-			tagErrs[i] <- tagErr{tag: tag, err: err}
+			_tag, err := tag.GenerateFullyQualifiedImageName(r.tagger, *artifacts[i])
+			tagErrs[i] <- tagErr{tag: _tag, err: err}
 		}()
 	}
 
@@ -179,13 +207,13 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 				showWarning = true
 			}
 
-			tag, err := r.ApplyDefaultRepo(t.tag)
+			_tag, err := r.ApplyDefaultRepo(t.tag)
 			if err != nil {
 				return nil, err
 			}
 
-			fmt.Fprintln(out, tag)
-			imageTags[imageName] = tag
+			fmt.Fprintln(out, _tag)
+			imageTags[imageName] = _tag
 		}
 	}
 
@@ -197,7 +225,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 	return imageTags, nil
 }
 
-func checkWorkspaces(artifacts []*latest_v1.Artifact) error {
+func CheckWorkspaces(artifacts []*latestV1.Artifact) error {
 	for _, a := range artifacts {
 		if a.Workspace != "" {
 			if info, err := os.Stat(a.Workspace); err != nil {

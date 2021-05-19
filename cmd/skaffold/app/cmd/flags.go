@@ -45,18 +45,19 @@ type Nillable interface {
 // subcommands the flag belongs to in `DefinedOn` field.
 // See https://pkg.go.dev/github.com/spf13/pflag#Flag
 type Flag struct {
-	Name               string
-	Shorthand          string
-	Usage              string
-	Value              interface{}
-	DefValue           interface{}
-	DefValuePerCommand map[string]interface{}
-	NoOptDefVal        string
-	FlagAddMethod      string
-	Deprecated         string
-	DefinedOn          []string
-	Hidden             bool
-	IsEnum             bool
+	Name                 string
+	Shorthand            string
+	Usage                string
+	Value                interface{}
+	DefValue             interface{}
+	DefValuePerCommand   map[string]interface{}
+	DeprecatedPerCommand map[string]interface{}
+	NoOptDefVal          string
+	FlagAddMethod        string
+	Deprecated           string
+	DefinedOn            []string
+	Hidden               bool
+	IsEnum               bool
 }
 
 // flagRegistry is a list of all Skaffold CLI flags.
@@ -164,16 +165,17 @@ var flagRegistry = []Flag{
 			"debug": true,
 		},
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "apply", "test"},
 		IsEnum:        true,
 	},
 	{
 		Name:          "event-log-file",
 		Usage:         "Save Skaffold events to the provided file after skaffold has finished executing, requires --enable-rpc=true",
+		Hidden:        true,
 		Value:         &opts.EventLogFile,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "test", "apply"},
 	},
 	{
 		Name:          "rpc-port",
@@ -366,6 +368,15 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
+		Name:          "propagate-profiles",
+		Usage:         "Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.",
+		Value:         &opts.PropagateProfiles,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose"},
+		IsEnum:        true,
+	},
+	{
 		Name:          "trigger",
 		Usage:         "How is change detection triggered? (polling, notify, or manual)",
 		Value:         &opts.Trigger,
@@ -432,13 +443,17 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "debug"},
 	},
 	{
-		Name:          "add-skaffold-labels",
-		Usage:         "Add Skaffold-specific labels to rendered manifest. If false, custom labels are still applied. Helpful for GitOps model where Skaffold is not the deployer.",
-		Value:         &opts.AddSkaffoldLabels,
-		DefValue:      true,
+		Name:     "add-skaffold-labels",
+		Usage:    "Add Skaffold-specific labels to rendered manifest. Custom labels will still be applied. Helpful for GitOps model where Skaffold is not the deployer.",
+		Value:    &opts.AddSkaffoldLabels,
+		DefValue: true,
+		DefValuePerCommand: map[string]interface{}{
+			"render": false,
+		},
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"render"},
+		DefinedOn:     []string{"dev", "debug", "render", "run"},
 		IsEnum:        true,
+		Deprecated:    "Adding Skaffold-specific labels in `render` is deprecated.",
 	},
 	{
 		Name:          "mute-logs",
@@ -528,13 +543,26 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
 	},
 	{
-		Name:          "v3",
-		Usage:         "Next skaffold config (v3). Use kpt to render/hydrate and deploy manifests.",
+		Name:          "v2",
+		Usage:         "Next skaffold config (v2). Use kpt to render/hydrate and deploy manifests.",
 		Value:         &opts.Experimental,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"apply", "debug", "deploy", "dev", "run"},
 		IsEnum:        true,
+	},
+	{
+		Name:          "digest-source",
+		Usage:         "Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests.",
+		Value:         &opts.DigestSource,
+		DefValue:      "remote",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"dev", "render", "run"},
+		DeprecatedPerCommand: map[string]interface{}{
+			"dev": true,
+			"run": true,
+		},
+		IsEnum: true,
 	},
 }
 
@@ -589,6 +617,11 @@ func (fl *Flag) flag(cmdName string) *pflag.Flag {
 	f.Shorthand = fl.Shorthand
 	f.Hidden = fl.Hidden || (fl.Deprecated != "")
 	f.Deprecated = fl.Deprecated
+
+	// Deprecations can be applied per command
+	if _, found := fl.DeprecatedPerCommand[cmdName]; found {
+		f.Deprecated = fl.Deprecated
+	}
 	return f
 }
 

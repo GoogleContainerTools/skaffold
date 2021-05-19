@@ -370,6 +370,11 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 		ev.stateLock.Lock()
 		ev.state.BuildState.Artifacts[be.Artifact] = be.Status
 		ev.stateLock.Unlock()
+	case *proto.Event_TestEvent:
+		te := e.TestEvent
+		ev.stateLock.Lock()
+		ev.state.TestState.Status = te.Status
+		ev.stateLock.Unlock()
 	case *proto.Event_DeploySubtaskEvent:
 		de := e.DeploySubtaskEvent
 		ev.stateLock.Lock()
