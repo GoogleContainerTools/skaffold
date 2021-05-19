@@ -379,6 +379,75 @@ func TestSetDefaultPortForwardAddress(t *testing.T) {
 	testutil.CheckDeepEqual(t, constants.DefaultPortForwardAddress, cfg.PortForward[1].Address)
 }
 
+func TestSetDefaultDeployer(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         *latestV1.SkaffoldConfig
+		expected    latestV1.DeployConfig
+	}{
+		{
+			description: "no deployer definition",
+			cfg:         &latestV1.SkaffoldConfig{},
+			expected: latestV1.DeployConfig{
+				DeployType: latestV1.DeployType{
+					KubectlDeploy: &latestV1.KubectlDeploy{Manifests: []string{"k8s/*.yaml"}},
+				},
+			},
+		},
+		{
+			description: "existing kubectl definition with local manifests",
+			cfg: &latestV1.SkaffoldConfig{
+				Pipeline: latestV1.Pipeline{
+					Deploy: latestV1.DeployConfig{DeployType: latestV1.DeployType{
+						KubectlDeploy: &latestV1.KubectlDeploy{Manifests: []string{"foo.yaml"}},
+					}},
+				},
+			},
+			expected: latestV1.DeployConfig{
+				DeployType: latestV1.DeployType{
+					KubectlDeploy: &latestV1.KubectlDeploy{Manifests: []string{"foo.yaml"}},
+				},
+			},
+		},
+		{
+			description: "existing kubectl definition with remote manifests",
+			cfg: &latestV1.SkaffoldConfig{
+				Pipeline: latestV1.Pipeline{
+					Deploy: latestV1.DeployConfig{DeployType: latestV1.DeployType{
+						KubectlDeploy: &latestV1.KubectlDeploy{RemoteManifests: []string{"foo:bar"}},
+					}},
+				},
+			},
+			expected: latestV1.DeployConfig{
+				DeployType: latestV1.DeployType{
+					KubectlDeploy: &latestV1.KubectlDeploy{RemoteManifests: []string{"foo:bar"}},
+				},
+			},
+		},
+		{
+			description: "existing helm definition",
+			cfg: &latestV1.SkaffoldConfig{
+				Pipeline: latestV1.Pipeline{
+					Deploy: latestV1.DeployConfig{DeployType: latestV1.DeployType{
+						HelmDeploy: &latestV1.HelmDeploy{Releases: []latestV1.HelmRelease{{ChartPath: "foo"}}},
+					}},
+				},
+			},
+			expected: latestV1.DeployConfig{
+				DeployType: latestV1.DeployType{
+					HelmDeploy: &latestV1.HelmDeploy{Releases: []latestV1.HelmRelease{{ChartPath: "foo"}}},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			SetDefaultDeployer(test.cfg)
+			t.CheckDeepEqual(test.expected, test.cfg.Deploy)
+		})
+	}
+}
+
 func TestSetLogsConfig(t *testing.T) {
 	tests := []struct {
 		description string
