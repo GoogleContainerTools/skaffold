@@ -69,6 +69,14 @@ ENV K3D_URL https://github.com/rancher/k3d/releases/download/${K3D_VERSION}/k3d-
 RUN wget -O k3d "${K3D_URL}"
 RUN chmod +x k3d
 
+# Download minikube
+FROM alpine:3.10 as download-minikube
+ENV MINIKUBE_VERSION v1.20.0
+ENV MINIKUBE_URL https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64
+RUN wget -O minikube "${MINIKUBE_URL}"
+RUN chmod +x minikube
+
+
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
 ENV GCLOUD_VERSION 335.0.0
@@ -100,6 +108,7 @@ COPY --from=download-container-structure-test container-structure-test /usr/loca
 COPY --from=download-bazel bazel /usr/local/bin/
 COPY --from=download-gcloud google-cloud-sdk/ /google-cloud-sdk/
 COPY --from=download-kind kind /usr/local/bin/
+COPY --from=download-minikube minikube /usr/local/bin/
 COPY --from=download-k3d k3d /usr/local/bin/
 
 # Finish installation of bazel

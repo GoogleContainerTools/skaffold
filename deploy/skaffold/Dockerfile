@@ -13,12 +13,17 @@
 # limitations under the License.
 
 # This base image has to be updated manually after running `make build_deps`
-FROM gcr.io/k8s-skaffold/build_deps:45b0b2b2c59e1b381f5386d6c960dd87c3a3c9d8 as builder
+ARG GCP_PROJECT=k8s-skaffold
+FROM gcr.io/${GCP_PROJECT}/build_deps:94fd5697ee13dc647a21760cb6105ad2fe7510a5 as builder
 WORKDIR /skaffold
 COPY . .
 
 FROM builder as release
 ARG VERSION
+ARG USER=nonroot
 RUN make clean out/skaffold VERSION=$VERSION && mv out/skaffold /usr/bin/skaffold
 RUN rm -rf secrets $SECRET cmd/skaffold/app/cmd/statik/statik.go
-RUN skaffold credits -d /THIRD_PARTY_NOTICES
+RUN skaffold credits -d /THIRD_PARTY_NOTICES 
+# RUN useradd -ms /bin/bash $USER
+# USER $USER
+# WORKDIR /home/$USER

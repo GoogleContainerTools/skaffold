@@ -187,10 +187,42 @@ build_deps:
 .PHONY: skaffold-builder
 skaffold-builder:
 	time docker build \
+		--build-arg GCP_PROJECT=$(GCP_PROJECT) \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		.
+
+.PHONY: integration-in-minikube
+integration-in-minikube: skaffold-builder
+	echo '{}' > /tmp/docker-config
+	docker run --rm \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.gradle:/root/.gradle \
+		-v $(HOME)/.cache:/root/.cache \
+		-v /tmp/docker-config:/root/.docker/config.json \
+		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
+		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
+		-e IT_PARTITION=$(IT_PARTITION) \
+		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		sh -eu -c ' \
+			  TERM=dumb minikube start --force --v 8 --driver=none; \
+			make integration \
+		'
+
+.PHONY: integration-in-minikube-tty
+integration-in-minikube-tty: skaffold-builder
+	echo '{}' > /tmp/docker-config
+	docker run -it --rm \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.gradle:/root/.gradle \
+		-v $(HOME)/.cache:/root/.cache \
+		-v /tmp/docker-config:/root/.docker/config.json \
+		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
+		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
+		-e IT_PARTITION=$(IT_PARTITION) \
+		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		/bin/bash
 
 .PHONY: integration-in-kind
 integration-in-kind: skaffold-builder
