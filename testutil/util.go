@@ -19,6 +19,7 @@ package testutil
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -147,6 +148,12 @@ func (t *T) CheckError(shouldErr bool, err error) {
 func (t *T) CheckErrorAndFailNow(shouldErr bool, err error) {
 	t.Helper()
 	CheckErrorAndFailNow(t.T, shouldErr, err)
+}
+
+// CheckFileExistAndContent checks if the given file path exists and the content is expected.
+func (t *T) CheckFileExistAndContent(filePath string, expectedContent []byte) {
+	t.Helper()
+	CheckFileExistAndContent(t.T, filePath, expectedContent)
 }
 
 // CheckErrorContains checks that an error is not nil and contains
@@ -311,6 +318,21 @@ func CheckErrorAndFailNow(t *testing.T, shouldErr bool, err error) {
 	if err := checkErr(shouldErr, err); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func CheckFileExistAndContent(t *testing.T, path string, expectedContent []byte) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		t.Fatalf("abs path %v: %v", path, err)
+	}
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		t.Fatalf("file %v does not exist", path)
+	}
+	actualContent, err := ioutil.ReadFile(absPath)
+	if err != nil {
+		t.Error(err)
+	}
+	CheckDeepEqual(t, expectedContent, actualContent)
 }
 
 func EnsureTestPanicked(t *testing.T) {
