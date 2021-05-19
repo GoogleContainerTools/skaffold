@@ -167,7 +167,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetEnvs(test.envs)
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(&kustomizeBinaryCheck, func() bool { return test.kustomizeCmdPresent })
+			t.Override(&KustomizeBinaryCheck, func() bool { return test.kustomizeCmdPresent })
 			t.NewTempDir().
 				Chdir()
 
@@ -246,7 +246,7 @@ func TestKustomizeCleanup(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			t.Override(&kustomizeBinaryCheck, func() bool { return true })
+			t.Override(&KustomizeBinaryCheck, func() bool { return true })
 
 			k, err := NewDeployer(&kustomizeConfig{
 				workingDir: tmpDir.Root(),

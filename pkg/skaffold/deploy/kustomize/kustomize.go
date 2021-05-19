@@ -41,9 +41,9 @@ import (
 
 var (
 	DefaultKustomizePath = "."
-	kustomizeFilePaths   = []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
+	KustomizeFilePaths   = []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
 	basePath             = "base"
-	kustomizeBinaryCheck = kustomizeBinaryExists // For testing
+	KustomizeBinaryCheck = kustomizeBinaryExists // For testing
 )
 
 // kustomization is the content of a kustomization.yaml file.
@@ -112,7 +112,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, d *latestV1.Kusto
 
 	kubectl := kubectl.NewCLI(cfg, d.Flags, defaultNamespace)
 	// if user has kustomize binary, prioritize that over kubectl kustomize
-	useKubectlKustomize := !kustomizeBinaryCheck() && kubectlVersionCheck(kubectl)
+	useKubectlKustomize := !KustomizeBinaryCheck() && kubectlVersionCheck(kubectl)
 
 	return &Deployer{
 		KustomizeDeploy:     d,
@@ -306,7 +306,7 @@ func IsKustomizationBase(path string) bool {
 
 func IsKustomizationPath(path string) bool {
 	filename := filepath.Base(path)
-	for _, candidate := range kustomizeFilePaths {
+	for _, candidate := range KustomizeFilePaths {
 		if filename == candidate {
 			return true
 		}
