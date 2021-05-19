@@ -208,7 +208,7 @@ func TestDlvTransformerApply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			config, image, err := dlvTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
+			config, image, err := dlvTransformer{}.Apply(&test.containerSpec, test.configuration, identity, nil)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.result, test.containerSpec)

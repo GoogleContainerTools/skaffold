@@ -67,7 +67,7 @@ func (t netcoreTransformer) IsApplicable(config imageConfiguration) bool {
 
 // Apply configures a container definition for vsdbg.
 // Returns a simple map describing the debug configuration details.
-func (t netcoreTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
+func (t netcoreTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for netcore debugging", container.Name)
 
 	return ContainerDebugConfiguration{

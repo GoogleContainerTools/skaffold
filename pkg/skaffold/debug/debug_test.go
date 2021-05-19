@@ -112,7 +112,7 @@ func (t testTransformer) IsApplicable(config imageConfiguration) bool {
 	return true
 }
 
-func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
+func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (ContainerDebugConfiguration, string, error) {
 	port := portAlloc(9999)
 	container.Ports = append(container.Ports, v1.ContainerPort{Name: "test", ContainerPort: port})
 

@@ -435,6 +435,7 @@ Options:
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
+      --protocols=[]: Priority sorted order of debugger protocols to support.
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -488,6 +489,7 @@ Env vars:
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
+* `SKAFFOLD_PROTOCOLS` (same as `--protocols`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)

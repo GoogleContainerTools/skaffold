@@ -37,6 +37,9 @@ func NewCmdDebug() *cobra.Command {
 		WithLongDescription("Similar to `dev`, but configures the pipeline for debugging. "+
 			"Auto-build and sync is disabled by default to prevent accidentally tearing down debug sessions.").
 		WithCommonFlags().
+		WithFlags([]*Flag{
+			{Value: &debugging.Protocols, Name: "protocols", DefValue: []string{}, Usage: "Priority sorted order of debugger protocols to support."},
+		}).
 		WithExample("Launch with port-forwarding", "debug --port-forward").
 		WithHouseKeepingMessages().
 		NoArgs(func(ctx context.Context, out io.Writer) error {

@@ -316,7 +316,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			config, image, err := nodeTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
+			config, image, err := nodeTransformer{}.Apply(&test.containerSpec, test.configuration, identity, nil)
 
 			// Apply never fails since there's always the option to set NODE_OPTIONS
 			t.CheckNil(err)

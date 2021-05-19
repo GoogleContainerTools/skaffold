@@ -92,7 +92,7 @@ func (t dlvTransformer) IsApplicable(config imageConfiguration) bool {
 
 // Apply configures a container definition for Go with Delve.
 // Returns the debug configuration details, with the "go" support image
-func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
+func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator, overrideProtocols []string) (ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for Go/Delve debugging", container.Name)
 
 	// try to find existing `dlv` command
