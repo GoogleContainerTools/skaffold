@@ -66,15 +66,18 @@ func newHandler() *eventHandler {
 }
 
 type eventHandler struct {
-	eventLog []proto.Event
-	logLock  sync.Mutex
-	cfg      event.Config
+	eventLog            []proto.Event
+	logLock             sync.Mutex
+	applicationLogs     []proto.Event
+	applicationLogsLock sync.Mutex
+	cfg                 event.Config
 
-	iteration int
-	state     proto.State
-	stateLock sync.Mutex
-	eventChan chan *proto.Event
-	listeners []*listener
+	iteration               int
+	state                   proto.State
+	stateLock               sync.Mutex
+	eventChan               chan *proto.Event
+	eventListeners          []*listener
+	applicationLogListeners []*listener
 }
 
 type listener struct {
@@ -96,6 +99,10 @@ func ForEachEvent(callback func(*proto.Event) error) error {
 	return handler.forEachEvent(callback)
 }
 
+func ForEachApplicationLog(callback func(*proto.Event) error) error {
+	return handler.forEachApplicationLog(callback)
+}
+
 func Handle(event *proto.Event) error {
 	if event != nil {
 		handler.handle(event)
@@ -115,10 +122,10 @@ func (ev *eventHandler) getState() proto.State {
 	return state
 }
 
-func (ev *eventHandler) logEvent(event *proto.Event) {
-	ev.logLock.Lock()
+func (ev *eventHandler) log(event *proto.Event, listeners *[]*listener, log *[]proto.Event, lock sync.Locker) {
+	lock.Lock()
 
-	for _, listener := range ev.listeners {
+	for _, listener := range *listeners {
 		if listener.closed {
 			continue
 		}
@@ -128,24 +135,32 @@ func (ev *eventHandler) logEvent(event *proto.Event) {
 			listener.closed = true
 		}
 	}
-	ev.eventLog = append(ev.eventLog, *event)
+	*log = append(*log, *event)
 
-	ev.logLock.Unlock()
+	lock.Unlock()
 }
 
-func (ev *eventHandler) forEachEvent(callback func(*proto.Event) error) error {
+func (ev *eventHandler) logEvent(event *proto.Event) {
+	ev.log(event, &ev.eventListeners, &ev.eventLog, &ev.logLock)
+}
+
+func (ev *eventHandler) logApplicationLog(event *proto.Event) {
+	ev.log(event, &ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock)
+}
+
+func (ev *eventHandler) forEach(listeners *[]*listener, log *[]proto.Event, lock sync.Locker, callback func(*proto.Event) error) error {
 	listener := &listener{
 		callback: callback,
 		errors:   make(chan error),
 	}
 
-	ev.logLock.Lock()
+	lock.Lock()
 
-	oldEvents := make([]proto.Event, len(ev.eventLog))
-	copy(oldEvents, ev.eventLog)
-	ev.listeners = append(ev.listeners, listener)
+	oldEvents := make([]proto.Event, len(*log))
+	copy(oldEvents, *log)
+	*listeners = append(*listeners, listener)
 
-	ev.logLock.Unlock()
+	lock.Unlock()
 
 	for i := range oldEvents {
 		if err := callback(&oldEvents[i]); err != nil {
@@ -155,6 +170,14 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.Event) error) error {
 	}
 
 	return <-listener.errors
+}
+
+func (ev *eventHandler) forEachEvent(callback func(*proto.Event) error) error {
+	return ev.forEach(&ev.eventListeners, &ev.eventLog, &ev.logLock, callback)
+}
+
+func (ev *eventHandler) forEachApplicationLog(callback func(*proto.Event) error) error {
+	return ev.forEach(&ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock, callback)
 }
 
 func emptyState(cfg event.Config) proto.State {
@@ -365,6 +388,9 @@ func (ev *eventHandler) handleBuildSubtaskEvent(e *proto.BuildSubtaskEvent) {
 
 func (ev *eventHandler) handleExec(event *proto.Event) {
 	switch e := event.GetEventType().(type) {
+	case *proto.Event_ApplicationLogEvent:
+		ev.logApplicationLog(event)
+		return
 	case *proto.Event_BuildSubtaskEvent:
 		be := e.BuildSubtaskEvent
 		ev.stateLock.Lock()

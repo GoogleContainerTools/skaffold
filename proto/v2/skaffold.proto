@@ -321,6 +321,12 @@ service SkaffoldV2Service {
         };
     }
 
+    rpc ApplicationLogs (google.protobuf.Empty) returns (stream Event) {
+        option (google.api.http) = {
+            get: "/v2/applicationLogs"
+        };
+    }
+
     // Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
     rpc Execute (UserIntentRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
