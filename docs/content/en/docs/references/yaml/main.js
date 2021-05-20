@@ -185,7 +185,7 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
         yield html`
           <tr>
             <td>
-              <span class="key" style="margin-left: ${(ident + 1) * 20}px"><span class="${valueClass}">${anchor(k)}: ${v}</span></span>
+              <span class="key" style="margin-left: ${(ident + 1) * 20}px">${k}: <span class="${valueClass}">${v}</span></span>
             </td>
             <td class="comment">#&nbsp;</td>
           </tr>
