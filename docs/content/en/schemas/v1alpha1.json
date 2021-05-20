@@ -33,10 +33,12 @@
         "buildArgs"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "represents items that need should be built, along with the context in which they should be built.",
       "x-intellij-html-description": "represents items that need should be built, along with the context in which they should be built."
     },
     "BuildConfig": {
+      "type": "object",
       "anyOf": [
         {
           "properties": {
@@ -105,6 +107,7 @@
       "x-intellij-html-description": "contains all the configuration for the build steps"
     },
     "DeployConfig": {
+      "type": "object",
       "anyOf": [
         {
           "properties": {
@@ -160,7 +163,8 @@
       "preferredOrder": [
         "projectId"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "type": "object"
     },
     "HelmDeploy": {
       "properties": {
@@ -174,7 +178,8 @@
       "preferredOrder": [
         "releases"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "type": "object"
     },
     "HelmRelease": {
       "properties": {
@@ -209,7 +214,8 @@
         "namespace",
         "version"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "type": "object"
     },
     "KubectlDeploy": {
       "properties": {
@@ -224,6 +230,7 @@
         "manifests"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the configuration needed for deploying with `kubectl apply`",
       "x-intellij-html-description": "contains the configuration needed for deploying with <code>kubectl apply</code>"
     },
@@ -237,6 +244,7 @@
         "skipPush"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository.",
       "x-intellij-html-description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository."
     },
@@ -261,7 +269,8 @@
         "paths",
         "parameters"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "type": "object"
     },
     "SkaffoldConfig": {
       "properties": {
@@ -285,6 +294,7 @@
         "deploy"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "top level config object that is parsed from a skaffold.yaml",
       "x-intellij-html-description": "top level config object that is parsed from a skaffold.yaml"
     }
