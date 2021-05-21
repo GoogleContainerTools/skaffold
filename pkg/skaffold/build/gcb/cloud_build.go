@@ -27,6 +27,7 @@ import (
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/googleapi"
@@ -40,7 +41,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Build builds a list of artifacts with Google Cloud Build.
@@ -85,7 +85,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	}
 
 	cbBucket := fmt.Sprintf("%s%s", projectID, constants.GCSBucketSuffix)
-	buildObject := fmt.Sprintf("source/%s-%s.tar.gz", projectID, util.RandomID())
+	buildObject := fmt.Sprintf("source/%s-%s.tar.gz", projectID, uuid.New().String())
 
 	if err := b.createBucketIfNotExists(ctx, c, projectID, cbBucket); err != nil {
 		return "", fmt.Errorf("creating bucket if not exists: %w", err)
@@ -113,7 +113,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	}
 
 	if err := sources.UploadToGCS(ctx, c, artifact, cbBucket, buildObject, dependencies); err != nil {
-		return "", fmt.Errorf("uploading source tarball: %w", err)
+		return "", fmt.Errorf("uploading source archive: %w", err)
 	}
 
 	buildSpec, err := b.buildSpec(artifact, tag, cbBucket, buildObject)
@@ -193,9 +193,10 @@ watch:
 	}
 
 	if err := c.Bucket(cbBucket).Object(buildObject).Delete(ctx); err != nil {
-		return "", fmt.Errorf("cleaning up source tar after build: %w", err)
+		logrus.Warnf("Unable to deleting source archive after build: %q: %v", buildObject, err)
+	} else {
+		logrus.Infof("Deleted source archive %s", buildObject)
 	}
-	logrus.Infof("Deleted object %s", buildObject)
 
 	return build.TagWithDigest(tag, digest), nil
 }
