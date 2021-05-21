@@ -24,8 +24,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	v1 "k8s.io/api/core/v1"
 )
 
 // dockerBuildSpec lists the build steps required to build a docker image.
@@ -71,13 +69,7 @@ func (b *Builder) dockerBuildArgs(a *latestV1.Artifact, tag string, deps []*late
 	}
 	requiredImages := docker.ResolveDependencyImages(deps, b.artifactStore, true)
 
-	env, err := evaluateEnv(d.Env)
-	if err != nil {
-		return nil, fmt.Errorf("unable to evaluate env variables: %w", err)
-	}
-	d.Env = env
-
-	buildArgs, err := docker.EvalBuildArgsWithEnv(b.cfg.Mode(), a.Workspace, d.DockerfilePath, d.BuildArgs, requiredImages, envMapFromVars(d.Env))
+	buildArgs, err := docker.EvalBuildArgs(b.cfg.Mode(), a.Workspace, d.DockerfilePath, d.BuildArgs, requiredImages)
 	if err != nil {
 		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
 	}
@@ -91,43 +83,4 @@ func (b *Builder) dockerBuildArgs(a *latestV1.Artifact, tag string, deps []*late
 	args = append(args, ".")
 
 	return args, nil
-}
-
-func evaluateEnv(env []v1.EnvVar, additional ...v1.EnvVar) ([]v1.EnvVar, error) {
-	// Prepare additional envs
-	addEnv := make(map[string]string)
-	for _, addEnvVar := range additional {
-		addEnv[addEnvVar.Name] = addEnvVar.Value
-	}
-
-	// Evaluate provided env variables
-	var evaluated []v1.EnvVar
-	for _, envVar := range env {
-		val, err := util.ExpandEnvTemplate(envVar.Value, nil)
-		if err != nil {
-			return nil, fmt.Errorf("unable to get value for env variable %q: %w", envVar.Name, err)
-		}
-
-		evaluated = append(evaluated, v1.EnvVar{Name: envVar.Name, Value: val})
-
-		// Provided env variables have higher priority than additional (generated) ones
-		delete(addEnv, envVar.Name)
-	}
-
-	// Append additional (generated) env variables
-	for name, value := range addEnv {
-		if value != "" {
-			evaluated = append(evaluated, v1.EnvVar{Name: name, Value: value})
-		}
-	}
-
-	return evaluated, nil
-}
-
-func envMapFromVars(env []v1.EnvVar) map[string]string {
-	envMap := make(map[string]string)
-	for _, envVar := range env {
-		envMap[envVar.Name] = envVar.Value
-	}
-	return envMap
 }

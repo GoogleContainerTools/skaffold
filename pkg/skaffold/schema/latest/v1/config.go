@@ -1208,11 +1208,6 @@ type DockerArtifact struct {
 	// For example: `{"key1": "value1", "key2": "value2"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 
-	// Env are environment variables passed to the docker build.
-	// It also accepts environment variables via the go template syntax.
-	// For example: `[{"name": "key1", "value": "value1"}, {"name": "key2", "value": "value2"}, {"name": "key3", "value": "'{{.ENV_VARIABLE}}'"}]`.
-	Env []v1.EnvVar `yaml:"env,omitempty"`
-
 	// NetworkMode is passed through to docker and overrides the
 	// network configuration of docker builder. If unset, use whatever
 	// is configured in the underlying docker daemon. Valid modes are
