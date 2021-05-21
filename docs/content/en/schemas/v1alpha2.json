@@ -8,6 +8,7 @@
   "$schema": "http://json-schema-org/draft-07/schema#",
   "definitions": {
     "Artifact": {
+      "type": "object",
       "anyOf": [
         {
           "properties": {
@@ -75,9 +76,11 @@
       "preferredOrder": [
         "target"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "type": "object"
     },
     "BuildConfig": {
+      "type": "object",
       "anyOf": [
         {
           "properties": {
@@ -181,10 +184,12 @@
         "timezone"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the configuration for the DateTime tagger.",
       "x-intellij-html-description": "contains the configuration for the DateTime tagger."
     },
     "DeployConfig": {
+      "type": "object",
       "anyOf": [
         {
           "additionalProperties": false
@@ -255,7 +260,8 @@
         "cacheFrom",
         "target"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "type": "object"
     },
     "EnvTemplateTagger": {
       "properties": {
@@ -267,10 +273,12 @@
         "template"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the configuration for the envTemplate tagger.",
       "x-intellij-html-description": "contains the configuration for the envTemplate tagger."
     },
     "GitTagger": {
+      "type": "object",
       "description": "contains the configuration for the git tagger.",
       "x-intellij-html-description": "contains the configuration for the git tagger."
     },
@@ -300,10 +308,12 @@
         "dockerImage"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the fields needed to do a remote build on Google Cloud Build.",
       "x-intellij-html-description": "contains the fields needed to do a remote build on Google Cloud Build."
     },
     "HelmConventionConfig": {
+      "type": "object",
       "description": "represents image config in the syntax of image.repository and image.tag",
       "x-intellij-html-description": "represents image config in the syntax of image.repository and image.tag"
     },
@@ -320,6 +330,7 @@
         "releases"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the configuration needed for deploying with helm",
       "x-intellij-html-description": "contains the configuration needed for deploying with helm"
     },
@@ -333,10 +344,12 @@
         "property"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "represents image config to use the FullyQualifiedImageName as param to set",
       "x-intellij-html-description": "represents image config to use the FullyQualifiedImageName as param to set"
     },
     "HelmImageStrategy": {
+      "type": "object",
       "anyOf": [
         {
           "additionalProperties": false
@@ -383,6 +396,7 @@
         "appVersion"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "represents parameters for packaging helm chart.",
       "x-intellij-html-description": "represents parameters for packaging helm chart."
     },
@@ -455,7 +469,8 @@
         "packaged",
         "imageStrategy"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "type": "object"
     },
     "KanikoBuild": {
       "properties": {
@@ -483,6 +498,7 @@
         "timeout"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the fields needed to do a on-cluster build using the kaniko image",
       "x-intellij-html-description": "contains the fields needed to do a on-cluster build using the kaniko image"
     },
@@ -512,6 +528,7 @@
         "flags"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the configuration needed for deploying with `kubectl apply`",
       "x-intellij-html-description": "contains the configuration needed for deploying with <code>kubectl apply</code>"
     },
@@ -545,6 +562,7 @@
         "delete"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "describes additional options flags that are passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete).",
       "x-intellij-html-description": "describes additional options flags that are passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete)."
     },
@@ -561,7 +579,8 @@
         "kustomizePath",
         "flags"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "type": "object"
     },
     "LocalBuild": {
       "properties": {
@@ -583,6 +602,7 @@
         "useBuildkit"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository.",
       "x-intellij-html-description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository."
     },
@@ -604,10 +624,12 @@
         "deploy"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "additional configuration that overrides default configuration when it is activated.",
       "x-intellij-html-description": "additional configuration that overrides default configuration when it is activated."
     },
     "ShaTagger": {
+      "type": "object",
       "description": "contains the configuration for the SHA tagger.",
       "x-intellij-html-description": "contains the configuration for the SHA tagger."
     },
@@ -639,7 +661,8 @@
         "deploy",
         "profiles"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "type": "object"
     },
     "TagPolicy": {
       "properties": {
@@ -663,6 +686,7 @@
         "dateTime"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains all the configuration for the tagging step",
       "x-intellij-html-description": "contains all the configuration for the tagging step"
     }

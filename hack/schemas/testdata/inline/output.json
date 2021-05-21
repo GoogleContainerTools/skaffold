@@ -51,6 +51,7 @@
         "field4"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "for testing the schema generator.",
       "x-intellij-html-description": "for testing the schema generator."
     }

@@ -234,6 +234,7 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 		def.AdditionalProperties = g.newDefinition("", tt.Value, "", "")
 
 	case *ast.StructType:
+		def.Type = "object"
 		for _, field := range tt.Fields.List {
 			yamlName := yamlFieldName(field)
 

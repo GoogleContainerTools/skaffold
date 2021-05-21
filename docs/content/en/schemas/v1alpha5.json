@@ -8,6 +8,7 @@
   "$schema": "http://json-schema-org/draft-07/schema#",
   "definitions": {
     "Artifact": {
+      "type": "object",
       "anyOf": [
         {
           "properties": {
@@ -166,6 +167,7 @@
         "tenantId"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the fields needed to do a build on Azure Container Registry",
       "x-intellij-html-description": "contains the fields needed to do a build on Azure Container Registry"
     },
@@ -179,10 +181,12 @@
         "target"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "describes an artifact built with Bazel.",
       "x-intellij-html-description": "describes an artifact built with Bazel."
     },
     "BuildConfig": {
+      "type": "object",
       "anyOf": [
         {
           "properties": {
@@ -308,10 +312,12 @@
         "timezone"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the configuration for the DateTime tagger.",
       "x-intellij-html-description": "contains the configuration for the DateTime tagger."
     },
     "DeployConfig": {
+      "type": "object",
       "anyOf": [
         {
           "additionalProperties": false
@@ -383,6 +389,7 @@
         "target"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "describes an artifact built from a Dockerfile, usually using `docker build`.",
       "x-intellij-html-description": "describes an artifact built from a Dockerfile, usually using <code>docker build</code>."
     },
@@ -396,10 +403,12 @@
         "template"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the configuration for the envTemplate tagger.",
       "x-intellij-html-description": "contains the configuration for the envTemplate tagger."
     },
     "GitTagger": {
+      "type": "object",
       "description": "contains the configuration for the git tagger.",
       "x-intellij-html-description": "contains the configuration for the git tagger."
     },
@@ -429,10 +438,12 @@
         "dockerImage"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the fields needed to do a remote build on Google Cloud Build.",
       "x-intellij-html-description": "contains the fields needed to do a remote build on Google Cloud Build."
     },
     "HelmConventionConfig": {
+      "type": "object",
       "description": "represents image config in the syntax of image.repository and image.tag",
       "x-intellij-html-description": "represents image config in the syntax of image.repository and image.tag"
     },
@@ -449,6 +460,7 @@
         "releases"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the configuration needed for deploying with helm",
       "x-intellij-html-description": "contains the configuration needed for deploying with helm"
     },
@@ -462,10 +474,12 @@
         "property"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "represents image config to use the FullyQualifiedImageName as param to set",
       "x-intellij-html-description": "represents image config to use the FullyQualifiedImageName as param to set"
     },
     "HelmImageStrategy": {
+      "type": "object",
       "anyOf": [
         {
           "additionalProperties": false
@@ -512,6 +526,7 @@
         "appVersion"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "represents parameters for packaging helm chart.",
       "x-intellij-html-description": "represents parameters for packaging helm chart."
     },
@@ -588,7 +603,8 @@
         "packaged",
         "imageStrategy"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "type": "object"
     },
     "JibGradleArtifact": {
       "properties": {
@@ -601,7 +617,8 @@
       "preferredOrder": [
         "project"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "type": "object"
     },
     "JibMavenArtifact": {
       "properties": {
@@ -618,7 +635,8 @@
         "module",
         "profile"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "type": "object"
     },
     "KanikoBuild": {
       "properties": {
@@ -650,6 +668,7 @@
         "image"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the fields needed to do a on-cluster build using the kaniko image",
       "x-intellij-html-description": "contains the fields needed to do a on-cluster build using the kaniko image"
     },
@@ -667,6 +686,7 @@
         "localDir"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the different fields available to specify a kaniko build context",
       "x-intellij-html-description": "contains the different fields available to specify a kaniko build context"
     },
@@ -696,6 +716,7 @@
         "flags"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the configuration needed for deploying with `kubectl apply`",
       "x-intellij-html-description": "contains the configuration needed for deploying with <code>kubectl apply</code>"
     },
@@ -729,6 +750,7 @@
         "delete"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "describes additional options flags that are passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete).",
       "x-intellij-html-description": "describes additional options flags that are passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete)."
     },
@@ -746,6 +768,7 @@
         "flags"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the configuration needed for deploying with kustomize.",
       "x-intellij-html-description": "contains the configuration needed for deploying with kustomize."
     },
@@ -769,10 +792,12 @@
         "useBuildkit"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository.",
       "x-intellij-html-description": "contains the fields needed to do a build on the local docker daemon and optionally push to a repository."
     },
     "LocalDir": {
+      "type": "object",
       "description": "represents the local directory kaniko build context",
       "x-intellij-html-description": "represents the local directory kaniko build context"
     },
@@ -798,10 +823,12 @@
         "deploy"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "additional configuration that overrides default configuration when it is activated.",
       "x-intellij-html-description": "additional configuration that overrides default configuration when it is activated."
     },
     "ShaTagger": {
+      "type": "object",
       "description": "contains the configuration for the SHA tagger.",
       "x-intellij-html-description": "contains the configuration for the SHA tagger."
     },
@@ -837,7 +864,8 @@
         "deploy",
         "profiles"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "type": "object"
     },
     "TagPolicy": {
       "properties": {
@@ -861,6 +889,7 @@
         "dateTime"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "contains all the configuration for the tagging step",
       "x-intellij-html-description": "contains all the configuration for the tagging step"
     },
@@ -882,6 +911,7 @@
         "structureTests"
       ],
       "additionalProperties": false,
+      "type": "object",
       "description": "a struct containing all the specified test configuration for an image.",
       "x-intellij-html-description": "a struct containing all the specified test configuration for an image."
     },
