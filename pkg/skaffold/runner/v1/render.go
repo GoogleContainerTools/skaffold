@@ -22,9 +22,9 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 )
 
@@ -40,7 +40,7 @@ func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []gra
 		}
 	}
 	if r.runCtx.DigestSource() == runner.NoneDigestSource {
-		color.Default.Fprintln(out, "--digest-source set to 'none', tags listed in Kubernetes manifests will be used for render")
+		output.Default.Fprintln(out, "--digest-source set to 'none', tags listed in Kubernetes manifests will be used for render")
 	}
 	return r.deployer.Render(ctx, out, builds, offline, filepath)
 }

@@ -33,13 +33,13 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/fn/framework"
 	k8syaml "sigs.k8s.io/yaml"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -116,11 +116,11 @@ func versionCheck(dir string, stdout io.Writer) error {
 		re := regexp.MustCompile(kustomizeVersionRegexP)
 		match := re.FindStringSubmatch(versionInfo)
 		if len(match) != 3 {
-			color.Yellow.Fprintf(stdout, "unable to determine kustomize version from %q\n"+
+			output.Yellow.Fprintf(stdout, "unable to determine kustomize version from %q\n"+
 				"You can download the official kustomize (recommended >= %v) from %v\n",
 				string(out), kustomizeMinVersion, kustomizeDownloadLink)
 		} else if !semver.IsValid(match[2]) || semver.Compare(match[2], kustomizeMinVersion) < 0 {
-			color.Yellow.Fprintf(stdout, "you are using kustomize version %q "+
+			output.Yellow.Fprintf(stdout, "you are using kustomize version %q "+
 				"(recommended >= %v). You can download the official kustomize from %v\n",
 				match[2], kustomizeMinVersion, kustomizeDownloadLink)
 		}

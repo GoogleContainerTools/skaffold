@@ -35,7 +35,6 @@ import (
 	shell "github.com/kballard/go-shellquote"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
@@ -44,6 +43,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -359,7 +359,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	}
 
 	if err := h.exec(ctx, ioutil.Discard, false, nil, getArgs(releaseName, opts.namespace)...); err != nil {
-		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
+		output.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 
 		opts.upgrade = false
 		opts.flags = h.Flags.Install

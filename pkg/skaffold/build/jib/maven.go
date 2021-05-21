@@ -24,8 +24,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -44,7 +44,7 @@ const MinimumJibMavenVersionForSync = "2.0.0"
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
 func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latestV1.JibArtifact, deps []*latestV1.ArtifactDependency, tag string) (string, error) {
-	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), color.IsColorable(out))
+	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", jibToolErr(err)
 	}
@@ -53,7 +53,7 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 }
 
 func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latestV1.JibArtifact, deps []*latestV1.ArtifactDependency, tag string) (string, error) {
-	args := GenerateMavenBuildArgs("build", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), color.IsColorable(out))
+	args := GenerateMavenBuildArgs("build", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", jibToolErr(err)
 	}

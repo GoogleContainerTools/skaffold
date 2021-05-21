@@ -26,15 +26,15 @@ import (
 
 	"github.com/docker/distribution/reference"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // loadImagesInKindNodes loads artifact images into every node of a kind cluster.
 func (r *SkaffoldRunner) loadImagesInKindNodes(ctx context.Context, out io.Writer, kindCluster string, artifacts []graph.Artifact) error {
-	color.Default.Fprintln(out, "Loading images into kind cluster nodes...")
+	output.Default.Fprintln(out, "Loading images into kind cluster nodes...")
 	return r.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
 		return exec.CommandContext(ctx, "kind", "load", "docker-image", "--name", kindCluster, tag)
 	})
@@ -42,7 +42,7 @@ func (r *SkaffoldRunner) loadImagesInKindNodes(ctx context.Context, out io.Write
 
 // loadImagesInK3dNodes loads artifact images into every node of a k3s cluster.
 func (r *SkaffoldRunner) loadImagesInK3dNodes(ctx context.Context, out io.Writer, k3dCluster string, artifacts []graph.Artifact) error {
-	color.Default.Fprintln(out, "Loading images into k3d cluster nodes...")
+	output.Default.Fprintln(out, "Loading images into k3d cluster nodes...")
 	return r.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
 		return exec.CommandContext(ctx, "k3d", "image", "import", "--cluster", k3dCluster, tag)
 	})
@@ -59,7 +59,7 @@ func (r *SkaffoldRunner) loadImages(ctx context.Context, out io.Writer, artifact
 			continue
 		}
 
-		color.Default.Fprintf(out, " - %s -> ", artifact.Tag)
+		output.Default.Fprintf(out, " - %s -> ", artifact.Tag)
 
 		// Only load images that are unknown to the node
 		if knownImages == nil {
@@ -73,20 +73,20 @@ func (r *SkaffoldRunner) loadImages(ctx context.Context, out io.Writer, artifact
 			return err
 		}
 		if util.StrSliceContains(knownImages, normalizedImageRef.String()) {
-			color.Green.Fprintln(out, "Found")
+			output.Green.Fprintln(out, "Found")
 			continue
 		}
 
 		cmd := createCmd(artifact.Tag)
-		if output, err := util.RunCmdOut(cmd); err != nil {
-			color.Red.Fprintln(out, "Failed")
-			return fmt.Errorf("unable to load image %q into cluster: %w, %s", artifact.Tag, err, output)
+		if cmdOut, err := util.RunCmdOut(cmd); err != nil {
+			output.Red.Fprintln(out, "Failed")
+			return fmt.Errorf("unable to load image %q into cluster: %w, %s", artifact.Tag, err, cmdOut)
 		}
 
-		color.Green.Fprintln(out, "Loaded")
+		output.Green.Fprintln(out, "Loaded")
 	}
 
-	color.Default.Fprintln(out, "Images loaded in", util.ShowHumanizeTime(time.Since(start)))
+	output.Default.Fprintln(out, "Images loaded in", util.ShowHumanizeTime(time.Since(start)))
 	return nil
 }
 

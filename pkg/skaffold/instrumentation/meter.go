@@ -50,7 +50,7 @@ var (
 	doesDeploy          = util.NewStringSet()
 	initExporter        = initCloudMonitoringExporterMetrics
 	isOnline            bool
-	shouldExportMetrics bool
+	ShouldExportMetrics bool
 )
 
 func init() {
@@ -64,7 +64,7 @@ func init() {
 // More info can be found here: https://www.chromium.org/chromium-os/chromiumos-design-docs/network-portal-detection
 func SetOnlineStatus() {
 	go func() {
-		if shouldExportMetrics {
+		if ShouldExportMetrics {
 			r, err := http.Get("http://clients3.google.com/generate_204")
 			if err == nil {
 				r.Body.Close()

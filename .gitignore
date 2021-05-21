@@ -15,5 +15,5 @@ docs/resources
 docs/node_modules
 docs/themes
 docs/package-lock.json
-pkg/skaffold/color/debug.test
+pkg/skaffold/output/debug.test
 cmd/skaffold/app/cmd/statik/statik.go

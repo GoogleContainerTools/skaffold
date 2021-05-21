@@ -24,7 +24,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
@@ -63,7 +63,7 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		}
 	}
 	if !needsUpdate {
-		color.Default.Fprintln(out, "config is already version", toVersion)
+		output.Default.Fprintln(out, "config is already version", toVersion)
 		return nil
 	}
 
@@ -97,7 +97,7 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		if err := ioutil.WriteFile(configFile, newCfg, 0644); err != nil {
 			return fmt.Errorf("writing config file: %w", err)
 		}
-		color.Default.Fprintf(out, "New config at version %s generated and written to %s\n", toVersion, opts.ConfigurationFile)
+		output.Default.Fprintf(out, "New config at version %s generated and written to %s\n", toVersion, opts.ConfigurationFile)
 	} else {
 		out.Write(newCfg)
 	}

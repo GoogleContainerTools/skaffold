@@ -22,8 +22,8 @@ import (
 	"io"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -111,7 +111,7 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 	b.forwardedResources.Store(entry.key(), entry)
 
 	if err := b.entryForwarder.Forward(ctx, entry); err == nil {
-		color.Green.Fprintln(
+		output.Green.Fprintln(
 			b.output,
 			fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %s -> %s:%d",
 				entry.resource.Type,
@@ -121,7 +121,7 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 				entry.resource.Address,
 				entry.localPort))
 	} else {
-		color.Red.Fprintln(b.output, err)
+		output.Red.Fprintln(b.output, err)
 	}
 	portForwardEvent(entry)
 }

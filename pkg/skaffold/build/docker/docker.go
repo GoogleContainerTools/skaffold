@@ -23,8 +23,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -48,7 +48,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 	var imageID string
 
 	if b.useCLI || b.useBuildKit {
-		imageID, err = b.dockerCLIBuild(ctx, color.GetWriter(out), a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts)
+		imageID, err = b.dockerCLIBuild(ctx, output.GetWriter(out), a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts)
 	} else {
 		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ImageName, a.ArtifactType.DockerArtifact, opts)
 	}

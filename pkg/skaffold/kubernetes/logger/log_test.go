@@ -27,8 +27,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -111,7 +111,7 @@ func TestPrintLogLine(t *testing.T) {
 
 			go func() {
 				for i := 0; i < 100; i++ {
-					logger.printLogLine(color.Default, "PREFIX", "TEXT\n")
+					logger.printLogLine(output.Default, "PREFIX", "TEXT\n")
 				}
 				wg.Done()
 			}()

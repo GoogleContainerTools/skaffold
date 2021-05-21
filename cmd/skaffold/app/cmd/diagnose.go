@@ -23,8 +23,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/diagnose"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -91,7 +91,7 @@ func printArtifactDiagnostics(ctx context.Context, out io.Writer, configs []*lat
 			return fmt.Errorf("running diagnostic on artifacts: %w", err)
 		}
 
-		color.Blue.Fprintln(out, "\nConfiguration")
+		output.Blue.Fprintln(out, "\nConfiguration")
 	}
 	return nil
 }

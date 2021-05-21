@@ -30,8 +30,8 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -139,7 +139,7 @@ func TestTestFailed(t *testing.T) {
 	TestFailed("img", errors.New("BUG"))
 	wait(t, func() bool {
 		tState := handler.getState().TestState
-		color.Yellow.Fprintf(os.Stdout, "Priya_1 tState is: %s): ", tState)
+		output.Yellow.Fprintf(os.Stdout, "Priya_1 tState is: %s): ", tState)
 		return tState.Status == Failed && tState.StatusCode == proto.StatusCode_TEST_UNKNOWN
 	})
 }

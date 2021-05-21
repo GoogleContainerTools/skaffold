@@ -33,9 +33,9 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -94,14 +94,14 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		if !isPortFree(util.Loopback, pfe.localPort) {
 			// Assuming that Skaffold brokered ports don't overlap, this has to be an external process that started
 			// since the dev loop kicked off. We are notifying the user in the hope that they can fix it
-			color.Red.Fprintf(k.out, "failed to port forward %v, port %d is taken, retrying...\n", pfe, pfe.localPort)
+			output.Red.Fprintf(k.out, "failed to port forward %v, port %d is taken, retrying...\n", pfe, pfe.localPort)
 			notifiedUser = true
 			time.Sleep(waitPortNotFree)
 			continue
 		}
 
 		if notifiedUser {
-			color.Green.Fprintf(k.out, "port forwarding %v recovered on port %d\n", pfe, pfe.localPort)
+			output.Green.Fprintf(k.out, "port forwarding %v recovered on port %d\n", pfe, pfe.localPort)
 			notifiedUser = false
 		}
 

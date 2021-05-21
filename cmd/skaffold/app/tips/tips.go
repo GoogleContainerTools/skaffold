@@ -19,8 +19,8 @@ package tips
 import (
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 )
 
 // PrintForRun prints tips to the user who has run `skaffold run`.
@@ -51,5 +51,5 @@ func PrintUseRunVsDeploy(out io.Writer) {
 }
 
 func printTip(out io.Writer, message string) {
-	color.Green.Fprintln(out, message)
+	output.Green.Fprintln(out, message)
 }

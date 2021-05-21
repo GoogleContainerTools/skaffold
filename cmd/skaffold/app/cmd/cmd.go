@@ -28,11 +28,12 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation/prompt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/survey"
@@ -78,7 +79,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 
 			opts.Command = cmd.Use
 			instrumentation.SetCommand(cmd.Use)
-			out := color.SetupColors(out, defaultColor, forceColors)
+			out := output.SetupColors(out, defaultColor, forceColors)
 			if timestamps {
 				l := logrus.New()
 				l.SetOutput(out)
@@ -114,7 +115,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 				updateMsg <- updateCheckForReleasedVersionsIfNotDisabled(versionInfo.Version)
 				surveyPrompt <- config.ShouldDisplaySurveyPrompt(opts.GlobalConfig)
 			}()
-			metricsPrompt = instrumentation.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
+			metricsPrompt = prompt.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
@@ -140,7 +141,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			default:
 			}
 			if metricsPrompt {
-				if err := instrumentation.DisplayMetricsPrompt(opts.GlobalConfig, cmd.OutOrStdout()); err != nil {
+				if err := prompt.DisplayMetricsPrompt(opts.GlobalConfig, cmd.OutOrStdout()); err != nil {
 					fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 				}
 			}
@@ -194,7 +195,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 
 	templates.ActsAsRootCommand(rootCmd, nil, groups...)
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
-	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.DefaultColorCode), "Specify the default output color in ANSI escape codes")
+	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(output.DefaultColorCode), "Specify the default output color in ANSI escape codes")
 	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
 	rootCmd.PersistentFlags().BoolVar(&interactive, "interactive", true, "Allow user prompts for more information")
 	rootCmd.PersistentFlags().BoolVar(&update.EnableCheck, "update-check", true, "Check for a more recent version of Skaffold")

@@ -24,8 +24,8 @@ import (
 	"github.com/pkg/browser"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 )
 
 const (
@@ -46,7 +46,7 @@ Tip: To permanently disable the survey prompt, run:
    skaffold config set --survey --global disable-prompt true`, URL)
 
 	// for testing
-	isStdOut     = color.IsStdout
+	isStdOut     = output.IsStdout
 	open         = browser.OpenURL
 	updateConfig = config.UpdateGlobalSurveyPrompted
 )
@@ -63,7 +63,7 @@ func New(configFile string) *Runner {
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer) error {
 	if isStdOut(out) {
-		color.Green.Fprintf(out, Prompt)
+		output.Green.Fprintf(out, Prompt)
 	}
 	return updateConfig(s.configFile)
 }

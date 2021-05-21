@@ -28,7 +28,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	fsNotify "github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger/fsnotify"
 )
@@ -86,9 +86,9 @@ func (t *pollTrigger) Debounce() bool {
 
 func (t *pollTrigger) LogWatchToUser(out io.Writer) {
 	if t.isActive() {
-		color.Yellow.Fprintf(out, "Watching for changes every %v...\n", t.Interval)
+		output.Yellow.Fprintf(out, "Watching for changes every %v...\n", t.Interval)
 	} else {
-		color.Yellow.Fprintln(out, "Not watching for changes...")
+		output.Yellow.Fprintln(out, "Not watching for changes...")
 	}
 }
 
@@ -129,9 +129,9 @@ func (t *manualTrigger) Debounce() bool {
 
 func (t *manualTrigger) LogWatchToUser(out io.Writer) {
 	if t.isActive() {
-		color.Yellow.Fprintln(out, "Press any key to rebuild/redeploy the changes")
+		output.Yellow.Fprintln(out, "Press any key to rebuild/redeploy the changes")
 	} else {
-		color.Yellow.Fprintln(out, "Not watching for changes...")
+		output.Yellow.Fprintln(out, "Not watching for changes...")
 	}
 }
 

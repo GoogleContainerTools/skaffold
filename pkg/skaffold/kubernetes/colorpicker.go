@@ -19,33 +19,33 @@ package kubernetes
 import (
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
 
-var colorCodes = []color.Color{
-	color.LightRed,
-	color.LightGreen,
-	color.LightYellow,
-	color.LightBlue,
-	color.LightPurple,
-	color.Red,
-	color.Green,
-	color.Yellow,
-	color.Blue,
-	color.Purple,
-	color.Cyan,
+var colorCodes = []output.Color{
+	output.LightRed,
+	output.LightGreen,
+	output.LightYellow,
+	output.LightBlue,
+	output.LightPurple,
+	output.Red,
+	output.Green,
+	output.Yellow,
+	output.Blue,
+	output.Purple,
+	output.Cyan,
 }
 
 // ColorPicker is used to associate colors for with pods so that the container logs
 // can be output to the terminal with a consistent color being used to identify logs
 // from each pod.
 type ColorPicker interface {
-	Pick(pod *v1.Pod) color.Color
+	Pick(pod *v1.Pod) output.Color
 }
 
 type colorPicker struct {
-	imageColors map[string]color.Color
+	imageColors map[string]output.Color
 }
 
 // NewColorPicker creates a new ColorPicker. For each artifact, a color will be selected
@@ -53,7 +53,7 @@ type colorPicker struct {
 // again. The formatter for the associated color will then be returned by `Pick` each
 // time it is called for the artifact and can be used to write to out in that color.
 func NewColorPicker(imageNames []string) ColorPicker {
-	imageColors := make(map[string]color.Color)
+	imageColors := make(map[string]output.Color)
 
 	for i, imageName := range imageNames {
 		imageColors[tag.StripTag(imageName)] = colorCodes[i%len(colorCodes)]
@@ -67,7 +67,7 @@ func NewColorPicker(imageNames []string) ColorPicker {
 // Pick will return the color that was associated with pod when `NewColorPicker` was called.
 // If no color was associated with the pod, the none color will be returned, which will
 // write with no formatting.
-func (p *colorPicker) Pick(pod *v1.Pod) color.Color {
+func (p *colorPicker) Pick(pod *v1.Pod) output.Color {
 	for _, container := range pod.Spec.Containers {
 		if c, present := p.imageColors[tag.StripTag(container.Image)]; present {
 			return c
@@ -75,5 +75,5 @@ func (p *colorPicker) Pick(pod *v1.Pod) color.Color {
 	}
 
 	// If no mapping is found, don't add any color formatting
-	return color.None
+	return output.None
 }
