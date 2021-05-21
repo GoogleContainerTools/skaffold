@@ -88,6 +88,11 @@ func TestValidate(t *testing.T) {
 			expectedValid: true,
 		},
 		{
+			description:   ".NET project",
+			path:          "test.csproj",
+			expectedValid: true,
+		},
+		{
 			description:   "Buildpacks",
 			path:          "project.toml",
 			expectedValid: true,

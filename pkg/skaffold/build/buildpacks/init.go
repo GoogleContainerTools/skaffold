@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
@@ -94,6 +95,11 @@ func validate(path string) bool {
 		if _, err := os.Stat(filepath.Join(filepath.Dir(path), "Procfile")); err == nil {
 			return true
 		}
+	}
+
+	// .NET.
+	if strings.HasSuffix(filepath.Base(path), ".csproj") {
+		return true
 	}
 
 	return false
