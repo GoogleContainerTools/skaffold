@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
@@ -96,5 +97,6 @@ func validate(path string) bool {
 		}
 	}
 
-	return false
+	// .NET project
+	return strings.HasSuffix(filepath.Base(path), ".csproj")
 }
