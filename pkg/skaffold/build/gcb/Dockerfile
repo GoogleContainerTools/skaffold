@@ -1,0 +1,6 @@
+FROM busybox
+
+ARG arg1
+ARG arg2
+ARG IMG1
+ARG IMG2
