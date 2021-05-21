@@ -23,6 +23,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation/prompt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -114,7 +115,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 				updateMsg <- updateCheckForReleasedVersionsIfNotDisabled(versionInfo.Version)
 				surveyPrompt <- config.ShouldDisplaySurveyPrompt(opts.GlobalConfig)
 			}()
-			metricsPrompt = instrumentation.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
+			metricsPrompt = prompt.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
@@ -140,7 +141,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			default:
 			}
 			if metricsPrompt {
-				if err := instrumentation.DisplayMetricsPrompt(opts.GlobalConfig, cmd.OutOrStdout()); err != nil {
+				if err := prompt.DisplayMetricsPrompt(opts.GlobalConfig, cmd.OutOrStdout()); err != nil {
 					fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 				}
 			}

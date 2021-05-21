@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package instrumentation
+package prompt
 
 import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 )
 
 const Prompt = `To help improve the quality of this product, we collect anonymized usage data for details on what is tracked and how we use this data visit <https://skaffold.dev/docs/resources/telemetry/>. This data is handled in accordance with our privacy policy <https://policies.google.com/privacy>
@@ -34,7 +35,7 @@ var (
 	isStdOut     = color.IsStdout
 	updateConfig = config.UpdateGlobalCollectMetrics
 	getConfig    = config.GetConfigForCurrentKubectx
-	setStatus    = SetOnlineStatus
+	setStatus    = instrumentation.SetOnlineStatus
 )
 
 // ShouldDisplayMetricsPrompt returns true if metrics is not enabled.
@@ -46,7 +47,7 @@ func ShouldDisplayMetricsPrompt(configfile string) bool {
 	if cfg == nil || cfg.CollectMetrics == nil {
 		return true
 	}
-	shouldExportMetrics = *cfg.CollectMetrics
+	instrumentation.ShouldExportMetrics = *cfg.CollectMetrics
 	setStatus()
 	return false
 }
