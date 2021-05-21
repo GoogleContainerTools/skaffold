@@ -97,10 +97,6 @@ func validate(path string) bool {
 		}
 	}
 
-	// .NET.
-	if strings.HasSuffix(filepath.Base(path), ".csproj") {
-		return true
-	}
-
-	return false
+	// .NET project
+	return strings.HasSuffix(filepath.Base(path), ".csproj")
 }
