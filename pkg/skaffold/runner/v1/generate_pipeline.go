@@ -22,8 +22,8 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	pipeline "github.com/GoogleContainerTools/skaffold/pkg/skaffold/generate_pipeline"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
