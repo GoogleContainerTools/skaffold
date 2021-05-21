@@ -113,7 +113,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	}
 
 	if err := sources.UploadToGCS(ctx, c, artifact, cbBucket, buildObject, dependencies); err != nil {
-		return "", fmt.Errorf("uploading source tarball: %w", err)
+		return "", fmt.Errorf("uploading source archive: %w", err)
 	}
 
 	buildSpec, err := b.buildSpec(artifact, tag, cbBucket, buildObject)
@@ -193,9 +193,10 @@ watch:
 	}
 
 	if err := c.Bucket(cbBucket).Object(buildObject).Delete(ctx); err != nil {
-		return "", fmt.Errorf("cleaning up source tar after build: %w", err)
+		logrus.Warnf("Unable to deleting source archive after build: %q: %v", buildObject, err)
+	} else {
+		logrus.Infof("Deleted source archive %s", buildObject)
 	}
-	logrus.Infof("Deleted object %s", buildObject)
 
 	return build.TagWithDigest(tag, digest), nil
 }
