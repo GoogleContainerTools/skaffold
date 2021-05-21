@@ -20,9 +20,9 @@ require (
 	github.com/aws/aws-sdk-go v1.36.30 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.4
-	github.com/buildpacks/imgutil v0.0.0-20201211223552-8581300fe2b2
+	github.com/buildpacks/imgutil v0.0.0-20210209163614-30601e371ce3
 	github.com/buildpacks/lifecycle v0.10.2
-	github.com/buildpacks/pack v0.17.0
+	github.com/buildpacks/pack v0.18.1
 	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/daixiang0/gci v0.2.8 // indirect
 	github.com/docker/cli v20.10.0-beta1.0.20201117192004-5cc239616494+incompatible
@@ -53,7 +53,6 @@ require (
 	github.com/moby/buildkit v0.8.0
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/onsi/ginkgo v1.15.0 // indirect
-	github.com/onsi/gomega v1.10.5 // indirect
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
@@ -74,7 +73,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.20.0
 	go.opentelemetry.io/otel/trace v0.20.0 // indirect
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
-	golang.org/x/mod v0.4.1
+	golang.org/x/mod v0.4.2
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
 	golang.org/x/oauth2 v0.0.0-20201109201403-9fd604954f58
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
