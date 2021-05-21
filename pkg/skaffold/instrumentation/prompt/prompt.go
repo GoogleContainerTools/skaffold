@@ -19,7 +19,7 @@ package prompt
 import (
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 )
@@ -32,7 +32,7 @@ You may choose to opt out of this collection by running the following command:
 
 var (
 	// for testing
-	isStdOut     = color.IsStdout
+	isStdOut     = output.IsStdout
 	updateConfig = config.UpdateGlobalCollectMetrics
 	getConfig    = config.GetConfigForCurrentKubectx
 	setStatus    = instrumentation.SetOnlineStatus
@@ -54,7 +54,7 @@ func ShouldDisplayMetricsPrompt(configfile string) bool {
 
 func DisplayMetricsPrompt(configFile string, out io.Writer) error {
 	if isStdOut(out) {
-		color.Green.Fprintf(out, Prompt)
+		output.Green.Fprintf(out, Prompt)
 		return updateConfig(configFile, true)
 	}
 	return nil

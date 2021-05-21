@@ -22,7 +22,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	pipeline "github.com/GoogleContainerTools/skaffold/pkg/skaffold/generate_pipeline"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
@@ -49,14 +49,14 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 	configFiles = append(baseConfig, configFiles...)
 
 	// Will run the profile setup multiple times and require user input for each specified config
-	color.Default.Fprintln(out, "Running profile setup...")
+	output.Default.Fprintln(out, "Running profile setup...")
 	for _, configFile := range configFiles {
 		if err := pipeline.CreateSkaffoldProfile(out, r.runCtx.GetKubeNamespace(), configFile); err != nil {
 			return fmt.Errorf("setting up profile: %w", err)
 		}
 	}
 
-	color.Default.Fprintln(out, "Generating Pipeline...")
+	output.Default.Fprintln(out, "Generating Pipeline...")
 	pipelineYaml, err := pipeline.Yaml(out, r.runCtx.GetKubeNamespace(), configFiles)
 	if err != nil {
 		return fmt.Errorf("generating pipeline yaml contents: %w", err)

@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -77,7 +77,7 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []graph.Artifa
 	}
 
 	eventV2.TaskInProgress(constants.Test)
-	color.Default.Fprintln(out, "Testing images...")
+	output.Default.Fprintln(out, "Testing images...")
 
 	if t.muted.MuteTest() {
 		file, err := logfile.Create("test.log")

@@ -21,7 +21,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -29,12 +29,12 @@ func TestColorPicker(t *testing.T) {
 	tests := []struct {
 		description   string
 		pod           *v1.Pod
-		expectedColor color.Color
+		expectedColor output.Color
 	}{
 		{
 			description:   "not found",
 			pod:           &v1.Pod{},
-			expectedColor: color.None,
+			expectedColor: output.None,
 		},
 		{
 			description: "found",

@@ -28,7 +28,7 @@ import (
 	typedV1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 )
 
@@ -41,7 +41,7 @@ func (b *Builder) setupPullSecret(ctx context.Context, out io.Writer) (func(), e
 		return func() {}, nil
 	}
 
-	color.Default.Fprintf(out, "Checking for kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
+	output.Default.Fprintf(out, "Checking for kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
 	client, err := kubernetesclient.Client()
 	if err != nil {
 		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
@@ -49,7 +49,7 @@ func (b *Builder) setupPullSecret(ctx context.Context, out io.Writer) (func(), e
 
 	secrets := client.CoreV1().Secrets(b.Namespace)
 	if _, err := secrets.Get(ctx, b.PullSecretName, metav1.GetOptions{}); err != nil {
-		color.Default.Fprintf(out, "Creating kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
+		output.Default.Fprintf(out, "Creating kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
 		if b.PullSecretPath == "" {
 			return nil, fmt.Errorf("secret %s does not exist. No path specified to create it", b.PullSecretName)
 		}
@@ -95,7 +95,7 @@ func (b *Builder) setupDockerConfigSecret(ctx context.Context, out io.Writer) (f
 		return func() {}, nil
 	}
 
-	color.Default.Fprintf(out, "Creating docker config secret [%s]...\n", b.DockerConfig.SecretName)
+	output.Default.Fprintf(out, "Creating docker config secret [%s]...\n", b.DockerConfig.SecretName)
 
 	client, err := kubernetesclient.Client()
 	if err != nil {

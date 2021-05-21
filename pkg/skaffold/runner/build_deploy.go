@@ -27,7 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
@@ -91,13 +91,13 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV
 	// In dry-run mode or with --digest-source set to 'remote' or 'tag' in render, we don't build anything, just return the tag for each artifact.
 	switch {
 	case r.runCtx.DryRun():
-		color.Yellow.Fprintln(out, "Skipping build phase since --dry-run=true")
+		output.Yellow.Fprintln(out, "Skipping build phase since --dry-run=true")
 		return artifactsWithTags(tags, artifacts), nil
 	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == RemoteDigestSource:
-		color.Yellow.Fprintln(out, "Skipping build phase since --digest-source=remote")
+		output.Yellow.Fprintln(out, "Skipping build phase since --digest-source=remote")
 		return artifactsWithTags(tags, artifacts), nil
 	case r.runCtx.RenderOnly() && r.runCtx.DigestSource() == TagDigestSource:
-		color.Yellow.Fprintln(out, "Skipping build phase since --digest-source=tag")
+		output.Yellow.Fprintln(out, "Skipping build phase since --digest-source=tag")
 		return artifactsWithTags(tags, artifacts), nil
 	default:
 	}
@@ -168,7 +168,7 @@ func (r *Builder) ApplyDefaultRepo(tag string) (string, error) {
 // imageTags generates tags for a list of artifacts
 func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latestV1.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
-	color.Default.Fprintln(out, "Generating tags...")
+	output.Default.Fprintln(out, "Generating tags...")
 
 	tagErrs := make([]chan tagErr, len(artifacts))
 
@@ -187,7 +187,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 
 	for i, artifact := range artifacts {
 		imageName := artifact.ImageName
-		color.Default.Fprintf(out, " - %s -> ", imageName)
+		output.Default.Fprintf(out, " - %s -> ", imageName)
 
 		select {
 		case <-ctx.Done():
@@ -218,7 +218,7 @@ func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*lat
 	}
 
 	if showWarning {
-		color.Yellow.Fprintln(out, "Some taggers failed. Rerun with -vdebug for errors.")
+		output.Yellow.Fprintln(out, "Some taggers failed. Rerun with -vdebug for errors.")
 	}
 
 	logrus.Infoln("Tags generated in", util.ShowHumanizeTime(time.Since(start)))

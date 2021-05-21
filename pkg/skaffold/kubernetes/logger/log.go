@@ -28,7 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -108,7 +108,7 @@ func (a *LogAggregator) Start(ctx context.Context, namespaces []string) error {
 				for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 					if c.ContainerID == "" {
 						if c.State.Waiting != nil && c.State.Waiting.Message != "" {
-							color.Red.Fprintln(a.output, c.State.Waiting.Message)
+							output.Red.Fprintln(a.output, c.State.Waiting.Message)
 						}
 						continue
 					}
@@ -171,7 +171,7 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	}
 }
 
-func (a *LogAggregator) printLogLine(headerColor color.Color, prefix, text string) {
+func (a *LogAggregator) printLogLine(headerColor output.Color, prefix, text string) {
 	if !a.IsMuted() {
 		a.outputLock.Lock()
 
@@ -225,7 +225,7 @@ func podAndContainerPrefix(pod *v1.Pod, container v1.ContainerStatus) string {
 	return fmt.Sprintf("[%s %s]", pod.Name, container.Name)
 }
 
-func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Color, prefix, podName, containerName string, rc io.Reader) error {
+func (a *LogAggregator) streamRequest(ctx context.Context, headerColor output.Color, prefix, podName, containerName string, rc io.Reader) error {
 	r := bufio.NewReader(rc)
 	for {
 		select {

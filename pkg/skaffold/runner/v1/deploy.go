@@ -25,7 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
@@ -70,7 +70,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	}
 
 	if r.runCtx.Tail() || r.runCtx.PortForward() {
-		color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
+		output.Yellow.Fprintln(out, "Press Ctrl+C to exit")
 		<-ctx.Done()
 	}
 
@@ -83,10 +83,10 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 		return r.Render(ctx, out, artifacts, false, r.runCtx.RenderOutput())
 	}
 
-	color.Default.Fprintln(out, "Tags used in deployment:")
+	output.Default.Fprintln(out, "Tags used in deployment:")
 
 	for _, artifact := range artifacts {
-		color.Default.Fprintf(out, " - %s -> ", artifact.ImageName)
+		output.Default.Fprintf(out, " - %s -> ", artifact.ImageName)
 		fmt.Fprintln(out, artifact.Tag)
 	}
 
@@ -212,7 +212,7 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 
 	eventV2.TaskInProgress(constants.StatusCheck)
 	start := time.Now()
-	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
+	output.Default.Fprintln(out, "Waiting for deployments to stabilize...")
 
 	s := runner.NewStatusCheck(r.runCtx, r.labeller)
 	if err := s.Check(ctx, out); err != nil {
@@ -220,7 +220,7 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 		return err
 	}
 
-	color.Default.Fprintln(out, "Deployments stabilized in", util.ShowHumanizeTime(time.Since(start)))
+	output.Default.Fprintln(out, "Deployments stabilized in", util.ShowHumanizeTime(time.Since(start)))
 	eventV2.TaskSucceeded(constants.StatusCheck)
 	return nil
 }

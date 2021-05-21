@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -79,9 +79,9 @@ func (ct *Runner) runCustomTest(ctx context.Context, out io.Writer, imageTag str
 	}
 
 	if test.TimeoutSeconds <= 0 {
-		color.Default.Fprintf(out, "Running custom test command: %q\n", command)
+		output.Default.Fprintf(out, "Running custom test command: %q\n", command)
 	} else {
-		color.Default.Fprintf(out, "Running custom test command: %q with timeout %d s\n", command, test.TimeoutSeconds)
+		output.Default.Fprintf(out, "Running custom test command: %q with timeout %d s\n", command, test.TimeoutSeconds)
 		newCtx, cancel := context.WithTimeout(ctx, time.Duration(test.TimeoutSeconds)*time.Second)
 
 		defer cancel()
@@ -97,17 +97,17 @@ func (ct *Runner) runCustomTest(ctx context.Context, out io.Writer, imageTag str
 		if e, ok := err.(*exec.ExitError); ok {
 			// If the process exited by itself, just return the error
 			if e.Exited() {
-				color.Red.Fprintf(out, "Command finished with non-0 exit code.\n")
+				output.Red.Fprintf(out, "Command finished with non-0 exit code.\n")
 				return cmdRunNonZeroExitErr(command, e)
 			}
 			// If the context is done, it has been killed by the exec.Command
 			select {
 			case <-ctx.Done():
 				if ctx.Err() == context.DeadlineExceeded {
-					color.Red.Fprintf(out, "Command timed out\n")
+					output.Red.Fprintf(out, "Command timed out\n")
 					return cmdRunTimedoutErr(test.TimeoutSeconds, ctx.Err())
 				} else if ctx.Err() == context.Canceled {
-					color.Red.Fprintf(out, "Command cancelled\n")
+					output.Red.Fprintf(out, "Command cancelled\n")
 					return cmdRunCancelledErr(ctx.Err())
 				}
 				return cmdRunExecutionErr(ctx.Err())
@@ -117,7 +117,7 @@ func (ct *Runner) runCustomTest(ctx context.Context, out io.Writer, imageTag str
 		}
 		return cmdRunErr(err)
 	}
-	color.Green.Fprintf(out, "Command finished successfully.\n")
+	output.Green.Fprintf(out, "Command finished successfully.\n")
 
 	return nil
 }

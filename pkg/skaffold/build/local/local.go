@@ -23,7 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
@@ -40,7 +40,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 
 func (b *Builder) PreBuild(_ context.Context, out io.Writer) error {
 	if b.localCluster {
-		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
+		output.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
 	}
 	return nil
 }

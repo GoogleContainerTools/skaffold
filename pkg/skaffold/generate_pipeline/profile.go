@@ -27,7 +27,7 @@ import (
 
 	yamlv2 "gopkg.in/yaml.v2"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
 
@@ -35,10 +35,10 @@ func CreateSkaffoldProfile(out io.Writer, namespace string, configFile *ConfigFi
 	reader := bufio.NewReader(os.Stdin)
 
 	// Check for existing oncluster profile, if none exists then prompt to create one
-	color.Default.Fprintf(out, "Checking for oncluster skaffold profile in %s...\n", configFile.Path)
+	output.Default.Fprintf(out, "Checking for oncluster skaffold profile in %s...\n", configFile.Path)
 	for _, profile := range configFile.Config.Profiles {
 		if profile.Name == "oncluster" {
-			color.Default.Fprintln(out, "profile \"oncluster\" found")
+			output.Default.Fprintln(out, "profile \"oncluster\" found")
 			configFile.Profile = &profile
 			return nil
 		}
@@ -46,7 +46,7 @@ func CreateSkaffoldProfile(out io.Writer, namespace string, configFile *ConfigFi
 
 confirmLoop:
 	for {
-		color.Default.Fprintf(out, "No profile \"oncluster\" found. Create one? [y/n]: ")
+		output.Default.Fprintf(out, "No profile \"oncluster\" found. Create one? [y/n]: ")
 		response, err := reader.ReadString('\n')
 		if err != nil {
 			return fmt.Errorf("reading user confirmation: %w", err)
@@ -61,7 +61,7 @@ confirmLoop:
 		}
 	}
 
-	color.Default.Fprintln(out, "Creating skaffold profile \"oncluster\"...")
+	output.Default.Fprintln(out, "Creating skaffold profile \"oncluster\"...")
 	profile, err := generateProfile(out, namespace, configFile.Config)
 	if err != nil {
 		return fmt.Errorf("generating profile \"oncluster\": %w", err)
@@ -123,7 +123,7 @@ func generateProfile(out io.Writer, namespace string, config *latestV1.SkaffoldC
 	for _, artifact := range profile.Build.Artifacts {
 		artifact.ImageName = fmt.Sprintf("%s-pipeline", artifact.ImageName)
 		if artifact.DockerArtifact != nil {
-			color.Default.Fprintf(out, "Cannot use Docker to build %s on cluster. Adding config for building with Kaniko.\n", artifact.ImageName)
+			output.Default.Fprintf(out, "Cannot use Docker to build %s on cluster. Adding config for building with Kaniko.\n", artifact.ImageName)
 			artifact.DockerArtifact = nil
 			artifact.KanikoArtifact = &latestV1.KanikoArtifact{}
 			addKaniko = true

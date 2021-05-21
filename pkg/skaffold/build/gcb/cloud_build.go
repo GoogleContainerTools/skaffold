@@ -34,7 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
@@ -99,7 +99,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", fmt.Errorf("getting dependencies for %q: %w", artifact.ImageName, err)
 	}
 
-	color.Default.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
+	output.Default.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
 
 	// Upload entire workspace for Jib projects to fix multi-module bug
 	// https://github.com/GoogleContainerTools/skaffold/issues/3477
@@ -132,7 +132,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", fmt.Errorf("getting build ID from op: %w", err)
 	}
 	logsObject := fmt.Sprintf("log-%s.txt", remoteID)
-	color.Default.Fprintf(out, "Logs are available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject)
+	output.Default.Fprintf(out, "Logs are available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject)
 
 	var digest string
 	offset := int64(0)

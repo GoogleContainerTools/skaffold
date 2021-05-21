@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -43,7 +43,7 @@ type Config interface {
 func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
 	for _, p := range cfg.GetPipelines() {
 		for _, artifact := range p.Build.Artifacts {
-			color.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.ImageName)
+			output.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.ImageName)
 
 			if artifact.DockerArtifact != nil {
 				size, err := sizeOfDockerContext(ctx, artifact, cfg)

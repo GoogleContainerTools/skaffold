@@ -24,7 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -44,7 +44,7 @@ const MinimumJibGradleVersionForSync = "2.0.0"
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
 
 func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latestV1.JibArtifact, deps []*latestV1.ArtifactDependency, tag string) (string, error) {
-	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), color.IsColorable(out))
+	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", jibToolErr(err)
 	}
@@ -53,7 +53,7 @@ func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, wor
 }
 
 func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latestV1.JibArtifact, deps []*latestV1.ArtifactDependency, tag string) (string, error) {
-	args := GenerateGradleBuildArgs("jib", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), color.IsColorable(out))
+	args := GenerateGradleBuildArgs("jib", tag, artifact, b.skipTests, b.pushImages, deps, b.artifacts, b.cfg.GetInsecureRegistries(), output.IsColorable(out))
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", jibToolErr(err)
 	}

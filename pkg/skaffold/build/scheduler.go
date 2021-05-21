@@ -23,7 +23,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -120,7 +120,7 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 		concurrency = len(artifacts)
 	}
 	if concurrency > 1 {
-		color.Default.Fprintf(out, "Building %d artifacts in parallel\n", concurrency)
+		output.Default.Fprintf(out, "Building %d artifacts in parallel\n", concurrency)
 	}
 	s := newScheduler(artifacts, artifactBuilder, concurrency, out, store)
 	ctx, cancel := context.WithCancel(ctx)
@@ -129,7 +129,7 @@ func InOrder(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts [
 }
 
 func performBuild(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latestV1.Artifact, build ArtifactBuilder) (string, error) {
-	color.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
+	output.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
 	tag, present := tags[artifact.ImageName]
 	if !present {
 		return "", fmt.Errorf("unable to find tag for image %s", artifact.ImageName)

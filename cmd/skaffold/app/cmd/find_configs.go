@@ -25,7 +25,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
@@ -65,9 +65,9 @@ func doFindConfigs(_ context.Context, out io.Writer) error {
 	case "table":
 		pathOutLen, versionOutLen := 70, 30
 		for p, v := range pathToVersion {
-			c := color.Default
+			c := output.Default
 			if v != latestV1.Version {
-				c = color.Green
+				c = output.Green
 			}
 			c.Fprintf(out, fmt.Sprintf("%%-%ds\t%%-%ds\n", pathOutLen, versionOutLen), p, v)
 		}

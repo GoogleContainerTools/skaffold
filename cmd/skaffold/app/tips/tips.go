@@ -19,7 +19,7 @@ package tips
 import (
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
 
@@ -51,5 +51,5 @@ func PrintUseRunVsDeploy(out io.Writer) {
 }
 
 func printTip(out io.Writer, message string) {
-	color.Green.Fprintln(out, message)
+	output.Green.Fprintln(out, message)
 }

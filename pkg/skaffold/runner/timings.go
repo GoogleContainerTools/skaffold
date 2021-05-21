@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -57,7 +57,7 @@ func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		return nil, nil
 	}
 	start := time.Now()
-	color.Default.Fprintln(out, "Starting build...")
+	output.Default.Fprintln(out, "Starting build...")
 
 	bRes, err := w.Builder.Build(ctx, out, tags, artifacts)
 	if err != nil {
@@ -69,7 +69,7 @@ func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 
 func (w withTimings) Test(ctx context.Context, out io.Writer, builds []graph.Artifact) error {
 	start := time.Now()
-	color.Default.Fprintln(out, "Starting test...")
+	output.Default.Fprintln(out, "Starting test...")
 
 	err := w.Tester.Test(ctx, out, builds)
 	if err != nil {
@@ -81,7 +81,7 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []graph.Art
 
 func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
 	start := time.Now()
-	color.Default.Fprintln(out, "Starting deploy...")
+	output.Default.Fprintln(out, "Starting deploy...")
 
 	ns, err := w.Deployer.Deploy(ctx, out, builds)
 	if err != nil {
@@ -93,7 +93,7 @@ func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []graph.A
 
 func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
 	start := time.Now()
-	color.Default.Fprintln(out, "Cleaning up...")
+	output.Default.Fprintln(out, "Cleaning up...")
 
 	err := w.Deployer.Cleanup(ctx, out)
 	if err != nil {
@@ -105,7 +105,7 @@ func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
 
 func (w withTimings) Prune(ctx context.Context, out io.Writer) error {
 	start := time.Now()
-	color.Default.Fprintln(out, "Pruning images...")
+	output.Default.Fprintln(out, "Pruning images...")
 
 	err := w.Builder.Prune(ctx, out)
 	if err != nil {

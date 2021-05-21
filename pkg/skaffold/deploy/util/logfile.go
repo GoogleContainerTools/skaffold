@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
 )
 
@@ -43,7 +43,7 @@ func WithLogFile(filename string, out io.Writer, muted Muted) (io.Writer, func()
 		return out, func() {}, fmt.Errorf("unable to create log file for deploy step: %w", err)
 	}
 
-	color.Default.Fprintln(out, "Starting deploy...")
+	output.Default.Fprintln(out, "Starting deploy...")
 	fmt.Fprintln(out, "- writing logs to", file.Name())
 
 	// After the deploy finishes, close the log file.
@@ -63,7 +63,7 @@ func WithStatusCheckLogFile(filename string, out io.Writer, muted Muted) (io.Wri
 		return out, func() {}, fmt.Errorf("unable to create log file for deploy step: %w", err)
 	}
 
-	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
+	output.Default.Fprintln(out, "Waiting for deployments to stabilize...")
 	fmt.Fprintln(out, "- writing logs to", file.Name())
 
 	// After the status-check finishes, close the log file.

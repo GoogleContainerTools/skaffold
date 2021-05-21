@@ -29,7 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
@@ -118,7 +118,7 @@ func readNextVersion(current string) string {
 	var new string
 	if len(os.Args) <= 1 {
 		new = bumpVersion(current)
-		color.Red.Fprintf(os.Stdout, "Please enter new version (default: %s): ", new)
+		output.Red.Fprintf(os.Stdout, "Please enter new version (default: %s): ", new)
 		reader := bufio.NewReader(os.Stdin)
 		if line, err := reader.ReadString('\n'); err != nil {
 			logrus.Fatalf("error reading input: %s", err)

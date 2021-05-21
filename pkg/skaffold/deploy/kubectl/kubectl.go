@@ -28,7 +28,7 @@ import (
 	"github.com/segmentio/textio"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
@@ -253,8 +253,8 @@ func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 
 func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestList, error) {
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
-		color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
-		color.Default.Fprintln(out, err)
+		output.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
+		output.Default.Fprintln(out, err)
 	}
 
 	debugHelpersRegistry, err := config.GetDebugHelpersRegistry(k.globalConfig)

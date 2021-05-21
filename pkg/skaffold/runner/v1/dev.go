@@ -24,7 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
@@ -83,7 +83,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 		meterUpdated = true
 		for _, s := range r.changeSet.NeedsResync() {
 			fileCount := len(s.Copy) + len(s.Delete)
-			color.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
+			output.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
 			fileSyncInProgress(fileCount, s.Image)
 
 			if err := r.syncer.Sync(ctx, s); err != nil {
@@ -182,7 +182,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	g := getTransposeGraph(artifacts)
 	// Watch artifacts
 	start := time.Now()
-	color.Default.Fprintln(out, "Listing files to watch...")
+	output.Default.Fprintln(out, "Listing files to watch...")
 
 	for i := range artifacts {
 		artifact := artifacts[i]
@@ -190,7 +190,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			continue
 		}
 
-		color.Default.Fprintf(out, " - %s\n", artifact.ImageName)
+		output.Default.Fprintf(out, " - %s\n", artifact.ImageName)
 
 		select {
 		case <-ctx.Done():
@@ -307,7 +307,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return fmt.Errorf("starting logger: %w", err)
 	}
 
-	color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
+	output.Yellow.Fprintln(out, "Press Ctrl+C to exit")
 
 	event.DevLoopComplete(r.devIteration)
 	eventV2.TaskSucceeded(constants.DevLoop)

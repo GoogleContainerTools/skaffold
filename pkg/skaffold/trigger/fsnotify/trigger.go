@@ -25,7 +25,7 @@ import (
 	"github.com/rjeczalik/notify"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -64,9 +64,9 @@ func (t *Trigger) Debounce() bool {
 
 func (t *Trigger) LogWatchToUser(out io.Writer) {
 	if t.isActive() {
-		color.Yellow.Fprintln(out, "Watching for changes...")
+		output.Yellow.Fprintln(out, "Watching for changes...")
 	} else {
-		color.Yellow.Fprintln(out, "Not watching for changes...")
+		output.Yellow.Fprintln(out, "Not watching for changes...")
 	}
 }
 

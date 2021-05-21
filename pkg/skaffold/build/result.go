@@ -25,7 +25,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
@@ -62,8 +62,8 @@ func (l *logAggregatorImpl) GetWriter() (io.Writer, func(), error) {
 	r, w := io.Pipe()
 
 	writer := io.Writer(w)
-	if color.IsColorable(l.out) {
-		writer = color.NewWriter(writer)
+	if output.IsColorable(l.out) {
+		writer = output.NewWriter(writer)
 	}
 	ch := make(chan string, buffSize)
 	l.messages <- ch

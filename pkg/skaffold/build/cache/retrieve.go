@@ -25,7 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -40,7 +40,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 	start := time.Now()
 
-	color.Default.Fprintln(out, "Checking cache...")
+	output.Default.Fprintln(out, "Checking cache...")
 
 	lookup := make(chan []cacheDetails)
 	go func() { lookup <- c.lookupArtifacts(ctx, tags, artifacts) }()
@@ -56,28 +56,28 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	var needToBuild []*latestV1.Artifact
 	var alreadyBuilt []graph.Artifact
 	for i, artifact := range artifacts {
-		color.Default.Fprintf(out, " - %s: ", artifact.ImageName)
+		output.Default.Fprintf(out, " - %s: ", artifact.ImageName)
 
 		result := results[i]
 		switch result := result.(type) {
 		case failed:
-			color.Red.Fprintln(out, "Error checking cache.")
+			output.Red.Fprintln(out, "Error checking cache.")
 			return nil, result.err
 
 		case needsBuilding:
-			color.Yellow.Fprintln(out, "Not found. Building")
+			output.Yellow.Fprintln(out, "Not found. Building")
 			hashByName[artifact.ImageName] = result.Hash()
 			needToBuild = append(needToBuild, artifact)
 			continue
 
 		case needsTagging:
-			color.Green.Fprintln(out, "Found. Tagging")
+			output.Green.Fprintln(out, "Found. Tagging")
 			if err := result.Tag(ctx, c); err != nil {
 				return nil, fmt.Errorf("tagging image: %w", err)
 			}
 
 		case needsPushing:
-			color.Green.Fprintln(out, "Found. Pushing")
+			output.Green.Fprintln(out, "Found. Pushing")
 			if err := result.Push(ctx, out, c); err != nil {
 				return nil, fmt.Errorf("%s: %w", sErrors.PushImageErr, err)
 			}
@@ -88,9 +88,9 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 				return nil, err
 			}
 			if isLocal {
-				color.Green.Fprintln(out, "Found Locally")
+				output.Green.Fprintln(out, "Found Locally")
 			} else {
-				color.Green.Fprintln(out, "Found Remotely")
+				output.Green.Fprintln(out, "Found Remotely")
 			}
 		}
 

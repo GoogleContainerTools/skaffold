@@ -25,7 +25,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -118,7 +118,7 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 				return fmt.Errorf("getting pod forwarding entry: %w", err)
 			}
 			if entry.resource.Port.IntVal != entry.localPort {
-				color.Yellow.Fprintf(p.entryManager.output, "Forwarding container %s/%s to local port %d.\n", pod.Name, c.Name, entry.localPort)
+				output.Yellow.Fprintf(p.entryManager.output, "Forwarding container %s/%s to local port %d.\n", pod.Name, c.Name, entry.localPort)
 			}
 			if prevEntry, ok := p.entryManager.forwardedResources.Load(entry.key()); ok {
 				// Check if this is a new generation of pod
