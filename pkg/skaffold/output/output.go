@@ -18,6 +18,7 @@ package output
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 )
 
@@ -44,7 +45,7 @@ func SetupOutput(out io.Writer, defaultColor int, forceColors bool) io.Writer {
 	return SkaffoldWriter{
 		MainWriter: SetupColors(out, defaultColor, forceColors),
 		// TODO(marlongamez): Replace this once event writer is implemented
-		EventWriter: io.Discard,
+		EventWriter: ioutil.Discard,
 	}
 }
 
