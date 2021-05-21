@@ -19,7 +19,6 @@ package output
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	colors "github.com/heroku/color"
@@ -71,7 +70,7 @@ func SetupColors(out io.Writer, defaultColor int, forceColors bool) io.Writer {
 	}[defaultColor]
 
 	if useColors {
-		return NewWriter(out)
+		return NewColorWriter(out)
 	}
 	return out
 }
@@ -137,32 +136,17 @@ func (c Color) Fprintf(out io.Writer, format string, a ...interface{}) {
 	fmt.Fprint(out, c.color.Sprintf(format, a...))
 }
 
-func NewWriter(out io.Writer) io.Writer {
+func NewColorWriter(out io.Writer) io.Writer {
 	return colorableWriter{out}
 }
 
 func IsColorable(out io.Writer) bool {
-	switch out.(type) {
+	switch w := out.(type) {
 	case colorableWriter:
 		return true
+	case SkaffoldWriter:
+		return IsColorable(w.MainWriter)
 	default:
 		return false
 	}
-}
-
-func IsStdout(out io.Writer) bool {
-	o, ok := out.(colorableWriter)
-	if ok {
-		return o.Writer == os.Stdout
-	}
-	return out == os.Stdout
-}
-
-// GetWriter returns the underlying writer if out is a colorableWriter
-func GetWriter(out io.Writer) io.Writer {
-	o, ok := out.(colorableWriter)
-	if ok {
-		return o.Writer
-	}
-	return out
 }
