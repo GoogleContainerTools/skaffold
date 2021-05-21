@@ -1116,16 +1116,6 @@
           "x-intellij-html-description": "locates the Dockerfile relative to workspace.",
           "default": "Dockerfile"
         },
-        "env": {
-          "items": {},
-          "type": "array",
-          "description": "environment variables passed to the docker build. It also accepts environment variables via the go template syntax.",
-          "x-intellij-html-description": "environment variables passed to the docker build. It also accepts environment variables via the go template syntax.",
-          "default": "[]",
-          "examples": [
-            "[{\"name\": \"key1\", \"value\": \"value1\"}, {\"name\": \"key2\", \"value\": \"value2\"}, {\"name\": \"key3\", \"value\": \"'{{.ENV_VARIABLE}}'\"}]"
-          ]
-        },
         "network": {
           "type": "string",
           "description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are `host`: use the host's networking stack. `bridge`: use the bridged network configuration. `container:<name|id>`: reuse another container's network stack. `none`: no networking in the container.",
@@ -1169,7 +1159,6 @@
         "dockerfile",
         "target",
         "buildArgs",
-        "env",
         "network",
         "addHost",
         "cacheFrom",
