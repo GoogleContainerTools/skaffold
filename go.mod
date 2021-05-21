@@ -37,7 +37,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.3
 	github.com/google/go-cmp v0.5.5
-	github.com/google/go-containerregistry v0.4.1-0.20210128200529-19c2b639fab1
+	github.com/google/go-containerregistry v0.5.1
 	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20210216200643-d81088d9983e // indirect
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/uuid v1.1.2
@@ -70,9 +70,9 @@ require (
 	go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/exporters/stdout v0.20.0
 	go.opentelemetry.io/otel/metric v0.20.0
-	go.opentelemetry.io/otel/sdk v0.20.0
+	go.opentelemetry.io/otel/sdk v0.20.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.20.0
-	go.opentelemetry.io/otel/trace v0.20.0
+	go.opentelemetry.io/otel/trace v0.20.0 // indirect
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/mod v0.4.1
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
