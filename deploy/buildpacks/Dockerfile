@@ -14,7 +14,7 @@
 
 FROM alpine:3.10
 
-COPY entrypoint.sh /entrypoint.sh
+COPY third_party/entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
 
 ARG PACK_VERSION
