@@ -256,9 +256,9 @@ func TestBuildArgTemplating(t *testing.T) {
 		"SO_SECRET": util.StringPtr("{{ .SO_SECRET}}"),
 	}
 
-	dockerFile :=
-		`ARG foo1
-	ARG foo2
+	dockerFile := `
+	ARG MY_KEY
+	ARG SO_SECRET
 	ARG foo3
 	ARG SKAFFOLD_GO_GCFLAGS
 	FROM bar1`
