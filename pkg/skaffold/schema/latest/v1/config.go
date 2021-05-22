@@ -1205,7 +1205,7 @@ type DockerArtifact struct {
 	Target string `yaml:"target,omitempty"`
 
 	// BuildArgs are arguments passed to the docker build.
-	// For example: `{"key1": "value1", "key2": "value2"}`.
+	// For example: `{"key1": "value1", "key2": "{{ .ENV_VAR }}"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 
 	// NetworkMode is passed through to docker and overrides the
