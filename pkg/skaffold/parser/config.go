@@ -175,8 +175,12 @@ func processEachConfig(config *latestV1.SkaffoldConfig, cfgOpts configOpts, opts
 	// This avoids maintaining multiple root directory information since the dependency skaffold configs would have their own root directory.
 	// if `opts.MakePathsAbsolute` is set, use that as condition to decide on making file paths absolute for all configs or none at all.
 	// This is used when the parsed config is marshalled out (for commands like `skaffold diagnose` or `skaffold inspect`), we want to retain the original relative paths in the output files.
-	if (opts.MakePathsAbsolute != nil && (*opts.MakePathsAbsolute)) || (opts.MakePathsAbsolute == nil && cfgOpts.isDependency) {
-		if err := tags.MakeFilePathsAbsolute(config, filepath.Dir(cfgOpts.file)); err != nil {
+	if isMakePathsAbsoluteSet(opts) || (opts.MakePathsAbsolute == nil && cfgOpts.isDependency) {
+		base, err := getBase(cfgOpts)
+		if err != nil {
+			return nil, sErrors.ConfigSetAbsFilePathsErr(config.Metadata.Name, cfgOpts.file, err)
+		}
+		if err := tags.MakeFilePathsAbsolute(config, base); err != nil {
 			return nil, sErrors.ConfigSetAbsFilePathsErr(config.Metadata.Name, cfgOpts.file, err)
 		}
 	}
@@ -339,4 +343,17 @@ func makeConfigPathAbsolute(dependentConfigPath string, currentConfigPath string
 	}
 	// dependent config path is relative to the current config path
 	return filepath.Join(filepath.Dir(currentConfigPath), dependentConfigPath)
+}
+
+func isMakePathsAbsoluteSet(opts config.SkaffoldOptions) bool {
+	return opts.MakePathsAbsolute != nil && (*opts.MakePathsAbsolute)
+}
+
+func getBase(cfgOpts configOpts) (string, error) {
+	if cfgOpts.isDependency {
+		logrus.Tracef("returning %q as base for absolute path substitution for dependent skaffold config %s", filepath.Dir(cfgOpts.file), cfgOpts.file)
+		return filepath.Dir(cfgOpts.file), nil
+	}
+	logrus.Tracef("returning current work dir as base for absolute path substitution for top-level skaffold config %s", cfgOpts.file)
+	return util.RealWorkDir()
 }

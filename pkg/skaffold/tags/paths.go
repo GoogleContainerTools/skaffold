@@ -62,7 +62,7 @@ func makeFilePathsAbsolute(config interface{}, base string) []error {
 						continue
 					}
 					v.SetString(filepath.Join(base, path))
-					logrus.Tracef("setting absolute path for config field %q", f.Name)
+					logrus.Tracef("setting absolute path %q for config field %q", filepath.Join(base, path), f.Name)
 				case []string:
 					for j := 0; j < v.Len(); j++ {
 						elem := v.Index(j)
