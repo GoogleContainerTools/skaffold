@@ -5,7 +5,7 @@ metadata:
 build:
   artifacts:
   - image: app2
-    context: /foo
+    context: {{.Root}}/foo2
     docker:
       dockerfile: Dockerfile
   tagPolicy:
@@ -26,7 +26,7 @@ metadata:
 build:
   artifacts:
   - image: app3
-    context: /foo
+    context: {{.Root}}/foo3
     docker:
       dockerfile: Dockerfile
   tagPolicy:
@@ -45,7 +45,7 @@ kind: Config
 build:
   artifacts:
   - image: app1
-    context: /foo
+    context: {{.Root}}/foo
     docker:
       dockerfile: Dockerfile
   tagPolicy:

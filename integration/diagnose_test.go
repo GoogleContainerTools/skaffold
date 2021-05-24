@@ -17,10 +17,13 @@ limitations under the License.
 package integration
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+	"text/template"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -67,10 +70,47 @@ func folders(root string) ([]string, error) {
 
 func TestMultiConfigDiagnose(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	testutil.Run(t, "test multiconfig diagnose", func(t *testutil.T) {
-		out := skaffold.Diagnose("--yaml-only").InDir("testdata/diagnose/multi-config").RunOrFailOutput(t.T)
-		expected, err := ioutil.ReadFile("testdata/diagnose/multi-config/skaffold_merged.yaml")
-		t.CheckNoError(err)
-		t.CheckDeepEqual(expected, out)
-	})
+	tests := []struct {
+		description string
+		dir         string
+		cpSkaffold  bool
+	}{
+		{
+			description: "single skaffold.yaml outside of source dir",
+			dir:         "testdata/diagnose/temp-config",
+			cpSkaffold:  true,
+		},
+		{
+			description: "multi skaffold.yaml outside of source dir",
+			dir:         "testdata/diagnose/multi-config",
+			cpSkaffold:  true,
+		},
+		{
+			description: "multi skaffold.yaml",
+			dir:         "testdata/diagnose/multi-config",
+			cpSkaffold:  false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			args := []string{}
+			if test.cpSkaffold {
+				tmpDir := t.NewTempDir()
+				configContents, err := ioutil.ReadFile(filepath.Join(test.dir, "skaffold.yaml"))
+				t.CheckNoError(err)
+				tmpDir.Write("skaffold.yaml", string(configContents))
+				args = append(args, fmt.Sprintf("-f=%s", tmpDir.Path("skaffold.yaml")))
+			}
+			out := skaffold.Diagnose(append(args, "--yaml-only")...).
+				InDir(test.dir).RunOrFailOutput(t.T)
+			templ, err := ioutil.ReadFile(filepath.Join(test.dir, "diagnose.tmpl"))
+			outTemplate := template.Must(template.New("tmpl").Parse(string(templ)))
+			t.CheckNoError(err)
+			cwd, err := filepath.Abs(test.dir)
+			t.CheckNoError(err)
+			expected := &bytes.Buffer{}
+			outTemplate.Execute(expected, map[string]string{"Root": cwd})
+			t.CheckDeepEqual(expected.String(), string(out))
+		})
+	}
 }

@@ -1,0 +1,18 @@
+apiVersion: skaffold/v2beta16
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-example
+    context: {{.Root}}
+    docker:
+      dockerfile: Dockerfile
+  tagPolicy:
+    gitCommit: {}
+  local:
+    concurrency: 1
+deploy:
+  kubectl:
+    manifests:
+    - {{.Root}}/k8s-*
+  logs:
+    prefix: container
