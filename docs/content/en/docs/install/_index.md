@@ -74,7 +74,7 @@ sudo install skaffold /usr/local/bin/
 
 ```bash
 # For macOS on ARM64
-curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64 && \
+curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-arm64 && \
 sudo install skaffold /usr/local/bin/
 ```
 
@@ -91,7 +91,7 @@ sudo install skaffold /usr/local/bin/
 
 ```bash
 # For macOS on ARM64
-curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64 && \
+curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-arm64 && \
 sudo install skaffold /usr/local/bin/
 ```
 
