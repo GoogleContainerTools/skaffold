@@ -120,7 +120,7 @@ func TestKpt_Deploy(t *testing.T) {
 				AndRunOut(fmt.Sprintf("kpt fn sink %v", tmpKustomizeDir), ``).
 				AndRunOut(fmt.Sprintf("kustomize build %v", tmpKustomizeDir), ``).
 				AndRunOut("kpt fn run --dry-run", testPod).
-				AndRun("kpt live apply valid_path"),
+				AndRun("kpt live apply valid_path --context kubecontext --namespace testNamespace"),
 			expected: []string{"default"},
 		},
 		{
@@ -131,8 +131,8 @@ func TestKpt_Deploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
 				AndRunOut("kpt fn run --dry-run", testPod).
-				AndRunOut("kpt live init .kpt-hydrated", ``).
-				AndRunErr("kpt live apply .kpt-hydrated", errors.New("BUG")),
+				AndRunOut("kpt live init .kpt-hydrated --context kubecontext --namespace testNamespace", ``).
+				AndRunErr("kpt live apply .kpt-hydrated --context kubecontext --namespace testNamespace", errors.New("BUG")),
 			shouldErr: true,
 		},
 		{
@@ -152,7 +152,7 @@ func TestKpt_Deploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
 				AndRunOut("kpt fn run --dry-run", testPod).
-				AndRun("kpt live apply valid_path --poll-period 5s --reconcile-timeout 2m"),
+				AndRun("kpt live apply valid_path --poll-period 5s --reconcile-timeout 2m --context kubecontext --namespace testNamespace"),
 		},
 		{
 			description: "user specifies invalid reconcile timeout and poll period",
@@ -171,7 +171,7 @@ func TestKpt_Deploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
 				AndRunOut("kpt fn run --dry-run", testPod).
-				AndRun("kpt live apply valid_path --poll-period foo --reconcile-timeout bar"),
+				AndRun("kpt live apply valid_path --poll-period foo --reconcile-timeout bar --context kubecontext --namespace testNamespace"),
 		},
 		{
 			description: "user specifies prune propagation policy and prune timeout",
@@ -190,7 +190,7 @@ func TestKpt_Deploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
 				AndRunOut("kpt fn run --dry-run", testPod).
-				AndRun("kpt live apply valid_path --prune-propagation-policy Orphan --prune-timeout 2m"),
+				AndRun("kpt live apply valid_path --prune-propagation-policy Orphan --prune-timeout 2m --context kubecontext --namespace testNamespace"),
 		},
 		{
 			description: "user specifies invalid prune propagation policy and prune timeout",
@@ -209,7 +209,7 @@ func TestKpt_Deploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kpt fn source .", ``).
 				AndRunOut("kpt fn run --dry-run", testPod).
-				AndRun("kpt live apply valid_path --prune-propagation-policy foo --prune-timeout bar"),
+				AndRun("kpt live apply valid_path --prune-propagation-policy foo --prune-timeout bar --context kubecontext --namespace testNamespace"),
 		},
 	}
 	for _, test := range tests {
@@ -385,19 +385,19 @@ func TestKpt_Cleanup(t *testing.T) {
 		{
 			description: "valid user specified applyDir w/o template resource",
 			applyDir:    "valid_path",
-			commands:    testutil.CmdRunErr("kpt live destroy valid_path", errors.New("BUG")),
+			commands:    testutil.CmdRunErr("kpt live destroy valid_path --context kubecontext --namespace testNamespace", errors.New("BUG")),
 			shouldErr:   true,
 		},
 		{
 			description: "valid user specified applyDir w/ template resource (emulated)",
 			applyDir:    "valid_path",
-			commands:    testutil.CmdRun("kpt live destroy valid_path"),
+			commands:    testutil.CmdRun("kpt live destroy valid_path --context kubecontext --namespace testNamespace"),
 		},
 		{
 			description: "unspecified applyDir",
 			commands: testutil.
-				CmdRunOut("kpt live init .kpt-hydrated", "").
-				AndRun("kpt live destroy .kpt-hydrated"),
+				CmdRunOut("kpt live init .kpt-hydrated --context kubecontext --namespace testNamespace", "").
+				AndRun("kpt live destroy .kpt-hydrated --context kubecontext --namespace testNamespace"),
 		},
 	}
 	for _, test := range tests {
@@ -808,7 +808,7 @@ func TestKpt_GetApplyDir(t *testing.T) {
 		{
 			description: "unspecified applyDir",
 			expected:    ".kpt-hydrated",
-			commands:    testutil.CmdRunOut("kpt live init .kpt-hydrated", ""),
+			commands:    testutil.CmdRunOut("kpt live init .kpt-hydrated --context kubecontext --namespace testNamespace", ""),
 		},
 		{
 			description: "unspecified applyDir with specified inventory-id and namespace",
@@ -819,7 +819,7 @@ func TestKpt_GetApplyDir(t *testing.T) {
 				},
 			},
 			expected: ".kpt-hydrated",
-			commands: testutil.CmdRunOut("kpt live init .kpt-hydrated --inventory-id 1a23bcde-4f56-7891-a2bc-de34fabcde5f6 --namespace foo", ""),
+			commands: testutil.CmdRunOut("kpt live init .kpt-hydrated --inventory-id 1a23bcde-4f56-7891-a2bc-de34fabcde5f6 --context kubecontext --namespace foo", ""),
 		},
 		{
 			description: "existing template resource in .kpt-hydrated",
@@ -1126,11 +1126,35 @@ func TestVersionCheck(t *testing.T) {
 	}
 }
 
+func TestNonEmptyKubeconfig(t *testing.T) {
+	commands := testutil.CmdRunOut("kpt fn source .", ``).
+		AndRunOut("kpt fn run --dry-run", testPod).
+		AndRun("kpt live apply valid_path --context kubecontext --kubeconfig testConfigPath --namespace testNamespace")
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&util.DefaultExecCommand, commands)
+		k := NewDeployer(&kptConfig{config: "testConfigPath"}, nil, &latestV1.KptDeploy{
+			Dir: ".",
+			Live: latestV1.KptLive{
+				Apply: latestV1.KptApplyInventory{
+					Dir: "valid_path",
+				},
+			},
+		})
+		os.Mkdir(k.Live.Apply.Dir, 0755)
+		defer os.RemoveAll(k.Live.Apply.Dir)
+		_, err := k.Deploy(context.Background(), ioutil.Discard, []graph.Artifact{})
+		t.CheckNoError(err)
+	})
+}
+
 type kptConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	workingDir            string
+	config                string
 }
 
 func (c *kptConfig) WorkingDir() string       { return c.workingDir }
 func (c *kptConfig) GetKubeContext() string   { return kubectl.TestKubeContext }
 func (c *kptConfig) GetKubeNamespace() string { return kubectl.TestNamespace }
+func (c *kptConfig) GetKubeConfig() string    { return c.config }

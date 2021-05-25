@@ -34,8 +34,8 @@ import (
 	k8syaml "sigs.k8s.io/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
@@ -66,15 +66,25 @@ type Deployer struct {
 	insecureRegistries map[string]bool
 	labels             map[string]string
 	globalConfig       string
+	kubeContext        string
+	kubeConfig         string
+	namespace          string
+}
+
+type Config interface {
+	kubectl.Config
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg types.Config, labels map[string]string, d *latestV1.KptDeploy) *Deployer {
+func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KptDeploy) *Deployer {
 	return &Deployer{
 		KptDeploy:          d,
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       cfg.GlobalConfig(),
+		kubeContext:        cfg.GetKubeContext(),
+		kubeConfig:         cfg.GetKubeConfig(),
+		namespace:          cfg.GetKubeNamespace(),
 	}
 }
 
@@ -215,7 +225,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return fmt.Errorf("getting applyDir: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "destroy"}, nil, nil)...)
+	cmd := exec.CommandContext(ctx, "kpt", kptCommandArgs(applyDir, []string{"live", "destroy"}, k.getGlobalFlags(), nil)...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
@@ -606,6 +616,7 @@ func (k *Deployer) getKptLiveApplyArgs() []string {
 		flags = append(flags, "--reconcile-timeout", k.Live.Options.ReconcileTimeout)
 	}
 
+	flags = append(flags, k.getGlobalFlags()...)
 	return flags
 }
 
@@ -617,8 +628,23 @@ func (k *Deployer) getKptLiveInitArgs() []string {
 		flags = append(flags, "--inventory-id", k.Live.Apply.InventoryID)
 	}
 
+	flags = append(flags, k.getGlobalFlags()...)
+	return flags
+}
+func (k *Deployer) getGlobalFlags() []string {
+	var flags []string
+
+	if k.kubeContext != "" {
+		flags = append(flags, "--context", k.kubeContext)
+	}
+	if k.kubeConfig != "" {
+		flags = append(flags, "--kubeconfig", k.kubeConfig)
+	}
 	if len(k.Live.Apply.InventoryNamespace) > 0 {
 		flags = append(flags, "--namespace", k.Live.Apply.InventoryNamespace)
+	} else if k.namespace != "" {
+		// Note: UI duplication.
+		flags = append(flags, "--namespace", k.namespace)
 	}
 
 	return flags
