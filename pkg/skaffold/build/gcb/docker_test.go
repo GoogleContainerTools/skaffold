@@ -166,7 +166,7 @@ func TestPullCacheFrom(t *testing.T) {
 	tests := []struct {
 		description string
 		artifact    *latestV1.Artifact
-		tag string
+		tag         string
 		expected    []*cloudbuild.BuildStep
 		shouldErr   bool
 	}{
