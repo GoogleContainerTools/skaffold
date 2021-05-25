@@ -351,9 +351,9 @@ func isMakePathsAbsoluteSet(opts config.SkaffoldOptions) bool {
 
 func getBase(cfgOpts configOpts) (string, error) {
 	if cfgOpts.isDependency {
-		logrus.Tracef("returning %q as base for absolute path substitution for dependent skaffold config %s", filepath.Dir(cfgOpts.file), cfgOpts.file)
+		logrus.Tracef("found %s base dir for absolute path substitution within skaffold config %s", filepath.Dir(cfgOpts.file), cfgOpts.file)
 		return filepath.Dir(cfgOpts.file), nil
 	}
-	logrus.Tracef("returning current work dir as base for absolute path substitution for top-level skaffold config %s", cfgOpts.file)
+	logrus.Tracef("found cwd as base for absolute path substitution within skaffold config %s", cfgOpts.file)
 	return util.RealWorkDir()
 }

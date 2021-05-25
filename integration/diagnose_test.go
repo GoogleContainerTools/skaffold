@@ -101,11 +101,10 @@ func TestMultiConfigDiagnose(t *testing.T) {
 				tmpDir.Write("skaffold.yaml", string(configContents))
 				args = append(args, fmt.Sprintf("-f=%s", tmpDir.Path("skaffold.yaml")))
 			}
-			out := skaffold.Diagnose(append(args, "--yaml-only")...).
-				InDir(test.dir).RunOrFailOutput(t.T)
+			out := skaffold.Diagnose(append(args, "--yaml-only")...).InDir(test.dir).RunOrFailOutput(t.T)
 			templ, err := ioutil.ReadFile(filepath.Join(test.dir, "diagnose.tmpl"))
-			outTemplate := template.Must(template.New("tmpl").Parse(string(templ)))
 			t.CheckNoError(err)
+			outTemplate := template.Must(template.New("tmpl").Parse(string(templ)))
 			cwd, err := filepath.Abs(test.dir)
 			t.CheckNoError(err)
 			expected := &bytes.Buffer{}
