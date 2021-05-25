@@ -19,7 +19,14 @@ flags.
 
 ## How It works
 
-`skaffold debug` examines the built artifacts to determine the underlying language runtime technology.
+Enabling debugging has two phases:
+
+1. Configuring container images for debugging by recognizing the underlying language runtimes
+2. Monitoring for when debuggable containers start execution. 
+
+### Configuring container images for debugging 
+
+`skaffold debug` examines the *built artifacts* to determine the underlying language runtime technology.
 Kubernetes manifests that reference these artifacts are transformed on-the-fly to enable the
 language runtime's debugging functionality.  These transforms add or alter environment variables
 and entrypoints, and more.
@@ -31,11 +38,22 @@ each of the appropriate containers.  These images are hosted at
 `gcr.io/k8s-skaffold/skaffold-debug-support`; alternative locations can be
 specified in [Skaffold's global configuration]({{< relref "/docs/design/global-config.md" >}}).
 
+For images that are successfully recognized, Skaffold adds a `debug.cloud.google.com/config`
+annotation to the corresponding Kubernetes pod-spec that encode the debugging parameters.
+
+### Monitoring for debuggable containers
+
+Once the application is deployed, `debug` monitors the cluster looking for debuggable pods with a
+`debug.cloud.google.com/config` annotation.  For each new debuggable pod,  Skaffold emits
+an event that can be used by tools like IDEs to establish a debug session.
+
+### Additional changes
+
 `debug` makes some other adjustments to simplify the debug experience:
 
   - *Replica Counts*: `debug` rewrites  the replica counts to 1 for
     deployments, replica sets, and stateful sets.  This results in
-    requests being considered one at a time.
+    requests being serialized so that one request is processed at a time.
 
   - *Kubernetes Probes*:  `debug` changes the timeouts on HTTP-based
     [liveness, readiness, and startup probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
@@ -57,33 +75,53 @@ specified in [Skaffold's global configuration]({{< relref "/docs/design/global-c
     spec: ...
     ```
 
-### Supported Language Runtimes
+## Supported Language Runtimes
 
 Debugging is currently supported for:
-  - Go (runtime ID: `go`)
-  - NodeJS (runtime ID: `nodejs`)
-  - Java and JVM languages (runtime ID: `jvm`)
-  - Python (runtime ID: `python`)
-  - .NET Core (runtime ID: `netcore`)
+  - Go (runtime ID: `go`) using [Delve](https://github.com/go-delve/delve)
+  - NodeJS (runtime ID: `nodejs`) using the NodeJS Inspector (Chrome DevTools)
+  - Java and JVM languages (runtime ID: `jvm`) using JDWP
+  - Python (runtime ID: `python`) using `debugpy` (Debug Adapter Protocol) or `pydevd`
+  - .NET Core (runtime ID: `netcore`) using `vsdbg`
   
+ This section describes how `debug` recognizes the language runtime used in a
+ container image, and how the container image is configured for debugging.
+ 
 Note that many debuggers may require additional information for the location of source files.
 We are looking for ways to identify this information and to pass it back if found.
 
-#### Go
+#### Go (runtime: `go`, protocols: `dlv`)
 
 Go-based applications are configured to run under [Delve](https://github.com/go-delve/delve) in its headless-server mode.
-In order to configure your application for debugging, your app must be:
 
-  - Identified as being Go-based by setting one of the [standard Go runtime
-    environment variables](https://godoc.org/runtime) in the container, such as `GODEBUG`, `GOGC`, `GOMAXPROCS`,
-    or `GOTRACEBACK`. `GOTRACEBACK=single` is the default setting for Go, and `GOTRACEBACK=all` is a 
-    generally useful configuration.
-  - Built with the `-gcflags='all=-N -l'` options to disable optimizations and inlining.
-    Debugging can be confusing otherwise due to seemingly-random
-    execution jumps from statement reordering and inlining.
-    Skaffold [_Profiles_]({{< relref "/docs/environment/profiles.md" >}}) are a useful option.
-    Note that the `golang:NN-alpine` container images do not include a C compiler which is required
-    for `-gcflags='all=-N -l'`.
+Go-based container images are recognized by:
+- the presence of one of the [standard Go runtime environment variables](https://godoc.org/runtime):
+  `GODEBUG`, `GOGC`, `GOMAXPROCS`, or `GOTRACEBACK`, or
+- is launching using `dlv`.
+
+Virtually all container images will need to set one of the Go environment variables.
+`GOTRACEBACK=single` is the default setting for Go, and `GOTRACEBACK=all` is a 
+generally useful configuration.
+
+On recognizing a Go-based container image, `debug` rewrites the container image's
+entrypoint to invoke your application using `dlv`:
+```
+dlv exec --headless --continue --accept-multiclient --listen=:56268 --api-version=2 <app> -- <args> ...
+```
+
+Your application should be built with the `-gcflags='all=-N -l'` options to disable optimizations and inlining.
+Debugging can be confusing otherwise due to seemingly-random execution jumps from statement reordering and inlining.
+Skaffold configures Docker builds with a `SKAFFOLD_GO_GCFLAGS` build argument flag  with suitable values:
+```
+FROM golang
+ENV GOTRACEBACK=all
+COPY . .
+ARG SKAFFOLD_GO_GCFLAGS
+RUN go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o /app .
+```
+
+Note that the `golang:NN-alpine` container images do not include a C compiler which is required
+for `-gcflags='all=-N -l'`.
 
 Note for users of [VS Code's debug adapter for Go](https://github.com/Microsoft/vscode-go): the debug adapter
 may require configuring both the _local_ and _remote_ source path prefixes via the `cwd` and `remotePath` properties.
@@ -107,17 +145,35 @@ works in this case:
 }
 ```
 
-#### Java and Other JVM Languages
+#### Java and Other JVM Languages (runtime: `jvm`, protocols: `jdwp`)
 
 Java/JVM applications are configured to expose the JDWP agent using the `JAVA_TOOL_OPTIONS`
 environment variable.  
 Note that the use of `JAVA_TOOL_OPTIONS` causes extra debugging output from the JVM on launch.
 
-#### NodeJS
+JVM application are recognized by:
+- the presence of a `JAVA_VERSION` or `JAVA_TOOL_OPTIONS` environment variable, or
+- the container command-line invokes `java`.
+
+On recognizing a JVM-based container image, `debug` rewrites the container image's
+environment to set:
+```
+JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y
+```
+
+#### NodeJS (runtime: `nodejs`, protocols: `devtools`)
 
 NodeJS applications are configured to use the Chrome DevTools inspector via the `--inspect` argument.
 
-Note that the client must first obtain [the inspector UUID](https://github.com/nodejs/node/issues/9185#issuecomment-254872466).
+NodeJS images are recognized by:
+- the presence of a `NODE_VERSION`, `NODEJS_VERSION`, or `NODE_ENV` environment variable, or
+- the container command-line invokes `node` or `npm`.
+
+On recognizing a NodeJS-based container image, `debug` rewrites the container image's
+entrypoint to invoke your application with `--inspect`:
+```
+node --inspect=9229 <app.js> 
+```
 
 {{< alert title="Note" >}}
 Many applications use NodeJS-based tools as part of their launch, like <tt>npm</tt>, rather than
@@ -127,27 +183,54 @@ only invokes the real <tt>node</tt> with <tt>--inspect</tt> if running an applic
 and skips scripts located in <tt>node_modules</tt>.  For more details see the
 <a href="https://github.com/GoogleContainerTools/container-debug-support/pull/34">associated PR</a>.
 {{< /alert >}}
-  
-#### Python
 
-Python applications are configured to use [`ptvsd`](https://github.com/microsoft/ptvsd/), a
-wrapper around [`pydevd`](https://github.com/fabioz/PyDev.Debugger) that uses the
-[_debug adapter protocol_ (DAP)](https://microsoft.github.io/debug-adapter-protocol/). 
+Note that a debugging client must first obtain [the inspector UUID](https://github.com/nodejs/node/issues/9185#issuecomment-254872466).  
 
-The DAP is supported by Visual Studio Code, [Eclipse LSP4e](https://projects.eclipse.org/projects/technology.lsp4e),
+
+#### Python (runtime: `python`, protocols: `dap` or `pydevd`)
+
+Python applications are configured to use either  [`debugpy`](https://github.com/microsoft/debugpy/), or
+wrapper around [`pydevd`](https://github.com/fabioz/PyDev.Debugger).  `debugpy` uses the
+[_debug adapter protocol_ (DAP)](https://microsoft.github.io/debug-adapter-protocol/) which 
+is supported by Visual Studio Code, [Eclipse LSP4e](https://projects.eclipse.org/projects/technology.lsp4e),
 [and other editors and IDEs](https://microsoft.github.io/debug-adapter-protocol/implementors/tools/).
-DAP is not yet supported by JetBrains IDEs like PyCharm.
 
-#### .NET Core
+Python application are recognized by:
+- the presence of a standard Python environment variable:
+  `PYTHON_VERSION`, `PYTHONVERBOSE`, `PYTHONINSPECT`, `PYTHONOPTIMIZE`,
+  `PYTHONUSERSITE`, `PYTHONUNBUFFERED`, `PYTHONPATH`, `PYTHONUSERBASE`,
+  `PYTHONWARNINGS`, `PYTHONHOME`, `PYTHONCASEOK`, `PYTHONIOENCODING`,
+  `PYTHONHASHSEED`, `PYTHONDONTWRITEBYTECODE`, or
+- the container command-line invokes `python`, `python2`, or `python3`.
+
+On recognizing a Python-based container image, `debug` rewrites the container image's
+entrypoint to invoke Python using either the `pydevd` or `debugpy` modules:
+```
+python -m debugpy --listen 5678 <app>
+```
+
+or
+```
+python -m pydevd --server --port 5678 <app.py>
+```
+
+{{< alert title="Note" >}}
+As many Python web frameworks use launcher scripts, like `gunicorn`, Skaffold now uses
+a debug launcher that examines the app command-line.
+{{< /alert >}}
+  
+
+#### .NET Core (runtime: `dotnet`, protocols: `vsdbg`)
 
 .NET Core applications are configured to be deployed along with `vsdbg`.
 
-In order to configure your application for debugging, your app must be:
+.NET Core application are recognized by:
+- the presence of a standard .NET environment variable:
+  `ASPNETCORE_URLS`, `DOTNET_RUNNING_IN_CONTAINER`,
+  `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT`, or
+- the container command-line invokes the [dotnet](https://github.com/dotnet/sdk) cli
 
-- Identified as being dotnet-based by having an entrypoint using [dotnet](https://github.com/dotnet/sdk) cli
-  or one of the following environment variables `ASPNETCORE_URLS`, `DOTNET_RUNNING_IN_CONTAINER`,
-  `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT`.
-- Built with the `--configuration Debug` options to disable optimizations.
+Furthermore, your app must be built with the `--configuration Debug` options to disable optimizations.
 
 **Note for users of [VS Code's debug adapter for C#](https://github.com/OmniSharp/omnisharp-vscode):**
 the following configuration can be used to debug a container. It assumes that your code is deployed
@@ -185,7 +268,68 @@ your base image.  (`//` comments must be stripped.)
 }
 ```
 
-## IDE Support via Events and Metadata
+## Troubleshooting
+
+### My container is not being made debuggable?
+
+**Was this image built by Skaffold?**
+`debug` only works for images that were built by
+ Skaffold so as to avoid affecting system- or infrastructure-level containers such as proxy sidecars.
+
+**Was Skaffold able to recognize the image?**
+`debug` emits a warning when it is unable to configure an image for debugging:
+```
+WARN[0005] Image "image-name" not configured for debugging: unable to determine runtime for "image-name" 
+```
+
+See the language runtime section details on how container images are recognized.
+
+### Can images be debugged without the runtime support images?
+
+The special [runtime-support images](https://github.com/GoogleContainerTools/container-debug-support)
+are provided as a convenience for automatic configuration.  You can manually configure your images
+for debugging by:
+
+1. Configure your container image to install and invoke the appropriate debugger.
+2. Add a `debug.cloud.google.com/config` workload annotation on the
+   pod-spec to describe the debug configuration of each container image in the pod,
+   as described in [_Workload Annotations_](#workload-annotations).
+
+## Limitations
+
+`skaffold debug` has some limitations.
+
+### Unsupported Container Entrypoints
+
+`skaffold debug` requires being able to examine and alter the
+command-line used in the container entrypoint.  This transformation
+will not work with images that use intermediate launch scripts or
+binaries.
+
+### Supported Deployers
+
+`skaffold debug` is only supported with the `kubectl`, `kustomize`, and `helm` deployers.
+
+{{< alert title="Note" >}}
+Helm support requires using Helm v3.1.0 or greater.
+{{< /alert >}}
+
+
+### Deprecated Workload API Objects
+
+`skaffold debug` does not support deprecated versions of Workload API objects:
+
+  - `extensions/v1beta1` and `apps/v1beta1` was [deprecated in Kubernetes 1.8](https://github.com/kubernetes/kubernetes/blob/HEAD/CHANGELOG/CHANGELOG-1.8.md#other-notable-changes-16)
+    and [removed in Kubernetes 1.16](https://kubernetes.io/blog/2019/07/18/api-deprecations-in-1-16/).
+  - `apps/v1beta2` was [deprecated in Kubernetes 1.9](https://github.com/kubernetes/kubernetes/blob/HEAD/CHANGELOG/CHANGELOG-1.9.md#apps)
+    and [removed in Kubernetes 1.16](https://kubernetes.io/blog/2019/07/18/api-deprecations-in-1-16/).
+
+Applications should transition to the `apps/v1` APIs,
+[introduced in Kubernetes 1.9](https://kubernetes.io/blog/2017/12/kubernetes-19-workloads-expanded-ecosystem/#workloads-api-ga).
+
+----
+
+## Appendix: IDE Support via Events and Metadata {#metadata-events}
 
 `debug` provides additional support for IDEs to detect the debuggable containers and to determine
 appropriate configuration parameters.
@@ -328,35 +472,3 @@ The API's _state_ ([gRPC](../references/api/grpc/#skaffoldservice), [REST](../re
 
 </details>
 
-
-## Limitations
-
-`skaffold debug` has some limitations.
-
-### Unsupported Container Entrypoints
-
-`skaffold debug` requires being able to examine and alter the
-command-line used in the container entrypoint.  This transformation
-will not work with images that use intermediate launch scripts or
-binaries.
-
-### Supported Deployers
-
-`skaffold debug` is only supported with the `kubectl`, `kustomize`, and `helm` deployers.
-
-{{< alert title="Note" >}}
-Helm support requires using Helm v3.1.0 or greater.
-{{< /alert >}}
-
-
-### Deprecated Workload API Objects
-
-`skaffold debug` does not support deprecated versions of Workload API objects:
-
-  - `extensions/v1beta1` and `apps/v1beta1` was [deprecated in Kubernetes 1.8](https://github.com/kubernetes/kubernetes/blob/HEAD/CHANGELOG/CHANGELOG-1.8.md#other-notable-changes-16)
-    and [removed in Kubernetes 1.16](https://kubernetes.io/blog/2019/07/18/api-deprecations-in-1-16/).
-  - `apps/v1beta2` was [deprecated in Kubernetes 1.9](https://github.com/kubernetes/kubernetes/blob/HEAD/CHANGELOG/CHANGELOG-1.9.md#apps)
-    and [removed in Kubernetes 1.16](https://kubernetes.io/blog/2019/07/18/api-deprecations-in-1-16/).
-
-Applications should transition to the `apps/v1` APIs,
-[introduced in Kubernetes 1.9](https://kubernetes.io/blog/2017/12/kubernetes-19-workloads-expanded-ecosystem/#workloads-api-ga).
