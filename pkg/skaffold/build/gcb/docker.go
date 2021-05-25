@@ -19,15 +19,19 @@ package gcb
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // dockerBuildSpec lists the build steps required to build a docker image.
 func (b *Builder) dockerBuildSpec(a *latestV1.Artifact, tag string) (cloudbuild.Build, error) {
+	a = adjustCacheFrom(a, tag)
+
 	args, err := b.dockerBuildArgs(a, tag, a.Dependencies)
 	if err != nil {
 		return cloudbuild.Build{}, err
@@ -72,6 +76,7 @@ func (b *Builder) dockerBuildArgs(a *latestV1.Artifact, tag string, deps []*late
 	if err != nil {
 		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
 	}
+
 	ba, err := docker.ToCLIBuildArgs(d, buildArgs)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker build args: %w", err)
@@ -82,4 +87,28 @@ func (b *Builder) dockerBuildArgs(a *latestV1.Artifact, tag string, deps []*late
 	args = append(args, ".")
 
 	return args, nil
+}
+
+// adjustCacheFrom returns  an artifact where any cache references from the artifactImage is changed to the tagged built image name instead.
+func adjustCacheFrom(a *latestV1.Artifact, artifactTag string) *latestV1.Artifact {
+	if os.Getenv("SKAFFOLD_DISABLE_GCB_CACHE_ADJUSTMENT") != "" {
+		// allow this behaviour to be disabled
+		return a
+	}
+
+	if !util.StrSliceContains(a.DockerArtifact.CacheFrom, a.ImageName) {
+		return a
+	}
+
+	cf := make([]string, 0, len(a.DockerArtifact.CacheFrom))
+	for _, image := range a.DockerArtifact.CacheFrom {
+		if image == a.ImageName {
+			cf = append(cf, artifactTag)
+		} else {
+			cf = append(cf, image)
+		}
+	}
+	copy := *a
+	copy.DockerArtifact.CacheFrom = cf
+	return &copy
 }

@@ -163,36 +163,71 @@ func TestDockerBuildSpec(t *testing.T) {
 }
 
 func TestPullCacheFrom(t *testing.T) {
-	testutil.Run(t, "TestPullCacheFrom", func(t *testutil.T) {
-		t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
-			return args, nil
-		})
-		artifact := &latestV1.Artifact{
-			ArtifactType: latestV1.ArtifactType{
-				DockerArtifact: &latestV1.DockerArtifact{
-					DockerfilePath: "Dockerfile",
-					CacheFrom:      []string{"from/image1", "from/image2"},
+	tests := []struct {
+		description string
+		artifact    *latestV1.Artifact
+		tag         string
+		expected    []*cloudbuild.BuildStep
+		shouldErr   bool
+	}{
+		{
+			description: "multiple cache-from images",
+			artifact: &latestV1.Artifact{
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
+						DockerfilePath: "Dockerfile",
+						CacheFrom:      []string{"from/image1", "from/image2"},
+					},
 				},
 			},
-		}
-		builder := NewBuilder(&mockBuilderContext{}, &latestV1.GoogleCloudBuild{
-			DockerImage: "docker/docker",
+			tag: "nginx2",
+			expected: []*cloudbuild.BuildStep{{
+				Name:       "docker/docker",
+				Entrypoint: "sh",
+				Args:       []string{"-c", "docker pull from/image1 || true"},
+			}, {
+				Name:       "docker/docker",
+				Entrypoint: "sh",
+				Args:       []string{"-c", "docker pull from/image2 || true"},
+			}, {
+				Name: "docker/docker",
+				Args: []string{"build", "--tag", "nginx2", "-f", "Dockerfile", "--cache-from", "from/image1", "--cache-from", "from/image2", "."},
+			}},
+		},
+		{
+			description: "cache-from self uses tagged image",
+			artifact: &latestV1.Artifact{
+				ImageName: "gcr.io/k8s-skaffold/test",
+				ArtifactType: latestV1.ArtifactType{
+					DockerArtifact: &latestV1.DockerArtifact{
+						DockerfilePath: "Dockerfile",
+						CacheFrom:      []string{"gcr.io/k8s-skaffold/test"},
+					},
+				},
+			},
+			tag: "gcr.io/k8s-skaffold/test:tagged",
+			expected: []*cloudbuild.BuildStep{{
+				Name:       "docker/docker",
+				Entrypoint: "sh",
+				Args:       []string{"-c", "docker pull gcr.io/k8s-skaffold/test:tagged || true"},
+			}, {
+				Name: "docker/docker",
+				Args: []string{"build", "--tag", "gcr.io/k8s-skaffold/test:tagged", "-f", "Dockerfile", "--cache-from", "gcr.io/k8s-skaffold/test:tagged", "."},
+			}},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+				return args, nil
+			})
+			builder := NewBuilder(&mockBuilderContext{}, &latestV1.GoogleCloudBuild{
+				DockerImage: "docker/docker",
+			})
+			desc, err := builder.dockerBuildSpec(test.artifact, test.tag)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, desc.Steps)
 		})
-		desc, err := builder.dockerBuildSpec(artifact, "nginx2")
-
-		expected := []*cloudbuild.BuildStep{{
-			Name:       "docker/docker",
-			Entrypoint: "sh",
-			Args:       []string{"-c", "docker pull from/image1 || true"},
-		}, {
-			Name:       "docker/docker",
-			Entrypoint: "sh",
-			Args:       []string{"-c", "docker pull from/image2 || true"},
-		}, {
-			Name: "docker/docker",
-			Args: []string{"build", "--tag", "nginx2", "-f", "Dockerfile", "--cache-from", "from/image1", "--cache-from", "from/image2", "."},
-		}}
-
-		t.CheckErrorAndDeepEqual(false, err, expected, desc.Steps)
-	})
+	}
 }
