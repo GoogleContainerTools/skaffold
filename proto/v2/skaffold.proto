@@ -192,8 +192,9 @@ message BuildSubtaskEvent {
     string id = 1; // id of the subtask which will be used in SkaffoldLog
     string task_id = 2; // id of the task of skaffold that this event came from
     string artifact = 3; // artifact name
-    string status = 4; // artifact build status oneof: InProgress, Completed, Failed
-    ActionableErr actionableErr = 5; // actionable error message
+    string step = 4; // which step of the build for the artifact oneof: Cache, Build, Push
+    string status = 5; // artifact build status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 6; // actionable error message
 }
 
 // `TestSubtaskEvent` represents the status of a test, and is emitted by Skaffold

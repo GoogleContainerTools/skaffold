@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"sync"
 
 	//nolint:golint,staticcheck
@@ -324,34 +323,6 @@ func TaskSucceeded(task constants.Phase) {
 	})
 }
 
-func BuildInProgress(id int, artifact string) {
-	handler.handleBuildSubtaskEvent(&proto.BuildSubtaskEvent{
-		Id:       strconv.Itoa(id),
-		TaskId:   fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
-		Artifact: artifact,
-		Status:   InProgress,
-	})
-}
-
-func BuildFailed(id int, artifact string, err error) {
-	handler.handleBuildSubtaskEvent(&proto.BuildSubtaskEvent{
-		Id:            strconv.Itoa(id),
-		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
-		Artifact:      artifact,
-		Status:        Failed,
-		ActionableErr: sErrors.ActionableErrV2(handler.cfg, constants.Build, err),
-	})
-}
-
-func BuildSucceeded(id int, artifact string) {
-	handler.handleBuildSubtaskEvent(&proto.BuildSubtaskEvent{
-		Id:       strconv.Itoa(id),
-		TaskId:   fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
-		Artifact: artifact,
-		Status:   Succeeded,
-	})
-}
-
 func (ev *eventHandler) setState(state proto.State) {
 	ev.stateLock.Lock()
 	ev.state = state
@@ -374,14 +345,6 @@ func (ev *eventHandler) handleTaskEvent(e *proto.TaskEvent) {
 	ev.handle(&proto.Event{
 		EventType: &proto.Event_TaskEvent{
 			TaskEvent: e,
-		},
-	})
-}
-
-func (ev *eventHandler) handleBuildSubtaskEvent(e *proto.BuildSubtaskEvent) {
-	ev.handle(&proto.Event{
-		EventType: &proto.Event_BuildSubtaskEvent{
-			BuildSubtaskEvent: e,
 		},
 	})
 }
