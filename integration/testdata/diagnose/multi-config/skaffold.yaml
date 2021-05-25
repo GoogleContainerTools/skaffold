@@ -6,7 +6,7 @@ requires:
 build:
   artifacts:
   - image: app1
-    context: /foo
+    context: foo
 deploy:
   kubectl:
     manifests:
