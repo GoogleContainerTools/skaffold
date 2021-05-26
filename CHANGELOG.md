@@ -1,3 +1,41 @@
+# v1.25.0 Release - 05/25/2021
+
+Highlights:
+* Debug support for pydevd, new --protocols debug flag [#5759](https://github.com/GoogleContainerTools/skaffold/pull/5759)
+
+New Features:
+* Allow caching from previously built artifacts on GCB [#5903](https://github.com/GoogleContainerTools/skaffold/pull/5903)
+
+Fixes:
+* fix: setting default deployer definition [#5861](https://github.com/GoogleContainerTools/skaffold/pull/5861)
+* Schemas should emit type=object for object [#5876](https://github.com/GoogleContainerTools/skaffold/pull/5876)
+* Failing to delete source archive should not fail GCB builds [#5891](https://github.com/GoogleContainerTools/skaffold/pull/5891)
+* Fix `skaffold diagnose` to work when skaffold.yaml is outside of source root dir [#5900](https://github.com/GoogleContainerTools/skaffold/pull/5900)
+
+Updates and Refactors:
+* [V3] add renderer basic struct. [#5793](https://github.com/GoogleContainerTools/skaffold/pull/5793)
+* [v3] Add render generator [#5865](https://github.com/GoogleContainerTools/skaffold/pull/5865)
+* Move application logs to their own endpoint for API V2 [#5868](https://github.com/GoogleContainerTools/skaffold/pull/5868)
+* Update go-containerregistry to 0.5.1 [#5881](https://github.com/GoogleContainerTools/skaffold/pull/5881)
+* Update pack to 0.18.1 [#5882](https://github.com/GoogleContainerTools/skaffold/pull/5882)
+* Add .NET .csproj detection to init for buildpacks [#5883](https://github.com/GoogleContainerTools/skaffold/pull/5883)
+* Refactor metrics prompt functions and change `color` package name [#5890](https://github.com/GoogleContainerTools/skaffold/pull/5890)
+
+Docs, Test, and Release Updates:
+* Fix yaml reference rendering for object-type examples [#5872](https://github.com/GoogleContainerTools/skaffold/pull/5872)
+* Update _index.md [#5902](https://github.com/GoogleContainerTools/skaffold/pull/5902)
+* Rework `debug` docs and add small section on troubleshooting [#5905](https://github.com/GoogleContainerTools/skaffold/pull/5905)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Asdrubal
+- Brian de Alwis
+- Gaurav
+- Marlon Gamez
+- Matthew Michihara
+- Tejal Desai
+- Yuwen Ma
+
 # v1.24.1 Release - 05/17/2021
 
 **Linux**
