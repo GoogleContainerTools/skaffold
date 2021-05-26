@@ -1111,7 +1111,7 @@
           "x-intellij-html-description": "arguments passed to the docker build.",
           "default": "{}",
           "examples": [
-            "{\"key1\": \"value1\", \"key2\": \"value2\"}"
+            "{\"key1\": \"value1\", \"key2\": \"{{ .ENV_VAR }}\"}"
           ]
         },
         "cacheFrom": {

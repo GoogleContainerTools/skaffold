@@ -245,6 +245,43 @@ func TestCreateBuildArgsFromArtifacts(t *testing.T) {
 	}
 }
 
+func TestBuildArgTemplating(t *testing.T) {
+	envs := map[string]string{
+		"MY_KEY":    "abc123",
+		"SO_SECRET": "do not say it",
+	}
+
+	args := map[string]*string{
+		"MY_KEY":    util.StringPtr("{{ .MY_KEY}}"),
+		"SO_SECRET": util.StringPtr("{{ .SO_SECRET}}"),
+	}
+
+	dockerFile := `
+	ARG MY_KEY
+	ARG SO_SECRET
+	ARG foo3
+	ARG SKAFFOLD_GO_GCFLAGS
+	FROM bar1`
+
+	testutil.Run(t, "test_templating_from_env_variables", func(t *testutil.T) {
+		t.SetEnvs(envs)
+		artifact := &latestV1.DockerArtifact{
+			DockerfilePath: "Dockerfile",
+			BuildArgs:      args,
+		}
+
+		tmpDir := t.NewTempDir()
+		tmpDir.Write("./Dockerfile", dockerFile)
+		workspace := tmpDir.Path(".")
+
+		filledMap, err := EvalBuildArgs(config.RunModes.Dev, workspace, artifact.DockerfilePath, artifact.BuildArgs, nil)
+
+		t.CheckNil(err)
+		t.CheckMatches(*filledMap["MY_KEY"], "abc123")
+		t.CheckMatches(*filledMap["SO_SECRET"], "do not say it")
+	})
+}
+
 type mockArtifactResolver struct {
 	m map[string]string
 }
