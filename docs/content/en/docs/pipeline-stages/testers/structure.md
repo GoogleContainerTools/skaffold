@@ -34,4 +34,4 @@ In order to restrict the executed structure tests, a `profile` section can overr
 
 {{% readfile file="samples/testers/structure/testProfile.yaml" %}}
 
-To execute the tests once, run `skaffold build --profile quickcheck`.
+To execute the tests once, run `skaffold test --profile quickcheck`.
