@@ -102,7 +102,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.Profiles,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "apply"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "apply", "test"},
 	},
 	{
 		Name:          "namespace",
@@ -183,7 +183,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.RPCPort,
 		DefValue:      constants.DefaultRPCPort,
 		FlagAddMethod: "IntVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test"},
 	},
 	{
 		Name:          "rpc-http-port",
@@ -191,7 +191,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.RPCHTTPPort,
 		DefValue:      constants.DefaultRPCHTTPPort,
 		FlagAddMethod: "IntVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test"},
 	},
 	{
 		Name:          "label",
@@ -319,7 +319,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.GlobalConfig,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"run", "dev", "debug", "build", "deploy", "delete", "diagnose", "apply"},
+		DefinedOn:     []string{"run", "dev", "debug", "build", "deploy", "delete", "diagnose", "apply", "test"},
 	},
 	{
 		Name:          "kube-context",
@@ -364,7 +364,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.ProfileAutoActivation,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test"},
 		IsEnum:        true,
 	},
 	{
@@ -373,7 +373,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.PropagateProfiles,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test"},
 		IsEnum:        true,
 	},
 	{
