@@ -19,6 +19,7 @@ package output
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"os"
 	"testing"
 
@@ -51,6 +52,18 @@ func TestIsStdOut(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			description: "colorableWriter passed",
+			out:         NewColorWriter(os.Stdout),
+			expected:    true,
+		},
+		{
+			description: "invalid colorableWriter passed",
+			out: SkaffoldWriter{
+				MainWriter: NewColorWriter(ioutil.Discard),
+			},
+			expected: false,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -71,6 +84,25 @@ func TestGetWriter(t *testing.T) {
 				MainWriter: colorableWriter{os.Stdout},
 			},
 			expected: os.Stdout,
+		},
+		{
+			description: "skaffold writer returns os.Stdout without colorableWriter",
+			out: SkaffoldWriter{
+				MainWriter: os.Stdout,
+			},
+			expected: os.Stdout,
+		},
+		{
+			description: "return ioutil.Discard from SkaffoldWriter",
+			out: SkaffoldWriter{
+				MainWriter: NewColorWriter(ioutil.Discard),
+			},
+			expected: ioutil.Discard,
+		},
+		{
+			description: "os.Stdout returned from colorableWriter",
+			out:         NewColorWriter(os.Stdout),
+			expected:    os.Stdout,
 		},
 		{
 			description: "GetWriter returns original writer if not colorable",

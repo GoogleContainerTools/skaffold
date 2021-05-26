@@ -28,15 +28,15 @@ type SkaffoldWriter struct {
 }
 
 func (s SkaffoldWriter) Write(p []byte) (int, error) {
-	for _, w := range []io.Writer{s.MainWriter, s.EventWriter} {
-		n, err := w.Write(p)
-		if err != nil {
-			return n, err
-		}
-		if n < len(p) {
-			return n, io.ErrShortWrite
-		}
+	n, err := s.MainWriter.Write(p)
+	if err != nil {
+		return n, err
 	}
+	if n != len(p) {
+		return n, io.ErrShortWrite
+	}
+
+	s.EventWriter.Write(p)
 
 	return len(p), nil
 }
@@ -52,11 +52,11 @@ func SetupOutput(out io.Writer, defaultColor int, forceColors bool) io.Writer {
 func IsStdout(out io.Writer) bool {
 	sw, isSW := out.(SkaffoldWriter)
 	if isSW {
-		cw, isCW := sw.MainWriter.(colorableWriter)
-		if isCW {
-			return cw.Writer == os.Stdout
-		}
-		return sw.MainWriter == os.Stdout
+		out = sw.MainWriter
+	}
+	cw, isCW := out.(colorableWriter)
+	if isCW {
+		out = cw.Writer
 	}
 	return out == os.Stdout
 }
@@ -65,11 +65,11 @@ func IsStdout(out io.Writer) bool {
 func GetWriter(out io.Writer) io.Writer {
 	sw, isSW := out.(SkaffoldWriter)
 	if isSW {
-		cw, isCW := sw.MainWriter.(colorableWriter)
-		if isCW {
-			return cw.Writer
-		}
-		return sw.MainWriter
+		out = sw.MainWriter
+	}
+	cw, isCW := out.(colorableWriter)
+	if isCW {
+		out = cw.Writer
 	}
 	return out
 }
