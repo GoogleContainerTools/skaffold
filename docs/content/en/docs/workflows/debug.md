@@ -17,12 +17,24 @@ syncing as it leads to users accidentally terminating debugging sessions by savi
 These behaviours can be re-enabled with the `--auto-build`, `--auto-deploy`, and `--auto-sync`
 flags.
 
+Debugging is currently supported for five language runtimes.
+
+  - Go 1.13+ (runtime ID: `go`) using [Delve](https://github.com/go-delve/delve)
+  - NodeJS (runtime ID: `nodejs`) using the NodeJS Inspector (Chrome DevTools)
+  - Java and JVM languages (runtime ID: `jvm`) using JDWP
+  - Python 3.5+ (runtime ID: `python`) using `debugpy` (Debug Adapter Protocol) or `pydevd`
+  - .NET Core (runtime ID: `netcore`) using `vsdbg`
+  
+
 ## How It works
 
 Enabling debugging has two phases:
 
-1. Configuring container images for debugging by recognizing the underlying language runtimes
-2. Monitoring for when debuggable containers start execution. 
+1. **Configuring:** Skaffold automatically examines each built container image and
+   attempts to recognize the underlying language runtime.  Container images can be
+   explicitly configured too.
+3. **Monitoring:** Skaffold watches the cluster to detect when debuggable containers
+   start execution. 
 
 ### Configuring container images for debugging 
 
@@ -77,15 +89,8 @@ an event that can be used by tools like IDEs to establish a debug session.
 
 ## Supported Language Runtimes
 
-Debugging is currently supported for:
-  - Go (runtime ID: `go`) using [Delve](https://github.com/go-delve/delve)
-  - NodeJS (runtime ID: `nodejs`) using the NodeJS Inspector (Chrome DevTools)
-  - Java and JVM languages (runtime ID: `jvm`) using JDWP
-  - Python (runtime ID: `python`) using `debugpy` (Debug Adapter Protocol) or `pydevd`
-  - .NET Core (runtime ID: `netcore`) using `vsdbg`
-  
- This section describes how `debug` recognizes the language runtime used in a
- container image, and how the container image is configured for debugging.
+This section describes how `debug` recognizes the language runtime used in a
+container image, and how the container image is configured for debugging.
  
 Note that many debuggers may require additional information for the location of source files.
 We are looking for ways to identify this information and to pass it back if found.
