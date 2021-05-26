@@ -47,6 +47,8 @@ type LogAggregator struct {
 	colorPicker kubernetes.ColorPicker
 
 	muted             int32
+	startOnce         sync.Once
+	stopOnce          sync.Once
 	sinceTime         time.Time
 	events            chan kubernetes.PodEvent
 	trackedContainers trackedContainers
@@ -91,60 +93,64 @@ func (a *LogAggregator) SetSince(t time.Time) {
 // Start starts a logger that listens to pods and tail their logs
 // if they are matched by the `podSelector`.
 func (a *LogAggregator) StartLogger(ctx context.Context, out io.Writer, namespaces []string) error {
-	if a == nil {
-		// Logs are not activated.
-		return nil
-	}
+	var err error
+	a.startOnce.Do(func() {
+		if a == nil {
+			// Logs are not activated.
+			return
+		}
 
-	a.output = out
+		a.output = out
 
-	a.podWatcher.Register(a.events)
-	stopWatcher, err := a.podWatcher.Start(namespaces)
-	if err != nil {
-		return err
-	}
+		a.podWatcher.Register(a.events)
+		var stopWatcher func()
+		stopWatcher, err = a.podWatcher.Start(namespaces)
+		if err != nil {
+			return
+		}
 
-	go func() {
-		defer stopWatcher()
+		go func() {
+			defer stopWatcher()
 
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case evt, ok := <-a.events:
-				if !ok {
+			for {
+				select {
+				case <-ctx.Done():
 					return
-				}
-
-				// TODO(dgageot): Add EphemeralContainerStatuses
-				pod := evt.Pod
-				for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
-					if c.ContainerID == "" {
-						if c.State.Waiting != nil && c.State.Waiting.Message != "" {
-							output.Red.Fprintln(a.output, c.State.Waiting.Message)
-						}
-						continue
+				case evt, ok := <-a.events:
+					if !ok {
+						return
 					}
 
-					if !a.trackedContainers.add(c.ContainerID) {
-						go a.streamContainerLogs(ctx, pod, c)
+					// TODO(dgageot): Add EphemeralContainerStatuses
+					pod := evt.Pod
+					for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+						if c.ContainerID == "" {
+							if c.State.Waiting != nil && c.State.Waiting.Message != "" {
+								output.Red.Fprintln(a.output, c.State.Waiting.Message)
+							}
+							continue
+						}
+
+						if !a.trackedContainers.add(c.ContainerID) {
+							go a.streamContainerLogs(ctx, pod, c)
+						}
 					}
 				}
 			}
-		}
-	}()
-
-	return nil
+		}()
+	})
+	return err
 }
 
 // Stop stops the logger.
 func (a *LogAggregator) StopLogger() {
-	if a == nil {
-		// Logs are not activated.
-		return
-	}
-
-	close(a.events)
+	a.stopOnce.Do(func() {
+		if a == nil {
+			// Logs are not activated.
+			return
+		}
+		close(a.events)
+	})
 }
 
 func sinceSeconds(d time.Duration) int64 {
@@ -281,7 +287,7 @@ func (a *LogAggregator) Unmute() {
 	atomic.StoreInt32(&a.muted, 0)
 }
 
-// IsMuted says if the logs are to be muted.
+// IsMuted returns true if the logger has been muted.
 func (a *LogAggregator) IsMuted() bool {
 	return atomic.LoadInt32(&a.muted) == 1
 }
