@@ -99,7 +99,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg Config, labels map[string]string, logger log.Logger, h *latestV1.HelmDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, logProvider log.Provider, h *latestV1.HelmDeploy) (*Deployer, error) {
 	hv, err := binVer()
 	if err != nil {
 		return nil, versionGetErr(err)
@@ -110,7 +110,7 @@ func NewDeployer(cfg Config, labels map[string]string, logger log.Logger, h *lat
 	}
 
 	return &Deployer{
-		Logger:        logger,
+		Logger:        logProvider.Get(),
 		HelmDeploy:    h,
 		kubeContext:   cfg.GetKubeContext(),
 		kubeConfig:    cfg.GetKubeConfig(),

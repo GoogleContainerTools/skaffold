@@ -89,7 +89,7 @@ spec:
 					},
 				},
 			}}),
-		}, nil, &log.NoopLogger{}, &latestV1.KubectlDeploy{
+		}, nil, &log.NoopProvider{}, &latestV1.KubectlDeploy{
 			Manifests: []string{"deployment.yaml"},
 		})
 		t.RequireNoError(err)
@@ -249,7 +249,7 @@ spec:
 				Opts: config.SkaffoldOptions{
 					AddSkaffoldLabels: true,
 				},
-			}, nil, &log.NoopLogger{}, &latestV1.KubectlDeploy{
+			}, nil, &log.NoopProvider{}, &latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			})
 			t.RequireNoError(err)
@@ -435,7 +435,7 @@ spec:
 						},
 					},
 				}}),
-			}, nil, &log.NoopLogger{}, &latestV1.HelmDeploy{
+			}, nil, &log.NoopProvider{}, &latestV1.HelmDeploy{
 				Releases: test.helmReleases,
 			})
 			t.RequireNoError(err)

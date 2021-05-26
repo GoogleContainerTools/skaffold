@@ -54,6 +54,7 @@ type LogAggregator struct {
 }
 
 type Config interface {
+	Tail() bool
 	PipelineForImage(imageName string) (latestV1.Pipeline, bool)
 	DefaultPipeline() latestV1.Pipeline
 }

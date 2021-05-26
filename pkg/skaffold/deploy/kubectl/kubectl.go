@@ -61,7 +61,7 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labels map[string]string, logger log.Logger, d *latestV1.KubectlDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, logProvider log.Provider, d *latestV1.KubectlDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -72,7 +72,7 @@ func NewDeployer(cfg Config, labels map[string]string, logger log.Logger, d *lat
 	}
 
 	return &Deployer{
-		Logger:             logger,
+		Logger:             logProvider.Get(),
 		KubectlDeploy:      d,
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
