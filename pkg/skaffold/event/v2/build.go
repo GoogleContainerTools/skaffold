@@ -29,7 +29,6 @@ import (
 const (
 	Cache = "Cache"
 	Build = "Build"
-	Push  = "Push"
 )
 
 var artifactIDs = map[string]int{}
@@ -40,37 +39,37 @@ func AssignArtifactIDs(artifacts []*latestV1.Artifact) {
 	}
 }
 
-func CacheCheckInProgress(id int, artifact string) {
-	buildSubtaskEvent(id, artifact, Cache, Started, nil)
+func CacheCheckInProgress(artifact string) {
+	buildSubtaskEvent(artifact, Cache, Started, nil)
 }
 
-func CacheCheckMiss(id int, artifact string) {
-	buildSubtaskEvent(id, artifact, Cache, Failed, nil)
+func CacheCheckMiss(artifact string) {
+	buildSubtaskEvent(artifact, Cache, Failed, nil)
 }
 
-func CacheCheckHit(id int, artifact string) {
-	buildSubtaskEvent(id, artifact, Cache, Succeeded, nil)
+func CacheCheckHit(artifact string) {
+	buildSubtaskEvent(artifact, Cache, Succeeded, nil)
 }
 
-func BuildInProgress(id int, artifact string) {
-	buildSubtaskEvent(id, artifact, Build, Started, nil)
+func BuildInProgress(artifact string) {
+	buildSubtaskEvent(artifact, Build, Started, nil)
 }
 
-func BuildFailed(id int, artifact string, err error) {
-  buildSubtaskEvent(id, artifact, Build, Failed, err)
+func BuildFailed(artifact string, err error) {
+  buildSubtaskEvent(artifact, Build, Failed, err)
 }
 
-func BuildSucceeded(id int, artifact string) {
-	buildSubtaskEvent(id, artifact, Build, Succeeded, nil)
+func BuildSucceeded(artifact string) {
+	buildSubtaskEvent(artifact, Build, Succeeded, nil)
 }
 
-func buildSubtaskEvent(id int, artifact, step, status string, err error) {
+func buildSubtaskEvent(artifact, step, status string, err error) {
 	var aErr *proto.ActionableErr
 	if err != nil {
 		aErr = sErrors.ActionableErrV2(handler.cfg, constants.Build, err)
 	}
 	handler.handleBuildSubtaskEvent(&proto.BuildSubtaskEvent{
-		Id:            strconv.Itoa(id),
+		Id:            strconv.Itoa(artifactIDs[artifact]),
 		TaskId:        fmt.Sprintf("%s-%d", constants.Build, handler.iteration),
 		Artifact:      artifact,
 		Step:          step,
