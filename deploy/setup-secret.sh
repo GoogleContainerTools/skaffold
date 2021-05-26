@@ -36,6 +36,6 @@ if [ $retVal -ne 0 ]; then
   echo "No key created."
   exit 1
 fi
-KEY_ID=$(gcloud iam service-accounts keys list --iam-account=metrics-writer@k8s-skaffold.iam.gserviceaccount.com --project=k8s-skaffold --managed-by=user --filter="validAfterTime.date('%Y-%m-%d', Z) = `date +%F`" --format="value(name)")
+KEY_ID=$(gcloud iam service-accounts keys list --iam-account=metrics-writer@k8s-skaffold.iam.gserviceaccount.com --project=k8s-skaffold --managed-by=user --filter="validAfterTime.date('%Y-%m-%d', Z) = `date +%F`" --format="value(name)" --limit=1)
 gsutil cp ${KEY_FILE} gs://${BUCKET_ID}/${KEY_ID}.json
 gsutil cp ${KEY_FILE} gs://${BUCKET_ID}/${LATEST_GCS_PATH}
