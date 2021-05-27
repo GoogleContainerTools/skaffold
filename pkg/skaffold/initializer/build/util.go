@@ -24,7 +24,7 @@ import (
 )
 
 func matchBuildersToImages(builders []InitBuilder, images []string) ([]ArtifactInfo, []InitBuilder, []string) {
-	images = tag.StripTags(images)
+	images = tag.StripTags(images, true)
 
 	var artifactInfos []ArtifactInfo
 	var unresolvedImages = make(sortedSet)

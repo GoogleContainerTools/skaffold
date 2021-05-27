@@ -56,7 +56,7 @@ func NewColorPicker(imageNames []string) ColorPicker {
 	imageColors := make(map[string]output.Color)
 
 	for i, imageName := range imageNames {
-		imageColors[tag.StripTag(imageName)] = colorCodes[i%len(colorCodes)]
+		imageColors[tag.StripTag(imageName, false)] = colorCodes[i%len(colorCodes)]
 	}
 
 	return &colorPicker{
@@ -69,7 +69,7 @@ func NewColorPicker(imageNames []string) ColorPicker {
 // write with no formatting.
 func (p *colorPicker) Pick(pod *v1.Pod) output.Color {
 	for _, container := range pod.Spec.Containers {
-		if c, present := p.imageColors[tag.StripTag(container.Image)]; present {
+		if c, present := p.imageColors[tag.StripTag(container.Image, false)]; present {
 			return c
 		}
 	}
