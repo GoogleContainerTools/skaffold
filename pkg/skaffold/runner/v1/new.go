@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strconv"
 
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -53,6 +54,8 @@ import (
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	event.InitializeState(runCtx)
 	event.LogMetaEvent()
+	eventV2.InitializeState(runCtx)
+	eventV2.LogMetaEvent()
 	kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
 
 	tagger, err := tag.NewTaggerMux(runCtx)
