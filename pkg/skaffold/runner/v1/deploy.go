@@ -49,6 +49,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 
 	// Logs should be retrieved up to just before the deploy
 	r.deployer.SetSince(time.Now())
+	r.deployer.RegisterBuildArtifacts(artifacts)
 	// First deploy
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
 		eventV2.TaskFailed(constants.Deploy, err)

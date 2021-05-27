@@ -94,12 +94,11 @@ func (a *LogAggregator) SetSince(t time.Time) {
 // if they are matched by the `podSelector`.
 func (a *LogAggregator) StartLogger(ctx context.Context, out io.Writer, namespaces []string) error {
 	var err error
+	if a == nil {
+		// Logs are not activated.
+		return nil
+	}
 	a.startOnce.Do(func() {
-		if a == nil {
-			// Logs are not activated.
-			return
-		}
-
 		a.output = out
 
 		a.podWatcher.Register(a.events)
@@ -144,11 +143,11 @@ func (a *LogAggregator) StartLogger(ctx context.Context, out io.Writer, namespac
 
 // Stop stops the logger.
 func (a *LogAggregator) StopLogger() {
+	if a == nil {
+		// Logs are not activated.
+		return
+	}
 	a.stopOnce.Do(func() {
-		if a == nil {
-			// Logs are not activated.
-			return
-		}
 		close(a.events)
 	})
 }

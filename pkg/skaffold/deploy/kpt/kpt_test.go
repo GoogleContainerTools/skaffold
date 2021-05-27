@@ -1134,7 +1134,7 @@ func TestNonEmptyKubeconfig(t *testing.T) {
 
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&util.DefaultExecCommand, commands)
-		k := NewDeployer(&kptConfig{config: "testConfigPath"}, nil, &latestV1.KptDeploy{
+		k := NewDeployer(&kptConfig{config: "testConfigPath"}, nil, &log.NoopProvider{}, &latestV1.KptDeploy{
 			Dir: ".",
 			Live: latestV1.KptLive{
 				Apply: latestV1.KptApplyInventory{
