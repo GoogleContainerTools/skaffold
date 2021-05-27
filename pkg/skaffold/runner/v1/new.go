@@ -34,7 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/status"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -54,7 +53,6 @@ import (
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	event.InitializeState(runCtx)
 	event.LogMetaEvent()
-	eventV2.InitializeState(runCtx)
 	kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
 
 	tagger, err := tag.NewTaggerMux(runCtx)

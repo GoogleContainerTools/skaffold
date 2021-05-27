@@ -17,21 +17,31 @@ limitations under the License.
 package v2
 
 import (
+	"fmt"
 	"strings"
 
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
-func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string) *proto.Metadata {
-	artifactCount := 0
-	for _, p := range pipelines {
-		artifactCount += len(p.Build.Artifacts)
-	}
-	m := &proto.Metadata{
-		Build: &proto.BuildMetadata{
-			NumberOfArtifacts: int32(artifactCount),
+func LogMetaEvent() {
+	metadata := handler.state.Metadata
+	handler.handle(
+		&proto.Event{
+			EventType: &proto.Event_MetaEvent{
+				MetaEvent: &proto.MetaEvent{
+					Entry:    fmt.Sprintf("Starting Skaffold: %+v", version.Get()),
+					Metadata: metadata,
+				},
+			},
 		},
+	)
+}
+
+func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string) *proto.Metadata {
+	m := &proto.Metadata{
+		Build:  &proto.BuildMetadata{},
 		Deploy: &proto.DeployMetadata{},
 	}
 
@@ -48,13 +58,13 @@ func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string) *prot
 		m.Build.Type = proto.BuildType_UNKNOWN_BUILD_TYPE
 	}
 
-	var builders []*proto.BuildMetadata_ImageBuilder
+	var artifacts []*proto.BuildMetadata_Artifact
 	var deployers []*proto.DeployMetadata_Deployer
 	for _, p := range pipelines {
-		builders = append(builders, getBuilders(p.Build)...)
+		artifacts = append(artifacts, getArtifacts(p.Build)...)
 		deployers = append(deployers, getDeploy(p.Deploy)...)
 	}
-	m.Build.Builders = builders
+	m.Build.Artifacts = artifacts
 
 	if len(deployers) == 0 {
 		m.Deploy = &proto.DeployMetadata{}
@@ -67,33 +77,31 @@ func initializeMetadata(pipelines []latestV1.Pipeline, kubeContext string) *prot
 	return m
 }
 
-func getBuilders(b latestV1.BuildConfig) []*proto.BuildMetadata_ImageBuilder {
-	m := map[proto.BuilderType]int{}
+func getArtifacts(b latestV1.BuildConfig) []*proto.BuildMetadata_Artifact {
+	result := []*proto.BuildMetadata_Artifact{}
 	for _, a := range b.Artifacts {
+		artifact := &proto.BuildMetadata_Artifact{
+			Name: a.ImageName,
+		}
 		switch {
 		case a.BazelArtifact != nil:
-			updateOrAddKey(m, proto.BuilderType_BAZEL)
+			artifact.Type = proto.BuilderType_BAZEL
 		case a.BuildpackArtifact != nil:
-			updateOrAddKey(m, proto.BuilderType_BUILDPACKS)
+			artifact.Type = proto.BuilderType_BUILDPACKS
 		case a.CustomArtifact != nil:
-			updateOrAddKey(m, proto.BuilderType_CUSTOM)
+			artifact.Type = proto.BuilderType_CUSTOM
 		case a.DockerArtifact != nil:
-			updateOrAddKey(m, proto.BuilderType_DOCKER)
+			artifact.Type = proto.BuilderType_DOCKER
 		case a.JibArtifact != nil:
-			updateOrAddKey(m, proto.BuilderType_JIB)
+			artifact.Type = proto.BuilderType_JIB
 		case a.KanikoArtifact != nil:
-			updateOrAddKey(m, proto.BuilderType_KANIKO)
+			artifact.Type = proto.BuilderType_KANIKO
 		default:
-			updateOrAddKey(m, proto.BuilderType_UNKNOWN_BUILDER_TYPE)
+			artifact.Type = proto.BuilderType_UNKNOWN_BUILDER_TYPE
 		}
+		result = append(result, artifact)
 	}
-	builders := make([]*proto.BuildMetadata_ImageBuilder, len(m))
-	i := 0
-	for k, v := range m {
-		builders[i] = &proto.BuildMetadata_ImageBuilder{Type: k, Count: int32(v)}
-		i++
-	}
-	return builders
+	return result
 }
 
 func getDeploy(d latestV1.DeployConfig) []*proto.DeployMetadata_Deployer {
@@ -109,14 +117,6 @@ func getDeploy(d latestV1.DeployConfig) []*proto.DeployMetadata_Deployer {
 		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUSTOMIZE, Count: 1})
 	}
 	return deployers
-}
-
-func updateOrAddKey(m map[proto.BuilderType]int, k proto.BuilderType) {
-	if _, ok := m[k]; ok {
-		m[k]++
-		return
-	}
-	m[k] = 1
 }
 
 func getClusterType(c string) proto.ClusterType {

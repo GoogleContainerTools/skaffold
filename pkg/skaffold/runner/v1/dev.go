@@ -70,8 +70,10 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 	defer r.monitor.Reset()
 	defer r.listener.LogWatchToUser(out)
 	event.DevLoopInProgress(r.devIteration)
+	eventV2.InitializeState(r.runCtx)
 	eventV2.TaskInProgress(constants.DevLoop)
 	defer func() { r.devIteration++ }()
+	eventV2.LogMetaEvent()
 
 	meterUpdated := false
 	if needsSync {
@@ -177,8 +179,11 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 // config until interrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latestV1.Artifact) error {
 	event.DevLoopInProgress(r.devIteration)
+	eventV2.InitializeState(r.runCtx)
 	eventV2.TaskInProgress(constants.DevLoop)
 	defer func() { r.devIteration++ }()
+	eventV2.LogMetaEvent()
+
 	g := getTransposeGraph(artifacts)
 	// Watch artifacts
 	start := time.Now()

@@ -37,19 +37,19 @@ message Metadata {
     BuildMetadata build = 1;
     DeployMetadata deploy = 2;
     TestMetadata test = 3;
+    string runID = 4;
     // Additional key value pairs to describe the build pipeline
     map<string, string> additional = 99;
 }
 
 message BuildMetadata {
-  message ImageBuilder {
+  message Artifact {
       enums.BuilderType type = 1;
-      int32 count = 2;
+      string name = 2;
   }
-  int32 numberOfArtifacts = 1;
-  repeated ImageBuilder builders= 2;
-  enums.BuildType type = 3;
-  // Additional key value pairs to describe the deploy pipeline
+  repeated Artifact artifacts = 1;
+  enums.BuildType type = 2;
+  // Additional key value pairs to describe the build pipeline
   map<string, string> additional = 99;
 }
 
