@@ -56,7 +56,7 @@ func BuildInProgress(artifact string) {
 }
 
 func BuildFailed(artifact string, err error) {
-  buildSubtaskEvent(artifact, Build, Failed, err)
+	buildSubtaskEvent(artifact, Build, Failed, err)
 }
 
 func BuildSucceeded(artifact string) {

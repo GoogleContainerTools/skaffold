@@ -356,9 +356,11 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 		return
 	case *proto.Event_BuildSubtaskEvent:
 		be := e.BuildSubtaskEvent
-		ev.stateLock.Lock()
-		ev.state.BuildState.Artifacts[be.Artifact] = be.Status
-		ev.stateLock.Unlock()
+		if be.Step == Build {
+			ev.stateLock.Lock()
+			ev.state.BuildState.Artifacts[be.Artifact] = be.Status
+			ev.stateLock.Unlock()
+		}
 	case *proto.Event_TestEvent:
 		te := e.TestEvent
 		ev.stateLock.Lock()
