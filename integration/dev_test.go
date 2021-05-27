@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -78,6 +79,62 @@ func TestDevNotification(t *testing.T) {
 				return dep.GetGeneration() != newDep.GetGeneration(), nil
 			})
 			failNowIfError(t, err)
+		})
+	}
+}
+
+func TestDevGracefulCancel(t *testing.T) {
+	tests := []struct {
+		name        string
+		dir         string
+		pods        []string
+		deployments []string
+	}{
+		{
+			name: "getting-started",
+			dir:  "examples/getting-started",
+			pods: []string{"getting-started"},
+		},
+		{
+			name:        "multi-config-microservices",
+			dir:         "examples/multi-config-microservices",
+			deployments: []string{"leeroy-app", "leeroy-web"},
+		},
+		{
+			name: "multiple deployers",
+			dir:  "testdata/deploy-multiple",
+			pods: []string{"deploy-kubectl", "deploy-kustomize"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ns, client := SetupNamespace(t)
+
+			procChan := make(chan *os.Process, 1)
+
+			go func() {
+				proc, _ := skaffold.Dev().InDir(test.dir).InNs(ns.Name).RunWithProcess(t)
+				procChan <- proc
+			}()
+
+			p := <-procChan
+			client.WaitForPodsReady(test.pods...)
+			client.WaitForDeploymentsToStabilize(test.deployments...)
+
+			defer func() {
+				state, _ := p.Wait()
+
+				// We can't `recover()` from a remotely panicked process, but we can check exit code instead.
+				// Exit code 2 means the process panicked.
+				// https://github.com/golang/go/issues/24284
+				if state.ExitCode() == 2 {
+					t.Fail()
+				}
+			}()
+
+			// once deployments are stable, send a SIGINT and make sure things cleanup correctly
+			p.Signal(syscall.SIGINT)
 		})
 	}
 }
