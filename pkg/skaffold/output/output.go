@@ -22,12 +22,12 @@ import (
 	"os"
 )
 
-type SkaffoldWriter struct {
+type skaffoldWriter struct {
 	MainWriter  io.Writer
 	EventWriter io.Writer
 }
 
-func (s SkaffoldWriter) Write(p []byte) (int, error) {
+func (s skaffoldWriter) Write(p []byte) (int, error) {
 	n, err := s.MainWriter.Write(p)
 	if err != nil {
 		return n, err
@@ -41,8 +41,8 @@ func (s SkaffoldWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func SetupOutput(out io.Writer, defaultColor int, forceColors bool) io.Writer {
-	return SkaffoldWriter{
+func GetWriter(out io.Writer, defaultColor int, forceColors bool) io.Writer {
+	return skaffoldWriter{
 		MainWriter: SetupColors(out, defaultColor, forceColors),
 		// TODO(marlongamez): Replace this once event writer is implemented
 		EventWriter: ioutil.Discard,
@@ -50,7 +50,7 @@ func SetupOutput(out io.Writer, defaultColor int, forceColors bool) io.Writer {
 }
 
 func IsStdout(out io.Writer) bool {
-	sw, isSW := out.(SkaffoldWriter)
+	sw, isSW := out.(skaffoldWriter)
 	if isSW {
 		out = sw.MainWriter
 	}
@@ -61,9 +61,9 @@ func IsStdout(out io.Writer) bool {
 	return out == os.Stdout
 }
 
-// GetWriter returns the underlying writer if out is a colorableWriter
-func GetWriter(out io.Writer) io.Writer {
-	sw, isSW := out.(SkaffoldWriter)
+// GetUnderlyingWriter returns the underlying writer if out is a colorableWriter
+func GetUnderlyingWriter(out io.Writer) io.Writer {
+	sw, isSW := out.(skaffoldWriter)
 	if isSW {
 		out = sw.MainWriter
 	}

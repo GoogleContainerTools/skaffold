@@ -144,7 +144,7 @@ func IsColorable(out io.Writer) bool {
 	switch w := out.(type) {
 	case colorableWriter:
 		return true
-	case SkaffoldWriter:
+	case skaffoldWriter:
 		return IsColorable(w.MainWriter)
 	default:
 		return false

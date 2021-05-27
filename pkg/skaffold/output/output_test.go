@@ -47,7 +47,7 @@ func TestIsStdOut(t *testing.T) {
 		},
 		{
 			description: "colorable std out passed",
-			out: SkaffoldWriter{
+			out: skaffoldWriter{
 				MainWriter: NewColorWriter(os.Stdout),
 			},
 			expected: true,
@@ -59,7 +59,7 @@ func TestIsStdOut(t *testing.T) {
 		},
 		{
 			description: "invalid colorableWriter passed",
-			out: SkaffoldWriter{
+			out: skaffoldWriter{
 				MainWriter: NewColorWriter(ioutil.Discard),
 			},
 			expected: false,
@@ -72,7 +72,7 @@ func TestIsStdOut(t *testing.T) {
 	}
 }
 
-func TestGetWriter(t *testing.T) {
+func TestGetUnderlyingWriter(t *testing.T) {
 	tests := []struct {
 		description string
 		out         io.Writer
@@ -80,21 +80,21 @@ func TestGetWriter(t *testing.T) {
 	}{
 		{
 			description: "colorable os.Stdout returns os.Stdout",
-			out: SkaffoldWriter{
+			out: skaffoldWriter{
 				MainWriter: colorableWriter{os.Stdout},
 			},
 			expected: os.Stdout,
 		},
 		{
 			description: "skaffold writer returns os.Stdout without colorableWriter",
-			out: SkaffoldWriter{
+			out: skaffoldWriter{
 				MainWriter: os.Stdout,
 			},
 			expected: os.Stdout,
 		},
 		{
-			description: "return ioutil.Discard from SkaffoldWriter",
-			out: SkaffoldWriter{
+			description: "return ioutil.Discard from skaffoldWriter",
+			out: skaffoldWriter{
 				MainWriter: NewColorWriter(ioutil.Discard),
 			},
 			expected: ioutil.Discard,
@@ -112,7 +112,7 @@ func TestGetWriter(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(true, test.expected == GetWriter(test.out))
+			t.CheckDeepEqual(true, test.expected == GetUnderlyingWriter(test.out))
 		})
 	}
 }

@@ -91,7 +91,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 
 	builderImage, runImage, pullPolicy := resolveDependencyImages(artifact, b.artifacts, a.Dependencies, b.pushImages)
 
-	if err := runPackBuildFunc(ctx, output.GetWriter(out), b.localDocker, pack.BuildOptions{
+	if err := runPackBuildFunc(ctx, output.GetUnderlyingWriter(out), b.localDocker, pack.BuildOptions{
 		AppPath:      workspace,
 		Builder:      builderImage,
 		RunImage:     runImage,
