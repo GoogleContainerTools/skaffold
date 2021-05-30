@@ -741,7 +741,7 @@ type HelmRelease struct {
 	RecreatePods bool `yaml:"recreatePods,omitempty"`
 
 	// SkipBuildDependencies should build dependencies be skipped.
-	// Ignored when `remote: true`.
+	// Ignored for `remoteChart`.
 	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
 
 	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
@@ -752,8 +752,8 @@ type HelmRelease struct {
 	Repo string `yaml:"repo,omitempty"`
 
 	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
-	// Default is `true` when helm chart is local (`remote: false`).
-	// Default is `false` if `remote: true`.
+	// Default is `true` when helm chart is local (has `chartPath`).
+	// Default is `false` when helm chart is remote (has `remoteChart`).
 	UpgradeOnChange *bool `yaml:"upgradeOnChange,omitempty"`
 
 	// Overrides are key-value pairs.
