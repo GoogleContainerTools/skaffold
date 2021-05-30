@@ -261,8 +261,10 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 			return userErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
 		}
 
-		args := []string{"template", chartSource(r)}
-		args = append(args[:1], append([]string{releaseName}, args[1:]...)...)
+		args := []string{"template", releaseName, chartSource(r)}
+		if r.Packaged == nil && r.Version != "" {
+			args = append(args, "--version", r.Version)
+		}
 
 		params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
 		if err != nil {
