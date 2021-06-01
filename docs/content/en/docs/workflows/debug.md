@@ -227,7 +227,9 @@ a debug launcher that examines the app command-line.
 
 #### .NET Core (runtime: `dotnet`, protocols: `vsdbg`)
 
-.NET Core applications are configured to be deployed along with `vsdbg`.
+.NET Core applications are configured to be deployed along with `vsdbg`
+for VS Code. 
+
 
 .NET Core application are recognized by:
 - the presence of a standard .NET environment variable:
@@ -237,7 +239,9 @@ a debug launcher that examines the app command-line.
 
 Furthermore, your app must be built with the `--configuration Debug` options to disable optimizations.
 
-**Note for users of [VS Code's debug adapter for C#](https://github.com/OmniSharp/omnisharp-vscode):**
+{{< alert title="Omnisharp for VS Code" >}}
+
+For users of [VS Code's debug adapter for C#](https://github.com/OmniSharp/omnisharp-vscode):**
 the following configuration can be used to debug a container. It assumes that your code is deployed
 in `/app` or `/src` folder in the container. If that is not the case, the `sourceFileMap` property
 should be changed to match the correct folder. `processId` is usually 1 but might be different if you
@@ -248,7 +252,7 @@ your base image.  (`//` comments must be stripped.)
     "name": "Skaffold Debug",
     "type": "coreclr",
     "request": "attach",
-    "processId" : 1, 
+    Tweak"processId" : 1, 
     "justMyCode": true, // set to `true` in debug configuration and `false` in release configuration
     "pipeTransport": {
         "pipeProgram": "kubectl",
@@ -272,6 +276,12 @@ your base image.  (`//` comments must be stripped.)
     }
 }
 ```
+{{< /alert >}}
+
+{{< alert title="JetBrains Rider" >}}
+This set up does not yet work with JetBrains' Rider,
+but [there is a workaround](https://github.com/GoogleCloudPlatform/cloud-code-intellij/wiki/Manual-set-up-for-remote-debugging-in-Rider).
+{{< /alert >}}
 
 ## Troubleshooting
 
