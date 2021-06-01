@@ -1401,6 +1401,20 @@ func TestHelmRender(t *testing.T) {
 				}},
 		},
 		{
+			description: "render with remote chart",
+			shouldErr:   false,
+			commands: testutil.CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+			helm: testDeployRemoteChart,
+		},
+		{
+			description: "render with remote chart with version",
+			shouldErr:   false,
+			commands: testutil.CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --version 1.0.0 --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+			helm: testDeployRemoteChartVersion,
+		},
+		{
 			description: "render with cli namespace",
 			shouldErr:   false,
 			namespace:   "clinamespace",
