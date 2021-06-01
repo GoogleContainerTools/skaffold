@@ -239,8 +239,13 @@ for VS Code.
 
 Furthermore, your app must be built with the `--configuration Debug` options to disable optimizations.
 
-{{< alert title="Omnisharp for VS Code" >}}
 
+{{< alert title="JetBrains Rider" >}}
+This set up does not yet work automatically with Cloud Code for IntelliJ in JetBrains Rider,
+but [there is a workaround](https://github.com/GoogleCloudPlatform/cloud-code-intellij/wiki/Manual-set-up-for-remote-debugging-in-Rider).
+{{< /alert >}}
+
+{{< alert title="Omnisharp for VS Code" >}}
 For users of [VS Code's debug adapter for C#](https://github.com/OmniSharp/omnisharp-vscode):**
 the following configuration can be used to debug a container. It assumes that your code is deployed
 in `/app` or `/src` folder in the container. If that is not the case, the `sourceFileMap` property
@@ -252,7 +257,7 @@ your base image.  (`//` comments must be stripped.)
     "name": "Skaffold Debug",
     "type": "coreclr",
     "request": "attach",
-    Tweak"processId" : 1, 
+    "processId" : 1, 
     "justMyCode": true, // set to `true` in debug configuration and `false` in release configuration
     "pipeTransport": {
         "pipeProgram": "kubectl",
@@ -276,11 +281,6 @@ your base image.  (`//` comments must be stripped.)
     }
 }
 ```
-{{< /alert >}}
-
-{{< alert title="JetBrains Rider" >}}
-This set up does not yet work with JetBrains' Rider,
-but [there is a workaround](https://github.com/GoogleCloudPlatform/cloud-code-intellij/wiki/Manual-set-up-for-remote-debugging-in-Rider).
 {{< /alert >}}
 
 ## Troubleshooting
