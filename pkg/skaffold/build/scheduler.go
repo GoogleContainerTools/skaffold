@@ -89,12 +89,12 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	defer release()
 
 	event.BuildInProgress(a.ImageName)
-	eventV2.BuildInProgress(i, a.ImageName)
+	eventV2.BuildInProgress(a.ImageName)
 
 	w, closeFn, err := s.logger.GetWriter()
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
-		eventV2.BuildFailed(i, a.ImageName, err)
+		eventV2.BuildFailed(a.ImageName, err)
 		return err
 	}
 	defer closeFn()
@@ -102,14 +102,14 @@ func (s *scheduler) build(ctx context.Context, tags tag.ImageTags, i int) error 
 	finalTag, err := performBuild(ctx, w, tags, a, s.artifactBuilder)
 	if err != nil {
 		event.BuildFailed(a.ImageName, err)
-		eventV2.BuildFailed(i, a.ImageName, err)
+		eventV2.BuildFailed(a.ImageName, err)
 		return err
 	}
 
 	s.results.Record(a, finalTag)
 	n.markComplete()
 	event.BuildComplete(a.ImageName)
-	eventV2.BuildSucceeded(i, a.ImageName)
+	eventV2.BuildSucceeded(a.ImageName)
 	return nil
 }
 
