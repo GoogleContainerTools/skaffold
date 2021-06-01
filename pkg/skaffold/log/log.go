@@ -35,6 +35,9 @@ type Logger interface {
 
 	SetSince(time.Time)
 
+	// The logger sometimes uses information about the currently deployed artifacts
+	// to actually retrieve logs (e.g. the Kubernetes PodSelector). Thus, we need to
+	// track the current build artifacts in the logger.
 	RegisterBuildArtifacts([]graph.Artifact)
 }
 

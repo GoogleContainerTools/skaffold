@@ -249,7 +249,7 @@ func (b *RunBuilder) Run(t *testing.T) error {
 	return nil
 }
 
-// RunWithPid starts the skaffold command and returns the process id and error.
+// RunWithProcess starts the skaffold command and returns the process id and error.
 func (b *RunBuilder) RunWithProcess(t *testing.T) (*os.Process, error) {
 	t.Helper()
 

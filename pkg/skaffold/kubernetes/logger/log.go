@@ -49,6 +49,7 @@ type LogAggregator struct {
 	muted             int32
 	startOnce         sync.Once
 	stopOnce          sync.Once
+	stopWatcher       func()
 	sinceTime         time.Time
 	events            chan kubernetes.PodEvent
 	trackedContainers trackedContainers
@@ -73,6 +74,7 @@ func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, conf
 	}
 }
 
+// RegisterBuildArtifacts tracks the provided build artifacts in the colorpicker
 func (a *LogAggregator) RegisterBuildArtifacts(artifacts []graph.Artifact) {
 	// image tags are added to the podSelector by the runner, which are picked up by the podWatcher
 	// we just need to make sure the colorPicker knows about them.
@@ -90,7 +92,7 @@ func (a *LogAggregator) SetSince(t time.Time) {
 	a.sinceTime = t
 }
 
-// Start starts a logger that listens to pods and tail their logs
+// StartLogger starts a logger that listens to pods and tail their logs
 // if they are matched by the `podSelector`.
 func (a *LogAggregator) StartLogger(ctx context.Context, out io.Writer, namespaces []string) error {
 	var err error
@@ -102,15 +104,13 @@ func (a *LogAggregator) StartLogger(ctx context.Context, out io.Writer, namespac
 		a.output = out
 
 		a.podWatcher.Register(a.events)
-		var stopWatcher func()
-		stopWatcher, err = a.podWatcher.Start(namespaces)
+		stopWatcher, err := a.podWatcher.Start(namespaces)
+		a.stopWatcher = stopWatcher
 		if err != nil {
 			return
 		}
 
 		go func() {
-			defer stopWatcher()
-
 			for {
 				select {
 				case <-ctx.Done():
@@ -141,13 +141,14 @@ func (a *LogAggregator) StartLogger(ctx context.Context, out io.Writer, namespac
 	return err
 }
 
-// Stop stops the logger.
+// StopLogger stops the logger.
 func (a *LogAggregator) StopLogger() {
 	if a == nil {
 		// Logs are not activated.
 		return
 	}
 	a.stopOnce.Do(func() {
+		a.stopWatcher()
 		close(a.events)
 	})
 }

@@ -359,11 +359,3 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string, logPro
 
 	return deployers, nil
 }
-
-// func getLogger(runCtx *runcontext.RunContext, cli *pkgkubectl.CLI, podSelector kubernetes.PodSelector) log.Logger {
-// 	if !runCtx.Tail() {
-// 		return &log.NoopLogger{}
-// 	}
-
-// 	return logger.NewLogAggregator(cli, podSelector, runCtx)
-// }
