@@ -241,8 +241,8 @@ Furthermore, your app must be built with the `--configuration Debug` options to 
 
 
 {{< alert title="JetBrains Rider" >}}
-This set up does not yet work automatically with Cloud Code for IntelliJ in JetBrains Rider,
-but [there is a workaround](https://github.com/GoogleCloudPlatform/cloud-code-intellij/wiki/Manual-set-up-for-remote-debugging-in-Rider).
+This set up does not yet work automatically with [Cloud Code for IntelliJ in JetBrains Rider](https://github.com/GoogleCloudPlatform/cloud-code-intellij/issues/2903).
+There is [a manual workaround](https://github.com/GoogleCloudPlatform/cloud-code-intellij/wiki/Manual-set-up-for-remote-debugging-in-Rider).
 {{< /alert >}}
 
 {{< alert title="Omnisharp for VS Code" >}}
