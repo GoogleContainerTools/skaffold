@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -56,6 +57,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	var needToBuild []*latestV1.Artifact
 	var alreadyBuilt []graph.Artifact
 	for i, artifact := range artifacts {
+		eventV2.CacheCheckInProgress(artifact.ImageName)
 		output.Default.Fprintf(out, " - %s: ", artifact.ImageName)
 
 		result := results[i]
@@ -65,24 +67,28 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			return nil, result.err
 
 		case needsBuilding:
+			eventV2.CacheCheckMiss(artifact.ImageName)
 			output.Yellow.Fprintln(out, "Not found. Building")
 			hashByName[artifact.ImageName] = result.Hash()
 			needToBuild = append(needToBuild, artifact)
 			continue
 
 		case needsTagging:
+			eventV2.CacheCheckHit(artifact.ImageName)
 			output.Green.Fprintln(out, "Found. Tagging")
 			if err := result.Tag(ctx, c); err != nil {
 				return nil, fmt.Errorf("tagging image: %w", err)
 			}
 
 		case needsPushing:
+			eventV2.CacheCheckHit(artifact.ImageName)
 			output.Green.Fprintln(out, "Found. Pushing")
 			if err := result.Push(ctx, out, c); err != nil {
 				return nil, fmt.Errorf("%s: %w", sErrors.PushImageErr, err)
 			}
 
 		default:
+			eventV2.CacheCheckHit(artifact.ImageName)
 			isLocal, err := c.isLocalImage(artifact.ImageName)
 			if err != nil {
 				return nil, err
