@@ -55,6 +55,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	event.InitializeState(runCtx)
 	event.LogMetaEvent()
 	eventV2.InitializeState(runCtx)
+	eventV2.LogMetaEvent()
 	kubectlCLI := pkgkubectl.NewCLI(runCtx, "")
 
 	tagger, err := tag.NewTaggerMux(runCtx)

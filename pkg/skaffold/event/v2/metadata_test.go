@@ -37,7 +37,7 @@ func TestEmptyState(t *testing.T) {
 			cfg: latestV1.Pipeline{
 				Build: latestV1.BuildConfig{
 					BuildType: latestV1.BuildType{LocalBuild: &latestV1.LocalBuild{}},
-					Artifacts: []*latestV1.Artifact{{ImageName: "img", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}}},
+					Artifacts: []*latestV1.Artifact{{ImageName: "docker-artifact-1", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}}},
 				},
 				Deploy: latestV1.DeployConfig{
 					DeployType: latestV1.DeployType{
@@ -49,9 +49,8 @@ func TestEmptyState(t *testing.T) {
 			cluster: "minikube",
 			expected: &proto.Metadata{
 				Build: &proto.BuildMetadata{
-					NumberOfArtifacts: 1,
-					Type:              proto.BuildType_LOCAL,
-					Builders:          []*proto.BuildMetadata_ImageBuilder{{Type: proto.BuilderType_DOCKER, Count: 1}},
+					Type:      proto.BuildType_LOCAL,
+					Artifacts: []*proto.BuildMetadata_Artifact{{Type: proto.BuilderType_DOCKER, Name: "docker-artifact-1"}},
 				},
 				Deploy: &proto.DeployMetadata{
 					Cluster: proto.ClusterType_MINIKUBE,
@@ -67,9 +66,9 @@ func TestEmptyState(t *testing.T) {
 				Build: latestV1.BuildConfig{
 					BuildType: latestV1.BuildType{Cluster: &latestV1.ClusterDetails{}},
 					Artifacts: []*latestV1.Artifact{
-						{ImageName: "img1", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}},
-						{ImageName: "img2", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}},
-						{ImageName: "img3", ArtifactType: latestV1.ArtifactType{JibArtifact: &latestV1.JibArtifact{}}},
+						{ImageName: "docker-artifact-1", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}},
+						{ImageName: "docker-artifact-2", ArtifactType: latestV1.ArtifactType{DockerArtifact: &latestV1.DockerArtifact{}}},
+						{ImageName: "jib-artifact-1", ArtifactType: latestV1.ArtifactType{JibArtifact: &latestV1.JibArtifact{}}},
 					},
 				},
 				Deploy: latestV1.DeployConfig{
@@ -81,11 +80,11 @@ func TestEmptyState(t *testing.T) {
 			cluster: "gke-tejal-test",
 			expected: &proto.Metadata{
 				Build: &proto.BuildMetadata{
-					NumberOfArtifacts: 3,
-					Type:              proto.BuildType_CLUSTER,
-					Builders: []*proto.BuildMetadata_ImageBuilder{
-						{Type: proto.BuilderType_JIB, Count: 1},
-						{Type: proto.BuilderType_DOCKER, Count: 2},
+					Type: proto.BuildType_CLUSTER,
+					Artifacts: []*proto.BuildMetadata_Artifact{
+						{Type: proto.BuilderType_JIB, Name: "jib-artifact-1"},
+						{Type: proto.BuilderType_DOCKER, Name: "docker-artifact-1"},
+						{Type: proto.BuilderType_DOCKER, Name: "docker-artifact-2"},
 					},
 				},
 				Deploy: &proto.DeployMetadata{
@@ -99,16 +98,15 @@ func TestEmptyState(t *testing.T) {
 				Build: latestV1.BuildConfig{
 					BuildType: latestV1.BuildType{GoogleCloudBuild: &latestV1.GoogleCloudBuild{}},
 					Artifacts: []*latestV1.Artifact{
-						{ImageName: "img1", ArtifactType: latestV1.ArtifactType{KanikoArtifact: &latestV1.KanikoArtifact{}}},
+						{ImageName: "artifact-1", ArtifactType: latestV1.ArtifactType{KanikoArtifact: &latestV1.KanikoArtifact{}}},
 					},
 				},
 			},
 			cluster: "gke-tejal-test",
 			expected: &proto.Metadata{
 				Build: &proto.BuildMetadata{
-					NumberOfArtifacts: 1,
-					Type:              proto.BuildType_GCB,
-					Builders:          []*proto.BuildMetadata_ImageBuilder{{Type: proto.BuilderType_KANIKO, Count: 1}},
+					Type:      proto.BuildType_GCB,
+					Artifacts: []*proto.BuildMetadata_Artifact{{Type: proto.BuilderType_KANIKO, Name: "artifact-1"}},
 				},
 				Deploy: &proto.DeployMetadata{},
 			},
@@ -138,10 +136,10 @@ func TestEmptyState(t *testing.T) {
 				state: emptyState(mockCfg([]latestV1.Pipeline{test.cfg}, test.cluster)),
 			}
 			metadata := handler.state.Metadata
-			builders := metadata.Build.Builders
+			artifacts := metadata.Build.Artifacts
 
 			// sort and compare
-			sort.Slice(builders, func(i, j int) bool { return builders[i].Type < builders[j].Type })
+			sort.Slice(artifacts, func(i, j int) bool { return artifacts[i].Type < artifacts[j].Type })
 			t.CheckDeepEqual(metadata, test.expected)
 		})
 	}
