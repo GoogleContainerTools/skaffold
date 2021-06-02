@@ -186,7 +186,7 @@ func (a *LogAggregator) prefix(pod *v1.Pod, container v1.ContainerStatus) string
 	var c latestV1.Pipeline
 	var present bool
 	for _, container := range pod.Spec.Containers {
-		if c, present = a.config.PipelineForImage(tag.StripTag(container.Image)); present {
+		if c, present = a.config.PipelineForImage(tag.StripTag(container.Image, false)); present {
 			break
 		}
 	}

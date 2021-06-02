@@ -27,6 +27,7 @@ func TestStripTags(t *testing.T) {
 		name           string
 		images         []string
 		expectedImages []string
+		ignoreDigest   bool
 	}{
 		{
 			name:           "latest",
@@ -47,6 +48,7 @@ func TestStripTags(t *testing.T) {
 			name:           "ignore digest",
 			images:         []string{"foo:sha256@deadbeef"},
 			expectedImages: nil,
+			ignoreDigest:   true,
 		},
 	}
 
@@ -54,7 +56,7 @@ func TestStripTags(t *testing.T) {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			t.Parallel()
 
-			i := StripTags(test.images)
+			i := StripTags(test.images, test.ignoreDigest)
 			t.CheckDeepEqual(test.expectedImages, i)
 		})
 	}

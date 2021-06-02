@@ -69,6 +69,17 @@ func TestColorPicker(t *testing.T) {
 			},
 			expectedColor: colorCodes[1],
 		},
+		{
+			description: "accept image with digest",
+			pod: &v1.Pod{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{Image: "second:tag@sha256:d3f4dd1541ee34b96850efc46955bada1a415b0594dc9948607c0197d2d16749"},
+					},
+				},
+			},
+			expectedColor: colorCodes[1],
+		},
 	}
 
 	picker := NewColorPicker([]string{"image:ignored", "second"})

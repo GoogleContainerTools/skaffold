@@ -375,7 +375,7 @@ func TestStripImageTags(t *testing.T) {
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 
-			images := tag.StripTags(test.taggedImages)
+			images := tag.StripTags(test.taggedImages, true)
 
 			t.CheckDeepEqual(test.expectedImages, images)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)

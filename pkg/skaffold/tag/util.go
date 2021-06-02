@@ -21,11 +21,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
-func StripTags(taggedImages []string) []string {
+func StripTags(taggedImages []string, ignoreDigest bool) []string {
 	// Remove tags from image names
 	var images []string
 	for _, image := range taggedImages {
-		tag := StripTag(image)
+		tag := StripTag(image, ignoreDigest)
 		if tag != "" {
 			images = append(images, tag)
 		}
@@ -33,14 +33,14 @@ func StripTags(taggedImages []string) []string {
 	return images
 }
 
-func StripTag(image string) string {
+func StripTag(image string, ignoreDigest bool) string {
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
 		// It's possible that it's a templatized name that can't be parsed as is.
 		warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
 		return ""
 	}
-	if parsed.Digest != "" {
+	if ignoreDigest && parsed.Digest != "" {
 		warnings.Printf("Ignoring image referenced by digest: [%s]", image)
 		return ""
 	}
