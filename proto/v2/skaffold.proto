@@ -181,7 +181,7 @@ message ApplicationLogEvent {
 message TaskEvent {
     string id = 1; // will be used by SkaffoldLog to link it to a task. Follows the form "{task_name}-{iteration-number}"
     string task = 2; // task name oneof: Tag, Build, Test, Deploy, StatusCheck, PortForward, DevLoop
-    string text = 3; // additional more descriptive text for the task
+    string description = 3; // additional more descriptive text for the task
     int32 iteration = 4; // which dev/debug iteration is currently running
     string status = 5; // artifact build status oneof: InProgress, Completed, Failed
     ActionableErr actionableErr = 6; // actionable error message
