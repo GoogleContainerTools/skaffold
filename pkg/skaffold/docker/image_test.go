@@ -356,27 +356,6 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--secret", "id=mysecret,src=foo.src"},
 		},
 		{
-			description: "secret with destination",
-			artifact: &latestV1.DockerArtifact{
-				Secret: &latestV1.DockerSecret{
-					ID:          "mysecret",
-					Destination: "foo.dst",
-				},
-			},
-			want: []string{"--secret", "id=mysecret,dst=foo.dst"},
-		},
-		{
-			description: "secret with source and destination",
-			artifact: &latestV1.DockerArtifact{
-				Secret: &latestV1.DockerSecret{
-					ID:          "mysecret",
-					Source:      "foo.src",
-					Destination: "foo.dst",
-				},
-			},
-			want: []string{"--secret", "id=mysecret,src=foo.src,dst=foo.dst"},
-		},
-		{
 			description: "ssh with no source",
 			artifact: &latestV1.DockerArtifact{
 				SSH: "default",
