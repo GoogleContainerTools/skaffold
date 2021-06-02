@@ -4,14 +4,14 @@
 
 # JIB owners
 
-**/**jib** @GoogleContainerTools/skaffold-team @loosebazooka @TadCordle @chanseokoh
+**/**jib** @GoogleContainerTools/skaffold-team @chanseokoh
 
 # kpt owners
 pkg/skaffold/deploy/**kpt** @GoogleContainerTools/skaffold-team @yuwenma
 
 # Debug owners
 
-pkg/skaffold/debug/** @GoogleContainerTools/skaffold-team @loosebazooka @quoctruong
-docs/content/en/docs/how-tos/debug/** @GoogleContainerTools/skaffold-team @loosebazooka @quoctruong
-integration/test-data/debug/** @GoogleContainerTools/skaffold-team @loosebazooka @quoctruong
-integration/debug_test.go @GoogleContainerTools/skaffold-team @loosebazooka @quoctruong
+pkg/skaffold/debug/** @GoogleContainerTools/skaffold-team @quoctruong
+docs/content/en/docs/how-tos/debug/** @GoogleContainerTools/skaffold-team @quoctruong
+integration/test-data/debug/** @GoogleContainerTools/skaffold-team @quoctruong
+integration/debug_test.go @GoogleContainerTools/skaffold-team @quoctruong
