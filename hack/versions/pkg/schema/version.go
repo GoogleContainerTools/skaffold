@@ -56,17 +56,23 @@ func getLastReleasedConfigVersion() string {
 		logrus.Fatalf("error getting latest version: %s", err)
 	}
 	logrus.Infof("last release tag: %s", lastTag)
-	configURL := fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag)
-	resp, err := http.Get(configURL)
-	if err != nil {
-		logrus.Fatalf("can't determine latest released config version, failed to download %s: %s", configURL, err)
+	// we split the config in v1.25.0
+	for _, url := range []string{
+		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/v1/config.go", lastTag),
+		fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag),
+	} {
+		resp, err := http.Get(url)
+		if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			defer resp.Body.Close()
+			config, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logrus.Fatalf("failed to fetch config for %s, err: %s", lastTag, err)
+			}
+			versionPattern := regexp.MustCompile("const Version string = \"skaffold/(.*)\"")
+			lastReleased := versionPattern.FindStringSubmatch(string(config))[1]
+			return lastReleased
+		}
 	}
-	defer resp.Body.Close()
-	config, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logrus.Fatalf("failed to read during download %s, err: %s", configURL, err)
-	}
-	versionPattern := regexp.MustCompile("const Version string = \"skaffold/(.*)\"")
-	lastReleased := versionPattern.FindStringSubmatch(string(config))[1]
-	return lastReleased
+	logrus.Fatalf("can't determine latest released config version, failed to download %s: %s", lastTag, err)
+	return ""
 }
