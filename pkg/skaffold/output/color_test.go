@@ -18,11 +18,7 @@ package output
 
 import (
 	"bytes"
-	"io"
-	"os"
 	"testing"
-
-	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func compareText(t *testing.T, expected, actual string) {
@@ -92,60 +88,4 @@ func TestFprintlnChangeDefaultToUnknown(t *testing.T) {
 	cw := SetupColors(&b, -1, true)
 	Default.Fprintln(cw, "2", "less", "chars!")
 	compareText(t, "2 less chars!\n", b.String())
-}
-
-func TestIsStdOut(t *testing.T) {
-	tests := []struct {
-		description string
-		out         io.Writer
-		expected    bool
-	}{
-		{
-			description: "std out passed",
-			out:         os.Stdout,
-			expected:    true,
-		},
-		{
-			description: "out nil",
-			out:         nil,
-		},
-		{
-			description: "out bytes buffer",
-			out:         new(bytes.Buffer),
-		},
-		{
-			description: "colorable std out passed",
-			out:         NewWriter(os.Stdout),
-			expected:    true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(test.expected, IsStdout(test.out))
-		})
-	}
-}
-
-func TestGetWriter(t *testing.T) {
-	tests := []struct {
-		description string
-		out         io.Writer
-		expected    io.Writer
-	}{
-		{
-			description: "colorable os.Stdout returns os.Stdout",
-			out:         colorableWriter{os.Stdout},
-			expected:    os.Stdout,
-		},
-		{
-			description: "GetWriter returns original writer if not colorable",
-			out:         os.Stdout,
-			expected:    os.Stdout,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(true, test.expected == GetWriter(test.out))
-		})
-	}
 }
