@@ -42,6 +42,10 @@ func (s skaffoldWriter) Write(p []byte) (int, error) {
 }
 
 func GetWriter(out io.Writer, defaultColor int, forceColors bool) io.Writer {
+	if _, isSW := out.(skaffoldWriter); isSW {
+		return out
+	}
+
 	return skaffoldWriter{
 		MainWriter: SetupColors(out, defaultColor, forceColors),
 		// TODO(marlongamez): Replace this once event writer is implemented
