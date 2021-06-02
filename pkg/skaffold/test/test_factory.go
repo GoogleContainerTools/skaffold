@@ -76,7 +76,7 @@ func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []graph.Artifa
 		return nil
 	}
 
-	eventV2.TaskInProgress(constants.Test)
+	eventV2.TaskInProgress(constants.Test, "")
 	output.Default.Fprintln(out, "Testing images...")
 
 	if t.muted.MuteTest() {

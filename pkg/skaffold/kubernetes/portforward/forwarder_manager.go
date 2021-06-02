@@ -110,7 +110,7 @@ func (p *ForwarderManager) Start(ctx context.Context, namespaces []string) error
 		return nil
 	}
 
-	eventV2.TaskInProgress(constants.PortForward)
+	eventV2.TaskInProgress(constants.PortForward, "Port forward URLs")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Start")
 	defer endTrace()
 

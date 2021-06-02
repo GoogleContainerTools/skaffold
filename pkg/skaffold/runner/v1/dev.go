@@ -73,7 +73,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 
 	event.DevLoopInProgress(r.devIteration)
 	eventV2.InitializeState(r.runCtx)
-	eventV2.TaskInProgress(constants.DevLoop)
+	eventV2.TaskInProgress(constants.DevLoop, "")
 	defer func() { r.devIteration++ }()
 	eventV2.LogMetaEvent()
 	ctx, endTrace := instrumentation.StartTrace(ctx, "doDev_DevLoopInProgress", map[string]string{
@@ -199,7 +199,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latestV1.Artifact) error {
 	event.DevLoopInProgress(r.devIteration)
 	eventV2.InitializeState(r.runCtx)
-	eventV2.TaskInProgress(constants.DevLoop)
+	eventV2.TaskInProgress(constants.DevLoop, "")
 	defer func() { r.devIteration++ }()
 	eventV2.LogMetaEvent()
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Dev", map[string]string{

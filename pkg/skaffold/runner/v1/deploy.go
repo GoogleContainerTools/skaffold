@@ -41,7 +41,7 @@ import (
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-	eventV2.TaskInProgress(constants.Deploy)
+	eventV2.TaskInProgress(constants.Deploy, "Deploy to cluster")
 
 	// Update which images are logged.
 	r.AddTagsToPodSelector(artifacts)
@@ -126,7 +126,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	event.DeployInProgress()
-	eventV2.TaskInProgress(constants.Deploy)
+	eventV2.TaskInProgress(constants.Deploy, "")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy_Deploying")
 	defer endTrace()
 
@@ -217,7 +217,7 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 		return nil
 	}
 
-	eventV2.TaskInProgress(constants.StatusCheck)
+	eventV2.TaskInProgress(constants.StatusCheck, "")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "performStatusCheck_WaitForDeploymentToStabilize")
 	defer endTrace()
 

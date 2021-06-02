@@ -290,7 +290,7 @@ func AutoTriggerDiff(phase constants.Phase, val bool) (bool, error) {
 	}
 }
 
-func TaskInProgress(task constants.Phase) {
+func TaskInProgress(task constants.Phase, text string) {
 	if task == constants.DevLoop {
 		handler.iteration++
 	}
@@ -298,6 +298,7 @@ func TaskInProgress(task constants.Phase) {
 	handler.handleTaskEvent(&proto.TaskEvent{
 		Id:        fmt.Sprintf("%s-%d", task, handler.iteration),
 		Task:      string(task),
+		Text:      text,
 		Iteration: int32(handler.iteration),
 		Status:    InProgress,
 	})
