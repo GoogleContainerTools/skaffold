@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
@@ -126,11 +127,15 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 
 	event.DeployInProgress()
 	eventV2.TaskInProgress(constants.Deploy)
+	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy_Deploying")
+	defer endTrace()
+
 	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
 		eventV2.TaskFailed(constants.Deploy, err)
+		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
 
@@ -139,8 +144,10 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	statusCheckOut, postStatusCheckFn, err := deployutil.WithStatusCheckLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	defer postStatusCheckFn()
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
+
 	event.DeployComplete()
 	eventV2.TaskSucceeded(constants.Deploy)
 	r.runCtx.UpdateNamespaces(namespaces)
@@ -211,6 +218,9 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 	}
 
 	eventV2.TaskInProgress(constants.StatusCheck)
+	ctx, endTrace := instrumentation.StartTrace(ctx, "performStatusCheck_WaitForDeploymentToStabilize")
+	defer endTrace()
+
 	start := time.Now()
 	output.Default.Fprintln(out, "Waiting for deployments to stabilize...")
 

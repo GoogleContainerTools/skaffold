@@ -209,7 +209,7 @@ func TestInitCloudMonitoring(t *testing.T) {
 			},
 		},
 		{
-			name: "key not present returns nill err",
+			name: "key not present returns nil err",
 			fileSystem: &testutil.FakeFileSystem{
 				Files: map[string][]byte{},
 			},

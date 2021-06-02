@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
 )
@@ -33,6 +34,9 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 	details := make([]cacheDetails, len(artifacts))
 	// Create a new `artifactHasher` on every new dev loop.
 	// This way every artifact hash is calculated at most once in a single dev loop, and recalculated on every dev loop.
+
+	ctx, endTrace := instrumentation.StartTrace(ctx, "lookupArtifacts_CacheLookupArtifacts")
+	defer endTrace()
 	h := newArtifactHasherFunc(c.artifactGraph, c.lister, c.cfg.Mode())
 	var wg sync.WaitGroup
 	for i := range artifacts {
@@ -50,6 +54,11 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 }
 
 func (c *cache) lookup(ctx context.Context, a *latestV1.Artifact, tag string, h artifactHasher) cacheDetails {
+	ctx, endTrace := instrumentation.StartTrace(ctx, "lookup_CacheLookupOneArtifact", map[string]string{
+		"ImageName": instrumentation.PII(a.ImageName),
+	})
+	defer endTrace()
+
 	hash, err := h.hash(ctx, a)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}

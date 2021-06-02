@@ -25,6 +25,7 @@ import (
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 )
 
 // Apply sends Kubernetes manifests to the cluster.
@@ -50,12 +51,15 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
+	ctx, endTrace := instrumentation.StartTrace(ctx, "applyResources_LoadImagesIntoCluster")
 	if len(localImages) > 0 && r.runCtx.Cluster.LoadImages {
 		err := r.loadImagesIntoCluster(ctx, out, localImages)
 		if err != nil {
+			endTrace(instrumentation.TraceEndError(err))
 			return err
 		}
 	}
+	endTrace()
 
 	deployOut, postDeployFn, err := deployutil.WithLogFile(time.Now().Format(deployutil.TimeFormat)+".log", out, r.runCtx.Muted())
 	if err != nil {
@@ -63,13 +67,15 @@ func (r *SkaffoldRunner) applyResources(ctx context.Context, out io.Writer, arti
 	}
 
 	event.DeployInProgress()
+	ctx, endTrace = instrumentation.StartTrace(ctx, "applyResources_Deploying")
+	defer endTrace()
 	namespaces, err := r.deployer.Deploy(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {
 		event.DeployFailed(err)
+		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
-
 	r.hasDeployed = true
 	event.DeployComplete()
 	r.runCtx.UpdateNamespaces(namespaces)

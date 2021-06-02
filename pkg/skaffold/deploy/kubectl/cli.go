@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -74,6 +75,10 @@ func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests manifest.Mani
 
 // Apply runs `kubectl apply` on a list of manifests.
 func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests manifest.ManifestList) error {
+	ctx, endTrace := instrumentation.StartTrace(ctx, "Apply", map[string]string{
+		"AppliedBy": "kubectl",
+	})
+	defer endTrace()
 	// Only redeploy modified or new manifests
 	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
 	updated := c.previousApply.Diff(manifests)
@@ -93,6 +98,7 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests manifest.Manif
 	}
 
 	if err := c.Run(ctx, updated.Reader(), out, "apply", c.args(c.Flags.Apply, args...)...); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return userErr(fmt.Errorf("kubectl apply: %w", err))
 	}
 

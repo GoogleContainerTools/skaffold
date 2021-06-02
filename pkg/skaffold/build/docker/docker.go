@@ -24,6 +24,7 @@ import (
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -31,6 +32,12 @@ import (
 )
 
 func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact, tag string) (string, error) {
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"BuildType":   "docker",
+		"Context":     instrumentation.PII(a.Workspace),
+		"Destination": instrumentation.PII(tag),
+	})
+
 	// Fail fast if the Dockerfile can't be found.
 	dockerfile, err := docker.NormalizeDockerfilePath(a.Workspace, a.DockerArtifact.DockerfilePath)
 	if err != nil {

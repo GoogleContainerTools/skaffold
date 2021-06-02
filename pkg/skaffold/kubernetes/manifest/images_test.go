@@ -17,6 +17,7 @@ limitations under the License.
 package manifest
 
 import (
+	"context"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -126,7 +127,7 @@ spec:
 		fakeWarner := &warnings.Collect{}
 		t.Override(&warnings.Printf, fakeWarner.Warnf)
 
-		resultManifest, err := manifests.ReplaceImages(builds)
+		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected.String(), resultManifest.String())
@@ -140,7 +141,7 @@ func TestReplaceEmptyManifest(t *testing.T) {
 	manifests := ManifestList{[]byte(""), []byte("  ")}
 	expected := ManifestList{}
 
-	resultManifest, err := manifests.ReplaceImages(nil)
+	resultManifest, err := manifests.ReplaceImages(context.TODO(), nil)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }
@@ -148,7 +149,7 @@ func TestReplaceEmptyManifest(t *testing.T) {
 func TestReplaceInvalidManifest(t *testing.T) {
 	manifests := ManifestList{[]byte("INVALID")}
 
-	_, err := manifests.ReplaceImages(nil)
+	_, err := manifests.ReplaceImages(context.TODO(), nil)
 
 	testutil.CheckError(t, true, err)
 }
@@ -161,7 +162,7 @@ image:
 - value2
 `)}
 
-	output, err := manifests.ReplaceImages(nil)
+	output, err := manifests.ReplaceImages(context.TODO(), nil)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), output.String())
 }

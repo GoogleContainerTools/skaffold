@@ -33,6 +33,7 @@ import (
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
@@ -88,19 +89,30 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		manifests manifest.ManifestList
 		err       error
 	)
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"DeployerType": "kubectl",
+	})
+
 	// if any hydrated manifests are passed to `skaffold apply`, only deploy these
 	// also, manually set the labels to ensure the runID is added
 	switch {
 	case len(k.hydratedManifests) > 0:
+		_, endTrace := instrumentation.StartTrace(ctx, "Deploy_createManifestList")
 		manifests, err = createManifestList(k.hydratedManifests)
 		if err != nil {
+			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
 		}
 		manifests, err = manifests.SetLabels(k.labels)
+		endTrace()
 	case k.skipRender:
-		manifests, err = k.readManifests(ctx, false)
+		childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_readManifests")
+		manifests, err = k.readManifests(childCtx, false)
+		endTrace()
 	default:
-		manifests, err = k.renderManifests(ctx, out, builds, false)
+		childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_renderManifests")
+		manifests, err = k.renderManifests(childCtx, out, builds, false)
+		endTrace()
 	}
 
 	if err != nil {
@@ -110,21 +122,27 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	if len(manifests) == 0 {
 		return nil, nil
 	}
-
+	_, endTrace := instrumentation.StartTrace(ctx, "Deploy_CollectNamespaces")
 	namespaces, err := manifests.CollectNamespaces()
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not fetch deployed resource namespace. "+
 			"This might cause port-forward and deploy health-check to fail: %w", err))
 	}
+	endTrace()
 
-	if err := k.kubectl.WaitForDeletions(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Deploy_WaitForDeletions")
+	if err := k.kubectl.WaitForDeletions(childCtx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
+	endTrace()
 
-	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
+	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_KubectlApply")
+	if err := k.kubectl.Apply(childCtx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
-
+	endTrace()
 	return namespaces, nil
 }
 
@@ -243,11 +261,20 @@ func (k *Deployer) readRemoteManifest(ctx context.Context, name string) ([]byte,
 }
 
 func (k *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool, filepath string) error {
-	manifests, err := k.renderManifests(ctx, out, builds, offline)
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"DeployerType": "kubectl",
+	})
+
+	childCtx, endTrace := instrumentation.StartTrace(ctx, "Render_renderManifests")
+	manifests, err := k.renderManifests(childCtx, out, builds, offline)
 	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
+	endTrace()
 
+	_, endTrace = instrumentation.StartTrace(ctx, "Render_manifest.Write")
+	defer endTrace()
 	return manifest.Write(manifests.String(), filepath, out)
 }
 
@@ -300,7 +327,7 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 		}
 	}
 
-	manifests, err = manifests.ReplaceImages(builds)
+	manifests, err = manifests.ReplaceImages(ctx, builds)
 	if err != nil {
 		return nil, err
 	}
@@ -314,6 +341,9 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 
 // Cleanup deletes what was deployed by calling Deploy.
 func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"DeployerType": "kubectl",
+	})
 	manifests, err := k.readManifests(ctx, false)
 	if err != nil {
 		return err
@@ -332,7 +362,7 @@ func (k *Deployer) Cleanup(ctx context.Context, out io.Writer) error {
 			rm = append(rm, manifest)
 		}
 
-		upd, err := rm.ReplaceImages(k.originalImages)
+		upd, err := rm.ReplaceImages(ctx, k.originalImages)
 		if err != nil {
 			return err
 		}

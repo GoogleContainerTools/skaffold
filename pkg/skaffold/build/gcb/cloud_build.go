@@ -38,6 +38,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
@@ -45,6 +46,10 @@ import (
 
 // Build builds a list of artifacts with Google Cloud Build.
 func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latestV1.Artifact) build.ArtifactBuilder {
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"BuildType": "gcb",
+		"Context":   instrumentation.PII(artifact.Workspace),
+	})
 	builder := build.WithLogFile(b.buildArtifactWithCloudBuild, b.muted)
 	return builder
 }
@@ -62,6 +67,9 @@ func (b *Builder) Concurrency() int {
 }
 
 func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latestV1.Artifact, tag string) (string, error) {
+	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
+		"Destination": instrumentation.PII(tag),
+	})
 	// TODO: [#4922] Implement required artifact resolution from the `artifactStore`
 	cbclient, err := cloudbuild.NewService(ctx, gcp.ClientOptions()...)
 	if err != nil {

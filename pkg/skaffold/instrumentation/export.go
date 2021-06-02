@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -28,15 +29,21 @@ import (
 	"time"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
+	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rakyll/statik/fs"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/stdout"
+	"go.opentelemetry.io/otel/exporters/trace/jaeger"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/option"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
@@ -282,4 +289,100 @@ func errorMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labe
 		unknownCounter := metric.Must(m).NewInt64ValueRecorder("build/unknown", metric.WithDescription("Unknown build Skaffold Errors"))
 		unknownCounter.Record(ctx, 1, labels...)
 	}
+}
+
+type TraceExporterConfig struct {
+	writer io.Writer
+}
+
+type TraceExporterOption func(te *TraceExporterConfig)
+
+func WithWriter(w io.Writer) TraceExporterOption {
+	return func(teconf *TraceExporterConfig) {
+		teconf.writer = w
+	}
+}
+
+func initTraceExporter(opts ...TraceExporterOption) (trace.TracerProvider, func(context.Context) error, error) {
+	teconf := TraceExporterConfig{
+		writer: os.Stdout,
+	}
+
+	for _, opt := range opts {
+		opt(&teconf)
+	}
+
+	switch os.Getenv("SKAFFOLD_TRACE") {
+	case "stdout":
+		logrus.Debugf("using stdout trace exporter")
+		return initIOWriterTracer(teconf.writer)
+	case "gcp-adc":
+		logrus.Debugf("using cloud trace exporter w/ application default creds")
+		tp, shutdown, err := initCloudTraceExporterApplicationDefaultCreds()
+		return tp, func(context.Context) error { shutdown(); return nil }, err
+	case "jaeger":
+		logrus.Debugf("using jaeger trace exporter")
+		tp, shutdown, err := initJaegerTraceExporter()
+		return tp, func(context.Context) error { shutdown(); return nil }, err
+	}
+
+	if otelTraceExporterVal, ok := os.LookupEnv("OTEL_TRACES_EXPORTER"); ok {
+		logrus.Debugf("using otel default exporter - OTEL_TRACES_EXPORTER=%s", otelTraceExporterVal)
+		return nil, func(context.Context) error { return nil }, nil
+	}
+
+	return nil, func(context.Context) error { return nil }, fmt.Errorf("error initializing trace exporter")
+}
+
+// initIOWriterTracer creates and registers trace provider instance that writes to an io.Writer interface
+func initIOWriterTracer(w io.Writer) (*sdktrace.TracerProvider, func(context.Context) error, error) {
+	exp, err := stdout.NewExporter(
+		stdout.WithWriter(w),
+		stdout.WithPrettyPrint(),
+	)
+	if err != nil {
+		return nil, func(context.Context) error { return nil }, err
+	}
+	bsp := sdktrace.NewBatchSpanProcessor(exp)
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSpanProcessor(bsp),
+	)
+	return tp, tp.Shutdown, nil
+}
+
+func initCloudTraceExporterApplicationDefaultCreds() (trace.TracerProvider, func(), error) {
+	otel.SetErrorHandler(errHandler{})
+	return texporter.InstallNewPipeline(
+		[]texporter.Option{
+			texporter.WithProjectID(os.Getenv("GOOGLE_CLOUD_PROJECT")),
+			texporter.WithOnError(func(err error) {
+				logrus.Debugf("Error with metrics: %v", err)
+			}),
+		},
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+	)
+}
+
+// initJaegerTraceExporter returns an OpenTelemetry TracerProvider configured to use
+// the Jaeger exporter that will send spans to the provided url. The returned
+// TracerProvider will also use a Resource configured with all the information
+// about the application.
+func initJaegerTraceExporter() (trace.TracerProvider, func(), error) {
+	// Create the Jaeger exporter
+	exp, err := jaeger.NewRawExporter(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint("http://localhost:14268/api/traces")))
+	if err != nil {
+		return nil, func() {}, err
+	}
+	tp := sdktrace.NewTracerProvider(
+		// Always be sure to batch in production.
+		sdktrace.WithBatcher(exp),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		// Record information about this application in an Resource.
+		sdktrace.WithResource(resource.NewWithAttributes(
+			semconv.ServiceNameKey.String("skaffold-trace"),
+			attribute.Int64("ID", 1), // TODO(aaron-prindle) verify this value makes sense
+		)),
+	)
+	return tp, func() {}, nil
 }
