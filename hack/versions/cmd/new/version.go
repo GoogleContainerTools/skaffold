@@ -91,6 +91,12 @@ func main() {
 		return nil
 	})
 
+	// Update diagnose.tmpl in diagnose tests
+	walk.From("integration/testdata/diagnose").WhenNameMatches("diagnose.tmpl").MustDo(func(path string, _ walk.Dirent) error {
+		sed(path, current, next)
+		return nil
+	})
+
 	// Add the new version to the list of versions
 	lines := lines(path("versions.go"))
 	var content string
