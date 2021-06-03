@@ -282,6 +282,26 @@ func TestUserDefinedResources(t *testing.T) {
 				"pod-pod-some-with-template-bar-9000",
 			},
 		},
+		{
+			description: "pod should be found with name with template",
+			userResources: []*latestV1.PortForwardResource{
+				{Type: constants.Pod, Name: "pod-{{ .FOO }}", Port: schemautil.FromInt(9000)},
+			},
+			namespaces: []string{"test"},
+			expectedResources: []string{
+				"pod-pod-bar-test-9000",
+			},
+		},
+		{
+			description: "pod should be found with name with template",
+			userResources: []*latestV1.PortForwardResource{
+				{Type: constants.Pod, Name: "pod-{{ .FOO }}", Namespace: "some-ns", Port: schemautil.FromInt(9000)},
+			},
+			namespaces: []string{"test", "another"},
+			expectedResources: []string{
+				"pod-pod-bar-some-ns-9000",
+			},
+		},
 	}
 
 	for _, test := range tests {
