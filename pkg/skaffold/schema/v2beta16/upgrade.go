@@ -17,11 +17,11 @@ limitations under the License.
 package v2beta16
 
 import (
+	"github.com/sirupsen/logrus"
+
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-
-	"github.com/sirupsen/logrus"
 )
 
 // Upgrade upgrades a configuration to the next version.
