@@ -137,3 +137,7 @@ func (p *ForwarderManager) Stop() {
 		f.Stop()
 	}
 }
+
+func (p *ForwarderManager) Name() string {
+	return "PortForwarding"
+}

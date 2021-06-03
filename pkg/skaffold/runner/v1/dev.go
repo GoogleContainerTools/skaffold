@@ -32,7 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -48,7 +47,7 @@ var (
 	fileSyncSucceeded  = event.FileSyncSucceeded
 )
 
-func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logger.LogAggregator, forwarderManager portforward.Forwarder) error {
+func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logger.LogAggregator, watchers ...Watcher) error {
 	// never queue intents from user, even if they're not used
 	defer r.intents.Reset()
 
@@ -171,7 +170,10 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 			r.intents.ResetDeploy()
 		}()
 
-		forwarderManager.Stop()
+		for _, w := range watchers {
+			logrus.Debugf("stopping watcher %s", w.Name())
+			w.Stop()
+		}
 		if !meterUpdated {
 			instrumentation.AddDevIteration("deploy")
 		}
@@ -182,9 +184,12 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, logger *logge
 			endTrace(instrumentation.TraceEndError(err))
 			return nil
 		}
-		if err := forwarderManager.Start(childCtx, r.runCtx.GetNamespaces()); err != nil {
-			logrus.Warnln("Port forwarding failed:", err)
+		for _, w := range watchers {
+			if err := w.Start(childCtx, r.runCtx.GetNamespaces()); err != nil {
+				logrus.Warnf("\n%s failed: %s", w.Name(), err)
+			}
 		}
+
 		endTrace()
 	}
 	event.DevLoopComplete(r.devIteration)
@@ -349,7 +354,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	endTrace()
 	r.devIteration++
 	return r.listener.WatchForChanges(ctx, out, func() error {
-		return r.doDev(ctx, out, logger, forwarderManager)
+		return r.doDev(ctx, out, logger, forwarderManager, debugContainerManager)
 	})
 }
 
