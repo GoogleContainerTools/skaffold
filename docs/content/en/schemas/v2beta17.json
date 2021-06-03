@@ -1689,14 +1689,14 @@
         },
         "skipBuildDependencies": {
           "type": "boolean",
-          "description": "should build dependencies be skipped. Ignored when `remote: true`.",
-          "x-intellij-html-description": "should build dependencies be skipped. Ignored when <code>remote: true</code>.",
+          "description": "should build dependencies be skipped. Ignored for `remoteChart`.",
+          "x-intellij-html-description": "should build dependencies be skipped. Ignored for <code>remoteChart</code>.",
           "default": "false"
         },
         "upgradeOnChange": {
           "type": "boolean",
-          "description": "specifies whether to upgrade helm chart on code changes. Default is `true` when helm chart is local (`remote: false`). Default is `false` if `remote: true`.",
-          "x-intellij-html-description": "specifies whether to upgrade helm chart on code changes. Default is <code>true</code> when helm chart is local (<code>remote: false</code>). Default is <code>false</code> if <code>remote: true</code>."
+          "description": "specifies whether to upgrade helm chart on code changes. Default is `true` when helm chart is local (has `chartPath`). Default is `false` when helm chart is remote (has `remoteChart`).",
+          "x-intellij-html-description": "specifies whether to upgrade helm chart on code changes. Default is <code>true</code> when helm chart is local (has <code>chartPath</code>). Default is <code>false</code> when helm chart is remote (has <code>remoteChart</code>)."
         },
         "useHelmSecrets": {
           "type": "boolean",
