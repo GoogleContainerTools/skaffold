@@ -35,9 +35,10 @@ var (
 )
 
 type ContainerManager struct {
-	podWatcher kubernetes.PodWatcher
-	active     map[string]string // set of containers that have been notified
-	events     chan kubernetes.PodEvent
+	podWatcher  kubernetes.PodWatcher
+	active      map[string]string // set of containers that have been notified
+	events      chan kubernetes.PodEvent
+	stopWatcher func()
 }
 
 func NewContainerManager(podSelector kubernetes.PodSelector) *ContainerManager {
@@ -61,9 +62,9 @@ func (d *ContainerManager) Start(ctx context.Context, namespaces []string) error
 	if err != nil {
 		return err
 	}
+	d.stopWatcher = stopWatcher
 
 	go func() {
-		defer stopWatcher()
 
 		for {
 			select {
@@ -85,8 +86,12 @@ func (d *ContainerManager) Start(ctx context.Context, namespaces []string) error
 func (d *ContainerManager) Stop() {
 	// if nil then debug mode probably not enabled
 	if d != nil {
-		close(d.events)
+		d.stopWatcher()
 	}
+}
+
+func (d *ContainerManager) Name() string {
+	return "Debug Manager"
 }
 
 func (d *ContainerManager) checkPod(pod *v1.Pod) {
