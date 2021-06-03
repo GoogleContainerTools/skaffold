@@ -66,6 +66,7 @@ type Deployer struct {
 	insecureRegistries map[string]bool
 	labels             map[string]string
 	globalConfig       string
+	hasKustomization   func(string) bool
 	kubeContext        string
 	kubeConfig         string
 	namespace          string
@@ -82,6 +83,7 @@ func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KptDeploy) *D
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       cfg.GlobalConfig(),
+		hasKustomization:   hasKustomization,
 		kubeContext:        cfg.GetKubeContext(),
 		kubeConfig:         cfg.GetKubeConfig(),
 		namespace:          cfg.GetKubeNamespace(),
@@ -112,8 +114,7 @@ func versionCheck(dir string, stdout io.Writer) error {
 
 	// Users can choose not to use kustomize in kpt deployer mode. We only check the kustomize
 	// version when kustomization.yaml config is directed under .deploy.kpt.dir path.
-	_, err = kustomize.FindKustomizationConfig(dir)
-	if err == nil {
+	if hasKustomization(dir) {
 		kustomizeCmd := exec.Command("kustomize", "version")
 		out, err := util.RunCmdOut(kustomizeCmd)
 		if err != nil {
@@ -320,8 +321,6 @@ func (k *Deployer) renderManifests(ctx context.Context, builds []graph.Artifact)
 	// Note: kustomize cannot be used as a kpt fn yet and thus we run kustomize in a temp dir
 	// in the kpt pipeline:
 	// kpt source -->  kpt run --> (workaround if kustomization exists) kustomize build --> kpt sink.
-	// Once the unified kpt/kustomize is done, kustomize can be run as a kpt fn step and
-	// this additional directory creation/deletion will no longer be needed.
 	//
 	// Note: Optimally the user would be able to control the order in which kpt functions and
 	// Kustomize build happens, and even have Kustomize build happen between Kpt fn invocations.
@@ -352,7 +351,7 @@ func (k *Deployer) renderManifests(ctx context.Context, builds []graph.Artifact)
 	}
 
 	// Only run kustomize if kustomization.yaml is found in the output from the kpt functions.
-	if _, err = kustomize.FindKustomizationConfig(tmpKustomizeDir); err == nil {
+	if k.hasKustomization(tmpKustomizeDir) {
 		cmd = exec.CommandContext(ctx, "kustomize", append([]string{"build"}, tmpKustomizeDir)...)
 		if buf, err = util.RunCmdOut(cmd); err != nil {
 			return nil, fmt.Errorf("kustomize build: %w", err)
@@ -614,4 +613,9 @@ func (k *Deployer) getGlobalFlags() []string {
 	}
 
 	return flags
+}
+
+func hasKustomization(dir string) bool {
+	_, err := kustomize.FindKustomizationConfig(dir)
+	return err == nil
 }
