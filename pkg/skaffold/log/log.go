@@ -25,9 +25,9 @@ import (
 )
 
 type Logger interface {
-	StartLogger(context.Context, io.Writer, []string) error
+	Start(context.Context, io.Writer, []string) error
 
-	StopLogger()
+	Stop()
 
 	Mute()
 
@@ -38,14 +38,14 @@ type Logger interface {
 	// The logger sometimes uses information about the currently deployed artifacts
 	// to actually retrieve logs (e.g. the Kubernetes PodSelector). Thus, we need to
 	// track the current build artifacts in the logger.
-	RegisterArtifactsToLogger([]graph.Artifact)
+	RegisterArtifacts([]graph.Artifact)
 }
 
 type NoopLogger struct{}
 
-func (n *NoopLogger) StartLogger(context.Context, io.Writer, []string) error { return nil }
+func (n *NoopLogger) Start(context.Context, io.Writer, []string) error { return nil }
 
-func (n *NoopLogger) StopLogger() {}
+func (n *NoopLogger) Stop() {}
 
 func (n *NoopLogger) Mute() {}
 
@@ -53,4 +53,4 @@ func (n *NoopLogger) Unmute() {}
 
 func (n *NoopLogger) SetSince(time.Time) {}
 
-func (n *NoopLogger) RegisterArtifactsToLogger(_ []graph.Artifact) {}
+func (n *NoopLogger) RegisterArtifacts(_ []graph.Artifact) {}

@@ -79,9 +79,9 @@ var (
 type Deployer struct {
 	*latestV1.HelmDeploy
 
-	log.Logger
-	preview.ResourcePreviewer
-	debug.Debugger
+	logger    log.Logger
+	previewer preview.ResourcePreviewer
+	debugger  debug.Debugger
 
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
@@ -130,22 +130,34 @@ func NewDeployer(cfg Config, labels map[string]string, logProvider log.Provider,
 	}
 
 	return &Deployer{
-		Logger:            logProvider.GetKubernetesLogger(podSelector),
-		ResourcePreviewer: previewProvider.GetKubernetesPreviewer(podSelector),
-		Debugger:          debugProvider.GetKubernetesDebugger(podSelector),
-		originalImages:    originalImages,
-		podSelector:       podSelector,
-		HelmDeploy:        h,
-		kubeContext:       cfg.GetKubeContext(),
-		kubeConfig:        cfg.GetKubeConfig(),
-		namespace:         cfg.GetKubeNamespace(),
-		forceDeploy:       cfg.ForceDeploy(),
-		configFile:        cfg.ConfigurationFile(),
-		labels:            labels,
-		bV:                hv,
-		enableDebug:       cfg.Mode() == config.RunModes.Debug,
-		isMultiConfig:     cfg.IsMultiConfig(),
+		logger:         logProvider.GetKubernetesLogger(podSelector),
+		previewer:      previewProvider.GetKubernetesPreviewer(podSelector),
+		debugger:       debugProvider.GetKubernetesDebugger(podSelector),
+		originalImages: originalImages,
+		podSelector:    podSelector,
+		HelmDeploy:     h,
+		kubeContext:    cfg.GetKubeContext(),
+		kubeConfig:     cfg.GetKubeConfig(),
+		namespace:      cfg.GetKubeNamespace(),
+		forceDeploy:    cfg.ForceDeploy(),
+		configFile:     cfg.ConfigurationFile(),
+		labels:         labels,
+		bV:             hv,
+		enableDebug:    cfg.Mode() == config.RunModes.Debug,
+		isMultiConfig:  cfg.IsMultiConfig(),
 	}, nil
+}
+
+func (h *Deployer) GetLogger() log.Logger {
+	return h.logger
+}
+
+func (h *Deployer) GetResourcePreviewer() preview.ResourcePreviewer {
+	return h.previewer
+}
+
+func (h *Deployer) GetDebugger() debug.Debugger {
+	return h.debugger
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
@@ -200,7 +212,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	deployutil.AddTagsToPodSelector(builds, h.originalImages, h.podSelector)
-	h.RegisterArtifactsToLogger(builds)
+	h.GetLogger().RegisterArtifacts(builds)
 	return namespaces, nil
 }
 

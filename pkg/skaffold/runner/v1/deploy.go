@@ -41,23 +41,23 @@ import (
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-	defer r.deployer.StopLogger()
+	defer r.deployer.GetLogger().Stop()
 
 	// Logs should be retrieved up to just before the deploy
-	r.deployer.SetSince(time.Now())
+	r.deployer.GetLogger().SetSince(time.Now())
 	// First deploy
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
 		return err
 	}
 
-	defer r.deployer.StopResourcePreview()
+	r.deployer.GetResourcePreviewer().Stop()
 
-	if err := r.deployer.StartResourcePreview(ctx, out, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.GetResourcePreviewer().Start(ctx, out, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
 	}
 
 	// Start printing the logs after deploy is finished
-	if err := r.deployer.StartLogger(ctx, out, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.GetLogger().Start(ctx, out, r.runCtx.GetNamespaces()); err != nil {
 		return fmt.Errorf("starting logger: %w", err)
 	}
 

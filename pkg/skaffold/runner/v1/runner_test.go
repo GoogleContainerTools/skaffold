@@ -108,6 +108,18 @@ func (t *TestBench) WithTestErrors(testErrors []error) *TestBench {
 	return t
 }
 
+func (t *TestBench) GetLogger() log.Logger {
+	return &log.NoopLogger{}
+}
+
+func (t *TestBench) GetResourcePreviewer() preview.ResourcePreviewer {
+	return &preview.NoopPreviewer{}
+}
+
+func (t *TestBench) GetDebugger() debug.Debugger {
+	return &debug.NoopDebugger{}
+}
+
 func (t *TestBench) TestDependencies(*latestV1.Artifact) ([]string, error) { return nil, nil }
 func (t *TestBench) Dependencies() ([]string, error)                       { return nil, nil }
 func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error      { return nil }

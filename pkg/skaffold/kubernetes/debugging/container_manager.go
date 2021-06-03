@@ -51,7 +51,7 @@ func NewContainerManager(podSelector kubernetes.PodSelector) *ContainerManager {
 	}
 }
 
-func (d *ContainerManager) StartDebugger(ctx context.Context, namespaces []string) error {
+func (d *ContainerManager) Start(ctx context.Context, namespaces []string) error {
 	if d == nil {
 		// debug mode probably not enabled
 		return nil
@@ -82,7 +82,7 @@ func (d *ContainerManager) StartDebugger(ctx context.Context, namespaces []strin
 	return nil
 }
 
-func (d *ContainerManager) StopDebugger() {
+func (d *ContainerManager) Stop() {
 	// if nil then debug mode probably not enabled
 	if d != nil {
 		d.stopWatcher()

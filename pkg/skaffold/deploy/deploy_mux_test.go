@@ -37,7 +37,7 @@ import (
 func NewMockDeployer() *MockDeployer { return &MockDeployer{labels: make(map[string]string)} }
 
 type MockDeployer struct {
-	log.NoopLogger
+	// log.NoopLogger
 	preview.NoopPreviewer
 	debug.Debugger
 
@@ -49,6 +49,18 @@ type MockDeployer struct {
 	cleanupErr       error
 	renderResult     string
 	renderErr        error
+}
+
+func (m *MockDeployer) GetLogger() log.Logger {
+	return &log.NoopLogger{}
+}
+
+func (m *MockDeployer) GetResourcePreviewer() preview.ResourcePreviewer {
+	return &preview.NoopPreviewer{}
+}
+
+func (m *MockDeployer) GetDebugger() debug.Debugger {
+	return &debug.NoopDebugger{}
 }
 
 func (m *MockDeployer) Dependencies() ([]string, error) {

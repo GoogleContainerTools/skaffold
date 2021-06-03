@@ -29,9 +29,11 @@ import (
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
 type Deployer interface {
-	log.Logger
-	preview.ResourcePreviewer
-	debug.Debugger
+	GetLogger() log.Logger
+
+	GetResourcePreviewer() preview.ResourcePreviewer
+
+	GetDebugger() debug.Debugger
 
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster. Returns the list of impacted namespaces.

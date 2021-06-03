@@ -22,13 +22,13 @@ import (
 )
 
 type ResourcePreviewer interface {
-	StartResourcePreview(context.Context, io.Writer, []string) error
+	Start(context.Context, io.Writer, []string) error
 
-	StopResourcePreview()
+	Stop()
 }
 
 type NoopPreviewer struct{}
 
-func (n *NoopPreviewer) StartResourcePreview(context.Context, io.Writer, []string) error { return nil }
+func (n *NoopPreviewer) Start(context.Context, io.Writer, []string) error { return nil }
 
-func (n *NoopPreviewer) StopResourcePreview() {}
+func (n *NoopPreviewer) Stop() {}

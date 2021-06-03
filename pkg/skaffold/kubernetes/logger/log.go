@@ -68,12 +68,13 @@ func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, conf
 		podSelector: podSelector,
 		podWatcher:  kubernetes.NewPodWatcher(podSelector),
 		colorPicker: kubernetes.NewColorPicker(),
+		stopWatcher: func() {},
 		events:      make(chan kubernetes.PodEvent),
 	}
 }
 
 // RegisterArtifactsToLogger tracks the provided build artifacts in the colorpicker
-func (a *LogAggregator) RegisterArtifactsToLogger(artifacts []graph.Artifact) {
+func (a *LogAggregator) RegisterArtifacts(artifacts []graph.Artifact) {
 	// image tags are added to the podSelector by the runner, which are picked up by the podWatcher
 	// we just need to make sure the colorPicker knows about them.
 	for _, artifact := range artifacts {
@@ -92,7 +93,7 @@ func (a *LogAggregator) SetSince(t time.Time) {
 
 // StartLogger starts a logger that listens to pods and tail their logs
 // if they are matched by the `podSelector`.
-func (a *LogAggregator) StartLogger(ctx context.Context, out io.Writer, namespaces []string) error {
+func (a *LogAggregator) Start(ctx context.Context, out io.Writer, namespaces []string) error {
 	var err error
 	if a == nil {
 		// Logs are not activated.
@@ -138,7 +139,7 @@ func (a *LogAggregator) StartLogger(ctx context.Context, out io.Writer, namespac
 }
 
 // StopLogger stops the logger.
-func (a *LogAggregator) StopLogger() {
+func (a *LogAggregator) Stop() {
 	if a == nil {
 		// Logs are not activated.
 		return

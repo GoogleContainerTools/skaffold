@@ -69,9 +69,9 @@ const (
 type Deployer struct {
 	*latestV1.KptDeploy
 
-	log.Logger
-	preview.ResourcePreviewer
-	debug.Debugger
+	logger    log.Logger
+	previewer preview.ResourcePreviewer
+	debugger  debug.Debugger
 
 	podSelector        *kubernetes.ImageList
 	originalImages     []graph.Artifact
@@ -91,9 +91,9 @@ type Config interface {
 func NewDeployer(cfg Config, labels map[string]string, logProvider log.Provider, previewProvider preview.Provider, debugProvider debug.Provider, d *latestV1.KptDeploy) *Deployer {
 	podSelector := kubernetes.NewImageList()
 	return &Deployer{
-		Logger:             logProvider.GetKubernetesLogger(podSelector),
-		ResourcePreviewer:  previewProvider.GetKubernetesPreviewer(podSelector),
-		Debugger:           debugProvider.GetKubernetesDebugger(podSelector),
+		logger:             logProvider.GetKubernetesLogger(podSelector),
+		previewer:          previewProvider.GetKubernetesPreviewer(podSelector),
+		debugger:           debugProvider.GetKubernetesDebugger(podSelector),
 		podSelector:        podSelector,
 		KptDeploy:          d,
 		insecureRegistries: cfg.GetInsecureRegistries(),
@@ -103,6 +103,18 @@ func NewDeployer(cfg Config, labels map[string]string, logProvider log.Provider,
 		kubeConfig:         cfg.GetKubeConfig(),
 		namespace:          cfg.GetKubeNamespace(),
 	}
+}
+
+func (k *Deployer) GetLogger() log.Logger {
+	return k.logger
+}
+
+func (k *Deployer) GetResourcePreviewer() preview.ResourcePreviewer {
+	return k.previewer
+}
+
+func (k *Deployer) GetDebugger() debug.Debugger {
+	return k.debugger
 }
 
 var sanityCheck = versionCheck
@@ -220,7 +232,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	deployutil.AddTagsToPodSelector(builds, k.originalImages, k.podSelector)
-	k.RegisterArtifactsToLogger(builds)
+	k.GetLogger().RegisterArtifacts(builds)
 	endTrace()
 	return namespaces, nil
 }

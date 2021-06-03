@@ -88,6 +88,6 @@ func TestContainerManagerZeroValue(t *testing.T) {
 	var m *ContainerManager
 
 	// Should not raise a nil dereference
-	m.StartDebugger(context.Background(), nil)
-	m.StopDebugger()
+	m.Start(context.Background(), nil)
+	m.Stop()
 }

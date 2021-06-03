@@ -65,7 +65,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		return nil
 	}
 
-	r.deployer.Mute()
+	r.deployer.GetLogger().Mute()
 	// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
 	defer r.monitor.Reset()
 	defer r.listener.LogWatchToUser(out)
@@ -169,8 +169,8 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			r.intents.ResetDeploy()
 		}()
 
-		r.deployer.StopResourcePreview()
-		r.deployer.StopDebugger()
+		r.deployer.GetResourcePreviewer().Stop()
+		r.deployer.GetDebugger().Stop()
 		if !meterUpdated {
 			instrumentation.AddDevIteration("deploy")
 		}
@@ -182,11 +182,11 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			return nil
 		}
 
-		if err := r.deployer.StartResourcePreview(childCtx, out, r.runCtx.GetNamespaces()); err != nil {
+		if err := r.deployer.GetResourcePreviewer().Start(childCtx, out, r.runCtx.GetNamespaces()); err != nil {
 			logrus.Warnln("Port forwarding failed:", err)
 		}
 
-		if err := r.deployer.StartDebugger(childCtx, r.runCtx.GetNamespaces()); err != nil {
+		if err := r.deployer.GetDebugger().Start(childCtx, r.runCtx.GetNamespaces()); err != nil {
 			logrus.Warnln("Debugging failed:", err)
 		}
 
@@ -195,7 +195,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	event.DevLoopComplete(r.devIteration)
 	eventV2.TaskSucceeded(constants.DevLoop)
 	endTrace()
-	r.deployer.Unmute()
+	r.deployer.GetLogger().Unmute()
 	return nil
 }
 
@@ -316,14 +316,14 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
-	defer r.deployer.StopLogger()
+	defer r.deployer.GetLogger().Stop()
 	defer func() {
 		fmt.Fprintf(os.Stdout, "calling stop debugger on %+v\n", r.deployer)
-		r.deployer.StopDebugger()
+		r.deployer.GetDebugger().Stop()
 	}()
 
 	// Logs should be retrieved up to just before the deploy
-	r.deployer.SetSince(time.Now())
+	r.deployer.GetLogger().SetSince(time.Now())
 
 	// First deploy
 	if err := r.Deploy(ctx, out, r.Builds); err != nil {
@@ -333,16 +333,16 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
 
-	defer r.deployer.StopResourcePreview()
+	defer r.deployer.GetResourcePreviewer().Stop()
 
-	if err := r.deployer.StartResourcePreview(ctx, out, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.GetResourcePreviewer().Start(ctx, out, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
 	}
-	if err := r.deployer.StartDebugger(ctx, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.GetDebugger().Start(ctx, r.runCtx.GetNamespaces()); err != nil {
 		logrus.Warnln("Error starting debug container notification:", err)
 	}
 	// Start printing the logs after deploy is finished
-	if err := r.deployer.StartLogger(ctx, out, r.runCtx.GetNamespaces()); err != nil {
+	if err := r.deployer.GetLogger().Start(ctx, out, r.runCtx.GetNamespaces()); err != nil {
 		return fmt.Errorf("starting logger: %w", err)
 	}
 

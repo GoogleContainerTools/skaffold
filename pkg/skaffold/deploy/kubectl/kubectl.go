@@ -48,9 +48,9 @@ import (
 type Deployer struct {
 	*latestV1.KubectlDeploy
 
-	log.Logger
-	preview.ResourcePreviewer
-	debug.Debugger
+	logger    log.Logger
+	previewer preview.ResourcePreviewer
+	debugger  debug.Debugger
 
 	originalImages     []graph.Artifact
 	podSelector        *kubernetes.ImageList
@@ -80,9 +80,9 @@ func NewDeployer(cfg Config, labels map[string]string, logProvider log.Provider,
 	podSelector := kubernetes.NewImageList()
 
 	return &Deployer{
-		Logger:             logProvider.GetKubernetesLogger(podSelector),
-		ResourcePreviewer:  previewProvider.GetKubernetesPreviewer(podSelector),
-		Debugger:           debugProvider.GetKubernetesDebugger(podSelector),
+		logger:             logProvider.GetKubernetesLogger(podSelector),
+		previewer:          previewProvider.GetKubernetesPreviewer(podSelector),
+		debugger:           debugProvider.GetKubernetesDebugger(podSelector),
 		podSelector:        podSelector,
 		KubectlDeploy:      d,
 		workingDir:         cfg.GetWorkingDir(),
@@ -94,6 +94,18 @@ func NewDeployer(cfg Config, labels map[string]string, logProvider log.Provider,
 		labels:             labels,
 		hydratedManifests:  cfg.HydratedManifests(),
 	}, nil
+}
+
+func (k *Deployer) GetLogger() log.Logger {
+	return k.logger
+}
+
+func (k *Deployer) GetResourcePreviewer() preview.ResourcePreviewer {
+	return k.previewer
+}
+
+func (k *Deployer) GetDebugger() debug.Debugger {
+	return k.debugger
 }
 
 // Deploy templates the provided manifests with a simple `find and replace` and
@@ -158,7 +170,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	deployutil.AddTagsToPodSelector(builds, k.originalImages, k.podSelector)
-	k.RegisterArtifactsToLogger(builds)
+	k.GetLogger().RegisterArtifacts(builds)
 	endTrace()
 	return namespaces, nil
 }

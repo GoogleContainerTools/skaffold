@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,20 +18,21 @@ package debug
 
 import (
 	"context"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
 
-type Config interface {
-	Mode() config.RunMode
+type DebuggerMux []Debugger
+
+func (d DebuggerMux) Start(ctx context.Context, namespaces []string) error {
+	for _, debugger := range d {
+		if err := debugger.Start(ctx, namespaces); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-type Debugger interface {
-	Start(context.Context, []string) error
-	Stop()
+func (d DebuggerMux) Stop() {
+	for _, debugger := range d {
+		debugger.Stop()
+	}
 }
-
-type NoopDebugger struct{}
-
-func (n *NoopDebugger) Start(_ context.Context, _ []string) error { return nil }
-func (n *NoopDebugger) Stop()                                     {}

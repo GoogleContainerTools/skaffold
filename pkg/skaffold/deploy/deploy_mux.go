@@ -21,12 +21,14 @@ import (
 	"context"
 	"io"
 	"strings"
-	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/preview"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -97,73 +99,26 @@ func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []graph.Artifac
 	return manifest.Write(strings.TrimSpace(allResources), filepath, w)
 }
 
-func (m DeployerMux) StartLogger(ctx context.Context, out io.Writer, namespaces []string) error {
+func (m DeployerMux) GetLogger() log.Logger {
+	var loggers log.LoggerMux
 	for _, deployer := range m {
-		if err := deployer.StartLogger(ctx, out, namespaces); err != nil {
-			return err
-		}
+		loggers = append(loggers, deployer.GetLogger())
 	}
-	return nil
+	return loggers
 }
 
-func (m DeployerMux) StopLogger() {
+func (m DeployerMux) GetResourcePreviewer() preview.ResourcePreviewer {
+	var previewers preview.ResourcePreviewerMux
 	for _, deployer := range m {
-		deployer.StopLogger()
+		previewers = append(previewers, deployer.GetResourcePreviewer())
 	}
+	return previewers
 }
 
-func (m DeployerMux) Mute() {
+func (m DeployerMux) GetDebugger() debug.Debugger {
+	var debuggers debug.DebuggerMux
 	for _, deployer := range m {
-		deployer.Mute()
+		debuggers = append(debuggers, deployer.GetDebugger())
 	}
-}
-
-func (m DeployerMux) Unmute() {
-	for _, deployer := range m {
-		deployer.Unmute()
-	}
-}
-
-func (m DeployerMux) SetSince(t time.Time) {
-	for _, deployer := range m {
-		deployer.SetSince(t)
-	}
-}
-
-func (m DeployerMux) RegisterArtifactsToLogger(artifacts []graph.Artifact) {
-	for _, deployer := range m {
-		deployer.RegisterArtifactsToLogger(artifacts)
-	}
-}
-
-func (m DeployerMux) StartResourcePreview(ctx context.Context, out io.Writer, namespaces []string) error {
-	for _, deployer := range m {
-		var err error
-		if err = deployer.StartResourcePreview(ctx, out, namespaces); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (m DeployerMux) StopResourcePreview() {
-	for _, deployer := range m {
-		deployer.StopResourcePreview()
-	}
-}
-
-func (m DeployerMux) StartDebugger(ctx context.Context, namespaces []string) error {
-	for _, deployer := range m {
-		var err error
-		if err = deployer.StartDebugger(ctx, namespaces); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (m DeployerMux) StopDebugger() {
-	for _, deployer := range m {
-		deployer.StopDebugger()
-	}
+	return debuggers
 }

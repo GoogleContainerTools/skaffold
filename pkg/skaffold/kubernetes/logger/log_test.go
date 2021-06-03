@@ -129,10 +129,10 @@ func TestLogAggregatorZeroValue(t *testing.T) {
 	var m *LogAggregator
 
 	// Should not raise a nil dereference
-	m.StartLogger(context.Background(), nil, []string{})
+	m.Start(context.Background(), nil, []string{})
 	m.Mute()
 	m.Unmute()
-	m.StopLogger()
+	m.Stop()
 }
 
 func TestPrefix(t *testing.T) {

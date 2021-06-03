@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,24 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package debug
+package preview
 
 import (
 	"context"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"io"
 )
 
-type Config interface {
-	Mode() config.RunMode
+type ResourcePreviewerMux []ResourcePreviewer
+
+func (r ResourcePreviewerMux) Start(ctx context.Context, out io.Writer, namespaces []string) error {
+	for _, previewer := range r {
+		if err := previewer.Start(ctx, out, namespaces); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-type Debugger interface {
-	Start(context.Context, []string) error
-	Stop()
+func (r ResourcePreviewerMux) Stop() {
+	for _, previewer := range r {
+		previewer.Stop()
+	}
 }
-
-type NoopDebugger struct{}
-
-func (n *NoopDebugger) Start(_ context.Context, _ []string) error { return nil }
-func (n *NoopDebugger) Stop()                                     {}
