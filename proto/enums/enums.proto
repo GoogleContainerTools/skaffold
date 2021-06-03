@@ -415,6 +415,10 @@ enum StatusCode {
     INSPECT_UNKNOWN_ERR = 1301;
     // Trying to add new build environment that already exists
     INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR = 1302;
+    // Trying to modify build environment that doesn't exist
+    INSPECT_BUILD_ENV_NOT_FOUND_ERR = 1303;
+    // Trying to modify a profile that doesn't exist
+    INSPECT_PROFILE_NOT_FOUND_ERR = 1304;
 }
 
 // Enum for Suggestion codes
@@ -552,9 +556,14 @@ enum SuggestionCode {
     CONFIG_FIX_API_VERSION = 707;
 
     // `skaffold inspect` command error suggestion codes
+
+    // Create new build env in a profile instead, or use the 'modify' command
     INSPECT_DEDUP_NEW_BUILD_ENV = 800;
-
-
+    // Check profile selection, or use the 'add' command instead
+    INSPECT_BUILD_ENV_NOT_FOUND = 801;
+    // Check profile flag value
+    INSPECT_PROFILE_NOT_FOUND = 802;
+    
     // Open an issue so this situation can be diagnosed
     OPEN_ISSUE = 900;
 

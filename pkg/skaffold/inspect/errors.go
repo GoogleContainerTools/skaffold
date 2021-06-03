@@ -43,3 +43,40 @@ func BuildEnvAlreadyExists(b BuildEnv, filename string, profile string) error {
 			},
 		})
 }
+
+// BuildEnvNotFound specifies that the target build environment definition doesn't exist.
+func BuildEnvNotFound(b BuildEnv, filename string, profile string) error {
+	var msg string
+	if profile == "" {
+		msg = fmt.Sprintf("trying to modify a %q build environment definition that doesn't exist, in file %s", b, filename)
+	} else {
+		msg = fmt.Sprintf("trying to modify a %q build environment definition that doesn't exist, in profile %q in file %s", b, profile, filename)
+	}
+	return sErrors.NewError(fmt.Errorf(msg),
+		proto.ActionableErr{
+			Message: msg,
+			ErrCode: proto.StatusCode_INSPECT_BUILD_ENV_NOT_FOUND_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_INSPECT_BUILD_ENV_NOT_FOUND,
+					Action:         "Check that the target build environment definition already exists. Otherwise use the `add` command instead of the `modify` command to create it",
+				},
+			},
+		})
+}
+
+// ProfileNotFound specifies that the target profile doesn't exist
+func ProfileNotFound(profile string) error {
+	msg := fmt.Sprintf("trying to modify a profile %q that doesn't exist", profile)
+	return sErrors.NewError(fmt.Errorf(msg),
+		proto.ActionableErr{
+			Message: msg,
+			ErrCode: proto.StatusCode_INSPECT_PROFILE_NOT_FOUND_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_INSPECT_PROFILE_NOT_FOUND,
+					Action:         "Check that the `--profile` flag matches at least one existing profile. Otherwise use the `add` command instead of the `modify` command to create it",
+				},
+			},
+		})
+}

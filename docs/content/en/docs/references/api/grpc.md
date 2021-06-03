@@ -1012,6 +1012,8 @@ For Cancelled Error code, use range 800 to 850.<br>
 | CONFIG_UNKNOWN_API_VERSION_ERR | 1213 | Config API version not found |
 | INSPECT_UNKNOWN_ERR | 1301 | Catch-all `skaffold inspect` command error |
 | INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR | 1302 | Trying to add new build environment that already exists |
+| INSPECT_BUILD_ENV_NOT_FOUND_ERR | 1303 | Trying to modify build environment that doesn't exist |
+| INSPECT_PROFILE_NOT_FOUND_ERR | 1304 | Trying to modify a profile that doesn't exist |
 
 
 
@@ -1072,7 +1074,9 @@ Enum for Suggestion codes
 | CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION | 705 | Check active profile selection for dependency config |
 | CONFIG_CHECK_PROFILE_SELECTION | 706 | Check profile selection flag |
 | CONFIG_FIX_API_VERSION | 707 | Fix config API version or upgrade the skaffold binary |
-| INSPECT_DEDUP_NEW_BUILD_ENV | 800 | `skaffold inspect` command error suggestion codes |
+| INSPECT_DEDUP_NEW_BUILD_ENV | 800 | Create new build env in a profile instead, or use the 'modify' command |
+| INSPECT_BUILD_ENV_NOT_FOUND | 801 | Check profile selection, or use the 'add' command instead |
+| INSPECT_PROFILE_NOT_FOUND | 802 | Check profile flag value |
 | OPEN_ISSUE | 900 | Open an issue so this situation can be diagnosed |
 | CHECK_CUSTOM_COMMAND | 1000 | Test error suggestion codes |
 | FIX_CUSTOM_COMMAND_TIMEOUT | 1001 |  |

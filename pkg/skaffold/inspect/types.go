@@ -29,7 +29,8 @@ type Options struct {
 	OutFormat string
 	// Modules is the module filter for specific commands
 	Modules []string
-
+	// Strict specifies the error-tolerance for specific commands
+	Strict bool
 	ProfilesOptions
 	BuildEnvOptions
 }

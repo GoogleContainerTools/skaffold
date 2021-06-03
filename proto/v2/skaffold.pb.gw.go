@@ -669,7 +669,7 @@ var (
 
 	pattern_SkaffoldV2Service_ApplicationLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v2", "applicationLogs"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_SkaffoldV2Service_SkaffoldLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v2", "applicationLogs"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_SkaffoldV2Service_SkaffoldLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v2", "skaffoldLogs"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_SkaffoldV2Service_Execute_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v2", "execute"}, "", runtime.AssumeColonVerbOpt(true)))
 

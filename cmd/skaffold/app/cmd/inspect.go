@@ -27,8 +27,10 @@ var inspectFlags = struct {
 	modules   []string
 	buildEnv  string
 	profiles  []string
+	strict    bool
 }{
 	fileName: "skaffold.yaml",
+	strict:   true,
 }
 
 func NewCmdInspect() *cobra.Command {

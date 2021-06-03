@@ -66,7 +66,7 @@ func cmdBuildEnv() *cobra.Command {
 	return NewCmd("build-env").
 		WithDescription("Interact with skaffold build environment definitions.").
 		WithPersistentFlagAdder(cmdBuildEnvFlags).
-		WithCommands(cmdBuildEnvList(), cmdBuildEnvAdd())
+		WithCommands(cmdBuildEnvList(), cmdBuildEnvAdd(), cmdBuildEnvModify())
 }
 
 func cmdBuildEnvList() *cobra.Command {
@@ -84,6 +84,13 @@ func cmdBuildEnvAdd() *cobra.Command {
 		WithCommands(cmdBuildEnvAddLocal(), cmdBuildEnvAddGcb(), cmdBuildEnvAddCluster())
 }
 
+func cmdBuildEnvModify() *cobra.Command {
+	return NewCmd("modify").
+		WithDescription("Modify the build environment for the default pipeline or an existing profile.").
+		WithPersistentFlagAdder(cmdBuildEnvModifyFlags).
+		WithCommands(cmdBuildEnvModifyGcb())
+}
+
 func cmdBuildEnvAddGcb() *cobra.Command {
 	return NewCmd("googleCloudBuild").
 		WithDescription("Add a new GoogleCloudBuild build environment definition").
@@ -92,7 +99,7 @@ Without the '--profile' flag the new environment definition is added to the defa
 In these respective scenarios, it will fail if the build env definition for the default pipeline or the named profile already exists. To override an existing definition use 'skaffold inspect build-env modify' command instead. 
 Use the '--module' filter to specify the individual module to target. Otherwise, it'll be applied to all modules defined in the target file. Also, with the '--profile' flag if the target config imports other configs as dependencies, then the new profile will be recursively created in all the imported configs also.`).
 		WithExample("Add a new profile named 'gcb' targeting the builder 'googleCloudBuild' against the GCP project ID '1234'.", "inspect build-env add googleCloudBuild --profile gcb --projectID 1234 -f skaffold.yaml").
-		WithFlagAdder(cmdBuildEnvAddGcbFlags).
+		WithFlagAdder(cmdBuildEnvGcbFlags).
 		NoArgs(addGcbBuildEnv)
 }
 
@@ -120,6 +127,18 @@ Use the '--module' filter to specify the individual module to target. Otherwise,
 		NoArgs(addClusterBuildEnv)
 }
 
+func cmdBuildEnvModifyGcb() *cobra.Command {
+	return NewCmd("googleCloudBuild").
+		WithDescription("Modify an existing GoogleCloudBuild build environment definition").
+		WithLongDescription(`Modify an existing GoogleCloudBuild build environment definition.
+Without the '--profile' flag, the default pipeline's build environment definition is modified. With the '--profile' flag it'll modify the build environment definition for all profile pipelines that match the given profile name. 
+In these respective scenarios, it will fail if the build env definition for the default pipeline or the named profile is not GoogleCloudBuild. To create a new build environment definition use 'skaffold inspect build-env add' command instead. 
+Use the '--module' filter to specify the individual module to target. Otherwise, it'll be applied to all modules defined in the target file. Also, with the '--profile' flag if the target config imports other configs as dependencies, then it'll modify profiles that match the given name in all imported configs`).
+		WithExample("Modify an existing profile named 'gcb' targeting the builder 'googleCloudBuild' against the GCP project ID '1234'.", "inspect build-env modify googleCloudBuild --profile gcb --projectID 1234 -f skaffold.yaml").
+		WithFlagAdder(cmdBuildEnvGcbFlags).
+		NoArgs(modifyGcbBuildEnv)
+}
+
 func listBuildEnv(ctx context.Context, out io.Writer) error {
 	return buildEnv.PrintBuildEnvsList(ctx, out, printBuildEnvsListOptions())
 }
@@ -129,7 +148,11 @@ func addLocalBuildEnv(ctx context.Context, out io.Writer) error {
 }
 
 func addGcbBuildEnv(ctx context.Context, out io.Writer) error {
-	return buildEnv.AddGcbBuildEnv(ctx, out, addGcbBuildEnvOptions())
+	return buildEnv.AddGcbBuildEnv(ctx, out, gcbBuildEnvOptions())
+}
+
+func modifyGcbBuildEnv(ctx context.Context, out io.Writer) error {
+	return buildEnv.ModifyGcbBuildEnv(ctx, out, gcbBuildEnvOptions())
 }
 
 func addClusterBuildEnv(ctx context.Context, out io.Writer) error {
@@ -154,7 +177,12 @@ func cmdBuildEnvLocalFlags(f *pflag.FlagSet) {
 	}
 }
 
-func cmdBuildEnvAddGcbFlags(f *pflag.FlagSet) {
+func cmdBuildEnvModifyFlags(f *pflag.FlagSet) {
+	f.StringVarP(&buildEnvFlags.profile, "profile", "p", "", `If specified then the modify actions are performed on all pipelines from profiles that match flag value. It must match at least one existing profile name. If unspecified then only the default pipeline in the target 'skaffold.yaml' file are modified`)
+	f.BoolVar(&inspectFlags.strict, "strict", true, "If set to 'false' then do not fail on mismatch of build env type or missing definitions. If set to 'true' then all default pipelines or those matching the `--profile` flag need to match the build env type exactly. Defaults to 'true'")
+}
+
+func cmdBuildEnvGcbFlags(f *pflag.FlagSet) {
 	f.StringVar(&buildEnvFlags.projectID, "projectId", "", `ID of the Cloud Platform Project.`)
 	f.Int64Var(&buildEnvFlags.diskSizeGb, "diskSizeGb", 0, `Disk size of the VM that runs the build`)
 	f.StringVar(&buildEnvFlags.machineType, "machineType", "", `Type of VM that runs the build`)
@@ -216,7 +244,7 @@ func localBuildEnvOptions() inspect.Options {
 	}
 }
 
-func addGcbBuildEnvOptions() inspect.Options {
+func gcbBuildEnvOptions() inspect.Options {
 	return inspect.Options{
 		Filename:  inspectFlags.fileName,
 		OutFormat: inspectFlags.outFormat,
@@ -229,6 +257,7 @@ func addGcbBuildEnvOptions() inspect.Options {
 			Timeout:     buildEnvFlags.timeout,
 			Concurrency: buildEnvFlags.concurrency,
 		},
+		Strict: inspectFlags.strict,
 	}
 }
 
