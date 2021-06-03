@@ -65,7 +65,6 @@ func (d *ContainerManager) Start(ctx context.Context, namespaces []string) error
 	d.stopWatcher = stopWatcher
 
 	go func() {
-
 		for {
 			select {
 			case <-ctx.Done():
