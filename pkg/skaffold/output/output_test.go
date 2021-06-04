@@ -23,6 +23,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -113,6 +115,45 @@ func TestGetUnderlyingWriter(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.CheckDeepEqual(true, test.expected == GetUnderlyingWriter(test.out))
+		})
+	}
+}
+
+func TestWithEventContext(t *testing.T) {
+	tests := []struct {
+		name      string
+		writer    io.Writer
+		phase     constants.Phase
+		subtaskID string
+		origin    string
+
+		expected io.Writer
+	}{
+		{
+			name: "skaffoldWriter update info",
+			writer: skaffoldWriter{
+				MainWriter:  ioutil.Discard,
+				EventWriter: eventV2.NewLogger(constants.Build, "1", "skaffold-test"),
+			},
+			phase:     constants.Test,
+			subtaskID: "2",
+			origin:    "skaffold-test-change",
+			expected: skaffoldWriter{
+				MainWriter:  ioutil.Discard,
+				EventWriter: eventV2.NewLogger(constants.Test, "2", "skaffold-test-change"),
+			},
+		},
+		{
+			name:     "non skaffoldWriter returns same",
+			writer:   ioutil.Discard,
+			expected: ioutil.Discard,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			got := WithEventContext(test.writer, test.phase, test.subtaskID, test.origin)
+			t.CheckDeepEqual(test.expected, got)
 		})
 	}
 }
