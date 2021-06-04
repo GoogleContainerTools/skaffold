@@ -20,11 +20,12 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -47,7 +48,7 @@ var (
 		{
 			Regexp:  re(fmt.Sprintf(".*%s.* denied: .*", PushImageErr)),
 			ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
-			Description: func(error) string {
+			Description: func(err error) string {
 				logrus.Tracef("error building %s", err)
 				return "Build Failed. No push access to specified image repository"
 			},
