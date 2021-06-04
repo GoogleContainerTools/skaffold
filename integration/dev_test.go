@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -84,6 +85,10 @@ func TestDevNotification(t *testing.T) {
 }
 
 func TestDevGracefulCancel(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("graceful cancel doesn't work on windows")
+	}
+
 	tests := []struct {
 		name        string
 		dir         string

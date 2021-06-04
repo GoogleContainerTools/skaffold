@@ -57,14 +57,14 @@ func NewPodWatcher(podSelector PodSelector) PodWatcher {
 
 func (w *podWatcher) Register(receiver chan<- PodEvent) {
 	w.receiverLock.Lock()
+	defer w.receiverLock.Unlock()
 	w.receivers[receiver] = true
-	w.receiverLock.Unlock()
 }
 
 func (w *podWatcher) Deregister(receiver chan<- PodEvent) {
 	w.receiverLock.Lock()
+	defer w.receiverLock.Unlock()
 	w.receivers[receiver] = false
-	w.receiverLock.Unlock()
 }
 
 func (w *podWatcher) Start(namespaces []string) (func(), error) {
