@@ -41,7 +41,6 @@ import (
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-	eventV2.TaskInProgress(constants.Deploy, "Deploy to cluster")
 
 	// Update which images are logged.
 	r.AddTagsToPodSelector(artifacts)
@@ -53,7 +52,6 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	logger.SetSince(time.Now())
 	// First deploy
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
-		eventV2.TaskFailed(constants.Deploy, err)
 		return err
 	}
 
@@ -66,7 +64,6 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 
 	// Start printing the logs after deploy is finished
 	if err := logger.Start(ctx, r.runCtx.GetNamespaces()); err != nil {
-		eventV2.TaskFailed(constants.Deploy, err)
 		return fmt.Errorf("starting logger: %w", err)
 	}
 
@@ -75,7 +72,6 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		<-ctx.Done()
 	}
 
-	eventV2.TaskSucceeded(constants.Deploy)
 	return nil
 }
 
@@ -126,7 +122,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	event.DeployInProgress()
-	eventV2.TaskInProgress(constants.Deploy, "")
+	eventV2.TaskInProgress(constants.Deploy, "Deploy to cluster")
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy_Deploying")
 	defer endTrace()
 
