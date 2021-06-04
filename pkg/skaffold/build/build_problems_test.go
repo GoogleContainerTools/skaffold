@@ -106,11 +106,11 @@ func TestBuildProblems(t *testing.T) {
 		},
 		{
 			description: "unknown project error",
-			err:         fmt.Errorf("build failed: could not push image: unknown: Project"),
-			expected:    "Build Failed. Check your GCR project.",
+			err:         fmt.Errorf("build failed: could not push image: unknown: Project test"),
+			expected:    "Build Failed. could not push image: unknown: Project test. Check your GCR project.",
 			expectedAE: &proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_PROJECT_NOT_FOUND,
-				Message: "build failed: could not push image: unknown: Project",
+				Message: "build failed: could not push image: unknown: Project test",
 				Suggestions: []*proto.Suggestion{{
 					SuggestionCode: proto.SuggestionCode_CHECK_GCLOUD_PROJECT,
 					Action:         "Check your GCR project",
