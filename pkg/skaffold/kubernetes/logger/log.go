@@ -147,7 +147,8 @@ func (a *LogAggregator) Stop() {
 		// Logs are not activated.
 		return
 	}
-
+	a.stopWatcher()
+	a.podWatcher.Deregister(a.events)
 	close(a.events)
 }
 
