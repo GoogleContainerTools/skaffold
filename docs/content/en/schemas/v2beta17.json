@@ -1215,11 +1215,6 @@
         "id"
       ],
       "properties": {
-        "dst": {
-          "type": "string",
-          "description": "path in the container to mount the secret.",
-          "x-intellij-html-description": "path in the container to mount the secret."
-        },
         "id": {
           "type": "string",
           "description": "id of the secret.",
@@ -1233,8 +1228,7 @@
       },
       "preferredOrder": [
         "id",
-        "src",
-        "dst"
+        "src"
       ],
       "additionalProperties": false,
       "type": "object",
