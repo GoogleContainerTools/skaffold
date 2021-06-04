@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -38,14 +40,16 @@ const (
 )
 
 var (
-	nilSuggestions = func(cfg interface{}) []*proto.Suggestion { return nil }
+	unknownProjectErr = fmt.Sprintf(".*(%s.* unknown: Project.*)", PushImageErr)
+	nilSuggestions    = func(cfg interface{}) []*proto.Suggestion { return nil }
 	// for testing
 	getConfigForCurrentContext = config.GetConfigForCurrentKubectx
 	problems                   = []sErrors.Problem{
 		{
 			Regexp:  re(fmt.Sprintf(".*%s.* denied: .*", PushImageErr)),
 			ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
-			Description: func(error) string {
+			Description: func(err error) string {
+				logrus.Tracef("error building %s", err)
 				return "Build Failed. No push access to specified image repository"
 			},
 			Suggestion: suggestBuildPushAccessDeniedAction,
@@ -59,9 +63,14 @@ var (
 			Suggestion: nilSuggestions,
 		},
 		{
-			Regexp: re(fmt.Sprintf(".*%s.* unknown: Project", PushImageErr)),
-			Description: func(error) string {
-				return "Build Failed"
+			Regexp: re(unknownProjectErr),
+			Description: func(err error) string {
+				logrus.Tracef("error building %s", err)
+				matchExp := re(unknownProjectErr)
+				if match := matchExp.FindStringSubmatch(err.Error()); len(match) >= 2 {
+					return fmt.Sprintf("Build Failed. %s", match[1])
+				}
+				return fmt.Sprintf("Build Failed due to %s", err)
 			},
 			ErrCode: proto.StatusCode_BUILD_PROJECT_NOT_FOUND,
 			Suggestion: func(interface{}) []*proto.Suggestion {
@@ -75,6 +84,7 @@ var (
 			Regexp:  re(dockerConnectionFailed),
 			ErrCode: proto.StatusCode_BUILD_DOCKER_DAEMON_NOT_RUNNING,
 			Description: func(err error) string {
+				logrus.Tracef("error building %s", err)
 				matchExp := re(dockerConnectionFailed)
 				if match := matchExp.FindStringSubmatch(err.Error()); len(match) >= 2 {
 					return fmt.Sprintf("Build Failed. %s", match[1])
