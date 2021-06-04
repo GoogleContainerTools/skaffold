@@ -32,6 +32,10 @@ build:
   - image: gcr.io/k8s-skaffold/skaffold-example
     docker:
       dockerfile: path/to/Dockerfile
+      secret:
+        id: id
+        src: /file.txt
+        dst: /etc/passwd
   - image: gcr.io/k8s-skaffold/bazel
     bazel:
       target: //mytarget
@@ -108,6 +112,9 @@ build:
   - image: gcr.io/k8s-skaffold/skaffold-example
     docker:
       dockerfile: path/to/Dockerfile
+      secret:
+        id: id
+        src: /file.txt
   - image: gcr.io/k8s-skaffold/bazel
     bazel:
       target: //mytarget

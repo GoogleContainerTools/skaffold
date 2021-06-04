@@ -1247,9 +1247,6 @@ type DockerSecret struct {
 
 	// Source is the path to the secret on the host machine.
 	Source string `yaml:"src,omitempty"`
-
-	// Destination is the path in the container to mount the secret.
-	Destination string `yaml:"dst,omitempty"`
 }
 
 // BazelArtifact describes an artifact built with [Bazel](https://bazel.build/).
