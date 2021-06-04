@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -49,6 +50,11 @@ spec:
   - image: leeroy-web:v1
     name: leeroy-web
 `
+	initKptfile = `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+`
 )
 
 func TestRender_StoredInCache(t *testing.T) {
@@ -57,9 +63,9 @@ func TestRender_StoredInCache(t *testing.T) {
 			Manifests: []string{"pod.yaml"}}}, "")
 		fakeCmd := testutil.CmdRunOut(fmt.Sprintf("kpt pkg init %v", DefaultHydrationDir), "")
 		t.Override(&util.DefaultExecCommand, fakeCmd)
-
 		t.NewTempDir().
 			Write("pod.yaml", podYaml).
+			Write(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), initKptfile).
 			Touch("empty.ignored").
 			Chdir()
 
