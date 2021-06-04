@@ -69,6 +69,8 @@ type eventHandler struct {
 	logLock             sync.Mutex
 	applicationLogs     []proto.Event
 	applicationLogsLock sync.Mutex
+	skaffoldLogs        []proto.Event
+	skaffoldLogsLock    sync.Mutex
 	cfg                 event.Config
 
 	iteration               int
@@ -77,6 +79,7 @@ type eventHandler struct {
 	eventChan               chan *proto.Event
 	eventListeners          []*listener
 	applicationLogListeners []*listener
+	skaffoldLogListeners    []*listener
 }
 
 type listener struct {
@@ -100,6 +103,10 @@ func ForEachEvent(callback func(*proto.Event) error) error {
 
 func ForEachApplicationLog(callback func(*proto.Event) error) error {
 	return handler.forEachApplicationLog(callback)
+}
+
+func ForEachSkaffoldLog(callback func(*proto.Event) error) error {
+	return handler.forEachSkaffoldLog(callback)
 }
 
 func Handle(event *proto.Event) error {
@@ -177,6 +184,10 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.Event) error) error {
 
 func (ev *eventHandler) forEachApplicationLog(callback func(*proto.Event) error) error {
 	return ev.forEach(&ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock, callback)
+}
+
+func (ev *eventHandler) forEachSkaffoldLog(callback func(*proto.Event) error) error {
+	return ev.forEach(&ev.skaffoldLogListeners, &ev.skaffoldLogs, &ev.skaffoldLogsLock, callback)
 }
 
 func emptyState(cfg event.Config) proto.State {
