@@ -41,7 +41,6 @@ import (
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
-
 	// Update which images are logged.
 	r.AddTagsToPodSelector(artifacts)
 
