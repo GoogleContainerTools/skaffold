@@ -46,6 +46,14 @@ type BuildEnvOptions struct {
 	Profiles []string
 	// Profile is a target profile to create or edit
 	Profile string
+	// Push specifies if images should be pushed to a registry.
+	Push *bool
+	// TryImportMissing specifies whether to attempt to import artifacts from Docker (either a local or remote registry) if not in the cache
+	TryImportMissing *bool
+	// UseDockerCLI specifies to use `docker` command-line interface instead of Docker Engine APIs
+	UseDockerCLI *bool
+	// UseBuildkit specifies to use Buildkit to build Docker images
+	UseBuildkit *bool
 	// ProjectID is the GCP project ID
 	ProjectID string
 	// DiskSizeGb is the disk size of the VM that runs the build

@@ -284,14 +284,14 @@ func isHouseKeepingMessagesAllowed(cmd *cobra.Command) bool {
 	if cmd.Annotations == nil {
 		return false
 	}
-	return cmd.Annotations[HouseKeepingMessagesAllowedAnnotation] == "true"
+	return cmd.Annotations[HouseKeepingMessagesAllowedAnnotation] == fmt.Sprintf("%t", true)
 }
 
 func allowHouseKeepingMessages(cmd *cobra.Command) {
 	if cmd.Annotations == nil {
 		cmd.Annotations = make(map[string]string)
 	}
-	cmd.Annotations[HouseKeepingMessagesAllowedAnnotation] = "true"
+	cmd.Annotations[HouseKeepingMessagesAllowedAnnotation] = fmt.Sprintf("%t", true)
 }
 
 func preReleaseVersion(s string) bool {
