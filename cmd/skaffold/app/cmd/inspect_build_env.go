@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	buildEnv "github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect/buildEnv"
 )
@@ -33,6 +34,12 @@ var buildEnvFlags = struct {
 	// Common
 	timeout     string
 	concurrency int
+
+	// Local
+	push             config.BoolOrUndefined
+	tryImportMissing config.BoolOrUndefined
+	useDockerCLI     config.BoolOrUndefined
+	useBuildkit      config.BoolOrUndefined
 
 	// Google Cloud Build
 	projectID   string
@@ -74,7 +81,7 @@ func cmdBuildEnvAdd() *cobra.Command {
 	return NewCmd("add").
 		WithDescription("Add a new build environment to the default pipeline or to a new or existing profile.").
 		WithPersistentFlagAdder(cmdBuildEnvAddFlags).
-		WithCommands(cmdBuildEnvAddGcb(), cmdBuildEnvAddCluster())
+		WithCommands(cmdBuildEnvAddLocal(), cmdBuildEnvAddGcb(), cmdBuildEnvAddCluster())
 }
 
 func cmdBuildEnvAddGcb() *cobra.Command {
@@ -87,6 +94,18 @@ Use the '--module' filter to specify the individual module to target. Otherwise,
 		WithExample("Add a new profile named 'gcb' targeting the builder 'googleCloudBuild' against the GCP project ID '1234'.", "inspect build-env add googleCloudBuild --profile gcb --projectID 1234 -f skaffold.yaml").
 		WithFlagAdder(cmdBuildEnvAddGcbFlags).
 		NoArgs(addGcbBuildEnv)
+}
+
+func cmdBuildEnvAddLocal() *cobra.Command {
+	return NewCmd("local").
+		WithDescription("Add a new Local build environment definition").
+		WithLongDescription(`Add a new Local build environment definition.
+Without the '--profile' flag the new environment definition is added to the default pipeline. With the '--profile' flag it will create a new profile with this build env definition. 
+In these respective scenarios, it will fail if the build env definition for the default pipeline or the named profile already exists. To override an existing definition use 'skaffold inspect build-env modify' command instead. 
+Use the '--module' filter to specify the individual module to target. Otherwise, it'll be applied to all modules defined in the target file. Also, with the '--profile' flag if the target config imports other configs as dependencies, then the new profile will be recursively created in all the imported configs also.`).
+		WithExample("Add a new profile named 'local' targeting the local build environment with option to push images and using buildkit", "inspect build-env add local --profile local --push true --useBuildkit true -f skaffold.yaml").
+		WithFlagAdder(cmdBuildEnvLocalFlags).
+		NoArgs(addLocalBuildEnv)
 }
 
 func cmdBuildEnvAddCluster() *cobra.Command {
@@ -105,6 +124,10 @@ func listBuildEnv(ctx context.Context, out io.Writer) error {
 	return buildEnv.PrintBuildEnvsList(ctx, out, printBuildEnvsListOptions())
 }
 
+func addLocalBuildEnv(ctx context.Context, out io.Writer) error {
+	return buildEnv.AddLocalBuildEnv(ctx, out, localBuildEnvOptions())
+}
+
 func addGcbBuildEnv(ctx context.Context, out io.Writer) error {
 	return buildEnv.AddGcbBuildEnv(ctx, out, addGcbBuildEnvOptions())
 }
@@ -115,6 +138,20 @@ func addClusterBuildEnv(ctx context.Context, out io.Writer) error {
 
 func cmdBuildEnvAddFlags(f *pflag.FlagSet) {
 	f.StringVarP(&buildEnvFlags.profile, "profile", "p", "", `Profile name to add the new build env definition in. If the profile name doesn't exist then the profile will be created in all the target configs. If this flag is not specified then the build env is added to the default pipeline of the target configs.`)
+}
+
+func cmdBuildEnvLocalFlags(f *pflag.FlagSet) {
+	var flags []*pflag.Flag
+	flags = append(flags, f.VarPF(&buildEnvFlags.push, "push", "", `Set to true to push images to a registry`))
+	flags = append(flags, f.VarPF(&buildEnvFlags.tryImportMissing, "tryImportMissing", "", `Set to true to to attempt importing artifacts from Docker (either a local or remote registry) if not in the build cache`))
+	flags = append(flags, f.VarPF(&buildEnvFlags.useDockerCLI, "useDockerCLI", "", `Set to true to use 'docker' command-line interface instead of Docker Engine APIs`))
+	flags = append(flags, f.VarPF(&buildEnvFlags.useBuildkit, "useBuildkit", "", `Set to true to use BuildKit to build Docker images`))
+	f.IntVar(&buildEnvFlags.concurrency, "concurrency", -1, `number of artifacts to build concurrently. 0 means "no-limit"`)
+
+	// support *bool flags without a value to be interpreted as `true`; like `--push` instead of `--push=true`
+	for _, f := range flags {
+		f.NoOptDefVal = "true"
+	}
 }
 
 func cmdBuildEnvAddGcbFlags(f *pflag.FlagSet) {
@@ -162,6 +199,23 @@ func printBuildEnvsListOptions() inspect.Options {
 		},
 	}
 }
+
+func localBuildEnvOptions() inspect.Options {
+	return inspect.Options{
+		Filename:  inspectFlags.fileName,
+		OutFormat: inspectFlags.outFormat,
+		Modules:   inspectFlags.modules,
+		BuildEnvOptions: inspect.BuildEnvOptions{
+			Profile:          buildEnvFlags.profile,
+			Push:             buildEnvFlags.push.Value(),
+			TryImportMissing: buildEnvFlags.tryImportMissing.Value(),
+			UseDockerCLI:     buildEnvFlags.useDockerCLI.Value(),
+			UseBuildkit:      buildEnvFlags.useBuildkit.Value(),
+			Concurrency:      buildEnvFlags.concurrency,
+		},
+	}
+}
+
 func addGcbBuildEnvOptions() inspect.Options {
 	return inspect.Options{
 		Filename:  inspectFlags.fileName,
@@ -177,6 +231,7 @@ func addGcbBuildEnvOptions() inspect.Options {
 		},
 	}
 }
+
 func addClusterBuildEnvOptions() inspect.Options {
 	return inspect.Options{
 		Filename:  inspectFlags.fileName,
