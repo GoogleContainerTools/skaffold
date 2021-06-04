@@ -23,6 +23,7 @@ provides built-in support for the following tools:
 * **Tag**
   * Git tagger
   * Sha256 tagger
+  * Input Digest tagger
   * Env Template tagger
   * DateTime tagger
 * **Deploy**
