@@ -30,7 +30,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
 )
 
@@ -69,7 +68,7 @@ type eventHandler struct {
 	logLock             sync.Mutex
 	applicationLogs     []proto.Event
 	applicationLogsLock sync.Mutex
-	cfg                 event.Config
+	cfg                 Config
 
 	iteration               int
 	state                   proto.State
@@ -179,7 +178,7 @@ func (ev *eventHandler) forEachApplicationLog(callback func(*proto.Event) error)
 	return ev.forEach(&ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock, callback)
 }
 
-func emptyState(cfg event.Config) proto.State {
+func emptyState(cfg Config) proto.State {
 	builds := map[string]string{}
 	for _, p := range cfg.GetPipelines() {
 		for _, a := range p.Build.Artifacts {
@@ -272,7 +271,7 @@ func emptyStatusCheckState() *proto.StatusCheckState {
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-func InitializeState(cfg event.Config) {
+func InitializeState(cfg Config) {
 	handler.cfg = cfg
 	handler.setState(emptyState(cfg))
 }
@@ -286,7 +285,7 @@ func AutoTriggerDiff(phase constants.Phase, val bool) (bool, error) {
 	case constants.Deploy:
 		return val != handler.getState().DeployState.AutoTrigger, nil
 	default:
-		return false, fmt.Errorf("unknown phase %v not found in handler state", phase)
+		return false, fmt.Errorf("unknown Phase %v not found in handler state", phase)
 	}
 }
 

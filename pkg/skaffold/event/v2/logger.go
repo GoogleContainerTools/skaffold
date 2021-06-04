@@ -25,27 +25,24 @@ import (
 )
 
 type logger struct {
-	handler *eventHandler
-
-	phase constants.Phase
-	subtaskID string
-	origin string
+	Phase     constants.Phase
+	SubtaskID string
+	Origin    string
 }
 
 func NewLogger(phase constants.Phase, subtaskID, origin string) io.Writer {
 	return logger{
-		handler:   handler,
-		phase:     phase,
-		subtaskID: subtaskID,
-		origin:    origin,
+		Phase:     phase,
+		SubtaskID: subtaskID,
+		Origin:    origin,
 	}
 }
 
 func (l logger) Write(p []byte) (int, error) {
-	l.handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
-		TaskId:    fmt.Sprintf("%s-%d", l.phase, l.handler.iteration),
-		SubtaskId: l.subtaskID,
-		Origin:    l.origin,
+	handler.handleSkaffoldLogEvent(&proto.SkaffoldLogEvent{
+		TaskId:    fmt.Sprintf("%s-%d", l.Phase, handler.iteration),
+		SubtaskId: l.SubtaskID,
+		Origin:    l.Origin,
 		Level:     0,
 		Message:   string(p),
 	})
