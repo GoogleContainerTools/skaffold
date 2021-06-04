@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/validate"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -44,17 +46,37 @@ type Renderer interface {
 }
 
 // NewSkaffoldRenderer creates a new Renderer object from the latestV2 API schema.
-func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir string) Renderer {
+func NewSkaffoldRenderer(config *latestV2.RenderConfig, workingDir string) (Renderer, error) {
 	// TODO(yuwenma): return instance of kpt-managed mode or skaffold-managed mode defer to the config.Path fields.
 	// The alpha implementation only has skaffold-managed mode.
 	// TODO(yuwenma): The current work directory may not be accurate if users use --filepath flag.
 	hydrationDir := filepath.Join(workingDir, DefaultHydrationDir)
-	generator := generate.NewGenerator(workingDir, *config.Generate)
-	return &SkaffoldRenderer{Generator: *generator, workingDir: workingDir, hydrationDir: hydrationDir}
+
+	var generator *generate.Generator
+	if config.Generate == nil {
+		// If render.generate is not given, default to current working directory.
+		defaultManifests := filepath.Join(workingDir, "*.yaml")
+		generator = generate.NewGenerator(workingDir, latestV2.Generate{Manifests: []string{defaultManifests}})
+	} else {
+		generator = generate.NewGenerator(workingDir, *config.Generate)
+	}
+
+	var validator *validate.Validator
+	if config.Validate != nil {
+		var err error
+		validator, err = validate.NewValidator(*config.Validate)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		validator, _ = validate.NewValidator([]latestV2.Validator{})
+	}
+	return &SkaffoldRenderer{Generator: *generator, Validator: *validator, workingDir: workingDir, hydrationDir: hydrationDir}, nil
 }
 
 type SkaffoldRenderer struct {
 	generate.Generator
+	validate.Validator
 	workingDir   string
 	hydrationDir string
 	labels       map[string]string
@@ -68,14 +90,16 @@ func (r *SkaffoldRenderer) prepareHydrationDir(ctx context.Context) error {
 	if _, err := os.Stat(r.hydrationDir); os.IsNotExist(err) {
 		logrus.Debugf("creating render directory: %v", r.hydrationDir)
 		if err := os.MkdirAll(r.hydrationDir, os.ModePerm); err != nil {
-			return fmt.Errorf("creating cache directory for hydration: %w", err)
+			return fmt.Errorf("creating render directory for hydration: %w", err)
 		}
 	}
 	kptFilePath := filepath.Join(r.hydrationDir, kptfile.KptFileName)
 	if _, err := os.Stat(kptFilePath); os.IsNotExist(err) {
 		cmd := exec.CommandContext(ctx, "kpt", "pkg", "init", r.hydrationDir)
 		if _, err := util.RunCmdOut(cmd); err != nil {
-			return err
+			// TODO: user error. need manual init
+			return fmt.Errorf("unable to initialize kpt directory in %v, please manually run `kpt pkg init %v`",
+				kptFilePath, kptFilePath)
 		}
 	}
 	return nil
@@ -111,10 +135,23 @@ func (r *SkaffoldRenderer) Render(ctx context.Context, out io.Writer, builds []g
 	defer file.Close()
 	kfConfig := &kptfile.KptFile{}
 	if err := yaml.NewDecoder(file).Decode(&kfConfig); err != nil {
-		return err
+		// TODO: user error.
+		return fmt.Errorf("unable to parse %v: %w, please check if the kptfile is updated to new apiVersion > v1alpha2",
+			kptFilePath, err)
+	}
+	if kfConfig.Pipeline == nil {
+		kfConfig.Pipeline = &kptfile.Pipeline{}
 	}
 
-	// TODO: Update the Kptfile with the new validators.
+	kfConfig.Pipeline.Validators = r.GetDeclarativeValidators()
 	// TODO: Update the Kptfile with the new mutators.
+
+	configByte, err := yaml.Marshal(kfConfig)
+	if err != nil {
+		return fmt.Errorf("unable to marshal Kptfile config %v", kfConfig)
+	}
+	if err = ioutil.WriteFile(kptFilePath, configByte, 0644); err != nil {
+		return fmt.Errorf("unable to update %v", kptFilePath)
+	}
 	return nil
 }

@@ -16,10 +16,13 @@ limitations under the License.
 package renderer
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -54,17 +57,95 @@ metadata:
 `
 )
 
-func TestRender_StoredInCache(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		r := NewSkaffoldRenderer(&latestV2.RenderConfig{Generate: &latestV2.Generate{
-			Manifests: []string{"pod.yaml"}}}, "")
-		fakeCmd := testutil.CmdRunOut(fmt.Sprintf("kpt pkg init %v", DefaultHydrationDir), "")
-		t.Override(&util.DefaultExecCommand, fakeCmd)
-		t.NewTempDir().
-			Write("pod.yaml", podYaml).
-			Write(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), initKptfile).
-			Touch("empty.ignored").
-			Chdir()
-	}
+func TestRender(t *testing.T) {
+	tests := []struct {
+		description     string
+		renderConfig    *latestV2.RenderConfig
+		originalKptfile string
+		updatedKptfile  string
+	}{
+		{
+			description: "single manifests, no hydration rule",
+			renderConfig: &latestV2.RenderConfig{
+				Generate: &latestV2.Generate{Manifests: []string{"pod.yaml"}},
+			},
+			originalKptfile: initKptfile,
+			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline: {}
+`,
+		},
 
+		{
+			description:     "manifests not given.",
+			renderConfig:    &latestV2.RenderConfig{},
+			originalKptfile: initKptfile,
+			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline: {}
+`,
+		},
+		{
+			description: "single manifests with validation rule.",
+			renderConfig: &latestV2.RenderConfig{
+				Generate: &latestV2.Generate{Manifests: []string{"pod.yaml"}},
+				Validate: &[]latestV2.Validator{{Name: "kubeval"}},
+			},
+			originalKptfile: initKptfile,
+			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  validators:
+  - image: gcr.io/kpt-fn/kubeval:v0.1
+`,
+		},
+		{
+			description: "Validation rule needs to be updated.",
+			renderConfig: &latestV2.RenderConfig{
+				Generate: &latestV2.Generate{Manifests: []string{"pod.yaml"}},
+				Validate: &[]latestV2.Validator{{Name: "kubeval"}},
+			},
+			originalKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  validators:
+  - image: gcr.io/kpt-fn/SOME-OTHER-FUNC
+`,
+			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
+kind: Kptfile
+metadata:
+  name: skaffold
+pipeline:
+  validators:
+  - image: gcr.io/kpt-fn/kubeval:v0.1
+`,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			r, err := NewSkaffoldRenderer(test.renderConfig, "")
+			t.CheckNoError(err)
+			fakeCmd := testutil.CmdRunOut(fmt.Sprintf("kpt pkg init %v", DefaultHydrationDir), "")
+			t.Override(&util.DefaultExecCommand, fakeCmd)
+			t.NewTempDir().
+				Write("pod.yaml", podYaml).
+				Write(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), test.originalKptfile).
+				Touch("empty.ignored").
+				Chdir()
+
+			var b bytes.Buffer
+			err = r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}})
+			t.CheckNoError(err)
+			t.CheckFileExistAndContent(filepath.Join(DefaultHydrationDir, dryFileName), []byte(labeledPodYaml))
+			t.CheckFileExistAndContent(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
+		})
+	}
 }
