@@ -141,6 +141,8 @@ enum StatusCode {
     BUILD_DOCKER_CACHE_FROM_PULL_ERR = 116;
     // Build error due to digest for built artifact could not be retrieved from docker daemon.
     BUILD_DOCKER_GET_DIGEST_ERR = 117;
+    // Build error due no space left in docker.
+    BUILD_DOCKER_NO_SPACE_ERR = 127;
     // Build error due to digest for built artifact could not be retrieved from registry.
     BUILD_REGISTRY_GET_DIGEST_ERR = 118;
     // Build error indicating unknown Jib plugin type. Should be one of [maven, gradle]
@@ -149,6 +151,7 @@ enum StatusCode {
     BUILD_JIB_GRADLE_DEP_ERR = 120;
     // Build error determining dependency for jib gradle project.
     BUILD_JIB_MAVEN_DEP_ERR = 121;
+
     // Docker build error when listing containers.
     INIT_DOCKER_NETWORK_LISTING_CONTAINERS = 122;
     // Docker build error indicating an invalid container name (or id).
@@ -452,6 +455,10 @@ enum SuggestionCode {
     CHECK_DOCKER_NETWORK_CONTAINER_RUNNING = 113;
     // Executing extractContainerNameFromNetworkMode with a non valid mode (only container mode allowed)
     FIX_DOCKER_NETWORK_MODE_WHEN_EXTRACTING_CONTAINER_NAME = 114;
+    // Prune Docker image
+    RUN_DOCKER_PRUNE = 115;
+    // Set Cleanup flag for skaffold command.
+    SET_CLEANUP_FLAG = 116;
 
 
 

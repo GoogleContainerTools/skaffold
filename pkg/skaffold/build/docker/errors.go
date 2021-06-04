@@ -19,17 +19,24 @@ package docker
 import (
 	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/jsonmessage"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
+var (
+	noSpaceLeft = regexp.MustCompile(".*no space left.*")
+)
+
 // newBuildError turns Docker-specific errors into actionable errors.
 // The input errors are assumed to be from the Skaffold docker invocation.
-func newBuildError(err error) error {
+func newBuildError(err error, cfg docker.Config) error {
 	errU := errors.Unwrap(err)
 	if errU == nil {
 		return err
@@ -49,48 +56,66 @@ func newBuildError(err error) error {
 				},
 			})
 	default:
-		return sErrors.NewError(err,
-			proto.ActionableErr{
-				Message: errU.Error(),
-				ErrCode: getErrorCode(errU),
-				Suggestions: []*proto.Suggestion{
-					{
-						SuggestionCode: proto.SuggestionCode_DOCKER_BUILD_RETRY,
-						Action:         "Docker build ran into internal error. Please retry.\nIf this keeps happening, please open an issue.",
-					},
-				},
-			})
+		return sErrors.NewError(err, getActionableErr(errU, cfg))
 	}
 }
 
-func getErrorCode(err error) proto.StatusCode {
+func getActionableErr(err error, cfg docker.Config) proto.ActionableErr {
+	var errCode proto.StatusCode
+	suggestions := []*proto.Suggestion{
+		{
+			SuggestionCode: proto.SuggestionCode_DOCKER_BUILD_RETRY,
+			Action:         "Docker build ran into internal error. Please retry.\nIf this keeps happening, please open an issue.",
+		},
+	}
 	switch err.(type) {
 	case errdefs.ErrNotFound:
-		return proto.StatusCode_BUILD_DOCKER_ERROR_NOT_FOUND
+		errCode = proto.StatusCode_BUILD_DOCKER_ERROR_NOT_FOUND
 	case errdefs.ErrInvalidParameter:
-		return proto.StatusCode_BUILD_DOCKER_INVALID_PARAM_ERR
+		errCode = proto.StatusCode_BUILD_DOCKER_INVALID_PARAM_ERR
 	case errdefs.ErrConflict:
-		return proto.StatusCode_BUILD_DOCKER_CONFLICT_ERR
+		errCode = proto.StatusCode_BUILD_DOCKER_CONFLICT_ERR
 	case errdefs.ErrCancelled:
-		return proto.StatusCode_BUILD_DOCKER_CANCELLED
+		errCode = proto.StatusCode_BUILD_DOCKER_CANCELLED
 	case errdefs.ErrForbidden:
-		return proto.StatusCode_BUILD_DOCKER_FORBIDDEN_ERR
+		errCode = proto.StatusCode_BUILD_DOCKER_FORBIDDEN_ERR
 	case errdefs.ErrDataLoss:
-		return proto.StatusCode_BUILD_DOCKER_DATA_LOSS_ERR
+		errCode = proto.StatusCode_BUILD_DOCKER_DATA_LOSS_ERR
 	case errdefs.ErrDeadline:
-		return proto.StatusCode_BUILD_DOCKER_DEADLINE
+		errCode = proto.StatusCode_BUILD_DOCKER_DEADLINE
 	case errdefs.ErrNotImplemented:
-		return proto.StatusCode_BUILD_DOCKER_NOT_IMPLEMENTED_ERR
+		errCode = proto.StatusCode_BUILD_DOCKER_NOT_IMPLEMENTED_ERR
 	case errdefs.ErrNotModified:
-		return proto.StatusCode_BUILD_DOCKER_NOT_MODIFIED_ERR
+		errCode = proto.StatusCode_BUILD_DOCKER_NOT_MODIFIED_ERR
 	case errdefs.ErrSystem:
-		return proto.StatusCode_BUILD_DOCKER_SYSTEM_ERR
+		errCode = proto.StatusCode_BUILD_DOCKER_SYSTEM_ERR
+		if noSpaceLeft.MatchString(err.Error()) {
+			errCode = proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR
+			suggestions = []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_RUN_DOCKER_PRUNE,
+					Action:         "Docker ran out of memory. Please run 'docker system prune' to removed unused docker data",
+				},
+			}
+			if !cfg.Prune() && (cfg.Mode() == config.RunModes.Dev || cfg.Mode() == config.RunModes.Debug) {
+				suggestions = append(suggestions, &proto.Suggestion{
+					SuggestionCode: proto.SuggestionCode_SET_CLEANUP_FLAG,
+					Action:         fmt.Sprintf("Run skaffold %s with --cleanup=true to clean up images built by skaffold", cfg.Mode()),
+				})
+			}
+		}
 	case errdefs.ErrUnauthorized:
-		return proto.StatusCode_BUILD_DOCKER_UNAUTHORIZED
+		errCode = proto.StatusCode_BUILD_DOCKER_UNAUTHORIZED
 	case errdefs.ErrUnavailable:
-		return proto.StatusCode_BUILD_DOCKER_UNAVAILABLE
+		errCode = proto.StatusCode_BUILD_DOCKER_UNAVAILABLE
 	default:
-		return proto.StatusCode_BUILD_DOCKER_UNKNOWN
+		errCode = proto.StatusCode_BUILD_DOCKER_UNKNOWN
+	}
+
+	return proto.ActionableErr{
+		Message:     err.Error(),
+		ErrCode:     errCode,
+		Suggestions: suggestions,
 	}
 }
 

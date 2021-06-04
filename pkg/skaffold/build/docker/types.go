@@ -19,7 +19,6 @@ package docker
 import (
 	"context"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 )
@@ -27,12 +26,10 @@ import (
 // Builder is an artifact builder that uses docker
 type Builder struct {
 	localDocker        docker.LocalDaemon
+	cfg                docker.Config
 	pushImages         bool
-	prune              bool
 	useCLI             bool
 	useBuildKit        bool
-	mode               config.RunMode
-	insecureRegistries map[string]bool
 	artifacts          ArtifactResolver
 	sourceDependencies TransitiveSourceDependenciesResolver
 }
@@ -48,15 +45,13 @@ type TransitiveSourceDependenciesResolver interface {
 }
 
 // NewBuilder returns an new instance of a docker builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, useCLI, useBuildKit, pushImages, prune bool, mode config.RunMode, insecureRegistries map[string]bool, ar ArtifactResolver, dr TransitiveSourceDependenciesResolver) *Builder {
+func NewArtifactBuilder(localDocker docker.LocalDaemon, cfg docker.Config, useCLI, useBuildKit, pushImages bool, ar ArtifactResolver, dr TransitiveSourceDependenciesResolver) *Builder {
 	return &Builder{
 		localDocker:        localDocker,
 		pushImages:         pushImages,
-		prune:              prune,
+		cfg:                cfg,
 		useCLI:             useCLI,
 		useBuildKit:        useBuildKit,
-		mode:               mode,
-		insecureRegistries: insecureRegistries,
 		artifacts:          ar,
 		sourceDependencies: dr,
 	}

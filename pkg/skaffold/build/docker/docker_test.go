@@ -28,25 +28,28 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestDockerCLIBuild(t *testing.T) {
 	tests := []struct {
-		description string
-		localBuild  latestV1.LocalBuild
-		mode        config.RunMode
-		extraEnv    []string
-		expectedEnv []string
-		err         error
-		expectedErr error
+		description     string
+		localBuild      latestV1.LocalBuild
+		cfg             mockConfig
+		extraEnv        []string
+		expectedEnv     []string
+		err             error
+		expectedErr     error
+		expectedErrCode proto.StatusCode
 	}{
 		{
 			description: "docker build",
 			localBuild:  latestV1.LocalBuild{},
-			mode:        config.RunModes.Dev,
+			cfg:         mockConfig{runMode: config.RunModes.Dev},
 			expectedEnv: []string{"KEY=VALUE"},
 		},
 		{
@@ -77,7 +80,38 @@ func TestDockerCLIBuild(t *testing.T) {
 			description: "docker build internal error",
 			localBuild:  latestV1.LocalBuild{UseDockerCLI: true},
 			err:         errdefs.Cancelled(fmt.Errorf("cancelled")),
-			expectedErr: newBuildError(errdefs.Cancelled(fmt.Errorf("cancelled"))),
+			expectedErr: newBuildError(errdefs.Cancelled(fmt.Errorf("cancelled")), mockConfig{runMode: config.RunModes.Dev}),
+		},
+		{
+			description:     "docker build no space left error with prune for dev",
+			localBuild:      latestV1.LocalBuild{UseDockerCLI: true},
+			cfg:             mockConfig{runMode: config.RunModes.Dev, prune: false},
+			err:             errdefs.System(fmt.Errorf("no space left")),
+			expectedErr:     fmt.Errorf("Docker ran out of memory. Please run 'docker system prune' to removed unused docker data or Run skaffold dev with --cleanup=true to clean up images built by skaffold"),
+			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
+		},
+		{
+			description:     "docker build no space left error with prune for build",
+			localBuild:      latestV1.LocalBuild{UseDockerCLI: true},
+			cfg:             mockConfig{runMode: config.RunModes.Build, prune: false},
+			err:             errdefs.System(fmt.Errorf("no space left")),
+			expectedErr:     fmt.Errorf("no space left: Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
+			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
+		},
+		{
+			description:     "docker build no space left error with prune true",
+			localBuild:      latestV1.LocalBuild{UseDockerCLI: true},
+			cfg:             mockConfig{prune: true},
+			err:             errdefs.System(fmt.Errorf("no space left")),
+			expectedErr:     fmt.Errorf("no space left: Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
+			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
+		},
+		{
+			description:     "docker build system error",
+			localBuild:      latestV1.LocalBuild{UseDockerCLI: true},
+			err:             errdefs.System(fmt.Errorf("something else")),
+			expectedErr:     fmt.Errorf("something else"),
+			expectedErrCode: proto.StatusCode_BUILD_DOCKER_SYSTEM_ERR,
 		},
 	}
 
@@ -92,8 +126,12 @@ func TestDockerCLIBuild(t *testing.T) {
 			var mockCmd *testutil.FakeCmd
 
 			if test.err != nil {
+				var pruneFlag string
+				if test.cfg.Prune() {
+					pruneFlag = " --force-rm"
+				}
 				mockCmd = testutil.CmdRunErr(
-					"docker build . --file "+dockerfilePath+" -t tag",
+					"docker build . --file "+dockerfilePath+" -t tag"+pruneFlag,
 					test.err,
 				)
 				t.Override(&util.DefaultExecCommand, mockCmd)
@@ -106,7 +144,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			}
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
 
-			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv(test.extraEnv), test.localBuild.UseDockerCLI, test.localBuild.UseBuildkit, false, false, test.mode, nil, mockArtifactResolver{make(map[string]string)}, nil)
+			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv(test.extraEnv), test.cfg, test.localBuild.UseDockerCLI, test.localBuild.UseBuildkit, false, mockArtifactResolver{make(map[string]string)}, nil)
 
 			artifact := &latestV1.Artifact{
 				Workspace: ".",
@@ -121,6 +159,14 @@ func TestDockerCLIBuild(t *testing.T) {
 			t.CheckError(test.err != nil, err)
 			if mockCmd != nil {
 				t.CheckDeepEqual(1, mockCmd.TimesCalled())
+			}
+			if test.err != nil && test.expectedErrCode != 0 {
+				if ae, ok := err.(sErrors.ErrDef); ok {
+					t.CheckDeepEqual(test.expectedErrCode, ae.StatusCode())
+					t.CheckErrorContains(test.expectedErr.Error(), ae)
+				} else {
+					t.Fatalf("expected to find an actionable error. not found")
+				}
 			}
 		})
 	}
@@ -149,4 +195,29 @@ func (t stubAuth) GetAuthConfig(string) (types.AuthConfig, error) {
 }
 func (t stubAuth) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
 	return nil, nil
+}
+
+type mockConfig struct {
+	runMode config.RunMode
+	prune   bool
+}
+
+func (m mockConfig) GetKubeContext() string {
+	return ""
+}
+
+func (m mockConfig) MinikubeProfile() string {
+	return ""
+}
+
+func (m mockConfig) GetInsecureRegistries() map[string]bool {
+	return map[string]bool{}
+}
+
+func (m mockConfig) Mode() config.RunMode {
+	return m.runMode
+}
+
+func (m mockConfig) Prune() bool {
+	return m.prune
 }
