@@ -8,13 +8,16 @@ aliases: [/docs/how-tos/taggers]
 
 Skaffold supports multiple taggers or tag policies for tagging images:
 
- + the `gitCommit` tagger uses git commits/references to tag images.
- + the `sha256` tagger uses `latest` to tag images.
- + the `envTemplate` tagger uses environment variables to tag images.
+ + the `gitCommit` tagger uses git commits/references.
+ + the `inputDigest` tagger uses a digest of the artifact source files.
+ + the `envTemplate` tagger uses environment variables.
  + the `datetime` tagger uses current date and time, with a configurable pattern.
  + the `customTemplate` tagger uses a combination of the existing taggers as components in a template.
+ + the `sha256` tagger uses `latest`.
 
 The default tagger, if none is specified in the `skaffold.yaml`, is the `gitCommit` tagger.
+
+The tags can be overridden with a fixed tag with the `--tag` option on the command-line.
 
 ### Configuration
 
@@ -68,22 +71,24 @@ specified explicitly:
 
 {{< schema root="GitTagger" >}}
 
-## `sha256`: uses `latest` to tag images
 
-`sha256` is a misleading name. It is named like that because, in the end, when Skaffold
-deploys to a remote cluster, the image's `sha256` digest is used in addition to `:latest`
-in order to create an immutable image reference.
+## `inputDigest`: uses a digest of the artifact source to tag images
+
+The `inputDigest` tagger tags images with a digest of the artifact
+source files.  The source files are the dependencies calculated by the
+configured builder.
 
 ### Example
 
 The following `build` section instructs Skaffold to build a
-Docker image `gcr.io/k8s-skaffold/example` with the `sha256` tag policy:
+Docker image `gcr.io/k8s-skaffold/example` with the `inputDigest` tag policy:
 
-{{% readfile file="samples/taggers/sha256.yaml" %}}
+{{% readfile file="samples/taggers/inputDigest.yaml" %}}
 
 ### Configuration
 
-`sha256` tag policy features no options.
+`inputDigest` tag policy features no options.
+
 
 ## `envTemplate`: uses values of environment variables as tags
 
@@ -177,3 +182,20 @@ Suppose the current time is `15:04:09.999 January 2nd, 2006` and the abbreviated
 The tag template uses the [Golang Templating Syntax](https://golang.org/pkg/text/template/).
 As showcased in the example, `customTemplate` tag policy features one
 **required** parameter, `template`, which is the tag template to use. To learn more about templating support in the skaffold.yaml, see [Templated fields]({{< relref "../environment/templating.md" >}})
+
+## `sha256`: uses `latest` to tag images
+
+`sha256` is a misleading name. It is named like that because, in the end, when Skaffold
+deploys to a remote cluster, the image's `sha256` digest is used in addition to `:latest`
+in order to create an immutable image reference.
+
+### Example
+
+The following `build` section instructs Skaffold to build a
+Docker image `gcr.io/k8s-skaffold/example` with the `sha256` tag policy:
+
+{{% readfile file="samples/taggers/sha256.yaml" %}}
+
+### Configuration
+
+`sha256` tag policy features no options.
