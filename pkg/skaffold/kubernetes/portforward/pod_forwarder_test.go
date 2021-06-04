@@ -514,6 +514,8 @@ func (f *fakePodWatcher) Register(receiver chan<- kubernetes.PodEvent) {
 	f.receiver = receiver
 }
 
+func (f *fakePodWatcher) Deregister(_ chan<- kubernetes.PodEvent) {} // noop
+
 func (f *fakePodWatcher) Start(namespaces []string) (func(), error) {
 	go func() {
 		for _, event := range f.events {

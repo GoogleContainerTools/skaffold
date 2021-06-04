@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"time"
 
@@ -318,7 +317,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	defer r.deployer.GetLogger().Stop()
 	defer func() {
-		fmt.Fprintf(os.Stdout, "calling stop debugger on %+v\n", r.deployer)
 		r.deployer.GetDebugger().Stop()
 	}()
 

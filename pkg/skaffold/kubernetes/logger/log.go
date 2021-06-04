@@ -145,6 +145,7 @@ func (a *LogAggregator) Stop() {
 		return
 	}
 	a.stopWatcher()
+	a.podWatcher.Deregister(a.events)
 	close(a.events)
 }
 
