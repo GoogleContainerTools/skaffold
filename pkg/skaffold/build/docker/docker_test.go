@@ -95,7 +95,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			localBuild:      latestV1.LocalBuild{UseDockerCLI: true},
 			cfg:             mockConfig{runMode: config.RunModes.Build, prune: false},
 			err:             errdefs.System(fmt.Errorf("no space left")),
-			expectedErr:     fmt.Errorf("no space left: Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
+			expectedErr:     fmt.Errorf("no space left. Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
 		},
 		{
@@ -103,7 +103,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			localBuild:      latestV1.LocalBuild{UseDockerCLI: true},
 			cfg:             mockConfig{prune: true},
 			err:             errdefs.System(fmt.Errorf("no space left")),
-			expectedErr:     fmt.Errorf("no space left: Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
+			expectedErr:     fmt.Errorf("no space left. Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
 		},
 		{
