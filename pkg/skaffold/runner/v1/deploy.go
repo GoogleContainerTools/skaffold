@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
@@ -154,6 +155,15 @@ func (r *SkaffoldRunner) loadImagesIntoCluster(ctx context.Context, out io.Write
 	currentContext, err := r.getCurrentContext()
 	if err != nil {
 		return err
+	}
+
+	if cluster.GetClient().IsMinikube(r.runCtx.KubeContext) {
+		minikubeCluster := cluster.GetClient(currentContext.Cluster)
+
+		// With `kind`, docker images have to be loaded with the `kind` CLI.
+		if err := r.loadImagesInKindNodes(ctx, out, minikubeCluster, artifacts); err != nil {
+			return fmt.Errorf("loading images into kind nodes: %w", err)
+		}
 	}
 
 	if config.IsKindCluster(r.runCtx.GetKubeContext()) {

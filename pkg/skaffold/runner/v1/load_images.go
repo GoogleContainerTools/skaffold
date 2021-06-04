@@ -26,6 +26,7 @@ import (
 
 	"github.com/docker/distribution/reference"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
@@ -48,6 +49,17 @@ func (r *SkaffoldRunner) loadImagesInK3dNodes(ctx context.Context, out io.Writer
 	})
 }
 
+// loadImagesInMinikubeNodes loads artifact images into every node of a minikube cluster.
+func (r *SkaffoldRunner) loadImagesInMinikubeNodes(ctx context.Context, out io.Writer, minikubeCluster string, artifacts []graph.Artifact) error {
+	output.Default.Fprintln(out, "Loading images into minikube cluster nodes...")
+	return r.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
+		// TODO(aaron-prindle) verify it makes sense to ignore the below errors
+		execCmd, _ := cluster.GetClient().MinikubeExec("image", "load", "--userold", tag)
+		return execCmd
+		// return exec.CommandContext(ctx, "minikube", "--user=skaffold", "image", "load",  tag)
+	})
+}
+
 func (r *SkaffoldRunner) loadImages(ctx context.Context, out io.Writer, artifacts []graph.Artifact, createCmd func(tag string) *exec.Cmd) error {
 	start := time.Now()
 
@@ -64,7 +76,11 @@ func (r *SkaffoldRunner) loadImages(ctx context.Context, out io.Writer, artifact
 		// Only load images that are unknown to the node
 		if knownImages == nil {
 			var err error
-			if knownImages, err = findKnownImages(ctx, r.kubectlCLI); err != nil {
+			if cluster.GetClient().IsMinikube(r.kubectlCLI.KubeContext) {
+				if knownImages, err = findMinikubeKnownImages(ctx, cluster.GetClient()); err != nil {
+					return fmt.Errorf("unable to retrieve minikube node's images: %w", err)
+				}
+			} else if knownImages, err = findKnownImages(ctx, r.kubectlCLI); err != nil {
 				return fmt.Errorf("unable to retrieve node's images: %w", err)
 			}
 		}
@@ -97,6 +113,16 @@ func findKnownImages(ctx context.Context, cli *kubectl.CLI) ([]string, error) {
 	}
 
 	knownImages := strings.Split(string(nodeGetOut), " ")
+	return knownImages, nil
+}
+
+func findMinikubeKnownImages(ctx context.Context, client cluster.Client) ([]string, error) {
+	minikubeNodeGetOut, err := client.MinikubeExec("image", "ls")
+	if err != nil {
+		return nil, fmt.Errorf("unable to inspect the minikube nodes: %w", err)
+	}
+
+	knownImages := strings.Split(minikubeNodeGetOut.String(), "\n")
 	return knownImages, nil
 }
 
