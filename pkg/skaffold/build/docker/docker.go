@@ -50,7 +50,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact); err != nil {
 		return "", cacheFromPullErr(err, a.ImageName)
 	}
-	opts := docker.BuildOptions{Tag: tag, Mode: b.mode, ExtraBuildArgs: docker.ResolveDependencyImages(a.Dependencies, b.artifacts, true)}
+	opts := docker.BuildOptions{Tag: tag, Mode: b.cfg.Mode(), ExtraBuildArgs: docker.ResolveDependencyImages(a.Dependencies, b.artifacts, true)}
 
 	var imageID string
 
@@ -61,7 +61,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 	}
 
 	if err != nil {
-		return "", newBuildError(err)
+		return "", newBuildError(err, b.cfg)
 	}
 
 	if b.pushImages {
@@ -75,7 +75,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 
 func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, dockerfilePath string, a *latestV1.DockerArtifact, opts docker.BuildOptions) (string, error) {
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", opts.Tag}
-	ba, err := docker.EvalBuildArgs(b.mode, workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs)
+	ba, err := docker.EvalBuildArgs(b.cfg.Mode(), workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
@@ -85,7 +85,7 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	}
 	args = append(args, cliArgs...)
 
-	if b.prune {
+	if b.cfg.Prune() {
 		args = append(args, "--force-rm")
 	}
 

@@ -897,6 +897,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | BUILD_DOCKERFILE_NOT_FOUND | 115 | Docker build failed due to dockerfile not found |
 | BUILD_DOCKER_CACHE_FROM_PULL_ERR | 116 | Docker build failed due `cacheFrom` user config error |
 | BUILD_DOCKER_GET_DIGEST_ERR | 117 | Build error due to digest for built artifact could not be retrieved from docker daemon. |
+| BUILD_DOCKER_NO_SPACE_ERR | 127 | Build error due no space left in docker. |
 | BUILD_REGISTRY_GET_DIGEST_ERR | 118 | Build error due to digest for built artifact could not be retrieved from registry. |
 | BUILD_UNKNOWN_JIB_PLUGIN_TYPE | 119 | Build error indicating unknown Jib plugin type. Should be one of [maven, gradle] |
 | BUILD_JIB_GRADLE_DEP_ERR | 120 | Build error determining dependency for jib gradle project. |
@@ -1037,6 +1038,8 @@ Enum for Suggestion codes
 | FIX_DOCKER_NETWORK_CONTAINER_NAME | 112 | Docker build network invalid docker container name (or id). |
 | CHECK_DOCKER_NETWORK_CONTAINER_RUNNING | 113 | Docker build network container not existing in the current context. |
 | FIX_DOCKER_NETWORK_MODE_WHEN_EXTRACTING_CONTAINER_NAME | 114 | Executing extractContainerNameFromNetworkMode with a non valid mode (only container mode allowed) |
+| RUN_DOCKER_PRUNE | 115 | Prune Docker image |
+| SET_CLEANUP_FLAG | 116 | Set Cleanup flag for skaffold command. |
 | CHECK_CLUSTER_CONNECTION | 201 | Check cluster connection |
 | CHECK_MINIKUBE_STATUS | 202 | Check minikube status |
 | INSTALL_HELM | 203 | Install helm tool |
