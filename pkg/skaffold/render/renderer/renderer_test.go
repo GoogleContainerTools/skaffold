@@ -16,13 +16,10 @@ limitations under the License.
 package renderer
 
 import (
-	"bytes"
-	"context"
 	"fmt"
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -68,10 +65,6 @@ func TestRender_StoredInCache(t *testing.T) {
 			Write(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), initKptfile).
 			Touch("empty.ignored").
 			Chdir()
+	}
 
-		var b bytes.Buffer
-		err := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}})
-		t.CheckNoError(err)
-		t.CheckFileExistAndContent(filepath.Join(DefaultHydrationDir, dryFileName), []byte(labeledPodYaml))
-	})
 }
