@@ -20,6 +20,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 )
 
 type skaffoldWriter struct {
@@ -75,5 +78,18 @@ func GetUnderlyingWriter(out io.Writer) io.Writer {
 	if isCW {
 		out = cw.Writer
 	}
+	return out
+}
+
+// WithEventContext will return a new skaffoldWriter with the given parameters to be used for the event writer.
+// If the passed io.Writer is not a skaffoldWriter, then it is simply returned.
+func WithEventContext(out io.Writer, phase constants.Phase, subtaskID, origin string) io.Writer {
+	if sw, isSW := out.(skaffoldWriter); isSW {
+		return skaffoldWriter{
+			MainWriter:  sw.MainWriter,
+			EventWriter: eventV2.NewLogger(phase, subtaskID, origin),
+		}
+	}
+
 	return out
 }
