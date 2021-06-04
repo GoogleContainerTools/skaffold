@@ -23,6 +23,7 @@ List of fields that support templating:
 * `deploy.kubectl.defaultNamespace`
 * `deploy.kustomize.defaultNamespace`
 * `portForward.namespace`
+* `portForward.resourceName`
 
 _Please note, this list is not exhaustive._
 

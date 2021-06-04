@@ -67,11 +67,10 @@ func NewUserDefinedForwarder(entryManager *EntryManager, userDefinedResources []
 func (p *ResourceForwarder) Start(ctx context.Context, namespaces []string) error {
 	if len(namespaces) == 1 {
 		for _, pf := range p.userDefinedResources {
-			if pf.Namespace != "" {
-				if err := applyNamespaceWithTemplate(pf); err != nil {
-					return err
-				}
-			} else {
+			if err := applyWithTemplate(pf); err != nil {
+				return err
+			}
+			if pf.Namespace == "" {
 				pf.Namespace = namespaces[0]
 			}
 		}
@@ -79,7 +78,7 @@ func (p *ResourceForwarder) Start(ctx context.Context, namespaces []string) erro
 		var validResources []*latestV1.PortForwardResource
 		for _, pf := range p.userDefinedResources {
 			if pf.Namespace != "" {
-				if err := applyNamespaceWithTemplate(pf); err != nil {
+				if err := applyWithTemplate(pf); err != nil {
 					return err
 				}
 				validResources = append(validResources, pf)
@@ -102,12 +101,19 @@ func (p *ResourceForwarder) Start(ctx context.Context, namespaces []string) erro
 	return nil
 }
 
-func applyNamespaceWithTemplate(resource *latestV1.PortForwardResource) error {
-	namespace, err := util.ExpandEnvTemplateOrFail(resource.Namespace, nil)
-	if err != nil {
-		return fmt.Errorf("cannot parse the namespace template on user defined port forwarder: %w", err)
+func applyWithTemplate(resource *latestV1.PortForwardResource) error {
+	if resource.Namespace != "" {
+		namespace, err := util.ExpandEnvTemplateOrFail(resource.Namespace, nil)
+		if err != nil {
+			return fmt.Errorf("cannot parse the namespace template on user defined port forwarder: %w", err)
+		}
+		resource.Namespace = namespace
 	}
-	resource.Namespace = namespace
+	name, err := util.ExpandEnvTemplateOrFail(resource.Name, nil)
+	if err != nil {
+		return fmt.Errorf("cannot parse the name template on user defined port forwarder: %w", err)
+	}
+	resource.Name = name
 	return nil
 }
 
