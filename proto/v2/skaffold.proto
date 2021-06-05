@@ -323,9 +323,17 @@ service SkaffoldV2Service {
         };
     }
 
+    // Returns all the user application logs of the current Skaffold execution
     rpc ApplicationLogs (google.protobuf.Empty) returns (stream Event) {
         option (google.api.http) = {
             get: "/v2/applicationLogs"
+        };
+    }
+
+    // Returns all the skaffold output of the current Skaffold execution
+    rpc SkaffoldLogs (google.protobuf.Empty) returns (stream Event) {
+        option (google.api.http) = {
+            get: "/v2/skaffoldLogs"
         };
     }
 
