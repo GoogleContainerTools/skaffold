@@ -221,15 +221,17 @@ func pollDeploymentStatus(ctx context.Context, cfg pkgkubectl.Config, r *resourc
 }
 
 func getSkaffoldDeployStatus(c *counter, rs []*resource.Deployment) (proto.StatusCode, error) {
-	if c.failed > 0 {
-		err := fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
-		for _, r := range rs {
-			if r.StatusCode() != proto.StatusCode_STATUSCHECK_SUCCESS {
-				return r.StatusCode(), err
-			}
+	if c.failed == 0 {
+		return proto.StatusCode_STATUSCHECK_SUCCESS, nil
+	}
+	err := fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
+	for _, r := range rs {
+		if r.StatusCode() != proto.StatusCode_STATUSCHECK_SUCCESS &&
+			r.StatusCode() != proto.StatusCode_STATUSCHECK_USER_CANCELLED {
+			return r.StatusCode(), err
 		}
 	}
-	return proto.StatusCode_STATUSCHECK_SUCCESS, nil
+	return proto.StatusCode_STATUSCHECK_USER_CANCELLED, err
 }
 
 func getDeadline(d int) time.Duration {

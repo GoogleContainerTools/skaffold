@@ -289,6 +289,26 @@ func TestGetDeployStatus(t *testing.T) {
 			shouldErr:    true,
 			expectedCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR,
 		},
+		{
+			description: "one deployment failed and others cancelled and or succeeded",
+			counter:     &counter{total: 3, failed: 2},
+			deployments: []*resource.Deployment{
+				withStatus(
+					resource.NewDeployment("deployment-cancelled", "test", 1),
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
+				),
+				withStatus(
+					resource.NewDeployment("deployment-success", "test", 1),
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+				),
+				withStatus(
+					resource.NewDeployment("deployment", "test", 1),
+					proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR},
+				),
+			},
+			shouldErr:    true,
+			expectedCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR,
+		},
 	}
 
 	for _, test := range tests {
