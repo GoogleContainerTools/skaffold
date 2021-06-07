@@ -628,6 +628,10 @@
           "description": "indicates that the builder should be trusted.",
           "x-intellij-html-description": "indicates that the builder should be trusted.",
           "default": "false"
+        },
+        "volumes": {
+          "description": "support mounting host volumes into the container.",
+          "x-intellij-html-description": "support mounting host volumes into the container."
         }
       },
       "preferredOrder": [
@@ -637,7 +641,8 @@
         "buildpacks",
         "trustBuilder",
         "projectDescriptor",
-        "dependencies"
+        "dependencies",
+        "volumes"
       ],
       "additionalProperties": false,
       "type": "object",
@@ -673,6 +678,38 @@
       "type": "object",
       "description": "*alpha* used to specify dependencies for an artifact built by buildpacks.",
       "x-intellij-html-description": "<em>alpha</em> used to specify dependencies for an artifact built by buildpacks."
+    },
+    "BuildpackVolume": {
+      "required": [
+        "host",
+        "target"
+      ],
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "local volume or absolute directory of the path to mount.",
+          "x-intellij-html-description": "local volume or absolute directory of the path to mount."
+        },
+        "options": {
+          "type": "string",
+          "description": "specify a list of comma-separated mount options. Valid options are: `ro` (default): volume contents are read-only. `rw`: volume contents are readable and writable. `volume-opt=<key>=<value>`: can be specified more than once, takes a key-value pair.",
+          "x-intellij-html-description": "specify a list of comma-separated mount options. Valid options are: <code>ro</code> (default): volume contents are read-only. <code>rw</code>: volume contents are readable and writable. <code>volume-opt=&lt;key&gt;=&lt;value&gt;</code>: can be specified more than once, takes a key-value pair."
+        },
+        "target": {
+          "type": "string",
+          "description": "path where the file or directory is available in the container. It is strongly recommended to not specify locations under `/cnb` or `/layers`.",
+          "x-intellij-html-description": "path where the file or directory is available in the container. It is strongly recommended to not specify locations under <code>/cnb</code> or <code>/layers</code>."
+        }
+      },
+      "preferredOrder": [
+        "host",
+        "target",
+        "options"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "*alpha* used to mount host volumes or directories in the build container.",
+      "x-intellij-html-description": "<em>alpha</em> used to mount host volumes or directories in the build container."
     },
     "ClusterDetails": {
       "properties": {

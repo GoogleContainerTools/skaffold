@@ -72,6 +72,12 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate env variables: %w", err)
 	}
+
+	cc, err := containerConfig(artifact)
+	if err != nil {
+		return "", fmt.Errorf("%q: %w", a.ImageName, err)
+	}
+
 	// List buildpacks to be used for the build.
 	// Those specified in the skaffold.yaml replace those in the project.toml.
 	buildpacks := artifact.Buildpacks
@@ -92,14 +98,15 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latestV1.Artifact
 	builderImage, runImage, pullPolicy := resolveDependencyImages(artifact, b.artifacts, a.Dependencies, b.pushImages)
 
 	if err := runPackBuildFunc(ctx, output.GetUnderlyingWriter(out), b.localDocker, pack.BuildOptions{
-		AppPath:      workspace,
-		Builder:      builderImage,
-		RunImage:     runImage,
-		Buildpacks:   buildpacks,
-		Env:          env,
-		Image:        latest,
-		PullPolicy:   pullPolicy,
-		TrustBuilder: artifact.TrustBuilder,
+		AppPath:         workspace,
+		Builder:         builderImage,
+		RunImage:        runImage,
+		Buildpacks:      buildpacks,
+		Env:             env,
+		Image:           latest,
+		PullPolicy:      pullPolicy,
+		TrustBuilder:    artifact.TrustBuilder,
+		ContainerConfig: cc,
 		// TODO(dgageot): Support project.toml include/exclude.
 		// FileFilter: func(string) bool { return true },
 	}); err != nil {
@@ -230,4 +237,24 @@ func resolveDependencyImages(artifact *latestV1.BuildpackArtifact, r ArtifactRes
 	}
 
 	return builderImage, runImage, pullPolicy
+}
+
+func containerConfig(artifact *latestV1.BuildpackArtifact) (pack.ContainerConfig, error) {
+	var vols []string
+	if artifact.Volumes != nil {
+		for _, v := range *artifact.Volumes {
+			if v.Host == "" || v.Target == "" {
+				// in case these slip by the JSON schema
+				return pack.ContainerConfig{}, errors.New("buildpacks volumes must have both host and target")
+			}
+			var spec string
+			if v.Options == "" {
+				spec = fmt.Sprintf("%s:%s", v.Host, v.Target)
+			} else {
+				spec = fmt.Sprintf("%s:%s:%s", v.Host, v.Target, v.Options)
+			}
+			vols = append(vols, spec)
+		}
+	}
+	return pack.ContainerConfig{Volumes: vols}, nil
 }
