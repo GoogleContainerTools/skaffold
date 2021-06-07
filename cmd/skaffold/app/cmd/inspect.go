@@ -22,13 +22,15 @@ import (
 )
 
 var inspectFlags = struct {
-	fileName  string
+	filename  string
 	outFormat string
 	modules   []string
 	buildEnv  string
 	profiles  []string
+	strict    bool
 }{
-	fileName: "skaffold.yaml",
+	filename: "skaffold.yaml",
+	strict:   true,
 }
 
 func NewCmdInspect() *cobra.Command {
@@ -40,6 +42,6 @@ func NewCmdInspect() *cobra.Command {
 }
 
 func cmdInspectFlags(f *pflag.FlagSet) {
-	f.StringVarP(&inspectFlags.fileName, "filename", "f", "skaffold.yaml", "Path to the local Skaffold config file. Defaults to `skaffold.yaml`")
+	f.StringVarP(&inspectFlags.filename, "filename", "f", "skaffold.yaml", "Path to the local Skaffold config file. Defaults to `skaffold.yaml`")
 	f.StringVarP(&inspectFlags.outFormat, "format", "o", "json", "Output format. One of: json(default)")
 }

@@ -37,8 +37,45 @@ func BuildEnvAlreadyExists(b BuildEnv, filename string, profile string) error {
 			ErrCode: proto.StatusCode_INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR,
 			Suggestions: []*proto.Suggestion{
 				{
-					SuggestionCode: proto.SuggestionCode_INSPECT_DEDUP_NEW_BUILD_ENV,
+					SuggestionCode: proto.SuggestionCode_INSPECT_USE_MODIFY_OR_NEW_PROFILE,
 					Action:         "Use the `modify` command instead of the `add` command to overwrite fields for an already existing build environment type. Otherwise pass the `--profile` flag with a unique name to create the new build environment definition in a new profile instead",
+				},
+			},
+		})
+}
+
+// BuildEnvNotFound specifies that the target build environment definition doesn't exist.
+func BuildEnvNotFound(b BuildEnv, filename string, profile string) error {
+	var msg string
+	if profile == "" {
+		msg = fmt.Sprintf("trying to modify a %q build environment definition that doesn't exist, in file %s", b, filename)
+	} else {
+		msg = fmt.Sprintf("trying to modify a %q build environment definition that doesn't exist, in profile %q in file %s", b, profile, filename)
+	}
+	return sErrors.NewError(fmt.Errorf(msg),
+		proto.ActionableErr{
+			Message: msg,
+			ErrCode: proto.StatusCode_INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_INSPECT_USE_ADD_BUILD_ENV,
+					Action:         "Check that the target build environment definition already exists. Otherwise use the `add` command instead of the `modify` command to create it",
+				},
+			},
+		})
+}
+
+// ProfileNotFound specifies that the target profile doesn't exist
+func ProfileNotFound(profile string) error {
+	msg := fmt.Sprintf("trying to modify a profile %q that doesn't exist", profile)
+	return sErrors.NewError(fmt.Errorf(msg),
+		proto.ActionableErr{
+			Message: msg,
+			ErrCode: proto.StatusCode_INSPECT_PROFILE_NOT_FOUND_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_INSPECT_CHECK_INPUT_PROFILE,
+					Action:         "Check that the `--profile` flag matches at least one existing profile. Otherwise use the `add` command instead of the `modify` command to create it",
 				},
 			},
 		})
