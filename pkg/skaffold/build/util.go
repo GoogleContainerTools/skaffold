@@ -18,6 +18,7 @@ package build
 
 import (
 	"context"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
@@ -54,7 +55,11 @@ func MergeWithPreviousBuilds(builds, previous []graph.Artifact) []graph.Artifact
 }
 
 func TagWithDigest(tag, digest string) string {
-	return tag + "@" + digest
+	digestSuffix := "@" + digest
+	if strings.HasSuffix(tag, digestSuffix) {
+		return tag
+	}
+	return tag + digestSuffix
 }
 
 func TagWithImageID(ctx context.Context, tag string, imageID string, localDocker docker.LocalDaemon) (string, error) {

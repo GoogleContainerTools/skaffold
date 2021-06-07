@@ -39,6 +39,13 @@ func TestMergeWithPreviousBuilds(t *testing.T) {
 	testutil.CheckDeepEqual(t, "img1:tag1_3,img2:tag2_3", tags(builds))
 }
 
+func TestTagWithDigest(t *testing.T) {
+	tag := TagWithDigest("some-tag", "sha256:abcd1234")
+	testutil.CheckDeepEqual(t, "some-tag@sha256:abcd1234", tag)
+	tag = TagWithDigest("some-tag@sha256:abcd1234", "sha256:abcd1234")
+	testutil.CheckDeepEqual(t, "some-tag@sha256:abcd1234", tag)
+}
+
 func artifact(image, tag string) graph.Artifact {
 	return graph.Artifact{
 		ImageName: image,
