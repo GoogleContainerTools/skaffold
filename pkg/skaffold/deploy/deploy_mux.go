@@ -20,12 +20,15 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"strconv"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -39,6 +42,7 @@ func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifac
 
 	for i, deployer := range m {
 		eventV2.DeployInProgress(i)
+		w = output.WithEventContext(w, constants.Deploy, strconv.Itoa(i), "skaffold")
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy")
 
 		namespaces, err := deployer.Deploy(ctx, w, as)

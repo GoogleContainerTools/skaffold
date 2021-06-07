@@ -18,7 +18,6 @@ package output
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -52,7 +51,7 @@ func GetWriter(out io.Writer, defaultColor int, forceColors bool) io.Writer {
 	return skaffoldWriter{
 		MainWriter: SetupColors(out, defaultColor, forceColors),
 		// TODO(marlongamez): Replace this once event writer is implemented
-		EventWriter: ioutil.Discard,
+		EventWriter: eventV2.NewLogger(constants.DevLoop, "-1", "skaffold"),
 	}
 }
 
