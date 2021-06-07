@@ -42,9 +42,12 @@ var buildEnvFlags = struct {
 	useBuildkit      config.BoolOrUndefined
 
 	// Google Cloud Build
-	projectID   string
-	diskSizeGb  int64
-	machineType string
+	projectID          string
+	diskSizeGb         int64
+	machineType        string
+	logging            string
+	logStreamingOption string
+	workerPool         string
 
 	// Cluster (kaniko)
 	pullSecretPath      string
@@ -160,6 +163,9 @@ func cmdBuildEnvAddGcbFlags(f *pflag.FlagSet) {
 	f.StringVar(&buildEnvFlags.machineType, "machineType", "", `Type of VM that runs the build`)
 	f.StringVar(&buildEnvFlags.timeout, "timeout", "", `Build timeout (in seconds)`)
 	f.IntVar(&buildEnvFlags.concurrency, "concurrency", -1, `number of artifacts to build concurrently. 0 means "no-limit"`)
+	f.StringVar(&buildEnvFlags.logging, "logging", "", `Specifies the logging mode for GCB`)
+	f.StringVar(&buildEnvFlags.logStreamingOption, "logStreamingOption", "", `Specifies the log streaming specifies behavior when writing build logs to Google Cloud Storage for GCB`)
+	f.StringVar(&buildEnvFlags.workerPool, "workerPool", "", `Configures a pool of workers to run the build`)
 }
 
 func cmdBuildEnvAddClusterFlags(f *pflag.FlagSet) {
@@ -222,12 +228,15 @@ func addGcbBuildEnvOptions() inspect.Options {
 		OutFormat: inspectFlags.outFormat,
 		Modules:   inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{
-			Profile:     buildEnvFlags.profile,
-			ProjectID:   buildEnvFlags.projectID,
-			DiskSizeGb:  buildEnvFlags.diskSizeGb,
-			MachineType: buildEnvFlags.machineType,
-			Timeout:     buildEnvFlags.timeout,
-			Concurrency: buildEnvFlags.concurrency,
+			Profile:            buildEnvFlags.profile,
+			ProjectID:          buildEnvFlags.projectID,
+			DiskSizeGb:         buildEnvFlags.diskSizeGb,
+			MachineType:        buildEnvFlags.machineType,
+			Timeout:            buildEnvFlags.timeout,
+			Concurrency:        buildEnvFlags.concurrency,
+			Logging:            buildEnvFlags.logging,
+			LogStreamingOption: buildEnvFlags.logStreamingOption,
+			WorkerPool:         buildEnvFlags.workerPool,
 		},
 	}
 }
