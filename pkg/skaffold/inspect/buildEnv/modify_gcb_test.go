@@ -112,7 +112,7 @@ profiles:
 			description:  "add to profile with wrong build env type; strict true",
 			strict:       true,
 			buildEnvOpts: inspect.BuildEnvOptions{MachineType: "machine2", Concurrency: 2, Profile: "p2"},
-			errCode:      proto.StatusCode_INSPECT_BUILD_ENV_NOT_FOUND_ERR,
+			errCode:      proto.StatusCode_INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR,
 		},
 		{
 			description:  "modify default pipeline; strict false",

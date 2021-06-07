@@ -93,10 +93,10 @@ func cmdBuildEnvModify() *cobra.Command {
 
 func cmdBuildEnvAddGcb() *cobra.Command {
 	return NewCmd("googleCloudBuild").
-		WithDescription("Add a new GoogleCloudBuild build environment definition").
-		WithLongDescription(`Add a new GoogleCloudBuild build environment definition.
+		WithDescription("Add a new 'googleCloudBuild' build environment definition").
+		WithLongDescription(`Add a new 'googleCloudBuild' build environment definition.
 Without the '--profile' flag the new environment definition is added to the default pipeline. With the '--profile' flag it will create a new profile with this build env definition. 
-In these respective scenarios, it will fail if the build env definition for the default pipeline or the named profile already exists. To override an existing definition use 'skaffold inspect build-env modify' command instead. 
+In these respective scenarios, it will fail if the build env definition for the default pipeline or the named profile already exists. To override an existing 'googleCloudBuild' definition use 'skaffold inspect build-env modify' command instead. 
 Use the '--module' filter to specify the individual module to target. Otherwise, it'll be applied to all modules defined in the target file. Also, with the '--profile' flag if the target config imports other configs as dependencies, then the new profile will be recursively created in all the imported configs also.`).
 		WithExample("Add a new profile named 'gcb' targeting the builder 'googleCloudBuild' against the GCP project ID '1234'.", "inspect build-env add googleCloudBuild --profile gcb --projectID 1234 -f skaffold.yaml").
 		WithFlagAdder(cmdBuildEnvGcbFlags).
@@ -105,10 +105,10 @@ Use the '--module' filter to specify the individual module to target. Otherwise,
 
 func cmdBuildEnvAddLocal() *cobra.Command {
 	return NewCmd("local").
-		WithDescription("Add a new Local build environment definition").
-		WithLongDescription(`Add a new Local build environment definition.
+		WithDescription("Add a new 'local' build environment definition").
+		WithLongDescription(`Add a new 'local' build environment definition.
 Without the '--profile' flag the new environment definition is added to the default pipeline. With the '--profile' flag it will create a new profile with this build env definition. 
-In these respective scenarios, it will fail if the build env definition for the default pipeline or the named profile already exists. To override an existing definition use 'skaffold inspect build-env modify' command instead. 
+In these respective scenarios, it will fail if the build env definition for the default pipeline or the named profile already exists. To override an existing 'local' build env definition use 'skaffold inspect build-env modify' command instead. 
 Use the '--module' filter to specify the individual module to target. Otherwise, it'll be applied to all modules defined in the target file. Also, with the '--profile' flag if the target config imports other configs as dependencies, then the new profile will be recursively created in all the imported configs also.`).
 		WithExample("Add a new profile named 'local' targeting the local build environment with option to push images and using buildkit", "inspect build-env add local --profile local --push true --useBuildkit true -f skaffold.yaml").
 		WithFlagAdder(cmdBuildEnvLocalFlags).
@@ -117,10 +117,10 @@ Use the '--module' filter to specify the individual module to target. Otherwise,
 
 func cmdBuildEnvAddCluster() *cobra.Command {
 	return NewCmd("cluster").
-		WithDescription("Add a new Cluster build environment definition").
-		WithLongDescription(`Add a new Cluster build environment definition.
+		WithDescription("Add a new 'cluster' build environment definition").
+		WithLongDescription(`Add a new 'cluster' build environment definition.
 Without the '--profile' flag the new environment definition is added to the default pipeline. With the '--profile' flag it will create a new profile with this build env definition. 
-In these respective scenarios, it will fail if the build env definition for the default pipeline or the named profile already exists. To override an existing definition use 'skaffold inspect build-env modify' command instead. 
+In these respective scenarios, it will fail if the build env definition for the default pipeline or the named profile already exists. To override an existing 'cluster' build env definition use 'skaffold inspect build-env modify' command instead. 
 Use the '--module' filter to specify the individual module to target. Otherwise, it'll be applied to all modules defined in the target file. Also, with the '--profile' flag if the target config imports other configs as dependencies, then the new profile will be recursively created in all the imported configs also.`).
 		WithExample("Add a new profile named 'cluster' targeting the builder 'kaniko' using the Kubernetes secret 'my-secret'", "inspect build-env add cluster --profile cluster --pullSecretName my-secret -f skaffold.yaml").
 		WithFlagAdder(cmdBuildEnvAddClusterFlags).
@@ -219,7 +219,7 @@ func cmdBuildEnvListFlags(f *pflag.FlagSet) {
 
 func printBuildEnvsListOptions() inspect.Options {
 	return inspect.Options{
-		Filename:  inspectFlags.fileName,
+		Filename:  inspectFlags.filename,
 		OutFormat: inspectFlags.outFormat,
 		Modules:   inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{
@@ -230,7 +230,7 @@ func printBuildEnvsListOptions() inspect.Options {
 
 func localBuildEnvOptions() inspect.Options {
 	return inspect.Options{
-		Filename:  inspectFlags.fileName,
+		Filename:  inspectFlags.filename,
 		OutFormat: inspectFlags.outFormat,
 		Modules:   inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{
@@ -246,7 +246,7 @@ func localBuildEnvOptions() inspect.Options {
 
 func gcbBuildEnvOptions() inspect.Options {
 	return inspect.Options{
-		Filename:  inspectFlags.fileName,
+		Filename:  inspectFlags.filename,
 		OutFormat: inspectFlags.outFormat,
 		Modules:   inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{
@@ -263,7 +263,7 @@ func gcbBuildEnvOptions() inspect.Options {
 
 func addClusterBuildEnvOptions() inspect.Options {
 	return inspect.Options{
-		Filename:  inspectFlags.fileName,
+		Filename:  inspectFlags.filename,
 		OutFormat: inspectFlags.outFormat,
 		Modules:   inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{

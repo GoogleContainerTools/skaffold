@@ -40,5 +40,5 @@ func cmdModulesList() *cobra.Command {
 }
 
 func listModules(ctx context.Context, out io.Writer) error {
-	return modules.PrintModulesList(ctx, out, inspect.Options{Filename: inspectFlags.fileName, OutFormat: inspectFlags.outFormat})
+	return modules.PrintModulesList(ctx, out, inspect.Options{Filename: inspectFlags.filename, OutFormat: inspectFlags.outFormat})
 }
