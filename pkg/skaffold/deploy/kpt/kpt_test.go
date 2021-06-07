@@ -1074,15 +1074,26 @@ func TestVersionCheck(t *testing.T) {
 				kustomizeDownloadLink),
 		},
 		{
-			description: "kpt version is too old (<0.34.0)",
+			description: "kpt version is too old (<0.38.1)",
 			commands: testutil.
-				CmdRunOut("kpt version", `0.1.0`),
+				CmdRunOut("kpt version", `0.37.0`),
 			kustomizations: map[string]string{"Kustomization": `resources:
 					- foo.yaml`},
 			shouldErr: true,
-			error: fmt.Errorf("you are using kpt \"0.1.0\"\n"+
-				"Please update your kpt version to >= %v\nSee kpt installation: %v",
-				kptMinVersion, kptDownloadLink),
+			error: fmt.Errorf("you are using kpt \"v0.37.0\"\nPlease install "+
+				"kpt %v <= version < %v\nSee kpt installation: %v",
+				kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink),
+		},
+		{
+			description: "kpt version is too new (>=1.0.0)",
+			commands: testutil.
+				CmdRunOut("kpt version", `1.0.0`),
+			kustomizations: map[string]string{"Kustomization": `resources:
+					- foo.yaml`},
+			shouldErr: true,
+			error: fmt.Errorf("you are using kpt \"v1.0.0\"\nPlease install "+
+				"kpt %v <= version < %v\nSee kpt installation: %v",
+				kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink),
 		},
 		{
 			description: "kpt version is unknown",
@@ -1091,9 +1102,9 @@ func TestVersionCheck(t *testing.T) {
 			kustomizations: map[string]string{"Kustomization": `resources:
 					- foo.yaml`},
 			shouldErr: true,
-			error: fmt.Errorf("unknown kpt version unknown\nPlease upgrade your "+
-				"local kpt CLI to a version >= %v\nSee kpt installation: %v",
-				kptMinVersion, kptDownloadLink),
+			error: fmt.Errorf("unknown kpt version unknown\nPlease install "+
+				"kpt %v <= version < %v\nSee kpt installation: %v",
+				kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink),
 		},
 		{
 			description: "kustomize versions is too old (< v3.2.3)",
@@ -1140,8 +1151,10 @@ func TestVersionCheck(t *testing.T) {
 			tmpDir.WriteFiles(test.kustomizations)
 			err := versionCheck("", io.Writer(&buf))
 			t.CheckError(test.shouldErr, err)
+			if test.shouldErr {
+				testutil.CheckDeepEqual(t.T, test.error.Error(), err.Error())
+			}
 		})
-		testutil.CheckError(t, test.shouldErr, test.error)
 		testutil.CheckDeepEqual(t, test.out, buf.String())
 	}
 }

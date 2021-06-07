@@ -51,8 +51,9 @@ const (
 	kptFnAnnotation   = "config.kubernetes.io/function"
 	kptFnLocalConfig  = "config.kubernetes.io/local-config"
 
-	kptDownloadLink = "https://googlecontainertools.github.io/kpt/installation/"
-	kptMinVersion   = "0.38.1"
+	kptDownloadLink        = "https://googlecontainertools.github.io/kpt/installation/"
+	kptMinVersionInclusive = "v0.38.1"
+	kptMaxVersionExclusive = "v1.0.0"
 
 	kustomizeDownloadLink  = "https://kubernetes-sigs.github.io/kustomize/installation/"
 	kustomizeMinVersion    = "v3.2.3"
@@ -100,16 +101,18 @@ func versionCheck(dir string, stdout io.Writer) error {
 		return fmt.Errorf("kpt is not installed yet\nSee kpt installation: %v",
 			kptDownloadLink)
 	}
-	version := strings.TrimSuffix(string(out), "\n")
 	// kpt follows semver but does not have "v" prefix.
-	if !semver.IsValid("v" + version) {
-		return fmt.Errorf("unknown kpt version %v\nPlease upgrade your "+
-			"local kpt CLI to a version >= %v\nSee kpt installation: %v",
-			string(out), kptMinVersion, kptDownloadLink)
+	version := "v" + strings.TrimSuffix(string(out), "\n")
+	if !semver.IsValid(version) {
+		return fmt.Errorf("unknown kpt version %v\nPlease install "+
+			"kpt %v <= version < %v\nSee kpt installation: %v",
+			string(out), kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink)
 	}
-	if semver.Compare("v"+version, "v"+kptMinVersion) < 0 {
-		return fmt.Errorf("you are using kpt %q\nPlease update your kpt version to"+
-			" >= %v\nSee kpt installation: %v", version[0], kptMinVersion, kptDownloadLink)
+	if semver.Compare(version, kptMinVersionInclusive) < 0 ||
+		semver.Compare(version, kptMaxVersionExclusive) >= 0 {
+		return fmt.Errorf("you are using kpt %q\nPlease install "+
+			"kpt %v <= version < %v\nSee kpt installation: %v",
+			version, kptMinVersionInclusive, kptMaxVersionExclusive, kptDownloadLink)
 	}
 
 	// Users can choose not to use kustomize in kpt deployer mode. We only check the kustomize
