@@ -27,6 +27,7 @@ type SkaffoldConfigEntry struct {
 	SourceFile   string
 	SourceIndex  int
 	IsRootConfig bool
+	IsRemote     bool
 }
 
 // SelectRootConfigs filters SkaffoldConfigSet to only configs read from the root skaffold.yaml file

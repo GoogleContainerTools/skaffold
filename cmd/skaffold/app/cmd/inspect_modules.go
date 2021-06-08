@@ -21,10 +21,15 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
 	modules "github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect/modules"
 )
+
+var modulesFlags = struct {
+	includeAll bool
+}{}
 
 func cmdModules() *cobra.Command {
 	return NewCmd("modules").
@@ -35,10 +40,21 @@ func cmdModules() *cobra.Command {
 func cmdModulesList() *cobra.Command {
 	return NewCmd("list").
 		WithExample("Get list of modules", "inspect modules list --format json").
+		WithExample("Get list of all configs (including unnamed modules)", "inspect modules list -a --format json").
 		WithDescription("Print the list of module names that can be invoked with the --module flag in other skaffold commands.").
+		WithFlagAdder(cmdModulesListFlags).
 		NoArgs(listModules)
 }
 
 func listModules(ctx context.Context, out io.Writer) error {
-	return modules.PrintModulesList(ctx, out, inspect.Options{Filename: inspectFlags.filename, OutFormat: inspectFlags.outFormat})
+	return modules.PrintModulesList(ctx, out, inspect.Options{
+		Filename:       inspectFlags.filename,
+		RepoCacheDir:   inspectFlags.repoCacheDir,
+		OutFormat:      inspectFlags.outFormat,
+		ModulesOptions: inspect.ModulesOptions{IncludeAll: modulesFlags.includeAll},
+	})
+}
+
+func cmdModulesListFlags(f *pflag.FlagSet) {
+	f.BoolVarP(&modulesFlags.includeAll, "all", "a", false, "Include unnamed modules in the result.")
 }
