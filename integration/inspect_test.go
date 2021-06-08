@@ -27,6 +27,8 @@ import (
 )
 
 func TestInspectBuildEnv(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
 	gcbParams := []string{
 		"--projectId", "proj2",
 		"--workerPool", "pool2",
