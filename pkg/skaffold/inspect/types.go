@@ -86,6 +86,12 @@ type BuildEnvOptions struct {
 	RandomPullSecret bool
 	// RandomDockerConfigSecret adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds, e.g. docker-cfgfd154022-c761-416f-8eb3-cf8258450b85.
 	RandomDockerConfigSecret bool
+	// Logging specifies the logging mode.
+	Logging string
+	// LogStreamingOption specifies the behavior when writing build logs to Google Cloud Storage.
+	LogStreamingOption string
+	// WorkerPool configures a pool of workers to run the build.
+	WorkerPool string
 }
 
 type BuildEnv string

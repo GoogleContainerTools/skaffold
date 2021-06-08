@@ -91,6 +91,15 @@ func constructGcbDefinition(existing *latestV1.GoogleCloudBuild, opts inspect.Bu
 	if opts.Timeout != "" {
 		b.Timeout = opts.Timeout
 	}
+	if opts.Logging != "" {
+		b.Logging = opts.Logging
+	}
+	if opts.LogStreamingOption != "" {
+		b.LogStreamingOption = opts.LogStreamingOption
+	}
+	if opts.WorkerPool != "" {
+		b.WorkerPool = opts.WorkerPool
+	}
 	return &b
 }
 
