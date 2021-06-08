@@ -122,6 +122,11 @@ func Render(args ...string) *RunBuilder {
 	return withDefaults("render", args)
 }
 
+// Inspect runs `skaffold inspect` with the given arguments.
+func Inspect(args ...string) *RunBuilder {
+	return &RunBuilder{command: "inspect", args: args}
+}
+
 // Filter runs `skaffold filter` with the given arguments.
 func Filter(args ...string) *RunBuilder {
 	return withDefaults("filter", args)
