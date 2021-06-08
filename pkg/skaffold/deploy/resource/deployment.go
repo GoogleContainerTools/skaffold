@@ -277,10 +277,10 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 			case proto.StatusCode_STATUSCHECK_CONTAINER_CREATING,
 				proto.StatusCode_STATUSCHECK_POD_INITIALIZING:
 				event.ResourceStatusCheckEventUpdated(p.String(), p.ActionableError())
-				eventV2.ResourceStatusCheckEventUpdated(p.String(), *sErrors.V2fromV1(p.ActionableError()))
+				eventV2.ResourceStatusCheckEventUpdated(p.String(), sErrors.V2fromV1(p.ActionableError()))
 			default:
 				event.ResourceStatusCheckEventCompleted(p.String(), p.ActionableError())
-				eventV2.ResourceStatusCheckEventCompleted(p.String(), *sErrors.V2fromV1(p.ActionableError()))
+				eventV2.ResourceStatusCheckEventCompleted(p.String(), sErrors.V2fromV1(p.ActionableError()))
 			}
 		}
 		newPods[p.String()] = p

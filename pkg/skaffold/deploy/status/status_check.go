@@ -249,7 +249,7 @@ func (s statusChecker) printStatusCheckSummary(out io.Writer, r *resource.Deploy
 		return
 	}
 	event.ResourceStatusCheckEventCompleted(r.String(), ae)
-	eventV2.ResourceStatusCheckEventCompleted(r.String(), *sErrors.V2fromV1(ae))
+	eventV2.ResourceStatusCheckEventCompleted(r.String(), sErrors.V2fromV1(ae))
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
@@ -292,7 +292,7 @@ func (s statusChecker) printStatus(deployments []*resource.Deployment, out io.Wr
 		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
 			ae := r.Status().ActionableError()
 			event.ResourceStatusCheckEventUpdated(r.String(), ae)
-			eventV2.ResourceStatusCheckEventUpdated(r.String(), *sErrors.V2fromV1(ae))
+			eventV2.ResourceStatusCheckEventUpdated(r.String(), sErrors.V2fromV1(ae))
 			fmt.Fprintln(out, trimNewLine(str))
 		}
 	}
