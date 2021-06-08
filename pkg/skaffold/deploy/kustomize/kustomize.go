@@ -30,9 +30,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -94,6 +96,9 @@ type secretGenerator struct {
 type Deployer struct {
 	*latestV1.KustomizeDeploy
 
+	podSelector    *kubernetes.ImageList
+	originalImages []graph.Artifact
+
 	kubectl             kubectl.CLI
 	insecureRegistries  map[string]bool
 	labels              map[string]string
@@ -101,7 +106,7 @@ type Deployer struct {
 	useKubectlKustomize bool
 }
 
-func NewDeployer(cfg kubectl.Config, labels map[string]string, d *latestV1.KustomizeDeploy) (*Deployer, error) {
+func NewDeployer(cfg kubectl.Config, labels map[string]string, podSelector *kubernetes.ImageList, d *latestV1.KustomizeDeploy) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -117,6 +122,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, d *latestV1.Kusto
 
 	return &Deployer{
 		KustomizeDeploy:     d,
+		podSelector:         podSelector,
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),
 		globalConfig:        cfg.GlobalConfig(),
@@ -181,6 +187,8 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
+
+	deployutil.AddTagsToPodSelector(builds, k.originalImages, k.podSelector)
 	endTrace()
 
 	return namespaces, nil
@@ -204,6 +212,13 @@ func (k *Deployer) renderManifests(ctx context.Context, out io.Writer, builds []
 
 	if len(manifests) == 0 {
 		return nil, nil
+	}
+
+	if len(k.originalImages) == 0 {
+		k.originalImages, err = manifests.GetImages()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	manifests, err = manifests.ReplaceImages(ctx, builds)

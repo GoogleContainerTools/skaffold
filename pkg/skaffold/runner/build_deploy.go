@@ -122,9 +122,6 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV
 		return nil, err
 	}
 
-	// Update which images are logged.
-	r.AddTagsToPodSelector(bRes)
-
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.Builds = build.MergeWithPreviousBuilds(bRes, r.Builds)
 
@@ -147,13 +144,6 @@ func artifactsWithTags(tags tag.ImageTags, artifacts []*latestV1.Artifact) []gra
 	}
 
 	return bRes
-}
-
-// Update which images are logged.
-func (r *Builder) AddTagsToPodSelector(artifacts []graph.Artifact) {
-	for _, artifact := range artifacts {
-		r.podSelector.Add(artifact.Tag)
-	}
 }
 
 type tagErr struct {

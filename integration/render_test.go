@@ -88,7 +88,7 @@ spec:
 					},
 				},
 			}}),
-		}, nil, &latestV1.KubectlDeploy{
+		}, nil, nil, &latestV1.KubectlDeploy{
 			Manifests: []string{"deployment.yaml"},
 		})
 		t.RequireNoError(err)
@@ -248,7 +248,7 @@ spec:
 				Opts: config.SkaffoldOptions{
 					AddSkaffoldLabels: true,
 				},
-			}, nil, &latestV1.KubectlDeploy{
+			}, nil, nil, &latestV1.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
 			})
 			t.RequireNoError(err)
@@ -434,7 +434,7 @@ spec:
 						},
 					},
 				}}),
-			}, nil, &latestV1.HelmDeploy{
+			}, nil, nil, &latestV1.HelmDeploy{
 				Releases: test.helmReleases,
 			})
 			t.RequireNoError(err)
