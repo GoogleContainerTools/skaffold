@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.13.4-alpine3.10 AS generate-files
+FROM golang:1.15-alpine AS generate-files
 RUN apk add --no-cache protobuf=3.6.1-r1 unzip jq moreutils
 
 WORKDIR /protoc
