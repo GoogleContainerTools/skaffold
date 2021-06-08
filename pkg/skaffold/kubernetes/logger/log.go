@@ -58,12 +58,16 @@ type Config interface {
 
 // NewLogAggregator creates a new LogAggregator for a given output.
 func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector kubernetes.PodSelector, config Config) *LogAggregator {
+	colorPicker := kubernetes.NewColorPicker()
+	for _, image := range imageNames {
+		colorPicker.AddImage(image)
+	}
 	return &LogAggregator{
 		output:      out,
 		kubectlcli:  cli,
 		config:      config,
 		podWatcher:  kubernetes.NewPodWatcher(podSelector),
-		colorPicker: kubernetes.NewColorPicker(imageNames),
+		colorPicker: colorPicker,
 		events:      make(chan kubernetes.PodEvent),
 	}
 }
