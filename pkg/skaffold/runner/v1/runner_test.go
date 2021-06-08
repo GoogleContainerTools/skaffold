@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
@@ -99,6 +100,10 @@ func (t *TestBench) WithDeployNamespaces(ns []string) *TestBench {
 func (t *TestBench) WithTestErrors(testErrors []error) *TestBench {
 	t.testErrors = testErrors
 	return t
+}
+
+func (t *TestBench) GetLogger() log.Logger {
+	return &log.NoopLogger{}
 }
 
 func (t *TestBench) TestDependencies(*latestV1.Artifact) ([]string, error) { return nil, nil }

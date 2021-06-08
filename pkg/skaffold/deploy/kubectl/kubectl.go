@@ -29,6 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -36,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -44,6 +46,8 @@ import (
 // Deployer deploys workflows using kubectl CLI.
 type Deployer struct {
 	*latestV1.KubectlDeploy
+
+	logger log.Logger
 
 	originalImages     []graph.Artifact
 	podSelector        *kubernetes.ImageList
@@ -60,7 +64,7 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KubectlDeploy) (*Deployer, *kubernetes.ImageList, error) {
+func NewDeployer(cfg Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KubectlDeploy) (*Deployer, *kubernetes.ImageList, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -75,6 +79,7 @@ func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KubectlDeploy
 	return &Deployer{
 		KubectlDeploy:      d,
 		podSelector:        podSelector,
+		logger:             provider.Logger.GetKubernetesLogger(podSelector),
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
 		defaultRepo:        cfg.DefaultRepo(),
@@ -84,6 +89,10 @@ func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KubectlDeploy
 		labels:             labels,
 		hydratedManifests:  cfg.HydratedManifests(),
 	}, podSelector, nil
+}
+
+func (k *Deployer) GetLogger() log.Logger {
+	return k.logger
 }
 
 // Deploy templates the provided manifests with a simple `find and replace` and
@@ -147,6 +156,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		return nil, err
 	}
 	deployutil.AddTagsToPodSelector(builds, k.originalImages, k.podSelector)
+	k.logger.RegisterArtifacts(builds)
 	endTrace()
 	return namespaces, nil
 }

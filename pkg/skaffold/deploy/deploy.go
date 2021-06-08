@@ -21,11 +21,17 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 )
+
+// NoopComponentProvider is for tests
+var NoopComponentProvider = ComponentProvider{Logger: &log.NoopProvider{}}
 
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
 type Deployer interface {
+	GetLogger() log.Logger
+
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster. Returns the list of impacted namespaces.
 	Deploy(context.Context, io.Writer, []graph.Artifact) ([]string, error)
@@ -40,4 +46,10 @@ type Deployer interface {
 	// Render generates the Kubernetes manifests replacing the build results and
 	// writes them to the given file path
 	Render(context.Context, io.Writer, []graph.Artifact, bool, string) error
+}
+
+// ComponentProvider serves as a clean way to send three providers
+// as params to the Deployer constructors
+type ComponentProvider struct {
+	Logger log.Provider
 }

@@ -246,12 +246,25 @@ func (b *RunBuilder) Run(t *testing.T) error {
 	cmd := b.cmd(context.Background())
 	logrus.Infof("Running %s in %s", cmd.Args, cmd.Dir)
 
-	start := time.Now()
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
-	logrus.Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
 	return nil
+}
+
+// StartWithProcess starts the skaffold command and returns the process id and error.
+func (b *RunBuilder) StartWithProcess(t *testing.T) (*os.Process, error) {
+	t.Helper()
+
+	cmd := b.cmd(context.Background())
+	logrus.Infof("Running %s in %s", cmd.Args, cmd.Dir)
+
+	start := time.Now()
+	if err := cmd.Start(); err != nil {
+		return nil, fmt.Errorf("skaffold %q: %w", b.command, err)
+	}
+	logrus.Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
+	return cmd.Process, nil
 }
 
 // RunWithCombinedOutput runs the skaffold command and returns the combined standard output and error.

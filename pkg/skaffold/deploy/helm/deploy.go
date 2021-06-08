@@ -37,6 +37,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
@@ -46,6 +47,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -76,6 +78,7 @@ var (
 type Deployer struct {
 	*latestV1.HelmDeploy
 
+	logger         log.Logger
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
 
@@ -102,7 +105,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg Config, labels map[string]string, h *latestV1.HelmDeploy) (*Deployer, *kubernetes.ImageList, error) {
+func NewDeployer(cfg Config, labels map[string]string, p deploy.ComponentProvider, h *latestV1.HelmDeploy) (*Deployer, *kubernetes.ImageList, error) {
 	hv, err := binVer()
 	if err != nil {
 		return nil, nil, versionGetErr(err)
@@ -126,6 +129,7 @@ func NewDeployer(cfg Config, labels map[string]string, h *latestV1.HelmDeploy) (
 	return &Deployer{
 		HelmDeploy:     h,
 		podSelector:    podSelector,
+		logger:         p.Logger.GetKubernetesLogger(podSelector),
 		originalImages: originalImages,
 		kubeContext:    cfg.GetKubeContext(),
 		kubeConfig:     cfg.GetKubeConfig(),
@@ -137,6 +141,10 @@ func NewDeployer(cfg Config, labels map[string]string, h *latestV1.HelmDeploy) (
 		enableDebug:    cfg.Mode() == config.RunModes.Debug,
 		isMultiConfig:  cfg.IsMultiConfig(),
 	}, podSelector, nil
+}
+
+func (h *Deployer) GetLogger() log.Logger {
+	return h.logger
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
@@ -191,6 +199,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	deployutil.AddTagsToPodSelector(builds, h.originalImages, h.podSelector)
+	h.logger.RegisterArtifacts(builds)
 	return namespaces, nil
 }
 
