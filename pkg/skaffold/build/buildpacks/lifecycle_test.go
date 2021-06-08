@@ -22,6 +22,10 @@ import (
 	"testing"
 
 	lifecycle "github.com/buildpacks/lifecycle/cmd"
+	"github.com/buildpacks/pack"
+
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestLifecycleStatusCode(t *testing.T) {
@@ -59,5 +63,53 @@ func TestLifecycleStatusCode(t *testing.T) {
 		if result.Error() != test.expected {
 			t.Errorf("got %q, wanted %q", result.Error(), test.expected)
 		}
+	}
+}
+
+func TestContainerConfig(t *testing.T) {
+	tests := []struct {
+		description string
+		volumes     []latestV1.BuildpackVolume
+		shouldErr   bool
+		expected    pack.ContainerConfig
+	}{
+		{
+			description: "single volume with no options",
+			volumes:     []latestV1.BuildpackVolume{{Host: "/foo", Target: "/bar"}},
+			expected:    pack.ContainerConfig{Volumes: []string{"/foo:/bar"}},
+		},
+		{
+			description: "single volume with  options",
+			volumes:     []latestV1.BuildpackVolume{{Host: "/foo", Target: "/bar", Options: "rw"}},
+			expected:    pack.ContainerConfig{Volumes: []string{"/foo:/bar:rw"}},
+		},
+		{
+			description: "multiple volumes",
+			volumes: []latestV1.BuildpackVolume{
+				{Host: "/foo", Target: "/bar", Options: "rw"},
+				{Host: "/bat", Target: "/baz", Options: "ro"},
+			},
+			expected: pack.ContainerConfig{Volumes: []string{"/foo:/bar:rw", "/bat:/baz:ro"}},
+		},
+		{
+			description: "missing host is skipped",
+			volumes:     []latestV1.BuildpackVolume{{Host: "", Target: "/bar"}},
+			shouldErr:   true,
+		},
+		{
+			description: "missing target is skipped",
+			volumes:     []latestV1.BuildpackVolume{{Host: "/foo", Target: ""}},
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			artifact := latestV1.BuildpackArtifact{
+				Volumes: &test.volumes,
+			}
+			result, err := containerConfig(&artifact)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, result)
+		})
 	}
 }
