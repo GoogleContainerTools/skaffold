@@ -100,7 +100,7 @@ func TestPrintBuildEnvsList(t *testing.T) {
 						{Name: "local", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
 					}}, SourceFile: "path/to/cfg2"},
 			}
-			t.Override(&inspect.ConfigSetFunc, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
+			t.Override(&inspect.GetConfigSet, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				// mock profile activation
 				var set parser.SkaffoldConfigSet
 				for _, c := range configSet {

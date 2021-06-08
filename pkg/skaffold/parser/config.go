@@ -210,7 +210,17 @@ func processEachConfig(config *latestV1.SkaffoldConfig, cfgOpts configOpts, opts
 	}
 
 	if required {
-		configs = append(configs, &SkaffoldConfigEntry{SkaffoldConfig: config, SourceFile: cfgOpts.file, SourceIndex: index, IsRootConfig: !cfgOpts.isDependency})
+		isRemote, err := isRemoteConfig(cfgOpts.file, opts)
+		if err != nil {
+			return nil, err
+		}
+		configs = append(configs, &SkaffoldConfigEntry{
+			SkaffoldConfig: config,
+			SourceFile:     cfgOpts.file,
+			SourceIndex:    index,
+			IsRootConfig:   !cfgOpts.isDependency,
+			IsRemote:       isRemote,
+		})
 	}
 	return configs, nil
 }
@@ -356,4 +366,13 @@ func getBase(cfgOpts configOpts) (string, error) {
 	}
 	logrus.Tracef("found cwd as base for absolute path substitution within skaffold config %s", cfgOpts.file)
 	return util.RealWorkDir()
+}
+
+func isRemoteConfig(file string, opts config.SkaffoldOptions) (bool, error) {
+	dir, err := git.GetRepoCacheDir(opts)
+	if err != nil {
+		// ignore
+		return false, err
+	}
+	return strings.HasPrefix(file, dir), nil
 }

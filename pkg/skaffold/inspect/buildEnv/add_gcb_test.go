@@ -336,7 +336,7 @@ profiles:
 						{Name: "p1", Pipeline: v1.Pipeline{Build: v1.BuildConfig{BuildType: v1.BuildType{LocalBuild: &v1.LocalBuild{}}}}},
 					}}, SourceFile: pathToCfg2, SourceIndex: 0},
 			}
-			t.Override(&inspect.ConfigSetFunc, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
+			t.Override(&inspect.GetConfigSet, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				if test.err != nil {
 					return nil, test.err
 				}

@@ -36,7 +36,7 @@ type profileEntry struct {
 
 func PrintProfilesList(ctx context.Context, out io.Writer, opts inspect.Options) error {
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
-	cfgs, err := inspect.ConfigSetFunc(config.SkaffoldOptions{ConfigurationFile: opts.Filename, ConfigurationFilter: opts.Modules})
+	cfgs, err := inspect.GetConfigSet(config.SkaffoldOptions{ConfigurationFile: opts.Filename, ConfigurationFilter: opts.Modules, RepoCacheDir: opts.RepoCacheDir})
 	if err != nil {
 		return formatter.WriteErr(err)
 	}

@@ -25,14 +25,24 @@ import (
 type Options struct {
 	// Filename is the `skaffold.yaml` file path
 	Filename string
+	// RepoCacheDir is the directory for the remote git repository cache
+	RepoCacheDir string
 	// OutFormat is the output format. One of: json
 	OutFormat string
 	// Modules is the module filter for specific commands
 	Modules []string
 	// Strict specifies the error-tolerance for specific commands
 	Strict bool
+
+	ModulesOptions
 	ProfilesOptions
 	BuildEnvOptions
+}
+
+// ModulesOptions holds flag values for various `skaffold inspect modules` commands
+type ModulesOptions struct {
+	// IncludeAll specifies if unnamed modules should be included in the output list
+	IncludeAll bool
 }
 
 // ProfilesOptions holds flag values for various `skaffold inspect profiles` commands
@@ -97,8 +107,8 @@ type BuildEnvOptions struct {
 type BuildEnv string
 
 var (
-	ConfigSetFunc = parser.GetConfigSet
-	BuildEnvs     = struct {
+	GetConfigSet = parser.GetConfigSet
+	BuildEnvs    = struct {
 		Unspecified      BuildEnv
 		Local            BuildEnv
 		GoogleCloudBuild BuildEnv

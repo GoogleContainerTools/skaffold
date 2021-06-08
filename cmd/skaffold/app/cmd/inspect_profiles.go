@@ -44,7 +44,13 @@ func cmdProfilesList() *cobra.Command {
 }
 
 func listProfiles(ctx context.Context, out io.Writer) error {
-	return profiles.PrintProfilesList(ctx, out, inspect.Options{Filename: inspectFlags.filename, OutFormat: inspectFlags.outFormat, Modules: inspectFlags.modules, ProfilesOptions: inspect.ProfilesOptions{BuildEnv: inspect.BuildEnv(inspectFlags.buildEnv)}})
+	return profiles.PrintProfilesList(ctx, out, inspect.Options{
+		Filename:        inspectFlags.filename,
+		RepoCacheDir:    inspectFlags.repoCacheDir,
+		OutFormat:       inspectFlags.outFormat,
+		Modules:         inspectFlags.modules,
+		ProfilesOptions: inspect.ProfilesOptions{BuildEnv: inspect.BuildEnv(inspectFlags.buildEnv)},
+	})
 }
 
 func cmdProfilesFlags(f *pflag.FlagSet) {

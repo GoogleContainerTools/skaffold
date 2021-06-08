@@ -225,9 +225,10 @@ func cmdBuildEnvListFlags(f *pflag.FlagSet) {
 
 func printBuildEnvsListOptions() inspect.Options {
 	return inspect.Options{
-		Filename:  inspectFlags.filename,
-		OutFormat: inspectFlags.outFormat,
-		Modules:   inspectFlags.modules,
+		Filename:     inspectFlags.filename,
+		RepoCacheDir: inspectFlags.repoCacheDir,
+		OutFormat:    inspectFlags.outFormat,
+		Modules:      inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{
 			Profiles: inspectFlags.profiles,
 		},
@@ -236,9 +237,10 @@ func printBuildEnvsListOptions() inspect.Options {
 
 func localBuildEnvOptions() inspect.Options {
 	return inspect.Options{
-		Filename:  inspectFlags.filename,
-		OutFormat: inspectFlags.outFormat,
-		Modules:   inspectFlags.modules,
+		Filename:     inspectFlags.filename,
+		RepoCacheDir: inspectFlags.repoCacheDir,
+		OutFormat:    inspectFlags.outFormat,
+		Modules:      inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{
 			Profile:          buildEnvFlags.profile,
 			Push:             buildEnvFlags.push.Value(),
@@ -272,9 +274,10 @@ func gcbBuildEnvOptions() inspect.Options {
 
 func addClusterBuildEnvOptions() inspect.Options {
 	return inspect.Options{
-		Filename:  inspectFlags.filename,
-		OutFormat: inspectFlags.outFormat,
-		Modules:   inspectFlags.modules,
+		Filename:     inspectFlags.filename,
+		RepoCacheDir: inspectFlags.repoCacheDir,
+		OutFormat:    inspectFlags.outFormat,
+		Modules:      inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{
 			PullSecretPath:           buildEnvFlags.pullSecretPath,
 			PullSecretName:           buildEnvFlags.pullSecretName,
