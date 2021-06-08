@@ -153,6 +153,10 @@ func (ev *eventHandler) logApplicationLog(event *proto.Event) {
 	ev.log(event, &ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock)
 }
 
+func (ev *eventHandler) logSkaffoldLog(event *proto.Event) {
+	ev.log(event, &ev.skaffoldLogListeners, &ev.skaffoldLogs, &ev.skaffoldLogsLock)
+}
+
 func (ev *eventHandler) forEach(listeners *[]*listener, log *[]proto.Event, lock sync.Locker, callback func(*proto.Event) error) error {
 	listener := &listener{
 		callback: callback,
@@ -364,6 +368,9 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 	switch e := event.GetEventType().(type) {
 	case *proto.Event_ApplicationLogEvent:
 		ev.logApplicationLog(event)
+		return
+	case *proto.Event_SkaffoldLogEvent:
+		ev.logSkaffoldLog(event)
 		return
 	case *proto.Event_BuildSubtaskEvent:
 		be := e.BuildSubtaskEvent
