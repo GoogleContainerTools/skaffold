@@ -994,7 +994,7 @@ type BuildpackArtifact struct {
 
 	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`
-	
+
 	// Volumes support mounting host volumes into the container.
 	Volumes *[]BuildpackVolume `yaml:"volumes,omitempty"`
 }
