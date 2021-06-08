@@ -35,7 +35,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
@@ -249,6 +251,7 @@ func (s statusChecker) printStatusCheckSummary(out io.Writer, r *resource.Deploy
 		return
 	}
 	event.ResourceStatusCheckEventCompleted(r.String(), ae)
+	eventV2.ResourceStatusCheckEventCompleted(r.String(), sErrors.V2fromV1(ae))
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
@@ -289,7 +292,9 @@ func (s statusChecker) printStatus(deployments []*resource.Deployment, out io.Wr
 		}
 		allDone = false
 		if str := r.ReportSinceLastUpdated(s.muteLogs); str != "" {
-			event.ResourceStatusCheckEventUpdated(r.String(), r.Status().ActionableError())
+			ae := r.Status().ActionableError()
+			event.ResourceStatusCheckEventUpdated(r.String(), ae)
+			eventV2.ResourceStatusCheckEventUpdated(r.String(), sErrors.V2fromV1(ae))
 			fmt.Fprintln(out, trimNewLine(str))
 		}
 	}

@@ -397,7 +397,7 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 	case *proto.Event_StatusCheckSubtaskEvent:
 		se := e.StatusCheckSubtaskEvent
 		ev.stateLock.Lock()
-		ev.state.StatusCheckState.Status = se.Status
+		ev.state.StatusCheckState.Resources[se.Resource] = se.Status
 		ev.stateLock.Unlock()
 	case *proto.Event_FileSyncEvent:
 		fse := e.FileSyncEvent
