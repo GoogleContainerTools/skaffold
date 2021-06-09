@@ -60,15 +60,17 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labels map[string]string, podSelector *kubernetes.ImageList, d *latestV1.KubectlDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KubectlDeploy) (*Deployer, *kubernetes.ImageList, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
 		defaultNamespace, err = util.ExpandEnvTemplate(*d.DefaultNamespace, nil)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
+
+	podSelector := kubernetes.NewImageList()
 
 	return &Deployer{
 		KubectlDeploy:      d,
@@ -81,7 +83,7 @@ func NewDeployer(cfg Config, labels map[string]string, podSelector *kubernetes.I
 		skipRender:         cfg.SkipRender(),
 		labels:             labels,
 		hydratedManifests:  cfg.HydratedManifests(),
-	}, nil
+	}, podSelector, nil
 }
 
 // Deploy templates the provided manifests with a simple `find and replace` and

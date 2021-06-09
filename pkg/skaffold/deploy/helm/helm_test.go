@@ -28,7 +28,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -472,7 +471,7 @@ func TestNewDeployer(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
 
-			_, err := NewDeployer(&helmConfig{}, nil, kubernetes.NewImageList(), &testDeployConfig)
+			_, _, err := NewDeployer(&helmConfig{}, nil, &testDeployConfig)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -1006,11 +1005,11 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&osExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 
-			deployer, err := NewDeployer(&helmConfig{
+			deployer, _, err := NewDeployer(&helmConfig{
 				namespace:  test.namespace,
 				force:      test.force,
 				configFile: "test.yaml",
-			}, nil, kubernetes.NewImageList(), &test.helm)
+			}, nil, &test.helm)
 			t.RequireNoError(err)
 
 			if test.configure != nil {
@@ -1085,9 +1084,9 @@ func TestHelmCleanup(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			deployer, err := NewDeployer(&helmConfig{
+			deployer, _, err := NewDeployer(&helmConfig{
 				namespace: test.namespace,
-			}, nil, kubernetes.NewImageList(), &test.helm)
+			}, nil, &test.helm)
 			t.RequireNoError(err)
 
 			deployer.Cleanup(context.Background(), ioutil.Discard)
@@ -1190,7 +1189,7 @@ func TestHelmDependencies(t *testing.T) {
 				local = tmpDir.Root()
 			}
 
-			deployer, err := NewDeployer(&helmConfig{}, nil, kubernetes.NewImageList(), &latestV1.HelmDeploy{
+			deployer, _, err := NewDeployer(&helmConfig{}, nil, &latestV1.HelmDeploy{
 				Releases: []latestV1.HelmRelease{{
 					Name:                  "skaffold-helm",
 					ChartPath:             local,
@@ -1453,9 +1452,9 @@ func TestHelmRender(t *testing.T) {
 
 			t.Override(&util.OSEnviron, func() []string { return append([]string{"FOO=FOOBAR"}, test.env...) })
 			t.Override(&util.DefaultExecCommand, test.commands)
-			deployer, err := NewDeployer(&helmConfig{
+			deployer, _, err := NewDeployer(&helmConfig{
 				namespace: test.namespace,
-			}, nil, kubernetes.NewImageList(), &test.helm)
+			}, nil, &test.helm)
 			t.RequireNoError(err)
 			err = deployer.Render(context.Background(), ioutil.Discard, test.builds, true, file)
 			t.CheckError(test.shouldErr, err)
@@ -1524,7 +1523,7 @@ func TestGenerateSkaffoldDebugFilter(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
-			h, err := NewDeployer(&helmConfig{}, nil, kubernetes.NewImageList(), &testDeployConfig)
+			h, _, err := NewDeployer(&helmConfig{}, nil, &testDeployConfig)
 			t.RequireNoError(err)
 			result := h.generateSkaffoldDebugFilter(test.buildFile)
 			t.CheckDeepEqual(test.result, result)

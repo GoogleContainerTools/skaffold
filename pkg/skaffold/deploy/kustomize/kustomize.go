@@ -106,13 +106,13 @@ type Deployer struct {
 	useKubectlKustomize bool
 }
 
-func NewDeployer(cfg kubectl.Config, labels map[string]string, podSelector *kubernetes.ImageList, d *latestV1.KustomizeDeploy) (*Deployer, error) {
+func NewDeployer(cfg kubectl.Config, labels map[string]string, d *latestV1.KustomizeDeploy) (*Deployer, *kubernetes.ImageList, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
 		defaultNamespace, err = util.ExpandEnvTemplate(*d.DefaultNamespace, nil)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -120,6 +120,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, podSelector *kube
 	// if user has kustomize binary, prioritize that over kubectl kustomize
 	useKubectlKustomize := !KustomizeBinaryCheck() && kubectlVersionCheck(kubectl)
 
+	podSelector := kubernetes.NewImageList()
 	return &Deployer{
 		KustomizeDeploy:     d,
 		podSelector:         podSelector,
@@ -128,7 +129,7 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, podSelector *kube
 		globalConfig:        cfg.GlobalConfig(),
 		labels:              labels,
 		useKubectlKustomize: useKubectlKustomize,
-	}, nil
+	}, podSelector, nil
 }
 
 // Check for existence of kustomize binary in user's PATH

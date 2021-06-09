@@ -49,7 +49,7 @@ type SkaffoldRunner struct {
 	artifactStore      build.ArtifactStore
 	sourceDependencies graph.SourceDependenciesCache
 	// podSelector is used to determine relevant pods for logging and portForwarding
-	podSelector *kubernetes.ImageList
+	podSelector kubernetes.ImageListMux
 
 	devIteration int
 	isLocalImage func(imageName string) (bool, error)
