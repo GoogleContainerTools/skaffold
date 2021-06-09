@@ -31,7 +31,6 @@ import (
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -39,14 +38,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func NewBuilder(builder build.Builder, tagger tag.Tagger, cache cache.Cache, podSelector *kubernetes.ImageList,
-	runCtx *runcontext.RunContext) *Builder {
+func NewBuilder(builder build.Builder, tagger tag.Tagger, cache cache.Cache, runCtx *runcontext.RunContext) *Builder {
 	return &Builder{
-		Builder:     builder,
-		tagger:      tagger,
-		cache:       cache,
-		podSelector: podSelector,
-		runCtx:      runCtx,
+		Builder: builder,
+		tagger:  tagger,
+		cache:   cache,
+		runCtx:  runCtx,
 	}
 }
 
@@ -55,9 +52,6 @@ type Builder struct {
 	tagger  tag.Tagger
 	cache   cache.Cache
 	Builds  []graph.Artifact
-
-	// podSelector is used to determine relevant pods for logging and portForwarding
-	podSelector *kubernetes.ImageList
 
 	hasBuilt bool
 	runCtx   *runcontext.RunContext
@@ -122,9 +116,6 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latestV
 		return nil, err
 	}
 
-	// Update which images are logged.
-	r.AddTagsToPodSelector(bRes)
-
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.Builds = build.MergeWithPreviousBuilds(bRes, r.Builds)
 
@@ -147,13 +138,6 @@ func artifactsWithTags(tags tag.ImageTags, artifacts []*latestV1.Artifact) []gra
 	}
 
 	return bRes
-}
-
-// Update which images are logged.
-func (r *Builder) AddTagsToPodSelector(artifacts []graph.Artifact) {
-	for _, artifact := range artifacts {
-		r.podSelector.Add(artifact.Tag)
-	}
 }
 
 type tagErr struct {

@@ -86,7 +86,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				description: "kpt deployer",
 				cfg:         latestV1.DeployType{KptDeploy: &latestV1.KptDeploy{}},
 				expected: deploy.DeployerMux{
-					kpt.NewDeployer(&runcontext.RunContext{}, nil, &latestV1.KptDeploy{}),
+					&kpt.Deployer{},
 				},
 			},
 			{
@@ -119,7 +119,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				helmVersion: `version.BuildInfo{Version:"v3.0.0"}`,
 				expected: deploy.DeployerMux{
 					&helm.Deployer{},
-					kpt.NewDeployer(&runcontext.RunContext{}, nil, &latestV1.KptDeploy{}),
+					&kpt.Deployer{},
 				},
 			},
 		}
@@ -132,7 +132,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					))
 				}
 
-				deployer, err := getDeployer(&runcontext.RunContext{
+				deployer, _, err := getDeployer(&runcontext.RunContext{
 					Opts: config.SkaffoldOptions{
 						Apply: test.apply,
 					},
@@ -251,7 +251,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						},
 					})
 				}
-				deployer, err := getDefaultDeployer(&runcontext.RunContext{
+				deployer, _, err := getDefaultDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines(pipelines),
 				}, nil)
 

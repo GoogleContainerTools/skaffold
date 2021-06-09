@@ -35,9 +35,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kustomize"
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -64,6 +66,9 @@ const (
 type Deployer struct {
 	*latestV1.KptDeploy
 
+	podSelector    *kubernetes.ImageList
+	originalImages []graph.Artifact
+
 	insecureRegistries map[string]bool
 	labels             map[string]string
 	globalConfig       string
@@ -78,9 +83,11 @@ type Config interface {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KptDeploy) *Deployer {
+func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KptDeploy) (*Deployer, *kubernetes.ImageList) {
+	podSelector := kubernetes.NewImageList()
 	return &Deployer{
 		KptDeploy:          d,
+		podSelector:        podSelector,
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labels:             labels,
 		globalConfig:       cfg.GlobalConfig(),
@@ -88,7 +95,7 @@ func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KptDeploy) *D
 		kubeContext:        cfg.GetKubeContext(),
 		kubeConfig:         cfg.GetKubeConfig(),
 		namespace:          cfg.GetKubeNamespace(),
-	}
+	}, podSelector
 }
 
 var sanityCheck = versionCheck
@@ -200,6 +207,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		return nil, err
 	}
 
+	deployutil.AddTagsToPodSelector(builds, k.originalImages, k.podSelector)
 	endTrace()
 	return namespaces, nil
 }
@@ -376,6 +384,12 @@ func (k *Deployer) renderManifests(ctx context.Context, builds []graph.Artifact)
 	manifests, err = k.excludeKptFn(manifests)
 	if err != nil {
 		return nil, fmt.Errorf("excluding kpt functions from manifests: %w", err)
+	}
+	if k.originalImages == nil {
+		k.originalImages, err = manifests.GetImages()
+		if err != nil {
+			return nil, err
+		}
 	}
 	manifests, err = manifests.ReplaceImages(ctx, builds)
 	if err != nil {

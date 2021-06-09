@@ -176,7 +176,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				skaffoldNamespaceOption = kubectl.TestNamespace
 			}
 
-			k, err := NewDeployer(&kustomizeConfig{
+			k, _, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
 				force:      test.forceDeploy,
 				waitForDeletions: config.WaitForDeletions{
@@ -248,7 +248,7 @@ func TestKustomizeCleanup(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&KustomizeBinaryCheck, func() bool { return true })
 
-			k, err := NewDeployer(&kustomizeConfig{
+			k, _, err := NewDeployer(&kustomizeConfig{
 				workingDir: tmpDir.Root(),
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
@@ -454,7 +454,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 				tmpDir.Write(path, contents)
 			}
 
-			k, err := NewDeployer(&kustomizeConfig{}, nil, &latestV1.KustomizeDeploy{KustomizePaths: kustomizePaths})
+			k, _, err := NewDeployer(&kustomizeConfig{}, nil, &latestV1.KustomizeDeploy{KustomizePaths: kustomizePaths})
 			t.RequireNoError(err)
 
 			deps, err := k.Dependencies()
@@ -695,7 +695,7 @@ spec:
 			t.Override(&util.DefaultExecCommand, fakeCmd)
 			t.NewTempDir().Chdir()
 
-			k, err := NewDeployer(&kustomizeConfig{
+			k, _, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: kubectl.TestNamespace}},
 			}, test.labels, &latestV1.KustomizeDeploy{

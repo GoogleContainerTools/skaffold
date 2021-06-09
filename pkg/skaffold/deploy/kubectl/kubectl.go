@@ -46,6 +46,7 @@ type Deployer struct {
 	*latestV1.KubectlDeploy
 
 	originalImages     []graph.Artifact
+	podSelector        *kubernetes.ImageList
 	hydratedManifests  []string
 	workingDir         string
 	globalConfig       string
@@ -59,18 +60,21 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KubectlDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KubectlDeploy) (*Deployer, *kubernetes.ImageList, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
 		defaultNamespace, err = util.ExpandEnvTemplate(*d.DefaultNamespace, nil)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
+	podSelector := kubernetes.NewImageList()
+
 	return &Deployer{
 		KubectlDeploy:      d,
+		podSelector:        podSelector,
 		workingDir:         cfg.GetWorkingDir(),
 		globalConfig:       cfg.GlobalConfig(),
 		defaultRepo:        cfg.DefaultRepo(),
@@ -79,7 +83,7 @@ func NewDeployer(cfg Config, labels map[string]string, d *latestV1.KubectlDeploy
 		skipRender:         cfg.SkipRender(),
 		labels:             labels,
 		hydratedManifests:  cfg.HydratedManifests(),
-	}, nil
+	}, podSelector, nil
 }
 
 // Deploy templates the provided manifests with a simple `find and replace` and
@@ -142,6 +146,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
+	deployutil.AddTagsToPodSelector(builds, k.originalImages, k.podSelector)
 	endTrace()
 	return namespaces, nil
 }
