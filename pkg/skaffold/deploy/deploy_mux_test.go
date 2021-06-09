@@ -49,6 +49,8 @@ func (m *MockDeployer) GetLogger() log.Logger {
 	return &log.NoopLogger{}
 }
 
+func (m *MockDeployer) TrackBuildArtifacts(_ []graph.Artifact) {}
+
 func (m *MockDeployer) Dependencies() ([]string, error) {
 	return m.dependencies, m.dependenciesErr
 }

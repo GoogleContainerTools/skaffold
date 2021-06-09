@@ -147,6 +147,11 @@ func (h *Deployer) GetLogger() log.Logger {
 	return h.logger
 }
 
+func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
+	deployutil.AddTagsToPodSelector(artifacts, h.originalImages, h.podSelector)
+	h.logger.RegisterArtifacts(artifacts)
+}
+
 // Deploy deploys the build results to the Kubernetes cluster
 func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Render", map[string]string{
@@ -198,8 +203,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		namespaces = append(namespaces, ns)
 	}
 
-	deployutil.AddTagsToPodSelector(builds, h.originalImages, h.podSelector)
-	h.logger.RegisterArtifacts(builds)
+	h.TrackBuildArtifacts(builds)
 	return namespaces, nil
 }
 

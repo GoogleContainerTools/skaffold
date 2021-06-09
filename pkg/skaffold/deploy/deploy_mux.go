@@ -104,3 +104,6 @@ func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []graph.Artifac
 	allResources := strings.Join(resources, "\n---\n")
 	return manifest.Write(strings.TrimSpace(allResources), filepath, w)
 }
+
+// TrackBuildArtifacts should *only* be called on individual deployers. This is a noop.
+func (m DeployerMux) TrackBuildArtifacts(_ []graph.Artifact) {}

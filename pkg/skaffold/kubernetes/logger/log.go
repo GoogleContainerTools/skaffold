@@ -73,9 +73,9 @@ func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, conf
 	}
 }
 
-// RegisterArtifactsToLogger tracks the provided build artifacts in the colorpicker
+// RegisterArtifacts tracks the provided build artifacts in the colorpicker
 func (a *LogAggregator) RegisterArtifacts(artifacts []graph.Artifact) {
-	// image tags are added to the podSelector by the runner, which are picked up by the podWatcher
+	// image tags are added to the podSelector by the deployer, which are picked up by the podWatcher
 	// we just need to make sure the colorPicker knows about them.
 	for _, artifact := range artifacts {
 		a.colorPicker.AddImage(artifact.Tag)

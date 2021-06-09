@@ -106,6 +106,11 @@ func (k *Deployer) GetLogger() log.Logger {
 	return k.logger
 }
 
+func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
+	deployutil.AddTagsToPodSelector(artifacts, k.originalImages, k.podSelector)
+	k.logger.RegisterArtifacts(artifacts)
+}
+
 var sanityCheck = versionCheck
 
 // versionCheck checks if the kpt and kustomize versions meet the minimum requirements.
@@ -215,8 +220,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		return nil, err
 	}
 
-	deployutil.AddTagsToPodSelector(builds, k.originalImages, k.podSelector)
-	k.logger.RegisterArtifacts(builds)
+	k.TrackBuildArtifacts(builds)
 	endTrace()
 	return namespaces, nil
 }

@@ -106,6 +106,8 @@ func (t *TestBench) GetLogger() log.Logger {
 	return &log.NoopLogger{}
 }
 
+func (t *TestBench) TrackBuildArtifacts(_ []graph.Artifact) {}
+
 func (t *TestBench) TestDependencies(*latestV1.Artifact) ([]string, error) { return nil, nil }
 func (t *TestBench) Dependencies() ([]string, error)                       { return nil, nil }
 func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error      { return nil }

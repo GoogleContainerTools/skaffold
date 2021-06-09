@@ -30,8 +30,6 @@ var NoopComponentProvider = ComponentProvider{Logger: &log.NoopProvider{}}
 // Deployer is the Deploy API of skaffold and responsible for deploying
 // the build results to a Kubernetes cluster
 type Deployer interface {
-	GetLogger() log.Logger
-
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster. Returns the list of impacted namespaces.
 	Deploy(context.Context, io.Writer, []graph.Artifact) ([]string, error)
@@ -46,6 +44,12 @@ type Deployer interface {
 	// Render generates the Kubernetes manifests replacing the build results and
 	// writes them to the given file path
 	Render(context.Context, io.Writer, []graph.Artifact, bool, string) error
+
+	// GetLogger returns a Deployer's implementation of a Logger
+	GetLogger() log.Logger
+
+	// TrackBuildArtifacts registers build artifacts to be tracked by a Deployer
+	TrackBuildArtifacts([]graph.Artifact)
 }
 
 // ComponentProvider serves as a clean way to send three providers

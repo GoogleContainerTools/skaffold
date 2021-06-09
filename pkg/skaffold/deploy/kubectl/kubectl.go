@@ -95,6 +95,11 @@ func (k *Deployer) GetLogger() log.Logger {
 	return k.logger
 }
 
+func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
+	deployutil.AddTagsToPodSelector(artifacts, k.originalImages, k.podSelector)
+	k.logger.RegisterArtifacts(artifacts)
+}
+
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
 func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact) ([]string, error) {
@@ -155,8 +160,8 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
 	}
-	deployutil.AddTagsToPodSelector(builds, k.originalImages, k.podSelector)
-	k.logger.RegisterArtifacts(builds)
+
+	k.TrackBuildArtifacts(builds)
 	endTrace()
 	return namespaces, nil
 }

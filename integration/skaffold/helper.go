@@ -259,11 +259,9 @@ func (b *RunBuilder) StartWithProcess(t *testing.T) (*os.Process, error) {
 	cmd := b.cmd(context.Background())
 	logrus.Infof("Running %s in %s", cmd.Args, cmd.Dir)
 
-	start := time.Now()
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
-	logrus.Infof("Ran %s in %v", cmd.Args, util.ShowHumanizeTime(time.Since(start)))
 	return cmd.Process, nil
 }
 
