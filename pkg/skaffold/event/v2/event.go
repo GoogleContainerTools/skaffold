@@ -309,8 +309,8 @@ func TaskInProgress(task constants.Phase, description string) {
 	if task == constants.DevLoop {
 		handler.iteration++
 
-		handler.applicationLogs = nil
-		handler.skaffoldLogs = nil
+		handler.applicationLogs = []proto.Event{}
+		handler.skaffoldLogs = []proto.Event{}
 	}
 
 	handler.handleTaskEvent(&proto.TaskEvent{
