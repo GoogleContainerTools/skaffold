@@ -1,22 +1,20 @@
-name: release (linux)
+name: PR (linux)
 
-on:
-  schedule:
-  - cron: "0 10 * * *"
+# Triggers the workflow on push or pull request events
+on: [push, pull_request]
 
 jobs:
 
   build:
-    name: Release binary integration tests
+    name: PR integration tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
         kustomize_version: [3.5.4]
         ko_version: [0.4.0]
         kompose_version: [1.21.0]
-        gcloud_sdk_version: [276.0.0]
+        gcloud_sdk_version: [335.0.0]
         container_structure_tests_version: [1.8.0]
-        minikube_version: [1.11.0]
         integration_test_partitions: [0, 1, 2, 3]
     steps:
 
@@ -28,10 +26,6 @@ jobs:
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
-
-    - name: Skaffold binary version
-      run: |
-        echo SKAFFOLD_VERSION="$(git log --format="%H" -n 1)" >> $GITHUB_ENV
 
     - name: Install Kustomize
       run: |
@@ -51,12 +45,12 @@ jobs:
     - name: Install GCloud
       run: |
         wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${{ matrix.gcloud_sdk_version }}-linux-x86_64.tar.gz
-        sudo tar -xvf gcloud.tar.gz -C /
-        sudo CLOUDSDK_PYTHON="python2.7" /google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
-        echo "/google-cloud-sdk/bin" >> $GITHUB_PATH
+        tar -xvf gcloud.tar.gz -C ${HOME}/
+        CLOUDSDK_PYTHON="python2.7" ${HOME}/google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
+        echo "${HOME}/google-cloud-sdk/bin" >> $GITHUB_PATH
 
     - name: Configure GCloud with Docker
-      run:  sudo gcloud auth configure-docker
+      run:  gcloud auth configure-docker
 
     - name: Install Container Structure Test
       run: |
@@ -65,27 +59,23 @@ jobs:
 
     - name: Setup other files and permissions
       run: |
-        sudo chown $(whoami) /home/$(whoami)/.config/gcloud -R
-        sudo chmod g+rw /home/$(whoami)/.config/gcloud -R
-        sudo chown $(whoami):docker /home/$(whoami)/.docker -R
-        sudo chmod g+rw /home/$(whoami)/.docker -R
-        echo '{}' > /home/$(whoami)/.docker/config.json
-        mkdir -p /home/$(whoami)/.m2/ && cp ./hack/maven/settings.xml /home/$(whoami)/.m2/settings.xml
-
-    - name: Install Minikube and start cluster
+        sudo chown $(whoami):docker ${HOME}/.docker -R
+        sudo chmod g+rw ${HOME}/.docker -R
+        echo '{}' > ${HOME}/.docker/config.json
+        mkdir -p ${HOME}/.m2/ && cp ./hack/maven/settings.xml ${HOME}/.m2/settings.xml
+        
+    - name: Install Minikube from minikube master branch @HEAD and start cluster
       run: |
-        curl -Lo minikube https://storage.googleapis.com/minikube/releases/v${{ matrix.minikube_version }}/minikube-linux-amd64
+        curl -Lo minikube https://storage.googleapis.com/minikube-builds/master/minikube-linux-amd64
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=docker
 
-    - name: Install Skaffold release binary
+    - name: Make and install Skaffold binary from current PR
       run: |
-        curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/${{ env.SKAFFOLD_VERSION }}/skaffold-linux-amd64
-        sudo install skaffold /usr/local/bin/skaffold
+        make
+        sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold
 
     - name: Run integration tests
-      env:
-        TOKEN: ${{ secrets.TOKEN }}
       run: |
         skaffold config set --global collect-metrics false
-        sudo IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
+        IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests

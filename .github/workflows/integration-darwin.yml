@@ -1,24 +1,13 @@
-name: release (darwin)
+name: per-pr (darwin)
 
-on:
-  schedule:
-  - cron: "0 10 * * *"
+# Triggers the workflow on push or pull request events
+on: [push, pull_request]
 
 jobs:
 
   build:
-    name: Release binary integration tests
+    name: PR integration tests
     runs-on: macos-latest
-    strategy:
-      matrix:
-        kustomize_version: [3.5.4]
-        ko_version: [0.4.0]
-        kompose_version: [1.21.0]
-        gcloud_sdk_version: [276.0.0]
-        kubectl_version: [1.18.0]
-        container_structure_tests_version: [1.8.0]
-        minikube_version: [1.12.1]
-        integration_test_partitions: [0, 1, 2, 3]
     steps:
 
     - name: Set up Go
@@ -30,75 +19,11 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
-    - name: Skaffold binary version
+    - name: Make and install Skaffold binary from current PR
       run: |
-        echo SKAFFOLD_VERSION="$(git log --format="%H" -n 1)" >> $GITHUB_ENV
-
-    - name: Install Kustomize
-      run: |
-        wget -O kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${{ matrix.kustomize_version }}/kustomize_v${{ matrix.kustomize_version }}_darwin_amd64.tar.gz
-        sudo tar -xvf kustomize.tar.gz -C /usr/local/bin/
-
-    - name: Install Ko
-      run: |
-        wget -O ko.tar.gz https://github.com/google/ko/releases/download/v0.4.0/ko_${{ matrix.ko_version }}_Darwin_x86_64.tar.gz
-        sudo tar -xvf ko.tar.gz -C /usr/local/bin/
-
-    - name: Install Kompose
-      run: |
-        wget -O kompose https://github.com/kubernetes/kompose/releases/download/v${{ matrix.kompose_version }}/kompose-darwin-amd64 && chmod +x kompose
-        sudo mv kompose /usr/local/bin/
-
-    - name: Install Docker
-      run: |
-        brew install docker
-
-    - name: Install GCloud and configure
-      run: |
-        wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${{ matrix.gcloud_sdk_version }}-darwin-x86_64.tar.gz
-        tar -xvf gcloud.tar.gz -C ${HOME}
-        CLOUDSDK_PYTHON="python2.7" ${HOME}/google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
-        echo "${HOME}/google-cloud-sdk/bin" >> $GITHUB_PATH
-
-    - name: Install Kubectl
-      run: |
-        curl -LO https://storage.googleapis.com/kubernetes-release/release/v${{ matrix.kubectl_version }}/bin/darwin/amd64/kubectl && chmod +x ./kubectl
-        sudo mv ./kubectl /usr/local/bin/kubectl
-
-    - name: Install Container Structure Test
-      run: |
-        wget -O container-structure-test https://storage.googleapis.com/container-structure-test/v${{ matrix.container_structure_tests_version }}/container-structure-test-darwin-amd64 && chmod +x container-structure-test
-        sudo mv container-structure-test /usr/local/bin/
-
-    - name: Setup other files and permissions
-      run: |
-        mkdir -p ${HOME}/.m2/ && cp ./hack/maven/settings.xml ${HOME}/.m2/settings.xml
-        gcloud auth configure-docker
-        echo '{}' > ${HOME}/.docker/config.json
-
-    - name: Check VBoxManage installed
-      run: |
-        /usr/local/bin/VBoxManage list hostinfo
-
-    - name: Install Minikube and start cluster
-      run: |
-        curl -Lo minikube https://storage.googleapis.com/minikube/releases/v${{ matrix.minikube_version }}/minikube-darwin-amd64
-        sudo install minikube /usr/local/bin/minikube
-        minikube start --profile=minikube --driver=virtualbox
-        eval $(minikube docker-env --profile=minikube)
-        echo DOCKER_TLS_VERIFY=${DOCKER_TLS_VERIFY} >> $GITHUB_ENV
-        echo DOCKER_HOST=${DOCKER_HOST} >> $GITHUB_ENV
-        echo DOCKER_CERT_PATH=${DOCKER_CERT_PATH} >> $GITHUB_ENV
-        echo MINIKUBE_ACTIVE_DOCKERD=${MINIKUBE_ACTIVE_DOCKERD} >> $GITHUB_ENV
-
-    - name: Install Skaffold release binary
-      run: |
-        curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/${{ env.SKAFFOLD_VERSION }}/skaffold-darwin-amd64
-        sudo install skaffold /usr/local/bin/skaffold
+        make
+        sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold
 
     - name: Run integration tests
-      env:
-        TOKEN: ${{ secrets.TOKEN }}
       run: |
-        skaffold config set --global collect-metrics false
-        IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
+         make quicktest
