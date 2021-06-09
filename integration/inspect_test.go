@@ -39,6 +39,14 @@ func TestInspectBuildEnv(t *testing.T) {
 		"--diskSizeGb", "10",
 		"--concurrency", "2",
 	}
+
+	clusterParams := []string{
+		"--concurrency", "2",
+		"--pullSecretName", "kaniko-secret2",
+		"--randomDockerConfigSecret=true",
+		"--randomPullSecret=true",
+	}
+
 	tests := []struct {
 		description        string
 		inputConfigFile    string
@@ -48,27 +56,40 @@ func TestInspectBuildEnv(t *testing.T) {
 	}{
 		{
 			description:        "add new gcb build env definition in default pipeline",
-			inputConfigFile:    "skaffold.local.yaml",
-			expectedConfigFile: "skaffold.gcb.add.default.yaml",
+			inputConfigFile:    "gcb/skaffold.local.yaml",
+			expectedConfigFile: "gcb/skaffold.add.default.yaml",
 			args:               append([]string{"build-env", "add", "googleCloudBuild"}, gcbParams...),
 		},
 		{
 			description:        "add new gcb build env definition in new profile",
-			inputConfigFile:    "skaffold.gcb.yaml",
-			expectedConfigFile: "skaffold.gcb.add.profile.yaml",
+			inputConfigFile:    "gcb/skaffold.gcb.yaml",
+			expectedConfigFile: "gcb/skaffold.add.profile.yaml",
 			args:               append([]string{"build-env", "add", "googleCloudBuild", "--profile", "gcb"}, gcbParams...),
 		},
 		{
 			description:        "modify existing gcb build env definition in default pipeline",
-			inputConfigFile:    "skaffold.gcb.yaml",
-			expectedConfigFile: "skaffold.gcb.modified.default.yaml",
+			inputConfigFile:    "gcb/skaffold.gcb.yaml",
+			expectedConfigFile: "gcb/skaffold.modified.default.yaml",
 			args:               append([]string{"build-env", "modify", "googleCloudBuild"}, gcbParams...),
 		},
 		{
 			description:        "modify existing gcb build env definition in existing profile",
-			inputConfigFile:    "skaffold.local.yaml",
-			expectedConfigFile: "skaffold.gcb.modified.profile.yaml",
+			inputConfigFile:    "gcb/skaffold.local.yaml",
+			expectedConfigFile: "gcb/skaffold.modified.profile.yaml",
 			args:               append([]string{"build-env", "modify", "googleCloudBuild", "--profile", "gcb"}, gcbParams...),
+		},
+
+		{
+			description:        "add new cluster build env definition in default pipeline",
+			inputConfigFile:    "cluster/skaffold.local.yaml",
+			expectedConfigFile: "cluster/skaffold.add.default.yaml",
+			args:               append([]string{"build-env", "add", "cluster"}, clusterParams...),
+		},
+		{
+			description:        "add new cluster build env definition in new profile",
+			inputConfigFile:    "cluster/skaffold.cluster.yaml",
+			expectedConfigFile: "cluster/skaffold.add.profile.yaml",
+			args:               append([]string{"build-env", "add", "cluster", "--profile", "cluster"}, clusterParams...),
 		},
 	}
 

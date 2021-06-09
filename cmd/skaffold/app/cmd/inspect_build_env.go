@@ -61,8 +61,8 @@ var buildEnvFlags = struct {
 	serviceAccount string
 	runAsUser      int64
 
-	randomPullSecret        bool
-	randomDockerConigSecret bool
+	randomPullSecret         bool
+	randomDockerConfigSecret bool
 }{}
 
 func cmdBuildEnv() *cobra.Command {
@@ -212,7 +212,7 @@ func cmdBuildEnvAddClusterFlags(f *pflag.FlagSet) {
 	f.Int64Var(&buildEnvFlags.runAsUser, "runAsUser", -1, "Defines the UID to request for running the container.")
 
 	f.BoolVar(&buildEnvFlags.randomPullSecret, "randomPullSecret", false, "Adds a random UUID postfix to the default name of the pull secret to facilitate parallel builds.")
-	f.BoolVar(&buildEnvFlags.randomDockerConigSecret, "randomDockerConigSecret", false, "Adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds.")
+	f.BoolVar(&buildEnvFlags.randomDockerConfigSecret, "randomDockerConfigSecret", false, "Adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds.")
 }
 
 func cmdBuildEnvFlags(f *pflag.FlagSet) {
@@ -279,6 +279,7 @@ func addClusterBuildEnvOptions() inspect.Options {
 		OutFormat:    inspectFlags.outFormat,
 		Modules:      inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{
+			Profile:                  buildEnvFlags.profile,
 			PullSecretPath:           buildEnvFlags.pullSecretPath,
 			PullSecretName:           buildEnvFlags.pullSecretName,
 			PullSecretMountPath:      buildEnvFlags.pullSecretMountPath,
@@ -288,7 +289,7 @@ func addClusterBuildEnvOptions() inspect.Options {
 			ServiceAccount:           buildEnvFlags.serviceAccount,
 			RunAsUser:                buildEnvFlags.runAsUser,
 			RandomPullSecret:         buildEnvFlags.randomPullSecret,
-			RandomDockerConfigSecret: buildEnvFlags.randomDockerConigSecret,
+			RandomDockerConfigSecret: buildEnvFlags.randomDockerConfigSecret,
 			Timeout:                  buildEnvFlags.timeout,
 			Concurrency:              buildEnvFlags.concurrency,
 		},

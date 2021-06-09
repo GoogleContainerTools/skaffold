@@ -115,8 +115,8 @@ func constructClusterDefinition(existing *latestV1.ClusterDetails, opts inspect.
 	if opts.RandomPullSecret {
 		b.RandomPullSecret = opts.RandomPullSecret
 	}
-	if !opts.RandomDockerConfigSecret {
-		b.RandomPullSecret = opts.RandomPullSecret
+	if opts.RandomDockerConfigSecret {
+		b.RandomDockerConfigSecret = opts.RandomDockerConfigSecret
 	}
 	if opts.Concurrency >= 0 {
 		b.Concurrency = opts.Concurrency

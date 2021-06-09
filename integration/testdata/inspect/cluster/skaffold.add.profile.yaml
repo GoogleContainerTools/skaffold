@@ -1,0 +1,20 @@
+apiVersion: skaffold/v2beta17
+kind: Config
+build:
+  artifacts:
+  - image: foo
+  cluster:
+    concurrency: 1
+    pullSecretName: kaniko-secret1
+profiles:
+- name: local
+  build:
+    local:
+      concurrency: 1
+- name: cluster
+  build:
+    cluster:
+      concurrency: 2
+      pullSecretName: kaniko-secret2
+      randomDockerConfigSecret: true
+      randomPullSecret: true
