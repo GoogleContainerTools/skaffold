@@ -28,6 +28,7 @@ import (
 	yamlv3 "gopkg.in/yaml.v3"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
@@ -36,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -96,6 +98,7 @@ type secretGenerator struct {
 type Deployer struct {
 	*latestV1.KustomizeDeploy
 
+	logger         log.Logger
 	podSelector    *kubernetes.ImageList
 	originalImages []graph.Artifact
 
@@ -106,7 +109,7 @@ type Deployer struct {
 	useKubectlKustomize bool
 }
 
-func NewDeployer(cfg kubectl.Config, labels map[string]string, d *latestV1.KustomizeDeploy) (*Deployer, *kubernetes.ImageList, error) {
+func NewDeployer(cfg kubectl.Config, labels map[string]string, provider deploy.ComponentProvider, d *latestV1.KustomizeDeploy) (*Deployer, *kubernetes.ImageList, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -124,12 +127,22 @@ func NewDeployer(cfg kubectl.Config, labels map[string]string, d *latestV1.Kusto
 	return &Deployer{
 		KustomizeDeploy:     d,
 		podSelector:         podSelector,
+		logger:              provider.Logger.GetKubernetesLogger(podSelector),
 		kubectl:             kubectl,
 		insecureRegistries:  cfg.GetInsecureRegistries(),
 		globalConfig:        cfg.GlobalConfig(),
 		labels:              labels,
 		useKubectlKustomize: useKubectlKustomize,
 	}, podSelector, nil
+}
+
+func (k *Deployer) GetLogger() log.Logger {
+	return k.logger
+}
+
+func (k *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
+	deployutil.AddTagsToPodSelector(artifacts, k.originalImages, k.podSelector)
+	k.logger.RegisterArtifacts(artifacts)
 }
 
 // Check for existence of kustomize binary in user's PATH
@@ -189,7 +202,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		return nil, err
 	}
 
-	deployutil.AddTagsToPodSelector(builds, k.originalImages, k.podSelector)
+	k.TrackBuildArtifacts(builds)
 	endTrace()
 
 	return namespaces, nil

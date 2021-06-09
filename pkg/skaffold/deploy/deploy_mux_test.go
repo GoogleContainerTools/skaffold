@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
@@ -43,6 +44,12 @@ type MockDeployer struct {
 	renderResult     string
 	renderErr        error
 }
+
+func (m *MockDeployer) GetLogger() log.Logger {
+	return &log.NoopLogger{}
+}
+
+func (m *MockDeployer) TrackBuildArtifacts(_ []graph.Artifact) {}
 
 func (m *MockDeployer) Dependencies() ([]string, error) {
 	return m.dependencies, m.dependenciesErr

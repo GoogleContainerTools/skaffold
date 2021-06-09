@@ -27,6 +27,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
@@ -230,7 +231,7 @@ func TestKpt_Deploy(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.NewTempDir().Chdir()
 
-			k, _ := NewDeployer(&kptConfig{}, nil, &test.kpt)
+			k, _ := NewDeployer(&kptConfig{}, nil, deploy.NoopComponentProvider, &test.kpt)
 			if test.hasKustomization != nil {
 				k.hasKustomization = test.hasKustomization
 			}
@@ -373,7 +374,7 @@ func TestKpt_Dependencies(t *testing.T) {
 			tmpDir.WriteFiles(test.createFiles)
 			tmpDir.WriteFiles(test.kustomizations)
 
-			k, _ := NewDeployer(&kptConfig{}, nil, &test.kpt)
+			k, _ := NewDeployer(&kptConfig{}, nil, deploy.NoopComponentProvider, &test.kpt)
 
 			res, err := k.Dependencies()
 
@@ -426,7 +427,7 @@ func TestKpt_Cleanup(t *testing.T) {
 
 			k, _ := NewDeployer(&kptConfig{
 				workingDir: ".",
-			}, nil, &latestV1.KptDeploy{
+			}, nil, deploy.NoopComponentProvider, &latestV1.KptDeploy{
 				Live: latestV1.KptLive{
 					Apply: latestV1.KptApplyInventory{
 						Dir: test.applyDir,
@@ -786,7 +787,7 @@ spec:
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.NewTempDir().Chdir()
 
-			k, _ := NewDeployer(&kptConfig{workingDir: "."}, test.labels, &test.kpt)
+			k, _ := NewDeployer(&kptConfig{workingDir: "."}, test.labels, deploy.NoopComponentProvider, &test.kpt)
 			if test.hasKustomization != nil {
 				k.hasKustomization = test.hasKustomization
 			}
@@ -863,7 +864,7 @@ func TestKpt_GetApplyDir(t *testing.T) {
 
 			k, _ := NewDeployer(&kptConfig{
 				workingDir: ".",
-			}, nil, &latestV1.KptDeploy{
+			}, nil, deploy.NoopComponentProvider, &latestV1.KptDeploy{
 				Live: test.live,
 			})
 
@@ -1022,7 +1023,7 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k, _ := NewDeployer(&kptConfig{}, nil, nil)
+			k, _ := NewDeployer(&kptConfig{}, nil, deploy.NoopComponentProvider, nil)
 			actualManifest, err := k.excludeKptFn(test.manifests)
 			t.CheckErrorAndDeepEqual(false, err, test.expected.String(), actualManifest.String())
 		})
@@ -1168,7 +1169,7 @@ func TestNonEmptyKubeconfig(t *testing.T) {
 
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&util.DefaultExecCommand, commands)
-		k, _ := NewDeployer(&kptConfig{config: "testConfigPath"}, nil, &latestV1.KptDeploy{
+		k, _ := NewDeployer(&kptConfig{config: "testConfigPath"}, nil, deploy.NoopComponentProvider, &latestV1.KptDeploy{
 			Dir: ".",
 			Live: latestV1.KptLive{
 				Apply: latestV1.KptApplyInventory{
