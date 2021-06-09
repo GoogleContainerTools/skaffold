@@ -305,8 +305,12 @@ func AutoTriggerDiff(phase constants.Phase, val bool) (bool, error) {
 }
 
 func TaskInProgress(task constants.Phase, description string) {
+	// Special casing to increment iteration and clear application and skaffold logs
 	if task == constants.DevLoop {
 		handler.iteration++
+
+		handler.applicationLogs = []proto.Event{}
+		handler.skaffoldLogs = []proto.Event{}
 	}
 
 	handler.handleTaskEvent(&proto.TaskEvent{
