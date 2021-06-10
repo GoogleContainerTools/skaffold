@@ -30,7 +30,6 @@ import (
 
 var (
 	portForwardEvent = func(entry *portForwardEntry) {
-		// TODO priyawadhwa@, change event API to accept ports of type int
 		event.PortForwarded(
 			int32(entry.localPort),
 			entry.resource.Port,
@@ -43,7 +42,6 @@ var (
 			entry.resource.Address)
 	}
 	portForwardEventV2 = func(entry *portForwardEntry) {
-		// TODO priyawadhwa@, change event API to accept ports of type int
 		eventV2.PortForwarded(
 			int32(entry.localPort),
 			entry.resource.Port,
