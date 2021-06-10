@@ -113,7 +113,7 @@ func cmdBuildEnvAddLocal() *cobra.Command {
 Without the '--profile' flag the new environment definition is added to the default pipeline. With the '--profile' flag it will create a new profile with this build env definition. 
 In these respective scenarios, it will fail if the build env definition for the default pipeline or the named profile already exists. To override an existing 'local' build env definition use 'skaffold inspect build-env modify' command instead. 
 Use the '--module' filter to specify the individual module to target. Otherwise, it'll be applied to all modules defined in the target file. Also, with the '--profile' flag if the target config imports other configs as dependencies, then the new profile will be recursively created in all the imported configs also.`).
-		WithExample("Add a new profile named 'local' targeting the local build environment with option to push images and using buildkit", "inspect build-env add local --profile local --push true --useBuildkit true -f skaffold.yaml").
+		WithExample("Add a new profile named 'local' targeting the local build environment with option to push images and using buildkit", "inspect build-env add local --profile local --push=true --useBuildkit=true -f skaffold.yaml").
 		WithFlagAdder(cmdBuildEnvLocalFlags).
 		NoArgs(addLocalBuildEnv)
 }
