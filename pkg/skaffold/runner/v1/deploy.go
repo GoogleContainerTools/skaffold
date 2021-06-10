@@ -75,7 +75,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 		return r.Render(ctx, out, artifacts, false, r.runCtx.RenderOutput())
 	}
 
-	output.WithEventContext(out, constants.Deploy, "-1", "skaffold")
+	out = output.WithEventContext(out, constants.Deploy, "-1", "skaffold")
 
 	output.Default.Fprintln(out, "Tags used in deployment:")
 
