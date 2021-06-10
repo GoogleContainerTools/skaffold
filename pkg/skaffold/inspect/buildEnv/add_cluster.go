@@ -29,7 +29,13 @@ import (
 
 func AddClusterBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) error {
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
-	cfgs, err := inspect.ConfigSetFunc(config.SkaffoldOptions{ConfigurationFile: opts.Filename, ConfigurationFilter: opts.Modules, SkipConfigDefaults: true, MakePathsAbsolute: util.BoolPtr(false)})
+	cfgs, err := inspect.GetConfigSet(config.SkaffoldOptions{
+		ConfigurationFile:   opts.Filename,
+		RepoCacheDir:        opts.RepoCacheDir,
+		ConfigurationFilter: opts.Modules,
+		SkipConfigDefaults:  true,
+		MakePathsAbsolute:   util.BoolPtr(false),
+	})
 	if err != nil {
 		return formatter.WriteErr(err)
 	}
@@ -109,8 +115,8 @@ func constructClusterDefinition(existing *latestV1.ClusterDetails, opts inspect.
 	if opts.RandomPullSecret {
 		b.RandomPullSecret = opts.RandomPullSecret
 	}
-	if !opts.RandomDockerConfigSecret {
-		b.RandomPullSecret = opts.RandomPullSecret
+	if opts.RandomDockerConfigSecret {
+		b.RandomDockerConfigSecret = opts.RandomDockerConfigSecret
 	}
 	if opts.Concurrency >= 0 {
 		b.Concurrency = opts.Concurrency

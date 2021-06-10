@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -36,6 +37,14 @@ import (
 // When encountering an error, it aborts and returns the error. Otherwise,
 // it collects the results and returns it in bulk.
 type DeployerMux []Deployer
+
+func (m DeployerMux) GetLogger() log.Logger {
+	var loggers log.LoggerMux
+	for _, deployer := range m {
+		loggers = append(loggers, deployer.GetLogger())
+	}
+	return loggers
+}
 
 func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifact) ([]string, error) {
 	seenNamespaces := util.NewStringSet()
@@ -99,3 +108,6 @@ func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []graph.Artifac
 	allResources := strings.Join(resources, "\n---\n")
 	return manifest.Write(strings.TrimSpace(allResources), filepath, w)
 }
+
+// TrackBuildArtifacts should *only* be called on individual deployers. This is a noop.
+func (m DeployerMux) TrackBuildArtifacts(_ []graph.Artifact) {}

@@ -21,6 +21,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
 
 // ApplyDefaultRepo applies the default repo to a given image tag.
@@ -36,4 +38,17 @@ func ApplyDefaultRepo(globalConfig string, defaultRepo *string, tag string) (str
 	}
 
 	return newTag, nil
+}
+
+// Update which images are logged, if the image is present in the provided deployer's artifacts.
+func AddTagsToPodSelector(artifacts []graph.Artifact, deployerArtifacts []graph.Artifact, podSelector *kubernetes.ImageList) {
+	m := map[string]bool{}
+	for _, a := range deployerArtifacts {
+		m[a.ImageName] = true
+	}
+	for _, artifact := range artifacts {
+		if _, ok := m[artifact.ImageName]; ok {
+			podSelector.Add(artifact.Tag)
+		}
+	}
 }

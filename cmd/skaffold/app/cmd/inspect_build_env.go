@@ -42,9 +42,12 @@ var buildEnvFlags = struct {
 	useBuildkit      config.BoolOrUndefined
 
 	// Google Cloud Build
-	projectID   string
-	diskSizeGb  int64
-	machineType string
+	projectID          string
+	diskSizeGb         int64
+	machineType        string
+	logging            string
+	logStreamingOption string
+	workerPool         string
 
 	// Cluster (kaniko)
 	pullSecretPath      string
@@ -58,8 +61,8 @@ var buildEnvFlags = struct {
 	serviceAccount string
 	runAsUser      int64
 
-	randomPullSecret        bool
-	randomDockerConigSecret bool
+	randomPullSecret         bool
+	randomDockerConfigSecret bool
 }{}
 
 func cmdBuildEnv() *cobra.Command {
@@ -110,7 +113,7 @@ func cmdBuildEnvAddLocal() *cobra.Command {
 Without the '--profile' flag the new environment definition is added to the default pipeline. With the '--profile' flag it will create a new profile with this build env definition. 
 In these respective scenarios, it will fail if the build env definition for the default pipeline or the named profile already exists. To override an existing 'local' build env definition use 'skaffold inspect build-env modify' command instead. 
 Use the '--module' filter to specify the individual module to target. Otherwise, it'll be applied to all modules defined in the target file. Also, with the '--profile' flag if the target config imports other configs as dependencies, then the new profile will be recursively created in all the imported configs also.`).
-		WithExample("Add a new profile named 'local' targeting the local build environment with option to push images and using buildkit", "inspect build-env add local --profile local --push true --useBuildkit true -f skaffold.yaml").
+		WithExample("Add a new profile named 'local' targeting the local build environment with option to push images and using buildkit", "inspect build-env add local --profile local --push=true --useBuildkit=true -f skaffold.yaml").
 		WithFlagAdder(cmdBuildEnvLocalFlags).
 		NoArgs(addLocalBuildEnv)
 }
@@ -188,6 +191,9 @@ func cmdBuildEnvGcbFlags(f *pflag.FlagSet) {
 	f.StringVar(&buildEnvFlags.machineType, "machineType", "", `Type of VM that runs the build`)
 	f.StringVar(&buildEnvFlags.timeout, "timeout", "", `Build timeout (in seconds)`)
 	f.IntVar(&buildEnvFlags.concurrency, "concurrency", -1, `number of artifacts to build concurrently. 0 means "no-limit"`)
+	f.StringVar(&buildEnvFlags.logging, "logging", "", `Specifies the logging mode for GCB`)
+	f.StringVar(&buildEnvFlags.logStreamingOption, "logStreamingOption", "", `Specifies the log streaming specifies behavior when writing build logs to Google Cloud Storage for GCB`)
+	f.StringVar(&buildEnvFlags.workerPool, "workerPool", "", `Configures a pool of workers to run the build`)
 }
 
 func cmdBuildEnvAddClusterFlags(f *pflag.FlagSet) {
@@ -206,7 +212,7 @@ func cmdBuildEnvAddClusterFlags(f *pflag.FlagSet) {
 	f.Int64Var(&buildEnvFlags.runAsUser, "runAsUser", -1, "Defines the UID to request for running the container.")
 
 	f.BoolVar(&buildEnvFlags.randomPullSecret, "randomPullSecret", false, "Adds a random UUID postfix to the default name of the pull secret to facilitate parallel builds.")
-	f.BoolVar(&buildEnvFlags.randomDockerConigSecret, "randomDockerConigSecret", false, "Adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds.")
+	f.BoolVar(&buildEnvFlags.randomDockerConfigSecret, "randomDockerConfigSecret", false, "Adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds.")
 }
 
 func cmdBuildEnvFlags(f *pflag.FlagSet) {
@@ -219,9 +225,10 @@ func cmdBuildEnvListFlags(f *pflag.FlagSet) {
 
 func printBuildEnvsListOptions() inspect.Options {
 	return inspect.Options{
-		Filename:  inspectFlags.filename,
-		OutFormat: inspectFlags.outFormat,
-		Modules:   inspectFlags.modules,
+		Filename:     inspectFlags.filename,
+		RepoCacheDir: inspectFlags.repoCacheDir,
+		OutFormat:    inspectFlags.outFormat,
+		Modules:      inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{
 			Profiles: inspectFlags.profiles,
 		},
@@ -230,9 +237,10 @@ func printBuildEnvsListOptions() inspect.Options {
 
 func localBuildEnvOptions() inspect.Options {
 	return inspect.Options{
-		Filename:  inspectFlags.filename,
-		OutFormat: inspectFlags.outFormat,
-		Modules:   inspectFlags.modules,
+		Filename:     inspectFlags.filename,
+		RepoCacheDir: inspectFlags.repoCacheDir,
+		OutFormat:    inspectFlags.outFormat,
+		Modules:      inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{
 			Profile:          buildEnvFlags.profile,
 			Push:             buildEnvFlags.push.Value(),
@@ -250,12 +258,15 @@ func gcbBuildEnvOptions() inspect.Options {
 		OutFormat: inspectFlags.outFormat,
 		Modules:   inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{
-			Profile:     buildEnvFlags.profile,
-			ProjectID:   buildEnvFlags.projectID,
-			DiskSizeGb:  buildEnvFlags.diskSizeGb,
-			MachineType: buildEnvFlags.machineType,
-			Timeout:     buildEnvFlags.timeout,
-			Concurrency: buildEnvFlags.concurrency,
+			Profile:            buildEnvFlags.profile,
+			ProjectID:          buildEnvFlags.projectID,
+			DiskSizeGb:         buildEnvFlags.diskSizeGb,
+			MachineType:        buildEnvFlags.machineType,
+			Timeout:            buildEnvFlags.timeout,
+			Concurrency:        buildEnvFlags.concurrency,
+			Logging:            buildEnvFlags.logging,
+			LogStreamingOption: buildEnvFlags.logStreamingOption,
+			WorkerPool:         buildEnvFlags.workerPool,
 		},
 		Strict: inspectFlags.strict,
 	}
@@ -263,10 +274,12 @@ func gcbBuildEnvOptions() inspect.Options {
 
 func addClusterBuildEnvOptions() inspect.Options {
 	return inspect.Options{
-		Filename:  inspectFlags.filename,
-		OutFormat: inspectFlags.outFormat,
-		Modules:   inspectFlags.modules,
+		Filename:     inspectFlags.filename,
+		RepoCacheDir: inspectFlags.repoCacheDir,
+		OutFormat:    inspectFlags.outFormat,
+		Modules:      inspectFlags.modules,
 		BuildEnvOptions: inspect.BuildEnvOptions{
+			Profile:                  buildEnvFlags.profile,
 			PullSecretPath:           buildEnvFlags.pullSecretPath,
 			PullSecretName:           buildEnvFlags.pullSecretName,
 			PullSecretMountPath:      buildEnvFlags.pullSecretMountPath,
@@ -276,7 +289,7 @@ func addClusterBuildEnvOptions() inspect.Options {
 			ServiceAccount:           buildEnvFlags.serviceAccount,
 			RunAsUser:                buildEnvFlags.runAsUser,
 			RandomPullSecret:         buildEnvFlags.randomPullSecret,
-			RandomDockerConfigSecret: buildEnvFlags.randomDockerConigSecret,
+			RandomDockerConfigSecret: buildEnvFlags.randomDockerConfigSecret,
 			Timeout:                  buildEnvFlags.timeout,
 			Concurrency:              buildEnvFlags.concurrency,
 		},

@@ -40,6 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
@@ -89,8 +90,14 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating tester: %w", err)
 	}
 	syncer := getSyncer(runCtx)
+
+	var podSelectors kubernetes.ImageListMux
 	var deployer deploy.Deployer
-	deployer, err = getDeployer(runCtx, labeller.Labels())
+	provider := deploy.ComponentProvider{
+		Logger: log.NewLogProvider(runCtx, kubectlCLI),
+	}
+
+	deployer, podSelectors, err = getDeployer(runCtx, provider, labeller.Labels())
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating deployer: %w", err)
@@ -133,9 +140,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
-	podSelectors := kubernetes.NewImageList()
-
-	rbuilder := runner.NewBuilder(builder, tagger, artifactCache, podSelectors, runCtx)
+	rbuilder := runner.NewBuilder(builder, tagger, artifactCache, runCtx)
 	return &SkaffoldRunner{
 		Builder:            *rbuilder,
 		Pruner:             runner.Pruner{Builder: builder},
@@ -241,7 +246,7 @@ The default deployer will honor a select set of deploy configuration from an exi
 For a multi-config project, we do not currently support resolving conflicts between differing sets of this deploy configuration.
 Therefore, in this function we do implicit validation of the provided configuration, and fail if any conflict cannot be resolved.
 */
-func getDefaultDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deploy.Deployer, error) {
+func getDefaultDeployer(runCtx *runcontext.RunContext, provider deploy.ComponentProvider, labels map[string]string) (deploy.Deployer, kubernetes.ImageListMux, error) {
 	deployCfgs := runCtx.DeployConfigs()
 
 	var kFlags *latestV1.KubectlFlags
@@ -253,19 +258,19 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labels map[string]string)
 	for _, d := range deployCfgs {
 		if d.KubeContext != "" {
 			if kubeContext != "" && kubeContext != d.KubeContext {
-				return nil, errors.New("cannot resolve active Kubernetes context - multiple contexts configured in skaffold.yaml")
+				return nil, nil, errors.New("cannot resolve active Kubernetes context - multiple contexts configured in skaffold.yaml")
 			}
 			kubeContext = d.KubeContext
 		}
 		if d.StatusCheckDeadlineSeconds != 0 && d.StatusCheckDeadlineSeconds != int(status.DefaultStatusCheckDeadline.Seconds()) {
 			if statusCheckTimeout != -1 && statusCheckTimeout != d.StatusCheckDeadlineSeconds {
-				return nil, fmt.Errorf("found multiple status check timeouts in skaffold.yaml (not supported in `skaffold apply`): %d, %d", statusCheckTimeout, d.StatusCheckDeadlineSeconds)
+				return nil, nil, fmt.Errorf("found multiple status check timeouts in skaffold.yaml (not supported in `skaffold apply`): %d, %d", statusCheckTimeout, d.StatusCheckDeadlineSeconds)
 			}
 			statusCheckTimeout = d.StatusCheckDeadlineSeconds
 		}
 		if d.Logs.Prefix != "" {
 			if logPrefix != "" && logPrefix != d.Logs.Prefix {
-				return nil, fmt.Errorf("found multiple log prefixes in skaffold.yaml (not supported in `skaffold apply`): %s, %s", logPrefix, d.Logs.Prefix)
+				return nil, nil, fmt.Errorf("found multiple log prefixes in skaffold.yaml (not supported in `skaffold apply`): %s, %s", logPrefix, d.Logs.Prefix)
 			}
 			logPrefix = d.Logs.Prefix
 		}
@@ -283,11 +288,11 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labels map[string]string)
 			kFlags = &currentKubectlFlags
 		}
 		if err := validateKubectlFlags(kFlags, currentKubectlFlags); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if currentDefaultNamespace != nil {
 			if defaultNamespace != nil && *defaultNamespace != *currentDefaultNamespace {
-				return nil, fmt.Errorf("found multiple namespaces in skaffold.yaml (not supported in `skaffold apply`): %s, %s", *defaultNamespace, *currentDefaultNamespace)
+				return nil, nil, fmt.Errorf("found multiple namespaces in skaffold.yaml (not supported in `skaffold apply`): %s, %s", *defaultNamespace, *currentDefaultNamespace)
 			}
 			defaultNamespace = currentDefaultNamespace
 		}
@@ -299,11 +304,11 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labels map[string]string)
 		Flags:            *kFlags,
 		DefaultNamespace: defaultNamespace,
 	}
-	defaultDeployer, err := kubectl.NewDeployer(runCtx, labels, k)
+	defaultDeployer, podSelector, err := kubectl.NewDeployer(runCtx, labels, provider, k)
 	if err != nil {
-		return nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
+		return nil, nil, fmt.Errorf("instantiating default kubectl deployer: %w", err)
 	}
-	return defaultDeployer, nil
+	return defaultDeployer, kubernetes.ImageListMux{podSelector}, nil
 }
 
 func validateKubectlFlags(flags *latestV1.KubectlFlags, additional latestV1.KubectlFlags) error {
@@ -329,9 +334,10 @@ func validateKubectlFlags(flags *latestV1.KubectlFlags, additional latestV1.Kube
 	return nil
 }
 
-func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deploy.Deployer, error) {
+func getDeployer(runCtx *runcontext.RunContext, provider deploy.ComponentProvider, labels map[string]string) (deploy.Deployer, kubernetes.ImageListMux, error) {
+	var podSelectors kubernetes.ImageListMux
 	if runCtx.Opts.Apply {
-		return getDefaultDeployer(runCtx, labels)
+		return getDefaultDeployer(runCtx, provider, labels)
 	}
 
 	deployerCfg := runCtx.Deployers()
@@ -339,33 +345,38 @@ func getDeployer(runCtx *runcontext.RunContext, labels map[string]string) (deplo
 	var deployers deploy.DeployerMux
 	for _, d := range deployerCfg {
 		if d.HelmDeploy != nil {
-			h, err := helm.NewDeployer(runCtx, labels, d.HelmDeploy)
+			h, podSelector, err := helm.NewDeployer(runCtx, labels, provider, d.HelmDeploy)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
+			podSelectors = append(podSelectors, podSelector)
 			deployers = append(deployers, h)
 		}
 
 		if d.KptDeploy != nil {
-			deployers = append(deployers, kpt.NewDeployer(runCtx, labels, d.KptDeploy))
+			deployer, podSelector := kpt.NewDeployer(runCtx, labels, provider, d.KptDeploy)
+			podSelectors = append(podSelectors, podSelector)
+			deployers = append(deployers, deployer)
 		}
 
 		if d.KubectlDeploy != nil {
-			deployer, err := kubectl.NewDeployer(runCtx, labels, d.KubectlDeploy)
+			deployer, podSelector, err := kubectl.NewDeployer(runCtx, labels, provider, d.KubectlDeploy)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
+			podSelectors = append(podSelectors, podSelector)
 			deployers = append(deployers, deployer)
 		}
 
 		if d.KustomizeDeploy != nil {
-			deployer, err := kustomize.NewDeployer(runCtx, labels, d.KustomizeDeploy)
+			deployer, podSelector, err := kustomize.NewDeployer(runCtx, labels, provider, d.KustomizeDeploy)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
+			podSelectors = append(podSelectors, podSelector)
 			deployers = append(deployers, deployer)
 		}
 	}
 
-	return deployers, nil
+	return deployers, podSelectors, nil
 }

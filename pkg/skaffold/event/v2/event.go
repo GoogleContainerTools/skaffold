@@ -153,6 +153,10 @@ func (ev *eventHandler) logApplicationLog(event *proto.Event) {
 	ev.log(event, &ev.applicationLogListeners, &ev.applicationLogs, &ev.applicationLogsLock)
 }
 
+func (ev *eventHandler) logSkaffoldLog(event *proto.Event) {
+	ev.log(event, &ev.skaffoldLogListeners, &ev.skaffoldLogs, &ev.skaffoldLogsLock)
+}
+
 func (ev *eventHandler) forEach(listeners *[]*listener, log *[]proto.Event, lock sync.Locker, callback func(*proto.Event) error) error {
 	listener := &listener{
 		callback: callback,
@@ -301,8 +305,12 @@ func AutoTriggerDiff(phase constants.Phase, val bool) (bool, error) {
 }
 
 func TaskInProgress(task constants.Phase, description string) {
+	// Special casing to increment iteration and clear application and skaffold logs
 	if task == constants.DevLoop {
 		handler.iteration++
+
+		handler.applicationLogs = []proto.Event{}
+		handler.skaffoldLogs = []proto.Event{}
 	}
 
 	handler.handleTaskEvent(&proto.TaskEvent{
@@ -365,6 +373,9 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 	case *proto.Event_ApplicationLogEvent:
 		ev.logApplicationLog(event)
 		return
+	case *proto.Event_SkaffoldLogEvent:
+		ev.logSkaffoldLog(event)
+		return
 	case *proto.Event_BuildSubtaskEvent:
 		be := e.BuildSubtaskEvent
 		if be.Step == Build {
@@ -390,7 +401,7 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 	case *proto.Event_StatusCheckSubtaskEvent:
 		se := e.StatusCheckSubtaskEvent
 		ev.stateLock.Lock()
-		ev.state.StatusCheckState.Status = se.Status
+		ev.state.StatusCheckState.Resources[se.Resource] = se.Status
 		ev.stateLock.Unlock()
 	case *proto.Event_FileSyncEvent:
 		fse := e.FileSyncEvent

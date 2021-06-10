@@ -37,13 +37,17 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
+	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
 	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -74,6 +78,10 @@ var (
 type Deployer struct {
 	*latestV1.HelmDeploy
 
+	logger         log.Logger
+	podSelector    *kubernetes.ImageList
+	originalImages []graph.Artifact
+
 	kubeContext string
 	kubeConfig  string
 	namespace   string
@@ -97,28 +105,51 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.0.0.
-func NewDeployer(cfg Config, labels map[string]string, h *latestV1.HelmDeploy) (*Deployer, error) {
+func NewDeployer(cfg Config, labels map[string]string, p deploy.ComponentProvider, h *latestV1.HelmDeploy) (*Deployer, *kubernetes.ImageList, error) {
 	hv, err := binVer()
 	if err != nil {
-		return nil, versionGetErr(err)
+		return nil, nil, versionGetErr(err)
 	}
 
 	if hv.LT(helm3Version) {
-		return nil, minVersionErr()
+		return nil, nil, minVersionErr()
 	}
 
+	originalImages := []graph.Artifact{}
+	for _, release := range h.Releases {
+		for _, v := range release.ArtifactOverrides {
+			originalImages = append(originalImages, graph.Artifact{
+				ImageName: v,
+			})
+		}
+	}
+
+	podSelector := kubernetes.NewImageList()
+
 	return &Deployer{
-		HelmDeploy:    h,
-		kubeContext:   cfg.GetKubeContext(),
-		kubeConfig:    cfg.GetKubeConfig(),
-		namespace:     cfg.GetKubeNamespace(),
-		forceDeploy:   cfg.ForceDeploy(),
-		configFile:    cfg.ConfigurationFile(),
-		labels:        labels,
-		bV:            hv,
-		enableDebug:   cfg.Mode() == config.RunModes.Debug,
-		isMultiConfig: cfg.IsMultiConfig(),
-	}, nil
+		HelmDeploy:     h,
+		podSelector:    podSelector,
+		logger:         p.Logger.GetKubernetesLogger(podSelector),
+		originalImages: originalImages,
+		kubeContext:    cfg.GetKubeContext(),
+		kubeConfig:     cfg.GetKubeConfig(),
+		namespace:      cfg.GetKubeNamespace(),
+		forceDeploy:    cfg.ForceDeploy(),
+		configFile:     cfg.ConfigurationFile(),
+		labels:         labels,
+		bV:             hv,
+		enableDebug:    cfg.Mode() == config.RunModes.Debug,
+		isMultiConfig:  cfg.IsMultiConfig(),
+	}, podSelector, nil
+}
+
+func (h *Deployer) GetLogger() log.Logger {
+	return h.logger
+}
+
+func (h *Deployer) TrackBuildArtifacts(artifacts []graph.Artifact) {
+	deployutil.AddTagsToPodSelector(artifacts, h.originalImages, h.podSelector)
+	h.logger.RegisterArtifacts(artifacts)
 }
 
 // Deploy deploys the build results to the Kubernetes cluster
@@ -171,6 +202,8 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	for ns := range nsMap {
 		namespaces = append(namespaces, ns)
 	}
+
+	h.TrackBuildArtifacts(builds)
 	return namespaces, nil
 }
 

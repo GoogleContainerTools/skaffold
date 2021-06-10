@@ -19,6 +19,7 @@ package logger
 import (
 	"bytes"
 	"context"
+	"io/ioutil"
 	"strings"
 	"sync"
 	"testing"
@@ -129,7 +130,7 @@ func TestLogAggregatorZeroValue(t *testing.T) {
 	var m *LogAggregator
 
 	// Should not raise a nil dereference
-	m.Start(context.Background(), []string{})
+	m.Start(context.Background(), ioutil.Discard, []string{})
 	m.Mute()
 	m.Unmute()
 	m.Stop()
@@ -188,7 +189,7 @@ func TestPrefix(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			logger := NewLogAggregator(nil, nil, nil, nil, &mockConfig{log: latestV1.LogsConfig{
+			logger := NewLogAggregator(nil, nil, &mockConfig{log: latestV1.LogsConfig{
 				Prefix: test.prefix,
 			}})
 
@@ -215,6 +216,10 @@ func containerWithName(n string) v1.ContainerStatus {
 
 type mockConfig struct {
 	log latestV1.LogsConfig
+}
+
+func (c *mockConfig) Tail() bool {
+	return true
 }
 
 func (c *mockConfig) PipelineForImage(string) (latestV1.Pipeline, bool) {

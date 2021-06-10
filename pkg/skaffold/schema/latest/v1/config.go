@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
 const Version string = "skaffold/v2beta17"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
@@ -994,6 +994,9 @@ type BuildpackArtifact struct {
 
 	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`
+
+	// Volumes support mounting host volumes into the container.
+	Volumes *[]BuildpackVolume `yaml:"volumes,omitempty"`
 }
 
 // BuildpackDependencies *alpha* is used to specify dependencies for an artifact built by buildpacks.
@@ -1004,6 +1007,23 @@ type BuildpackDependencies struct {
 	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
 	// Will only work in conjunction with `paths`.
 	Ignore []string `yaml:"ignore,omitempty"`
+}
+
+// BuildpackVolume *alpha* is used to mount host volumes or directories in the build container.
+type BuildpackVolume struct {
+	// Host is the local volume or absolute directory of the path to mount.
+	Host string `yaml:"host" skaffold:"filepath" yamltags:"required"`
+
+	// Target is the path where the file or directory is available in the container.
+	// It is strongly recommended to not specify locations under `/cnb` or `/layers`.
+	Target string `yaml:"target" yamltags:"required"`
+
+	// Options specify a list of comma-separated mount options.
+	// Valid options are:
+	// `ro` (default): volume contents are read-only.
+	// `rw`: volume contents are readable and writable.
+	// `volume-opt=<key>=<value>`: can be specified more than once, takes a key-value pair.
+	Options string `yaml:"options,omitempty"`
 }
 
 // CustomArtifact *beta* describes an artifact built from a custom build script

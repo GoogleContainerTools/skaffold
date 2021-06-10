@@ -26,7 +26,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
@@ -275,8 +277,10 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 			case proto.StatusCode_STATUSCHECK_CONTAINER_CREATING,
 				proto.StatusCode_STATUSCHECK_POD_INITIALIZING:
 				event.ResourceStatusCheckEventUpdated(p.String(), p.ActionableError())
+				eventV2.ResourceStatusCheckEventUpdated(p.String(), sErrors.V2fromV1(p.ActionableError()))
 			default:
 				event.ResourceStatusCheckEventCompleted(p.String(), p.ActionableError())
+				eventV2.ResourceStatusCheckEventCompleted(p.String(), sErrors.V2fromV1(p.ActionableError()))
 			}
 		}
 		newPods[p.String()] = p

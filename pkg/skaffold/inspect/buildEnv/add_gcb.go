@@ -29,7 +29,12 @@ import (
 
 func AddGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) error {
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
-	cfgs, err := inspect.ConfigSetFunc(config.SkaffoldOptions{ConfigurationFile: opts.Filename, ConfigurationFilter: opts.Modules, SkipConfigDefaults: true, MakePathsAbsolute: util.BoolPtr(false)})
+	cfgs, err := inspect.GetConfigSet(config.SkaffoldOptions{
+		ConfigurationFile:   opts.Filename,
+		RepoCacheDir:        opts.RepoCacheDir,
+		ConfigurationFilter: opts.Modules,
+		SkipConfigDefaults:  true,
+		MakePathsAbsolute:   util.BoolPtr(false)})
 	if err != nil {
 		return formatter.WriteErr(err)
 	}
@@ -90,6 +95,15 @@ func constructGcbDefinition(existing *latestV1.GoogleCloudBuild, opts inspect.Bu
 	}
 	if opts.Timeout != "" {
 		b.Timeout = opts.Timeout
+	}
+	if opts.Logging != "" {
+		b.Logging = opts.Logging
+	}
+	if opts.LogStreamingOption != "" {
+		b.LogStreamingOption = opts.LogStreamingOption
+	}
+	if opts.WorkerPool != "" {
+		b.WorkerPool = opts.WorkerPool
 	}
 	return &b
 }

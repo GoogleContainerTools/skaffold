@@ -22,9 +22,9 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"

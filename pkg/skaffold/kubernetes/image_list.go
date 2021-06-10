@@ -60,3 +60,15 @@ func (l *ImageList) Select(pod *v1.Pod) bool {
 
 	return false
 }
+
+// TODO(nkubala): remove this when podSelector is moved entirely into Deployer
+type ImageListMux []*ImageList
+
+func (l ImageListMux) Select(pod *v1.Pod) bool {
+	for _, selector := range l {
+		if selector.Select(pod) {
+			return true
+		}
+	}
+	return false
+}

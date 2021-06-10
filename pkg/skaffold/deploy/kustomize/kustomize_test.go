@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -176,7 +177,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				skaffoldNamespaceOption = kubectl.TestNamespace
 			}
 
-			k, err := NewDeployer(&kustomizeConfig{
+			k, _, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
 				force:      test.forceDeploy,
 				waitForDeletions: config.WaitForDeletions{
@@ -186,7 +187,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				},
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption,
-				}}}, nil, &test.kustomize)
+				}}}, nil, deploy.NoopComponentProvider, &test.kustomize)
 			t.RequireNoError(err)
 			_, err = k.Deploy(context.Background(), ioutil.Discard, test.builds)
 
@@ -248,11 +249,11 @@ func TestKustomizeCleanup(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&KustomizeBinaryCheck, func() bool { return true })
 
-			k, err := NewDeployer(&kustomizeConfig{
+			k, _, err := NewDeployer(&kustomizeConfig{
 				workingDir: tmpDir.Root(),
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: kubectl.TestNamespace}},
-			}, nil, &test.kustomize)
+			}, nil, deploy.NoopComponentProvider, &test.kustomize)
 			t.RequireNoError(err)
 			err = k.Cleanup(context.Background(), ioutil.Discard)
 
@@ -454,7 +455,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 				tmpDir.Write(path, contents)
 			}
 
-			k, err := NewDeployer(&kustomizeConfig{}, nil, &latestV1.KustomizeDeploy{KustomizePaths: kustomizePaths})
+			k, _, err := NewDeployer(&kustomizeConfig{}, nil, deploy.NoopComponentProvider, &latestV1.KustomizeDeploy{KustomizePaths: kustomizePaths})
 			t.RequireNoError(err)
 
 			deps, err := k.Dependencies()
@@ -695,10 +696,10 @@ spec:
 			t.Override(&util.DefaultExecCommand, fakeCmd)
 			t.NewTempDir().Chdir()
 
-			k, err := NewDeployer(&kustomizeConfig{
+			k, _, err := NewDeployer(&kustomizeConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: kubectl.TestNamespace}},
-			}, test.labels, &latestV1.KustomizeDeploy{
+			}, test.labels, deploy.NoopComponentProvider, &latestV1.KustomizeDeploy{
 				KustomizePaths: kustomizationPaths,
 			})
 			t.RequireNoError(err)

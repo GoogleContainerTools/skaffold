@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.13.4-alpine3.10 AS generate-files
-RUN apk add --no-cache protobuf=3.6.1-r1 unzip jq moreutils
+FROM golang:1.15-alpine AS generate-files
+RUN apk add --no-cache protobuf=3.13.0-r2 unzip jq moreutils
 
 WORKDIR /protoc
-ENV PROTOC_VERSION=3.11.0
+ENV PROTOC_VERSION=3.13.0
 RUN wget -O protoc.zip https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
 RUN unzip protoc.zip
 

@@ -25,14 +25,24 @@ import (
 type Options struct {
 	// Filename is the `skaffold.yaml` file path
 	Filename string
+	// RepoCacheDir is the directory for the remote git repository cache
+	RepoCacheDir string
 	// OutFormat is the output format. One of: json
 	OutFormat string
 	// Modules is the module filter for specific commands
 	Modules []string
 	// Strict specifies the error-tolerance for specific commands
 	Strict bool
+
+	ModulesOptions
 	ProfilesOptions
 	BuildEnvOptions
+}
+
+// ModulesOptions holds flag values for various `skaffold inspect modules` commands
+type ModulesOptions struct {
+	// IncludeAll specifies if unnamed modules should be included in the output list
+	IncludeAll bool
 }
 
 // ProfilesOptions holds flag values for various `skaffold inspect profiles` commands
@@ -86,13 +96,19 @@ type BuildEnvOptions struct {
 	RandomPullSecret bool
 	// RandomDockerConfigSecret adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds, e.g. docker-cfgfd154022-c761-416f-8eb3-cf8258450b85.
 	RandomDockerConfigSecret bool
+	// Logging specifies the logging mode.
+	Logging string
+	// LogStreamingOption specifies the behavior when writing build logs to Google Cloud Storage.
+	LogStreamingOption string
+	// WorkerPool configures a pool of workers to run the build.
+	WorkerPool string
 }
 
 type BuildEnv string
 
 var (
-	ConfigSetFunc = parser.GetConfigSet
-	BuildEnvs     = struct {
+	GetConfigSet = parser.GetConfigSet
+	BuildEnvs    = struct {
 		Unspecified      BuildEnv
 		Local            BuildEnv
 		GoogleCloudBuild BuildEnv

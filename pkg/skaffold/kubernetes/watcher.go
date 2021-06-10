@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -31,13 +32,15 @@ import (
 
 type PodWatcher interface {
 	Register(receiver chan<- PodEvent)
+	Deregister(receiver chan<- PodEvent)
 	Start(ns []string) (func(), error)
 }
 
 // podWatcher is a pod watcher for multiple namespaces.
 type podWatcher struct {
-	podSelector PodSelector
-	receivers   []chan<- PodEvent
+	podSelector  PodSelector
+	receivers    map[chan<- PodEvent]bool
+	receiverLock sync.Mutex
 }
 
 type PodEvent struct {
@@ -48,11 +51,20 @@ type PodEvent struct {
 func NewPodWatcher(podSelector PodSelector) PodWatcher {
 	return &podWatcher{
 		podSelector: podSelector,
+		receivers:   make(map[chan<- PodEvent]bool),
 	}
 }
 
 func (w *podWatcher) Register(receiver chan<- PodEvent) {
-	w.receivers = append(w.receivers, receiver)
+	w.receiverLock.Lock()
+	w.receivers[receiver] = true
+	w.receiverLock.Unlock()
+}
+
+func (w *podWatcher) Deregister(receiver chan<- PodEvent) {
+	w.receiverLock.Lock()
+	w.receivers[receiver] = false
+	w.receiverLock.Unlock()
 }
 
 func (w *podWatcher) Start(namespaces []string) (func(), error) {
@@ -84,7 +96,6 @@ func (w *podWatcher) Start(namespaces []string) (func(), error) {
 		}
 
 		watchers = append(watchers, watcher)
-
 		go func() {
 			for evt := range watcher.ResultChan() {
 				// If the event's type is "ERROR", warn and continue.
@@ -103,12 +114,16 @@ func (w *podWatcher) Start(namespaces []string) (func(), error) {
 					continue
 				}
 
-				for _, receiver := range w.receivers {
-					receiver <- PodEvent{
-						Type: evt.Type,
-						Pod:  pod,
+				w.receiverLock.Lock()
+				for receiver, open := range w.receivers {
+					if open {
+						receiver <- PodEvent{
+							Type: evt.Type,
+							Pod:  pod,
+						}
 					}
 				}
+				w.receiverLock.Unlock()
 			}
 		}()
 	}

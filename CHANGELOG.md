@@ -1,3 +1,62 @@
+# v1.26.0 Release - 06/08/2021
+
+Highlights:
+
+New Features:
+* Emit status check subtask events for V2 API [#5961](https://github.com/GoogleContainerTools/skaffold/pull/5961)
+* Buildpacks builder supports mounting read/write volumes (experimental) [#5972](https://github.com/GoogleContainerTools/skaffold/pull/5972)
+
+Fixes:
+* Fix and cleanup Kpt fn integration [#5886](https://github.com/GoogleContainerTools/skaffold/pull/5886)
+* Avoid adding image digest twice to tag on render [#5958](https://github.com/GoogleContainerTools/skaffold/pull/5958)
+* have BuildSubtaskEvent use InProgress status [#5963](https://github.com/GoogleContainerTools/skaffold/pull/5963)
+* Ignore first user cancelled and get actual error as final error [#5941](https://github.com/GoogleContainerTools/skaffold/pull/5941)
+* Fix up missed remote -> remotePath changes [#5920](https://github.com/GoogleContainerTools/skaffold/pull/5920)
+* Add missing flags to `skaffold test` [#5912](https://github.com/GoogleContainerTools/skaffold/pull/5912)
+
+Updates and Refactors:
+* make sure SkaffoldLogEvent types go through correct endpoint [#5964](https://github.com/GoogleContainerTools/skaffold/pull/5964)
+* update hack/generate-kind-config.sh to handle multiple mirrors [#5977](https://github.com/GoogleContainerTools/skaffold/pull/5977)
+* [v3]  Add validator in render v2. [#5942](https://github.com/GoogleContainerTools/skaffold/pull/5942)
+* [v3] Add the Kptfile struct to render. [#5940](https://github.com/GoogleContainerTools/skaffold/pull/5940)
+* setup /v2/skaffoldLogs endpoint [#5951](https://github.com/GoogleContainerTools/skaffold/pull/5951)
+* Refactor to use new SkaffoldWriter type [#5894](https://github.com/GoogleContainerTools/skaffold/pull/5894)
+* Show more detailed error when unknown Project [#5939](https://github.com/GoogleContainerTools/skaffold/pull/5939)
+* Add event logger type and function to set event context for writer [#5937](https://github.com/GoogleContainerTools/skaffold/pull/5937)
+* Remove unsupported `docker.secret.dst` field [#5927](https://github.com/GoogleContainerTools/skaffold/pull/5927)
+* Add step field for `BuildSubtaskEvent` to represent the different parts of a build for an artifact [#5915](https://github.com/GoogleContainerTools/skaffold/pull/5915)
+* Pass kubeconfig to `kpt live` [#5906](https://github.com/GoogleContainerTools/skaffold/pull/5906)
+* Use Helm chart version in render [#5922](https://github.com/GoogleContainerTools/skaffold/pull/5922)
+* Add pointer for .NET debugging for Rider [#5924](https://github.com/GoogleContainerTools/skaffold/pull/5924)
+* skaffold trace wrapping of critical functions & skaffold trace exporters via SKAFFOLD_TRACE env var [#5854](https://github.com/GoogleContainerTools/skaffold/pull/5854)
+* Ensure tag stripping logic can optionally accept digests [#5919](https://github.com/GoogleContainerTools/skaffold/pull/5919)
+* Update metadata event emission to happen every devloop and update build metadata [#5918](https://github.com/GoogleContainerTools/skaffold/pull/5918)
+* Add additional detail text field for task protos [#5929](https://github.com/GoogleContainerTools/skaffold/pull/5929)
+* Add distinct error codes for docker no space error and better suggestion [#5938](https://github.com/GoogleContainerTools/skaffold/pull/5938)
+* Add support for Port forwarding with resourceName with Templated Fields [#5934](https://github.com/GoogleContainerTools/skaffold/pull/5934)
+* Pause debug pod watchers before next iteration deploy [#5932](https://github.com/GoogleContainerTools/skaffold/pull/5932)
+
+Docs, Test, and Release Updates:
+* Add integration tests for `skaffold inspect build-env` commands [#5973](https://github.com/GoogleContainerTools/skaffold/pull/5973)
+* Add/fix remoteChart tests [#5921](https://github.com/GoogleContainerTools/skaffold/pull/5921)
+* Container Structure Test page should use `skaffold test` [#5911](https://github.com/GoogleContainerTools/skaffold/pull/5911)
+* Improve documentation of docker buildArgs (#5871) [#5901](https://github.com/GoogleContainerTools/skaffold/pull/5901)
+* Document `inputDigest` tagger, and move `sha256` tagger to end [#5948](https://github.com/GoogleContainerTools/skaffold/pull/5948)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Appu
+- Brian de Alwis
+- Gaurav
+- Marlon Gamez
+- Mattias Öhrn
+- Nick Kubala
+- Piotr Wielgolaski
+- Rob Thorne
+- Tejal Desai
+- Yuwen Ma
+
 # v1.25.0 Release - 05/25/2021
 
 Highlights:

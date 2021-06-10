@@ -18,6 +18,7 @@ package inspect
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -29,21 +30,30 @@ type moduleList struct {
 }
 
 type moduleEntry struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
+	Name     string `json:"name"`
+	Path     string `json:"path"`
+	IsRemote bool   `json:"isRemote,omitempty"`
+	IsRoot   bool   `json:"isRoot,omitempty"`
 }
 
 func PrintModulesList(ctx context.Context, out io.Writer, opts inspect.Options) error {
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
-	cfgs, err := inspect.ConfigSetFunc(config.SkaffoldOptions{ConfigurationFile: opts.Filename})
+	cfgs, err := inspect.GetConfigSet(config.SkaffoldOptions{ConfigurationFile: opts.Filename, RepoCacheDir: opts.RepoCacheDir})
 	if err != nil {
 		return formatter.WriteErr(err)
 	}
 
 	l := &moduleList{Modules: []moduleEntry{}}
+	if err != nil {
+		return formatter.WriteErr(err)
+	}
 	for _, c := range cfgs {
 		if c.Metadata.Name != "" {
-			l.Modules = append(l.Modules, moduleEntry{Name: c.Metadata.Name, Path: c.SourceFile})
+			l.Modules = append(l.Modules, moduleEntry{Name: c.Metadata.Name, Path: c.SourceFile, IsRemote: c.IsRemote, IsRoot: c.IsRootConfig})
+		} else if opts.ModulesOptions.IncludeAll {
+			// if the `--all` flag is selected, include unnamed modules with the generated name `__config_<index>`
+			// we need a generated name to disambiguate between multiple unnamed modules in the same file.
+			l.Modules = append(l.Modules, moduleEntry{Name: fmt.Sprintf("__config_%d", c.SourceIndex), Path: c.SourceFile, IsRemote: c.IsRemote, IsRoot: c.IsRootConfig})
 		}
 	}
 	return formatter.Write(l)

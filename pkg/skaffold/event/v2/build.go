@@ -48,7 +48,7 @@ func GetArtifactID(a *latestV1.Artifact) int {
 }
 
 func CacheCheckInProgress(artifact string) {
-	buildSubtaskEvent(artifact, Cache, Started, nil)
+	buildSubtaskEvent(artifact, Cache, InProgress, nil)
 }
 
 func CacheCheckMiss(artifact string) {
@@ -60,7 +60,7 @@ func CacheCheckHit(artifact string) {
 }
 
 func BuildInProgress(artifact string) {
-	buildSubtaskEvent(artifact, Build, Started, nil)
+	buildSubtaskEvent(artifact, Build, InProgress, nil)
 }
 
 func BuildFailed(artifact string, err error) {

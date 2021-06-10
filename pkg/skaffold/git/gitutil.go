@@ -90,7 +90,8 @@ func getRepoDir(g latestV1.GitInfo) (string, error) {
 	return base64.URLEncoding.EncodeToString(hasher.Sum(nil))[:32], nil
 }
 
-func getRepoCacheDir(opts config.SkaffoldOptions) (string, error) {
+// GetRepoCacheDir returns the directory for the remote git repo cache
+func GetRepoCacheDir(opts config.SkaffoldOptions) (string, error) {
 	if opts.RepoCacheDir != "" {
 		return opts.RepoCacheDir, nil
 	}
@@ -104,7 +105,7 @@ func getRepoCacheDir(opts config.SkaffoldOptions) (string, error) {
 }
 
 func syncRepo(g latestV1.GitInfo, opts config.SkaffoldOptions) (string, error) {
-	skaffoldCacheDir, err := getRepoCacheDir(opts)
+	skaffoldCacheDir, err := GetRepoCacheDir(opts)
 	r := gitCmd{Dir: skaffoldCacheDir}
 	if err != nil {
 		return "", fmt.Errorf("failed to clone repo %s: %w", g.Repo, err)

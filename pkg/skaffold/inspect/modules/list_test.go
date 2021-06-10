@@ -36,16 +36,34 @@ func TestPrintModulesList(t *testing.T) {
 	tests := []struct {
 		description string
 		configSet   parser.SkaffoldConfigSet
+		includeAll  bool
 		err         error
 		expected    string
 	}{
 		{
 			description: "print modules",
 			configSet: parser.SkaffoldConfigSet{
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg1"}}, SourceFile: "path/to/cfg1"},
-				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg2"}}, SourceFile: "path/to/cfg2"},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: ""}}, SourceFile: "path/to/cfg1", SourceIndex: 0, IsRootConfig: true},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg1"}}, SourceFile: "path/to/cfg1", SourceIndex: 1, IsRootConfig: true},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg2"}}, SourceFile: "path/to/cfg2", SourceIndex: 0, IsRemote: true},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: ""}}, SourceFile: "path/to/cfg3", SourceIndex: 0},
 			},
-			expected: `{"modules":[{"name":"cfg1","path":"path/to/cfg1"},{"name":"cfg2","path":"path/to/cfg2"}]}` + "\n",
+			expected: `{"modules":[{"name":"cfg1","path":"path/to/cfg1","isRoot":true},{"name":"cfg2","path":"path/to/cfg2","isRemote":true}]}` + "\n",
+		},
+		{
+			description: "print modules; include all",
+			configSet: parser.SkaffoldConfigSet{
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: ""}}, SourceFile: "path/to/cfg1", SourceIndex: 0, IsRootConfig: true},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg1"}}, SourceFile: "path/to/cfg1", SourceIndex: 1, IsRootConfig: true},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: "cfg2"}}, SourceFile: "path/to/cfg2", SourceIndex: 0, IsRemote: true},
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &v1.SkaffoldConfig{Metadata: v1.Metadata{Name: ""}}, SourceFile: "path/to/cfg3", SourceIndex: 0},
+			},
+			includeAll: true,
+			expected: `{"modules":[` +
+				`{"name":"__config_0","path":"path/to/cfg1","isRoot":true},` +
+				`{"name":"cfg1","path":"path/to/cfg1","isRoot":true},` +
+				`{"name":"cfg2","path":"path/to/cfg2","isRemote":true},` +
+				`{"name":"__config_0","path":"path/to/cfg3"}]}` + "\n",
 		},
 		{
 			description: "actionable error",
@@ -61,7 +79,7 @@ func TestPrintModulesList(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&inspect.ConfigSetFunc, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
+			t.Override(&inspect.GetConfigSet, func(opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				if len(opts.ConfigurationFilter) == 0 {
 					return test.configSet, test.err
 				}
@@ -75,7 +93,7 @@ func TestPrintModulesList(t *testing.T) {
 				return set, test.err
 			})
 			var buf bytes.Buffer
-			err := PrintModulesList(context.Background(), &buf, inspect.Options{OutFormat: "json"})
+			err := PrintModulesList(context.Background(), &buf, inspect.Options{OutFormat: "json", ModulesOptions: inspect.ModulesOptions{IncludeAll: test.includeAll}})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})

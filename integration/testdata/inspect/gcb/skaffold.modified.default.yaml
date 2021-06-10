@@ -1,0 +1,19 @@
+apiVersion: skaffold/v2beta17
+kind: Config
+build:
+  artifacts:
+  - image: foo
+  googleCloudBuild:
+    projectId: proj2
+    diskSizeGb: 10
+    machineType: vm2
+    timeout: 180s
+    logging: LEGACY
+    logStreamingOption: STREAM_ON
+    concurrency: 2
+    workerPool: pool2
+profiles:
+- name: local
+  build:
+    local:
+      concurrency: 1
