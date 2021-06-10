@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
@@ -32,7 +31,6 @@ import (
 	"google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
-	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -144,60 +142,35 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 
 	var digest string
 	offset := int64(0)
+	delay := time.NewTicker(RetryDelay)
+	defer delay.Stop()
+	buildResult := b.reporter.getStatus(ctx, projectID, remoteID)
 watch:
 	for {
-		var cb *cloudbuild.Build
-		var err error
-		logrus.Debugf("current offset %d", offset)
-		backoff := NewStatusBackoff()
-		if waitErr := wait.Poll(backoff.Duration, RetryTimeout, func() (bool, error) {
-			backoff.Step()
-			cb, err = cbclient.Projects.Builds.Get(projectID, remoteID).Do()
-			if err == nil {
-				return true, nil
+		select {
+		case r := <-buildResult:
+			if r.err != nil {
+				return "", err
 			}
-			if strings.Contains(err.Error(), "Error 429: Quota exceeded for quota metric 'cloudbuild.googleapis.com/get_requests'") {
-				// if we hit the rate limit, continue to retry
-				return false, nil
-			}
-			return false, err
-		}); waitErr != nil {
-			return "", fmt.Errorf("getting build status: %w", waitErr)
-		}
-		if err != nil {
-			return "", fmt.Errorf("getting build status: %w", err)
-		}
-		if cb == nil {
-			return "", errors.New("getting build status")
-		}
-
-		r, err := b.getLogs(ctx, c, offset, cbBucket, logsObject)
-		if err != nil {
-			return "", fmt.Errorf("getting logs: %w", err)
-		}
-		if r != nil {
-			written, err := io.Copy(out, r)
-			if err != nil {
-				return "", fmt.Errorf("copying logs to stdout: %w", err)
-			}
-			offset += written
-			r.Close()
-		}
-		switch cb.Status {
-		case StatusQueued, StatusWorking, StatusUnknown:
-		case StatusSuccess:
-			digest, err = b.getDigest(cb, tag)
+			digest, err = b.getDigest(r.status, tag)
 			if err != nil {
 				return "", fmt.Errorf("getting image id from finished build: %w", err)
 			}
 			break watch
-		case StatusFailure, StatusInternalError, StatusTimeout, StatusCancelled:
-			return "", fmt.Errorf("cloud build failed: %s", cb.Status)
-		default:
-			return "", fmt.Errorf("unknown status: %s", cb.Status)
+		case <-delay.C:
+			r, err := b.getLogs(ctx, c, offset, cbBucket, logsObject)
+			if err != nil {
+				return "", fmt.Errorf("getting logs: %w", err)
+			}
+			if r != nil {
+				written, err := io.Copy(out, r)
+				if err != nil {
+					return "", fmt.Errorf("copying logs to stdout: %w", err)
+				}
+				offset += written
+				r.Close()
+			}
 		}
-
-		time.Sleep(RetryDelay)
 	}
 
 	if err := c.Bucket(cbBucket).Object(buildObject).Delete(ctx); err != nil {

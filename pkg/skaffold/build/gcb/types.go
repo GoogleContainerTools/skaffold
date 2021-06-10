@@ -55,8 +55,11 @@ const (
 	// StatusCancelled  "CANCELLED" - Build was canceled by a user.
 	StatusCancelled = "CANCELLED"
 
-	// RetryDelay is the time to wait in between polling the status of the cloud build
+	// RetryDelay is the time to wait in between writing logs of the cloud build
 	RetryDelay = 1 * time.Second
+
+	// PollingInterval is the time to wait in between fetching grouped cloud build statuses
+	PollingInterval = 10 * time.Second
 
 	// BackoffFactor is the exponent for exponential backoff during build status polling
 	BackoffFactor = 1.5
@@ -86,6 +89,7 @@ type Builder struct {
 	muted              build.Muted
 	artifactStore      build.ArtifactStore
 	sourceDependencies graph.SourceDependenciesCache
+	reporter           statusReporter
 }
 
 type Config interface {
@@ -110,6 +114,7 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latestV1.GoogleCloudBuild) *Build
 		muted:              bCtx.Muted(),
 		artifactStore:      bCtx.ArtifactStore(),
 		sourceDependencies: bCtx.SourceDependenciesResolver(),
+		reporter:           getStatusReporter(),
 	}
 }
 
