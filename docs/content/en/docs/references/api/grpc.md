@@ -844,6 +844,7 @@ Enum indicating deploy tools used
 | HELM | 1 | Helm Deployer |
 | KUSTOMIZE | 2 | Kustomize Deployer |
 | KUBECTL | 3 | Kubectl Deployer |
+| KPT | 4 | kpt Deployer |
 
 
 
@@ -878,6 +879,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | OK | 0 | A default status code for events that do not have an associated phase. Typically seen with the DevEndEvent event on success. |
 | STATUSCHECK_SUCCESS | 200 | Status Check Success |
 | BUILD_SUCCESS | 201 | Build Success |
+| RENDER_SUCCESS | 204 | Render Success |
 | DEPLOY_SUCCESS | 202 | Deploy Success |
 | TEST_SUCCESS | 203 | Test Success |
 | BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
@@ -984,6 +986,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | DEPLOY_PARSE_MANIFEST_IMAGES_ERR | 1021 | Error getting images from a kubernetes manifest. |
 | DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE | 1022 | Helm config `createNamespace` not available |
 | DEPLOY_CLUSTER_INTERNAL_SYSTEM_ERR | 1023 | Kubernetes cluster reported an internal system error |
+| DEPLOY_KPTFILE_INIT_ERR | 1024 | The Kptfile cannot be created via `kpt live init`. |
 | TEST_USER_CONFIG_ERR | 1101 | Error expanding paths |
 | TEST_CST_USER_ERR | 1102 | Error running container-structure-test |
 | TEST_IMG_PULL_ERR | 1103 | Unable to docker pull image |
@@ -997,6 +1000,9 @@ For Cancelled Error code, use range 800 to 850.<br>
 | TEST_CUSTOM_DEPENDENCIES_CMD_ERR | 1112 | Error getting dependencies from command |
 | TEST_CUSTOM_DEPENDENCIES_UNMARSHALL_ERR | 1113 | Unmarshalling dependency output error |
 | TEST_CUSTOM_CMD_RETRIEVE_ERR | 1114 | Error retrieving the command |
+| RENDER_KPTFILE_INIT_ERR | 1501 | Render errors The Kptfile cannot be created via `kpt pkg init`. |
+| RENDER_KPTFILE_INVALID_YAML_ERR | 1401 | The Kptfile is not a valid yaml file |
+| RENDER_KPTFILE_INVALID_SCHEMA_ERR | 1402 | The Kptfile is not a valid API schema |
 | CONFIG_FILE_PARSING_ERR | 1201 | Catch-all configuration file parsing error |
 | CONFIG_FILE_NOT_FOUND_ERR | 1202 | Main configuration file not found |
 | CONFIG_DEPENDENCY_NOT_FOUND_ERR | 1203 | Dependency configuration file not found |
@@ -1010,6 +1016,8 @@ For Cancelled Error code, use range 800 to 850.<br>
 | CONFIG_MULTI_IMPORT_PROFILE_CONFLICT_ERR | 1211 | Same config imported at least twice with different set of profiles |
 | CONFIG_PROFILES_NOT_FOUND_ERR | 1212 | Profile selection did not match known profile names |
 | CONFIG_UNKNOWN_API_VERSION_ERR | 1213 | Config API version not found |
+| CONFIG_UNKNOWN_VALIDATOR | 1214 | The validator is not allowed in skaffold-managed mode. |
+| CONFIG_UNKNOWN_TRANSFORMER | 1215 | The transformer is not allowed in skaffold-managed mode. |
 | INSPECT_UNKNOWN_ERR | 1301 | Catch-all `skaffold inspect` command error |
 | INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR | 1302 | Trying to add new build environment that already exists |
 | INSPECT_BUILD_ENV_INCORRECT_TYPE_ERR | 1303 | Trying to modify build environment that doesn't exist |
@@ -1066,6 +1074,8 @@ Enum for Suggestion codes
 | UNPAUSE_MINIKUBE | 502 | Minikube is paused: use `minikube unpause` |
 | RUN_DOCKER_PULL | 551 | Run Docker pull for the image with v1 manifest and try again. |
 | SET_RENDER_FLAG_OFFLINE_FALSE | 600 | Rerun with correct offline flag value. |
+| KPTFILE_MANUAL_INIT | 601 | Manually run `kpt pkg init` or `kpt live init` |
+| KPTFILE_CHECK_YAML | 602 | Check if the Kptfile is correct. |
 | CONFIG_CHECK_FILE_PATH | 700 | Check configuration file path |
 | CONFIG_CHECK_DEPENDENCY_DEFINITION | 701 | Check dependency config definition |
 | CONFIG_CHANGE_NAMES | 702 | Change config name to avoid duplicates |
@@ -1074,6 +1084,8 @@ Enum for Suggestion codes
 | CONFIG_CHECK_DEPENDENCY_PROFILES_SELECTION | 705 | Check active profile selection for dependency config |
 | CONFIG_CHECK_PROFILE_SELECTION | 706 | Check profile selection flag |
 | CONFIG_FIX_API_VERSION | 707 | Fix config API version or upgrade the skaffold binary |
+| CONFIG_ALLOWLIST_VALIDATORS | 708 | Only the allow listed validators are acceptable in skaffold-managed mode. |
+| CONFIG_ALLOWLIST_transformers | 709 | Only the allow listed transformers are acceptable in skaffold-managed mode. |
 | INSPECT_USE_MODIFY_OR_NEW_PROFILE | 800 | Create new build env in a profile instead, or use the 'modify' command |
 | INSPECT_USE_ADD_BUILD_ENV | 801 | Check profile selection, or use the 'add' command instead |
 | INSPECT_CHECK_INPUT_PROFILE | 802 | Check profile flag value |

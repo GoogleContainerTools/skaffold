@@ -53,6 +53,8 @@ enum DeployerType {
     KUSTOMIZE = 2;
     // Kubectl Deployer
     KUBECTL = 3;
+    // kpt Deployer
+    KPT = 4;
 }
 
 // Enum indicating cluster type the application is deployed to
@@ -100,6 +102,8 @@ enum StatusCode {
     STATUSCHECK_SUCCESS = 200;
     // Build Success
     BUILD_SUCCESS = 201;
+    // Render Success
+    RENDER_SUCCESS = 204;
     // Deploy Success
     DEPLOY_SUCCESS = 202;
     // Test Success
@@ -349,6 +353,8 @@ enum StatusCode {
     DEPLOY_HELM_CREATE_NS_NOT_AVAILABLE = 1022;
     // Kubernetes cluster reported an internal system error
     DEPLOY_CLUSTER_INTERNAL_SYSTEM_ERR = 1023;
+    // The Kptfile cannot be created via `kpt live init`.
+    DEPLOY_KPTFILE_INIT_ERR = 1024;
 
     // Test errors
 
@@ -379,6 +385,13 @@ enum StatusCode {
     // Error retrieving the command
     TEST_CUSTOM_CMD_RETRIEVE_ERR = 1114;
 
+    // Render errors
+    // The Kptfile cannot be created via `kpt pkg init`.
+    RENDER_KPTFILE_INIT_ERR = 1501;
+    // The Kptfile is not a valid yaml file
+    RENDER_KPTFILE_INVALID_YAML_ERR = 1401;
+    // The Kptfile is not a valid API schema
+    RENDER_KPTFILE_INVALID_SCHEMA_ERR = 1402;
 
     // Configuration errors
 
@@ -408,6 +421,10 @@ enum StatusCode {
     CONFIG_PROFILES_NOT_FOUND_ERR = 1212;
     // Config API version not found
     CONFIG_UNKNOWN_API_VERSION_ERR = 1213;
+    // The validator is not allowed in skaffold-managed mode.
+    CONFIG_UNKNOWN_VALIDATOR = 1214;
+    // The transformer is not allowed in skaffold-managed mode.
+    CONFIG_UNKNOWN_TRANSFORMER = 1215;
 
     // Inspect command errors
 
@@ -535,6 +552,10 @@ enum SuggestionCode {
 
     // Rerun with correct offline flag value.
     SET_RENDER_FLAG_OFFLINE_FALSE = 600;
+    // Manually run `kpt pkg init` or `kpt live init`
+    KPTFILE_MANUAL_INIT = 601;
+    // Check if the Kptfile is correct.
+    KPTFILE_CHECK_YAML = 602;
 
     // Configuration error suggestion codes
 
@@ -554,6 +575,10 @@ enum SuggestionCode {
     CONFIG_CHECK_PROFILE_SELECTION = 706;
     // Fix config API version or upgrade the skaffold binary
     CONFIG_FIX_API_VERSION = 707;
+    // Only the allow listed validators are acceptable in skaffold-managed mode.
+    CONFIG_ALLOWLIST_VALIDATORS = 708;
+    // Only the allow listed transformers are acceptable in skaffold-managed mode.
+    CONFIG_ALLOWLIST_transformers = 709;
 
     // `skaffold inspect` command error suggestion codes
 

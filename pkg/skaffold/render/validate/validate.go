@@ -18,23 +18,40 @@ package validate
 import (
 	"fmt"
 
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
 	latestV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest/v2"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
 )
 
-var validatorWhitelist = map[string]kptfile.Function{
-	"kubeval": {Image: "gcr.io/kpt-fn/kubeval:v0.1"},
-	// TODO: Add conftest validator in kpt catalog.
-}
+var (
+	AllowlistedValidators = []string{"kubeval"}
+	validatorAllowlist    = map[string]kptfile.Function{
+		"kubeval": {Image: "gcr.io/kpt-fn/kubeval:v0.1"},
+		// TODO: Add conftest validator in kpt catalog.
+	}
+)
 
 // NewValidator instantiates a Validator object.
 func NewValidator(config []latestV2.Validator) (*Validator, error) {
 	var fns []kptfile.Function
 	for _, c := range config {
-		fn, ok := validatorWhitelist[c.Name]
+		fn, ok := validatorAllowlist[c.Name]
 		if !ok {
-			// TODO: kpt user error
-			return nil, fmt.Errorf("unsupported validator %v", c.Name)
+			// TODO: Add links to explain "skaffold-managed mode" and "kpt-managed mode".
+			return nil, sErrors.NewErrorWithStatusCode(
+				proto.ActionableErr{
+					Message: fmt.Sprintf("unsupported validator %q", c.Name),
+					ErrCode: proto.StatusCode_CONFIG_UNKNOWN_VALIDATOR,
+					Suggestions: []*proto.Suggestion{
+						{
+							SuggestionCode: proto.SuggestionCode_CONFIG_ALLOWLIST_VALIDATORS,
+							Action: fmt.Sprintf(
+								"please only use the following validators in skaffold-managed mode: %v. "+
+									"to use custom validators, please use kpt-managed mode.", AllowlistedValidators),
+						},
+					},
+				})
 		}
 		fns = append(fns, fn)
 	}

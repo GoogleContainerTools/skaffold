@@ -18,6 +18,7 @@ package renderer
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -148,4 +149,19 @@ pipeline:
 			t.CheckFileExistAndContent(filepath.Join(DefaultHydrationDir, kptfile.KptFileName), []byte(test.updatedKptfile))
 		})
 	}
+}
+func TestRender_UserErr(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		r, err := NewSkaffoldRenderer(&latestV2.RenderConfig{
+			Generate: &latestV2.Generate{Manifests: []string{"pod.yaml"}},
+			Validate: &[]latestV2.Validator{{Name: "kubeval"}},
+		}, "")
+		t.CheckNoError(err)
+		fakeCmd := testutil.CmdRunOutErr(fmt.Sprintf("kpt pkg init %v", DefaultHydrationDir), "",
+			errors.New("fake err"))
+		t.Override(&util.DefaultExecCommand, fakeCmd)
+		err = r.Render(context.Background(), &bytes.Buffer{}, []graph.Artifact{{ImageName: "leeroy-web",
+			Tag: "leeroy-web:v1"}})
+		t.CheckContains("please manually run `kpt pkg init", err.Error())
+	})
 }
