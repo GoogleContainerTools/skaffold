@@ -23,6 +23,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	//nolint:golint,staticcheck
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
@@ -339,6 +340,31 @@ func TaskSucceeded(task constants.Phase) {
 		Task:      string(task),
 		Iteration: int32(handler.iteration),
 		Status:    Succeeded,
+	})
+}
+
+// PortForwarded notifies that a remote port has been forwarded locally.
+func PortForwarded(localPort int32, remotePort util.IntOrString, podName, containerName, namespace string, portName string, resourceType, resourceName, address string) {
+	event := proto.PortForwardEvent{
+		TaskId: fmt.Sprintf("%s-%d", constants.PortForward, handler.iteration),
+		LocalPort:     localPort,
+		PodName:       podName,
+		ContainerName: containerName,
+		Namespace:     namespace,
+		PortName:      portName,
+		ResourceType:  resourceType,
+		ResourceName:  resourceName,
+		Address:       address,
+		TargetPort: &proto.IntOrString{
+			Type:   int32(remotePort.Type),
+			IntVal: int32(remotePort.IntVal),
+			StrVal: remotePort.StrVal,
+		},
+	}
+	handler.handle(&proto.Event{
+		EventType: &proto.Event_PortEvent{
+			PortEvent: &event,
+		},
 	})
 }
 
