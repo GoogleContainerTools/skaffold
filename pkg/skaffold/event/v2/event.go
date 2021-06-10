@@ -422,6 +422,9 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 	case *proto.Event_PortEvent:
 		pe := e.PortEvent
 		ev.stateLock.Lock()
+		if ev.state.ForwardedPorts == nil {
+			ev.state.ForwardedPorts = map[int32]*proto.PortForwardEvent{}
+		}
 		ev.state.ForwardedPorts[pe.LocalPort] = pe
 		ev.stateLock.Unlock()
 	case *proto.Event_StatusCheckSubtaskEvent:
