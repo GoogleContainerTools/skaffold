@@ -39,6 +39,14 @@ func AssignArtifactIDs(artifacts []*latestV1.Artifact) {
 	}
 }
 
+func GetArtifactID(a *latestV1.Artifact) int {
+	if id, ok := artifactIDs[a.ImageName]; ok {
+		return id
+	}
+
+	return -1
+}
+
 func CacheCheckInProgress(artifact string) {
 	buildSubtaskEvent(artifact, Cache, Started, nil)
 }
