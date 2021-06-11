@@ -1,3 +1,18 @@
+# v1.26.1 Release - 06/11/2021
+
+Highlights:
+* This is a patch release that fixes some integration issues with the Cloud Code IDEs, and our release process. CLI-only users don't have to upgrade to this version.
+
+Fixes:
+* Re-use key created for a release. [#5996](https://github.com/GoogleContainerTools/skaffold/pull/5996)
+* fix command example [#6002](https://github.com/GoogleContainerTools/skaffold/pull/6002)
+* fix issues in `inspect build-env add cluster` command [#5987](https://github.com/GoogleContainerTools/skaffold/pull/5987)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Gaurav
+- Tejal Desai
+
 # v1.26.0 Release - 06/08/2021
 
 Highlights:
